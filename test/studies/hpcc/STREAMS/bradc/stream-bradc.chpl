@@ -1,3 +1,5 @@
+use Math;
+
 // constants related to memory
 param MB = 1024**2,
       GB = 1024*MB,

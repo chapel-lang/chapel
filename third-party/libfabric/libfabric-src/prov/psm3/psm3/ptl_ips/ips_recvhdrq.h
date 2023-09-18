@@ -53,12 +53,12 @@
 
 /* Copyright (c) 2003-2015 Intel Corporation. All rights reserved. */
 
+#ifndef _IPS_RECVHDRQ_H
+#define _IPS_RECVHDRQ_H
+
 #include "psm_user.h"
 #include "ips_proto_params.h"
 #include "ips_proto_header.h"
-
-#ifndef _IPS_RECVHDRQ_H
-#define _IPS_RECVHDRQ_H
 
 struct ips_recvhdrq;
 struct ips_recvhdrq_state;
@@ -70,6 +70,10 @@ struct ips_epstate;
 #define IPS_RECVHDRQ_BREAK      1
 /* keep current packet, revisit the same packet next time */
 #define IPS_RECVHDRQ_REVISIT	2
+/* no progress, such as data not ready */
+#define IPS_RECVHDRQ_NO_PROGRESS 3
+/* internal error */
+#define IPS_RECVHDRQ_ERROR	4
 
 
 struct ips_recvhdrq_event {
@@ -85,17 +89,6 @@ struct ips_recvhdrq_event {
 struct ips_recvhdrq_callbacks {
 	int (*callback_packet_unknown) (const struct ips_recvhdrq_event *);
 };
-
-psm2_error_t
-ips_recvhdrq_init(const psmi_context_t *context,
-		  const struct ips_epstate *epstate,
-		  const struct ips_proto *proto,
-		  const struct ips_recvhdrq_callbacks *callbacks,
-		  struct ips_recvhdrq *recvq
-		);
-
-psm2_error_t ips_recvhdrq_progress(struct ips_recvhdrq *recvq);
-
 
 /*
  * Structure containing state for recvhdrq reading. This is logically
@@ -114,7 +107,6 @@ struct ips_recvhdrq_state {
  */
 struct ips_recvhdrq {
 	struct ips_proto *proto;
-	const psmi_context_t *context;	/* error handling, epid id, etc. */
 	/* Header queue handling */
 	pthread_spinlock_t hdrq_lock;	/* Lock for thread-safe polling */
 	/* Lookup endpoints epid -> ptladdr (rank)) */
@@ -127,7 +119,6 @@ struct ips_recvhdrq {
 	SLIST_HEAD(pending_flows, ips_flow) pending_acks;
 
 };
-
 
 PSMI_INLINE(
 void *

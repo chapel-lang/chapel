@@ -14,7 +14,7 @@ record GenericCollection {
 }
 
 {
-  var b:GenericCollection(borrowed MyClass)
-        = new GenericCollection((new owned MyClass()).borrow());
+  var o = new MyClass();
+  var b:GenericCollection(borrowed MyClass) = new GenericCollection(o.borrow());
   writeln("b ", b.type:string, " has field ", b.field.type:string);
 }

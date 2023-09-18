@@ -1,0 +1,19 @@
+underscoreMethods.chpl:12: warning: fileWriter._mark is deprecated - please use fileWriter.mark instead
+underscoreMethods.chpl:14: warning: fileWriter._revert is deprecated - please use fileWriter.revert instead
+underscoreMethods.chpl:16: warning: fileWriter._offset is deprecated - please use fileWriter.offset instead
+underscoreMethods.chpl:19: warning: fileWriter._mark is deprecated - please use fileWriter.mark instead
+underscoreMethods.chpl:21: warning: fileWriter._commit is deprecated - please use fileWriter.commit instead
+underscoreMethods.chpl:23: warning: fileWriter._offset is deprecated - please use fileWriter.offset instead
+underscoreMethods.chpl:29: warning: 
+underscoreMethods.chpl:35: warning: fileReader._mark is deprecated - please use fileReader.mark instead
+underscoreMethods.chpl:37: warning: fileReader._revert is deprecated - please use fileReader.revert instead
+underscoreMethods.chpl:39: warning: fileReader._offset is deprecated - please use fileReader.offset instead
+underscoreMethods.chpl:42: warning: fileReader._mark is deprecated - please use fileReader.mark instead
+underscoreMethods.chpl:44: warning: fileReader._commit is deprecated - please use fileReader.commit instead
+underscoreMethods.chpl:46: warning: fileReader._offset is deprecated - please use fileReader.offset instead
+writing
+0
+12
+reading
+0
+12

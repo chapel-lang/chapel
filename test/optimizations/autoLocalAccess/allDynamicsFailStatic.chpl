@@ -5,7 +5,7 @@ var D = createDom({1..10});
 
 
 var A: [D] int;
-var B = Cyclic.createArray({1..10}, int);
+var B = cyclicDist.createArray({1..10}, int);
 
 // A is a static candidate, and will pass the static check
 // B is a dynamic candidate that'll fail static check, in that case, we want
@@ -14,7 +14,7 @@ var B = Cyclic.createArray({1..10}, int);
 
 // One way to confirm that is that "Static check successful" message is shown
 // only once in the compiler logs
-forall i in D {
-  A[i] = 
+forall i in D with (ref A) {
+  A[i] =
     B[i];
 }

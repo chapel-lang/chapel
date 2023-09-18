@@ -95,6 +95,7 @@ module FileSystem {
   use CTypes;
   use IO;
   use OS.POSIX;
+  use ChplConfig;
 
 /* S_IRUSR and the following constants are values of the form
    S_I[R | W | X][USR | GRP | OTH], S_IRWX[U | G | O], S_ISUID, S_ISGID, or
@@ -180,7 +181,7 @@ private inline proc unescape(str: string) {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.chdir(name: string) throws {
-  extern proc chpl_fs_chdir(name: c_string):errorCode;
+  extern proc chpl_fs_chdir(name: c_ptrConst(c_char)):errorCode;
 
   var err: errorCode = 0;
   on this {
@@ -209,7 +210,7 @@ proc locale.chdir(name: string) throws {
 */
 @deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
 proc chmod(name: string, mode: int) throws {
-  extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+  extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
 
   var err = chpl_fs_chmod(unescape(name).c_str(), mode);
   if err then try ioerror(err, "in chmod", name);
@@ -218,6 +219,12 @@ proc chmod(name: string, mode: int) throws {
 /* Change one or both of the owner and group id of the named file or directory
    to the specified values.  If `uid` or `gid` are -1, the value in question
    will remain unchanged.
+
+   .. note::
+
+      Changing the owner typically requires root or elevated privileges.
+      Changing the group typically requires being the owner and a member of the
+      group, or having elevated privileges.
 
    :arg name: The name of the file to be changed.
    :type name: `string`
@@ -231,7 +238,7 @@ proc chmod(name: string, mode: int) throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc chown(name: string, uid: int, gid: int) throws {
-  extern proc chpl_fs_chown(name: c_string, uid: c_int, gid: c_int):errorCode;
+  extern proc chpl_fs_chown(name: c_ptrConst(c_char), uid: c_int, gid: c_int):errorCode;
 
   var err = chpl_fs_chown(unescape(name).c_str(), uid:c_int, gid:c_int);
   if err then try ioerror(err, "in chown", name);
@@ -272,7 +279,7 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
 
   proc copyMode(src: string, dest: string) throws {
     proc getMode(name: string): int throws {
-      extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+      extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
       var ret:c_int;
       var err = chpl_fs_viewmode(ret, unescape(name).c_str());
@@ -281,7 +288,7 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
     }
 
     proc chmod(name: string, mode: int) throws {
-      extern proc chpl_fs_chmod(name: c_string, mode: int): errorCode;
+      extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
 
       var err = chpl_fs_chmod(unescape(name).c_str(), mode);
       if err then try ioerror(err, "in chmod", name);
@@ -329,7 +336,7 @@ proc copy(src: string, dest: string, metadata: bool = false, permissions: bool =
   }
 
   if (metadata) {
-    extern proc chpl_fs_copy_metadata(source: c_string, dest: c_string): errorCode;
+    extern proc chpl_fs_copy_metadata(source: c_ptrConst(c_char), dest: c_ptrConst(c_char)): errorCode;
 
     // Copies the access time, and time of last modification.
     // Does not copy uid, gid, or mode
@@ -404,14 +411,14 @@ private proc copyFileImpl(src: string, dest: string) throws {
     } catch { /* ignore errors */ }
   }
 
-  var srcChnl = try srcFile.reader(kind=ionative, locking=false);
+  var srcChnl = try srcFile.reader(locking=false);
   defer {
     try {
       srcChnl.close();
     } catch { /* ignore errors */ }
   }
 
-  var destChnl = try destFile.writer(kind=ionative, locking=false);
+  var destChnl = try destFile.writer(locking=false);
   defer {
     try {
       destChnl.close();
@@ -424,7 +431,7 @@ private proc copyFileImpl(src: string, dest: string) throws {
   // If increasing the read size, make sure there's a test in
   // test/library/standard/FileSystem that copies a file larger than one buffer.
   while (try srcChnl.readBytes(buf, maxSize=4096)) {
-    try destChnl.write(buf);
+    try destChnl.writeBytes(buf);
     // From mppf:
     // If you want it to be faster, we can make it only buffer once (sharing
     // the bytes read into memory between the two channels). To do that you'd
@@ -477,7 +484,7 @@ proc copyMode(src: string, dest: string) throws {
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
 proc copyMode(out error: errorCode, src: string, dest: string) {
   var err: errorCode = 0;
@@ -531,7 +538,7 @@ proc copyTree(src: string, dest: string, copySymbolically: bool=false, metadata:
 }
 
 private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=false, metadata: bool=false) throws {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   // Create dest
   var oldMode:c_int;
@@ -593,19 +600,19 @@ private proc copyTreeHelper(src: string, dest: string, copySymbolically: bool=fa
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc locale.cwd(): string throws {
-  extern proc chpl_fs_cwd(ref working_dir:c_string):errorCode;
+  extern proc chpl_fs_cwd(ref working_dir:c_ptrConst(c_char)):errorCode;
 
   var ret:string;
   var err: errorCode = 0;
   on this {
-    var tmp:c_string;
+    var tmp:c_ptrConst(c_char);
     // c_strings can't cross on statements.
     err = chpl_fs_cwd(tmp);
     try! {
-      ret = createStringWithNewBuffer(tmp, policy=decodePolicy.escape);
+      ret = string.createCopyingBuffer(tmp, policy=decodePolicy.escape);
     }
     // tmp was qio_malloc'd by chpl_fs_cwd
-    chpl_free_c_string(tmp);
+    deallocate(tmp);
   }
   if err != 0 then try ioerror(err, "in cwd");
   return ret;
@@ -625,7 +632,7 @@ proc locale.cwd(): string throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc exists(name: string): bool throws {
-  extern proc chpl_fs_exists(ref result:c_int, name: c_string): errorCode;
+  extern proc chpl_fs_exists(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   if (name.isEmpty()) {
     // chpl_fs_exists uses stat to determine if a file exists, which throws an
@@ -682,7 +689,7 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter findFiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
        where tag == iterKind.standalone {
@@ -702,7 +709,7 @@ iter findFiles(startdir: string = ".", recursive: bool = false,
 // addition to the one that comes from the serial iterator for a forall loop
 // that calls this. (serial, leader, follower, standalone). Rely on just
 // the serial deprecation warning to reduce it to a single message.
-pragma "no doc"
+@chpldoc.nodoc
 //@deprecated(notes="'findfiles' is deprecated, please use 'findFiles' instead")
 iter findfiles(startdir: string = ".", recursive: bool = false,
                hidden: bool = false, param tag: iterKind): string
@@ -736,7 +743,7 @@ proc getGID(name: string): int throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getGid(name: string): int throws {
-  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_string): errorCode;
+  extern proc chpl_fs_get_gid(ref result: c_int, filename: c_ptrConst(c_char)): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_gid(result, unescape(name).c_str());
@@ -759,7 +766,7 @@ proc getGid(name: string): int throws {
 */
 @deprecated(notes="'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead")
 proc getMode(name: string): int throws {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_string): errorCode;
+  extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   var ret:c_int;
   var err = chpl_fs_viewmode(ret, unescape(name).c_str());
@@ -778,7 +785,7 @@ proc getMode(name: string): int throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getFileSize(name: string): int throws {
-  extern proc chpl_fs_get_size(ref result: int, filename: c_string):errorCode;
+  extern proc chpl_fs_get_size(ref result: int, filename: c_ptrConst(c_char)):errorCode;
 
   var result: int;
   var err = chpl_fs_get_size(result, unescape(name).c_str());
@@ -803,7 +810,7 @@ proc getUID(name: string): int throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc getUid(name: string): int throws {
-  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_string): errorCode;
+  extern proc chpl_fs_get_uid(ref result: c_int, filename: c_ptrConst(c_char)): errorCode;
 
   var result: c_int;
   var err = chpl_fs_get_uid(result, unescape(name).c_str());
@@ -827,7 +834,7 @@ private module GlobWrappers {
   // glob wrapper that takes care of casting and error checking
   inline proc glob_w(pattern: string, ref ret_glob:glob_t): void {
     import FileSystem.unescape;
-    extern proc chpl_glob(pattern: c_string, flags: c_int,
+    extern proc chpl_glob(pattern: c_ptrConst(c_char), flags: c_int,
                           ref ret_glob: glob_t): c_int;
 
     const GLOB_NOFLAGS = 0: c_int;
@@ -850,9 +857,9 @@ private module GlobWrappers {
 
   // glob_index wrapper that takes care of casting
   inline proc glob_index_w(glb: glob_t, idx: int): string {
-    extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_string;
+    extern proc chpl_glob_index(glb: glob_t, idx: c_size_t): c_ptrConst(c_char);
     try! {
-      return createStringWithNewBuffer(chpl_glob_index(glb,
+      return string.createCopyingBuffer(chpl_glob_index(glb,
                                                        idx.safeCast(c_size_t)),
                                        policy=decodePolicy.escape);
     }
@@ -888,7 +895,7 @@ iter glob(pattern: string = "*"): string {
 }
 
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind): string
        where tag == iterKind.standalone {
   use GlobWrappers;
@@ -912,7 +919,7 @@ iter glob(pattern: string = "*", param tag: iterKind): string
 // should be rewritten to do so (and would require freeing
 // the state at the end of the call).
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", param tag: iterKind)
        where tag == iterKind.leader {
   use GlobWrappers;
@@ -929,7 +936,7 @@ iter glob(pattern: string = "*", param tag: iterKind)
     yield followThis;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter glob(pattern: string = "*", followThis, param tag: iterKind): string
        where tag == iterKind.follower {
   use GlobWrappers;
@@ -963,7 +970,7 @@ iter glob(pattern: string = "*", followThis, param tag: iterKind): string
                         to a valid file or directory.
 */
 proc isDir(name:string):bool throws {
-  extern proc chpl_fs_is_dir(ref result:c_int, name: c_string):errorCode;
+  extern proc chpl_fs_is_dir(ref result:c_int, name: c_ptrConst(c_char)):errorCode;
 
   var ret:c_int;
   var doesExist = try exists(name);
@@ -988,7 +995,7 @@ proc isDir(name:string):bool throws {
                         to a valid file or directory.
 */
 proc isFile(name:string):bool throws {
-  extern proc chpl_fs_is_file(ref result:c_int, name: c_string):errorCode;
+  extern proc chpl_fs_is_file(ref result:c_int, name: c_ptrConst(c_char)):errorCode;
 
   var ret:c_int;
   var doesExist = try exists(name);
@@ -1014,7 +1021,7 @@ proc isFile(name:string):bool throws {
                         to a valid file or directory.
 */
 proc isSymlink(name: string): bool throws {
-  extern proc chpl_fs_is_link(ref result:c_int, name: c_string): errorCode;
+  extern proc chpl_fs_is_link(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   if (name.isEmpty()) {
     // chpl_fs_is_link uses lstat to determine if a path is a link, which throws
@@ -1049,7 +1056,7 @@ proc isLink(name: string): bool throws {
 */
 proc isMount(name: string): bool throws {
 
-  extern proc chpl_fs_is_mount(ref result:c_int, name: c_string): errorCode;
+  extern proc chpl_fs_is_mount(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
 
   var doesExist = try exists(name);
   if !doesExist then return false;
@@ -1098,25 +1105,27 @@ iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
 */
 iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
               files: bool = true, listlinks: bool = true): string {
-  extern type DIRptr;
-  extern type direntptr;
-  extern proc opendir(name: c_string): DIRptr;
+  extern record DIR {}
+  extern type DIRptr = c_ptr(DIR);
+  extern "struct dirent" record chpl_dirent {}
+  extern type direntptr = c_ptr(chpl_dirent);
+  extern proc opendir(name: c_ptrConst(c_char)): DIRptr;
   extern proc readdir(dirp: DIRptr): direntptr;
   extern proc closedir(dirp: DIRptr): c_int;
 
-  proc direntptr.d_name(): c_string {
-    extern proc chpl_rt_direntptr_getname(d: direntptr): c_string;
+  proc direntptr.d_name(): c_ptrConst(c_char) {
+    extern proc chpl_rt_direntptr_getname(d: direntptr): c_ptrConst(c_char);
 
     return chpl_rt_direntptr_getname(this);
   }
 
   var dir: DIRptr = opendir(unescape(path).c_str());
-  if (!is_c_nil(dir)) {
+  if (dir != nil) {
     var ent: direntptr = readdir(dir);
-    while (!is_c_nil(ent)) {
+    while (ent != nil) {
       var filename: string;
       try! {
-        filename = createStringWithNewBuffer(ent.d_name(),
+        filename = string.createCopyingBuffer(ent.d_name(),
                                              policy=decodePolicy.escape);
       }
       if (hidden || filename[0] != '.') {
@@ -1144,7 +1153,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
     }
     closedir(dir);
   } else {
-    extern proc perror(s: c_string);
+    extern proc perror(s: c_ptrConst(c_char));
     perror(("error in listDir(): " + path).c_str());
   }
 }
@@ -1181,7 +1190,7 @@ iter listDir(path: string = ".", hidden: bool = false, dirs: bool = true,
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc mkdir(name: string, mode: int = 0o777, parents: bool=false) throws {
-  extern proc chpl_fs_mkdir(name: c_string, mode: int, parents: bool):errorCode;
+  extern proc chpl_fs_mkdir(name: c_ptrConst(c_char), mode: int, parents: bool):errorCode;
 
   if name.isEmpty() then
     try ioerror(ENOENT:errorCode, "mkdir called with illegal path: '" + name + "'");
@@ -1225,7 +1234,7 @@ proc moveDir(src: string, dest: string) throws {
         // source and destination is to fail with a helpful error message.
         // Since this error code shouldn't occur otherwise, it signals to
         // the wrapper function what has happened.
-        throw new owned IllegalArgumentError("src", "Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
+        throw new owned IllegalArgumentError("illegal argument 'src': Cannot move a directory \'" + src + "\' into itself \'" + dest + "\'.");
       } else {
         // dest is a directory, we'll copy src inside it
         // NOT YET SUPPORTED.  Requires basename and joinPath
@@ -1254,7 +1263,7 @@ proc moveDir(src: string, dest: string) throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc rename(oldname: string, newname: string) throws {
-  extern proc chpl_fs_rename(oldname: c_string, newname: c_string):errorCode;
+  extern proc chpl_fs_rename(oldname: c_ptrConst(c_char), newname: c_ptrConst(c_char)):errorCode;
 
   var err = chpl_fs_rename(unescape(oldname).c_str(),
                            unescape(newname).c_str());
@@ -1269,13 +1278,13 @@ proc rename(oldname: string, newname: string) throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc remove(name: string) throws {
-  extern proc chpl_fs_remove(name: c_string):errorCode;
+  extern proc chpl_fs_remove(name: c_ptrConst(c_char)):errorCode;
 
   var err = chpl_fs_remove(unescape(name).c_str());
   if err then try ioerror(err, "in remove", name);
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc remove(out error: errorCode, name: string) {
   try {
     remove(name);
@@ -1348,7 +1357,7 @@ private proc rmTreeHelper(root: string) throws {
 */
 proc sameFile(file1: string, file2: string): bool throws {
   extern proc chpl_fs_samefile_string(ref ret: c_int,
-                                      file1: c_string, file2: c_string): errorCode;
+                                      file1: c_ptrConst(c_char), file2: c_ptrConst(c_char)): errorCode;
 
   var ret:c_int;
   var err = chpl_fs_samefile_string(ret, unescape(file1).c_str(),
@@ -1403,7 +1412,7 @@ proc sameFile(file1: file, file2: file): bool throws {
    :throws SystemError: Thrown to describe an error if one occurs.
 */
 proc symlink(oldName: string, newName: string) throws {
-  extern proc chpl_fs_symlink(orig: c_string, linkName: c_string): errorCode;
+  extern proc chpl_fs_symlink(orig: c_ptrConst(c_char), linkName: c_ptrConst(c_char)): errorCode;
 
   var err = chpl_fs_symlink(unescape(oldName).c_str(),
                             unescape(newName).c_str());
@@ -1419,14 +1428,28 @@ proc symlink(oldName: string, newName: string) throws {
       This is not safe within a parallel context.  A umask call in one task
       will affect the umask of all tasks for that locale.
 
+   .. warning::
 
-   :arg mask: The file creation mask to use now.
+      'umask' is unstable on locale models other than the flat locale model.
+
+   :arg mask: The file creation mask to use now. Octal literals may be specified, e.g., ``0o777``. See :ref:`Integral literal values <Integral literal values>`.
    :type mask: `int`
 
    :return: The previous file creation mask
    :rtype: `int`
 */
-proc locale.umask(mask: int): int {
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL == "flat") {
+  return umaskHelper(mask);
+}
+
+@chpldoc.nodoc
+@unstable("'umask' is unstable on locale models other than 'flat'")
+proc locale.umask(mask: int): int where (CHPL_LOCALE_MODEL != "flat") {
+  return umaskHelper(mask);
+}
+
+@chpldoc.nodoc
+proc locale.umaskHelper(mask: int): int {
   import OS.POSIX.mode_t;
   extern proc chpl_fs_umask(mask: mode_t): mode_t;
   extern proc chpl_int_to_mode(mode: c_int): mode_t;
@@ -1439,7 +1462,6 @@ proc locale.umask(mask: int): int {
   }
   return result.safeCast(int);
 }
-
 
 @deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
@@ -1505,7 +1527,7 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
     yield path;
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string
@@ -1518,7 +1540,7 @@ iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
 //
 // Here's a parallel version
 //
-pragma "no doc"
+@chpldoc.nodoc
 iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
               hidden: bool = false, followlinks: bool = false,
               sort: bool = false, param tag: iterKind): string

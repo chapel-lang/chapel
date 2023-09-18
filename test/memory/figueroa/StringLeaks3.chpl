@@ -1,7 +1,7 @@
 // This test case shows that there is a memory leak due to the second assignment
 // to s.  s should be freed just before it is assigned to again.
 
-use Memory.Diagnostics, IO;
+use MemDiagnostics, IO;
 
 config const n = 1;
 

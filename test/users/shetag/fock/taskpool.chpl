@@ -8,6 +8,10 @@ class taskpool {
   var taskarr : [0..poolSize-1] sync unmanaged blockIndices?;
   var head, tail : sync int = 0;
 
+  proc init(poolSize) {
+    this.poolSize = poolSize;
+  }
+
   proc add(bI) {
     const pos = tail.readFE();
     tail.writeEF((pos+1)%poolSize);

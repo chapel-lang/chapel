@@ -12,7 +12,7 @@ use ReplicatedDist;
 config const blk = 5, fac=10;
 const n = blk*fac;
 
-const Dist2D = new dmap(new Replicated());
+const Dist2D = new replicatedDist();
 
 proc main() {
   const AbD: domain(2) dmapped Dist2D = {1..n, 1..n};

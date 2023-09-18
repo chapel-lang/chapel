@@ -70,8 +70,6 @@ void list_view_noline(const BaseAST* ast);
 
 void astDump_view(int id);
 void astDump_view(BaseAST* ast);
-void astDumpToNode_view(int id);
-void astDumpToNode_view(BaseAST* ast);
 
 void viewFlags(int id);
 

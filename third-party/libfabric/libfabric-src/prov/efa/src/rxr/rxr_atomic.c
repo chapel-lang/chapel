@@ -48,7 +48,7 @@ static void rxr_atomic_init_shm_msg(struct fi_msg_atomic *shm_msg,
 
 	assert(msg->rma_iov_count <= RXR_IOV_LIMIT);
 	memcpy(shm_msg, msg, sizeof(*msg));
-	if (!(shm_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR)) {
+	if (!(g_shm_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR)) {
 		memcpy(rma_iov, msg->rma_iov,
 		       sizeof(*msg->rma_iov) * msg->rma_iov_count);
 		for (i = 0; i < msg->rma_iov_count; i++)
@@ -66,20 +66,25 @@ static void rxr_atomic_init_shm_msg(struct fi_msg_atomic *shm_msg,
 }
 
 static
-struct rxr_tx_entry *
+struct rxr_op_entry *
 rxr_atomic_alloc_tx_entry(struct rxr_ep *rxr_ep,
 			  const struct fi_msg_atomic *msg_atomic,
 			  const struct rxr_atomic_ex *atomic_ex,
 			  uint32_t op, uint64_t flags)
 {
-	struct rxr_tx_entry *tx_entry;
+	struct rxr_op_entry *tx_entry;
 	struct fi_msg msg;
 	struct iovec iov[RXR_IOV_LIMIT];
-	size_t datatype_size = ofi_datatype_size(msg_atomic->datatype);
+	size_t datatype_size;
 
-	tx_entry = ofi_buf_alloc(rxr_ep->tx_entry_pool);
+	datatype_size = ofi_datatype_size(msg_atomic->datatype);
+	if (OFI_UNLIKELY(!datatype_size)) {
+		return NULL;
+	}
+
+	tx_entry = ofi_buf_alloc(rxr_ep->op_entry_pool);
 	if (OFI_UNLIKELY(!tx_entry)) {
-		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL, "TX entries exhausted.\n");
+		FI_DBG(&rxr_prov, FI_LOG_EP_CTRL, "TX entries exhausted.\n");
 		return NULL;
 	}
 
@@ -119,7 +124,7 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 			       const struct rxr_atomic_ex *atomic_ex,
 			       uint32_t op, uint64_t flags)
 {
-	struct rxr_tx_entry *tx_entry;
+	struct rxr_op_entry *tx_entry;
 	struct rdm_peer *peer;
 	bool delivery_complete_requested;
 	ssize_t err;
@@ -130,8 +135,12 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 	};
 
 	assert(msg->iov_count <= rxr_ep->tx_iov_limit);
-	rxr_perfset_start(rxr_ep, perf_rxr_tx);
-	fastlock_acquire(&rxr_ep->util_ep.lock);
+	efa_perfset_start(rxr_ep, perf_efa_tx);
+
+	if (msg->desc && efa_mr_is_cuda(msg->desc[0]))
+		return -FI_ENOSYS;
+
+	ofi_mutex_lock(&rxr_ep->util_ep.lock);
 
 	if (OFI_UNLIKELY(is_tx_res_full(rxr_ep))) {
 		err = -FI_EAGAIN;
@@ -155,7 +164,6 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 
 	delivery_complete_requested = tx_entry->fi_flags & FI_DELIVERY_COMPLETE;
 	if (delivery_complete_requested && !(peer->is_local)) {
-		tx_entry->rxr_flags |= RXR_DELIVERY_COMPLETE_REQUESTED;
 		/*
 		 * Because delivery complete is defined as an extra
 		 * feature, the receiver might not support it.
@@ -172,13 +180,17 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 		 * support it or not.
 		 */
 		err = rxr_pkt_trigger_handshake(rxr_ep, tx_entry->addr, peer);
-		if (OFI_UNLIKELY(err))
+		if (OFI_UNLIKELY(err)) {
+			rxr_release_tx_entry(rxr_ep, tx_entry);
 			goto out;
+		}
 
 		if (!(peer->flags & RXR_PEER_HANDSHAKE_RECEIVED)) {
+			rxr_release_tx_entry(rxr_ep, tx_entry);
 			err = -FI_EAGAIN;
 			goto out;
 		} else if (!rxr_peer_support_delivery_complete(peer)) {
+			rxr_release_tx_entry(rxr_ep, tx_entry);
 			err = -FI_EOPNOTSUPP;
 			goto out;
 		}
@@ -188,30 +200,33 @@ ssize_t rxr_atomic_generic_efa(struct rxr_ep *rxr_ep,
 			    peer->next_msg_id++ : ++peer->next_msg_id;
 
 	if (delivery_complete_requested && op == ofi_op_atomic) {
-		err = rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY,
-					tx_entry,
-					RXR_DC_WRITE_RTA_PKT,
-					0);
+		err = rxr_pkt_post_req(rxr_ep,
+				       tx_entry,
+				       RXR_DC_WRITE_RTA_PKT,
+				       0,
+				       0);
 	} else {
 		/*
 		 * Fetch atomic and compare atomic
 		 * support DELIVERY_COMPLETE
 		 * by nature
 		 */
-		err = rxr_pkt_post_ctrl(rxr_ep, RXR_TX_ENTRY,
-					tx_entry,
-					req_pkt_type_list[op],
-					0);
+		err = rxr_pkt_post_req(rxr_ep,
+				       tx_entry,
+				       req_pkt_type_list[op],
+				       0,
+				       0);
 	}
 
 	if (OFI_UNLIKELY(err)) {
+		rxr_ep_progress_internal(rxr_ep);
 		rxr_release_tx_entry(rxr_ep, tx_entry);
 		peer->next_msg_id--;
 	}
 
 out:
-	fastlock_release(&rxr_ep->util_ep.lock);
-	rxr_perfset_end(rxr_ep, perf_rxr_tx);
+	ofi_mutex_unlock(&rxr_ep->util_ep.lock);
+	efa_perfset_end(rxr_ep, perf_efa_tx);
 	return err;
 }
 
@@ -231,9 +246,8 @@ rxr_atomic_inject(struct fid_ep *ep,
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	peer = rxr_ep_get_peer(rxr_ep, dest_addr);
 	assert(peer);
-	if (peer->is_local) {
-		assert(rxr_ep->use_shm);
-		if (!(shm_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR))
+	if (peer->is_local && rxr_ep->use_shm_for_tx) {
+		if (!(g_shm_info->domain_attr->mr_mode & FI_MR_VIRT_ADDR))
 			remote_addr = 0;
 
 		return fi_inject_atomic(rxr_ep->shm_ep, buf, count, peer->shm_fiaddr,
@@ -280,8 +294,7 @@ rxr_atomic_writemsg(struct fid_ep *ep,
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
 	assert(peer);
-	if (peer->is_local) {
-		assert(rxr_ep->use_shm);
+	if (peer->is_local && rxr_ep->use_shm_for_tx) {
 		rxr_atomic_init_shm_msg(&shm_msg, msg, rma_iov, shm_desc);
 		shm_msg.addr = peer->shm_fiaddr;
 		return fi_atomicmsg(rxr_ep->shm_ep, &shm_msg, flags);
@@ -347,7 +360,12 @@ rxr_atomic_readwritemsg(struct fid_ep *ep,
 	struct fi_rma_ioc shm_rma_iov[RXR_IOV_LIMIT];
 	void *shm_desc[RXR_IOV_LIMIT];
 	struct rxr_atomic_ex atomic_ex;
-	size_t datatype_size = ofi_datatype_size(msg->datatype);
+	size_t datatype_size;
+
+	datatype_size = ofi_datatype_size(msg->datatype);
+	if (OFI_UNLIKELY(!datatype_size)) {
+		return -errno;
+	}
 
 	FI_DBG(&rxr_prov, FI_LOG_EP_DATA, "%s total_len=%ld atomic_op=%d\n", __func__,
 	       ofi_total_ioc_cnt(msg->msg_iov, msg->iov_count), msg->op);
@@ -355,8 +373,7 @@ rxr_atomic_readwritemsg(struct fid_ep *ep,
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
 	assert(peer);
-	if (peer->is_local) {
-		assert(rxr_ep->use_shm);
+	if (peer->is_local & rxr_ep->use_shm_for_tx) {
 		rxr_atomic_init_shm_msg(&shm_msg, msg, shm_rma_iov, shm_desc);
 		shm_msg.addr = peer->shm_fiaddr;
 		return fi_fetch_atomicmsg(rxr_ep->shm_ep, &shm_msg,
@@ -430,7 +447,12 @@ rxr_atomic_compwritemsg(struct fid_ep *ep,
 	struct fi_rma_ioc shm_rma_iov[RXR_IOV_LIMIT];
 	void *shm_desc[RXR_IOV_LIMIT];
 	struct rxr_atomic_ex atomic_ex;
-	size_t datatype_size = ofi_datatype_size(msg->datatype);
+	size_t datatype_size;
+
+	datatype_size = ofi_datatype_size(msg->datatype);
+	if (OFI_UNLIKELY(!datatype_size)) {
+		return -errno;
+	}
 
 	FI_DBG(&rxr_prov, FI_LOG_EP_DATA,
 	       "%s: iov_len: %lu flags: %lx\n",
@@ -439,8 +461,7 @@ rxr_atomic_compwritemsg(struct fid_ep *ep,
 	rxr_ep = container_of(ep, struct rxr_ep, util_ep.ep_fid.fid);
 	peer = rxr_ep_get_peer(rxr_ep, msg->addr);
 	assert(peer);
-	if (peer->is_local) {
-		assert(rxr_ep->use_shm);
+	if (peer->is_local && rxr_ep->use_shm_for_tx) {
 		rxr_atomic_init_shm_msg(&shm_msg, msg, shm_rma_iov, shm_desc);
 		shm_msg.addr = peer->shm_fiaddr;
 		return fi_compare_atomicmsg(rxr_ep->shm_ep, &shm_msg,
@@ -474,7 +495,7 @@ rxr_atomic_compwritev(struct fid_ep *ep,
 	rma_ioc.key = rma_key;
 
 	msg.msg_iov = iov;
-	msg.iov_count = count; 
+	msg.iov_count = count;
 	msg.desc = desc;
 	msg.addr = dest_addr;
 	msg.rma_iov = &rma_ioc;
@@ -518,7 +539,7 @@ int rxr_query_atomic(struct fid_domain *domain,
 		     enum fi_datatype datatype, enum fi_op op,
 		     struct fi_atomic_attr *attr, uint64_t flags)
 {
-	struct rxr_domain *rxr_domain;
+	struct efa_domain *efa_domain;
 	int ret;
 	size_t max_atomic_size;
 
@@ -528,21 +549,30 @@ int rxr_query_atomic(struct fid_domain *domain,
 		return -FI_EINVAL;
 	}
 
+	if ((datatype == FI_INT128) || (datatype == FI_UINT128)) {
+		FI_WARN(&rxr_prov, FI_LOG_EP_CTRL,
+			"128-bit atomic integers not supported\n");
+		return -FI_EOPNOTSUPP;
+	}
+
 	ret = ofi_atomic_valid(&rxr_prov, datatype, op, flags);
 	if (ret || !attr)
 		return ret;
 
-	rxr_domain = container_of(domain, struct rxr_domain,
+	efa_domain = container_of(domain, struct efa_domain,
 				  util_domain.domain_fid);
 
-	max_atomic_size = rxr_domain->mtu_size - sizeof(struct rxr_rta_hdr)
-			  - rxr_domain->addrlen
+	max_atomic_size = efa_domain->mtu_size - sizeof(struct rxr_rta_hdr)
+			  - efa_domain->addrlen
 			  - RXR_IOV_LIMIT * sizeof(struct fi_rma_iov);
 
 	if (flags & FI_COMPARE_ATOMIC)
 		max_atomic_size /= 2;
 
 	attr->size = ofi_datatype_size(datatype);
+	if (OFI_UNLIKELY(!attr->size)) {
+		return -errno;
+	}
 	attr->count = max_atomic_size / attr->size;
 	return 0;
 }

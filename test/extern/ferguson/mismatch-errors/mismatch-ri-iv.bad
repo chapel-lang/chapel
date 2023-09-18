@@ -1,5 +1,5 @@
 Incorrect number of arguments passed to called function!
-  %4 = call i32 @returnIntFromIntArg() #0
+  %n = call i32 @returnIntFromIntArg() #0
 internal error: COD-CG--BOL-nnnn chpl version mmmm
 
 Internal errors indicate a bug in the Chapel compiler,

@@ -21,6 +21,7 @@ module HPCC_PTRANS {
 
   use LinearAlgebra, 
       Time,
+      Math,
       BlockDist;
 
   proc main () {
@@ -32,10 +33,10 @@ module HPCC_PTRANS {
     // declare distribution rules for matrix and transpose
 
     const Matrix_Block_Dist 
-      = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_rows, 1..n_cols}));
+      = new blockDist(rank=2,idxType=int(64),boundingBox={1..n_rows, 1..n_cols});
 
     const Transpose_Block_Dist 
-      = new dmap(new Block(rank=2,idxType=int(64),boundingBox={1..n_cols, 1..n_rows}));
+      = new blockDist(rank=2,idxType=int(64),boundingBox={1..n_cols, 1..n_rows});
 
     // declare domains (index sets) for matrix and transpose
 
@@ -74,12 +75,12 @@ module HPCC_PTRANS {
      // detect any addressing errors.
     // -------------------------------------------------------------------------
 
-    forall (i,j) in matrix_domain do {
+    forall (i,j) in matrix_domain with (ref A, ref C) do {
       A [i,j] = erf (i) * cos (j);
       C [j,i] = sin (i) * cbrt (j);
     }
 
-    forall (i,j) in transpose_domain do
+    forall (i,j) in transpose_domain with (ref C_plus_A_transpose) do
       C_plus_A_transpose [i,j] = beta * sin (j) * cbrt (i) + erf(j) * cos (i);
 
     // norm_A = norm (A);
@@ -172,7 +173,7 @@ module HPCC_PTRANS {
   //  =====================================================
 
   proc Chapel_PTRANS ( A : [?A_domain] real, 
-		      C : [?C_domain] real, 
+		      ref C : [?C_domain] real, 
 		      beta : real ) : bool
     where ( A.rank == 2 ) && ( C.rank == 2 )
     {
@@ -190,17 +191,17 @@ module HPCC_PTRANS {
       {
 	if ( beta == 1.0 ) then
 
-      	  forall (i,j) in C_domain do
+      	  forall (i,j) in C_domain with (ref C) do
 	    C [i,j] += A [j,i];
     
 	else if ( beta == 0.0 ) then
       
-	  forall (i,j) in C_domain do
+	  forall (i,j) in C_domain with (ref C) do
 	    C [i,j] = A [j,i];
     
 	else
       
-	  forall (i,j) in C_domain do
+	  forall (i,j) in C_domain with (ref C) do
 	    C [i,j] = beta * C [i,j]  +  A [j,i];
 	return true;
       }

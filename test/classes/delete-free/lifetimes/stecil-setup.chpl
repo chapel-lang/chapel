@@ -7,7 +7,7 @@ class MyLocDom {
 
 
 class MyStencilDom {
-  var A:[1..10] borrowed MyLocDom?;
+  var A:[1..10] unmanaged MyLocDom?;
 }
 
 config const branch = true;
@@ -26,7 +26,7 @@ proc test() {
   var dom = new unmanaged MyStencilDom();
   dom.setup();
   writeln(dom);
-  delete dom.A[1]:unmanaged;
+  delete dom.A[1];
   delete dom;
 }
 

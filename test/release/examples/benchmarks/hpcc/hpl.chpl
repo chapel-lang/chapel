@@ -75,7 +75,7 @@ proc main() {
   // rows and its low column bound.
   //
   const MatVectSpace: domain(2)
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize))
                     = {1..n, 1..n+1},
@@ -104,8 +104,8 @@ proc main() {
 // blocked LU factorization with pivoting for matrix augmented with
 // vector of RHS values.
 //
-proc LUFactorize(n: int, Ab: [?AbD] elemType,
-                piv: [1..n] int) {
+proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
+                ref piv: [1..n] int) {
   
   // Initialize the pivot vector to represent the initially unpivoted matrix.
   piv = 1..n;
@@ -185,7 +185,7 @@ proc LUFactorize(n: int, Ab: [?AbD] elemType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(ref Ab: [?AbD] elemType, AD: domain(?), BD: domain(?), Rest: domain(?)) {
   //
   // Copy data into replicated arrays so every processor has a local copy
   // of the data it will need to perform a local matrix-multiply.
@@ -194,7 +194,7 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
             replB = replicateD1(Ab, BD);
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
     //
     // At this point, the dgemms should all be local once we have
     // replication correct, so we'll want to assert that fact
@@ -214,12 +214,12 @@ proc schurComplement(Ab: [?AbD] elemType, AD: domain, BD: domain, Rest: domain) 
 //
 proc replicateD1(Ab, BD) {
   const replBD = {1..blkSize, 1..n+1}
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new ReplicatedDim(gridRows),
                               new BlockCyclicDim(gridCols, lowIdx=1, blkSize));
   var replB: [replBD] elemType;
 
-  coforall dest in targetLocales[.., 0] do
+  coforall dest in targetLocales[.., 0] with (ref replB) do
     on dest {
       const (rows, _) = BD.dims();
       replB = Ab[rows, 1..n+1];
@@ -233,12 +233,12 @@ proc replicateD1(Ab, BD) {
 //
 proc replicateD2(Ab, AD) {
   const replAD = {1..n, 1..blkSize}
-    dmapped DimensionalDist2D(targetLocales,
+    dmapped dimensionalDist2D(targetLocales,
                               new BlockCyclicDim(gridRows, lowIdx=1, blkSize),
                               new ReplicatedDim(gridCols));
   var replA: [replAD] elemType;
 
-  coforall dest in targetLocales[0, ..] do
+  coforall dest in targetLocales[0, ..] with (ref replA) do
     on dest {
       const (_, cols) = AD.dims();
       replA = Ab[1..n, cols];
@@ -252,9 +252,9 @@ proc replicateD2(Ab, AD) {
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 //
-proc panelSolve(Ab: [] elemType,
-               panel: domain,
-               piv: [] int) {
+proc panelSolve(ref Ab: [] elemType,
+               panel: domain(?),
+               ref piv: [] int) {
 
   const (_, cols) = panel.dims();
   for k in cols {                  // iterate through the columns
@@ -284,7 +284,7 @@ proc panelSolve(Ab: [] elemType,
     Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -295,16 +295,16 @@ proc panelSolve(Ab: [] elemType,
 // solve a block (tl for top-left) portion of a matrix. This function
 // solves the rows to the right of the block.
 //
-proc updateBlockRow(Ab: [] elemType,
-                   tl: domain,
-                   tr: domain) {
+proc updateBlockRow(ref Ab: [] elemType,
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   const (rows, _) = tr.dims();
   for row in rows {
     const activeRow = tr[row..row, ..],
           prevRows = rows.low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -369,7 +369,7 @@ proc printConfiguration() {
 // construct an n by n+1 matrix filled with random values and scale
 // it to be in the range -1.0..1.0
 //
-proc initAB(Ab: [] elemType) {
+proc initAB(ref Ab: [] elemType) {
   fillRandom(Ab, seed);
   Ab = Ab * 2.0 - 1.0;
 }
@@ -377,7 +377,7 @@ proc initAB(Ab: [] elemType) {
 //
 // calculate norms and residuals to verify the results
 //
-proc verifyResults(Ab, MatrixSpace, x) {
+proc verifyResults(ref Ab, MatrixSpace, x) {
   if !verify then return true;
   initAB(Ab);
 
@@ -421,7 +421,7 @@ proc gaxpyMinus(A: [],
                 y: [?yD]) {
   var res: [1..n] elemType;
 
-  forall i in 1..n do
+  forall i in 1..n with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;

@@ -39,11 +39,6 @@
 #include "ofi_hook.h"
 #include "ofi_prov.h"
 
-
-static char **hooks;
-static size_t hook_cnt;
-
-
 struct hook_fabric *hook_to_fabric(const struct fid *fid)
 {
 	switch (fid->fclass) {
@@ -280,58 +275,4 @@ struct hook_prov_ctx hook_noop_ctx = {
 HOOK_NOOP_INI
 {
 	return &hook_noop_ctx.prov;
-}
-
-/*
- * Call the fabric() interface of the hooking provider.  We pass in the
- * fabric being hooked via the fabric attributes and the corresponding
- * fi_provider structure as the context.
- */
-void ofi_hook_install(struct fid_fabric *hfabric, struct fid_fabric **fabric,
-		      struct fi_provider *prov)
-{
-	struct fi_provider *hook_prov;
-	struct fi_fabric_attr attr;
-	int i, ret;
-
-	*fabric = hfabric;
-	if (!hook_cnt || !hooks)
-		return;
-
-	memset(&attr, 0, sizeof attr);
-
-	for (i = 0; i < hook_cnt; i++) {
-		hook_prov = ofi_get_hook(hooks[i]);
-		if (!hook_prov)
-			continue;
-
-		attr.fabric = hfabric;
-		ret = hook_prov->fabric(&attr, fabric, prov);
-		if (ret)
-			continue;
-
-		hfabric = *fabric;
-	}
-}
-
-void ofi_hook_init(void)
-{
-	char *param_val = NULL;
-
-	fi_param_define(NULL, "hook", FI_PARAM_STRING,
-			"Intercept calls to underlying provider and apply "
-			"the specified functionality to them.  Hook option: "
-			"perf (gather performance data)");
-	fi_param_get_str(NULL, "hook", &param_val);
-
-	if (!param_val)
-		return;
-
-	hooks = ofi_split_and_alloc(param_val, ";", &hook_cnt);
-}
-
-void ofi_hook_fini(void)
-{
-	if (hooks)
-		ofi_free_string_array(hooks);
 }

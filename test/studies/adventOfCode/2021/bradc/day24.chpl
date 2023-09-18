@@ -15,7 +15,7 @@ var numruns = 0;
 
 while infile.readLine(line) {
   line = line.strip();
-  code.append(line);
+  code.pushBack(line);
 }
 
 if input=="" {

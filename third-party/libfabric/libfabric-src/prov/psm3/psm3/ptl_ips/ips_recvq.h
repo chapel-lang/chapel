@@ -64,10 +64,10 @@
  * If function returns NULL, no memory has been allocated and the error handler
  * has been executed on 'ep' and hence assume status PSM2_NO_MEMORY.
  */
-void **ips_recvq_egrbuf_table_alloc(psm2_ep_t ep,
+void **psm3_ips_recvq_egrbuf_table_alloc(psm2_ep_t ep,
 				    void *base, uint32_t bufnum,
 				    uint32_t bufsize);
-void ips_recvq_egrbuf_table_free(void **buftable);
+void psm3_ips_recvq_egrbuf_table_free(void **buftable);
 
 
 #endif /* _IPS_RECVQ_H */

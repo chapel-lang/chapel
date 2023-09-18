@@ -1,0 +1,2 @@
+boolWithSize.chpl:3: error: illegal type index expression 'bool(8)'
+boolWithSize.chpl:3: note: primitive type 'bool' cannot be indexed in this manner

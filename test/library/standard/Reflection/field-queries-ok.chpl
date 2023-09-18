@@ -1,10 +1,10 @@
-// Check that numFields et al. handles a variety of aggregate types.
+// Check that getNumFields et al. handles a variety of aggregate types.
 // See also: test/param/ferguson/field*
 use Reflection;
 
 proc test(type tp) {
   compilerWarning("===== ", tp:string);
-  compilerWarning("  numFields       ", numFields(tp)            :string);
+  compilerWarning("  getNumFields    ", getNumFields(tp)         :string);
   compilerWarning("  getFieldName    ", getFieldName(tp, 5)             );
   compilerWarning("  hasField        ", hasField(tp, "f6")       :string);
   compilerWarning("  getFieldIndex   ", getFieldIndex(tp, "f6")  :string);

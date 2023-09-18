@@ -78,7 +78,7 @@ void tcpx_free_cm_ctx(struct tcpx_cm_context *cm_ctx)
  * CM message should be readable, as it fits within a single MTU
  * and is the first data transferred over the socket.
  */
-static int rx_cm_data(SOCKET fd, int type, struct tcpx_cm_context *cm_ctx)
+static ssize_t rx_cm_data(SOCKET fd, int type, struct tcpx_cm_context *cm_ctx)
 {
 	size_t data_size = 0;
 	ssize_t ret;
@@ -121,11 +121,10 @@ static int rx_cm_data(SOCKET fd, int type, struct tcpx_cm_context *cm_ctx)
 			goto out;
 		}
 
-		if (ntohs(cm_ctx->msg.hdr.seg_size) > TCPX_MAX_CM_DATA_SIZE) {
+		if (data_size > TCPX_MAX_CM_DATA_SIZE) {
 			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
 				"Discarding unexpected cm data\n");
-			ofi_discard_socket(fd, ntohs(cm_ctx->msg.hdr.seg_size) -
-					   TCPX_MAX_CM_DATA_SIZE);
+			ofi_discard_socket(fd, data_size - TCPX_MAX_CM_DATA_SIZE);
 		}
 	}
 
@@ -159,35 +158,15 @@ static int tx_cm_data(SOCKET fd, uint8_t type, struct tcpx_cm_context *cm_ctx)
 
 	ret = ofi_send_socket(fd, &cm_ctx->msg, sizeof(cm_ctx->msg.hdr) +
 			      cm_ctx->cm_data_sz, MSG_NOSIGNAL);
-	if (ret != sizeof(cm_ctx->msg.hdr) + cm_ctx->cm_data_sz)
+	if ((size_t) ret != sizeof(cm_ctx->msg.hdr) + cm_ctx->cm_data_sz)
 		return ofi_sockerr() ? -ofi_sockerr() : -FI_EIO;
 
 	return FI_SUCCESS;
 }
 
-static int tcpx_ep_enable(struct tcpx_ep *ep,
-			  struct fi_eq_cm_entry *cm_entry,
-			  size_t cm_entry_sz)
-
+static int tcpx_ep_add_fd(struct tcpx_ep *ep)
 {
-	int ret = 0;
-
-	if (!ep->util_ep.rx_cq && !ep->util_ep.tx_cq) {
-		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
-			"ep must be bound to cq's\n");
-		return -FI_ENOCQ;
-	}
-
-	fastlock_acquire(&ep->lock);
-	if (ep->state != TCPX_CONNECTING && ep->state != TCPX_ACCEPTING) {
-		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
-			"ep is in invalid state\n");
-		ret = -FI_EINVAL;
-		goto unlock;
-	}
-
-	ep->state = TCPX_CONNECTED;
-	fastlock_release(&ep->lock);
+	int ret;
 
 	if (ep->util_ep.rx_cq) {
 		ret = ofi_wait_add_fd(ep->util_ep.rx_cq->wait,
@@ -213,6 +192,108 @@ static int tcpx_ep_enable(struct tcpx_ep *ep,
 		}
 	}
 
+	if (ep->util_ep.rx_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.rx_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to rx_cntr\n");
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.tx_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.tx_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to tx_cntr\n");
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.wr_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.wr_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to wr_cntr\n");
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rd_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.rd_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to rd_cntr\n");
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rem_wr_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.rem_wr_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to rem_wr_cntr\n");
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rem_rd_cntr) {
+		ret = ofi_wait_add_fd(ep->util_ep.rem_rd_cntr->wait,
+				      ep->bsock.sock, POLLIN, tcpx_try_func,
+				      (void *) &ep->util_ep,
+				      &ep->util_ep.ep_fid.fid);
+		if (ret) {
+			FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+				"Failed to add fd to rem_rd_cntr\n");
+			return ret;
+		}
+	}
+	return 0;
+}
+
+static int tcpx_ep_enable(struct tcpx_ep *ep,
+			  struct fi_eq_cm_entry *cm_entry,
+			  size_t cm_entry_sz)
+
+{
+	int ret = 0;
+
+	if (!ep->util_ep.rx_cq && !ep->util_ep.tx_cq) {
+		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+			"ep must be bound to cq's\n");
+		return -FI_ENOCQ;
+	}
+
+	ofi_mutex_lock(&ep->lock);
+	if (ep->state != TCPX_CONNECTING && ep->state != TCPX_ACCEPTING) {
+		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL,
+			"ep is in invalid state\n");
+		ret = -FI_EINVAL;
+		goto unlock;
+	}
+
+	ep->state = TCPX_CONNECTED;
+	ofi_mutex_unlock(&ep->lock);
+
+	ret = tcpx_ep_add_fd(ep);
+	if (ret)
+		return ret;
+
 	ret = (int) fi_eq_write(&ep->util_ep.eq->eq_fid, FI_CONNECTED, cm_entry,
 				cm_entry_sz, 0);
 	if (ret < 0) {
@@ -221,8 +302,9 @@ static int tcpx_ep_enable(struct tcpx_ep *ep,
 	}
 
 	return 0;
+
 unlock:
-	fastlock_release(&ep->lock);
+	ofi_mutex_unlock(&ep->lock);
 	return ret;
 }
 
@@ -231,7 +313,7 @@ static void tcpx_cm_recv_resp(struct util_wait *wait,
 {
 	struct fi_eq_cm_entry *cm_entry;
 	struct tcpx_ep *ep;
-	int ret;
+	ssize_t ret;
 
 	FI_DBG(&tcpx_prov, FI_LOG_EP_CTRL, "Handling accept from server\n");
 	assert(cm_ctx->hfid->fclass == FI_CLASS_EP);
@@ -258,8 +340,10 @@ static void tcpx_cm_recv_resp(struct util_wait *wait,
 	}
 
 	cm_entry = calloc(1, sizeof(*cm_entry) + cm_ctx->cm_data_sz);
-	if (!cm_entry)
+	if (!cm_entry) {
+		ret = FI_ENOMEM;
 		goto err1;
+	}
 
 	cm_entry->fid = cm_ctx->hfid;
 	memcpy(cm_entry->data, cm_ctx->msg.data, cm_ctx->cm_data_sz);
@@ -279,9 +363,9 @@ static void tcpx_cm_recv_resp(struct util_wait *wait,
 err2:
 	free(cm_entry);
 err1:
-	fastlock_acquire(&ep->lock);
-	tcpx_ep_disable(ep, -ret);
-	fastlock_release(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
+	tcpx_ep_disable(ep, -ret, cm_ctx->msg.data, cm_ctx->cm_data_sz);
+	ofi_mutex_unlock(&ep->lock);
 	tcpx_free_cm_ctx(cm_ctx);
 }
 
@@ -330,9 +414,9 @@ static void tcpx_cm_send_resp(struct util_wait *wait,
 delfd:
 	ofi_wait_del_fd(wait, ep->bsock.sock);
 disable:
-	fastlock_acquire(&ep->lock);
-	tcpx_ep_disable(ep, -ret);
-	fastlock_release(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
+	tcpx_ep_disable(ep, -ret, NULL, 0);
+	ofi_mutex_unlock(&ep->lock);
 	tcpx_free_cm_ctx(cm_ctx);
 }
 
@@ -342,7 +426,7 @@ static void tcpx_cm_recv_req(struct util_wait *wait,
 	struct tcpx_conn_handle *handle;
 	struct fi_eq_cm_entry *cm_entry;
 	socklen_t len;
-	int ret;
+	ssize_t ret;
 
 	FI_DBG(&tcpx_prov, FI_LOG_EP_CTRL, "Server receive connect request\n");
 	handle  = container_of(cm_ctx->hfid, struct tcpx_conn_handle, fid);
@@ -371,7 +455,9 @@ static void tcpx_cm_recv_req(struct util_wait *wait,
 	if (!cm_entry->info)
 		goto err2;
 
-	len = cm_entry->info->dest_addrlen = handle->pep->info->src_addrlen;
+	cm_entry->info->dest_addrlen = handle->pep->info->src_addrlen;
+	len = (socklen_t) cm_entry->info->dest_addrlen;
+
 	free(cm_entry->info->dest_addr);
 	cm_entry->info->dest_addr = malloc(len);
 	if (!cm_entry->info->dest_addr)
@@ -422,7 +508,8 @@ static void tcpx_cm_send_req(struct util_wait *wait,
 			 (char *) &status, &len);
 	if (ret < 0 || status) {
 		ret = (ret < 0)? -ofi_sockerr() : -status;
-		FI_WARN(&tcpx_prov, FI_LOG_EP_CTRL, "connection failure\n");
+		FI_WARN_SPARSE(&tcpx_prov, FI_LOG_EP_CTRL,
+				"connection failure (sockerr %d)\n", ret);
 		goto delfd;
 	}
 
@@ -449,9 +536,9 @@ static void tcpx_cm_send_req(struct util_wait *wait,
 delfd:
 	ofi_wait_del_fd(wait, ep->bsock.sock);
 disable:
-	fastlock_acquire(&ep->lock);
-	tcpx_ep_disable(ep, -ret);
-	fastlock_release(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
+	tcpx_ep_disable(ep, -ret, NULL, 0);
+	ofi_mutex_unlock(&ep->lock);
 	tcpx_free_cm_ctx(cm_ctx);
 }
 
@@ -545,21 +632,19 @@ static void process_cm_ctx(struct util_wait *wait,
 	}
 }
 
-void tcpx_conn_mgr_run(struct util_eq *eq)
+void tcpx_conn_mgr_run(struct util_eq *util_eq)
 {
 	struct util_wait_fd *wait_fd;
-	struct tcpx_eq *tcpx_eq;
+	struct tcpx_eq *eq;
 	struct fid *fid;
 	struct ofi_epollfds_event events[MAX_POLL_EVENTS];
 	int count, i;
 
-	assert(eq->wait != NULL);
+	assert(util_eq->wait != NULL);
+	wait_fd = container_of(util_eq->wait, struct util_wait_fd, util_wait);
 
-	wait_fd = container_of(eq->wait, struct util_wait_fd,
-			       util_wait);
-
-	tcpx_eq = container_of(eq, struct tcpx_eq, util_eq);
-	fastlock_acquire(&tcpx_eq->close_lock);
+	eq = container_of(util_eq, struct tcpx_eq, util_eq);
+	ofi_mutex_lock(&eq->close_lock);
 	count = (wait_fd->util_wait.wait_obj == FI_WAIT_FD) ?
 		ofi_epoll_wait(wait_fd->epoll_fd, events, MAX_POLL_EVENTS, 0) :
 		ofi_pollfds_wait(wait_fd->pollfds, events, MAX_POLL_EVENTS, 0);
@@ -573,8 +658,8 @@ void tcpx_conn_mgr_run(struct util_eq *eq)
 
 		fid = events[i].data.ptr;
 		if (fid->fclass == TCPX_CLASS_CM)
-			process_cm_ctx(eq->wait, events[i].data.ptr);
+			process_cm_ctx(util_eq->wait, events[i].data.ptr);
 	}
 unlock:
-	fastlock_release(&tcpx_eq->close_lock);
+	ofi_mutex_unlock(&eq->close_lock);
 }

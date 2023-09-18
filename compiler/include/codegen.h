@@ -46,8 +46,11 @@ namespace clang {
   }
 }
 
+#include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
+#include "llvm/IR/PassManager.h"
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
@@ -69,6 +72,18 @@ struct LoopData
   llvm::MDNode* accessGroup;
   bool markMemoryOps; // mark load/store with the access group
 #endif
+};
+
+/* Holds names of files used by LLVM codegen. */
+struct LLVMGenFilenames {
+  std::string moduleFilename;
+  std::string preOptFilename;
+  std::string opt1Filename;
+  std::string opt2Filename;
+  std::string artifactFilename;
+  std::string gpuObjectFilenamePrefix;
+  std::string outFilenamePrefix;
+  std::string fatbinFilename;
 };
 
 /* GenInfo is meant to be a global variable which stores
@@ -111,6 +126,8 @@ struct GenInfo {
   llvm::MDBuilder *mdBuilder;
   llvm::TargetMachine* targetMachine;
 
+  LLVMGenFilenames llvmGenFilenames;
+
   std::vector<LoopData> loopStack;
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
@@ -136,9 +153,19 @@ struct GenInfo {
   GlobalToWideInfo globalToWideInfo;
 
   // Optimizations to apply immediately after code-generating a fn
-  llvm::legacy::FunctionPassManager* FPM_postgen;
+  // (this one is only set for LLVM_USE_OLD_PASSES)
+  llvm::legacy::FunctionPassManager* FPM_postgen = nullptr;
 
-  ClangInfo* clangInfo;
+  // Managers to optimize immediately after code-generating a fn
+  // (these ones are used ifndef LLVM_USE_OLD_PASSES)
+  llvm::LoopAnalysisManager* LAM = nullptr;
+  llvm::FunctionAnalysisManager* FAM = nullptr;
+  llvm::CGSCCAnalysisManager* CGAM = nullptr;
+  llvm::ModuleAnalysisManager* MAM = nullptr;
+  llvm::FunctionPassManager* FunctionSimplificationPM = nullptr;
+
+  // pointer to clang support info
+  ClangInfo* clangInfo = nullptr;
 #endif
 
   GenInfo();
@@ -153,6 +180,9 @@ extern bool     gCodegenGPU;
 // Map from filename to an integer that will represent an unique ID for each
 // generated GET/PUT
 extern std::map<std::string, int> commIDMap;
+
+// Freshly initialize gGenInfo, expecting it does not already exist.
+void initializeGenInfo(void);
 
 #ifdef HAVE_LLVM
 void setupClang(GenInfo* info, std::string rtmain);
@@ -176,7 +206,9 @@ GenRet codegenCallExpr(const char* fnName);
 GenRet codegenCallExpr(const char* fnName, GenRet a1);
 GenRet codegenCallExpr(const char* fnName, GenRet a1, GenRet a2);
 Type* getNamedTypeDuringCodegen(const char* name);
+void setupDefaultFilenames(void);
 void gatherTypesForCodegen(void);
+GenRet codegenTypeByName(const char* type_name);
 
 void registerPrimitiveCodegens();
 

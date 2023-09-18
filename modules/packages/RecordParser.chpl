@@ -117,8 +117,8 @@ class RecordReader {
   var myReader;
   /* The regular expression to read (using match on the channel) */
   var matchRegex: regex(string);
-  pragma "no doc"
-  param num_fields = numFields(t); // Number of fields in record
+  @chpldoc.nodoc
+  param num_fields = getNumFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
      for a record created by the :proc:`createRegex` routine.
@@ -130,7 +130,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
       this.matchRegex = new regex(createRegex());
     }
@@ -148,7 +148,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
         this.matchRegex = new regex(mRegex);
     }
@@ -182,7 +182,10 @@ class RecordReader {
       do {
         var (rec, once) = _get_internal(offst, len);
         if (once == true) {
-          if (myReader.offset() >= offst+len) { // rec.end >= start + len
+          try! myReader.lock();
+          var o = myReader.chpl_offset();
+          myReader.unlock();
+          if (o >= offst+len) { // rec.end >= start + len
             // So yield and break
             yield rec;
             break;
@@ -221,7 +224,7 @@ class RecordReader {
      for parallel file IO
 
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _get_internal(offst: int(64) = 0, len: int(64) = -1) throws {
     var rec: t; // create record
     var once = false; // We havent populated yet

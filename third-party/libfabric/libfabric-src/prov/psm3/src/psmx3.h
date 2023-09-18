@@ -458,7 +458,7 @@ struct psmx3_sendv_reply {
 };
 
 struct psmx3_req_queue {
-	fastlock_t	lock;
+	ofi_spin_t	lock;
 	struct slist	list;
 };
 
@@ -480,7 +480,7 @@ struct psmx3_fid_fabric {
 	struct util_ns		name_server;
 
 	/* list of all opened domains */
-	fastlock_t		domain_lock;
+	ofi_spin_t		domain_lock;
 	struct dlist_entry	domain_list;
 };
 
@@ -507,16 +507,16 @@ struct psmx3_trx_ctxt {
 
 	/* request pool for RMA/atomic ops */
 	struct ofi_bufpool	*am_req_pool;
-	fastlock_t		am_req_pool_lock;
+	ofi_spin_t		am_req_pool_lock;
 
-	/* lock to prevent the sequence of psm2_mq_ipeek and psm2_mq_test be
+	/* lock to prevent the sequence of psm3_mq_ipeek and psm3_mq_test be
 	 * interleaved in a multithreaded environment.
 	 */
-	fastlock_t		poll_lock;
+	ofi_spin_t		poll_lock;
 
 	/* list of peers connected to this tx/rx context */
 	struct dlist_entry	peer_list;
-	fastlock_t		peer_lock;
+	ofi_spin_t		peer_lock;
 
 	/* number of pathes this tx/rx context can be polled. this include
 	 * CQs and counters, as well as domain->trx_ctxt_list.
@@ -529,9 +529,9 @@ struct psmx3_trx_ctxt {
 	struct dlist_entry	entry;
 };
 
-typedef void	(*psmx3_lock_fn_t) (fastlock_t *lock, int lock_level);
-typedef int	(*psmx3_trylock_fn_t) (fastlock_t *lock, int lock_level);
-typedef void	(*psmx3_unlock_fn_t) (fastlock_t *lock, int lock_level);
+typedef void	(*psmx3_lock_fn_t) (ofi_spin_t *lock, int lock_level);
+typedef int	(*psmx3_trylock_fn_t) (ofi_spin_t *lock, int lock_level);
+typedef void	(*psmx3_unlock_fn_t) (ofi_spin_t *lock, int lock_level);
 
 struct psmx3_fid_domain {
 	struct util_domain	util_domain;
@@ -540,16 +540,16 @@ struct psmx3_fid_domain {
 	uint64_t		caps;
 
 	enum fi_mr_mode		mr_mode;
-	fastlock_t		mr_lock;
+	ofi_spin_t		mr_lock;
 	uint64_t		mr_reserved_key;
 	RbtHandle		mr_map;
 
 	/* list of hw contexts opened for this domain */
-	fastlock_t		trx_ctxt_lock;
+	ofi_spin_t		trx_ctxt_lock;
 	struct dlist_entry	trx_ctxt_list;
 
 	ofi_atomic32_t		sep_cnt;
-	fastlock_t		sep_lock;
+	ofi_spin_t		sep_lock;
 	struct dlist_entry	sep_list;
 
 	int			progress_thread_enabled;
@@ -591,9 +591,9 @@ struct psmx3_fid_domain {
 #define PSMX3_EP_SCALABLE	1
 #define PSMX3_EP_SRC_ADDR	2
 
-#define PSMX3_RESERVED_EPID	(0xFFFFULL)
 #define PSMX3_DEFAULT_UNIT	(-1)
 #define PSMX3_DEFAULT_PORT	0
+#define PSMX3_DEFAULT_ADDR_INDEX	(-1)
 #define PSMX3_ANY_SERVICE	0
 
 struct psmx3_ep_name {
@@ -608,7 +608,8 @@ struct psmx3_ep_name {
 	uint32_t		service;	/* for src addr. 0 means any */
 };
 
-#define PSMX3_MAX_STRING_NAME_LEN	64	/* "fi_addr_psmx3://<uint64_t>:<uint64_t>"  */
+/* need 16+(17*3)+16+1 = 84 bytes including \0, a little larger for safety */
+#define PSMX3_MAX_STRING_NAME_LEN	96	/* "fi_addr_psmx3://<uint64_t>:<uint64_t>:<uint64_t>:<uint64_t>"  */
 
 struct psmx3_status_data {
 	struct psmx3_fid_cq	*poll_cq;
@@ -649,7 +650,7 @@ struct psmx3_fid_cq {
 	size_t				event_count;
 	struct slist			event_queue;
 	struct slist			free_list;
-	fastlock_t			lock;
+	ofi_spin_t			lock;
 	struct psmx3_cq_event		*pending_error;
 	struct util_wait		*wait;
 	int				wait_cond;
@@ -676,7 +677,7 @@ struct psmx3_fid_cntr {
 	int			wait_is_local;
 	struct util_wait	*wait;
 	struct psmx3_trigger	*trigger;
-	fastlock_t		trigger_lock;
+	ofi_spin_t		trigger_lock;
 };
 
 #define PSMX3_AV_DEFAULT_SIZE	64
@@ -721,7 +722,7 @@ struct psmx3_fid_av {
 	uint64_t		flags;
 	size_t			addrlen;
 	size_t			count;
-	fastlock_t		lock;
+	ofi_spin_t		lock;
 	struct psmx3_trx_ctxt	*av_map_trx_ctxt;
 	struct util_shm		shm;
 	struct psmx3_av_hdr	*hdr;	/* shared AV header */
@@ -812,6 +813,7 @@ struct psmx3_epaddr_context {
 	psm2_epid_t		epid;
 	psm2_epaddr_t		epaddr;
 	struct dlist_entry	entry;
+	fi_addr_t		fi_addr;
 };
 
 struct psmx3_env {
@@ -835,16 +837,20 @@ struct psmx3_env {
 };
 
 #define PSMX3_MAX_UNITS	PSMI_MAX_RAILS /* from psm_config.h */
-struct psmx3_hfi_info {
+struct psmx3_domain_info {
 	int max_trx_ctxt;
 	int free_trx_ctxt;
-	int num_units;
-	int num_active_units;
+	int num_units;	/* total HW units found by PSM3 */
+	int num_reported_units;	/* num entries in arrays below */
+	int num_active_units;	/* total active found, >= num_reported_units */
 	int active_units[PSMX3_MAX_UNITS];
 	int unit_is_active[PSMX3_MAX_UNITS];
+	int unit_id[PSMX3_MAX_UNITS];	/* PSM3 unit_id */
+	int addr_index[PSMX3_MAX_UNITS];/* PSM3 address index within unit_id */
 	int unit_nctxts[PSMX3_MAX_UNITS];
 	int unit_nfreectxts[PSMX3_MAX_UNITS];
-	char default_domain_name[PSMX3_MAX_UNITS * NAME_MAX]; /* hfi1_0;hfi1_1;...;hfi1_n */
+	char default_domain_name[PSMX3_MAX_UNITS * NAME_MAX]; /* autoselect:irdma0;irdma1;..... */
+	char default_fabric_name[PSMX3_MAX_UNITS * NAME_MAX]; /* RoCE 192.168.101.0/24;RoCE 192.168.102.0/24;.... */
 };
 
 extern struct fi_ops_mr		psmx3_mr_ops;
@@ -871,7 +877,7 @@ extern struct fi_ops_msg	psmx3_msg2_ops;
 extern struct fi_ops_rma	psmx3_rma_ops;
 extern struct fi_ops_atomic	psmx3_atomic_ops;
 extern struct psmx3_env		psmx3_env;
-extern struct psmx3_hfi_info	psmx3_hfi_info;
+extern struct psmx3_domain_info	psmx3_domain_info;
 extern struct psmx3_fid_fabric	*psmx3_active_fabric;
 
 /*
@@ -880,51 +886,51 @@ extern struct psmx3_fid_fabric	*psmx3_active_fabric;
  *     1 -- lock needed if there is more than one thread (including internal threads)
  *     2 -- lock needed if more then one thread accesses the same psm2 ep
  */
-static inline void psmx3_lock(fastlock_t *lock, int lock_level)
+static inline void psmx3_lock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx3_env.lock_level >= lock_level)
-		fastlock_acquire(lock);
+		ofi_spin_lock(lock);
 }
 
-static inline int psmx3_trylock(fastlock_t *lock, int lock_level)
+static inline int psmx3_trylock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx3_env.lock_level >= lock_level)
-		return fastlock_tryacquire(lock);
+		return ofi_spin_trylock(lock);
 	else
 		return 0;
 }
 
-static inline void psmx3_unlock(fastlock_t *lock, int lock_level)
+static inline void psmx3_unlock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx3_env.lock_level >= lock_level)
-		fastlock_release(lock);
+		ofi_spin_unlock(lock);
 }
 
 /* Specialized lock functions used based on FI_THREAD model */
 
-static inline void psmx3_lock_disabled(fastlock_t *lock, int lock_level)
+static inline void psmx3_lock_disabled(ofi_spin_t *lock, int lock_level)
 {
 	return;
 }
 
-static inline int psmx3_trylock_disabled(fastlock_t *lock, int lock_level)
+static inline int psmx3_trylock_disabled(ofi_spin_t *lock, int lock_level)
 {
 	return 0;
 }
 
-static inline void psmx3_lock_enabled(fastlock_t *lock, int lock_level)
+static inline void psmx3_lock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	fastlock_acquire(lock);
+	ofi_spin_lock(lock);
 }
 
-static inline void psmx3_unlock_enabled(fastlock_t *lock, int lock_level)
+static inline void psmx3_unlock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	fastlock_release(lock);
+	ofi_spin_unlock(lock);
 }
 
-static inline int psmx3_trylock_enabled(fastlock_t *lock, int lock_level)
+static inline int psmx3_trylock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	return fastlock_tryacquire(lock);
+	return ofi_spin_trylock(lock);
 }
 
 int	psmx3_init_prov_info(const struct fi_info *hints, struct fi_info **info);
@@ -1024,7 +1030,8 @@ int	psmx3_cq_poll_mq(struct psmx3_fid_cq *cq, struct psmx3_trx_ctxt *trx_ctxt,
 			 struct psmx3_cq_event *event, int count, fi_addr_t *src_addr);
 
 void	psmx3_epid_to_epaddr(struct psmx3_trx_ctxt *trx_ctxt,
-			     psm2_epid_t epid, psm2_epaddr_t *epaddr);
+			     psm2_epid_t epid, psm2_epaddr_t *epaddr,
+			     fi_addr_t fi_addr);
 
 int	psmx3_av_add_trx_ctxt(struct psmx3_fid_av *av, struct psmx3_trx_ctxt *trx_ctxt);
 
@@ -1070,12 +1077,14 @@ psm2_epaddr_t psmx3_av_translate_addr(struct psmx3_fid_av *av,
 		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt]))
 			 psmx3_epid_to_epaddr(trx_ctxt,
 					      av->sep_info[idx].epids[ctxt],
-					      &av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt]);
+					      &av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt],
+					      addr);
 		epaddr = av->conn_info[trx_ctxt->id].sepaddrs[idx][ctxt];
 	} else {
 		if (OFI_UNLIKELY(!av->conn_info[trx_ctxt->id].epaddrs[idx]))
 			psmx3_epid_to_epaddr(trx_ctxt, av->table[idx].epid,
-					     &av->conn_info[trx_ctxt->id].epaddrs[idx]);
+					     &av->conn_info[trx_ctxt->id].epaddrs[idx],
+					     addr);
 		epaddr = av->conn_info[trx_ctxt->id].epaddrs[idx];
 	}
 
@@ -1152,15 +1161,24 @@ static inline void psmx3_cntr_inc(struct psmx3_fid_cntr *cntr, int error)
 		cntr->wait->signal(cntr->wait);
 }
 
-fi_addr_t psmx3_av_translate_source(struct psmx3_fid_av *av,
-				    psm2_epaddr_t source, int source_sep_id);
+static inline fi_addr_t psmx3_av_translate_source(struct psmx3_fid_av *av,
+						  psm2_epaddr_t source)
+{
+	struct psmx3_epaddr_context *context;
+
+	if (av->type == FI_AV_MAP)
+		return (fi_addr_t) source;
+
+	context = (void *)psm3_epaddr_getctxt(source);
+	return context ? context->fi_addr : FI_ADDR_NOTAVAIL;
+}
 
 static inline void psmx3_get_source_name(psm2_epaddr_t source,
 					 int source_sep_id,
 					 struct psmx3_ep_name *name)
 {
 	memset(name, 0, sizeof(*name));
-	psm2_epaddr_to_epid(source, &name->epid);
+	psm3_epaddr_to_epid(source, &name->epid);
 	name->sep_id = source_sep_id;
 	name->type = source_sep_id ? PSMX3_EP_SCALABLE : PSMX3_EP_REGULAR;
 }
@@ -1172,7 +1190,7 @@ static inline void psmx3_get_source_string_name(psm2_epaddr_t source,
 	struct psmx3_ep_name ep_name;
 
 	memset(&ep_name, 0, sizeof(ep_name));
-	psm2_epaddr_to_epid(source, &ep_name.epid);
+	psm3_epaddr_to_epid(source, &ep_name.epid);
 	ep_name.sep_id = source_sep_id;
 	ep_name.type = source_sep_id ? PSMX3_EP_SCALABLE : PSMX3_EP_REGULAR;
 
@@ -1212,7 +1230,7 @@ static inline void psmx3_am_poll(struct psmx3_trx_ctxt *trx_ctxt)
 {
 	if (OFI_UNLIKELY(++trx_ctxt->am_poll_count > PSMX3_AM_POLL_INTERVAL)) {
 		trx_ctxt->am_poll_count = 0;
-		psm2_poll(trx_ctxt->psm2_ep);
+		psm3_poll(trx_ctxt->psm2_ep);
 	}
 }
 

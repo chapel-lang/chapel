@@ -1,1 +1,2 @@
-duplicateMod.chpl:8: error: duplicate mention of the same module 'Sub'
+duplicateMod.chpl:7: In module 'Program':
+duplicateMod.chpl:8: error: cannot find module or enum named 'Sub' in module 'Sub'

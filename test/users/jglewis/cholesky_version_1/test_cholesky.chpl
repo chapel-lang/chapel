@@ -89,7 +89,8 @@ module cholesky_test {
 
   proc main {
 
-    var Rand = (new owned RandomStream ( real, seed = 314159) ).borrow();
+    var ownRand = new owned RandomStream ( real, seed = 314159);
+    var Rand = ownRand.borrow();
 
     const mat_dom : domain (2) = { index_base .. #n, index_base .. #n };
 
@@ -119,7 +120,7 @@ module cholesky_test {
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
+    forall (i,j) in mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in mat_dom.dim (0) ]
     			    B (i, k) * B (j, k) );
 

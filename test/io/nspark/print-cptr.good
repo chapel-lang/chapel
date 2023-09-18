@@ -1,4 +1,4 @@
-c_nil = nil
+nil = nil
 foo = (mem = nil)
 foo = (mem = 0x???)
 bar = (mem = nil)

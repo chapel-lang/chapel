@@ -3,7 +3,8 @@ dnl  SPARC64 mpn_gcd_11.
 dnl  Based on the K7 gcd_1.asm, by Kevin Ryde.  Rehacked for SPARC by Torbjörn
 dnl  Granlund.
 
-dnl  Copyright 2000-2002, 2005, 2009, 2011-2013 Free Software Foundation, Inc.
+dnl  Copyright 2000-2002, 2005, 2009, 2011-2013, 2021 Free Software Foundation,
+dnl  Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -60,8 +61,6 @@ define(`u0',    `%o0')
 define(`v0',    `%o1')
 
 ASM_START()
-	REGISTER(%g2,#scratch)
-	REGISTER(%g3,#scratch)
 PROLOGUE(mpn_gcd_11)
 	LEA64(ctz_table, o5, g4)
 	b	L(odd)
@@ -70,19 +69,19 @@ PROLOGUE(mpn_gcd_11)
 	ALIGN(16)
 L(top):	movcc	%xcc, %o4, v0		C v = min(u,v)
 	movcc	%xcc, %o2, %o0		C u = |v - u]
-L(mid):	ldub	[%o5+%g3], %g5		C
-	brz,a,pn %g3, L(shift_alot)	C
-	 srlx	%o0, MAXSHIFT, %o0
-	srlx	%o0, %g5, %o4		C new u, odd
+L(mid):	ldub	[%o5+%g1], %g5		C
+	brz,pn %g1, L(shift_alot)	C
+	 srlx	%o0, %g5, %o4		C new u, odd
 L(odd):	subcc	v0, %o4, %o2		C v - u, set flags for branch and movcc
 	sub	%o4, v0, %o0		C u - v
 	bnz,pt	%xcc, L(top)		C
-	 and	%o2, MASK, %g3		C extract low MAXSHIFT bits from (v-u)
+	 and	%o2, MASK, %g1		C extract low MAXSHIFT bits from (v-u)
 
 	retl
 	 mov	v0, %o0
 
 L(shift_alot):
+	mov	%o4, %o0
 	b	L(mid)
-	 and	%o0, MASK, %g3		C
+	 and	%o4, MASK, %g1		C
 EPILOGUE()

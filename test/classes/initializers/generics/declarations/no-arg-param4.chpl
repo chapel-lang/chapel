@@ -13,7 +13,8 @@ class Foo {
 
 var foo: borrowed Foo(4)?; // We can create an instantiation with p = 4
 var foo2: borrowed Foo(4)?;
-var foo3 = (new owned Foo()).borrow();
+var ownFoo3 = new owned Foo();
+var foo3 = ownFoo3.borrow();
 writeln(foo.type == foo2.type);
 writeln(foo.type == foo3.type?);
 writeln(foo.type:string);

@@ -85,38 +85,38 @@ int psmx_am_progress(struct psmx_fid_domain *domain)
 	struct psmx_trigger *trigger;
 
 	if (psmx_env.am_msg) {
-		fastlock_acquire(&domain->send_queue.lock);
+		ofi_spin_lock(&domain->send_queue.lock);
 		while (!slist_empty(&domain->send_queue.list)) {
 			item = slist_remove_head(&domain->send_queue.list);
 			req = container_of(item, struct psmx_am_request, list_entry);
-			fastlock_release(&domain->send_queue.lock);
+			ofi_spin_unlock(&domain->send_queue.lock);
 			psmx_am_process_send(domain, req);
-			fastlock_acquire(&domain->send_queue.lock);
+			ofi_spin_lock(&domain->send_queue.lock);
 		}
-		fastlock_release(&domain->send_queue.lock);
+		ofi_spin_unlock(&domain->send_queue.lock);
 	}
 
 	if (psmx_env.tagged_rma) {
-		fastlock_acquire(&domain->rma_queue.lock);
+		ofi_spin_lock(&domain->rma_queue.lock);
 		while (!slist_empty(&domain->rma_queue.list)) {
 			item = slist_remove_head(&domain->rma_queue.list);
 			req = container_of(item, struct psmx_am_request, list_entry);
-			fastlock_release(&domain->rma_queue.lock);
+			ofi_spin_unlock(&domain->rma_queue.lock);
 			psmx_am_process_rma(domain, req);
-			fastlock_acquire(&domain->rma_queue.lock);
+			ofi_spin_lock(&domain->rma_queue.lock);
 		}
-		fastlock_release(&domain->rma_queue.lock);
+		ofi_spin_unlock(&domain->rma_queue.lock);
 	}
 
-	fastlock_acquire(&domain->trigger_queue.lock);
+	ofi_spin_lock(&domain->trigger_queue.lock);
 	while (!slist_empty(&domain->trigger_queue.list)) {
 		item = slist_remove_head(&domain->trigger_queue.list);
 		trigger = container_of(item, struct psmx_trigger, list_entry);
-		fastlock_release(&domain->trigger_queue.lock);
+		ofi_spin_unlock(&domain->trigger_queue.lock);
 		psmx_process_trigger(domain, trigger);
-		fastlock_acquire(&domain->trigger_queue.lock);
+		ofi_spin_lock(&domain->trigger_queue.lock);
 	}
-	fastlock_release(&domain->trigger_queue.lock);
+	ofi_spin_unlock(&domain->trigger_queue.lock);
 
 	return 0;
 }
@@ -174,22 +174,22 @@ int psmx_am_init(struct psmx_fid_domain *domain)
 	slist_init(&domain->unexp_queue.list);
 	slist_init(&domain->trigger_queue.list);
 	slist_init(&domain->send_queue.list);
-	fastlock_init(&domain->rma_queue.lock);
-	fastlock_init(&domain->recv_queue.lock);
-	fastlock_init(&domain->unexp_queue.lock);
-	fastlock_init(&domain->trigger_queue.lock);
-	fastlock_init(&domain->send_queue.lock);
+	ofi_spin_init(&domain->rma_queue.lock);
+	ofi_spin_init(&domain->recv_queue.lock);
+	ofi_spin_init(&domain->unexp_queue.lock);
+	ofi_spin_init(&domain->trigger_queue.lock);
+	ofi_spin_init(&domain->send_queue.lock);
 
 	return err;
 }
 
 int psmx_am_fini(struct psmx_fid_domain *domain)
 {
-	fastlock_destroy(&domain->rma_queue.lock);
-	fastlock_destroy(&domain->recv_queue.lock);
-	fastlock_destroy(&domain->unexp_queue.lock);
-	fastlock_destroy(&domain->trigger_queue.lock);
-	fastlock_destroy(&domain->send_queue.lock);
+	ofi_spin_destroy(&domain->rma_queue.lock);
+	ofi_spin_destroy(&domain->recv_queue.lock);
+	ofi_spin_destroy(&domain->unexp_queue.lock);
+	ofi_spin_destroy(&domain->trigger_queue.lock);
+	ofi_spin_destroy(&domain->send_queue.lock);
 
 	psmx_atomic_fini();
 

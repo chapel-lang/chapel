@@ -1,0 +1,6 @@
+# Test/studies/madness ignores.
+/**/test_diff
+/**/test_gaxpy
+/**/test_likepy
+/**/test_mul
+/**/test_showboxes

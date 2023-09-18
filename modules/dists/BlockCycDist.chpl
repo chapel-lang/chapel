@@ -18,10 +18,12 @@
  * limitations under the License.
  */
 
+@unstable("BlockCycDist is unstable and may change in the future")
+prototype module BlockCycDist {
 //
 // BlockCyclic Distribution
 //
-//      BlockCyclic    BlockCyclicDom     BlockCyclicArr
+//  BlockCyclicImpl    BlockCyclicDom     BlockCyclicArr
 //
 //   LocBlockCyclic    LocBlockCyclicDom  LocBlockCyclicArr
 //
@@ -61,11 +63,11 @@ proc _ensureTuple(arg) {
 
 
 ////////////////////////////////////////////////////////////////////////////////
-// BlockCyclic Distribution Class
+// BlockCyclicImpl Distribution Class
 //
 /*
 
-This Block-Cyclic distribution maps maps blocks of indices to locales in a
+The ``blockCycDist`` distribution maps blocks of indices to locales in a
 round-robin pattern according to a given block size and start index.
 
 Formally, consider a Block-Cyclic distribution with:
@@ -109,12 +111,12 @@ to the ID of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const D: domain(2)
-      dmapped BlockCyclic(startIdx=Space.lowBound,blocksize=(2,3))
+      dmapped blockCycDist(startIdx=Space.lowBound,blocksize=(2,3))
       = Space;
     var A: [D] int;
 
     forall a in A do
-      a = a.locale.id;
+      a = a.here.id;
 
     writeln(A);
 
@@ -134,11 +136,11 @@ When run on 6 locales, the output is:
 
 **Initializer Arguments**
 
-The ``BlockCyclic`` class initializer is defined as follows:
+The ``blockCycDist`` initializer is defined as follows:
 
   .. code-block:: chapel
 
-    proc BlockCyclic.init(
+    proc blockCycDist.init(
       startIdx,
       blocksize,
       targetLocales: [] locale = Locales,
@@ -170,7 +172,7 @@ of tasks on each Locale for data parallelism.
 The ``rank`` and ``idxType`` arguments are inferred from the
 ``startIdx`` argument unless explicitly set.
 They must match the rank and index type of the domains
-"dmapped" using that BlockCyclic instance.
+"dmapped" using that blockCycDist instance.
 
 
 **Data-Parallel Iteration**
@@ -180,7 +182,107 @@ executes each iteration on the locale where that iteration's index
 is mapped to.
 
 */
-class BlockCyclic : BaseDist {
+
+
+record blockCycDist: writeSerializable {
+  param rank: int;
+  type idxType = int;
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged BlockCyclicImpl(rank, idxType));
+
+  proc init(startIdx,
+            blocksize,
+            targetLocales: [] locale = Locales,
+            dataParTasksPerLocale=getDataParTasksPerLocale(),
+            param rank = _determineRankFromArg(startIdx),
+            type idxType = _determineIdxTypeFromArg(startIdx)) {
+    const value = new unmanaged BlockCyclicImpl(startIdx, blocksize,
+                                                targetLocales,
+                                          dataParTasksPerLocale,
+                                          rank, idxType);
+    this.rank = rank;
+    this.idxType = idxType;
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.rank = _instance.rank;
+      this.idxType = _instance.idxType;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.rank = value.rank;
+      this.idxType = value.idxType;
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : blockCycDist(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new blockCycDist(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: blockCycDist(?), d2: blockCycDist(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: blockCycDist(?), d2: blockCycDist(?)) {
+    return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: blockCycDist(?), b: blockCycDist(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+@deprecated("'BlockCyclic' is deprecated, please use 'blockCycDist' instead")
+type BlockCyclic = blockCycDist;
+
+
+class BlockCyclicImpl : BaseDist, writeSerializable {
   param rank: int;
   type idxType = int;
 
@@ -225,7 +327,7 @@ class BlockCyclic : BaseDist {
     const dummyLBC = new unmanaged LocBlockCyclic(rank, idxType, dummy=true);
     var locDistTemp: [targetLocDom] unmanaged LocBlockCyclic(rank, idxType) = dummyLBC;
 
-    coforall locid in targetLocDom do
+    coforall locid in targetLocDom with (ref locDistTemp) do
       on this.targetLocales(locid) do
         locDistTemp(locid) = new unmanaged LocBlockCyclic(rank, idxType, locid, this.lowIdx, this.blocksize, targetLocDom);
 
@@ -237,14 +339,14 @@ class BlockCyclic : BaseDist {
     else
       this.dataParTasksPerLocale = dataParTasksPerLocale;
 
-    this.complete();
+    init this;
 
     if debugBlockCyclicDist then
       for loc in locDist do writeln(loc);
   }
 
   // copy initializer for privatization
-  proc init(param rank: int, type idxType, other: unmanaged BlockCyclic(rank, idxType)) {
+  proc init(param rank: int, type idxType, other: unmanaged BlockCyclicImpl(rank, idxType)) {
     this.rank = rank;
     this.idxType = idxType;
     lowIdx = other.lowIdx;
@@ -256,7 +358,7 @@ class BlockCyclic : BaseDist {
   }
 
   proc dsiClone() {
-    return new unmanaged BlockCyclic(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
+    return new unmanaged BlockCyclicImpl(lowIdx, blocksize, targetLocales, dataParTasksPerLocale);
   }
 
   override proc dsiDestroyDist() {
@@ -266,7 +368,7 @@ class BlockCyclic : BaseDist {
     }
   }
 
-  proc dsiEqualDMaps(that: BlockCyclic(?)) {
+  proc dsiEqualDMaps(that: BlockCyclicImpl(?)) {
     //
     // TODO: In retrospect, I think that this equality check
     // is too simple.  Since a distribution distributes the
@@ -288,7 +390,7 @@ class BlockCyclic : BaseDist {
   }
 }
 
-proc BlockCyclic._locsize {
+proc BlockCyclicImpl._locsize {
   var ret : rank*int;
   for param i in 0..rank-1 {
     ret(i) = targetLocDom.dim(i).sizeAs(int);
@@ -299,8 +401,8 @@ proc BlockCyclic._locsize {
 //
 // create a new rectangular domain over this distribution
 //
-override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
-                                      param stridable: bool, inds) {
+override proc BlockCyclicImpl.dsiNewRectangularDom(param rank: int, type idxType,
+                                      param strides: strideKind, inds) {
   if idxType != this.idxType then
     compilerError("BlockCyclic domain index type does not match distribution's");
   if rank != this.rank then
@@ -308,7 +410,7 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 
   var dom = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
                                          dist=_to_unmanaged(this),
-                                         stridable=stridable);
+                                         strides=strides);
   dom.dsiSetIndices(inds);
   return dom;
 }
@@ -316,9 +418,9 @@ override proc BlockCyclic.dsiNewRectangularDom(param rank: int, type idxType,
 //
 // output distribution
 //
-proc BlockCyclic.writeThis(x) throws {
-  x.writeln("BlockCyclic");
-  x.writeln("-------");
+proc BlockCyclicImpl.writeThis(x) throws {
+  x.writeln("blockCycDist");
+  x.writeln("------------");
   x.writeln("distributes: ", lowIdx, "...");
   x.writeln("in chunks of: ", blocksize);
   x.writeln("across locales: ", targetLocales);
@@ -327,15 +429,18 @@ proc BlockCyclic.writeThis(x) throws {
   for locid in targetLocDom do
     x.writeln("  [", locid, "] ", locDist(locid));
 }
+override proc BlockCyclicImpl.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 //
 // convert an index into a locale value
 //
-proc BlockCyclic.dsiIndexToLocale(ind: idxType) where rank == 1 {
+proc BlockCyclicImpl.dsiIndexToLocale(ind: idxType) where rank == 1 {
   return targetLocales(idxToLocaleInd(ind));
 }
 
-proc BlockCyclic.dsiIndexToLocale(ind: rank*idxType) {
+proc BlockCyclicImpl.dsiIndexToLocale(ind: rank*idxType) {
   return targetLocales(idxToLocaleInd(ind));
 }
 
@@ -343,7 +448,7 @@ proc BlockCyclic.dsiIndexToLocale(ind: rank*idxType) {
 // compute what chunk of inds is owned by a given locale -- assumes
 // it's being called on the locale in question
 //
-proc BlockCyclic.getStarts(inds, locid) {
+proc BlockCyclicImpl.getStarts(inds, locid) {
   // use domain slicing to get the intersection between what the
   // locale owns and the domain's index set
   //
@@ -351,8 +456,8 @@ proc BlockCyclic.getStarts(inds, locid) {
   //
   // TODO: Does using David's detupling trick work here?
   //
-  var D: domain(rank, idxType, stridable=true);
-  var R: rank*range(idxType, stridable=true);
+  var D: domain(rank, idxType, strides=strideKind.any);
+  var R: rank*range(idxType, strides=strideKind.any);
   for i in 0..rank-1 {
     var lo, hi: idxType;
     const domlo = inds.dim(i).lowBound,
@@ -398,17 +503,17 @@ proc BlockCyclic.getStarts(inds, locid) {
 // someone else can help me remember it (since it was probably someone
 // else's suggestion).
 //
-proc BlockCyclic.idxToLocaleInd(ind: idxType) where rank == 1 {
+proc BlockCyclicImpl.idxToLocaleInd(ind: idxType) where rank == 1 {
   const ind0 = ind - lowIdx(0);
   //  compilerError((ind0/blocksize(0)%targetLocDom.dim(0).type:string);
   return (ind0 / blocksize(0)) % targetLocDom.dim(0).size;
 }
 
-proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
+proc BlockCyclicImpl.idxToLocaleInd(ind: rank*idxType) where rank == 1 {
   return idxToLocaleInd(ind(0));
 }
 
-proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
+proc BlockCyclicImpl.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   var locInd: rank*int;
   for param i in 0..rank-1 {
     const ind0 = ind(i) - lowIdx(i);
@@ -417,7 +522,7 @@ proc BlockCyclic.idxToLocaleInd(ind: rank*idxType) where rank != 1 {
   return locInd;
 }
 
-proc BlockCyclic.init(other: BlockCyclic, privatizeData,
+proc BlockCyclicImpl.init(other: BlockCyclicImpl, privatizeData,
                       param rank = other.rank, type idxType = other.idxType) {
   this.rank = rank;
   this.idxType = idxType;
@@ -429,20 +534,20 @@ proc BlockCyclic.init(other: BlockCyclic, privatizeData,
   dataParTasksPerLocale = privatizeData[3];
 }
 
-override proc BlockCyclic.dsiSupportsPrivatization() param do return true;
+override proc BlockCyclicImpl.dsiSupportsPrivatization() param do return true;
 
-proc BlockCyclic.dsiGetPrivatizeData() {
+proc BlockCyclicImpl.dsiGetPrivatizeData() {
   return (lowIdx, blocksize, targetLocDom.dims(), dataParTasksPerLocale);
 }
 
-proc BlockCyclic.dsiPrivatize(privatizeData) {
-  return new unmanaged BlockCyclic(_to_unmanaged(this), privatizeData);
+proc BlockCyclicImpl.dsiPrivatize(privatizeData) {
+  return new unmanaged BlockCyclicImpl(_to_unmanaged(this), privatizeData);
 }
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Distribution Class
 //
-class LocBlockCyclic {
+class LocBlockCyclic : writeSerializable {
   param rank: int;
   type idxType;
 
@@ -452,7 +557,7 @@ class LocBlockCyclic {
   // to use lclIdxType here is wrong since we're talking about
   // the section of the global index space owned by the locale.
   //
-  const myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+  const myStarts: rank*range(idxType, boundKind.low, strides=strideKind.any);
 
   //
   // Initializer computes what chunk of index(0) is owned by the
@@ -465,12 +570,12 @@ class LocBlockCyclic {
     this.rank = rank;
     this.idxType = idxType;
 
-    var myStarts: rank*range(idxType, BoundedRangeType.boundedLow, stridable=true);
+    var myStarts: rank*range(idxType, boundKind.low, strides=strideKind.any);
       for param i in 0..rank-1 {
         const locid_i = if isTuple(locid) then locid(i) else locid;
         const lo = lowIdx(i) + (locid_i * blocksize(i));
         const str = blocksize(i) * targetLocDom.dim(i).size;
-        myStarts(i) = (lo.. by str).safeCast(myStarts(i).type);
+        myStarts(i) = (lo.. by str) : myStarts(i).type;
       }
     this.myStarts = myStarts;
   }
@@ -490,28 +595,32 @@ proc LocBlockCyclic.writeThis(x) throws {
   }
   x.write("locale ", localeid, " owns blocks: ", myStarts);
 }
+override proc LocBlockCyclic.serialize(writer, ref serializer) throws {
+  writeThis(writer);
+}
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Domain Class
 //
-class BlockCyclicDom: BaseRectangularDom {
+class BlockCyclicDom: BaseRectangularDom(?) {
   //
   // LEFT LINK: a pointer to the parent distribution
   //
-  const dist: unmanaged BlockCyclic(rank, idxType);
+  const dist: unmanaged BlockCyclicImpl(rank, idxType);
 
   //
   // DOWN LINK: an array of local domain class descriptors -- set up in
   // setup() below
   //
-  var locDomsNil: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank, idxType, stridable)?;
+  var locDomsNil: [dist.targetLocDom] unmanaged LocBlockCyclicDom(rank,
+                                                           idxType, strides)?;
 
   inline proc locDoms(idx) do return locDomsNil(idx)!;
 
   //
   // a domain describing the complete domain
   //
-  var whole: domain(rank=rank, idxType=idxType, stridable=stridable);
+  var whole: domain(rank=rank, idxType=idxType, strides=strides);
   //  const startLoc: index(dist.targetLocDom);
 }
 
@@ -539,7 +648,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
           const dim    = whole.dim(j);
           const dimLow = dim.lowBound;
 
-          var temp : range(idxType, stridable=stridable);
+          var temp : range(idxType, strides=strides);
           temp = max(lo, dimLow)..
                      min(lo + dist.blocksize(j):idxType-1, dim.highBound);
           temp     = dim[temp];
@@ -567,7 +676,7 @@ iter BlockCyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 // stencil communication will be done on a per-locale basis.
 //
 iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind.follower {
-  var t: rank*range(idxType, stridable=stridable);
+  var t: rank*range(idxType, strides=strides);
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
@@ -575,7 +684,7 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
     const stride    = dim.stride;
     const low       = (stride * curFollow.lowBound): idxType;
     const high      = (stride * curFollow.highBound): idxType;
-    t(i) = ((low..high by stride) + dim.lowBound).safeCast(t(i).type);
+    t(i) = ((low..high by stride) + dim.lowBound) : t(i).type;
   }
 
   for i in {(...t)} {
@@ -588,15 +697,17 @@ iter BlockCyclicDom.these(param tag: iterKind, followThis) where tag == iterKind
 //
 proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   const dom = this;
-  var locArrTemp: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
-  var myLocArrTemp: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
+  var locArrTemp: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType,
+                                                      rank, idxType, strides)?;
+  var myLocArrTemp: unmanaged LocBlockCyclicArr(eltType, rank, idxType,
+                                                strides)?;
   const creationLocale = here;
 
   // formerly BlockCyclicArr.setup()
-  coforall localeIdx in dom.dist.targetLocDom with (ref myLocArrTemp) {
+  coforall localeIdx in dom.dist.targetLocDom with (ref locArrTemp, ref myLocArrTemp) {
     on dom.dist.targetLocales(localeIdx) {
       const LBCA = new unmanaged LocBlockCyclicArr(eltType, rank,
-                                                   idxType, stridable,
+                                                   idxType, strides,
                                                    dom.locDoms(localeIdx),
                                                    dom.locDoms(localeIdx),
                                                    localeIdx,
@@ -609,7 +720,7 @@ proc BlockCyclicDom.dsiBuildArray(type eltType, param initElts:bool) {
   var locArrNN = locArrTemp!; //#15080
 
   var arr = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
-                                         idxType=idxType, stridable=stridable,
+                                         idxType=idxType, strides=strides,
                                          locArr = locArrNN,
                                          myLocArr = myLocArrTemp,
                                          dom=_to_unmanaged(this));
@@ -637,7 +748,7 @@ proc BlockCyclicDom.dsiGetIndices() do  return whole.getIndices();
 proc BlockCyclicDom.dsiMember(i) do     return whole.contains(i);
 proc BlockCyclicDom.doiToString() do    return whole:string;
 proc BlockCyclicDom.dsiSerialWrite(x) { x.write(whole); }
-proc BlockCyclicDom.dsiLocalSlice(param stridable, ranges) do return whole((...ranges));
+proc BlockCyclicDom.dsiLocalSlice(param strides, ranges) do return whole((...ranges));
 override proc BlockCyclicDom.dsiIndexOrder(i) do              return whole.indexOrder(i);
 override proc BlockCyclicDom.dsiMyDist() do                   return dist;
 
@@ -674,8 +785,8 @@ proc BlockCyclicDom.setup() {
   coforall localeIdx in dist.targetLocDom do
     on dist.targetLocales(localeIdx) do
       if (locDomsNil(localeIdx) == nil) then
-        locDomsNil(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType, stridable, _to_unmanaged(this),
-                                                   dist.getStarts(whole, localeIdx));
+        locDomsNil(localeIdx) = new unmanaged LocBlockCyclicDom(rank, idxType,
+               strides, _to_unmanaged(this), dist.getStarts(whole, localeIdx));
       else {
         locDoms(localeIdx).myStarts = dist.getStarts(whole, localeIdx);
         locDoms(localeIdx).myFlatInds = {0..#locDoms(localeIdx).computeFlatInds()};
@@ -708,7 +819,7 @@ proc type BlockCyclicDom.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged BlockCyclicDom(rank=this.rank,
                                     idxType=this.idxType,
-                                    stridable=this.stridable),
+                                    strides=this.strides),
            data);
 }
 
@@ -718,7 +829,8 @@ proc BlockCyclicDom.dsiGetPrivatizeData() do return dist.pid;
 
 proc BlockCyclicDom.dsiPrivatize(privatizeData) {
   var privateDist = chpl_getPrivatizedCopy(dist.type, privatizeData);
-  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType, stridable=stridable, dist=privateDist);
+  var c = new unmanaged BlockCyclicDom(rank=rank, idxType=idxType,
+                                       strides=strides, dist=privateDist);
   c.locDomsNil = locDomsNil;
   c.whole = whole;
   return c;
@@ -731,19 +843,26 @@ proc BlockCyclicDom.dsiReprivatize(other, reprivatizeData) {
   whole = other.whole;
 }
 
+proc BlockCyclicDom.dsiGetDist() {
+  if _isPrivatized(dist) then
+    return new blockCycDist(dist.pid, dist, _unowned=true);
+  else
+    return new blockCycDist(nullPid, dist, _unowned=true);
+}
+
 
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Domain Class
 //
-class LocBlockCyclicDom {
+class LocBlockCyclicDom : writeSerializable {
   param rank: int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   //
   // UP LINK: a reference to the parent global domain class
   //
-  const globDom: unmanaged BlockCyclicDom(rank, idxType, stridable);
+  const globDom: unmanaged BlockCyclicDom(rank, idxType, strides);
 
   //
   // a local domain describing the indices owned by this locale
@@ -752,7 +871,7 @@ class LocBlockCyclicDom {
   // require a glbIdxType offset in order to get from the global
   // indices back to the local index type.
   //
-  var myStarts: domain(rank, idxType, stridable=true);
+  var myStarts: domain(rank, idxType, strides=strideKind.any);
   var myFlatInds: domain(1);
 }
 
@@ -776,6 +895,9 @@ proc LocBlockCyclicDom.computeFlatInds() {
 //
 proc LocBlockCyclicDom.writeThis(x) throws {
   x.write(myStarts);
+}
+override proc LocBlockCyclicDom.serialize(writer, ref serializer) throws {
+  writeThis(writer);
 }
 
 proc LocBlockCyclicDom.enumerateBlocks() {
@@ -841,22 +963,23 @@ proc LocBlockCyclicDom._sizes {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Array Class
 //
-class BlockCyclicArr: BaseRectangularArr {
+class BlockCyclicArr: BaseRectangularArr(?) {
 
   //
   // LEFT LINK: the global domain descriptor for this array
   //
-  var dom: unmanaged BlockCyclicDom(rank, idxType, stridable);
+  var dom: unmanaged BlockCyclicDom(rank, idxType, strides);
 
   //
   // DOWN LINK: an array of local array classes
   //
-  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable);
+  var locArr: [dom.dist.targetLocDom] unmanaged LocBlockCyclicArr(eltType,
+                                                    rank, idxType, strides);
 
   //
   // optimized reference to a local LocBlockCyclicArr instance (or nil)
   //
-  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, stridable)?;
+  var myLocArr: unmanaged LocBlockCyclicArr(eltType, rank, idxType, strides)?;
 }
 
 override proc BlockCyclicArr.dsiGetBaseDom() do return dom;
@@ -918,7 +1041,7 @@ proc type BlockCyclicArr.chpl__deserialize(data) {
   return chpl_getPrivatizedCopy(
            unmanaged BlockCyclicArr(rank=this.rank,
                                     idxType=this.idxType,
-                                    stridable=this.stridable,
+                                    strides=this.strides,
                                     eltType=this.eltType),
            data);
 }
@@ -930,7 +1053,7 @@ proc BlockCyclicArr.dsiGetPrivatizeData() do return 0;
 proc BlockCyclicArr.dsiPrivatize(privatizeData) {
   var privdom = chpl_getPrivatizedCopy(dom.type, dom.pid);
   var c = new unmanaged BlockCyclicArr(eltType=eltType, rank=rank,
-    idxType=idxType, stridable=stridable, dom=privdom, locArr=locArr);
+    idxType=idxType, strides=strides, dom=privdom, locArr=locArr);
 
   for localeIdx in dom.dist.targetLocDom do
     if c.locArr(localeIdx).locale == here then
@@ -995,7 +1118,7 @@ iter BlockCyclicArr.these(param tag: iterKind) where tag == iterKind.leader {
 }
 
 iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iterKind.follower {
-  var myFollowThis: rank*range(idxType=idxType, stridable=stridable);
+  var myFollowThis: rank*range(idxType=idxType, strides=strides);
 
   for param i in 0..rank-1 {
     const curFollow = followThis(i);
@@ -1003,7 +1126,7 @@ iter BlockCyclicArr.these(param tag: iterKind, followThis) ref where tag == iter
     const stride    = dim.stride;
     const low       = curFollow.lowBound * stride;
     const high      = curFollow.highBound * stride;
-    myFollowThis(i) = ((low..high by stride) + dim.lowBound).safeCast(curFollow.type);
+    myFollowThis(i) = ((low..high by stride) + dim.lowBound) : curFollow.type;
   }
 
   const myFollowThisDom = {(...myFollowThis)};
@@ -1042,7 +1165,7 @@ proc BlockCyclicArr.dsiTargetLocales() const ref {
 proc BlockCyclicDom.dsiTargetLocales() const ref {
   return dist.targetLocales;
 }
-proc BlockCyclic.dsiTargetLocales() const ref {
+proc BlockCyclicImpl.dsiTargetLocales() const ref {
   return targetLocales;
 }
 
@@ -1082,7 +1205,7 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
 
   // TODO -- could be replaced by a privatized myLocDom in BlockCyclicDom
   // as it is with BlockCyclicArr
-  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, stridable)? = nil;
+  var myLocDom:unmanaged LocBlockCyclicDom(rank, idxType, strides)? = nil;
   for (loc, locDom) in zip(dist.targetLocales, locDomsNil) {
     if loc == here then
       myLocDom = locDom;
@@ -1095,18 +1218,18 @@ iter BlockCyclicDom.dsiLocalSubdomains(loc: locale) {
 ////////////////////////////////////////////////////////////////////////////////
 // BlockCyclic Local Array Class
 //
-class LocBlockCyclicArr {
+class LocBlockCyclicArr : writeSerializable {
   type eltType;
   param rank: int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
 
   //
   // LEFT LINK: a reference to the local domain class for this array and locale
   //
-  const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  const allocDom: unmanaged LocBlockCyclicDom(rank, idxType, strides);
   // MPF TODO: Why do we need indexDom at all? is it always == allocDom?
-  const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable);
+  const indexDom: unmanaged LocBlockCyclicDom(rank, idxType, strides);
 
 
   // STATE:
@@ -1130,20 +1253,20 @@ class LocBlockCyclicArr {
   proc init(type eltType,
             param rank: int,
             type idxType,
-            param stridable: bool,
-            allocDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
-            indexDom: unmanaged LocBlockCyclicDom(rank, idxType, stridable),
+            param strides: strideKind,
+            allocDom: unmanaged LocBlockCyclicDom(rank, idxType, strides),
+            indexDom: unmanaged LocBlockCyclicDom(rank, idxType, strides),
             localeIndex,
             param initElts: bool) {
     this.eltType = eltType;
     this.rank = rank;
     this.idxType = idxType;
-    this.stridable = stridable;
+    this.strides = strides;
     this.allocDom = allocDom;
     this.indexDom = indexDom;
     this.myElems = this.allocDom.myFlatInds.buildArray(eltType, initElts=initElts);
     this.localeIndex = localeIndex;
-    this.complete();
+    init this;
 
     // BlockCyclic arrays are currently represented in a way that
     // stores additional padding elements.
@@ -1196,6 +1319,9 @@ class LocBlockCyclicArr {
   // type's compilerError()
   override proc writeThis(f) throws {
     halt("LocBlockCyclicArr.writeThis() is not implemented / should not be needed");
+  }
+  override proc serialize(writer, ref serializer) throws {
+    halt("LocBlockCyclicArr.serialize() is not implemented / should not be needed");
   }
 }
 
@@ -1274,14 +1400,6 @@ proc LocBlockCyclicArr.this(i) ref {
   return myElems(flatInd);
 }
 
-//
-// output local array piece
-//
-proc LocBlockCyclicArr.writeThis(x) throws {
-  // note on this fails; see writeThisUsingOn.chpl
-  x.write(myElems);
-}
-
 // sungeun: This doesn't appear to be used yet, so I left it, but it
 //  might be useful to others.  Consider putting it in DSIUtil.chpl.
 
@@ -1301,3 +1419,4 @@ proc _computeBlockCyclic(waylo, numelems, lo, wayhi, numblocks, blocknum) {
 
   return (blo, bhi);
 }
+} // BlockCycDist

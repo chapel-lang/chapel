@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config var n: int = 10;
 

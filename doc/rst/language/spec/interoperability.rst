@@ -566,21 +566,22 @@ correspondence between Chapel intents and C argument type declarations.
 These correspondences pertain to both imported and exported function
 signatures.
 
-======= =======
-Chapel  C
-======= =======
-T       const T
-in T    T
-ref T   T\*
+=========== =========
+Chapel      C
+=========== =========
+T           const T
+in T        T
+ref T       T\*
+const ref T const T\*
 param  
-type    char\*
-======= =======
+type        char\*
+=========== =========
 
 Currently, ``param`` arguments are not allowed in an extern function
 declaration, and ``type`` args are passed as a string containing the
 name of the actual type being passed. Note that the level of indirection
 is changed when passing arguments to a C function using
-the ``ref`` intent. The C code implementing that function must
+the ``ref`` or ``const ref`` intent. The C code implementing that function must
 dereference the argument to extract its value.
 
 .. _Interop_Variable_Initialization:

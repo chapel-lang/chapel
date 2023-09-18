@@ -20,38 +20,38 @@ proc main() {
   writeln(A[1], " ", A[n]);
 }
 
-proc kernel1for(A) {
+proc kernel1for(ref A) {
   foreach i in 1..n {
     A[i] = i;
   }
 }
 
-proc kernel1forall(A) {
-  forall i in 1..n {
+proc kernel1forall(ref A) {
+  forall i in 1..n with (ref A) {
     A[i] = i;
   }
 }
 
-proc kernel2for(A) {
+proc kernel2for(ref A) {
   foreach i in 1..n {
     A[i] = sqrt(i:real);
   }
 }
 
-proc kernel2forall(A) {
-  forall i in 1..n {
+proc kernel2forall(ref A) {
+  forall i in 1..n with (ref A) {
     A[i] = sqrt(i:real);
   }
 }
 
-proc kernel4for(A, B, C) {
+proc kernel4for(ref A, B, C) {
   foreach i in 1..n {
     A[i] = B[i] + C[i];
   }
 }
 
-proc kernel4forall(A, B, C) {
-  forall i in 1..n {
+proc kernel4forall(ref A, B, C) {
+  forall i in 1..n with (ref A) {
     A[i] = B[i] + C[i];
   }
 }

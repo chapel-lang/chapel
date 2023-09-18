@@ -40,9 +40,9 @@ proc partRedCheckAndCreateResultDimensions(dist, resDimSpec, srcArr, srcDims)
         resDims(dim) = (specD..specD) : srcDims(1).type;
       }
       else if isRange(specD) {
-        if specD.boundedType == BoundedRangeType.bounded then
+        if specD.bounds == boundKind.both then
           resDims(dim) = specD;
-        else if specD.boundedType == BoundedRangeType.boundedNone then
+        else if specD.bounds == boundKind.neither then
           resDims(dim) = srcDims(dim);
         else
           compilerError("the range in the dimension " + dim + " of the shape of the partial reduction is neither fully bounded nor fully unbounded");

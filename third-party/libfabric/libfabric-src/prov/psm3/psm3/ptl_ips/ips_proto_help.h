@@ -67,6 +67,23 @@ _get_proto_hfi_opcode(const struct ips_message_header *p_hdr))
 		 HFI_BTH_OPCODE_SHIFT) & HFI_BTH_OPCODE_MASK);
 }
 
+/* convert a total packet length in bytes to the dword count used in lrh[2] */
+PSMI_ALWAYS_INLINE(
+__be16
+ips_proto_bytes_to_lrh2_be(struct ips_proto *proto, uint32_t bytes))
+{
+	uint16_t words = (bytes >> BYTE2DWORD_SHIFT) & proto->pktlen_mask;
+	return __cpu_to_be16(words);
+}
+
+/* convert a lrh[2] dword count to a total packet length in bytes */
+PSMI_ALWAYS_INLINE(
+uint32_t
+ips_proto_lrh2_be_to_bytes(struct ips_proto *proto, __be16 lrh2))
+{
+	return (__be16_to_cpu(lrh2) & proto->pktlen_mask) << BYTE2DWORD_SHIFT;
+}
+
 PSMI_ALWAYS_INLINE(
 uint8_t
 ips_flow_gen_ackflags(ips_scb_t *scb, struct ips_flow *flow))
@@ -77,10 +94,23 @@ ips_flow_gen_ackflags(ips_scb_t *scb, struct ips_flow *flow))
 	 */
 	if (scb->scb_flags & IPS_SEND_FLAG_ACKREQ || scb->nfrag > 1) {
 		flow->ack_counter = 0;
+#ifdef PSM_BYTE_FLOW_CREDITS
+		flow->ack_counter_bytes = 0;
+#endif
 	} else {
 		flow->ack_counter++;
-		if (flow->ack_counter > flow->ack_interval) {
+#ifdef PSM_BYTE_FLOW_CREDITS
+		flow->ack_counter_bytes += scb->chunk_size;
+#endif
+		if (flow->ack_counter > flow->ack_interval
+#ifdef PSM_BYTE_FLOW_CREDITS
+			|| flow->ack_counter_bytes > flow->ack_interval_bytes
+#endif
+			) {
 			flow->ack_counter = 0;
+#ifdef PSM_BYTE_FLOW_CREDITS
+			flow->ack_counter_bytes = 0;
+#endif
 			scb->scb_flags |= IPS_SEND_FLAG_ACKREQ;
 		}
 	}
@@ -104,28 +134,15 @@ int
 ips_do_cksum(struct ips_proto *proto, struct ips_message_header *p_hdr,
 	     void *payload, uint32_t paylen, uint32_t *cksum))
 {
-	uint16_t paywords;
-
 	/* Update the payload words in header */
-	paywords = (sizeof(struct ips_message_header) + paylen +
-		    PSM_CRC_SIZE_IN_BYTES + HFI_CRC_SIZE_IN_BYTES) >>
-	    BYTE2DWORD_SHIFT;
-	p_hdr->lrh[2] = __cpu_to_be16(paywords & HFI_LRH_PKTLEN_MASK);
+	p_hdr->lrh[2] = ips_proto_bytes_to_lrh2_be(proto,
+				sizeof(struct ips_message_header) + paylen +
+				PSM_CRC_SIZE_IN_BYTES + HFI_CRC_SIZE_IN_BYTES);
 
 	/* Need to regenerate KDETH checksum after updating payload length */
 	/* ips_kdeth_cksum(p_hdr); */
 
-	*cksum = 0xffffffff;
-
-	/* Checksum header */
-	*cksum = ips_crc_calculate(sizeof(struct ips_message_header),
-				   (uint8_t *) p_hdr, *cksum);
-
-	/* Checksum payload (if any) */
-	if (paylen) {
-		psmi_assert_always(payload);
-		*cksum = ips_crc_calculate(paylen, (uint8_t *) payload, *cksum);
-	}
+	*cksum = psm3_ips_cksum_calculate(p_hdr, (uint8_t *)payload, paylen);
 
 	return 0;
 }
@@ -136,10 +153,10 @@ void
 ips_proto_hdr(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 	      struct ips_flow *flow, ips_scb_t *scb, uint8_t flags))
 {
-	uint16_t slid, dlid;
-	uint32_t paywords = (sizeof(struct ips_message_header) +
-			     scb->payload_size + HFI_CRC_SIZE_IN_BYTES) >>
-	    BYTE2DWORD_SHIFT;
+	__be16 slid, dlid;
+	__be16 lrh2_be = ips_proto_bytes_to_lrh2_be(proto,
+				sizeof(struct ips_message_header) +
+				scb->payload_size + HFI_CRC_SIZE_IN_BYTES);
 	struct ips_message_header *p_hdr = &scb->ips_lrh;
 #if 0
 	/*
@@ -147,7 +164,7 @@ ips_proto_hdr(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 	 * so some of the header fields are already set.
 	 */
 	if (scb->flow == flow) {
-		p_hdr->lrh[2] = __cpu_to_be16(paywords & HFI_LRH_PKTLEN_MASK);
+		p_hdr->lrh[2] = lrh2_be;
 
 		p_hdr->bth[0] = __cpu_to_be32(flow->path->pr_pkey |
 					      (scb->
@@ -161,12 +178,7 @@ ips_proto_hdr(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 		p_hdr->khdr.kdeth0 = __cpu_to_le32(scb->offset |
 						   (scb->
 						    offset_mode <<
-						    HFI_KHDR_OM_SHIFT) | (scb->
-									  tid <<
-									  HFI_KHDR_TID_SHIFT)
-						   | (scb->
-						      tidctrl <<
-						      HFI_KHDR_TIDCTRL_SHIFT) |
+						    HFI_KHDR_OM_SHIFT)
 						   (scb->
 						    flags & IPS_SEND_FLAG_INTR)
 						   | (scb->
@@ -196,7 +208,7 @@ ips_proto_hdr(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 				       HFI_LRH_SL_SHIFT)
 					);
 	p_hdr->lrh[1] = dlid;
-	p_hdr->lrh[2] = __cpu_to_be16(paywords & HFI_LRH_PKTLEN_MASK);
+	p_hdr->lrh[2] = lrh2_be;
 	p_hdr->lrh[3] = slid;
 
 	/* Setup BTH fields */
@@ -205,21 +217,7 @@ ips_proto_hdr(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 	p_hdr->bth[2] = __cpu_to_be32(flow->xmit_seq_num.psn_num |
 				      (scb->scb_flags & IPS_SEND_FLAG_ACKREQ));
 
-	if (scb->tidctrl) {	/* expected receive packet */
-		psmi_assert(scb->tidsendc != NULL);
-		p_hdr->bth[1] = __cpu_to_be32((scb->tidsendc->
-						rdescid._desc_idx
-						 << HFI_BTH_FLOWID_SHIFT));
-
-		/* Setup KHDR fields */
-		p_hdr->khdr.kdeth0 = __cpu_to_le32(p_hdr->khdr.kdeth0 |
-						   (scb->tidctrl <<
-						    HFI_KHDR_TIDCTRL_SHIFT) |
-						   (scb->scb_flags &
-							IPS_SEND_FLAG_INTR)
-						   | (IPS_PROTO_VERSION <<
-						    HFI_KHDR_KVER_SHIFT));
-	} else {		/* eager receive packet */
+	{
 		p_hdr->bth[1] = __cpu_to_be32((flow->flowid
 						 << HFI_BTH_FLOWID_SHIFT));
 		/* Setup KHDR fields */
@@ -252,8 +250,10 @@ void
 ips_scb_prepare_flow_inner(struct ips_proto *proto, struct ips_epaddr *ipsaddr,
 			   struct ips_flow *flow, ips_scb_t *scb))
 {
-	// ips_ptl_mq_rndv can allow small odd sized payload in RTS
-	psmi_assert(scb->payload_size <= 3 || ! (scb->payload_size & 3));
+	// On UD and UDP, ips_ptl_mq_rndv can allow small odd sized payload
+	// in RTS and eager can do odd length send
+	psmi_assert(psmi_hal_has_cap(PSM_HAL_CAP_NON_DW_PKT_SIZE)
+			|| ((scb->payload_size & 3) == 0));
 	ips_proto_hdr(proto, ipsaddr, flow, scb,
 		      ips_flow_gen_ackflags(scb, flow));
 
@@ -310,7 +310,7 @@ ips_proto_epaddr_stats_set(struct ips_proto *proto, uint8_t msgtype))
  * Exported there solely for inlining is_expected_or_nak and mq_tiny handling
  */
 extern
-psm2_error_t ips_proto_send_ctrl_message(struct ips_flow *flow,
+psm2_error_t psm3_ips_proto_send_ctrl_message(struct ips_flow *flow,
 		uint8_t message_type, uint16_t *msg_queue_mask,
 		ips_scb_t *ctrlscb, void *payload, uint32_t paylen);
 
@@ -333,7 +333,8 @@ ips_proto_send_ack(struct ips_recvhdrq *recvq, struct ips_flow *flow))
 		ctrlscb.scb_flags = 0;
 		ctrlscb.ips_lrh.ack_seq_num = flow->recv_seq_num.psn_num;
 		/* Coalesced ACKs disabled. Send ACK immediately */
-		ips_proto_send_ctrl_message(flow, OPCODE_ACK,
+		// no payload, pass cksum so non-NULL
+		psm3_ips_proto_send_ctrl_message(flow, OPCODE_ACK,
 					    &flow->ipsaddr->ctrl_msg_queued,
 					    &ctrlscb, ctrlscb.cksum, 0);
 	}
@@ -358,7 +359,8 @@ ips_proto_send_nak(struct ips_recvhdrq *recvq, struct ips_flow *flow))
 		ctrlscb.scb_flags = 0;
 		ctrlscb.ips_lrh.ack_seq_num = flow->recv_seq_num.psn_num;
 		/* Coalesced ACKs disabled. Send NAK immediately */
-		ips_proto_send_ctrl_message(flow, OPCODE_NAK,
+		// no payload, pass cksum so non-NULL
+		psm3_ips_proto_send_ctrl_message(flow, OPCODE_NAK,
 					    &flow->ipsaddr->ctrl_msg_queued,
 					    &ctrlscb, ctrlscb.cksum, 0);
 	}
@@ -405,7 +407,7 @@ ips_proto_is_expected_or_nak(struct ips_recvhdrq_event *rcv_ev))
 	}
 
 	/* process ack if packet is not in sequence. */
-	ips_proto_process_ack(rcv_ev);
+	psm3_ips_proto_process_ack(rcv_ev);
 
 	return 0;
 }
@@ -462,19 +464,24 @@ ips_proto_check_msg_order(ips_epaddr_t *ipsaddr,
 
 PSMI_INLINE(
 int
-ips_proto_process_packet(const struct ips_recvhdrq_event *rcv_ev))
+ips_proto_process_packet(const struct ips_recvhdrq_event *rcv_ev,
+		ips_packet_service_fn_t *packet_service_routines))
 {
 	uint32_t index;
 
 #ifdef PSM_FI
 
-	if_pf(PSMI_FAULTINJ_ENABLED_EP(rcv_ev->proto->ep)) {
-		PSMI_FAULTINJ_STATIC_DECL(fi_recv, "recvlost",
+	if_pf(PSM3_FAULTINJ_ENABLED_EP(rcv_ev->proto->ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_recv, "recvlost",
 					  "drop "
+#ifdef PSM_VERBS
+#ifdef USE_RC
 					  "RC eager or any UD "
+#endif
+#endif
 					  "packet at recv",
 					   1, IPS_FAULTINJ_RECVLOST);
-		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_recv, ""))
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_recv, rcv_ev->proto->ep, ""))
 			return IPS_RECVHDRQ_CONTINUE;
 	}
 #endif // PSM_FI
@@ -483,7 +490,7 @@ ips_proto_process_packet(const struct ips_recvhdrq_event *rcv_ev))
 	if (index >= (OPCODE_FUTURE_FROM - OPCODE_RESERVED))
 		index = 0;
 
-	return ips_packet_service_routine[index]
+	return packet_service_routines[index]
 			((struct ips_recvhdrq_event *)rcv_ev);
 }
 
@@ -500,7 +507,7 @@ ips_recv_progress_if_busy(ptl_t *ptl_gen, psm2_error_t err))
 	struct ptl_ips *ptl = (struct ptl_ips *) ptl_gen;
 
 	if (err == PSM2_EP_NO_RESOURCES) {
-		ptl->ctl->ep_poll(ptl_gen, 0);
+		ptl->ctl->ep_poll(ptl_gen, 0, 1);
 		return PSM2_OK;
 	} else
 		return err;
@@ -545,14 +552,57 @@ ips_select_path(struct ips_proto *proto, ips_path_type_t path_type,
 			pathgrp->pg_next_path[path_type] = 0;
 	} else if (proto->flags & IPS_PROTO_FLAG_PPOLICY_STATIC_DST)
 		path_idx =	/* Key on destination context */
-		    ipsaddr->IPSADDR_HASH % pathgrp->pg_num_paths[path_type];
+		    ipsaddr->hash % pathgrp->pg_num_paths[path_type];
 	else if (proto->flags & IPS_PROTO_FLAG_PPOLICY_STATIC_SRC)
 		path_idx =	/* Key off src context */
-		    proto->epinfo.EP_HASH % pathgrp->pg_num_paths[path_type];
+		    proto->epinfo.ep_hash % pathgrp->pg_num_paths[path_type];
 	else			/* Base LID routed - Default in Infinhfi 2.5 (Oct 09). */
 		path_idx = 0;
 
 	return pathgrp->pg_path[path_idx][path_type];
+}
+
+PSMI_ALWAYS_INLINE(
+void
+process_pending_acks(struct ips_recvhdrq *recvq))
+{
+	ips_scb_t ctrlscb;
+	struct ips_message_header *msg_hdr = NULL;
+
+	/* If any pending acks, dispatch them now */
+	while (!SLIST_EMPTY(&recvq->pending_acks)) {
+		struct ips_flow *flow = SLIST_FIRST(&recvq->pending_acks);
+
+		SLIST_REMOVE_HEAD(&recvq->pending_acks, next);
+		SLIST_NEXT(flow, next) = NULL;
+
+		ctrlscb.scb_flags = 0;
+		msg_hdr = &ctrlscb.ips_lrh;
+		msg_hdr->ack_seq_num = flow->recv_seq_num.psn_num;
+
+		if (flow->flags & IPS_FLOW_FLAG_PENDING_ACK) {
+			psmi_assert_always((flow->
+					    flags & IPS_FLOW_FLAG_PENDING_NAK)
+					   == 0);
+
+			flow->flags &= ~IPS_FLOW_FLAG_PENDING_ACK;
+			// no payload, pass cksum so non-NULL
+			psm3_ips_proto_send_ctrl_message(flow, OPCODE_ACK,
+						    &flow->ipsaddr->
+						    ctrl_msg_queued,
+						    &ctrlscb, ctrlscb.cksum, 0);
+		} else {
+			psmi_assert_always(flow->
+					   flags & IPS_FLOW_FLAG_PENDING_NAK);
+
+			flow->flags &= ~IPS_FLOW_FLAG_PENDING_NAK;
+			// no payload, pass cksum so non-NULL
+			psm3_ips_proto_send_ctrl_message(flow, OPCODE_NAK,
+						    &flow->ipsaddr->
+						    ctrl_msg_queued,
+						    &ctrlscb, ctrlscb.cksum, 0);
+		}
+	}
 }
 
 #endif /* _IPS_PROTO_HELP_H */

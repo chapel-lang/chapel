@@ -91,6 +91,7 @@
     to its own file, with a dot ('.') and the locale ID appended to
     this path.
  */
+@deprecated("The Memory.Diagnostics module is deprecated - please use :mod:`MemDiagnostics` instead")
 module Diagnostics {
 
 pragma "insert line file info"

@@ -1,0 +1,3 @@
+-sbigintInitThrows=false # deprecateOldInitFlag.set-false.good
+-sbigintInitThrows=true # deprecateOldInitFlag.set-true.good
+ # deprecateOldInitFlag.unset.good

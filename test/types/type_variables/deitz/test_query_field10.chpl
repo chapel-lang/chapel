@@ -1,4 +1,4 @@
-proc foo(type t, x: range(t, BoundedRangeType.bounded, ?stridable) ... ?k) {
+proc foo(type t, x: range(t, boundKind.both, ?stridable) ... ?k) {
   writeln(x);
 }
 

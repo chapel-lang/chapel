@@ -3,9 +3,10 @@ config const printOutput=false;
 
 
 config  const n: int=100;
-var Dist1 = new dmap(new Block({1..n}));
-var Dist2 = new dmap(new Block({1..n,1..n}));
-var Dist3 = new dmap(new Block({1..n,1..n,1..n}));
+assert(n > 0); // relied upon in the cast 'n:uint'
+var Dist1 = new blockDist({1..n});
+var Dist2 = new blockDist({1..n,1..n});
+var Dist3 = new blockDist({1..n,1..n,1..n});
 var Dom1: domain(1,int) dmapped Dist1 = {1..n};
 var Dom2: domain(2,int) dmapped Dist2 = {1..n,1..n};
 var Dom3: domain(3,int) dmapped Dist3 = {1..n,1..n,1..n};
@@ -127,7 +128,7 @@ if printOutput then writeln("Block Dist. Example 2: A",D1, " Locales:",numLocale
 A[D1]=B[D1];
 for (a,b) in zip(A[D1],B[D1]) do if (a!=b) then writeln("ERROR!!!!");
 
-D1={1..n by n};
+D1={1..n by n:uint};
 A=1;
 
 if printOutput then writeln("Block Dist. Example 3: A",D1, " Locales:",numLocales);
@@ -216,7 +217,7 @@ if printOutput then writeln("Block Dist. Example 14: A",D3, " Locales:",numLocal
 A3[D3]=B3[D3];
 for (a,b) in zip(A3[D3],B3[D3]) do if (a!=b) then writeln("ERROR!!!!");
 
-var Dist4 = new dmap(new Block({1..6,1..6,1..6}));
+var Dist4 = new blockDist({1..6,1..6,1..6});
 var Dom4: domain(3,int) dmapped Dist4 ={1..6,1..6,1..6};
 var D4 ={1..5 by 2,1..3,1..6};
 var A4:[Dom4] int(64)=[(i,j,k) in Dom4] (i-1)*6*6 + (j-1)*6 + k;

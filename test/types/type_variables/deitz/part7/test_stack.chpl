@@ -4,12 +4,12 @@ class stack_elt {
   var next : unmanaged stack_elt(eltType)?;
 }
 
-record stack {
+record stack : writeSerializable {
   type eltType;
 
   var  top : unmanaged stack_elt(eltType)?;
 
-  proc deinit() {
+  proc ref deinit() {
     while top != nil {
       var t = top;
 
@@ -23,11 +23,11 @@ record stack {
 proc stack.empty do
   return top == nil;
 
-proc stack.push(v : eltType) {
+proc ref stack.push(v : eltType) {
   top = new unmanaged stack_elt(eltType, v, top);
 }
 
-proc stack.pop() : eltType {
+proc ref stack.pop() : eltType {
   var t = top;
   var v = top!.value;
 
@@ -38,10 +38,10 @@ proc stack.pop() : eltType {
   return v;
 }
 
-proc stack.writeThis(f) throws {
+proc stack.serialize(writer, ref serializer) throws {
   var tmp = top;
   while tmp != nil {
-    f.write(tmp!.value, " ");
+    writer.write(tmp!.value, " ");
     tmp = tmp!.next;
   }
 }

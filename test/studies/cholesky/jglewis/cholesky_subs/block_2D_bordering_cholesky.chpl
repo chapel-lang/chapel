@@ -59,7 +59,7 @@ module block_2D_bordering_cholesky {
   // block rows and columns (I+1..).
   // =========================================================================
     
-  proc block_2D_bordering_cholesky ( A : [] )  
+  proc block_2D_bordering_cholesky ( ref A : [] )  
 
     where ( A.domain.rank == 2 ) {
 
@@ -98,8 +98,8 @@ module block_2D_bordering_cholesky {
 	// apply the outer product modifications to the symmetric 
 	// diagonal block
 
-	forall i in active_rows do
-	  forall j in active_rows (..i) do
+	forall i in active_rows with (ref A) do
+	  forall j in active_rows (..i) with (ref A) do
 	    for k in prev_rows do
 	      A (i,j) -= A (i,k) * A (j,k);
       }

@@ -1,4 +1,5 @@
 // BLC: Implement a timer class and insert calls
+use Math;
 
 config const totMemSize = 1000;
 param tableElemSize = 8;  // BLC: magic number == sizeof(uint(64))
@@ -32,7 +33,7 @@ proc main() {
 // BLC: eliminate Ran array -- replace with per-thread local variable
 proc randomAccessUpdate() {
   // BLC: might prefer the following line to be Table = tableDom;
-  [i in tableDom] Table(i) = i:uint(64);  // BLC: unfortunate cast
+  [i in tableDom with (ref Table)] Table(i) = i:uint(64);  // BLC: unfortunate cast
 
   if debug then writeln("Table is: ", Table);
 
@@ -45,7 +46,7 @@ proc randomAccessUpdate() {
   // BLC: resulting in the following unfortunate cast:
   // BLC: Getting the ambiguity declared is priority #1 for me 
   //      // I've made this mistake too many times now
-  [i in ranDom] Ran(i) = HPCCstarts(((numUpdates:int/numRandoms) * i));
+  [i in ranDom with (ref Ran)] Ran(i) = HPCCstarts(((numUpdates:int/numRandoms) * i));
 
   if debug then writeln("Ran is: ", Ran);
 

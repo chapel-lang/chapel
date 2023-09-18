@@ -52,12 +52,12 @@ static int sock_mr_close(struct fid *fid)
 	mr = container_of(fid, struct sock_mr, mr_fid.fid);
 	dom = mr->domain;
 
-	fastlock_acquire(&dom->lock);
+	ofi_mutex_lock(&dom->lock);
 	err = ofi_mr_map_remove(&dom->mr_map, mr->key);
 	if (err != 0)
 		SOCK_LOG_ERROR("MR Erase error %d \n", err);
 
-	fastlock_release(&dom->lock);
+	ofi_mutex_unlock(&dom->lock);
 	ofi_atomic_dec32(&dom->ref);
 	free(mr);
 	return 0;
@@ -109,7 +109,7 @@ struct sock_mr *sock_mr_verify_key(struct sock_domain *domain, uint64_t key,
 	int err = 0;
 	struct sock_mr *mr;
 
-	fastlock_acquire(&domain->lock);
+	ofi_mutex_lock(&domain->lock);
 
 	err = ofi_mr_map_verify(&domain->mr_map, buf, len, key, access, (void **)&mr);
 	if (err != 0) {
@@ -117,7 +117,7 @@ struct sock_mr *sock_mr_verify_key(struct sock_domain *domain, uint64_t key,
 		mr = NULL;
 	}
 
-	fastlock_release(&domain->lock);
+	ofi_mutex_unlock(&domain->lock);
 	return mr;
 }
 
@@ -152,7 +152,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 
 	ofi_mr_update_attr(dom->fab->fab_fid.api_version, dom->info.caps,
 			   attr, &cur_abi_attr);
-	fastlock_acquire(&dom->lock);
+	ofi_mutex_lock(&dom->lock);
 
 	_mr->mr_fid.fid.fclass = FI_CLASS_MR;
 	_mr->mr_fid.fid.context = attr->context;
@@ -167,7 +167,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 
 	_mr->mr_fid.key = _mr->key = key;
 	_mr->mr_fid.mem_desc = (void *) (uintptr_t) key;
-	fastlock_release(&dom->lock);
+	ofi_mutex_unlock(&dom->lock);
 
 	*mr = &_mr->mr_fid;
 	ofi_atomic_inc32(&dom->ref);
@@ -182,7 +182,7 @@ static int sock_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	return 0;
 
 err:
-	fastlock_release(&dom->lock);
+	ofi_mutex_unlock(&dom->lock);
 	free(_mr);
 	return ret;
 }
@@ -200,6 +200,8 @@ static int sock_regv(struct fid *fid, const struct iovec *iov,
 	attr.offset = offset;
 	attr.requested_key = requested_key;
 	attr.context = context;
+	attr.auth_key_size = 0;
+	attr.auth_key = NULL;
 	return sock_regattr(fid, &attr, flags, mr);
 }
 

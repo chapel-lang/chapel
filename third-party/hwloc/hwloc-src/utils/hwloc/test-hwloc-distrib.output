@@ -1,11 +1,14 @@
+# 2 sets out of 2 2 2
 0x0000000f
 0x000000f0
 
+# 4 sets out of 2 2 2
 0x00000003
 0x0000000c
 0x00000030
 0x000000c0
 
+# 8 sets out of 2 2 2
 0x00000001
 0x00000002
 0x00000004
@@ -15,6 +18,7 @@
 0x00000040
 0x00000080
 
+# 13 sets out of 2 2 2
 0x00000001
 0x00000001
 0x00000002
@@ -29,6 +33,7 @@
 0x00000040
 0x00000080
 
+# 16 sets out of 2 2 2
 0x00000001
 0x00000001
 0x00000002
@@ -46,35 +51,43 @@
 0x00000080
 0x00000080
 
+# 4 sets out of 3 3 3
 0x00000007
 0x000001f8
 0x0003fe00
 0x07fc0000
 
+# 4 singlified sets out of 3 3 3
 0x00000001
 0x00000008
 0x00000200
 0x00040000
 
+# 4 sets out of 3 3 3, reversed
 0x07000000
 0x00fc0000
 0x0003fe00
 0x000001ff
 
+# 4 singlified sets out of 3 3 3, reversed
 0x04000000
 0x00800000
 0x00020000
 0x00000100
 
+# 2 sets out of 4 4
 0x000000ff
 0x0000ff00
 
+# 2 singlified sets out of 4 4
 0x00000001
 0x00000100
 
+# 2 singlified sets out of 4 4, reversed
 0x00008000
 0x00000080
 
+# 19 sets out of 4 4
 0x000000ff
 0x0000ff00
 0xffff0000
@@ -95,6 +108,7 @@
 0x0000ffff,,,,,,,0x0
 0xffff0000,,,,,,,0x0
 
+# 9 sets out of 2 2 2 2
 0x00000001
 0x00000002
 0x0000000c
@@ -105,6 +119,7 @@
 0x00003000
 0x0000c000
 
+# 9 sets out of 2 2 2 2, starting at PU level
 0x00000001
 0x00000006
 0x00000018
@@ -115,6 +130,7 @@
 0x00003000
 0x0000c000
 
+# 9 sets out of 2 2 2 2, stopping at Core level
 0x00000003
 0x00000003
 0x0000000c

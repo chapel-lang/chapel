@@ -204,7 +204,7 @@ module BLAS {
    */
   config param blasHeader = '';
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param header = if blasHeader == '' then
                    if blasImpl == BlasImpl.off then ''
                    else if blasImpl == BlasImpl.mkl then 'mkl_cblas.h'
@@ -676,7 +676,7 @@ module BLAS {
         n = Bdom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trmm".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'B': Non-square array of dimensions %ix%i passed to trmm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -737,7 +737,7 @@ module BLAS {
         n = Bdom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("B", "Non-square array of dimensions %ix%i passed to trsm".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'B': Non-square array of dimensions %ix%i passed to trsm".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order),
@@ -772,7 +772,7 @@ module BLAS {
 
   /* Level 2 BLAS */
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `GBMV`_ routines::
 
@@ -972,7 +972,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HBMV`_ routines::
 
@@ -1027,7 +1027,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to hemv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to hemv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1062,7 +1062,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to her".format(m, n));
 
     // TODO -- Assert alpha is real
 
@@ -1099,7 +1099,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to her2".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to her2".format(m, n));
 
 
     // Set strides if necessary
@@ -1119,7 +1119,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPMV`_ routines::
 
@@ -1153,7 +1153,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR`_ routines::
 
@@ -1188,7 +1188,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `HPR2`_ routines::
 
@@ -1222,7 +1222,7 @@ module BLAS {
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `SBMV`_ routines::
 
@@ -1261,7 +1261,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPMV`_ routines::
 
@@ -1294,7 +1294,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR`_ routines::
 
@@ -1327,7 +1327,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `SPR2`_ routines::
 
@@ -1378,7 +1378,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to symv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to symv".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1415,7 +1415,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to syr".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1452,7 +1452,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to syr2".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to syr2".format(m, n));
 
     var _ldA = getLeadingDim(A, order);
 
@@ -1469,7 +1469,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for the `TBMV`_ routines::
 
@@ -1516,7 +1516,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for the `TBSV`_ routines::
 
@@ -1567,7 +1567,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
    Wrapper for `TPMV`_ routines::
 
@@ -1611,7 +1611,7 @@ module BLAS {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   /*
     Wrapper for `TPSV`_ routines::
 
@@ -1675,7 +1675,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trmv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to trmv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1721,7 +1721,7 @@ module BLAS {
         n = Adom.dim(1).size : c_int;
 
     if m != n then
-      throw new owned IllegalArgumentError("A", "Non-square array of dimensions %ix%i passed to trsv".format(m, n));
+      throw new owned IllegalArgumentError("illegal argument 'A': Non-square array of dimensions %ix%i passed to trsv".format(m, n));
 
     // Set strides if necessary
     var _ldA = getLeadingDim(A, order);
@@ -1841,7 +1841,7 @@ module BLAS {
     require header;
 
     if P.size != 5 then
-      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotmg");
+      throw new owned IllegalArgumentError("illegal argument 'P': must consist of 5 elements, passed to rotmg");
 
     select eltType {
       when real(32) do{
@@ -1947,7 +1947,7 @@ module BLAS {
     require header;
 
     if P.size != 5 then
-      throw new owned IllegalArgumentError("P", "must consist of 5 elements, passed to rotm");
+      throw new owned IllegalArgumentError("illegal argument 'P': must consist of 5 elements, passed to rotm");
 
     const N = D.size: c_int;
 
@@ -2448,7 +2448,7 @@ module BLAS {
   // Helper functions
   //
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(A: [?Adom], order : Order) : c_int {
     require header;
     if order==Order.Row then
@@ -2457,7 +2457,7 @@ module BLAS {
       return Adom.dim(0).size : c_int;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc getLeadingDim(Arr: [], order : Order) : c_int
     where chpl__isArrayView(Arr)
   { require header;
@@ -2667,7 +2667,7 @@ module BLAS {
      Runs some assertions for constants defined in the underlying BLAS
      implementation to confirm compatibility.
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc checkBLAS()
   {
     require header;

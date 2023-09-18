@@ -1,3 +1,3 @@
-var f = lambda(i:int) { writeln(i); };
+var f = proc(i:int) { writeln(i); };
 
 f();

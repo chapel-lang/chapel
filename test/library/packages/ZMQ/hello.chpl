@@ -11,11 +11,6 @@ enum ExecMode {
 config const mode = ExecMode.Launcher;
 config const to = "world";
 
-const env = [
-  "QTHREAD_NUM_SHEPHERDS=1",
-  "QTHREAD_NUM_WORKERS_PER_SHEPHERD=1"
-  ];
-
 proc main(args: [] string) {
   if (args.size >= 2) && (args[1] == "--help" || args[1] == "-h") {
     printUsage();
@@ -33,10 +28,10 @@ proc Launcher(exec: string) {
   var toFlag = "--to=" + to;
   var master = spawn(["master", "--mode=Master",
                       "--memLeaks=" + memLeaks:string, toFlag],
-                     env=env, executable=exec);
+                     executable=exec);
   var worker = spawn(["worker", "--mode=Worker",
                       "--memLeaks=" + memLeaks:string],
-                     env=env, executable=exec);
+                     executable=exec);
   master.communicate();
   worker.communicate();
 }

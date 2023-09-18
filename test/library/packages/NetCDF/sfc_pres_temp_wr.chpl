@@ -58,7 +58,7 @@ proc main {
   }
 
   /* Create the file. */
-  cdfError(nc_create(filename.c_str(), NC_CLOBBER, ncid));
+  cdfError(nc_create(filename, NC_CLOBBER, ncid));
 
   /* Define the dimensions. */
   cdfError(nc_def_dim(ncid, latName, nlat, latDimId));
@@ -78,9 +78,9 @@ proc main {
      reading C program to ensure that it puts null-terminators on
      strings where necessary. */
   cdfError(nc_put_att_text(ncid, latVarId, units,
-                           degNorth.numBytes, degNorth.c_str()));
+                           degNorth.numBytes, degNorth));
   cdfError(nc_put_att_text(ncid, lonVarId, units,
-                           degEast.numBytes, degEast.c_str()));
+                           degEast.numBytes, degEast));
 
   /* Define the netCDF variables. The dimids array is used to pass
      the dimids of the dimensions of the variables. */
@@ -93,10 +93,10 @@ proc main {
                       ndims, dimids[0], tempVarId));
 
   /* Define units attributes for vars. */
-  cdfError(nc_put_att_text(ncid, presVarId, units.c_str(),
-                           presUnits.numBytes:c_size_t, presUnits.c_str()));
-  cdfError(nc_put_att_text(ncid, tempVarId, units.c_str(),
-                           tempUnits.numBytes:c_size_t, tempUnits.c_str()));
+  cdfError(nc_put_att_text(ncid, presVarId, units,
+                           presUnits.numBytes:c_size_t, presUnits));
+  cdfError(nc_put_att_text(ncid, tempVarId, units,
+                           tempUnits.numBytes:c_size_t, tempUnits));
 
   /* End define mode. */
   cdfError(nc_enddef(ncid));

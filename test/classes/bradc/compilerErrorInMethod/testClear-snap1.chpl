@@ -4,18 +4,18 @@ record Wrap {
   var _value;
 }
 
-proc Wrap.init=(other: Wrap) {
+proc Wrap.init=(other: Wrap(?)) {
   this._value = other._value;
 }
 proc Wrap.init=(other) {
   this._value = other;
 }
 
-operator =(ref lhs:Wrap, rhs) {
+operator =(ref lhs:Wrap(?), rhs) {
   lhs._value.clearHelp();
 }
 
-operator :(rhs, type t:Wrap) {
+operator :(rhs, type t:Wrap(?)) {
   var tmp: t = rhs;
   return tmp;
 }

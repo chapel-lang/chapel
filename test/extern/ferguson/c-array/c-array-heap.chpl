@@ -1,5 +1,5 @@
 use CTypes;
-var ptr = c_malloc(c_array(int, 5), 1);
+var ptr = allocate(c_array(int, 5), 1);
 
 ref arr = ptr.deref();
 
@@ -8,4 +8,4 @@ for i in 0..#5 do
 
 writeln(ptr.deref());
 
-c_free(ptr);
+deallocate(ptr);

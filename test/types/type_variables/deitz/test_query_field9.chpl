@@ -1,4 +1,4 @@
-proc foo(x: range(?eltType,BoundedRangeType.bounded,?stridable)) {
+proc foo(x: range(?eltType,boundKind.both,?strides)) {
   writeln(x);
 }
 

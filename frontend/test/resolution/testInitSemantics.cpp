@@ -33,6 +33,12 @@ std::string opEquals = R"""(
     }
     )""";
 
+std::string otherOps = R"""(
+    operator >(ref lhs: int, rhs: int) {
+      return __primitive(">", lhs, rhs);
+    }
+    )""";
+
 static void testFieldUseBeforeInit1(void) {
   Context context;
   Context* ctx = &context;
@@ -633,6 +639,98 @@ static void testInitParamCondGeneric(void) {
   }
 }
 
+static void testNotThisDot(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + otherOps + R""""(
+    record X {
+      proc type foo() {
+        return 5;
+      }
+    }
+
+    record R {
+      var i : int;
+
+      proc init(i = 0) {
+        if X.foo() > 0 {
+          this.i = 1;
+        } else {
+          this.i = 0;
+        }
+      }
+    }
+
+    var r : R;
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+}
+
+static void testRelevantInit(void) {
+  Context context;
+  Context* ctx = &context;
+  ErrorGuard guard(ctx);
+
+  //
+  // Based on behavior implemented by production compiler back in:
+  //   https://github.com/chapel-lang/chapel/pull/9004
+  //
+  // This test exists to check dyno's ability to only try resolving candidate
+  // initializers that are implemented for a particular type. Without this
+  // capability, the program below would fail to compile while trying to
+  // resolve 'X.init' and 'R.init' for the formal 'x' in 'R.init'.
+  //
+
+  auto path = TEST_NAME(ctx);
+  std::string contents = opEquals + otherOps + R""""(
+    operator =(ref lhs: int, const rhs: int) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record X {
+      var val : int;
+    }
+
+    operator =(ref lhs: X, const rhs: X) {
+      lhs.val = rhs.val;
+    }
+
+    record R {
+      var x : X;
+
+      proc init(x = new X(5)) {
+        this.x = x;
+      }
+    }
+
+    var r: R;
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod);
+
+  // Resolve the module.
+  std::ignore = resolveModule(ctx, mod->id());
+}
+
 // TODO:
 // - test using defaults for types and params
 //   - also in conditionals
@@ -657,6 +755,11 @@ int main() {
   testInitCondGenericDiff();
   testInitCondGeneric();
   testInitParamCondGeneric();
+
+  // Tests that track old InitResolver bugs
+  testNotThisDot();
+
+  testRelevantInit();
 
   return 0;
 }

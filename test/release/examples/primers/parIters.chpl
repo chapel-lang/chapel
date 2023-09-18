@@ -182,7 +182,7 @@ Using the standalone parallel 'count' iterator
 // iteration, the standalone version of the ``count()`` iterator is
 // used.
 //
-forall i in count(probSize) do
+forall i in count(probSize) with (ref A) do
   A[i] = i:real;
 
 writeln("After parallel initialization, A is:");
@@ -192,7 +192,7 @@ writeln();
 //
 // Invoking it again with a different low value:
 //
-forall i in count(n=probSize/2, low=probSize/4) do
+forall i in count(n=probSize/2, low=probSize/4) with (ref A) do
   A[i] = -A[i];
 
 writeln("After negating the middle of A in parallel:");
@@ -472,7 +472,7 @@ Closing notes
 // routine works only for unstrided ranges with the default index type
 // of ``int``.  These constraints could be relaxed with more effort.
 // 
-proc computeChunk(r: range, myChunk, numChunks) where r.stridable == false {
+proc computeChunk(r: range, myChunk, numChunks) {
   const numElems = r.size;
   const elemsperChunk = numElems/numChunks;
   const rem = numElems%numChunks;

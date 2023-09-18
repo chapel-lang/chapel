@@ -1,0 +1,4 @@
+rwThisFromLoc.chpl:3: warning: 'readWriteThisFromLocale' is unstable and may be removed or modified in a future release
+rwThisFromLoc.chpl:4: warning: 'readWriteThisFromLocale' is unstable and may be removed or modified in a future release
+nil
+nil

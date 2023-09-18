@@ -89,8 +89,47 @@ static void test1() {
   assert(functionT->formalType(0).type() == anyNonNil);
 }
 
+static void test2() {
+  printf("test2\n");
+
+  // This test exists to ensure the compiler can correctly infer the type
+  // of 'myParent' without resolving the field's initialization expression,
+  // which would result in recursion.
+  std::string program = R"""(
+    var sentinelValue = new MyRecord();
+
+    record MyRecord {
+      var inst : unmanaged MyClass?;
+
+      proc init() { }
+    }
+
+    class MyClass {
+      const myParent : MyRecord = sentinelValue;
+    }
+
+    proc main() {
+      var x = sentinelValue;
+    }
+  )""";
+
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  auto m = parseModule(context, program);
+  auto results = resolveModule(context, m->id());
+
+  auto var = findVariable(m, "x");
+  auto rec = m->stmt(1)->toRecord();
+  auto qt = results.byAst(var).type();
+  assert(!qt.isErroneousType());
+  assert(qt.type()->isRecordType());
+  assert(qt.type()->toRecordType()->id() == rec->id());
+}
+
 int main() {
   test1();
+  test2();
 
   return 0;
 }

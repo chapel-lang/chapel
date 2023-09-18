@@ -70,6 +70,7 @@ void collect_stmts(BaseAST* ast, std::vector<Expr*>& stmts);
 void collectDefExprs(BaseAST* ast, std::vector<DefExpr*>& defExprs);
 void collectDefExprs(BaseAST* ast, llvm::SmallVectorImpl<DefExpr*>& defExprs);
 void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts);
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs);
 void collectMyCallExprs(BaseAST* ast,
                         std::vector<CallExpr*>& callExprs,
@@ -228,5 +229,12 @@ void collectUsedFnSymbols(BaseAST* ast, std::set<FnSymbol*>& fnSymbols);
 void cleanupAfterTypeRemoval();
 
 void convertToQualifiedRefs();
+
+bool shouldWarnUnstableFor(BaseAST* ast);
+
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove);
 
 #endif

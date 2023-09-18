@@ -1008,7 +1008,7 @@ int _gnix_pep_progress(struct gnix_fid_pep *pep)
 {
 	int accept_fd, ret, errno_keep;
 
-	fastlock_acquire(&pep->lock);
+	ofi_spin_lock(&pep->lock);
 
 	accept_fd = accept(pep->listen_fd, NULL, NULL);
 	if (accept_fd >= 0) {
@@ -1026,7 +1026,7 @@ int _gnix_pep_progress(struct gnix_fid_pep *pep)
 			  strerror(errno_keep));
 	}
 
-	fastlock_release(&pep->lock);
+	ofi_spin_unlock(&pep->lock);
 
 	return FI_SUCCESS;
 }
@@ -1037,7 +1037,7 @@ static void __pep_destruct(void *obj)
 
 	GNIX_DEBUG(FI_LOG_EP_CTRL, "Destroying PEP: %p\n", pep);
 
-	fastlock_destroy(&pep->lock);
+	ofi_spin_destroy(&pep->lock);
 
 	if (pep->listen_fd >= 0)
 		close(pep->listen_fd);
@@ -1078,7 +1078,7 @@ DIRECT_FN int gnix_pep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 
 	pep = container_of(fid, struct gnix_fid_pep, pep_fid.fid);
 
-	fastlock_acquire(&pep->lock);
+	ofi_spin_lock(&pep->lock);
 
 	switch (bfid->fclass) {
 	case FI_CLASS_EQ:
@@ -1105,7 +1105,7 @@ DIRECT_FN int gnix_pep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 		break;
 	}
 
-	fastlock_release(&pep->lock);
+	ofi_spin_unlock(&pep->lock);
 
 	return ret;
 }
@@ -1122,7 +1122,7 @@ DIRECT_FN int gnix_pep_listen(struct fid_pep *pep)
 
 	pep_priv = container_of(pep, struct gnix_fid_pep, pep_fid.fid);
 
-	fastlock_acquire(&pep_priv->lock);
+	ofi_spin_lock(&pep_priv->lock);
 
 	if (!pep_priv->eq) {
 		ret = -FI_EINVAL;
@@ -1183,7 +1183,7 @@ DIRECT_FN int gnix_pep_listen(struct fid_pep *pep)
 		goto err_sock;
 	}
 
-	fastlock_release(&pep_priv->lock);
+	ofi_spin_unlock(&pep_priv->lock);
 
 	GNIX_DEBUG(FI_LOG_EP_CTRL,
 		   "Configured PEP for listening: %p (%s:%d)\n",
@@ -1194,7 +1194,7 @@ DIRECT_FN int gnix_pep_listen(struct fid_pep *pep)
 err_sock:
 	close(pep_priv->listen_fd);
 err_unlock:
-	fastlock_release(&pep_priv->lock);
+	ofi_spin_unlock(&pep_priv->lock);
 	return ret;
 }
 
@@ -1218,11 +1218,11 @@ DIRECT_FN STATIC int gnix_reject(struct fid_pep *pep, fid_t handle,
 
 	pep_priv = container_of(pep, struct gnix_fid_pep, pep_fid.fid);
 
-	fastlock_acquire(&pep_priv->lock);
+	ofi_spin_lock(&pep_priv->lock);
 
 	conn = (struct gnix_pep_sock_conn *)handle;
 	if (!conn || conn->fid.fclass != FI_CLASS_CONNREQ) {
-		fastlock_release(&pep_priv->lock);
+		ofi_spin_unlock(&pep_priv->lock);
 		return -FI_EINVAL;
 	}
 
@@ -1236,7 +1236,7 @@ DIRECT_FN STATIC int gnix_reject(struct fid_pep *pep, fid_t handle,
 
 	ret = write(conn->sock_fd, &resp, sizeof(resp));
 	if (ret != sizeof(resp)) {
-		fastlock_release(&pep_priv->lock);
+		ofi_spin_unlock(&pep_priv->lock);
 		GNIX_WARN(FI_LOG_EP_CTRL,
 			  "Failed to send resp, errno: %d\n",
 			  errno);
@@ -1246,7 +1246,7 @@ DIRECT_FN STATIC int gnix_reject(struct fid_pep *pep, fid_t handle,
 	close(conn->sock_fd);
 	free(conn);
 
-	fastlock_release(&pep_priv->lock);
+	ofi_spin_unlock(&pep_priv->lock);
 
 	GNIX_DEBUG(FI_LOG_EP_CTRL, "Sent conn reject: %p\n", pep_priv);
 
@@ -1282,7 +1282,7 @@ DIRECT_FN int gnix_pep_open(struct fid_fabric *fabric,
 
 	pep_priv->listen_fd = -1;
 	pep_priv->backlog = 5; /* TODO set via fi_control parameter. */
-	fastlock_init(&pep_priv->lock);
+	ofi_spin_init(&pep_priv->lock);
 
 	if (info->src_addr) {
 		ep_name = info->src_addr;

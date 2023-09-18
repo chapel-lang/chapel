@@ -10,8 +10,8 @@ class C {
     yield z;
   }
 }
-
-var myC = (new owned C()).borrow();
+var myCobj = new C();
+var myC = myCobj.borrow();
 
 for c in myC do
   writeln(c);

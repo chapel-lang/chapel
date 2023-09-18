@@ -4,7 +4,7 @@ for `lhs = rhs` in various contexts of initialization/assignment, fields/
 vars, etc.
 
 It is always an error when `lhs` is non-nilable and `rhs` is nilable or `nil`,
-except when `lhs` is an owned class.
+except when `lhs` is an owned class or a shared class.
 
 It is always OK when `lhs` is nilable and `rhs` is `nil`.
 

@@ -113,7 +113,8 @@ ownedExample0LM();
 
 proc ownedExample1EOB() {
   writeln("ownedExample1EOB");
-  var b: borrowed C = (new owned C(1)).borrow();
+  var ownB = new owned C(1);
+  var b: borrowed C = ownB.borrow();
   // point 1
   writeln(b);
   writeln();
@@ -168,7 +169,7 @@ ownedExample9EOB();
 class Wrapper { var x; }
 proc f() {
   var a: [1..100] int;
-  forall i in a.domain {
+  forall i in a.domain with (ref a) {
     a[i] = i;
   }
   return new Wrapper(a);

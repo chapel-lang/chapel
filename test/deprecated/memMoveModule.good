@@ -1,3 +1,4 @@
+memMoveModule.chpl:1: warning: The Memory module is deprecated
 memMoveModule.chpl:1: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead
 memMoveModule.chpl:11: In function 'main':
 memMoveModule.chpl:14: warning: The Memory.Initialization module has been deprecated; please use the 'MemMove' module instead

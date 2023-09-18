@@ -25,7 +25,7 @@ module LocaleModelHelpGPU {
   public use LocaleModelHelpRuntime;
   use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param debugGPULocale = false;
 
   //////////////////////////////////////////

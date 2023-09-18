@@ -40,7 +40,7 @@ proc return_reindex(A: []) {
   return A.reindex(3..6);
 }
 
-use Memory.Diagnostics;
+use MemDiagnostics;
 proc main() {
   writeln("Calling create_literal():");
   var m1 = memoryUsed();

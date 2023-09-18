@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019-2020 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2019-2022 Amazon.com, Inc. or its affiliates.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -38,10 +38,10 @@
 #include <ofi_util.h>
 #include <ofi_iov.h>
 
-#include "rxr.h"
 #include "efa.h"
 #include "rxr_msg.h"
 #include "rxr_rma.h"
+#include "rxr_op_entry.h"
 #include "rxr_pkt_cmd.h"
 
 /*
@@ -137,9 +137,9 @@ void rxr_pkt_entry_release_rx(struct rxr_ep *ep,
 		return;
 
 	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_RX_POOL) {
-		ep->rx_bufs_efa_to_post++;
+		ep->efa_rx_pkts_to_post++;
 	} else if (pkt_entry->alloc_type == RXR_PKT_FROM_SHM_RX_POOL) {
-		ep->rx_bufs_shm_to_post++;
+		ep->shm_rx_pkts_to_post++;
 	} else if (pkt_entry->alloc_type == RXR_PKT_FROM_READ_COPY_POOL) {
 		assert(ep->rx_readcopy_pkt_pool_used > 0);
 		ep->rx_readcopy_pkt_pool_used--;
@@ -308,7 +308,7 @@ ssize_t rxr_pkt_entry_sendmsg(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry
 			      const struct fi_msg *msg, uint64_t flags)
 {
 	struct rdm_peer *peer;
-	size_t ret;
+	ssize_t ret;
 
 	if (pkt_entry->alloc_type == RXR_PKT_FROM_EFA_TX_POOL &&
 	    ep->efa_outstanding_tx_ops == ep->efa_max_outstanding_tx_ops)
@@ -326,8 +326,8 @@ ssize_t rxr_pkt_entry_sendmsg(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry
 	rxr_pkt_print("Sent", ep, (struct rxr_base_hdr *)pkt_entry->pkt);
 #endif
 #endif
-	if (peer->is_local) {
-		assert(ep->use_shm);
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_SHM_TX_POOL) {
+		assert(peer->is_local && ep->use_shm_for_tx);
 		ret = fi_sendmsg(ep->shm_ep, msg, flags);
 	} else {
 		ret = fi_sendmsg(ep->rdm_ep, msg, flags);
@@ -369,7 +369,7 @@ ssize_t rxr_pkt_entry_send(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
 	} else {
 		iov.iov_base = rxr_pkt_start(pkt_entry);
 		iov.iov_len = pkt_entry->pkt_size;
-		desc = peer->is_local ? NULL : fi_mr_desc(pkt_entry->mr);
+		desc = (pkt_entry->alloc_type == RXR_PKT_FROM_SHM_TX_POOL) ? NULL : fi_mr_desc(pkt_entry->mr);
 		msg.msg_iov = &iov;
 		msg.iov_count = 1;
 		msg.desc = &desc;
@@ -379,7 +379,7 @@ ssize_t rxr_pkt_entry_send(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry,
 	msg.context = pkt_entry;
 	msg.data = 0;
 
-	if (peer->is_local) {
+	if (pkt_entry->alloc_type == RXR_PKT_FROM_SHM_TX_POOL) {
 		msg.addr = peer->shm_fiaddr;
 		rxr_convert_desc_for_shm(msg.iov_count, msg.desc);
 	}
@@ -398,7 +398,7 @@ ssize_t rxr_pkt_entry_inject(struct rxr_ep *ep,
 	peer = rxr_ep_get_peer(ep, addr);
 	assert(peer);
 
-	assert(ep->use_shm && peer->is_local);
+	assert(ep->use_shm_for_tx && peer->is_local);
 	ret = fi_inject(ep->shm_ep, rxr_pkt_start(pkt_entry), pkt_entry->pkt_size,
 			 peer->shm_fiaddr);
 
@@ -412,7 +412,7 @@ ssize_t rxr_pkt_entry_inject(struct rxr_ep *ep,
 /*
  * Functions for pkt_rx_map
  */
-struct rxr_rx_entry *rxr_pkt_rx_map_lookup(struct rxr_ep *ep,
+struct rxr_op_entry *rxr_pkt_rx_map_lookup(struct rxr_ep *ep,
 					   struct rxr_pkt_entry *pkt_entry)
 {
 	struct rxr_pkt_rx_map *entry = NULL;
@@ -427,7 +427,7 @@ struct rxr_rx_entry *rxr_pkt_rx_map_lookup(struct rxr_ep *ep,
 
 void rxr_pkt_rx_map_insert(struct rxr_ep *ep,
 			   struct rxr_pkt_entry *pkt_entry,
-			   struct rxr_rx_entry *rx_entry)
+			   struct rxr_op_entry *rx_entry)
 {
 	struct rxr_pkt_rx_map *entry;
 
@@ -435,7 +435,7 @@ void rxr_pkt_rx_map_insert(struct rxr_ep *ep,
 	if (OFI_UNLIKELY(!entry)) {
 		FI_WARN(&rxr_prov, FI_LOG_CQ,
 			"Map entries for medium size message exhausted.\n");
-			efa_eq_write_error(&ep->util_ep, FI_ENOBUFS, -FI_ENOBUFS);
+		efa_eq_write_error(&ep->util_ep, FI_ENOBUFS, FI_EFA_ERR_RX_ENTRIES_EXHAUSTED);
 		return;
 	}
 
@@ -458,7 +458,7 @@ void rxr_pkt_rx_map_insert(struct rxr_ep *ep,
 
 void rxr_pkt_rx_map_remove(struct rxr_ep *ep,
 			   struct rxr_pkt_entry *pkt_entry,
-			   struct rxr_rx_entry *rx_entry)
+			   struct rxr_op_entry *rx_entry)
 {
 	struct rxr_pkt_rx_map *entry;
 	struct rxr_pkt_rx_key key;

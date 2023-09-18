@@ -1,0 +1,2 @@
+unstableHammingDistance.chpl:6: warning: bigint.hammingDistance is unstable and may change in the future
+1

@@ -1,0 +1,6 @@
+#!/bin/bash
+
+# Sort the output due to the variance in when the iterations of the promoted
+# call will run
+sort $2 > $2.tmp
+mv $2.tmp $2

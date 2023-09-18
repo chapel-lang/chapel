@@ -1,6 +1,1 @@
-globalArray is 0
-setting returnGlobalArray() = ArrTwo
-copy/assign from 0
-copy/assign from 2
-globalArray is now 0
-0
+1.4-assign-callexpr-array.chpl:13: error: illegal lvalue in assignment

@@ -27,7 +27,7 @@ or
 
 .. data:: var domain5: domain(2, int(8))
 
-.. data:: var domain6: domain(2, stridable = true)
+.. data:: var domain6: domain(2, strides = strideKind.any)
 
-.. data:: var domain7: domain(rank = 3, idxType = int, stridable = false)
+.. data:: var domain7: domain(rank = 3, idxType = int, strides = strideKind.one)
 

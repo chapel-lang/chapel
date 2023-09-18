@@ -9,7 +9,7 @@ record Foo {
 
 var foo = new Foo();
 
-for param i in 0..<numFields(foo.type) {
+for param i in 0..<getNumFields(foo.type) {
     if isType(getField(foo,i)) {
         continue;
     }
@@ -18,8 +18,10 @@ for param i in 0..<numFields(foo.type) {
 
 /////////////////////////////////////////////////////////////////////////////
 
+config param flag = true;
+
 proc p() type {
-  if true then
+  if flag then
     return int;
 
   return string;
@@ -36,6 +38,43 @@ proc p(param flag) {
 
 writeln(p(true));
 writeln(p(false));
+
+/////////////////////////////////////////////////////////////////////////////
+
+class Parent {
+  proc f() throws {
+    return here;
+  }
+  iter itr(): int {
+    if flag then return;
+    yield "hi"; // note that this line is ignored
+  }
+}
+
+class Child: Parent {
+  override proc f(): locale throws {
+    throw new Error("in Child.f()");
+  }
+  override iter itr(): int {
+    if flag then return;
+  }
+}
+
+var obj = new Parent();
+classtest();
+
+obj = new Child();
+classtest();
+
+proc classtest() {
+  try { writeln(obj.f()); }
+  catch e { writeln(e); }
+
+  for idx in obj.itr() {
+    compilerWarning(idx.type:string, 0);
+    writeln(idx);
+  }
+}
 
 /////////////////////////////////////////////////////////////////////////////
 

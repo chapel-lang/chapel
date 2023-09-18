@@ -1,2 +1,4 @@
-same_name_in_mod2.chpl:7: error: symbol F is multiply defined
-same_name_in_mod2.chpl:1: note: symbol 'Foo', defined here, was renamed to 'F' at same_name_in_mod2.chpl:5
+same_name_in_mod2.chpl:4: In module 'User':
+same_name_in_mod2.chpl:7: error: 'F' has multiple definitions
+same_name_in_mod2.chpl:5: note: redefined through the 'import' statement here
+same_name_in_mod2.chpl:1: note: leading to the definition here

@@ -13,9 +13,9 @@ class Child: Parent {
 }
 
 var A: [0..#numLocales] int;
-
-var child: borrowed Parent = (new owned Child()).borrow();
+var ownChild = new owned Child();
+var child: borrowed Parent = ownChild.borrow();
 
 for c in child do A[c] = c; writeln(A); A = 0;
-forall c in child do A[c] = c; writeln(A); A = 0;
-forall (c, c1) in zip(child, child) do A[c] = c1; writeln(A);
+forall c in child with (ref A) do A[c] = c; writeln(A); A = 0;
+forall (c, c1) in zip(child, child) with (ref A) do A[c] = c1; writeln(A);

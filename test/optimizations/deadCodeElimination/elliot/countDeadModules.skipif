@@ -1,0 +1,3 @@
+# At time of writing, AutoMath is dead only when --fast is thrown, offsetting
+# number of dead modules from .good expectations by 1.
+COMPOPTS <= --fast

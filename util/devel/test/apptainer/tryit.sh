@@ -67,7 +67,6 @@ do
       #exit 1
       ;;
     esac
-
     cd "$DIR"
 
     ((i++))

@@ -1,0 +1,2 @@
+BugFormalMultipleDefinitions.chpl:1: error: 'x' has multiple definitions, redefined at:
+  BugFormalMultipleDefinitions.chpl:1

@@ -65,7 +65,7 @@
 
 
 #define TCPX_MAX_INJECT		128
-#define MAX_POLL_EVENTS		100
+#define MAX_POLL_EVENTS		1024
 #define TCPX_MIN_MULTI_RECV	16384
 #define TCPX_PORT_MAX_RANGE	(USHRT_MAX)
 
@@ -73,6 +73,7 @@ extern struct fi_provider	tcpx_prov;
 extern struct util_prov		tcpx_util_prov;
 extern struct fi_info		tcpx_info;
 extern struct tcpx_port_range	port_range;
+
 extern int tcpx_nodelay;
 extern int tcpx_staging_sbuf_size;
 extern int tcpx_prefetch_rbuf_size;
@@ -213,13 +214,16 @@ enum tcpx_state {
 struct tcpx_cur_rx {
 	union {
 		struct tcpx_base_hdr	base_hdr;
+		struct tcpx_cq_data_hdr cq_data_hdr;
+		struct tcpx_tag_data_hdr tag_data_hdr;
+		struct tcpx_tag_hdr	tag_hdr;
 		uint8_t			max_hdr[TCPX_MAX_HDR];
 	} hdr;
 	size_t			hdr_len;
 	size_t			hdr_done;
 	size_t			data_left;
 	struct tcpx_xfer_entry	*entry;
-	int			(*handler)(struct tcpx_ep *ep);
+	ssize_t			(*handler)(struct tcpx_ep *ep);
 };
 
 struct tcpx_cur_tx {
@@ -229,11 +233,20 @@ struct tcpx_cur_tx {
 
 struct tcpx_rx_ctx {
 	struct fid_ep		rx_fid;
+	struct tcpx_cq		*cq;
 	struct slist		rx_queue;
+	struct slist		tag_queue;
+	struct tcpx_xfer_entry	*(*match_tag_rx)(struct tcpx_rx_ctx *srx,
+						 struct tcpx_ep *ep,
+						 uint64_t tag);
+
 	struct ofi_bufpool	*buf_pool;
 	uint64_t		op_flags;
-	fastlock_t		lock;
+	ofi_mutex_t		lock;
 };
+
+int tcpx_srx_context(struct fid_domain *domain, struct fi_rx_attr *attr,
+		     struct fid_ep **rx_ep, void *context);
 
 struct tcpx_ep {
 	struct util_ep		util_ep;
@@ -253,6 +266,7 @@ struct tcpx_ep {
 	int			rx_avail;
 	struct tcpx_rx_ctx	*srx_ctx;
 	enum tcpx_state		state;
+	fi_addr_t		src_addr;
 	union {
 		struct fid		*fid;
 		struct tcpx_cm_context	*cm_ctx;
@@ -260,9 +274,10 @@ struct tcpx_ep {
 	};
 
 	/* lock for protecting tx/rx queues, rma list, state*/
-	fastlock_t		lock;
-	int (*start_op[ofi_op_write + 1])(struct tcpx_ep *ep);
+	ofi_mutex_t		lock;
 	void (*hdr_bswap)(struct tcpx_base_hdr *hdr);
+	void (*report_success)(struct tcpx_ep *ep, struct util_cq *cq,
+			       struct tcpx_xfer_entry *xfer_entry);
 	size_t			min_multi_recv_size;
 	bool			pollout_set;
 };
@@ -271,12 +286,14 @@ struct tcpx_fabric {
 	struct util_fabric	util_fabric;
 };
 
-#define TCPX_INTERNAL_MASK	GENMASK_ULL(63, 58)
-#define TCPX_NEED_RESP		BIT_ULL(58)
-#define TCPX_NEED_ACK		BIT_ULL(59)
-#define TCPX_INTERNAL_XFER	BIT_ULL(60)
-#define TCPX_NEED_DYN_RBUF 	BIT_ULL(61)
-#define TCPX_ASYNC		BIT_ULL(62)
+
+/* tcpx_xfer_entry::ctrl_flags */
+#define TCPX_NEED_RESP		BIT(1)
+#define TCPX_NEED_ACK		BIT(2)
+#define TCPX_INTERNAL_XFER	BIT(3)
+#define TCPX_NEED_DYN_RBUF 	BIT(4)
+#define TCPX_ASYNC		BIT(5)
+#define TCPX_INJECT_OP		BIT(6)
 
 struct tcpx_xfer_entry {
 	struct slist_entry	entry;
@@ -290,7 +307,11 @@ struct tcpx_xfer_entry {
 	size_t			iov_cnt;
 	struct iovec		iov[TCPX_IOV_LIMIT+1];
 	struct tcpx_ep		*ep;
-	uint64_t		flags;
+	uint64_t		tag;
+	uint64_t		ignore;
+	fi_addr_t		src_addr;
+	uint64_t		cq_flags;
+	uint32_t		ctrl_flags;
 	uint32_t		async_index;
 	void			*context;
 	void			*mrecv_msg_start;
@@ -318,13 +339,15 @@ struct tcpx_cq {
 	struct ofi_bufpool	*xfer_pool;
 };
 
+/* tcpx_cntr maps directly to util_cntr */
+
 struct tcpx_eq {
 	struct util_eq		util_eq;
 	/*
 	  The following lock avoids race between ep close
 	  and connection management code.
 	 */
-	fastlock_t		close_lock;
+	ofi_mutex_t		close_lock;
 };
 
 int tcpx_create_fabric(struct fi_fabric_attr *attr,
@@ -342,18 +365,24 @@ int tcpx_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 
 int tcpx_endpoint(struct fid_domain *domain, struct fi_info *info,
 		  struct fid_ep **ep_fid, void *context);
-void tcpx_ep_disable(struct tcpx_ep *ep, int cm_err);
+void tcpx_ep_disable(struct tcpx_ep *ep, int cm_err, void* err_data,
+		     size_t err_data_size);
 
 
 int tcpx_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		 struct fid_cq **cq_fid, void *context);
-void tcpx_cq_report_success(struct util_cq *cq,
-			    struct tcpx_xfer_entry *xfer_entry);
+void tcpx_report_success(struct tcpx_ep *ep, struct util_cq *cq,
+			 struct tcpx_xfer_entry *xfer_entry);
 void tcpx_cq_report_error(struct util_cq *cq,
 			  struct tcpx_xfer_entry *xfer_entry,
 			  int err);
 void tcpx_get_cq_info(struct tcpx_xfer_entry *entry, uint64_t *flags,
 		      uint64_t *data, uint64_t *tag);
+int tcpx_cntr_open(struct fid_domain *fid_domain, struct fi_cntr_attr *attr,
+		   struct fid_cntr **cntr_fid, void *context);
+void tcpx_report_cntr_success(struct tcpx_ep *ep, struct util_cq *cq,
+			      struct tcpx_xfer_entry *xfer_entry);
+void tcpx_cntr_incerr(struct tcpx_ep *ep, struct tcpx_xfer_entry *xfer_entry);
 
 void tcpx_reset_rx(struct tcpx_ep *ep);
 
@@ -366,7 +395,7 @@ int tcpx_update_epoll(struct tcpx_ep *ep);
 void tcpx_hdr_none(struct tcpx_base_hdr *hdr);
 void tcpx_hdr_bswap(struct tcpx_base_hdr *hdr);
 
-void tcpx_tx_queue_insert(struct tcpx_ep *tcpx_ep,
+void tcpx_tx_queue_insert(struct tcpx_ep *ep,
 			  struct tcpx_xfer_entry *tx_entry);
 
 void tcpx_conn_mgr_run(struct util_eq *eq);
@@ -374,19 +403,13 @@ int tcpx_eq_wait_try_func(void *arg);
 int tcpx_eq_create(struct fid_fabric *fabric_fid, struct fi_eq_attr *attr,
 		   struct fid_eq **eq_fid, void *context);
 
-int tcpx_op_invalid(struct tcpx_ep *tcpx_ep);
-int tcpx_op_msg(struct tcpx_ep *tcpx_ep);
-int tcpx_op_read_req(struct tcpx_ep *tcpx_ep);
-int tcpx_op_write(struct tcpx_ep *tcpx_ep);
-int tcpx_op_read_rsp(struct tcpx_ep *tcpx_ep);
-
 
 static inline void
 tcpx_set_ack_flags(struct tcpx_xfer_entry *xfer, uint64_t flags)
 {
 	if (flags & (FI_TRANSMIT_COMPLETE | FI_DELIVERY_COMPLETE)) {
 		xfer->hdr.base_hdr.flags |= TCPX_DELIVERY_COMPLETE;
-		xfer->flags |= TCPX_NEED_ACK;
+		xfer->ctrl_flags |= TCPX_NEED_ACK;
 	}
 }
 
@@ -396,8 +419,26 @@ tcpx_set_commit_flags(struct tcpx_xfer_entry *xfer, uint64_t flags)
 	tcpx_set_ack_flags(xfer, flags);
 	if (flags & FI_COMMIT_COMPLETE) {
 		xfer->hdr.base_hdr.flags |= TCPX_COMMIT_COMPLETE;
-		xfer->flags |= TCPX_NEED_ACK;
+		xfer->ctrl_flags |= TCPX_NEED_ACK;
 	}
+}
+
+static inline uint64_t
+tcpx_tx_completion_flag(struct tcpx_ep *ep, uint64_t op_flags)
+{
+	/* Generate a completion if op flags indicate or we generate
+	 * completions by default
+	 */
+	return (ep->util_ep.tx_op_flags | op_flags) & FI_COMPLETION;
+}
+
+static inline uint64_t
+tcpx_rx_completion_flag(struct tcpx_ep *ep, uint64_t op_flags)
+{
+	/* Generate a completion if op flags indicate or we generate
+	 * completions by default
+	 */
+	return (ep->util_ep.rx_op_flags | op_flags) & FI_COMPLETION;
 }
 
 static inline struct tcpx_xfer_entry *
@@ -405,9 +446,9 @@ tcpx_alloc_xfer(struct tcpx_cq *cq)
 {
 	struct tcpx_xfer_entry *xfer;
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	xfer = ofi_buf_alloc(cq->xfer_pool);
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 
 	return xfer;
 }
@@ -416,12 +457,13 @@ static inline void
 tcpx_free_xfer(struct tcpx_cq *cq, struct tcpx_xfer_entry *xfer)
 {
 	xfer->hdr.base_hdr.flags = 0;
-	xfer->flags = 0;
+	xfer->cq_flags = 0;
+	xfer->ctrl_flags = 0;
 	xfer->context = 0;
 
-	cq->util_cq.cq_fastlock_acquire(&cq->util_cq.cq_lock);
+	ofi_genlock_lock(&cq->util_cq.cq_lock);
 	ofi_buf_free(xfer);
-	cq->util_cq.cq_fastlock_release(&cq->util_cq.cq_lock);
+	ofi_genlock_unlock(&cq->util_cq.cq_lock);
 }
 
 static inline struct tcpx_xfer_entry *
@@ -446,9 +488,9 @@ tcpx_free_rx(struct tcpx_xfer_entry *xfer)
 
 	if (xfer->ep->srx_ctx) {
 		srx = xfer->ep->srx_ctx;
-		fastlock_acquire(&srx->lock);
+		ofi_mutex_lock(&srx->lock);
 		ofi_buf_free(xfer);
-		fastlock_release(&srx->lock);
+		ofi_mutex_unlock(&srx->lock);
 	} else {
 		cq = container_of(xfer->ep->util_ep.rx_cq,
 				  struct tcpx_cq, util_cq);

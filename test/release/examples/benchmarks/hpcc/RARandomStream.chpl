@@ -4,6 +4,8 @@
 // of values
 //
 module RARandomStream {
+  use Math;
+
   config param useLCG = true;
 
   param randWidth = 64;              // the bit-width of the random numbers

@@ -1,0 +1,5 @@
+bug: compiler segfault when overriding method gives default value to arg which didn't have one in base class
+#17679, #22517
+
+In #17679, there was some agreement that this shouldn't compile.
+As of #22517, it now gives a compiler segfault.

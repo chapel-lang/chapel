@@ -1,2 +1,2 @@
-Lifetime errors for list.append() stopped firing after its return type
+Lifetime errors for list.pushBack() stopped firing after its return type
 was changed to int in #17510.

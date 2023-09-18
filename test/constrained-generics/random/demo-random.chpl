@@ -25,8 +25,10 @@ proc testGetNth(rs1: ?Q, rs2: Q) where Q implements RandomStream {
   writeln("testGetNth() done");
 }
 
-const rs1 = createRandomStream(int, 123).borrow(),
-      rs2 = createRandomStream(int, 123).borrow();
+var ownRs1 = createRandomStream(int, 123);
+var ownRs2 = createRandomStream(int, 123);
+const rs1 = ownRs1.borrow(),
+      rs2 = ownRs2.borrow();
 testGetNth(rs1, rs2);
 
 /////////////////////////////////
@@ -38,7 +40,7 @@ proc fillRandom(stream: PCGRandomStream(?), arr)
     x = r;
 }
 
-proc fillRandom(stream: ?Stream, arr: ?ARR)
+proc fillRandom(stream: ?Stream, ref arr: ?ARR)
   where Stream implements PCGRandomStreamImpl &&
         ARR implements Array1d(Stream.eltType)
         // && Stream.eltType == ARR.eltType
@@ -84,7 +86,7 @@ if && reduce (A1 == A2) then writeln("fillRandom() check passed");
 
 /////////////////////////////////
 
-proc PCGRandomStream.startCursor(D: domain) {
+proc PCGRandomStream.startCursor(D: domain(?)) {
   type resultType = eltType;
   _lock();
   const start = PCGRandomStreamPrivate_count;

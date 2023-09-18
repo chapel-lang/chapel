@@ -40,13 +40,15 @@ see :doc:`CMake`.
 
 The CMake options you need to add are:
 
- * ``-DCMAKE_CROSSCOMPILING=True``
+ * ``-DCMAKE_SYSTEM_NAME=<target-system>``
  * ``-DCMAKE_INSTALL_PREFIX=<install-dir>``
  * ``-DLLVM_TABLEGEN=<path-to-host-bin>/llvm-tblgen``
  * ``-DCLANG_TABLEGEN=<path-to-host-bin>/clang-tblgen``
  * ``-DLLVM_DEFAULT_TARGET_TRIPLE=arm-linux-gnueabihf``
  * ``-DLLVM_TARGET_ARCH=ARM``
  * ``-DLLVM_TARGETS_TO_BUILD=ARM``
+
+Note: ``CMAKE_CROSSCOMPILING`` is always set automatically when ``CMAKE_SYSTEM_NAME`` is set. Don't put ``-DCMAKE_CROSSCOMPILING=TRUE`` in your options.
 
 If you're compiling with GCC, you can use architecture options for your target,
 and the compiler driver will detect everything that it needs:
@@ -143,13 +145,13 @@ Finally, if you're using your platform compiler, run:
 
    .. code-block:: bash
 
-     $ cmake -G Ninja <source-dir> <options above>
+     $ cmake -G Ninja <source-dir> -DCMAKE_BUILD_TYPE=<type> <options above>
 
 If you're using Clang as the cross-compiler, run:
 
    .. code-block:: bash
 
-     $ CC='clang' CXX='clang++' cmake -G Ninja <source-dir> <options above>
+     $ CC='clang' CXX='clang++' cmake -G Ninja <source-dir> -DCMAKE_BUILD_TYPE=<type> <options above>
 
 If you have ``clang``/``clang++`` on the path, it should just work, and special
 Ninja files will be created in the build directory. I strongly suggest

@@ -1,2 +1,3 @@
 outOfOrderFieldUse.chpl:5: error: 'y' used before defined
 outOfOrderFieldUse.chpl:6: note: defined here
+outOfOrderFieldUse.chpl:5: error: field "y" used before it is initialized

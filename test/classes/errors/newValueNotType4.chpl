@@ -9,7 +9,7 @@ var myC = new owned C(42);
 var myC1 = new myC();
 writeln(myC1);
 
-var myC2 = (new owned myC()).borrow();
+var myC2obj = new myC(); var myC2 = myC2obj.borrow();
 writeln(myC2);
 
 var myC3 = new unmanaged myC();

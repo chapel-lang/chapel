@@ -74,20 +74,20 @@ proc masonBuild(args: [] string, checkProj=true) throws {
 
   if example {
     // compopts become example names. Build never runs examples
-    for val in exampleOpts.values() do compopts.append(val);
-    compopts.append("--no-run");
-    if skipUpdate then compopts.append('--no-update');
-                  else compopts.append('--update');
-    if show then compopts.append("--show");
-    if release then compopts.append("--release");
-    if force then compopts.append("--force");
+    for val in exampleOpts.values() do compopts.pushBack(val);
+    compopts.pushBack("--no-run");
+    if skipUpdate then compopts.pushBack('--no-update');
+                  else compopts.pushBack('--update');
+    if show then compopts.pushBack("--show");
+    if release then compopts.pushBack("--release");
+    if force then compopts.pushBack("--force");
     // add expected arguments for masonExample
     compopts.insert(0,["example", "--example"]);
     masonExample(compopts.toArray(), checkProj=checkProj);
   }
   else {
     if passArgs.hasValue() {
-      for val in passArgs.values() do compopts.append(val);
+      for val in passArgs.values() do compopts.pushBack(val);
     }
     const configNames = updateLock(skipUpdate);
     const tomlName = configNames[0];
@@ -259,10 +259,10 @@ proc genSourceList(lockFile: borrowed Toml) {
           } else {
             branch = "HEAD";
           }
-          gitList.append((url, name, branch, revision));
+          gitList.pushBack((url, name, branch, revision));
         } else if toml.pathExists("source") {
           var source = toml["source"]!.s;
-          sourceList.append((source, name, version));
+          sourceList.pushBack((source, name, version));
         }
       }
     }
@@ -349,7 +349,7 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
   // Checks for compilation options are present in Mason.toml
   if lock.pathExists('root.compopts') {
     const cmpFlags = lock["root"]!["compopts"]!.s;
-    compopts.append(cmpFlags);
+    compopts.pushBack(cmpFlags);
   }
 
   if lock.pathExists('external') {
@@ -358,9 +358,9 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
       for (k,v) in allFields(depInfo!) {
         var val = v!;
         select k {
-            when "libs" do compopts.append("-L" + val.s);
-            when "include" do compopts.append("-I" + val.s);
-            when "other" do compopts.append("-I" + val.s);
+            when "libs" do compopts.pushBack("-L" + val.s);
+            when "include" do compopts.pushBack("-I" + val.s);
+            when "other" do compopts.pushBack("-I" + val.s);
             otherwise continue;
           }
       }
@@ -370,8 +370,8 @@ proc getTomlCompopts(lock: borrowed Toml, ref compopts: list(string)) {
     const pkgDeps = lock['system']!;
     for (name, dep) in zip(pkgDeps.A.keys(), pkgDeps.A.values()) {
       var depInfo = dep!;
-      compopts.append(depInfo["libs"]!.s);
-      compopts.append("-I" + depInfo["include"]!.s);
+      compopts.pushBack(depInfo["libs"]!.s);
+      compopts.pushBack("-I" + depInfo["include"]!.s);
     }
   }
   return compopts;

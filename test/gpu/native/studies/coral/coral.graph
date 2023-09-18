@@ -1,0 +1,5 @@
+perfkeys: Convolve time:
+files: coral.dat
+graphkeys: 1-GPU
+ylabel: Time (s)
+graphtitle: Coral Image Analysis (4000x4000, window_size=100)

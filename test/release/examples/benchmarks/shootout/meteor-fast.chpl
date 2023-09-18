@@ -322,7 +322,7 @@ proc goodPiece(mask, pos) {
         a = (a | s1 | s2 | s3 | s4 | s5 | s6 | s7 | s8) & b;
       } while aOld != a;
 
-      if popcount(a) % 5 != 0 then
+      if popCount(a) % 5 != 0 then
         return false;
 
       b ^= a;
@@ -341,17 +341,24 @@ record BackoffSpinLock {
       lockAttempts = 0,
       maxLockAttempts = (2**16-1);
 
-  inline proc lock() {
+  proc init() {}
+  proc init=(other: BackoffSpinLock) {
+    this.l = other.l.read();
+    this.lockAttempts = other.lockAttempts;
+    this.maxLockAttempts = other.maxLockAttempts;
+  }
+
+  inline proc ref lock() {
     while l.testAndSet() {
       lockAttempts += 1;
       if (lockAttempts & maxLockAttempts) == 0 {
         maxLockAttempts >>= 1;
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
   }
 
-  inline proc unlock() {
+  inline proc ref unlock() {
     l.clear();
   }
 }
@@ -363,7 +370,7 @@ var recordSolutionLock: BackoffSpinLock;
 //
 // Recursively add pieces to the board, and check solution when filled
 //
-proc searchLinear(in board, in pos, used, placed, currentSolution) {
+proc searchLinear(in board, in pos, used, placed, ref currentSolution) {
 
   if placed == numPieces {
     recordSolutionLock.lock();

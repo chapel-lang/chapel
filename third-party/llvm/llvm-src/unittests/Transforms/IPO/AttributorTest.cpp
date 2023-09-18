@@ -57,7 +57,8 @@ TEST_F(AttributorTestBase, TestCast) {
   CallGraphUpdater CGUpdater;
   BumpPtrAllocator Allocator;
   InformationCache InfoCache(M, AG, Allocator, nullptr);
-  Attributor A(Functions, InfoCache, CGUpdater);
+  AttributorConfig AC(CGUpdater);
+  Attributor A(Functions, InfoCache, AC);
 
   Function *F = M.getFunction("foo");
 
@@ -150,8 +151,9 @@ TEST_F(AttributorTestBase, AAReachabilityTest) {
   CallGraphUpdater CGUpdater;
   BumpPtrAllocator Allocator;
   InformationCache InfoCache(M, AG, Allocator, nullptr);
-  Attributor A(Functions, InfoCache, CGUpdater, /* Allowed */ nullptr,
-               /*DeleteFns*/ false);
+  AttributorConfig AC(CGUpdater);
+  AC.DeleteFns = false;
+  Attributor A(Functions, InfoCache, AC);
 
   Function &F1 = *M.getFunction("func1");
   Function &F3 = *M.getFunction("func3");
@@ -185,7 +187,6 @@ TEST_F(AttributorTestBase, AAReachabilityTest) {
   F7AA.canReach(A, F7FirstCB, F3);
   F7AA.canReach(A, F7FirstCB, F4);
   F9AA.instructionCanReach(A, F9FirstInst, F3);
-  F9AA.instructionCanReach(A, F9SecondInst, F3, false);
   F9AA.instructionCanReach(A, F9FirstInst, F4);
 
   A.run();
@@ -201,15 +202,13 @@ TEST_F(AttributorTestBase, AAReachabilityTest) {
   ASSERT_TRUE(F6AA.canReach(A, F4));
 
   // The second instruction of F9 can't reach the first call.
-  ASSERT_FALSE(F9AA.instructionCanReach(A, F9SecondInst, F3, false));
-  // TODO: Without lifetime limiting callback this query does actually not make
-  //       much sense. "Anything" is reachable from the caller of func10.
-  ASSERT_TRUE(F9AA.instructionCanReach(A, F9SecondInst, F3, true));
+  ASSERT_FALSE(F9AA.instructionCanReach(A, F9SecondInst, F3));
 
   // The first instruction of F9 can reach the first call.
   ASSERT_TRUE(F9AA.instructionCanReach(A, F9FirstInst, F3));
-  // Because func10 calls the func4 after the call to func9 it is reachable.
-  ASSERT_TRUE(F9AA.instructionCanReach(A, F9FirstInst, F4));
+  // Because func10 calls the func4 after the call to func9 it is reachable but
+  // as it requires backwards logic we would need AA::isPotentiallyReachable.
+  ASSERT_FALSE(F9AA.instructionCanReach(A, F9FirstInst, F4));
 }
 
 } // namespace llvm

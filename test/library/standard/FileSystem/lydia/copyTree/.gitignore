@@ -1,0 +1,12 @@
+# Test/library/standard/FileSystem/lydia/copyTree ignores.
+/complexDest
+/emptyDest
+/sparseDest
+/verySparseDest
+/shortDest
+/denseDest
+/cutoffDest
+/existing_dir
+/hasLink
+/willLink
+/willCopy

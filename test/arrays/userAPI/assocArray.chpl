@@ -1,18 +1,15 @@
 use assocArrayAPItest;
 use IO;
+use ChplFormat;
 
 config const testSlice = false;
 
 proc main() {
 
   // Ask that arrays are output with [1,2] style
-  stdout.lock();
-  var style = stdout._styleInternal();
-  style.array_style = QIO_ARRAY_FORMAT_CHPL:uint(8);
-  stdout._set_styleInternal(style);
-  stdout.unlock();
+  var output = stdout.withSerializer(new chplSerializer());
 
-  writeln([1,2,3]);
+  output.writeln([1,2,3]);
 
   var D:domain(string);
   var A:[D] real;
@@ -32,7 +29,7 @@ proc main() {
   D += "ten";
 
   if !testSlice {
-    testAssocArrayAPI(A);
+    testAssocArrayAPI(A, output);
   } else {
     const DGood = D;
     D += "eleven";
@@ -41,6 +38,6 @@ proc main() {
     D += "gogol";
     D += "infinity";
 
-    testAssocArrayAPI(A[DGood]);
+    testAssocArrayAPI(A[DGood], output);
   }
 }

@@ -36,8 +36,9 @@
 #define _SMR_SIGNAL_H_
 #include <signal.h>
 #include <ofi_shm.h>
+#include "smr.h"
 
-struct sigaction *old_action;
+extern struct sigaction *old_action;
 
 static void smr_handle_signal(int signum, siginfo_t *info, void *ucontext)
 {
@@ -62,15 +63,12 @@ static void smr_handle_signal(int signum, siginfo_t *info, void *ucontext)
 	/* call the original handler */
 	if (old_action[signum].sa_flags & SA_SIGINFO)
 		old_action[signum].sa_sigaction(signum, info, ucontext);
-	else if (old_action[signum].sa_handler == SIG_DFL ||
-		 old_action[signum].sa_handler == SIG_IGN)
-		return;
 	else
-		old_action[signum].sa_handler(signum);
+		raise(signum);
 
 }
 
-static void smr_reg_sig_hander(int signum)
+static inline void smr_reg_sig_handler(int signum)
 {
 	struct sigaction action;
 	int ret;

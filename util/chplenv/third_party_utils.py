@@ -4,7 +4,7 @@ import re
 import chpl_cpu, chpl_arch, chpl_compiler
 import chpl_lib_pic, chpl_locale_model, chpl_platform
 from chpl_home_utils import get_chpl_home, get_chpl_third_party, using_chapel_module
-from utils import error, memoize, run_command, warning
+from utils import error, memoize, run_command, warning, try_run_command
 
 #
 # This is the default unique configuration path which
@@ -108,7 +108,9 @@ def filter_libs(bundled_libs, system_libs):
 @memoize
 def pkgconfig_get_system_compile_args(pkg):
     # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if returncode:
+        return (None, None)
     # run pkg-config to get the cflags
     cflags_line = run_command(['pkg-config', '--cflags'] + [pkg]);
     cflags = cflags_line.split()
@@ -168,7 +170,9 @@ def pkgconfig_default_static():
 @memoize
 def pkgconfig_get_system_link_args(pkg, static=pkgconfig_default_static()):
     # check that pkg-config knows about the package in question
-    run_command(['pkg-config', '--exists', pkg])
+    exists, returncode, my_stdout, my_stderr = try_run_command(['pkg-config', '--exists', pkg])
+    if returncode:
+        return (None, None)
     # run pkg-config to get the link flags
     static_arg = [ ]
     if static:
@@ -246,16 +250,13 @@ def pkgconfig_get_bundled_link_args(pkg, ucp='', pcfile='',
     # assuming libs_private stores system libs, like -lpthread
     return filter_libs(libs, libs_private)
 
-# Get the version number for a system-wide installed package.
-# Presumably we update the bundled packages to compatible versions,
-# so this routine doesn't handle ucp and other bundled version concerns.
 @memoize
-def pkgconfig_get_system_version(pkg):
-  # check that pkg-config knows about the package in question
-  run_command(['pkg-config', '--exists', pkg])
-  # run pkg-config to get the version
-  version = run_command(['pkg-config', '--modversion', pkg])
-  return version.strip()
+def has_pkgconfig():
+    (exists, code, _stdout, _stderr) = try_run_command(['pkg-config',
+                                                       '--version'])
+    if exists and code == 0:
+        return True
+    return False
 
 #
 # This returns the default link args for the given third-party package

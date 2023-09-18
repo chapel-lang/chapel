@@ -49,7 +49,7 @@ proc main(){
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 
-  forall i in computationSpaceRange do{
+  forall i in computationSpaceRange with (ref space) do{
      space[0, i] = 0;
      space[1, i] = 0;
   }
@@ -66,7 +66,7 @@ proc main(){
   timer.start();
 
   for t in computationTimeRange {
-      forall x in computationSpaceRange do
+      forall x in computationSpaceRange with (ref space) do
           space[write, x] = (space[read, x-1] +
                              space[read, x] +
                              space[read, x+1]) / 3;
@@ -89,7 +89,7 @@ proc main(){
 
 // return true if the current end state is the same as the
 // stencil applied to the original state, in serial iteration.
-proc verifyResult(space: [] Cell, lowerBound: int, upperBound: int,
+proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
                    verbose: bool = true ): bool {
 
   var totalSpaceRange = lowerBound - 1 .. upperBound + 1;

@@ -7,7 +7,7 @@
    SAFE TO REACH IT THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT IT WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2006-2010, 2012, 2015 Free Software Foundation, Inc.
+Copyright 2006-2010, 2012, 2015, 2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -167,14 +167,19 @@ mpn_toom3_sqr (mp_ptr pp,
   /* vm1, 2n+1 limbs */
 #ifdef SMALLER_RECURSION
   TOOM3_SQR_REC (vm1, asm1, n, scratch_out);
-  cy = 0;
-  if (asm1[n] != 0)
-    cy = asm1[n] + mpn_add_n (vm1 + n, vm1 + n, asm1, n);
-  if (asm1[n] != 0)
-    cy += mpn_add_n (vm1 + n, vm1 + n, asm1, n);
+  cy = asm1[n];
+  if (cy != 0)
+    {
+#if HAVE_NATIVE_mpn_addlsh1_n_ip1
+      cy += mpn_addlsh1_n_ip1 (vm1 + n, asm1, n);
+#else
+      cy += mpn_addmul_1 (vm1 + n, asm1, n, CNST_LIMB(2));
+#endif
+    }
   vm1[2 * n] = cy;
 #else
-  TOOM3_SQR_REC (vm1, asm1, n + 1, scratch_out);
+  vm1[2 * n] = 0;
+  TOOM3_SQR_REC (vm1, asm1, n + asm1[n], scratch_out);
 #endif
 
   TOOM3_SQR_REC (v2, as2, n + 1, scratch_out);	/* v2, 2n+1 limbs */
@@ -186,30 +191,21 @@ mpn_toom3_sqr (mp_ptr pp,
 #ifdef SMALLER_RECURSION
   /* v1, 2n+1 limbs */
   TOOM3_SQR_REC (v1, as1, n, scratch_out);
-  if (as1[n] == 1)
-    {
-      cy = as1[n] + mpn_add_n (v1 + n, v1 + n, as1, n);
-    }
-  else if (as1[n] != 0)
-    {
-#if HAVE_NATIVE_mpn_addlsh1_n_ip1
-      cy = 2 * as1[n] + mpn_addlsh1_n_ip1 (v1 + n, as1, n);
-#else
-      cy = 2 * as1[n] + mpn_addmul_1 (v1 + n, as1, n, CNST_LIMB(2));
-#endif
-    }
-  else
-    cy = 0;
-  if (as1[n] == 1)
-    {
-      cy += mpn_add_n (v1 + n, v1 + n, as1, n);
-    }
-  else if (as1[n] != 0)
+  cy = as1[n];
+  if (cy == 1)
     {
 #if HAVE_NATIVE_mpn_addlsh1_n_ip1
       cy += mpn_addlsh1_n_ip1 (v1 + n, as1, n);
 #else
       cy += mpn_addmul_1 (v1 + n, as1, n, CNST_LIMB(2));
+#endif
+    }
+  else if (cy != 0)
+    {
+#if HAVE_NATIVE_mpn_addlsh2_n_ip1
+      cy = 4 + mpn_addlsh2_n_ip1 (v1 + n, as1, n);
+#else
+      cy = 4 + mpn_addmul_1 (v1 + n, as1, n, CNST_LIMB(4));
 #endif
     }
   v1[2 * n] = cy;

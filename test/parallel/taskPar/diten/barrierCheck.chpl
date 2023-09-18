@@ -9,14 +9,14 @@ proc check(b: barrier) {
       b.notify();
     } else {
       var spinCount = 0;
-      writeln(b.check()); // false
+      writeln(!b.pending()); // false
       b.notify();
 
       /* wait until all tasks have notified */
-      while !b.check() {
+      while b.pending() {
         spinCount += 1;
       }
-      writeln(b.check()); // true
+      writeln(!b.pending());
       if printSpinCount then
         writeln(spinCount);
     }

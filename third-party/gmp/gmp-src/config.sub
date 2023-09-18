@@ -102,9 +102,9 @@ itanium | itanium2)
   test_cpu=ia64 ;;
 pentium | pentiummmx | pentiumpro | pentium[234m] | k[567] | k6[23] | geode | athlon | viac3*)
   test_cpu=i386 ;;
-athlon64 | atom | silvermont | goldmont | core2 | corei* | opteron | k[89] | k10 | bobcat | jaguar* | bulldozer* | piledriver* | steamroller* | excavator* | zen* | nano | nehalem | westmere | sandybridge* | ivybridge* | haswell* | broadwell* | skylake* | kabylake* | knightslanding)
+athlon64 | atom | silvermont | goldmont | tremont | core2 | corei* | opteron | k[89] | k10 | bobcat | jaguar* | bulldozer* | piledriver* | steamroller* | excavator* | zen* | nano | nehalem | westmere | sandybridge* | ivybridge* | haswell* | broadwell* | skylake* | kabylake* | icelake* | rocketlake* | tigerlake* | alderlake* | raptorlake* | knightslanding)
   test_cpu=x86_64 ;;
-power[2-9] | power2sc)
+power[2-9] | power1[0-9] | power2sc)
   test_cpu=power ;;
 powerpc401 | powerpc403 | powerpc405 | \
 powerpc505 | \
@@ -112,7 +112,7 @@ powerpc601 | powerpc602  | \
 powerpc603 | powerpc603e | \
 powerpc604 | powerpc604e | \
 powerpc620 | powerpc630  | powerpc970  | \
-powerpc740 | powerpc7400 | powerpc7450 | powerpc750  | \
+powerpc740 | powerpc74[0-9][0-9] | powerpc750  | \
 powerpc801 | powerpc821 | powerpc823  | powerpc860 | \
 powerpc64)
   test_cpu=powerpc ;;
@@ -122,15 +122,15 @@ ultrasparc | ultrasparc2 | ultrasparc2i | ultrasparc3 | ultrasparct[12345])
 sh2)
   test_cpu=sh ;;
 
-z900 | z990 | z9 | z10 | z196)
+z900 | z990 | z9 | z1[0-6] | z196)
   test_cpu=s390x;;
-z900esa | z990esa | z9esa | z10esa | z196esa)
+z900esa | z990esa | z9esa | z1[0-6]esa | z196esa)
   test_cpu=s390;;
 
 armsa1 | armxscale | arm9tdmi | arm9te |				\
 arm10* | arm11mpcore | armsa1 | arm1136 | arm1156 | arm1176 |		\
 armcortex[arm][0-9] | armcortex[arm][0-9][0-9] |			\
-arm*neon | armxgene1 | armexynosm1 | armthunderx)
+arm*neon | armxgene1 | armexynosm1 | armthunderx | applem[1-9])
   test_cpu="arm";;
 
 *)

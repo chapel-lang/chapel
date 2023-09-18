@@ -1,0 +1,2 @@
+warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
+0.0 2.0 4.0 6.0 8.0 10.0 12.0 14.0 16.0 18.0 20.0

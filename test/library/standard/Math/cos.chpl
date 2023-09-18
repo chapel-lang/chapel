@@ -1,3 +1,5 @@
+use Math;
+
 var pi : real = 3.1415926535;
 
 writeln("pi = ", pi);

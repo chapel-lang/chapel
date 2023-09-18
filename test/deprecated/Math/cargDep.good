@@ -1,4 +1,0 @@
-cargDep.chpl:3: In function 'testType':
-cargDep.chpl:4: warning: In an upcoming release 'carg' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it
-cargDep.chpl:3: In function 'testType':
-cargDep.chpl:4: warning: In an upcoming release 'carg' will no longer be included by default, please 'use' or 'import' the 'Math' module to call it

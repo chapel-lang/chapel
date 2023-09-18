@@ -1486,6 +1486,7 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
                                bool forVectorize) {
   bool forIsOrderIndep = forLoop->isOrderIndependent();
   bool forHasHazard = forLoop->hasVectorizationHazard();
+  auto llvmAttrs = forLoop->getAdditionalLLVMMetadata();
 
   if (forVectorize) {
     forLoop->orderIndependentSet(true);
@@ -1519,6 +1520,8 @@ static void markLoopProperties(ForLoop* forLoop, BlockStmt* ibody,
           bool hazard = loop->hasVectorizationHazard();
           hazard = hazard || forHasHazard;
           loop->setHasVectorizationHazard(hazard);
+
+          loop->setAdditionalLLVMMetadata(llvmAttrs);
         }
       }
     }
@@ -2318,8 +2321,8 @@ isBoundedIterator(FnSymbol* fn) {
   if (fn->_this) {
     Type* type = fn->_this->getValType();
     if (type->symbol->hasFlag(FLAG_RANGE)) {
-      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "boundedType"));
-      if (!strcmp(type->substitutionsPostResolve[1].value->name, "bounded"))
+      INT_ASSERT(0==strcmp(type->substitutionsPostResolve[1].name, "bounds"));
+      if (!strcmp(type->substitutionsPostResolve[1].value->name, "both"))
         return true;
       else
         return false;
@@ -2526,13 +2529,6 @@ expandForLoop(ForLoop* forLoop) {
       // are in a zippered context, we'll set it up based on this
       // iterator which is presumably the first.
       if (testBlock == NULL) {
-        if (!isBoundedIterator(iterFn) && iterators.n > 1) {
-          USR_WARN(forLoop, "The behavior of zippered serial loops driven by "
-                   "unbounded ranges has been fixed in this release to act "
-                   "as though they were conceptually infinite; to maintain "
-                   "the previous behavior, swap a bounded iterand into the "
-                   "first expression of the 'zip(...)'.");
-        }
         if (isNotDynIter) {
           // note that we have found the first test
           testBlock = buildIteratorCall(NULL, HASMORE, iterators.v[i], children);
@@ -3030,7 +3026,102 @@ static void removeUncalledIterators()
   }
 }
 
+static
+bool exprContainsSymbol(Symbol* sym, Expr* expr) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(expr, symExprs);
+  for (auto se: symExprs) {
+    if (se->symbol() == sym) return true;
+  }
+  return false;
+}
+
+static
+bool callSetsSymbol(Symbol* sym, CallExpr* call)
+{
+  if (isMoveOrAssign(call)) {
+    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+      Expr* rhs = call->get(2);
+      // if rhs contains the sym and lhs is a ref
+      if (lhs->isRef() &&
+          !lhs->symbol()->isConstant() &&
+          lhs->symbol()->qualType().getQual() != QUAL_CONST_REF &&
+          exprContainsSymbol(sym, rhs))
+        return true;
+    }
+  }
+  if(!call->isPrimitive()) {
+    if(FnSymbol* fn = call->theFnSymbol()) {
+      for(int i = 1; i <= call->numActuals(); i++) {
+        // if actual at index uses the sym we are checking for
+        if(exprContainsSymbol(sym, call->get(i))) {
+          // if the corresponding formal is `ref` or `[in]out`, return true
+          auto formal = fn->getFormal(i);
+          if(formal->intent == INTENT_REF ||
+             formal->intent == INTENT_OUT ||
+             formal->intent == INTENT_INOUT)
+            return true;
+        }
+      }
+    }
+
+  }
+  return false;
+}
+
+static
+void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
+  // need to do some heuristics to determine if arg gets modified
+
+  // check if sym used in iterand
+  bool symInIterand = std::find_if(allIterandSymExprs.begin(),
+                                  allIterandSymExprs.end(), [sym](auto se) {
+                                    return sym == se->symbol();
+                                  }) != allIterandSymExprs.end();
+  if (symInIterand) return;
+
+  for (auto ce: allCalls) {
+    // if a call sets the symbol, warn
+    if (callSetsSymbol(sym, ce)) {
+      USR_WARN(fs,
+                "inferring a default intent to be 'ref' is deprecated - "
+                "please add an explicit 'ref' forall intent for '%s'",
+                sym->name);
+      break;
+    }
+  }
+}
+
+
+static void checkForallRefMaybeConst(ForallStmt* fs, std::set<Symbol*> syms) {
+  // collect all SymExpr used in the iterand of the forall so we dont warn for them
+  std::vector<SymExpr*> allIterandSymExprs;
+  for_alist(expr, fs->iteratedExpressions()) {
+    collectSymExprs(expr, allIterandSymExprs);
+  }
+  if (CallExpr* zipCall = fs->zipCall()) {
+    collectSymExprs(zipCall, allIterandSymExprs);
+  }
+
+  // should I be checking loopBodies?
+  std::vector<CallExpr*> allCallsInForall;
+  collectCallExprs(fs->loopBody(), allCallsInForall);
+
+  for (auto s: syms) {
+    maybeIssueRefMaybeConstWarning(fs, s, allCallsInForall, allIterandSymExprs);
+  }
+}
+
+static void checkForallRefMaybeConst() {
+  for (auto fsSyms: refMaybeConstForallPairs) {
+    checkForallRefMaybeConst(fsSyms.first, fsSyms.second);
+  }
+}
+
 void lowerIterators() {
+
+  checkForallRefMaybeConst();
+
   nonLeaderParCheck();
 
   markVectorizableForallLoops();

@@ -50,7 +50,7 @@ struct gnix_fid_cntr {
 	ofi_atomic32_t cnt_err;
 	struct gnix_reference ref_cnt;
 	struct dlist_entry trigger_list;
-	fastlock_t trigger_lock;
+	ofi_spin_t trigger_lock;
 	struct gnix_prog_set pset;
 	bool requires_lock;
 };

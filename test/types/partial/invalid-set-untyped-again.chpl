@@ -3,13 +3,13 @@ record R {
   var x: int;
 }
 
-proc R.init=(rhs: R) {
+proc R.init=(rhs: R(?)) {
   this.fixed = rhs.fixed; // what happens if this.fixed is already false and rhs.fixed is true?
 
   this.x = rhs.x;
 }
 
-operator R.=(ref lhs:R, const ref rhs:R) {
+operator R.=(ref lhs:R(?), const ref rhs:R(?)) {
   lhs.x = rhs.x;
 }
 

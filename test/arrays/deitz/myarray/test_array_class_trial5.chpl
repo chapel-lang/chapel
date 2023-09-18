@@ -15,7 +15,8 @@ class array1d {
   }
 }
 
-var a : borrowed array1d(int) = (new owned array1d(int)).borrow();
+var aOwn =  new owned array1d(int);
+var a : borrowed array1d(int) = aOwn.borrow();
 
 a.indexedby(1) = 3;
 a.indexedby(2) = 2;
@@ -35,7 +36,8 @@ class array2d {
   }
 }
 
-var a2 : borrowed array2d(int) = (new owned array2d(int)).borrow();
+var a2Own = new owned array2d(int);
+var a2 : borrowed array2d(int) = a2Own.borrow();
 
 a2.indexedby(1, 1) = 4;
 writeln(a2.indexedby(1, 1));

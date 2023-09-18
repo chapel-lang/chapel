@@ -33,6 +33,7 @@
 #include <inttypes.h>
 
 #include "ofi.h"
+#include "ofi_mem.h"
 #include "ofi_prov.h"
 #include "ofi_hook.h"
 #include "hook_prov.h"

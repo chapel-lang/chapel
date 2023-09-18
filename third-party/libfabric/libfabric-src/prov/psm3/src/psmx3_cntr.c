@@ -287,7 +287,7 @@ static int psmx3_cntr_close(fid_t fid)
 			fi_close((fid_t)cntr->wait);
 	}
 
-	fastlock_destroy(&cntr->trigger_lock);
+	ofi_spin_destroy(&cntr->trigger_lock);
 	psmx3_domain_release(cntr->domain);
 	free(cntr);
 
@@ -426,7 +426,7 @@ int psmx3_cntr_open(struct fid_domain *domain, struct fi_cntr_attr *attr,
 	ofi_atomic_initialize64(&cntr_priv->error_counter, 0);
 
 	slist_init(&cntr_priv->poll_list);
-	fastlock_init(&cntr_priv->trigger_lock);
+	ofi_spin_init(&cntr_priv->trigger_lock);
 
 	if (wait)
 		fi_poll_add(&cntr_priv->wait->pollset->poll_fid,

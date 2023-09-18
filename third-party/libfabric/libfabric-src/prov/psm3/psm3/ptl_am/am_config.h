@@ -70,11 +70,21 @@
 /* Each block reserves some space at the beginning to store auxiliary data */
 #define AMSH_BLOCK_HEADER_SIZE  4096
 
+/* These are the defaults for shm Fifos.  Tunable via PSM3_SHM_ env */
+/* Short and Long shm Fifo Queue depths */
+#define AMSHORT_Q_NO_DSA 1024
+#define AMLONG_Q_NO_DSA 256
 /* AMLONG_SZ is the total size in memory of a bulk packet, including an
  * am_pkt_bulk_t header struct.
- * AMLONG_MTU is the number of bytes available in a bulk packet for payload. */
-#define AMLONG_SZ   8192
-#define AMLONG_MTU (AMLONG_SZ-sizeof(am_pkt_bulk_t))
+ */
+#define AMLONG_SZ_NO_DSA   8192
+
+#ifdef PSM_DSA
+/* DSA benefits from larger bulk packets and hence larger copies */
+#define AMSHORT_Q_DSA 1024
+#define AMLONG_Q_DSA 256
+#define AMLONG_SZ_DSA   (1024*512)
+#endif
 
 #define PSMI_KASSIST_MODE_DEFAULT PSMI_KASSIST_CMA_GET
 #define PSMI_KASSIST_MODE_DEFAULT_STRING  "cma-get"

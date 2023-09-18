@@ -315,16 +315,16 @@ check_again:
 	 * of the queue.
 	 */
 
-	fastlock_acquire(&cm_nic->wq_lock);
+	ofi_spin_lock(&cm_nic->wq_lock);
 	p = dlist_first_entry(&cm_nic->cm_nic_wq, struct gnix_work_req,
 			      list);
 	if (p == NULL) {
-		fastlock_release(&cm_nic->wq_lock);
+		ofi_spin_unlock(&cm_nic->wq_lock);
 		return ret;
 	}
 
 	dlist_remove_init(&p->list);
-	fastlock_release(&cm_nic->wq_lock);
+	ofi_spin_unlock(&cm_nic->wq_lock);
 
 	assert(p->progress_fn);
 
@@ -350,9 +350,9 @@ check_again:
 		}
 		goto check_again;
 	} else {
-		fastlock_acquire(&cm_nic->wq_lock);
+		ofi_spin_lock(&cm_nic->wq_lock);
 		dlist_insert_before(&p->list, &cm_nic->cm_nic_wq);
-		fastlock_release(&cm_nic->wq_lock);
+		ofi_spin_unlock(&cm_nic->wq_lock);
 	}
 
 err:
@@ -479,9 +479,9 @@ int _gnix_cm_nic_send(struct gnix_cm_nic *cm_nic,
 		work_req->data = dgram;
 		work_req->completer_fn = NULL;
 
-		fastlock_acquire(&cm_nic->wq_lock);
+		ofi_spin_lock(&cm_nic->wq_lock);
 		dlist_insert_before(&work_req->list, &cm_nic->cm_nic_wq);
-		fastlock_release(&cm_nic->wq_lock);
+		ofi_spin_unlock(&cm_nic->wq_lock);
 
 		GNIX_INFO(FI_LOG_EP_CTRL, "Initiated intra-CM NIC connect\n");
 	} else {
@@ -658,7 +658,7 @@ int _gnix_cm_nic_alloc(struct gnix_fid_domain *domain,
 	cm_nic->ctrl_progress = domain->control_progress;
 	cm_nic->my_name.name_type = name_type;
 	cm_nic->poll_cnt = 0;
-	fastlock_init(&cm_nic->wq_lock);
+	ofi_spin_init(&cm_nic->wq_lock);
 	dlist_init(&cm_nic->cm_nic_wq);
 
 	/*

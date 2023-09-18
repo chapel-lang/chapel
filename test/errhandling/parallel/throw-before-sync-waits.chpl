@@ -8,7 +8,7 @@ proc throwingFn() throws {
   throw new owned StringError("test error");
 }
 
-var s$:sync int;
+var s:sync int;
 
 proc otherTask() {
   writeln("Starting otherTask");
@@ -20,7 +20,7 @@ proc test() {
 
   try {
     sync {
-      begin otherTask(); 
+      begin otherTask();
       sleep(syncWait);
       throwingFn();
     }

@@ -140,7 +140,7 @@ static ssize_t efa_post_recv(struct efa_ep *ep, const struct fi_msg *msg, uint64
 	struct efa_recv_wr *ewr;
 	struct ibv_recv_wr *wr;
 	uintptr_t addr;
-	ssize_t err;
+	ssize_t err, post_recv_err;
 	size_t i;
 
 	ewr = ofi_buf_alloc(ep->recv_wr_pool);
@@ -193,8 +193,14 @@ static ssize_t efa_post_recv(struct efa_ep *ep, const struct fi_msg *msg, uint64
 	return err;
 
 out_err:
-	if (ep->recv_more_wr_head.next)
-		ibv_post_recv(qp->ibv_qp, ep->recv_more_wr_head.next, &bad_wr);
+	if (ep->recv_more_wr_head.next) {
+		post_recv_err = ibv_post_recv(qp->ibv_qp, ep->recv_more_wr_head.next, &bad_wr);
+		if (post_recv_err) {
+			EFA_WARN(FI_LOG_EP_DATA,
+				 "Encountered error %ld when ibv_post_recv on error handling path\n",
+				 post_recv_err);
+		}
+	}
 
 	free_recv_wr_list(ep->recv_more_wr_head.next);
 	ep->recv_more_wr_tail = &ep->recv_more_wr_head;
@@ -313,6 +319,15 @@ ssize_t efa_post_flush(struct efa_ep *ep, struct ibv_send_wr **bad_wr)
 	return ret;
 }
 
+static bool efa_msg_has_hmem_mr(const struct fi_msg *msg)
+{
+	/* the device only support send up 2 iov, so iov_count cannot be > 2 */
+	assert(msg->iov_count == 1 || msg->iov_count == 2);
+	/* first iov is always on host memory, because it must contain packet header */
+	assert(!efa_mr_is_hmem(msg->desc[0]));
+	return (msg->iov_count == 2) && efa_mr_is_hmem(msg->desc[1]);
+}
+
 static ssize_t efa_post_send(struct efa_ep *ep, const struct fi_msg *msg, uint64_t flags)
 {
 	struct efa_qp *qp = ep->qp;
@@ -342,7 +357,8 @@ static ssize_t efa_post_send(struct efa_ep *ep, const struct fi_msg *msg, uint64
 
 	efa_post_send_sgl(ep, msg, ewr);
 
-	if (flags & FI_INJECT)
+	if (len <= ep->domain->device->efa_attr.inline_buf_size &&
+	    !efa_msg_has_hmem_mr(msg))
 		wr->send_flags |= IBV_SEND_INLINE;
 
 	wr->opcode = IBV_WR_SEND;

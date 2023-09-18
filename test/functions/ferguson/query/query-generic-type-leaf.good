@@ -1,5 +1,7 @@
-query-generic-type-leaf.chpl:34: error: unresolved call 'f(Wrapper(OtherGenericClass(int(64))))'
+query-generic-type-leaf.chpl:15: In function 'f':
+query-generic-type-leaf.chpl:15: warning: need '(?)' on the type 'GenericClass' of the formal 'x' because this type is generic
+query-generic-type-leaf.chpl:39: error: unresolved call 'f(Wrapper(OtherGenericClass(int(64))))'
 query-generic-type-leaf.chpl:15: note: this candidate did not match: f(x: Wrapper(GenericClass))
 query-generic-type-leaf.chpl:15: note: because an argument was incompatible
-query-generic-type-leaf.chpl:34: note: other candidates are:
+query-generic-type-leaf.chpl:39: note: other candidates are:
 query-generic-type-leaf.chpl:12: note:   Wrapper.f

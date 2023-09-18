@@ -1,1 +1,2 @@
-innerModuleSharesName-topLevel.chpl:11: error: Symbol 'whatev' undeclared in module 'M'
+innerModuleSharesName-topLevel.chpl:1: In module 'OuterModule':
+innerModuleSharesName-topLevel.chpl:11: error: cannot find 'whatev' in module 'M'

@@ -1,12 +1,5 @@
 use GpuDiagnostics;
 
-proc verifyLaunches() {
-  use ChplConfig;
-  param expected = if CHPL_GPU_MEM_STRATEGY == "unified_memory" then 4 else 5;
-  const actual = getGpuDiagnostics()[0].kernel_launch;
-  assert(actual == expected,
-         "observed ", actual, " launches instead of ", expected);
-}
 
 
 config const start = 1;
@@ -24,4 +17,4 @@ on here.gpus[0] {
   foreach elem in a { elem += value;       } writeln(a);
 }
 stopGpuDiagnostics();
-verifyLaunches();
+assertGpuDiags(kernel_launch_um=4, kernel_launch_aod=5);

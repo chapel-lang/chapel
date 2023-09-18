@@ -1,0 +1,1 @@
+result.chpl --main-module=shoc-sort

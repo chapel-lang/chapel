@@ -1,0 +1,11 @@
+These test was used in the early days to prototype GPU support.  I think
+keeping this test around is a "nice to have" sort of thing because:
+
+- it demonstrates at a very basic level what our runtime library does
+- it's good to have as a template to work off of if we end up wanting to add
+  support for a new vendor
+- it provides test coverage for some important primitives
+
+On the other hand if there's a large maintenance burden involved with this test
+keeping this test around it you want to consider just removing it; we've
+discussed that here: <https://github.com/Cray/chapel-private/issues/3195>.

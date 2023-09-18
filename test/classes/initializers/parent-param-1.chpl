@@ -1,10 +1,10 @@
-class Derived : Base {
+class Derived : Base(?) {
   var y : int = x + 1;
 
   proc init(param _x) {
     super.init(_x);
 
-    complete();
+    init this;
   }
 }
 
@@ -15,7 +15,7 @@ class Base {
   proc init(param _x) {
     x = _x;
 
-    complete();
+    init this;
   }
 }
 

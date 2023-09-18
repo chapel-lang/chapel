@@ -38,8 +38,10 @@ TESTS = \
 		test_subteams \
  		qthread_fork_precond \
 		qthread_migrate_to  \
-		qthread_disable_shepherd 
-
+		qthread_disable_shepherd \
+                qthread_timer_wait \
+                qthread_fp \
+                qthread_fp_double
 
 if QTHREAD_PERFORMANCE
 TESTS += performance
@@ -108,6 +110,8 @@ qthread_stackleft_SOURCES = qthread_stackleft.c
 qthread_migrate_to_SOURCES = qthread_migrate_to.c
 
 qthread_disable_shepherd_SOURCES = qthread_disable_shepherd.c
+
+qthread_timer_wait_SOURCES = qthread_timer_wait.c
 
 qtimer_SOURCES = qtimer.c
 

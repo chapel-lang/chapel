@@ -729,7 +729,7 @@ static int __gnix_nic_tx_freelist_init(struct gnix_nic *nic, int n_descs)
 	nic->max_tx_desc_id = n_descs - 1;
 	nic->tx_desc_base = desc_base;
 
-	fastlock_init(&nic->tx_desc_lock);
+	ofi_spin_init(&nic->tx_desc_lock);
 
 	return ret;
 
@@ -746,7 +746,7 @@ static void __gnix_nic_tx_freelist_destroy(struct gnix_nic *nic)
 	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
 	free(nic->tx_desc_base);
-	fastlock_destroy(&nic->tx_desc_lock);
+	ofi_spin_destroy(&nic->tx_desc_lock);
 }
 
 /*
@@ -1173,7 +1173,7 @@ int gnix_nic_alloc(struct gnix_fid_domain *domain,
 				  "alloc_bitmap returned %d\n", ret);
 			goto err1;
 		}
-		fastlock_init(&nic->vc_id_lock);
+		ofi_spin_init(&nic->vc_id_lock);
 
 		/*
 		 * initialize free list for VC's
@@ -1207,14 +1207,14 @@ int gnix_nic_alloc(struct gnix_fid_domain *domain,
 			goto err1;
 		}
 
-		fastlock_init(&nic->lock);
+		ofi_spin_init(&nic->lock);
 
 		ret = __gnix_nic_tx_freelist_init(nic,
 						  domain->params.tx_cq_size);
 		if (ret != FI_SUCCESS)
 			goto err1;
 
-		fastlock_init(&nic->prog_vcs_lock);
+		ofi_spin_init(&nic->prog_vcs_lock);
 		dlist_init(&nic->prog_vcs);
 
 		_gnix_ref_init(&nic->ref_cnt, 1, __nic_destruct);

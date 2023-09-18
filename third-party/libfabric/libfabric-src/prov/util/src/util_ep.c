@@ -92,9 +92,9 @@ int ofi_ep_bind_av(struct util_ep *util_ep, struct util_av *av)
 	util_ep->av = av;
 	ofi_atomic_inc32(&av->ref);
 
-	fastlock_acquire(&av->ep_list_lock);
+	ofi_mutex_lock(&av->ep_list_lock);
 	dlist_insert_tail(&util_ep->av_entry, &av->ep_list);
-	fastlock_release(&av->ep_list_lock);
+	ofi_mutex_unlock(&av->ep_list_lock);
 
 	return 0;
 }
@@ -191,7 +191,7 @@ int ofi_ep_bind(struct util_ep *util_ep, struct fid *fid, uint64_t flags)
 	return -FI_EINVAL;
 }
 
-static inline int util_coll_init_cid_mask(struct bitmask *mask)
+static inline int util_coll_init_cid_mask(struct ofi_bitmask *mask)
 {
 	int err = ofi_bitmask_create(mask, OFI_MAX_GROUP_ID);
 	if (err)
@@ -247,13 +247,13 @@ int ofi_endpoint_init(struct fid_domain *domain, const struct util_prov *util_pr
 	ofi_atomic_inc32(&util_domain->ref);
 	if (util_domain->eq)
 		ofi_ep_bind_eq(ep, util_domain->eq);
-	fastlock_init(&ep->lock);
+	ofi_mutex_init(&ep->lock);
 	if (ep->domain->threading != FI_THREAD_SAFE) {
-		ep->lock_acquire = ofi_fastlock_acquire_noop;
-		ep->lock_release = ofi_fastlock_release_noop;
+		ep->lock_acquire = ofi_mutex_lock_noop;
+		ep->lock_release = ofi_mutex_unlock_noop;
 	} else {
-		ep->lock_acquire = ofi_fastlock_acquire;
-		ep->lock_release = ofi_fastlock_release;
+		ep->lock_acquire = ofi_mutex_lock_op;
+		ep->lock_release = ofi_mutex_unlock_op;
 	}
 	if (ep->caps & FI_COLLECTIVE) {
 		ep->coll_cid_mask = calloc(1, sizeof(*ep->coll_cid_mask));
@@ -326,9 +326,9 @@ int ofi_endpoint_close(struct util_ep *util_ep)
 	}
 
 	if (util_ep->av) {
-		fastlock_acquire(&util_ep->av->ep_list_lock);
+		ofi_mutex_lock(&util_ep->av->ep_list_lock);
 		dlist_remove(&util_ep->av_entry);
-		fastlock_release(&util_ep->av->ep_list_lock);
+		ofi_mutex_unlock(&util_ep->av->ep_list_lock);
 
 		ofi_atomic_dec32(&util_ep->av->ref);
 	}
@@ -341,6 +341,6 @@ int ofi_endpoint_close(struct util_ep *util_ep)
 	if (util_ep->eq)
 		ofi_atomic_dec32(&util_ep->eq->ref);
 	ofi_atomic_dec32(&util_ep->domain->ref);
-	fastlock_destroy(&util_ep->lock);
+	ofi_mutex_destroy(&util_ep->lock);
 	return 0;
 }

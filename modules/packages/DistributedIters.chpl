@@ -119,7 +119,7 @@ iter distributedDynamic(c,
 }
 
 // Zippered leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int=1,
@@ -291,7 +291,7 @@ where tag == iterKind.leader
 }
 
 // Zippered follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedDynamic(param tag:iterKind,
                         c,
                         chunkSize:int,
@@ -386,7 +386,7 @@ iter distributedGuided(c,
 }
 
 // Zippered leader.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int=0,
@@ -544,7 +544,7 @@ where tag == iterKind.leader
 }
 
 // Zippered follower.
-pragma "no doc"
+@chpldoc.nodoc
 iter distributedGuided(param tag:iterKind,
                        c,
                        numTasks:int,

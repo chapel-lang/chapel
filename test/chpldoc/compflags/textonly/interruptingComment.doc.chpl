@@ -1,5 +1,5 @@
 record R {
-  pragma "no doc"
+  @chpldoc.nodoc
   var x /* : int */ = 10;
 
   proc write() /* : int */ {

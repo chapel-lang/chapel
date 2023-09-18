@@ -109,8 +109,6 @@ mpn_set_str (mp_ptr rp, const unsigned char *str, size_t str_len, int base)
       mp_ptr powtab_mem, tp;
       powers_t powtab[GMP_LIMB_BITS];
       int chars_per_limb;
-      powers_t *pt;
-      size_t n_pows;
       mp_size_t size;
       mp_size_t un;
       TMP_DECL;
@@ -124,8 +122,8 @@ mpn_set_str (mp_ptr rp, const unsigned char *str, size_t str_len, int base)
       /* Allocate one large block for the powers of big_base.  */
       powtab_mem = TMP_BALLOC_LIMBS (mpn_str_powtab_alloc (un));
 
-      n_pows = mpn_compute_powtab (powtab, powtab_mem, un, base);
-      pt = powtab + n_pows;
+      size_t n_pows = mpn_compute_powtab (powtab, powtab_mem, un, base);
+      powers_t *pt = powtab + n_pows;
 
       tp = TMP_BALLOC_LIMBS (mpn_dc_set_str_itch (un));
       size = mpn_dc_set_str (rp, str, str_len, pt, tp);

@@ -1,7 +1,7 @@
-var r:range(stridable=false);
+var r:range(strides=strideKind.one);
 writeln(r);
 
-proc test(arg:range(stridable=true)) {
+proc test(arg:range(strides=strideKind.any)) {
   writeln(arg);
 }
 

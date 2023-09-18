@@ -933,9 +933,9 @@ static int __gnix_auth_key_set_val(
 	/* if the limits have already been set, and the user is
 	 * trying to modify it, kick it back */
 	if (opt == GNIX_USER_KEY_LIMIT || opt == GNIX_PROV_KEY_LIMIT) {
-		fastlock_acquire(&info->lock);
+		ofi_spin_lock(&info->lock);
 		if (info->enabled) {
-			fastlock_release(&info->lock);
+			ofi_spin_unlock(&info->lock);
 			GNIX_INFO(FI_LOG_FABRIC, "authorization key already "
 				"enabled and cannot be modified\n");
 			return -FI_EAGAIN;
@@ -951,7 +951,7 @@ static int __gnix_auth_key_set_val(
 			ret = -FI_EINVAL;
 		} else
 			info->attr.user_key_limit = v;
-		fastlock_release(&info->lock);
+		ofi_spin_unlock(&info->lock);
 		break;
 	case GNIX_PROV_KEY_LIMIT:
 		v = *(int *) val;
@@ -961,7 +961,7 @@ static int __gnix_auth_key_set_val(
 			ret = -FI_EINVAL;
 		}
 		info->attr.prov_key_limit = v;
-		fastlock_release(&info->lock);
+		ofi_spin_unlock(&info->lock);
 		break;
 	case GNIX_TOTAL_KEYS_NEEDED:
 		GNIX_WARN(FI_LOG_FABRIC,

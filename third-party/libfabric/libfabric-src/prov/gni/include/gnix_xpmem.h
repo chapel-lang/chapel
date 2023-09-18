@@ -45,7 +45,7 @@ typedef int64_t xpmem_segid_t;
 struct gnix_xpmem_handle {
 	struct gnix_reference ref_cnt;
 	struct gnix_hashtable *apid_ht;
-	fastlock_t lock;
+	ofi_spin_t lock;
 };
 
 struct gnix_xpmem_access_handle {

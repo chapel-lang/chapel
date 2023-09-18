@@ -58,50 +58,14 @@
 #include "ips_proto.h"
 #include "ips_proto_internal.h"
 
-/* receive service routine for each packet opcode */
-ips_packet_service_fn_t
-ips_packet_service_routine[OPCODE_FUTURE_FROM-OPCODE_RESERVED] = {
-ips_proto_process_unknown_opcode,	/* 0xC0 */
-ips_proto_mq_handle_tiny,		/* OPCODE_TINY */
-ips_proto_mq_handle_short,
-ips_proto_mq_handle_eager,
-ips_proto_mq_handle_rts,                /* RTS */
-ips_proto_mq_handle_cts,                /* CTS */
-ips_proto_mq_handle_data,               /* DATA */
-#ifdef RNDV_MOD
-ips_protoexp_process_err_chk_rdma,		/* ERR_CHK_RDMA */
-ips_protoexp_process_err_chk_rdma_resp,		/* ERR_CHK_RDMA_RESP */
-#else
-ips_proto_process_unknown_opcode,
-ips_proto_process_unknown_opcode,
-#endif
-/* these are control packets */
-ips_proto_process_ack,
-ips_proto_process_nak,
-ips_proto_process_unknown_opcode,		/* BECN */
-ips_proto_process_err_chk,
-// ERR_CHK_GEN only valid for STL100 HW TIDFLOW
-ips_proto_process_unknown_opcode,		/* ERR_CHK_GEN */
-ips_proto_connect_disconnect,
-ips_proto_connect_disconnect,
-ips_proto_connect_disconnect,
-ips_proto_connect_disconnect,
-/* rest are not control packets */
-ips_proto_am,
-ips_proto_am,
-ips_proto_am				/* OPCODE_AM_REPLY */
-};
-
 static void ips_report_strays(struct ips_proto *proto);
 
-#define INC_TIME_SPEND(timer)
-
-psm2_error_t ips_proto_recv_init(struct ips_proto *proto)
+psm2_error_t psm3_ips_proto_recv_init(struct ips_proto *proto)
 {
 	uint32_t interval_secs;
 	union psmi_envvar_val env_stray;
 
-	psmi_getenv("PSM3_STRAY_WARNINTERVAL",
+	psm3_getenv("PSM3_STRAY_WARNINTERVAL",
 		    "min secs between stray process warnings",
 		    PSMI_ENVVAR_LEVEL_HIDDEN,
 		    PSMI_ENVVAR_TYPE_UINT,
@@ -116,7 +80,7 @@ psm2_error_t ips_proto_recv_init(struct ips_proto *proto)
 	return PSM2_OK;
 }
 
-psm2_error_t ips_proto_recv_fini(struct ips_proto *proto)
+psm2_error_t psm3_ips_proto_recv_fini(struct ips_proto *proto)
 {
 	ips_report_strays(proto);
 	return PSM2_OK;
@@ -128,7 +92,6 @@ psm2_error_t ips_proto_recv_fini(struct ips_proto *proto)
 struct ips_stray_epid {
 	psm2_epid_t epid;
 	uint32_t err_check_bad_sent;
-	uint32_t ipv4_addr;
 	uint32_t pid;
 	uint32_t num_messages;
 	uint64_t t_warn_next;
@@ -141,7 +104,7 @@ void ips_report_strays(struct ips_proto *proto)
 {
 	struct ips_stray_epid *sepid;
 	struct psmi_eptab_iterator itor;
-	psmi_epid_itor_init(&itor, PSMI_EP_CROSSTALK);
+	psm3_epid_itor_init(&itor, PSMI_EP_CROSSTALK);
 
 #if _HFI_DEBUGGING
 	double t_first = 0;
@@ -152,10 +115,8 @@ void ips_report_strays(struct ips_proto *proto)
 	}
 #endif
 
-	while ((sepid = psmi_epid_itor_next(&itor))) {
-		char ipbuf[INET_ADDRSTRLEN], *ip = NULL;
+	while ((sepid = psm3_epid_itor_next(&itor))) {
 		char bufpid[32];
-		uint32_t lid = psm2_epid_nid(sepid->epid);
 #if _HFI_DEBUGGING
 		if (_HFI_INFO_ON) {
 			t_first =
@@ -164,13 +125,6 @@ void ips_report_strays(struct ips_proto *proto)
 				cycles_to_sec_f(sepid->t_last - proto->t_init);
 		}
 #endif
-		if (sepid->ipv4_addr)
-			ip = (char *)
-			    inet_ntop(AF_INET, &sepid->ipv4_addr, ipbuf,
-				      sizeof(ipbuf));
-		if (!ip)
-			snprintf(ipbuf, sizeof(ipbuf), "%d (%x)", lid, lid);
-
 		if (sepid->pid)
 			snprintf(bufpid, sizeof(bufpid), "PID=%d", sepid->pid);
 		else
@@ -178,25 +132,26 @@ void ips_report_strays(struct ips_proto *proto)
 
 		if (_HFI_INFO_ON) {
 			_HFI_INFO_ALWAYS
-				("Process %s on host %s=%s sent %d stray message(s) and "
+				("Process %s on host %s sent %d stray message(s) and "
 				"was told so %d time(s) (first stray message at %.1fs "
 				"(%d%%), last at %.1fs (%d%%) into application run)\n",
-				bufpid, ip ? "IP" : "LID", ipbuf, sepid->num_messages,
+				bufpid, psm3_epaddr_get_name(sepid->epid, 0),
+				sepid->num_messages,
 				sepid->err_check_bad_sent, t_first,
 				(int)(t_first * 100.0 / t_runtime), t_last,
 				(int)(t_last * 100.0 / t_runtime));
 		}
 
-		psmi_epid_remove(PSMI_EP_CROSSTALK, sepid->epid);
+		psm3_epid_remove(PSMI_EP_CROSSTALK, sepid->epid);
 		psmi_free(sepid);
 	}
-	psmi_epid_itor_fini(&itor);
+	psm3_epid_itor_fini(&itor);
 	return;
 }
 
 /* New scbs now available.  If we have pending sends because we were out of
  * scbs, put the pendq on the timerq so it can be processed. */
-void ips_proto_rv_scbavail_callback(struct ips_scbctrl *scbc, void *context)
+void psm3_ips_proto_rv_scbavail_callback(struct ips_scbctrl *scbc, void *context)
 {
 	struct ips_proto *proto = (struct ips_proto *)context;
 	struct ips_pend_sreq *sreq = STAILQ_FIRST(&proto->pend_sends.pendq);
@@ -207,7 +162,7 @@ void ips_proto_rv_scbavail_callback(struct ips_scbctrl *scbc, void *context)
 }
 
 psm2_error_t
-ips_proto_timer_pendq_callback(struct psmi_timer *timer, uint64_t current)
+psm3_ips_proto_timer_pendq_callback(struct psmi_timer *timer, uint64_t current)
 {
 	psm2_error_t err = PSM2_OK;
 	struct ips_pend_sends *pend_sends =
@@ -220,21 +175,21 @@ ips_proto_timer_pendq_callback(struct psmi_timer *timer, uint64_t current)
 		sreq = STAILQ_FIRST(phead);
 		switch (sreq->type) {
 		case IPS_PENDSEND_EAGER_REQ:
-			err = ips_proto_mq_push_cts_req(proto, sreq->req);
+			err = psm3_ips_proto_mq_push_cts_req(proto, sreq->req);
 			break;
 		case IPS_PENDSEND_EAGER_DATA:
-			err = ips_proto_mq_push_rts_data(proto, sreq->req);
+			err = psm3_ips_proto_mq_push_rts_data(proto, sreq->req);
 			break;
 
 		default:
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+			psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 					  "Unknown pendq state %d\n",
 					  sreq->type);
 		}
 
 		if (err == PSM2_OK) {
 			STAILQ_REMOVE_HEAD(phead, next);
-			psmi_mpool_put(sreq);
+			psm3_mpool_put(sreq);
 		} else {	/* out of scbs. wait for the next scb_avail callback */
 			/* printf("!!!!! breaking out of pendq progress\n"); */
 			break;
@@ -244,22 +199,7 @@ ips_proto_timer_pendq_callback(struct psmi_timer *timer, uint64_t current)
 	return err;
 }
 
-PSMI_INLINE(
-int
-between(int first_seq, int last_seq, int seq))
-{
-	if (last_seq >= first_seq) {
-		if (seq < first_seq || seq > last_seq) {
-			return 0;
-		}
-	} else {
-		if (seq > last_seq && seq < first_seq) {
-			return 0;
-		}
-	}
-	return 1;
-}
-
+// return 1 if this ack_seq_num is potentially for a packet on unackedq
 PSMI_INLINE(
 int
 pio_dma_ack_valid(struct ips_proto *proto, struct ips_flow *flow,
@@ -283,8 +223,11 @@ pio_dma_ack_valid(struct ips_proto *proto, struct ips_flow *flow,
 
 
 
-/* NAK post process for dma flow */
-void ips_dmaflow_nak_post_process(struct ips_proto *proto,
+/* NAK post process for any flow where an scb may describe more than 1 packet
+ * (OPA dma flow or GSO PIO flow). In which case we may need to resume in
+ * middle of scb.
+ */
+void psm3_ips_segmentation_nak_post_process(struct ips_proto *proto,
 				  struct ips_flow *flow)
 {
 	ips_scb_t *scb;
@@ -348,11 +291,10 @@ void ips_dmaflow_nak_post_process(struct ips_proto *proto,
 		/* 4. if packet length is changed, set new length */
 		if (scb->payload_size != pktlen) {
 			scb->payload_size = pktlen;
-			scb->ips_lrh.lrh[2] = __cpu_to_be16((
-				(scb->payload_size +
-				sizeof(struct ips_message_header) +
-				HFI_CRC_SIZE_IN_BYTES) >>
-				BYTE2DWORD_SHIFT) & HFI_LRH_PKTLEN_MASK);
+			scb->ips_lrh.lrh[2] = ips_proto_bytes_to_lrh2_be(proto,
+					scb->payload_size +
+					sizeof(struct ips_message_header) +
+					HFI_CRC_SIZE_IN_BYTES);
 		}
 	}
 }
@@ -360,7 +302,7 @@ void ips_dmaflow_nak_post_process(struct ips_proto *proto,
 /* process an incoming ack message.  Separate function to allow */
 /* for better optimization by compiler */
 int
-ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
+psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 {
 	struct ips_proto *proto = rcv_ev->proto;
 	ips_epaddr_t *ipsaddr = rcv_ev->ipsaddr;
@@ -371,11 +313,11 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	psmi_seqnum_t ack_seq_num, last_seq_num;
 	ips_epaddr_flow_t flowid;
 	ips_scb_t *scb;
-	uint32_t tidctrl;
 
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
-	tidctrl = GET_HFI_KHDR_TIDCTRL(__le32_to_cpu(p_hdr->khdr.kdeth0));
-	if (!tidctrl && ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW)) {
+	// check actual psn acked (ack_seq_num-1), we only want to process acks
+	// for packets we never got an ack for
+	if ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW) {
 		ack_seq_num.psn_num =
 		    (ack_seq_num.psn_num - 1) & proto->psn_mask;
 		psmi_assert(flowid < EP_FLOW_LAST);
@@ -383,10 +325,15 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 		if (!pio_dma_ack_valid(proto, flow, ack_seq_num))
 			goto ret;
 	} else {
-		// we don't use tidflow on UD nor UDP, shouldn't get ACKs about it
-		_HFI_ERROR("Got ack for TID flow, not allowed for UD\n");
-			goto ret;
+		// we don't put TID (aka RDMA) pkts on UD, shouldn't get ACKs about it
+		_HFI_ERROR("Got ack for invalid flowid\n");
+		goto ret;
 	}
+#ifndef PSM_TCP_ACK
+	// for ack-less TCP we should have acked self-packet before recv reports
+	// the given ack_seq_num
+	psmi_assert(psm3_epid_protocol(proto->ep->epid) != PSMI_ETH_PROTO_TCP);
+#endif
 	flow->xmit_ack_num.psn_num = p_hdr->ack_seq_num;
 
 	unackedq = &flow->scb_unacked;
@@ -396,6 +343,7 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 		goto ret;
 
 	last_seq_num = STAILQ_LAST(unackedq, ips_scb, nextq)->seq_num;
+	_HFI_VDBG("ack_seq_num=%d last_seq_num=%d \n", ack_seq_num.psn_num, last_seq_num.psn_num);
 
 	INC_TIME_SPEND(TIME_SPEND_USER2);
 
@@ -418,15 +366,42 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 		flow->scb_num_unacked--;
 		psmi_assert(flow->scb_num_unacked >= flow->scb_num_pending);
 #endif
+		// this assumes the ACK will always be for a complete scb
 		flow->credits += scb->nfrag;
+#ifdef PSM_BYTE_FLOW_CREDITS
+		flow->credit_bytes += scb->chunk_size;
+		_HFI_VDBG("after ACK psn=%d: flow_credits %d bytes %d\n",
+				scb->seq_num.psn_num, flow->credits, flow->credit_bytes);
+#else
+		_HFI_VDBG("after ACK: flow_credits %d\n", flow->credits);
+#endif
 
-
+#ifdef PSM_HAVE_SDMA
+		if (scb->sdma_outstanding) {
+			// we got an ack for a DMA we did not yet complete
+			// maybe a late arrival of original we were asked to
+			// retry.  We choose to wait here so we can properly
+			// mark this scb and perhaps scbs after it as acked.
+			// If we don't wait and mark it now we would end up
+			// timing out on lack of ack for this scb later.
+			proto->stats.sdma_compl_wait_ack++;
+			ips_proto_dma_wait_until(proto, scb);
+		}
+#endif /* PSM_HAVE_SDMA */
+#ifdef PSM_ONEAPI
+		if (scb->scb_flags & IPS_SEND_FLAG_USE_GDRCOPY) {
+			psmi_hal_gdr_munmap_gpu_to_host_addr(
+					scb->gdr_addr, scb->gdr_size,
+					0, proto->ep);
+			scb->scb_flags &= ~IPS_SEND_FLAG_USE_GDRCOPY;
+		}
+#endif
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
 
 		if (!(scb->scb_flags & IPS_SEND_FLAG_PERSISTENT))
-			ips_scbctrl_free(scb);
+			psm3_ips_scbctrl_free(scb);
 
 		/* set all index pointer to NULL if all frames have been
 		 * acked */
@@ -441,6 +416,15 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 			/* Reset congestion window - all packets ACK'd */
 			flow->credits = flow->cwin = proto->flow_credits;
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
+#ifdef PSM_BYTE_FLOW_CREDITS
+			flow->credit_bytes = proto->flow_credit_bytes;
+			flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
+			_HFI_VDBG("after all ACKed: flow_credits %d bytes %d\n",
+				flow->credits, flow->credit_bytes);
+#else
+			_HFI_VDBG("after all ACKed: flow_credits %d\n",
+				flow->credits);
+#endif
 			goto ret;
 		} else if (flow->timer_ack == scb->timer_ack) {
 			/*
@@ -472,24 +456,36 @@ ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev)
 	{
 		/* Increase congestion window if flow is not congested */
 		if_pf(flow->cwin < proto->flow_credits) {
+			// this only happens for OPA, so we don't have to
+			// increase ack_interval_bytes and flow_credit_bytes
+			// since we never decrease them for congestion
 			flow->credits +=
 			    min(flow->cwin << 1,
 				proto->flow_credits) - flow->cwin;
 			flow->cwin = min(flow->cwin << 1, proto->flow_credits);
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
+#ifdef PSM_BYTE_FLOW_CREDITS
+			//flow->credit_bytes += TBD
+			//flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
+			_HFI_VDBG("after grow cwin: flow_credits %d bytes %d\n",
+				flow->credits, flow->credit_bytes);
+#else
+			_HFI_VDBG("after grow cwin: flow_credits %d\n",
+				flow->credits);
+#endif
 		}
 	}
 
 	/* Reclaimed some credits - attempt to flush flow */
 	if (!SLIST_EMPTY(scb_pend))
 		flow->flush(flow, NULL);
-
 	/*
 	 * If the next packet has not even been put on the wire, cancel the
 	 * retransmission timer since we're still presumably waiting on free
-	 * pio bufs
+	 * pio bufs.  If flow->flush has drained the scb_pend queue and TCP HAL
+	 * has self-acked all those packets, we may get here with unackedq empty.
 	 */
-	if (STAILQ_FIRST(unackedq)->abs_timeout == TIMEOUT_INFINITE)
+	if ((scb = STAILQ_FIRST(unackedq)) && scb->abs_timeout == TIMEOUT_INFINITE)
 		psmi_timer_cancel(proto->timerq, flow->timer_ack);
 
 ret:
@@ -498,7 +494,7 @@ ret:
 
 /* process an incoming nack message.  Separate function to allow */
 /* for better optimization by compiler */
-int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
+int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 {
 	struct ips_proto *proto = rcv_ev->proto;
 	ips_epaddr_t *ipsaddr = rcv_ev->ipsaddr;
@@ -510,13 +506,14 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 	psm_protocol_type_t protocol;
 	ips_epaddr_flow_t flowid;
 	ips_scb_t *scb;
-	uint32_t tidctrl;
 
 	INC_TIME_SPEND(TIME_SPEND_USER3);
 
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
-	tidctrl = GET_HFI_KHDR_TIDCTRL(__le32_to_cpu(p_hdr->khdr.kdeth0));
-	if (!tidctrl && ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW)) {
+	// we are likely to get a previous ack_seq_num in NAK, in which case
+	// we need to resend unacked packets starting with ack_seq_num.  So check
+	// psn of 1st NAK would like us to retransmit (e.g. don't -1 before check)
+	if ((flowid = ips_proto_flowid(p_hdr)) < EP_FLOW_TIDFLOW) {
 		protocol = PSM_PROTOCOL_GO_BACK_N;
 		psmi_assert(flowid < EP_FLOW_LAST);
 		flow = &ipsaddr->flows[flowid];
@@ -526,19 +523,9 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 		    (ack_seq_num.psn_num - 1) & proto->psn_mask;
 		flow->xmit_ack_num.psn_num = p_hdr->ack_seq_num;
 	} else {
-		// we don't use tidflow on UD nor UDP, shouldn't get NAKs about it
-		_HFI_ERROR("Got nak for TID flow, not allowed for UD\n");
-			goto ret;	/* Invalid ack for flow */
-		ack_seq_num.psn_seq--;
-
-		psmi_assert(flow->xmit_seq_num.psn_gen == ack_seq_num.psn_gen);
-		psmi_assert(flow->xmit_ack_num.psn_gen == ack_seq_num.psn_gen);
-		/* Update xmit_ack_num with both new generation and new
-		 * acked sequence; update xmit_seq_num with the new flow
-		 * generation, don't change the sequence number. */
-		flow->xmit_ack_num = (psmi_seqnum_t) p_hdr->data[1].u32w0;
-		flow->xmit_seq_num.psn_gen = flow->xmit_ack_num.psn_gen;
-		psmi_assert(flow->xmit_seq_num.psn_gen != ack_seq_num.psn_gen);
+		// we don't put TID (aka RDMA) pkts on UD, shouldn't get NAKs about it
+		_HFI_ERROR("Got nak for invalid flowid\n");
+		goto ret;
 	}
 
 	unackedq = &flow->scb_unacked;
@@ -579,13 +566,34 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 		psmi_assert(flow->scb_num_unacked >= flow->scb_num_pending);
 #endif
 
+#ifdef PSM_HAVE_SDMA
+		if (scb->sdma_outstanding) {
+			// we got an ack (via nak) for a DMA we did not yet
+			// complete
+			// maybe a late arrival of original we were asked to
+			// retry.  We choose to wait here so we can properly
+			// mark this scb and perhaps scbs after it as acked.
+			// If we don't wait and mark it now we would end up
+			// timing out on lack of ack for this scb later.
+			proto->stats.sdma_compl_wait_ack++;
+			ips_proto_dma_wait_until(proto, scb);
+		}
+#endif /* PSM_HAVE_SDMA */
 
+#ifdef PSM_ONEAPI
+		if (scb->scb_flags & IPS_SEND_FLAG_USE_GDRCOPY) {
+			psmi_hal_gdr_munmap_gpu_to_host_addr(
+					scb->gdr_addr, scb->gdr_size,
+					0, proto->ep);
+			scb->scb_flags &= ~IPS_SEND_FLAG_USE_GDRCOPY;
+		}
+#endif
 		if (scb->callback)
 			(*scb->callback) (scb->cb_param, scb->nfrag > 1 ?
 					  scb->chunk_size : scb->payload_size);
 
 		if (!(scb->scb_flags & IPS_SEND_FLAG_PERSISTENT))
-			ips_scbctrl_free(scb);
+			psm3_ips_scbctrl_free(scb);
 
 		/* set all index pointer to NULL if all frames has been acked */
 		if (STAILQ_EMPTY(unackedq)) {
@@ -599,6 +607,15 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 			/* Reset congestion window if all packets acknowledged */
 			flow->credits = flow->cwin = proto->flow_credits;
 			flow->ack_interval = max((flow->credits >> 2) - 1, 1);
+#ifdef PSM_BYTE_FLOW_CREDITS
+			flow->credit_bytes = proto->flow_credit_bytes;
+			flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
+			_HFI_VDBG("after all NAKed: flow_credits %d bytes %d\n",
+				flow->credits, flow->credit_bytes);
+#else
+			_HFI_VDBG("after all NAKed: flow_credits %d\n",
+				flow->credits);
+#endif
 			goto ret;
 		} else if (flow->timer_ack == scb->timer_ack) {
 			/*
@@ -628,9 +645,10 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 	psmi_assert(!STAILQ_EMPTY(unackedq));	/* sanity for above loop */
 
 	if (protocol == PSM_PROTOCOL_TIDFLOW)
+		// we don't put TID (aka RDMA) pkts on UD, shouldn't get NAKs about it
 		_HFI_ERROR("post processing, Got nak for TID flow, not allowed for UD\n");
 	else if (scb->nfrag > 1)
-		ips_dmaflow_nak_post_process(proto, flow);
+		psm3_ips_segmentation_nak_post_process(proto, flow);
 
 	/* Always cancel ACK timer as we are going to restart the flow */
 	psmi_timer_cancel(proto->timerq, flow->timer_ack);
@@ -642,6 +660,20 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 #endif
 	while (scb && !(scb->scb_flags & IPS_SEND_FLAG_PENDING)) {
 
+#ifdef PSM_HAVE_SDMA
+		if (scb->sdma_outstanding) {
+			// The NAK implies the receiver got something
+			// out of order and we need to retransmit everything
+			// which follows.  If we have incomplete DMAs queued
+			// to HW queue, they will unfortunately be discarded
+			// as out of order at the receiver, but we must wait
+			// for them to complete so we can queue their
+			// retransmission.  It's also possible they have been
+			// sent but are waiting for lazy compl reaping
+			proto->stats.sdma_compl_wait_resend++;
+			ips_proto_dma_wait_until(proto, scb);
+		}
+#endif /* PSM_HAVE_SDMA */
 		scb->scb_flags |= IPS_SEND_FLAG_PENDING;
 		scb = SLIST_NEXT(scb, next);
 	}
@@ -652,6 +684,18 @@ int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev)
 		/* Reclaim all credits upto congestion window only */
 		flow->credits = flow->cwin;
 		flow->ack_interval = max((flow->credits >> 2) - 1, 1);
+#ifdef PSM_BYTE_FLOW_CREDITS
+		// TBD cwin not implemented for UD and UDP so can predict
+		// credit_bytes here
+		psmi_assert(flow->cwin == proto->flow_credits);
+		flow->credit_bytes = proto->flow_credit_bytes;
+		flow->ack_interval_bytes = max((flow->credit_bytes >> 2) - 1, 1);
+		_HFI_VDBG("after reclaim cwin: flow_credits %d\n",
+				flow->credits);
+#else /* PSM_BYTE_FLOW_CREDITS */
+		_HFI_VDBG("after reclaim cwin: flow_credits %d\n",
+				flow->credits);
+#endif /* PSM_BYTE_FLOW_CREDITS */
 
 		/* Flush pending scb's */
 		flow->flush(flow, &num_resent);
@@ -664,7 +708,7 @@ ret:
 }
 
 int
-ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
+psm3_ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
 {
 	struct ips_recvhdrq *recvq = (struct ips_recvhdrq *)rcv_ev->recvq;
 	struct ips_message_header *p_hdr = rcv_ev->p_hdr;
@@ -687,6 +731,8 @@ ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
 		_HFI_VDBG("naking for seq=%d, off=%d on flowid  %d\n",
 			  seq_num.psn_num, seq_off, flowid);
 
+		// BECN only for OPA (could ifdef)
+		// so no need to test ack_interval_bytes
 		if (seq_off < -flow->ack_interval)
 			flow->flags |= IPS_FLOW_FLAG_GEN_BECN;
 
@@ -698,7 +744,8 @@ ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
 
 		ctrlscb.scb_flags = 0;
 		ctrlscb.ips_lrh.ack_seq_num = flow->recv_seq_num.psn_num;
-		ips_proto_send_ctrl_message(flow, OPCODE_ACK,
+		// no payload, pass cksum so non-NULL
+		psm3_ips_proto_send_ctrl_message(flow, OPCODE_ACK,
 					    &ipsaddr->ctrl_msg_queued,
 					    &ctrlscb, ctrlscb.cksum, 0);
 	}
@@ -707,21 +754,19 @@ ips_proto_process_err_chk(struct ips_recvhdrq_event *rcv_ev)
 	return IPS_RECVHDRQ_CONTINUE;
 }
 
-
-
 static void ips_bad_opcode(uint8_t op_code, struct ips_message_header *proto)
 {
 	_HFI_DBG("Discarding message with bad opcode 0x%x\n", op_code);
 
-	if (hfi_debug & __HFI_DBG) {
-		ips_proto_show_header(proto, "received bad opcode");
-		ips_proto_dump_frame(proto, sizeof(struct ips_message_header),
+	if (psm3_dbgmask & __HFI_DBG) {
+		psm3_ips_proto_show_header(proto, "received bad opcode");
+		psm3_ips_proto_dump_frame(proto, sizeof(struct ips_message_header),
 				     "Opcode error protocol header dump");
 	}
 }
 
 int
-ips_proto_process_unknown_opcode(struct ips_recvhdrq_event *rcv_ev)
+psm3_ips_proto_process_unknown_opcode(struct ips_recvhdrq_event *rcv_ev)
 {
 	struct ips_message_header *protocol_header = rcv_ev->p_hdr;
 	struct ips_proto *proto = rcv_ev->proto;
@@ -733,50 +778,52 @@ ips_proto_process_unknown_opcode(struct ips_recvhdrq_event *rcv_ev)
 }
 
 int
-ips_proto_connect_disconnect(struct ips_recvhdrq_event *rcv_ev)
+psm3_ips_proto_connect_disconnect(struct ips_recvhdrq_event *rcv_ev)
 {
 	psm2_error_t err = PSM2_OK;
 	char *payload = ips_recvhdrq_event_payload(rcv_ev);
 	uint32_t paylen = ips_recvhdrq_event_paylen(rcv_ev);
 
 	psmi_assert(payload);
-	err = ips_proto_process_connect(rcv_ev->proto,
+	err = psm3_ips_proto_process_connect(rcv_ev->proto,
 					_get_proto_hfi_opcode(rcv_ev->p_hdr),
 					rcv_ev->p_hdr,
 					payload,
 					paylen);
 	if (err != PSM2_OK)
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
+		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
 			"Process connect/disconnect error: %d, opcode %x\n",
 			err, _get_proto_hfi_opcode(rcv_ev->p_hdr));
 
 	return IPS_RECVHDRQ_CONTINUE;
 }
 
-/* Return 1 if packet is ok. */
-/* Return 0 if packet should be skipped */
-int ips_proto_process_unknown(const struct ips_recvhdrq_event *rcv_ev)
+/* helper function which should be called by a HAL specific wrapper function */
+/* Return 0 if packet is now handled. */
+/* Return 1 if packet should be skipped with error */
+int psm3_ips_proto_process_unknown(const struct ips_recvhdrq_event *rcv_ev, int *opcode)
 {
 	struct ips_message_header *p_hdr = rcv_ev->p_hdr;
 	struct ips_proto *proto = rcv_ev->proto;
-	int opcode = (int)_get_proto_hfi_opcode(p_hdr);
+
+	*opcode = (int)_get_proto_hfi_opcode(p_hdr);
 
 	/*
 	 * If the protocol is disabled or not yet enabled, no processing happens
 	 * We set it t_init to 0 when disabling the protocol
 	 */
 	if (proto->t_init == 0)
-		return IPS_RECVHDRQ_CONTINUE;
+		return 0;
 
 	/* Connect messages don't have to be from a known epaddr */
-	switch (opcode) {
+	switch (*opcode) {
 	case OPCODE_CONNECT_REQUEST:
 	case OPCODE_CONNECT_REPLY:
 	case OPCODE_DISCONNECT_REQUEST:
 	case OPCODE_DISCONNECT_REPLY:
-		ips_proto_connect_disconnect(
+		psm3_ips_proto_connect_disconnect(
 				(struct ips_recvhdrq_event *)rcv_ev);
-		return IPS_RECVHDRQ_CONTINUE;
+		return 0;
 	default:
 		break;
 	}
@@ -789,26 +836,19 @@ int ips_proto_process_unknown(const struct ips_recvhdrq_event *rcv_ev)
 		uint32_t paylen = ips_recvhdrq_event_paylen(rcv_ev) +
 		    ((__be32_to_cpu(rcv_ev->p_hdr->bth[0]) >> 20) & 3);
 
-		if (hfi_debug & __HFI_PKTDBG) {
-			ips_proto_dump_frame(rcv_ev->p_hdr,
-					     HFI_MESSAGE_HDR_SIZE, "header");
+		if (psm3_dbgmask & __HFI_PKTDBG) {
+			psm3_ips_proto_dump_frame(rcv_ev->p_hdr,
+					     sizeof(struct ips_message_header), "header");
 			if (paylen)
-				ips_proto_dump_frame(payload, paylen, "data");
+				psm3_ips_proto_dump_frame(payload, paylen, "data");
 		}
 	}
-
 
 	proto->stats.stray_packets++;
 
 	/* If we have debug mode, print the complete packet every time */
-	if (hfi_debug & __HFI_PKTDBG)
-		ips_proto_show_header(p_hdr, "invalid connidx");
+	if (psm3_dbgmask & __HFI_PKTDBG)
+		psm3_ips_proto_show_header(p_hdr, "invalid connidx");
 
-	psmi_handle_error(PSMI_EP_LOGEVENT, PSM2_EPID_NETWORK_ERROR,
-			 "Received message(s) opcode=%x from an unknown process", opcode);
-
-	return 0;		/* Always skip this packet unless the above call was a noreturn
-				 * call */
+	return 1;	/* caller will skip with error output */
 }
-
-

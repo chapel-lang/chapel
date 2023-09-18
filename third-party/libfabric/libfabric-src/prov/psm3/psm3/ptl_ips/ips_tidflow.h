@@ -78,7 +78,6 @@ struct ips_tf_entry {
 };
 
 struct ips_tf_ctrl {
-	pthread_spinlock_t tf_ctrl_lock;
 	uint32_t tf_num_max;
 	uint32_t tf_num_avail;
 	uint32_t tf_head;
@@ -86,7 +85,6 @@ struct ips_tf_ctrl {
 } __attribute__ ((aligned(64)));
 
 struct ips_tf {
-	const psmi_context_t *context;
 	ips_tf_avail_cb_fn_t tf_avail_cb;
 	void *tf_avail_context;
 	struct ips_tf_ctrl *tf_ctrl;
@@ -111,21 +109,17 @@ PSMI_ALWAYS_INLINE(int ips_tf_available(struct ips_tf *tf))
 	return tf->tf_ctrl->tf_num_avail;
 }
 
-psm2_error_t ips_tf_init(struct ips_protoexp *protoexp,
-			const psmi_context_t *context,
+psm2_error_t psm3_ips_tf_init(struct ips_protoexp *protoexp,
 			struct ips_tf *tfc,
 			ips_tf_avail_cb_fn_t cb);
-psm2_error_t ips_tf_fini(struct ips_tf *tfc);
+psm2_error_t psm3_ips_tf_fini(struct ips_tf *tfc);
 
 /* Allocate a tidflow */
-psm2_error_t ips_tf_allocate(struct ips_tf *tfc,
+psm2_error_t psm3_ips_tf_allocate(struct ips_tf *tfc,
 			struct ips_tid_recv_desc **tidrecvc);
 
 /* Deallocate a tidflow */
-psm2_error_t ips_tf_deallocate(struct ips_tf *tfc, uint32_t tf_idx);
+psm2_error_t psm3_ips_tf_deallocate(struct ips_tf *tfc, uint32_t tf_idx, int used);
 
-/* Allocate a generation for a flow */
-psm2_error_t ips_tfgen_allocate(struct ips_tf *tfc,
-			uint32_t tf_idx, uint32_t *tfgen);
 
 #endif

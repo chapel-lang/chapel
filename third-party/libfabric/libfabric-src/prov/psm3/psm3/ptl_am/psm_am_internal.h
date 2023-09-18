@@ -61,6 +61,13 @@
 
 #define AMSH_DIRBLOCK_SIZE 128
 
+#ifdef PSM_ONEAPI
+/* sock_connected_state state definitions */
+#define ZE_SOCK_NOT_CONNECTED			0
+#define ZE_SOCK_DEV_FDS_SENT			1
+#define ZE_SOCK_DEV_FDS_SENT_AND_RECD	2
+#endif
+
 typedef
 struct am_epaddr {
 	/*
@@ -71,6 +78,12 @@ struct am_epaddr {
 
 	uint16_t shmidx;
 	uint16_t return_shmidx;
+#ifdef PSM_ONEAPI
+	int num_peer_fds;
+	int peer_fds[MAX_ZE_DEVICES];
+	int sock_connected_state;
+	int sock;
+#endif
 
 	uint32_t cstate_outgoing:3;
 	uint32_t cstate_incoming:3;
@@ -119,7 +132,7 @@ typedef struct psmi_handlertab {
 #define PSMI_KASSIST_PUT       0x2
 #define PSMI_KASSIST_MASK      0x3
 
-int psmi_epaddr_pid(psm2_epaddr_t epaddr);
+int psm3_epaddr_pid(psm2_epaddr_t epaddr);
 
 /*
  * Eventually, we will allow users to register handlers as "don't reply", which
@@ -128,58 +141,58 @@ int psmi_epaddr_pid(psm2_epaddr_t epaddr);
 #define PSMI_HANDLER_NEEDS_REPLY(handler)    1
 #define PSMI_VALIDATE_REPLY(handler)    assert(PSMI_HANDLER_NEEDS_REPLY(handler))
 
-int psmi_amsh_poll(ptl_t *ptl, int replyonly);
+int psm3_amsh_poll(ptl_t *ptl, int replyonly);
 
 /* Shared memory AM, forward decls */
 int
-psmi_amsh_short_request(ptl_t *ptl, psm2_epaddr_t epaddr,
+psm3_amsh_short_request(ptl_t *ptl, psm2_epaddr_t epaddr,
 			psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 			const void *src, size_t len, int flags);
 
 void
-psmi_amsh_short_reply(amsh_am_token_t *tok,
+psm3_amsh_short_reply(amsh_am_token_t *tok,
 		      psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		      const void *src, size_t len, int flags);
 
 int
-psmi_amsh_long_request(ptl_t *ptl, psm2_epaddr_t epaddr,
+psm3_amsh_long_request(ptl_t *ptl, psm2_epaddr_t epaddr,
 		       psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		       const void *src, size_t len, void *dest, int flags);
 
 void
-psmi_amsh_long_reply(amsh_am_token_t *tok,
+psm3_amsh_long_reply(amsh_am_token_t *tok,
 		     psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		     const void *src, size_t len, void *dest, int flags);
 
-void psmi_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
+void psm3_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			size_t len);
 
-void psmi_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
+void psm3_am_mq_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 			size_t len);
-void psmi_am_mq_handler_data(void *toki, psm2_amarg_t *args, int narg,
+void psm3_am_mq_handler_data(void *toki, psm2_amarg_t *args, int narg,
 			     void *buf, size_t len);
-void psmi_am_mq_handler_complete(void *toki, psm2_amarg_t *args, int narg,
+void psm3_am_mq_handler_complete(void *toki, psm2_amarg_t *args, int narg,
 				 void *buf, size_t len);
-void psmi_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg,
+void psm3_am_mq_handler_rtsmatch(void *toki, psm2_amarg_t *args, int narg,
 				 void *buf, size_t len);
-void psmi_am_mq_handler_rtsdone(void *toki, psm2_amarg_t *args, int narg,
+void psm3_am_mq_handler_rtsdone(void *toki, psm2_amarg_t *args, int narg,
 				void *buf, size_t len);
-void psmi_am_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
+void psm3_am_handler(void *toki, psm2_amarg_t *args, int narg, void *buf,
 		     size_t len);
 
 /* AM over shared memory (forward decls) */
 psm2_error_t
-psmi_amsh_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters);
+psm3_amsh_am_get_parameters(psm2_ep_t ep, struct psm2_am_parameters *parameters);
 
 psm2_error_t
-psmi_amsh_am_short_request(psm2_epaddr_t epaddr,
+psm3_amsh_am_short_request(psm2_epaddr_t epaddr,
 			   psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 			   void *src, size_t len, int flags,
 			   psm2_am_completion_fn_t completion_fn,
 			   void *completion_ctxt);
 
 psm2_error_t
-psmi_amsh_am_short_reply(psm2_am_token_t tok,
+psm3_amsh_am_short_reply(psm2_am_token_t tok,
 			 psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 			 void *src, size_t len, int flags,
 			 psm2_am_completion_fn_t completion_fn,
@@ -229,8 +242,8 @@ struct am_reqq_fifo_t {
 	am_reqq_t **lastp;
 };
 
-psm2_error_t psmi_am_reqq_drain(ptl_t *ptl);
-void psmi_am_reqq_add(int amtype, ptl_t *ptl, psm2_epaddr_t epaddr,
+psm2_error_t psm3_am_reqq_drain(ptl_t *ptl);
+void psm3_am_reqq_add(int amtype, ptl_t *ptl, psm2_epaddr_t epaddr,
 		      psm2_handler_t handler, psm2_amarg_t *args, int nargs,
 		      void *src, size_t len, void *dest, int flags);
 
@@ -416,6 +429,10 @@ struct am_ctl_nodeinfo {
 	amsh_qinfo_t amsh_qsizes;
 	uint32_t amsh_features;
 	struct amsh_qdirectory qdir;
+#ifdef PSM_ONEAPI
+	int num_peer_fds;
+	int peer_fds[MAX_ZE_DEVICES];
+#endif
 } __attribute__((aligned(64)));
 
 struct ptl_am {

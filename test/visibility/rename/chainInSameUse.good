@@ -1,3 +1,4 @@
-chainInSameUse.chpl:8: warning: identifier 'bleep' is repeated
-note: Did you mean to rename 'a' to 'bloop'?
-chainInSameUse.chpl:8: error: Bad identifier in rename, no known 'bleep' in 'Foo'
+chainInSameUse.chpl:7: In module 'M':
+chainInSameUse.chpl:8: error: cannot rename symbol 'bleep' as it is not defined in 'Foo'
+chainInSameUse.chpl:8: warning: 'bleep' is repeated
+chainInSameUse.chpl:8: note: did you mean to rename 'a' to 'bloop'?

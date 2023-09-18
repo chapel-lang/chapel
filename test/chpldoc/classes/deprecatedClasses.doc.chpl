@@ -97,34 +97,34 @@ class F {
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated class G {
   // Also fields, methods, and type methods
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated var a: int;
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated proc foo() { }
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated proc type bar() {}
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="H is deprecated, use I instead") class H {
   // Also fields, methods, and type methods
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="field a is deprecated") var a: int;
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="method foo is deprecated") proc foo() { }
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="type method bar is deprecated") proc type bar() {}
 }
 
 class I {
   // Checks deprecated fields, methods and type methods in an undeprecated class
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated var a: int;
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated(notes="method foo is deprecated") proc foo() { }
-  pragma "no doc"
+  @chpldoc.nodoc
   @deprecated proc type bar() { }
 }

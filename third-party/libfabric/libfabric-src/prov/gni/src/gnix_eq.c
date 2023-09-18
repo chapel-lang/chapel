@@ -184,7 +184,7 @@ ssize_t _gnix_eq_write_error(struct gnix_fid_eq *eq, fid_t fid,
 	if (!eq)
 		return -FI_EINVAL;
 
-	fastlock_acquire(&eq->lock);
+	ofi_spin_lock(&eq->lock);
 
 	item = _gnix_queue_get_free(eq->errors);
 	if (!item) {
@@ -228,7 +228,7 @@ ssize_t _gnix_eq_write_error(struct gnix_fid_eq *eq, fid_t fid,
 		_gnix_signal_wait_obj(eq->wait);
 
 err:
-	fastlock_release(&eq->lock);
+	ofi_spin_unlock(&eq->lock);
 
 	return ret;
 }
@@ -242,7 +242,7 @@ static void __eq_destruct(void *obj)
 
 	_gnix_ref_put(eq->fabric);
 
-	fastlock_destroy(&eq->lock);
+	ofi_spin_destroy(&eq->lock);
 
 	switch (eq->attr.wait_obj) {
 	case FI_WAIT_NONE:
@@ -404,7 +404,7 @@ DIRECT_FN int gnix_eq_open(struct fid_fabric *fabric, struct fi_eq_attr *attr,
 	eq_priv->requires_lock = 1;
 	eq_priv->attr = *attr;
 
-	fastlock_init(&eq_priv->lock);
+	ofi_spin_init(&eq_priv->lock);
 
 	rwlock_init(&eq_priv->poll_obj_lock);
 	dlist_init(&eq_priv->poll_objs);
@@ -438,7 +438,7 @@ err2:
 	_gnix_queue_destroy(eq_priv->events);
 err1:
 	_gnix_ref_put(eq_priv->fabric);
-	fastlock_destroy(&eq_priv->lock);
+	ofi_spin_destroy(&eq_priv->lock);
 err:
 	free(eq_priv);
 	return ret;
@@ -496,7 +496,7 @@ static ssize_t __gnix_eq_sread(int blocking, struct fid_eq *eq,
 	if (eq_priv->wait)
 		gnix_wait_wait((struct fid_wait *) eq_priv->wait, timeout);
 
-	fastlock_acquire(&eq_priv->lock);
+	ofi_spin_lock(&eq_priv->lock);
 
 	if (_gnix_queue_peek(eq_priv->errors)) {
 		read_size = -FI_EAVAIL;
@@ -532,7 +532,7 @@ static ssize_t __gnix_eq_sread(int blocking, struct fid_eq *eq,
 	}
 
 err:
-	fastlock_release(&eq_priv->lock);
+	ofi_spin_unlock(&eq_priv->lock);
 
 	return read_size;
 }
@@ -580,7 +580,7 @@ DIRECT_FN STATIC ssize_t gnix_eq_readerr(struct fid_eq *eq,
 
 	eq_priv = container_of(eq, struct gnix_fid_eq, eq_fid);
 
-	fastlock_acquire(&eq_priv->lock);
+	ofi_spin_lock(&eq_priv->lock);
 
 	if (flags & FI_PEEK)
 		item = _gnix_queue_peek(eq_priv->errors);
@@ -608,7 +608,7 @@ DIRECT_FN STATIC ssize_t gnix_eq_readerr(struct fid_eq *eq,
 	_gnix_queue_enqueue_free(eq_priv->errors, &entry->item);
 
 err:
-	fastlock_release(&eq_priv->lock);
+	ofi_spin_unlock(&eq_priv->lock);
 
 	return read_size;
 }
@@ -625,7 +625,7 @@ DIRECT_FN STATIC ssize_t gnix_eq_write(struct fid_eq *eq, uint32_t event,
 
 	eq_priv = container_of(eq, struct gnix_fid_eq, eq_fid);
 
-	fastlock_acquire(&eq_priv->lock);
+	ofi_spin_lock(&eq_priv->lock);
 
 	item = _gnix_queue_get_free(eq_priv->events);
 	if (!item) {
@@ -656,7 +656,7 @@ DIRECT_FN STATIC ssize_t gnix_eq_write(struct fid_eq *eq, uint32_t event,
 		_gnix_signal_wait_obj(eq_priv->wait);
 
 err:
-	fastlock_release(&eq_priv->lock);
+	ofi_spin_unlock(&eq_priv->lock);
 
 	return ret;
 }

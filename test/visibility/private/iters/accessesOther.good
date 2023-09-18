@@ -1,1 +1,2 @@
-accessesOther.chpl:11: error: Cannot access 'foo', 'foo' is private to 'M1'
+accessesOther.chpl:1: In module 'OuterModule':
+accessesOther.chpl:11: error: cannot access 'foo' as it is private to 'M1'

@@ -80,7 +80,7 @@ psmi_errhandler_psm(psm2_ep_t ep,
 	/* we want the error to be seen through ssh, etc., so we flush and then
 	 * sleep a bit.   Not perfect, but not doing so means it almost never
 	 * gets seen. */
-	fprintf(stderr, "%s: %s\n", hfi_get_mylabel(), token->err_string);
+	fprintf(stderr, "%s: %s\n", psm3_get_mylabel(), token->err_string);
 	fflush(stdout);
 	fflush(stderr);
 
@@ -98,9 +98,9 @@ psmi_errhandler_psm(psm2_ep_t ep,
 		exit(-1);
 }
 
-psm2_ep_errhandler_t psmi_errhandler_global = psmi_errhandler_noop;
+psm2_ep_errhandler_t psm3_errhandler_global = psmi_errhandler_noop;
 
-psm2_error_t __psm2_error_defer(psm2_error_token_t token)
+psm2_error_t psm3_error_defer(psm2_error_token_t token)
 {
 	psm2_error_t rv;
 	PSM2_LOG_MSG("entering");
@@ -109,17 +109,16 @@ psm2_error_t __psm2_error_defer(psm2_error_token_t token)
 	PSM2_LOG_MSG("leaving");
 	return rv;
 }
-PSMI_API_DECL(psm2_error_defer)
 
 psm2_error_t
-__psm2_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandler)
+psm3_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandler)
 {
 	psm2_ep_errhandler_t *errh;
 
 	PSM2_LOG_MSG("entering");
 
 	if (ep == NULL)
-		errh = &psmi_errhandler_global;
+		errh = &psm3_errhandler_global;
 	else
 		errh = &ep->errh;
 
@@ -134,10 +133,9 @@ __psm2_error_register_handler(psm2_ep_t ep, const psm2_ep_errhandler_t errhandle
 
 	return PSM2_OK;
 }
-PSMI_API_DECL(psm2_error_register_handler)
 
 psm2_error_t
-MOCKABLE (psmi_handle_error)(psm2_ep_t ep, psm2_error_t error, const char *buf, ...)
+MOCKABLE (psm3_handle_error)(psm2_ep_t ep, psm2_error_t error, const char *buf, ...)
 {
 	va_list argptr;
 	int syslog_level;
@@ -164,16 +162,16 @@ MOCKABLE (psmi_handle_error)(psm2_ep_t ep, psm2_error_t error, const char *buf, 
 		if (ep == PSMI_EP_NORETURN)
 			console_print = 0;
 		else if (ep == NULL
-			 && psmi_errhandler_global != psmi_errhandler_psm)
+			 && psm3_errhandler_global != psmi_errhandler_psm)
 			console_print = 1;
 		else if (ep != NULL && ep->errh != psmi_errhandler_psm)
 			console_print = 1;
 	}
 
 	/* Before we let the user even handle the error, send to syslog */
-	syslog_level = psmi_error_syslog_level(error);
+	syslog_level = psm3_error_syslog_level(error);
 	if (syslog_level != PSMI_NOLOG || ep == PSMI_EP_LOGEVENT)
-		psmi_syslog(ep, console_print,
+		psm3_syslog(ep, console_print,
 			    ep == PSMI_EP_LOGEVENT ? LOG_NOTICE : syslog_level,
 			    "%s (err=%d)", token.err_string, error);
 
@@ -184,17 +182,17 @@ MOCKABLE (psmi_handle_error)(psm2_ep_t ep, psm2_error_t error, const char *buf, 
 		    psmi_errhandler_psm(NULL, error, token.err_string, &token);
 	else if (ep == NULL)
 		newerr =
-		    psmi_errhandler_global(NULL, error, token.err_string,
+		    psm3_errhandler_global(NULL, error, token.err_string,
 					   &token);
 	else
 		newerr = ep->errh(ep, error, token.err_string, &token);
 
 	return newerr;
 }
-MOCK_DEF_EPILOGUE(psmi_handle_error);
+MOCK_DEF_EPILOGUE(psm3_handle_error);
 
 /* Returns the "worst" error out of errA and errB */
-psm2_error_t psmi_error_cmp(psm2_error_t errA, psm2_error_t errB)
+psm2_error_t psm3_error_cmp(psm2_error_t errA, psm2_error_t errB)
 {
 #define _PSMI_ERR_IS(err) if (errA == (err) || errB == (err)) return (err)
 
@@ -328,7 +326,7 @@ struct psmi_error_item psmi_error_items[] = {
 	{PSMI_NOLOG, "unknown 80"},
 };
 
-const char *__psm2_error_get_string(psm2_error_t error)
+const char *psm3_error_get_string(psm2_error_t error)
 {
 	PSM2_LOG_MSG("entering");
 	if (error >= PSM2_ERROR_LAST) {
@@ -340,9 +338,8 @@ const char *__psm2_error_get_string(psm2_error_t error)
 		return psmi_error_items[error].error_string;
 	}
 }
-PSMI_API_DECL(psm2_error_get_string)
 
-int psmi_error_syslog_level(psm2_error_t error)
+int psm3_error_syslog_level(psm2_error_t error)
 {
 	if (error >= PSM2_ERROR_LAST)
 		return PSMI_NOLOG;

@@ -42,7 +42,7 @@ log_info "Building tarball with version: ${version}"
 
 mkdir -p $HOME/test
 git clone git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull) 
-cp $HOME/test/homebrew-core/Formula/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
+cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
@@ -61,6 +61,8 @@ $sed_command  "1s/sha256.*/sha256 \"$sha256\"/;t" -e "1,/sha256.*/s//sha256 \"$s
 # Test if homebrew install using the chapel formula works.
 brew upgrade 
 brew uninstall --force chapel
+# Remove the cached chapel tar file before running brew install --build-from-source chapel.rb
+rm /Users/chapelu/Library/Caches/Homebrew/downloads/*.tar.gz
 brew install --build-from-source chapel.rb
 INSTALL_STATUS=$?
     if [ $INSTALL_STATUS -ne 0 ]

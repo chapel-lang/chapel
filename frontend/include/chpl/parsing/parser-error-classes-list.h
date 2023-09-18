@@ -27,9 +27,7 @@
 // Calls to the ERROR_CLASS/WARNING_CLASS/etc. macros should list the new
 // error's name first, followed a list of types describing error details.
 //
-// Errors are grouped by which compilation stage they relate to, and sorted
-// alphabetically within these groups. Groups themselves are ordered by the
-// order their compilation stages occur in.
+// Errors/warnings/etc should be ordered alphabetically by name.
 //
 // Also, the macro calls in this file should each be on a single line,
 // even though that makes long lines that are normally avoided.
@@ -42,7 +40,7 @@ PARSER_ERROR_CLASS(BisonUnknownError, std::string, std::string)
 // other parser errors
 PARSER_SYNTAX_CLASS(CannotAttachPragmas, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(CommentEOF, Location, Location)
-PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, uast::VisibilityClause::LimitationKind)
+PARSER_SYNTAX_CLASS(ExceptOnlyInvalidExpr, Location, uast::VisibilityClause::LimitationKind)
 PARSER_SYNTAX_CLASS(ExternUnclosedPair, std::string)
 PARSER_SYNTAX_CLASS(InvalidIndexExpr)
 PARSER_SYNTAX_CLASS(InvalidNewForm, const uast::AstNode*)
@@ -52,7 +50,6 @@ PARSER_ERROR_CLASS(MultipleExternalRenaming)
 PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
 PARSER_WARNING_CLASS(SingleStmtReturnDeprecated, const uast::AstNode*)
-PARSER_ERROR_CLASS(RecordInheritanceNotSupported, std::string)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 
@@ -65,6 +62,8 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
+ERROR_CLASS(InvalidGpuAssertion, const uast::AstNode*, const uast::Attribute*)
+ERROR_CLASS(InvalidParenfulDeprecation, const uast::AttributeGroup*, const uast::AstNode*)
 POSTPARSE_ERROR_CLASS(MultipleManagementStrategies, const uast::New::Management, const uast::New::Management)
 WARNING_CLASS(ParenlessAttributeArgDeprecated, const uast::Attribute*)
 POSTPARSE_ERROR_CLASS(PostParseErr, std::string)

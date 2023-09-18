@@ -62,7 +62,7 @@ const epsilon = 1.0e-8,
       seed = 271828183:int(64);
 	 
 const WorkSpace = {0:int(64)..#nn},
-      WorkDist  = WorkSpace dmapped Block(WorkSpace);
+      WorkDist  = WorkSpace dmapped blockDist(WorkSpace);
 
 var totalTime: stopwatch;
 
@@ -79,6 +79,8 @@ writef(" Number of tasks per locale:          %15i\n", dataParTasksPerLocale);
 totalTime.start();
 
 proc gaussPairsBatch(k: int(64), numPairs: int) {
+	use Math;
+
 	var x: [1..numPairs*2] real;
 	var q: RingsTuple;
 	var t1, t2, tx, ty, x1, x2: real;

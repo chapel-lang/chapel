@@ -222,21 +222,33 @@ different provider than the highest-performing one, however.
   registration and fixed heaps when using the ofi communication layer.
 
 
-Hugepages on Cray XC Systems
-____________________________
+Hugepages on Cray XC and HPE Cray EX Systems
+____________________________________________
 
-We have not yet quantified the effects, but performance with the gni
-provider may be improved if you have a ``craype-hugepages`` module
-loaded both when you build your program and when you run it.  For
+We have not yet quantified the effects, but performance with the gni and
+cxi providers may be improved through the use of hugepages. To use
+hugepages you must have a ``craype-hugepages`` module loaded and
+``CHPL_COMM_OFI_USE_HUGEPAGES=true`` when you build Chapel and compile
+your program, and you must have a ``craype-hugepages`` module loaded
+and ``CHPL_RT_COMM_OFI_USE_HUGEPAGES=true`` when you run your program
+(note that these are not the same variable.)
+
+For
 example::
 
      module load craype-hugepages16M
+     CHPL_COMM_OFI_USE_HUGEPAGES=true
+     CHPL_RT_COMM_OFI_USE_HUGEPAGES=true
 
 See :ref:`ugni-comm-on-cray` for more discussion about hugepages,
-hugepage modules, and the heap size.  Note, however, that anything there
-about a dynamically sized heap does not apply to the ofi communication
-layer and the libfabric gni provider.
-
+hugepage modules, and the heap size.  Note, however, that anything
+there about a dynamically sized heap does not apply to the ofi
+communication layer and the libfabric gni and cxi providers. Also note
+that the ofi communication layer cannot test the size of a hugepage
+fixed heap during initialization; as a result, it will create a heap of
+size ``CHPL_RT_MAX_HEAP_SIZE`` even if there is insufficient physical
+memory, which may lead to out-of-memory errors during program
+execution.
 
 .. _mpirun4ofi-launcher:
 
@@ -261,20 +273,4 @@ slurm job, however.
 
 
 .. _Homebrew: https://github.com/Homebrew/brew
-
-.. _bound-endpoints:
-
-Bound Endpoints
-_______________________
-
-For best performance endpoints should be "bound" to cores, so that
-each core has a dedicated transmit endpoint. Unfortunately, some
-providers incorrectly report that they support too few endpoints to bind
-each core to an endpoint. You can override the number of endpoints reported
-by the provider by setting ``CHPL_RT_COMM_OFI_EP_COUNT``. Note that
-endpoint creation will fail if you set this variable to a value higher
-than the number of endpoints that the provider can support. You
-may verify whether or not endpoints are bound by specifying the
-the ``-v`` option on the command line and looking at the line in the output
-that starts with ``COMM=``.
 

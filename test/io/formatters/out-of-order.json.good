@@ -1,7 +1,0 @@
-(z = hello, x = 5, y = 42.0)
-(x = 5, y = 42.0, z = hello)
-(y = 42.0, x = 5, z = hello)
-(x = 5, z = hello)
-uncaught Error: field not found...
-  Json.chpl:177: thrown here
-  Json.chpl:155: uncaught here

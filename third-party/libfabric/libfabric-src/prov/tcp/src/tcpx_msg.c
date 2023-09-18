@@ -50,13 +50,46 @@
 
 
 static inline struct tcpx_xfer_entry *
-tcpx_alloc_send_entry(struct tcpx_ep *ep)
+tcpx_alloc_send(struct tcpx_ep *ep)
 {
 	struct tcpx_xfer_entry *send_entry;
 
 	send_entry = tcpx_alloc_tx(ep);
 	if (send_entry)
 		send_entry->hdr.base_hdr.op = ofi_op_msg;
+
+	return send_entry;
+}
+
+/* When dynamic receive buffers are enabled, receive buffer matching
+ * is handled by the upper layer (rxm).  The tcp provider is only
+ * carrying the tag to reduce header overhead.  The transport operation
+ * is still op_msg at the tcp provider.  This is needed for backwards
+ * compatibility.
+ *
+ * If dynamic receive buffers are disabled, then tagged messages are
+ * being handled entirely by the tcp provider.  We use the op_tagged
+ * protocol for this, which allows distinguishing between the two
+ * cases at the receiver.
+ *
+ * We assume the peer is configured similar to the local side, which
+ * is all we can check.
+ */
+static inline struct tcpx_xfer_entry *
+tcpx_alloc_tsend(struct tcpx_ep *ep)
+{
+	struct tcpx_xfer_entry *send_entry;
+
+	send_entry = tcpx_alloc_tx(ep);
+	if (send_entry) {
+		if (tcpx_dynamic_rbuf(ep)) {
+			send_entry->hdr.base_hdr.op = ofi_op_msg;
+			send_entry->hdr.base_hdr.flags = TCPX_TAGGED;
+		} else {
+			assert(ep->srx_ctx);
+			send_entry->hdr.base_hdr.op = ofi_op_tagged;
+		}
+	}
 
 	return send_entry;
 }
@@ -123,32 +156,32 @@ tcpx_init_tx_iov(struct tcpx_xfer_entry *tx_entry, size_t hdr_len,
 	}
 }
 
-static inline bool tcpx_queue_recv(struct tcpx_ep *ep,
-				   struct tcpx_xfer_entry *recv_entry)
+static inline bool
+tcpx_queue_recv(struct tcpx_ep *ep, struct tcpx_xfer_entry *recv_entry)
 {
 	bool ret;
 
-	fastlock_acquire(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
 	ret = ep->rx_avail;
 	if (ret) {
 		slist_insert_tail(&recv_entry->entry, &ep->rx_queue);
 		ep->rx_avail--;
 	}
-	fastlock_release(&ep->lock);
+	ofi_mutex_unlock(&ep->lock);
 	return ret;
 }
 
-static ssize_t tcpx_recvmsg(struct fid_ep *ep, const struct fi_msg *msg,
-			    uint64_t flags)
+static ssize_t
+tcpx_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg, uint64_t flags)
 {
 	struct tcpx_xfer_entry *recv_entry;
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
 	assert(msg->iov_count <= TCPX_IOV_LIMIT);
 
-	recv_entry = tcpx_alloc_rx(tcpx_ep);
+	recv_entry = tcpx_alloc_rx(ep);
 	if (!recv_entry)
 		return -FI_EAGAIN;
 
@@ -156,26 +189,27 @@ static ssize_t tcpx_recvmsg(struct fid_ep *ep, const struct fi_msg *msg,
 	memcpy(&recv_entry->iov[0], &msg->msg_iov[0],
 	       msg->iov_count * sizeof(struct iovec));
 
-	recv_entry->flags = tcpx_ep->util_ep.rx_msg_flags | flags |
-			    FI_MSG | FI_RECV;
+	recv_entry->cq_flags = tcpx_rx_completion_flag(ep, flags) |
+			       FI_MSG | FI_RECV;
 	recv_entry->context = msg->context;
 
-	if (!tcpx_queue_recv(tcpx_ep, recv_entry)) {
+	if (!tcpx_queue_recv(ep, recv_entry)) {
 		tcpx_free_rx(recv_entry);
 		return -FI_EAGAIN;
 	}
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_recv(struct fid_ep *ep, void *buf, size_t len, void *desc,
-			 fi_addr_t src_addr, void *context)
+static ssize_t
+tcpx_recv(struct fid_ep *ep_fid, void *buf, size_t len, void *desc,
+	  fi_addr_t src_addr, void *context)
 {
 	struct tcpx_xfer_entry *recv_entry;
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	recv_entry = tcpx_alloc_rx(tcpx_ep);
+	recv_entry = tcpx_alloc_rx(ep);
 	if (!recv_entry)
 		return -FI_EAGAIN;
 
@@ -183,62 +217,63 @@ static ssize_t tcpx_recv(struct fid_ep *ep, void *buf, size_t len, void *desc,
 	recv_entry->iov[0].iov_base = buf;
 	recv_entry->iov[0].iov_len = len;
 
-	recv_entry->flags = (tcpx_ep->util_ep.rx_op_flags & FI_COMPLETION) |
-			    FI_MSG | FI_RECV;
+	recv_entry->cq_flags = tcpx_rx_completion_flag(ep, 0) |
+			       FI_MSG | FI_RECV;
 	recv_entry->context = context;
 
-	if (!tcpx_queue_recv(tcpx_ep, recv_entry)) {
+	if (!tcpx_queue_recv(ep, recv_entry)) {
 		tcpx_free_rx(recv_entry);
 		return -FI_EAGAIN;
 	}
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_recvv(struct fid_ep *ep, const struct iovec *iov, void **desc,
-			  size_t count, fi_addr_t src_addr, void *context)
+static ssize_t
+tcpx_recvv(struct fid_ep *ep_fid, const struct iovec *iov, void **desc,
+	   size_t count, fi_addr_t src_addr, void *context)
 {
 	struct tcpx_xfer_entry *recv_entry;
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
 	assert(count <= TCPX_IOV_LIMIT);
 
-	recv_entry = tcpx_alloc_rx(tcpx_ep);
+	recv_entry = tcpx_alloc_rx(ep);
 	if (!recv_entry)
 		return -FI_EAGAIN;
 
 	recv_entry->iov_cnt = count;
 	memcpy(recv_entry->iov, iov, count * sizeof(*iov));
 
-	recv_entry->flags = (tcpx_ep->util_ep.rx_op_flags & FI_COMPLETION) |
-			    FI_MSG | FI_RECV;
+	recv_entry->cq_flags = tcpx_rx_completion_flag(ep, 0) |
+			       FI_MSG | FI_RECV;
 	recv_entry->context = context;
 
-	if (!tcpx_queue_recv(tcpx_ep, recv_entry)) {
+	if (!tcpx_queue_recv(ep, recv_entry)) {
 		tcpx_free_rx(recv_entry);
 		return -FI_EAGAIN;
 	}
 	return FI_SUCCESS;
 }
 
-static inline void tcpx_queue_send(struct tcpx_ep *ep,
-				   struct tcpx_xfer_entry *tx_entry)
+static inline void
+tcpx_queue_send(struct tcpx_ep *ep, struct tcpx_xfer_entry *tx_entry)
 {
-	fastlock_acquire(&ep->lock);
+	ofi_mutex_lock(&ep->lock);
 	tcpx_tx_queue_insert(ep, tx_entry);
-	fastlock_release(&ep->lock);
+	ofi_mutex_unlock(&ep->lock);
 }
 
-static ssize_t tcpx_sendmsg(struct fid_ep *ep, const struct fi_msg *msg,
-			    uint64_t flags)
+static ssize_t
+tcpx_sendmsg(struct fid_ep *ep_fid, const struct fi_msg *msg, uint64_t flags)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 	size_t hdr_len;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
@@ -251,91 +286,92 @@ static ssize_t tcpx_sendmsg(struct fid_ep *ep, const struct fi_msg *msg,
 	}
 
 	tcpx_init_tx_iov(tx_entry, hdr_len, msg->msg_iov, msg->iov_count);
-	tx_entry->flags = ((tcpx_ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			    flags | FI_MSG | FI_SEND);
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, flags) |
+			     FI_MSG | FI_SEND;
 	tcpx_set_ack_flags(tx_entry, flags);
 	tx_entry->context = msg->context;
 
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_send(struct fid_ep *ep, const void *buf, size_t len,
-			 void *desc, fi_addr_t dest_addr, void *context)
+static ssize_t
+tcpx_send(struct fid_ep *ep_fid, const void *buf, size_t len,
+	  void *desc, fi_addr_t dest_addr, void *context)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
 	tcpx_init_tx_buf(tx_entry, sizeof(tx_entry->hdr.base_hdr), buf, len);
 	tx_entry->context = context;
-	tx_entry->flags = (tcpx_ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_MSG | FI_SEND;
-	tcpx_set_ack_flags(tx_entry, tcpx_ep->util_ep.tx_op_flags);
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_MSG | FI_SEND;
+	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_sendv(struct fid_ep *ep, const struct iovec *iov,
-			  void **desc, size_t count, fi_addr_t dest_addr,
-			  void *context)
+static ssize_t
+tcpx_sendv(struct fid_ep *ep_fid, const struct iovec *iov,
+	   void **desc, size_t count, fi_addr_t dest_addr, void *context)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
 	tcpx_init_tx_iov(tx_entry, sizeof(tx_entry->hdr.base_hdr), iov, count);
 	tx_entry->context = context;
-	tx_entry->flags = (tcpx_ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_MSG | FI_SEND;
-	tcpx_set_ack_flags(tx_entry, tcpx_ep->util_ep.tx_op_flags);
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_MSG | FI_SEND;
+	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
 
-static ssize_t tcpx_inject(struct fid_ep *ep, const void *buf, size_t len,
-			   fi_addr_t dest_addr)
+static ssize_t
+tcpx_inject(struct fid_ep *ep_fid, const void *buf, size_t len,
+	    fi_addr_t dest_addr)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
 	tcpx_init_tx_inject(tx_entry, sizeof(tx_entry->hdr.base_hdr), buf, len);
+	tx_entry->ctrl_flags = TCPX_INJECT_OP;
 
-	tx_entry->flags = FI_MSG | FI_SEND;
-
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_senddata(struct fid_ep *ep, const void *buf, size_t len,
-			     void *desc, uint64_t data, fi_addr_t dest_addr,
-			     void *context)
+static ssize_t
+tcpx_senddata(struct fid_ep *ep_fid, const void *buf, size_t len,
+	      void *desc, uint64_t data, fi_addr_t dest_addr, void *context)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
@@ -347,23 +383,24 @@ static ssize_t tcpx_senddata(struct fid_ep *ep, const void *buf, size_t len,
 	tcpx_init_tx_buf(tx_entry, sizeof(tx_entry->hdr.cq_data_hdr),
 			 buf, len);
 	tx_entry->context = context;
-	tx_entry->flags = (tcpx_ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_MSG | FI_SEND;
-	tcpx_set_ack_flags(tx_entry, tcpx_ep->util_ep.tx_op_flags);
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_MSG | FI_SEND;
+	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
-static ssize_t tcpx_injectdata(struct fid_ep *ep, const void *buf, size_t len,
-			       uint64_t data, fi_addr_t dest_addr)
+static ssize_t
+tcpx_injectdata(struct fid_ep *ep_fid, const void *buf, size_t len,
+		uint64_t data, fi_addr_t dest_addr)
 {
-	struct tcpx_ep *tcpx_ep;
+	struct tcpx_ep *ep;
 	struct tcpx_xfer_entry *tx_entry;
 
-	tcpx_ep = container_of(ep, struct tcpx_ep, util_ep.ep_fid);
+	ep = container_of(ep_fid, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(tcpx_ep);
+	tx_entry = tcpx_alloc_send(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
@@ -372,10 +409,9 @@ static ssize_t tcpx_injectdata(struct fid_ep *ep, const void *buf, size_t len,
 
 	tcpx_init_tx_inject(tx_entry, sizeof(tx_entry->hdr.cq_data_hdr),
 			    buf, len);
+	tx_entry->ctrl_flags = TCPX_INJECT_OP;
 
-	tx_entry->flags = FI_MSG | FI_SEND;
-
-	tcpx_queue_send(tcpx_ep, tx_entry);
+	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
 }
 
@@ -410,25 +446,23 @@ tcpx_tsendmsg(struct fid_ep *fid_ep, const struct fi_msg_tagged *msg,
 	size_t hdr_len;
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
 	if (flags & FI_REMOTE_CQ_DATA) {
-		tx_entry->hdr.base_hdr.flags = TCPX_REMOTE_CQ_DATA |
-						TCPX_TAGGED;
+		tx_entry->hdr.base_hdr.flags |= TCPX_REMOTE_CQ_DATA;
 		tx_entry->hdr.tag_data_hdr.cq_data_hdr.cq_data = msg->data;
 		tx_entry->hdr.tag_data_hdr.tag = msg->tag;
 		hdr_len = sizeof(tx_entry->hdr.tag_data_hdr);
 	} else {
-		tx_entry->hdr.base_hdr.flags = TCPX_TAGGED;
 		tx_entry->hdr.tag_hdr.tag = msg->tag;
 		hdr_len = sizeof(tx_entry->hdr.tag_hdr);
 	}
 
 	tcpx_init_tx_iov(tx_entry, hdr_len, msg->msg_iov, msg->iov_count);
-	tx_entry->flags = ((ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			    flags | FI_TAGGED | FI_SEND);
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, flags) |
+			     FI_TAGGED | FI_SEND;
 	tcpx_set_ack_flags(tx_entry, flags);
 	tx_entry->context = msg->context;
 
@@ -444,17 +478,16 @@ tcpx_tsend(struct fid_ep *fid_ep, const void *buf, size_t len,
 	struct tcpx_xfer_entry *tx_entry;
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
-	tx_entry->hdr.base_hdr.flags = TCPX_TAGGED;
 	tx_entry->hdr.tag_hdr.tag = tag;
 
 	tcpx_init_tx_buf(tx_entry, sizeof(tx_entry->hdr.tag_hdr), buf, len);
 	tx_entry->context = context;
-	tx_entry->flags = (ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_TAGGED | FI_SEND;
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_TAGGED | FI_SEND;
 	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
 	tcpx_queue_send(ep, tx_entry);
@@ -469,17 +502,16 @@ tcpx_tsendv(struct fid_ep *fid_ep, const struct iovec *iov, void **desc,
 	struct tcpx_xfer_entry *tx_entry;
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
-	tx_entry->hdr.base_hdr.flags = TCPX_TAGGED;
 	tx_entry->hdr.tag_hdr.tag = tag;
 
 	tcpx_init_tx_iov(tx_entry, sizeof(tx_entry->hdr.tag_hdr), iov, count);
 	tx_entry->context = context;
-	tx_entry->flags = (ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_TAGGED | FI_SEND;
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_TAGGED | FI_SEND;
 	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
 	tcpx_queue_send(ep, tx_entry);
@@ -495,16 +527,13 @@ tcpx_tinject(struct fid_ep *fid_ep, const void *buf, size_t len,
 	struct tcpx_xfer_entry *tx_entry;
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
-
-	tx_entry->hdr.base_hdr.flags = TCPX_TAGGED;
 	tx_entry->hdr.tag_hdr.tag = tag;
 
 	tcpx_init_tx_inject(tx_entry, sizeof(tx_entry->hdr.tag_hdr), buf, len);
-
-	tx_entry->flags = FI_TAGGED | FI_SEND;
+	tx_entry->ctrl_flags = TCPX_INJECT_OP;
 
 	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;
@@ -518,19 +547,19 @@ tcpx_tsenddata(struct fid_ep *fid_ep, const void *buf, size_t len, void *desc,
 	struct tcpx_xfer_entry *tx_entry;
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
-	tx_entry->hdr.base_hdr.flags = TCPX_TAGGED | TCPX_REMOTE_CQ_DATA;
+	tx_entry->hdr.base_hdr.flags |= TCPX_REMOTE_CQ_DATA;
 	tx_entry->hdr.tag_data_hdr.tag = tag;
 	tx_entry->hdr.tag_data_hdr.cq_data_hdr.cq_data = data;
 
 	tcpx_init_tx_buf(tx_entry, sizeof(tx_entry->hdr.tag_data_hdr),
 			 buf, len);
 	tx_entry->context = context;
-	tx_entry->flags = (ep->util_ep.tx_op_flags & FI_COMPLETION) |
-			   FI_TAGGED | FI_SEND;
+	tx_entry->cq_flags = tcpx_tx_completion_flag(ep, 0) |
+			     FI_TAGGED | FI_SEND;
 	tcpx_set_ack_flags(tx_entry, ep->util_ep.tx_op_flags);
 
 	tcpx_queue_send(ep, tx_entry);
@@ -546,18 +575,17 @@ tcpx_tinjectdata(struct fid_ep *fid_ep, const void *buf, size_t len,
 
 	ep = container_of(fid_ep, struct tcpx_ep, util_ep.ep_fid);
 
-	tx_entry = tcpx_alloc_send_entry(ep);
+	tx_entry = tcpx_alloc_tsend(ep);
 	if (!tx_entry)
 		return -FI_EAGAIN;
 
-	tx_entry->hdr.base_hdr.flags = TCPX_TAGGED | TCPX_REMOTE_CQ_DATA;
+	tx_entry->hdr.base_hdr.flags |= TCPX_REMOTE_CQ_DATA;
 	tx_entry->hdr.tag_data_hdr.tag = tag;
 	tx_entry->hdr.tag_data_hdr.cq_data_hdr.cq_data = data;
 
 	tcpx_init_tx_inject(tx_entry, sizeof(tx_entry->hdr.tag_data_hdr),
 			    buf, len);
-
-	tx_entry->flags = FI_TAGGED | FI_SEND;
+	tx_entry->ctrl_flags = TCPX_INJECT_OP;
 
 	tcpx_queue_send(ep, tx_entry);
 	return FI_SUCCESS;

@@ -4,15 +4,15 @@
  * contributed by Kyle Brady
  * modified from the Chapel version by Casey Battaglino
  */
-
+use CTypes;
 config const LINE_LENGTH = 60;
 config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE : real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-//extern proc printf(s:c_string, ref args ...);
-extern proc printf(s:c_string, len:int(32), ref args ...);
-extern proc printf(s:c_string, ref args ...);
+//extern proc printf(s:c_ptrConst(c_char), ref args ...);
+extern proc printf(s:c_ptrConst(c_char), len:int(32), ref args ...);
+extern proc printf(s:c_ptrConst(c_char), ref args ...);
 
 record Freq {
   var c: int(8);
@@ -91,7 +91,7 @@ HomoSapiens[2] = new Freq(103, 0.1975473066391); // g -> 103
 HomoSapiens[3] = new Freq(116, 0.3015094502008); // t -> 116
 
 // (Scan operation)
-proc sumAndScale(a :[?D]) {
+proc sumAndScale(ref a :[?D]) {
   var p : real = 0;
   for item in a {
     p += item.p;

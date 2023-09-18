@@ -88,7 +88,7 @@ module block_partition_iterators {
 
 
 
-    proc block_leading_indices ( matrix_domain )  {
+  proc block_leading_indices ( matrix_domain )  {
 
       // -------------------------------------------------------------------
       // Deliver as a strided domain the leading / low indices of the blocks
@@ -105,8 +105,8 @@ module block_partition_iterators {
       // to allow submatrices with odd sized blocks on all sides.
       // -------------------------------------------------------------------
 
-    var block_leading_index_domain : domain (2, stridable=true) = 
-      matrix_domain by ( block_size, block_size );
+    var block_leading_index_domain : domain (2, strides=strideKind.positive) = 
+      matrix_domain by ( block_size: uint, block_size: uint );
 
     return block_leading_index_domain;
   }

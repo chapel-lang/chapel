@@ -1,9 +1,10 @@
-type my_type = c_string;
+use CTypes;
+type my_type = c_ptrConst(c_char);
 
 proc my_type.doit() {
-  writeln(this);
+  writeln(string.createBorrowingBuffer(this));
 }
 
-var str = "bla":c_string;
+var str = "bla".c_str();
 str.doit();
 

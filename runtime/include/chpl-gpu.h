@@ -33,6 +33,11 @@ extern "C" {
 // section due to the fact that GpuDiagnostics module accesses it (and this
 // module can be used despite what locale model you're using).
 extern bool chpl_gpu_debug;
+extern int chpl_gpu_num_devices;
+extern bool chpl_gpu_no_cpu_mode_warning;
+extern bool chpl_gpu_sync_with_host;
+extern bool chpl_gpu_use_stream_per_task;
+
 
 #ifdef HAS_GPU_LOCALE
 
@@ -48,7 +53,7 @@ static inline void CHPL_GPU_DEBUG(const char *str, ...) {
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
 // returns time from epoch in milliseconds. Used in macros below.
-static inline long double get_time() {
+static inline long double get_time(void) {
   struct timeval tv;
 
   gettimeofday(&tv, NULL);
@@ -78,9 +83,9 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
-void chpl_gpu_on_std_modules_finished_initializing(void);
-
-void chpl_gpu_get_device_count(int* into);
+void chpl_gpu_task_end(void);
+void chpl_gpu_task_fence(void);
+void chpl_gpu_support_module_finished_initializing(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* name,
@@ -89,7 +94,7 @@ void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             int nargs, ...);
 void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                                  const char* name,
-                                 int num_threads, int blk_dim,
+                                 int64_t num_threads, int blk_dim,
                                  int nargs, ...);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
@@ -108,10 +113,28 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
 void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
-void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
+void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
+                     c_sublocid_t src_subloc, const void* src,
+                     size_t n, int32_t commID, int ln, int32_t fn);
+void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
+                       c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn);
+
+void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
+                       c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn);
+
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
-void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
-void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
+void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
+void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                    c_sublocid_t src_dev, const void* src,
+                                    size_t n, int32_t commID, int ln,
+                                    int32_t fn);
 void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_comm_wait(void *stream);
 
@@ -122,6 +145,10 @@ unsigned int chpl_gpu_device_clock_rate(int32_t devNum);
 
 // TODO do we really need to expose this?
 size_t chpl_gpu_get_alloc_size(void* ptr);
+
+bool chpl_gpu_can_access_peer(int dev1, int dev2);
+void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
+
 #endif // HAS_GPU_LOCALE
 
 #ifdef __cplusplus

@@ -225,10 +225,43 @@ void chpl_rt_init(int argc, char* argv[]) {
   //
   parseArgs(false, parse_dash_E, &argc, argv);
 
+
+  //
+  // Intialization of the topo, comm, mem, and task layers is tricky because
+  // they have inter-twined dependencies and there isn't a linear ordering
+  // in which they can be completely initialized.
+  // Here is a general summary of what these functions do, in order:
+  //   chpl_topo_pre_comm_init
+  //     Initializes the topology information required to initialize the comm
+  //     layer. For example, some comm configurations need to know the
+  //     upper limit on the number of cores the locale will use.
+  //   chpl_comm_init
+  //     Initializes enough of the comm layer so that the topo layer can
+  //     finish initialization, including determining how many co-locales
+  //     there are on the node.
+  //   chpl_topo_post_comm_init
+  //     Finishes topo initialization, including partitioning the resources
+  //     such as CPUs, NUMA domains and NICs among the co-locales on the
+  //     node.
+  //   chpl_comm_pre_mem_init
+  //     Performs any comm initialization that requires the topology layer to
+  //     be fully initialized, such as calling gasnet_attach.
+  //   chpl_mem_init
+  //     Initializes the mem layer
+  //   chpl_comm_post_mem_init
+  //     Performs any comm initialization that requires the mem layer to be
+  //     initialized, such as initializing the fabric when comm=ofi.
+  //   chpl_task_init
+  //     Initializes the task layer
+  //   chpl_comm_post_task_init
+  //     Performs any comm initialization that requires the task layer to be
+  //     initialized, such as pinning the fixed heap when comm=ofi.
+  //
+
   chpl_error_init();  // This does local-only initialization
-  chpl_comm_pre_topo_init();
-  chpl_topo_init();
+  chpl_topo_pre_comm_init(NULL);
   chpl_comm_init(&argc, &argv);
+  chpl_topo_post_comm_init();
   chpl_comm_pre_mem_init();
   chpl_mem_init();
   chpl_comm_post_mem_init();
@@ -300,14 +333,6 @@ void chpl_rt_init(int argc, char* argv[]) {
 }
 
 //
-// Called by "main.c:main(...)" and "cphl-init.c:chpl_library_finalize()".
-//
-void chpl_rt_finalize(int return_value) {
-  //chpl_rt_postUserCodeHook();
-  chpl_exit_all(return_value);
-}
-
-//
 // Chapel standard module initialization.
 //
 // Factored out of "main.c:chpl_main(...)" this needs to be called from within the
@@ -330,15 +355,6 @@ void chpl_std_module_init(void) {
     // Initialize the internal modules.
     chpl__init_PrintModuleInitOrder(0, myFilename);
     chpl__init_ChapelStandard(0, myFilename);
-
-    // We want to treat how we allocate arrays on GPUs differently
-    // for standard modules so we start the runtime assuming we're doing
-    // all initialization for the standard modules until this callback
-    // function gets called.  (see comments on the `impl` version of this
-    // function for more details on why).
-    #ifdef HAS_GPU_LOCALE
-    chpl_gpu_on_std_modules_finished_initializing();
-    #endif
 
     // Note that in general, module code can contain "on" clauses
     // and should therefore not be called before the call to
@@ -407,6 +423,13 @@ void chpl_libraryModuleLevelCleanup(void);
 // }
 //
 void chpl_library_init(int argc, char* argv[]) {
+  static bool inited = false;
+
+  if (inited) {
+    chpl_error("Can't call chpl_library_init() twice", 0, 0);
+  } else {
+    inited = true;
+  }
   chpl_rt_init(argc, argv);                     // Initialize the runtime
   chpl_task_callMain(chpl_std_module_init);     // Initialize std modules
   chpl_libraryModuleLevelSetup();
@@ -420,10 +443,10 @@ void chpl_library_init(int argc, char* argv[]) {
 extern void chpl_deinitModules(void);
 
 //
-// A wrapper around chpl-init.c:chpl_rt_finalize(...), sole purpose is
+// A wrapper around chplexit.c:chpl_finalize(...), sole purpose is
 // to provide a "chpl_library_*" interface for the Chapel "library-user".
 void chpl_library_finalize(void) {
   chpl_libraryModuleLevelCleanup();
   chpl_deinitModules();
-  chpl_rt_finalize(0);
+  chpl_finalize(0, 1);
 }

@@ -3,7 +3,7 @@ Chapel Contributors
 
 The following people have contributed to Chapel releases:
 
-Contributors to the Chapel 1.30.0 release
+Contributors to the Chapel 1.31.0 release
 -----------------------------------------
 * Jade Abraham, [HPE]
 * Paul Cassella, [HPE]
@@ -24,11 +24,10 @@ Contributors to the Chapel 1.30.0 release
 * Ahmad Rezaii, [HPE]
 * Anna Rift, [HPE]
 * Elliot Ronaghan, [HPE]
-* Erik Schierboom, individual contributor
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Karlon West, [HPE]
-* Vanessa Zambrano, [HPE]
+* Tom Westerhout, individual contributor
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -50,7 +49,7 @@ Contributors to previous releases
 * Robert Bocchino, [Cray Inc.] intern from [University of Illinois, Urbana-Champaign]
 * Dan Bonachea, [UC Berkeley]
 * Kyle Brady, [Cray Inc.]
-o Gabriel Brown, individual contributor
+* Gabriel Brown, individual contributor
 * Daniel Buettner, [LTS]
 * John Byrne, [HPE]
 * Zixian Cai, individual contributor
@@ -163,6 +162,7 @@ o Gabriel Brown, individual contributor
 * Preston Sahabu, [Cray Inc.]
 * Sara Salem, [Cairo University]
 * Alberto Sanz, [Universidad de Málaga (University of Malaga)]
+* Erik Schierboom, individual contributor
 * Vaibhav Sethia, individual contributor
 * Mohammed Sharfuddin, individual contributor
 * Raj Shekhar, individual contributor
@@ -192,13 +192,14 @@ o Gabriel Brown, individual contributor
 * Branch Vincent, individual contributor
 * Chris Wailes, [Indiana University]
 * Tony Wallace, [Cray Inc.]
-o Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
+* Vivian Wang, individual contributor, [GHC] 2022 Open Source Day
 * Alvis Wong, [GSoC 2019] student from [University of Waterloo]
 * Wayne Wong, [Cray Inc.]
 * Tong Xu, individual contributor
 * Joe Yan, [University of Maryland]
 * Sahil Yerawar, [GSoC 2018] student from [Indian Institute of Technology, Hyderabad]
 * Tim Zakian, [Cray Inc.] intern from [Indiana University]
+* Vanessa Zambrano, [HPE]
 * Hui Zhang, [University of Maryland]
 
 [Logo Design](https://chapel-lang.org/logo.html)

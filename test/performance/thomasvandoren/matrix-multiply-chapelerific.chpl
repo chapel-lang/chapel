@@ -20,6 +20,6 @@ proc dotProduct(ref C: [?DC] int, ref A: [?DA] int, ref B: [?DB] int)
 
   // Use promotion of * operator on slices of A and B, then reduce that result
   // with + operator.
-  forall (row, col) in DC do
+  forall (row, col) in DC with (ref C) do
     C[row, col] = + reduce (A[row, 1..] * B[1.., col]);
 }

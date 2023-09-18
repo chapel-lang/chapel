@@ -135,7 +135,7 @@ int _gnix_fl_init_ts(int elem_size, int offset, int init_size,
 			     fl);
 	if (ret == FI_SUCCESS) {
 		fl->ts = 1;
-		fastlock_init(&fl->lock);
+		ofi_spin_init(&fl->lock);
 	}
 
 	return ret;
@@ -155,7 +155,7 @@ void _gnix_fl_destroy(struct gnix_freelist *fl)
 	}
 
 	if (fl->ts)
-		fastlock_destroy(&fl->lock);
+		ofi_spin_destroy(&fl->lock);
 }
 
 

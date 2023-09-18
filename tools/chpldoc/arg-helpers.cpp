@@ -18,10 +18,17 @@
  */
 
 #include "arg-helpers.h"
+
+#include "chpl/framework/Context.h"
 #include "chpl/util/filesystem.h"
 
 #include <iostream>
 #include <cstring>
+#include <cstdio>
+#include <cstdlib>
+#include <inttypes.h>
+
+extern chpl::Context* gContext;
 
 bool developer = false;
 
@@ -31,6 +38,9 @@ bool startsWith(const char* str, const char* prefix) {
 }
 
 void clean_exit(int status) {
+  if (gContext) {
+    gContext->cleanupTmpDirIfNeeded();
+  }
   exit(status);
 }
 
@@ -122,3 +132,19 @@ define_str2Int(int64, "%" SCNd64)
 
 define_str2Int(uint64, "%" SCNu64)
 
+void arg_fatalError(const char *msg) {
+  std::cerr << "error: " << msg << std::endl;
+  clean_exit(1);
+}
+
+void arg_fatalUserError(const char *msg) {
+  arg_fatalError(msg);
+}
+
+const char *arg_programLoc(const char *argv0, void *mainAddr) {
+  return strdup(findProgramPath(argv0, mainAddr).c_str());
+}
+
+void arg_fatalErrorCont(const char *msg) {
+  std::cerr << "error: " << msg << std::endl;
+}

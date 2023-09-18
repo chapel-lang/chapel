@@ -12,13 +12,23 @@ close (TMPFILE);
 
 @out_lines = ( );
 
+my $found_marker = 0;
 for my $line (@lines) {
   chomp $line;
+
+  # Skip until we find "compiling generated source" command line.
+  # This is needed to ignore the compiler-driver's re-invocation lines.
+  if (!$found_marker && index($line, "compiling generated source") != -1) {
+    $found_marker = 1
+  }
+  next if not $found_marker;
+
   # find -O1 etc
   my @opts = ($line =~ / -O[0-9a-zA-Z]/g);
   my $opt = join('', @opts);
   # trim leading and trailing spaces
   $opt =~ s/^\s+|\s+$//g;
+
   # accept only the 1st non-empty such line
   # that way, this test ignores opts to linker
   if ($opt ne '') {

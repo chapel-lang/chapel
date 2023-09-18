@@ -1,0 +1,4 @@
+-suseLocking=true -sfileOffsetWithoutLocking=true
+-suseLocking=true -sfileOffsetWithoutLocking=false # offsetWithLocking-deprecated.good
+-suseLocking=false -sfileOffsetWithoutLocking=true
+-suseLocking=false -sfileOffsetWithoutLocking=false

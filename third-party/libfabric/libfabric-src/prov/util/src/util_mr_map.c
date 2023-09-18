@@ -108,14 +108,22 @@ int ofi_mr_map_verify(struct ofi_mr_map *map, uintptr_t *io_addr,
 	void *addr;
 
 	node = ofi_rbmap_find(map->rbtree, &key);
-	if (!node)
-		return -FI_EINVAL;
+	if (!node) {
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "unknown key: %" PRIu64 "\n", key);
+	        return -FI_EINVAL;
+        }
 
 	attr = node->data;
 	assert(attr);
 
 	if ((access & attr->access) != access) {
-		FI_DBG(map->prov, FI_LOG_MR, "verify_addr: invalid access\n");
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "invalid access: permitted %s\n",
+                        fi_tostr(&attr->access, FI_TYPE_MR_MODE));
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "invalid access: requested %s\n",
+                        fi_tostr(&access, FI_TYPE_MR_MODE));
 		return -FI_EACCES;
 	}
 
@@ -124,6 +132,13 @@ int ofi_mr_map_verify(struct ofi_mr_map *map, uintptr_t *io_addr,
 	if ((addr < attr->mr_iov[0].iov_base) ||
 	    (((char *) addr + len) > ((char *) attr->mr_iov[0].iov_base +
 			    	      attr->mr_iov[0].iov_len))) {
+                FI_WARN(map->prov, FI_LOG_MR,
+                        "target region (%p - %p) "
+                        "out of registered range (%p - %p)\n",
+                        addr, (char *) addr + len,
+                        (char *) attr->mr_iov[0].iov_base,
+                        (char *) attr->mr_iov[0].iov_base +
+                        attr->mr_iov[0].iov_len);
 		return -FI_EACCES;
 	}
 
@@ -200,9 +215,9 @@ int ofi_mr_close(struct fid *fid)
 
 	mr = container_of(fid, struct ofi_mr, mr_fid.fid);
 
-	fastlock_acquire(&mr->domain->lock);
+	ofi_genlock_lock(&mr->domain->lock);
 	ret = ofi_mr_map_remove(&mr->domain->mr_map, mr->key);
-	fastlock_release(&mr->domain->lock);
+	ofi_genlock_unlock(&mr->domain->lock);
 	if (ret)
 		return ret;
 
@@ -260,12 +275,23 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_EINVAL;
 
 	domain = container_of(fid, struct util_domain, domain_fid.fid);
+
+	if (!ofi_hmem_is_initialized(attr->iface)) {
+		FI_WARN(domain->mr_map.prov, FI_LOG_MR,
+			"Cannot register memory for uninitialized iface\n");
+		return -FI_ENOSYS;
+	}
+
 	mr = calloc(1, sizeof(*mr));
 	if (!mr)
 		return -FI_ENOMEM;
 
 	ofi_mr_update_attr(domain->fabric->fabric_fid.api_version,
 			   domain->info_domain_caps, attr, &cur_abi_attr);
+
+	if ((flags & FI_HMEM_HOST_ALLOC) && (attr->iface == FI_HMEM_ZE))
+		cur_abi_attr.device.ze = -1;
+
 	if (!hmem_ops[cur_abi_attr.iface].initialized) {
 		FI_WARN(domain->mr_map.prov, FI_LOG_MR,
 			"MR registration failed - hmem iface not initialized\n");
@@ -273,7 +299,7 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 		return -FI_ENOSYS;
 	}
 
-	fastlock_acquire(&domain->lock);
+	ofi_genlock_lock(&domain->lock);
 
 	mr->mr_fid.fid.fclass = FI_CLASS_MR;
 	mr->mr_fid.fid.context = attr->context;
@@ -296,7 +322,7 @@ int ofi_mr_regattr(struct fid *fid, const struct fi_mr_attr *attr,
 	ofi_atomic_inc32(&domain->ref);
 
 out:
-	fastlock_release(&domain->lock);
+	ofi_genlock_unlock(&domain->lock);
 	return ret;
 }
 
@@ -338,9 +364,9 @@ int ofi_mr_verify(struct ofi_mr_map *map, ssize_t len,
 	int ret;
 
 	domain = container_of(map, struct util_domain, mr_map);
-	fastlock_acquire(&domain->lock);
+	ofi_genlock_lock(&domain->lock);
 	ret = ofi_mr_map_verify(&domain->mr_map, addr, len,
 				key, access, NULL);
-	fastlock_release(&domain->lock);
+	ofi_genlock_unlock(&domain->lock);
 	return ret;
 }

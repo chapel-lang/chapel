@@ -1,0 +1,17 @@
+#!/bin/sh
+
+TESTNAME=$1
+OUTFILE=$2
+TMPFILE="$outfile.prediff.tmp"
+FILTER_TEXT="warning: The GPU locale interface is unstable"
+
+# If using --warn-unstable-internal only compare lines that have the GPU
+# specific warning.  (The intent of this test is to check for this warning and
+# we don't want to have to update the test if other unstable features are used
+# in our internal code).
+
+if [[ "$@" == *"--warn-unstable-internal"* ]]; then
+  mv $OUTFILE $TMPFILE
+  grep "$FILTER_TEXT" "$TMPFILE" > "$OUTFILE"
+  rm $TMPFILE
+fi

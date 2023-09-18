@@ -1,7 +1,7 @@
 /* mpz_root(root, u, nth) --  Set ROOT to floor(U^(1/nth)).
    Return an indication if the result is exact.
 
-Copyright 1999-2003, 2005, 2012 Free Software Foundation, Inc.
+Copyright 1999-2003, 2005, 2012, 2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -45,10 +45,17 @@ mpz_root (mpz_ptr root, mpz_srcptr u, unsigned long int nth)
   if (UNLIKELY (us < 0 && (nth & 1) == 0))
     SQRT_OF_NEGATIVE;
 
-  /* root extraction interpreted as c^(1/nth) means a zeroth root should
-     provoke a divide by zero, do this even if c==0 */
-  if (UNLIKELY (nth == 0))
-    DIVIDE_BY_ZERO;
+  if (UNLIKELY (nth <= 1))
+    {
+      /* root extraction interpreted as c^(1/nth) means a zeroth root should
+	 provoke a divide by zero, do this even if c==0 */
+      if (UNLIKELY (nth == 0))
+	DIVIDE_BY_ZERO;
+      /* nth == 1 */
+      if (root != NULL && u != root)
+	mpz_set (root, u);
+      return 1;			/* exact result */
+    }
 
   if (us == 0)
     {
@@ -69,16 +76,7 @@ mpz_root (mpz_ptr root, mpz_srcptr u, unsigned long int nth)
     rootp = TMP_ALLOC_LIMBS (rootn);
 
   up = PTR(u);
-
-  if (nth == 1)
-    {
-      MPN_COPY (rootp, up, un);
-      remn = 0;
-    }
-  else
-    {
-      remn = mpn_rootrem (rootp, NULL, up, un, (mp_limb_t) nth);
-    }
+  remn = mpn_rootrem (rootp, NULL, up, un, (mp_limb_t) nth);
 
   if (root != NULL)
     {

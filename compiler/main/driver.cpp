@@ -24,17 +24,18 @@
 
 #include "driver.h"
 
+#include "ModuleSymbol.h"
+#include "PhaseTracker.h"
 #include "arg.h"
 #include "chpl.h"
+#include "clangUtil.h"
 #include "config.h"
 #include "files.h"
 #include "library.h"
 #include "log.h"
-#include "ModuleSymbol.h"
 #include "misc.h"
 #include "mysystem.h"
 #include "parser.h"
-#include "PhaseTracker.h"
 #include "primitive.h"
 #include "runpasses.h"
 #include "stmt.h"
@@ -43,10 +44,11 @@
 #include "version.h"
 #include "visibleFunctions.h"
 
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/Context.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/chplenv.h"
+#include "chpl/util/clang-integration.h"
 
 #include "chpl/util/assertions.h"
 
@@ -55,9 +57,20 @@
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
+#include "llvm/Support/CommandLine.h"
+#if HAVE_LLVM_VER >= 140
+#include "llvm/MC/TargetRegistry.h"
+#else
+#include "llvm/Support/TargetRegistry.h"
+#endif
+#include "llvm/Support/TargetSelect.h"
 #endif
 
+
 std::map<std::string, const char*> envMap;
+
+// envMap used as input to getChplEnv
+static std::map<std::string, const char*> envMapChplEnvInput;
 
 char CHPL_HOME[FILENAME_MAX+1] = "";
 
@@ -75,7 +88,7 @@ const char* CHPL_TARGET_PLATFORM = NULL;
 const char* CHPL_TARGET_ARCH = NULL;
 const char* CHPL_TARGET_CPU = NULL;
 const char* CHPL_RUNTIME_CPU = NULL;
-const char* CHPL_TARGET_BACKEND_CPU = NULL;
+const char* CHPL_LLVM_TARGET_CPU = NULL;
 const char* CHPL_TARGET_CPU_FLAG = NULL;
 const char* CHPL_TARGET_COMPILER = NULL;
 const char* CHPL_TARGET_COMPILER_PRGENV = NULL;
@@ -113,13 +126,15 @@ const char* CHPL_TARGET_BUNDLED_LINK_ARGS = NULL;
 const char* CHPL_TARGET_SYSTEM_LINK_ARGS = NULL;
 
 const char* CHPL_CUDA_LIBDEVICE_PATH = NULL;
-const char* CHPL_ROCM_PATH = NULL;
-const char* CHPL_GPU_CODEGEN = NULL;
+const char* CHPL_GPU = NULL;
 const char* CHPL_GPU_ARCH = NULL;
 
 static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
+
+// Tmp dir path managed by compiler driver
+static char driverTmpDir[FILENAME_MAX] = "";
 
 // Flags that were in commonFlags.h/cpp for awhile
 
@@ -129,6 +144,10 @@ static bool fBaseline = false;
 //
 static bool fRungdb = false;
 static bool fRunlldb = false;
+bool fDriverDoMonolithic = true;
+bool fDriverPhaseOne = false;
+bool fDriverPhaseTwo = false;
+bool driverDebugPhaseSpecified = false;
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -137,6 +156,9 @@ bool fLibraryPython = false;
 bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
 
+bool driverInSubInvocation = false;
+bool driverDebugPhaseOne = true;
+bool driverDebugPhaseTwo = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool developer = false;
@@ -198,6 +220,8 @@ bool fWarnArrayOfRange = true;
 bool fWarnConstLoops = true;
 bool fWarnIntUint = false;
 bool fWarnUnstable = false;
+bool fWarnUnstableStandard = false;
+bool fWarnUnstableInternal = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -266,6 +290,7 @@ bool fReportOptimizedOn = false;
 bool fReportOptimizeForallUnordered = false;
 bool fReportPromotion = false;
 bool fReportScalarReplace = false;
+bool fReportGpu = false;
 bool fReportDeadBlocks = false;
 bool fReportDeadModules = false;
 bool fReportGpuTransformTime = false;
@@ -303,6 +328,7 @@ bool preserveInlinedLineNumbers = false;
 
 char stopAfterPass[128] = "";
 
+const char* compileCommandFilename = "compileCommand.tmp";
 const char* compileCommand = NULL;
 char compileVersion[64];
 
@@ -315,6 +341,8 @@ static bool fPrintVersion = false;
 static bool fPrintChplHome = false;
 
 std::string llvmFlags;
+std::string llvmRemarksFilters;
+std::vector<std::string> llvmRemarksFunctionsToShow;
 
 bool fPrintAdditionalErrors;
 
@@ -326,13 +354,16 @@ bool fPrintChplSettings = false;
 bool fDetailedErrors = false;
 
 bool fDynoCompilerLibrary = false;
+bool fDynoScopeResolve = true;
 bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
 size_t fDynoBreakOnHash = 0;
 
-bool fUseIOFormatters = false;
+bool fNoIOGenSerialization = false;
+bool fNoIOSerializeWriteThis = false;
+bool fNoIODeserializeReadThis = false;
 
 bool fWarnUnknownAttributeToolname = true;
 
@@ -342,9 +373,11 @@ std::vector<std::string> gDynoPrependInternalModulePaths;
 std::vector<std::string> gDynoPrependStandardModulePaths;
 
 int fGPUBlockSize = 0;
-char fGpuArch[16];
+char fGpuArch[gpuArchNameLen+1] = "";
 bool fGpuPtxasEnforceOpt;
+bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
+std::set<std::string> gpuArches;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -577,6 +610,13 @@ static void setupChplLLVM(void) {
 #endif
 }
 
+static void saveCompileCommand() {
+  // save compile command to file for later use in codegen
+  fileinfo* file = openTmpFile(compileCommandFilename, "w");
+  fprintf(file->fptr, "%s", compileCommand);
+  closefile(file);
+}
+
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -602,6 +642,7 @@ static void recordCodeGenStrings(int argc, char* argv[]) {
     if (arg)
       compileCommand = astr(compileCommand, arg, " ");
   }
+
   get_version(compileVersion, sizeof(compileVersion));
 }
 
@@ -702,13 +743,34 @@ static void setLDFlags(const ArgumentDescription* desc, const char* arg) {
 static void setLLVMFlags(const ArgumentDescription* desc, const char* arg) {
   // Append arg to the end of llvmFlags.
 
+#ifdef HAVE_LLVM
   // add a space if there are already arguments here
   if( llvmFlags.length() > 0 )
     llvmFlags += ' ';
 
   llvmFlags += arg;
+
+  if (0 == strcmp(arg, "--help")) {
+    std::vector<const char*> Args = {"chpl --mllvm", "--help", nullptr};
+    llvm::cl::ParseCommandLineOptions(Args.size()-1, &Args[0]);
+  }
+#else
+  printf("Cannot use '--mllvm': this 'chpl' was built without LLVM support\n");
+  clean_exit(1);
+#endif
 }
 
+static void setLLVMRemarksFilters(const ArgumentDescription* desc, const char* arg) {
+  llvmRemarksFilters = std::string(arg);
+}
+
+static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char* arg) {
+  std::vector<std::string> fNames;
+  splitString(std::string(arg), fNames, ",");
+  for(auto n: fNames) {
+    llvmRemarksFunctionsToShow.push_back(n);
+  }
+}
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
  addLibFile(libraryFilename);
@@ -720,6 +782,87 @@ static void handleLibPath(const ArgumentDescription* desc, const char* arg_unuse
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
   addIncInfo(incFilename);
+}
+
+static int invokeChplWithArgs(int argc, char* argv[],
+                              const std::vector<std::string>& additionalArgs,
+                              const char* description) {
+  // invoke the compiler again with arguments forwarded
+  assert(!additionalArgs.empty() &&
+         "expected additional flags to be specified for chpl invocation");
+  std::vector<std::string> commandVec;
+  for (int i = 0; i < argc; i++) {
+    commandVec.emplace_back(argv[i]);
+    if (i == 0) {
+      // argv[0] is the chapel binary (usually 'chpl'), and we want to insert
+      // our additional arguments immediately after that to put them before
+      // other user-specified args
+      commandVec.insert(commandVec.end(), additionalArgs.begin(),
+                        additionalArgs.end());
+    }
+  }
+
+  return mysystem(commandVec, description,
+                  /* ignoreStatus */ true, /* quiet */ false);
+}
+
+static int runDriverPhaseOne(int argc, char* argv[]);
+static int runDriverPhaseTwo(int argc, char* argv[]);
+
+// Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
+// that trigger components of the actual compilation work to be performed.
+// After all phases are complete, or upon failure, the driver exits.
+static void runAsCompilerDriver(int argc, char* argv[]) {
+  int status = 0;
+
+  // initialize resources that need to be carried over between invocations
+  ensureTmpDirExists();
+  saveCompileCommand();
+
+  // invoke phase one
+  if ((status = runDriverPhaseOne(argc, argv)) != 0) {
+    clean_exit(status);
+  }
+
+  // Skip phase two if the compile command does not require it, or if we are
+  // running in a debugger for phase one only.
+  bool debugPhaseOneOnly =
+      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
+  if (debugPhaseOneOnly) {
+    USR_WARN(
+        "Skipping phase two due to running only phase one "
+        "in debugger; change this with --driver-debug-phase if desired");
+  }
+  bool shouldSkipPhaseTwo =
+      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
+      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+  if (!shouldSkipPhaseTwo) {
+    // invoke phase two
+    if ((status = runDriverPhaseTwo(argc, argv)) != 0) {
+      clean_exit(status);
+    }
+  }
+
+  // Tmp dir will be deleted if necessary when the compiler-driver's Context is
+  // deleted.
+
+  clean_exit(status);
+}
+
+// Run phase one of compiler-driver
+static int runDriverPhaseOne(int argc, char* argv[]) {
+  std::vector<std::string> additionalArgs = {"--driver-phase-one",
+                                             "--driver-tmp-dir", intDirName};
+  return invokeChplWithArgs(argc, argv, additionalArgs,
+                            "invoking driver phase one");
+}
+
+// Run phase two of compiler-driver
+static int runDriverPhaseTwo(int argc, char* argv[]) {
+  std::vector<std::string> additionalArgs = {"--driver-phase-two",
+                                             "--driver-tmp-dir", intDirName};
+  return invokeChplWithArgs(argc, argv, additionalArgs,
+                            "invoking driver phase two");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -764,6 +907,30 @@ static void readConfig(const ArgumentDescription* desc, const char* arg_unused) 
   }
 }
 
+static void setSubInvocation(const ArgumentDescription* desc, const char* arg) {
+  driverInSubInvocation = true;
+}
+
+static void setDriverDebugPhase(const ArgumentDescription* desc,
+                                const char* arg) {
+  driverDebugPhaseSpecified = true;
+
+  if (0 == strcmp(arg, "1")) {
+    driverDebugPhaseOne = true;
+    driverDebugPhaseTwo = false;
+  } else if (0 == strcmp(arg, "2")) {
+    driverDebugPhaseOne = false;
+    driverDebugPhaseTwo = true;
+  } else if (0 == strcmp(arg, "all")) {
+    driverDebugPhaseOne = true;
+    driverDebugPhaseTwo = true;
+  } else {
+    USR_FATAL(
+        "--driver-debug-phase requires either '1', '2', or 'all' as input, "
+        "but got: %s\n", arg);
+  }
+}
+
 static void addModulePath(const ArgumentDescription* desc, const char* newpath) {
   addFlagModulePath(newpath);
 
@@ -798,7 +965,6 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
 {
   if (fYesLlvmCodegen) {
     fNoLlvmCodegen = false;
-    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
     envMap["CHPL_TARGET_COMPILER"] = "llvm";
     // set the environment variable for follow-on processes including
     // any printchplenv invocation
@@ -806,7 +972,6 @@ static void setLlvmCodegen(const ArgumentDescription* desc, const char* unused)
     if( rc ) USR_FATAL("Could not setenv CHPL_TARGET_COMPILER");
   } else {
     fNoLlvmCodegen = true;
-    USR_WARN("--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
   }
 }
 
@@ -955,6 +1120,10 @@ static void setLogDir(const ArgumentDescription* desc, const char* arg) {
 
 static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
+}
+
+static void setLogModule(const ArgumentDescription* desc, const char* arg) {
+  log_modules.insert(std::string(arg));
 }
 
 static void setPrintPassesFile(const ArgumentDescription* desc, const char* fileName) {
@@ -1187,12 +1356,13 @@ static ArgumentDescription arg_desc[] = {
  {"log", ' ', NULL, "Dump IR in text format.", "F", &fLog, "CHPL_LOG", NULL},
  {"log-dir", ' ', "<path>", "Specify log directory", "P", log_dir, "CHPL_LOG_DIR", setLogDir},
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
- {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module", "S256", log_module, "CHPL_LOG_MODULE", NULL},
+ {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module. Can be specified multiple times", "S", NULL, "CHPL_LOG_MODULE", setLogModule},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
- {"log-node", ' ', NULL, "Dump IR using AstDumpToNode", "F", &fLogNode, "CHPL_LOG_NODE", NULL},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
+ {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
+ {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -1216,6 +1386,7 @@ static ArgumentDescription arg_desc[] = {
  {"report-optimized-forall-unordered-ops", ' ', NULL, "Show which statements in foralls have been converted to unordered operations", "F", &fReportOptimizeForallUnordered, NULL, NULL},
  {"report-promotion", ' ', NULL, "Print information about scalar promotion", "F", &fReportPromotion, NULL, NULL},
  {"report-scalar-replace", ' ', NULL, "Print scalar replacement stats", "F", &fReportScalarReplace, NULL, NULL},
+ {"report-gpu", ' ', NULL, "Print information about what loops are and are not GPU eligible", "F", &fReportGpu, NULL, NULL},
 
  {"", ' ', NULL, "Developer Flags -- Miscellaneous", NULL, NULL, NULL, NULL},
  {"allow-noinit-array-not-pod", ' ', NULL, "Allow noinit for arrays of records", "N", &fAllowNoinitArrayNotPod, "CHPL_BREAK_ON_CODEGEN", NULL},
@@ -1227,10 +1398,15 @@ static ArgumentDescription arg_desc[] = {
  {"explain-call-id", ' ', "<call-id>", "Explain resolution of call by ID", "I", &explainCallID, NULL, NULL},
  {"break-on-resolve-id", ' ', NULL, "Break when function call with AST id is resolved", "I", &breakOnResolveID, "CHPL_BREAK_ON_RESOLVE_ID", NULL},
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
+ {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
+ {"compiler-driver", ' ', NULL, "Run chpl executable as a compiler driver", "f", &fDriverDoMonolithic, NULL, NULL},
+ {"driver-phase-one", ' ', NULL, "Run driver phase one (internal use flag)", "F", &fDriverPhaseOne, NULL, setSubInvocation},
+ {"driver-phase-two", ' ', NULL, "Run driver phase two (internal use flag)", "F", &fDriverPhaseTwo, NULL, setSubInvocation},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
+ {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
  {"lifetime-checking", ' ', NULL, "Enable [disable] lifetime checking pass", "n", &fNoLifetimeChecking, NULL, NULL},
- {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"split-initialization", ' ', NULL, "Enable [disable] support for split initialization", "n", &fNoSplitInit, NULL, NULL},
  {"early-deinit", ' ', NULL, "Enable [disable] support for early deinit based upon expiring value analysis", "n", &fNoEarlyDeinit, NULL, NULL},
  {"copy-elision", ' ', NULL, "Enable [disable] copy elision based upon expiring value analysis", "n", &fNoCopyElision, NULL, NULL},
@@ -1246,6 +1422,7 @@ static ArgumentDescription arg_desc[] = {
  {"gpu-block-size", ' ', "<block-size>", "Block size for GPU launches", "I", &fGPUBlockSize, "CHPL_GPU_BLOCK_SIZE", NULL},
  {"gpu-arch", ' ', "<cuda-architecture>", "CUDA architecture to use", "S16", &fGpuArch, "_CHPL_GPU_ARCH", setEnv},
  {"gpu-ptxas-enforce-optimization", ' ', NULL, "Modify generated .ptxas file to enable optimizations", "F", &fGpuPtxasEnforceOpt, NULL, NULL},
+ {"gpu-specialization", ' ', NULL, "Enable [disable] an optimization that clones functions into copies assumed to run on a GPU locale.", "N", &fGpuSpecialization, "CHPL_GPU_SPECIALIZATION", NULL},
  {"library", ' ', NULL, "Generate a Chapel library file", "F", &fLibraryCompile, NULL, NULL},
  {"library-dir", ' ', "<directory>", "Save generated library helper files in directory", "P", libDir, "CHPL_LIB_SAVE_DIR", verifySaveLibDir},
  {"library-header", ' ', "<filename>", "Name generated header file", "P", libmodeHeadername, NULL, setLibmode},
@@ -1286,10 +1463,11 @@ static ArgumentDescription arg_desc[] = {
  {"warn-int-uint", ' ', NULL, "Enable [disable] warnings for potentially negative 'int' values implicitly converted to 'uint'", "N", &fWarnIntUint, "CHPL_WARN_INT_UINT", NULL},
  {"warn-tuple-iteration", ' ', NULL, "Enable [disable] warnings for tuple iteration", "n", &fNoWarnTupleIteration, "CHPL_WARN_TUPLE_ITERATION", setWarnTupleIteration},
  {"warn-special", ' ', NULL, "Enable [disable] special warnings", "n", &fNoWarnSpecial, "CHPL_WARN_SPECIAL", setWarnSpecial},
-
+ {"warn-unstable-internal", ' ', NULL, "Enable [disable] unstable warnings in internal modules", "N", &fWarnUnstableInternal, NULL, NULL},
+ {"warn-unstable-standard", ' ', NULL, "Enable [disable] unstable warnings in standard modules", "N", &fWarnUnstableStandard, NULL, NULL},
  {"detailed-errors", ' ', NULL, "Enable [disable] detailed error messages", "N", &fDetailedErrors, NULL, NULL},
-
  {"dyno", ' ', NULL, "Enable [disable] using dyno compiler library", "N", &fDynoCompilerLibrary, "CHPL_DYNO_COMPILER_LIBRARY", NULL},
+ {"dyno-scope-resolve", ' ', NULL, "Enable [disable] using dyno for scope resolution", "N", &fDynoScopeResolve, "CHPL_DYNO_SCOPE_RESOLVE", NULL},
  {"dyno-scope-production", ' ', NULL, "Enable [disable] using both dyno and production scope resolution", "N", &fDynoScopeProduction, "CHPL_DYNO_SCOPE_PRODUCTION", NULL},
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
@@ -1297,7 +1475,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
 
- {"use-io-formatters", ' ', NULL, "Enable [disable] use of experimental IO formatters", "N", &fUseIOFormatters, "CHPL_USE_IO_FORMATTERS", NULL},
+ {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
+ {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
+ {"io-deserialize-readThis", ' ', NULL, "Enable [disable] use of 'readThis' as default for 'deserialize' methods", "n", &fNoIODeserializeReadThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
  {"print-chpl-loc", ' ', NULL, "Print this executable's path and exit", "F", &fPrintChplLoc, NULL,NULL},
   {0}
 };
@@ -1320,6 +1500,15 @@ static void printStuff(const char* argv0) {
 
 #ifdef HAVE_LLVM
     fprintf(stdout, "  built with LLVM version %s\n", LLVM_VERSION_STRING);
+    llvm::InitializeAllTargets();
+    std::string availableTargets;
+    bool first = true;
+    for (auto target : llvm::TargetRegistry::targets()) {
+      if(!first) { availableTargets += ", "; }
+      first = false;
+      availableTargets += target.getName();
+    }
+    fprintf(stdout, "  available LLVM targets: %s\n", availableTargets.c_str());
 #endif
 
     fPrintCopyright  = true;
@@ -1441,11 +1630,17 @@ static void populateEnvMap() {
   // populates global envMap if the key has not been already set from
   // argument processing
 
+  envMapChplEnvInput = envMap;
+
   // Call printchplenv and collect output into a map
   auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
-  if (auto err = chplEnvResult.getError()) {
-    USR_FATAL("failed to get output from printchplenv, error: %s",
-              err.message().c_str());
+  if (!chplEnvResult) {
+    if (auto err = chplEnvResult.getError()) {
+      USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
+                err.message().c_str());
+    } else {
+      USR_FATAL("failed to get environment settings");
+    }
   }
 
   // figure out if it's a Cray programing environment so we can infer
@@ -1479,7 +1674,7 @@ static void setChapelEnvs() {
   CHPL_TARGET_ARCH     = envMap["CHPL_TARGET_ARCH"];
   CHPL_TARGET_CPU      = envMap["CHPL_TARGET_CPU"];
   CHPL_RUNTIME_CPU     = envMap["CHPL_RUNTIME_CPU"];
-  CHPL_TARGET_BACKEND_CPU = envMap["CHPL_TARGET_BACKEND_CPU"];
+  CHPL_LLVM_TARGET_CPU = envMap["CHPL_LLVM_TARGET_CPU"];
   CHPL_TARGET_CPU_FLAG = envMap["CHPL_TARGET_CPU_FLAG"];
   CHPL_TARGET_COMPILER = envMap["CHPL_TARGET_COMPILER"];
   CHPL_TARGET_COMPILER_PRGENV = envMap["CHPL_TARGET_COMPILER_PRGENV"];
@@ -1518,8 +1713,7 @@ static void setChapelEnvs() {
 
   if (usingGpuLocaleModel()) {
     CHPL_CUDA_LIBDEVICE_PATH = envMap["CHPL_CUDA_LIBDEVICE_PATH"];
-    CHPL_ROCM_PATH = envMap["CHPL_ROCM_PATH"];
-    CHPL_GPU_CODEGEN = envMap["CHPL_GPU_CODEGEN"];
+    CHPL_GPU= envMap["CHPL_GPU"];
     CHPL_GPU_ARCH = envMap["CHPL_GPU_ARCH"];
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -1528,8 +1722,9 @@ static void setChapelEnvs() {
       case GpuCodegenType::GPU_CG_AMD_HIP:
         gGpuSdkPath = envMap["CHPL_ROCM_PATH"];
         break;
-      default:
-        INT_ASSERT(0 && "Should be unreachable");
+      case GpuCodegenType::GPU_CG_CPU:
+        gGpuSdkPath = "";
+        break;
     }
   }
 
@@ -1620,7 +1815,7 @@ static void setMultiLocaleInterop() {
   fMultiLocaleInterop = true;
 }
 
-static void setMaxCIndentLen() {
+static void setMaxCIdentLen() {
   bool gotPGI = !strcmp(CHPL_TARGET_COMPILER, "pgi")
              || !strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-pgi");
   // conservatively how much is needed for the current PGI compiler
@@ -1631,10 +1826,27 @@ static void setPrintCppLineno() {
   if (developer && !userSetCppLineno) printCppLineno = false;
 }
 
-static void setGPUFlags() {
-  bool isGpuCodegen = usingGpuLocaleModel();
+static void populateGpuArches(const char* from) {
+  // using memcpy and setting the null byte to avoid errors from older
+  // GCCs
+  char buffer[gpuArchNameLen+1];
+  memcpy(buffer, from, gpuArchNameLen);
+  buffer[gpuArchNameLen] = '\0';
 
-  if(isGpuCodegen) {
+  std::vector<std::string> into;
+  splitString(std::string(buffer), into, ",");
+  for (auto& str : into){
+    gpuArches.insert(str);
+  }
+}
+
+static void setGPUFlags() {
+  if(usingGpuLocaleModel()) {
+    if (fWarnUnstable) {
+      USR_WARN("GPU support is under active development. As such, the"
+               " interface is unstable and expected to change in the"
+               " forthcoming releases.");
+    }
     if (!fNoChecks) {
       USR_WARN("The prototype GPU support implies --no-checks."
                " This may impact debuggability. To suppress this warning,"
@@ -1649,6 +1861,66 @@ static void setGPUFlags() {
       fNoCastChecks = true;
       fNoDivZeroChecks = true;
     }
+    //
+    // set up gpuArch
+    if (strlen(fGpuArch) > 0) {
+      populateGpuArches(fGpuArch);
+    }
+    else {
+      if (CHPL_GPU_ARCH != nullptr && strlen(CHPL_GPU_ARCH) == 0) {
+        USR_FATAL("CHPL_GPU_ARCH must be set. See "
+                  "https://chapel-lang.org/docs/technotes/gpu.html "
+                  "for more information");
+      }
+      else {
+        populateGpuArches(CHPL_GPU_ARCH);
+      }
+    }
+  }
+
+}
+
+// Warn for use of deprecated flags
+static void warnDeprecatedFlags() {
+  if (fYesLlvmCodegen) {
+    USR_WARN("--llvm is deprecated -- please use --target-compiler=llvm");
+  }
+  if (fNoLlvmCodegen) {
+    USR_WARN(
+        "--no-llvm is deprecated -- please use e.g. --target-compiler=gnu");
+  }
+}
+
+// Check for inconsistencies in compiler-driver control flags
+static void checkCompilerDriverFlags() {
+  if (fDriverDoMonolithic) {
+    // Prevent running if we are in monolithic mode but appear to be in a
+    // sub-invocation, to ensure we are safe from contradictory flags down the
+    // line.
+    if (driverInSubInvocation) {
+      USR_FATAL(
+          "Requested monolithic compilation, but an internal compiler-driver "
+          "flag was set");
+    }
+    if (driverTmpDir[0]) {
+      USR_FATAL("Can't set driver temp dir for monolithic compilation");
+    }
+  }
+
+  if (driverDebugPhaseSpecified) {
+    if (fDriverDoMonolithic) {
+      USR_WARN(
+          "Driver debug phase has no effect for monolithic compilation");
+    }
+    if (!(fRungdb || fRunlldb)) {
+      USR_WARN(
+          "Driver debug phase has no effect when not running with debugger");
+    }
+  }
+
+  if (fDriverPhaseOne && fDriverPhaseTwo) {
+      USR_FATAL(
+          "Multiple internal compiler-driver phase flags set simultaneously");
   }
 }
 
@@ -1809,7 +2081,14 @@ static void checkNotLibraryAndMinimalModules(void) {
 // or CHPL_ settings
 //
 static void postprocess_args() {
-  setMaxCIndentLen();
+  bool ignore_warnings_previous = ignore_warnings;
+  // To avoid redundant warnings in driver sub-invocations, disable them unless
+  // we are in a top-level invocation.
+  if (driverInSubInvocation) {
+    ignore_warnings = true;
+  }
+
+  setMaxCIdentLen();
 
   postLocal();
 
@@ -1828,6 +2107,9 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
+
+  // restore warnings to previous state
+  ignore_warnings = ignore_warnings_previous;
 }
 
 
@@ -1844,6 +2126,8 @@ static void postprocess_args() {
 // chplconfig-style environment variables checks could/should be done in the
 // chplenv scripts; otherwise put the checks here.
 static void validateSettings() {
+  warnDeprecatedFlags();
+
   checkNotLibraryAndMinimalModules();
 
   checkLLVMCodeGen();
@@ -1857,8 +2141,93 @@ static void validateSettings() {
   checkRuntimeBuilt();
 }
 
+static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
+  return {
+    .boundsChecking = !fNoBoundsChecks,
+    .castChecking = !fNoCastChecks,
+    .nilDerefChecking = !fNoNilChecks,
+    .overloadSetsChecking = fOverloadSetsChecks,
+    .divByZeroChecking = !fNoDivZeroChecks,
+    .cacheRemote = fCacheRemote,
+    .privatization = !(fNoPrivatization || fLocal),
+    .local = fLocal,
+    .warnUnstable = fWarnUnstable,
+  };
+}
+
+// Ensure initialization of tmp dir, using savecdir if provided.
+// If invoked by the driver, creates the tmp dir; if invoked in a sub-process,
+// uses the one passed to us by the driver.
+// Also works in monolithic mode, in which case its only responsibility is to
+// respect savecdir.
+static void bootstrapTmpDir() {
+  chpl::Context::Configuration config;
+
+  if (driverInSubInvocation) {
+    // We are in a sub-invocation and can assume that a tmp dir has been
+    // established for us by the driver already, and will be deleted for us
+    // later if necessary.
+    if (!driverTmpDir[0]) {
+      USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
+    }
+    intDirName = driverTmpDir;
+    config.tmpDir = intDirName;
+    config.keepTmpDir = true;
+  } else {
+    // This is an initial invocation of the driver, or monolithic.
+    if (saveCDir[0]) {
+      // Bootstrap with specified savecdir.
+      ensureDirExists(saveCDir, "ensuring --savec directory exists");
+      config.tmpDir = saveCDir;
+      config.keepTmpDir = true;
+    } else {
+      // No specified savecdir, so we don't do anything for bootstrapping.
+      // Just let the Context create a default temp dir.
+    }
+  }
+
+  auto oldContext = gContext;
+  gContext = new chpl::Context(*oldContext, std::move(config));
+  delete oldContext;
+
+  // Besides accessing, this creates the dir if it does not exist already.
+  // Ensure it exists by the end of this function for simplicity.
+  std::ignore = gContext->tmpDir();
+}
+
 static void dynoConfigureContext(std::string chpl_module_path) {
   INT_ASSERT(gContext != nullptr);
+
+  // Compute a new configuration for the Context
+  chpl::Context::Configuration config;
+  config.chplHome = CHPL_HOME;
+  for (const auto& pair : envMapChplEnvInput) {
+    config.chplEnvOverrides.insert(pair);
+  }
+  config.toolName = "chpl";
+  // Keep tmp dir if previous config did; this is needed as the tmp dir has
+  // already been created by the tmp dir bootstrap function.
+  config.keepTmpDir = gContext->shouldSaveTmpDirFiles();
+
+  // Replace the current gContext with one using the new configuration.
+  auto oldContext = gContext;
+  gContext = new chpl::Context(*oldContext, std::move(config));
+  delete oldContext;
+
+  // set up the clang arguments
+#ifdef HAVE_LLVM
+  {
+    std::vector<std::string> clangCCArgs;
+    computeClangArgs(clangCCArgs);
+    if (developer && printSystemCommands) {
+      printf("computed clang arguments:\n");
+      for (const auto& arg : clangCCArgs) {
+        printf("  %s\n", arg.c_str());
+      }
+    }
+    chpl::util::setClangFlags(gContext, clangCCArgs);
+  }
+#endif
 
   // Set the config names/values we processed earlier and clear them.
   chpl::parsing::setConfigSettings(gContext, gDynoParams);
@@ -1893,12 +2262,21 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   // Configure compilation flags for the context.
   chpl::CompilerFlags flags;
   flags.set(chpl::CompilerFlags::WARN_UNSTABLE, fWarnUnstable);
+  flags.set(chpl::CompilerFlags::WARN_UNSTABLE_INTERNAL,
+            fWarnUnstableInternal);
+  flags.set(chpl::CompilerFlags::WARN_UNSTABLE_STANDARD,
+            fWarnUnstableStandard);
   flags.set(chpl::CompilerFlags::WARN_ARRAY_OF_RANGE, fWarnArrayOfRange);
   flags.set(chpl::CompilerFlags::WARN_UNKNOWN_TOOL_SPACED_ATTRS,
             fWarnUnknownAttributeToolname);
+  flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
+            fPermitUnhandledModuleErrors);
 
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);
+
+  // Set the compilation globals all at once using a query.
+  chpl::setCompilerGlobals(gContext, dynoBuildCompilerGlobals());
 }
 
 
@@ -1942,6 +2320,8 @@ int main(int argc, char* argv[]) {
       chpl_module_path = envvarpath;
     }
 
+    bootstrapTmpDir();
+
     addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
     postprocess_args();
@@ -1956,7 +2336,7 @@ int main(int argc, char* argv[]) {
     recordCodeGenStrings(argc, argv);
   } // astlocMarker scope
 
-  // we print things (--help*, --copyright, etc.) before validating
+  // We print things (--help*, --copyright, etc.) before validating
   // settings so that someone's attempt to run 'chpl --help' won't
   // result in a "you can't compile with those settings!!!" type of
   // error when all they were trying to do was get some help.
@@ -1965,14 +2345,29 @@ int main(int argc, char* argv[]) {
   // other steps above so that if they run '--help-settings' or the
   // like, they'll get the full set of set and inferred settings.
   //
-  printStuff(argv[0]);
-  validateSettings();
+  // Printing and validation is skipped if we are in a sub-invocation to avoid
+  // giving the user the same information on each invocation.
+  //
 
-  if (fRungdb)
-    runCompilerInGDB(argc, argv);
+  // Check driver flags even in sub-invocation, in case the user manually set
+  // internal flags that put us in a phony sub-invocation.
+  checkCompilerDriverFlags();
+  if (!driverInSubInvocation) {
+    printStuff(argv[0]);
+    validateSettings();
+  }
 
-  if (fRunlldb)
-    runCompilerInLLDB(argc, argv);
+  if (!fDriverDoMonolithic && !driverInSubInvocation)
+    runAsCompilerDriver(argc, argv);
+
+  // In driver mode, debug only if we are in a driver phase that was requested
+  // to be debugged.
+  if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
+        (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
+    // re-run compiler in appropriate debugger if requested
+    if (fRungdb) runCompilerInGDB(argc, argv);
+    if (fRunlldb) runCompilerInLLDB(argc, argv);
+  }
 
   assertSourceFilesFound();
 

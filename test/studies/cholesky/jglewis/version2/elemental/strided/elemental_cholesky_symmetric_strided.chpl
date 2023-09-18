@@ -94,7 +94,7 @@ module elemental_cholesky_symmetric_strided {
     // processor grid from A's distribution
     // --------------------------------------------
 
-    const A_locale_grid = A.domain.dist.targetLocales();
+    const A_locale_grid = A.domain.distribution.targetLocales();
     const A_grid_domain = A_locale_grid.domain,
           n_processors  = A_grid_domain.size;
 
@@ -246,7 +246,7 @@ module elemental_cholesky_symmetric_strided {
 	      // necessary when that replication is available.  It is 
 	      // unnecessary in the current code.
 
-	      //	      const L12_Idx : domain (2, stridable = true) 
+	      //	      const L12_Idx : domain (2, strides = strideKind.any) 
 	      //		                         = [my_Ax2_cols, A11_cols];
 	      const L12_Idx              = {my_Ax2_cols, A11_cols};
 	      const L12 : [L12_Idx] real = A [L12_Idx];

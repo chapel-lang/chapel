@@ -285,7 +285,7 @@ static void udpx_ep_progress(struct util_ep *util_ep)
 	hdr.msg_controllen = 0;
 	hdr.msg_flags = 0;
 
-	fastlock_acquire(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_lock(&ep->util_ep.rx_cq->cq_lock);
 	if (ofi_cirque_isempty(ep->rxq))
 		goto out;
 
@@ -299,7 +299,7 @@ static void udpx_ep_progress(struct util_ep *util_ep)
 		ofi_cirque_discard(ep->rxq);
 	}
 out:
-	fastlock_release(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_unlock(&ep->util_ep.rx_cq->cq_lock);
 }
 
 static ssize_t udpx_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
@@ -310,7 +310,7 @@ static ssize_t udpx_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 	ssize_t ret;
 
 	ep = container_of(ep_fid, struct udpx_ep, util_ep.ep_fid.fid);
-	fastlock_acquire(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_lock(&ep->util_ep.rx_cq->cq_lock);
 	if (ofi_cirque_isfull(ep->rxq)) {
 		ret = -FI_EAGAIN;
 		goto out;
@@ -327,7 +327,7 @@ static ssize_t udpx_recvmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 	ofi_cirque_commit(ep->rxq);
 	ret = 0;
 out:
-	fastlock_release(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_unlock(&ep->util_ep.rx_cq->cq_lock);
 	return ret;
 }
 
@@ -351,7 +351,7 @@ static ssize_t udpx_recv(struct fid_ep *ep_fid, void *buf, size_t len,
 	ssize_t ret;
 
 	ep = container_of(ep_fid, struct udpx_ep, util_ep.ep_fid.fid);
-	fastlock_acquire(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_lock(&ep->util_ep.rx_cq->cq_lock);
 	if (ofi_cirque_isfull(ep->rxq)) {
 		ret = -FI_EAGAIN;
 		goto out;
@@ -367,7 +367,7 @@ static ssize_t udpx_recv(struct fid_ep *ep_fid, void *buf, size_t len,
 	ofi_cirque_commit(ep->rxq);
 	ret = 0;
 out:
-	fastlock_release(&ep->util_ep.rx_cq->cq_lock);
+	ofi_genlock_unlock(&ep->util_ep.rx_cq->cq_lock);
 	return ret;
 }
 
@@ -392,7 +392,7 @@ static ssize_t udpx_sendto(struct udpx_ep *ep, const void *buf, size_t len,
 {
 	ssize_t ret;
 
-	fastlock_acquire(&ep->util_ep.tx_cq->cq_lock);
+	ofi_genlock_lock(&ep->util_ep.tx_cq->cq_lock);
 	if (ofi_cirque_isfull(ep->util_ep.tx_cq->cirq)) {
 		ret = -FI_EAGAIN;
 		goto out;
@@ -407,7 +407,7 @@ static ssize_t udpx_sendto(struct udpx_ep *ep, const void *buf, size_t len,
 		ret = -errno;
 	}
 out:
-	fastlock_release(&ep->util_ep.tx_cq->cq_lock);
+	ofi_genlock_unlock(&ep->util_ep.tx_cq->cq_lock);
 	return ret;
 }
 
@@ -448,7 +448,7 @@ static ssize_t udpx_sendmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 	hdr.msg_controllen = 0;
 	hdr.msg_flags = 0;
 
-	fastlock_acquire(&ep->util_ep.tx_cq->cq_lock);
+	ofi_genlock_lock(&ep->util_ep.tx_cq->cq_lock);
 	if (ofi_cirque_isfull(ep->util_ep.tx_cq->cirq)) {
 		ret = -FI_EAGAIN;
 		goto out;
@@ -462,7 +462,7 @@ static ssize_t udpx_sendmsg(struct fid_ep *ep_fid, const struct fi_msg *msg,
 		ret = -errno;
 	}
 out:
-	fastlock_release(&ep->util_ep.tx_cq->cq_lock);
+	ofi_genlock_unlock(&ep->util_ep.tx_cq->cq_lock);
 	return ret;
 }
 

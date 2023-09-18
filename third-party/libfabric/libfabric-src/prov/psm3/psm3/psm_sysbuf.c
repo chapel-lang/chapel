@@ -74,7 +74,7 @@ struct psmi_mem_block_ctrl {
 
 
 /* Per MQ allocators */
-void psmi_mq_sysbuf_init(psm2_mq_t mq)
+void psm3_mq_sysbuf_init(psm2_mq_t mq)
 {
     int i;
     uint32_t block_sizes[] = {256, 512, 1024, 2048, 4096, 8192, (uint32_t)-1};
@@ -106,15 +106,15 @@ void psmi_mq_sysbuf_init(psm2_mq_t mq)
         void *ptr;
         if (block_sizes[i] == -1)
             continue;
-        ptr = psmi_mq_sysbuf_alloc(mq, block_sizes[i]);
-        psmi_mq_sysbuf_free(mq, ptr);
+        ptr = psm3_mq_sysbuf_alloc(mq, block_sizes[i]);
+        psm3_mq_sysbuf_free(mq, ptr);
     }
-    // undo counters from psmi_mq_sysbuf_alloc during init
+    // undo counters from psm3_mq_sysbuf_alloc during init
     mq->stats.rx_sysbuf_num = 0;
     mq->stats.rx_sysbuf_bytes  = 0;
 }
 
-void psmi_mq_sysbuf_fini(psm2_mq_t mq)  // free all buffers that is currently not used
+void psm3_mq_sysbuf_fini(psm2_mq_t mq)  // free all buffers that is currently not used
 {
     struct psmi_mem_block_ctrl *block;
     int i;
@@ -131,7 +131,7 @@ void psmi_mq_sysbuf_fini(psm2_mq_t mq)  // free all buffers that is currently no
     mq->mem_ctrl_is_init = 0;
 }
 
-void psmi_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len)
+void psm3_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len)
 {
     snprintf(buf, len-1, "Sysbuf consumption: %"PRIu64" bytes\n",
              mq->mem_ctrl_total_bytes);
@@ -139,7 +139,7 @@ void psmi_mq_sysbuf_getinfo(psm2_mq_t mq, char *buf, size_t len)
     return;
 }
 
-void *psmi_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
+void *psm3_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
 {
     psmi_mem_ctrl_t *mm_handler = mq->handler_index;
     struct psmi_mem_block_ctrl *new_block;
@@ -148,7 +148,7 @@ void *psmi_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
     /* There is a timing race with ips initialization, fix later.
  *      * XXX */
     if (!mq->mem_ctrl_is_init)
-        psmi_mq_sysbuf_init(mq);
+        psm3_mq_sysbuf_init(mq);
 
     mq->stats.rx_sysbuf_num++;
     mq->stats.rx_sysbuf_bytes += alloc_size;
@@ -203,7 +203,7 @@ void *psmi_mq_sysbuf_alloc(psm2_mq_t mq, uint32_t alloc_size)
     return NULL;
 }
 
-void psmi_mq_sysbuf_free(psm2_mq_t mq, void * mem_to_free)
+void psm3_mq_sysbuf_free(psm2_mq_t mq, void * mem_to_free)
 {
     struct psmi_mem_block_ctrl * block_to_free;
     psmi_mem_ctrl_t *mm_handler;

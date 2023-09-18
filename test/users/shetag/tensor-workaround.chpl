@@ -14,7 +14,7 @@ version of the 1d example code.
 
 type elemType = real(64);
 
-class Vector {
+class Vector : writeSerializable {
   var n : int;
   var d = {1..n};
   var a : [d] elemType;
@@ -45,8 +45,8 @@ class Vector {
     d = {1..n};
   }
 
-  override proc writeThis(f) throws {
-    f.write("{n = ", n, ", a = ", a, "}");
+  override proc serialize(writer, ref serializer) throws {
+    writer.write("{n = ", n, ", a = ", a, "}");
   }
 
   //error: internal failure SYM1167 chpl Version 0.5

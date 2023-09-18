@@ -45,7 +45,7 @@ static int rxd_tree_compare(struct ofi_rbmap *map, void *key, void *data)
 	memset(addr, 0, len);
 	av = container_of(map, struct rxd_av, rbmap);
 	dg_addr = (intptr_t)ofi_idx_lookup(&av->rxdaddr_dg_idx,
-					   (fi_addr_t) data);
+					   (int)(uintptr_t) data);
 
 	ret = fi_av_lookup(av->dg_av, dg_addr,addr, &len);
 	if (ret)
@@ -110,10 +110,10 @@ static fi_addr_t rxd_av_dg_addr(struct rxd_av *av, fi_addr_t fi_addr)
 {
 	fi_addr_t dg_addr;
 	fi_addr_t rxd_addr = (intptr_t) ofi_idx_lookup(&av->fi_addr_idx,
-					     RXD_IDX_OFFSET(fi_addr));
+					     RXD_IDX_OFFSET((int)fi_addr));
 	if (!rxd_addr)
 		goto err;
-	dg_addr = (intptr_t) ofi_idx_lookup(&av->rxdaddr_dg_idx, rxd_addr);
+	dg_addr = (intptr_t) ofi_idx_lookup(&av->rxdaddr_dg_idx, (int)rxd_addr);
 	if (!dg_addr)
 		goto err;
 
@@ -133,25 +133,26 @@ static int rxd_set_rxd_addr(struct rxd_av *av, fi_addr_t dg_addr, fi_addr_t *add
 
 }
 
-static fi_addr_t rxd_set_fi_addr(struct rxd_av *av, fi_addr_t rxd_addr)
+static int rxd_set_fi_addr(struct rxd_av *av, fi_addr_t rxd_addr)
 {
-	int fi_addr;
+	int idx;
 	fi_addr_t dg_addr;
-	fi_addr = ofi_idx_insert(&(av->fi_addr_idx), (void*)(uintptr_t)rxd_addr);
-	if (fi_addr < 0)
+
+	idx = ofi_idx_insert(&(av->fi_addr_idx), (void*)(uintptr_t)rxd_addr);
+	if (idx < 0)
 		goto nomem1;
 
-	if (ofi_idm_set(&(av->rxdaddr_fi_idm), rxd_addr,
-		        (void*)(uintptr_t) fi_addr) < 0)
+	if (ofi_idm_set(&(av->rxdaddr_fi_idm), (int)rxd_addr,
+		        (void*)(uintptr_t) idx) < 0)
 		goto nomem2;
 
-	return fi_addr;
+	return idx;
 
 nomem2:
-	ofi_idx_remove_ordered(&(av->fi_addr_idx), fi_addr);
+	ofi_idx_remove_ordered(&(av->fi_addr_idx), idx);
 nomem1:
 	dg_addr = (intptr_t) ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx),
-						    rxd_addr);
+						    (int) rxd_addr);
 	fi_av_remove(av->dg_av, &dg_addr, 1, 0);
 
 	return -FI_ENOMEM;
@@ -178,7 +179,7 @@ int rxd_av_insert_dg_addr(struct rxd_av *av, const void *addr,
 			       NULL);
 	if (ret) {
 		assert(ret != -FI_EALREADY);
-		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), *rxd_addr);
+		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), (int)(*rxd_addr));
 		goto nomem;
 	}
 
@@ -208,7 +209,7 @@ static int rxd_av_insert(struct fid_av *av_fid, const void *addr, size_t count,
 		memset(sync_err, 0, sizeof(*sync_err) * count);
 	}
 
-	fastlock_acquire(&av->util_av.lock);
+	ofi_mutex_lock(&av->util_av.lock);
 	if (!av->dg_addrlen) {
 		ret = rxd_av_set_addrlen(av, addr);
 		if (ret)
@@ -227,9 +228,8 @@ static int rxd_av_insert(struct fid_av *av_fid, const void *addr, size_t count,
 				break;
 		}
 
-		util_addr = (intptr_t)ofi_idm_lookup(&av->rxdaddr_fi_idm,
-						     rxd_addr);
-
+		util_addr = (int)(intptr_t) ofi_idm_lookup(&av->rxdaddr_fi_idm,
+							   (int) rxd_addr);
 		if (!util_addr) {
 			util_addr = rxd_set_fi_addr(av, rxd_addr);
 			if (util_addr < 0) {
@@ -257,7 +257,7 @@ static int rxd_av_insert(struct fid_av *av_fid, const void *addr, size_t count,
 	}
 out:
 	av->dg_av_used += success_cnt;
-	fastlock_release(&av->util_av.lock);
+	ofi_mutex_unlock(&av->util_av.lock);
 
 	for (; i < count; i++) {
 		if (fi_addr)
@@ -299,23 +299,23 @@ static int rxd_av_remove(struct fid_av *av_fid, fi_addr_t *fi_addr, size_t count
 	struct rxd_av *av;
 
 	av = container_of(av_fid, struct rxd_av, util_av.av_fid);
-	fastlock_acquire(&av->util_av.lock);
+	ofi_mutex_lock(&av->util_av.lock);
 	for (i = 0; i < count; i++) {
 		rxd_addr = (intptr_t)ofi_idx_lookup(&av->fi_addr_idx,
-						    RXD_IDX_OFFSET(fi_addr[i]));
+						    (int) RXD_IDX_OFFSET(fi_addr[i]));
 		if (!rxd_addr)
 			goto err;
 
 		ofi_idx_remove_ordered(&(av->fi_addr_idx),
-				       RXD_IDX_OFFSET(fi_addr[i]));
-		ofi_idm_clear(&(av->rxdaddr_fi_idm), rxd_addr);
+				       (int) RXD_IDX_OFFSET(fi_addr[i]));
+		ofi_idm_clear(&(av->rxdaddr_fi_idm), (int) rxd_addr);
 	}
 
 err:
 	if (ret)
 		FI_WARN(&rxd_prov, FI_LOG_AV, "Unable to remove address from AV\n");
 
-	fastlock_release(&av->util_av.lock);
+	ofi_mutex_unlock(&av->util_av.lock);
 	return ret;
 }
 
@@ -367,7 +367,7 @@ static int rxd_av_close(struct fid *fid)
 	while ((node = ofi_rbmap_get_root(&av->rbmap))) {
 		rxd_addr = (fi_addr_t) node->data;
 		dg_addr = (intptr_t)ofi_idx_lookup(&av->rxdaddr_dg_idx,
-						   rxd_addr);
+						   (int) rxd_addr);
 
 		ret = fi_av_remove(av->dg_av, &dg_addr, 1, 0);
 		if (ret)
@@ -375,7 +375,7 @@ static int rxd_av_close(struct fid *fid)
 				"failed to remove dg addr: %d (%s)\n",
 				-ret, fi_strerror(-ret));
 
-		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), rxd_addr);
+		ofi_idx_remove_ordered(&(av->rxdaddr_dg_idx), (int) rxd_addr);
 		ofi_rbmap_delete(&av->rbmap, node);
 	}
 	ofi_rbmap_cleanup(&av->rbmap);

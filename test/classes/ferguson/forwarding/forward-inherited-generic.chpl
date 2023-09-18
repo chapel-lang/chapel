@@ -5,7 +5,7 @@ class Collection {
     }
 }
 
-class Deque : Collection {
+class Deque : Collection(?) {
     override proc add(elt : eltType) : bool {
         writeln("Called");
         return true;
@@ -16,7 +16,7 @@ record wrapper {
     type t;
     var instance : unmanaged Deque(t)?;
 
-    inline proc _value {
+    inline proc ref _value {
         if instance == nil then
             instance = new unmanaged Deque(t);
         return instance!;

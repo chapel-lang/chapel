@@ -1,5 +1,5 @@
+LICM: may-alias report for a loop in function test:
 noAliasSets: no-aliases for function main:
 noAliasSets: no-aliases for function callTest:
 noAliasSets: no-aliases for function test:
 noAliasSets: no-aliases for function chpl__deinit_global-arrays-nested:
-LICM: may-alias report for a loop in function test:

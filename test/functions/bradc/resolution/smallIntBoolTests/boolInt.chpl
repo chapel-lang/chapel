@@ -1,11 +1,29 @@
 config param testenum=false;
 
-proc foo(x: int(?w), y: int(w)) {
-  writeln("In int foo ", w);
+proc foo(x: int(8), y: int(8)) {
+  writeln("In int foo 8");
+}
+proc foo(x: int(16), y: int(16)) {
+  writeln("In int foo 16");
+}
+proc foo(x: int(32), y: int(32)) {
+  writeln("In int foo 32");
+}
+proc foo(x: int(64), y: int(64)) {
+  writeln("In int foo 64");
 }
 
-proc foo(x: uint(?w), y: uint(w)) {
-  writeln("In uint foo ", w);
+proc foo(x: uint(8), y: uint(8)) {
+  writeln("In uint foo 8");
+}
+proc foo(x: uint(16), y: uint(16)) {
+  writeln("In uint foo 16");
+}
+proc foo(x: uint(32), y: uint(32)) {
+  writeln("In uint foo 32");
+}
+proc foo(x: uint(64), y: uint(64)) {
+  writeln("In uint foo 64");
 }
 
 proc foo(x: int(64), y: uint(64)) {

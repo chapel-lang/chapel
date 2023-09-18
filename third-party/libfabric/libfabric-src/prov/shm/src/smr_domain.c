@@ -44,7 +44,7 @@ static struct fi_ops_domain smr_domain_ops = {
 	.cntr_open = smr_cntr_open,
 	.poll_open = fi_poll_create,
 	.stx_ctx = fi_no_stx_context,
-	.srx_ctx = fi_no_srx_context,
+	.srx_ctx = smr_srx_context,
 	.query_atomic = smr_query_atomic,
 	.query_collective = fi_no_query_collective,
 };
@@ -55,6 +55,10 @@ static int smr_domain_close(fid_t fid)
 	struct smr_domain *domain;
 
 	domain = container_of(fid, struct smr_domain, util_domain.domain_fid.fid);
+
+	if (domain->ipc_cache)
+		ofi_ipc_cache_destroy(domain->ipc_cache);
+
 	ret = ofi_domain_close(&domain->util_domain);
 	if (ret)
 		return ret;
@@ -93,17 +97,25 @@ int smr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 	if (!smr_domain)
 		return -FI_ENOMEM;
 
-	ret = ofi_domain_init(fabric, info, &smr_domain->util_domain, context);
+	ret = ofi_domain_init(fabric, info, &smr_domain->util_domain, context,
+			      OFI_LOCK_SPINLOCK);
 	if (ret) {
 		free(smr_domain);
 		return ret;
 	}
 
+	smr_domain->util_domain.threading = FI_THREAD_SAFE;
 	smr_fabric = container_of(fabric, struct smr_fabric, util_fabric.fabric_fid);
-	fastlock_acquire(&smr_fabric->util_fabric.lock);
+	ofi_mutex_lock(&smr_fabric->util_fabric.lock);
 	smr_domain->fast_rma = smr_fast_rma_enabled(info->domain_attr->mr_mode,
 						    info->tx_attr->msg_order);
-	fastlock_release(&smr_fabric->util_fabric.lock);
+	ofi_mutex_unlock(&smr_fabric->util_fabric.lock);
+
+	ret = ofi_ipc_cache_open(&smr_domain->ipc_cache, &smr_domain->util_domain);
+	if (ret) {
+		free(smr_domain);
+		return ret;
+	}
 
 	*domain = &smr_domain->util_domain.domain_fid;
 	(*domain)->fid.ops = &smr_domain_fi_ops;

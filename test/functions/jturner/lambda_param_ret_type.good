@@ -1,1 +1,0 @@
-lambda_param_ret_type.chpl:1: error: 'param' return types are not allowed in lambdas

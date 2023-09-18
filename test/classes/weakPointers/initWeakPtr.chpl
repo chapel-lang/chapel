@@ -22,7 +22,7 @@ var bc_weak1;
         bc1.x += 1;
         writeln("2");
 
-        var bc2 = shared.create(bc1);
+        var bc2 = bc1;
 
         bc_weak2 = new weak(bc2);
 
@@ -37,7 +37,7 @@ var bc_weak1;
             bc2.x += 1;
             writeln("3");
 
-            var bc3 = shared.create(bc1);
+            var bc3 = bc1;
 
             // weak pointer via initializer
             bc_weak3 = bc3.downgrade();

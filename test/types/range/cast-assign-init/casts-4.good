@@ -1,0 +1,1 @@
+casts-4.chpl:8: error: 'tryCast' to a range type with idxType=bool is not currently supported

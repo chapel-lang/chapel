@@ -47,6 +47,7 @@ static int list_providers = 0;
 static int verbose = 0, env = 0;
 static char *envstr;
 
+
 /* options and matching help strings need to be kept in sync */
 
 static const struct option longopts[] = {
@@ -63,6 +64,7 @@ static const struct option longopts[] = {
 	{"provider", required_argument, NULL, 'p'},
 	{"env", no_argument, NULL, 'e'},
 	{"getenv", required_argument, NULL, 'g'},
+	{"info", required_argument, NULL, 'i'},
 	{"list", no_argument, NULL, 'l'},
 	{"verbose", no_argument, NULL, 'v'},
 	{"version", no_argument, &ver, 1},
@@ -83,6 +85,7 @@ static const char *help_strings[][2] = {
 	{"PROV", "\t\tspecify provider explicitly"},
 	{"", "\t\tprint libfabric environment variables"},
 	{"SUBSTR", "\t\tprint libfabric environment variables with substr"},
+	{"", "\t\tprint fi_info structures containing substr"},
 	{"", "\t\tlist available libfabric providers"},
 	{"", "\t\tverbose output"},
 	{"", "\t\tprint version info and exit"},
@@ -270,6 +273,7 @@ static int print_vars(void)
 static int print_providers(struct fi_info *info)
 {
 	struct fi_info *cur;
+
 	for (cur = info; cur; cur = cur->next) {
 		printf("%s:\n", cur->fabric_attr->prov_name);
 		printf("    version: %d.%d\n",
@@ -282,6 +286,7 @@ static int print_providers(struct fi_info *info)
 static int print_short_info(struct fi_info *info)
 {
 	struct fi_info *cur;
+
 	for (cur = info; cur; cur = cur->next) {
 		printf("provider: %s\n", cur->fabric_attr->prov_name);
 		printf("    fabric: %s\n", cur->fabric_attr->name),
@@ -298,10 +303,15 @@ static int print_short_info(struct fi_info *info)
 
 static int print_long_info(struct fi_info *info)
 {
+	char buf[8192];
 	struct fi_info *cur;
+
 	for (cur = info; cur; cur = cur->next) {
-		printf("---\n");
-		printf("%s", fi_tostr(cur, FI_TYPE_INFO));
+		fi_tostr_r(buf, sizeof(buf), cur, FI_TYPE_INFO);
+		if (!envstr || strcasestr(buf, envstr)) {
+			printf("---\n");
+			printf("%s", buf);
+		}
 	}
 	return EXIT_SUCCESS;
 }
@@ -345,7 +355,7 @@ int main(int argc, char **argv)
 	hints->domain_attr->mode = ~0;
 	hints->domain_attr->mr_mode = ~(FI_MR_BASIC | FI_MR_SCALABLE);
 
-	while ((op = getopt_long(argc, argv, "s:n:P:c:m:t:a:p:d:f:eg:lhv", longopts,
+	while ((op = getopt_long(argc, argv, "s:n:P:c:m:t:a:p:d:f:eg:i:lhv", longopts,
 				 &option_index)) != -1) {
 		switch (op) {
 		case 0:
@@ -420,6 +430,9 @@ int main(int argc, char **argv)
 			list_providers = 1;
 			flags |= FI_PROV_ATTR_ONLY;
 			break;
+		case 'i':
+			envstr = optarg;
+			/* fall through */
 		case 'v':
 			verbose = 1;
 			break;

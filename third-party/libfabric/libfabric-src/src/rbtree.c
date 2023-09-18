@@ -397,6 +397,13 @@ void rbtKeyValue(RbtHandle h, RbtIterator it, void **key, void **val) {
     *val = i->val;
 }
 
+void ** rbtValuePtr(RbtHandle h, RbtIterator it) {
+    NodeType *i = it;
+
+    return &i->val;
+}
+
+
 void *rbtFindLeftmost(RbtHandle h, void *key, int(*compare)(void *a, void *b))
 {
 	RbtType *rbt = h;

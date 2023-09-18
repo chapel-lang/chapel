@@ -20,10 +20,12 @@
 
 module ExplicitRefCount {
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class RefCountBase {
 
     var refcnt: atomic int;
+
+    proc init() {}
 
     /*
       Increment the reference count and return the reference count value before

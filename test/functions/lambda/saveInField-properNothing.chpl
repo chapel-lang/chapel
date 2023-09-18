@@ -2,9 +2,9 @@ record Foo {
   type funcType;
   var funcField: funcType;
 
-  proc init(x: func(int, bool)) {
-    funcType = func(int, bool);
-    funcField = x;
+  proc init(y: proc(x: int): bool) {
+    funcType = proc(x: int): bool;
+    funcField = y;
   }
 
   proc init() {

@@ -1,5 +1,5 @@
 {
-  var F = lambda (x: int) { writeln(x); return x + 42; };
+  var F = proc(x: int) { writeln(x); return x + 42; };
   writeln(F.retType:string);
   writeln(F(13));
   writeln();
@@ -10,7 +10,7 @@
     var a: int;
     var b: real;
   }
-  var F = lambda () {
+  var F = proc() {
     var r = new R(13, 42.0);
     writeln(r);
     return r;
@@ -26,7 +26,7 @@
     var a: eltType;
     var b: eltType;
   }
-  var F = lambda () {
+  var F = proc() {
     var r = new R(real, 13.0, 42.0);
     writeln(r);
     return r;
@@ -37,7 +37,7 @@
 }
 
 {
-  var F = lambda (x: real) { writeln(x); return x:string; };
+  var F = proc(x: real) { writeln(x); return x:string; };
   writeln(F.retType:string);
   writeln(F(42));
   writeln();

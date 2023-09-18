@@ -78,7 +78,8 @@ static void make_crc_table(void)
  * crc() routine below)).
  */
 
-uint32_t ips_crc_calculate(uint32_t len, uint8_t *data, uint32_t crc)
+static uint32_t psm3_ips_crc_calculate(uint32_t len, uint8_t *data,
+					uint32_t crc)
 {
 	uint32_t c = crc;
 	uint32_t n;
@@ -90,4 +91,23 @@ uint32_t ips_crc_calculate(uint32_t len, uint8_t *data, uint32_t crc)
 		c = crc_table[(c ^ data[n]) & 0xff] ^ (c >> 8);
 	}
 	return c;
+}
+
+// calculate checksum for a PSM packet, including header and payload and
+// any padding words
+uint32_t psm3_ips_cksum_calculate(struct ips_message_header *p_hdr,
+				uint8_t *payload, uint32_t paylen)
+{
+	uint32_t cksum = 0xffffffff;
+
+	/* Checksum header */
+	cksum = psm3_ips_crc_calculate(sizeof(struct ips_message_header),
+						(uint8_t *) p_hdr, cksum);
+
+	/* Checksum payload (if any) */
+	if (paylen) {
+		psmi_assert_always(payload);
+		cksum = psm3_ips_crc_calculate(paylen, payload, cksum);
+	}
+	return cksum;
 }

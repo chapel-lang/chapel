@@ -68,7 +68,7 @@ static psm2_error_t rcvthread_initstats(ptl_t *ptl);
 static psm2_error_t rcvthread_initsched(struct ptl_rcvthread *rcvc);
 
 struct ptl_rcvthread {
-	const psmi_context_t *context;
+	psm2_ep_t ep;
 	const ptl_t *ptl;
 	struct ips_recvhdrq *recvq;
 
@@ -91,6 +91,11 @@ struct ptl_rcvthread {
 	uint32_t last_timeout;
 };
 
+#ifdef PSM_DSA
+// we only create one per process, can save here for read/compare only
+pthread_t psm3_rcv_threadid;
+#endif
+
 #ifdef PSM_CUDA
 	/* This is a global cuda context (extern declaration in psm_user.h)
          * stored to provide hints during a cuda failure
@@ -103,7 +108,7 @@ struct ptl_rcvthread {
  * The receive thread knows about the ptl interface, so it can muck with it
  * directly.
  */
-psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
+psm2_error_t psm3_ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 {
 	struct ptl_ips *ptl = (struct ptl_ips *)ptl_gen;
 	psm2_error_t err = PSM2_OK;
@@ -117,13 +122,13 @@ psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 	}
 	rcvc = ptl->rcvthread;
 
+	rcvc->ep = ptl->ep;
 	rcvc->recvq = recvq;
 	rcvc->ptl = ptl_gen;
-	rcvc->context = ptl->context;
 	rcvc->t_start_cyc = get_cycles();
 
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED)
+	if (PSMI_IS_GPU_ENABLED)
 		PSMI_CUDA_CALL(cuCtxGetCurrent, &cu_ctxt);
 #endif
 
@@ -135,7 +140,7 @@ psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 
 		/* Create a pipe so we can synchronously terminate the thread */
 		if (pipe(rcvc->pipefd) != 0) {
-			err = psmi_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
+			err = psm3_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
 						"Cannot create a pipe for receive thread: %s\n",
 						strerror(errno));
 			goto fail;
@@ -146,11 +151,14 @@ psm2_error_t ips_ptl_rcvthread_init(ptl_t *ptl_gen, struct ips_recvhdrq *recvq)
 				   ips_ptl_pollintr, ptl->rcvthread)) {
 			close(rcvc->pipefd[0]);
 			close(rcvc->pipefd[1]);
-			err = psmi_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
+			err = psm3_handle_error(ptl->ep, PSM2_EP_DEVICE_FAILURE,
 						"Cannot start receive thread: %s\n",
 						strerror(errno));
 			goto fail;
 		}
+#ifdef PSM_DSA
+		psm3_rcv_threadid = rcvc->hdrq_threadid;
+#endif
 		if ((err = rcvthread_initstats(ptl_gen)))
 			goto fail;
 	}
@@ -160,7 +168,7 @@ fail:
 	return err;
 }
 
-psm2_error_t ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
+psm2_error_t psm3_ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 {
 	struct ptl_ips *ptl = (struct ptl_ips *)ptl_gen;
 	struct ptl_rcvthread *rcvc = (struct ptl_rcvthread *)ptl->rcvthread;
@@ -172,16 +180,14 @@ psm2_error_t ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 	if (ptl->rcvthread == NULL)
 		return err;
 
-	psmi_stats_deregister_type(PSMI_STATSTYPE_RCVTHREAD, rcvc);
+	psm3_stats_deregister_type(PSMI_STATSTYPE_RCVTHREAD, rcvc);
 	if (rcvc->hdrq_threadid && psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED)) {
 		t_now = get_cycles();
 
 		/* Disable interrupts then kill the receive thread */
-		if (psmi_context_interrupt_isenabled
-		    ((psmi_context_t *) ptl->context))
+		if (psm3_context_interrupt_isenabled(ptl->ep))
 			if ((err =
-			     psmi_context_interrupt_set((psmi_context_t *) ptl->
-							context, 0)))
+			     psm3_context_interrupt_set(ptl->ep, 0)))
 				goto fail;
 
 		/* Close the pipe so we can have the thread synchronously exit.
@@ -197,13 +203,10 @@ psm2_error_t ips_ptl_rcvthread_fini(ptl_t *ptl_gen)
 		pthread_join(rcvc->hdrq_threadid, NULL);
 		psmi_hal_sub_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
 		rcvc->hdrq_threadid = 0;
-		if (_HFI_PRDBG_ON) {
-			_HFI_PRDBG_ALWAYS
-				("rcvthread poll success %lld/%lld times, "
+		_HFI_PRDBG("rcvthread poll success %lld/%lld times, "
 				 "thread cancelled in %.3f us\n",
 				(long long)rcvc->pollok, (long long)rcvc->pollcnt,
 				(double)cycles_to_nanosecs(get_cycles() - t_now) / 1e3);
-		}
 	}
 
 	psmi_free(ptl->rcvthread);
@@ -212,7 +215,12 @@ fail:
 	return err;
 }
 
-void ips_ptl_rcvthread_transfer_ownership(ptl_t *from_ptl_gen, ptl_t *to_ptl_gen)
+/* This is never actually called since we track rcvthread_is_enabled per HAL
+ * but if it was called it might have a bug since we don't
+ * psm3_context_interrupt_set for the new owning ep, nor do we unset
+ * interrupt for the old owning ep.
+ */
+void psm3_ips_ptl_rcvthread_transfer_ownership(ptl_t *from_ptl_gen, ptl_t *to_ptl_gen)
 {
 	struct ptl_rcvthread *rcvc;
 
@@ -225,7 +233,7 @@ void ips_ptl_rcvthread_transfer_ownership(ptl_t *from_ptl_gen, ptl_t *to_ptl_gen
 	rcvc = to_ptl->rcvthread;
 
 	rcvc->recvq = &to_ptl->recvq;
-	rcvc->context = to_ptl->context;
+	rcvc->ep = to_ptl->ep;
 	rcvc->ptl = to_ptl_gen;
 }
 
@@ -243,12 +251,12 @@ psm2_error_t rcvthread_initsched(struct ptl_rcvthread *rcvc)
 		 RCVTHREAD_TO_MAX_FREQ, RCVTHREAD_TO_SHIFT);
 	buf[sizeof(buf) - 1] = '\0';
 
-	if (!psmi_getenv("PSM3_RCVTHREAD_FREQ",
+	if (!psm3_getenv("PSM3_RCVTHREAD_FREQ",
 			 "Recv Thread frequency (per sec) <min_freq[:max_freq[:shift_freq]]>",
 			 PSMI_ENVVAR_LEVEL_USER, PSMI_ENVVAR_TYPE_STR,
 			 (union psmi_envvar_val)rcv_freq, &env_to)) {
 		/* not using default values */
-		int nparsed = psmi_parse_str_tuples(env_to.e_str, 3, tvals);
+		int nparsed = psm3_parse_str_tuples(env_to.e_str, 3, tvals);
 		int invalid = 0;
 
 		if (nparsed < 1 || (nparsed > 0 && tvals[0] == 0) ||
@@ -322,116 +330,6 @@ int rcvthread_next_timeout(struct ptl_rcvthread *rcvc)
 
 extern int ips_in_rcvthread;
 
-static void process_async_event(psm2_ep_t ep)
-{
-	struct ibv_async_event async_event;
-	const char* errstr = NULL;
-
-	if (ibv_get_async_event(ep->verbs_ep.context, &async_event)) {
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			"Receive thread ibv_get_async_event() error on %s port %u: %s", ep->dev_name, ep->portnum, strerror(errno));
-	}
-	/* Ack the event */
-	ibv_ack_async_event(&async_event);
-
-	switch (async_event.event_type) {
-	case IBV_EVENT_CQ_ERR:
-		if (async_event.element.cq == ep->verbs_ep.send_cq)
-			errstr = "Send CQ";
-		else if (async_event.element.cq == ep->verbs_ep.recv_cq)
-			errstr = "Recv CQ";
-		else
-			errstr = "CQ";
-		break;
-	case IBV_EVENT_QP_FATAL:
-	case IBV_EVENT_QP_REQ_ERR:
-	case IBV_EVENT_QP_ACCESS_ERR:
-		if (async_event.element.qp == ep->verbs_ep.qp)
-			errstr = "UD QP";
-		else
-			errstr = "RC QP";	// qp->context will be an ipsaddr
-		break;
-	case IBV_EVENT_DEVICE_FATAL:
-		errstr = "NIC";
-		break;
-	default:
-		// be silent about other events
-		break;
-	}
-	if (errstr)
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Fatal %s Async Event on %s port %u: %s", errstr, ep->dev_name, ep->portnum,
-				ibv_event_type_str(async_event.event_type));
-}
-
-static void rearm_cq_event(psm2_ep_t ep)
-{
-	struct ibv_cq *ev_cq;
-	void *ev_ctx;
-
-	_HFI_VDBG("rcvthread got solicited event\n");
-	if (ibv_get_cq_event(ep->verbs_ep.recv_comp_channel, &ev_cq, &ev_ctx)) {
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Receive thread ibv_get_cq_event() error on %s port %u: %s",
-			  ep->dev_name, ep->portnum, strerror(errno));
-	}
-
-	/* Ack the event */
-	ibv_ack_cq_events(ev_cq, 1);
-	psmi_assert_always(ev_cq == ep->verbs_ep.recv_cq);
-	psmi_assert_always(ev_ctx == ep);
-	// we only use solicited, so just reenable it
-	// TBD - during shutdown events get disabled and we could check
-	// psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_INTR_ENABLED)
-	// to make sure we still want enabled.  But given verbs events
-	// are one-shots, that seems like overkill
-	if (ibv_req_notify_cq(ep->verbs_ep.recv_cq, 1)) {
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-			  "Receive thread ibv_req_notify_cq() error on %s port %u: %s",
-			  ep->dev_name, ep->portnum, strerror(errno));
-	}
-}
-
-// poll for async events for all rails/QPs within a given end user opened EP
-static void poll_async_events(psm2_ep_t ep)
-{
-	struct pollfd pfd[PSMI_MAX_QPS];
-	psm2_ep_t pep[PSMI_MAX_QPS];
-	int num_ep = 0;
-	psm2_ep_t first;
-	int ret;
-	int i;
-
-	first = ep;
-	do {
-#ifdef RNDV_MOD
-		if (IPS_PROTOEXP_FLAG_KERNEL_QP(ep->rdmamode)
-		    && __psm2_rv_cq_overflowed(ep->verbs_ep.rv))
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-				  "RV event ring overflow for %s port %u", ep->dev_name, ep->portnum);
-#endif
-		pfd[num_ep].fd = ep->verbs_ep.context->async_fd;
-		pfd[num_ep].events = POLLIN;
-		pfd[num_ep].revents = 0;
-		pep[num_ep++] = ep;
-		ep = ep->mctxt_next;
-	} while (ep != first);
-
-	ret = poll(pfd, num_ep, 0);
-	if_pf(ret < 0) {
-		if (errno == EINTR)
-			_HFI_DBG("got signal, keep polling\n");
-		else
-			psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,
-				  "Receive thread poll() error: %s", strerror(errno));
-	} else if_pf (ret > 0) {
-		for (i=0; i < num_ep; i++) {
-			if (pfd[i].revents & POLLIN)
-				process_async_event(pep[i]);
-		}
-	}
-}
-
 /*
  * Receiver thread support.
  *
@@ -447,17 +345,12 @@ static
 void *ips_ptl_pollintr(void *rcvthreadc)
 {
 	struct ptl_rcvthread *rcvc = (struct ptl_rcvthread *)rcvthreadc;
-	struct ips_recvhdrq *recvq = rcvc->recvq;
 	int fd_pipe = rcvc->pipefd[0];
-	psm2_ep_t ep;
-	struct pollfd pfd[3];
-	int ret;
 	int next_timeout = rcvc->last_timeout;
-	uint64_t t_cyc;
 	psm2_error_t err;
 
 #ifdef PSM_CUDA
-	if (PSMI_IS_CUDA_ENABLED && cu_ctxt != NULL)
+	if (PSMI_IS_GPU_ENABLED && cu_ctxt != NULL)
 		PSMI_CUDA_CALL(cuCtxSetCurrent, cu_ctxt);
 #endif
 
@@ -467,8 +360,7 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	psmi_assert_always(psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED));
 
 	/* Switch driver to a mode where it can interrupt on urgent packets */
-	if (psmi_context_interrupt_set((psmi_context_t *)
-				       rcvc->context, 1) == PSM2_EP_NO_RESOURCES) {
+	if (psm3_context_interrupt_set(rcvc->ep, 1) == PSM2_EP_NO_RESOURCES) {
 		_HFI_PRDBG
 		    ("poll_type feature not present in driver, turning "
 		     "off internal progress thread\n");
@@ -478,105 +370,25 @@ void *ips_ptl_pollintr(void *rcvthreadc)
 	_HFI_PRDBG("Enabled communication thread on URG packets\n");
 
 	while (1) {
-		// pfd[0] is for urgent inbound packets (NAK, urgent ACK, etc)
-		// pfd[1] is for rcvthread termination
-		// pfd[2] is for verbs async events (PSM_UD only)
-		// on timeout (poll() returns 0), we do background process checks
-		//		for non urgent inbound packets
-		pfd[0].fd = rcvc->context->ep->verbs_ep.recv_comp_channel->fd;
-		pfd[0].events = POLLIN;
-		pfd[0].revents = 0;
-		pfd[1].fd = fd_pipe;
-		pfd[1].events = POLLIN;
-		pfd[1].revents = 0;
-		pfd[2].fd = rcvc->context->ep->verbs_ep.context->async_fd;
-		pfd[2].events = POLLIN;
-		pfd[2].revents = 0;
-
-		ret = poll(pfd, 3, next_timeout);
-		t_cyc = get_cycles();
-		if_pf(ret < 0) {
-			if (errno == EINTR)
-				_HFI_DBG("got signal, keep polling\n");
-			else
-				psmi_handle_error(PSMI_EP_NORETURN,
-						  PSM2_INTERNAL_ERR,
-						  "Receive thread poll() error: %s",
-						  strerror(errno));
-		} else if (pfd[1].revents) {
-			/* Any type of event on this fd means exit, should be POLLHUP */
-			_HFI_DBG("close thread: revents=0x%x\n", pfd[1].revents);
-			close(fd_pipe);
+		err = psmi_hal_ips_ptl_pollintr(rcvc->ep,
+					rcvc->recvq, fd_pipe, next_timeout,
+					&rcvc->pollok, &rcvc->pollcyc);
+		if (err == PSM2_IS_FINALIZED)
 			break;
-		} else {
-			// we got an async event
-			if (pfd[2].revents & POLLIN)
-				process_async_event(rcvc->context->ep);
+		if (err == PSM2_OK_NO_PROGRESS)
+			continue;
+		rcvc->pollcnt++;
+		if (err == PSM2_TIMEOUT) {
+			/* change timeout only on timed out poll */
+			rcvc->pollcnt_to++;
+			next_timeout = rcvthread_next_timeout(rcvc);
+		} else if (err != PSM2_OK) {
+			psm3_handle_error(PSMI_EP_NORETURN,
+                                                  PSM2_INTERNAL_ERR,
+                                                  "Unexpected Receive thread HAL poll() error: %s",
+                                                  psm3_error_get_string(err));
+			break;
 
-			// we got here due to a CQ event (as opposed to timeout)
-			// consume the event and rearm, we'll poll cq below
-			if (pfd[0].revents & POLLIN)
-				rearm_cq_event(rcvc->context->ep);
-
-			rcvc->pollcnt++;
-			if (!PSMI_LOCK_TRY(psmi_creation_lock)) {
-				if (ret == 0 || pfd[0].revents & (POLLIN | POLLERR)) {
-					if (PSMI_LOCK_DISABLED) {
-						// this path is not supported.  having rcvthread
-						// and PSMI_PLOCK_IS_NOLOCK define not allowed.
-						// TBD - would be good if we could quickly
-						// check for ep->verbs_ep.recv_wc_count == 0
-						//	&& nothing on CQ without doing a ibv_poll_cq
-						// ibv_poll_cq(cq, 0, NULL) always returns 0, so that
-						// doesn't help
-						// ibv_poll_cq would consume a CQE and require a lock so
-						// must call our main recv progress function below
-						// maybe if we open the can on HW verbs driver we could
-						// quickly check Q without polling.  Main benefit would
-						// be avoiding spinlock contention with main PSM
-						// thread and perhaps using the trylock style inside
-						// poll_cq much like we do for WFR
-						if (!ips_recvhdrq_trylock(recvq))
-							continue;
-						err = ips_recvhdrq_progress(recvq);
-						if (err == PSM2_OK)
-							rcvc->pollok++;
-						else
-							rcvc->pollcyc += get_cycles() - t_cyc;
-						ips_recvhdrq_unlock(recvq);
-					} else {
-
-						ep = psmi_opened_endpoint;
-
-						/* Go through all master endpoints. */
-						do{
-							if (!PSMI_LOCK_TRY(ep->mq->progress_lock)) {
-								/* If we time out, we service shm and NIC.
-								* If not, we assume to have received an urgent
-								* packet and service only NIC.
-								*/
-								err = psmi_poll_internal(ep,
-											 ret == 0 ? PSMI_TRUE : PSMI_FALSE);
-
-								if (err == PSM2_OK)
-									rcvc->pollok++;
-								else
-									rcvc->pollcyc += get_cycles() - t_cyc;
-								PSMI_UNLOCK(ep->mq->progress_lock);
-							}
-							poll_async_events(ep);
-
-							/* get next endpoint from multi endpoint list */
-							ep = ep->user_ep_next;
-						} while(NULL != ep);
-					}
-				}
-				PSMI_UNLOCK(psmi_creation_lock);
-			}
-			if (ret == 0) { /* change timeout only on timed out poll */
-				rcvc->pollcnt_to++;
-				next_timeout = rcvthread_next_timeout(rcvc);
-			}
 		}
 	}
 
@@ -623,7 +435,7 @@ static psm2_error_t rcvthread_initstats(ptl_t *ptl_gen)
 	if (!psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED)) {
 		int i;
 		static uint64_t ctr_nan = MPSPAWN_NAN;
-		for (i = 0; i < (int)PSMI_STATS_HOWMANY(entries); i++) {
+		for (i = 0; i < (int)PSMI_HOWMANY(entries); i++) {
 			entries[i].getfn = NULL;
 			entries[i].u.val = &ctr_nan;
 		}
@@ -631,8 +443,8 @@ static psm2_error_t rcvthread_initstats(ptl_t *ptl_gen)
 
 	// one rcvThread per process, so omit id (ptl->ep->epid) and
 	// info (ptl->ep->dev_name)
-	return psmi_stats_register_type("RcvThread_statistics",
+	return psm3_stats_register_type("RcvThread_statistics",
 					PSMI_STATSTYPE_RCVTHREAD,
 					entries,
-					PSMI_STATS_HOWMANY(entries), 0, rcvc, NULL);
+					PSMI_HOWMANY(entries), NULL, rcvc, NULL);
 }

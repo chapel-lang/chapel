@@ -1,7 +1,7 @@
 config const size = 100000;
 config const verbose = false;
 
-use Sort;
+use Sort, Math;
 
 record UselessKeyComparator {
   proc key(x) {

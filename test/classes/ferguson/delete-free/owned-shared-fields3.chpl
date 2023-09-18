@@ -16,9 +16,9 @@ record R4 {
   var fo:owned MyClass;
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    this.complete();
+    init this;
     fo = owned.adopt(a);
-    fs = shared.create(b);
+    fs = shared.adopt(b);
   }
 }
 
@@ -33,9 +33,9 @@ class C4 {
   var fo:owned MyClass;
   var fs:shared MyClass;
   proc init(a:unmanaged MyClass, b:unmanaged MyClass) {
-    this.complete();
+    init this;
     fo = owned.adopt(a);
-    fs = shared.create(b);
+    fs = shared.adopt(b);
   }
 }
 

@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012, Free Software Foundation, Inc.
+Copyright 2012, 2022, Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -53,6 +53,32 @@ testmain (int argc, char **argv)
 	  abort ();
 	}
     }
+
+  /* res >= 0, come from the random choices above, */
+  if (mpz_cmp_ui (res, 1) <= 0) /* if too small, */
+    mpz_add_ui (res, res, 9); /* add an arbitrary value. */
+
+  mpz_set_ui (e, 0);
+  /* Test the case m^0 (mod m), expect 1 (m is greater than 1). */
+  mpz_powm (res, res, e, res);
+  if (mpz_cmp_ui (res, 1) != 0)
+    {
+      fprintf (stderr, "mpz_powm failed: b=m, e=0; 1 expected,\n");
+      dump ("m", res);
+      dump ("r", res);
+      abort ();
+    }
+
+  /* Now res is 1. */
+  /* Test the case 1^0 (mod 1), expect 0. */
+  mpz_powm (res, res, e, res);
+  if (mpz_size (res))
+    {
+      fprintf (stderr, "mpz_powm failed: b=1, e=0, m=1; 0 expected,\n");
+      dump ("r", res);
+      abort ();
+    }
+
   mpz_clear (b);
   mpz_clear (e);
   mpz_clear (m);

@@ -17,7 +17,7 @@ var diffs: [D] int;
 
 a.write(0);
 
-coforall i in D {
+coforall i in D with (ref outputs) {
   outputs[i] = a.fetchAdd(inputs[i]);
 }
 

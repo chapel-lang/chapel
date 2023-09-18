@@ -82,7 +82,7 @@ writeln();
 // we define a new type, ``Point``, and overload the definition of ``+``
 // to handle that type.
 //
-record Point { var x, y: real; }
+record Point : writeSerializable { var x, y: real; }
 
 // Tell how to add two points together.
 operator Point.+(p1: Point, p2: Point)
@@ -92,16 +92,16 @@ operator Point.+(p1: Point, p2: Point)
 }
 
 //
-// We can also overload the ``writeThis()`` routine called by writeln.
+// We can also overload the ``serialize`` routine called by writeln.
 //
-proc Point.writeThis(w) throws
+proc Point.serialize(writer, ref serializer) throws
 {
   // Writes it out as a coordinate pair.
-  w.write("(");
-  w.write(this.x);
-  w.write(", ");
-  w.write(this.y);
-  w.write(")");
+  writer.write("(");
+  writer.write(this.x);
+  writer.write(", ");
+  writer.write(this.y);
+  writer.write(")");
 }
 
 writeln("Using operator overloading");

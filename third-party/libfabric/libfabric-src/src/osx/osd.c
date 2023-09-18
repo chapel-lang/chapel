@@ -1,5 +1,6 @@
 /*
  * Copyright (C) 2020 by Argonne National Laboratory.
+ * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -33,7 +34,7 @@
 #include "ofi.h"
 #include "ofi_osd.h"
 
-static ssize_t
+ssize_t
 ofi_sendv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt, int flags)
 {
 	ssize_t size = 0;
@@ -58,7 +59,7 @@ ofi_sendv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt, int flags
 	return size;
 }
 
-static ssize_t
+ssize_t
 ofi_recvv_socket(SOCKET fd, const struct iovec *iovec, size_t iov_cnt, int flags)
 {
 	ssize_t size = 0;

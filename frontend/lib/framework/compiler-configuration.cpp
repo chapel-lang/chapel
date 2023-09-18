@@ -17,11 +17,45 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/query-impl.h"
 #include "chpl/framework/compiler-configuration.h"
+
+#include "chpl/framework/query-impl.h"
 
 namespace chpl {
 
+bool CompilerGlobals::update(CompilerGlobals& keep, CompilerGlobals& addin) {
+  return defaultUpdate(keep, addin);
+}
+
+void CompilerGlobals::swap(CompilerGlobals& other) {
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    std::swap(this->FIELD__, other.FIELD__);
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+}
+
+bool CompilerGlobals::operator==(const CompilerGlobals& other) const {
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    this->FIELD__ == other.FIELD__&&
+  return
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
+    true;
+}
+
+bool CompilerGlobals::operator!=(const CompilerGlobals& other) const {
+  return !(*this==other);
+}
+
+const CompilerGlobals& compilerGlobals(Context* context) {
+  QUERY_BEGIN_INPUT(compilerGlobals, context);
+  CompilerGlobals ret{};
+  return QUERY_END(ret);
+}
+
+void setCompilerGlobals(Context* context, CompilerGlobals newValue) {
+  QUERY_STORE_INPUT_RESULT(compilerGlobals, context, newValue);
+}
 
 const CompilerFlags& compilerFlags(Context* context) {
   QUERY_BEGIN_INPUT(compilerFlags, context);
@@ -37,5 +71,6 @@ bool isCompilerFlagSet(Context* context, CompilerFlags::Name flag) {
   auto& list = chpl::compilerFlags(context);
   return list.get(flag);
 }
+
 
 } // end namespace chpl

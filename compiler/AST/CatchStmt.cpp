@@ -273,7 +273,7 @@ void CatchStmt::cleanup()
 
   if (catchall) {
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 
@@ -289,7 +289,7 @@ void CatchStmt::cleanup()
     castedDef->insertAfter(cond);
 
     Expr* nonNilC = new CallExpr(PRIM_TO_NON_NILABLE_CLASS, casted);
-    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr("_owned", nonNilC));
+    Expr* toOwned = new CallExpr(PRIM_NEW, new CallExpr(new SymExpr(dtOwned->symbol), nonNilC));
 
     errorDef->init = toOwned;
 

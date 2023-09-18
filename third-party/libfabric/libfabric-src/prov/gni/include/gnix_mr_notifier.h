@@ -67,7 +67,7 @@ typedef volatile uint64_t kdreg_user_delta_t;
 struct gnix_mr_notifier {
 	int fd;
 	kdreg_user_delta_t *cntr;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	int ref_cnt;
 };
 

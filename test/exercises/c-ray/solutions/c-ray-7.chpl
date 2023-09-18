@@ -27,6 +27,7 @@
 use Image;    // use helper module related to writing out images
 use List;
 use IO;       // allow use of stderr, stdin, ioMode
+import Math.pi;
 
 //
 // =================================================
@@ -45,7 +46,7 @@ config const size = "800x600",            // size of output image
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
-             fieldOfView = quarter_pi,    // field of view in radians
+             fieldOfView = pi/4,          // field of view in radians
              maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
@@ -138,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -171,7 +172,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     // If uncommented, the following line will print out where each
     // iteration is running to sanity check that the work is
     // distributed:
@@ -517,20 +518,20 @@ proc loadScene() {
   // be problematic in any way.
   //
   if scene == "built-in" {
-    newScene.objects.append(new sphere((-1.5, -0.3, -1), 0.7,
+    newScene.objects.pushBack(new sphere((-1.5, -0.3, -1), 0.7,
                                           new material((1.0, 0.2, 0.05), 50.0,
                                                        0.3)));
-    newScene.objects.append(new sphere((1.5, -0.4, 0), 0.6,
+    newScene.objects.pushBack(new sphere((1.5, -0.4, 0), 0.6,
                                           new material((0.1, 0.85, 1.0), 50.0,
                                                        0.4)));
-    newScene.objects.append(new sphere((0, -1000, 2), 999,
+    newScene.objects.pushBack(new sphere((0, -1000, 2), 999,
                                           new material((0.1, 0.2, 0.6), 80.0,
                                                        0.8)));
-    newScene.objects.append(new sphere((0, 0, 2), 1,
+    newScene.objects.pushBack(new sphere((0, 0, 2), 1,
                                           new material((1.0, 0.5, 0.1), 60.0,
                                                        0.7)));
-    newScene.lights.append((-50, 100, -50));
-    newScene.lights.append((40, 40, 150));
+    newScene.lights.pushBack((-50, 100, -50));
+    newScene.lights.pushBack((40, 40, 150));
     newScene.camera = new cameraType((0, 6, -17), (0, -1, 0), 45);
 
     return newScene;
@@ -574,7 +575,7 @@ proc loadScene() {
 
     // if this is a light, store it as such
     if inType == 'l' {
-      newScene.lights.append(pos);
+      newScene.lights.pushBack(pos);
       continue;
     }
 
@@ -595,7 +596,7 @@ proc loadScene() {
           refl = columns[9]: real;
 
     // this must be a sphere, so store it
-    newScene.objects.append(new sphere(pos, rad,
+    newScene.objects.pushBack(new sphere(pos, rad,
                                           new material(col, spow, refl)));
 
     // helper routine for printing errors in the input file

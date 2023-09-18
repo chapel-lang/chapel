@@ -1,3 +1,5 @@
+import Math.pi;
+
 class MyCircleImpl {
   var radius:real;
 

@@ -11,7 +11,7 @@ config const LOOKUP_SIZE = 4*1024;
 config const LOOKUP_SCALE: real = LOOKUP_SIZE - 1;
 config const n = 1000;
 
-const stdout = (new file(1)).writer(kind=iokind.native, locking=false);
+const stdout = (new file(1)).writer(serializer=new binarySerializer(), locking=false);
 param newLine: int(8) = "\n".toByte();
 
 param
@@ -78,7 +78,7 @@ var HomoSapiens: [0..3] Freq = [
 ];
 
 // Scan operation
-proc sumAndScale(a) {
+proc sumAndScale(ref a) {
   var p: real = 0;
   for item in a {
     p += item.p;

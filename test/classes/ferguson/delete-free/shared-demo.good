@@ -10,9 +10,9 @@ shared3 = {x = 3}
 after assigning shared1 = shared3
 shared1 = {x = 3}
 shared3 = {x = 3}
-after shared1.retain C(100)
+after shared1 = shared.adopt C(100)
 shared1 = {x = 100}
-after shared1.clear()
+after shared1 = nil
 shared1 = nil
 declaring shared4 storing C(4)
 shared4 = {x = 4}

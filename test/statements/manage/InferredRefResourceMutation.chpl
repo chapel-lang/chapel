@@ -1,7 +1,7 @@
-record man {
+record man : contextManager {
   var x = 0;
-  proc enterThis() ref: int { return x; }
-  proc leaveThis(in err: owned Error?) {
+  proc ref enterContext() ref: int { return x; }
+  proc exitContext(in err: owned Error?) {
     if err then halt();
   }
 }

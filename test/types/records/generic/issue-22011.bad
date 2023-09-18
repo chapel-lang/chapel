@@ -1,0 +1,12 @@
+issue-22011.chpl:10: warning: partial instantiation without '?' argument
+issue-22011.chpl:10: note: opt in to partial instantiation explicitly with a trailing '?' argument
+issue-22011.chpl:10: note: or, add arguments to instantiate the following fields in generic type 'wrapper_record(generic_record)':
+issue-22011.chpl:6: note:   generic type field 't'
+issue-22011.chpl:10: In method 'field':
+issue-22011.chpl:10: internal error: AST-PRI-IVE-0242 chpl version 1.31.0 pre-release (cfd71d55aa)
+
+Internal errors indicate a bug in the Chapel compiler,
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+

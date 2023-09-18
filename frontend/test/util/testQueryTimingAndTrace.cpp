@@ -21,6 +21,7 @@
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/util/filesystem.h"
 
 #include <cstdlib>
 
@@ -30,8 +31,22 @@ using namespace resolution;
 using namespace uast;
 
 static const char* outPath = "/tmp/chpl-queries-trace.txt";
+// relative to $CHPL_HOME
+static const char* relativeCommandPath = "frontend/util/analyze-query-trace";
 
 int main(int argc, char** argv) {
+  // even if invoked by Dyno tests, ensure the command we would run for this
+  // manual test exists
+  std::string commandPath;
+  commandPath += getenv("CHPL_HOME");
+  commandPath += "/";
+  commandPath += relativeCommandPath;
+  if (!fileExists(commandPath.c_str())) {
+    printf("Could not find analyze query trace command at path %s\n",
+           commandPath.c_str());
+    return 1;
+  }
+
   if (argc == 1) {
     printf("Usage: %s file.chpl otherFile.chpl ...\n", argv[0]);
     return 0; // need this to return 0 for testing to be happy
@@ -57,7 +72,9 @@ int main(int argc, char** argv) {
 
   printf("Wrote trace to %s\n", outPath);
 
-  std::string command = "$CHPL_HOME/compiler/dyno/util/analyze-query-trace ";
+  std::string command;
+  command += commandPath;
+  command += " ";
   command += outPath;
   command += " --dot-png /tmp/chpl-queries.png";
   command += " --collapse";
@@ -66,7 +83,10 @@ int main(int argc, char** argv) {
   printf("Running %s\n", command.c_str());
   int rc = system(command.c_str());
   if (rc != 0) {
-    printf("Non-zero exit code from running %s\n", command.c_str());
+    printf("Non-zero exit code %i from running %s\n", rc, command.c_str());
+    // observed that exit code may be out of valid range, so use 1 as a
+    // safe erroneous exit code value to avoid system turning it into 0
+    return 1;
   }
 
   return 0;

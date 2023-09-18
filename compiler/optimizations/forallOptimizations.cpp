@@ -63,7 +63,8 @@ enum CallRejectReason {
   CRR_NO_CLEAN_INDEX_MATCH,
   CRR_ACCESS_BASE_IS_LOOP_INDEX,
   CRR_ACCESS_BASE_IS_NOT_OUTER_VAR,
-  CRR_ACCESS_BASE_IS_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR,
+  CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR,
   CRR_TIGHTER_LOCALITY_DOMINATOR,
   CRR_UNKNOWN,
 };
@@ -966,8 +967,11 @@ static const char *getCallRejectReasonStr(CallRejectReason reason) {
     case CRR_ACCESS_BASE_IS_NOT_OUTER_VAR:
       return "call base is defined within the loop body";
       break;
-    case CRR_ACCESS_BASE_IS_SHADOW_VAR:
-      return "call base is a defined in a forall intent";
+    case CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR:
+      return "call base is a complex shadow variable";
+      break;
+    case CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR:
+      return "call base has reduce intent";
       break;
     case CRR_TIGHTER_LOCALITY_DOMINATOR:
       return "call base is in a nested on and/or forall";
@@ -1029,6 +1033,13 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       }
     }
 
+    // this call has another tighter-enclosing stmt that may change locality,
+    // don't optimize
+    if (forall != getLocalityDominator(call)) {
+      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
+      return NULL;
+    }
+
     // (i,j) in forall (i,j) in bla is a tuple that is index-by-index accessed
     // in loop body that throw off this analysis
     if (accBaseSym->hasFlag(FLAG_INDEX_OF_INTEREST)) { return NULL; }
@@ -1040,20 +1051,24 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
       return NULL;
     }
 
-    // similarly, give up if the base symbol is a shadow variable
-    if (isShadowVarSymbol(accBaseSym)) {
-      if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_SHADOW_VAR;
-      return NULL;
-    }
+    if (ShadowVarSymbol *svar = toShadowVarSymbol(accBaseSym)) {
+      if (svar->isReduce()) {
+        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_REDUCE_SHADOW_VAR;
+        return NULL;
+      }
 
-    // this call has another tighter-enclosing stmt that may change locality,
-    // don't optimize
-    if (forall != getLocalityDominator(call)) {
-      if (reason != NULL) *reason = CRR_TIGHTER_LOCALITY_DOMINATOR;
-      return NULL;
-    }
+      Symbol* outerVar = svar->outerVarSym();
 
-    return accBaseSym;
+      if (outerVar == NULL) {
+        if (reason != NULL) *reason = CRR_ACCESS_BASE_IS_COMPLEX_SHADOW_VAR;
+        return NULL;
+      }
+
+      return outerVar;
+    }
+    else {
+      return accBaseSym;
+    }
   }
 
   if (reason != NULL) *reason = CRR_NOT_ARRAY_ACCESS_LIKE;
@@ -1063,7 +1078,12 @@ static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
 static Symbol *getCallBase(CallExpr *call) {
   SymExpr *baseSE = toSymExpr(call->baseExpr);
   if (baseSE != NULL) {
-    return baseSE->symbol();
+    if (ShadowVarSymbol *svar = toShadowVarSymbol(baseSE->symbol())) {
+      return svar->outerVarSym();
+    }
+    else {
+      return baseSE->symbol();
+    }
   }
   return NULL;
 }
@@ -1140,6 +1160,9 @@ static Symbol *generateStaticCheckForAccess(CallExpr *access,
 
     VarSymbol *checkSym = new VarSymbol("chpl__staticAutoLocalCheckSym");
     checkSym->addFlag(FLAG_PARAM);
+    // mark it with FLAG_TEMP to prevent the normalizer from adding
+    // PRIM_END_OF_STATEMENT in the wrong places for loops.
+    checkSym->addFlag(FLAG_TEMP);
     optInfo.staticCheckSymForSymMap[baseSym] = checkSym;
 
     CallExpr *checkCall = new CallExpr("chpl__staticAutoLocalCheck");
@@ -1726,7 +1749,7 @@ static CondStmt *createAggCond(CallExpr *noOptAssign, Symbol *aggregator, SymExp
 // remove it when we use it, but we can also leave some untouched. This
 // function removes that argument if the primitive still has 3 arguments
 void AggregationCandidateInfo::removeSideEffectsFromPrimitive() {
-  INT_ASSERT(this->candidate->isNamed("="));
+  INT_ASSERT(this->candidate->isNamedAstr(astrSassign));
 
   if (CallExpr *childCall = toCallExpr(this->candidate->get(1))) {
     if (childCall->isPrimitive(PRIM_MAYBE_LOCAL_ARR_ELEM)) {
@@ -1841,7 +1864,7 @@ static CallExpr *getAggGenCallForChild(Expr *child, bool srcAggregation) {
 // currently we want both sides to be calls, but we need to relax these to
 // accept symexprs to support foralls over arrays
 static bool assignmentSuitableForAggregation(CallExpr *call, ForallStmt *forall) {
-  INT_ASSERT(call->isNamed("="));
+  INT_ASSERT(call->isNamedAstr(astrSassign));
 
   if (CallExpr *leftCall = toCallExpr(call->get(1))) {
     if (CallExpr *rightCall = toCallExpr(call->get(2))) {
@@ -2098,7 +2121,7 @@ static bool handleYieldedArrayElementsInAssignment(CallExpr *call,
                                                    ForallStmt *forall) {
   SET_LINENO(call);
 
-  INT_ASSERT(call->isNamed("="));
+  INT_ASSERT(call->isNamedAstr(astrSassign));
 
   if (!forall->optInfo.infoGathered) {
     gatherForallInfo(forall);
@@ -2366,7 +2389,7 @@ static void removeAggregationFromRecursiveForallHelp(BlockStmt *block) {
 
         CallExpr *assignCall = toCallExpr(condStmt->thenStmt->getFirstExpr()->parentExpr);
         INT_ASSERT(assignCall);
-        INT_ASSERT(assignCall->isNamed("="));
+        INT_ASSERT(assignCall->isNamedAstr(astrSassign));
 
         CallExpr *aggCall = toCallExpr(condStmt->elseStmt->getFirstExpr()->parentExpr);
         INT_ASSERT(aggCall);

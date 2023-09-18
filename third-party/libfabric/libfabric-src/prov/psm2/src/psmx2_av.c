@@ -954,7 +954,7 @@ static int psmx2_av_close(fid_t fid)
 
 	av = container_of(fid, struct psmx2_fid_av, av.fid);
 	psmx2_domain_release(av->domain);
-	fastlock_destroy(&av->lock);
+	ofi_spin_destroy(&av->lock);
 
 	if (av->type == FI_AV_MAP)
 		goto out;
@@ -1151,7 +1151,7 @@ int psmx2_av_open(struct fid_domain *domain, struct fi_av_attr *attr,
 	}
 
 init_lock:
-	fastlock_init(&av_priv->lock);
+	ofi_spin_init(&av_priv->lock);
 
 	psmx2_domain_acquire(domain_priv);
 

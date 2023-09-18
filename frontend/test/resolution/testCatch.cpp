@@ -110,7 +110,9 @@ static void test1() {
               proc main() {
                 try {
                   foo();
-                } catch e : SomeErrorName { }
+                } catch e : SomeErrorName {
+
+                } catch e { }
               }
             }
          )"""",
@@ -133,7 +135,7 @@ static void test2() {
                   foo();
                 } catch e : SomeErrorName {
                   var j = e;
-                }
+                } catch e { }
               }
             }
          )"""",
@@ -210,7 +212,8 @@ static void test6() {
               proc main() {
                 try {
                   foo();
-                } catch e : int {  }
+                } catch e : int {
+                } catch e { }
               }
             }
          )"""";
@@ -234,7 +237,8 @@ static void test7() {
               proc main() {
                 try {
                   foo();
-                } catch e : MyClass {  }
+                } catch e : MyClass {
+                } catch e { }
               }
             }
          )"""";
@@ -309,7 +313,8 @@ static void test9() {
               proc main() {
                 try {
                   foo();
-                } catch e : AnotherErrorName { }
+                } catch e : AnotherErrorName {
+                } catch e { }
               }
             }
          )"""",
@@ -319,7 +324,535 @@ static void test9() {
          "M.main@3");
 }
 
+// "try without a catchall in a non-throwing function"
+static void test10(Parser* parser) {
+  // test for a try without a catchall in a non-throwing function
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test10.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            var x:int;
+                            try {
+                              var y = x;
+                            }
+                          }
+                        }
+              )"""";
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+
+// catchall placed before the end of a catch list in non-throwing function
+static void test11(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test11.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          class MyError: Error { }
+                          proc test() {
+                            var x:int;
+                            try {
+                              var y = x;
+                            } catch e: Error {
+                            } catch e: MyError {
+                            }
+                          }
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "catchall placed before the end of a catch list");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+
+// cannot throw in a non-throwing function
+static void test12(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test12.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          proc test() {
+                            throw new Error();
+                          }
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "cannot throw in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+
+// "is in a try but not handled"
+static void test13(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test13.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module MyModule {
+                          proc throwit(i:int):int throws {
+                            if true then
+                              throw new owned Error();
+                            return i;
+                          }
+
+                          proc tryReturn(i:int):int {
+                            return try throwit(i);
+                          }
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+  auto func2 = mod->stmt(1)->toFunction();
+  assert(func2);
+  auto resFunc2 = resolveConcreteFunction(ctx, func2->id());
+  assert(resFunc2);
+
+  // TODO: Should this be two errors? It seems like the Try without catchall
+  // is the real error here. What's the purpose of the first error?
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->message() == "call to throwing function 'throwit' is in a try but not handled");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 2);
+}
+
+//TODO: "Could not find error variable for handler"
+
+// "deinit is not permitted to throw"
+static void test14(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test14.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module MyModule {
+                          proc deinit() throws{
+                            throw new owned Error();
+                          }
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(0)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "deinit is not permitted to throw");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// test for a try wit a catch but not a catchall in a non-throwing function
+static void test15(Parser* parser) {
+
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test15.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          class MyError: Error { }
+                          proc test() {
+                            var x:int;
+                            try {
+                              var y = x;
+                            } catch e : MyError {
+
+                            }
+                          }
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// check relaxed error checking mode
+
+
+
+
+// check fatal error handling mode
+static void test16(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test16.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        proc canThrow(i: bool): bool throws {
+                          if i then
+                            throw new owned Error();
+
+                          return i;
+                        }
+                        canThrow(true);
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto canThrowFn = mod->stmt(0)->toFunction();
+  assert(canThrowFn);
+  auto call = mod->stmt(1)->toFnCall();
+  assert(call);
+  assert(!guard.realizeErrors());
+}
+
+// check relaxed error handling mode
+static void test17(Parser* parser) {
+
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test17.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          proc canThrow(i: bool): bool throws {
+                            if i then
+                              throw new owned Error();
+
+                            return i;
+                          }
+                          canThrow(true);
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto call = mod->stmt(1)->toFnCall();
+  assert(call);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto canThrowFn = mod->stmt(0)->toFunction();
+  assert(canThrowFn);
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "call to throwing function 'canThrow' without throws, try, or try! (relaxed mode)");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+// check fatal error handling mode prototype module
+static void test18(Parser* parser) {
+
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test18.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        prototype module M {
+                          proc canThrow(i: bool): bool throws {
+                            if i then
+                              throw new owned Error();
+
+                            return i;
+                          }
+                          canThrow(true);
+                        }
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto call = mod->stmt(1)->toFnCall();
+  assert(call);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto canThrowFn = mod->stmt(0)->toFunction();
+  assert(canThrowFn);
+
+  assert(!guard.realizeErrors());
+}
+
+
+// check fatal error handling mode - implicit module
+static void test19(Parser* parser) {
+
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test19.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        proc canThrow(i: bool): bool throws {
+                          if i then
+                            throw new owned Error();
+
+                          return i;
+                        }
+                        canThrow(true);
+              )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto call = mod->stmt(1)->toFnCall();
+  assert(call);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto canThrowFn = mod->stmt(0)->toFunction();
+  assert(canThrowFn);
+
+  assert(!guard.realizeErrors());
+}
+
+
+static void test20(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test20.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          class OnlyASubClass : Error {}
+                          proc f() {
+                            try {
+                              proc g() {
+                                  try {
+                                    // maybe something that throws
+                                  } catch e : OnlyASubClass {
+
+                                  } // no catchall - a problem
+                              }
+                            } catch {
+                              // catch-all, we're good
+                            }
+                          }
+                        }
+                       )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+  auto fTry = func->stmt(0)->toTry();
+  assert(fTry);
+  auto gFunc = fTry->stmt(0)->toFunction();
+  assert(gFunc);
+  auto gRes = resolveConcreteFunction(ctx, gFunc->id());
+  assert(gRes);
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 1);
+}
+
+
+static void test21(Parser* parser) {
+ auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test21.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          class SomeSubType : Error {}
+                          proc f() throws {
+                            throw new Error();
+                          }
+                          try {
+                            f();
+                          } catch e : SomeSubType {
+
+                          } catch {
+                            // catch-all, we're good
+                          }
+                        }
+                       )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto func = mod->stmt(1)->toFunction();
+  assert(func);
+  auto resFunc = resolveConcreteFunction(ctx, func->id());
+  assert(resFunc);
+  assert(guard.numErrors() == 0);
+  assert(!guard.realizeErrors());
+}
+
+static void test22(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test22.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          try {
+                            f();
+                          } catch e : SomeSubType {
+                            // no catch-all - a problem
+                          }
+                          class SomeSubType : Error {}
+                          proc f() throws {
+                            throw new owned Error();
+                          }
+                        }
+                       )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  auto errClass = mod->stmt(1)->toClass();
+  assert(errClass);
+  auto func = mod->stmt(2)->toFunction();
+  assert(func);
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->message() == "call to throwing function 'f' is in a try but not handled");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 2);
+}
+
+// nested try where catchall is only in outermost try
+static void test23(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test23.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          try {
+                            try {
+                              f();
+                            } catch (e1 : SomeSubType) {}
+                          } catch {}
+                          class SomeSubType : Error {}
+                          proc f() throws {
+                            throw new owned Error();
+                          }
+                        }
+                       )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  assert(!guard.realizeErrors());
+}
+
+// nested try without a catchall
+static void test24(Parser* parser) {
+  auto ctx = parser->context();
+  auto path = UniqueString::get(ctx, "test24.chpl");
+
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+                        module M {
+                          try {
+                            try {
+                              f();
+                            } catch (e1 : SomeSubType) {}
+                          } catch (e1 : SomeSubType) {}
+                          class SomeSubType : Error {}
+                          proc f() throws {
+                            throw new owned Error();
+                          }
+                        }
+                       )"""";
+  ctx->advanceToNextRevision(false);
+  setFileText(ctx, path, program);
+  const ModuleVec& vec = parseToplevel(ctx, path);
+  auto mod = vec[0]->toModule();
+  assert(mod);
+  auto modRes = resolveModule(ctx, mod->id());
+  // guard.realizeErrors();
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->message() == "call to throwing function 'f' is in a try but not handled");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.error(1)->message() == "Try without a catchall in a non-throwing function");
+  assert(guard.error(1)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 2);
+}
+
+
+// TODO: error handling in defer blocks must be complete
+
+
 int main() {
+  Context context;
+  Context* ctx = &context;
+  auto parser = Parser::createForTopLevelModule(ctx);
+
+  Parser* p = &parser;
+
   test1();
   test2();
   test3();
@@ -329,6 +862,21 @@ int main() {
   test7();
   test8();
   test9();
+  test10(p);
+  test11(p);
+  test12(p);
+  test13(p);
+  test14(p);
+  test15(p);
+  test16(p);
+  test17(p);
+  test18(p);
+  test19(p);
+  test20(p);
+  test21(p);
+  test22(p);
+  test23(p);
+  test24(p);
 
   return 0;
 }

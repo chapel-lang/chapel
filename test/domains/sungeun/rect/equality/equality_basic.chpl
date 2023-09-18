@@ -26,11 +26,11 @@ proc checkit(d1, d2) {
 }
 
 {
-  var init_range: rank*range(stridable=true);
+  var init_range: rank*range(strides=strideKind.any);
   for param i in 0..rank-1 do
     init_range(i) = 1..n*i by s;
-  const D1: domain(rank, stridable=true) = init_range;
-  var D2: domain(rank, stridable=true) = init_range;
+  const D1: domain(rank, strides=strideKind.any) = init_range;
+  var D2: domain(rank, strides=strideKind.any) = init_range;
   checkit(D1, D2);
 
   init_range(rank/2) = 1..1;
@@ -39,11 +39,11 @@ proc checkit(d1, d2) {
 }
 
 {
-  var init_range: rank*range(stridable=true);
+  var init_range: rank*range(strides=strideKind.any);
   for param i in 0..rank-1 do
     init_range(i) = 1..n*i by -s;
-  const D1: domain(rank, stridable=true) = init_range;
-  var D2: domain(rank, stridable=true) = init_range;
+  const D1: domain(rank, strides=strideKind.any) = init_range;
+  var D2: domain(rank, strides=strideKind.any) = init_range;
   checkit(D1, D2);
 
   init_range(rank/2) = 1..1;

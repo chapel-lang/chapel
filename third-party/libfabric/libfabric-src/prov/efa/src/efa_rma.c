@@ -59,10 +59,17 @@ ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg,
 	struct efa_qp *qp;
 	struct efa_mr *efa_mr;
 	struct efa_conn *conn;
+#ifndef _WIN32
 	struct ibv_sge sge_list[msg->iov_count];
+#else
+	/* MSVC compiler does not support array declarations with runtime size, so hardcode
+	 * the expected iov_limit/max_sq_sge from the lower-level efa provider.
+	 */
+	struct ibv_sge sge_list[EFA_DEV_ATTR_MAX_WR_SGE];
+#endif
 	int i;
 
-	if (OFI_UNLIKELY(msg->iov_count > ep->domain->ctx->max_wr_rdma_sge)) {
+	if (OFI_UNLIKELY(msg->iov_count > ep->domain->device->ibv_attr.max_sge_rd)) {
 		EFA_WARN(FI_LOG_CQ, "invalid iov_count!\n");
 		return -FI_EINVAL;
 	}
@@ -73,7 +80,7 @@ ssize_t efa_rma_post_read(struct efa_ep *ep, const struct fi_msg_rma *msg,
 	}
 
 	if (OFI_UNLIKELY(ofi_total_iov_len(msg->msg_iov, msg->iov_count)
-			 > ep->domain->ctx->max_rdma_size)) {
+			 > ep->domain->device->max_rdma_size)) {
 		EFA_WARN(FI_LOG_CQ, "maximum rdma_size exceeded!\n");
 		return -FI_EINVAL;
 	}

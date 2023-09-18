@@ -1,2 +1,3 @@
 error-return-expr-in-iter-1.chpl:1: In iterator 'i11f':
-error-return-expr-in-iter-1.chpl:3: error: returning a value in an iterator
+error-return-expr-in-iter-1.chpl:3: error: 'return' statements with values are not allowed in iterators
+error-return-expr-in-iter-1.chpl:1: note: 'i11f' is declared as an iterator here

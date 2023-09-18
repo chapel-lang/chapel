@@ -28,9 +28,6 @@
 #include <string>
 
 namespace chpl {
-
-class ErrorBase;
-
 namespace parsing {
 
 
@@ -73,7 +70,7 @@ class FileContents {
     std::swap(error_, other.error_);
   }
   static bool update(FileContents& keep, FileContents& addin) {
-    return defaultUpdate(keep, addin);
+    return chpl::defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
     if (error_ != nullptr) error_->mark(context);

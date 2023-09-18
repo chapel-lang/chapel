@@ -25,14 +25,16 @@ proc t1(A:[]) where true {
 t1(A);
 
 record R {
-  var x;
-  var y;
+  type xType;
+  type yType;
+  var x: xType;
+  var y: yType;
 }
 
 proc t2(r:R(int, ?)) {
   writeln("OK t2(r:R(int, ?)");
 }
-proc t2(r:R) where true {
+proc t2(r:R(?)) where true {
   writeln("t2(r:R)");
 }
 
@@ -48,7 +50,7 @@ proc t3(r) where true {
 
 t3(r);
 
-proc t4(r:R) {
+proc t4(r:R(?)) {
   writeln("OK t4(r:R)");
 }
 proc t4(r) where true {

@@ -402,7 +402,7 @@ static void __cq_destruct(void *obj)
 	_gnix_queue_destroy(cq->events);
 	_gnix_queue_destroy(cq->errors);
 
-	fastlock_destroy(&cq->lock);
+	ofi_spin_destroy(&cq->lock);
 	free(cq->cq_fid.ops);
 	free(cq->cq_fid.fid.ops);
 	free(cq);
@@ -708,7 +708,7 @@ DIRECT_FN int gnix_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 	 */
 	cq_priv->entry_size = format_sizes[cq_priv->attr.format];
 
-	fastlock_init(&cq_priv->lock);
+	ofi_spin_init(&cq_priv->lock);
 	ret = gnix_cq_set_wait(cq_priv);
 	if (ret)
 		goto free_cq_priv;
@@ -732,7 +732,7 @@ free_gnix_queue:
 	_gnix_queue_destroy(cq_priv->events);
 free_cq_priv:
 	_gnix_ref_put(cq_priv->domain);
-	fastlock_destroy(&cq_priv->lock);
+	ofi_spin_destroy(&cq_priv->lock);
 	free(cq_priv);
 free_fi_cq_ops:
 	free(fi_cq_ops);

@@ -9,6 +9,10 @@ param ITERATIONS = 10;
 
 record R {
   var s: sync int;
+  proc init() {}
+  proc init=(other: R) {
+    s = other.s.readXX();
+  }
 }
 var c: R;
 

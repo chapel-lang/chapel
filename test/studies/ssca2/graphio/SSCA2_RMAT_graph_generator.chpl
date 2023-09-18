@@ -344,8 +344,8 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
                  if forWriting then ioMode.cw else ioMode.r,
                  ioHintSet.sequential);
   const chan = if forWriting
-    then f.writer(iokind.big, false)
-    else f.reader(iokind.big, false);
+    then f.writer(serializer=new binarySerializer(ioendian.big), false)
+    else f.reader(deserializer=new binaryDeserializer(ioendian.big), false);
   return chan;
 }
 
@@ -371,6 +371,8 @@ proc readNum(ch): IONumType do  return ch.read(IONumType);
 ///////// misc /////////
 
 proc reportNumVerticesError(G, snapshot_prefix, vCount) {
+  use Math;
+
   const vcountLog2 =
     if vCount <= 0 then -1:int(64) else floor(log2(vCount)):int(64);
   const helpMessage =

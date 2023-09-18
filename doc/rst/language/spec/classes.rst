@@ -24,7 +24,7 @@ to an instance of that class or any of its derived classes.
 
 A class is generic if it has generic fields. A class can also be generic
 if it inherits from a generic class. Generic classes and fields are
-discussed in :ref:`Generic_Types`.
+discussed in :ref:`Generic_Types`.
 
 .. _Class_Declarations:
 
@@ -64,7 +64,7 @@ effect.
 If a class declaration contains a type alias or a parameter field, or it
 contains a variable or constant without a specified type and without an
 initialization expression, then it declares a generic class type.
-Generic classes are described in :ref:`Generic_Types`.
+Generic classes are described in :ref:`Generic_Types`.
 
    .. note::
       *Future:*.
@@ -83,17 +83,15 @@ its deletion. It is legal to access the class fields or methods only
 during its lifetime.
 
 Each allocation of a class instance specifies a *memory management
-strategy*. Four memory management strategies are available: ``owned``,
-``shared``, ``borrowed``, and ``unmanaged``.
+strategy*. Three memory management strategies are available: ``owned``,
+``shared``, and ``unmanaged``.
 
 ``owned`` and ``shared`` class instances always have their lifetime
 managed by the compiler. In other words, the compiler automatically calls
 ``delete`` on these instances to reclaim their memory. For these
 instances, ``=`` and copy initialization can result in the transfer or
 sharing of ownership. See the :ref:`Owned_Objects` and :ref:`Shared_Objects`
-sections for more details.  When ``borrowed`` is used as a memory management
-strategy in a ``new-expression``, it also creates an instance that has its
-lifetime managed by the compiler (:ref:`Class_New`).
+sections for more details.
 
 Class instances that are ``unmanaged`` have their lifetime managed
 explicitly by the programmer. The ``delete`` keyword must be used to
@@ -112,7 +110,7 @@ Additionally, coercions are available that are equivalent to calling the
 
    *Example (borrowing.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -222,8 +220,7 @@ It is an error to apply more than one memory management strategy to a
 class type. However, in some cases, generic code needs to compute a
 variant of the class type using a different memory management strategy.
 Casts from the class type to a different memory management strategy are
-available for this purpose
-(see :ref:`Explicit_Class_Conversions`).
+available for this purpose (see :ref:`Explicit_Class_Conversions`).
 
    *Example (duplicate-management.chpl)*.
 
@@ -298,13 +295,13 @@ or ``shared``. If the value is in fact ``nil``, it halts.
 
 An alternative to ``!`` is to use a cast to a non-nilable type. Such a
 cast will throw ``NilClassError`` if the value was in fact ``nil``.
-See :ref:`Explicit_Class_Conversions`.
+See :ref:`Explicit_Class_Conversions`.
 
 Non-nilable class types are implicitly convertible to nilable class
-types. See :ref:`Implicit_Class_Conversions`.
+types. See :ref:`Implicit_Class_Conversions`.
 
 Class methods generally expect a receiver of type ``borrowed C``
-(see :ref:`Class_Methods`). Since such a class method call might
+(see :ref:`Class_Methods`). Since such a class method call might
 involve dynamic dispatch, it is a program error to call a class method
 on a class receiver storing ``nil``. The compiler will not
 resolve calls to class methods if the receiver has nilable type. If the
@@ -442,7 +439,7 @@ Class Methods
 ~~~~~~~~~~~~~
 
 Methods on classes are referred to as *class methods*. They can be
-instance methods or type methods.  See :ref:`Chapter-Methods` for more
+instance methods or type methods.  See :ref:`Chapter-Methods` for more
 information about methods.
 
 Within a class method, the type of ``this`` is generally the non-nilable
@@ -567,8 +564,8 @@ Inheritance
 
 A class inherits, or *derives*, from the class specified in the class
 declaration’s ``class-inherit`` clause when such clause is present.
-Otherwise the class inherits from the predefined ``object`` class
-(:ref:`The_object_Class`). In either case, there is exactly one
+Otherwise the class inherits from the predefined ``RootClass`` class
+(:ref:`The_Root_Class`). In either case, there is exactly one
 *parent* class. There can be many classes that inherit from a particular
 parent class.
 
@@ -576,19 +573,20 @@ It is possible for a class to inherit from a generic class. Suppose for
 example that a class ``C`` inherits from class ``ParentC``. In this
 situation, ``C`` will have type constructor arguments based upon generic
 fields in the ``ParentC`` as described
-in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
+in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
-.. _The_object_Class:
+.. _The_Root_Class:
 
-The *object* Class
-~~~~~~~~~~~~~~~~~~
+The Root Class
+~~~~~~~~~~~~~~
 
-All classes are derived from the ``object`` class, either directly or
-indirectly. If no class name appears in ``class-inherit`` clause, the
-class derives implicitly from ``object``. Otherwise, a class derives
-from ``object`` indirectly through the class it inherits. A variable of
-type ``object`` can hold a reference to an object of any class type.
+All classes are derived from a base class named ``RootClass``, either
+directly or indirectly. If a class declaration does not contain a
+``class-inherit`` clause, the class implicitly derives from
+``RootClass``. Otherwise, the class derives from ``RootClass``
+indirectly through the class it inherits from. A variable of type
+``RootClass`` can hold a reference to an object of any class type.
 
 .. _Accessing_Base_Class_Fields:
 
@@ -599,7 +597,7 @@ A derived class contains data associated with the fields in its base
 classes. The fields can be accessed in the same way that they are
 accessed in their base class unless a getter method is overridden in the
 derived class, as discussed
-in :ref:`Overriding_Base_Class_Methods`.
+in :ref:`Overriding_Base_Class_Methods`.
 
 .. _Shadowing_Base_Class_Fields:
 
@@ -691,8 +689,7 @@ An initializer for a given class is called by placing the ``new``
 operator in front of a type expression. Any initializer arguments follow
 the class name in a parenthesized list.
 
-Syntactically, the ``type-expression`` includes ``owned``, ``shared``,
-``borrowed``, and ``unmanaged``. However these have important
+Syntactically, the ``type-expression`` includes ``owned``, ``shared``, and ``unmanaged``. However these have important
 consequences for class new expressions. In particular, suppose ``C`` is
 a ``type-expression`` that results in a class type. Then:
 
@@ -706,17 +703,6 @@ a ``type-expression`` that results in a class type. Then:
 -  ``new shared C()`` allocates and initializes the instance that will
    be deleted when the last ``shared`` variable referring to it goes out
    of scope. Results in something of type ``shared C``.
-
--  ``new borrowed C()`` allocates and initializes an instance that will
-   be automatically deleted at the end of the current block. This
-   process is managed by an ``owned`` temporary. Unlike
-   ``new owned C()``, this results in a value of type ``borrowed C`` and
-   ownership of the instance cannot be transferred out of the block. In
-   other words, ``new borrowed C()`` is equivalent to 
-
-   .. code-block:: chapel
-
-            (new owned C()).borrow()
 
 -  ``new unmanaged C()`` allocates and initializes an instance that must
    have ``delete`` called on it explicitly to avoid a memory leak. It
@@ -761,7 +747,7 @@ are initialized must be initialized in declaration order.
 Initializers for generic classes (:ref:`Generic_Types`) handle
 generic fields without default values differently and may need to
 satisfy additional requirements. See
-Section :ref:`Generic_User_Initializers` for details.
+Section :ref:`Generic_User_Initializers` for details.
 
    *Example (simpleInitializers.chpl)*.
 
@@ -1031,19 +1017,17 @@ instances have been initialized, provided their value is not ``nil``.
    partially-initialized instances.
 
 Methods may be called and ``this`` may be passed to functions only after
-the built-in ``complete`` method is invoked. This method may not be
-overridden. If any fields have not been initialized by the time the
-``complete`` method is invoked, they will be considered omitted and the
-compiler will insert initialization statements as described earlier. If
-the user does not invoke the ``complete`` method explicitly, the
-compiler will insert a call to ``complete`` at the end of the
-initializer.
+the special ``init this`` statement is used. If any fields have not been
+initialized by the time the ``init this`` statement is used, they will be
+considered omitted and the compiler will insert initialization statements as
+described earlier. If the user does not use ``init this`` explicitly, the
+compiler will insert it at the end of the initializer.
 
    *Rationale*.
 
    Due to support for omitted field initialization, there is potential
    for confusion regarding the overall status of initialization. This
-   confusion is addressed in the design by requiring ``complete`` to
+   confusion is addressed in the design by requiring ``init this`` to
    explicitly mark the transition between partially and fully
    initialized instances.
 
@@ -1051,8 +1035,8 @@ initializer.
 
    *Implementors’ note*.
 
-   Even if the user explicitly initializes every field, the ``complete``
-   method is still required to invoke other methods.
+   Even if the user explicitly initializes every field, the ``init this``
+   statement is still required to invoke other methods.
 
    *Example (thisDotComplete.chpl)*.
 
@@ -1070,7 +1054,7 @@ initializer.
           this.y = y;
           // compiler inserts initialization for 'max' and 'msg'
 
-          this.complete(); // 'this' is now considered to be fully initialized
+          init this; // 'this' is now considered to be fully initialized
 
           this.verify();
           writeln(this);
@@ -1081,7 +1065,7 @@ initializer.
           this.msg = msg;
 
           // Illegal: this.verify();
-          // Implicit 'this.complete();'
+          // Implicit 'init this;'
         }
 
         proc verify() {
@@ -1105,16 +1089,16 @@ initializer.
       {x = 1.0, y = 2.0, max = 10.0, msg = Unlabeled}
       {x = 0.0, y = 0.0, max = 10.0, msg = Origin}
 
-   The first initializer leverages the ``complete`` method to initialize
+   The first initializer leverages the ``init this`` statement to initialize
    the remaining fields and to allow for the usage of the ``verify``
    method. Calling the ``verify`` method or passing ``this`` to
-   ``writeln`` before the ``complete`` method is called would result in
+   ``writeln`` before the ``init this`` statement is used would result in
    a compile-time error.
 
    The second initializer exists to emphasize the rule that even though
    all fields are initialized after the initialization of the ``msg``
    field, the compiler does not consider the type initialized until the
-   ``complete`` method is called. If the second initializer tried to
+   ``init this`` statement is used. If the second initializer tried to
    invoke the ``verify`` method, a compile-time error would be issued.
 
 .. _Invoking_Other_Initializers:
@@ -1127,7 +1111,7 @@ initializer implemented for the same type. Because the invoked
 initializer must operate on completely uninitialized memory, a
 compile-time error will be issued for field initialization before a call
 to ``init``. Because each initializer either explicitly or implicitly
-invokes the ``complete`` method, all fields and methods may be used
+uses the ``init this`` statement, all fields and methods may be used
 after such a call to ``init``.
 
    *Example (thisDotInit.chpl)*.
@@ -1143,7 +1127,7 @@ after such a call to ``init``.
           this.x = x;
           this.y = y;
           this.z = z;
-          // implicit 'this.complete();'
+          // implicit 'init this;'
         }
 
         proc init(u: real) {
@@ -1161,7 +1145,7 @@ after such a call to ``init``.
 
    The second initializer leverages the first initializer to initialize
    all fields with the same value. After the ``init`` call the type is
-   fully initialized, the ``complete`` method has been invoked, and so
+   fully initialized, the ``init this`` statement has been used, and so
    ``this`` can be passed to the ``writeln`` function.
 
 .. _Initializing_Fields_in_Conditional_Statements:
@@ -1244,7 +1228,7 @@ at the end of the conditional statement.
           if cond {
             super.init(val, val);
             this.z = val;
-            this.complete();
+            init this;
           } else {
             this.init(val, val, val);
           }
@@ -1269,7 +1253,7 @@ at the end of the conditional statement.
 
       {x = 5.0, y = 5.0, z = 5.0}
 
-   The first initializer must invoke the ``complete`` method at the end
+   The first initializer must use ``init this`` statement at the end
    of the if-branch in order to match the state at the end of the
    else-branch.
 
@@ -1293,7 +1277,7 @@ The order and names of arguments matches the order and names of field
 declarations within the class.
 
 Generic fields are discussed in
-Section :ref:`Generic_Compiler_Generated_Initializers`.
+Section :ref:`Generic_Compiler_Generated_Initializers`.
 
 The compiler-generated initializer will initialize each field to the
 value of the corresponding actual argument.
@@ -1538,9 +1522,9 @@ Calling Methods on Parent Classes
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Once ``super.init()`` returns, the dynamic type of ``this`` is the
-parent’s type until the ``complete`` method
+parent’s type until the ``init this`` statement
 (:ref:`Limitations_on_Instance_Usage_in_Initializers`) is
-invoked (except when the child’s fields are initialized and used). As a
+used (except when the child’s fields are initialized and used). As a
 result, the parent’s methods may be called and ``this`` may be passed to
 functions as though it were of the parent type.
 
@@ -1574,7 +1558,7 @@ functions as though it were of the parent type.
           super.init(x, y); // parent's compiler-generated initializer
           foo(); // Parent.foo()
           this.z = z;
-          this.complete();
+          init this;
           foo(); // Child.foo()
         }
 
@@ -1593,7 +1577,7 @@ functions as though it were of the parent type.
 
 
    Once the parent’s initializer is finished, the parent method ``foo``
-   may be called. After the ``complete`` method is invoked, a call to
+   may be called. After the ``init this`` statement is used, a call to
    ``foo`` resolves to the child’s overridden
    (:ref:`Overriding_Base_Class_Methods`) implementation:
    
@@ -1776,58 +1760,12 @@ instantiated class type itself.
 
 .. _Getter_Methods:
 
-Variable Getter Methods
-~~~~~~~~~~~~~~~~~~~~~~~
+Field Getter Methods
+~~~~~~~~~~~~~~~~~~~~
 
-All field accesses are performed via getters. A getter is a method
-without parentheses with the same name as the field. It is defined in
-the field’s class and has a ``ref`` return intent
-(:ref:`Ref_Return_Intent`). If the program does not define it,
-the default getter, which simply returns the field, is provided.
-
-   *Example (getterSetter.chpl)*.
-
-   In the code 
-
-   .. code-block:: chapel
-
-      class C {
-        var setCount: int;
-        var x: int;
-        proc x ref {
-          setCount += 1;
-          return x;
-        }
-        proc x {
-          return x;
-        }
-
-      }
-
-   
-
-   .. BLOCK-test-chapelpost
-
-      var c = new C();
-      c.x = 1;
-      writeln(c.x);
-      c.x = 2;
-      writeln(c.x);
-      c.x = 3;
-      writeln(c.x);
-      writeln(c.setCount);
-
-
-   .. BLOCK-test-chapeloutput
-
-      1
-      2
-      3
-      3
-
-   an explicit variable getter method is defined for field ``x``. It
-   returns the field ``x`` and increments another field that records the
-   number of times x was assigned a value.
+The compiler implements field access as calls to a compiler-generated
+methods without parentheses that have the same name as the field. See
+also :ref:`Methods_without_Parentheses`.
 
 .. _Class_Method_Calls:
 
@@ -2018,17 +1956,17 @@ the memory.
 Owned Objects
 -------------
 
-Including ``owned`` (or :record:`~SharedObject.shared`) in a class type directs
-the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when only one reference to an
-object needs to manage that object's storage at a time.
+Including :type:`~OwnedObject.owned` (or :type:`~SharedObject.shared`) in a
+class type directs the compiler to manage the deallocation of a class instances
+of that type. :type:`~OwnedObject.owned` is meant to be used when only one
+reference to an object needs to manage that object's storage at a time.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
 Using `owned`
 ~~~~~~~~~~~~~
 
-The ``new`` keyword allocates :record:`~OwnedObject.owned` classes by default.
+The ``new`` keyword allocates :type:`~OwnedObject.owned` classes by default.
 Additionally, it is possible to explicitly request an ``owned`` class instance
 
 .. code-block:: chapel
@@ -2040,11 +1978,11 @@ Additionally, it is possible to explicitly request an ``owned`` class instance
  var myOwnedObject = new owned MyClass();
 
 When ``myOwnedObject`` goes out of scope, the class instance it refers to will
-be deleted. It is possible to transfer the ownership to another ``owned``
-variable before that happens.
+be deleted. It is possible to transfer the ownership to another
+:type:`~OwnedObject.owned` variable before that happens.
 
 Copy initializing from ``myOwnedObject`` or assigning it to another
-:record:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
+:type:`~OwnedObject.owned` will leave ``myOwnedObject`` storing a nil value
 and transfer the owned class instance to the other value.
 
 .. code-block:: chapel
@@ -2061,7 +1999,7 @@ and transfer the owned class instance to the other value.
  // when myOwnedObject goes out of scope.
 
 
-``owned`` forms part of a type and can be used in type expressions:
+:type:`~OwnedObject.owned` forms part of a type and can be used in type expressions:
 
 .. code-block:: chapel
 
@@ -2074,8 +2012,8 @@ Borrowing from `owned`
 ~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~OwnedObject.owned.borrow` method returns the pointer managed by the
-:record:`~OwnedObject.owned`. This pointer is only valid as long as the
-:record:`~OwnedObject.owned` is storing that pointer.
+:type:`~OwnedObject.owned`. This pointer is only valid as long as the
+:type:`~OwnedObject.owned` is storing that pointer.
 
 The compiler includes a component called the lifetime checker that
 can, in many cases, check that a `borrow` does not refer to an object
@@ -2098,7 +2036,7 @@ Coercions for `owned`
 ~~~~~~~~~~~~~~~~~~~~~
 
 The compiler includes support for introducing automatic coercions
-from :record:`~OwnedObject.owned` to the borrow type. This is equivalent
+from :type:`~OwnedObject.owned` to the borrow type. This is equivalent
 to calling the :proc:`~OwnedObject.owned.borrow` method. For example:
 
 .. code-block:: chapel
@@ -2130,8 +2068,9 @@ For example:
 `owned` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~OwnedObject.owned` is ``const ref``.
-See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+The default intent for :type:`~OwnedObject.owned` is ``const``. See more on
+argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
+more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
 
 .. _Owned_Methods:
 
@@ -2147,23 +2086,23 @@ Methods on `owned` Classes
 Shared Objects
 --------------
 
-Including ``shared`` (or :record:`~OwnedObject.owned`) in a class type directs
-the compiler to manage the deallocation of a class instances of that type.
-:record:`~OwnedObject.owned` is meant to be used when many different references
-will exist to the object at the same time and these references need to keep
-the object alive.
+Including :type:`~SharedObject.shared` (or :type:`~OwnedObject.owned`) in a
+class type directs the compiler to manage the deallocation of a class instances
+of that type. :type:`~SharedObject.shared` is meant to be used when many
+different references will exist to the object at the same time and these
+references need to keep the object alive.
 
 Also see the above section on :ref:`Class_Lifetime_and_Borrows`.
 
 Using `shared`
 ~~~~~~~~~~~~~~
 
-To use :record:`~SharedObject.shared`, allocate a class instance following this
+To use :type:`~SharedObject.shared`, allocate a class instance following this
 pattern:
 
 .. code-block:: chapel
 
- var mySharedObject = new shared MyClass(...));
+ var mySharedObject = new shared MyClass(...);
 
 When ``mySharedObject`` and any copies of it go out of scope, the class
 instance it refers to will be deleted.
@@ -2189,19 +2128,19 @@ Borrowing from `shared`
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The :proc:`~SharedObject.shared.borrow` method returns the pointer managed by
-the :record:`~SharedObject.shared`. This pointer is only valid as long as the
-:record:`~SharedObject.shared` is storing that pointer. The compiler includes
+the :type:`~SharedObject.shared`. This pointer is only valid as long as the
+:type:`~SharedObject.shared` is storing that pointer. The compiler includes
 some checking for errors in this case. In these ways,
-:record:`~SharedObject.shared` is similar to :record:`~OwnedObject.owned`.
+:type:`~SharedObject.shared` is similar to :type:`~OwnedObject.owned`.
 
 See :ref:`about-owned-borrowing` for more details and examples.
 
 Coercions for `shared`
 ~~~~~~~~~~~~~~~~~~~~~~
 
-As with :record:`~OwnedObject.owned`, :record:`~SharedObject.shared` supports
-coercions to the class type as well as
-coercions from a ``shared(T)`` to ``shared(U)`` where ``T`` is a
+As with :type:`~OwnedObject.owned`, :type:`~SharedObject.shared` supports
+coercions to the class type, as well as
+coercions from a ``shared T`` to ``shared U`` where ``T`` is a
 subclass of ``U``.
 
 See :ref:`about-owned-coercions` for more details and examples.
@@ -2209,8 +2148,9 @@ See :ref:`about-owned-coercions` for more details and examples.
 `shared` Default Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~
 
-The default intent for :record:`~SharedObject.shared` types is ``const ref``.
-See more on argument intents in the :ref:`Procedures Primer <primers-procedures>`
+The default intent for :type:`~SharedObject.shared` is ``const``. See more on
+argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
+more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
 
 .. _Shared_Methods:
 

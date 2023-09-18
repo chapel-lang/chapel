@@ -61,6 +61,7 @@
 module Collectives {
   import HaltWrappers;
   import ChplConfig;
+  use CTypes;
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
@@ -73,19 +74,30 @@ module Collectives {
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   record barrier {
-    pragma "no doc"
+    @chpldoc.nodoc
     var bar: unmanaged BarrierBaseType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var isowned: bool = false;
 
     /* Construct a new barrier object.
 
        :arg numTasks: The number of tasks that will use this barrier
-       :arg barrierType: The barrier implementation to use
+
+    */
+    proc init(numTasks: int) {
+      bar = new unmanaged aBarrier(numTasks, reusable=true);
+      isowned = true;
+    }
+
+
+    /* Construct a new barrier object.
+
+       :arg numTasks: The number of tasks that will use this barrier
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */
-    proc init(numTasks: int, reusable: bool = true) {
+    @deprecated(notes="non-reusable barriers are deprecated, please remove the 'reusable' argument from this initializer call")
+    proc init(numTasks: int, reusable: bool) {
       if reusable {
         bar = new unmanaged aBarrier(numTasks, reusable=true);
       } else {
@@ -128,19 +140,19 @@ module Collectives {
       isowned = true;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       this.init(0);
     }
 
     /* copy initializer */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(b: barrier) {
       this.bar = b.bar;
       this.isowned = false;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if isowned && bar != nil {
         delete bar;
@@ -172,8 +184,13 @@ module Collectives {
       bar.wait();
     }
 
-    /* Return `true` if `n` tasks have called :proc:`notify`
+    /* Return `true` if fewer than `n` tasks have called :proc:`notify`
      */
+    inline proc pending(): bool {
+      return !bar.check();
+    }
+
+    @deprecated(notes="'barrier.check()' is deprecated, please use '!barrier.pending()' instead")
     inline proc check(): bool {
       return bar.check();
     }
@@ -189,29 +206,29 @@ module Collectives {
 
   /* The BarrierBaseType class provides an abstract base type for barriers
    */
-  pragma "no doc"
+  @chpldoc.nodoc
   class BarrierBaseType {
-    pragma "no doc"
+    @chpldoc.nodoc
     proc barrier() {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc notify() {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc wait() {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc check(): bool {
       HaltWrappers.pureVirtualMethodHalt();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc reset(nTasks: int) {
       HaltWrappers.pureVirtualMethodHalt();
     }
@@ -220,23 +237,23 @@ module Collectives {
 /* A task barrier implemented using atomics. Can be used as a simple barrier
    or as a split-phase barrier.
  */
-  pragma "no doc" class aBarrier: BarrierBaseType {
+  @chpldoc.nodoc class aBarrier: BarrierBaseType {
     /* If true the barrier can be used multiple times.  When using this as a
        split-phase barrier this causes :proc:`wait` to block until all tasks
        have reached the wait */
     param reusable = true;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var n: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     param procAtomics = if ChplConfig.CHPL_NETWORK_ATOMICS == "none" then true else false;
-    pragma "no doc"
+    @chpldoc.nodoc
     var count: if procAtomics then chpl__processorAtomicType(int) else atomic int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var done: if procAtomics then chpl__processorAtomicType(bool) else atomic bool;
 
     // Hack for AllLocalesBarrier
-    pragma "no doc"
+    @chpldoc.nodoc
     param hackIntoCommBarrier = false;
 
     /* Construct a new Barrier object.
@@ -245,21 +262,21 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 
     // Hack for AllLocalesBarrier
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(n: int, param reusable: bool, param procAtomics: bool, param hackIntoCommBarrier: bool) {
       this.reusable = reusable;
       this.procAtomics = procAtomics;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.complete();
+      init this;
       reset(n);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     /* inline */ override proc reset(nTasks: int) {
       inline proc innerReset() {
         n = nTasks;
@@ -277,8 +294,8 @@ module Collectives {
         const myc = count.fetchSub(1);
         if myc<=1 {
           if hackIntoCommBarrier {
-            extern proc chpl_comm_barrier(msg: c_string);
-            chpl_comm_barrier(c"local barrier call");
+            extern proc chpl_comm_barrier(msg: c_ptrConst(c_char));
+            chpl_comm_barrier("local barrier call");
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
@@ -342,19 +359,19 @@ module Collectives {
   /* A task barrier implemented using sync and single variables. Can be used
      as a simple barrier or as a split-phase barrier.
    */
- pragma "no doc" class sBarrier: BarrierBaseType {
+ @chpldoc.nodoc class sBarrier: BarrierBaseType {
     /* If true the barrier can be used multiple times.  When using this as a
        split-phase barrier this causes :proc:`wait` to block until all tasks
        have reached the wait */
     param reusable = true;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     var inGate: sync int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var outGate: sync int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var blockers: chpl__processorAtomicType(int);
-    pragma "no doc"
+    @chpldoc.nodoc
     var maxBlockers: int;
 
     /* Construct a new `n` task Barrier.
@@ -362,7 +379,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -437,7 +454,7 @@ module Collectives {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator barrier.=(ref lhs: barrier, rhs: barrier) {
     if lhs.isowned {
       delete lhs.bar;

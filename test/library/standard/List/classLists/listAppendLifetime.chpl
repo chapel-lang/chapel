@@ -8,7 +8,7 @@ proc bad1() {
   {
     var own = new owned C();
     var bb = own.borrow();
-    L.append(bb);
+    L.pushBack(bb);
   }
 
   return;
@@ -20,7 +20,7 @@ proc bad2() {
 
   {
     var own = new owned C();
-    L.append(own);
+    L.pushBack(own);
   }
 
   return;
@@ -32,10 +32,9 @@ proc ok() {
 
   {
     var own = new owned C();
-    L.append(own);
+    L.pushBack(own);
   }
 
   return;
 }
 ok();
-

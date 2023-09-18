@@ -24,7 +24,7 @@ config const printConfig = false;
 config const printTimings = false;
 config const printCommDiags = false;
 
-const remoteVarSpace = LocaleSpace dmapped Block(LocaleSpace);
+const remoteVarSpace = LocaleSpace dmapped blockDist(LocaleSpace);
 var remoteVar: [remoteVarSpace] int;
 var remoteVarAtomic: [remoteVarSpace] atomic int;
 
@@ -45,7 +45,7 @@ proc main() {
   var t: stopwatch;
   t.start();
 
-  coforall locIdx in 0..#numLocales {
+  coforall locIdx in 0..#numLocales with (ref remoteVar, ref remoteVarAtomic) {
     on Locales(locIdx) {
       if locIdx > 1 {
         //

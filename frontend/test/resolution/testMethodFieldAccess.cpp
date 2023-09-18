@@ -86,68 +86,6 @@ static void testIt(const char* testName,
   printf("\n");
 }
 
-// if calledFnIdStr == "", expect no match (e.g. ambiguity)
-static void testCall(const char* testName,
-                     const char* program,
-                     const char* methodIdStr,
-                     const char* callIdStr,
-                     const char* calledFnIdStr) {
-  printf("test %s\n", testName);
-  Context ctx;
-  Context* context = &ctx;
-
-  auto path = UniqueString::get(context, testName);
-  std::string contents = program;
-  setFileText(context, path, contents);
-  // parse it so that Context knowns about the IDs
-  const ModuleVec& vec = parseToplevel(context, path);
-
-  for (auto m : vec) {
-    m->dump();
-  }
-
-  ID methodId = ID::fromString(context, methodIdStr);
-  ID callId = ID::fromString(context, callIdStr);
-  ID calledFnId;
-  if (calledFnIdStr[0] != '\0') {
-    calledFnId = ID::fromString(context, calledFnIdStr);
-  }
-
-  auto methodAst = parsing::idToAst(context, methodId);
-  assert(methodAst);
-  assert(methodAst->isFunction());
-  auto callAst = parsing::idToAst(context, callId);
-  assert(callAst);
-  assert(callAst->isIdentifier() || callAst->isDot() || callAst->isCall());
-  const AstNode* calledFnAst = nullptr;
-  if (calledFnIdStr[0] != '\0') {
-    calledFnAst = parsing::idToAst(context, calledFnId);
-    assert(calledFnAst);
-    assert(calledFnAst->isVariable() || calledFnAst->isAggregateDecl() ||
-           calledFnAst->isFunction());
-  }
-
-  const ResolvedFunction* r = resolveConcreteFunction(context, methodId);
-
-  const ResolvedExpression& re = r->byId(callAst->id());
-  ID toIdentId = re.toId();
-  if (!toIdentId.isEmpty()) {
-    printf("full resolved fn to id %s\n", toIdentId.str().c_str());
-  }
-  ID toFnId;
-  if (auto fn = re.mostSpecific().only()) {
-    toFnId = fn->id();
-    printf("full resolved fn to %s\n", toFnId.str().c_str());
-  }
-  if (calledFnIdStr[0] != '\0') {
-    assert(toIdentId == calledFnAst->id() || toFnId == calledFnAst->id());
-  } else {
-    assert(toIdentId.isEmpty() && toFnId.isEmpty());
-  }
-  printf("\n");
-}
-
-
 static void test1r() {
   testIt("test1r.chpl",
          R""""(
@@ -1118,7 +1056,6 @@ static void testExample20() {
            "A.test@2",
            "" /* ambiguity error */);
 }
-
 
 int main() {
   test1r();

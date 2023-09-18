@@ -66,6 +66,14 @@
 #include "ips_tidflow.h"
 #include "ips_path_rec.h"
 
+// when defined, this enables use of byte based flow credits in addition
+// to packet based.
+// It can help UDP to avoid overflowing the sockets kernel buffers.
+// However it adds 12 bytes of flow state and will ultmately affect PSM
+// memory at scale.
+// UD/RC, TCP and OPA HALs self configure so this has no effect
+#define PSM_BYTE_FLOW_CREDITS
+
 typedef enum ips_path_type {
 	IPS_PATH_LOW_PRIORITY,
 	IPS_PATH_NORMAL_PRIORITY,
@@ -77,15 +85,16 @@ typedef enum ips_path_type {
  * Local Endpoint info.
  *
  * Contains information necessary for composing packets for the local endpoint
+ * Most are direct copies from psm2_ep_t
  */
 struct ips_epinfo {
-	uint16_t ep_base_lid;
+	__be16 ep_base_lid;
 	uint8_t ep_hash;	// for hashing adaptive dispersive routing
-#define EP_HASH ep_hash
 	uint8_t ep_lmc;
-	opa_rate ep_link_rate;
+	enum psm3_ibv_rate ep_link_rate;
 	uint16_t ep_sl;		/* PSM3_NIC_SL only when path record not used */
-	uint16_t ep_mtu;	// PSM payload after potential hdr & PSM3_MTU decrease
+	uint32_t ep_mtu;	// PSM payload after potential hdr & PSM3_MTU decrease
+				// or TCP increase beyond wire size
 	uint16_t ep_pkey;	/* PSM3_PKEY only when path record not used */
 	uint64_t ep_timeout_ack;	/* PSM3_ERRCHK_TIMEOUT if no path record */
 	uint64_t ep_timeout_ack_max;
@@ -104,8 +113,8 @@ struct ips_epinfo {
  */
 #define IPS_MAX_PATH_LMC 3
 typedef struct ips_path_grp {
-	uint16_t pg_base_dlid;
-	uint16_t pg_base_slid;
+	__be16 pg_base_dlid;
+	__be16 pg_base_slid;
 	uint8_t pg_num_paths[IPS_PATH_MAX_PRIORITY];
 	uint8_t pg_next_path[IPS_PATH_MAX_PRIORITY];
 	ips_path_rec_t *pg_path[0][IPS_PATH_MAX_PRIORITY];
@@ -115,7 +124,7 @@ typedef struct ips_path_grp {
  * Start and finish routines for constructing an ips_proto.
  */
 struct ips_proto;
-psm2_error_t ips_proto_init(const psmi_context_t *context,
+psm2_error_t psm3_ips_proto_init(psm2_ep_t ep,
 			    const struct ptl *ptl,
 			    int num_of_send_bufs,
 			    int num_of_send_desc,
@@ -125,7 +134,7 @@ psm2_error_t ips_proto_init(const psmi_context_t *context,
 			    void *spioc,	                  /* PTL's opaque spio control */
 			    struct ips_proto *proto);	          /* output protocol */
 
-psm2_error_t ips_proto_fini(struct ips_proto *proto, int force,
+psm2_error_t psm3_ips_proto_fini(struct ips_proto *proto, int force,
 			   uint64_t timeout);
 
 /*
@@ -147,7 +156,7 @@ struct ips_ctrlq {
 
 	uint32_t ctrlq_head;
 	uint32_t ctrlq_tail;
-	uint32_t ctrlq_overflow;
+	//uint32_t ctrlq_overflow;
 
 	struct ips_ctrlq_elem ctrlq_cqe[CTRL_MSG_QEUEUE_SIZE] PSMI_CACHEALIGN;
 	struct psmi_timer ctrlq_timer;	/* when in timerq */
@@ -171,20 +180,20 @@ struct ips_ctrlq {
 #define CSTATE_OUTGOING_WAITING		4
 #define CSTATE_OUTGOING_WAITING_DISC	5
 
-psm2_error_t ips_proto_connect(struct ips_proto *proto, int numep,
+psm2_error_t psm3_ips_proto_connect(struct ips_proto *proto, int numep,
 			      const psm2_epid_t *array_of_epid,
 			      const int *array_of_epid_mask,
 			      psm2_error_t *array_of_errors,
 			      psm2_epaddr_t *array_of_epaddr,
 			      uint64_t timeout_in);
 
-psm2_error_t ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
+psm2_error_t psm3_ips_proto_disconnect(struct ips_proto *proto, int force, int numep,
 				 psm2_epaddr_t array_of_epaddr[],
 				 const int array_of_epaddr_mask[],
 				 psm2_error_t array_of_errors[],
 				 uint64_t timeout_in);
 
-int ips_proto_isconnected(struct ips_epaddr *ipsaddr);
+int psm3_ips_proto_isconnected(struct ips_epaddr *ipsaddr);
 
 /*
  * Pending operation structures
@@ -217,11 +226,28 @@ struct ips_protoexp;
 struct ips_proto_stats {
 	uint64_t pio_busy_cnt;
 	uint64_t pio_no_flow_credits;
+#ifdef PSM_BYTE_FLOW_CREDITS
+	uint64_t pio_no_flow_credit_bytes;
+#endif
+#ifdef PSM_VERBS
 	uint64_t post_send_fail;
-	uint64_t writev_busy_cnt;
+#endif
+#ifdef PSM_HAVE_SDMA
+	uint64_t sdma_compl_wait_ack;
+	uint64_t sdma_compl_wait_resend;
+	uint64_t sdma_compl_slow;
+	uint64_t sdma_compl_yield;
+#endif
+
 	uint64_t scb_egr_unavail_cnt;
 	uint64_t unknown_packets;
 	uint64_t stray_packets;
+	uint64_t rcv_revisit;
+#ifdef PSM_SOCKETS
+	uint64_t partial_write_cnt;
+	uint64_t partial_read_cnt;
+	uint64_t rcv_hol_blocking;
+#endif
 };
 
 
@@ -231,11 +257,13 @@ struct ips_proto_stats {
 struct ips_proto_epaddr_stats {
 	uint64_t err_chk_send;
 	uint64_t err_chk_recv;
-#ifdef RNDV_MOD
+#ifdef PSM_VERBS
+#ifdef PSM_HAVE_RNDV_MOD
 	uint64_t err_chk_rdma_send;
 	uint64_t err_chk_rdma_recv;
 	uint64_t err_chk_rdma_resp_send;
 	uint64_t err_chk_rdma_resp_recv;
+#endif
 #endif
 	uint64_t nak_send;
 	uint64_t nak_recv;
@@ -254,8 +282,10 @@ struct ips_proto_epaddr_stats {
 	uint64_t cts_rdma_send;
 	uint64_t cts_rdma_recv;
 	uint64_t send_rexmit;
-#ifdef RNDV_MOD
+#ifdef PSM_VERBS
+#ifdef PSM_HAVE_RNDV_MOD
 	uint64_t rdma_rexmit;
+#endif
 #endif
 };
 
@@ -269,9 +299,9 @@ struct opp_api {
 };
 
 struct ips_ibta_compliance_fn {
-	psm2_error_t(*get_path_rec) (struct ips_proto *proto, uint16_t slid,
-				    uint16_t dlid,
-				    uint16_t ip_hi,
+	psm2_error_t(*get_path_rec) (struct ips_proto *proto, __be16 slid,
+				    __be16 dlid,
+				    __be64 gid_hi, __be64 gid_lo,
 				    unsigned long timeout,
 				    ips_path_grp_t **ppathgrp);
 	psm2_error_t(*fini) (struct ips_proto *proto);
@@ -306,25 +336,33 @@ struct ips_proto {
 
 	struct ips_protoexp *protoexp;
 	struct ips_scbctrl *scbc_rv;
-	struct ips_spio *spioc;
+	void *spioc;	// HAL specific structure
 	struct ips_scbctrl scbc_egr;
 	struct ips_epinfo epinfo;
 
 
 	uint64_t timeout_send;
 	uint32_t flags;
+#if   defined(PSM_HAVE_REG_MR)
+	// TBD adjust rest of Send DMA code to use PSM_HAVE_SDMA
 	uint32_t iovec_thresh_eager;
 	uint32_t iovec_thresh_eager_blocking;
-#ifdef PSM_CUDA
+#endif
+#ifdef PSM_HAVE_REG_MR
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint32_t iovec_gpu_thresh_eager;
 	uint32_t iovec_gpu_thresh_eager_blocking;
 #endif
-	uint32_t psn_mask;
+#endif
+	uint32_t psn_mask;		// mask BTH PSN (24b or 31b)
 	uint32_t scb_bufsize;
 	uint32_t multirail_thresh_load_balance;
-	uint16_t flow_credits;
+	uint16_t pktlen_mask;		// mask LRH pktlen (words) (12b or 16b)
+	uint16_t flow_credits;		// credit limit in packets
+#ifdef PSM_BYTE_FLOW_CREDITS
+	uint32_t flow_credit_bytes;	// credit limit in bytes
+#endif
 	mpool_t pend_sends_pool;
-	mpool_t timer_pool;
 	struct ips_ibta_compliance_fn ibta;
 	struct ips_proto_stats stats;
 	struct ips_proto_epaddr_stats epaddr_stats;
@@ -336,8 +374,10 @@ struct ips_proto {
 	/* pure sdma mode, use dma flow, otherwise, use pio flow */
 	ips_epaddr_flow_t msgflowid;
 
+#ifdef PSM_HAVE_REG_MR
 	// mr_cache is only allocated and used when PSM3_RDMA enabled
 	psm2_mr_cache_t mr_cache;
+#endif
 
 
 	uint64_t t_init;
@@ -380,15 +420,22 @@ struct ips_proto {
 	void *opp_ctxt;
 	struct opp_api opp_fn;
 
-#ifdef PSM_CUDA
-	struct ips_cuda_hostbuf_mpool_cb_context cuda_hostbuf_send_cfg;
-	struct ips_cuda_hostbuf_mpool_cb_context cuda_hostbuf_small_send_cfg;
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	struct ips_gpu_hostbuf_mpool_cb_context cuda_hostbuf_send_cfg;
+	struct ips_gpu_hostbuf_mpool_cb_context cuda_hostbuf_small_send_cfg;
 	mpool_t cuda_hostbuf_pool_send;
 	mpool_t cuda_hostbuf_pool_small_send;
-	CUstream cudastream_send;
-	unsigned cuda_prefetch_limit;
 #endif
 
+#ifdef PSM_CUDA
+	CUstream cudastream_send;
+#elif defined(PSM_ONEAPI)
+	ze_command_queue_handle_t cq_send;
+#endif
+
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	unsigned cuda_prefetch_limit;
+#endif
 /*
  * Control message queue for pending messages.
  *
@@ -397,11 +444,13 @@ struct ips_proto {
  *
  * Variables here are write once (at init) and read afterwards (except the msg
  * queue overflow counters).
+ *
+ * Each of the queable messages is given a single bit in the queue_mask and
+ * message_type_to_mask indicates the bit in the mask for a given message type.
  */
-	uint32_t ctrl_msg_queue_overflow;
+	uint64_t ctrl_msg_queue_overflow;
 	uint32_t ctrl_msg_queue_enqueue;
-	uint32_t message_type_to_index[256];
-#define message_type2index(proto, msg_type) (proto->message_type_to_index[(msg_type)])
+	uint32_t message_type_to_mask[256];
 
 	time_t writevFailTime;
 };
@@ -445,7 +494,7 @@ struct ips_flow {
 	struct ips_epaddr *ipsaddr;	/* back pointer, remote endpoint */
 	ips_path_rec_t *path;	/* Path to use for flow */
 
-	uint16_t frag_size;	/* < This flow's fragment size, calculated as the
+	uint32_t frag_size;	/* < This flow's fragment size, calculated as the
 				   < minimum of all relevant MTUs involved */
 
 	uint16_t flowid:2;	/* flow id: pio(0) or dma(1) or tidflow(2) */
@@ -453,15 +502,39 @@ struct ips_flow {
 	uint16_t protocol:3;	/* go-back-n or tidflow */
 	uint16_t flags:8;	/* flow state flags */
 
-	uint16_t cwin;		/* Size of congestion window */
+	// TBD - cwin only needed for OPA for CCA
+	uint16_t cwin;		/* Size of congestion window in packets */
+	// to allow for good pipelining of send/ACK need to trigger an ack at
+	// least every ack_interval packets (roughy flow_credits/4) or every
+	// ack_inteval_bytes bytes (roughly flow_credit_bytes/4) whichever
+	// comes 1st.  When flow_credit_bytes >= flow_credits*mtu
+	// ack_interval will be the trigger.
+	// Only when flow_credit_bytes < flow_credits*mtu will
+	// ack_interval_bytes come into play.
 	uint16_t ack_interval;	/* interval to ack packets */
 	uint16_t ack_counter;	/* counter to ack packets */
+#ifdef PSM_BYTE_FLOW_CREDITS
+	uint32_t ack_interval_bytes;	/* interval to ack packets in bytes */
+	uint32_t ack_counter_bytes;	/* counter to ack packets in bytes */
+#endif
+#ifdef PSM_SOCKETS
+	uint32_t used_snd_buff; // number of bytes in socket send buffer
+	uint32_t send_remaining; // the length of remaining data to send
+#endif
+	// We track credits in terms of packets and bytes.
+	// For UD and OPA, packets is sufficient since per pkt buffering.
+	// For UDP, sockets has byte oriented buffering so we need to
+	// impose a credit_bytes limit to allow sufficient pkt credits
+	// but avoid sockets buffer overflow and recv side discards/flow control
 	int16_t  credits;	/* Current credits available to send on flow */
+#ifdef PSM_BYTE_FLOW_CREDITS
+	int32_t  credit_bytes;	/* Current credit bytes avail to send on flow */
+#endif
 	uint32_t ack_index;     /* Index of the last ACK message type in pending message queue */
 
-	psmi_seqnum_t xmit_seq_num;	/* transmit packet sequence number */
-	psmi_seqnum_t xmit_ack_num;	/* acked packet sequence number */
-	psmi_seqnum_t recv_seq_num;	/* recieved packet sequence number */
+	psmi_seqnum_t xmit_seq_num;	/* next psn for xmit */
+	psmi_seqnum_t xmit_ack_num;	/* last xmited psn acked + 1 */
+	psmi_seqnum_t recv_seq_num;	/* next psn expect to recv */
 
 	psmi_timer *timer_send;	/* timer for frames that got a busy PIO */
 	psmi_timer *timer_ack;	/* timer for unacked frames */
@@ -478,7 +551,7 @@ struct ips_flow {
 #define IPS_FLOW_MSG_TOGGLE_OOO_MASK	(1 << 0)	/* ooo msg check */
 #define IPS_FLOW_MSG_TOGGLE_UNEXP_MASK	(1 << 1)	/* unexp msg check */
 /*
- * Make sure ips_epaddr_t and psm2_epaddr_t can be converted each other.
+ * Make sure ips_epaddr_t and psm2_epaddr_t can be converted to each other.
  */
 struct ips_epaddr {
 	struct psm2_epaddr epaddr;	/* inlined psm level epaddr */
@@ -493,55 +566,96 @@ struct ips_epaddr {
 	uint32_t connidx_incoming;	/* my connection idx */
 
 	uint16_t ctrl_msg_queued;	/* bitmap of queued control messages to be send */
-	uint32_t window_rv;		/* RNDV window size per connection */
 
 	uint8_t  hpp_index;	/* high priority index */
 	uint8_t  msg_toggle;	/* only 2 bits used, 6 bits for future */
-	// on UD/UDP context only used for hashing adaptive dispersive routing
-	uint32_t remote_qpn;
-#define IPSADDR_HASH remote_qpn
-#ifdef RNDV_MOD
-	union  ibv_gid remote_gid;	/* GID of dest to use for IB CM  */
-	psm2_rv_conn_t rv_conn;
-	uint32_t remote_rv_index; // RV index of dest to use for immed */
-	// state of connection - need it here so we don't call kernel to poll
-	// ! conn - no connection
-	// conn && ! connected - connection processes started, but not done
-	// connected - connection established and usable (implies conn)
-	uint8_t rv_connected:1;
-	uint8_t reserved:4;
-	// during error recovery a receiver may be unable to allocate an scb to
-	// send the respond.  In which case the information is stashed here and
-	// checked in ips_proto_timer_send_callback for the proto->msgflowid flow
-	// when an scb is available, this info allows the response to be built
-	// Since we can only stash one such info per ipsaddr, we limit senders
-	// to one outstanding err_chk_rdma at a time.  Recovery is infrequent
-	// and already slow due to QP reconnect so this is a reasonable compromise
-	// the idea of using the ctrlq (64 entries deep per proto) was explored
-	// but is not really for "level 2" reliability messages so this approach
-	// was deemed simpler to implement and lower risk to mature code
-	uint8_t rv_err_chk_rdma_outstanding:1; /* only one per requestor */
-	uint8_t rv_need_send_err_chk_rdma_resp:1; /* is resp info stashed */
-	uint8_t rv_err_chk_rdma_resp_need_resend:1; /* info for resp */
-	ptl_arg_t rv_err_chk_rdma_resp_rdesc_id; /* info for resp */
-	ptl_arg_t rv_err_chk_rdma_resp_sdesc_id; /* info for resp */
-	STAILQ_ENTRY(ips_epaddr) pend_err_resp_next; /* queue to send resp */
-#endif
-	// TBD - to reduce memory footprint, perhaps allocate a separate
-	// structure only when RC QP enabled and point to it here
-	struct ibv_qp *rc_qp;
-	struct psm2_verbs_recv_pool recv_pool;
-	uint32_t rc_qp_max_recv_wr;	// TBD if we allocated recv buffers sooner we
-							// wouldn't need this field
-	uint32_t rc_qp_max_inline_data;
-	struct psm2_verbs_send_allocator send_allocator;
-	// use_* help avoid if tests in post_send datapath
-	psm2_verbs_send_allocator_t use_allocator;	// points to verbs_ep until
-												// rc_connected
-	struct ibv_qp *use_qp;	// points to verbs_ep UD QP until
-							// rc_connected
-	uint32_t use_max_inline_data;	// verbs_ep UD QP value until connected
-	uint8_t rc_connected;
+	uint8_t  hash;		/* hash for adaptve and static_dst dispersive */
+	union {
+		// HAL specific fields
+#ifdef PSM_VERBS
+		struct {
+			uint32_t remote_qpn;
+#ifdef PSM_HAVE_RNDV_MOD
+			// for PSM3_RDMA=1
+				/* GID of dest to use for IB CM  */
+			union  ibv_gid remote_gid;
+			psm3_rv_conn_t rv_conn;
+ 				/* RV index of dest to use for immed */
+			uint32_t remote_rv_index;
+			// state of connection - here so don't call kernel to
+			// 	poll
+			// ! conn - no connection
+			// conn && ! connected - connection processes started,
+			// 	but not done
+			// connected - connection established and usable
+			// 	(implies conn)
+			uint8_t rv_connected:1;
+			uint8_t reserved:4;
+			// during error recovery a receiver may be unable to
+			// allocate an scb to send the response.  In which case
+			// the information is stashed here and checked in
+			// psm3_ips_proto_timer_send_callback for the
+			// proto->msgflowid flow when an scb is available, this
+			// info allows the response to be built.
+			// Since we can only stash one such info per ipsaddr,
+			// we limit senders to one outstanding err_chk_rdma at
+			// a time.  Recovery is infrequent and already slow due
+			// to QP reconnect so this is a reasonable compromise
+			// the idea of using the ctrlq (64 entries deep per
+			// proto) was explored but is not really for "level 2"
+			// reliability messages so this approach
+			// was deemed simpler to implement and lower risk to
+			// mature code
+ 				/* only one per requestor */
+			uint8_t rv_err_chk_rdma_outstanding:1;
+				/* is resp info stashed */
+			uint8_t rv_need_send_err_chk_rdma_resp:1;
+				/* info for resp */
+			uint8_t rv_err_chk_rdma_resp_need_resend:1;
+				/* info for resp */
+			ptl_arg_t rv_err_chk_rdma_resp_rdesc_id;
+				/* info for resp */
+			ptl_arg_t rv_err_chk_rdma_resp_sdesc_id;
+				/* queue to send resp */
+			STAILQ_ENTRY(ips_epaddr) pend_err_resp_next;
+#endif /* PSM_HAVE_RNDV_MOD */
+#ifdef USE_RC
+			// for PSM3_RDMA=2 or 3
+			// TBD - to reduce memory footprint, perhaps allocate a
+			// separate structure only when RC QP enabled and point
+			// to it here and/or merge these with fields above
+			struct ibv_qp *rc_qp;
+			struct psm3_verbs_recv_pool recv_pool;
+				// TBD if we allocated recv buffers sooner we
+				// wouldn't need this field
+			uint32_t rc_qp_max_recv_wr;
+			uint32_t rc_qp_max_inline_data;
+			struct psm3_verbs_send_allocator send_allocator;
+
+			// use_* help avoid if tests in post_send datapath
+				// points to verbs_ep until rc_connected
+			psm3_verbs_send_allocator_t use_allocator;
+				// points to verbs_ep UD QP until rc_connected
+			struct ibv_qp *use_qp;
+				// verbs_ep UD QP value until connected
+			uint32_t use_max_inline_data;
+
+			uint8_t rc_connected;
+#endif /* USE_RC */
+		} verbs;
+#endif /* PSM_VERBS */
+#if defined(PSM_SOCKETS)
+		struct {
+			// for UDP the pri_addr is a UDP socket
+			// for TCP the pri_addr is a TCP socket and the
+			// aux_addr is a UDP socket used only for disconnect
+			struct sockaddr_in6 remote_pri_addr;
+			struct sockaddr_in6 remote_aux_addr;
+			int tcp_fd;
+			uint8_t connected;
+		} sockets;
+#endif /* PSM_SOCKETS */
+	};
 
 	/* this portion is only for connect/disconnect */
 	uint64_t s_timeout;	/* used as a time in close */
@@ -554,17 +668,28 @@ struct ips_epaddr {
 	uint32_t cerror_incoming:8;	/* error code during connection */
 };
 
+#ifdef PSM_HAVE_REG_MR
+// This is only called when proto->protoexp != NULL (eg. HAL
+// supports RDMA and RDMA is enabled).  So for now we can get away
+// without adding this to HAL, even though it tests some ipsaddr fields
+// which are undefined for sockets HAL.
 static inline int
-ips_epaddr_connected(struct ips_epaddr *ipsaddr)
+ips_epaddr_rdma_connected(struct ips_epaddr *ipsaddr)
 {
-	if (ipsaddr->rc_connected)
-		return 1;
-#ifdef RNDV_MOD
-	if (ipsaddr->rv_connected)
+	psmi_assert(psmi_hal_has_cap(PSM_HAL_CAP_RDMA));
+#ifdef PSM_VERBS
+#if defined(USE_RC)
+	if (ipsaddr->verbs.rc_connected)
 		return 1;
 #endif
+#ifdef PSM_HAVE_RNDV_MOD
+	if (ipsaddr->verbs.rv_connected)
+		return 1;
+#endif
+#endif /* PSM_VERBS */
 	return 0;
 }
+#endif
 
 /*
  * ips_msgctl_t is per connection struct.
@@ -611,23 +736,26 @@ void IPS_MCTXT_REMOVE(ips_epaddr_t *node)
  * - min(remote EP MTU, selected path's MTU, local EP MTU) for DMA sends
  * - min(remote EP MTU, selected path's MTU, local EP MTU, local PIO bufsize) for PIO sends
  */
-void MOCKABLE(ips_flow_init)(struct ips_flow *flow, struct ips_proto *proto,
+void MOCKABLE(psm3_ips_flow_init)(struct ips_flow *flow, struct ips_proto *proto,
 		   ips_epaddr_t *ipsaddr, psm_transfer_type_t transfer_type,
 		   psm_protocol_type_t protocol, ips_path_type_t path_type,
 		   uint32_t flow_index);
-MOCK_DCL_EPILOGUE(ips_flow_init);
+MOCK_DCL_EPILOGUE(psm3_ips_flow_init);
 
 void ips_scb_prepare_flow(ips_scb_t *scb, ips_epaddr_t *ipsaddr,
 			  struct ips_flow *flow);
 
-void MOCKABLE(ips_proto_flow_enqueue)(struct ips_flow *flow, ips_scb_t *scb);
-MOCK_DCL_EPILOGUE(ips_proto_flow_enqueue);
+void MOCKABLE(psm3_ips_proto_flow_enqueue)(struct ips_flow *flow, ips_scb_t *scb);
+MOCK_DCL_EPILOGUE(psm3_ips_proto_flow_enqueue);
 
-psm2_error_t ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed);
+psm2_error_t psm3_ips_proto_flow_flush_pio(struct ips_flow *flow, int *nflushed);
 
 /* Wrapper for enqueue + flush */
 psm2_error_t ips_proto_scb_pio_send(struct ips_flow *flow, ips_scb_t *scb);
 
+#ifdef PSM_HAVE_SDMA
+psm2_error_t ips_proto_dma_wait_until(struct ips_proto *proto, ips_scb_t *scb);
+#endif
 
 /*
  * Protocol receive processing
@@ -635,70 +763,67 @@ psm2_error_t ips_proto_scb_pio_send(struct ips_flow *flow, ips_scb_t *scb);
  */
 /* Error handling for unknown packet, packet is unknown when epid doesn't match
  * in epstate table */
-int ips_proto_process_unknown(const struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_process_unknown(const struct ips_recvhdrq_event *rcv_ev, int *opcode);
 /* Exposed for fastpath only */
-int ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_process_ack(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_process_nak(struct ips_recvhdrq_event *rcv_ev);
 
 /*
  * Protocol exception handling and frame dumps
  */
-void ips_proto_show_header(struct ips_message_header *p_hdr, char *msg);
-void ips_proto_dump_frame(void *frame, int lenght, char *message);
-void ips_proto_dump_data(void *data, int data_length);
+void psm3_ips_proto_show_header(struct ips_message_header *p_hdr, char *msg);
+void psm3_ips_proto_dump_frame(void *frame, int lenght, char *message);
+void psm3_ips_proto_dump_data(void *data, int data_length);
 void ips_proto_dump_eager(uint32_t *curr_rcv_hdr);
 
 /*
  * Checksum of ips packets
  */
-uint32_t ips_crc_calculate(uint32_t len, uint8_t *data, uint32_t crc);
+uint32_t psm3_ips_cksum_calculate(struct ips_message_header *p_hdr,
+                                uint8_t *payload, uint32_t paylen);
 
 /*
  * Matched-Queue processing and sends
  */
-psm2_error_t ips_proto_mq_push_cts_req(struct ips_proto *proto,
+psm2_error_t psm3_ips_proto_mq_push_cts_req(struct ips_proto *proto,
 				      psm2_mq_req_t req);
-psm2_error_t ips_proto_mq_push_rts_data(struct ips_proto *proto,
+psm2_error_t psm3_ips_proto_mq_push_rts_data(struct ips_proto *proto,
 				       psm2_mq_req_t req);
-int ips_proto_mq_handle_cts(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_mq_handle_rts(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_mq_handle_tiny(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_mq_handle_short(struct ips_recvhdrq_event *rcv_ev);
-int ips_proto_mq_handle_eager(struct ips_recvhdrq_event *rcv_ev);
-void ips_proto_mq_handle_outoforder_queue(psm2_mq_t mq, ips_msgctl_t *msgctl);
-int ips_proto_mq_handle_data(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_mq_handle_cts(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_mq_handle_rts(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_mq_handle_tiny(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_mq_handle_short(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_mq_handle_eager(struct ips_recvhdrq_event *rcv_ev);
+void psm3_ips_proto_mq_handle_outoforder_queue(psm2_mq_t mq, ips_msgctl_t *msgctl);
+int psm3_ips_proto_mq_handle_data(struct ips_recvhdrq_event *rcv_ev);
 
-psm2_error_t ips_proto_mq_send(psm2_mq_t mq, psm2_epaddr_t epaddr,
+psm2_error_t psm3_ips_proto_mq_send(psm2_mq_t mq, psm2_epaddr_t epaddr,
 			      uint32_t flags, psm2_mq_tag_t *tag,
 			      const void *ubuf, uint32_t len);
 
-psm2_error_t ips_proto_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr,
+psm2_error_t psm3_ips_proto_mq_isend(psm2_mq_t mq, psm2_epaddr_t epaddr,
 				uint32_t flags_user, uint32_t flags_internal,
 				psm2_mq_tag_t *tag, const void *ubuf, uint32_t len,
 				void *context, psm2_mq_req_t *req_o);
 
-psm2_error_t ips_proto_msg_size_thresh_query (enum psm2_info_query_thresh_et,
-					      uint32_t *out, psm2_mq_t mq, psm2_epaddr_t);
-
-int ips_proto_am(struct ips_recvhdrq_event *rcv_ev);
+int psm3_ips_proto_am(struct ips_recvhdrq_event *rcv_ev);
 
 /*
  * IPS packet service routine table.
  */
 typedef int (*ips_packet_service_fn_t)(struct ips_recvhdrq_event *rcv_ev);
 extern ips_packet_service_fn_t
-	ips_packet_service_routine[OPCODE_FUTURE_FROM-OPCODE_RESERVED];
+	psm3_ips_packet_service_routine[OPCODE_FUTURE_FROM-OPCODE_RESERVED];
 
-psm2_error_t ips_ibta_link_updown_event(struct ips_proto *proto);
-
+/* IBTA feature related functions (path record, etc.) */
 psm2_error_t
-MOCKABLE(ips_ibta_init)(struct ips_proto *proto);
-MOCK_DCL_EPILOGUE(ips_ibta_init);
+MOCKABLE(psm3_ips_ibta_init)(struct ips_proto *proto);
+MOCK_DCL_EPILOGUE(psm3_ips_ibta_init);
 
-psm2_error_t ips_ibta_fini(struct ips_proto *proto);
+psm2_error_t psm3_ips_ibta_fini(struct ips_proto *proto);
 
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 PSMI_ALWAYS_INLINE(
 uint32_t ips_cuda_next_window(uint32_t max_window, uint32_t offset,
 			      uint32_t len))

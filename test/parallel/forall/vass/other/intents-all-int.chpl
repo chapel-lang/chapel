@@ -46,20 +46,20 @@ iter myiter(followThis, param tag: iterKind) where tag == iterKind.follower {
 
 
 var i = 111;
-var s1$, s2$: sync int;
+var s1, s2: sync int;
 
 /* blank intents are not available at present
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  blank");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 222;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       writeln(i, "    inside");
     }
   }
@@ -67,17 +67,17 @@ cobegin with (ref i) {
 */
 i = 222;
 
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  in");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 333;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (in i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       i += 1;
       writeln(i, "    inside");
     }
@@ -85,68 +85,68 @@ cobegin with (ref i) {
 }
 
 
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  const");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 444;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (const i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       writeln(i, "    inside");
     }
   }
 }
 
 
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  const in");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 555;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (const in i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       writeln(i, "    inside");
     }
   }
 }
 
 
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  const ref");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 666;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (const ref i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       writeln(i, "    inside");
     }
   }
 }
 
 
-s1$.reset(); s2$.reset();
+s1.reset(); s2.reset();
 writeln(i, "  ref");
 cobegin with (ref i) {
   {
-    s1$.readFE();
+    s1.readFE();
     i = 777;
-    s2$.writeEF(1);
+    s2.writeEF(1);
   }{
     forall indvar in myiter() with (ref i) {
-      s1$.writeEF(1);
-      s2$.readFE();
+      s1.writeEF(1);
+      s2.readFE();
       i += 1;
       writeln(i, "    inside");
     }

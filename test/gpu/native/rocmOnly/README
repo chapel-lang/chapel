@@ -1,0 +1,6 @@
+For extern_kernel_launch.chpl:
+
+This like the equivalent test under `gpu/native/cudaOnly` was used in the early
+days of adding AMD support. I think it's nice to keep this around but if
+there's a large maintenance burden involved we might want to remove it, see
+this for more info: https://github.com/Cray/chapel-private/issues/3195

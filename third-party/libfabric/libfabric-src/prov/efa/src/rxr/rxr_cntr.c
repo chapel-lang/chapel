@@ -33,7 +33,7 @@
  */
 
 #include "ofi_util.h"
-#include "rxr.h"
+#include "efa.h"
 #include "rxr_cntr.h"
 
 static int efa_cntr_wait(struct fid_cntr *cntr_fid, uint64_t threshold, int timeout)

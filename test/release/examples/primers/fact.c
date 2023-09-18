@@ -13,7 +13,7 @@ int fact(int x){
 
 
 
-data* getNewData(){
+data* getNewData(void){
     data *d = malloc(sizeof(data));
     d->x = 5;
     return d;
@@ -33,7 +33,7 @@ data* fact_d(data *d){
     return f;
 }
 
-data* getDataStructPtr(){
+data* getDataStructPtr(void){
     data *d = malloc(sizeof(data));
     d->x = 10;
     return d;

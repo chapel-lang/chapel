@@ -5,7 +5,7 @@ size:		14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
-alignment:	(1, 1)
+alignment:	(0, 0)
 first:		(1, 1)
 last:		(6, 6)
 {
@@ -22,7 +22,7 @@ size:		14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
-alignment:	(1, 1)
+alignment:	(0, 0)
 first:		(1, 1)
 last:		(6, 6)
 {
@@ -39,7 +39,7 @@ size:		14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
-alignment:	(1, 1)
+alignment:	(0, 0)
 first:		(1, 4)
 last:		(6, 6)
 {
@@ -56,7 +56,7 @@ size:		14
 low:		(1, 1)
 high:		(6, 6)
 stride:		(1, 1)
-alignment:	(1, 1)
+alignment:	(0, 0)
 first:		(1, 1)
 last:		(6, 6)
 {

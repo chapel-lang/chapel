@@ -10,6 +10,3 @@ f(a.readFE());
 proc g(x:integral) {
   writeln(x);
 }
-
-var b:single int = 1;
-g(b.readFF());

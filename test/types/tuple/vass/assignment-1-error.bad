@@ -8,4 +8,4 @@ and we're sorry for the hassle.  We would appreciate your reporting this bug --
 please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
 the filename + line number above may be useful in working around the issue.
 
-  assignment-1-error.chpl:9: called as test(tup: (int(64),[domain(1,int(64),false)] int(64)))
+  assignment-1-error.chpl:9: called as test(tup: (int(64),[domain(1,int(64),one)] int(64)))

@@ -19,6 +19,7 @@
 
 #include "chpl/resolution/scope-queries.h"
 
+#include "chpl/resolution/resolution-queries.h"
 #include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/global-strings.h"
 #include "chpl/framework/query-impl.h"
@@ -26,6 +27,7 @@
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/all-uast.h"
 
+#include "extern-blocks.h"
 #include "scope-help.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -54,20 +56,27 @@ static void maybeEmitWarningsForId(Context* context, ID idMention,
   parsing::reportUnstableWarningForId(context, idMention, idTarget);
 }
 
-static bool isMethodOrField(const AstNode* d, bool atFieldLevel) {
+static bool isField(const AstNode* d, bool atFieldLevel) {
   // anything declared directly in a record/class/union counts
   // for this purpose. (This covers nested classes / nested records).
+  if (d == nullptr) return false;
+
   if (atFieldLevel) {
-    return true;
+    return !d->isFunction();
   }
 
-  if (d != nullptr) {
-    if (auto fn = d->toFunction()) {
-      return fn->isMethod();
-    }
-    if (auto v = d->toVariable()) {
-      return v->isField();
-    }
+  if (auto v = d->toVariable()) {
+    return v->isField();
+  }
+
+  return false;
+}
+
+static bool isMethod(const AstNode* d, bool atFieldLevel) {
+  if (d == nullptr) return false;
+
+  if (auto fn = d->toFunction()) {
+    return atFieldLevel || fn->isMethod();
   }
 
   return false;
@@ -97,13 +106,15 @@ static void gather(DeclMap& declared,
     declared.emplace_hint(search,
                           name,
                           OwnedIdsWithName(d->id(), visibility,
-                                           isMethodOrField(d, atFieldLevel),
+                                           isField(d, atFieldLevel),
+                                           isMethod(d, atFieldLevel),
                                            isParenfulFunction(d)));
   } else {
     // found an entry, so add to it
     OwnedIdsWithName& val = search->second;
     val.appendIdAndFlags(d->id(), visibility,
-                         isMethodOrField(d, atFieldLevel),
+                         isField(d, atFieldLevel),
+                         isMethod(d, atFieldLevel),
                          isParenfulFunction(d));
   }
 }
@@ -133,7 +144,7 @@ struct GatherDecls {
   bool atFieldLevel = false;
 
   GatherDecls(const AstNode* parentAst) {
-    if (parentAst && parentAst->isAggregateDecl()) {
+    if (parentAst && (parentAst->isAggregateDecl() || parentAst->isInterface())) {
       atFieldLevel = true;
     }
   }
@@ -204,7 +215,7 @@ struct GatherDecls {
 
   // consider 'include module' something that defines a name
   bool enter(const Include* d) {
-    gather(declared, d->name(), d, uast::Decl::PUBLIC, atFieldLevel);
+    gather(declared, d->name(), d, d->visibility(), atFieldLevel);
     return false;
   }
   void exit(const Include* d) { }
@@ -254,6 +265,7 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
+         || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
          || asttags::isSync(tag);
@@ -265,15 +277,17 @@ isElseBlockOfConditionalWithIfVarQuery(Context* context, ID id) {
 
   bool result = false;
 
-  ID parentId = parsing::idToParentId(context, id);
-  if (!parentId.isEmpty()) {
-    if (asttags::isConditional(parsing::idToTag(context, parentId))) {
-      auto parentAst = parsing::idToAst(context, parentId);
-      auto cond = parentAst->toConditional();
-      CHPL_ASSERT(cond); // should have checked it was a conditional already
-      if (cond->condition()->isVariable() && cond->elseBlock() != nullptr) {
-        if (cond->elseBlock()->id() == id) {
-          result = true;
+  if (!id.isEmpty() && asttags::isBlock(parsing::idToTag(context, id))) {
+    ID parentId = parsing::idToParentId(context, id);
+    if (!parentId.isEmpty()) {
+      if (asttags::isConditional(parsing::idToTag(context, parentId))) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        auto cond = parentAst->toConditional();
+        CHPL_ASSERT(cond); // should have checked it was a conditional already
+        if (cond->condition()->isVariable() && cond->elseBlock() != nullptr) {
+          if (cond->elseBlock()->id() == id) {
+            result = true;
+          }
         }
       }
     }
@@ -292,15 +306,60 @@ isElseBlockOfConditionalWithIfVar(Context* context,
   return isElseBlockOfConditionalWithIfVarQuery(context, ast->id());
 }
 
+static const Block* const&
+isConditionOfDoWhileLoopQuery(Context* context, ID id) {
+  QUERY_BEGIN(isConditionOfDoWhileLoopQuery, context, id);
+
+  const Block* result = nullptr;
+
+  if (!id.isEmpty()) {
+    ID parentId = parsing::idToParentId(context, id);
+    if (!parentId.isEmpty()) {
+      if (asttags::isDoWhile(parsing::idToTag(context, parentId))) {
+        auto parentAst = parsing::idToAst(context, parentId);
+        auto doWhile = parentAst->toDoWhile();
+        CHPL_ASSERT(doWhile);
+        if (doWhile->condition()->id() == id) {
+          result = doWhile->body();
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+/**
+  If the current AST node is the condition of a do-while loop, return the
+  loop's body, whose scope would be the "parent" scope for the current node.
+  Otherwise, return nullptr.
+ */
+static const Block*
+isConditionOfDoWhileLoop(Context* context, const uast::AstNode* ast) {
+  if (!ast) return nullptr;
+
+  return isConditionOfDoWhileLoopQuery(context, ast->id());
+}
+
 static const Scope* const& scopeForIdQuery(Context* context, ID id);
 
-static void populateScopeWithBuiltins(Context* context, Scope* scope) {
-  std::unordered_map<UniqueString,const Type*> map;
-  Type::gatherBuiltins(context, map);
+static void populateScopeWithBuiltinKeywords(Context* context, Scope* scope) {
+  scope->addBuiltin(UniqueString::get(context, "index"));
+}
 
-  for (const auto& pair : map) {
+static void populateScopeWithBuiltins(Context* context, Scope* scope) {
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  auto& globalMap = getCompilerGeneratedGlobals(context);
+
+  for (const auto& pair : typeMap) {
     scope->addBuiltin(pair.first);
   }
+  for (const auto& pair : globalMap) {
+    scope->addBuiltin(pair.first);
+  }
+
+  populateScopeWithBuiltinKeywords(context, scope);
 }
 
 // This query always constructs a scope
@@ -404,6 +463,11 @@ static const Scope* const& scopeForIdQuery(Context* context, ID idIn) {
         // Construct the new scope.
         const owned<Scope>& newScope = constructScopeQuery(context, id);
         result = newScope.get();
+      } else if (auto loopBody = isConditionOfDoWhileLoop(context, ast)) {
+        // If this is a condition in do-while loop, its next scope should
+        // be the loop body, even though structurally it's not inside
+        // the loop body.
+        result = scopeForIdQuery(context, loopBody->id());
       } else {
         // find the scope for the parent node and return that.
         ID parentId = parsing::idToParentId(context, id);
@@ -422,7 +486,7 @@ const Scope* scopeForId(Context* context, ID id) {
 using VisibilityTraceElt = ResultVisibilityTrace::VisibilityTraceElt;
 
 // a struct to encapsulate arguments to doLookupIn...
-// so that the calls and function signatures do not get too unweildy.
+// so that the calls and function signatures do not get too unwieldy.
 struct LookupHelper {
   Context* context;
   const ResolvedVisibilityScope* resolving;
@@ -449,13 +513,15 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config,
                                 IdAndFlags::Flags filterFlags,
-                                IdAndFlags::Flags excludeFilter,
+                                const IdAndFlags::FlagSet& excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope);
 
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
                              bool onlyInnermost,
-                             bool skipPrivateVisibilities);
+                             bool skipPrivateVisibilities,
+                             bool onlyMethodsFields,
+                             bool includeMethods);
 
   bool doLookupInToplevelModules(const Scope* scope, UniqueString name);
 
@@ -464,7 +530,7 @@ struct LookupHelper {
                                 UniqueString name,
                                 LookupConfig config);
 
-  bool doLookupInExternBlock(const Scope* scope, UniqueString name);
+  bool doLookupInExternBlocks(const Scope* scope, UniqueString name);
 
   bool doLookupInScope(const Scope* scope,
                        llvm::ArrayRef<const Scope*> receiverScopes,
@@ -516,12 +582,14 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    UniqueString name,
                                    LookupConfig config,
                                    IdAndFlags::Flags filterFlags,
-                                   IdAndFlags::Flags excludeFilter,
+                                   const IdAndFlags::FlagSet& excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
+  bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipPrivateUseImport = (config & LOOKUP_SKIP_PRIVATE_USE_IMPORT) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -559,7 +627,7 @@ bool LookupHelper::doLookupInImportsAndUses(
         if (!allowPrivateAccess) {
           newConfig |= LOOKUP_SKIP_PRIVATE_VIS;
         } else {
-          // TODO: this disallowes nested modules from working  with
+          // TODO: this disallows nested modules from working  with
           // a private use/import in a parent module. But, that is
           // subject to discussion in issue #21723.
           // See the history of this comment for an implementation that
@@ -571,6 +639,12 @@ bool LookupHelper::doLookupInImportsAndUses(
         }
         if (onlyMethodsFields) {
           newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+        }
+        if (includeMethods) {
+          newConfig |= LOOKUP_METHODS;
+        }
+        if (checkExternBlocks) {
+          newConfig |= LOOKUP_EXTERN_BLOCKS;
         }
 
         // If the whole module is being renamed, still search for the original
@@ -604,12 +678,14 @@ bool LookupHelper::doLookupInImportsAndUses(
         // Make sure the module / enum being renamed isn't private.
         auto scopeAst = parsing::idToAst(context, is.scope()->id());
         auto visibility = scopeAst->toDecl()->visibility();
-        bool isMethodOrField = false; // target must be module/enum, not method
+        bool isField = false; // target must be module/enum, not field
+        bool isMethod = false; // target must be module/enum, not method
         bool isParenfulFunction = false;
         auto foundIds =
           BorrowedIdsWithName::createWithSingleId(is.scope()->id(),
                                                   visibility,
-                                                  isMethodOrField,
+                                                  isField,
+                                                  isMethod,
                                                   isParenfulFunction,
                                                   filterFlags,
                                                   excludeFilter);
@@ -630,7 +706,7 @@ bool LookupHelper::doLookupInImportsAndUses(
             traceResult->push_back(std::move(t));
           }
 
-          result.push_back(std::move(foundIds.getValue()));
+          result.push_back(std::move(*foundIds));
           found = true;
         }
       }
@@ -643,7 +719,9 @@ bool LookupHelper::doLookupInImportsAndUses(
 bool LookupHelper::doLookupInAutoModules(const Scope* scope,
                                          UniqueString name,
                                          bool onlyInnermost,
-                                         bool skipPrivateVisibilities) {
+                                         bool skipPrivateVisibilities,
+                                         bool onlyMethodsFields,
+                                         bool includeMethods) {
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
   bool found = false;
 
@@ -656,6 +734,14 @@ bool LookupHelper::doLookupInAutoModules(const Scope* scope,
 
       if (onlyInnermost) {
         newConfig |= LOOKUP_INNERMOST;
+      }
+
+      if (onlyMethodsFields) {
+        newConfig |= LOOKUP_ONLY_METHODS_FIELDS;
+      }
+
+      if (includeMethods) {
+        newConfig |= LOOKUP_METHODS;
       }
 
       if (trace) {
@@ -780,29 +866,48 @@ bool LookupHelper::doLookupInReceiverScopes(
   return got;
 }
 
-bool LookupHelper::doLookupInExternBlock(const Scope* scope,
-                                         UniqueString name) {
-  // Return the ID of the extern block(s) that matched.
+// returns IDs of all extern blocks directly contained within scope
+static const std::vector<ID>& gatherExternBlocks(Context* context, ID scopeID) {
+  QUERY_BEGIN(gatherExternBlocks, context, scopeID);
 
-  // TODO: need to check if the name is present in the C code for
-  // extern blocks contained in this scope. Consider using clang
-  // precompiled headers and FindExternalVisibleDeclsByName.
+  std::vector<ID> result;
 
-  // TODO: implement this in a more incremental-friendly manner
-  auto ast = parsing::idToAst(context, scope->id());
+  auto ast = parsing::idToAst(context, scopeID);
   for (auto child : ast->children()) {
     if (child->isExternBlock()) {
-      bool isMethodOrField = false; // not possible in an extern block
-      bool isParenfulFunction = false; // TODO -- it could be a regular fn
+      result.push_back(child->id());
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+bool LookupHelper::doLookupInExternBlocks(const Scope* scope,
+                                          UniqueString name) {
+  // Which are the IDs of the contained extern block(s)?
+  const std::vector<ID>& exbIds = gatherExternBlocks(context, scope->id());
+
+  // Consider each extern block in turn. Does it have a symbol with that name?
+  for (const auto& exbId : exbIds) {
+    if (externBlockContainsName(context, exbId, name)) {
+      // note that this extern block can match 'name'
+      bool isField = false; // not possible in an extern block
+      bool isMethod = false; // not possible in an extern block
+      bool isParenfulFunction = false; // might be a lie. TODO does it matter?
       IdAndFlags::Flags filterFlags = 0;
-      IdAndFlags::Flags excludeFlags = 0;
+      IdAndFlags::FlagSet excludeFlagSet;
+
+      auto newId = ID::fabricateId(context, exbId, name,
+                                   ID::ExternBlockElement);
+
       auto foundIds =
-        BorrowedIdsWithName::createWithSingleId(child->id(),
+        BorrowedIdsWithName::createWithSingleId(newId,
                                                 Decl::PUBLIC,
-                                                isMethodOrField,
+                                                isField,
+                                                isMethod,
                                                 isParenfulFunction,
                                                 filterFlags,
-                                                excludeFlags);
+                                                excludeFlagSet);
       if (foundIds) {
         if (traceCurPath && traceResult) {
           ResultVisibilityTrace t;
@@ -812,7 +917,7 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
           t.visibleThrough.push_back(std::move(elt));
           traceResult->push_back(std::move(t));
         }
-        result.push_back(std::move(foundIds.getValue()));
+        result.push_back(std::move(*foundIds));
       }
     }
   }
@@ -820,13 +925,44 @@ bool LookupHelper::doLookupInExternBlock(const Scope* scope,
   return true;
 }
 
-static bool
-isScopeElseBlockOfConditionalWithIfVar(Context* context, const Scope* scope) {
-  if (!scope->id().isEmpty() && asttags::isBlock(scope->tag())) {
-    return isElseBlockOfConditionalWithIfVarQuery(context, scope->id());
+/**
+  Similar to just calling parentScope() on scope, but does additional work
+  to semantically find the "next scope to be searched". In particular, skips
+  if-var-statement scopes if we're in the else block and jumps to the scope of
+  a do-while body if we're in the do-while condition.
+
+  The 'if-vars' trickiness is required to implement correct scoping behavior
+  for 'if-vars' in conditionals. The 'if-var' lives in the scope
+  for the conditional, but it is not visible within the 'else'
+  branch. Without this hack, we'd be able to see the 'if-var' in
+  both branches.
+
+  The do-while logic is required because code like the following is valid:
+
+      do {
+        var x = false;
+      } while x;
+
+  Even though the loop body is not the parent of the conditional, its scope
+  should be visible.
+
+ */
+static const Scope* nextHigherScope(Context* context, const Scope* scope) {
+  auto scopeId = scope->id();
+
+  if (isElseBlockOfConditionalWithIfVarQuery(context, scopeId)) {
+    // We're the else block of an if-statement. Skip the scope of the
+    // if-statement, and go for the next thing up.
+    return nextHigherScope(context, scope->parentScope());
   }
 
-  return false;
+  if (auto loopBody = isConditionOfDoWhileLoopQuery(context, scopeId)) {
+    // We're the condition of a do-while loop. The scope we should go to
+    // next is the scope of the do-while body.
+    return scopeForIdQuery(context, loopBody->id());
+  }
+
+  return scope->parentScope();
 }
 
 // appends to result
@@ -856,21 +992,24 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
   bool checkExternBlocks = (config & LOOKUP_EXTERN_BLOCKS) != 0;
   bool skipShadowScopes = (config & LOOKUP_SKIP_SHADOW_SCOPES) != 0;
+  bool includeMethods = (config & LOOKUP_METHODS) != 0;
   bool trace = (traceCurPath != nullptr && traceResult != nullptr);
 
   IdAndFlags::Flags curFilter = 0;
-  IdAndFlags::Flags excludeFilter = 0;
+  IdAndFlags::FlagSet excludeFilter;
   if (skipPrivateVisibilities) {
     curFilter |= IdAndFlags::PUBLIC;
   }
   if (onlyMethodsFields) {
     curFilter |= IdAndFlags::METHOD_FIELD;
+  } else if (!includeMethods && receiverScopes.empty()) {
+    curFilter |= IdAndFlags::NOT_METHOD;
   }
-  // Note: curFilter can only represent combinations of positive flags;
-  // if it extended, it might no longer be possible to rerepresent
-  // the combinedFilter below as a single bitset.
-  // Also note: setting excludeFilter in some way other than the
+  // note: setting excludeFilter in some way other than the
   // handling below with checkedScopes will require other adjustments.
+  // This is because the updated filter in checkedScopes will be assumed to
+  // contain all the past search information, but would be missing any
+  // additional information from modifying excludeFilter manually.
 
   // goPastModules should imply checkParents; otherwise, why would we proceed
   // through module boundaries if we aren't traversing the scope chain?
@@ -884,41 +1023,30 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
   // update the checkedScopes map and return early if there is nothing to do.
   auto p = checkedScopes.insert(std::make_pair(CheckedScope(name, scope),
-                                               curFilter));
+                                               IdAndFlags::FlagSet::singleton(curFilter)));
   if (p.second == false) {
     // insertion did not occur because there was already an entry.
-    // Set flagsInMap to refer to the flags of the existing element
-    IdAndFlags::Flags& flagsInMap = p.first->second;
+    // Set flagsInMap to refer to the flag combinations of the existing element
+    IdAndFlags::FlagSet& flagsInMap = p.first->second;
 
     // the insert did not succeed: there was already something in the map.
     // decide what to do about it.
-    IdAndFlags::Flags foundFilter = flagsInMap;
-    if ((curFilter & foundFilter) == foundFilter) {
+    if (flagsInMap.subsumes(curFilter)) {
       // if the flags we found are equal to foundFilter,
       // or if curFilter is a superset of foundFilter
       // (which, because these are filters, means that foundFilter is
-      //  less restricted / more general),
+      //  less restricted / more general / subsumes curFilter),
       // there is no need to visit this scope further.
       return false;
     }
 
     // ok, we can search for curFilter but exclude what was already found
-    excludeFilter = foundFilter;
+    excludeFilter = flagsInMap;
 
-    // Update checkedScopes to remove filter bits that weren't present
-    // in foundFilter (because we are going to update results
-    // with matches for the now-not-filtered-out cases).
-    // This is an approximation.
-    // Since we are storing only a single bit set, we cannot represent
-    // all combinations, e.g.:
-    //   if we had input foundFilter={PUBLIC} and curFilter={METHODS_OR_FIELDS},
-    //   we will search now for {PRIVATE,METHODS_OR_FIELDS},
-    //   but then we will have no way of recording that we have
-    //   searched {PUBLIC} U {PRIVATE,METHODS_OR_FIELDS}, which means
-    //   that a future search for {PRIVATE,NOT_METHODS_OR_FIELDS} won't work.
-    IdAndFlags::Flags combinedFilter = foundFilter & curFilter;
-
-    flagsInMap = combinedFilter;
+    // Update checkedScopes to record that a search has occurred for
+    // curFilter. This means subsequent searches will not look at symbols
+    // that match curFilter, because those symbols would've already been found.
+    flagsInMap.addDisjunction(curFilter);
   }
 
   // if the scope has an extern block, note that fact.
@@ -968,7 +1096,10 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(scope, name,
-                                 onlyInnermost, skipPrivateVisibilities);
+                                 onlyInnermost,
+                                 skipPrivateVisibilities,
+                                 onlyMethodsFields,
+                                 includeMethods);
     if (onlyInnermost && got) return true;
   }
 
@@ -1000,38 +1131,15 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
     bool reachedModule = false;
-    bool skipClosestConditional = false;
-
-    // This trickiness is required to implement correct scoping behavior
-    // for 'if-vars' in conditionals. The 'if-var' lives in the scope
-    // for the conditional, but it is not visible within the 'else'
-    // branch. Without this hack, we'd be able to see the 'if-var' in
-    // both branches. First, detect if the start scope is the else-block.
-    skipClosestConditional =
-      isScopeElseBlockOfConditionalWithIfVar(context, scope);
 
     if (!asttags::isModule(scope->tag()) || goPastModules) {
-      for (cur = scope->parentScope();
+      for (cur = nextHigherScope(context, scope);
            cur != nullptr;
-           cur = cur->parentScope()) {
+           cur = nextHigherScope(context, cur)) {
 
         if (asttags::isModule(cur->tag()) && !goPastModules) {
           reachedModule = true;
           break;
-        }
-
-        // We could be in a nested block, so check for the else-block to
-        // trigger the pattern matching as we walk up...
-        if (!skipClosestConditional)
-          if (isScopeElseBlockOfConditionalWithIfVar(context, cur))
-            skipClosestConditional = true;
-
-        // Skip the first conditional's scope if we need to.
-        if (skipClosestConditional) {
-          if (asttags::isConditional(cur->tag())) {
-            skipClosestConditional = false;
-            continue;
-          }
         }
 
         if (trace) {
@@ -1059,9 +1167,6 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
         }
       }
     }
-
-    // Skip should have been performed if needed, at least once.
-    CHPL_ASSERT(!skipClosestConditional);
 
     if (reachedModule) {
       // check the containing module scope
@@ -1114,7 +1219,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // return the extern block ID
   if (checkExternBlocks && scope->containsExternBlock()) {
     foundExternBlock = true;
-    doLookupInExternBlock(scope, name);
+    doLookupInExternBlocks(scope, name);
   }
 
   if (trace) {
@@ -1380,6 +1485,14 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                         checked);
 }
 
+static const bool& isNameBuiltinType(Context* context, UniqueString name) {
+  QUERY_BEGIN(isNameBuiltinType, context, name);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  bool toReturn = typeMap.find(name) != typeMap.end();
+  return QUERY_END(toReturn);
+}
+
 static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
@@ -1390,17 +1503,54 @@ static void errorIfNameNotInScope(Context* context,
                                   bool isRename) {
   CheckedScopes checkedScopes;
   std::vector<BorrowedIdsWithName> result;
-  bool foundExternBlock = false;
   LookupConfig config = LOOKUP_INNERMOST |
                         LOOKUP_DECLS |
-                        LOOKUP_IMPORT_AND_USE;
-  auto helper = LookupHelper(context, resolving, checkedScopes, result,
-                             foundExternBlock,
-                             /* traceCurPath */ nullptr,
-                             /* traceResult */ nullptr);
-  bool got = helper.doLookupInScope(scope, {}, name, config);
+                        LOOKUP_IMPORT_AND_USE |
+                        LOOKUP_EXTERN_BLOCKS |
+                        LOOKUP_METHODS |
+                        LOOKUP_SKIP_PRIVATE_VIS;
 
-  if (got == false || result.size() == 0) {
+  bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+                               checkedScopes, result,
+                               /* traceCurPath */ nullptr,
+                               /* traceResult */ nullptr);
+
+  bool found = got && result.size() > 0;
+  bool foundViaPrivate = false;
+  bool foundViaBuiltin = false;
+
+  if (!found) {
+    // Relax the private visibilities condition, in case the user is trying to
+    // import something like Module.SomeRecord to get some tertiary method
+    // Module defines on SomeRecord. In that case, SomeRecord would be visible
+    // in Module, but likely not public. This is made unstable by:
+    //
+    // https://github.com/chapel-lang/chapel/issues/22761
+
+    config &= ~LOOKUP_SKIP_PRIVATE_VIS;
+    bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+                                 checkedScopes, result,
+                                 /* traceCurPath */ nullptr,
+                                 /* traceResult */ nullptr);
+
+    found = got && result.size() > 0;
+
+    foundViaPrivate |= found;
+  }
+
+  if (!found) {
+    // Builtins aren't explicitly visible in the scope, but can be used therein
+    // and so are valid in imports and uses.
+    //
+    // Such cases are instances of importing a type to get its methods (e.g. import IO.string).
+    // This is made unstable by:
+    //
+    // https://github.com/chapel-lang/chapel/issues/22761
+
+    found = foundViaBuiltin = isNameBuiltinType(context, name);
+  }
+
+  if (!found) {
     CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
                 exprForError,
                 clauseForError,
@@ -1408,6 +1558,29 @@ static void errorIfNameNotInScope(Context* context,
                 useOrImport,
                 isRename);
     return;
+  }
+
+  if ((foundViaPrivate || foundViaBuiltin) &&
+      parsing::shouldWarnUnstableForId(context, exprForError->id())) {
+    // try to avoid throwing the warning if the user imports a (private) method
+    // from a module. If that's what they're doing, it's not really a tertiary
+    // import, it's just an error, which they will be shown later.
+    bool shouldWarnForTertiaryImport = false;
+    if (foundViaBuiltin) {
+      shouldWarnForTertiaryImport = true;
+    } else if (foundViaPrivate) {
+      for (auto& ids : result) {
+        for (auto& id : ids) {
+          if (asttags::isTypeDecl(parsing::idToTag(context, id))) {
+            shouldWarnForTertiaryImport = true;
+          }
+        }
+      }
+    }
+
+    if (shouldWarnForTertiaryImport) {
+      CHPL_REPORT(context, TertiaryUseImportUnstable, name, exprForError, clauseForError, scope, useOrImport);
+    }
   }
 
   // If there is a single ID, then go ahead and try to emit warnings. If
@@ -1635,6 +1808,30 @@ static const Scope* findScopeViz(Context* context, const Scope* scope,
 
   ID foundId = vec[0].firstId();
   AstTag tag = parsing::idToTag(context, foundId);
+
+  // Added to help deprecate BoundedRangeType in 1.31.
+  // Pattern match the case `use ABC` where ABC is a parenless type function
+  // with a single statement `return XYZ`. If so, treat it as `use XYZ`,
+  // resolving `XYZ` in the scope where the function is defined.
+  if (isFunction(tag)) {
+    auto function = parsing::idToAst(context, foundId)->toFunction();
+    if (function->isParenless() && !function->isMethod() &&
+        function->returnIntent() == Function::ReturnIntent::TYPE) {
+      if (auto block = function->body()->toBlock()) {
+        if (block->numStmts() == 1) {
+          if (auto return_ = block->child(0)->toReturn()) {
+            if (auto ident = return_->value()->toIdentifier()) {
+              auto functionScope = scopeForId(context, foundId);
+              maybeEmitWarningsForId(context, idForErrs, functionScope->id());
+              return findScopeViz(context, functionScope, ident->name(),
+                  resolving, idForErrs, useOrImport, isFirstPart,
+                  previousPartName);
+            }
+          }
+        }
+      }
+    }
+  }
 
   if (isModule(tag) || isInclude(tag) ||
       (useOrImport == VIS_USE && isEnum(tag))) {
@@ -2062,8 +2259,8 @@ doWarnHiddenFormal(Context* context,
   const Formal* formal = nullptr;
   std::vector<BorrowedIdsWithName> ids;
   IdAndFlags::Flags filterFlags = 0;
-  IdAndFlags::Flags excludeFlags = 0;
-  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlags);
+  IdAndFlags::FlagSet excludeFlagSet;
+  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlagSet);
   for (const auto& b : ids) {
     for (const auto& id : b) {
       auto formalAst = parsing::idToAst(context, id);
@@ -2292,7 +2489,7 @@ std::vector<ID> findUsedImportedModules(Context* context,
 static const std::map<ID, ID>&
 findAllModulesUsedImportedInTreeQuery(Context* context, ID id);
 
-// Pre-order depth first traveral of the entire module to gather use/import.
+// Pre-order depth first traversal of the entire module to gather use/import.
 // Key is ID of use/import, value is target module ID. We use a map here
 // because the C++ standard map maintains ordering, which should sort all
 // the use/import by their lexical order (via ID ordering).
@@ -2615,6 +2812,7 @@ static void countReturnIntents(Context* context,
       Function::ReturnIntent reti = parsing::idToFnReturnIntent(context, id);
       switch (reti) {
         case Function::DEFAULT_RETURN_INTENT:
+        case Function::OUT:
         case Function::CONST:
           nValue++;
           break;

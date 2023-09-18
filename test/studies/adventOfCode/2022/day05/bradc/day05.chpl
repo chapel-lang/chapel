@@ -17,14 +17,14 @@ var num, from, to : int;
 // Process the commands
 while readf("move %i from %i to %i\n", num, from, to) {
   for i in 1..num {
-    const crate = Stacks[from].pop();
-    Stacks[to].append(crate);
+    const crate = Stacks[from].popBack();
+    Stacks[to].pushBack(crate);
   }
 }
 
 // Print the top of each stack
 for stack in Stacks {
-  write(stack.pop());
+  write(stack.popBack());
 }
 writeln();
 
@@ -62,7 +62,7 @@ proc initStacks() {
     for (offset, stackIdx) in zip(1..<line.size by charsPerStack, 1.. ) {
       const char = line[offset];
       if (char != " ") then  // blank means no crate here
-        Stacks[stackIdx].append(char: crateID);
+        Stacks[stackIdx].pushBack(char: crateID);
     }
   }
 
@@ -75,4 +75,3 @@ iter readInitState() {
   while (readLine(line) && line.size > 1) do
     yield line;
 }
-

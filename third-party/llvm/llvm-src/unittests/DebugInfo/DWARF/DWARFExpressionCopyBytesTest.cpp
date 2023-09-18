@@ -19,12 +19,16 @@
 #include "llvm/MC/MCContext.h"
 #include "llvm/MC/MCInstrInfo.h"
 #include "llvm/MC/MCObjectWriter.h"
+#include "llvm/MC/MCRegisterInfo.h"
 #include "llvm/MC/MCStreamer.h"
+#include "llvm/MC/MCSubtargetInfo.h"
 #include "llvm/MC/MCTargetOptions.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Object/Binary.h"
+#include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Support/DataExtractor.h"
 #include "llvm/Support/LEB128.h"
+#include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/TargetSelect.h"
 #include "llvm/Testing/Support/Error.h"
 #include "gtest/gtest.h"
@@ -102,7 +106,7 @@ DWARFExpressionCopyBytesTest::createStreamer(raw_pwrite_stream &OS) {
   Res.Ctx->setObjectFileInfo(Res.MOFI.get());
 
   Res.MII.reset(TheTarget->createMCInstrInfo());
-  MCCodeEmitter *MCE = TheTarget->createMCCodeEmitter(*Res.MII, *MRI, *Res.Ctx);
+  MCCodeEmitter *MCE = TheTarget->createMCCodeEmitter(*Res.MII, *Res.Ctx);
   MCAsmBackend *MAB =
       TheTarget->createMCAsmBackend(*STI, *MRI, MCTargetOptions());
   std::unique_ptr<MCObjectWriter> OW = MAB->createObjectWriter(OS);
@@ -131,13 +135,13 @@ SmallString<0> DWARFExpressionCopyBytesTest::emitObjFile(StringRef ExprBytes) {
   C.Streamer->initSections(false, *STI);
   MCSection *Section = C.MOFI->getTextSection();
   Section->setHasInstructions(true);
-  C.Streamer->SwitchSection(Section);
+  C.Streamer->switchSection(Section);
   C.Streamer->emitCFIStartProc(true);
   auto Str = EncodeDefCfaExpr(ExprBytes);
   C.Streamer->emitCFIEscape(Str);
   C.Streamer->emitNops(4, 1, SMLoc(), *STI);
   C.Streamer->emitCFIEndProc();
-  C.Streamer->Finish();
+  C.Streamer->finish();
   return Storage;
 }
 

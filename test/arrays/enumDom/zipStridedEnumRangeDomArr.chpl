@@ -5,21 +5,21 @@ proc testit(r) {
   var A: [r] real;
 
   // standalone parallel loop over range
-  forall c in r do
+  forall c in r with (ref A) do
     A[c] = chpl__enumToOrder(c)+1;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
   // zip enum range and int range
-  forall (c,i) in zip(r, 10..) do
+  forall (c,i) in zip(r, 10..) with (ref A) do
     A[c] = i;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
   writeln("---");
 
   // zip int range and enum range
-  forall (i,c) in zip(5..#r.size, r) do
+  forall (i,c) in zip(5..#r.size, r) with (ref A) do
     A[c] = i;
   for c in r do
     writeln("A[", c, "] = ", A[c]);
@@ -59,7 +59,7 @@ proc testit(r) {
   writeln("---");
 
   // standalone parallel loop over domain
-  forall i in A.domain do
+  forall i in A.domain with (ref A) do
     A[i] = chpl__enumToOrder(i)+1;
   for c in r do
     writeln("A[", c, "] = ", A[c]);

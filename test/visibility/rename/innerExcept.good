@@ -1,1 +1,2 @@
-innerExcept.chpl:14: error: Bad identifier in rename, no known 'bar' in 'A'
+innerExcept.chpl:13: In module 'M':
+innerExcept.chpl:14: error: cannot rename symbol 'bar' as it is not defined in 'A'

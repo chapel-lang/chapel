@@ -4,8 +4,6 @@
       |
     1 | var x =
       |     ⎺⎺⎺⎺
-    2 |         1;
-      | ⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   Redefined here:
       |
@@ -14,7 +12,12 @@
       |
   Redefined here:
       |
-    4 | var x = 3;
+    4 | var y = 1, x = 3;
+      |            ⎺⎺⎺⎺⎺
+      |
+  Redefined here:
+      |
+    6 |     x = 3;
       |     ⎺⎺⎺⎺⎺
       |
 

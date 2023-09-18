@@ -388,7 +388,7 @@ struct gnix_fid_domain {
 	struct dlist_entry nic_list;
 	struct gnix_fid_fabric *fabric;
 	struct gnix_cm_nic *cm_nic;
-	fastlock_t cm_nic_lock;
+	ofi_spin_t cm_nic_lock;
 	uint32_t cdm_id_seed;
 	uint32_t addr_format;
 	/* user tunable parameters accessed via open_ops functions */
@@ -403,7 +403,7 @@ struct gnix_fid_domain {
 	gnix_mr_cache_attr_t mr_cache_attr;
 	struct gnix_mr_cache_info *mr_cache_info;
 	struct gnix_mr_ops *mr_ops;
-	fastlock_t mr_cache_lock;
+	ofi_spin_t mr_cache_lock;
 	int mr_cache_type;
 	/* flag to indicate that memory registration is initialized and should not
 	 * be changed at this point.
@@ -439,7 +439,7 @@ struct gnix_fid_pep {
 	struct fi_info *info;
 	struct gnix_fid_eq *eq;
 	struct gnix_ep_name src_addr;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	int listen_fd;
 	int backlog;
 	int bound;
@@ -479,7 +479,7 @@ struct gnix_int_tx_ptrs {
 struct gnix_int_tx_pool {
 	bool enabled;
 	int nbufs;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct slist sl;
 	struct slist bl;
 };
@@ -524,7 +524,7 @@ struct gnix_fid_ep {
 	struct gnix_fid_stx *stx_ctx;
 	struct gnix_cm_nic *cm_nic;
 	struct gnix_nic *nic;
-	fastlock_t vc_lock;
+	ofi_spin_t vc_lock;
 	/* used for unexpected receives */
 	struct gnix_tag_storage unexp_recv_queue;
 	/* used for posted receives */
@@ -629,7 +629,7 @@ struct gnix_fid_sep {
 	struct gnix_cm_nic *cm_nic;
 	struct gnix_fid_av *av;
 	struct gnix_ep_name my_name;
-	fastlock_t sep_lock;
+	ofi_spin_t sep_lock;
 	struct gnix_reference ref_cnt;
 	struct gnix_auth_key *auth_key;
 };

@@ -35,8 +35,10 @@ proc printer(type T) {
 proc test2() {
   writeln("test2");
 
-  var A : borrowed X(real, false, 1) = (new owned X(real, false, 1)).borrow();
-  var B : borrowed X(uint, true, 3) = (new owned X(uint, true, 3)).borrow();
+  var AOwn = new owned X(real, false, 1);
+  var A : borrowed X(real, false, 1) = AOwn.borrow();
+  var BOwn = new owned X(uint, true, 3);
+  var B : borrowed X(uint, true, 3) = BOwn.borrow();
 
   printer(A.type);
   printer(B.type);

@@ -55,7 +55,7 @@
 // This performs memory registration for RDMA Rendezvous
 // It also tracks MRs in use and allows existing MRs to be shared.
 
-// in cache_mode MR_CACHE_MODE_USER, as a PoC we keep the cache overly simple.
+// cache_mode MR_CACHE_MODE_USER_NOINVAL, is a PoC and overly simple.
 // This approach is only viable for
 // some microbenchmarks and simple apps.  For more complex apps the lack of
 // invalidate hooks into memory free may lead to memory corruption.
@@ -64,27 +64,19 @@
 // used by hypervisors and hence are complete and reliable.
 
 #include <sys/types.h>
-#include "psm_user.h"	// pulls in psm_verbs_ep.h and psm_verbs_mr.h
-#ifdef RNDV_MOD
-#include "psm_rndv_mod.h"
-#endif
+#include "psm_user.h"	// pulls in hal_verbs/verbs_ep.h and psm_verbs_mr.h
 #include "psm2_hal.h"
 #ifdef PSM_FI
 #include "ips_config.h"
 #endif
+#ifdef UMR_CACHE
+#include "psm_mq_internal.h"
+#endif
+
+#ifdef PSM_HAVE_REG_MR
 
 //#undef _HFI_MMDBG
 //#define _HFI_MMDBG printf
-
-#ifdef min
-#undef min
-#endif
-#define min(a, b) ((a) < (b) ? (a) : (b))
-
-#ifdef max
-#undef max
-#endif
-#define max(a, b) ((a) > (b) ? (a) : (b))
 
 #define MEGABYTE (1024*1024)
 
@@ -100,7 +92,6 @@
 	((type *) ((uint8_t *)(ptr) - offsetof(type, member)))
 #endif
 
-
 // Since rbtree.h and rbtree.c are designed to be included, and declare
 // some hardcoded type names (cl_map_item_t and cl_qmap_t), we must limit
 // our data type declarations which use those types to this .c file
@@ -112,7 +103,7 @@ struct psm2_mr_cache_map_pl {
 
 // rbtree.h uses these 2 well known defines to create the payload for
 // cl_map_item_t and cl_qmap_t structures
-#define RBTREE_MI_PL  struct psm2_verbs_mr
+#define RBTREE_MI_PL  struct psm3_verbs_mr
 #define RBTREE_MAP_PL struct psm2_mr_cache_map_pl
 #include "psm3_rbtree.h"
 
@@ -121,56 +112,80 @@ struct psm2_mr_cache {
 	// limits to allow headroom for priority registrations
 	uint32_t limit_inuse;
 	uint64_t limit_inuse_bytes;
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint64_t limit_gpu_inuse_bytes;
 #endif
-	psm2_rv_t rv;
+	psm3_rv_t rv;
 	int cmd_fd;
 #endif
+	struct ibv_pd *pd;
 	psm2_ep_t ep;
 	uint8_t cache_mode;	// MR_CACHE_MODE_*
+	int access;	// value to OR into access on all reg_mr
 	cl_qmap_t map;
 	cl_map_item_t root;
 	cl_map_item_t nil_item;
 	// Below is for queue of cache entries available for reuse (refcount==0)
-	// only used when cache_mode==MR_CACHE_MODE_USER.
+	// only used when cache_mode==MR_CACHE_MODE_USER*
 	// Available entries are added at end of list and reused from start.
 	// Hence having aging of cached entries.
 	// Aging helps reduce some of the corruption risk,
 	// but is not a full solution.  Good enough for the PoC
-	TAILQ_HEAD(avail_list, psm2_verbs_mr) avail_list;
+	TAILQ_HEAD(avail_list, psm3_verbs_mr) avail_list;
 	mpool_t mr_pool;	// pool of MRs
 	// some statistics for user space
 	uint64_t hit;
 	uint64_t miss;
 	uint64_t rejected;		// rejected non-priority registration
 	uint64_t full;			// failed registration (tends to be priority)
+	uint64_t full_pri;
+	uint64_t full_pri_recv;
+	uint64_t full_pri_send;
+	uint64_t full_nonpri;
+	uint64_t full_nonpri_recv;
+	uint64_t full_nonpri_send;
 	uint64_t failed;		// other failures, should be none
 	uint32_t inuse;		// entry count in use
 	uint32_t max_inuse;
 	uint64_t inuse_bytes;
 	uint64_t max_inuse_bytes;
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+	uint32_t inuse_recv;		// entry count in use
+	uint32_t max_inuse_recv;
+	uint64_t inuse_recv_bytes;
+	uint64_t max_inuse_recv_bytes;
+	uint32_t inuse_send;		// entry count in use
+	uint32_t max_inuse_send;
+	uint64_t inuse_send_bytes;
+	uint64_t max_inuse_send_bytes;
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint64_t gpu_inuse_bytes;
 	uint64_t max_gpu_inuse_bytes;
+	uint64_t gpu_inuse_recv_bytes;
+	uint64_t max_gpu_inuse_recv_bytes;
+	uint64_t gpu_inuse_send_bytes;
+	uint64_t max_gpu_inuse_send_bytes;
 #endif
 #endif
 	uint32_t max_nelems;
 	uint32_t max_refcount;
-#ifdef RNDV_MOD
-	struct psm2_rv_cache_stats rv_stats;	// statistics from rv module
+#ifdef PSM_HAVE_RNDV_MOD
+	struct psm3_rv_cache_stats rv_stats;	// statistics from rv module
 									// will remain 0 if rv not open
-#ifdef PSM_CUDA
-	struct psm2_rv_gpu_cache_stats rv_gpu_stats;	// GPU statistics from rv module
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	struct psm3_rv_gpu_cache_stats rv_gpu_stats;	// GPU statistics from rv module
 									// will remain 0 if rv not open
 #endif
 #endif
+#ifdef UMR_CACHE
+	struct psm2_umr_cache umr_cache;
+	TAILQ_HEAD(umrc_event_list, psm2_umrc_event) umrc_event_list;
+#endif // UMR_CACHE
 };
 
-static int mr_cache_key_cmp(const struct psm2_verbs_mr *a,
-							const struct psm2_verbs_mr *b)
+static int mr_cache_key_cmp(const struct psm3_verbs_mr *a,
+							const struct psm3_verbs_mr *b)
 {
 	// to match addr, length and access must match
 	// we require exact match to avoid the issue of a release of the larger
@@ -200,7 +215,9 @@ static int mr_cache_key_cmp(const struct psm2_verbs_mr *a,
 #define RBTREE_CMP(a,b) mr_cache_key_cmp((a), (b))
 #define RBTREE_ASSERT                     psmi_assert
 #define RBTREE_MAP_COUNT(PAYLOAD_PTR)     ((PAYLOAD_PTR)->nelems)
+#ifndef UMR_CACHE
 #define RBTREE_NO_EMIT_IPS_CL_QMAP_PREDECESSOR
+#endif
 #include "psm3_rbtree.c"
 
 // TBD - move to a utility macro header
@@ -255,12 +272,17 @@ static inline uint32_t NextPower2(uint64_t x)
 
 
 CACHE_STAT_FUNC(mr_cache_mode, cache_mode)
+CACHE_STAT_FUNC(mr_cache_access, ep->mr_access)
 CACHE_STAT_FUNC(mr_cache_max_entries, max_entries)
 CACHE_STAT_FUNC(mr_cache_nelems, map.payload.nelems)
 CACHE_STAT_FUNC(mr_cache_max_nelems, max_nelems)
 CACHE_STAT_FUNC(mr_cache_limit_inuse, limit_inuse)
 CACHE_STAT_FUNC(mr_cache_inuse, inuse)
 CACHE_STAT_FUNC(mr_cache_max_inuse, max_inuse)
+CACHE_STAT_FUNC(mr_cache_inuse_recv, inuse_recv)
+CACHE_STAT_FUNC(mr_cache_max_inuse_recv, max_inuse_recv)
+CACHE_STAT_FUNC(mr_cache_inuse_send, inuse_send)
+CACHE_STAT_FUNC(mr_cache_max_inuse_send, max_inuse_send)
 CACHE_STAT_FUNC(mr_cache_max_refcount, max_refcount)
 #undef CACHE_STAT_FUNC
 
@@ -282,7 +304,7 @@ static uint64_t mr_cache_miss_rate(void *context)
 		return 0;
 }
 
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 static uint64_t mr_cache_rv_size(void *context)
 {
 	psm2_mr_cache_t cache = (psm2_mr_cache_t)context;
@@ -292,7 +314,7 @@ static uint64_t mr_cache_rv_size(void *context)
 		// so we use the 1st of the rv statistics accessors to get
 		// the statistics from rv into the cache structure so other accessors
 		// can simply return the relevant value
-		(void)__psm2_rv_get_cache_stats(cache->rv, &cache->rv_stats);
+		(void)psm3_rv_get_cache_stats(cache->rv, &cache->rv_stats);
 	}
 	return cache->rv_stats.cache_size/MEGABYTE;
 }
@@ -331,17 +353,17 @@ static uint64_t mr_cache_rv_miss_rate(void *context)
 		return 0;
 }
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 static uint64_t mr_cache_rv_gpu_size(void *context)
 {
 	psm2_mr_cache_t cache = container_of(context, struct psm2_mr_cache, rv_gpu_stats);
-	if (cache->rv && PSMI_IS_CUDA_ENABLED ) {
+	if (cache->rv && PSMI_IS_GPU_ENABLED ) {
 		// this is a little sly, we know the stats processing routines will
 		// call the accessors in the order from the entries list
 		// so we use the 1st of the rv statistics accessors to get
 		// the statistics from rv into the cache structure so other accessors
 		// can simply return the relevant value
-		(void)__psm2_rv_gpu_get_cache_stats(cache->rv, &cache->rv_gpu_stats);
+		(void)psm3_rv_gpu_get_cache_stats(cache->rv, &cache->rv_gpu_stats);
 	}
 	return cache->rv_gpu_stats.cache_size/MEGABYTE;
 }
@@ -468,9 +490,14 @@ static uint64_t mr_cache_rv_gpu_miss_rate_mmap(void *context)
 	else
 		return 0;
 }
-#endif // PSM_CUDA
+#endif // PSM_CUDA || PSM_ONEAPI
 
-#endif // RNDV_MOD
+#endif // PSM_HAVE_RNDV_MOD
+
+#ifdef UMR_CACHE
+static int psm3_verbs_umrc_prepare(psm2_ep_t ep, psm2_mr_cache_t cache);
+static void psm3_verbs_umrc_event_queue_process(psm2_mr_cache_t cache);
+#endif
 
 #define INC_STAT(cache, stat, max_stat) \
 	do { \
@@ -486,10 +513,10 @@ static uint64_t mr_cache_rv_gpu_miss_rate_mmap(void *context)
 
 
 // ep is used for RNDV_MOD, memory tracking and stats
-psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
+psm2_mr_cache_t psm3_verbs_alloc_mr_cache(psm2_ep_t ep,
 							uint32_t max_entries, uint8_t cache_mode,
 							uint32_t pri_entries, uint64_t pri_size
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 							, uint64_t gpu_pri_size
 #endif
 							)
@@ -505,10 +532,11 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 	max_entries = NextPower2(max_entries);
 	cache->max_entries = max_entries;
 	cache->cache_mode = cache_mode;
+	cache->access = ep->mr_access?IBV_ACCESS_REMOTE_WRITE:0;
 	// we leave headroom for priority registrations
 	cache->limit_inuse = max_entries - pri_entries;
 	cache->ep = ep;
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 	if (cache->cache_mode == MR_CACHE_MODE_KERNEL
 		|| cache->cache_mode == MR_CACHE_MODE_RV) {
 		// TBD - could make this a warning and set limit_inuse_bytes=0
@@ -517,43 +545,52 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 		if ((uint64_t)ep->rv_mr_cache_size*MEGABYTE < pri_size) {
 			_HFI_ERROR("PSM3_RV_MR_CACHE_SIZE=%u too small, require >= %"PRIu64"\n",
 				ep->rv_mr_cache_size, (pri_size + MEGABYTE-1)/MEGABYTE);
+			psmi_free(cache);
 			return NULL;
 		}
 		cache->limit_inuse_bytes = (uint64_t)ep->rv_mr_cache_size*MEGABYTE - pri_size;
-#ifdef PSM_CUDA
-		if (PSMI_IS_CUDA_ENABLED) {
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		if (PSMI_IS_GPU_ENABLED) {
 			// For GPU, due to GdrCopy, we can't undersize cache.
 			// Otherwise RDMA MRs could consume all the
 			// cache space and leave a gdrcopy pin/mmap stuck
 			// retrying indefinitely.  If we want to allow undersize
 			// GPU cache, we need to have gdrcopy pin/mmap failures
 			// also invoke progress functions to release MRs
-			if (__psm2_min_gpu_bar_size()) {
-				uint64_t max_recommend = __psm2_min_gpu_bar_size() - 32*MEGABYTE;
+			if (psm3_min_gpu_bar_size()) {
+				uint64_t max_recommend = psm3_min_gpu_bar_size() - 32*MEGABYTE;
 				if ((uint64_t)ep->rv_gpu_cache_size*MEGABYTE >= max_recommend) {
 					_HFI_INFO("Warning: PSM3_RV_GPU_CACHE_SIZE=%u too large for smallest GPU's BAR size of %"PRIu64" (< %"PRIu64" total of endpoint-rail-qp recommended)\n",
 						ep->rv_gpu_cache_size,
-						(__psm2_min_gpu_bar_size() + MEGABYTE-1)/MEGABYTE,
+						(psm3_min_gpu_bar_size() + MEGABYTE-1)/MEGABYTE,
 						max_recommend/MEGABYTE);
 				}
 			}
 			if ((uint64_t)ep->rv_gpu_cache_size*MEGABYTE < gpu_pri_size) {
 				_HFI_ERROR("PSM3_RV_GPU_CACHE_SIZE=%u too small, require >= %"PRIu64"\n",
 					ep->rv_gpu_cache_size, (gpu_pri_size + MEGABYTE-1)/MEGABYTE);
+				psmi_free(cache);
 				return NULL;
 			}
 			cache->limit_gpu_inuse_bytes = (uint64_t)ep->rv_gpu_cache_size*MEGABYTE - gpu_pri_size;
 		}
 		_HFI_MMDBG("CPU cache %u GPU cache %u\n", ep->rv_mr_cache_size, ep->rv_gpu_cache_size);
-#endif
+#endif /* PSM_CUDA || PSM_ONEAPI */
 	} else
-#endif // RNDV_MOD
+#endif // PSM_HAVE_RNDV_MOD
 		cache->limit_inuse_bytes = UINT64_MAX;	// no limit, just count inuse
-#ifdef RNDV_MOD
-	cache->rv = ep->verbs_ep.rv;
-	cache->cmd_fd = ep->verbs_ep.context->cmd_fd;
-#endif // RNDV_MOD
-#if defined(RNDV_MOD) && defined(PSM_CUDA)
+#ifdef PSM_HAVE_RNDV_MOD
+	cache->rv = ep->rv;
+	cache->cmd_fd = ep->cmd_fd;
+#endif // PSM_HAVE_RNDV_MOD
+	cache->pd = ep->pd;
+#ifdef UMR_CACHE
+	if (ep->mr_cache_mode == MR_CACHE_MODE_USER) {
+		if (psm3_verbs_umrc_prepare(ep, cache) != PSM2_OK)
+			return NULL;
+	}
+#endif
+#if defined(PSM_HAVE_RNDV_MOD) && (defined(PSM_CUDA) || defined(PSM_ONEAPI))
 	_HFI_MMDBG("cache alloc: max_entries=%u limit_inuse=%u limit_inuse_bytes=%"PRIu64" limit_gpu_inuse_bytes=%"PRIu64", pri_entries=%u pri_size=%"PRIu64" gpu_pri_size=%"PRIu64"\n",
 			cache->max_entries, cache->limit_inuse,
 			cache->limit_inuse_bytes, cache->limit_gpu_inuse_bytes,
@@ -564,7 +601,7 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 			cache->limit_inuse_bytes, pri_entries, pri_size);
 #endif
 	// max_entries must be power of 2>= obj per chunk which is also a power of 2
-	cache->mr_pool = psmi_mpool_create(sizeof(cl_map_item_t),
+	cache->mr_pool = psm3_mpool_create(sizeof(cl_map_item_t),
 						min(128, max_entries), max_entries, 0,
 						DESCRIPTORS, NULL, NULL);
 	if (! cache->mr_pool) {
@@ -579,6 +616,9 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 	struct psmi_stats_entry entries[] = {
 		PSMI_STATS_DECL("cache_mode", MPSPAWN_STATS_REDUCTION_ALL,
 				mr_cache_mode, NULL),
+		PSMI_STATS_DECL("mr_access", MPSPAWN_STATS_REDUCTION_ALL,
+				mr_cache_access, NULL),
+		PSMI_STATS_DECLU64("inuse_bytes", &cache->inuse_bytes),
 		PSMI_STATS_DECL_FUNC("limit_entries", mr_cache_max_entries),
 		PSMI_STATS_DECL_FUNC("nelems", mr_cache_nelems),
 		PSMI_STATS_DECL_FUNC("max_nelems", mr_cache_max_nelems),
@@ -587,18 +627,39 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 				mr_cache_limit_inuse, NULL),
 		PSMI_STATS_DECL_FUNC("inuse", mr_cache_inuse),
 		PSMI_STATS_DECL_FUNC("max_inuse", mr_cache_max_inuse),
+		// if cache->access recv and send inuse stats will remain 0
+		PSMI_STATS_DECL_FUNC("inuse_recv", mr_cache_inuse_recv),
+		PSMI_STATS_DECL_FUNC("max_inuse_recv", mr_cache_max_inuse_recv),
+		PSMI_STATS_DECL_FUNC("inuse_send", mr_cache_inuse_send),
+		PSMI_STATS_DECL_FUNC("max_inuse_send", mr_cache_max_inuse_send),
 		PSMI_STATS_DECL("limit_inuse_bytes",
 				MPSPAWN_STATS_REDUCTION_ALL,
 				NULL, &cache->limit_inuse_bytes),
 		PSMI_STATS_DECLU64("inuse_bytes", &cache->inuse_bytes),
 		PSMI_STATS_DECLU64("max_inuse_bytes", &cache->max_inuse_bytes),
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+		// if cache->access recv and send inuse stats will remain 0
+		PSMI_STATS_DECLU64("inuse_recv_bytes", &cache->inuse_recv_bytes),
+		PSMI_STATS_DECLU64("max_inuse_recv_bytes", &cache->max_inuse_recv_bytes),
+		PSMI_STATS_DECLU64("inuse_send_bytes", &cache->inuse_send_bytes),
+		PSMI_STATS_DECLU64("max_inuse_send_bytes", &cache->max_inuse_send_bytes),
+#ifdef UMR_CACHE
+		PSMI_STATS_DECLU64("umrc_evict", &cache->umr_cache.stats.evict),
+		PSMI_STATS_DECLU64("umrc_uffd_remove", &cache->umr_cache.stats.remove),
+		PSMI_STATS_DECLU64("umrc_uffd_unmap", &cache->umr_cache.stats.unmap),
+		PSMI_STATS_DECLU64("umrc_uffd_remap", &cache->umr_cache.stats.remap),
+#endif
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 		PSMI_STATS_DECL("limit_gpu_inuse_bytes",
 				MPSPAWN_STATS_REDUCTION_ALL,
 				NULL, &cache->limit_gpu_inuse_bytes),
 		PSMI_STATS_DECLU64("gpu_inuse_bytes", &cache->gpu_inuse_bytes),
 		PSMI_STATS_DECLU64("max_gpu_inuse_bytes", &cache->max_gpu_inuse_bytes),
+		// if cache->access recv and send inuse stats will remain 0
+		PSMI_STATS_DECLU64("gpu_inuse_recv_bytes", &cache->gpu_inuse_recv_bytes),
+		PSMI_STATS_DECLU64("max_gpu_inuse_recv_bytes", &cache->max_gpu_inuse_recv_bytes),
+		PSMI_STATS_DECLU64("gpu_inuse_send_bytes", &cache->gpu_inuse_send_bytes),
+		PSMI_STATS_DECLU64("max_gpu_inuse_send_bytes", &cache->max_gpu_inuse_send_bytes),
 #endif
 #endif
 		PSMI_STATS_DECL_FUNC("max_refcount", mr_cache_max_refcount),
@@ -610,8 +671,16 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 				mr_cache_miss_rate, NULL),
 		PSMI_STATS_DECLU64("rejected", &cache->rejected),
 		PSMI_STATS_DECLU64("full", &cache->full),
+		// if cache->access recv and send full stats will remain 0
+		// otherwise full_pri and nonpri remain 0
+		PSMI_STATS_DECLU64("full_pri", &cache->full_pri),
+		PSMI_STATS_DECLU64("full_pri_recv", &cache->full_pri_recv),
+		PSMI_STATS_DECLU64("full_pri_send", &cache->full_pri_send),
+		PSMI_STATS_DECLU64("full_nonpri", &cache->full_nonpri),
+		PSMI_STATS_DECLU64("full_nonpri_recv", &cache->full_nonpri_recv),
+		PSMI_STATS_DECLU64("full_nonpri_send", &cache->full_nonpri_send),
 		PSMI_STATS_DECLU64("failed", &cache->failed),
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 		PSMI_STATS_DECL_FUNC("rv_size", mr_cache_rv_size),
 		PSMI_STATS_DECL_FUNC("rv_max_size", mr_cache_rv_max_size),
 		PSMI_STATS_DECL_FUNC("rv_limit", mr_cache_rv_limit_size),
@@ -632,15 +701,15 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 		PSMI_STATS_DECLU64("rv_failed", (uint64_t*)&cache->rv_stats.failed),
 		PSMI_STATS_DECLU64("rv_remove", (uint64_t*)&cache->rv_stats.remove),
 		PSMI_STATS_DECLU64("rv_evict", (uint64_t*)&cache->rv_stats.evict),
-#endif // RNDV_MOD
+#endif // PSM_HAVE_RNDV_MOD
 	};
-	psmi_stats_register_type("MR_Cache_Statistics",
+	psm3_stats_register_type("MR_Cache_Statistics",
 					PSMI_STATSTYPE_MR_CACHE,
 					entries,
-					PSMI_STATS_HOWMANY(entries),
-					ep->epid, cache, ep->dev_name);
-#ifdef PSM_CUDA
-#ifdef RNDV_MOD
+					PSMI_HOWMANY(entries),
+					psm3_epid_fmt_internal(ep->epid, 0), cache, ep->dev_name);
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_RNDV_MOD
 	struct psmi_stats_entry gpu_entries[] = {
 		PSMI_STATS_DECL_FUNC("rv_gpu_size", mr_cache_rv_gpu_size),
 		PSMI_STATS_DECL_FUNC("rv_gpu_size_reg", mr_cache_rv_gpu_size_reg),
@@ -723,20 +792,20 @@ psm2_mr_cache_t psm2_verbs_alloc_mr_cache(psm2_ep_t ep,
 		PSMI_STATS_DECLU64("rv_gpu_post_write", (uint64_t*)&cache->rv_gpu_stats.gpu_post_write),
 		PSMI_STATS_DECLU64("rv_gpu_post_write_bytes", (uint64_t*)&cache->rv_gpu_stats.gpu_post_write_bytes),
 	};
-	if (cache->rv && PSMI_IS_CUDA_ENABLED)
-		psmi_stats_register_type("MR_GPU_Cache_Statistics",
+	if (cache->rv && PSMI_IS_GPU_ENABLED && ep->rv_gpu_cache_size)
+		psm3_stats_register_type("MR_GPU_Cache_Statistics",
 					PSMI_STATSTYPE_MR_CACHE,
 					gpu_entries,
-					PSMI_STATS_HOWMANY(gpu_entries),
-					ep->epid, &cache->rv_gpu_stats,
+					PSMI_HOWMANY(gpu_entries),
+					psm3_epid_fmt_internal(ep->epid, 0), &cache->rv_gpu_stats,
 					ep->dev_name);
-#endif
-#endif
+#endif /* PSM_HAVE_RNDV_MOD */
+#endif /* PSM_CUDA || PSM_ONEAPI */
 
 	return cache;
 }
 
-int psm2_verbs_mr_cache_allows_user_mr(psm2_mr_cache_t cache)
+int psm3_verbs_mr_cache_allows_user_mr(psm2_mr_cache_t cache)
 {
 	if (!cache)
 		return 0;
@@ -745,7 +814,10 @@ int psm2_verbs_mr_cache_allows_user_mr(psm2_mr_cache_t cache)
 			return 0;
 		case MR_CACHE_MODE_KERNEL:
 			return psmi_hal_has_cap(PSM_HAL_CAP_USER_MR);
+		case MR_CACHE_MODE_USER_NOINVAL:
+#ifdef UMR_CACHE
 		case MR_CACHE_MODE_USER:
+#endif
 			return 1;
 		case MR_CACHE_MODE_RV:
 			return psmi_hal_has_cap(PSM_HAL_CAP_USER_MR);
@@ -758,35 +830,81 @@ static void update_stats_inc_inuse(psm2_mr_cache_t cache, uint64_t length,
 					int access)
 {
 	INC_STAT(cache, inuse, max_inuse);
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	if (access & IBV_ACCESS_IS_GPU_ADDR)
 		ADD_STAT(cache, length, gpu_inuse_bytes, max_gpu_inuse_bytes);
 	else
 #endif
 #endif
 		ADD_STAT(cache, length, inuse_bytes, max_inuse_bytes);
+	if (cache->access)	// can't distinguish recv vs send
+		return;
+	if (access & IBV_ACCESS_REMOTE_WRITE) {
+		INC_STAT(cache, inuse_recv, max_inuse_recv);
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		if (access & IBV_ACCESS_IS_GPU_ADDR)
+			ADD_STAT(cache, length, gpu_inuse_recv_bytes, max_gpu_inuse_recv_bytes);
+		else
+#endif
+#endif
+			ADD_STAT(cache, length, inuse_recv_bytes, max_inuse_recv_bytes);
+	} else {
+		INC_STAT(cache, inuse_send, max_inuse_send);
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		if (access & IBV_ACCESS_IS_GPU_ADDR)
+			ADD_STAT(cache, length, gpu_inuse_send_bytes, max_gpu_inuse_send_bytes);
+		else
+#endif
+#endif
+			ADD_STAT(cache, length, inuse_send_bytes, max_inuse_send_bytes);
+	}
 }
 
 static void update_stats_dec_inuse(psm2_mr_cache_t cache, uint64_t length,
 					int access)
 {
 	cache->inuse--;
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	if (access & IBV_ACCESS_IS_GPU_ADDR)
 		cache->gpu_inuse_bytes -= length;
 	else
 #endif
 #endif
 		cache->inuse_bytes -= length;
+	if (cache->access)	// can't distinguish recv vs send
+		return;
+	if (access & IBV_ACCESS_REMOTE_WRITE) {
+		cache->inuse_recv--;
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		if (access & IBV_ACCESS_IS_GPU_ADDR)
+			cache->gpu_inuse_recv_bytes -= length;
+		else
+#endif
+#endif
+			cache->inuse_recv_bytes -= length;
+	} else {
+		cache->inuse_send--;
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+		if (access & IBV_ACCESS_IS_GPU_ADDR)
+			cache->gpu_inuse_send_bytes -= length;
+		else
+#endif
+#endif
+			cache->inuse_send_bytes -= length;
+	}
 }
 
 // checks for space for a non-priority registration
 static inline int have_space(psm2_mr_cache_t cache, uint64_t length, int access)
 {
-#ifdef RNDV_MOD
-#ifdef PSM_CUDA
+#ifdef PSM_HAVE_RNDV_MOD
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	if (access & IBV_ACCESS_IS_GPU_ADDR)
 		return (cache->inuse < cache->limit_inuse
 			&& cache->gpu_inuse_bytes + length < cache->limit_gpu_inuse_bytes);
@@ -797,182 +915,63 @@ static inline int have_space(psm2_mr_cache_t cache, uint64_t length, int access)
 			&& cache->inuse_bytes + length < cache->limit_inuse_bytes);
 }
 
-#ifdef PSM_CUDA
-#ifdef RNDV_MOD
-// given an ep this returns the "next one".
-// It loops through all the multi-rail/multi-QP EPs in a given user opened EP
-// 1st, then it goes to the next user opened EP (multi-EP) and loops through
-// it's multi-rail/mult-QP EPs.
-// When it hits the last rail of the last user opened EP, it goes back to
-// the 1st rail of the 1st user opened EP.
-// caller must hold creation_lock
-static psm2_ep_t next_ep(psm2_ep_t ep)
-{
-       //mctxt_next is the circular list of rails/QPs in a given user EP
-       //mctxt_master is the 1st in the list, when we get back to the 1st
-       //go to the next user EP
-       ep = ep->mctxt_next;
-       if (ep->mctxt_master != ep)
-               return ep;
-       //user_ep_next is a linked list of user opened EPs.  End of list is NULL
-       //when hit end of list, go back to 1st (psmi_opened_endpoint)
-       //for each user opened EP, the entry on this list is the 1st rail within
-       //the EP
-       ep = ep->user_ep_next;
-       if (ep)
-               return ep;
-       else
-               return psmi_opened_endpoint;
-}
-
-// determine if ep is still valid (can't dereference or trust ep given)
-// caller must hold creation_lock
-static int valid_ep(psm2_ep_t ep)
-{
-	psm2_ep_t e1 = psmi_opened_endpoint;
-
-	while (e1) {	// user opened ep's - linear list ending in NULL
-		psm2_ep_t e2 = e1;
-		//check mtcxt list (multi-rail within user opened ep)
-		do {
-			if (e2 == ep)
-				return 1;
-			e2 = e2->mctxt_next;
-		} while (e2 != e1);	// circular list
-		e1 = e1->user_ep_next;
-	}
-	return 0;	// not found
-}
-
-// advance ep to the next.  However it's possible ep is stale and
-// now closed/freed, so make sure it's good.  good_ep is at least one
-// known good_ep and lets us avoid search some of the time (or if only 1 EP)
-// caller must hold creation_lock
-static psm2_ep_t next_valid_ep(psm2_ep_t ep, psm2_ep_t good_ep)
-{
-	if (ep == good_ep || valid_ep(ep))
-		return next_ep(ep);
-	else
-		return good_ep;
-}
-
-/*
- * Evict some space in given cache (only GPU needs this)
- * If nvidia_p2p_get_pages reports out of BAR space (perhaps prematurely),
- * we need to evict from other EPs too.
- * So we rotate among all eps (rails or QPs) in our user opened EP for eviction.
- * length - amount attempted in pin/register which just failed
- * access - indicates if IS_GPU_ADDR or not (rest ignored)
- * returns:
- * 	>0 bytes evicted if some evicted
- * 	-1 if nothing evicted (errno == ENOENT means nothing evictable found)
- * 	ENOENT also used when access is not for GPU
- * The caller will have the progress_lock, we need the creation_lock
- * to walk the list of EPs outside our own MQ.  However creation_lock
- * is above the progress_lock in lock heirarchy, so we use a LOCK_TRY
- * to avoid deadlock in the rare case where another thread
- * has creation_lock and is trying to get progress_lock (such as during
- * open_ep, close_ep or rcvthread).
- */
-int64_t psm2_verbs_evict_some(psm2_ep_t ep, uint64_t length, int access)
-{
-	static __thread psm2_ep_t last_evict_ep;	// among all eps
-	static __thread psm2_ep_t last_evict_myuser_ep;	// in my user ep
-	int64_t evicted = 0;
-	int ret;
-
-	if (! (access & IBV_ACCESS_IS_GPU_ADDR)) {
-		errno = ENOENT;
-		return -1;	// only need evictions on GPU addresses
-	}
-	if (! last_evict_ep) {	// first call only
-		last_evict_ep = ep;
-		last_evict_myuser_ep = ep;
-	}
-	// 1st try to evict from 1st rail/QP in our opened EP (gdrcopy and MRs)
-	ret = __psm2_rv_evict_gpu_amount(ep->mctxt_master->verbs_ep.rv, max(gpu_cache_evict, length), 0);
-	if (ret > 0)
-		evicted = ret;
-
-	// next rotate among other rails/QPs in our opened ep (MRs)
-	last_evict_myuser_ep = last_evict_myuser_ep->mctxt_next;
-	if (last_evict_myuser_ep != ep->mctxt_master) {
-		ret = __psm2_rv_evict_gpu_amount(last_evict_myuser_ep->verbs_ep.rv, max(gpu_cache_evict, length), 0);
-		if (ret > 0)
-			evicted += ret;
-	}
-	if (evicted >= length)
-		return evicted;
-
-	// now try other opened EPs
-	if (PSMI_LOCK_TRY(psmi_creation_lock))
-		goto done;
-	// last_evict_ep could point to an ep which has since been closed/freed
- 	last_evict_ep = next_valid_ep(last_evict_ep, ep);
-	if (last_evict_ep->mctxt_master != ep->mctxt_master) {
-		if (!PSMI_LOCK_TRY(last_evict_ep->mq->progress_lock)) {
-			ret = __psm2_rv_evict_gpu_amount(last_evict_ep->verbs_ep.rv, max(gpu_cache_evict, length), 0);
-			PSMI_UNLOCK(last_evict_ep->mq->progress_lock);
-			if (ret > 0)
-				evicted += ret;
-		}
-	} else {
-		ret = __psm2_rv_evict_gpu_amount(last_evict_ep->verbs_ep.rv, max(gpu_cache_evict, length), 0);
-		if (ret > 0 )
-			evicted += ret;
-	}
-	PSMI_UNLOCK(psmi_creation_lock);
-done:
-	if (! evicted) {
-		errno = ENOENT;
-		return -1;
-	}
-	return evicted;
-}
-#endif
-#endif
-
 // each attempt will increment exactly one of: hit, miss, rejected, full, failed
-struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
-				bool priority, struct ibv_pd *pd,
+struct psm3_verbs_mr * psm3_verbs_reg_mr(psm2_mr_cache_t cache, bool priority,
 				void *addr, uint64_t length, int access)
 {
-	psm2_verbs_mr_t mrc;
+	psm3_verbs_mr_t mrc;
+#ifdef PSM_ONEAPI
+	void *base;
+	size_t len;
+#endif
+
+	psmi_assert(cache->pd);
+	if (! cache->pd)
+		return NULL;
 
 #ifdef PSM_FI
-	if_pf(PSMI_FAULTINJ_ENABLED_EP(cache->ep)) {
-		PSMI_FAULTINJ_STATIC_DECL(fi_reg_mr, "reg_mr",
+	if_pf(PSM3_FAULTINJ_ENABLED_EP(cache->ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_reg_mr, "reg_mr",
 				"MR cache full, any request type",
 				1, IPS_FAULTINJ_REG_MR);
-		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_reg_mr, "")) {
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_reg_mr, cache->ep, "")) {
 			cache->failed++;
 			errno = ENOMEM;
 			return NULL;
 		}
 	}
-	if_pf(!priority && PSMI_FAULTINJ_ENABLED_EP(cache->ep)) {
-		PSMI_FAULTINJ_STATIC_DECL(fi_nonpri_reg_mr, "nonpri_reg_mr",
+	if_pf(!priority && PSM3_FAULTINJ_ENABLED_EP(cache->ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_nonpri_reg_mr, "nonpri_reg_mr",
 				"MR cache full, non-priority request",
 				1, IPS_FAULTINJ_NONPRI_REG_MR);
-		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_nonpri_reg_mr, "")) {
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_nonpri_reg_mr, cache->ep, "")) {
 			cache->failed++;
 			errno = ENOMEM;
 			return NULL;
 		}
 	}
-	if_pf(priority && PSMI_FAULTINJ_ENABLED_EP(cache->ep)) {
-		PSMI_FAULTINJ_STATIC_DECL(fi_pri_reg_mr, "pri_reg_mr",
+	if_pf(priority && PSM3_FAULTINJ_ENABLED_EP(cache->ep)) {
+		PSM3_FAULTINJ_STATIC_DECL(fi_pri_reg_mr, "pri_reg_mr",
 				"MR cache full, priority request",
 				1, IPS_FAULTINJ_PRI_REG_MR);
-		if_pf(PSMI_FAULTINJ_IS_FAULT(fi_pri_reg_mr, "")) {
+		if_pf(PSM3_FAULTINJ_IS_FAULT(fi_pri_reg_mr, cache->ep, "")) {
 			cache->failed++;
 			errno = ENOMEM;
 			return NULL;
 		}
 	}
 #endif // PSM_FI
-	access |= IBV_ACCESS_LOCAL_WRITE;	// manditory flag
-#ifndef RNDV_MOD
+	access |= IBV_ACCESS_LOCAL_WRITE|cache->access; // manditory flag
+#ifdef PSM_HAVE_RNDV_MOD
+	// drop IBV_ACCESS_RDMA flag if all MRs are for user space QP use.
+	// (this flag is IBV_ACCESS_KERNEL for builds enabled with RNDV_MOD,
+	// 0 otherwise)
+	if (cache->cache_mode != MR_CACHE_MODE_RV)
+		access &= ~IBV_ACCESS_RDMA;
+#else
+	psmi_assert(IBV_ACCESS_RDMA == 0);
+#endif
+#ifndef PSM_HAVE_RNDV_MOD
 	if (access & IBV_ACCESS_IS_GPU_ADDR) {
 		_HFI_ERROR("unsupported GPU memory registration\n");
 		cache->failed++;
@@ -980,23 +979,49 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 		return NULL;
 	}
 #else
-#ifdef PSM_CUDA
-	psmi_assert(!!(access & IBV_ACCESS_IS_GPU_ADDR) == (PSMI_IS_CUDA_ENABLED && PSMI_IS_CUDA_MEM(addr)));
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	psmi_assert(!!(access & IBV_ACCESS_IS_GPU_ADDR) == (PSMI_IS_GPU_ENABLED && PSMI_IS_GPU_MEM(addr)));
+#ifdef PSM_ONEAPI
+	if (access & IBV_ACCESS_IS_GPU_ADDR) {
+#define MAX_USER_MR_SIZE (32 * 1024)
+		PSMI_ONEAPI_ZE_CALL(zeMemGetAddressRange, ze_context,
+				    (const void *)addr, &base, &len);
+		/*
+		 * Need to register MR with base address and total length.
+		 * However, for Mellanox cards, the max buffer size for a
+		 * user MR registered through the rv module is 32k bytes.
+		 * Otherwise, it will fail with IB_WC_MW_BIND_ERR.
+		 */
+		if (strncasecmp(cache->ep->dev_name, "mlx5_0", 3) == 0 &&
+		    !(access & IBV_ACCESS_KERNEL) && len > MAX_USER_MR_SIZE) {
+			/* Change only if the buffer stays in the first 32k */
+			if (((char *)addr + length) <= ((char *)base + MAX_USER_MR_SIZE)) {
+				addr = base;
+				length = MAX_USER_MR_SIZE;
+			}
+		} else {
+			/* Kernel MR or user MR with total size <= MAX_USER_MR_SIZE */
+			addr = base;
+			length = len;
+		}
+	}
 #endif
 #endif
-	struct psm2_verbs_mr key = { // our search key
+#endif
+	struct psm3_verbs_mr key = { // our search key
 		.addr = addr,
 		.length = length,
 		.access = access
 	};
-	// for user QPs, can share entries with send DMA and send RDMA
-#ifdef RNDV_MOD
-	if (cache->cache_mode != MR_CACHE_MODE_RV)
-		key.access &= ~IBV_ACCESS_RDMA;
-#else
-	key.access &= ~IBV_ACCESS_RDMA;
-#endif
 
+#ifdef UMR_CACHE
+	if (cache->cache_mode == MR_CACHE_MODE_USER) {
+		cache->umr_cache.lock = cache->ep->verbs_ep.umrc.thread;
+		cache->umr_cache.event_queue = cache->ep->verbs_ep.umrc.event_queue;
+		if (cache->umr_cache.event_queue)
+			psm3_verbs_umrc_event_queue_process(cache);
+	}
+#endif // UMR_CACHE
 	cl_map_item_t *p_item = ips_cl_qmap_searchv(&cache->map, &key);
 	if (p_item->payload.mr.mr_ptr) {
 		psmi_assert(p_item != cache->map.nil_item);
@@ -1030,13 +1055,28 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 	}
 	// we only reuse entries from avail_list once cache is full
 	// this helps improve cache hit rate.
-	// we only have items on avail_list when cache_mode==MR_CACHE_MODE_USER
+	// we only have items on avail_list when MR_CACHE_MODE_USER*
 	if (cache->map.payload.nelems >= cache->max_entries) {
 		int ret;
 		mrc = TAILQ_FIRST(&cache->avail_list);
 		if (! mrc) {
 			_HFI_MMDBG("user space MR cache full\n");
 			cache->full++;
+			if (priority) {
+				if (cache->access)
+					cache->full_pri++;
+				else if (access & IBV_ACCESS_REMOTE_WRITE)
+					cache->full_pri_recv++;
+				else
+					cache->full_pri_send++;
+			} else {
+				if (cache->access)
+					cache->full_nonpri++;
+				else if (access & IBV_ACCESS_REMOTE_WRITE)
+					cache->full_nonpri_recv++;
+				else
+					cache->full_nonpri_send++;
+			}
 			errno = ENOMEM;
 			return NULL;
 		}
@@ -1047,10 +1087,13 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 					addr, length, access, mrc);
 		ips_cl_qmap_remove_item(&mrc->cache->map, p_item);
 		TAILQ_REMOVE(&cache->avail_list, mrc, next);
-#ifdef RNDV_MOD
+#ifdef UMR_CACHE
+ 		psm3_verbs_umrc_unregister(&cache->umr_cache, (uintptr_t)addr, length);
+#endif
+#ifdef PSM_HAVE_RNDV_MOD
 		if (cache->cache_mode == MR_CACHE_MODE_KERNEL
 			|| cache->cache_mode == MR_CACHE_MODE_RV)	// should not happen
-			ret = __psm2_rv_dereg_mem(cache->rv, mrc->mr.rv_mr);
+			ret = psm3_rv_dereg_mem(cache->rv, mrc->mr.rv_mr);
 		else
 #endif
 			ret = ibv_dereg_mr(mrc->mr.ibv_mr);
@@ -1061,13 +1104,13 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 			// MR is fouled up, we leak the MR and free the cache entry
 			// caller will try again later
 			mrc->mr.mr_ptr = NULL;
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 			return NULL;
 		}
 		mrc->mr.mr_ptr = NULL;
 	} else {
 		// allocate a new item
-		p_item = (cl_map_item_t *)psmi_mpool_get(cache->mr_pool);
+		p_item = (cl_map_item_t *)psm3_mpool_get(cache->mr_pool);
 		if (! p_item) {	// keep KW happy, should not happen, we check max above
 			_HFI_ERROR("unexpected cache pool allocate failure\n");
 			cache->failed++;
@@ -1077,24 +1120,38 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 		// we initialize mrc below
 		cache->max_nelems = max(cache->max_nelems, cache->map.payload.nelems+1);
 	}
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 	/* need cmd_fd for access to ucontext when converting user pd into kernel pd */
 	if (cache->cache_mode == MR_CACHE_MODE_KERNEL) {
-		// user space QPs for everything, drop IBV_ACCESS_RDMA flag
-		mrc->mr.rv_mr = __psm2_rv_reg_mem(cache->rv, cache->cmd_fd, pd, addr, length, access & ~IBV_ACCESS_RDMA);
+		// user space QPs for everything
+		mrc->mr.rv_mr = psm3_rv_reg_mem(cache->rv, cache->cmd_fd, cache->pd, addr, length, access);
 		if (! mrc->mr.rv_mr) {
 			int save_errno = errno;
 			if (errno == ENOMEM) {
 				cache->full++;
-#ifdef PSM_CUDA
-				if (priority)
-					(void)psm2_verbs_evict_some(cache->ep, length, access);
-#endif
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+				if (priority) {
+					(void)psm3_gpu_evict_some(cache->ep, length, access);
+					if (cache->access)
+						cache->full_pri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_pri_recv++;
+					else
+						cache->full_pri_send++;
+				} else {
+					if (cache->access)
+						cache->full_nonpri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_nonpri_recv++;
+					else
+						cache->full_nonpri_send++;
+				}
+#endif /* PSM_CUDA || PSM_ONEAPI */
 			} else {
 				_HFI_ERROR("reg_mr failed; %s acc 0x%x\n", strerror(errno), access);
 				cache->failed++;
 			}
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 			errno = save_errno;
 			return NULL;
 		}
@@ -1103,20 +1160,34 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 		mrc->rkey = mrc->mr.rv_mr->rkey;
 	} else if (cache->cache_mode == MR_CACHE_MODE_RV) {
 		// kernel QP for RDMA, user QP for send DMA
-		mrc->mr.rv_mr = __psm2_rv_reg_mem(cache->rv, cache->cmd_fd, (access&IBV_ACCESS_RDMA)?NULL:pd, addr, length, access);
+		mrc->mr.rv_mr = psm3_rv_reg_mem(cache->rv, cache->cmd_fd, (access&IBV_ACCESS_RDMA)?NULL:cache->pd, addr, length, access);
 		if (! mrc->mr.rv_mr) {
 			int save_errno = errno;
 			if (errno == ENOMEM) {
 				cache->full++;
-#ifdef PSM_CUDA
-				if (priority)
-					(void)psm2_verbs_evict_some(cache->ep, length, access);
-#endif
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+				if (priority) {
+					(void)psm3_gpu_evict_some(cache->ep, length, access);
+					if (cache->access)
+						cache->full_pri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_pri_recv++;
+					else
+						cache->full_pri_send++;
+				} else {
+					if (cache->access)
+						cache->full_nonpri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_nonpri_recv++;
+					else
+						cache->full_nonpri_send++;
+				}
+#endif /* PSM_CUDA || PSM_ONEAPI */
 			} else {
 				_HFI_ERROR("reg_mr failed; %s acc 0x%x\n", strerror(errno), access);
 				cache->failed++;
 			}
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 			errno = save_errno;
 			return NULL;
 		}
@@ -1124,19 +1195,34 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 		mrc->lkey = mrc->mr.rv_mr->lkey;
 		mrc->rkey = mrc->mr.rv_mr->rkey;
 	} else
-#endif
+#endif /* PSM_HAVE_RNDV_MOD */
 	{
-		// user space QPs for everything, drop IBV_ACCESS_RDMA flag
-		mrc->mr.ibv_mr = ibv_reg_mr(pd, addr, length, access & ~IBV_ACCESS_RDMA);
+		// user space QPs for everything
+		mrc->mr.ibv_mr = ibv_reg_mr(cache->pd, addr, length, access);
 		if (! mrc->mr.ibv_mr) {
 			int save_errno = errno;
 			if (errno == ENOMEM) {
 				cache->full++;
+				if (priority) {
+					if (cache->access)
+						cache->full_pri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_pri_recv++;
+					else
+						cache->full_pri_send++;
+				} else {
+					if (cache->access)
+						cache->full_nonpri++;
+					else if (access & IBV_ACCESS_REMOTE_WRITE)
+						cache->full_nonpri_recv++;
+					else
+						cache->full_nonpri_send++;
+				}
 			} else {
 				_HFI_ERROR("reg_mr failed; %s acc 0x%x\n", strerror(errno), access);
 				cache->failed++;
 			}
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 			errno = save_errno;
 			return NULL;
 		}
@@ -1149,22 +1235,21 @@ struct psm2_verbs_mr * psm2_verbs_reg_mr(psm2_mr_cache_t cache,
 	mrc->refcount = 1;
 	mrc->addr = addr;
 	mrc->length = length;
-#ifdef RNDV_MOD
-	if (cache->cache_mode != MR_CACHE_MODE_RV)
-		mrc->access = access & ~IBV_ACCESS_RDMA;
-	else
-		mrc->access = access;
-#else
-	mrc->access = access & ~IBV_ACCESS_RDMA;
-#endif
+	mrc->access = access;
 	ips_cl_qmap_insert_item(&cache->map, p_item);
 	update_stats_inc_inuse(cache, length, access);
+#ifdef UMR_CACHE
+	if (cache->cache_mode == MR_CACHE_MODE_USER) {
+		mrc->umrc_not_reuse = 0;
+		mrc->umrc_reg = (psm3_verbs_umrc_register(&cache->umr_cache, (uintptr_t)addr, length) == PSM2_OK);
+	}
+#endif // UMR_CACHE
 	_HFI_MMDBG("registered new MR pri %d addr %p len %"PRIu64" access 0x%x ref %u ptr %p nelems %u\n",
 		priority, addr, length, access, mrc->refcount, mrc, cache->map.payload.nelems);
 	return mrc;
 }
 
-int psm2_verbs_release_mr(struct psm2_verbs_mr *mrc)
+int psm3_verbs_release_mr(struct psm3_verbs_mr *mrc)
 {
 	int ret = 0;
 	if (! mrc) {
@@ -1179,21 +1264,44 @@ int psm2_verbs_release_mr(struct psm2_verbs_mr *mrc)
 		mrc->addr, mrc->length, mrc->access, mrc->refcount, mrc);
 	mrc->refcount--;
 	if (!mrc->refcount) {
+		update_stats_dec_inuse(mrc->cache, mrc->length, mrc->access);
+#ifdef UMR_CACHE
 		if (mrc->cache->cache_mode == MR_CACHE_MODE_USER) {
+			if (!mrc->umrc_not_reuse)
+				// put on avail_list
+				TAILQ_INSERT_TAIL(&mrc->cache->avail_list, mrc, next);
+			else {
+				// not re-used and should be removed from avail_list
+				cl_map_item_t *p_item = container_of(mrc, cl_map_item_t, payload);
+				if (!TAILQ_EMPTY(&mrc->cache->avail_list))
+					TAILQ_REMOVE(&mrc->cache->avail_list, mrc, next);
+				ips_cl_qmap_remove_item(&mrc->cache->map, p_item);
+				ret = ibv_dereg_mr(mrc->mr.ibv_mr);
+				if (ret) {
+					// nasty choice, do we leak the MR or leak the cache entry
+					// we chose to leak the MR and free the cache entry
+					_HFI_ERROR("unexpected dreg_mr failure on %s: %s\n", mrc->cache->ep->dev_name, strerror(errno));
+					errno = EIO;
+					ret = -1;
+				}
+				mrc->mr.mr_ptr = NULL;
+				psm3_mpool_put(p_item);
+			}
+		} else
+#endif
+		if (mrc->cache->cache_mode == MR_CACHE_MODE_USER_NOINVAL) {
 			// if refcount now zero, put on avail_list to be reclaimed if needed
-			update_stats_dec_inuse(mrc->cache, mrc->length, mrc->access);
 			TAILQ_INSERT_TAIL(&mrc->cache->avail_list, mrc, next);
 		} else {
 			_HFI_MMDBG("freeing MR addr %p len %"PRIu64" access 0x%x ref %u ptr %p nelems %u\n",
 				mrc->addr, mrc->length, mrc->access, mrc->refcount, mrc,
 				mrc->cache->map.payload.nelems);
-			update_stats_dec_inuse(mrc->cache, mrc->length, mrc->access);
 			cl_map_item_t *p_item = container_of(mrc, cl_map_item_t, payload);
 			ips_cl_qmap_remove_item(&mrc->cache->map, p_item);
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 			if (mrc->cache->cache_mode == MR_CACHE_MODE_KERNEL
 					|| mrc->cache->cache_mode == MR_CACHE_MODE_RV)
-				ret = __psm2_rv_dereg_mem(mrc->cache->rv, mrc->mr.rv_mr);
+				ret = psm3_rv_dereg_mem(mrc->cache->rv, mrc->mr.rv_mr);
 			else
 #endif
 				ret = ibv_dereg_mr(mrc->mr.ibv_mr);
@@ -1205,33 +1313,37 @@ int psm2_verbs_release_mr(struct psm2_verbs_mr *mrc)
 				ret = -1;
 			}
 			mrc->mr.mr_ptr = NULL;
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 		}
 	}
 	return ret;
 }
 
-void psm2_verbs_free_mr_cache(psm2_mr_cache_t cache)
+void psm3_verbs_free_mr_cache(psm2_mr_cache_t cache)
 {
-#ifdef PSM_CUDA
-#ifdef RNDV_MOD
-	if (cache->rv && PSMI_IS_CUDA_ENABLED)
-		psmi_stats_deregister_type(PSMI_STATSTYPE_MR_CACHE,
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#ifdef PSM_HAVE_RNDV_MOD
+	if (cache->rv && PSMI_IS_GPU_ENABLED)
+		psm3_stats_deregister_type(PSMI_STATSTYPE_MR_CACHE,
 					&cache->rv_gpu_stats);
 #endif
 #endif
-	psmi_stats_deregister_type(PSMI_STATSTYPE_MR_CACHE, cache);
+#ifdef UMR_CACHE
+	if (cache->cache_mode == MR_CACHE_MODE_USER && cache->umr_cache.event_queue)
+		psm3_verbs_umrc_event_queue_process(cache);
+#endif
+	psm3_stats_deregister_type(PSMI_STATSTYPE_MR_CACHE, cache);
 	while (cache->map.payload.nelems) {
 		cl_map_item_t *p_item = __cl_map_root(&cache->map);
 		psmi_assert(p_item != cache->map.nil_item);
-		psm2_verbs_mr_t mrc = &p_item->payload;
+		psm3_verbs_mr_t mrc = &p_item->payload;
 		psmi_assert(mrc->mr.mr_ptr);
 		if (mrc->mr.mr_ptr) {
 			int ret;
 			_HFI_MMDBG("free MR addr %p len %"PRIu64" access 0x%x ref %u ptr %p\n",
 				mrc->addr, mrc->length, mrc->access, mrc->refcount, mrc);
 			if (mrc->refcount) {
-				_HFI_ERROR("unreleased MR in psm2_verbs_free_mr_cache addr %p len %"PRIu64" access 0x%x\n",
+				_HFI_ERROR("unreleased MR in psm3_verbs_free_mr_cache addr %p len %"PRIu64" access 0x%x\n",
 					mrc->addr, mrc->length, mrc->access);
 				return; // leak the rest, let process exit cleanup
 			}
@@ -1239,22 +1351,211 @@ void psm2_verbs_free_mr_cache(psm2_mr_cache_t cache)
 			cl_map_item_t *p_item = container_of(mrc, cl_map_item_t, payload);
 			ips_cl_qmap_remove_item(&cache->map, p_item);
 			TAILQ_REMOVE(&cache->avail_list, mrc, next);
-#ifdef RNDV_MOD
+#ifdef PSM_HAVE_RNDV_MOD
 			if (cache->cache_mode == MR_CACHE_MODE_KERNEL
 					|| cache->cache_mode == MR_CACHE_MODE_RV)
-				ret = __psm2_rv_dereg_mem(cache->rv, mrc->mr.rv_mr);
+				ret = psm3_rv_dereg_mem(cache->rv, mrc->mr.rv_mr);
 			else
 #endif
 				ret = ibv_dereg_mr(mrc->mr.ibv_mr);
 			if (ret)
 				_HFI_ERROR("unexpected dreg_mr failure on %s: %s\n", mrc->cache->ep->dev_name, strerror(errno));
 			mrc->mr.mr_ptr = NULL;
-			psmi_mpool_put(p_item);
+			psm3_mpool_put(p_item);
 		}
 	}
 	psmi_assert(TAILQ_EMPTY(&cache->avail_list));
 	psmi_assert(! cache->map.payload.nelems);
 
-	psmi_mpool_destroy(cache->mr_pool);
+	psm3_mpool_destroy(cache->mr_pool);
 	psmi_free(cache);
 }
+
+#ifdef UMR_CACHE
+
+// this is used to enable ips_cl_qmap_search() in psm3_rbtree.c
+// if RBTREE_CMP was previously defined
+#define ENABLE_OVERLAPPING_SEARCH
+
+static uint32_t umrc_access;
+static unsigned long RBTREE_GET_LEFTMOST(psm3_verbs_mr_t mrc)
+{
+	if (mrc->access == umrc_access)
+		return (uintptr_t)mrc->addr;
+	else
+		return 0;
+}
+static unsigned long RBTREE_GET_RIGHTMOST(psm3_verbs_mr_t mrc)
+{
+	if (mrc->access == umrc_access)
+		return (uintptr_t)mrc->addr + mrc->length;
+	else
+		return ULONG_MAX;
+}
+#include "psm3_rbtree.c"
+
+static void psm3_verbs_umrc_event_process(psm2_mr_cache_t cache, uint32_t event, uint64_t addr, uint64_t length)
+{
+	int ret;
+	psm3_verbs_mr_t mrc;
+	cl_map_item_t *p_item;
+
+	_HFI_MMDBG("cache=%p fd=%d ADDR=0x%lx length=0x%lx uffd event=0x%x nelms=%d\n",
+				cache, *cache->umr_cache.fd, addr, length, event, cache->map.payload.nelems);
+	umrc_access = IBV_ACCESS_LOCAL_WRITE | cache->access;
+	do {
+	next_search:
+		p_item = ips_cl_qmap_search(&cache->map, (uintptr_t)addr, (uintptr_t)addr + length);
+		if (p_item != cache->map.nil_item) {
+			mrc = &p_item->payload;
+			if (mrc->mr.mr_ptr) {
+				if (!mrc->refcount) {
+					if (mrc->umrc_reg)
+						ret = psm3_verbs_umrc_unregister(&cache->umr_cache, (uintptr_t)mrc->addr, mrc->length);
+					_HFI_MMDBG("event_process: cache=%p mrc->addr=%p mrc->length=%lx mrc->access=%d event=%x fd=%d\n",
+								cache, mrc->addr, mrc->length, mrc->access, event, *cache->umr_cache.fd);
+					ret = ibv_dereg_mr(mrc->mr.ibv_mr);
+					if (ret)
+						_HFI_ERROR("Unexpected dreg_mr failure: %s\n", strerror(errno));
+					update_stats_dec_inuse(mrc->cache, mrc->length, mrc->access);
+					ips_cl_qmap_remove_item(&cache->map, p_item);
+					TAILQ_REMOVE(&cache->avail_list, mrc, next);
+					mrc->mr.mr_ptr = NULL;
+					psm3_mpool_put(p_item);
+					cache->umr_cache.stats.evict++;
+				} else {
+					// should be unregister anyway
+					if (mrc->umrc_reg)
+						psm3_verbs_umrc_unregister(&cache->umr_cache, (uintptr_t)mrc->addr, mrc->length);
+					// cannot be deleted now and marked as not re-used
+					mrc->umrc_not_reuse = 1;
+					mrc->access = 0; // mr cache entry will not appear in search
+					_HFI_MMDBG("marked as not_reused cache=%p mrc->refcount=%d mrc->addr=%p mrc->length=%lx mrc->access=%d event=%x\n",
+								cache, mrc->refcount, mrc->addr, mrc->length, mrc->access, event);
+				}
+				umrc_access = IBV_ACCESS_LOCAL_WRITE | cache->access;
+			}
+		} else if (!(umrc_access & IBV_ACCESS_REMOTE_WRITE)) {
+				// we seached for send (! remote write), now search for
+				// a recv (remote write) entry matching addr/length
+				umrc_access |= IBV_ACCESS_REMOTE_WRITE;
+				goto next_search;
+		}
+	} while(p_item != cache->map.nil_item);
+}
+
+static void psm3_verbs_umrc_event_queue_process(psm2_mr_cache_t cache)
+{
+	psm2_umrc_event_t umrc_event;
+
+	TAILQ_FOREACH(umrc_event, &cache->umrc_event_list, next) {
+		psm3_verbs_umrc_event_process(cache, umrc_event->event, umrc_event->addr, umrc_event->length);
+		TAILQ_REMOVE(&cache->umrc_event_list, umrc_event, next);
+		cache->umr_cache.queue_cnt--;
+	}
+}
+
+// TBD rename as umrc_init
+static int psm3_verbs_umrc_prepare(psm2_ep_t ep, psm2_mr_cache_t cache)
+{
+	psm2_umr_cache_t umr_cache = &cache->umr_cache;
+
+	umr_cache->fd = &ep->verbs_ep.umrc.fd;
+	umr_cache->page_size = PSMI_PAGESIZE;
+	umr_cache->mr_cache = cache;
+	ep->verbs_ep.umrc.mr_cache = cache;
+	if (ep->verbs_ep.umrc.event_queue) {
+		umr_cache->event_queue = ep->verbs_ep.umrc.event_queue;
+		umr_cache->mm_events = (struct psm2_umrc_event *)psmi_calloc(PSMI_EP_NONE, UNDEFINED,
+							sizeof(struct psm2_umrc_event), UMR_CACHE_QUEUE_DEPTH);
+		if (! umr_cache->mm_events) {
+			_HFI_ERROR("Couldn't allocate memory for mm_events. MR cache disabled\n");
+			return ENOMEM;
+		}
+		TAILQ_INIT(&cache->umrc_event_list);
+	}
+	_HFI_MMDBG("Init cache=%p fd=%d\n", cache, ep->verbs_ep.umrc.fd);
+
+	return PSM2_OK;
+}
+
+void psm3_verbs_umrc_free(psm2_umrc_t umrc)
+{
+	psm2_umr_cache_t umr_cache = &((psm2_mr_cache_t)umrc->mr_cache)->umr_cache;
+	psmi_free(umr_cache->mm_events);
+	umr_cache->mm_events = NULL;
+}
+
+static inline void psm3_verbs_uffd_collect(psm2_umrc_t umrc, uint32_t event, uint64_t addr, uint64_t len)
+{
+	psm2_mr_cache_t cache = (psm2_mr_cache_t)umrc->mr_cache;
+	psm2_umrc_event_t mm_event;
+
+	if (cache->umr_cache.lock)
+ 		PSMI_LOCK(cache->ep->mq->progress_lock);
+	if (cache->umr_cache.event_queue) {
+		if (TAILQ_EMPTY(&cache->umrc_event_list))
+			mm_event = cache->umr_cache.mm_events;
+		else {
+			if (cache->umr_cache.queue_cnt < UMR_CACHE_QUEUE_DEPTH)
+				mm_event = TAILQ_LAST(&cache->umrc_event_list, umrc_event_list) +1;
+			else {
+				if (cache->umr_cache.lock)
+					PSMI_UNLOCK(cache->ep->mq->progress_lock);
+				_HFI_ERROR("max_event_queue exceeded maximum supported\n");
+				return;
+			}
+		}
+		mm_event->addr = addr;
+		mm_event->length = len;
+		mm_event->event = event;
+		cache->umr_cache.queue_cnt++;
+		TAILQ_INSERT_TAIL(&cache->umrc_event_list, mm_event, next);
+		_HFI_MMDBG("** uffd event ** cache=%p addr=0x%lx len=0x%lx uffd event=0x%x fd=%d queue_cnt=%u\n",
+					cache, addr, len, event, *cache->umr_cache.fd, cache->umr_cache.queue_cnt);
+	} else {
+		_HFI_MMDBG("** uffd event ** cache=%p addr=0x%lx len=0x%lx uffd event=0x%x fd=%d\n",
+				cache, addr, len, event, *cache->umr_cache.fd);
+		psm3_verbs_umrc_event_process(cache, event, addr, len);
+	}
+	if (cache->umr_cache.lock)
+ 		PSMI_UNLOCK(cache->ep->mq->progress_lock);
+}
+
+void psm3_verbs_uffd_event(psm2_ep_t ep)
+{
+	psm2_mr_cache_t cache = ep->verbs_ep.umrc.mr_cache;
+	psm2_umrc_t  umrc = &ep->verbs_ep.umrc;
+	struct uffd_msg msg;
+	int ret;
+
+	do {
+		ret = read(ep->verbs_ep.umrc.fd, &msg, sizeof(msg));
+		if (ret != sizeof(msg)) {
+			if (errno != EAGAIN)
+				break;
+			continue;
+		}
+		switch (msg.event) {
+		case UFFD_EVENT_REMOVE:
+			cache->umr_cache.stats.remove++;
+			psm3_verbs_uffd_collect(umrc, msg.event, msg.arg.remove.start,
+							msg.arg.remove.end - msg.arg.remove.start);
+			break;
+		case UFFD_EVENT_UNMAP:
+			cache->umr_cache.stats.unmap++;
+			psm3_verbs_uffd_collect(umrc, msg.event, msg.arg.remove.start,
+							msg.arg.remove.end - msg.arg.remove.start);
+			break;
+		case UFFD_EVENT_REMAP:
+			cache->umr_cache.stats.remap++;
+			psm3_verbs_uffd_collect(umrc, msg.event, msg.arg.remap.from, msg.arg.remap.len);
+			break;
+		default:
+			_HFI_ERROR("uffd unexpected event\n");
+			break;
+		}
+	} while (ret > 0);
+}
+#endif // UMR_CACHE
+#endif // PSM_HAVE_REG_MR

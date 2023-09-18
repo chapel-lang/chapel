@@ -11,9 +11,8 @@ module Timer {
     proc stop() {
       halt("Called Abstract Base stop method");
     }
-    proc elapsed() {
+    proc elapsed(): real {
       halt("Called Abstract Base elapsed method");
-      return 0.0;
     }
   }
 
@@ -30,7 +29,9 @@ module Timer {
     }
   }
 
-  extern const CLOCKS_PER_SEC: real(64);
+  // Note: clock_t could be any integer or floating-point type,
+  // so these might require C helpers on some platforms.
+  extern const CLOCKS_PER_SEC: uint(64);
   extern proc clock(): uint(64);
   class ClockTimer: TimerImpl {
 

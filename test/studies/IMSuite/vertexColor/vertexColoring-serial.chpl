@@ -22,7 +22,7 @@
 pragma "error mode fatal"
 module vertexColoring {
 
-  use Random, IO;
+    use Random, IO, Math;
     use VisualDebug;
 
     config const inputFile = "input/inputvertexColoring_64_-rn.txt";
@@ -174,7 +174,7 @@ module vertexColoring {
 
     /* Reduces the number of colors used in the graph to six. */
     proc sixColor(){
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             forall j in 1..node.children.size {
                 sendColor(node.children[j], node.color);
@@ -183,7 +183,7 @@ module vertexColoring {
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref again, ref nval) {
             const node = nodeQ!;
             if(i!=root){
                 again[i]=false;
@@ -220,7 +220,7 @@ module vertexColoring {
             if(nodeSet[root]!.color == ncolor) then ncolor = (ncolor+1)%3;
             nodeSet[root]!.color = ncolor;
             
-            forall (i, nodeQ) in zip(D, nodeSet) {
+            forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
                 const node = nodeQ!;
                 var cparent=0,cchild=0;
                 if(node.color == x) {
@@ -248,7 +248,7 @@ module vertexColoring {
 
    /* Shifts the color of parent down to its children. */
    proc shiftDown() {
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             for j in 1..node.children.size {
                     sendColor(node.children[j], node.color);
@@ -256,7 +256,7 @@ module vertexColoring {
             }
         }
 
-        forall (i, nodeQ) in zip(D, nodeSet) {
+        forall (i, nodeQ) in zip(D, nodeSet) with (ref nval) {
             const node = nodeQ!;
             if(i != root) then node.color = node.receivedColor;
             if(loadValue!=0) then nval[i] = loadweight(nval[i]+i);

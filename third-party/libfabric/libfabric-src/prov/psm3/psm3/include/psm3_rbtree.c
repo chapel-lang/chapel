@@ -85,6 +85,7 @@
 
 #include <string.h> /* for memset declaration */
 
+#ifndef ENABLE_OVERLAPPING_SEARCH
 // RBTREE_CMP should be a comparator, i.e. RBTREE_CMP(a, b) should evaluate to
 // -1, 0, or 1 depending on if a < b, a == b, or a > b, respectively.
 #ifdef RBTREE_CMP
@@ -658,7 +659,9 @@ ips_cl_qmap_predecessor(
 }
 #endif /* RBTREE_NO_EMIT_IPS_CL_QMAP_PREDECESSOR */
 
-#if defined(RBTREE_GET_LEFTMOST)
+#endif // ENABLE_OVERLAPPING_SEARCH
+
+#if defined(RBTREE_GET_LEFTMOST) || defined(ENABLE_OVERLAPPING_SEARCH)
 /*
  * return the first node with buffer overlapping or zero.
  */

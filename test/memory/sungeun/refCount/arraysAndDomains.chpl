@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config const n = 4;
 config const printProgress = false;
@@ -42,7 +42,7 @@ proc main() {
 
   writeln("Calling sync begin do_array() with global:");
   m1 = memoryUsed();
-  serial do sync begin do_array(A);
+  serial do sync begin with (ref A) do_array(A);
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
   if printMemStats then printMemAllocs();
@@ -52,7 +52,7 @@ proc main() {
   serial do sync {
     const D = {1..n};
     var A: [D] int;
-    begin do_array(A);
+    begin with (ref A) do_array(A);
   }
   m2 = memoryUsed();
   writeln("\t", m2-m1, " bytes leaked");
@@ -90,7 +90,7 @@ proc main() {
 
 proc do_local_domain() {
   var D, D_copy, D_slice, D_expand, D_exterior, D_interior, D_translate: domain(1);
-  var D_strided: domain(1, stridable=true);
+  var D_strided: domain(1, strides=strideKind.any);
 
   if printProgress then writeln("Initializing D");
   D = {1..n};   // add ref count and decrement in destructor
@@ -137,7 +137,7 @@ proc do_local_array() {
   var A_reindex = A.reindex(4..n+3); // create new descriptor, ref count
 }
 
-proc do_array(A:[]) {
+proc do_array(ref A:[]) {
   if printProgress then writeln("Creating A_copy");
   var A_copy = A;                      // create nw array, ref count
 

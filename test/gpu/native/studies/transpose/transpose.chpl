@@ -2,15 +2,79 @@ use CTypes;
 use GpuDiagnostics;
 use GPU;
 use Time;
+use Math;
+
+// This test implements matrix transpose operations based on the following example:
+//
+// https://www.nvidia.com/content/cudazone/cuda_sdk/Linear_Algebra.html#transpose
+//
+// In particular, the naive implType represents a naive matrix multiplication
+// (one that just writes (i,j) to (j,i)). The clever and lowlevel versions
+// represent the implementation that does memory coalescing. The lowlevel
+// verion uses a GPU kernel launch primitive to get a 2D kernel (which matches
+// the CUDA version more closely), whereas the clever version uses a 1D
+// kernel that is implicitly launched from a foreach loop.
+enum implType {
+    naive, clever, lowlevel
+}
+use implType;
 
 config const perftest = false;
 config const numTrials = 10;
-config const useNaive = false;
+config const impl = naive;
 config const sizeX = 2048*8,
              sizeY = 2048*8;
 config param blockSize = 16;
 config param blockPadding = 1;
 config type dataType = real(32);
+
+inline proc transposeNaive(original, ref output) {
+  @assertOnGpu
+  foreach (x,y) in original.domain {
+    output[y,x] = original[x,y];
+  }
+}
+
+inline proc transposeClever(original, ref output) {
+  @assertOnGpu
+  foreach 0..<original.size {
+    setBlockSize(blockSize * blockSize);
+    param paddedBlockSize = blockSize + blockPadding;
+    var smArrPtr = createSharedArray(dataType, paddedBlockSize*blockSize);
+
+    // The blockIdx and threadIdx can be computed from the index variable
+    // of the loop if need be. However, using the GPU's underlying primitives
+    // to get these values is cleaner (and less brittle in case the block
+    // size changes).
+    const blockIdx = __primitive("gpu blockIdx x"),
+          threadIdx = __primitive("gpu threadIdx x");
+
+    const blockIdxX = blockIdx % (sizeX / blockSize),
+          blockIdxY = blockIdx / (sizeX / blockSize),
+          // Swapping thread X/Y here is safe because these coordinates are
+          // entirely "synthetic": all we need is a one-to-one correspondence
+          // of 1D blocks and threads to 2D blocks and threads.
+          //
+          // However, swapping X/Y seems to have a significant performance
+          // impact, for reasons yet unknown.
+          threadIdxY = threadIdx % blockSize,
+          threadIdxX = threadIdx / blockSize;
+    var idxX = blockIdxX * blockSize + threadIdxX,
+        idxY = blockIdxY * blockSize + threadIdxY;
+    // Store the input data in transposed order into temporary array
+    // i.e., the below is effectively smArrPtr[y][x] instead of
+    // smArrPtr[x][y] for copy
+    smArrPtr[paddedBlockSize * threadIdxX + threadIdxY] = original[idxX, idxY];
+
+    // synchronize the threads
+    syncThreads();
+
+    // Swap coordinates and write back out
+    idxX = blockIdxY * blockSize + threadIdxX;
+    idxY = blockIdxX * blockSize + threadIdxY;
+    output[idxX, idxY] = smArrPtr[paddedBlockSize * threadIdxY + threadIdxX];
+  }
+}
 
 pragma "codegen for GPU"
 pragma "always resolve function"
@@ -44,57 +108,66 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
   }
 }
 
-inline proc transposeLowLevel(original, output) {
+inline proc transposeLowLevel(original, ref output) {
   __primitive("gpu kernel launch",
-          c"transposeMatrix",
+          "transposeMatrix":chpl_c_string,
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
           /* block size */ blockSize, blockSize, 1,
-          /* kernel args */ c_ptrTo(output), c_ptrTo(original), sizeX, sizeY);
+          /* kernel args */ c_ptrTo(output), c_ptrToConst(original), sizeX, sizeY);
 }
 
-inline proc transposeNaive(original, output) {
-  foreach (x,y) in original.domain do output[y,x] = original[x,y];
+var originalHost: [0..#sizeX, 0..#sizeY] dataType;
+var outputHost: [0..#sizeY, 0..#sizeX] dataType;
+forall (a, (x,y)) in zip(originalHost, originalHost.domain) {
+  a = x*sizeY + y;
 }
+
+var timer: stopwatch;
+
 
 on here.gpus[0] {
-  var original: [0..#sizeX, 0..#sizeY] dataType;
-  var output: [0..#sizeY, 0..#sizeY] dataType;
+  var originalDev: [0..#sizeX, 0..#sizeY] dataType;
+  var outputDev: [0..#sizeY, 0..#sizeX] dataType;
 
-  for (a, (x,y)) in zip(original, original.domain) {
-    a = x*sizeY + y;
-  }
+  originalDev = originalHost;
 
   // Make sure a is on device if we're using unified memory.
-  foreach a in original do a = a + 1;
+  foreach a in originalDev do a = a + 1;
 
-  var timer: stopwatch;
   for 1..#numTrials {
     timer.start();
-    if useNaive {
-      transposeNaive(original, output);
-    } else {
-      transposeLowLevel(original, output);
+    select impl {
+      when naive do transposeNaive(originalDev, outputDev);
+      when clever do transposeClever(originalDev, outputDev);
+      when lowlevel do transposeLowLevel(originalDev, outputDev);
     }
     timer.stop();
   }
-  var elapsed = timer.elapsed() / numTrials;
 
-  var sizeInBytes = original.size * numBytes(dataType);
-  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
-  var gbPerSec = sizeInGb / elapsed;
-  if perftest {
-    writeln("Wall clock time (s): ", elapsed);
-    writeln("Performance (GB/s): ", gbPerSec);
-  }
-
-  var passed = true;
-  for (x,y) in original.domain {
-    if original[x,y] != output[y,x] {
-      writeln("Incorrect output at ", (x,y),
-              ". Expected ", original[x,y],
-              ", got ", output[y,x]);
-      passed = false;
-    }
-  }
-  writeln(if passed then "Passed" else "Failed");
+  outputHost = outputDev;
 }
+
+var elapsed = timer.elapsed() / numTrials;
+
+if perftest {
+var sizeInBytes = originalHost.size * numBytes(dataType);
+  writeln("Wall clock time (s): ", elapsed);
+  var sizeInGb = sizeInBytes / (1000.0 * 1000.0 * 1000.0);
+  var gibPerSec = sizeInGb / elapsed;
+  // GiB/s is the precise metric here. However, GB/s can be used interchangably
+  // and that's how we started testing. Changing it confuses the test system.
+  // Note that we report this as GiB/s in the relevant plot.
+  writeln("Performance (GB/s): ", gibPerSec);
+}
+
+var passed = true;
+for (x,y) in originalHost.domain {
+  // -1 because we incremented the input once as a warmup
+  if !isClose(originalHost[x,y], outputHost[y,x]-1) {
+    writeln("Incorrect output at ", (x,y),
+            ". Expected ", originalHost[x,y],
+            ", got ", outputHost[y,x]);
+    passed = false;
+  }
+}
+writeln(if passed then "Passed" else "Failed");

@@ -20,6 +20,7 @@ param Dtm = "D.tdmeth";
 proc type D.tdmeth param do  return Dtm;
 
 var xx = new C();
+var xxu = new unmanaged C();
 var yy: owned C?;
 var dd = new D(int);
 
@@ -102,81 +103,82 @@ proc main {
   //var z14c = xx:tm()!;
   //check("z14c = xx:tm()!", z14c, "borrowed C");
 
-  var z15a  = xx: unmanaged C;
+  var z15a  = xxu: unmanaged C;
   check("z15a  = xx: unmanaged C", z15a, "unmanaged C");
 
-  var z15b = xx: unmanaged C?;
+  var z15b = xxu: unmanaged C?;
   check("z15b = xx: unmanaged C?", z15b, "unmanaged C?");
 
   // var z15c = xx: unmanaged C!; // parsed 'unmanaged (C!)' -- illegal
   // check("z15c = xx: unmanaged C!", z15c, "unmanaged C");
 
-  var z16a = xx!: unmanaged C;
+  var z16a = xxu!: unmanaged C;
   check("z16a = xx!: unmanaged C", z16a, "unmanaged C");
 
-  var z16b = xx!: unmanaged C?;
+  var z16b = xxu!: unmanaged C?;
   check("z16b = xx!: unmanaged C?", z16b, "unmanaged C?");
 
   // var z16c = xx!: unmanaged C!; // like z15c
   // check("z16c = xx!: unmanaged C!", z16c, "unmanaged C");
 
-  var z17a = xx : class? : unmanaged class; // cast binds most loosely, left associative
+  var z17a = xxu : class? : unmanaged class; // cast binds most loosely, left associative
   check("z17a = xx : class?: unmanaged class", z17a, "unmanaged C");
 
-  var z17b = xx : class? : unmanaged C; // same as z17a
+  var z17b = xxu : class? : unmanaged C; // same as z17a
   check("z17b = xx : class? : unmanaged C", z17b, "unmanaged C");
 
   // z18a,b are not interesting, just making sure the compiler accepts them
-  var z18a = xx : class? : unmanaged class?;
+  var z18a = xxu : class? : unmanaged class?;
   check("z18a = xx : class : unmanaged class?", z18a, "unmanaged C?");
 
-  var z18b = xx : class? : unmanaged C?;
+  var z18b = xxu : class? : unmanaged C?;
   check("z18b = xx : class? : unmanaged C?", z18b, "unmanaged C?");
 
   // var z = new C() : unmanaged(3,5); -- errors all around
 
-  var z19a = new C() : unmanaged;
+  var z19a = new unmanaged C() : unmanaged;
   check("z19a = newC() : unmanaged", z19a, "unmanaged C");
 
-  var z19b = new C()? : unmanaged;
+  var z19b = new unmanaged C()? : unmanaged;
   check("z19b = new C()? : unmanaged", z19b, "unmanaged C?");
 
-  var z19c = new C?() : unmanaged;
+  var z19c = new unmanaged C?() : unmanaged;
   check("z19c = new C?() :unmanaged", z19c, "unmanaged C?");
 
   // var z = new C() : unmanaged?; -- error: cannot make _uninstantiated into a unmanaged class
 
-  var z19d = new C(): unmanaged class?;
+  var z19d = new unmanaged C(): unmanaged class?;
   check("z19d = new C(): unmanaged class?", z19d, "unmanaged C?");
 
-  var z19e = (new owned C()).borrow() : unmanaged class?;
-  check("z19e = (new owned C()).borrow() :unmanaged class?", z19e, "unmanaged C?");
+  // cannot cast borrowed to unmanaged
+  // var z19e = (new owned C()).borrow() : unmanaged class?;
+  // check("z19e = (new owned C()).borrow() :unmanaged class?", z19e, "unmanaged C?");
 
   // '.' binds more tightly than 'new'
   // param z = new C().meth;  -- error: C.meth is not a type method
 
-  // treated as new (C().tmeth)()
-  var z20a = new C().tmeth();
-  check("z20a = new C().m", z20a, "owned D(int(64))");
+  // treated as new (C().tmeth)() -- commented out to avoid warning
+  //var z20a = new C().tmeth();
+  //check("z20a = new C().m", z20a, "owned D(int(64))");
 
   param z20b = new C()!.meth;  // '.' is applied last
   checkCm("z20b = new C()!.meth", z20b);
 
-  var z20c = new C()?.tmeth();
-  check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
+  //var z20c = new C()?.tmeth();
+  //check("z20c = new C()?.tmeth", z20c, "owned D(int(64))");
 
-  var z20d = new unmanaged (C()?.tmeth)();  // like z20a
-  check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
+  //var z20d = new unmanaged (C()?.tmeth)();  // like z20a
+  //check("z20d = new unmanaged C()?.tmeth", z20d, "unmanaged D(int(64))");
 
   // same as z20 series, with parens at end
-  var z21a = new C().xmeth(5.5);
-  check("z21a = new C().xmeth(5.5)", z21a, "owned X(real(64))");
+  //var z21a = new C().xmeth(5.5);
+  //check("z21a = new C().xmeth(5.5)", z21a, "owned X(real(64))");
 
-  var z21c = new C()?.xmeth(5.5);
-  check("z21c = new C()?.xmeth(5.5)", z21c, "owned X(real(64))");
+  //var z21c = new C()?.xmeth(5.5);
+  //check("z21c = new C()?.xmeth(5.5)", z21c, "owned X(real(64))");
 
-  var z21d = new unmanaged C()?.xmeth(5.5);  // like z20a
-  check("z21d = new unmanaged C()?.xmeth(5.5)", z21d, "unmanaged X(real(64))");
+  //var z21d = new unmanaged C()?.xmeth(5.5);  // like z20a
+  //check("z21d = new unmanaged C()?.xmeth(5.5)", z21d, "unmanaged X(real(64))");
 
   type z22a = (unmanaged C).tmeth;
   check("z22a = (unmanaged C).tmeth", z22a, "D(int(64))");
@@ -207,3 +209,5 @@ proc main {
 
   compilerError("done", 0);
 }
+
+delete xxu;

@@ -157,7 +157,7 @@ proc SPAdot(A: [?Adom], B: [?Bdom]) where isCSArr(A) && isCSArr(B) {
 
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 /* Sparse-accumulator */
 record _SPA {
   var cols: domain(1);
@@ -167,24 +167,24 @@ record _SPA {
       ls: list(int);      // indices
 
   /* Reset w, b, and ls to empty */
-  proc reset() {
+  proc ref reset() {
     b = false;
     w = 0;
     ls.clear();
   }
 
   /* Accumulate nonzeros in SPA */
-  proc scatter(const value, const pos) {
+  proc ref scatter(const value, const pos) {
     if this.b[pos] == 0 {
       this.w[pos] = value;
       this.b[pos] = true;
-      this.ls.append(pos);
+      this.ls.pushBack(pos);
     } else {
       this.w[pos] += value;
     }
   }
 
-  proc gather(ref C: [?Cdom], i) {
+  proc ref gather(ref C: [?Cdom], i) {
     const nzcur = C.IR[i];
     var nzi = 0;
     this.ls.sort();

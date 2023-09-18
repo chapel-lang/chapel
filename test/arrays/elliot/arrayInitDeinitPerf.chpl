@@ -1,6 +1,6 @@
 use Time, CTypes;
 config const size = 40_000_000;
-config const innerSize = 40;
+config const innerSize : c_size_t = 40;
 
 config const printTiming = true;
 
@@ -23,10 +23,10 @@ proc timeit(type T, desc: string) {
 record RAlloc {
   var p: c_ptr(int);
   proc init() {
-    p = c_malloc(int, innerSize);
+    p = allocate(int, innerSize);
     for i in 0..<innerSize do p[i] = 0;
   }
-  proc deinit() { c_free(p); }
+  proc deinit() { deallocate(p); }
 }
 
 timeit([1..size][1..innerSize] int, "AoA");

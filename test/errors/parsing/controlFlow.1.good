@@ -13,67 +13,73 @@ controlFlow.chpl:16: error: 'continue' is not allowed outside of a loop
 controlFlow.chpl:21: error: 'break' is not allowed in a 'forall' statement
 controlFlow.chpl:22: error: could not find label 'someLabel' for 'break' statement
 controlFlow.chpl:24: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:27: error: 'break' is not allowed in a 'coforall' statement
+controlFlow.chpl:27: error: 'break' is not allowed in a 'foreach' statement
 controlFlow.chpl:28: error: could not find label 'someLabel' for 'break' statement
-controlFlow.chpl:29: error: 'continue' is not allowed in a 'coforall' statement
 controlFlow.chpl:30: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:33: error: 'break' is not allowed in an 'on' statement
+controlFlow.chpl:33: error: 'break' is not allowed in a 'coforall' statement
 controlFlow.chpl:34: error: could not find label 'someLabel' for 'break' statement
-controlFlow.chpl:35: error: 'continue' is not allowed in an 'on' statement
+controlFlow.chpl:35: error: 'continue' is not allowed in a 'coforall' statement
 controlFlow.chpl:36: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:39: error: 'break' is not allowed in a 'begin' statement
+controlFlow.chpl:39: error: 'break' is not allowed in an 'on' statement
 controlFlow.chpl:40: error: could not find label 'someLabel' for 'break' statement
-controlFlow.chpl:41: error: 'continue' is not allowed in a 'begin' statement
+controlFlow.chpl:41: error: 'continue' is not allowed in an 'on' statement
 controlFlow.chpl:42: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:45: error: 'break' is not allowed in a 'sync' statement
+controlFlow.chpl:45: error: 'break' is not allowed in a 'begin' statement
 controlFlow.chpl:46: error: could not find label 'someLabel' for 'break' statement
-controlFlow.chpl:47: error: 'continue' is not allowed in a 'sync' statement
+controlFlow.chpl:47: error: 'continue' is not allowed in a 'begin' statement
 controlFlow.chpl:48: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:51: error: 'break' is not allowed in a 'cobegin' statement
+controlFlow.chpl:51: error: 'break' is not allowed in a 'sync' statement
 controlFlow.chpl:52: error: could not find label 'someLabel' for 'break' statement
-controlFlow.chpl:53: error: 'continue' is not allowed in a 'cobegin' statement
+controlFlow.chpl:53: error: 'continue' is not allowed in a 'sync' statement
 controlFlow.chpl:54: error: could not find label 'someLabel' for 'continue' statement
-controlFlow.chpl:58: In function 'wrapper2':
-controlFlow.chpl:59: error: 'break' is not allowed outside of a loop
-controlFlow.chpl:58: note: cannot 'break' out of a procedure
-controlFlow.chpl:60: error: 'break' to label 'actualLabel' outside of a procedure is not allowed
-controlFlow.chpl:58: note: cannot 'break' out of a procedure
-controlFlow.chpl:61: error: 'continue' is not allowed outside of a loop
-controlFlow.chpl:58: note: cannot 'continue' out of a procedure
-controlFlow.chpl:62: error: 'continue' to label 'actualLabel' outside of a procedure is not allowed
-controlFlow.chpl:58: note: cannot 'continue' out of a procedure
-controlFlow.chpl:67: error: 'break' is not allowed in a 'forall' statement
-controlFlow.chpl:68: error: 'break' to label 'actualLabel' outside of a 'forall' statement is not allowed
-controlFlow.chpl:66: note: cannot 'break' out of a 'forall' statement
-controlFlow.chpl:70: error: 'continue' to label 'actualLabel' outside of a 'forall' statement is not allowed
-controlFlow.chpl:66: note: cannot 'continue' out of a 'forall' statement
-controlFlow.chpl:73: error: 'break' is not allowed in a 'coforall' statement
-controlFlow.chpl:74: error: 'break' to label 'actualLabel' outside of a 'coforall' statement is not allowed
-controlFlow.chpl:72: note: cannot 'break' out of a 'coforall' statement
-controlFlow.chpl:75: error: 'continue' is not allowed in a 'coforall' statement
-controlFlow.chpl:76: error: 'continue' to label 'actualLabel' outside of a 'coforall' statement is not allowed
-controlFlow.chpl:72: note: cannot 'continue' out of a 'coforall' statement
-controlFlow.chpl:79: error: 'break' is not allowed in an 'on' statement
-controlFlow.chpl:80: error: 'break' to label 'actualLabel' outside of an 'on' statement is not allowed
-controlFlow.chpl:78: note: cannot 'break' out of an 'on' statement
-controlFlow.chpl:81: error: 'continue' is not allowed in an 'on' statement
-controlFlow.chpl:82: error: 'continue' to label 'actualLabel' outside of an 'on' statement is not allowed
-controlFlow.chpl:78: note: cannot 'continue' out of an 'on' statement
-controlFlow.chpl:85: error: 'break' is not allowed in a 'begin' statement
-controlFlow.chpl:86: error: 'break' to label 'actualLabel' outside of a 'begin' statement is not allowed
-controlFlow.chpl:84: note: cannot 'break' out of a 'begin' statement
-controlFlow.chpl:87: error: 'continue' is not allowed in a 'begin' statement
-controlFlow.chpl:88: error: 'continue' to label 'actualLabel' outside of a 'begin' statement is not allowed
-controlFlow.chpl:84: note: cannot 'continue' out of a 'begin' statement
-controlFlow.chpl:91: error: 'break' is not allowed in a 'sync' statement
-controlFlow.chpl:92: error: 'break' to label 'actualLabel' outside of a 'sync' statement is not allowed
-controlFlow.chpl:90: note: cannot 'break' out of a 'sync' statement
-controlFlow.chpl:93: error: 'continue' is not allowed in a 'sync' statement
-controlFlow.chpl:94: error: 'continue' to label 'actualLabel' outside of a 'sync' statement is not allowed
-controlFlow.chpl:90: note: cannot 'continue' out of a 'sync' statement
-controlFlow.chpl:97: error: 'break' is not allowed in a 'cobegin' statement
-controlFlow.chpl:98: error: 'break' to label 'actualLabel' outside of a 'cobegin' statement is not allowed
-controlFlow.chpl:96: note: cannot 'break' out of a 'cobegin' statement
-controlFlow.chpl:99: error: 'continue' is not allowed in a 'cobegin' statement
-controlFlow.chpl:100: error: 'continue' to label 'actualLabel' outside of a 'cobegin' statement is not allowed
-controlFlow.chpl:96: note: cannot 'continue' out of a 'cobegin' statement
+controlFlow.chpl:57: error: 'break' is not allowed in a 'cobegin' statement
+controlFlow.chpl:58: error: could not find label 'someLabel' for 'break' statement
+controlFlow.chpl:59: error: 'continue' is not allowed in a 'cobegin' statement
+controlFlow.chpl:60: error: could not find label 'someLabel' for 'continue' statement
+controlFlow.chpl:64: In function 'wrapper2':
+controlFlow.chpl:65: error: 'break' is not allowed outside of a loop
+controlFlow.chpl:64: note: cannot 'break' out of a procedure
+controlFlow.chpl:66: error: 'break' to label 'actualLabel' outside of a procedure is not allowed
+controlFlow.chpl:64: note: cannot 'break' out of a procedure
+controlFlow.chpl:67: error: 'continue' is not allowed outside of a loop
+controlFlow.chpl:64: note: cannot 'continue' out of a procedure
+controlFlow.chpl:68: error: 'continue' to label 'actualLabel' outside of a procedure is not allowed
+controlFlow.chpl:64: note: cannot 'continue' out of a procedure
+controlFlow.chpl:73: error: 'break' is not allowed in a 'forall' statement
+controlFlow.chpl:74: error: 'break' to label 'actualLabel' outside of a 'forall' statement is not allowed
+controlFlow.chpl:72: note: cannot 'break' out of a 'forall' statement
+controlFlow.chpl:76: error: 'continue' to label 'actualLabel' outside of a 'forall' statement is not allowed
+controlFlow.chpl:72: note: cannot 'continue' out of a 'forall' statement
+controlFlow.chpl:79: error: 'break' is not allowed in a 'foreach' statement
+controlFlow.chpl:80: error: 'break' to label 'actualLabel' outside of a 'foreach' statement is not allowed
+controlFlow.chpl:78: note: cannot 'break' out of a 'foreach' statement
+controlFlow.chpl:85: error: 'break' is not allowed in a 'coforall' statement
+controlFlow.chpl:86: error: 'break' to label 'actualLabel' outside of a 'coforall' statement is not allowed
+controlFlow.chpl:84: note: cannot 'break' out of a 'coforall' statement
+controlFlow.chpl:87: error: 'continue' is not allowed in a 'coforall' statement
+controlFlow.chpl:88: error: 'continue' to label 'actualLabel' outside of a 'coforall' statement is not allowed
+controlFlow.chpl:84: note: cannot 'continue' out of a 'coforall' statement
+controlFlow.chpl:91: error: 'break' is not allowed in an 'on' statement
+controlFlow.chpl:92: error: 'break' to label 'actualLabel' outside of an 'on' statement is not allowed
+controlFlow.chpl:90: note: cannot 'break' out of an 'on' statement
+controlFlow.chpl:93: error: 'continue' is not allowed in an 'on' statement
+controlFlow.chpl:94: error: 'continue' to label 'actualLabel' outside of an 'on' statement is not allowed
+controlFlow.chpl:90: note: cannot 'continue' out of an 'on' statement
+controlFlow.chpl:97: error: 'break' is not allowed in a 'begin' statement
+controlFlow.chpl:98: error: 'break' to label 'actualLabel' outside of a 'begin' statement is not allowed
+controlFlow.chpl:96: note: cannot 'break' out of a 'begin' statement
+controlFlow.chpl:99: error: 'continue' is not allowed in a 'begin' statement
+controlFlow.chpl:100: error: 'continue' to label 'actualLabel' outside of a 'begin' statement is not allowed
+controlFlow.chpl:96: note: cannot 'continue' out of a 'begin' statement
+controlFlow.chpl:103: error: 'break' is not allowed in a 'sync' statement
+controlFlow.chpl:104: error: 'break' to label 'actualLabel' outside of a 'sync' statement is not allowed
+controlFlow.chpl:102: note: cannot 'break' out of a 'sync' statement
+controlFlow.chpl:105: error: 'continue' is not allowed in a 'sync' statement
+controlFlow.chpl:106: error: 'continue' to label 'actualLabel' outside of a 'sync' statement is not allowed
+controlFlow.chpl:102: note: cannot 'continue' out of a 'sync' statement
+controlFlow.chpl:109: error: 'break' is not allowed in a 'cobegin' statement
+controlFlow.chpl:110: error: 'break' to label 'actualLabel' outside of a 'cobegin' statement is not allowed
+controlFlow.chpl:108: note: cannot 'break' out of a 'cobegin' statement
+controlFlow.chpl:111: error: 'continue' is not allowed in a 'cobegin' statement
+controlFlow.chpl:112: error: 'continue' to label 'actualLabel' outside of a 'cobegin' statement is not allowed
+controlFlow.chpl:108: note: cannot 'continue' out of a 'cobegin' statement

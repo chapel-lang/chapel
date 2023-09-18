@@ -95,7 +95,7 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
   var rho = + reduce R**2;
 
   var W: [1..n,1..1] elemType;  // helper dense column
- 
+
   for cgit in 1..cgitmax {
     // WANT (a partial reduction):
     //    const Q = + reduce(dim=2) [(i,j) in MatDom] (A(i,j) * P(j));
@@ -133,8 +133,8 @@ proc conjGrad(A: [?MatDom], X: [?VectDom]) {
 record ForallExpr1 { proc init(){} }
 record ForallExpr2 { proc init(){} }
 
-proc transpose(DestRow, SrcCol) {
+proc transpose(ref DestRow, SrcCol) {
   // a shared-memory version for now
-  forall i in 1..n do
+  forall i in 1..n with (ref DestRow) do
     DestRow(1,i) = SrcCol(i,1);
 }

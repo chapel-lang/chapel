@@ -21,6 +21,8 @@ add_public_tablegen_target(RISCVCommonTableGen)
 add_llvm_target(RISCVCodeGen
   RISCVAsmPrinter.cpp
   RISCVCallLowering.cpp
+  RISCVCodeGenPrepare.cpp
+  RISCVMakeCompressible.cpp
   RISCVExpandAtomicPseudoInsts.cpp
   RISCVExpandPseudoInsts.cpp
   RISCVFrameLowering.cpp
@@ -32,8 +34,10 @@ add_llvm_target(RISCVCodeGen
   RISCVISelLowering.cpp
   RISCVLegalizerInfo.cpp
   RISCVMachineFunctionInfo.cpp
+  RISCVMacroFusion.cpp
   RISCVMCInstLower.cpp
   RISCVMergeBaseOffset.cpp
+  RISCVRedundantCopyElimination.cpp
   RISCVRegisterBankInfo.cpp
   RISCVRegisterInfo.cpp
   RISCVSExtWRemoval.cpp
@@ -46,6 +50,7 @@ add_llvm_target(RISCVCodeGen
   Analysis
   AsmPrinter
   Core
+  IPO
   CodeGen
   MC
   RISCVDesc

@@ -458,7 +458,7 @@ struct psmx2_sendv_reply {
 };
 
 struct psmx2_req_queue {
-	fastlock_t	lock;
+	ofi_spin_t	lock;
 	struct slist	list;
 };
 
@@ -479,7 +479,7 @@ struct psmx2_fid_fabric {
 	struct util_ns		name_server;
 
 	/* list of all opened domains */
-	fastlock_t		domain_lock;
+	ofi_spin_t		domain_lock;
 	struct dlist_entry	domain_list;
 };
 
@@ -511,16 +511,16 @@ struct psmx2_trx_ctxt {
 
 	/* request pool for RMA/atomic ops */
 	struct ofi_bufpool	*am_req_pool;
-	fastlock_t		am_req_pool_lock;
+	ofi_spin_t		am_req_pool_lock;
 
 	/* lock to prevent the sequence of psm2_mq_ipeek and psm2_mq_test be
 	 * interleaved in a multithreaded environment.
 	 */
-	fastlock_t		poll_lock;
+	ofi_spin_t		poll_lock;
 
 	/* list of peers connected to this tx/rx context */
 	struct dlist_entry	peer_list;
-	fastlock_t		peer_lock;
+	ofi_spin_t		peer_lock;
 
 	/* number of pathes this tx/rx context can be polled. this include
 	 * CQs and counters, as well as domain->trx_ctxt_list.
@@ -533,9 +533,9 @@ struct psmx2_trx_ctxt {
 	struct dlist_entry	entry;
 };
 
-typedef void	(*psmx2_lock_fn_t) (fastlock_t *lock, int lock_level);
-typedef int	(*psmx2_trylock_fn_t) (fastlock_t *lock, int lock_level);
-typedef void	(*psmx2_unlock_fn_t) (fastlock_t *lock, int lock_level);
+typedef void	(*psmx2_lock_fn_t) (ofi_spin_t *lock, int lock_level);
+typedef int	(*psmx2_trylock_fn_t) (ofi_spin_t *lock, int lock_level);
+typedef void	(*psmx2_unlock_fn_t) (ofi_spin_t *lock, int lock_level);
 
 struct psmx2_fid_domain {
 	struct util_domain	util_domain;
@@ -545,16 +545,16 @@ struct psmx2_fid_domain {
 	psm2_uuid_t		uuid;
 
 	enum fi_mr_mode		mr_mode;
-	fastlock_t		mr_lock;
+	ofi_spin_t		mr_lock;
 	uint64_t		mr_reserved_key;
 	RbtHandle		mr_map;
 
 	/* list of hw contexts opened for this domain */
-	fastlock_t		trx_ctxt_lock;
+	ofi_spin_t		trx_ctxt_lock;
 	struct dlist_entry	trx_ctxt_list;
 
 	ofi_atomic32_t		sep_cnt;
-	fastlock_t		sep_lock;
+	ofi_spin_t		sep_lock;
 	struct dlist_entry	sep_list;
 
 	int			progress_thread_enabled;
@@ -659,7 +659,7 @@ struct psmx2_fid_cq {
 	size_t				event_count;
 	struct slist			event_queue;
 	struct slist			free_list;
-	fastlock_t			lock;
+	ofi_spin_t			lock;
 	struct psmx2_cq_event		*pending_error;
 	struct util_wait		*wait;
 	int				wait_cond;
@@ -686,7 +686,7 @@ struct psmx2_fid_cntr {
 	int			wait_is_local;
 	struct util_wait	*wait;
 	struct psmx2_trigger	*trigger;
-	fastlock_t		trigger_lock;
+	ofi_spin_t		trigger_lock;
 };
 
 #define PSMX2_AV_DEFAULT_SIZE	64
@@ -731,7 +731,7 @@ struct psmx2_fid_av {
 	uint64_t		flags;
 	size_t			addrlen;
 	size_t			count;
-	fastlock_t		lock;
+	ofi_spin_t		lock;
 	struct psmx2_trx_ctxt	*av_map_trx_ctxt;
 	struct util_shm		shm;
 	struct psmx2_av_hdr	*hdr;	/* shared AV header */
@@ -889,51 +889,51 @@ extern struct psmx2_fid_fabric	*psmx2_active_fabric;
  *     1 -- lock needed if there is more than one thread (including internal threads)
  *     2 -- lock needed if more then one thread accesses the same psm2 ep
  */
-static inline void psmx2_lock(fastlock_t *lock, int lock_level)
+static inline void psmx2_lock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx2_env.lock_level >= lock_level)
-		fastlock_acquire(lock);
+		ofi_spin_lock(lock);
 }
 
-static inline int psmx2_trylock(fastlock_t *lock, int lock_level)
+static inline int psmx2_trylock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx2_env.lock_level >= lock_level)
-		return fastlock_tryacquire(lock);
+		return ofi_spin_trylock(lock);
 	else
 		return 0;
 }
 
-static inline void psmx2_unlock(fastlock_t *lock, int lock_level)
+static inline void psmx2_unlock(ofi_spin_t *lock, int lock_level)
 {
 	if (psmx2_env.lock_level >= lock_level)
-		fastlock_release(lock);
+		ofi_spin_unlock(lock);
 }
 
 /* Specialized lock functions used based on FI_THREAD model */
 
-static inline void psmx2_lock_disabled(fastlock_t *lock, int lock_level)
+static inline void psmx2_lock_disabled(ofi_spin_t *lock, int lock_level)
 {
 	return;
 }
 
-static inline int psmx2_trylock_disabled(fastlock_t *lock, int lock_level)
+static inline int psmx2_trylock_disabled(ofi_spin_t *lock, int lock_level)
 {
 	return 0;
 }
 
-static inline void psmx2_lock_enabled(fastlock_t *lock, int lock_level)
+static inline void psmx2_lock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	fastlock_acquire(lock);
+	ofi_spin_lock(lock);
 }
 
-static inline void psmx2_unlock_enabled(fastlock_t *lock, int lock_level)
+static inline void psmx2_unlock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	fastlock_release(lock);
+	ofi_spin_unlock(lock);
 }
 
-static inline int psmx2_trylock_enabled(fastlock_t *lock, int lock_level)
+static inline int psmx2_trylock_enabled(ofi_spin_t *lock, int lock_level)
 {
-	return fastlock_tryacquire(lock);
+	return ofi_spin_trylock(lock);
 }
 
 int	psmx2_init_prov_info(const struct fi_info *hints, struct fi_info **info);

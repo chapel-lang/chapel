@@ -216,6 +216,9 @@ class CompositeType : public Type {
   /** Get the bytes type */
   static const RecordType* getBytesType(Context* context);
 
+  /** Get the locale type */
+  static const RecordType* getLocaleType(Context* context);
+
   /** When compiling without a standard library (for testing purposes),
       the compiler code needs to work around the fact that there
       is no definition available for the bundled types needed

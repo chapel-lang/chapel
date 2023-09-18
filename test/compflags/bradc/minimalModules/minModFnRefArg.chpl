@@ -1,5 +1,5 @@
 
-extern proc printf(f:c_string, x);
+extern proc printf(f, x);
 operator =(ref lhs, rhs) { __primitive(c"=", lhs, rhs); }
 
 proc foo(ref x) {

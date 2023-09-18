@@ -7,8 +7,8 @@ use TensorFlow.C_TensorFlow;
 
 config const filename = "graph.pb";
 
-proc deallocateBuffer(buf: c_void_ptr, size: c_size_t) {
-  extern "free" proc c_free(ptr: c_void_ptr);
+proc deallocateBuffer(buf: c_ptr(void), size: c_size_t) {
+  extern "free" proc c_free(ptr: c_ptr(void));
   c_free(buf);
 }
 
@@ -17,8 +17,8 @@ proc readBufferFromFile(filename: string) {
   extern type FILE;
   extern "fopen"  proc c_fopen(filename: c_string, mode: c_string): c_ptr(FILE);
   extern "fclose" proc c_fclose(fp: c_ptr(FILE)): c_int;
-  extern "fread"  proc c_fread(ptr: c_void_ptr, size: c_size_t, nitems: c_size_t, fp: c_ptr(FILE)): c_size_t;
-  extern "malloc" proc c_malloc(length: c_size_t): c_void_ptr;
+  extern "fread"  proc c_fread(ptr: c_ptr(void), size: c_size_t, nitems: c_size_t, fp: c_ptr(FILE)): c_size_t;
+  extern "malloc" proc c_malloc(length: c_size_t): c_ptr(void);
 
   const length = getFileSize(filename);
   var data = c_malloc(length: c_size_t);

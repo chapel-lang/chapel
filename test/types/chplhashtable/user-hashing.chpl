@@ -1,11 +1,11 @@
 use Map;
 
-record MyRecord {
+record MyRecord : hashable {
   var i = 1;
 
   proc hash() {
     writeln("called user hash");
-    return i;
+    return i : uint;
   }
 }
 

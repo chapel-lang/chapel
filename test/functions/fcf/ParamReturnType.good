@@ -1,0 +1,2 @@
+ParamReturnType.chpl:1: error: a captured proc cannot return by 'param' intent
+ParamReturnType.chpl:2: error: illegal access of procedure

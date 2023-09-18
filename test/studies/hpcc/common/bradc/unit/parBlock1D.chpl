@@ -1,9 +1,9 @@
 use BlockDist;
 
-var Dist = new dmap(new Block(boundingBox={1..9}));
+var Dist = new blockDist(boundingBox={1..9});
 
-var D1 = new _domain(Dist.newRectangularDom(1, int(64), false));
-var D2 = new _domain(Dist.newRectangularDom(1, int(64), false));
+var D1 = new _domain(Dist.newRectangularDom(1, int(64), strideKind.one));
+var D2 = new _domain(Dist.newRectangularDom(1, int(64), strideKind.one));
 D1.setIndices({1..9});
 D2.setIndices({2..10});
 

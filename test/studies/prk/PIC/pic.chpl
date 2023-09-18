@@ -6,6 +6,7 @@
 
 require "random_draw.h", "random_draw.c";
 use Time, CTypes;
+import Math.pi;
 
 // use random_draw library from PRK repo
 extern proc LCG_init();
@@ -120,7 +121,7 @@ for niter in 0..iterations {
 
   if niter == 1 then t.start();
 
-  forall i in 0..#particles.size {
+  forall i in 0..#particles.size with (ref particles) {
 
     var x0:real, y0:real; // for debug mode
 
@@ -196,6 +197,7 @@ proc initializeGeometric() {
 }
 
 proc initializeSinusoidal() {
+  use Math;
 
   const step = pi/L;
 

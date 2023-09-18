@@ -10,7 +10,7 @@ class Parent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y: int;
 
   proc init(yVal: int, xVal: int) {
@@ -20,7 +20,8 @@ class Child : Parent {
 }
 
 proc main() {
-  var child = (new owned Child(10, 11)).borrow();
+  var ownChild = new owned Child(10, 11);
+  var child = ownChild.borrow();
   writeln(child.type:string);
   writeln(child);
 }

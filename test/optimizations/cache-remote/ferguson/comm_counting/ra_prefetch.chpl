@@ -40,7 +40,7 @@ proc test(n_prefetch:int): (int,real) {
   on Locales[1] {
     var clock : stopwatch;
     var sum = 0;
-    var elapsed_time = INFINITY;
+    var elapsed_time = inf;
 
 
     for i in 1..n_experiments {

@@ -97,6 +97,11 @@ class CanPassResult {
                     const types::Type* actualT,
                     const types::Type* formalT);
 
+  static bool
+  canConvertCPtr(Context* context,
+                 const types::Type* actualT,
+                 const types::Type* formalT);
+
   static bool canConvertParamNarrowing(Context* context,
                                        const types::QualifiedType& actualType,
                                        const types::QualifiedType& formalType);
@@ -180,12 +185,12 @@ CanPassResult canPass(Context* context,
   commonType to serve the case of functions that enforce param, type,
   or const returns.
  */
-using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
+using KindRequirement = optional<chpl::types::QualifiedType::Kind>;
 
 /**
   Given a (non-empty) list of types (e.g., the types of various return
   statements in a function), determine the type, if any, that can be used to
-  represent all of them. Returns an llvm::Optional that contains the qualified
+  represent all of them. Returns an optional that contains the qualified
   type if one is found, or is empty otherwise.
 
   If useRequiredKind=true is specified, the requiredKind argument is treated
@@ -194,7 +199,7 @@ using KindRequirement = llvm::Optional<chpl::types::QualifiedType::Kind>;
   result in failure to find a common type, even if the types can otherwise
   by unified.
  */
-llvm::Optional<chpl::types::QualifiedType>
+optional<chpl::types::QualifiedType>
 commonType(Context* context,
            const std::vector<chpl::types::QualifiedType>& types,
            KindRequirement requiredKind = KindRequirement());

@@ -44,6 +44,7 @@ extern "C" {
 #define _default_format_read_string       "%255s"
 
 typedef FILE* _cfile;
+typedef FILE _cfiletype;
 
 static inline _cfile chpl_cnullfile(void) { return (_cfile) 0; }
 

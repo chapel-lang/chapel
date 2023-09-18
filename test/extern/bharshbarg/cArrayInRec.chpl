@@ -1,3 +1,5 @@
+use CTypes;
+
 require "cArrayInRec.h";
 
 extern record myBuffer {
@@ -5,11 +7,12 @@ extern record myBuffer {
 }
 
 record wrapper {
-  var foo : myBuffer;
+  var buf : myBuffer;
 }
 
 proc main() {
   var x : wrapper;
-  for i in 0..9 do x.foo.foo[i] = 65:c_char;
-  writeln(x.foo.foo[0]);
+  for i in 0..9 do x.buf.foo[i] = 65:c_char;
+  var s = string.createBorrowingBuffer(x.buf.foo, 10, 10);
+  writeln(s);
 }

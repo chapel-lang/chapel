@@ -10,7 +10,13 @@ class D: C {
   override proc foo() { writeln("D: ", this); }
 }
 
-var s: LinkedList(borrowed C) = makeList( (new owned C(1)).borrow(), (new owned D(2,3)).borrow(), (new owned C(4)).borrow(), (new owned D(5,6)).borrow() );
+var a = new C(1);
+var b = new D(2,3);
+var c = new C(4);
+var d = new D(5,6);
+
+var s: LinkedList(borrowed C) = makeList(a.borrow(), b.borrow(),
+                                         c.borrow(), d.borrow());
 
 writeln(s);
 

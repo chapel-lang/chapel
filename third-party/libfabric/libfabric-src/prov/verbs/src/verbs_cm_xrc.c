@@ -54,7 +54,7 @@ void vrb_next_xrc_conn_state(struct vrb_xrc_ep *ep)
 		break;
 	default:
 		assert(0);
-		VERBS_WARN(FI_LOG_EP_CTRL, "Unkown XRC connection state %d\n",
+		VRB_WARN(FI_LOG_EP_CTRL, "Unkown XRC connection state %d\n",
 			   ep->conn_state);
 	}
 }
@@ -80,7 +80,7 @@ void vrb_prev_xrc_conn_state(struct vrb_xrc_ep *ep)
 		break;
 	default:
 		assert(0);
-		VERBS_WARN(FI_LOG_EP_CTRL, "Unkown XRC connection state %d\n",
+		VRB_WARN(FI_LOG_EP_CTRL, "Unkown XRC connection state %d\n",
 			   ep->conn_state);
 	}
 }
@@ -109,13 +109,13 @@ int vrb_verify_xrc_cm_data(struct vrb_xrc_cm_data *remote,
 			      int private_data_len)
 {
 	if (sizeof(*remote) > private_data_len) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "XRC MSG EP CM data length mismatch\n");
 		return -FI_EINVAL;
 	}
 
 	if (remote->version != VRB_XRC_VERSION) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "XRC MSG EP connection protocol mismatch "
 			   "(local %"PRIu8", remote %"PRIu8")\n",
 			   VRB_XRC_VERSION, remote->version);
@@ -133,8 +133,8 @@ static void vrb_log_ep_conn(struct vrb_xrc_ep *ep, char *desc)
 	if (!fi_log_enabled(&vrb_prov, FI_LOG_INFO, FI_LOG_EP_CTRL))
 		return;
 
-	VERBS_INFO(FI_LOG_EP_CTRL, "EP %p, %s\n", (void *) ep, desc);
-	VERBS_INFO(FI_LOG_EP_CTRL,
+	VRB_INFO(FI_LOG_EP_CTRL, "EP %p, %s\n", (void *) ep, desc);
+	VRB_INFO(FI_LOG_EP_CTRL,
 		  "EP %p, CM ID %p, TGT CM ID %p, SRQN %d Peer SRQN %d\n",
 		  (void*) ep, (void *) ep->base_ep.id, (void *) ep->tgt_id,
 		  ep->srqn, ep->peer_srqn);
@@ -144,30 +144,30 @@ static void vrb_log_ep_conn(struct vrb_xrc_ep *ep, char *desc)
 		addr = rdma_get_local_addr(ep->base_ep.id);
 		len = sizeof(buf);
 		ofi_straddr(buf, &len, ep->base_ep.info_attr.addr_format, addr);
-		VERBS_INFO(FI_LOG_EP_CTRL, "EP %p src_addr: %s\n",
+		VRB_INFO(FI_LOG_EP_CTRL, "EP %p src_addr: %s\n",
 			   (void *) ep, buf);
 
 		addr = rdma_get_peer_addr(ep->base_ep.id);
 		len = sizeof(buf);
 		ofi_straddr(buf, &len, ep->base_ep.info_attr.addr_format, addr);
-		VERBS_INFO(FI_LOG_EP_CTRL, "EP %p dst_addr: %s\n",
+		VRB_INFO(FI_LOG_EP_CTRL, "EP %p dst_addr: %s\n",
 			   (void *) ep, buf);
 	}
 
 	if (ep->base_ep.ibv_qp) {
-		VERBS_INFO(FI_LOG_EP_CTRL, "EP %p, INI QP Num %d\n",
+		VRB_INFO(FI_LOG_EP_CTRL, "EP %p, INI QP Num %d\n",
 			   (void *) ep, ep->base_ep.ibv_qp->qp_num);
-		VERBS_INFO(FI_LOG_EP_CTRL, "EP %p, Remote TGT QP Num %d\n",
+		VRB_INFO(FI_LOG_EP_CTRL, "EP %p, Remote TGT QP Num %d\n",
 			   (void *) ep, ep->ini_conn->tgt_qpn);
 	}
 	if (ep->tgt_ibv_qp)
-		VERBS_INFO(FI_LOG_EP_CTRL, "EP %p, TGT QP Num %d\n",
+		VRB_INFO(FI_LOG_EP_CTRL, "EP %p, TGT QP Num %d\n",
 			   (void *) ep, ep->tgt_ibv_qp->qp_num);
 }
 
 void vrb_free_xrc_conn_setup(struct vrb_xrc_ep *ep, int disconnect)
 {
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	assert(ep->conn_setup);
 
 	/* If a disconnect is requested then the XRC bidirectional connection
@@ -207,13 +207,13 @@ int vrb_connect_xrc(struct vrb_xrc_ep *ep, struct sockaddr *addr,
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 	int ret;
 
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	assert(!ep->base_ep.id && !ep->base_ep.ibv_qp && !ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
 	ret = vrb_get_shared_ini_conn(ep, &ep->ini_conn);
 	if (ret) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "Get of shared XRC INI connection failed %d\n", ret);
 		if (!reciprocal) {
 			free(ep->conn_setup);
@@ -235,7 +235,7 @@ void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 {
 	struct vrb_domain *domain = vrb_ep_to_domain(&ep->base_ep);
 
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	domain->xrc.lock_acquire(&domain->xrc.ini_lock);
@@ -250,7 +250,7 @@ void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 		ep->ini_conn->state = VRB_INI_QP_CONNECTED;
 		ep->ini_conn->tgt_qpn = tgt_qpn;
 		ep->base_ep.id->qp = NULL;
-		VERBS_DBG(FI_LOG_EP_CTRL,
+		VRB_DBG(FI_LOG_EP_CTRL,
 			  "Set INI Conn QP %d remote TGT QP %d\n",
 			  ep->ini_conn->ini_qp->qp_num,
 			  ep->ini_conn->tgt_qpn);
@@ -263,7 +263,7 @@ void vrb_ep_ini_conn_done(struct vrb_xrc_ep *ep, uint32_t tgt_qpn)
 
 void vrb_ep_ini_conn_rejected(struct vrb_xrc_ep *ep)
 {
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	assert(ep->base_ep.id && ep->ini_conn);
 
 	vrb_log_ep_conn(ep, "INI Connection Rejected");
@@ -288,7 +288,7 @@ int vrb_resend_shared_accept_xrc(struct vrb_xrc_ep *ep,
 	struct rdma_conn_param conn_param = { 0 };
 	struct vrb_xrc_cm_data *cm_data = ep->accept_param_data;
 
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	assert(cm_data && ep->tgt_ibv_qp);
 	assert(ep->tgt_ibv_qp->qp_num == connreq->xrc.tgt_qpn);
 	assert(ep->peer_srqn == connreq->xrc.peer_srqn);
@@ -317,10 +317,10 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 	struct vrb_connreq *connreq;
 	struct rdma_conn_param conn_param = { 0 };
 	struct vrb_xrc_cm_data *cm_data = param;
-	struct vrb_xrc_cm_data connect_cm_data;
+	struct vrb_xrc_cm_data connect_cm_data = { 0 };
 	int ret;
 
-	assert(fastlock_held(&ep->base_ep.eq->lock));
+	assert(ofi_mutex_held(&ep->base_ep.eq->lock));
 	addr = rdma_get_local_addr(ep->tgt_id);
 	if (addr)
 		ofi_straddr_dbg(&vrb_prov, FI_LOG_CORE, "src_addr", addr);
@@ -362,7 +362,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 	ret = rdma_accept(ep->tgt_id, &conn_param);
 	if (OFI_UNLIKELY(ret)) {
 		ret = -errno;
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "XRC TGT, rdma_accept error %d\n", ret);
 		vrb_prev_xrc_conn_state(ep);
 		return ret;
@@ -371,7 +371,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 
 	if (ep->tgt_id->ps == RDMA_PS_UDP &&
 	    vrb_eq_add_sidr_conn(ep, cm_data, paramlen))
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			   "SIDR connection accept not added to map\n");
 
 	/* The passive side of the initial shared connection using
@@ -383,7 +383,7 @@ int vrb_accept_xrc(struct vrb_xrc_ep *ep, int reciprocal,
 					 &connect_cm_data,
 					 sizeof(connect_cm_data));
 		if (ret) {
-			VERBS_WARN(FI_LOG_EP_CTRL,
+			VRB_WARN(FI_LOG_EP_CTRL,
 				   "XRC reciprocal connect error %d\n", ret);
 			vrb_prev_xrc_conn_state(ep);
 			ep->tgt_id->qp = NULL;
@@ -404,7 +404,7 @@ int vrb_process_xrc_connreq(struct vrb_ep *ep,
 
 	xrc_ep->conn_setup = calloc(1, sizeof(*xrc_ep->conn_setup));
 	if (!xrc_ep->conn_setup) {
-		VERBS_WARN(FI_LOG_EP_CTRL,
+		VRB_WARN(FI_LOG_EP_CTRL,
 			  "Unable to allocate connection setup memory\n");
 		return -FI_ENOMEM;
 	}

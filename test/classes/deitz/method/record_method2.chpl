@@ -1,7 +1,7 @@
 record point {
   var x : real;
   var y : real;
-  proc setx(newx : real) {
+  proc ref setx(newx : real) {
     x = newx;
   }
 }

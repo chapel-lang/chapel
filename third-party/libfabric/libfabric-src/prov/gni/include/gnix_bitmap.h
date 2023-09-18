@@ -32,7 +32,7 @@ typedef uint64_t gnix_bitmap_value_t;
 typedef atomic_uint_fast64_t gnix_bitmap_block_t;
 #else
 typedef struct atomic_uint64_t {
-	fastlock_t lock;
+	ofi_spin_t lock;
 	gnix_bitmap_value_t val;
 } gnix_bitmap_block_t;
 #endif
@@ -191,7 +191,7 @@ int _gnix_bitmap_empty(gnix_bitmap_t *bitmap);
 
 /**
  * Helper function for determining the size of array needed to support
- * 'x' number of bits for an externally provided buffer address 
+ * 'x' number of bits for an externally provided buffer address
  * @param   nbits  number of bits requested for the bitmap
  */
 __attribute__((unused))

@@ -90,11 +90,11 @@ module Crypto {
   private use IO;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc generateKeys(bits: int) {
    var localKeyPair: EVP_PKEY_PTR;
    var keyCtx = EVP_PKEY_CTX_new_id(EVP_PKEY_RSA: c_int,
-                                    c_nil: ENGINE_PTR);
+                                    nil: ENGINE_PTR);
    EVP_PKEY_keygen_init(keyCtx);
    EVP_PKEY_CTX_set_rsa_keygen_bits(keyCtx, bits: c_int);
    EVP_PKEY_keygen(keyCtx, localKeyPair);
@@ -112,11 +112,11 @@ module Crypto {
 
   */
   class CryptoBuffer {
-    pragma "no doc"
+    @chpldoc.nodoc
     var _len: int = 0;
-    pragma "no doc"
+    @chpldoc.nodoc
     var buffDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var buff: [buffDomain] uint(8);
 
     /* The `CryptoBuffer` class initializer that initializes the buffer
@@ -130,7 +130,7 @@ module Crypto {
 
     */
     proc init(s: string) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -151,7 +151,7 @@ module Crypto {
 
     */
     proc init(s: bytes) {
-      this.complete();
+      init this;
       this._len = s.numBytes;
       if (this._len == 0) {
         halt("Enter a string with length greater than 0 in order to create a buffer");
@@ -173,7 +173,7 @@ module Crypto {
 
     */
     proc init(s: [] uint(8)) {
-      this.complete();
+      init this;
       this._len = s.size;
       if (this._len == 0) {
         halt("Enter an array with size greater than 0 in order to create a buffer");
@@ -258,9 +258,9 @@ module Crypto {
 
   */
   class RSAKey {
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyObj: EVP_PKEY_PTR;
 
     /* The `RSAKey` class initializer that initializes the `EVP_PKEY` object
@@ -277,7 +277,7 @@ module Crypto {
 
     */
     proc init(keyLen: int) {
-      this.complete();
+      init this;
       if (keyLen != 1024 && keyLen != 2048 && keyLen != 4096) {
         halt("RSAKey: Invalid key length.");
       }
@@ -285,7 +285,7 @@ module Crypto {
       this.keyObj = generateKeys(this.keyLen);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc getKeyPair() {
       return this.keyObj;
     }
@@ -302,13 +302,13 @@ module Crypto {
 
   */
   class Envelope {
-    pragma "no doc"
+    @chpldoc.nodoc
     var keyDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var keys: [keyDomain] owned CryptoBuffer;
-    pragma "no doc"
+    @chpldoc.nodoc
     var iv: owned CryptoBuffer;
-    pragma "no doc"
+    @chpldoc.nodoc
     var value: owned CryptoBuffer;
 
     /* The `Envelope` class initializer that encapsulates the IV, AES encrypted
@@ -328,7 +328,7 @@ module Crypto {
 
     */
     proc init(iv: owned CryptoBuffer, encSymmKey: [] owned CryptoBuffer, encSymmValue: owned CryptoBuffer) {
-      this.complete();
+      init this;
       this.keyDomain = encSymmKey.domain;
       for i in this.keyDomain do {
         this.keys[i] = encSymmKey[i];
@@ -389,7 +389,7 @@ module Crypto {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc digestPrimitives(digestName: string, hashLen: int, inputBuffer: CryptoBuffer) {
 
     CHPL_OpenSSL_add_all_digests();
@@ -402,8 +402,8 @@ module Crypto {
     var md: CONST_EVP_MD_PTR;
     md = EVP_get_digestbyname(digestName.c_str());
 
-    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, c_nil: ENGINE_PTR);
-    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_void_ptr, inputBuffer._len: c_size_t);
+    EVP_DigestInit_ex(CHPL_EVP_MD_CTX_ptr(ctx), md, nil: ENGINE_PTR);
+    EVP_DigestUpdate(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(inputBuffer.buff): c_ptr(void), inputBuffer._len: c_size_t);
     EVP_DigestFinal_ex(CHPL_EVP_MD_CTX_ptr(ctx), c_ptrTo(hash): c_ptr(c_uchar), retHashLen);
 
     CHPL_EVP_MD_CTX_free(ctx);
@@ -424,13 +424,13 @@ module Crypto {
 
   */
   class Hash {
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var digestName: string;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashDomain: domain(1);
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashSpace: [hashDomain] uint(8);
 
     /* The `Hash` class initializer that initializes the hashing function
@@ -454,7 +454,7 @@ module Crypto {
 
     */
     proc init(digestName: Digest) {
-      this.complete();
+      init this;
       select digestName {
         when Digest.MD5        do this.hashLen = 16;
         when Digest.SHA1       do this.hashLen = 20;
@@ -499,7 +499,7 @@ module Crypto {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc aesEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -507,23 +507,23 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize(): c_int;
 
-    var ciphertextLen = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
-    var cipherDomain: domain(1) = {0..ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 16; // 16 is the MAX_BLOCK_SIZE for AES
+    var cipherDomain: domain(1) = {0..ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_EncryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext): c_ptr(c_uchar),
                         c_ptrTo(updatedCipherLen): c_ptr(c_int));
@@ -534,7 +534,7 @@ module Crypto {
     return ciphertext;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc aesDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -542,23 +542,23 @@ module Crypto {
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
@@ -593,9 +593,9 @@ module Crypto {
 
   */
   class AES {
-    pragma "no doc"
+    @chpldoc.nodoc
     var cipher: CONST_EVP_CIPHER_PTR;
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
 
     /* The `AES` class initializer that initializes the AES encryption
@@ -702,7 +702,7 @@ module Crypto {
     }
   }
 
-pragma "no doc"
+@chpldoc.nodoc
 proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -710,16 +710,16 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var plaintextData = plaintext.getBuffData();
-    var plaintextLen = plaintext.getBuffSize();
+    var plaintextLen: c_int = plaintext.getBuffSize():c_int;
 
-    var ciphertextLen = plaintextLen + 8;
-    var cipherDomain: domain(1) = {0..#ciphertextLen};
+    var ciphertextLen: c_int = plaintextLen + 8;
+    var cipherDomain: domain(1) = {0..#ciphertextLen:int};
     var updatedCipherLen: c_int = 0;
     var ciphertext: [cipherDomain] uint(8);
 
     EVP_EncryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
 
@@ -727,7 +727,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
                       c_ptrTo(ciphertext): c_ptr(c_uchar),
                       c_ptrTo(ciphertextLen): c_ptr(c_int),
                       c_ptrTo(plaintextData): c_ptr(c_uchar),
-                      plaintextLen: c_int);
+                      plaintextLen);
 
     EVP_EncryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(ciphertext[ciphertextLen..]): c_ptr(c_uchar),
@@ -738,7 +738,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     return ciphertext;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc bfDecrypt(ciphertext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cipher: CONST_EVP_CIPHER_PTR) {
 
     var ctx = CHPL_EVP_CIPHER_CTX_new();
@@ -746,23 +746,23 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     var keyData = key.getBuffData();
     var ivData = IV.getBuffData();
     var ciphertextData = ciphertext.getBuffData();
-    var ciphertextLen = ciphertext.getBuffSize();
+    var ciphertextLen: c_int = ciphertext.getBuffSize(): c_int;
 
-    var plaintextLen = ciphertextLen;
+    var plaintextLen: c_int = ciphertextLen;
     var updatedPlainLen: c_int = 0;
-    var plainDomain: domain(1) = {0..plaintextLen};
+    var plainDomain: domain(1) = {0..plaintextLen:int};
     var plaintext: [plainDomain] uint(8);
 
     EVP_DecryptInit_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                        cipher,
-                       c_nil: ENGINE_PTR,
+                       nil: ENGINE_PTR,
                        c_ptrTo(keyData): c_ptr(c_uchar),
                        c_ptrTo(ivData): c_ptr(c_uchar));
     EVP_DecryptUpdate(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                       c_ptrTo(plaintext): c_ptr(c_uchar),
                       c_ptrTo(plaintextLen): c_ptr(c_int),
                       c_ptrTo(ciphertextData): c_ptr(c_uchar),
-                      ciphertextLen: c_int);
+                      ciphertextLen);
     EVP_DecryptFinal_ex(CHPL_EVP_CIPHER_CTX_ptr(ctx),
                         c_ptrTo(plaintext[plaintextLen..]): c_ptr(c_uchar),
                         c_ptrTo(updatedPlainLen): c_ptr(c_int));
@@ -803,9 +803,9 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
   */
   @deprecated(notes="Blowfish is deprecated, please use another algorithm")
   class Blowfish {
-    pragma "no doc"
+    @chpldoc.nodoc
     var cipher: CONST_EVP_CIPHER_PTR;
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
 
     /* The `Blowfish` class initializer that initializes the Blowfish encryption
@@ -860,11 +860,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       var ivLen = IV.getBuffSize();
       var keyLen = key.getBuffSize();
       if (ivLen != 8) {
-        throw new owned IllegalArgumentError("IV", "Blowfish cipher expects a size of 8 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'IV': Blowfish cipher expects a size of 8 bytes.");
       }
 
       if (keyLen < 10) {
-        throw new owned IllegalArgumentError("key", "Blowfish cipher expects a size greater than 10 bytes.");
+        throw new owned IllegalArgumentError("illegal argument 'key': Blowfish cipher expects a size greater than 10 bytes.");
       }
       var encryptedPlaintext = bfEncrypt(plaintext, key, IV, this.cipher);
       var encryptedPlaintextBuff = new owned CryptoBuffer(encryptedPlaintext);
@@ -899,7 +899,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc createRandomBuffer(buffLen: int) throws {
     var buff: [0..#buffLen] uint(8);
     var retErrCode: c_int;
@@ -938,7 +938,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     */
     proc getRandomBuffer(buffLen: int): owned CryptoBuffer throws {
       if (buffLen < 1) {
-        throw new owned IllegalArgumentError("buffLen", "Invalid random buffer length specified.");
+        throw new owned IllegalArgumentError("illegal argument 'buffLen': Invalid random buffer length specified.");
       }
       var randomizedBuff = try createRandomBuffer(buffLen);
       var randomizedCryptoBuff = new owned CryptoBuffer(randomizedBuff);
@@ -946,7 +946,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc PBKDF2(userKey: string, saltBuff: CryptoBuffer, byteLen: int, iterCount: int, digestName: string) {
 
     CHPL_OpenSSL_add_all_digests();
@@ -974,11 +974,11 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
 
   */
   class KDF {
-    pragma "no doc"
+    @chpldoc.nodoc
     var byteLen: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var iterCount: int;
-    pragma "no doc"
+    @chpldoc.nodoc
     var hashName: string;
 
     /* The `KDF` class initializer that initializes the common data used by most
@@ -1030,7 +1030,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     }
   }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc rsaEncrypt(keys: [] RSAKey, plaintext: CryptoBuffer, ref iv: [] uint(8), ref encSymmKeys: [] CryptoBuffer) {
 
       var ctx: EVP_CIPHER_CTX;
@@ -1079,7 +1079,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       return ciphertext;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc rsaDecrypt(key: RSAKey, iv: [] uint(8), ciphertext: [] uint(8), encKeys: [] CryptoBuffer) throws {
 
       var ctx: EVP_CIPHER_CTX;
@@ -1101,7 +1101,7 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
       }
 
       if (!openErrCode) {
-        throw new owned IllegalArgumentError("key", "The RSAKey is an invalid match.");
+        throw new owned IllegalArgumentError("illegal argument 'key': The RSAKey is an invalid match.");
       }
 
       var plaintextLen = ciphertext.size;
@@ -1276,20 +1276,20 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_OpenFinal(ref ctx: EVP_CIPHER_CTX, outm: c_ptr(c_uchar), outl: c_ptr(c_int)): c_int;
 
     extern proc CHPL_OpenSSL_add_all_digests();
-    extern proc EVP_get_digestbyname(name: c_string): CONST_EVP_MD_PTR;
+    extern proc EVP_get_digestbyname(name: c_ptrConst(c_char)): CONST_EVP_MD_PTR;
 
     extern proc CHPL_EVP_MD_CTX_new(): CHPL_EVP_MD_CTX;
     extern proc CHPL_EVP_MD_CTX_free(ref c: CHPL_EVP_MD_CTX);
     extern proc CHPL_EVP_MD_CTX_ptr(ref c: CHPL_EVP_MD_CTX):EVP_MD_CTX_PTR;
     extern proc EVP_DigestInit_ex(ctx: EVP_MD_CTX_PTR, types: CONST_EVP_MD_PTR, impl: ENGINE_PTR): c_int;
-    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_void_ptr, cnt: c_size_t): c_int;
+    extern proc EVP_DigestUpdate(ctx: EVP_MD_CTX_PTR, const d: c_ptr(void), cnt: c_size_t): c_int;
     extern proc EVP_DigestFinal_ex(ctx: EVP_MD_CTX_PTR, md: c_ptr(c_uchar), ref s: c_uint): c_int;
 
     extern proc RAND_bytes(buf: c_ptr(c_uchar), num: c_int) : c_int;
 
     extern proc EVP_sha256(): CONST_EVP_MD_PTR;
 
-    extern proc PKCS5_PBKDF2_HMAC(pass: c_string,
+    extern proc PKCS5_PBKDF2_HMAC(pass: c_ptrConst(c_char),
                                   passlen: c_int,
                                   const salt: c_ptr(c_uchar),
                                   saltlen: c_int,
@@ -1346,6 +1346,6 @@ proc bfEncrypt(plaintext: CryptoBuffer, key: CryptoBuffer, IV: CryptoBuffer, cip
     extern proc EVP_bf_cfb(): CONST_EVP_CIPHER_PTR;
     extern proc EVP_bf_ofb(): CONST_EVP_CIPHER_PTR;
 
-    extern proc RAND_seed(const buf: c_void_ptr, num: c_int);
+    extern proc RAND_seed(const buf: c_ptr(void), num: c_int);
   }
 }

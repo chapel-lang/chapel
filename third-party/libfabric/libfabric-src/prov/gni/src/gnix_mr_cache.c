@@ -1048,7 +1048,7 @@ int _gnix_mr_cache_init(
 
 	dlist_init(&cache_p->rq.list);
 	dlist_init(&cache_p->rq.entry);
-	fastlock_init(&cache_p->rq.lock);
+	ofi_spin_init(&cache_p->rq.lock);
 
 	*cache = cache_p;
 

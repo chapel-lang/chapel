@@ -86,7 +86,6 @@ void verify();
 void checkInvariants(char log_tag);
 void checkPrimitives();                 // constrains primitive use
 void checkPostResolution();
-void checkNoUnresolveds();
 // These checks can be applied after any pass.
 void checkForDuplicateUses();
 void checkArgsAndLocals();
@@ -155,6 +154,10 @@ void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);
+// support for deprecation by Vass in 1.31 to implement #17131
+bool tryReplaceStridable(CallExpr* parentCall, const char* name,
+                         UnresolvedSymExpr* use);
+void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr);
 
 // parallel.cpp
 Type* getOrMakeRefTypeDuringCodegen(Type* type);

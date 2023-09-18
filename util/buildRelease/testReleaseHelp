@@ -76,6 +76,14 @@ if ($tmpstatus != 0) then
     exit($tmpstatus)
 endif
 
+$mymake protoc-gen-chpl
+set tmpstatus = $status
+if ($tmpstatus != 0) then
+    echo "ERROR: make protoc-gen-chpl failed"
+    exit($tmpstatus)
+endif
+
+
 
 # Calculate expected version string from CMakeLists.txt
 set major=`cat CMakeLists.txt | grep 'set(CHPL_MAJOR_VERSION' | cut -f2 -d' ' | sed 's/)//g'`

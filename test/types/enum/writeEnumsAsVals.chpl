@@ -2,7 +2,7 @@ proc print(x) {
   writeln(x);
 
   writef("%s\n", x);
-  writef("%t\n", x);
+  writef("%?\n", x);
   writef("%i\n", x);
   writef("%u\n", x);
   writef("%xi\n", x);
@@ -20,4 +20,3 @@ print(f);
 enum G { F1, F2 = 5};
 var g = G.F2;
 print(g);
-

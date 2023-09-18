@@ -1,0 +1,3 @@
+queryGenericField4.chpl:7: In function 'test':
+queryGenericField4.chpl:7: error: 'r' used before defined
+queryGenericField4.chpl:7: note: defined here

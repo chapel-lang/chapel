@@ -10,6 +10,7 @@
 #include "ProfiledBinary.h"
 #include "llvm/ADT/SCCIterator.h"
 #include "llvm/ADT/Statistic.h"
+#include "llvm/DebugInfo/Symbolize/SymbolizableModule.h"
 #include <cstdint>
 #include <queue>
 
@@ -54,20 +55,21 @@ static cl::opt<bool> SamplePreInlineReplay(
     cl::desc(
         "Replay previous inlining and adjust context profile accordingly"));
 
-CSPreInliner::CSPreInliner(SampleProfileMap &Profiles, ProfiledBinary &Binary,
-                           uint64_t HotThreshold, uint64_t ColdThreshold)
+CSPreInliner::CSPreInliner(SampleContextTracker &Tracker,
+                           ProfiledBinary &Binary, ProfileSummary *Summary)
     : UseContextCost(UseContextCostForPreInliner),
       // TODO: Pass in a guid-to-name map in order for
       // ContextTracker.getFuncNameFor to work, if `Profiles` can have md5 codes
       // as their profile context.
-      ContextTracker(Profiles, nullptr), ProfileMap(Profiles), Binary(Binary),
-      HotCountThreshold(HotThreshold), ColdCountThreshold(ColdThreshold) {
+      ContextTracker(Tracker), Binary(Binary), Summary(Summary) {
   // Set default preinliner hot/cold call site threshold tuned with CSSPGO.
   // for good performance with reasonable profile size.
   if (!SampleHotCallSiteThreshold.getNumOccurrences())
     SampleHotCallSiteThreshold = 1500;
   if (!SampleColdCallSiteThreshold.getNumOccurrences())
     SampleColdCallSiteThreshold = 0;
+  if (!ProfileInlineLimitMax.getNumOccurrences())
+    ProfileInlineLimitMax = 3000;
 }
 
 std::vector<StringRef> CSPreInliner::buildTopDownOrder() {
@@ -104,7 +106,7 @@ bool CSPreInliner::getInlineCandidates(ProfiledCandidateQueue &CQueue,
   // current one in the trie is relavent. So we walk the trie instead of call
   // targets from function profile.
   ContextTrieNode *CallerNode =
-      ContextTracker.getContextFor(CallerSamples->getContext());
+      ContextTracker.getContextNodeForProfile(CallerSamples);
 
   bool HasNewCandidate = false;
   for (auto &Child : CallerNode->getAllChildContext()) {
@@ -115,7 +117,7 @@ bool CSPreInliner::getInlineCandidates(ProfiledCandidateQueue &CQueue,
 
     // Call site count is more reliable, so we look up the corresponding call
     // target profile in caller's context profile to retrieve call site count.
-    uint64_t CalleeEntryCount = CalleeSamples->getEntrySamples();
+    uint64_t CalleeEntryCount = CalleeSamples->getHeadSamplesEstimate();
     uint64_t CallsiteCount = 0;
     LineLocation Callsite = CalleeNode->getCallSiteLoc();
     if (auto CallTargets = CallerSamples->findCallTargetMapAt(Callsite)) {
@@ -128,7 +130,7 @@ bool CSPreInliner::getInlineCandidates(ProfiledCandidateQueue &CQueue,
     // TODO: call site and callee entry count should be mostly consistent, add
     // check for that.
     HasNewCandidate = true;
-    uint32_t CalleeSize = getFuncSize(*CalleeSamples);
+    uint32_t CalleeSize = getFuncSize(CalleeNode);
     CQueue.emplace(CalleeSamples, std::max(CallsiteCount, CalleeEntryCount),
                    CalleeSize);
   }
@@ -136,12 +138,11 @@ bool CSPreInliner::getInlineCandidates(ProfiledCandidateQueue &CQueue,
   return HasNewCandidate;
 }
 
-uint32_t CSPreInliner::getFuncSize(const FunctionSamples &FSamples) {
-  if (UseContextCost) {
-    return Binary.getFuncSizeForContext(FSamples.getContext());
-  }
+uint32_t CSPreInliner::getFuncSize(const ContextTrieNode *ContextNode) {
+  if (UseContextCost)
+    return Binary.getFuncSizeForContext(ContextNode);
 
-  return FSamples.getBodySamples().size();
+  return ContextNode->getFunctionSamples()->getBodySamples().size();
 }
 
 bool CSPreInliner::shouldInline(ProfiledInlineCandidate &Candidate) {
@@ -151,16 +152,32 @@ bool CSPreInliner::shouldInline(ProfiledInlineCandidate &Candidate) {
     return Candidate.CalleeSamples->getContext().hasAttribute(
         ContextWasInlined);
 
-  // Adjust threshold based on call site hotness, only do this for callsite
-  // prioritized inliner because otherwise cost-benefit check is done earlier.
   unsigned int SampleThreshold = SampleColdCallSiteThreshold;
-  if (Candidate.CallsiteCount > HotCountThreshold)
-    SampleThreshold = SampleHotCallSiteThreshold;
+  uint64_t ColdCountThreshold = ProfileSummaryBuilder::getColdCountThreshold(
+      (Summary->getDetailedSummary()));
 
-  // TODO: for small cold functions, we may inlined them and we need to keep
-  // context profile accordingly.
-  if (Candidate.CallsiteCount < ColdCountThreshold)
+  if (Candidate.CallsiteCount <= ColdCountThreshold)
     SampleThreshold = SampleColdCallSiteThreshold;
+  else {
+    // Linearly adjust threshold based on normalized hotness, i.e, a value in
+    // [0,1]. Use 10% cutoff instead of the max count as the normalization
+    // upperbound for stability.
+    double NormalizationUpperBound =
+        ProfileSummaryBuilder::getEntryForPercentile(
+            Summary->getDetailedSummary(), 100000 /* 10% */)
+            .MinCount;
+    double NormalizationLowerBound = ColdCountThreshold;
+    double NormalizedHotness =
+        (Candidate.CallsiteCount - NormalizationLowerBound) /
+        (NormalizationUpperBound - NormalizationLowerBound);
+    if (NormalizedHotness > 1.0)
+      NormalizedHotness = 1.0;
+    // Add 1 to to ensure hot callsites get a non-zero threshold, which could
+    // happen when SampleColdCallSiteThreshold is 0. This is when we do not
+    // want any inlining for cold callsites.
+    SampleThreshold = SampleHotCallSiteThreshold * NormalizedHotness * 100 +
+                      SampleColdCallSiteThreshold + 1;
+  }
 
   return (Candidate.SizeCost < SampleThreshold);
 }
@@ -170,7 +187,8 @@ void CSPreInliner::processFunction(const StringRef Name) {
   if (!FSamples)
     return;
 
-  unsigned FuncSize = getFuncSize(*FSamples);
+  unsigned FuncSize =
+      getFuncSize(ContextTracker.getContextNodeForProfile(FSamples));
   unsigned FuncFinalSize = FuncSize;
   unsigned SizeLimit = FuncSize * ProfileInlineGrowthLimit;
   SizeLimit = std::min(SizeLimit, (unsigned)ProfileInlineLimitMax);
@@ -199,11 +217,12 @@ void CSPreInliner::processFunction(const StringRef Name) {
     } else {
       ++PreInlNumCSNotInlined;
     }
-    LLVM_DEBUG(dbgs() << (ShouldInline ? "  Inlined" : "  Outlined")
-                      << " context profile for: "
-                      << Candidate.CalleeSamples->getContext().toString()
-                      << " (callee size: " << Candidate.SizeCost
-                      << ", call count:" << Candidate.CallsiteCount << ")\n");
+    LLVM_DEBUG(
+        dbgs() << (ShouldInline ? "  Inlined" : "  Outlined")
+               << " context profile for: "
+               << ContextTracker.getContextString(*Candidate.CalleeSamples)
+               << " (callee size: " << Candidate.SizeCost
+               << ", call count:" << Candidate.CallsiteCount << ")\n");
   }
 
   if (!CQueue.empty()) {
@@ -227,7 +246,8 @@ void CSPreInliner::processFunction(const StringRef Name) {
       CQueue.pop();
       bool WasInlined =
           Candidate.CalleeSamples->getContext().hasAttribute(ContextWasInlined);
-      dbgs() << "    " << Candidate.CalleeSamples->getContext().toString()
+      dbgs() << "    "
+             << ContextTracker.getContextString(*Candidate.CalleeSamples)
              << " (candidate size:" << Candidate.SizeCost
              << ", call count: " << Candidate.CallsiteCount << ", previously "
              << (WasInlined ? "inlined)\n" : "not inlined)\n");
@@ -237,19 +257,24 @@ void CSPreInliner::processFunction(const StringRef Name) {
 
 void CSPreInliner::run() {
 #ifndef NDEBUG
-  auto printProfileNames = [](SampleProfileMap &Profiles, bool IsInput) {
-    dbgs() << (IsInput ? "Input" : "Output") << " context-sensitive profiles ("
-           << Profiles.size() << " total):\n";
-    for (auto &It : Profiles) {
-      const FunctionSamples &Samples = It.second;
-      dbgs() << "  [" << Samples.getContext().toString() << "] "
-             << Samples.getTotalSamples() << ":" << Samples.getHeadSamples()
-             << "\n";
+  auto printProfileNames = [](SampleContextTracker &ContextTracker,
+                              bool IsInput) {
+    uint32_t Size = 0;
+    for (auto *Node : ContextTracker) {
+      FunctionSamples *FSamples = Node->getFunctionSamples();
+      if (FSamples) {
+        Size++;
+        dbgs() << "  [" << ContextTracker.getContextString(Node) << "] "
+               << FSamples->getTotalSamples() << ":"
+               << FSamples->getHeadSamples() << "\n";
+      }
     }
+    dbgs() << (IsInput ? "Input" : "Output") << " context-sensitive profiles ("
+           << Size << " total):\n";
   };
 #endif
 
-  LLVM_DEBUG(printProfileNames(ProfileMap, true));
+  LLVM_DEBUG(printProfileNames(ContextTracker, true));
 
   // Execute global pre-inliner to estimate a global top-down inline
   // decision and merge profiles accordingly. This helps with profile
@@ -264,22 +289,15 @@ void CSPreInliner::run() {
 
   // Not inlined context profiles are merged into its base, so we can
   // trim out such profiles from the output.
-  std::vector<SampleContext> ProfilesToBeRemoved;
-  for (auto &It : ProfileMap) {
-    SampleContext &Context = It.second.getContext();
-    if (!Context.isBaseContext() && !Context.hasState(InlinedContext)) {
-      assert(Context.hasState(MergedContext) &&
-             "Not inlined context profile should be merged already");
-      ProfilesToBeRemoved.push_back(It.first);
+  for (auto *Node : ContextTracker) {
+    FunctionSamples *FProfile = Node->getFunctionSamples();
+    if (FProfile &&
+        (Node->getParentContext() != &ContextTracker.getRootContext() &&
+         !FProfile->getContext().hasState(InlinedContext))) {
+      Node->setFunctionSamples(nullptr);
     }
   }
+  FunctionSamples::ProfileIsPreInlined = true;
 
-  for (auto &ContextName : ProfilesToBeRemoved) {
-    ProfileMap.erase(ContextName);
-  }
-
-  // Make sure ProfileMap's key is consistent with FunctionSamples' name.
-  SampleContextTrimmer(ProfileMap).canonicalizeContextProfiles();
-
-  LLVM_DEBUG(printProfileNames(ProfileMap, false));
+  LLVM_DEBUG(printProfileNames(ContextTracker, false));
 }

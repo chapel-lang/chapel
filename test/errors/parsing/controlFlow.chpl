@@ -23,6 +23,12 @@ forall 1..10 {
     continue;
     continue someLabel;
 }
+foreach 1..10 {
+    break;
+    break someLabel;
+    continue;
+    continue someLabel;
+}
 coforall 1..10 {
     break;
     break someLabel;
@@ -64,6 +70,12 @@ label actualLabel for 1..10 {
 
     // Each of the following block continues and returns.
     forall 1..10 {
+        break;
+        break actualLabel;
+        continue;
+        continue actualLabel;
+    }
+    foreach 1..10 {
         break;
         break actualLabel;
         continue;

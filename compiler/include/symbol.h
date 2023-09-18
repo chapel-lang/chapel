@@ -168,11 +168,12 @@ public:
 
   std::string deprecationMsg;
   const char* getDeprecationMsg() const;
-  void generateDeprecationWarning(Expr* context);
+  void maybeGenerateDeprecationWarning(Expr* context);
+
 
   std::string unstableMsg;
   const char* getUnstableMsg() const;
-  void generateUnstableWarning(Expr* context);
+  void maybeGenerateUnstableWarning(Expr* context);
 
   const char* getSanitizedMsg(std::string msg) const;
 
@@ -564,7 +565,19 @@ public:
   //  - to itself, if there is a default implementation
   //  - to gDummyWitness, otherwise
   SymbolMap  requiredFns;
+
+  // Set to true if this interface has an "eny intent" function; such interfaces
+  // cannot be used in CG functions, because the resulting intent of the call to
+  // the witness cannot be known.
+  bool hasAnyIntentFn = false;
 };
+
+extern InterfaceSymbol* gHashable;
+extern InterfaceSymbol* gContextManager;
+extern InterfaceSymbol* gWriteSerializable;
+extern InterfaceSymbol* gReadDeserializable;
+extern InterfaceSymbol* gInitDeserializable;
+extern InterfaceSymbol* gSerializable;
 
 /************************************* | **************************************
 *                                                                             *
@@ -726,8 +739,8 @@ VarSymbol *new_StringOrBytesSymbol(const char *s, AggregateType *at);
 // Creates a new C string literal with the given value.
 VarSymbol *new_CStringSymbol(const char *s);
 
-// Creates a new boolean literal with the given value and bit-width.
-VarSymbol *new_BoolSymbol(bool b, IF1_bool_type size=BOOL_SIZE_SYS);
+// Creates a new boolean literal with the given value
+VarSymbol *new_BoolSymbol(bool b);
 
 // Creates a new (signed) integer literal with the given value and bit-width.
 VarSymbol *new_IntSymbol(int64_t b, IF1_int_type size=INT_SIZE_64);
@@ -800,14 +813,19 @@ extern const char* astrSlt;     // <
 extern const char* astrSlte;    // <=
 extern const char* astrSswap;   // <=>
 extern const char* astrScolon;  // :
+extern const char* astrScomma;  // ,
+extern const char* astrSstar;   // *
+extern const char* astrSstarstar;   // **
 extern const char* astr_defaultOf;
 extern const char* astrInit;
 extern const char* astrInitEquals;
 extern const char* astrNew;
 extern const char* astrDeinit;
 extern const char* astrPostinit;
+extern const char* astrBuildTuple;
 extern const char* astrTag;
 extern const char* astrThis;
+extern const char* astrThese;
 extern const char* astrSuper;
 extern const char* astr_chpl_cname;
 extern const char* astr_chpl_forward_tgt;
@@ -857,6 +875,7 @@ extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
+extern Symbol *gStrideOne, *gStrideAny; //deprecation in 1.31 for #17131
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gSplitInit;
@@ -875,22 +894,14 @@ extern Symbol *gDummyRef;
 extern Symbol *gFixupRequiredToken;
 extern VarSymbol *gTrue;
 extern VarSymbol *gFalse;
-extern VarSymbol *gBoundsChecking;
-extern VarSymbol *gCastChecking;
-extern VarSymbol *gNilChecking;
-extern VarSymbol *gOverloadSetsChecks;
-extern VarSymbol *gDivZeroChecking;
-extern VarSymbol *gCacheRemote;
-extern VarSymbol *gPrivatization;
-extern VarSymbol *gLocal;
-extern VarSymbol *gWarnUnstable;
 extern VarSymbol *gIteratorBreakToken;
 extern VarSymbol *gNodeID;
 extern VarSymbol *gModuleInitIndentLevel;
 extern VarSymbol *gInfinity;
 extern VarSymbol *gNan;
 extern VarSymbol *gUninstantiated;
-extern VarSymbol *gUseIOFormatters;
+
+extern llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 extern Symbol *gSyncVarAuxFields;
 extern Symbol *gSingleVarAuxFields;
@@ -940,6 +951,8 @@ std::vector<std::string> gatherPrintLlvmIrCNames();
 void printLlvmIr(const char* name, llvm::Function *func, llvmStageNum_t numStage);
 #endif
 
+// Restore list of cnames to print, from tmp file on disk into memory.
+void restorePrintIrCNames();
 void preparePrintLlvmIrForCodegen();
 void completePrintLlvmIrStage(llvmStageNum_t numStage);
 

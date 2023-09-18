@@ -735,7 +735,7 @@ Value tuples include:
 
 - tuple variables
 - formal arguments with ``in`` intent that have a tuple type
-- tuples returned from functions with the default or ``const`` return intent
+- tuples returned from functions with the default return intent
 
 A *referential tuple* stores its components by value or by reference,
 as determined by the default argument intent of the component's type:
@@ -961,7 +961,7 @@ tuple depending on its argument intent.
 Tuple Return Behavior
 ---------------------
 
-Procedures with the default or ``const`` return intent always return
+Procedures with the default return intent always return
 a value tuple. If an expression returned by such a procedure is
 a referential tuple, it will be implicitly converted to a value tuple.
 
@@ -1017,7 +1017,7 @@ the procedure's scope. Otherwise there is a compilation error.
 Tuple Yield Behavior
 --------------------
 
-Iterators with the default or ``const`` return intent always yield
+Iterators with the default return intent always yield
 a value tuple. If an expression yielded by such an iterator is
 a referential tuple, it will be implicitly converted to a value tuple.
 

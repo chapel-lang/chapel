@@ -1,0 +1,48 @@
+warn-interfaces.chpl:nnnn: warning: the type 'JustTwoRecord' defines methods that previously had special meaning. These will soon require 'JustTwoRecord' to implement the 'initDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'init' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'SerializeMissingRecord' defines methods that previously had special meaning. These will soon require 'SerializeMissingRecord' to implement the 'writeSerializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'serialize' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'DeserializeMissingRecord' defines methods that previously had special meaning. These will soon require 'DeserializeMissingRecord' to implement the 'readDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'deserialize' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'InitMissingRecord' defines methods that previously had special meaning. These will soon require 'InitMissingRecord' to implement the 'initDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'init' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'JustTwoClass' defines methods that previously had special meaning. These will soon require 'JustTwoClass' to implement the 'initDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'init' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'SerializeMissingClass' defines methods that previously had special meaning. These will soon require 'SerializeMissingClass' to implement the 'writeSerializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'serialize' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'DeserializeMissingClass' defines methods that previously had special meaning. These will soon require 'DeserializeMissingClass' to implement the 'readDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'deserialize' defined here
+warn-interfaces.chpl:nnnn: warning: the type 'InitMissingClass' defines methods that previously had special meaning. These will soon require 'InitMissingClass' to implement the 'initDeserializable' interface to continue to be treated specially.
+warn-interfaces.chpl:nnnn: note: formerly-special function 'init' defined here
+----- JustTwoRecord -----
+got: 10
+----- DefaultRecord -----
+got: (x = 10)
+----- SerializableRecord -----
+got: 10
+----- SerializeMissingRecord -----
+----- SerializePresentRecord -----
+----- DeserializeMissingRecord -----
+got: 10
+----- DeserializePresentRecord -----
+got: 10
+----- InitMissingRecord -----
+got: 10
+----- InitPresentRecord -----
+got: 10
+----- owned JustTwoClass -----
+got: 10
+----- owned DefaultClass -----
+got: {x = 10}
+----- owned SerializableClass -----
+got: 10
+----- owned SerializeMissingClass -----
+----- owned SerializePresentClass -----
+----- owned DeserializeMissingClass -----
+got: 10
+----- owned DeserializePresentClass -----
+got: 10
+----- owned InitMissingClass -----
+got: 10
+----- owned InitPresentClass -----
+got: 10

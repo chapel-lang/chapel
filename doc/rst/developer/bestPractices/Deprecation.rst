@@ -23,17 +23,14 @@ The deprecation message uses the following format:
 For compile-time messaging you can use ``compilerWarning()`` to do this, but
 when deprecating symbols the ``@deprecated`` attribute often works better because
 it can be applied to any symbol in a uniform way.  Look in the test/deprecated
-and test/deprecated-keyword directories for many examples.  Note that the
-``@deprecated`` attribute itself is likely to be replaced by different syntax in
-the future, though this may not affect its use in practice since deprecations
-typically only last for one release anyway.
+and test/deprecated-keyword directories for many examples.
 
 Currently, the ``@deprecated`` attribute optionally takes a string literal,
 which is used for the deprecated symbol's documentation and compiler warning
 message. If there is also a documentation comment applied to the symbol that
-comment will take precedence when producing documentation.  When we produce a
-compiler warning we filter it to remove any inline markup.
+comment will take precedence when producing documentation.
 
+When we produce a compiler warning we filter it to remove any inline markup.
 This means if your deprecation message points to the preferred feature using
 syntax like this: ``foo is deprecated - please use :proc:`bar```, then in the
 generated documentation "bar" will link to the documentation for the "bar"
@@ -86,7 +83,7 @@ Changing A Function's Return Type
 When nothing about a function except its return type needs to change, it can
 be tricky for a user to opt in to the new behavior.
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("foo returning 'int' is deprecated")
    proc foo(): int { ... }
@@ -98,7 +95,7 @@ be tricky for a user to opt in to the new behavior.
 In this situation, we recommend adding a ``config param`` and a ``where`` clause
 that responds to it to the deprecated function and its replacement:
 
-.. code-block:: text
+.. code-block:: chapel
 
    // The default state should result in the deprecated behavior, so users can
    // adjust their code at their leisure
@@ -115,7 +112,7 @@ that responds to it to the deprecated function and its replacement:
 When the deprecated function is removed, the flag should also be deprecated (and
 removed from the new function to avoid generating noise for the user):
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("'fooReturnsBool' is deprecated and no longer has an effect")
    config param fooReturnsBool = false;
@@ -136,7 +133,7 @@ When only the name of a function argument needs to change and not its type, a
 new overload will encounter conflicts when a user relies solely on positional
 ordering:
 
-.. code-block:: text
+.. code-block:: chapel
 
    @deprecated("argument name 'a' is deprecated, use 'b' instead")
    proc foo(a: int) { ... }
@@ -159,7 +156,7 @@ resort"`` - this will avoid conflicts in the positional ordering case while
 still keeping the old argument name available to generate the deprecation
 warning:
 
-.. code-block:: text
+.. code-block:: chapel
 
    pragma "last resort"
    @deprecated("argument name 'a' is deprecated, use 'b' instead")
@@ -240,7 +237,7 @@ support for opting in to maintaining the default initializer (which is planned
 but not currently implemented), this will also require the addition of an
 equivalent replacement for the default initializer, which is a burden.
 
-.. code-block:: text
+.. code-block:: chapel
 
    record Foo {
      var newName: int;

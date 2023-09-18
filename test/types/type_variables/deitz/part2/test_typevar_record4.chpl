@@ -4,13 +4,13 @@ class node {
   var next : unmanaged node(t)?;
 }
 
-record foo {
+record foo : writeSerializable {
   type t;
   var length : int;
   var first : unmanaged node(t)?;
   var last : unmanaged node(t)?;
 
-  proc append(e : t) {
+  proc ref append(e : t) {
    var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
@@ -24,7 +24,7 @@ record foo {
     return this;
   }
 
-  proc prepend(e : t) {
+  proc ref prepend(e : t) {
     var anew : unmanaged node(t) = new unmanaged node(t);
     anew.element = e;
     if length > 0 {
@@ -50,17 +50,17 @@ record foo {
   }
 }
 
-proc foo.writeThis(fp) throws {
-  fp.write("(/");
+proc foo.serialize(writer, ref serializer) throws {
+  writer.write("(/");
   var tmp = first;
   while tmp != nil {
-    fp.write(tmp!.element);
+    writer.write(tmp!.element);
     tmp = tmp!.next;
     if (tmp != nil) {
-      fp.write(", ");
+      writer.write(", ");
     }
   }
-  fp.write("/)");
+  writer.write("/)");
 }
 
 var f : foo(int);

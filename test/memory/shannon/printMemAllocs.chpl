@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 config var n : int = 20;
 config var epsilon : real = 0.00001;
@@ -20,11 +20,11 @@ var delta : real = 1.0;
   // printMemAllocs prints entries for
   // whatever is currently allocated.
 
-  forall (i,j) in BigR {
+  forall (i,j) in BigR with (ref A) {
     A(i,j) = 0.0;
   }
 
-  forall (i,j) in South {
+  forall (i,j) in South with (ref A) {
     A(i,j) = 1.0;
   }
 
@@ -34,7 +34,7 @@ var delta : real = 1.0;
   }
 
   while (delta > epsilon) {
-    forall (i,j) in R {
+    forall (i,j) in R with (ref Temp) {
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
     }
     delta = 0.0;

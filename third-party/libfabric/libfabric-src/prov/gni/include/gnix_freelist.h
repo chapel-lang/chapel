@@ -63,7 +63,7 @@ struct gnix_freelist {
 	int elem_size;
 	int offset;
 	int ts;
-	fastlock_t lock;
+	ofi_spin_t lock;
 };
 
 /** Initializes a gnix_freelist
@@ -122,7 +122,7 @@ static inline int _gnix_fl_alloc(struct dlist_entry **e, struct gnix_freelist *f
     assert(fl);
 
     if (fl->ts)
-	    fastlock_acquire(&fl->lock);
+	    ofi_spin_lock(&fl->lock);
 
     if (dlist_empty(&fl->freelist)) {
 
@@ -158,7 +158,7 @@ static inline int _gnix_fl_alloc(struct dlist_entry **e, struct gnix_freelist *f
     *e = de;
 err:
     if (fl->ts)
-        fastlock_release(&fl->lock);
+        ofi_spin_unlock(&fl->lock);
     return ret;
 }
 
@@ -176,11 +176,11 @@ static inline void _gnix_fl_free(struct dlist_entry *e, struct gnix_freelist *fl
     e->next = NULL;  /* keep slist implementation happy */
 
     if (fl->ts)
-        fastlock_acquire(&fl->lock);
+        ofi_spin_lock(&fl->lock);
     dlist_init(e);
     dlist_insert_head(e, &fl->freelist);
     if (fl->ts)
-        fastlock_release(&fl->lock);
+        ofi_spin_unlock(&fl->lock);
 }
 
 

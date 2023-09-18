@@ -35,6 +35,8 @@
 #define _GNU_SOURCE
 #endif /* _GNU_SOURCE */
 
+#include "config.h"
+
 #include <stdio.h>
 #include <unistd.h>
 #include <fcntl.h>
@@ -106,7 +108,7 @@ int fi_fd_block(int fd)
 	return 0;
 }
 
-int fi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
+int ofi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 {
 	uint64_t t;
 	struct timespec ts;
@@ -118,6 +120,24 @@ int fi_wait_cond(pthread_cond_t *cond, pthread_mutex_t *mut, int timeout_ms)
 	ts.tv_sec = t / 1000;
 	ts.tv_nsec = (t % 1000) * 1000000;
 	return pthread_cond_timedwait(cond, mut, &ts);
+}
+
+int ofi_mmap_anon_pages(void **memptr, size_t size, int flags)
+{
+	*memptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
+		MAP_PRIVATE | MAP_ANONYMOUS | flags, -1, 0);
+	if (OFI_UNLIKELY(*memptr == MAP_FAILED)) {
+		return -errno;
+	}
+	return FI_SUCCESS;
+}
+
+int ofi_unmap_anon_pages(void *memptr, size_t size)
+{
+	if (munmap(memptr, size)) {
+		return -errno;
+	}
+	return FI_SUCCESS;
 }
 
 int ofi_shm_map(struct util_shm *shm, const char *name, size_t size,
@@ -298,43 +318,35 @@ int ofi_set_thread_affinity(const char *s)
 }
 
 
-void ofi_pollfds_do_add(struct ofi_pollfds *pfds,
-			struct ofi_pollfds_work_item *item)
+struct ofi_pollfds_ctx *ofi_pollfds_get_ctx(struct ofi_pollfds *pfds, int fd)
 {
-	if (item->fd >= pfds->size) {
-		if (ofi_pollfds_grow(pfds, item->fd))
-			return;
-	}
+	struct ofi_pollfds_ctx *ctx;
 
-	pfds->fds[item->fd].fd = item->fd;
-	pfds->fds[item->fd].events = item->events;
-	pfds->fds[item->fd].revents = 0;
-	pfds->context[item->fd] = item->context;
-	if (item->fd >= pfds->nfds)
-		pfds->nfds = item->fd + 1;
+	assert(ofi_genlock_held(&pfds->lock));
+	if (fd < 0 || fd >= pfds->size)
+		return NULL;
+
+	ctx = &pfds->ctx[fd];
+	if (ctx->index < 0 || ctx->index >= pfds->nfds ||
+	    pfds->fds[ctx->index].fd != fd)
+		return NULL;
+
+	return ctx;
 }
 
-int ofi_pollfds_do_mod(struct ofi_pollfds *pfds, int fd, uint32_t events,
-		       void *context)
+struct ofi_pollfds_ctx *ofi_pollfds_alloc_ctx(struct ofi_pollfds *pfds, int fd)
 {
-	if ((fd < pfds->nfds) && (pfds->fds[fd].fd == fd)) {
-		pfds->fds[fd].events = events;
-		pfds->context[fd] = context;
-		return FI_SUCCESS;
+	struct ofi_pollfds_ctx *ctx;
+
+	assert(ofi_genlock_held(&pfds->lock));
+	assert(!ofi_pollfds_get_ctx(pfds, fd));
+	if (fd >= pfds->size) {
+		if (ofi_pollfds_grow(pfds, fd))
+			return NULL;
 	}
 
-	return -FI_ENOENT;
-}
-
-void ofi_pollfds_do_del(struct ofi_pollfds *pfds,
-			struct ofi_pollfds_work_item *item)
-{
-	if (item->fd >= pfds->nfds)
-		return;
-
-	pfds->fds[item->fd].fd = INVALID_SOCKET;
-	pfds->fds[item->fd].events = 0;
-	pfds->fds[item->fd].revents = 0;
-	while (pfds->nfds && pfds->fds[pfds->nfds - 1].fd == INVALID_SOCKET)
-		pfds->nfds--;
+	ctx = &pfds->ctx[fd];
+	assert(ctx->index < 0);
+	ctx->index = pfds->nfds++;
+	return ctx;
 }

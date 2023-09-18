@@ -1,0 +1,12 @@
+#!/usr/bin/env bash
+# Ignore line numbers in modules.
+
+sed '\|CHPL_HOME/modules|s/:[0-9]*:/:nnnn:/' $2 > $2.tmp
+mv $2.tmp $2
+
+OUTPUT=$(grep "does not support reading associative arrays" $2)
+if [ "$OUTPUT" ]; then
+  echo $OUTPUT > $2.tmp
+  mv $2.tmp $2
+fi
+

@@ -39,30 +39,35 @@ public:
                                        Expr*      iteratorExpr,
                                        BlockStmt* body,
                                        bool       zippered,
-                                       bool       isForExpr);
+                                       bool       isForExpr,
+                                       LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildForeachLoop (Expr*      indices,
                                            Expr*      iteratorExpr,
                                            BlockStmt* body,
                                            bool       zippered,
-                                           bool       isForExpr);
+                                           bool       isForExpr,
+                                           LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildCoforallLoop (Expr*      indices,
                                             Expr*      iteratorExpr,
                                             BlockStmt* body,
-                                            bool       zippered);
+                                            bool       zippered,
+                                            LLVMMetadataList attrs = {});
 
   static BlockStmt*      buildLoweredForallLoop (Expr*      indices,
                                                  Expr*      iteratorExpr,
                                                  BlockStmt* body,
                                                  bool       zippered,
-                                                 bool       isForExpr);
+                                                 bool       isForExpr,
+                                                 LLVMMetadataList attrs = {});
 
 
 private:
   static BlockStmt*      doBuildForLoop (Expr*      indices,
                                          Expr*      iteratorExpr,
                                          BlockStmt* body,
+                                         LLVMMetadataList attrs,
                                          bool       coforall,
                                          bool       zippered,
                                          bool       isLoweredForall,

@@ -57,6 +57,6 @@
 #define _PTL_FWD_SELF_H
 
 /* Symbol in am ptl */
-extern struct ptl_ctl_init psmi_ptl_self;
+extern struct ptl_ctl_init psm3_ptl_self;
 
 #endif

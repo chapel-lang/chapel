@@ -29,48 +29,48 @@ config param useDimIterRowDistributed = useDimIterDistributed;
 config param useDimIterColDistributed = useDimIterDistributed;
 
 class SyncLock {
-  var lock$ : sync bool;
+  var lockVar : sync bool;
 
   proc init(){
-    this.complete();
-    this.lock$.writeEF(true);
+    init this;
+    this.lockVar.writeEF(true);
   }
 
   proc lock(){
-    lock$.readFE();
+    lockVar.readFE();
   }
 
   proc unlock(){
-    lock$.writeEF(true);
+    lockVar.writeEF(true);
   }
 
   proc forceUnlock(){
-    lock$.writeXF(true);
+    lockVar.writeXF(true);
   }
 
   proc isLocked() : bool {
-    return this.lock$.isFull;
+    return this.lockVar.isFull;
   }
 }
 
 class AtomicLock {
-  var lock$: atomic bool;
+  var lockVar: atomic bool;
 
   proc init(){
-    this.complete();
-    lock$.clear();
+    init this;
+    lockVar.clear();
   }
 
   proc lock(){
-    while lock$.testAndSet() do chpl_task_yield();
+    while lockVar.testAndSet() do currentTask.yieldExecution();
   }
 
   proc unlock(){
-    lock$.clear();
+    lockVar.clear();
   }
 
   proc isLocked() : bool {
-    return this.lock$.read();
+    return this.lockVar.read();
   }
 }
 
@@ -145,7 +145,7 @@ class ParallelWorkQueue {
     this.lockType = lockType;
     this.lock = new lockType();
     this.queue = new unmanaged Vector( eltType );
-    this.complete();
+    init this;
 
     terminated.write(false);
   }
@@ -202,7 +202,7 @@ class ParallelWorkQueue {
           yield work;
         }
       } else  {
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       delete unlockedQueue;
@@ -227,7 +227,7 @@ class DistributedWorkQueue {
   var localInstance : unmanaged LocalDistributedWorkQueue(eltType, lockType);
   var pid = -1;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc _value {
     if pid == -1 then halt("DistributedWorkQueue is uninitialized.");
     return chpl_getPrivatizedCopy(unmanaged LocalDistributedWorkQueue(eltType,lockType), pid);
@@ -244,7 +244,7 @@ class DistributedWorkQueue {
 
     this.localInstance = new unmanaged LocalDistributedWorkQueue(eltType, lockType, targetLocales);
     this.pid = this.localInstance.pid;
-    this.complete();
+    init this;
   }
 
   proc deinit(){
@@ -278,7 +278,7 @@ class LocalDistributedWorkQueue {
     this.queue = new unmanaged Vector(eltType);
     this.terminatedRetries = retries;
 
-    this.complete();
+    init this;
 
     terminated.write(false);
     this.pid = _newPrivatizedClass(this);
@@ -294,9 +294,9 @@ class LocalDistributedWorkQueue {
     this.terminatedRetries = that.terminatedRetries;
     this.pid = pid;
 
-    this.complete();
+    init this;
 
-    this.lock.lock$.write( that.lock.isLocked() );
+    this.lock.lockVar.write( that.lock.isLocked() );
     this.terminated.write(that.terminated.read());
   }
 
@@ -329,7 +329,7 @@ class LocalDistributedWorkQueue {
   pragma "fn returns iterator"
   inline proc these(param tag) where (tag == iterKind.standalone) {
     var maxTasks : [0..#Locales.size] int;
-    forall onLocale in Locales {
+    forall onLocale in Locales with (ref maxTasks) {
       maxTasks[ onLocale.id ] = onLocale.maxTaskPar;
     }
     return this.these(tag=tag, maxTasks);
@@ -369,7 +369,7 @@ class LocalDistributedWorkQueue {
             yield work;
           }
         } else  {
-          chpl_task_yield();
+          currentTask.yieldExecution();
         }
 
         delete unlockedQueue;
@@ -394,7 +394,7 @@ class LocalDistributedWorkQueue {
   }
 }
 
-class PermutationMap {
+class PermutationMap : writeSerializable {
   type idxType;
   param rank = 2;
   var rowDom : domain(1);
@@ -437,13 +437,13 @@ class PermutationMap {
     return new owned PermutationMap( inverseRowMap, inverseColumnMap );
   }
 
-  iter these( onDomain : domain ) : rank*idxType
+  iter these( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield this.map( idx );
   }
 
-  iter inverseThese( onDomain : domain ) : rank*idxType
+  iter inverseThese( onDomain : domain(?) ) : rank*idxType
   where onDomain.rank == 2
   {
     for idx in onDomain do yield inverseMap( idx );
@@ -451,7 +451,7 @@ class PermutationMap {
 
 
   // TODO make parallel
-  iter these(param tag : iterKind, onDomain : domain) : rank*idxType
+  iter these(param tag : iterKind, onDomain : domain(?)) : rank*idxType
   where tag == iterKind.standalone && onDomain.rank == 2
   {
     for idx in this.these( onDomain ) do yield idx;
@@ -459,27 +459,27 @@ class PermutationMap {
 
   // TODO leader follower iterator
 
-  override proc writeThis( f ){
+  override proc serialize(writer, ref serializer){
     const maxVal = max( (max reduce rowMap), (max reduce columnMap) ) : string;
     const minVal = min( (min reduce rowMap), (min reduce columnMap) ) : string;
     const padding = max( maxVal.size, minVal.size );
     const formatString = "%%%nn -> %%%nn".format( max(2,padding), padding );
     const inSpace = max(padding-2,0);
-    f.writeln("Row map");
-    for i in 0..#inSpace do f.write(" ");
-    f.write("in -> out");
+    writer.writeln("Row map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.write("in -> out");
     for i in rowDom {
-      f.writeln(formatString.format( i, rowMap[i] ));
+      writer.writeln(formatString.format( i, rowMap[i] ));
     }
-    f.writeln("Column map");
-    for i in 0..#inSpace do f.write(" ");
-    f.writeln("in -> out");
+    writer.writeln("Column map");
+    for i in 0..#inSpace do writer.write(" ");
+    writer.writeln("in -> out");
     for i in columnDom {
-      f.write(formatString.format( i, columnMap[i] ));
+      writer.write(formatString.format( i, columnMap[i] ));
     }
   }
 
-  proc permuteDomain( D : domain )
+  proc permuteDomain( D : domain(?) )
   where D.rank == 2 && D.isSparse()
   {
     // stopwatch for debugging purposes
@@ -504,7 +504,7 @@ class PermutationMap {
 
   proc permuateIndexList( array : [?D] rank*idxType ) : [D] rank*idxType {
     var retArray : [array.domain] array.eltType;
-    forall i in retArray.domain {
+    forall i in retArray.domain with (ref retArray) {
       retArray[i] = this( array[i] );
     }
     return retArray;
@@ -524,7 +524,7 @@ class TopoSortResult {
   }
 }
 
-proc createRandomPermutationMap( D : domain, seed : int ) : shared PermutationMap(D.idxType)
+proc createRandomPermutationMap( D : domain(?), seed : int ) : shared PermutationMap(D.idxType)
 where D.rank == 2
 {
   var rowMap : [D.dim(0)] D.idxType = D.dim(0);
@@ -584,7 +584,7 @@ proc createSparseUpperTriangluarIndexList(
       var sDRandom : [sDRandomDom] D.rank*D.idxType;
 
       // foreach row
-      forall row in low..high-1 {
+      forall row in low..high-1 with (ref sDRandom) {
         // Inital position in sDRandom is Sum(N-1) - Sum( (N-1) - (row-1) ) + 1
         var i = (-((N-row)*(N-row)) - N + row) / 2 + ((N-1)*(N-1) + N - 1)/2 + 1;
         for column in row+1..high {
@@ -637,7 +637,7 @@ proc createSparseUpperTriangluarIndexList(
       }
 
       // foreach row...
-      forall row in low..high-1 {
+      forall row in low..high-1 with (ref rowCount, ref sDRandom) {
         // create a new local random number generator
         // note: seed is still deterministic. Should get same behavior regardless
         // of tasking (including number of tasks and scheduling)
@@ -665,7 +665,7 @@ proc createSparseUpperTriangluarIndexList(
   }
 
   // Diagonal indices
-  forall i in D.dim(0) {
+  forall i in D.dim(0) with (ref sparseD) {
     sparseD[i] = (i,i);
   }
 
@@ -676,7 +676,7 @@ proc createSparseUpperTriangluarIndexList(
   return sparseD;
 }
 
-proc checkIsUperTriangularDomain( D : domain ) : bool
+proc checkIsUperTriangularDomain( D : domain(?) ) : bool
 where D.rank == 2 && D.isSparse()
 {
   var isUT = true;
@@ -715,7 +715,7 @@ where D.rank == 2
   }
 }
 
-proc toposortSerial( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortSerial( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var result = new shared TopoSortResult(D.idxType);
@@ -828,7 +828,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortParallel( D : domain, numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
+proc toposortParallel( D : domain(?), numTasks : int = here.maxTaskPar ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if numTasks < 1 then halt("Must run with numTaks >= 1");
@@ -849,7 +849,7 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in rows {
+  forall row in rows with (ref rowCount, ref rowSum) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -893,7 +893,7 @@ where D.rank == 2
   result.timers["toposort"].start();
 
   // For each queued row (and rows that will be queued)...
-  forall swapRow in workQueue {
+  forall swapRow in workQueue with (ref columnMap, ref rowCount, ref rowMap, ref rowSum) {
     // The body of this loop executes on the locale where swapRow is queued
 
     if enableRuntimeDebugging && debugTopo {
@@ -960,7 +960,7 @@ where D.rank == 2
   return result;
 }
 
-proc toposortDistributed( D : domain ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?) ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   var maxTasksPerLocale : [0..#Locales.size] int;
@@ -970,7 +970,7 @@ where D.rank == 2
   return toposortDistributed( D, maxTasksPerLocale );
 }
 
-proc toposortDistributed( D : domain, maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
+proc toposortDistributed( D : domain(?), maxTasksPerLocale : [] int ) : shared TopoSortResult(D.idxType)
 where D.rank == 2
 {
   if (min reduce maxTasksPerLocale) < 1 then halt("Must run with numTasks >= 1");
@@ -992,7 +992,7 @@ where D.rank == 2
 
   // initialize rowCount and rowSum and put work in queue
   result.timers["initialization"].start();
-  forall row in rows {
+  forall row in rows with (ref rowCount, ref rowSum) {
     // Accumulate task locally, then write at end.
     var count = 0;
     var sum = 0;
@@ -1015,7 +1015,7 @@ where D.rank == 2
     }
 
     if count == 1 {
-      workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+      workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
     }
 
     rowCount[row].write( count );
@@ -1037,7 +1037,7 @@ where D.rank == 2
 
   // For each queued row (and rows that will be queued)...
   // TODO make workQueue.these() accept maxTasksPerLocale
-  forall swapRow in workQueue {
+  forall swapRow in workQueue with (ref columnMap, ref rowCount, ref rowMap, ref rowSum) {
     // The body of this loop executes on the locale where swapRow is queued
 
     if enableRuntimeDebugging && debugTopo {
@@ -1091,7 +1091,7 @@ where D.rank == 2
           // if previousRowCount = 2 (ie rowCount[row] == 1)
           if previousRowCount == 2 {
             if enableRuntimeDebugging && debugTopo then writeln( "Queueing ", row);
-            workQueue.add( row, D.dist.dsiIndexToLocale( (row,minCol) ) );
+            workQueue.add( row, D.distribution.dsiIndexToLocale( (row,minCol) ) );
           }
         }
       }
@@ -1183,7 +1183,7 @@ proc main(){
     }
     when ToposortImplementation.Distributed {
        if !silentMode then writeln("Converting to Sparse Block domain");
-      var distributedD : D.type dmapped Block(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
+      var distributedD : D.type dmapped blockDist(D, targetLocales=reshape(Locales, {Locales.domain.dim(0),1..#1}) ) = D;
 
       var distributedPermutedSparseD : sparse subdomain(distributedD);
       distributedPermutedSparseD.bulkAdd( permutedSparseUpperTriangularIndexList );

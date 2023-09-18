@@ -5,11 +5,12 @@ module DistributedMap {
     private use HaltWrappers;
     private use CyclicDist;
     private use IO;
+    private use Math;
     private use Reflection;
     private use ChapelLocks;
 
 
-    record distributedMap {
+    record distributedMap : writeSerializable {
         type keyType;
         type valType;
 
@@ -32,30 +33,30 @@ module DistributedMap {
             this.instance!.clear();
         }
 
-        proc writeThis(fr) throws {
-            this.instance!.writeThis(fr);
+        proc serialize(writer, ref serializer) throws {
+            this.instance!.serialize(writer, serializer);
         }
     }
 
-    class distMapInternal {
+    class distMapInternal : writeSerializable {
         type keyType;
         type valType;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const targetLocales = Locales;
 
-        pragma "no doc"
+        @chpldoc.nodoc
         const locDom = {0..<targetLocales.size}
-            dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+            dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
-        pragma "no doc"
+        @chpldoc.nodoc
             var tables: [locDom] chainTable(keyType, valType);
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var locks: [locDom] owned _LockWrapper =
             [i in locDom] new owned _LockWrapper();
 
-        pragma "no doc"
+        @chpldoc.nodoc
         var localeHasher;
 
         // -------------------------------------------
@@ -101,11 +102,11 @@ module DistributedMap {
             return this.size == 0;
         }
 
-        proc extend(m: map) {
+        proc extend(m: map(?)) {
             compilerError("unimplemented");
         }
 
-        proc extend(other: distributedMap) {
+        proc extend(other: distributedMap(?)) {
             compilerError("unimplemented");
         }
 
@@ -121,7 +122,8 @@ module DistributedMap {
             compilerError("unimplemented");
         }
 
-        proc writeThis(fr) throws {
+        override proc serialize(writer, ref serializer) throws {
+            var fr = writer;
             for locIdx in this.locDom {
                 on this.targetLocales[locIdx] {
                     fr.write("[", this.targetLocales[locIdx], ": ");
@@ -163,7 +165,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType) const : valType
             where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType)
         {
@@ -179,7 +181,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType) const ref : valType
             where !isNonNilableClass(valType)
         {
@@ -197,7 +199,7 @@ module DistributedMap {
             return ret;
         }
 
-        pragma "no doc"
+        @chpldoc.nodoc
         proc const this(k: keyType)
             where isNonNilableClass(valType)
         {
@@ -284,7 +286,7 @@ module DistributedMap {
             return ret;
         }
 
-        proc addOrSet(in k: keyType, in v: valType) {
+        proc addOrReplace(in k: keyType, in v: valType) {
             const loc = this._localeFor(k);
             on loc {
                 this.locks[loc.id].lock();
@@ -354,7 +356,7 @@ module DistributedMap {
         }
     }
 
-    record staticRefsManager {
+    record staticRefsManager : contextManager {
         type dmType;
         var dm: dmType;
 
@@ -363,12 +365,12 @@ module DistributedMap {
             this.dm = dm;
         }
 
-        proc ref enterThis() ref: dmType {
+        proc ref enterContext() ref: dmType {
             this.dm._incrementStaticCounts();
             return this.dm;
         }
 
-        proc ref leaveThis(in err: owned Error?) {
+        proc ref exitContext(in err: owned Error?) {
             this.dm._decrementStaticCounts();
             this.dm._maybeResizeAndBallance();
             if err then try! { throw err; }

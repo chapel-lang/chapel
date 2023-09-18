@@ -7,7 +7,7 @@ class C {
 
   proc init() {
     rank = 2;
-    this.complete();
+    init this;
     x = new owned D();
   }
 }

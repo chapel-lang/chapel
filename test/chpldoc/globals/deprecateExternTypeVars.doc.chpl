@@ -19,7 +19,7 @@ extern type Blah9;
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated extern type Blah10;
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="Blah11 is deprecated") extern type Blah11;

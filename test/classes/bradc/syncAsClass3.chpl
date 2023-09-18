@@ -1,4 +1,4 @@
-var myObject: borrowed object?;
+var myObject: borrowed RootClass?;
 
 var mysync: sync int;
 

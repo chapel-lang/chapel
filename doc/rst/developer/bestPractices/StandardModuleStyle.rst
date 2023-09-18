@@ -112,7 +112,7 @@ Factory procedures can be functions or type methods. For example, we
 could have:
 
  * ``createStringWithBorrowedBuffer`` or
- * ``string.createWithBorrowedBuffer``.
+ * ``string.createBorrowingBuffer``.
 
 Accessors
 +++++++++

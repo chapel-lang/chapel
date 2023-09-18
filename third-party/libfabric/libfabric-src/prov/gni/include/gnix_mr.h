@@ -72,7 +72,7 @@ struct gnix_mr_cache_info {
 	struct gnix_fid_domain *domain;
 	struct gnix_auth_key *auth_key;
 
-	fastlock_t mr_cache_lock;
+	ofi_spin_t mr_cache_lock;
 	int inuse;
 };
 
@@ -207,14 +207,14 @@ int _gnix_close_cache(struct gnix_fid_domain *domain,
 int _gnix_flush_registration_cache(struct gnix_fid_domain *domain);
 
 
-/** 
+/**
  * used for internal registrations,
  *
  * @param fid  endpoint fid
  * @param buf            buffer to register
  * @param len            length of buffer to register
  * @param access         access permissions
- * @param offset         registration offset 
+ * @param offset         registration offset
  * @param requested_key  key requested for new registration
  * @param flags          registration flags
  * @param mr_o           pointer to returned registration
@@ -223,7 +223,7 @@ int _gnix_flush_registration_cache(struct gnix_fid_domain *domain);
  * @param reserved       1 if provider registration, 0 otherwise
  *
  * @note  Set reserved to 0 for a user registration
- * @note  Set reserved to 1 for a provider registration 
+ * @note  Set reserved to 1 for a provider registration
  */
 int _gnix_mr_reg(struct fid *fid, const void *buf, size_t len,
 			  uint64_t access, uint64_t offset,

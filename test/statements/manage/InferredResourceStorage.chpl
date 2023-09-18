@@ -12,32 +12,32 @@ record res {
 
 var globalRes = new res();
 
-record man1 {
+record man1 : contextManager {
   var x = new r();
-  proc enterThis(): res {
-    writeln('proc man1.enterThis(): res'); return new res();
+  proc enterContext(): res {
+    writeln('proc man1.enterContext(): res'); return new res();
   }
-  proc leaveThis(in err: owned Error?) {
+  proc exitContext(in err: owned Error?) {
     if err then try! { throw err; } writeln('leaving');
   }
 }
 
-record man2 {
+record man2 : contextManager {
   var x = new r();
-  proc enterThis() ref: res {
-    writeln('proc man2.enterThis() ref: res'); return globalRes;
+  proc enterContext() ref: res {
+    writeln('proc man2.enterContext() ref: res'); return globalRes;
   }
-  proc leaveThis(in err: owned Error?) {
+  proc exitContext(in err: owned Error?) {
     if err then try! { throw err; } writeln('leaving');
   }
 }
 
-record man3 {
+record man3 : contextManager {
   var x = new r();
-  proc enterThis() const ref: res {
-    writeln('proc man3.enterThis() const ref: res'); return globalRes;
+  proc enterContext() const ref: res {
+    writeln('proc man3.enterContext() const ref: res'); return globalRes;
   }
-  proc leaveThis(in err: owned Error?) {
+  proc exitContext(in err: owned Error?) {
     if err then try! { throw err; } writeln('leaving');
   }
 }

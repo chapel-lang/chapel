@@ -8,13 +8,13 @@ record r {
   proc init(id: int, doPrint: bool=false) {
     this.doPrint = doPrint;
     this.x = id;
-    this.complete();
+    init this;
     if doPrint then writeln('init int');
   }
   proc init=(rhs: r) {
     this.doPrint = rhs.doPrint;
     this.x = rhs.x;
-    this.complete();
+    init this;
     if doPrint then writeln('init=');
   }
   proc deinit() { if doPrint then writeln('deinit'); }

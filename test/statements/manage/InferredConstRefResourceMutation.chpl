@@ -1,13 +1,13 @@
-record man {
+record man : contextManager {
   var x = 0;
-  proc enterThis(): int { return x; }
-  proc enterThis() const ref: int { return x; }
-  proc leaveThis(in err: owned Error?) {
+  proc enterContext(): int { return x; }
+  proc enterContext() const ref: int { return x; }
+  proc exitContext(in err: owned Error?) {
     if err then halt();
   }
 }
 
-// Emit an error because there are two overloads of 'enterThis()'.
+// Emit an error because there are two overloads of 'enterContext()'.
 proc test1() {
   var myManager = new man();
   writeln(myManager);

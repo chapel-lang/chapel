@@ -35,11 +35,11 @@
 //       "value provided"
 // - [ ] "can't initialize %s field '%s' with 'new' expression"
 //       (for types and params)
-// - [ ] "cannot take a reference to 'this' before this.complete()"
-// - [ ] "cannot initialize a variable from 'this' before this.complete()"
+// - [ ] "cannot take a reference to 'this' before 'init this'"
+// - [ ] "cannot initialize a variable from 'this' before 'init this'"
 // - [ ] "cannot pass 'this' to a function before calling super.init() "
 //       "or this.init()"
-// - [ ] "cannot pass a record to a function before this.complete()"
+// - [ ] "cannot pass a record to a function before 'init this'"
 //
 namespace chpl {
 namespace resolution {
@@ -55,7 +55,7 @@ static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
 
 static const CompositeType* typeToCompType(const Type* type) {
   if (auto cls = type->toClassType()) {
-    return cls->basicClassType();
+    return cls->toManageableType();
   } else {
     auto ret = type->toCompositeType();
     return ret;
@@ -269,6 +269,8 @@ const Type* InitResolver::computeReceiverTypeConsideringState(void) {
                           subs);
   } else if (auto cls = initialRecvType_->toClassType()) {
     auto oldBasic = cls->basicClassType();
+    CHPL_ASSERT(oldBasic && "Not handled!");
+
     auto basic = BasicClassType::get(ctx_, oldBasic->id(),
                                      oldBasic->name(),
                                      oldBasic->parentClassType(),
@@ -368,9 +370,11 @@ bool InitResolver::implicitlyResolveFieldType(ID id) {
   if (!state || !state->initPointId.isEmpty()) return false;
 
   if (state->qt.isParam()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::PARAM, ErroneousType::get(ctx_));
   } else if (state->qt.isType()) {
-    CHPL_ASSERT(0 == "Not handled yet!");
+    // TODO: not yet implemented
+    state->qt = QualifiedType(QualifiedType::TYPE, ErroneousType::get(ctx_));
   } else {
     auto ct = typeToCompType(currentRecvType_);
     auto& rf = resolveFieldDecl(ctx_, ct, id, DefaultsPolicy::USE_DEFAULTS);
@@ -463,6 +467,17 @@ bool InitResolver::isFieldInitialized(ID fieldId) {
   return ret;
 }
 
+void InitResolver::handleInitMarker(const uast::AstNode* node) {
+  // TODO: Better/more appropriate user facing error message for this?
+  if (thisCompleteIds_.size() > 0) {
+    CHPL_ASSERT(phase_ == PHASE_COMPLETE);
+    CHPL_REPORT(ctx_, PhaseTwoInitMarker, node, thisCompleteIds_);
+  } else {
+    thisCompleteIds_.push_back(node->id());
+    phase_ = PHASE_COMPLETE;
+  }
+}
+
 bool InitResolver::handleCallToThisComplete(const FnCall* node) {
   if (!node->calledExpression()) return false;
   bool isCompleteCall = false;
@@ -476,14 +491,7 @@ bool InitResolver::handleCallToThisComplete(const FnCall* node) {
 
   if (!isCompleteCall) return false;
 
-  // TODO: Better/more appropriate user facing error message for this?
-  if (thisCompleteIds_.size() > 0) {
-    CHPL_ASSERT(phase_ == PHASE_COMPLETE);
-    ctx_->error(node, "use of this.complete() call in phase 2");
-  } else {
-    thisCompleteIds_.push_back(node->id());
-    phase_ = PHASE_COMPLETE;
-  }
+  handleInitMarker(node);
 
   return true;
 }
@@ -587,6 +595,16 @@ bool InitResolver::handleResolvingCall(const Call* node) {
   return ret;
 }
 
+bool InitResolver::handleInitStatement(const uast::Init* node) {
+  // current parser rules require this to always be this, but maybe someday
+  // they won't.
+  if (node->target()->name() != "this") return false;
+
+  handleInitMarker(node);
+
+  return true;
+}
+
 bool InitResolver::handleUseOfField(const AstNode* node) {
   auto id = fieldIdFromPossibleMentionOfField(node);
   if (id.isEmpty()) return false;
@@ -670,6 +688,9 @@ bool InitResolver::handleResolvingFieldAccess(const Dot* node) {
         re.setType(qt);
         return false;
       }
+    } else {
+      // Otherwise, proceed normally.
+      return false;
     }
   }
 

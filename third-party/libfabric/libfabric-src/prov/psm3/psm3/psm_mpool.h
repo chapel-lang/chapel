@@ -74,34 +74,36 @@ typedef void (*alloc_dealloc_callback_fn_t) (int is_alloc, void *context,
 					     void *chunk);
 
 mpool_t
-MOCKABLE(psmi_mpool_create)(size_t obj_size, uint32_t num_obj_per_chunk,
+MOCKABLE(psm3_mpool_create)(size_t obj_size, uint32_t num_obj_per_chunk,
 			  uint32_t num_obj_max_total, int flags,
 			  psmi_memtype_t statstype,
 			  non_empty_callback_fn_t cb, void *context);
-MOCK_DCL_EPILOGUE(psmi_mpool_create);
+MOCK_DCL_EPILOGUE(psm3_mpool_create);
 
-mpool_t psmi_mpool_create_for_cuda(size_t obj_size, uint32_t num_obj_per_chunk,
-				   uint32_t num_obj_max_total, int flags,
-				   psmi_memtype_t statstype,
-				   non_empty_callback_fn_t cb, void *context,
-				   alloc_dealloc_callback_fn_t ad_cb,
-				   void *ad_context);
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+mpool_t psm3_mpool_create_for_gpu(size_t obj_size, uint32_t num_obj_per_chunk,
+				  uint32_t num_obj_max_total, int flags,
+				  psmi_memtype_t statstype,
+				  non_empty_callback_fn_t cb, void *context,
+				  alloc_dealloc_callback_fn_t ad_cb,
+				  void *ad_context);
+#endif
 
-void psmi_mpool_destroy(mpool_t mp);
+void psm3_mpool_destroy(mpool_t mp);
 
 void
-MOCKABLE(psmi_mpool_get_obj_info)(mpool_t mp, uint32_t *num_obj_per_chunk,
+MOCKABLE(psm3_mpool_get_obj_info)(mpool_t mp, uint32_t *num_obj_per_chunk,
 			     uint32_t *num_obj_max_total);
-MOCK_DCL_EPILOGUE(psmi_mpool_get_obj_info);
+MOCK_DCL_EPILOGUE(psm3_mpool_get_obj_info);
 
-void *psmi_mpool_get(mpool_t mp);
-void psmi_mpool_put(void *obj);
+void *psm3_mpool_get(mpool_t mp);
+void psm3_mpool_put(void *obj);
 
-int psmi_mpool_get_obj_index(void *obj);
-uint32_t psmi_mpool_get_obj_gen_count(void *obj);
-int psmi_mpool_get_obj_index_gen_count(void *obj,
+int psm3_mpool_get_obj_index(void *obj);
+uint32_t psm3_mpool_get_obj_gen_count(void *obj);
+int psm3_mpool_get_obj_index_gen_count(void *obj,
 				       uint32_t *index, uint32_t *gen_count);
 
-void *psmi_mpool_find_obj_by_index(mpool_t mp, int index);
+void *psm3_mpool_find_obj_by_index(mpool_t mp, int index);
 
 #endif

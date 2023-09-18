@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2019 Amazon.com, Inc. or its affiliates.
+ * Copyright (c) 2019-2022 Amazon.com, Inc. or its affiliates.
  * All rights reserved.
  *
  * This software is available to you under a choice of one of two
@@ -49,6 +49,7 @@
 #include <rdma/fi_rma.h>
 #include <rdma/fi_tagged.h>
 #include <rdma/fi_trigger.h>
+#include <rdma/fi_ext.h>
 
 #include <ofi.h>
 #include <ofi_iov.h>
@@ -63,21 +64,12 @@
 #include <ofi_perf.h>
 #include <ofi_hmem.h>
 
-#include "rxr_pkt_entry.h"
 #include "rxr_pkt_type.h"
-
-/*
- * EFA support interoperability between protocol version 4 and above,
- * and version 4 is considered the base version.
- */
-#define RXR_BASE_PROTOCOL_VERSION	(4)
-#define RXR_CUR_PROTOCOL_VERSION	(4)
-#define RXR_NUM_PROTOCOL_VERSION	(RXR_CUR_PROTOCOL_VERSION - RXR_BASE_PROTOCOL_VERSION + 1)
-#define RXR_MAX_PROTOCOL_VERSION	(100)
+#include "rxr_op_entry.h"
+#include "rxr_env.h"
 
 #define RXR_FI_VERSION		OFI_VERSION_LATEST
 
-#define RXR_IOV_LIMIT		(4)
 
 #ifdef ENABLE_EFA_POISONING
 extern const uint32_t rxr_poison_value;
@@ -118,8 +110,6 @@ static inline void rxr_poison_mem_region(uint32_t *ptr, size_t size)
 #define RXR_RAND_MAX_TIMEOUT		(120)
 
 /* bounds for flow control */
-#define RXR_DEF_MAX_RX_WINDOW		(128)
-#define RXR_DEF_MAX_TX_CREDITS		(64)
 #define RXR_DEF_MIN_TX_CREDITS		(32)
 
 /*
@@ -189,6 +179,26 @@ static inline void rxr_poison_mem_region(uint32_t *ptr, size_t size)
 #define RXR_RX_ENTRY_QUEUED_RNR BIT_ULL(9)
 
 /*
+ * Flag to indicate an rx_entry has an EOR
+ * in flight (the EOR has been sent or queued,
+ * and has not got send completion)
+ * hence the rx_entry cannot be released
+ */
+#define RXR_EOR_IN_FLIGHT BIT_ULL(10)
+
+/*
+ * Flag to indicate a tx_entry has already
+ * written an cq error entry for RNR
+ */
+#define RXR_TX_ENTRY_WRITTEN_RNR_CQ_ERR_ENTRY BIT_ULL(10)
+
+/*
+ * Flag to indicate an op_entry has queued ctrl packet,
+ * and is on ep->op_entry_queued_ctrl_list
+ */
+#define RXR_OP_ENTRY_QUEUED_CTRL BIT_ULL(11)
+
+/*
  * OFI flags
  * The 64-bit flag field is used as follows:
  * 1-grow up    common (usable with multiple operations)
@@ -206,94 +216,17 @@ static inline void rxr_poison_mem_region(uint32_t *ptr, size_t size)
 
 #define RXR_MTU_MAX_LIMIT	BIT_ULL(15)
 
-
-
-extern struct fi_info *shm_info;
-
-extern struct fi_provider *lower_efa_prov;
-extern struct fi_provider rxr_prov;
-extern struct fi_info rxr_info;
-extern struct rxr_env rxr_env;
-extern struct fi_fabric_attr rxr_fabric_attr;
-extern struct util_prov rxr_util_prov;
-extern struct efa_ep_addr *local_efa_addr;
-
-struct rxr_env {
-	int rx_window_size;
-	int tx_min_credits;
-	int tx_max_credits;
-	int tx_queue_size;
-	int use_device_rdma;
-	int use_zcpy_rx;
-	int zcpy_rx_seed;
-	int enable_shm_transfer;
-	int shm_av_size;
-	int shm_max_medium_size;
-	int recvwin_size;
-	int ooo_pool_chunk_size;
-	int unexp_pool_chunk_size;
-	int readcopy_pool_size;
-	int atomrsp_pool_size;
-	int cq_size;
-	size_t max_memcpy_size;
-	size_t mtu_size;
-	size_t tx_size;
-	size_t rx_size;
-	size_t tx_iov_limit;
-	size_t rx_iov_limit;
-	int rx_copy_unexp;
-	int rx_copy_ooo;
-	int rnr_backoff_wait_time_cap; /* unit is us */
-	int rnr_backoff_initial_wait_time; /* unit is us */
-	size_t efa_cq_read_size;
-	size_t shm_cq_read_size;
-	size_t efa_max_medium_msg_size;
-	size_t efa_min_read_msg_size;
-	size_t efa_min_read_write_size;
-	size_t efa_read_segment_size;
-	/* If first attempt to send a packet failed,
-	 * this value controls how many times firmware
-	 * retries the send before it report an RNR error
-	 * (via rdma-core error cq entry).
-	 *
-	 * The valid number is from
-	 *      0 (no retry)
-	 * to
-	 *      EFA_RNR_INFINITY_RETRY (retry infinitely)
-	 */
-	int rnr_retry;
+enum ibv_cq_ex_type {
+	IBV_CQ,
+	EFADV_CQ
 };
 
+extern struct fi_provider rxr_prov;
+extern struct fi_fabric_attr rxr_fabric_attr;
+extern struct util_prov rxr_util_prov;
 enum rxr_lower_ep_type {
 	EFA_EP = 1,
 	SHM_EP,
-};
-
-enum rxr_x_entry_type {
-	RXR_TX_ENTRY = 1,
-	RXR_RX_ENTRY,
-	RXR_READ_ENTRY,
-};
-
-enum rxr_tx_comm_type {
-	RXR_TX_FREE = 0,	/* tx_entry free state */
-	RXR_TX_REQ,		/* tx_entry sending REQ packet */
-	RXR_TX_SEND,		/* tx_entry sending data in progress */
-	RXR_TX_QUEUED_SHM_RMA,	/* tx_entry was unable to send RMA operations over shm provider */
-	RXR_TX_QUEUED_CTRL,	/* tx_entry was unable to send ctrl packet */
-};
-
-enum rxr_rx_comm_type {
-	RXR_RX_FREE = 0,	/* rx_entry free state */
-	RXR_RX_INIT,		/* rx_entry ready to recv RTM */
-	RXR_RX_UNEXP,		/* rx_entry unexp msg waiting for post recv */
-	RXR_RX_MATCHED,		/* rx_entry matched with RTM */
-	RXR_RX_RECV,		/* rx_entry large msg recv data pkts */
-	RXR_RX_QUEUED_CTRL,	/* rx_entry encountered error when sending control
-				   it is in rxr_ep->rx_queued_entry_list, progress
-				   engine will resend the ctrl packet */
-	RXR_RX_WAIT_READ_FINISH, /* rx_entry wait for send to finish, FI_READ */
-	RXR_RX_WAIT_ATOMRSP_SENT, /* rx_entry wait for atomrsp packet sent completion */
 };
 
 #define RXR_PEER_REQ_SENT BIT_ULL(0) /* sent a REQ to the peer, peer should send a handshake back */
@@ -307,17 +240,6 @@ enum rxr_rx_comm_type {
  */
 #define RXR_PEER_HANDSHAKE_QUEUED      BIT_ULL(5)
 
-struct rxr_fabric {
-	struct util_fabric util_fabric;
-	struct fid_fabric *lower_fabric;
-	struct fid_fabric *shm_fabric;
-#ifdef RXR_PERF_ENABLED
-	struct ofi_perfset perf_set;
-#endif
-};
-
-#define RXR_MAX_NUM_PROTOCOLS (RXR_MAX_PROTOCOL_VERSION - RXR_BASE_PROTOCOL_VERSION + 1)
-
 struct rdm_peer {
 	bool is_self;			/* self flag */
 	bool is_local;			/* local/remote peer flag */
@@ -327,13 +249,11 @@ struct rdm_peer {
 	uint32_t prev_qkey;		/* each peer has unique gid+qpn. the qkey can change */
 	uint32_t next_msg_id;		/* sender's view of msg_id */
 	uint32_t flags;
-	uint32_t maxproto;		/* maximum supported protocol version by this peer */
-	uint64_t features[RXR_MAX_NUM_PROTOCOLS]; /* the feature flag for each version */
+	uint32_t nextra_p3;		/* number of members in extra_info plus 3 */
+	uint64_t extra_info[RXR_MAX_NUM_EXINFO]; /* the feature/request flag for each version */
 	size_t efa_outstanding_tx_ops;	/* tracks outstanding tx ops to this peer on EFA device */
 	size_t shm_outstanding_tx_ops;  /* tracks outstanding tx ops to this peer on SHM */
 	struct dlist_entry outstanding_tx_pkts; /* a list of outstanding tx pkts to the peer */
-	uint16_t tx_credits;		/* available send credits */
-	uint16_t rx_credits;		/* available credits to allocate */
 	uint64_t rnr_backoff_begin_ts;	/* timestamp for RNR backoff period begin */
 	uint64_t rnr_backoff_wait_time;	/* how long the RNR backoff period last */
 	int rnr_queued_pkt_cnt;		/* queued RNR packet count */
@@ -343,219 +263,34 @@ struct rdm_peer {
 	struct dlist_entry rx_unexp_tagged_list; /* a list of unexpected tagged rx_entry for this peer */
 	struct dlist_entry tx_entry_list; /* a list of tx_entry related to this peer */
 	struct dlist_entry rx_entry_list; /* a list of rx_entry relased to this peer */
+
+	/* number of bytes that has been sent as part of runting protocols
+	 * capped by rxr_env.efa_runt_size
+	 */
+	int64_t num_runt_bytes_in_flight;
+
+	/*
+	 * number of messages that are using read based protocol
+	 */
+	int64_t num_read_msg_in_flight;
+
 };
 
-struct rxr_queued_ctrl_info {
-	int type;
-	int inject;
-};
-
-struct rxr_atomic_hdr {
-	/* atomic_op is different from tx_op */
-	uint32_t atomic_op;
-	uint32_t datatype;
-};
-
-/* extra information that is not included in fi_msg_atomic
- * used by fetch atomic and compare atomic.
- *     resp stands for response
- *     comp stands for compare
+/** @brief Information of a queued copy.
+ *
+ * This struct is used when receiving buffer is on device.
+ * Under such circumstance, batching a series copies to
+ * do them at the same time can avoid memory barriers between
+ * copies, and improve performance.
  */
-struct rxr_atomic_ex {
-	struct iovec resp_iov[RXR_IOV_LIMIT];
-	int resp_iov_count;
-	struct iovec comp_iov[RXR_IOV_LIMIT];
-	int comp_iov_count;
+struct rxr_queued_copy {
+	struct rxr_pkt_entry *pkt_entry;
+	char *data;
+	size_t data_size;
+	size_t data_offset;
 };
 
-struct rxr_rx_entry {
-	/* Must remain at the top */
-	enum rxr_x_entry_type type;
-
-	fi_addr_t addr;
-	struct rdm_peer *peer;
-
-	/*
-	 * freestack ids used to lookup rx_entry during pkt recv
-	 */
-	uint32_t tx_id;
-	uint32_t rx_id;
-	uint32_t op;
-
-	/*
-	 * The following two varibales are for emulated RMA fi_read only
-	 */
-	uint32_t rma_loc_tx_id;
-	uint32_t rma_initiator_rx_id;
-
-	struct rxr_atomic_hdr atomic_hdr;
-
-	uint32_t msg_id;
-
-	uint64_t tag;
-	uint64_t ignore;
-
-	uint64_t bytes_received;
-	uint64_t bytes_copied;
-	int64_t window;
-	uint16_t credit_request;
-	int credit_cts;
-
-	uint64_t total_len;
-
-	enum rxr_rx_comm_type state;
-	struct rxr_queued_ctrl_info queued_ctrl;
-
-	uint64_t fi_flags;
-	uint16_t rxr_flags;
-
-	size_t iov_count;
-	struct iovec iov[RXR_IOV_LIMIT];
-
-	/* App-provided buffers and descriptors */
-	void *desc[RXR_IOV_LIMIT];
-	struct fi_msg *posted_recv;
-
-	/* iov_count on sender side, used for large message READ over shm */
-	size_t rma_iov_count;
-	struct fi_rma_iov rma_iov[RXR_IOV_LIMIT];
-
-	struct fi_cq_tagged_entry cq_entry;
-
-	/* entry is linked with rx entry lists in rxr_ep */
-	struct dlist_entry entry;
-
-	struct dlist_entry peer_unexp_entry; /* linked to peer->rx_unexp_list or peer->rx_unexp_tagged_list */
-
-	/* queued_ctrl_entry is linked with rx_queued_ctrl_list in rxr_ep */
-	struct dlist_entry queued_ctrl_entry;
-
-	/* queued_rnr_entry is linked with rx_queued_rnr_list in rxr_ep */
-	struct dlist_entry queued_rnr_entry;
-
-	/* Queued packets due to TX queue full or RNR backoff */
-	struct dlist_entry queued_pkts;
-
-	/*
-	 * A list of rx_entries tracking FI_MULTI_RECV buffers. An rx_entry of
-	 * type RXR_MULTI_RECV_POSTED that was created when the multi-recv
-	 * buffer was posted is the list head, and the rx_entries of type
-	 * RXR_MULTI_RECV_CONSUMER get added to the list as they consume the
-	 * buffer.
-	 */
-	struct dlist_entry multi_recv_consumers;
-	struct dlist_entry multi_recv_entry;
-	struct rxr_rx_entry *master_entry;
-
-	struct rxr_pkt_entry *unexp_pkt;
-	char *atomrsp_data;
-
-	/* linked with rx_entry_list in rdm_peer */
-	struct dlist_entry peer_entry;
-
-	/* linked with rx_entry_list in rxr_ep */
-	struct dlist_entry ep_entry;
-#if ENABLE_DEBUG
-	/* linked with rx_pending_list in rxr_ep */
-	struct dlist_entry rx_pending_entry;
-#endif
-};
-
-struct rxr_tx_entry {
-	/* Must remain at the top */
-	enum rxr_x_entry_type type;
-
-	uint32_t op;
-	fi_addr_t addr;
-	struct rdm_peer *peer;
-
-	/*
-	 * freestack ids used to lookup tx_entry during ctrl pkt recv
-	 */
-	uint32_t tx_id;
-	uint32_t rx_id;
-
-	uint32_t msg_id;
-
-	uint64_t tag;
-
-	uint64_t bytes_acked;
-	uint64_t bytes_sent;
-	int64_t window;
-	uint16_t credit_request;
-	uint16_t credit_allocated;
-
-	uint64_t total_len;
-
-	enum rxr_tx_comm_type state;
-	struct rxr_queued_ctrl_info queued_ctrl;
-
-	uint64_t fi_flags;
-	uint64_t rxr_flags;
-
-	uint64_t send_flags;
-	size_t iov_count;
-	size_t iov_index;
-	size_t iov_offset;
-	struct iovec iov[RXR_IOV_LIMIT];
-
-	uint64_t rma_loc_rx_id;
-	uint64_t rma_window;
-	size_t rma_iov_count;
-	struct fi_rma_iov rma_iov[RXR_IOV_LIMIT];
-
-	/* App-provided reg descriptor */
-	void *desc[RXR_IOV_LIMIT];
-
-	/* atomic related variables */
-	struct rxr_atomic_hdr atomic_hdr;
-	struct rxr_atomic_ex atomic_ex;
-
-	/* Only used with mr threshold switch from memcpy */
-	size_t iov_mr_start;
-	struct fid_mr *mr[RXR_IOV_LIMIT];
-
-	struct fi_cq_tagged_entry cq_entry;
-
-	/* entry is linked with tx_pending_list in rxr_ep */
-	struct dlist_entry entry;
-
-	/* queued_ctrl_entry is linked with tx_queued_ctrl_list in rxr_ep */
-	struct dlist_entry queued_ctrl_entry;
-
-	/* queued_rnr_entry is linked with tx_queued_rnr_list in rxr_ep */
-	struct dlist_entry queued_rnr_entry;
-
-	/* Queued packets due to TX queue full or RNR backoff */
-	struct dlist_entry queued_pkts;
-
-	/* peer_entry is linked with tx_entry_list in rdm_peer */
-	struct dlist_entry peer_entry;
-
-	/* linked with tx_entry_list in rxr_ep */
-	struct dlist_entry ep_entry;
-};
-
-#define RXR_GET_X_ENTRY_TYPE(pkt_entry)	\
-	(*((enum rxr_x_entry_type *)	\
-	 ((unsigned char *)((pkt_entry)->x_entry))))
-
-enum efa_domain_type {
-	EFA_DOMAIN_DGRAM = 0,
-	EFA_DOMAIN_RDM,
-};
-
-struct rxr_domain {
-	struct util_domain util_domain;
-	enum efa_domain_type type;
-	struct fid_domain *rdm_domain;
-	size_t mtu_size;
-	size_t addrlen;
-	uint8_t rxr_mr_local;
-	uint64_t rdm_mode;
-	int do_progress;
-	size_t cq_size;
-};
+#define RXR_EP_MAX_QUEUED_COPY (8)
 
 struct rxr_ep {
 	struct util_ep util_ep;
@@ -563,15 +298,17 @@ struct rxr_ep {
 	uint8_t core_addr[RXR_MAX_NAME_LENGTH];
 	size_t core_addrlen;
 
-	/* per-version feature flag */
-	uint64_t features[RXR_NUM_PROTOCOL_VERSION];
+	/* per-version extra feature/request flag */
+	uint64_t extra_info[RXR_MAX_NUM_EXINFO];
 
 	/* core provider fid */
 	struct fid_ep *rdm_ep;
-	struct fid_cq *rdm_cq;
+	struct ibv_cq_ex *ibv_cq_ex;
+
+	enum ibv_cq_ex_type ibv_cq_ex_type;
 
 	/* shm provider fid */
-	bool use_shm;
+	bool use_shm_for_tx;
 	struct fid_ep *shm_ep;
 	struct fid_cq *shm_cq;
 
@@ -657,10 +394,7 @@ struct rxr_ep {
 #endif
 
 	/* datastructure to maintain rxr send/recv states */
-	struct ofi_bufpool *tx_entry_pool;
-	struct ofi_bufpool *rx_entry_pool;
-	/* datastructure to maintain read response */
-	struct ofi_bufpool *readrsp_tx_entry_pool;
+	struct ofi_bufpool *op_entry_pool;
 	/* data structure to maintain read */
 	struct ofi_bufpool *read_entry_pool;
 	/* data structure to maintain pkt rx map */
@@ -684,16 +418,15 @@ struct rxr_ep {
 	struct dlist_entry rx_posted_buf_list;
 	/* list of pre-posted recv buffers for shm */
 	struct dlist_entry rx_posted_buf_shm_list;
-	/* tx entries with queued ctrl packets */
-	struct dlist_entry tx_entry_queued_ctrl_list;
 	/* tx entries with queued rnr packets */
 	struct dlist_entry tx_entry_queued_rnr_list;
-	/* rx entries with queued ctrl packets */
-	struct dlist_entry rx_entry_queued_ctrl_list;
 	/* rx entries with queued rnr packets */
 	struct dlist_entry rx_entry_queued_rnr_list;
-	/* tx_entries with data to be sent (large messages) */
-	struct dlist_entry tx_pending_list;
+	/* op entries with queued ctrl packets */
+	struct dlist_entry op_entry_queued_ctrl_list;
+	/* tx/rx_entries used by long CTS msg/write/read protocol
+         * which have data to be sent */
+	struct dlist_entry op_entry_longcts_send_list;
 	/* read entries with data to be read */
 	struct dlist_entry read_pending_list;
 	/* rxr_peer entries that are in backoff due to RNR */
@@ -702,10 +435,11 @@ struct rxr_ep {
 	struct dlist_entry handshake_queued_peer_list;
 
 #if ENABLE_DEBUG
-	/* rx_entries waiting for data to arrive (large messages) */
-	struct dlist_entry rx_pending_list;
-	/* count of rx_pending_list */
-	size_t rx_pending;
+	/* tx/rx_entries waiting to receive data in 
+         * long CTS msg/read/write protocols */
+	struct dlist_entry op_entry_recv_list;
+	/* counter tracking op_entry_recv_list */
+	size_t pending_recv_counter;
 
 	/* rx packets being processed or waiting to be processed */
 	struct dlist_entry rx_pkt_list;
@@ -723,23 +457,36 @@ struct rxr_ep {
 	struct dlist_entry rx_entry_list;
 	struct dlist_entry tx_entry_list;
 
-	/* number of posted buffer for shm */
-	size_t posted_bufs_shm;
-	size_t rx_bufs_shm_to_post;
-
-	/* number of posted buffers */
-	size_t posted_bufs_efa;
-	size_t rx_bufs_efa_to_post;
-	/* number of buffers available for large messages */
-	size_t available_data_bufs;
-	/* Timestamp of when available_data_bufs was exhausted. */
-	uint64_t available_data_bufs_ts;
+	/*
+	 * number of posted RX packets for shm
+	 */
+	size_t shm_rx_pkts_posted;
+	/*
+	 * number of RX packets to be posted by progress engine for shm.
+	 * It exists because posting RX packets by bulk is more efficient.
+	 */
+	size_t shm_rx_pkts_to_post;
+	/*
+	 * number of posted RX packets for EFA device
+	 */
+	size_t efa_rx_pkts_posted;
+	/*
+	 * Number of RX packets to be posted by progress engine for EFA device.
+	 * It exists because posting RX packets by bulk is more efficient.
+	 */
+	size_t efa_rx_pkts_to_post;
 
 	/* number of outstanding tx ops on efa device */
 	size_t efa_outstanding_tx_ops;
 	/* number of outstanding tx ops on shm */
 	size_t shm_outstanding_tx_ops;
+
+	struct rxr_queued_copy queued_copy_vec[RXR_EP_MAX_QUEUED_COPY];
+	int queued_copy_num;
+	int gdrcopy_rx_entry_num; /* number of RX entries that are using gdrcopy */
 };
+
+int rxr_ep_flush_queued_blocking_copy_to_hmem(struct rxr_ep *ep);
 
 #define rxr_rx_flags(rxr_ep) ((rxr_ep)->util_ep.rx_op_flags)
 #define rxr_tx_flags(rxr_ep) ((rxr_ep)->util_ep.tx_op_flags)
@@ -761,17 +508,6 @@ static inline void rxr_copy_shm_cq_entry(struct fi_cq_tagged_entry *cq_tagged_en
 
 }
 
-static inline void rxr_setup_msg(struct fi_msg *msg, const struct iovec *iov, void **desc,
-				 size_t count, fi_addr_t addr, void *context, uint32_t data)
-{
-	msg->msg_iov = iov;
-	msg->desc = desc;
-	msg->iov_count = count;
-	msg->addr = addr;
-	msg->context = context;
-	msg->data = data;
-}
-
 struct efa_ep_addr *rxr_ep_raw_addr(struct rxr_ep *ep);
 
 const char *rxr_ep_raw_addr_str(struct rxr_ep *ep, char *buf, size_t *buflen);
@@ -780,37 +516,22 @@ struct efa_ep_addr *rxr_peer_raw_addr(struct rxr_ep *ep, fi_addr_t addr);
 
 const char *rxr_peer_raw_addr_str(struct rxr_ep *ep, fi_addr_t addr, char *buf, size_t *buflen);
 
-struct rxr_rx_entry *rxr_ep_get_rx_entry(struct rxr_ep *ep,
-					 const struct fi_msg *msg,
-					 uint64_t tag,
-					 uint64_t ignore,
-					 uint32_t op,
-					 uint64_t flags);
-
-struct rxr_rx_entry *rxr_ep_rx_entry_init(struct rxr_ep *ep,
-					  struct rxr_rx_entry *rx_entry,
-					  const struct fi_msg *msg,
-					  uint64_t tag,
-					  uint64_t ignore,
-					  uint32_t op,
-					  uint64_t flags);
-
-void rxr_tx_entry_init(struct rxr_ep *rxr_ep, struct rxr_tx_entry *tx_entry,
+void rxr_tx_entry_init(struct rxr_ep *rxr_ep, struct rxr_op_entry *tx_entry,
 		       const struct fi_msg *msg, uint32_t op, uint64_t flags);
 
-struct rxr_tx_entry *rxr_ep_alloc_tx_entry(struct rxr_ep *rxr_ep,
+struct rxr_op_entry *rxr_ep_alloc_tx_entry(struct rxr_ep *rxr_ep,
 					   const struct fi_msg *msg,
 					   uint32_t op,
 					   uint64_t tag,
 					   uint64_t flags);
 
-void rxr_release_tx_entry(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry);
+void rxr_release_tx_entry(struct rxr_ep *ep, struct rxr_op_entry *tx_entry);
 
-struct rxr_rx_entry *rxr_ep_alloc_rx_entry(struct rxr_ep *ep,
+struct rxr_op_entry *rxr_ep_alloc_rx_entry(struct rxr_ep *ep,
 					   fi_addr_t addr, uint32_t op);
 
 static inline void rxr_release_rx_entry(struct rxr_ep *ep,
-					struct rxr_rx_entry *rx_entry)
+					struct rxr_op_entry *rx_entry)
 {
 	struct rxr_pkt_entry *pkt_entry;
 	struct dlist_entry *tmp;
@@ -833,21 +554,10 @@ static inline void rxr_release_rx_entry(struct rxr_ep *ep,
 
 #ifdef ENABLE_EFA_POISONING
 	rxr_poison_mem_region((uint32_t *)rx_entry,
-			      sizeof(struct rxr_rx_entry));
+			      sizeof(struct rxr_op_entry));
 #endif
-	rx_entry->state = RXR_RX_FREE;
+	rx_entry->state = RXR_OP_FREE;
 	ofi_buf_free(rx_entry);
-}
-
-static inline int rxr_match_addr(fi_addr_t addr, fi_addr_t match_addr)
-{
-	return (addr == FI_ADDR_UNSPEC || addr == match_addr);
-}
-
-static inline int rxr_match_tag(uint64_t tag, uint64_t ignore,
-				uint64_t match_tag)
-{
-	return ((tag | ignore) == (match_tag | ignore));
 }
 
 void rxr_ep_record_tx_op_submitted(struct rxr_ep *ep, struct rxr_pkt_entry *pkt_entry);
@@ -881,16 +591,10 @@ static inline int rxr_ep_use_zcpy_rx(struct rxr_ep *ep, struct fi_info *info)
 }
 
 /* Initialization functions */
-void rxr_reset_rx_tx_to_core(const struct fi_info *user_info,
-			     struct fi_info *core_info);
 int rxr_get_lower_rdm_info(uint32_t version, const char *node, const char *service,
 			   uint64_t flags, const struct util_prov *util_prov,
 			   const struct fi_info *util_hints,
 			   struct fi_info **core_info);
-int rxr_fabric(struct fi_fabric_attr *attr,
-	       struct fid_fabric **fabric, void *context);
-int rxr_domain_open(struct fid_fabric *fabric, struct fi_info *info,
-		    struct fid_domain **dom, void *context);
 int rxr_cq_open(struct fid_domain *domain, struct fi_cq_attr *attr,
 		struct fid_cq **cq_fid, void *context);
 int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
@@ -900,45 +604,29 @@ int rxr_endpoint(struct fid_domain *domain, struct fi_info *info,
 void rxr_ep_progress(struct util_ep *util_ep);
 void rxr_ep_progress_internal(struct rxr_ep *rxr_ep);
 
-int rxr_ep_post_user_buf(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
-			 uint64_t flags);
+int rxr_ep_post_user_recv_buf(struct rxr_ep *ep, struct rxr_op_entry *rx_entry,
+			      uint64_t flags);
 
-int rxr_ep_set_tx_credit_request(struct rxr_ep *rxr_ep,
-				 struct rxr_tx_entry *tx_entry);
-
-int rxr_ep_tx_init_mr_desc(struct rxr_domain *rxr_domain,
-			   struct rxr_tx_entry *tx_entry,
-			   int mr_iov_start, uint64_t access);
+int rxr_ep_determine_rdma_support(struct rxr_ep *ep, fi_addr_t addr,
+				  struct rdm_peer *peer);
 
 void rxr_convert_desc_for_shm(int numdesc, void **desc);
 
-void rxr_prepare_desc_send(struct rxr_domain *rxr_domain,
-			   struct rxr_tx_entry *tx_entry);
+void rxr_prepare_desc_send(struct efa_domain *efa_domain,
+			   struct rxr_op_entry *tx_entry);
 
-struct rxr_rx_entry *rxr_ep_lookup_mediumrtm_rx_entry(struct rxr_ep *ep,
+struct rxr_op_entry *rxr_ep_lookup_mediumrtm_rx_entry(struct rxr_ep *ep,
 						      struct rxr_pkt_entry *pkt_entry);
 
 void rxr_ep_record_mediumrtm_rx_entry(struct rxr_ep *ep,
 				      struct rxr_pkt_entry *pkt_entry,
-				      struct rxr_rx_entry *rx_entry);
-
-struct rxr_rx_entry *rxr_ep_alloc_unexp_rx_entry_for_msgrtm(struct rxr_ep *ep,
-							    struct rxr_pkt_entry **pkt_entry);
-
-struct rxr_rx_entry *rxr_ep_alloc_unexp_rx_entry_for_tagrtm(struct rxr_ep *ep,
-							    struct rxr_pkt_entry **pkt_entry);
-
-struct rxr_rx_entry *rxr_ep_split_rx_entry(struct rxr_ep *ep,
-					   struct rxr_rx_entry *posted_entry,
-					   struct rxr_rx_entry *consumer_entry,
-					   struct rxr_pkt_entry *pkt_entry);
-int rxr_raw_addr_to_smr_name(void *addr, char *smr_name);
+				      struct rxr_op_entry *rx_entry);
 
 /* CQ sub-functions */
-void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_rx_entry *rx_entry,
+void rxr_cq_write_rx_error(struct rxr_ep *ep, struct rxr_op_entry *rx_entry,
 			   int err, int prov_errno);
 
-void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_tx_entry *tx_entry,
+void rxr_cq_write_tx_error(struct rxr_ep *ep, struct rxr_op_entry *tx_entry,
 			   int err, int prov_errno);
 
 void rxr_cq_queue_rnr_pkt(struct rxr_ep *ep,
@@ -946,17 +634,17 @@ void rxr_cq_queue_rnr_pkt(struct rxr_ep *ep,
 			  struct rxr_pkt_entry *pkt_entry);
 
 void rxr_cq_write_rx_completion(struct rxr_ep *ep,
-				struct rxr_rx_entry *rx_entry);
+				struct rxr_op_entry *rx_entry);
 
-void rxr_cq_handle_rx_completion(struct rxr_ep *ep,
-				 struct rxr_pkt_entry *pkt_entry,
-				 struct rxr_rx_entry *rx_entry);
+void rxr_cq_complete_recv(struct rxr_ep *ep,
+			  struct rxr_op_entry *op_entry,
+			  bool post_ctrl, int ctrl_type);
 
 void rxr_cq_write_tx_completion(struct rxr_ep *ep,
-				struct rxr_tx_entry *tx_entry);
+				struct rxr_op_entry *tx_entry);
 
-void rxr_cq_handle_tx_completion(struct rxr_ep *ep,
-				 struct rxr_tx_entry *tx_entry);
+void rxr_cq_handle_send_completion(struct rxr_ep *ep,
+				   struct rxr_op_entry *op_entry);
 
 void rxr_cq_handle_shm_completion(struct rxr_ep *ep,
 				  struct fi_cq_data_entry *cq_entry,
@@ -980,8 +668,10 @@ static inline void efa_eq_write_error(struct util_ep *ep, ssize_t err,
 	struct fi_eq_err_entry err_entry;
 	int ret = -FI_ENOEQ;
 
-	FI_WARN(&rxr_prov, FI_LOG_EQ, "Writing error %s to EQ.\n",
-		fi_strerror(err));
+	FI_WARN(&rxr_prov, FI_LOG_EQ,
+		"Writing error to EQ: err: %s (%zd) prov_errno: %s (%zd)\n",
+		fi_strerror(err), err,
+		efa_strerror(prov_errno), prov_errno);
 	if (ep->eq) {
 		memset(&err_entry, 0, sizeof(err_entry));
 		err_entry.err = err;
@@ -994,20 +684,20 @@ static inline void efa_eq_write_error(struct util_ep *ep, ssize_t err,
 			return;
 	}
 
-	FI_WARN(&rxr_prov, FI_LOG_EQ,
-		"Unable to write to EQ: %s. err: %s (%zd) prov_errno: %s (%zd)\n",
-		fi_strerror(-ret), fi_strerror(err), err,
-		fi_strerror(prov_errno), prov_errno);
+	FI_WARN(&rxr_prov, FI_LOG_EQ, "Unable to write to EQ\n");
 	fprintf(stderr,
-		"Unable to write to EQ: %s. err: %s (%zd) prov_errno: %s (%zd) %s:%d\n",
-		fi_strerror(-ret), fi_strerror(err), err,
-		fi_strerror(prov_errno), prov_errno, __FILE__, __LINE__);
+		"Libfabric EFA provider has encounterd an internal error:\n\n"
+		"Libfabric error: (%zd) %s\n"
+		"EFA internal error: (%zd) %s\n\n"
+		"Your application will now abort().\n",
+		err, fi_strerror(err),
+		prov_errno, efa_strerror(prov_errno));
 	abort();
 }
 
-static inline struct rxr_domain *rxr_ep_domain(struct rxr_ep *ep)
+static inline struct efa_domain *rxr_ep_domain(struct rxr_ep *ep)
 {
-	return container_of(ep->util_ep.domain, struct rxr_domain, util_domain);
+	return container_of(ep->util_ep.domain, struct efa_domain, util_domain);
 }
 
 /*
@@ -1026,56 +716,22 @@ static inline uint64_t is_rx_res_full(struct rxr_ep *ep)
 
 static inline void rxr_rm_rx_cq_check(struct rxr_ep *ep, struct util_cq *rx_cq)
 {
-	fastlock_acquire(&rx_cq->cq_lock);
+	ofi_genlock_lock(&rx_cq->cq_lock);
 	if (ofi_cirque_isfull(rx_cq->cirq))
 		ep->rm_full |= RXR_RM_RX_CQ_FULL;
 	else
 		ep->rm_full &= ~RXR_RM_RX_CQ_FULL;
-	fastlock_release(&rx_cq->cq_lock);
+	ofi_genlock_unlock(&rx_cq->cq_lock);
 }
 
 static inline void rxr_rm_tx_cq_check(struct rxr_ep *ep, struct util_cq *tx_cq)
 {
-	fastlock_acquire(&tx_cq->cq_lock);
+	ofi_genlock_lock(&tx_cq->cq_lock);
 	if (ofi_cirque_isfull(tx_cq->cirq))
 		ep->rm_full |= RXR_RM_TX_CQ_FULL;
 	else
 		ep->rm_full &= ~RXR_RM_TX_CQ_FULL;
-	fastlock_release(&tx_cq->cq_lock);
+	ofi_genlock_unlock(&tx_cq->cq_lock);
 }
 
-/* Performance counter declarations */
-#ifdef RXR_PERF_ENABLED
-#define RXR_PERF_FOREACH(DECL)	\
-	DECL(perf_rxr_tx),	\
-	DECL(perf_rxr_recv),	\
-	DECL(rxr_perf_size)	\
-
-enum rxr_perf_counters {
-	RXR_PERF_FOREACH(OFI_ENUM_VAL)
-};
-
-extern const char *rxr_perf_counters_str[];
-
-static inline void rxr_perfset_start(struct rxr_ep *ep, size_t index)
-{
-	struct rxr_domain *domain = rxr_ep_domain(ep);
-	struct rxr_fabric *fabric = container_of(domain->util_domain.fabric,
-						 struct rxr_fabric,
-						 util_fabric);
-	ofi_perfset_start(&fabric->perf_set, index);
-}
-
-static inline void rxr_perfset_end(struct rxr_ep *ep, size_t index)
-{
-	struct rxr_domain *domain = rxr_ep_domain(ep);
-	struct rxr_fabric *fabric = container_of(domain->util_domain.fabric,
-						 struct rxr_fabric,
-						 util_fabric);
-	ofi_perfset_end(&fabric->perf_set, index);
-}
-#else
-#define rxr_perfset_start(ep, index) do {} while (0)
-#define rxr_perfset_end(ep, index) do {} while (0)
-#endif
 #endif

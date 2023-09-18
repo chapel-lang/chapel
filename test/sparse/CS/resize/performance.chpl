@@ -59,7 +59,7 @@ proc testGrow() {
 proc testBulkGrow() {
   const D = {1..n, 1..n};
   var Diag: [1..n] 2*int;
-  [i in 1..n] Diag[i] = (i,i);
+  [i in 1..n with (ref Diag)] Diag[i] = (i,i);
 
   for 1..iters {
     var subD: sparse subdomain(D) dmapped CS();

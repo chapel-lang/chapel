@@ -35,9 +35,10 @@
 
 #define TCPX_DOMAIN_CAPS (FI_LOCAL_COMM | FI_REMOTE_COMM)
 #define TCPX_EP_CAPS	 (FI_MSG | FI_RMA | FI_RMA_PMEM)
+#define TCPX_EP_SRX_CAPS (TCPX_EP_CAPS | FI_TAGGED)
 #define TCPX_TX_CAPS	 (FI_SEND | FI_WRITE | FI_READ)
 #define TCPX_RX_CAPS	 (FI_RECV | FI_REMOTE_READ | 			\
-			  FI_REMOTE_WRITE)
+			  FI_REMOTE_WRITE | FI_RMA_EVENT)
 
 
 #define TCPX_MSG_ORDER (OFI_ORDER_RAR_SET | OFI_ORDER_RAW_SET | FI_ORDER_RAS | \
@@ -82,6 +83,39 @@ static struct fi_ep_attr tcpx_ep_attr = {
 	.max_order_waw_size = SIZE_MAX,
 };
 
+static struct fi_tx_attr tcpx_tx_srx_attr = {
+	.caps = TCPX_EP_SRX_CAPS | TCPX_TX_CAPS,
+	.op_flags = TCPX_TX_OP_FLAGS,
+	.comp_order = FI_ORDER_STRICT,
+	.msg_order = TCPX_MSG_ORDER,
+	.inject_size = TCPX_MAX_INJECT,
+	.size = 1024,
+	.iov_limit = TCPX_IOV_LIMIT,
+	.rma_iov_limit = TCPX_IOV_LIMIT,
+};
+
+static struct fi_rx_attr tcpx_rx_srx_attr = {
+	.caps = TCPX_EP_SRX_CAPS | TCPX_RX_CAPS,
+	.op_flags = TCPX_RX_OP_FLAGS,
+	.comp_order = FI_ORDER_STRICT,
+	.msg_order = TCPX_MSG_ORDER,
+	.total_buffered_recv = 0,
+	.size = 65536,
+	.iov_limit = TCPX_IOV_LIMIT
+};
+
+static struct fi_ep_attr tcpx_ep_srx_attr = {
+	.type = FI_EP_MSG,
+	.protocol = FI_PROTO_SOCK_TCP,
+	.protocol_version = 0,
+	.max_msg_size = SIZE_MAX,
+	.tx_ctx_cnt = 1,
+	.rx_ctx_cnt = FI_SHARED_CONTEXT,
+	.max_order_raw_size = SIZE_MAX,
+	.max_order_waw_size = SIZE_MAX,
+	.mem_tag_format = FI_TAG_GENERIC,
+};
+
 static struct fi_domain_attr tcpx_domain_attr = {
 	.name = "tcp",
 	.caps = TCPX_DOMAIN_CAPS,
@@ -108,7 +142,18 @@ static struct fi_fabric_attr tcpx_fabric_attr = {
 	.prov_version = OFI_VERSION_DEF_PROV,
 };
 
+struct fi_info tcpx_srx_info = {
+	.caps = TCPX_DOMAIN_CAPS | TCPX_EP_SRX_CAPS | TCPX_TX_CAPS | TCPX_RX_CAPS,
+	.addr_format = FI_SOCKADDR,
+	.tx_attr = &tcpx_tx_srx_attr,
+	.rx_attr = &tcpx_rx_srx_attr,
+	.ep_attr = &tcpx_ep_srx_attr,
+	.domain_attr = &tcpx_domain_attr,
+	.fabric_attr = &tcpx_fabric_attr
+};
+
 struct fi_info tcpx_info = {
+	.next = &tcpx_srx_info,
 	.caps = TCPX_DOMAIN_CAPS | TCPX_EP_CAPS | TCPX_TX_CAPS | TCPX_RX_CAPS,
 	.addr_format = FI_SOCKADDR,
 	.tx_attr = &tcpx_tx_attr,
@@ -122,16 +167,16 @@ struct fi_info tcpx_info = {
 /* User hints will still override the modified dest_info attributes
  * through ofi_alter_info
  */
-static int
+static void
 tcpx_alter_defaults(uint32_t version, const struct fi_info *hints,
 		    const struct fi_info *base_info,
 		    struct fi_info *dest_info)
 {
 	dest_info->tx_attr->size = tcpx_default_tx_size;
-	if (hints && hints->ep_attr &&
-	    hints->ep_attr->rx_ctx_cnt != FI_SHARED_CONTEXT)
+	if ((base_info->ep_attr->rx_ctx_cnt != FI_SHARED_CONTEXT) &&
+	    hints && hints->ep_attr &&
+	    (hints->ep_attr->rx_ctx_cnt != FI_SHARED_CONTEXT))
 		dest_info->rx_attr->size = tcpx_default_rx_size;
-	return 0;
 }
 
 

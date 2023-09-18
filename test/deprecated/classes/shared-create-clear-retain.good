@@ -1,0 +1,5 @@
+shared-create-clear-retain.chpl:6: warning: shared.create from an unmanaged is deprecated - please use shared.adopt instead
+shared-create-clear-retain.chpl:11: warning: shared.create from an owned is deprecated - please use shared.adopt with an unmanaged object instead
+shared-create-clear-retain.chpl:16: warning: shared.create from a shared is deprecated - please use assignment instead
+shared-create-clear-retain.chpl:21: warning: shared.clear is deprecated - please assign `nil` to the shared object instead
+shared-create-clear-retain.chpl:27: warning: shared.retain is deprecated - please use shared.adopt instead

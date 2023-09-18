@@ -1,16 +1,16 @@
-record man1 {
+record man1 : contextManager {
   var x = 0;
-  proc enterThis() const ref: int { return x; }
-  proc leaveThis(in err: owned Error?) {
+  proc enterContext() const ref: int { return x; }
+  proc exitContext(in err: owned Error?) {
     if err then halt();
   }
 }
 
-record man2 {
+record man2 : contextManager {
   var x = 0;
-  proc enterThis(): int { return x; }
-  proc enterThis() const ref: int { return x; }
-  proc leaveThis(in err: owned Error?) {
+  proc enterContext(): int { return x; }
+  proc enterContext() const ref: int { return x; }
+  proc exitContext(in err: owned Error?) {
     if err then halt();
   }
 }
@@ -28,7 +28,7 @@ proc test2() {
   var myManager = new man1();
   writeln(myManager);
 
-  // This is OK, we can infer 'man1.enterThis()' due to no overloads.
+  // This is OK, we can infer 'man1.enterContext()' due to no overloads.
   manage myManager as myResource do
     myResource += 1;
 }

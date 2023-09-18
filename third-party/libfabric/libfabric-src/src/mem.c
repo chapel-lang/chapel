@@ -87,7 +87,7 @@ void ofi_mem_init(void)
 	while (n-- > 0) {
 		if (sscanf(pglist[n]->d_name, "hugepages-%zukB", &hpsize) == 1) {
 			hpsize *= 1024;
-			if (hpsize != page_sizes[OFI_DEF_HUGEPAGE_SIZE])
+			if ((size_t) hpsize != page_sizes[OFI_DEF_HUGEPAGE_SIZE])
 				page_sizes[num_page_sizes++] = hpsize;
 		}
 		free(pglist[n]);

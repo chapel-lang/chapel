@@ -9,12 +9,12 @@ class G {
   proc init(type t) { this.t = t; }
 }
 
-proc foo(type t : borrowed G) {
+proc foo(type t : borrowed G(?)) {
   writeln("G");
 }
 
-proc foo(type t : borrowed object) {
-  writeln("object");
+proc foo(type t : borrowed RootClass) {
+  writeln("RootClass");
 }
 
 foo(borrowed C); // prints "G" !?

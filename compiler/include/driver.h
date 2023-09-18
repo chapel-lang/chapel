@@ -108,7 +108,7 @@ extern const char* CHPL_TARGET_PLATFORM;
 extern const char* CHPL_TARGET_ARCH;
 extern const char* CHPL_TARGET_CPU;
 extern const char* CHPL_RUNTIME_CPU;
-extern const char* CHPL_TARGET_BACKEND_CPU;
+extern const char* CHPL_LLVM_TARGET_CPU;
 extern const char* CHPL_TARGET_CPU_FLAG;
 extern const char* CHPL_TARGET_COMPILER;
 extern const char* CHPL_TARGET_COMPILER_PRGENV;
@@ -145,8 +145,7 @@ extern const char* CHPL_TARGET_BUNDLED_LINK_ARGS;
 extern const char* CHPL_TARGET_SYSTEM_LINK_ARGS;
 
 extern const char* CHPL_CUDA_LIBDEVICE_PATH;
-extern const char* CHPL_ROCM_PATH;
-extern const char* CHPL_GPU_CODEGEN;
+extern const char* CHPL_GPU;
 extern const char* CHPL_GPU_ARCH;
 
 extern bool  printPasses;
@@ -161,6 +160,11 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+// begin compiler driver control flags
+extern bool fDriverDoMonolithic;
+extern bool fDriverPhaseOne;
+extern bool fDriverPhaseTwo;
+// end compiler driver control flags
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
@@ -232,6 +236,8 @@ extern int  squelch_header_errors;
 extern bool fWarnConstLoops;
 extern bool fWarnIntUint;
 extern bool fWarnUnstable;
+extern bool fWarnUnstableStandard;
+extern bool fWarnUnstableInternal;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
@@ -241,6 +247,7 @@ extern bool fReportVectorizedLoops;
 extern bool fReportOptimizedOn;
 extern bool fReportPromotion;
 extern bool fReportScalarReplace;
+extern bool fReportGpu;
 extern bool fReportDeadBlocks;
 extern bool fReportDeadModules;
 extern bool fReportGpuTransformTime;
@@ -259,13 +266,17 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-extern char fGpuArch[16];
+const int gpuArchNameLen = 256;
+extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
+extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
+extern std::set<std::string> gpuArches;
 
 extern char stopAfterPass[128];
 
 // code generation strings
+extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
@@ -284,10 +295,13 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+extern std::string llvmRemarksFilters;
+extern std::vector<std::string> llvmRemarksFunctionsToShow;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoCompilerLibrary;
+extern bool fDynoResolve;
+extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
@@ -295,7 +309,9 @@ extern bool fDynoVerifySerialization;
 
 extern size_t fDynoBreakOnHash;
 
-extern bool fUseIOFormatters;
+extern bool fNoIOGenSerialization;
+extern bool fNoIOSerializeWriteThis;
+extern bool fNoIODeserializeReadThis;
 
 namespace chpl {
   class Context;

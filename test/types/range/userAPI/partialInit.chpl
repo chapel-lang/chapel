@@ -2,7 +2,7 @@
 proc main() {
   // Ensure that we can initialize a range constrained by a partial type
   // expression
-  type SR = range(stridable=true, ?);
+  type SR = range(strides=strideKind.any, ?);
 
   var A : SR = 1..10;
   writeln(A.type:string, ": ", A);

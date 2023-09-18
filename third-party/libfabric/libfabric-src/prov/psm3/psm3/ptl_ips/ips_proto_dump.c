@@ -59,7 +59,7 @@
 #include "ips_expected_proto.h"
 #include "ips_proto_help.h"
 
-void ips_proto_dump_frame(void *frame, int lenght, char *message)
+void psm3_ips_proto_dump_frame(void *frame, int lenght, char *message)
 {
 	uint8_t *raw_frame = frame;
 	int counter;
@@ -83,7 +83,7 @@ void ips_proto_dump_frame(void *frame, int lenght, char *message)
 	printf("\n");
 }
 
-void ips_proto_dump_data(void *data, int data_length)
+void psm3_ips_proto_dump_data(void *data, int data_length)
 {
 	int counter;
 	uint8_t *payload = (uint8_t *) data;
@@ -102,7 +102,7 @@ void ips_proto_dump_data(void *data, int data_length)
 	printf("\n");
 }
 
-void ips_proto_show_header(struct ips_message_header *p_hdr, char *msg)
+void psm3_ips_proto_show_header(struct ips_message_header *p_hdr, char *msg)
 {
 	psmi_seqnum_t ack_seq_num;
 
@@ -126,25 +126,8 @@ void ips_proto_show_header(struct ips_message_header *p_hdr, char *msg)
 	printf("opcode %x\n", _get_proto_hfi_opcode(p_hdr));
 
 	ack_seq_num.psn_num = p_hdr->ack_seq_num;
-	if (GET_HFI_KHDR_TIDCTRL(__le32_to_cpu(p_hdr->khdr.kdeth0)))
-		printf("TidFlow Flow: %x, Gen: %x, Seq: %x\n",
-		       (__be32_to_cpu(p_hdr->bth[1]) >>
-			HFI_BTH_FLOWID_SHIFT) & HFI_BTH_FLOWID_MASK,
-		       (__be32_to_cpu(p_hdr->bth[2]) >>
-			HFI_BTH_GEN_SHIFT) & HFI_BTH_GEN_MASK,
-		       (__be32_to_cpu(p_hdr->bth[2]) >>
-			HFI_BTH_SEQ_SHIFT) & HFI_BTH_SEQ_MASK);
-	else if (ips_proto_flowid(p_hdr) == EP_FLOW_TIDFLOW)
-		printf("ack_seq_num gen %x, seq %x\n",
-		       ack_seq_num.psn_gen, ack_seq_num.psn_seq);
-	else
 		printf("ack_seq_num %x\n", ack_seq_num.psn_num);
 
 	printf("src_rank/connidx %x\n", p_hdr->connidx);
-	if (GET_HFI_KHDR_TIDCTRL(__le32_to_cpu(p_hdr->khdr.kdeth0)))
-		printf("tid_session_gen %d\n", p_hdr->exp_rdescid_genc);
 	printf("flags %x\n", p_hdr->flags);
 }
-
-
-

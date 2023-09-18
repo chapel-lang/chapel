@@ -1,0 +1,3 @@
+FcfAuxMethods.chpl:1: warning: use of routines as values is unstable
+FcfAuxMethods.chpl:2: warning: The 'argTypes' method is unstable
+FcfAuxMethods.chpl:3: warning: The 'retType' method is unstable

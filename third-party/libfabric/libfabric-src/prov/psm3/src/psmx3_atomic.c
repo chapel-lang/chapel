@@ -50,16 +50,16 @@
  *	args[1].u64	req
  */
 
-static fastlock_t psmx3_atomic_lock;
+static ofi_spin_t psmx3_atomic_lock;
 
 void psmx3_atomic_global_init(void)
 {
-	fastlock_init(&psmx3_atomic_lock);
+	ofi_spin_init(&psmx3_atomic_lock);
 }
 
 void psmx3_atomic_global_fini(void)
 {
-	fastlock_destroy(&psmx3_atomic_lock);
+	ofi_spin_destroy(&psmx3_atomic_lock);
 }
 
 static inline void psmx3_ioc_read(const struct fi_ioc *ioc, size_t count,
@@ -94,16 +94,22 @@ static inline void psmx3_ioc_write(struct fi_ioc *ioc, size_t count,
 	}
 }
 
+static inline size_t psmx3_ioc_elements_count(const struct fi_ioc *ioc, size_t count)
+{
+	int i;
+	size_t total = 0;
+
+	for (i = 0; i < count; i++) {
+		total += ioc[i].count;
+	}
+
+	return total;
+}
+
 static inline size_t psmx3_ioc_size(const struct fi_ioc *ioc, size_t count,
 				    int datatype)
 {
-	int i;
-	size_t len = 0;
-
-	for (i=0; i<count; i++)
-		len += ofi_datatype_size(datatype) * ioc[i].count;
-
-	return len;
+	return psmx3_ioc_elements_count(ioc, count) * ofi_datatype_size(datatype);
 }
 
 #define CASE_INT_TYPE(FUNC,...) \
@@ -431,7 +437,7 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 	int cmd;
 	struct psmx3_trx_ctxt *rx;
 
-	psm2_am_get_source(token, &epaddr);
+	psm3_am_get_source(token, &epaddr);
 	cmd = PSMX3_AM_GET_OP(args[0].u32w0);
 
 	switch (cmd) {
@@ -468,7 +474,7 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 		rep_args[0].u32w0 = PSMX3_AM_REP_ATOMIC_WRITE;
 		rep_args[0].u32w1 = op_error;
 		rep_args[1].u64 = args[1].u64;
-		err = psm2_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
+		err = psm3_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
 					  rep_args, 2, NULL, 0, 0,
 					  NULL, NULL );
 		break;
@@ -522,7 +528,7 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 		rep_args[0].u32w0 = PSMX3_AM_REP_ATOMIC_READWRITE;
 		rep_args[0].u32w1 = op_error;
 		rep_args[1].u64 = args[1].u64;
-		err = psm2_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
+		err = psm3_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
 					  rep_args, 2, tmp_buf,
 					  (tmp_buf ? len : 0),
 					  0, free, tmp_buf );
@@ -571,7 +577,7 @@ int psmx3_am_atomic_handler(psm2_am_token_t token,
 		rep_args[0].u32w0 = PSMX3_AM_REP_ATOMIC_READWRITE;
 		rep_args[0].u32w1 = op_error;
 		rep_args[1].u64 = args[1].u64;
-		err = psm2_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
+		err = psm3_am_reply_short(token, PSMX3_AM_ATOMIC_HANDLER,
 					  rep_args, 2, tmp_buf,
 					  (tmp_buf ? len : 0),
 					  0, free, tmp_buf );
@@ -826,9 +832,9 @@ ssize_t psmx3_atomic_write_generic(struct fid_ep *ep,
 	assert(av);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid)
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid))
 		return psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_WRITE, ep_priv,
 					 buf, count, desc, NULL, NULL, NULL,
 					 NULL, addr, key, datatype, op,
@@ -874,7 +880,7 @@ ssize_t psmx3_atomic_write_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    (void *)buf, len, am_flags, NULL, NULL);
 	if (err) {
@@ -905,6 +911,7 @@ ssize_t psmx3_atomic_writev_generic(struct fid_ep *ep,
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size;
 	size_t len;
+	size_t iov_items;
 	uint8_t *buf;
 	int err;
 
@@ -927,12 +934,13 @@ ssize_t psmx3_atomic_writev_generic(struct fid_ep *ep,
 	av = ep_priv->av;
 	assert(av);
 
-	len = psmx3_ioc_size(iov, count, datatype);
+	iov_items = psmx3_ioc_elements_count(iov, count);
+	len = iov_items * ofi_datatype_size(datatype);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid) {
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid)) {
 		buf = malloc(len);
 		if (!buf)
 			return -FI_ENOMEM;
@@ -940,7 +948,7 @@ ssize_t psmx3_atomic_writev_generic(struct fid_ep *ep,
 		psmx3_ioc_read(iov, count, datatype, buf, len);
 
 		err = psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_WRITE, ep_priv,
-					buf, len / ofi_datatype_size(datatype),
+					buf, iov_items,
 					NULL, NULL, NULL, NULL, NULL, addr,
 					key, datatype, op, context, flags);
 
@@ -983,13 +991,13 @@ ssize_t psmx3_atomic_writev_generic(struct fid_ep *ep,
 	req->cq_flags = FI_WRITE | FI_ATOMIC;
 
 	args[0].u32w0 = PSMX3_AM_REQ_ATOMIC_WRITE;
-	args[0].u32w1 = len / ofi_datatype_size(datatype);
+	args[0].u32w1 = iov_items;
 	args[1].u64 = (uint64_t)(uintptr_t)req;
 	args[2].u64 = addr;
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    (void *)buf, len, am_flags, NULL, NULL);
 	if (err) {
@@ -1130,9 +1138,9 @@ ssize_t psmx3_atomic_readwrite_generic(struct fid_ep *ep,
 	assert(av);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid)
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid))
 		return psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_READWRITE, ep_priv,
 					 buf, count, desc, NULL, NULL, result,
 					 result_desc, addr, key, datatype, op,
@@ -1182,7 +1190,7 @@ ssize_t psmx3_atomic_readwrite_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    (void *)buf, (buf?len:0), am_flags, NULL,
 				    NULL);
@@ -1217,6 +1225,7 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size;
 	size_t len, result_len, iov_size;
+	size_t iov_items, result_iov_items, dt_size;
 	uint8_t *buf, *result;
 	void *desc0, *result_desc0;
 	int err;
@@ -1238,22 +1247,24 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 	assert((int)datatype >= 0 && (int)datatype < FI_DATATYPE_LAST);
 	assert((int)op >= 0 && (int)op < FI_ATOMIC_OP_LAST);
 
-	if (iov) {
-		while (count && !iov[count-1].count)
-			count--;
-	}
+	dt_size = ofi_datatype_size(datatype);
 
 	while (result_count && !resultv[result_count-1].count)
 		result_count--;
 
-	result_len = psmx3_ioc_size(resultv, result_count, datatype);
+	result_iov_items = psmx3_ioc_elements_count(resultv, result_count);
+	result_len = result_iov_items * dt_size;
 
 	if (op != FI_ATOMIC_READ) {
+		while (count && !iov[count-1].count)
+			count--;
 		buf = iov[0].addr; /* as default for count == 1 */
-		len = psmx3_ioc_size(iov, count, datatype);
+		iov_items = psmx3_ioc_elements_count(iov, count);
+		len = iov_items * dt_size;
 		desc0 = desc ? desc[0] : NULL;
 	} else {
 		buf = NULL;
+		iov_items = result_iov_items;
 		len = result_len;
 		desc0 = NULL;
 	}
@@ -1264,9 +1275,9 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 	assert(av);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid) {
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid)) {
 		if (buf && count > 1) {
 			buf = malloc(len);
 			psmx3_ioc_read(iov, count, datatype, buf, len);
@@ -1287,7 +1298,7 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 		}
 
 		err = psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_READWRITE, ep_priv,
-					buf, len / ofi_datatype_size(datatype),
+					buf, iov_items,
 					desc0, NULL, NULL, result, result_desc0,
 					addr, key, datatype, op, context, flags);
 
@@ -1356,13 +1367,13 @@ ssize_t psmx3_atomic_readwritev_generic(struct fid_ep *ep,
 		req->cq_flags = FI_WRITE | FI_ATOMIC;
 
 	args[0].u32w0 = PSMX3_AM_REQ_ATOMIC_READWRITE;
-	args[0].u32w1 = len / ofi_datatype_size(datatype);
+	args[0].u32w1 = iov_items;
 	args[1].u64 = (uint64_t)(uintptr_t)req;
 	args[2].u64 = addr;
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    (void *)buf, (buf?len:0), am_flags, NULL,
 				    NULL);
@@ -1525,9 +1536,9 @@ ssize_t psmx3_atomic_compwrite_generic(struct fid_ep *ep,
 	assert(av);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid)
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid))
 		return psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_COMPWRITE, ep_priv,
 					 buf, count, desc, compare,
 					 compare_desc, result, result_desc,
@@ -1577,7 +1588,7 @@ ssize_t psmx3_atomic_compwrite_generic(struct fid_ep *ep,
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    (void *)buf, len * 2, am_flags,
 				    NULL, NULL);
@@ -1614,7 +1625,7 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 	psm2_epid_t psm2_epid;
 	int am_flags = PSM2_AM_FLAG_ASYNC;
 	int chunk_size;
-	size_t len, iov_size;
+	size_t len, iov_size, iov_items;
 	uint8_t *buf, *compare, *result;
 	void *desc0, *compare_desc0, *result_desc0;
 	int err;
@@ -1651,7 +1662,8 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 	while (result_count && !resultv[result_count-1].count)
 		result_count--;
 
-	len = psmx3_ioc_size(iov, count, datatype);
+	iov_items = psmx3_ioc_elements_count(iov, count);
+	len = iov_items * ofi_datatype_size(datatype);
 
 	assert(psmx3_ioc_size(comparev, compare_count, datatype) >= len);
 	assert(psmx3_ioc_size(resultv, result_count, datatype) >= len);
@@ -1660,9 +1672,9 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 	assert(av);
 
 	psm2_epaddr = psmx3_av_translate_addr(av, ep_priv->tx, dest_addr, av->type);
-	psm2_epaddr_to_epid(psm2_epaddr, &psm2_epid);
+	psm3_epaddr_to_epid(psm2_epaddr, &psm2_epid);
 
-	if (psm2_epid == ep_priv->tx->psm2_epid) {
+	if (!psm3_epid_cmp(psm2_epid, ep_priv->tx->psm2_epid)) {
 		if (count > 1) {
 			buf = malloc(len);
 			if (!buf)
@@ -1704,7 +1716,7 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 		}
 
 		err = psmx3_atomic_self(PSMX3_AM_REQ_ATOMIC_COMPWRITE, ep_priv,
-					buf, len / ofi_datatype_size(datatype), desc0,
+					buf, iov_items, desc0,
 					compare, compare_desc0, result, result_desc0,
 					addr, key, datatype, op, context, flags);
 
@@ -1774,13 +1786,13 @@ ssize_t psmx3_atomic_compwritev_generic(struct fid_ep *ep,
 	req->cq_flags = FI_WRITE | FI_ATOMIC;
 
 	args[0].u32w0 = PSMX3_AM_REQ_ATOMIC_COMPWRITE;
-	args[0].u32w1 = len / ofi_datatype_size(datatype);
+	args[0].u32w1 = iov_items;
 	args[1].u64 = (uint64_t)(uintptr_t)req;
 	args[2].u64 = addr;
 	args[3].u64 = key;
 	args[4].u32w0 = datatype;
 	args[4].u32w1 = op;
-	err = psm2_am_request_short(psm2_epaddr,
+	err = psm3_am_request_short(psm2_epaddr,
 				    PSMX3_AM_ATOMIC_HANDLER, args, 5,
 				    buf, len * 2, am_flags, NULL, NULL);
 	if (err) {

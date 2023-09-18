@@ -50,11 +50,11 @@ module Buffers {
   use OS;
   private use CTypes;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbytes_ptr_t;
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbuffer_ptr_t;
-  pragma "no doc"
+  @chpldoc.nodoc
   extern type qbuffer_iter_t;
   private extern const QBYTES_PTR_NULL:qbytes_ptr_t;
   private extern const QBUFFER_PTR_NULL:qbuffer_ptr_t;
@@ -63,7 +63,7 @@ module Buffers {
   private extern proc qbytes_retain(qb:qbytes_ptr_t);
   private extern proc qbytes_release(qb:qbytes_ptr_t);
   private extern proc qbytes_len(qb:qbytes_ptr_t):int(64);
-  private extern proc qbytes_data(qb:qbytes_ptr_t):c_void_ptr;
+  private extern proc qbytes_data(qb:qbytes_ptr_t):c_ptr(void);
 
   private extern proc qbytes_create_iobuf(ref ret:qbytes_ptr_t):errorCode;
   private extern proc qbytes_create_calloc(ref ret:qbytes_ptr_t, len:int(64)):errorCode;
@@ -80,10 +80,10 @@ module Buffers {
   private extern proc qbuffer_flatten(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref bytes_out):errorCode;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
   private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
-  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
+  private extern proc qbuffer_copyout(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr(void), size):errorCode;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, ref x, size):errorCode;
   private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr, size):errorCode;
-  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_void_ptr, size):errorCode;
+  private extern proc qbuffer_copyin(buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t, x: c_ptr(void), size):errorCode;
 
   private extern proc qbuffer_begin(buf:qbuffer_ptr_t):qbuffer_iter_t;
   private extern proc qbuffer_end(buf:qbuffer_ptr_t):qbuffer_iter_t;
@@ -108,7 +108,7 @@ module Buffers {
 
   private extern proc bulk_get_bytes(src_locale:int, src_addr:qbytes_ptr_t):qbytes_ptr_t;
 
-  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_void_ptr, dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):errorCode;
+  private extern proc bulk_put_buffer(dst_locale:int, dst_addr:c_ptr(void), dst_len:int(64), buf:qbuffer_ptr_t, start:qbuffer_iter_t, end:qbuffer_iter_t):errorCode;
 
   // Now define the Chapel types using the originals..
 
@@ -122,7 +122,7 @@ module Buffers {
   record byteBuffer {
     /* The home locale storing the data */
     var home: locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _bytes_internal:qbytes_ptr_t = QBYTES_PTR_NULL;
   }
 
@@ -141,21 +141,21 @@ module Buffers {
    */
   proc byteBuffer.init(len:int(64), out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbytes_create_calloc(this._bytes_internal, len);
     // The buffer is "retained" internally on creation, but only on success.
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc byteBuffer.init(len:int(64)) {
     this.home = here;
-    this.complete();
+    init this;
     var error:errorCode = qbytes_create_calloc(this._bytes_internal, len);
     if error then try! ioerror(error, "in bytes initializer");
     // The buffer is retained internally on initialization, but only on success.
   }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc byteBuffer.init=(x: byteBuffer) {
     this.home = here;
     if x.home == here {
@@ -167,7 +167,7 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   private proc create_iobuf():byteBuffer throws {
     var ret: bytes;
     var err = qbytes_create_iobuf(ret._bytes_internal);
@@ -176,7 +176,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator byteBuffer.=(ref ret:byteBuffer, x:byteBuffer) {
     // retain -- release
     if( x.home == here ) {
@@ -202,8 +202,8 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
-  proc byteBuffer.deinit() {
+  @chpldoc.nodoc
+  proc ref byteBuffer.deinit() {
     on this.home {
       qbytes_release(this._bytes_internal);
       this._bytes_internal = QBYTES_PTR_NULL;
@@ -216,9 +216,9 @@ module Buffers {
        The pointer returned by this method is only valid for the lifetime of
        the `byteBuffer` object and will be invalid if this memory is freed.
 
-    :returns: a `c_void_ptr` to the internal byte array
+    :returns: a `c_ptr(void)` to the internal byte array
    */
-  proc byteBuffer.ptr(): c_void_ptr {
+  proc byteBuffer.ptr(): c_ptr(void) {
     return qbytes_data(this._bytes_internal);
   }
 
@@ -242,12 +242,12 @@ module Buffers {
   record buffer_iterator {
     /* The home locale storing the data */
     var home: locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _bufit_internal:qbuffer_iter_t = qbuffer_iter_null();
   }
 
   /* Create a :record:`buffer_iterator` that points nowhere */
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer_iterator.init() {
     this.home = here;
     this._bufit_internal = qbuffer_iter_null();
@@ -282,7 +282,7 @@ module Buffers {
   record buffer {
     /* The home locale storing the data */
     var home:locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var _buf_internal:qbuffer_ptr_t = QBUFFER_PTR_NULL;
   }
 
@@ -296,26 +296,26 @@ module Buffers {
    */
   proc buffer.init(out error:errorCode) {
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.init() /*throws*/ {
     var error:errorCode = 0;
     this.home = here;
-    this.complete();
+    init this;
     error = qbuffer_create(this._buf_internal);
     // TODO: really want the following to be `try` once we can throw from
     // initializers
     if error then try! ioerror(error, "in buffer initializer");
   }
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.init=(x: buffer) {
     if x.home == here {
       qbuffer_retain(x._buf_internal);
       this.home = here;
       this._buf_internal = x._buf_internal;
-      this.complete();
+      init this;
     } else {
       var error: errorCode = 0;
       this.init(error);
@@ -358,18 +358,18 @@ module Buffers {
      the buffer into it. This function should work even if buffer is
      remote.
 
-     :arg range: the region of the buffer to copy, for example buffer.all()
+     :arg bufRange: the region of the buffer to copy, for example buffer.all()
      :returns: a newly initialized bytes object on the current locale
    */
-  proc buffer.flatten(range:buffer_range) throws {
+  proc buffer.flatten(bufRange:buffer_range) throws {
     var ret: byteBuffer  = new byteBuffer();
     var err: errorCode = 0;
 
     if this.home == here {
-      err = qbuffer_flatten(this._buf_internal, range.start._bufit_internal, range.end._bufit_internal, ret._bytes_internal);
+      err = qbuffer_flatten(this._buf_internal, bufRange.start._bufit_internal, bufRange.end._bufit_internal, ret._bytes_internal);
     } else {
       var dst_locale = here;
-      var dst_len:int(64) = range.len;
+      var dst_len:int(64) = bufRange.len;
       ret = new byteBuffer(dst_len, error=err);
       if err then try ioerror(err, "in buffer.flatten");
 
@@ -378,15 +378,15 @@ module Buffers {
         // Copy the buffer to the bytes...
         err = bulk_put_buffer(dst_locale.id, dst_addr, dst_len,
                                 this._buf_internal,
-                                range.start._bufit_internal,
-                                range.end._bufit_internal);
+                                bufRange.start._bufit_internal,
+                                bufRange.end._bufit_internal);
       }
     }
     if err then try ioerror(err, "in buffer.flatten");
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator buffer.=(ref ret:buffer, x:buffer) throws {
     ret.home = here;
     // retain -- release
@@ -437,8 +437,8 @@ module Buffers {
   }
 
 
-  pragma "no doc"
-  proc buffer.deinit() {
+  @chpldoc.nodoc
+  proc ref buffer.deinit() {
     on this.home {
       qbuffer_release(this._buf_internal);
       this._buf_internal = QBUFFER_PTR_NULL;
@@ -573,7 +573,7 @@ module Buffers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer_iterator.debug_print()
   {
     on this.home {
@@ -612,7 +612,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.copyout(it:buffer_iterator, ref value: string):buffer_iterator throws {
     var ret:buffer_iterator;
     var err:errorCode = 0;
@@ -631,11 +631,11 @@ module Buffers {
       if !err {
         this.advance(start, numBytes(int));
         this.advance(end, len);
-        var buf = c_calloc(uint(8), (len+1):c_size_t);
+        var buf = allocate(uint(8), (len+1):c_size_t, clear=true);
         err = qbuffer_copyout(this._buf_internal,
                               start._bufit_internal, end._bufit_internal,
                               buf, len);
-        value = try! createStringWithOwnedBuffer(buf, length=len, size=len+1);
+        value = try! string.createAdoptingBuffer(buf, length=len, size=len+1);
         ret = end;
       }
     }
@@ -678,7 +678,7 @@ module Buffers {
     return ret;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc buffer.copyin(it:buffer_iterator, value: string):buffer_iterator throws {
     var ret:buffer_iterator;
     var err:errorCode = 0;
@@ -700,7 +700,7 @@ module Buffers {
         this.advance(end, len);
         err = qbuffer_copyin(this._buf_internal,
                              start._bufit_internal, end._bufit_internal,
-                             tmp.c_str():c_void_ptr, len);
+                             tmp.c_str():c_ptr(void), len);
         ret = end;
       }
     }

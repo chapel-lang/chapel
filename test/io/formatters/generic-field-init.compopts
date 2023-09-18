@@ -1,2 +1,0 @@
---use-io-formatters -sT=G # generic-field-init.typeless.good
---use-io-formatters -sT=I # generic-field-init.integral.good

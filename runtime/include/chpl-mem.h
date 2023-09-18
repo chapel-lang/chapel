@@ -167,11 +167,7 @@ void* chpl_memcpy(void* dest, const void* src, size_t num)
 static inline
 void* chpl_memmove(void* dest, const void* src, size_t num)
 {
-#ifdef HAS_GPU_LOCALE
-    return chpl_gpu_memmove(dest, src, num);
-#else
-    return memmove(dest, src, num);
-#endif
+  return memmove(dest, src, num);
 }
 
 // Query the allocator to ask for a good size to allocate that is at least

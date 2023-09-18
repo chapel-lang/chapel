@@ -17,7 +17,7 @@ Base Language Features
    Associative Set Operations <sets>
    Avoiding Array Element Initialization with noinit <noinit>
    Error Handling Modes and Prototype Modules <errorHandling>
-   First-class Functions in Chapel <firstClassFns>
+   First-class Procedures in Chapel <firstClassProcedures>
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
@@ -61,6 +61,14 @@ Interoperability
    Calling Chapel Code from Other Languages <libraries>
    Fortran Interoperability <fortranInterop>
    Using the Chapel Allocator from C <allocators>
+
+IO
+-----
+
+.. toctree::
+   :maxdepth: 1
+
+   IO Serializers and Deserializers <ioSerializers>
 
 Compiler Features
 -----------------

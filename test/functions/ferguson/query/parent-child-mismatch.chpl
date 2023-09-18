@@ -2,7 +2,7 @@ class ParentGenericClass {
   type t;
 }
 
-class ChildGenericClass : ParentGenericClass {
+class ChildGenericClass : ParentGenericClass(?) {
   var v: t;
 }
 
@@ -10,7 +10,7 @@ record Wrapper {
   var f;
 }
 
-proc g(x: Wrapper(unmanaged ParentGenericClass)) {
+proc g(x: Wrapper(unmanaged ParentGenericClass(?))) {
   writeln(x, " : ", x.type:string);
 }
 

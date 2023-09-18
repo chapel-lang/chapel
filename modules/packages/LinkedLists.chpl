@@ -28,7 +28,7 @@
 module LinkedLists {
 
 
-pragma "no doc"
+@chpldoc.nodoc
 class listNode {
   type eltType;
   var data: eltType;
@@ -36,11 +36,28 @@ class listNode {
 }
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator LinkedList.=(ref l1: LinkedList(?t), const ref l2: LinkedList(?t2)) {
     l1.destroy();
     for i in l2 do
       l1.append(i);
+  }
+
+  @chpldoc.nodoc
+  operator LinkedList.==(const ref A : LinkedList(?t), const ref B: LinkedList(?t2)) {
+    var match = true;
+    if A.size != B.size {
+      match = false;
+    } else {
+      for (a, b) in zip(A, B) {
+        if a != b {
+          match = false;
+          break;
+        }
+      }
+    }
+
+    return match;
   }
 
   use IO;
@@ -53,33 +70,33 @@ class listNode {
       :proc:`~LinkedList.destroy` must be called to reclaim any memory used by the list.
 
  */
-record LinkedList {
+record LinkedList : serializable {
   /*
     The type of the data stored in every node.
    */
   type eltType;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _first: unmanaged listNode(eltType)?;
-  pragma "no doc"
   pragma "owned"
+  @chpldoc.nodoc
   var _last: unmanaged listNode(eltType)?;
   /*
     The number of nodes in the list.
    */
   var size: int;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init(type eltType, first : unmanaged listNode(eltType)? = nil, last : unmanaged listNode(eltType)? = nil) {
     this.eltType = eltType;
     this._first = first;
     this._last = last;
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc init=(l : this.type) {
     this.eltType = l.eltType;
-    this.complete();
+    init this;
     for i in l do
       this.append(i);
   }
@@ -100,7 +117,7 @@ record LinkedList {
   /*
     Append `e` to the list.
    */
-  proc append(e : eltType) {
+  proc ref append(e : eltType) {
     if _last {
       _last!.next = new unmanaged listNode(eltType, e);
       _last = _last!.next;
@@ -113,14 +130,14 @@ record LinkedList {
   /*
      Synonym for append.
    */
-  inline proc push_back(e : eltType) {
+  inline proc ref push_back(e : eltType) {
     append(e);
   }
 
   /*
     Append all of the supplied arguments to the list.
    */
-  proc append(e: eltType, es: eltType ...?k) {
+  proc ref append(e: eltType, es: eltType ...?k) {
     //TODO: merge the append overloads
     append(e);
     for param i in 0..k-1 do
@@ -130,7 +147,7 @@ record LinkedList {
   /*
     Prepend `e` to the list.
    */
-  proc prepend(e : eltType) {
+  proc ref prepend(e : eltType) {
     _first = new unmanaged listNode(eltType, e, _first);
     if _last == nil then
       _last = _first;
@@ -148,7 +165,7 @@ record LinkedList {
   /*
     Append all the elements in `l` to the end of the list.
    */
-  proc concat(l: LinkedList(eltType)) {
+  proc ref concat(l: LinkedList(eltType)) {
     for e in l do
       append(e);
   }
@@ -157,7 +174,7 @@ record LinkedList {
     Remove the first encountered instance of `x` from the list.
     Does nothing if `x` is not present in the list.
    */
-  proc remove(x: eltType) {
+  proc ref remove(x: eltType) {
     var tmp = _first,
         prev: _first.type = nil;
     while tmp != nil && tmp!.data != x {
@@ -180,7 +197,7 @@ record LinkedList {
      Remove the first element from the list and return it.
      It is an error to call this function on an empty list.
    */
-   proc pop_front():eltType {
+   proc ref pop_front():eltType {
      import HaltWrappers;
      if boundsChecking && size < 1 {
        HaltWrappers.boundsCheckHalt("pop_front on empty list");
@@ -253,7 +270,7 @@ record LinkedList {
   /*
     Delete every node in the list.
    */
-  proc destroy() {
+  proc ref destroy() {
     var current = _first;
     while (current != nil) {
       var next = current!.next;
@@ -268,14 +285,14 @@ record LinkedList {
   /*
     Destructor
    */
-  pragma "no doc"
-  proc deinit(){
+  @chpldoc.nodoc
+  proc ref deinit(){
     destroy();
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc writeThis(f) throws {
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isspace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !binary;
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
@@ -306,15 +323,26 @@ record LinkedList {
 
   }
 
-  pragma "no doc"
-  proc readThis(f) throws {
+  proc serialize(writer, ref serializer) throws {
+    if writer.serializerType == IO.defaultSerializer {
+      writeThis(writer);
+    } else {
+      var ser = serializer.startList(writer, size);
+      for e in this do
+        ser.writeElement(e);
+      ser.endList();
+    }
+  }
+
+  @chpldoc.nodoc
+  proc ref readThis(f) throws {
     use OS;
 
     //
     // Special handling for reading in order to handle reading an arbitrary
     // size.
     //
-    const isBinary = f.binary();
+    const isBinary = f._binary();
     const arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     const isSpace = arrayStyle == QIO_ARRAY_FORMAT_SPACE && !isBinary;
     const isJson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !isBinary;
@@ -376,11 +404,47 @@ record LinkedList {
       if isJson || isChpl then f._readLiteral("]");
   }
 
+  proc ref deserialize(reader: fileReader, ref deserializer) throws
+  where reader.deserializerType == IO.defaultDeserializer {
+    destroy();
+
+    // Default format works as a 1D array
+    var des = deserializer.startArray(reader);
+    des.startDim();
+
+    var done = false;
+    while !done {
+      try {
+        append(des.readElement(eltType));
+      } catch {
+        done = true;
+      }
+    }
+
+    des.endDim();
+    des.endArray();
+  }
+
+  proc ref deserialize(reader: fileReader, ref deserializer) throws {
+    // Clear out existing elements in the list.
+    destroy();
+
+    var des = deserializer.startList(reader);
+
+    var done = false;
+    while des.hasMore() {
+      append(des.readElement(eltType));
+    }
+
+    des.endList();
+  }
+
   // TODO: temporary implementation to get some tests passing, but needs to
   // go through the formatter eventually.
-  proc init(type eltType, r: fileReader) throws {
+  @chpldoc.nodoc
+  proc init(type eltType, reader: fileReader, ref deserializer) throws {
     this.init(eltType);
-    readThis(r);
+    deserialize(reader, deserializer);
   }
 }
 

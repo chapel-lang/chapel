@@ -1,0 +1,3 @@
+-striggerAssert=true   #assertOnGpu-do-assert
+-striggerAssert=false -sgpuNoCpuModeWarning=false #assertOnGpu-dont-assert
+-striggerAssert=false -sgpuNoCpuModeWarning #assertOnGpu-dont-assert-no-warn

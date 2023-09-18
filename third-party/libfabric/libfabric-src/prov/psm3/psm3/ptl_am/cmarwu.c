@@ -136,7 +136,7 @@ static inline ssize_t __x86_64_syscall6(int syscall,
 #endif /* __x86_64__ */
 #endif /* __GLIBC__ < 2.15 */
 
-int64_t cma_get(pid_t pid, const void *src, void *dst, int64_t n)
+int64_t psm3_cma_get(pid_t pid, const void *src, void *dst, int64_t n)
 {
 	int64_t nr, sum;
 	struct iovec local = {
@@ -162,7 +162,7 @@ int64_t cma_get(pid_t pid, const void *src, void *dst, int64_t n)
 	return sum;
 }
 
-int64_t cma_put(const void *src, pid_t pid, void *dst, int64_t n)
+int64_t psm3_cma_put(const void *src, pid_t pid, void *dst, int64_t n)
 {
 	int64_t nr, sum;
 	struct iovec local = {
@@ -190,7 +190,7 @@ int64_t cma_put(const void *src, pid_t pid, void *dst, int64_t n)
 }
 
 /* Test if CMA is available by trying a no-op call. */
-int cma_available(void)
+int psm3_cma_available(void)
 {
 
 	/* Make a no-op CMA syscall. If CMA is present, 0 (bytes transferred)

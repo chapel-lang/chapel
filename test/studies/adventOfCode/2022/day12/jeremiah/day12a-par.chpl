@@ -28,7 +28,7 @@ proc findValidMoves(elevs: [?d] uint(8)) {
     var elevs_signed : [d.expand(1)] int(8) = 27;
         elevs_signed[d] = elevs : int(8);
 
-    forall idx in d do
+    forall idx in d with (ref moves) do
         for (mask, dir) in ((1, (0, 1)), (2, (0, -1)), (4, (1, 0)), (8, (-1, 0))) do
             moves[idx] +=
                 (if elevs_signed[idx] - elevs_signed[idx+dir] >= -1 then mask else 0): uint(8);

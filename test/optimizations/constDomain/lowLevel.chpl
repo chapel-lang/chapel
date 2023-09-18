@@ -18,11 +18,11 @@ test(customConstDom);
 writeln();
 
 writeln("var domain with record initializer");
-var varRecInit = new _domain(defaultDist, 1, int, false, false);
+var varRecInit = new _domain(defaultDist, 1, int, strideKind.one);
 test(varRecInit);
 writeln();
 
 writeln("const domain with record initializer");
-const constRecInit = new _domain(defaultDist, 1, int, false, true);
+const constRecInit = new _domain(defaultDist, 1, int, strideKind.one, true);
 test(constRecInit);
 writeln();

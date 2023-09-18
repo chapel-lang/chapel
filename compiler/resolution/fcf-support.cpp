@@ -98,6 +98,8 @@ static const char* intentToString(IntentTag tag);
 
 static const char* typeToStringSpecializing(Type* t);
 
+static const char* typeToStringMangledSpecializing(Type* t);
+
 static const char*
 buildUserFacingTypeString(const std::vector<FcfFormalInfo>& formals,
                           RetTag retTag,
@@ -140,6 +142,9 @@ attachSuperThis(AggregateType* super,
                 Type* retType,
                 bool throws);
 
+static FnSymbol*
+attachSuperWriteMethod(AggregateType* super, const char* name);
+
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
                             FnSymbol* payload);
@@ -149,8 +154,9 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
                 FnSymbol* payload);
 
 static FnSymbol*
-attachChildWriteThis(const SharedFcfSuperInfo info, AggregateType* child,
-                     FnSymbol* payload, const char* name);
+attachChildWriteMethod(const SharedFcfSuperInfo info, AggregateType* child,
+                       FnSymbol* payload,
+                       const char* name);
 
 static FnSymbol*
 attachChildPayloadPtrGetter(const SharedFcfSuperInfo info,
@@ -170,14 +176,10 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use);
 *                                                                            *
 ************************************** | ************************************/
 
-
-
 static bool isIntentSameAsDefault(IntentTag tag, Type* t) {
   auto ret = concreteIntent(INTENT_BLANK, t) == concreteIntent(tag, t);
   return ret;
 }
-
-
 
 static Type* buildSharedWrapperType(AggregateType* super) {
   Type* ret = NULL;
@@ -225,6 +227,10 @@ static const char* intentToString(IntentTag tag) {
 
 static const char* typeToStringSpecializing(Type* t) {
   return FunctionType::typeToString(t);
+}
+
+static const char* typeToStringMangledSpecializing(Type* t) {
+  return FunctionType::typeToStringMangled(t);
 }
 
 // TODO: Original intent or concrete intent?
@@ -316,6 +322,11 @@ buildWrapperSuperTypeAtProgram(const std::vector<FcfFormalInfo>& formals,
   v->thisMethod = attachSuperThis(v->type, formals, retTag,
                                   retType,
                                   throws);
+  std::ignore = attachSuperWriteMethod(v->type, "writeThis");
+  if (!fNoIOGenSerialization) {
+    std::ignore = attachSuperWriteMethod(v->type, "serialize");
+  }
+
   if (isAnyFormalNamed) v->thisMethod->addFlag(FLAG_OVERRIDE);
 
   // This ordering matters to prevent a circular dependency in 'toString'.
@@ -358,14 +369,14 @@ buildSuperName(const std::vector<FcfFormalInfo>& formals,
   for (auto& info : formals) {
     bool skip = isIntentSameAsDefault(info.intent, info.type);
     if (!skip) oss << intentTagMnemonicMangled(info.intent);
-    oss << typeToStringSpecializing(info.type) << "_";
+    oss << typeToStringMangledSpecializing(info.type) << "_";
     if (info.name) oss << info.name;
     oss << "_";
   }
 
   oss << "_";
   if (retTag != RET_VALUE) oss << retTagMnemonicMangled(retTag) << "_";
-  oss << typeToStringSpecializing(retType);
+  oss << typeToStringMangledSpecializing(retType);
   if (throws) oss << "_throws";
 
   auto ret = astr(oss.str());
@@ -414,6 +425,9 @@ attachSuperRetTypeGetter(AggregateType* super, Type* retType) {
                     "_",
                     ret->cname);
 
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'retType' method is unstable";
+
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
 
@@ -446,6 +460,9 @@ attachSuperArgTypeGetter(AggregateType* super,
   ret->cname = astr("chpl_get_",
                     super->symbol->cname, "_",
                     ret->cname);
+
+  ret->addFlag(FLAG_UNSTABLE);
+  ret->unstableMsg = "The 'argTypes' method is unstable";
 
   auto mt = new ArgSymbol(INTENT_BLANK, "_mt", dtMethodToken);
   ret->insertFormalAtTail(mt);
@@ -545,6 +562,15 @@ attachSuperThis(AggregateType* super,
   return ret;
 }
 
+static FnSymbol*
+attachSuperWriteMethod(AggregateType* super, const char* name) {
+  ArgSymbol* fileArg = nullptr;
+  auto ret = buildWriteThisFnSymbol(super, &fileArg, name);
+  ret->throwsErrorInit();
+  normalize(ret);
+  return ret;
+}
+
 static AggregateType*
 insertChildWrapperAtPayload(const SharedFcfSuperInfo info,
                             FnSymbol* payload) {
@@ -640,8 +666,28 @@ attachChildThis(const SharedFcfSuperInfo info, AggregateType* child,
   return ret;
 }
 
+static const char*
+generateWriteThisOutput(FnSymbol* fn) {
+  auto ft = toFunctionType(fn->type);
+  INT_ASSERT(ft && ft->kind() == FunctionType::PROC);
+  std::string str = ft->toString();
+
+  if (!fn->isAnonymous()) {
+    std::string key = FunctionType::kindToString(ft->kind());
+    auto idx = str.find(key);
+    INT_ASSERT(idx != std::string::npos);
+    auto pos = idx + key.length();
+    str.insert(pos, fn->name);
+    str.insert(pos, " ");
+  }
+
+  str += " { ... }";
+
+  return astr(str);
+}
+
 static FnSymbol*
-attachChildWriteThis(const SharedFcfSuperInfo info,
+attachChildWriteMethod(const SharedFcfSuperInfo info,
                      AggregateType* child,
                      FnSymbol* payload,
                      const char* name) {
@@ -657,8 +703,8 @@ attachChildWriteThis(const SharedFcfSuperInfo info,
 
   ret->body->useListAdd(new UseStmt(ioModule, "", false));
   ret->getModule()->moduleUseAdd(ioModule);
-  auto str = new_StringSymbol(astr(payload->name, "()"));
-  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("writeIt"),
+  auto str = new_StringSymbol(generateWriteThisOutput(payload));
+  auto writeCall = new CallExpr(".", fileArg, new_StringSymbol("write"),
                                 str);
   ret->insertAtTail(new CallExpr(writeCall));
   normalize(ret);
@@ -774,9 +820,9 @@ static Expr* createLegacyClassInstance(FnSymbol* fn, Expr* use) {
   auto child = insertChildWrapperAtPayload(info, fn);
   std::ignore = attachChildThis(info, child, fn);
 
-  std::ignore = attachChildWriteThis(info, child, fn, "writeThis");
-  if (fUseIOFormatters) {
-    std::ignore = attachChildWriteThis(info, child, fn, "encodeTo");
+  std::ignore = attachChildWriteMethod(info, child, fn, "writeThis");
+  if (!fNoIOGenSerialization) {
+    std::ignore = attachChildWriteMethod(info, child, fn, "serialize");
   }
 
   std::ignore = attachChildPayloadPtrGetter(info, child, fn);
@@ -963,12 +1009,6 @@ readConfigParamBool(ModuleSymbol* modSym, const char* configParamName,
 
   bool ret = (cachedValue == gTrue);
   return ret;
-}
-
-bool useLegacyBehavior(void) {
-  static VarSymbol* cachedValue = nullptr;
-  return readConfigParamBool(baseModule, "fcfsUseLegacyBehavior",
-                             cachedValue);
 }
 
 bool usePointerImplementation(void) {

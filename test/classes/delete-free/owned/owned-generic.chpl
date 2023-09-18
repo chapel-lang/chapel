@@ -3,7 +3,7 @@ class GenericClass {
   var v: int;
 }
 
-proc f(x: owned GenericClass) {
+proc f(x: owned GenericClass(?)) {
   writeln(x);
 }
 

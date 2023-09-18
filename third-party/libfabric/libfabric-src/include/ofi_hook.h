@@ -60,7 +60,8 @@ enum ofi_hook_class {
 	HOOK_NOOP,
 	HOOK_PERF,
 	HOOK_DEBUG,
-	MAX_HOOKS
+	HOOK_HMEM,
+	HOOK_DMABUF_PEER_MEM,
 };
 
 
@@ -86,8 +87,8 @@ struct fid_wait *hook_to_hwait(const struct fid_wait *wait);
  * TODO
  * comment from GitHub PR #5052:
  * "another option would be to store the ini/fini calls in a separate structure
- * that we reference from struct fi_prov_context. We could even extend the
- * definition of fi_prov_context with a union that is accessed based on the
+ * that we reference from struct ofi_prov_context. We could even extend the
+ * definition of ofi_prov_context with a union that is accessed based on the
  * prov_type. That might work better if we want to support external hooks,
  * without the external hook provider needing to implement everything"
  */
@@ -165,6 +166,9 @@ struct hook_domain {
 	ssize_t (*base_credit_handler)(struct fid_ep *ep_fid, size_t credits);
 };
 
+int hook_domain_init(struct fid_fabric *fabric, struct fi_info *info,
+		     struct fid_domain **domain, void *context,
+		     struct hook_domain *dom);
 int hook_domain(struct fid_fabric *fabric, struct fi_info *info,
 		struct fid_domain **domain, void *context);
 
@@ -229,6 +233,7 @@ struct hook_cq {
 	struct fid_cq *hcq;
 	struct hook_domain *domain;
 	void *context;
+	enum fi_cq_format format;
 };
 
 int hook_cq_init(struct fid_domain *domain, struct fi_cq_attr *attr,
@@ -268,6 +273,8 @@ int hook_srx_ctx(struct fid_domain *domain,
 
 int hook_query_atomic(struct fid_domain *domain, enum fi_datatype datatype,
 		  enum fi_op op, struct fi_atomic_attr *attr, uint64_t flags);
+int hook_query_collective(struct fid_domain *domain, enum fi_collective_op coll,
+			  struct fi_collective_attr *attr, uint64_t flags);
 
 extern struct fi_ops hook_fabric_fid_ops;
 extern struct fi_ops hook_domain_fid_ops;

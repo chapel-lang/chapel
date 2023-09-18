@@ -1,0 +1,1 @@
+isCloseBadType2.chpl:5: error: x and y must be either 'real', 'imag', or 'complex', x was 'int(64)' and y was 'real(64)'

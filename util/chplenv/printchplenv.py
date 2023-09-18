@@ -46,6 +46,7 @@ from collections import namedtuple
 from functools import partial
 import optparse
 import os
+import unittest
 from sys import stdout, path
 
 from chplenv import *
@@ -91,16 +92,16 @@ CHPL_ENVS = [
     ChapelEnv('CHPL_TARGET_CPU_FLAG', INTERNAL),
     ChapelEnv('CHPL_TARGET_BACKEND_CPU', INTERNAL),
     ChapelEnv('CHPL_LOCALE_MODEL', RUNTIME | LAUNCHER | DEFAULT, 'loc'),
-    ChapelEnv('  CHPL_GPU_CODEGEN', COMPILER | NOPATH),
-    ChapelEnv('  CHPL_GPU_RUNTIME', RUNTIME | NOPATH, 'gpu'),
-    ChapelEnv('  CHPL_CUDA_PATH', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_ROCM_PATH', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_GPU_ARCH', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', RUNTIME | NOPATH),
-    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME | INTERNAL | NOPATH),
+    ChapelEnv('  CHPL_GPU', RUNTIME | DEFAULT, 'gpu'),
+    ChapelEnv('  CHPL_GPU_ARCH', INTERNAL),
+    ChapelEnv('  CHPL_GPU_MEM_STRATEGY', RUNTIME , 'gpu_mem' ),
+    ChapelEnv('  CHPL_CUDA_PATH', INTERNAL),
+    ChapelEnv('  CHPL_ROCM_PATH', INTERNAL),
+    ChapelEnv('  CHPL_CUDA_LIBDEVICE_PATH', INTERNAL),
     ChapelEnv('CHPL_COMM', RUNTIME | LAUNCHER | DEFAULT, 'comm'),
     ChapelEnv('  CHPL_COMM_SUBSTRATE', RUNTIME | LAUNCHER | DEFAULT),
     ChapelEnv('  CHPL_GASNET_SEGMENT', RUNTIME | LAUNCHER | DEFAULT),
+    ChapelEnv('  CHPL_GASNET_VERSION', RUNTIME | LAUNCHER),
     ChapelEnv('  CHPL_LIBFABRIC', RUNTIME | INTERNAL | DEFAULT),
     ChapelEnv('CHPL_TASKS', RUNTIME | LAUNCHER | DEFAULT, 'tasks'),
     ChapelEnv('CHPL_LAUNCHER', LAUNCHER | DEFAULT, 'launch'),
@@ -125,6 +126,8 @@ CHPL_ENVS = [
     ChapelEnv('  CHPL_LLVM_VERSION', COMPILER),
     ChapelEnv('  CHPL_LLVM_CLANG_C', INTERNAL),
     ChapelEnv('  CHPL_LLVM_CLANG_CXX', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_STATIC_DYNAMIC', INTERNAL),
+    ChapelEnv('  CHPL_LLVM_TARGET_CPU', INTERNAL),
     ChapelEnv('CHPL_AUX_FILESYS', RUNTIME | DEFAULT, 'fs'),
     ChapelEnv('CHPL_LIB_PIC', RUNTIME | LAUNCHER, 'lib_pic'),
     ChapelEnv('CHPL_SANITIZE', COMPILER | LAUNCHER, 'san'),
@@ -188,16 +191,13 @@ def compute_all_values():
             get_lcd=chpl_home_utils.using_chapel_module()).cpu
 
     ENV_VALS['CHPL_LOCALE_MODEL'] = chpl_locale_model.get()
-    ENV_VALS['  CHPL_GPU_CODEGEN'] = chpl_gpu.get()
-    ENV_VALS['  CHPL_GPU_RUNTIME'] = chpl_gpu.get_runtime()
-    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("cuda")
-    ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("rocm")
-    ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
+    ENV_VALS['  CHPL_GPU'] = chpl_gpu.get()
     ENV_VALS['  CHPL_CUDA_LIBDEVICE_PATH'] = chpl_gpu.get_cuda_libdevice_path()
     ENV_VALS['  CHPL_GPU_MEM_STRATEGY'] = chpl_gpu.get_gpu_mem_strategy()
     ENV_VALS['CHPL_COMM'] = chpl_comm.get()
     ENV_VALS['  CHPL_COMM_SUBSTRATE'] = chpl_comm_substrate.get()
     ENV_VALS['  CHPL_GASNET_SEGMENT'] = chpl_comm_segment.get()
+    ENV_VALS['  CHPL_GASNET_VERSION'] = chpl_gasnet.get_version()
     ENV_VALS['  CHPL_LIBFABRIC'] = chpl_libfabric.get()
     ENV_VALS['CHPL_TASKS'] = chpl_tasks.get()
     ENV_VALS['CHPL_LAUNCHER'] = chpl_launcher.get()
@@ -223,6 +223,7 @@ def compute_all_values():
     llvm_clang_cxx = chpl_llvm.get_llvm_clang('c++')
     ENV_VALS['  CHPL_LLVM_CLANG_C'] = " ".join(llvm_clang_c)
     ENV_VALS['  CHPL_LLVM_CLANG_CXX'] = " ".join(llvm_clang_cxx)
+    ENV_VALS['  CHPL_LLVM_STATIC_DYNAMIC'] = chpl_llvm.get_static_dynamic()
     aux_filesys = chpl_aux_filesys.get()
     ENV_VALS['CHPL_AUX_FILESYS'] = '_'.join(sorted(aux_filesys.split(' ')))
     ENV_VALS['CHPL_LIB_PIC'] = chpl_lib_pic.get()
@@ -235,7 +236,7 @@ def compute_all_values():
     chpl_arch.validate('target')
     chpl_llvm.validate_llvm_config()
     chpl_compiler.validate_compiler_settings()
-    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'], ENV_VALS['CHPL_COMM'])
+    chpl_gpu.validate(ENV_VALS['CHPL_LOCALE_MODEL'])
 
 
 """Compute '--internal' env var values and populate global dict, ENV_VALS"""
@@ -247,6 +248,7 @@ def compute_internal_values():
     backend_info = chpl_cpu.get('target', map_to_compiler=True)
     ENV_VALS['CHPL_TARGET_CPU_FLAG'] = backend_info.flag
     ENV_VALS['CHPL_TARGET_BACKEND_CPU'] = backend_info.cpu
+    ENV_VALS['  CHPL_LLVM_TARGET_CPU'] = chpl_cpu.get_llvm_target_cpu().cpu
 
     ENV_VALS['CHPL_TARGET_MEM'] = chpl_mem.get('target')
     ENV_VALS['CHPL_RUNTIME_SUBDIR'] = printchplenv(set(['runtime']), print_format='path').rstrip('\n')
@@ -297,6 +299,10 @@ def compute_internal_values():
     ENV_VALS['  CHPL_TARGET_BUNDLED_LINK_ARGS'] = " ".join(tgt_link[0])
     ENV_VALS['  CHPL_TARGET_SYSTEM_LINK_ARGS'] = " ".join(tgt_link[1])
 
+    ENV_VALS['  CHPL_GPU_ARCH'] = chpl_gpu.get_arch()
+    ENV_VALS['  CHPL_CUDA_PATH'] = chpl_gpu.get_sdk_path("nvidia")
+    ENV_VALS['  CHPL_ROCM_PATH'] = chpl_gpu.get_sdk_path("amd")
+
 
 """Return non-empty string if var is set via environment or chplconfig"""
 def user_set(env):
@@ -322,22 +328,31 @@ def filter_overrides(chpl_env):
 def filter_tidy(chpl_env):
     comm = ENV_VALS['CHPL_COMM']
     llvm = ENV_VALS['CHPL_LLVM']
-    locale_model = ENV_VALS['CHPL_LOCALE_MODEL']
-
-    gpu_vars = ('  CHPL_GPU_SDK_PATH',
-                '  CHPL_CUDA_LIBDEVICE_PATH',
-                '  CHPL_GPU_MEM_STRATEGY')
+    locale = ENV_VALS['CHPL_LOCALE_MODEL']
+    gpu = ENV_VALS['  CHPL_GPU']
 
     if chpl_env.name == '  CHPL_COMM_SUBSTRATE':
         return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_GASNET_SEGMENT':
         return comm == 'gasnet'
+    elif chpl_env.name == '  CHPL_GASNET_VERSION':
+        return comm == 'gasnet'
     elif chpl_env.name == '  CHPL_LIBFABRIC':
         return comm == 'ofi'
     elif chpl_env.name == '  CHPL_NETWORK_ATOMICS':
         return comm != 'none'
-    elif chpl_env.name in gpu_vars:
-        return locale_model == 'gpu'
+    elif chpl_env.name == '  CHPL_GPU':
+        return locale == 'gpu'
+    elif chpl_env.name == '  CHPL_GPU_MEM_STRATEGY':
+        return gpu != 'none'
+    elif chpl_env.name == '  CHPL_CUDA_PATH':
+        return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_CUDA_LIBDEVICE_PATH':
+        return gpu == 'nvidia'
+    elif chpl_env.name == '  CHPL_ROCM_PATH':
+        return gpu == 'amd'
+    elif chpl_env.name == '  CHPL_GPU_ARCH':
+        return gpu == 'nvidia' or gpu == 'amd'
     return True
 
 
@@ -426,6 +441,10 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
                 value = ENV_VALS['CHPL_RUNTIME_CPU']
             elif env.name == 'CHPL_COMM' and chpl_comm_debug.get() == 'debug':
                 value += '-debug'
+            elif env.name == 'CHPL_HWLOC' and chpl_hwloc_debug.get() == 'debug':
+                value += '-debug'
+            elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
+                value += '-debug'
         if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
                 value += ' (deprecated)'
         ret.append(print_var(env.name, value, shortname=env.shortname))
@@ -476,6 +495,9 @@ def parse_args():
     parser.add_option('--cmake',  action='store_const', dest='format', const='cmake')
     parser.add_option('--path',   action='store_const', dest='format', const='path')
 
+    #[hidden]
+    parser.add_option('--unit-tests', action='store_true', dest='do_unit_tests')
+
     # Hijack the help message to use the module docstring
     # optparse is not robust enough to support help msg sections for args.
     parser.print_help = lambda: stdout.write(__doc__)
@@ -485,6 +507,16 @@ def parse_args():
 
 def main():
     (options, args) = parse_args()
+
+    # If passed hidden --unit-tests flag, perform all PyUnit tests that can we
+    # can find and exit.
+    if options.do_unit_tests:
+      this_dir = os.path.realpath(os.path.dirname(__file__))
+      test_loader = unittest.TestLoader()
+      test_suite = test_loader.discover(this_dir, pattern="*.py")
+      test_runner = unittest.TextTestRunner()
+      test_runner.run(test_suite)
+      exit(1)
 
     # Handle --all flag
     if options.all:

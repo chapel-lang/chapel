@@ -465,7 +465,7 @@ DIRECT_FN int gnix_cntr_open(struct fid_domain *domain,
 	_gnix_prog_init(&cntr_priv->pset);
 
 	dlist_init(&cntr_priv->trigger_list);
-	fastlock_init(&cntr_priv->trigger_lock);
+	ofi_spin_init(&cntr_priv->trigger_lock);
 
 	ret = gnix_cntr_set_wait(cntr_priv);
 	if (ret)

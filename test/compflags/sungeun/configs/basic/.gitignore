@@ -1,0 +1,7 @@
+# Test/compflags/sungeun/configs/basic ignores.
+/configType.good
+/configParamWithConfigType.good
+/configConst.good
+/configVar.good
+/configParamWithType.good
+/configParam.good

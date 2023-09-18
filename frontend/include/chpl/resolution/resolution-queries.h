@@ -387,6 +387,18 @@ resolveGeneratedCallInMethod(Context* context,
 */
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
+/**
+  Determine the types of various compiler-generated globals, which depend
+  on the settings the compiler / Dyno was started with.
+ */
+const std::unordered_map<UniqueString, types::QualifiedType>&
+getCompilerGeneratedGlobals(Context* context);
+
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent);
 
 
 } // end namespace resolution

@@ -1,2 +1,4 @@
-var-shadows-public-import.chpl:8: error: symbol x is multiply defined
-var-shadows-public-import.chpl:3: note: also defined here
+var-shadows-public-import.chpl:6: In module 'N':
+var-shadows-public-import.chpl:8: error: 'x' has multiple definitions
+var-shadows-public-import.chpl:7: note: redefined through the 'import' statement here
+var-shadows-public-import.chpl:3: note: leading to the definition here

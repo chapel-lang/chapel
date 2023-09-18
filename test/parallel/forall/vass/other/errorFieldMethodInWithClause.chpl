@@ -35,8 +35,8 @@ proc myRecord.test {
 }
 
 proc main {
-  const mc = (new owned myClass()).borrow();
+  const mc = new myClass();
   mc.test;
-  const mr = (new owned myRecord()).borrow();
+  const mr = new myRecord();
   mr.test;
 }

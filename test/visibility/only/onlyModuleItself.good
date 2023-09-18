@@ -1,2 +1,2 @@
 onlyModuleItself.chpl:6: In function 'main':
-onlyModuleItself.chpl:7: error: Bad identifier in 'only' clause, no known 'Toolbox' defined in 'Toolbox'
+onlyModuleItself.chpl:7: error: cannot use 'only' clause with symbol 'Toolbox' as it is not defined in 'Toolbox'

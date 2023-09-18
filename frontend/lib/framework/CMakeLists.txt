@@ -18,13 +18,14 @@
 target_sources(ChplFrontend-obj
                PRIVATE
 
-               compiler-configuration.cpp
                Context.cpp
                ErrorBase.cpp
                ErrorMessage.cpp
                ErrorWriter.cpp
                ID.cpp
                Location.cpp
+               TemporaryFileResult.cpp
                UniqueString.cpp
+               compiler-configuration.cpp
 
               )

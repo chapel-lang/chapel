@@ -23,28 +23,28 @@ var F:[rngs,rng] int=0;
 // if 2: as 0, but now the splitting in the victim is performed from its tail.
 
 writeln("Checking a non-strided range");
-forall i in adaptive(rng, nTasks) do {
+forall i in adaptive(rng, nTasks) with (ref A) do {
   A[i]=A[i]+1;
 }
 // Check if parallel assignment of Arr[] using adaptive() Iterator is correct
 checkCorrectness(A,rng);
 
 writeln("Checking a non-strided domain");
-forall i in adaptive(dmn, nTasks) do {
+forall i in adaptive(dmn, nTasks) with (ref D) do {
   D[i]=D[i]+1;
 }
 // Check if parallel assignment of Arr[] using adaptive() Iterator is correct
 checkCorrectness(D,dmn);
 
 writeln("Checking a strided range");
-forall i in adaptive(rngs, nTasks) do {
+forall i in adaptive(rngs, nTasks) with (ref B) do {
   B[i]=B[i]+1;
 }
 // Check if parallel assignment of Arr[] using adaptive() Iterator is correct
 checkCorrectness(B,rngs);
 
 writeln("Checking a strided domain");
-forall i in adaptive(dmns, nTasks) do {
+forall i in adaptive(dmns, nTasks) with (ref E) do {
   E[i]=E[i]+1;
 }
 // Check if parallel assignment of Arr[] using adaptive() Iterator is correct
@@ -52,7 +52,7 @@ checkCorrectness(E,dmns);
 
 writeln("Checking a zippered iteration (range)");
 // The iterator
-forall (i,j) in zip(adaptive(rngs,nTasks),rng#rngs.size) do {
+forall (i,j) in zip(adaptive(rngs,nTasks),rng#rngs.size) with (ref C) do {
   C[i,j]=C[i,j]+1;
 }
 // Check if parallel assignment of Arr[] using dynamic() Iterator is correct
@@ -60,7 +60,7 @@ checkCorrectness2(C,rngs,rng);
 
 writeln("Checking a zippered iteration (domain)");
 // The iterator
-forall (i,j) in zip(adaptive(dmns,nTasks),dmn#dmns.size) do {
+forall (i,j) in zip(adaptive(dmns,nTasks),dmn#dmns.size) with (ref F) do {
   F[i,j]=F[i,j]+1;
 }
 // Check if parallel assignment of Arr[] using dynamic() Iterator is correct
@@ -81,7 +81,7 @@ proc checkCorrectness(Arr:[]int, r:range(?))
     writeln("Adaptive Iterator with Stealing method ", methodStealing, ": Correct");
 }
 
-proc checkCorrectness(Arr:[]int, c:domain)
+proc checkCorrectness(Arr:[]int, c:domain(?))
 {
   var check=true;
   for i in Arr do {
@@ -111,7 +111,7 @@ proc checkCorrectness2(Arr:[]int,r:range(?), r2:range(?))
     writeln("Adaptive Iterator with Stealing method ", methodStealing,": Correct");
 }
 
-proc checkCorrectness2(Arr:[]int,c:domain, c2:domain)
+proc checkCorrectness2(Arr:[]int,c:domain(?), c2:domain(?))
 {
   var check=true;
   for (i,j) in zip(c,c2#c.size) do {

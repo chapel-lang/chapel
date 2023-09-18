@@ -36,22 +36,25 @@ config const n = 8;
 //
 const Space = {1..n, 1..n};
 
-// Block (and distribution basics)
-// -------------------------------
+// blockDist (and distribution basics)
+// -----------------------------------
 //
-// The ``Block`` distribution distributes a bounding box from
-// n-dimensional space across the target locale array viewed as an
-// n-dimensional virtual locale grid.  The bounding box is blocked
-// into roughly equal portions across the locales.  Note that domains
-// declared over a Block distribution can also store indices outside
-// of the bounding box; the bounding box is merely used to compute
-// the blocking of space.
+// The ``blockDist`` distribution partitions an n-dimensional bounding
+// box between a set of target locales arranged into a conceptual
+// n-dimensional grid.  The bounding box is divided into roughly
+// equal-size block sections, where each locale owns one of them.
+// Note that domains declared using a ``blockDist`` distribution can
+// also store indices outside of the bounding box; the bounding box is
+// merely used to compute a partitioning of n-dimensional space, not
+// to constrain legal domains.
 //
-// In this example, we declare a 2-dimensional Block-distributed
-// domain ``BlockSpace`` and a Block-distributed array ``BA`` declared over
-// the domain.
+// In this example, we declare a 2-dimensional block distribution
+// whose bounding box is defined by ``Space``, a domain over that
+// distribution using the same index set, and an array over the
+// domain.
 //
-const BlockSpace = Space dmapped Block(boundingBox=Space);
+const BlkDist = new blockDist(boundingBox=Space);
+const BlockSpace = Space dmapped BlkDist;
 var BA: [BlockSpace] int;
 
 //
@@ -67,7 +70,7 @@ forall ba in BA do
 // index set for a locale can be represented by a single domain.
 //
 if !BA.hasSingleLocalSubdomain() then
-  halt("For a Block distribution, the index set per locale should be \
+  halt("For a blockDist distribution, the index set per locale should be \
       represented by a single domain");
 
 //
@@ -103,7 +106,7 @@ writeln();
 // ``targetLocales`` argument that permits you to pass in your own
 // array of locales to be targeted.  In general, the targetLocales
 // argument should match the rank of the distribution.  So for
-// example, to ``Block``-distribute a domain over a 2D ``numLocales * 1``
+// example, to block-distribute a domain over a 2D ``numLocales * 1``
 // view of the locale set, one could do something like the following.
 
 //
@@ -120,8 +123,8 @@ var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 // this view of the locales:
 //
 
-const BlockSpace2 = Space dmapped Block(boundingBox=Space,
-                                        targetLocales=MyLocales);
+const BlkDist2 = new blockDist(boundingBox=Space, targetLocales=MyLocales);
+const BlockSpace2 = Space dmapped BlkDist2;
 var BA2: [BlockSpace2] int;
 
 //
@@ -145,19 +148,20 @@ for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
 
 
 
-// Cyclic
-// ------
+// cyclicDist
+// ----------
 //
-// Next, we'll perform a similar computation for the ``Cyclic`` distribution.
-// Cyclic distributions start at a designated n-dimensional index and
-// distribute the n-dimensional space across an n-dimensional array
-// of locales in a round-robin fashion (in each dimension).  As with
-// the ``Block`` distribution, domains declared using the Cyclic distribution
-// may have lower indices than the distribution's starting index.
-// The starting index should just be considered a parameterization of
-// how the distribution is defined.
+// Next, we'll perform a similar computation for the ``cyclicDist``
+// distribution.  This distribution deals indices of n-dimensional
+// space out to a set of target locales arranged in a conceptual
+// n-dimensional grid.  A designated ``startIdx`` is given to the
+// initial locale, and others are dealt out in a round-robin fashion
+// in each dimension from there.  Similar to the ``blockDist``
+// distribution, domains declared using the ``cyclicDist`` may have
+// indices that precede the distribution's starting index.
 //
-const CyclicSpace = Space dmapped Cyclic(startIdx=Space.low);
+const CycDist = new cyclicDist(startIdx=Space.low);
+const CyclicSpace = Space dmapped CycDist;
 var CA: [CyclicSpace] int;
 
 forall ca in CA do
@@ -168,8 +172,9 @@ writeln(CA);
 writeln();
 
 //
-// The domain returned by ``localSubdomain`` need not be a dense block, as is
-// the case for the ``Cyclic`` distribution.
+// When using the ``localSubdomain`` query with ``cyclicDist``, the
+// result will be a strided set of indices for any dimension that has
+// more than one target locale.
 //
 on Locales[0] {
   const indices = CA.localSubdomain();
@@ -182,15 +187,15 @@ on Locales[0] {
 // Block-Cyclic
 // ------------
 //
-// Next, we'll use a ``BlockCyclic`` distribution.  Block-Cyclic
+// Next, we'll use a ``blockCycDist`` distribution.  Block-Cyclic
 // distributions also deal out indices in a round-robin fashion,
 // but rather than dealing out singleton indices, they deal out blocks
-// of indices.  Thus, the ``BlockCyclic`` distribution is parameterized
+// of indices.  Thus, the ``blockCycDist`` distribution is parameterized
 // by a starting index (as with ``Cyclic``) and a block size (per
 // dimension) specifying how large the chunks to be dealt out are.
 //
-const BlkCycSpace = Space dmapped BlockCyclic(startIdx=Space.low,
-                                              blocksize=(2, 3));
+const BlkCycSpace = Space dmapped blockCycDist(startIdx=Space.low,
+                                               blocksize=(2, 3));
 var BCA: [BlkCycSpace] int;
 
 forall bca in BCA do
@@ -244,7 +249,7 @@ verifyID(BA);
 // 2D Dimensional
 // --------------
 //
-// The ``DimensionalDist2D`` distribution lets us build a 2D distribution
+// The ``dimensionalDist2D`` distribution lets us build a 2D distribution
 // as a composition of specifiers for individual dimensions.
 // Under such a "dimensional" distribution each dimension is handled
 // independently of the other.
@@ -255,7 +260,7 @@ verifyID(BA);
 // accepts just the number of locales that the indices in the corresponding
 // dimension will be distributed across.
 //
-// The ``DimensionalDist2D`` constructor requires:
+// The ``dimensionalDist2D`` constructor requires:
 //   an ``[0..nl1-1, 0..nl2-1]`` array of locales, where
 //   ``nl1`` and ``nl2`` are the number of locales in each dimension, and
 //   two dimension specifiers, created for ``nl1`` and ``nl2`` locale counts,
@@ -282,7 +287,7 @@ MyLocaleView = {0..#nl1, 0..#nl2};
 MyLocales = reshape(Locales[0..#nl1*nl2], MyLocaleView);
 
 const DimReplicatedBlockcyclicSpace = Space
-  dmapped DimensionalDist2D(MyLocales,
+  dmapped dimensionalDist2D(MyLocales,
                             new ReplicatedDim(numLocales = nl1),
                             new BlockCyclicDim(numLocales = nl2,
                                                lowIdx = 1, blockSize = 2));

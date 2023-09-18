@@ -15,14 +15,14 @@ record Stack {
   }
 
   var head: unmanaged node?;
-  proc push(s: string) {
+  proc ref push(s: string) {
     if head == nil {
       head = new unmanaged node(s);
     } else {
       head = new unmanaged node(s, head);
     }
   }
-  proc pop() {
+  proc ref pop() {
     if head == nil {
       return "";
     } else {

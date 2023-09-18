@@ -135,7 +135,8 @@ earliest assignment statement(s) setting that variable that occurs before
 the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
 purpose.  It will search only within block statements ``{ }``,
-``local`` blocks, ``serial`` blocks, ``try`` blocks, ``try!`` blocks, and
+``local`` blocks, ``serial`` blocks, ``sync`` blocks,
+``try`` blocks, ``try!`` blocks, and
 conditionals.  These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
 initialization, not assignment, of that variable.
@@ -288,7 +289,7 @@ records     default constructed record
 ranges      1..0 (empty range)
 arrays      elements are default values
 tuples      components are default values
-sync/single base default value and *empty* status
+sync        base default value and *empty* status
 atomic      base default value
 =========== =======================================
 
@@ -299,7 +300,6 @@ Local Type Inference
 
 If the type is omitted from a variable declaration, the type of the
 variable is defined to be the type of the initialization expression.
-With the exception of sync and single expressions, the declaration
 
 
 .. code-block:: chapel
@@ -312,8 +312,7 @@ is equivalent to
 
    var v: e.type = e;
 
-for an arbitrary expression ``e``. If ``e`` is of sync or single type,
-the type of ``v`` is the base type of ``e``.
+for an arbitrary expression ``e``.
 
 .. _Multiple_Variable_Declarations:
 
@@ -410,7 +409,6 @@ follows:
    .. code-block:: chapel
 
       proc readXX(x: sync) do return x.readXX();
-      proc readXX(x: single) do return x.readXX();
       proc readXX(x) do return x;
 
    Note that the use of the helper function ``readXX()`` in this code
@@ -421,13 +419,13 @@ follows:
 
    *Rationale*.
 
-   This algorithm is complicated by the existence of *sync* and *single*
-   variables. If these did not exist, we could rewrite any
-   multi-variable declaration such that later variables were simply
-   initialized by the first variable and the first variable was defined
-   as if it appeared alone in the ``identifier-list``. However, both
-   *sync* and *single* variables require careful handling to avoid
-   unintentional changes to their *full*/*empty* state.
+   This algorithm is complicated by the existence of *sync* variables.
+   If these did not exist, we could rewrite any multi-variable
+   declaration such that later variables were simply initialized by the
+   first variable and the first variable was defined as if it appeared
+   alone in the ``identifier-list``. However, *sync* variables require
+   careful handling to avoid unintentional changes to their
+   *full*/*empty* state.
 
 .. _Module_Level_Variables:
 
@@ -714,9 +712,10 @@ Regular local variables are destroyed at the end of the containing block.
 Temporary local variables have a different rule as described below.
 
 The compiler adds temporary local variables to contain the result of
-nested call expressions. ``g()`` in the statement ``f(g());`` is an
-example of a nested call expression. If the containing statement is an
-initialization expression for some variable, such as ``var x = f(g());``,
+nested call expressions. For example, ``g()`` in the statement ``f(g());`` is
+a nested call expression. If the containing statement is an
+initialization expression for a ``ref`` or ``const ref``,
+such as ``const ref x = f(g());``,
 then the temporary local variables for that statement are deinitialized at
 the end of the containing block. Otherwise, the temporary local variables
 are deinitialized at the end of the containing statement.
@@ -762,8 +761,9 @@ are deinitialized at the end of the containing statement.
 
       proc temporaryInDeclaration() {
         const x = f(makeRecord());
+        // the temporary result of 'makeRecord()' is deinited here
         writeln("block ending");
-        // 'x' and the temporary result of 'makeRecord()' are deinited here
+        // 'x' is deinited here
       }
 
       proc temporaryInConstRefDeclaration() {
@@ -783,8 +783,8 @@ are deinitialized at the end of the containing statement.
 
       init (default)
       init (default)
-      block ending
       deinit 0
+      block ending
       deinit 0
       init (default)
       init (default)
@@ -925,8 +925,8 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 ``throw`` exits a function, a copy can be elided if it is followed
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
-block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``try``
-blocks, ``try!`` blocks, and conditionals.
+block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
+``try`` blocks, ``try!`` blocks, and conditionals.
 
    *Example (copy-elision.chpl)*
 

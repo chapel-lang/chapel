@@ -173,6 +173,15 @@ EOF
   ;;
 
 arm*-*-* | aarch64-*-*)
+  if [ $( (uname -s) 2>/dev/null) = Darwin ]; then
+      case $(system_profiler SPHardwareDataType | grep Chip) in
+	  *Apple\ M1)
+	    exact_cpu="applem1";;
+	  *Apple\ M2)
+	    exact_cpu="applem2";;
+      esac
+  fi
+
   cpu_code=`sed -n 's/^CPU part.*\(0x.*\)$/\1/p' /proc/cpuinfo 2>/dev/null | sort -r | head -n 1 2>/dev/null`
   cpu_implementer=`sed -n 's/^CPU implementer.*\(0x.*\)$/\1/p' /proc/cpuinfo 2>/dev/null | head -n 1 2>/dev/null`
   case "${cpu_implementer}_${cpu_code}" in
@@ -180,6 +189,7 @@ arm*-*-* | aarch64-*-*)
     0x51_0x800) exact_cpu=armcortexa57 ;;
     0x43_0x0a1) exact_cpu=armthunderx  ;;
     0x50_0x000) exact_cpu=armxgene1    ;;
+    0x61_0x023) exact_cpu=applem1      ;;
   esac
   if test -z "$exact_cpu"; then
     case "$cpu_code" in
@@ -446,6 +456,7 @@ main ()
   case 0x004c:
   case 0x004d: puts ("power8");      break;
   case 0x004e: puts ("power9");      break;
+  case 0x0080: puts ("power10");     break;
   case 0x0050: puts ("powerpc860");  break;
   case 0x8000: puts ("powerpc7450"); break;
   case 0x8001: puts ("powerpc7455"); break;
@@ -689,23 +700,23 @@ sparc-*-* | sparc64-*-*)
   for prtconfopt in "" "-vp"; do
     if test -z "$exact_cpu"; then
       if $SHELL -c "/usr/sbin/prtconf $prtconfopt" 2>/dev/null >$dummy; then
-	if grep 'SUNW,UltraSPARC-T5' $dummy >/dev/null; then
+	if egrep '(SUNW|ORCL),(Ultra)?SPARC-T5' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct5
-	elif grep 'SUNW,UltraSPARC-T4' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-T4' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct4
-	elif grep 'SUNW,UltraSPARC-T3' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-T3' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct3
-	elif grep 'SUNW,UltraSPARC-T2' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-T2' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct2
-	elif grep 'SUNW,UltraSPARC-T1' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-T1' $dummy >/dev/null; then
 	  exact_cpu=ultrasparct1
-	elif grep 'SUNW,UltraSPARC-III' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-III' $dummy >/dev/null; then
 	  exact_cpu=ultrasparc3
-	elif grep 'SUNW,UltraSPARC-IIi' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-IIi' $dummy >/dev/null; then
 	  exact_cpu=ultrasparc2i
-	elif grep 'SUNW,UltraSPARC-II' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC-II' $dummy >/dev/null; then
 	  exact_cpu=ultrasparc2
-	elif grep 'SUNW,UltraSPARC' $dummy >/dev/null; then
+	elif egrep '(SUNW|ORCL),(Ultra)?SPARC' $dummy >/dev/null; then
 	  exact_cpu=ultrasparc
 	elif grep 'Ross,RT62.' $dummy >/dev/null; then
 	  # RT620, RT625, RT626 hypersparcs (v8).
@@ -909,9 +920,24 @@ main ()
           else if (model == 0x5c) cpu_64bit = 1,            modelstr = "goldmont";   /* Goldmont */
           else if (model == 0x5e) cpu_64bit = 1, cpu_avx=1, modelstr = "skylake";    /* Skylake */
           else if (model == 0x5f) cpu_64bit = 1,            modelstr = "goldmont";   /* Goldmont */
+          else if (model == 0x6a) cpu_64bit = 1, cpu_avx=1, modelstr = "icelake";    /* Ice Lake-DE */
+          else if (model == 0x6c) cpu_64bit = 1, cpu_avx=1, modelstr = "icelake";    /* Ice Lake-SP */
           else if (model == 0x7a) cpu_64bit = 1,            modelstr = "goldmont";   /* Goldmont Plus */
-          else if (model == 0x8e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kabylake Y/U */
-          else if (model == 0x9e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kabylake desktop */
+          else if (model == 0x7d) cpu_64bit = 1, cpu_avx=1, modelstr = "icelake";    /* Ice Lake Y */
+          else if (model == 0x7e) cpu_64bit = 1, cpu_avx=1, modelstr = "icelake";    /* Ice Lake U */
+          else if (model == 0x8a) cpu_64bit = 1,            modelstr = "tremont";    /* Tremont */
+          else if (model == 0x8c) cpu_64bit = 1, cpu_avx=1, modelstr = "tigerlake";  /* Tiger Lake U */
+          else if (model == 0x8d) cpu_64bit = 1, cpu_avx=1, modelstr = "tigerlake";  /* Tiger Lake H */
+          else if (model == 0x8e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kaby Lake Y/U */
+          else if (model == 0x8f) cpu_64bit = 1, cpu_avx=1, modelstr = "alderlake";  /* Sapphire Rapids */
+          else if (model == 0x96) cpu_64bit = 1,            modelstr = "tremont";    /* Tremont */
+          else if (model == 0x97) cpu_64bit = 1, cpu_avx=1, modelstr = "alderlake";  /* Alder Lake S */
+          else if (model == 0x9a) cpu_64bit = 1, cpu_avx=1, modelstr = "alderlake";  /* Alder Lake P */
+          else if (model == 0x9c) cpu_64bit = 1,            modelstr = "tremont";    /* Tremont */
+          else if (model == 0x9e) cpu_64bit = 1, cpu_avx=1, modelstr = "kabylake";   /* Kaby Lake desktop */
+          else if (model == 0xa7) cpu_64bit = 1, cpu_avx=1, modelstr = "rocketlake"; /* Rocket Lake S */
+          else if (model == 0xba) cpu_64bit = 1, cpu_avx=1, modelstr = "raptorlake"; /* Raptor Lake */
+          else if (model == 0xb7) cpu_64bit = 1, cpu_avx=1, modelstr = "raptorlake"; /* Raptor Lake */
           else                    cpu_64bit = 1,            modelstr = "nehalem";    /* default */
 
 	  if (strcmp (modelstr, "haswell") == 0 ||
@@ -979,10 +1005,9 @@ main ()
 	case 22:		/* Jaguar, an improved bobcat */
 	  cpu_64bit = 1, cpu_avx = 1, modelstr = "jaguar";
 	  break;
-	case 23:		/* Zen */
+	case 23:		/* Zen 1, 2 */
 	  cpu_64bit = 1, cpu_avx = 1;
-	  switch (model)
-	    {
+	  switch (model) {
 	    case 1:
 	    case 8:
 	    case 17:
@@ -994,10 +1019,22 @@ main ()
 	      break;
 	    }
 	  break;
-	case 25:		/* Zen 3 */
+	case 25:                /* Zen 3, 4 */
 	  cpu_64bit = 1, cpu_avx = 1;
-	  modelstr = "zen3";
-	  break;
+	  switch (model) {
+	    case 0x00:
+	    case 0x01:
+	    case 0x08:
+	    case 0x21:
+	    case 0x40:
+	    case 0x44:
+	    case 0x50:
+	      modelstr = "zen3";
+	      break;
+	    default:
+	      modelstr = "zen4";
+	      break;
+	    }
 	}
     }
   else if (strcmp (vendor_string, "HygonGenuine") == 0)
@@ -1129,6 +1166,15 @@ s390*-*-*)
       2097 | 2098) zcpu="z10"  ;;
       2817 | 2818 | *) zcpu="z196" ;;
     esac
+    if grep "^features.* vxp2" /proc/cpuinfo >/dev/null; then
+      zcpu="z16"
+    elif grep "^features.* vxe2" /proc/cpuinfo >/dev/null; then
+      zcpu="z15"
+    elif grep "^features.* vxe" /proc/cpuinfo >/dev/null; then
+      zcpu="z14"
+    elif grep "^features.* vx" /proc/cpuinfo >/dev/null; then
+      zcpu="z13"
+    fi
     case "$guess_full" in
       s390x-*-*) exact_cpu=${zcpu}    ;;
       s390-*-*)  exact_cpu=${zcpu}esa ;;

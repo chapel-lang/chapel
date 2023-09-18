@@ -6,12 +6,12 @@ def extend2(x, y):
     x[0].extend(y[0])
     x[1].extend(y[1])
 
-# Remove duplicates, keeping last occurrence and preserving order
+# Remove duplicate -l arguments, keeping last occurrence and preserving order
 # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ...
 def dedup(args):
     seen = set()
     ret = [arg for arg in reversed(args)
-           if not (arg in seen or seen.add(arg))]
+           if not arg.startswith("-l") or (not (arg in seen or seen.add(arg)))]
     return reversed(ret)
 
 # Returns the runtime includes and defines according
@@ -53,6 +53,8 @@ def get_runtime_includes_and_defines():
     if locale_model == "gpu":
         # this -D is needed since it affects code inside of headers
         bundled.append("-DHAS_GPU_LOCALE")
+        if chpl_gpu.get() == "cpu":
+            bundled.append("-DGPU_RUNTIME_CPU")
         memtype = chpl_gpu.get_gpu_mem_strategy()
 
         # If compiling for GPU locales, add CUDA runtime headers to include path
@@ -60,9 +62,9 @@ def get_runtime_includes_and_defines():
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
 
         bundled.append("-I" + os.path.join(incl, "gpu", chpl_gpu.get()))
-        if gpu_type == "cuda":
+        if gpu_type == "nvidia":
             system.append("-I" + os.path.join(sdk_path, "include"))
-        elif gpu_type == "rocm":
+        elif gpu_type == "amd":
             # -isystem instead of -I silences warnings from inside these includes.
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
@@ -92,11 +94,11 @@ def get_runtime_link_args(runtime_subdir):
         # and add cuda libraries
         gpu_type = chpl_gpu.get()
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
-        if gpu_type == "cuda":
+        if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
             system.append("-lcuda")
             system.append("-lcudart")
-        elif gpu_type == "rocm":
+        elif gpu_type == "amd":
             lib_path = os.path.join(sdk_path, "lib")
             system.append("-L" + lib_path)
             system.append("-Wl,-rpath," + lib_path)
@@ -145,19 +147,6 @@ def compute_internal_compile_link_args(runtime_subdir):
     extend2(tgt_compile, chpl_hwloc.get_compile_args())
     extend2(tgt_link, chpl_hwloc.get_link_args())
 
-    if chpl_comm.get() == 'ofi':
-        extend2(tgt_compile, chpl_libfabric.get_compile_args())
-        extend2(tgt_link, chpl_libfabric.get_link_args())
-    elif chpl_comm.get() == 'gasnet':
-        extend2(tgt_compile, chpl_gasnet.get_compile_args())
-        extend2(tgt_link, chpl_gasnet.get_link_args())
-    elif chpl_comm.get() == 'ugni':
-        # If there isn't a hugepage module loaded, we need to request
-        # libhugetlbfs ourselves.
-        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
-        if pe_product_list and 'HUGETLB' in pe_product_list:
-            tgt_link[1].append('-lhugetlbfs')
-
     if chpl_tasks.get() == 'qthreads':
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
@@ -174,6 +163,25 @@ def compute_internal_compile_link_args(runtime_subdir):
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
+
+    # The following communication-oriented options have been moved to
+    # the end of this sequence of third-party package options because
+    # GASNet can involve system library paths which we want to come
+    # after all of our bundled/local arguments to avoid conflicts.
+    # See issue #23362 for a potential way to do this in a more
+    # principled way going forward.
+    if chpl_comm.get() == 'ofi':
+        extend2(tgt_compile, chpl_libfabric.get_compile_args())
+        extend2(tgt_link, chpl_libfabric.get_link_args())
+    elif chpl_comm.get() == 'gasnet':
+        extend2(tgt_compile, chpl_gasnet.get_compile_args())
+        extend2(tgt_link, chpl_gasnet.get_link_args())
+    elif chpl_comm.get() == 'ugni':
+        # If there isn't a hugepage module loaded, we need to request
+        # libhugetlbfs ourselves.
+        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
+        if pe_product_list and 'HUGETLB' in pe_product_list:
+            tgt_link[1].append('-lhugetlbfs')
 
     aux_filesys = chpl_aux_filesys.get()
     if 'lustre' in aux_filesys:

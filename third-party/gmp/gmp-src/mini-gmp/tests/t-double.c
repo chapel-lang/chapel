@@ -1,6 +1,6 @@
 /*
 
-Copyright 2012, 2013, 2018, 2020 Free Software Foundation, Inc.
+Copyright 2012, 2013, 2018 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -160,7 +160,7 @@ testmain (int argc, char **argv)
 		   values[i].d, s, values[i].s);
 	  abort ();
 	}
-      testfree (s);
+      testfree (s, strlen(s) + 1);
       mpz_clear (x);
     }
 

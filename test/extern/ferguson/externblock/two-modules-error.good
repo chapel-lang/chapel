@@ -1,2 +1,3 @@
-two-modules-error.chpl:15: error: Symbol 'y' undeclared in module 'A'
-two-modules-error.chpl:18: error: Symbol 'y' undeclared in module 'A'
+two-modules-error.chpl:1: In module 'OuterModule':
+two-modules-error.chpl:15: error: cannot find 'y' in module 'A'
+two-modules-error.chpl:18: error: cannot find 'y' in module 'A'

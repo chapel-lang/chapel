@@ -262,7 +262,7 @@ int _gnix_xpmem_handle_create(struct gnix_fid_domain *dom,
 
 	_gnix_ref_init(&hndl->ref_cnt, 1,
 			__xpmem_hndl_destruct);
-	fastlock_init(&hndl->lock);
+	ofi_spin_init(&hndl->lock);
 
 	/*
 	 * initialize xpmem_apid_t key'd hash table for
@@ -337,7 +337,7 @@ int _gnix_xpmem_access_hndl_get(struct gnix_xpmem_handle *xp_hndl,
 	 *  - if not in the hash, create and insert
 	 */
 
-	fastlock_acquire(&xp_hndl->lock);
+	ofi_spin_lock(&xp_hndl->lock);
 
 	entry = _gnix_ht_lookup(xp_hndl->apid_ht,
 			      (gnix_ht_key_t)peer_apid);
@@ -393,7 +393,7 @@ int _gnix_xpmem_access_hndl_get(struct gnix_xpmem_handle *xp_hndl,
 	}
 
 exit_w_lock:
-	fastlock_release(&xp_hndl->lock);
+	ofi_spin_unlock(&xp_hndl->lock);
 	return ret;
 
 }
@@ -418,7 +418,7 @@ int _gnix_xpmem_access_hndl_put(struct gnix_xpmem_access_handle *access_hndl)
 		return -FI_EINVAL;
 	}
 
-	fastlock_acquire(&xp_hndl->lock);
+	ofi_spin_lock(&xp_hndl->lock);
 
 	ret = _gnix_mr_cache_deregister(entry->mr_cache,
 					access_hndl);
@@ -426,7 +426,7 @@ int _gnix_xpmem_access_hndl_put(struct gnix_xpmem_access_handle *access_hndl)
 		GNIX_WARN(FI_LOG_EP_DATA, "_gnix_mr_cache_deregister returned %s\n",
 			  fi_strerror(-ret));
 
-	fastlock_release(&xp_hndl->lock);
+	ofi_spin_unlock(&xp_hndl->lock);
 
 	return ret;
 }

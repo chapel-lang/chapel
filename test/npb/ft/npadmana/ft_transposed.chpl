@@ -12,6 +12,7 @@
 */
 use DistributedFFT;
 use Time;
+import Math.{pi, exp, log};
 
 // Define the classes
 enum NPB {S,W,A,B,C,D,E,F};
@@ -82,7 +83,7 @@ writef("MFLOPS : %10.4dr\n",mflops);
 
 
 proc evolve() {
-  forall ijk in DomT {
+  forall ijk in DomT with (ref V, ref Wt) {
     const elt = V[ijk]*Twiddle[ijk];
     V[ijk] = elt;
     Wt[ijk] = elt;
@@ -120,7 +121,7 @@ proc checksum() : complex {
 proc initialize_twiddle() {
   const Ns = (Ny, Nx, Nz);
   const fac = 4.0*pi**2 * alpha;
-  forall xyz in DomT {
+  forall xyz in DomT with (ref Twiddle) {
     var e : int = 0;
     for (idx, N) in zip(xyz, Ns) {
       const x1 = if idx >= N/2 then idx-N else idx;

@@ -1,0 +1,2 @@
+--prepend-internal-module-dir=int  # noWarnUnstableInt.good
+--prepend-internal-module-dir=int --warn-unstable  # warnUnstableInt.good

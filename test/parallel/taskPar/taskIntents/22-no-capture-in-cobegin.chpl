@@ -17,7 +17,8 @@ const rLarge = new RecordLarge(yy01=30001, yy07=30007, yy20=30020);
 class ClassType {
   var zzz: int;
 }
-const cInstance = (new owned ClassType(44444444)).borrow();
+const ownCInstance = new owned ClassType(44444444);
+const cInstance = ownCInstance.borrow();
 union UnionType {
   var ufield111, ufield222: int;
 }
@@ -329,7 +330,7 @@ writeln("arr2", " ", arr2);
 test();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 // Verify that values are not captured upon a 'cobegin' with a ref clause.
 // This needs #include "support-decls.cpp".
@@ -475,9 +476,9 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-  sbegin$.writeEF(1);
+  sbegin.writeEF(1);
 }
-sbegin$.readFE();
+sbegin.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {

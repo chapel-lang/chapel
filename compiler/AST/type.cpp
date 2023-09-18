@@ -43,8 +43,11 @@
 #include "stringutil.h"
 #include "symbol.h"
 #include "vec.h"
+#include "wellknown.h"
 
 #include "global-ast-vecs.h"
+
+#include "chpl/framework/compiler-configuration.h"
 
 #include <cmath>
 
@@ -213,6 +216,9 @@ const char* toString(Type* type, bool decorateAllClasses) {
       } else if (strncmp(at->symbol->name, drDomName, drDomNameLen) == 0) {
         retval = astr("domain", at->symbol->name + drDomNameLen);
 
+      } else if (startsWith(at->symbol->name, "_domain")) {
+        retval = astr(at->symbol->name + 1); // skip the leading _
+
       } else if (at->symbol->hasFlag(FLAG_FUNCTION_CLASS)) {
         retval = fcfs::functionClassTypeToString(at);
 
@@ -270,8 +276,16 @@ const char* toString(Type* type, bool decorateAllClasses) {
           retval = useName;
         }
       }
-    } else if (vt == dtCVoidPtr) {  // de-sugar chpl__c_void_ptr
-      retval = "c_void_ptr";
+    } else if (vt == dtCVoidPtr) {
+      // de-sugar chpl__c_void_ptr, which is used internally and is a distinct
+      // type from c_ptr(void)
+      retval = "raw_c_void_ptr";
+    } else if (vt == dtCFnPtr) {
+      retval = "c_fn_ptr";
+    } else if (vt == dtStringC) {
+      // present dtStringC type as familiar 'c_string' instead of the internal
+      // name 'chpl_c_string' or cname, 'c_string_rehook'.
+      retval = "c_string";
     }
 
     if (retval == NULL)
@@ -331,8 +345,14 @@ bool QualifiedType::isWideRefType() const {
 }
 
 const char* QualifiedType::qualStr() const {
-  if (isRefType())
-    return qualifierToStr(QUAL_REF);
+  if (isRefType()) {
+    if (_qual == QUAL_CONST_REF ||
+        _qual == QUAL_CONST) {
+      return qualifierToStr(QUAL_CONST_REF);
+    } else {
+      return qualifierToStr(QUAL_REF);
+    }
+  }
 
   if (isWideRefType())
     return qualifierToStr(QUAL_WIDE_REF);
@@ -691,16 +711,20 @@ const char* FunctionType::intentToString(IntentTag intent) {
   return nullptr;
 }
 
-const char* FunctionType::typeToString(Type* t) {
-  auto vt = t->getValType();
+static const char* builtinTypeName(Type* vt) {
   if (vt == dtInt[INT_SIZE_DEFAULT]) return "int";
   if (vt == dtUInt[INT_SIZE_DEFAULT]) return "uint";
   if (vt == dtReal[COMPLEX_SIZE_DEFAULT]) return "real";
-  if (vt == dtBools[BOOL_SIZE_DEFAULT]) return "bool";
+  if (vt == dtBool) return "bool";
   if (vt == dtComplex[COMPLEX_SIZE_DEFAULT]) return "complex";
   if (vt == dtImag[FLOAT_SIZE_DEFAULT]) return "imag";
-  auto ret = vt->symbol->cname;
-  return ret;
+  return nullptr;
+}
+
+const char* FunctionType::typeToString(Type* t) {
+  auto vt = t->getValType();
+  if (auto builtinName = builtinTypeName(vt)) return builtinName;
+  return vt->symbol->name;
 }
 
 const char* FunctionType::returnIntentToString(RetTag intent) {
@@ -871,6 +895,12 @@ const char* FunctionType::intentTagMnemonicMangled(IntentTag tag) {
   return nullptr;
 }
 
+const char* FunctionType::typeToStringMangled(Type* t) {
+  auto vt = t->getValType();
+  if (auto builtinName = builtinTypeName(vt)) return builtinName;
+  return vt->symbol->cname;
+}
+
 const char* FunctionType::retTagMnemonicMangled(RetTag tag) {
   switch (tag) {
     case RET_VALUE: return "";
@@ -891,7 +921,7 @@ const char* FunctionType::toStringMangledForCodegen() const {
     auto f = this->formal(i);
     bool skip = isIntentSameAsDefault(f->intent, f->type);
     if (!skip) oss << intentTagMnemonicMangled(f->intent);
-    oss << typeToString(f->type) << "_";
+    oss << typeToStringMangled(f->type) << "_";
     if (f->name) oss << f->name;
     oss << "_";
   }
@@ -901,7 +931,7 @@ const char* FunctionType::toStringMangledForCodegen() const {
     oss << retTagMnemonicMangled(returnIntent_) << "_";
   }
 
-  oss << typeToString(returnType_);
+  oss << typeToStringMangled(returnType_);
   if (throws_) oss << "_throws";
 
   auto ret = astr(oss.str());
@@ -997,9 +1027,6 @@ static VarSymbol*     createSymbol(PrimitiveType* primType, const char* name);
 // Specify name for now.
 // Though it will probably be something like int1, int8, etc. in the end.
 // In that case we can just specify the width (i.e., size).
-#define INIT_PRIM_BOOL(name, width)                                             \
-  dtBools[BOOL_SIZE_ ## width] = createPrimitiveType(name, "chpl_bool" #width); \
-  dtBools[BOOL_SIZE_ ## width]->defaultValue = new_BoolSymbol( false, BOOL_SIZE_ ## width)
 
 #define INIT_PRIM_INT( name, width)                                             \
   dtInt[INT_SIZE_ ## width] = createPrimitiveType (name, "int" #width "_t");    \
@@ -1040,15 +1067,21 @@ void initPrimitiveTypes() {
   dtVoid->symbol->addFlag(FLAG_NO_RENAME);
   dtNothing                            = createInternalType ("nothing",  "nothing");
 
-  dtBools[BOOL_SIZE_SYS]               = createPrimitiveType("bool",     "chpl_bool");
   dtInt[INT_SIZE_64]                   = createPrimitiveType("int",      "int64_t");
   dtReal[FLOAT_SIZE_64]                = createPrimitiveType("real",     "_real64");
 
-  dtStringC                            = createPrimitiveType("c_string", "c_string" );
+  // The Chapel name is prefixed with 'chpl_' to make it internal, but the
+  // C type is 'c_string' which is defined in the runtime as an alias for
+  // 'const char*'. The user-facing alias is defined in 'ChapelBase' so that
+  // it can easily be deprecated.
+  // Note that we actually map to the type 'c_string_rehook' to avoid a
+  // collision with the type alias when '--no-munge-user-idents' is thrown.
+  // TODO: a better solution than renaming c_string to avoid the collision would be preferred
+  dtStringC                            = createPrimitiveType("chpl_c_string", "c_string_rehook");
   dtStringC->symbol->addFlag(FLAG_NO_CODEGEN);
 
   dtObject                             = new AggregateType(AGGREGATE_CLASS);
-  dtObject->symbol                     = new TypeSymbol("object", dtObject);
+  dtObject->symbol                     = new TypeSymbol("RootClass", dtObject);
 
   dtBytes                              = new AggregateType(AGGREGATE_RECORD);
   dtBytes->symbol                      = new TypeSymbol("bytes", dtBytes);
@@ -1059,32 +1092,36 @@ void initPrimitiveTypes() {
   dtLocale                             = new AggregateType(AGGREGATE_RECORD);
   dtLocale->symbol                     = new TypeSymbol("locale", dtLocale);
 
+  dtRange                              = new AggregateType(AGGREGATE_RECORD);
+  dtRange->symbol                      = new TypeSymbol("range", dtRange);
+
   dtOwned                              = new AggregateType(AGGREGATE_RECORD);
   dtOwned->symbol                      = new TypeSymbol("_owned", dtOwned);
 
   dtShared                             = new AggregateType(AGGREGATE_RECORD);
   dtShared->symbol                     = new TypeSymbol("_shared", dtShared);
 
-  gFalse                               = createSymbol(dtBools[BOOL_SIZE_SYS], "false");
-  gTrue                                = createSymbol(dtBools[BOOL_SIZE_SYS], "true");
+  dtBool                               = createPrimitiveType("bool", "chpl_bool");
+
+  gFalse                               = createSymbol(dtBool, "false");
+  gTrue                                = createSymbol(dtBool, "true");
 
   gFalse->addFlag(FLAG_PARAM);
   gFalse->immediate                    = new Immediate;
   gFalse->immediate->v_bool            = false;
   gFalse->immediate->const_kind        = NUM_KIND_BOOL;
-  gFalse->immediate->num_index         = BOOL_SIZE_DEFAULT;
+  gFalse->immediate->num_index         = BOOL_SIZE_SYS;
 
   gTrue->addFlag(FLAG_PARAM);
   gTrue->immediate                     = new Immediate;
   gTrue->immediate->v_bool             = true;
   gTrue->immediate->const_kind         = NUM_KIND_BOOL;
-  gTrue->immediate->num_index          = BOOL_SIZE_DEFAULT;
+  gTrue->immediate->num_index          = BOOL_SIZE_SYS;
 
-  dtBools[BOOL_SIZE_SYS]->defaultValue = gFalse;
+  dtBool->defaultValue = gFalse;
   dtInt[INT_SIZE_64]->defaultValue     = new_IntSymbol(0, INT_SIZE_64);
   dtReal[FLOAT_SIZE_64]->defaultValue  = new_RealSymbol("0.0", FLOAT_SIZE_64);
 
-  dtBool                               = dtBools[BOOL_SIZE_SYS];
 
   uniqueConstantsHash.put(gFalse->immediate, gFalse);
   uniqueConstantsHash.put(gTrue->immediate,  gTrue);
@@ -1116,11 +1153,6 @@ void initPrimitiveTypes() {
 
   gIteratorBreakToken = createSymbol(dtBool, "_iteratorBreakToken");
   gIteratorBreakToken->addFlag(FLAG_NO_CODEGEN);
-
-  INIT_PRIM_BOOL("bool(8)", 8);
-  INIT_PRIM_BOOL("bool(16)", 16);
-  INIT_PRIM_BOOL("bool(32)", 32);
-  INIT_PRIM_BOOL("bool(64)", 64);
 
   INIT_PRIM_INT( "int(8)", 8);
   INIT_PRIM_INT( "int(16)", 16);
@@ -1158,11 +1190,14 @@ void initPrimitiveTypes() {
 
   // Could be == c_ptr(int(8)) e.g.
   // used in some runtime interfaces
-  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "c_void_ptr" );
+  dtCVoidPtr   = createPrimitiveType("chpl__c_void_ptr", "raw_c_void_ptr" );
   dtCVoidPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCVoidPtr->defaultValue = gNil;
 
-  dtCFnPtr = createPrimitiveType("c_fn_ptr", "c_fn_ptr");
+  // Map to runtime type 'c_fn_ptr_rehook' to avoid collision with name of
+  // symbol in module ('c_fn_ptr'), when using '--no-munge-user-idents' is
+  // thrown.
+  dtCFnPtr = createPrimitiveType("chpl_c_fn_ptr", "c_fn_ptr_rehook");
   dtCFnPtr->symbol->addFlag(FLAG_NO_CODEGEN);
   dtCFnPtr->defaultValue = gNil;
 
@@ -1189,9 +1224,6 @@ void initPrimitiveTypes() {
 
   dtAny = createInternalType ("_any", "_any");
   dtAny->symbol->addFlag(FLAG_GENERIC);
-
-  dtAnyBool = createInternalType("chpl_anybool", "bool");
-  dtAnyBool->symbol->addFlag(FLAG_GENERIC);
 
   dtAnyComplex = createInternalType("chpl_anycomplex", "complex");
   dtAnyComplex->symbol->addFlag(FLAG_GENERIC);
@@ -1327,65 +1359,41 @@ void initChplProgram() {
 
 // Appends a VarSymbol to the root module and gives it the bool immediate
 // matching 'value'. For use in initCompilerGlobals.
-static void setupBoolGlobal(VarSymbol* globalVar, bool value) {
+
+template <typename T>
+VarSymbol* createCompilerGlobalParam(const char* name, T value);
+
+template <>
+VarSymbol* createCompilerGlobalParam<bool>(const char* name, bool value) {
+  auto globalVar = new VarSymbol(name, dtBool);
+  globalVar->addFlag(FLAG_PARAM);
   rootModule->block->insertAtTail(new DefExpr(globalVar));
 
   if (value) {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gTrue->immediate;
+    paramMap.put(globalVar, gTrue);
 
   } else {
      globalVar->immediate = new Immediate;
     *globalVar->immediate = *gFalse->immediate;
+    paramMap.put(globalVar, gFalse);
   }
+
+  return globalVar;
 }
 
 void initCompilerGlobals() {
-
-  gBoundsChecking = new VarSymbol("boundsChecking", dtBool);
-  gBoundsChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gBoundsChecking, !fNoBoundsChecks);
-
-  gCastChecking = new VarSymbol("castChecking", dtBool);
-  gCastChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCastChecking, !fNoCastChecks);
-
-  gNilChecking = new VarSymbol("chpl_checkNilDereferences", dtBool);
-  gNilChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gNilChecking, !fNoNilChecks);
-
-  gOverloadSetsChecks = new VarSymbol("chpl_overloadSetsChecks", dtBool);
-  gOverloadSetsChecks->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gOverloadSetsChecks, fOverloadSetsChecks);
-
-  gDivZeroChecking = new VarSymbol("chpl_checkDivByZero", dtBool);
-  gDivZeroChecking->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gDivZeroChecking, !fNoDivZeroChecks);
-
-  gCacheRemote = new VarSymbol("CHPL_CACHE_REMOTE", dtBool);
-  gCacheRemote->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gCacheRemote, fCacheRemote);
-
-  gPrivatization = new VarSymbol("_privatization", dtBool);
-  gPrivatization->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gPrivatization, !(fNoPrivatization || fLocal));
-
-  gLocal = new VarSymbol("_local", dtBool);
-  gLocal->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gLocal, fLocal);
-
-  gWarnUnstable = new VarSymbol("chpl_warnUnstable", dtBool);
-  gWarnUnstable->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gWarnUnstable, fWarnUnstable);
+  auto& compilerGlobals = chpl::compilerGlobals(gContext);
+  #define COMPILER_GLOBAL(TYPE__, NAME__, FIELD__) \
+    gCompilerGlobalParams.push_back(createCompilerGlobalParam<TYPE__>(NAME__, compilerGlobals.FIELD__));
+  #include "chpl/uast/compiler-globals-list.h"
+  #undef COMPILER_GLOBAL
 
   // defined and maintained by the runtime
   gNodeID = new VarSymbol("chpl_nodeID", dtInt[INT_SIZE_32]);
   gNodeID->addFlag(FLAG_EXTERN);
   rootModule->block->insertAtTail(new DefExpr(gNodeID));
-
-  gUseIOFormatters = new VarSymbol("chpl_useIOFormatters", dtBool);
-  gUseIOFormatters->addFlag(FLAG_PARAM);
-  setupBoolGlobal(gUseIOFormatters, fUseIOFormatters);
 
   initForTaskIntents();
 }
@@ -1395,12 +1403,7 @@ bool is_nothing_type(Type* t) {
 }
 
 bool is_bool_type(Type* t) {
-  return
-    t == dtBools[BOOL_SIZE_SYS] ||
-    t == dtBools[BOOL_SIZE_8] ||
-    t == dtBools[BOOL_SIZE_16] ||
-    t == dtBools[BOOL_SIZE_32] ||
-    t == dtBools[BOOL_SIZE_64];
+  return t == dtBool;
 }
 
 
@@ -1474,22 +1477,18 @@ bool isLegalParamType(Type* t) {
 }
 
 int get_width(Type *t) {
-  if (t == dtBools[BOOL_SIZE_8] ||
-      t == dtInt[INT_SIZE_8] ||
+  if (t == dtInt[INT_SIZE_8] ||
       t == dtUInt[INT_SIZE_8])
     return 8;
-  if (t == dtBools[BOOL_SIZE_16] ||
-      t == dtInt[INT_SIZE_16] ||
+  if (t == dtInt[INT_SIZE_16] ||
       t == dtUInt[INT_SIZE_16])
     return 16;
-  if (t == dtBools[BOOL_SIZE_32] ||
-      t == dtInt[INT_SIZE_32] ||
+  if (t == dtInt[INT_SIZE_32] ||
       t == dtUInt[INT_SIZE_32] ||
       t == dtReal[FLOAT_SIZE_32] ||
       t == dtImag[FLOAT_SIZE_32])
     return 32;
-  if (t == dtBools[BOOL_SIZE_64] ||
-      t == dtInt[INT_SIZE_64] ||
+  if (t == dtInt[INT_SIZE_64] ||
       t == dtUInt[INT_SIZE_64] ||
       t == dtReal[FLOAT_SIZE_64] ||
       t == dtImag[FLOAT_SIZE_64] ||
@@ -1606,6 +1605,24 @@ bool isBuiltinGenericClassType(Type* t) {
          t == dtAnyManagementNilable;
 }
 
+bool isBuiltinGenericType(Type* t) {
+  // ignore any decorator; irrelevant for knowing if it's builtin+generic
+  if (DecoratedClassType* dct = toDecoratedClassType(t))
+    if (AggregateType* at = dct->getCanonicalClass())
+      t = at;
+
+  return isBuiltinGenericClassType(t) ||
+         t == dtAnyComplex || t == dtAnyImag || t == dtAnyReal ||
+         t == dtAnyEnumerated ||
+         t == dtNumeric || t == dtIntegral ||
+         t == dtIteratorRecord || t == dtIteratorClass ||
+         t == dtAnyPOD ||
+         t == dtOwned || t == dtShared ||
+         t == dtAnyRecord || t == dtTuple ||
+         t->symbol->hasFlag(FLAG_SINGLE) || // _singlevar
+         t->symbol->hasFlag(FLAG_SYNC);  // _syncvar
+}
+
 bool isClassLike(Type* t) {
   return isDecoratedClassType(t) ||
          isBuiltinGenericClassType(t) ||
@@ -1624,6 +1641,21 @@ bool isClassLikeOrPtr(Type* t) {
                             t == dtCVoidPtr ||
                             t == dtStringC ||
                             t == dtCFnPtr);
+}
+
+bool isCPtrConstChar(Type* t) {
+  if (t->symbol->hasFlag(FLAG_C_PTRCONST_CLASS)) {
+    if (auto dct = getDataClassType(t->symbol)) {
+      return dct->typeInfo() == dt_c_char;
+    }
+  }
+  return false;
+}
+
+bool isCVoidPtr(Type* t) {
+  return (t->symbol->hasFlag(FLAG_C_PTR_CLASS) &&
+          getDataClassType(t->symbol)->typeInfo() == dtVoid) ||
+         t == dtCVoidPtr;
 }
 
 bool isClassLikeOrNil(Type* t) {
@@ -1808,6 +1840,76 @@ bool isSingleType(const Type* t) {
 bool isAtomicType(const Type* t) {
   return t->symbol->hasFlag(FLAG_ATOMIC_TYPE);
 }
+
+// Returns the element type, given an array type.
+static Type* arrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  INT_ASSERT(arrayType->symbol->hasFlag(FLAG_ARRAY));
+  Type* instType = arrayType->getField("_instance")->type;
+  AggregateType* instClass = toAggregateType(canonicalClassType(instType));
+  TypeSymbol* ts = getDataClassType(instClass->symbol);
+  // if no eltType here, go to the super class
+  while (ts == nullptr) {
+    if (Symbol* super = instClass->getSubstitutionWithName(astr("super"))) {
+        instClass = toAggregateType(canonicalClassType(super->type));
+        ts = getDataClassType(instClass->symbol);
+    } else break;
+  }
+  if (ts != NULL) eltType = ts->type;
+
+  return eltType;
+}
+
+// Returns the element type, given an array type.
+// Recurse into it if it is still an array.
+static Type* finalArrayElementType(AggregateType* arrayType) {
+  Type* eltType = nullptr;
+  do {
+    eltType = arrayElementType(arrayType);
+    arrayType = toAggregateType(eltType);
+  } while (arrayType != nullptr && arrayType->symbol->hasFlag(FLAG_ARRAY));
+
+  return eltType;
+}
+
+static bool isOrContains(Type *type, Flag flag, bool checkRefs = true) {
+  if (type == nullptr) {
+    return false;
+  } else if (!checkRefs && type->isRef()) {
+    return false;
+  } else if (type->symbol->hasFlag(flag)) {
+    return true;
+  } else {
+    Type* vt = type->getValType();
+    if (isDecoratedClassType(vt)) {
+      vt = canonicalClassType(vt)->getValType();
+    }
+    if (AggregateType* at = toAggregateType(vt)) {
+      // get backing array instance and recurse
+      if (at->symbol->hasFlag(FLAG_ARRAY)) {
+        Type* eltType = finalArrayElementType(at);
+        if (isOrContains(eltType, flag, checkRefs)) return true;
+      } else if (at->symbol->hasFlag(FLAG_TUPLE)) {
+        // if its a tuple, search the tuple type substitutions
+        for (const auto& ns: at->substitutionsPostResolve) {
+          Type* eltType = ns.value->type;
+          if (isOrContains(eltType, flag, checkRefs)) return true;
+        }
+      }
+    }
+  }
+  return false;
+}
+bool isOrContainsSyncType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SYNC, checkRefs);
+}
+bool isOrContainsSingleType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_SINGLE, checkRefs);
+}
+bool isOrContainsAtomicType(Type* t, bool checkRefs) {
+  return isOrContains(t, FLAG_ATOMIC_TYPE, checkRefs);
+}
+
 
 bool isRefIterType(Type* t) {
   Symbol* iteratorRecord = NULL;
@@ -2017,11 +2119,7 @@ bool isPOD(Type* t)
 bool isPrimitiveScalar(Type* type) {
   bool retval = false;
 
-  if (type == dtBools[BOOL_SIZE_8]         ||
-      type == dtBools[BOOL_SIZE_16]        ||
-      type == dtBools[BOOL_SIZE_32]        ||
-      type == dtBools[BOOL_SIZE_64]        ||
-      type == dtBools[BOOL_SIZE_SYS]       ||
+  if (type == dtBool                       ||
 
       type == dtInt[INT_SIZE_8]            ||
       type == dtInt[INT_SIZE_16]           ||
@@ -2246,7 +2344,7 @@ bool isNumericParamDefaultType(Type* t)
       t == dtReal[FLOAT_SIZE_DEFAULT] ||
       t == dtImag[FLOAT_SIZE_DEFAULT] ||
       t == dtComplex[COMPLEX_SIZE_DEFAULT] ||
-      t == dtBools[BOOL_SIZE_DEFAULT])
+      t == dtBool)
     return true;
 
   return false;

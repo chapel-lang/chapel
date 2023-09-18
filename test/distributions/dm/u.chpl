@@ -107,13 +107,13 @@ proc doShowDom(dmdom) {
   tl();
 }
 
-proc showArr(dmdom, dmarr, dmhelp) {
+proc showArr(dmdom, dmarr, ref dmhelp) {
   for l in overLocales() do
     on l do
       doShowArr(dmdom, dmarr, dmhelp);
 }
 
-proc doShowArr(dmdom, dmarr, dmhelp) {
+proc doShowArr(dmdom, dmarr, ref dmhelp) {
   hhd("dmarr - serial iteration");
   msgserial(dmarr);
   tl();
@@ -127,7 +127,7 @@ proc doShowArr(dmdom, dmarr, dmhelp) {
   resetDmhelp(dmhelp);
   dmhelp = dmarr;
   tl();
-  
+
   hhd("dmhelp after assignment");
   msgserial(dmhelp);
   tl();
@@ -152,7 +152,7 @@ proc doShowArr(dmdom, dmarr, dmhelp) {
   tl();
 }
 
-proc resetDmhelp(dmhelp: []) {
+proc resetDmhelp(ref dmhelp: []) {
   if dmhelp.rank != 2 then
     compilerError("resetDmhelp is implemented only for 2-d arrays");
 

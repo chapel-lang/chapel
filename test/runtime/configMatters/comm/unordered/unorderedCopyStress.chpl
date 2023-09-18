@@ -21,7 +21,7 @@ config const sizePerLocale = 10000,
              size = sizePerLocale * numLocales;
 
 const space = {0..size};
-const D = space dmapped Block(space, dataParTasksPerLocale=tasksPerLocale);
+const D = space dmapped blockDist(space, dataParTasksPerLocale=tasksPerLocale);
 var A, reversedA: [D] copyType;
 
 forall (a, r, d) in zip(A, reversedA, D) {
@@ -67,20 +67,20 @@ proc stop(opType: string) {
 
 
 start();
-forall i in D {
+forall i in D with (ref A, ref reversedA) {
   assign(reversedA[i], A[size-i]);
 }
 stop("GET   ");
 
 start();
-forall i in D {
+forall i in D with (ref A, ref reversedA) {
   assign(reversedA[size-i], A[i]);
 }
 stop("PUT   ");
 
 start();
 const offset = 2 * (size/numLocales);
-forall i in D {
+forall i in D with (ref A, ref reversedA) {
   const offIdx = (i + offset) % (size+1);
   assign(reversedA[offIdx], A[size-offIdx]);
 }

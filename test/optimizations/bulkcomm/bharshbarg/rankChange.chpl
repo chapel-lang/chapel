@@ -40,21 +40,21 @@ iter variations(in template, param rank = template.size) {
 
 
 for param rank in 2..maxDims {
-  var dom : domain(rank, stridable=true);
+  var dom : domain(rank, strides=strideKind.any);
   {
-    var r : rank*range(stridable=true);
+    var r : rank*range(strides=strideKind.any);
     for i in 0..#rank do r(i) = 1..10;
-    var temp : domain(rank, stridable=true) = r;
+    var temp : domain(rank, strides=strideKind.any) = r;
     dom = temp;
   }
 
   var A, B : [dom] int;
 
-  var smaller : domain(rank-1, stridable=true);
+  var smaller : domain(rank-1, strides=strideKind.any);
   {
-    var r : (rank-1)*range(stridable=true);
+    var r : (rank-1)*range(strides=strideKind.any);
     for i in 0..#(rank-1) do r(i) = 1..10;
-    var temp : domain(rank-1, stridable = true) = r;
+    var temp : domain(rank-1, strides = strideKind.any) = r;
     smaller = temp;
   }
   

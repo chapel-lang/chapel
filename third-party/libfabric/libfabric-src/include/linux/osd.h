@@ -1,6 +1,7 @@
 /*
  * Copyright (c) 2015 Los Alamos Nat. Security, LLC. All rights reserved.
  * Copyright (c) 2018 Amazon.com, Inc. or its affiliates. All rights reserved.
+ * Copyright (c) 2022 DataDirect Networks, Inc. All rights reserved.
  *
  * This software is available to you under a choice of one of two
  * licenses.  You may choose to be licensed under the terms of the GNU
@@ -65,18 +66,7 @@ ssize_t ofi_get_hugepage_size(void);
 
 static inline int ofi_alloc_hugepage_buf(void **memptr, size_t size)
 {
-	*memptr = mmap(NULL, size, PROT_READ | PROT_WRITE,
-		       MAP_PRIVATE | MAP_ANONYMOUS | MAP_HUGETLB, -1, 0);
-
-	if (*memptr == MAP_FAILED)
-		return -errno;
-
-	return FI_SUCCESS;
-}
-
-static inline int ofi_free_hugepage_buf(void *memptr, size_t size)
-{
-	return munmap(memptr, size);
+	return ofi_mmap_anon_pages(memptr, size, MAP_HUGETLB);
 }
 
 static inline int ofi_hugepage_enabled(void)
@@ -93,7 +83,7 @@ static inline int ofi_hugepage_enabled(void)
 	if (ret)
 		return 0;
 
-	ret = ofi_free_hugepage_buf(buffer, len);
+	ret = ofi_unmap_anon_pages(buffer, len);
 	assert(ret == 0);
 
 	return 1;
@@ -185,6 +175,38 @@ static inline ssize_t
 ofi_recvmsg_tcp(SOCKET fd, struct msghdr *msg, int flags)
 {
 	return recvmsg(fd, msg, flags);
+}
+
+static inline ssize_t
+ofi_sendv_socket(SOCKET fd, const struct iovec *iov, size_t cnt, int flags)
+{
+       struct msghdr msg;
+
+       msg.msg_control = NULL;
+       msg.msg_controllen = 0;
+       msg.msg_flags = 0;
+       msg.msg_name = NULL;
+       msg.msg_namelen = 0;
+       msg.msg_iov = (struct iovec *) iov;
+       msg.msg_iovlen = cnt;
+
+       return ofi_sendmsg_tcp(fd, &msg, flags);
+}
+
+static inline ssize_t
+ofi_recvv_socket(SOCKET fd, const struct iovec *iov, size_t cnt, int flags)
+{
+       struct msghdr msg;
+
+       msg.msg_control = NULL;
+       msg.msg_controllen = 0;
+       msg.msg_flags = 0;
+       msg.msg_name = NULL;
+       msg.msg_namelen = 0;
+       msg.msg_iov = (struct iovec *) iov;
+       msg.msg_iovlen = cnt;
+
+       return ofi_recvmsg_tcp(fd, &msg, flags);
 }
 
 #endif /* _LINUX_OSD_H_ */

@@ -10,3 +10,7 @@ variables.
 
 The difference of indvar-errors-2 from indvar-errors-1 is that in the
 former there is a tuple decomposition.
+
+Issue #21972 also tracks the fact that Dyno causes a "use-before-definition"
+error in this case, which is not deliberate and represents some kind of
+misresolution.

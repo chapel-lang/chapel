@@ -1,0 +1,4 @@
+# Compiler/main ignores.
+/BUILD_VERSION
+/COPYRIGHT
+/LICENSE

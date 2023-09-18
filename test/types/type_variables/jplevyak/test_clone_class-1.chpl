@@ -16,7 +16,7 @@ delete f1;
 
 
 
-
-var f2 = (new owned foo(x = 3.0)).borrow();
+var ownF2 = new owned foo(x = 3.0);
+var f2 = ownF2.borrow();
 
 f2.print();

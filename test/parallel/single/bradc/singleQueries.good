@@ -1,4 +1,0 @@
-x$.isFull? = false
-x$.readXX = false
-x$.isFull? = true
-x$.readXX = true

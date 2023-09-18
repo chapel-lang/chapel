@@ -13,7 +13,7 @@ class ListNode {
 }
 
 class List {
-  var head: ListNode?;
+  var head: shared ListNode?;
 
   proc deinit() {
     while head != nil {

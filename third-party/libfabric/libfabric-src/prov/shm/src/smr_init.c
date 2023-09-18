@@ -35,12 +35,15 @@
 #include <ofi_prov.h>
 #include "smr.h"
 #include "smr_signal.h"
+#include "smr_dsa.h"
 #include <ofi_hmem.h>
 
-extern struct sigaction *old_action;
+struct sigaction *old_action = NULL;
+
 struct smr_env smr_env = {
 	.sar_threshold = SIZE_MAX,
 	.disable_cma = false,
+	.use_dsa_sar = false,
 };
 
 static void smr_init_env(void)
@@ -49,6 +52,7 @@ static void smr_init_env(void)
 	fi_param_get_size_t(&smr_prov, "tx_size", &smr_info.tx_attr->size);
 	fi_param_get_size_t(&smr_prov, "rx_size", &smr_info.rx_attr->size);
 	fi_param_get_bool(&smr_prov, "disable_cma", &smr_env.disable_cma);
+	fi_param_get_bool(&smr_prov, "use_dsa_sar", &smr_env.use_dsa_sar);
 }
 
 static void smr_resolve_addr(const char *node, const char *service,
@@ -129,7 +133,7 @@ static int smr_getinfo(uint32_t version, const char *node, const char *service,
 	int ret;
 
 	mr_mode = hints && hints->domain_attr ? hints->domain_attr->mr_mode :
-						FI_MR_VIRT_ADDR | FI_MR_HMEM;
+						FI_MR_VIRT_ADDR;
 	msg_order = hints && hints->tx_attr ? hints->tx_attr->msg_order : 0;
 	fast_rma = smr_fast_rma_enabled(mr_mode, msg_order);
 
@@ -158,20 +162,11 @@ static int smr_getinfo(uint32_t version, const char *node, const char *service,
 						 &cur->src_addrlen);
 		}
 		if (fast_rma) {
-			cur->domain_attr->mr_mode = FI_MR_VIRT_ADDR;
+			cur->domain_attr->mr_mode |= FI_MR_VIRT_ADDR;
 			cur->tx_attr->msg_order = FI_ORDER_SAS;
 			cur->ep_attr->max_order_raw_size = 0;
 			cur->ep_attr->max_order_waw_size = 0;
 			cur->ep_attr->max_order_war_size = 0;
-		}
-		if (cur->caps & FI_HMEM) {
-			if (!(mr_mode & FI_MR_HMEM)) {
-				fi_freeinfo(cur);
-				return -FI_ENODATA;
-			}
-			cur->domain_attr->mr_mode |= FI_MR_HMEM;
-		} else {
-			cur->domain_attr->mr_mode &= ~FI_MR_HMEM;
 		}
 	}
 	return 0;
@@ -218,19 +213,18 @@ SHM_INI
 			 Default: 1024");
 	fi_param_define(&smr_prov, "disable_cma", FI_PARAM_BOOL,
 			"Manually disables CMA. Default: false");
+	fi_param_define(&smr_prov, "use_dsa_sar", FI_PARAM_BOOL,
+			"Enable use of DSA in SAR protocol. Default: false");
+	fi_param_define(&smr_prov, "enable_dsa_page_touch", FI_PARAM_BOOL,
+			"Enable CPU touching of memory pages in DSA command \
+			 descriptor when page fault is reported. \
+			 Default: false");
 
 	smr_init_env();
 
 	old_action = calloc(SIGRTMIN, sizeof(*old_action));
 	if (!old_action)
 		return NULL;
-	/* Signal handlers to cleanup tmpfs files on an unclean shutdown */
-	assert(SIGBUS < SIGRTMIN && SIGSEGV < SIGRTMIN
-	       && SIGTERM < SIGRTMIN && SIGINT < SIGRTMIN);
-	smr_reg_sig_hander(SIGBUS);
-	smr_reg_sig_hander(SIGSEGV);
-	smr_reg_sig_hander(SIGTERM);
-	smr_reg_sig_hander(SIGINT);
 
 	return &smr_prov;
 }

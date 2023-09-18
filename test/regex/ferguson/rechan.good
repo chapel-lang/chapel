@@ -4,7 +4,7 @@ match (matched = true, byteOffset = 0, numBytes = 5)
 offset 0
 +match: nothing no captures
 match (matched = false, byteOffset = -1, numBytes = 0)
-offset 1
+offset 17
 +match: one word with captures
 match (matched = true, byteOffset = 0, numBytes = 5)
 cap Words
@@ -12,15 +12,15 @@ offset 0
 +match: nothing with captures
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
-offset 1
+offset 17
 +match: nothing
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
-offset 11
+offset 17
 +match: nothing with captures
 match (matched = false, byteOffset = -1, numBytes = 0)
 cap 
-offset 0
+offset 17
 +search: One word no captures
 match (matched = true, byteOffset = 0, numBytes = 5)
 offset 0

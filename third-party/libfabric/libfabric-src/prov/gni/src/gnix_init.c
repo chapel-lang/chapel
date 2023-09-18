@@ -56,7 +56,7 @@ __thread uint32_t gnix_debug_tid = ~(uint32_t) 0;
 ofi_atomic32_t gnix_debug_next_tid;
 #endif
 
-extern fastlock_t __gnix_alps_lock;
+extern ofi_spin_t __gnix_alps_lock;
 
 /**
  * Helper for static computation of GNI CRC updating an intermediate crc
@@ -153,7 +153,7 @@ void _gnix_init(void)
 	static int called=0;
 
 	if (called==0) {
-		fastlock_init(&__gnix_alps_lock);
+		ofi_spin_init(&__gnix_alps_lock);
 
 		if (sizeof(struct gnix_mr_key) != sizeof(uint64_t)) {
 			GNIX_FATAL(FI_LOG_FABRIC,

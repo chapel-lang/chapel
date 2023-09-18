@@ -8,7 +8,7 @@ proc acceptListC(lst: list(MyClass)) {
 
 {
   var lst: list(owned MyClass);
-  lst.append(new MyClass(1));
+  lst.pushBack(new MyClass(1));
   acceptListC(lst);
 }
 
@@ -18,6 +18,6 @@ proc acceptListI(lst: list(integral)) {
 
 {
   var lst: list(int);
-  lst.append(1);
+  lst.pushBack(1);
   acceptListI(lst);
 }

@@ -6,7 +6,7 @@ record Foo {
 operator Foo.!=(lhs: Foo, rhs: Foo) {
   return lhs.x != rhs.x;
 }
-proc Foo.myMethod(other: [] Bar) {
+proc ref Foo.myMethod(other: [] Bar) {
   if (& reduce(other != x)) {
     writeln("Replacing");
     x = other;

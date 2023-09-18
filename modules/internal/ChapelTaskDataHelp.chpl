@@ -24,6 +24,7 @@ module ChapelTaskDataHelp {
 
   private use ChapelStandard;
   private use CTypes;
+  private use OS.POSIX;
 
   extern type chpl_task_infoChapel_t;
   pragma "fn synchronization free"
@@ -36,7 +37,7 @@ module ChapelTaskDataHelp {
   // a new task.
   proc chpl_task_data_setup(args: chpl_task_bundle_p,
                             infoChapel:c_ptr(chpl_task_infoChapel_t)) {
-    c_memcpy(chpl_task_getInfoChapelInBundle(args), infoChapel,
+    memcpy(chpl_task_getInfoChapelInBundle(args), infoChapel,
              c_sizeof(chpl_task_infoChapel_t));
   }
 

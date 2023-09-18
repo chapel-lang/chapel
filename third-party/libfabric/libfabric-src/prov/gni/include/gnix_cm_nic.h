@@ -73,7 +73,7 @@ struct gnix_cm_nic {
 	struct gnix_dgram_hndl *dgram_hndl;
 	struct gnix_fid_domain *domain;
 	struct gnix_hashtable *addr_to_ep_ht;
-	fastlock_t wq_lock;
+	ofi_spin_t wq_lock;
 	struct dlist_entry cm_nic_wq;
 	struct gnix_reference ref_cnt;
 	enum fi_progress ctrl_progress;

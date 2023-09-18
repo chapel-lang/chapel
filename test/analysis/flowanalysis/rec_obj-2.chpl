@@ -3,15 +3,15 @@ class Cons {
   var cdr; 
 };
 
-proc print(c : borrowed Cons) {
+proc print(c : borrowed Cons(?)) {
   if (c != nil) {
      writeln(c.car);
      print(c.cdr);
   }
 }
 
-var a = (new owned Cons(1, (new owned Cons(2, nil)).borrow())).borrow();
-var b = (new owned Cons(1.0, new borrowed Cons(2.0, nil))).borrow();
+ref a = (new Cons(1, (new Cons(2, nil)).borrow())).borrow();
+ref b = (new Cons(1.0, (new Cons(2.0, nil)).borrow())).borrow();
 
 print(a);
 print(b);

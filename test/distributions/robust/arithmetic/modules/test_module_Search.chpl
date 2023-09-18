@@ -12,7 +12,7 @@ var foundIdx: int;
 var idx = n1/2+1;
 var elem: real;
 
-proc reset(A) {
+proc reset(ref A) {
   rng.fillRandom(A);
   sort(A);
   elem = A[idx];
@@ -44,7 +44,7 @@ reset(R1D);
 checkSearch(found, foundIdx, R1D, "binarySearch");
 
 writeln("Search reindexed array");
-proc foo(D: domain, A: [D], useLinear=true) {
+proc foo(D: domain(?), A: [D], useLinear=true) {
   if useLinear then
     return linearSearch(A, elem);
   else

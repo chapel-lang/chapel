@@ -53,16 +53,16 @@ struct fi_ops_fabric tcpx_fabric_ops = {
 static int tcpx_fabric_close(fid_t fid)
 {
 	int ret;
-	struct tcpx_fabric *tcpx_fabric;
+	struct tcpx_fabric *fabric;
 
-	tcpx_fabric = container_of(fid, struct tcpx_fabric,
-				   util_fabric.fabric_fid.fid);
+	fabric = container_of(fid, struct tcpx_fabric,
+			      util_fabric.fabric_fid.fid);
 
-	ret = ofi_fabric_close(&tcpx_fabric->util_fabric);
+	ret = ofi_fabric_close(&fabric->util_fabric);
 	if (ret)
 		return ret;
 
-	free(tcpx_fabric);
+	free(fabric);
 	return 0;
 }
 
@@ -74,26 +74,26 @@ struct fi_ops tcpx_fabric_fi_ops = {
 	.ops_open = fi_no_ops_open,
 };
 
-int tcpx_create_fabric(struct fi_fabric_attr *attr, struct fid_fabric **fabric,
-		       void *context)
+int tcpx_create_fabric(struct fi_fabric_attr *attr,
+		       struct fid_fabric **fabric_fid, void *context)
 {
-	struct tcpx_fabric *tcpx_fabric;
+	struct tcpx_fabric *fabric;
 	int ret;
 
-	tcpx_fabric = calloc(1, sizeof(*tcpx_fabric));
-	if (!tcpx_fabric)
+	fabric = calloc(1, sizeof(*fabric));
+	if (!fabric)
 		return -FI_ENOMEM;
 
 	ret = ofi_fabric_init(&tcpx_prov, tcpx_info.fabric_attr, attr,
-			      &tcpx_fabric->util_fabric, context);
+			      &fabric->util_fabric, context);
 	if (ret) {
-		free(tcpx_fabric);
+		free(fabric);
 		return ret;
 	}
 
-	*fabric = &tcpx_fabric->util_fabric.fabric_fid;
-	(*fabric)->fid.ops = &tcpx_fabric_fi_ops;
-	(*fabric)->ops = &tcpx_fabric_ops;
+	fabric->util_fabric.fabric_fid.fid.ops = &tcpx_fabric_fi_ops;
+	fabric->util_fabric.fabric_fid.ops = &tcpx_fabric_ops;
+	*fabric_fid = &fabric->util_fabric.fabric_fid;
 
 	return 0;
 }

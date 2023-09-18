@@ -80,7 +80,7 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 // end with a space.
 //
 // 'encounteredAutoModule' is set to 'false' at the start of this function
-// but will be set to 'true' if the symbol came from an automaticly use'd
+// but will be set to 'true' if the symbol came from an automatically use'd
 // module
 //
 // 'from' is set to 'name' at the start of this function and will be
@@ -295,6 +295,17 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto externBlockId = std::get<ID>(info);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
+  wr.heading(kind_, type_, externBlockId,
+             "running clang on extern block failed",
+             (errors.size() > 0 ? " -- clang errors follow" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, error.second);
+  }
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
   const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
@@ -486,6 +497,26 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
+  auto fnCall = std::get<const uast::FnCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+
+  wr.heading(kind_, type_, fnCall,
+             "invalid use of the 'index' keyword.");
+  wr.codeForLocation(fnCall);
+  wr.message("The 'index' keyword should be used with a domain: 'index(D)'.");
+
+  if (fnCall->numActuals() == 0) {
+    wr.message("However, 'index' here did not have any actuals.");
+  } else if (fnCall->numActuals() > 1) {
+    wr.message("However, 'index' here had more than one actual.");
+    wr.code(fnCall, { fnCall->actual(1) });
+  } else if (type.type() && !type.type()->isDomainType()) {
+    wr.message("However, 'index' here is not called with a domain argument, but with ", decayToValue(type), ".");
+    wr.code(fnCall, { fnCall->actual(0) });
+  }
+}
+
 void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   auto newExpr = std::get<const uast::New*>(info);
   auto type = std::get<types::QualifiedType>(info);
@@ -505,6 +536,34 @@ void ErrorInvalidNewTarget::write(ErrorWriterBase& wr) const {
   }
   wr.code(newExpr, { newExpr->typeExpression() });
   wr.message("The 'new' expression can only be used with records or classes.");
+}
+
+void ErrorInvalidSuper::write(ErrorWriterBase& wr) const {
+  auto superExpr = std::get<const uast::Identifier*>(info);
+  auto qt = std::get<types::QualifiedType>(info);
+
+  const types::RecordType* recordType = nullptr;
+  if (auto type = qt.type()) {
+    recordType = type->toRecordType();
+  }
+
+  if (recordType) {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' in record '", recordType->name(), "'.");
+  } else {
+    wr.heading(kind_, type_, superExpr, "invalid use of 'super' with ", qt);
+  }
+  wr.code(superExpr, { superExpr });
+  if (recordType) {
+    wr.note(superExpr, "inheritance is not currently supported for records.");
+    wr.message(
+        "Thoughts on what record inheritance should entail can be added to "
+        "https://github.com/chapel-lang/chapel/issues/6851.");
+    wr.message(recordType->name(), " declared as a record here:");
+    wr.codeForLocation(recordType->id());
+    wr.message("If you meant to declare '", recordType->name(), "' as a class ",
+               "instead, you can do that by writing 'class ", recordType->name(),
+               "' instead of 'record ", recordType->name(), "'.");
+  }
 }
 
 void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
@@ -528,7 +587,7 @@ void ErrorMemManagementNonClass::write(ErrorWriterBase& wr) const {
   wr.message("Memory management strategies can only be used with classes.");
   if (record) {
     wr.note(record->id(), "'", record->name(), "' declared as record here:");
-    wr.code(record->id());
+    wr.codeForLocation(record->id());
     wr.message(
                "Consider removing the '", uast::New::managementToString(newCall->management()),
                "' keyword to fix this error, or defining '", record->name(),
@@ -579,6 +638,22 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   wr.message("An enum cannot have repeated elements of the same name.");
 }
 
+void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
+  auto theClass = std::get<const uast::Class*>(info);
+  auto firstParent = std::get<1>(info);
+  auto secondParent = std::get<2>(info);
+
+  wr.heading(kind_, type_, theClass,
+             "invalid use of multiple inheritance in class '", theClass->name(),
+             "'; only single inheritance is supported.");
+  wr.message("The first class being inherited from is here:");
+  wr.code(justOneLine(firstParent), { firstParent });
+  wr.message("The second class being inherited from is here:");
+  wr.code(justOneLine(secondParent), { secondParent });
+  wr.message("Although a class can implement multiple interfaces, it cannot ",
+             "inherit from multiple parent classes.");
+}
+
 void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
   auto call = std::get<const uast::FnCall*>(info);
   auto firstQuestion = std::get<1>(info);
@@ -613,12 +688,12 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.code(reference, { reference });
   wr.note(innerDecl, "the identifier is used within ", innerName, " '",
           innerDecl->name(), "', declared here:");
-  wr.code(innerDecl);
+  wr.codeForLocation(innerDecl);
   wr.note(outerDecl, "however, the identifier refers to a field of an enclosing ",
           outerName, " '", outerDecl->name(), "', declared here:");
-  wr.code(outerDecl);
+  wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
-  wr.code<ID, ID>(id, { id });
+  wr.codeForDef(id);
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
@@ -626,8 +701,8 @@ void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto iterand = std::get<1>(info);
   auto& iterandType = std::get<types::QualifiedType>(info);
   wr.heading(kind_, type_, loop, "cannot iterate over ", decayToValue(iterandType), ".");
-  wr.message("In the following loop:");
-  wr.code(loop, { iterand });
+  wr.message("Used as an iterand in a loop here:");
+  wr.code(iterand, { iterand });
 }
 
 void ErrorNotInModule::write(ErrorWriterBase& wr) const {
@@ -635,9 +710,15 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //ID moduleId = std::get<1>(info);
   UniqueString moduleName = std::get<2>(info);
   ID renameClauseId = std::get<3>(info);
+  bool thereButPrivate = std::get<bool>(info);
 
-  wr.heading(kind_, type_, dot,
-             "cannot find '", dot->field(), "' in module '", moduleName, "'");
+  if (thereButPrivate) {
+    wr.heading(kind_, type_, dot,
+               "cannot access '", dot->field(), "' as it is private to '", moduleName, "'.");
+  } else {
+    wr.heading(kind_, type_, dot,
+               "cannot find '", dot->field(), "' in module '", moduleName, "'.");
+  }
 
   wr.code(dot, { dot });
 
@@ -655,14 +736,28 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
     } else {
       wr.note(locationOnly(renameClauseId),
               "module '", moduleName, "' was renamed to"
-              " '", dotModName, "' here");
-      wr.code<ID,ID>(renameClauseId, { renameClauseId });
+              " '", dotModName, "' here:");
+      wr.code<ID>(renameClauseId, { renameClauseId });
     }
   }
 
   //wr.note(moduleId, "module '", moduleName, "' declared here");
 
   return;
+}
+
+void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto& others = std::get<std::vector<ID>>(info);
+
+  const char* markerType = node->isInit() ? "init this" : "this.complete()";
+  wr.heading(kind_, type_, node,
+             "use of '", markerType, "' after type has been initialized.");
+  wr.code(node, { node });
+
+  auto previousMarker = others.at(0);
+  wr.note(previousMarker, "the type was previously marked as initialized here:");
+  wr.code<ID>(previousMarker, { previousMarker });
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
@@ -673,7 +768,7 @@ void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
              "an include statement");
   wr.code(moduleInclude);
   wr.note(moduleDef, "module declared private here:");
-  wr.code(moduleDef);
+  wr.codeForLocation(moduleDef);
 }
 
 void ErrorProcDefExplicitAnonFormal::write(ErrorWriterBase& wr) const {
@@ -703,7 +798,7 @@ void ErrorPrototypeInclude::write(ErrorWriterBase& wr) const {
              "cannot apply prototype to module in include statement");
   wr.code(moduleInclude);
   wr.note(moduleDef, "put prototype keyword at module declaration here:");
-  wr.code(moduleDef);
+  wr.codeForLocation(moduleDef);
 }
 
 // find the first ID not from use/import, returns true and sets result
@@ -717,8 +812,8 @@ static bool firstIdFromDecls(
     const auto& t = trace[i];
     if (t.visibleThrough.size() == 0) {
       // TODO: find the first non-function ID?
-      // To do that, would use flags in BorrowedIdsWithIter
-      // to filter Idvs.
+      // To do that, would use flags in BorrowedIdsWithName
+      // to filter Ids.
       result = matches[i].firstId();
       return true;
     }
@@ -786,7 +881,7 @@ void ErrorRedefinition::write(ErrorWriterBase& wr) const {
         }
       }
 
-      wr.code<ID, ID>(matchId, { matchId });
+      wr.codeForDef(matchId);
     }
   }
 }
@@ -828,11 +923,12 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
 
   // Don't print the details of managed / unmanaged / etc.
   if (auto classType = actualType.type()->toClassType()) {
-    actualClassType = classType->basicClassType();
-    while (auto instFrom = actualClassType->instantiatedFrom()) {
-      actualClassType = instFrom;
+    if (auto actualClassType = classType->basicClassType()) {
+      while (auto instFrom = actualClassType->instantiatedFrom()) {
+        actualClassType = instFrom;
+      }
+      actualType = types::QualifiedType(actualType.kind(), actualClassType);
     }
-    actualType = types::QualifiedType(actualType.kind(), actualClassType);
   }
   wr.message("The operation must be a type extending 'ReduceScanOp', but "
              "it is ", actualType);
@@ -854,7 +950,23 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.code(use, {use});
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
-  wr.code(mod);
+  wr.codeForLocation(mod);
+}
+
+void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto node = std::get<const uast::AstNode*>(info);
+  auto clause = std::get<const uast::VisibilityClause*>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "a 'use'"
+                                                             : "an 'import'";
+  wr.heading(kind_, type_, clause,
+             "using a type's name ('", name, "' in this case) in ", useOrImportStr,
+             " statement to access its tertiary methods is an unstable feature.");
+  wr.message("In the following clause:");
+  wr.code(clause, { node });
+  wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
@@ -919,7 +1031,7 @@ void ErrorUnknownEnumElem::write(ErrorWriterBase& wr) const {
              "' has no element named '", elemName, "'.");
   wr.code(node, { node });
   wr.note(enumAst->id(), "'", enumAst->name(), "' is declared here.");
-  wr.code(enumAst->id());
+  wr.codeForLocation(enumAst->id());
 }
 
 void ErrorUnknownIdentifier::write(ErrorWriterBase& wr) const {
@@ -961,9 +1073,9 @@ void ErrorUseImportMultiplyDefined::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is multiply defined.");
   wr.message("'", symbolName, "' was first defined here:");
-  wr.code(firstOccurrence, { firstOccurrence });
+  wr.codeForDef(firstOccurrence);
   wr.message("Redefined here:");
-  wr.code(secondOccurrence, { secondOccurrence });
+  wr.codeForDef(secondOccurrence);
 }
 
 void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
@@ -974,9 +1086,9 @@ void ErrorUseImportMultiplyMentioned::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, secondOccurrence, "'",
              symbolName, "' is repeated.");
   wr.message("'", symbolName, "' was first mentioned here:");
-  wr.code(firstOccurrence, { firstOccurrence });
+  wr.codeForDef(firstOccurrence);
   wr.message("Mentioned again here:");
-  wr.code(secondOccurrence, { secondOccurrence });
+  wr.codeForDef(secondOccurrence);
 }
 
 void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
@@ -987,7 +1099,7 @@ void ErrorUseImportNotModule::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, id, "cannot '", useOrImport, "' symbol '", moduleName,
              "', which is not a ", allowedItem(useOrImport), ".");
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code<ID, ID>(id, { id });
+  wr.code<ID>(id, { id });
   wr.message("Only ", allowedItems(useOrImport), " can be used with '",
              useOrImport, "' statements.");
 }
@@ -1025,7 +1137,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
                " named '", moduleName, "' in module '", previousPartName, "'.");
   }
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code<ID, ID>(id, { id });
+  wr.code<ID>(id, { id });
   if (!improperMatches.empty()) {
     wr.message("The following declarations are not covered by the '", useOrImport,
                "' statement but seem similar to what you meant.");
@@ -1043,7 +1155,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
       if (tag == uast::asttags::AstTag::Module) {
         wr.note(locationOnly(improperId),
                 "a module named '", moduleName, "' is defined here:");
-        wr.code<ID, ID>(improperId, { improperId });
+        wr.codeForDef(improperId);
         wr.note(locationOnly(improperId),
                 "however, a full path or an explicit relative ", useOrImport,
                 " is required for modules that are not at the root level.");
@@ -1051,7 +1163,7 @@ void ErrorUseImportUnknownMod::write(ErrorWriterBase& wr) const {
       } else {
         wr.note(locationOnly(improperId), "a declaration of '", moduleName,
                 "' is here:");
-        wr.code<ID, ID>(improperId, { improperId });
+        wr.codeForDef(improperId);
         wr.note(locationOnly(improperId), "however, '", useOrImport,
                 "' statements can only be used with ",
                 allowedItems(useOrImport), " (and this '", moduleName,
@@ -1102,7 +1214,7 @@ void ErrorUseImportUnknownSym::write(ErrorWriterBase& wr) const {
   whatIsSearched[0] = std::tolower(whatIsSearched[0]);
   wr.message("Searching in the scope of ", whatIsSearched, " '",
              searchedScope->name(), "':");
-  wr.code(searchedScope->id());
+  wr.codeForLocation(searchedScope->id());
 }
 
 void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
@@ -1113,7 +1225,7 @@ void ErrorUseOfLaterVariable::write(ErrorWriterBase& wr) const {
   wr.message("In the following statement:");
   wr.code(stmt);
   wr.message("there is a reference to a variable defined later:");
-  wr.code(laterId);
+  wr.codeForDef(laterId);
   wr.message("Variables cannot be referenced before they are defined.");
 }
 
@@ -1126,7 +1238,6 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
 }
-
 
 /* end resolution errors */
 

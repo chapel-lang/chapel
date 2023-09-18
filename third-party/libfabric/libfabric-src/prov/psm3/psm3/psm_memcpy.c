@@ -61,8 +61,8 @@
 #include "psm_user.h"
 #include "psm_mq_internal.h"
 
-void *psmi_memcpyo(void *dst, const void *src, size_t n)
+void *psm3_memcpyo(void *dst, const void *src, size_t n)
 {
-	psmi_mq_mtucpy(dst, src, n);
+	psm3_mq_mtucpy(dst, src, n);
 	return dst;
 }

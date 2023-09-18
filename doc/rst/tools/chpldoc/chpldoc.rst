@@ -224,7 +224,7 @@ Stifling documentation
 To mark a particular symbol to not be output as part of the documentation,
 preface the symbol with the attribute ``@chpldoc.nodoc``. For example:
 
-.. code-block:: text
+.. code-block:: chapel
 
    @chpldoc.nodoc
    proc foo() { ... }
@@ -504,8 +504,9 @@ a matching identifier is found:
 ``:var:``
 ``:param:``
 ``:type:``
+``:enum:``
 
-    Reference a module-level variable, constant, compiler param, or type.
+    Reference a module-level variable, constant, compiler param, type, or enum.
 
 ``:class:``
 ``:record:``

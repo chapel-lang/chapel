@@ -108,7 +108,7 @@ int rstream_domain_open(struct fid_fabric *fabric, struct fi_info *info,
 		goto err1;
 
 	ret = ofi_domain_init(fabric, info, &rstream_domain->util_domain,
-		context);
+			      context, OFI_LOCK_MUTEX);
 	if (ret)
 		goto err1;
 

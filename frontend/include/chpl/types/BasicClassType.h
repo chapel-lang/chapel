@@ -20,7 +20,7 @@
 #ifndef CHPL_TYPES_BASIC_CLASS_TYPE_H
 #define CHPL_TYPES_BASIC_CLASS_TYPE_H
 
-#include "chpl/types/CompositeType.h"
+#include "chpl/types/ManageableType.h"
 #include "chpl/framework/global-strings.h"
 
 namespace chpl {
@@ -31,7 +31,7 @@ namespace types {
   This class represents an class type (e.g. `class C`)
   without considering decorators.
  */
-class BasicClassType final : public CompositeType {
+class BasicClassType final : public ManageableType {
  private:
   const BasicClassType* parentType_ = nullptr;
 
@@ -39,8 +39,8 @@ class BasicClassType final : public CompositeType {
                  const BasicClassType* parentType,
                  const BasicClassType* instantiatedFrom,
                  SubstitutionsMap subs)
-    : CompositeType(typetags::BasicClassType, id, name,
-                    instantiatedFrom, std::move(subs)),
+    : ManageableType(typetags::BasicClassType, id, name,
+                     instantiatedFrom, std::move(subs)),
       parentType_(parentType)
   {
     // all classes should have a parent type, except for object

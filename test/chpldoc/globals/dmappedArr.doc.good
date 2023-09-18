@@ -19,7 +19,7 @@ or
 
 .. data:: var domBase = {1..10}
 
-.. data:: var domMap = new Block(domBase)
+.. data:: var domMap = new blockDist(domBase)
 
 .. data:: var dom1 = domBase dmapped new dmap(domMap)
 

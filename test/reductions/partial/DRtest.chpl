@@ -8,7 +8,7 @@ var A3: [1..N, 1..M, 1..L] int;
 setup2(A2);
 setup3(A3);
 
-proc setup2(A2) {
+proc setup2(ref A2) {
   var setupVar = 1;
   for (i1,i2) in A2.domain {
     A2[i1,i2] = setupVar;
@@ -16,7 +16,7 @@ proc setup2(A2) {
   }
 }
 
-proc setup3(A3) {
+proc setup3(ref A3) {
   var setupVar = 100;
   for (i1,i2,i3) in A3.domain {
     A3[i1,i2,i3] = setupVar + i3;

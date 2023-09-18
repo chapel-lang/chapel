@@ -111,18 +111,34 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
-    pragma "no doc" pragma "last resort"
+/* These methods are commented out so that __primitive("resolves")
+   in proc newRectangularDom() fails.
+   Also, the compiler is currently adjusted to forego the 'override'
+   checking so that user-defined domain maps can continue specifying
+   'override' on their implementations of dsiNewRectangularDom().
+   The second overload below needs to be restored when 'stridable'
+   is removed entirely.
+
+    // this overload supports deprecation by Vass in 1.31 to implement #17131
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param stridable: bool, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
+    proc dsiNewRectangularDom(param rank: int, type idxType,
+                              param strides: strideKind, inds) {
+      compilerError("rectangular domains not supported by this distribution");
+    }
+*/
+
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
       compilerError("associative domains not supported by this distribution");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) {
       compilerError("sparse domains not supported by this distribution");
     }
@@ -183,8 +199,6 @@ module ChapelDistribution {
 
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDist; // nil
-      return ret;
     }
 
     // default overloads to provide clear compile-time error messages
@@ -193,34 +207,34 @@ module ChapelDistribution {
       compilerError("this domain type does not support '", op, "'");
     }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiLow                   { dnsError("low"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiHigh                  { dnsError("high"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignedLow            { dnsError("alignedLow"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignedHigh           { dnsError("alignedHigh"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiFirst                 { dnsError("first"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiLast                  { dnsError("last"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiStride                { dnsError("stride"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiAlignment             { dnsError("alignment"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiIndexOrder(i)         { dnsError("indexOrder"); }
 
-    pragma "no doc" pragma "last resort"
+    pragma "last resort" @chpldoc.nodoc
     proc dsiCreateIndexBuffer(size) { dnsError("createIndexBuffer"); }
 
     // end of default overloads to provide clear compile-time error messages
@@ -411,12 +425,21 @@ module ChapelDistribution {
   class BaseRectangularDom : BaseDom {
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
+
+    // deprecated by Vass in 1.31 to implement #17131
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc stridable param do return strides.toStridable();
+    @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    proc type stridable param do return strides.toStridable();
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     override proc isRectangular() param do return true;
 
     proc getBaseArrType() type {
-      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, stridable=stridable);
+      var tmp = new unmanaged BaseArrOverRectangularDom(rank=rank, idxType=idxType, strides=strides);
       return tmp.type;
     }
 
@@ -426,16 +449,14 @@ module ChapelDistribution {
 
     proc dsiAdd(in x) {
       compilerError("Cannot add indices to a rectangular domain");
-      return 0;
     }
 
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
-      return 0;
     }
   }
 
-  class BaseSparseDomImpl : BaseSparseDom {
+  class BaseSparseDomImpl : BaseSparseDom(?) {
 
     var nnzDom = {1..0};
 
@@ -444,22 +465,21 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
 
-      if !dataSorted && preserveInds {
-        var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique, addOn);
-      }
-      else {
-        return bulkAdd_help(inds, dataSorted, isUnique, addOn);
-      }
+      var inds_ = inds;
+      return bulkAdd_help(inds_, dataSorted, isUnique, addOn);
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
-      halt("Helper function called on the BaseSparseDomImpl");
 
-      return -1;
+      return bulkAdd_help(inds, dataSorted, isUnique, addOn);
+    }
+
+    proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
+        dataSorted=false, isUnique=false, addOn=nilLocale): int {
+      halt("Helper function called on the BaseSparseDomImpl");
     }
 
     // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
@@ -494,6 +514,8 @@ module ChapelDistribution {
     // calculate new nnz and update it, (2) call this method, (3) add
     // indices
     inline proc _bulkGrow() {
+      use Math;
+
       const nnz  = getNNZ();
       if (nnz > nnzDom.size) {
         const _newNNZDomSize = (exp2(log2(nnz)+1.0)):int;
@@ -517,7 +539,7 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
+    proc bulkAdd_prepareInds(ref inds, dataSorted, isUnique, cmp) {
       use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
@@ -599,7 +621,7 @@ module ChapelDistribution {
 
   record SparseIndexBuffer {
     param rank: int;
-    var obj: BaseSparseDom;
+    var obj: borrowed BaseSparseDom(?);
 
     type idxType = if rank==1 then int else rank*int;
     var bufDom = domain(1);
@@ -612,11 +634,11 @@ module ChapelDistribution {
       bufDom = {0..#size};
     }
 
-    proc deinit() {
+    proc ref deinit() {
       commit();
     }
 
-    proc add(idx: idxType) {
+    proc ref add(idx: idxType) {
       buf[cur] = idx;
       cur += 1;
 
@@ -624,7 +646,7 @@ module ChapelDistribution {
         commit();
     }
 
-    proc commit() {
+    proc ref commit() {
       if cur >= 1 then
         obj.dsiBulkAdd(buf[..cur-1]);
       cur = 0;
@@ -658,11 +680,17 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true,
+        dataSorted=false, isUnique=false,
         addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
-      return 0;
+    }
+
+    proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false,
+        addOn=nilLocale): int {
+
+      halt("Bulk addition is not supported by this sparse domain");
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
@@ -693,15 +721,11 @@ module ChapelDistribution {
     override proc dsiHigh { return parentDom.highBound; }
     override proc dsiStride { return parentDom.stride; }
     override proc dsiAlignment { return parentDom.alignment; }
-    override proc dsiFirst {
+    override proc dsiFirst: rank*idxType {
       halt("dsiFirst is not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
-    override proc dsiLast {
+    override proc dsiLast: rank*idxType {
       halt("dsiLast not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
@@ -726,7 +750,6 @@ module ChapelDistribution {
 
     proc dsiAdd(in idx) {
       compilerError("Index addition is not supported by this domain");
-      return 0;
     }
 
     proc rank param {
@@ -769,8 +792,6 @@ module ChapelDistribution {
 
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDom; // nil
-      return ret;
     }
 
     // takes 'rmFromList' which indicates whether the array should
@@ -803,17 +824,14 @@ module ChapelDistribution {
 
     proc chpl_isElementTypeDefaultInitializable(): bool {
       halt("chpl_isElementTypeDefaultInitializable must be defined");
-      return false;
     }
 
     proc chpl_isElementTypeNonNilableClass(): bool {
       halt("chpl_isElementTypeNonNilableClass must be defined");
-      return false;
     }
 
-    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx): bool {
       halt("chpl_unsafeAssignIsClassElementNil must be defined");
-      return false;
     }
 
     proc chpl_unsafeAssignHaltUninitializedElement(idx) {
@@ -948,13 +966,22 @@ module ChapelDistribution {
   class BaseArrOverRectangularDom: BaseArr {
     param rank : int;
     type idxType;
-    param stridable: bool;
+    param strides: strideKind;
+
+    // deprecated by Vass in 1.31 to implement #17131
+    @deprecated("[array].stridable is deprecated; use [array].strides instead")
+    proc stridable param do return strides.toStridable();
+    @deprecated("[array].stridable is deprecated; use [array].strides instead")
+    proc type stridable param do return strides.toStridable();
+
+    @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
+    @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     // the dsiReallocate to overload only uses the argument with
     // the matching tuple of ranges.
 
     // Q. Should this pass in a BaseRectangularDom or ranges?
-    proc dsiReallocate(bounds: rank*range(idxType,BoundedRangeType.bounded,stridable)) {
+    proc dsiReallocate(bounds: rank*range(idxType,boundKind.both,strides)) {
       halt("reallocating not supported for this array type");
     }
 
@@ -964,13 +991,11 @@ module ChapelDistribution {
     proc deinit() {
       // this is a bug workaround
     }
-
-
   }
 
   pragma "base array"
-  class BaseRectangularArr: BaseArrOverRectangularDom {
-    /* rank, idxType, stridable are from BaseArrOverRectangularDom */
+  class BaseRectangularArr: BaseArrOverRectangularDom(?) {
+    /* rank, idxType, strides are from BaseArrOverRectangularDom */
     type eltType;
 
     proc deinit() {
@@ -1006,7 +1031,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: AbsBaseArr {
+  class BaseSparseArr: AbsBaseArr(?) {
     param rank : int;
     type idxType;
 
@@ -1024,7 +1049,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  class BaseSparseArrImpl: BaseSparseArr {
+  class BaseSparseArrImpl: BaseSparseArr(?) {
 
     pragma "local field" pragma "unsafe"
     // may be initialized separately
@@ -1157,6 +1182,21 @@ module ChapelDistribution {
 
   // domain assignment helpers
 
+  private proc castIndices(from, lhs) {
+    param rank = lhs.rank;
+    compilerAssert(rank == from.size);
+
+    type resultType = range(lhs.idxType, boundKind.both, lhs.strides);
+    if from(0).type == resultType then
+      return from;
+
+    var result: rank * resultType;
+    for param i in 0..rank-1 do
+      result(i) = from(i) : resultType;
+
+    return result;
+  }
+
   // Implement simple reallocate/set indices/post reallocate
   // for compatibility.
   // Domain implementations may supply their own dsiAssignDomain
@@ -1165,34 +1205,23 @@ module ChapelDistribution {
   proc chpl_assignDomainWithGetSetIndices(lhs:?t, rhs: domain)
     where isSubtype(_to_borrowed(t),BaseRectangularDom)
   {
+    const rhsInds = rhs.getIndices();
     type arrType = lhs.getBaseArrType();
-    param rank = lhs.rank;
-    type idxType = lhs.idxType;
-    param stridable = lhs.stridable;
 
     for e in lhs._arrs do {
       on e {
-        var eCastQ = e:arrType?;
-        if eCastQ == nil then
+        if const eCast = e:arrType? then
+          eCast.dsiReallocate(castIndices(rhsInds, lhs));
+          // castIndices() is not hoisted because 'lhs' may not have any arrays
+        else
           halt("internal error: ", t:string,
-               " contains an bad array type ", arrType:string);
-
-        var eCast = eCastQ!;
-
-        var inds = rhs.getIndices();
-        var tmp:rank * range(idxType,BoundedRangeType.bounded,stridable);
-
-        // set tmp = inds with some error checking
-        for param i in 0..rank-1 {
-          var from = inds(i);
-          tmp(i) =
-            from.safeCast(range(idxType,BoundedRangeType.bounded,stridable));
-        }
-
-        eCast.dsiReallocate(tmp);
+               " contains a bad array type ", arrType:string);
       }
     }
-    lhs.dsiSetIndices(rhs.getIndices());
+
+    // todo: should we cast indices for dsiSetIndices like for dsiReallocate?
+    lhs.dsiSetIndices(rhsInds);
+
     for e in lhs._arrs do {
       var eCastQ = e:arrType?;
       var eCast = eCastQ!;

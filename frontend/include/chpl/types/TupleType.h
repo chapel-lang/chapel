@@ -55,6 +55,8 @@ class TupleType final : public CompositeType {
       if (elt.postOrderId() == -1) {
         isKnownSize_ = false;
       }
+    } else if (subs_.size() == 0) {
+      isKnownSize_ = false;
     }
     computeIsStarTuple();
     computeIsParamKnown();
@@ -87,12 +89,12 @@ class TupleType final : public CompositeType {
   getReferentialTuple(Context* context, std::vector<const Type*> eltTypes);
 
   static const TupleType*
-  getVarArgTuple(Context* context, std::vector<QualifiedType> eltTypes);
+  getQualifiedTuple(Context* context, std::vector<QualifiedType> eltTypes);
 
   static const TupleType*
-  getVarArgTuple(Context* context,
-                 QualifiedType paramSize,
-                 QualifiedType starEltType);
+  getStarTuple(Context* context,
+               QualifiedType paramSize,
+               QualifiedType starEltType);
 
   /** Return the generic tuple type `_tuple` */
   static const TupleType* getGenericTupleType(Context* context);

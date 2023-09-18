@@ -1,3 +1,0 @@
-# For valgrind, instead of this test
-# use its duplicate, stress.valgrind.chpl
-CHPL_TEST_VGRND_EXE == on

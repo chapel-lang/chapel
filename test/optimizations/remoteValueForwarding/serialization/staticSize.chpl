@@ -1,4 +1,5 @@
 use CommDiagnostics, Map;
+use Sort;
 
 config const n = 10;
 
@@ -65,9 +66,13 @@ proc main() {
   }
   stop("begin-on");
 
-  for (msg, dat) in commStats.items() {
+  var keys = commStats.keys();
+  sort(keys);
+
+  for msg in keys {
     const sep = "===== " + msg + " =====";
     writeln(sep);
+    const dat = commStats[msg];
     for (loc, dat) in zip(Locales, dat) {
       writeln(loc, ": ", dat.get);
     }

@@ -24,7 +24,7 @@ class Parent : Grandparent {
   }
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   var y : 2*eltType;
 
   proc init(type t) {

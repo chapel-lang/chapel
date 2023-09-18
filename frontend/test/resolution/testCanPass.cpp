@@ -149,43 +149,10 @@ static void test3() {
   Context* context = &ctx;
   Context* c = context;
 
-  QualifiedType bool0(QualifiedType::VAR, BoolType::get(context, 0));
-  QualifiedType bool8(QualifiedType::VAR, BoolType::get(context, 8));
-  QualifiedType bool16(QualifiedType::VAR, BoolType::get(context, 16));
-  QualifiedType bool32(QualifiedType::VAR, BoolType::get(context, 32));
-  QualifiedType bool64(QualifiedType::VAR, BoolType::get(context, 64));
+  QualifiedType bool0(QualifiedType::VAR, BoolType::get(context));
 
   CanPassResult r;
   r = canPass(c, bool0, bool0); assert(passesAsIs(r));
-  r = canPass(c, bool8, bool8); assert(passesAsIs(r));
-  r = canPass(c, bool16, bool16); assert(passesAsIs(r));
-  r = canPass(c, bool32, bool32); assert(passesAsIs(r));
-  r = canPass(c, bool64, bool64); assert(passesAsIs(r));
-
-  r = canPass(c, bool0, bool8); assert(passesNumeric(r));
-  r = canPass(c, bool0, bool16); assert(passesNumeric(r));
-  r = canPass(c, bool0, bool32); assert(passesNumeric(r));
-  r = canPass(c, bool0, bool64); assert(passesNumeric(r));
-
-  r = canPass(c, bool8, bool0); assert(passesNumeric(r));
-  r = canPass(c, bool8, bool16); assert(passesNumeric(r));
-  r = canPass(c, bool8, bool32); assert(passesNumeric(r));
-  r = canPass(c, bool8, bool64); assert(passesNumeric(r));
-
-  r = canPass(c, bool16, bool0); assert(passesNumeric(r));
-  r = canPass(c, bool16, bool8); assert(passesNumeric(r));
-  r = canPass(c, bool16, bool32); assert(passesNumeric(r));
-  r = canPass(c, bool16, bool64); assert(passesNumeric(r));
-
-  r = canPass(c, bool32, bool0); assert(passesNumeric(r));
-  r = canPass(c, bool32, bool8); assert(passesNumeric(r));
-  r = canPass(c, bool32, bool16); assert(passesNumeric(r));
-  r = canPass(c, bool32, bool64); assert(passesNumeric(r));
-
-  r = canPass(c, bool64, bool0); assert(passesNumeric(r));
-  r = canPass(c, bool64, bool8); assert(passesNumeric(r));
-  r = canPass(c, bool64, bool16); assert(passesNumeric(r));
-  r = canPass(c, bool64, bool32); assert(passesNumeric(r));
 }
 
 static void test4() {

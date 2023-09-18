@@ -65,6 +65,8 @@
 #define IPS_SCB_FLAG_ADD_BUFFER 0x1
 
 /* macros to update scb */
+// TBD - these accessor macros provide limited value, just use the raw fields
+// as we already must do for a number of other scb fields
 #define ips_scb_opcode(scb)    scb->opcode
 #define ips_scb_buffer(scb)    scb->payload
 #define ips_scb_length(scb)    scb->payload_size
@@ -91,8 +93,6 @@ STAILQ_HEAD(ips_scb_stailq, ips_scb);
 SLIST_HEAD(ips_scb_slist, ips_scb);
 
 struct ips_scbctrl {
-	/* const psmi_context_t *context; */
-
 	/* Send control blocks for each send */
 	uint32_t scb_num;
 	uint32_t scb_num_cur;
@@ -130,6 +130,10 @@ struct ips_scb {
 		SLIST_ENTRY(ips_scb) next;
 		STAILQ_ENTRY(ips_scb) nextq;
 	};
+	/* for expediency, control packet SCBs are incompletely initialzed
+	 * and only setup scb_flags, ips_lrh, nfrag, chunk_size and frag_size
+	 * when FLAG_PKTCKSUM, chksum also valid
+	 */
 	union {
 		void *payload;				// used for UD and UDP
 		struct ips_scbbuf *sbuf;	// linkage for free scb's
@@ -141,21 +145,35 @@ struct ips_scb {
 	psmi_timer *timer_ack;	/* for acking packets */
 
 	/* Used when composing packet */
-	psmi_seqnum_t seq_num;
-	uint32_t cksum[2];
+	psmi_seqnum_t seq_num;	// psn of last packet to xmit as part of this scb
+	uint32_t cksum[2]; /* only valid when FLAG_CKSUM */
 	uint32_t scb_flags;
-	uint32_t payload_size;	/* remaining first packet size */
-	uint32_t chunk_size;	/* total buffer size if nfrag > 1 */
-	/* initially chunk_size_remaining = chunk_size. */
-	uint32_t chunk_size_remaining; /* buffer size to re-transmit */
-	uint16_t nfrag;		/* total packets in sequence */
-	/* initially nfrag_remaining = nfrag */
-	uint16_t nfrag_remaining; /* number packets to re-transmit */
-	uint16_t dma_complete;
-	uint16_t tidctrl;
-	uint16_t frag_size;	/* max packet size in sequence */
+	/* When nfrag==1, frag_size and *remaining are undefined.
+	 * An scb can describe a large user buffer (nfrag>1) for segmentation
+	 * (UDP GSO and OPA send DMA).
+	 * When such a buffer needs retransmission, the payload and payload_size
+	 * will be advanced to reflect what needs to be retransmitted.
+	 * *_remaining also are reduced to reflect what remains.
+	 * However nfrag and chunk_size will still reflect their original values
+	 * so we can identify that it was originally a large send (nfrag>1)
+	 * and know how big it was (chunk_size) for req completion reporting.
+	 * During such retransmission, when nfrag_remaining==1, ACKREQ is set.
+	 */
+	uint32_t payload_size;	/* remaining 1st packet payload size w/o hdr */
+	uint32_t chunk_size;	/* total original buffer size */
+	/* for nfrag>1, initially chunk_size_remaining = chunk_size. */
+	uint32_t chunk_size_remaining; /* remaining buffer size to transmit */
+	uint16_t nfrag;		/* total original packets in sequence */
+	/* for nfrag>1, initially nfrag_remaining = nfrag */
+	uint16_t nfrag_remaining; /* remaining packets to transmit */
+	uint32_t frag_size;	/* max packet size in sequence */
+#ifdef PSM_HAVE_SDMA
+	uint16_t sdma_outstanding;
+#endif
 	uint16_t opcode;
-	psm2_verbs_mr_t mr;
+#ifdef PSM_HAVE_REG_MR
+	psm3_verbs_mr_t mr;
+#endif
 	struct ips_flow *flow;
 	struct ips_tid_send_desc *tidsendc;
 
@@ -167,34 +185,39 @@ struct ips_scb {
 		psm2_am_completion_fn_t completion_am;
 	};
 	void *cb_param;
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	psm2_mq_req_t mq_req;		/* back pointer to original request */
+#ifdef PSM_ONEAPI
+	/* For munmap GDR buffer */
+	unsigned long gdr_addr;
+	size_t gdr_size;
 #endif
+#endif /* PSM_CUDA || PSM_ONEAPI */
 	struct {
 		struct ips_message_header ips_lrh;
 	} PSMI_CACHEALIGN;
 };
 
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 #define IS_TRANSFER_BUF_GPU_MEM(scb) (ips_scb_flags(scb) & IPS_SEND_FLAG_PAYLOAD_BUF_GPU)
 #endif
 
-void ips_scbctrl_free(ips_scb_t *scb);
-int ips_scbctrl_bufalloc(ips_scb_t *scb);
-int ips_scbctrl_avail(struct ips_scbctrl *scbc);
-ips_scb_t *MOCKABLE(ips_scbctrl_alloc)(struct ips_scbctrl *scbc,
+void psm3_ips_scbctrl_free(ips_scb_t *scb);
+int psm3_ips_scbctrl_bufalloc(ips_scb_t *scb);
+int psm3_ips_scbctrl_avail(struct ips_scbctrl *scbc);
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc)(struct ips_scbctrl *scbc,
 				int scbnum, int len, uint32_t flags);
-MOCK_DCL_EPILOGUE(ips_scbctrl_alloc);
-ips_scb_t *MOCKABLE(ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc);
-MOCK_DCL_EPILOGUE(ips_scbctrl_alloc_tiny);
+MOCK_DCL_EPILOGUE(psm3_ips_scbctrl_alloc);
+ips_scb_t *MOCKABLE(psm3_ips_scbctrl_alloc_tiny)(struct ips_scbctrl *scbc);
+MOCK_DCL_EPILOGUE(psm3_ips_scbctrl_alloc_tiny);
 
-psm2_error_t ips_scbctrl_init(const psmi_context_t *context,
+psm2_error_t psm3_ips_scbctrl_init(psm2_ep_t ep,
 			     uint32_t numscb, uint32_t numbufs,
 			     uint32_t imm_size, uint32_t bufsize,
 			     ips_scbctrl_avail_callback_fn_t,
 			     void *avail_context, struct ips_scbctrl *);
-psm2_error_t ips_scbctrl_fini(struct ips_scbctrl *);
+psm2_error_t psm3_ips_scbctrl_fini(struct ips_scbctrl *);
 
 psm2_error_t ips_scbctrl_writev(struct ips_scb_slist *slist, int fd);
 

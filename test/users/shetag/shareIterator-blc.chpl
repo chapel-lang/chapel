@@ -8,6 +8,8 @@ var A: [D] int;
 class OneToTen {
   var currIndex: sync int = 1;
 
+  proc init() {}
+
   iter count() {
     var done = false;
 
@@ -26,7 +28,7 @@ class OneToTen {
 
 var sharedOneToTen = new unmanaged OneToTen();
 
-cobegin {
+cobegin  with (ref A) {
   for x in sharedOneToTen.count() do A(x) = 1;
   for y in sharedOneToTen.count() do A(y) = 2;
 }

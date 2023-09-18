@@ -1,4 +1,4 @@
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 writeln("Locales.numPUs() = ", Locales.numPUs());
 writeln("Locales.physicalMemory = ", Locales.physicalMemory());

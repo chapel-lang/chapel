@@ -1825,7 +1825,7 @@ int32_t chpl_comm_getMaxThreads(void)
   return 0;
 }
 
-void chpl_comm_pre_topo_init(void) {
+void chpl_comm_init(int *argc_p, char ***argv_p) {
   if (fork_op_num_ops > (1 << FORK_OP_BITS))
     CHPL_INTERNAL_ERROR("too many fork OPs for internal encoding");
 
@@ -1866,11 +1866,6 @@ void chpl_comm_pre_topo_init(void) {
     CHPL_INTERNAL_ERROR("PMI_Get_numpes_in_app_on_smp() failed");
   }
   chpl_set_num_locales_on_node((int32_t) count);
-}
-
-
-void chpl_comm_init(int *argc_p, char ***argv_p)
-{
 
   {
     GNI_CHECK(GNI_GetDeviceType(&nic_type));
@@ -3009,7 +3004,7 @@ void chpl_comm_rollcall(void)
   // Initialize diags
   chpl_comm_diags_init();
 
-  chpl_msg(2, "executing on node %d of %d node(s): %s\n", chpl_nodeID,
+  chpl_msg(2, "executing locale %d of %d on node '%s'\n", chpl_nodeID,
            chpl_numNodes, chpl_nodeName());
 
   if (chpl_numNodes == 1)

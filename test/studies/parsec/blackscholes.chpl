@@ -1,4 +1,5 @@
 use Time, IO, BlockDist;
+import Math.exp;
 
 config const timer : bool = false;
 var t : stopwatch;
@@ -27,8 +28,8 @@ config var numOptions : int(64) = 1000;
 config const ERR_CHK = false;
 config const filename = "optionData.txt";
 
-const Dist = new dmap(new Block(rank=1, idxType=int(64), boundingBox={0..#numOptions},
-                                dataParTasksPerLocale=here.maxTaskPar));
+const Dist = new blockDist(rank=1, idxType=int(64), boundingBox={0..#numOptions},
+                                dataParTasksPerLocale=here.maxTaskPar);
 const Dom : domain(1, int(64)) dmapped Dist = {0..#numOptions};
 
 var data : [Dom] OptionData;
@@ -82,6 +83,8 @@ proc CNDF ( in InputX : fptype )  : fptype
 proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
                          volatility : fptype, time : fptype, otype : bool) : fptype
 {
+	use Math;
+
 	// local private working variables for the calculation
 	var OptionPrice  : fptype ;
 	var xD1 = rate + volatility * volatility * 0.5;
@@ -109,7 +112,7 @@ proc BlkSchlsEqEuroNoDiv( sptprice : fptype, strike : fptype, rate : fptype,
 
 proc bs() {
 	for 0..#NUM_RUNS do {
-		forall i in Dom do {
+		forall i in Dom with (ref prices) do {
 			/* Calling main function to calculate option value based on 
 			 * Black & Sholes's equation.
 			 */

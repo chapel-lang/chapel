@@ -1,9 +1,13 @@
-ignore-unreachable.chpl:28: warning: int(64)
+ignore-unreachable.chpl:30: warning: int(64)
+ignore-unreachable.chpl:69: In function 'classtest':
+ignore-unreachable.chpl:74: warning: int(64)
 hi
 3.5
 bye
+LOCALE0
+Error: in Child.f()
 in t1
 in t1
 7755
 in t2
-ignore-unreachable.chpl:67: error: halt reached - in main
+ignore-unreachable.chpl:106: error: halt reached - in main

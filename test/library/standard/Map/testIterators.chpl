@@ -12,7 +12,7 @@ record FacInt {
 
   proc init(n: uint) {
     this.n = n;
-    this.complete();
+    init this;
     this.nFac = factorial(n);
   }
 

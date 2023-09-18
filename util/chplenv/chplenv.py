@@ -12,6 +12,7 @@ import chpl_compiler
 import chpl_gasnet
 import chpl_gmp
 import chpl_hwloc
+import chpl_hwloc_debug
 import chpl_jemalloc
 import chpl_launcher
 import chpl_libfabric
@@ -23,6 +24,7 @@ import chpl_mem
 import chpl_qthreads
 import chpl_re2
 import chpl_tasks
+import chpl_tasks_debug
 import chpl_timers
 import chpl_unwind
 import chpl_lib_pic

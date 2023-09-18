@@ -289,6 +289,19 @@ TEST(ELFObjectFileTest, MachineTestForMSP430) {
     checkFormatAndArch(D, Formats[I++], Triple::msp430);
 }
 
+TEST(ELFObjectFileTest, MachineTestForLoongArch) {
+  std::array<StringRef, 4> Formats = {"elf32-loongarch", "elf32-loongarch",
+                                      "elf64-loongarch", "elf64-loongarch"};
+  std::array<Triple::ArchType, 4> Archs = {
+      Triple::loongarch32, Triple::loongarch32, Triple::loongarch64,
+      Triple::loongarch64};
+  size_t I = 0;
+  for (const DataForTest &D : generateData(ELF::EM_LOONGARCH)) {
+    checkFormatAndArch(D, Formats[I], Archs[I]);
+    ++I;
+  }
+}
+
 TEST(ELFObjectFileTest, MachineTestForCSKY) {
   std::array<StringRef, 4> Formats = {"elf32-csky", "elf32-csky",
                                       "elf64-unknown", "elf64-unknown"};
@@ -484,7 +497,7 @@ Sections:
 }
 
 // Tests for error paths of the ELFFile::decodeBBAddrMap API.
-TEST(ELFObjectFileTest, InvalidBBAddrMap) {
+TEST(ELFObjectFileTest, InvalidDecodeBBAddrMap) {
   StringRef CommonYamlString(R"(
 --- !ELF
 FileHeader:
@@ -492,14 +505,10 @@ FileHeader:
   Data:  ELFDATA2LSB
   Type:  ET_EXEC
 Sections:
-  - Name: .llvm_bb_addr_map
-    Type: SHT_LLVM_BB_ADDR_MAP
+  - Type: SHT_LLVM_BB_ADDR_MAP
+    Name: .llvm_bb_addr_map
     Entries:
       - Address: 0x11111
-        BBEntries:
-          - AddressOffset: 0x0
-            Size:          0x1
-            Metadata:      0x2
 )");
 
   auto DoCheck = [&](StringRef YamlString, const char *ErrMsg) {
@@ -516,19 +525,41 @@ Sections:
                       FailedWithMessage(ErrMsg));
   };
 
+  // Check that we can detect unsupported versions.
+  SmallString<128> UnsupportedVersionYamlString(CommonYamlString);
+  UnsupportedVersionYamlString += R"(
+        Version: 2
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x1
+            Metadata:      0x2
+)";
+
+  DoCheck(UnsupportedVersionYamlString,
+          "unsupported SHT_LLVM_BB_ADDR_MAP version: 2");
+
+  SmallString<128> CommonVersionedYamlString(CommonYamlString);
+  CommonVersionedYamlString += R"(
+        Version: 1
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x1
+            Metadata:      0x2
+)";
+
   // Check that we can detect the malformed encoding when the section is
   // truncated.
-  SmallString<128> TruncatedYamlString(CommonYamlString);
+  SmallString<128> TruncatedYamlString(CommonVersionedYamlString);
   TruncatedYamlString += R"(
-    ShSize: 0x8
+    ShSize: 0xa
 )";
-  DoCheck(TruncatedYamlString, "unable to decode LEB128 at offset 0x00000008: "
+  DoCheck(TruncatedYamlString, "unable to decode LEB128 at offset 0x0000000a: "
                                "malformed uleb128, extends past end");
 
   // Check that we can detect when the encoded BB entry fields exceed the UINT32
   // limit.
-  SmallVector<SmallString<128>, 3> OverInt32LimitYamlStrings(3,
-                                                             CommonYamlString);
+  SmallVector<SmallString<128>, 3> OverInt32LimitYamlStrings(
+      3, CommonVersionedYamlString);
   OverInt32LimitYamlStrings[0] += R"(
           - AddressOffset: 0x100000000
             Size:          0xFFFFFFFF
@@ -548,11 +579,11 @@ Sections:
 )";
 
   DoCheck(OverInt32LimitYamlStrings[0],
-          "ULEB128 value at offset 0xc exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0xe exceeds UINT32_MAX (0x100000000)");
   DoCheck(OverInt32LimitYamlStrings[1],
-          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0x13 exceeds UINT32_MAX (0x100000000)");
   DoCheck(OverInt32LimitYamlStrings[2],
-          "ULEB128 value at offset 0x16 exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0x18 exceeds UINT32_MAX (0x100000000)");
 
   // Check the proper error handling when the section has fields exceeding
   // UINT32 and is also truncated. This is for checking that we don't generate
@@ -561,34 +592,154 @@ Sections:
       3, OverInt32LimitYamlStrings[1]);
   // Truncate before the end of the 5-byte field.
   OverInt32LimitAndTruncated[0] += R"(
-    ShSize: 0x15
+    ShSize: 0x17
 )";
   // Truncate at the end of the 5-byte field.
   OverInt32LimitAndTruncated[1] += R"(
-    ShSize: 0x16
+    ShSize: 0x18
 )";
   // Truncate after the end of the 5-byte field.
   OverInt32LimitAndTruncated[2] += R"(
-    ShSize: 0x17
+    ShSize: 0x19
 )";
 
   DoCheck(OverInt32LimitAndTruncated[0],
-          "unable to decode LEB128 at offset 0x00000011: malformed uleb128, "
+          "unable to decode LEB128 at offset 0x00000013: malformed uleb128, "
           "extends past end");
   DoCheck(OverInt32LimitAndTruncated[1],
-          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0x13 exceeds UINT32_MAX (0x100000000)");
   DoCheck(OverInt32LimitAndTruncated[2],
-          "ULEB128 value at offset 0x11 exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0x13 exceeds UINT32_MAX (0x100000000)");
 
   // Check for proper error handling when the 'NumBlocks' field is overridden
   // with an out-of-range value.
-  SmallString<128> OverLimitNumBlocks(CommonYamlString);
+  SmallString<128> OverLimitNumBlocks(CommonVersionedYamlString);
   OverLimitNumBlocks += R"(
         NumBlocks: 0x100000000
 )";
 
   DoCheck(OverLimitNumBlocks,
-          "ULEB128 value at offset 0x8 exceeds UINT32_MAX (0x100000000)");
+          "ULEB128 value at offset 0xa exceeds UINT32_MAX (0x100000000)");
+}
+
+// Test for the ELFObjectFile::readBBAddrMap API.
+TEST(ELFObjectFileTest, ReadBBAddrMap) {
+  StringRef CommonYamlString(R"(
+--- !ELF
+FileHeader:
+  Class: ELFCLASS64
+  Data:  ELFDATA2LSB
+  Type:  ET_EXEC
+Sections:
+  - Name: .llvm_bb_addr_map_1
+    Type: SHT_LLVM_BB_ADDR_MAP
+    Link: 1
+    Entries:
+      - Version: 1
+        Address: 0x11111
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x1
+            Metadata:      0x2
+  - Name: .llvm_bb_addr_map_2
+    Type: SHT_LLVM_BB_ADDR_MAP
+    Link: 1
+    Entries:
+      - Version: 1
+        Address: 0x22222
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x2
+            Metadata:      0x4
+  - Name: .llvm_bb_addr_map
+    Type: SHT_LLVM_BB_ADDR_MAP_V0
+  # Link: 0 (by default)
+    Entries:
+      - Version: 0
+        Address: 0x33333
+        BBEntries:
+          - AddressOffset: 0x0
+            Size:          0x3
+            Metadata:      0x6
+)");
+
+  BBAddrMap E1 = {0x11111, {{0x0, 0x1, 0x2}}};
+  BBAddrMap E2 = {0x22222, {{0x0, 0x2, 0x4}}};
+  BBAddrMap E3 = {0x33333, {{0x0, 0x3, 0x6}}};
+
+  std::vector<BBAddrMap> Section0BBAddrMaps = {E3};
+  std::vector<BBAddrMap> Section1BBAddrMaps = {E1, E2};
+  std::vector<BBAddrMap> AllBBAddrMaps = {E1, E2, E3};
+
+  auto DoCheckSucceeds = [&](StringRef YamlString,
+                             Optional<unsigned> TextSectionIndex,
+                             std::vector<BBAddrMap> ExpectedResult) {
+    SmallString<0> Storage;
+    Expected<ELFObjectFile<ELF64LE>> ElfOrErr =
+        toBinary<ELF64LE>(Storage, YamlString);
+    ASSERT_THAT_EXPECTED(ElfOrErr, Succeeded());
+
+    Expected<const typename ELF64LE::Shdr *> BBAddrMapSecOrErr =
+        ElfOrErr->getELFFile().getSection(1);
+    ASSERT_THAT_EXPECTED(BBAddrMapSecOrErr, Succeeded());
+    auto BBAddrMaps = ElfOrErr->readBBAddrMap(TextSectionIndex);
+    EXPECT_THAT_EXPECTED(BBAddrMaps, Succeeded());
+    EXPECT_EQ(*BBAddrMaps, ExpectedResult);
+  };
+
+  auto DoCheckFails = [&](StringRef YamlString,
+                          Optional<unsigned> TextSectionIndex,
+                          const char *ErrMsg) {
+    SmallString<0> Storage;
+    Expected<ELFObjectFile<ELF64LE>> ElfOrErr =
+        toBinary<ELF64LE>(Storage, YamlString);
+    ASSERT_THAT_EXPECTED(ElfOrErr, Succeeded());
+
+    Expected<const typename ELF64LE::Shdr *> BBAddrMapSecOrErr =
+        ElfOrErr->getELFFile().getSection(1);
+    ASSERT_THAT_EXPECTED(BBAddrMapSecOrErr, Succeeded());
+    EXPECT_THAT_ERROR(ElfOrErr->readBBAddrMap(TextSectionIndex).takeError(),
+                      FailedWithMessage(ErrMsg));
+  };
+
+  // Check that we can retrieve the data in the normal case.
+  DoCheckSucceeds(CommonYamlString, /*TextSectionIndex=*/None, AllBBAddrMaps);
+  DoCheckSucceeds(CommonYamlString, /*TextSectionIndex=*/0, Section0BBAddrMaps);
+  DoCheckSucceeds(CommonYamlString, /*TextSectionIndex=*/1, Section1BBAddrMaps);
+  // Check that when no bb-address-map section is found for a text section,
+  // we return an empty result.
+  DoCheckSucceeds(CommonYamlString, /*TextSectionIndex=*/2, {});
+
+  // Check that we detect when a bb-addr-map section is linked to an invalid
+  // (not present) section.
+  SmallString<128> InvalidLinkedYamlString(CommonYamlString);
+  InvalidLinkedYamlString += R"(
+    Link: 10
+)";
+
+  DoCheckFails(InvalidLinkedYamlString, /*TextSectionIndex=*/1,
+               "unable to get the linked-to section for "
+               "SHT_LLVM_BB_ADDR_MAP_V0 section with index 3: invalid section "
+               "index: 10");
+  // Linked sections are not checked when we don't target a specific text
+  // section.
+  DoCheckSucceeds(InvalidLinkedYamlString, /*TextSectionIndex=*/None,
+                  AllBBAddrMaps);
+
+  // Check that we can detect when bb-address-map decoding fails.
+  SmallString<128> TruncatedYamlString(CommonYamlString);
+  TruncatedYamlString += R"(
+    ShSize: 0x8
+)";
+
+  DoCheckFails(TruncatedYamlString, /*TextSectionIndex=*/None,
+               "unable to read SHT_LLVM_BB_ADDR_MAP_V0 section with index 3: "
+               "unable to decode LEB128 at offset 0x00000008: malformed "
+               "uleb128, extends past end");
+  // Check that we can read the other section's bb-address-maps which are
+  // valid.
+  DoCheckSucceeds(TruncatedYamlString, /*TextSectionIndex=*/1,
+                  Section1BBAddrMaps);
 }
 
 // Test for ObjectFile::getRelocatedSection: check that it returns a relocated

@@ -10,7 +10,7 @@ class GlobalDistribution : BaseDist {}
 class GlobalDomain : BaseDom {
   param rank : int;
   type idxType;
-  param stridable: bool;
+  param strides: strideKind;
   var ranges: rank * range(idxType);
 }
 
@@ -22,20 +22,12 @@ proc GlobalDistribution.dsiClone(): unmanaged GlobalDistribution {
   return new unmanaged GlobalDistribution();
 }
 
-proc GlobalDistribution.dsiNewArithmeticDom(param rank: int,
+override proc GlobalDistribution.dsiNewRectangularDom(param rank: int,
                                             type idxType,
-                                            param stridable: bool)
-                                      : GlobalDomain(rank, idxType, stridable)
+                                            param strides, inds)
+                                      : GlobalDomain(rank, idxType, strides)
 {
-  return new GlobalDomain(rank, idxType, stridable);
-}
-
-proc GlobalDomain.init(param rank: int,
-                               type idxType,
-                               param stridable: bool) {
-  this.rank = rank;
-  this.idxType = idxType;
-  this.stridable = stridable;
+  return new unmanaged GlobalDomain(rank, idxType, strides, inds);
 }
 
 proc GlobalDomain.dsiSetIndices(arg_ranges: rank * range(idxType)): void {
@@ -46,6 +38,6 @@ proc GlobalDomain.dsiGetIndices(): rank * range(idxType) {
   return ranges;
 }
 
-proc GlobalDomain.dsiBuildArray(type eltType): GlobalArray {
-  return new GlobalArray();
+proc GlobalDomain.dsiBuildArray(type eltType, param initElts): GlobalArray {
+  return new unmanaged GlobalArray();
 }

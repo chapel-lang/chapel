@@ -23,21 +23,21 @@ module Deque {
     var d: deque_t;
     proc init(type eltType) {
       this.eltType = eltType;
-      this.complete();
+      init this;
       deque_init(sizeof(eltType), d, 0);
     }
-    proc deinit() {
+    proc ref deinit() {
       deque_destroy(d);
     }
     proc pushFront(x: eltType) {
       var t = x;
       deque_push_front(sizeof(eltType), d, t);
     }
-    proc pushBack(x: eltType) {
+    proc ref pushBack(x: eltType) {
       var t = x;
       deque_push_back(sizeof(eltType), d, t);
     }
-    proc getFront() {
+    proc ref getFront() {
       var t: eltType;
       deque_it_get_cur(sizeof(eltType), deque_begin(d), t);
       return t;
@@ -47,7 +47,7 @@ module Deque {
       deque_it_get_cur(sizeof(eltType), deque_last(sizeof(eltType), d), t);
       return t;
     }
-    proc popFront() {
+    proc ref popFront() {
       var front: eltType = getFront(); // = getFront():eltType;
       deque_pop_front(sizeof(eltType), d);
       return front;
@@ -57,7 +57,7 @@ module Deque {
       deque_pop_back(sizeof(eltType), d);
       return back;
     }
-    proc empty() {
+    proc ref empty() {
       return deque_size(sizeof(eltType), d) == 0;
     }
   }

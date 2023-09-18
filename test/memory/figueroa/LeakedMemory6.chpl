@@ -1,7 +1,7 @@
 // find out how much memory is leaked when a function with a local array
 // is called, and than array's domain is changed
 
-use Memory.Diagnostics;
+use MemDiagnostics;
 
 const N = 5;
 var D = {2..N};

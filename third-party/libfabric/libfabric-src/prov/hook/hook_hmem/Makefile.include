@@ -1,0 +1,29 @@
+if HAVE_HOOK_HMEM
+
+_hmemhook_files = \
+	prov/hook/hook_hmem/src/hook_hmem.c
+
+_hmemhook_headers = \
+	prov/hook/hook_hmem/include/hook_hmem.h
+
+if HAVE_HOOK_HMEM_DL
+pkglib_LTLIBRARIES += libhook_hmem-fi.la
+libhook_hmem_fi_la_SOURCES =	$(_hmemhook_files) \
+				$(_hmemhook_headers) \
+				$(common_hook_srcs) \
+				$(common_srcs)
+libhook_hmem_fi_la_CPPFLAGS =	$(AM_CPPFLAGS) \
+				-I$(top_srcdir)/prov/hook/include \
+				-I$(top_srcdir)/prov/hook/perf/include \
+				-I$(top_srcdir)/prov/hook/hook_hmem/include
+libhook_hmem_fi_la_LIBADD =	$(linkback) $(hook_hmem_shm_LIBS)
+libhook_hmem_fi_la_LDFLAGS =	-module -avoid-version -shared -export-dynamic
+libhook_hmem_fi_la_DEPENDENCIES = $(linkback)
+else !HAVE_HOOK_HMEM_DL
+src_libfabric_la_SOURCES  +=	$(_hmemhook_files) \
+				$(_hmemhook_headers)
+src_libfabric_la_CPPFLAGS +=	-I$(top_srcdir)/prov/hook/hook_hmem/include
+src_libfabric_la_LIBADD	  +=	$(hmemhook_shm_LIBS)
+endif !HAVE_HOOK_HMEM_DL
+
+endif HAVE_HOOK_HMEM

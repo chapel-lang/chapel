@@ -6,7 +6,7 @@ class MyClass {
   proc init(length: int) {
     this.len = length;
     this.dom = {1..length};
-    this.complete();
+    init this;
     forall (a,i) in zip(this.arr, 13..) do
       a = i;
   }
@@ -14,7 +14,7 @@ class MyClass {
   proc init(array: [] int, length: int) {
     this.len = length;
     this.dom = {1..length};
-    this.complete();
+    init this;
     forall (a,b) in zip(this.arr, array) do
       a = b;
   }

@@ -1,0 +1,4 @@
+-sformat=FormatKind.default # deserialize-by-ref.default.good
+-sformat=FormatKind.json # deserialize-by-ref.json.good
+-sformat=FormatKind.little # deserialize-by-ref.little.good
+-sformat=FormatKind.syntax # deserialize-by-ref.syntax.good

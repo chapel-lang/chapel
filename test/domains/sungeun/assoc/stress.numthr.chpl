@@ -17,7 +17,7 @@ var inserted: [1..numAdds] bool;
 var D: domain(real, parSafe=parSafe);
 
 var removeOrder: [1..numAdds] int;
-[i in 1..numAdds] removeOrder[i] = i;
+[i in 1..numAdds with (ref removeOrder)] removeOrder[i] = i;
 // permute the order in which we remove elements
 for p in 1..numSwapPasses {
   for i in p..stride*numSwaps+p by stride {
@@ -28,7 +28,7 @@ for p in 1..numSwapPasses {
 writeln(D.sorted());
 sync serial doSerial || (!doSerial && !parSafe) {
   writeln("Start adding..");
-  begin with (ref D) forall i in 1..numAdds with (ref D) {
+  begin with (ref D, ref inserted) forall i in 1..numAdds with (ref D, ref inserted) {
     D += elems[i];
     inserted[i] = true;
   }
@@ -36,8 +36,8 @@ sync serial doSerial || (!doSerial && !parSafe) {
   writeln("Start removing..");
   var totalRemoved: sync int = 0;
   sync {
-    begin with (ref D) while (totalRemoved.readXX() != numRemoves) {
-      forall i in 1..min(numAdds,numRemoves) with (ref D) {
+    begin with (ref D, ref inserted) while (totalRemoved.readXX() != numRemoves) {
+      forall i in 1..min(numAdds,numRemoves) with (ref D, ref inserted) {
         if inserted[removeOrder[i]] == true {
           D -= elems[removeOrder[i]];
           inserted[removeOrder[i]] = false;

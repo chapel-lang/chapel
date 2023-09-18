@@ -1,0 +1,8 @@
+blockDist
+---------
+distributes: {1..10}
+across locales: LOCALE0
+indexed via: {0..0}
+resulting in: 
+  [0] locale 0 owns chunk: {-9223372036854775808..9223372036854775807}
+

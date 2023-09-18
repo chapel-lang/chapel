@@ -63,11 +63,18 @@ size_t ofi_datatype_size(enum fi_datatype datatype);
 #define ofi_atomic_isswap_op(op) \
 	(op >= OFI_SWAP_OP_START && op < OFI_SWAP_OP_LAST)
 
-extern void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][FI_DATATYPE_LAST])
+#define OFI_DATATYPE_CNT	(FI_UINT128 + 1)
+
+#ifdef HAVE___INT128
+typedef __int128 ofi_int128_t;
+typedef unsigned __int128 ofi_uint128_t;
+#endif
+
+extern void (*ofi_atomic_write_handlers[OFI_WRITE_OP_CNT][OFI_DATATYPE_CNT])
 			(void *dst, const void *src, size_t cnt);
-extern void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][FI_DATATYPE_LAST])
+extern void (*ofi_atomic_readwrite_handlers[OFI_READWRITE_OP_CNT][OFI_DATATYPE_CNT])
 			(void *dst, const void *src, void *res, size_t cnt);
-extern void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][FI_DATATYPE_LAST])
+extern void (*ofi_atomic_swap_handlers[OFI_SWAP_OP_CNT][OFI_DATATYPE_CNT])
 			(void *dst, const void *src, const void *cmp,
 			 void *res, size_t cnt);
 

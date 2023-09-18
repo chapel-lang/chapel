@@ -11,7 +11,7 @@
 # Copyright © 2004-2005 The Regents of the University of California.
 #                         All rights reserved.
 # Copyright © 2008-2014 Cisco Systems, Inc.  All rights reserved.
-# Copyright © 2014 Inria.  All rights reserved.
+# Copyright © 2014-2018 Inria.  All rights reserved.
 # $COPYRIGHT$
 #
 # Additional copyrights may follow
@@ -70,6 +70,18 @@ case "$option" in
     --version)
 	echo $HWLOC_VERSION
 	;;
+    --major)
+        echo $HWLOC_MAJOR_VERSION
+        ;;
+    --minor)
+        echo $HWLOC_MINOR_VERSION
+        ;;
+    --release)
+        echo $HWLOC_RELEASE_VERSION
+        ;;
+    --greek)
+        echo $HWLOC_GREEK_VERSION
+        ;;
     --release-date)
         echo $HWLOC_RELEASE_DATE
         ;;
@@ -82,7 +94,11 @@ $0 <srcfile> <option>
 
 <srcfile> - Text version file
 <option>  - One of:
-    --version      - Show version number
+    --version      - Show full version number
+    --major        - Major version number
+    --minor        - Minor version number
+    --release      - Release version number
+    --greek        - Greek (alpha, beta, etc) version suffix
     --release-date - Show the release date
     --snapshot     - Show whether this is a snapshot release or not
     --help         - This message

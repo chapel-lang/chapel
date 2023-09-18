@@ -31,7 +31,6 @@ The syntax to declare an iterator is given by:
      identifier
 
    yield-intent:
-     'const'
      'const ref'
      'ref'
      'param'
@@ -233,13 +232,14 @@ typically made by iterating over it in a loop.
 
    .. BLOCK-test-chapelnoprint
 
-      proc Tree.writeThis(x)
+      Tree implements writeSerializable;
+      override proc Tree.serialize(writer, ref serializer)
       {
         var first = true;
         for node in postorder(this) {
           if first then first = false;
-            else x.write(" ");
-          write(node);
+            else writer.write(" ");
+          writer.write(node);
         }
       }
       writeln("Tree Data");

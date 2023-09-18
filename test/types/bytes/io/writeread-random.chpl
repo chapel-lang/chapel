@@ -5,13 +5,13 @@ config const nBytes = 1024;
 
 // create bytes with random bytes
 var randomStream = createRandomStream(eltType=uint(8));
-var buf = c_malloc(uint(8), nBytes+1);
+var buf = allocate(uint(8), (nBytes+1).safeCast(c_size_t));
 for i in 0..#nBytes {
   buf[i] = randomStream.getNext();
 }
 buf[nBytes] = 0;
 
-const randomBytes = createBytesWithOwnedBuffer(buf, length=nBytes,
+const randomBytes = bytes.createAdoptingBuffer(buf, length=nBytes,
                                                     size=nBytes+1);
 
 if randomBytes.size != nBytes {
@@ -23,15 +23,14 @@ var bytesChannel = openTempFile();
 {
   // write them to a channel
   var bytesWriter = bytesChannel.writer();
-  bytesWriter.writef("%ht", randomBytes);
+  bytesWriter.write(randomBytes);
   bytesWriter.close();
 }
 
 {
   // read them into a different object
   var bytesReader = bytesChannel.reader();
-  var readBytes = b"";
-  bytesReader.readf("%ht", readBytes);
+  var readBytes = bytesReader.readAll(bytes);
   bytesReader.close();
   // compare
   if readBytes == randomBytes {

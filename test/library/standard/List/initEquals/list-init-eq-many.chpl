@@ -4,7 +4,7 @@ use List;
 proc newCopyFromList() {
   writeln("newCopyFromList");
   var x:list(int);
-  x.append(1); x.append(2);
+  x.pushBack(1); x.pushBack(2);
   writeln("x:", x.type:string, " = ", x);
 
 
@@ -16,7 +16,7 @@ proc newCopyFromList() {
   writeln("c:", c.type:string, " = ", c);
   
   var y:list(int, parSafe=true);
-  y.append(1); y.append(2);
+  y.pushBack(1); y.pushBack(2);
   writeln("y:", y.type:string, " = ", y);
 
   var d = new list(y);
@@ -31,10 +31,10 @@ newCopyFromList();
 proc initCopyFromList() {
   writeln("initCopyFromList");
   var x:list(int);
-  x.append(1); x.append(2);
+  x.pushBack(1); x.pushBack(2);
   writeln("x:", x.type:string, " = ", x);
 
-  var a: list = x;
+  var a: list(?) = x;
   writeln("a:", a.type:string, " = ", a);
   var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
@@ -42,10 +42,10 @@ proc initCopyFromList() {
   writeln("c:", c.type:string, " = ", c);
 
   var y:list(parSafe=true, int);
-  y.append(1); y.append(2);
+  y.pushBack(1); y.pushBack(2);
   writeln("y:", y.type:string, " = ", y);
 
-  var d: list = y;
+  var d: list(?) = y;
   writeln("d:", d.type:string, " = ", d);
   var e: list(parSafe=false, ?) = y;
   writeln("e:", e.type:string, " = ", e);
@@ -61,7 +61,7 @@ proc initCopyFromList() {
   writeln("i:", i.type:string, " = ", i);
 
   var z:list(int(8));
-  z.append(1); z.append(2);
+  z.pushBack(1); z.pushBack(2);
   writeln("z:", z.type:string, " = ", z);
 
   var j: list(int) = z;
@@ -93,7 +93,7 @@ proc initCopyFromArray() {
   var x:[1..2] int = 1..2;
   writeln("x:", x.type:string, " = ", x);
 
-  var a: list = x;
+  var a: list(?) = x;
   writeln("a:", a.type:string, " = ", a);
   var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
@@ -133,7 +133,7 @@ proc initCopyFromRange() {
   var x = 1..2;
   writeln("x:", x.type:string, " = ", x);
 
-  var a: list = x;
+  var a: list(?) = x;
   writeln("a:", a.type:string, " = ", a);
   var b: list(parSafe=false, ?) = x;
   writeln("b:", b.type:string, " = ", b);
@@ -177,11 +177,11 @@ newCopyFromIter();
 
 proc initCopyFromIter() {
   writeln("initCopyFromIter");
-  var a:list = for i in 1..2 do i;
+  var a:list(?) = for i in 1..2 do i;
   writeln("a:", a.type:string, " = ", a);
-  var b:list = myIter();
+  var b:list(?) = myIter();
   writeln("b:", b.type:string, " = ", b);
-  var c:list = (1..2).these();
+  var c:list(?) = (1..2).these();
   writeln("c:", c.type:string, " = ", c);
   var d:list(parSafe=false, ?) = [i in 1..2] i;
   writeln("d:", d.type:string, " = ", d);

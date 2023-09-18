@@ -1,0 +1,2 @@
+-stestnum=3 -sretType='[0..2] atomic int' # return-by-ref.good
+-stestnum=3 -sretType='[0..2] [0..2] atomic int' # return-by-ref.good

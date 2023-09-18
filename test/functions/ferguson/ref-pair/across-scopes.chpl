@@ -33,7 +33,8 @@ class Child : Parent {
 
 
 writeln("Calling child name functions");
-var c = (new owned Child()).borrow();
+var ownC = new owned Child();
+var c = ownC.borrow();
 writeln(c.name);
 writeln(c.name2);
 writeln(c.name3);

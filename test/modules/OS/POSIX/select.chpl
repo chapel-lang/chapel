@@ -31,12 +31,12 @@ proc beReader(fds:[] c_int) {
   var fdset:fd_set;
   var timeout:struct_timeval;
   while numReceived < numXfers {
-    chpl_task_yield();
+    currentTask.yieldExecution();
     const (fdMin, fdMax) = fdsetSetup(c_ptrTo(fdset), fds);
     timeout.tv_sec = 0:time_t;             // timeout = 0.1 sec
     timeout.tv_usec = 100_000:suseconds_t;
     const numFdsReady = select_posix((fdMax + 1):c_int,
-                                     c_ptrTo(fdset), c_nil, c_nil,
+                                     c_ptrTo(fdset), nil, nil,
                                      c_ptrTo(timeout));
     if numFdsReady < 0 {
       writeln('beReader() select(): ', strerror(errno):string);
@@ -70,7 +70,7 @@ proc beReader(fds:[] c_int) {
   const (fdMin, fdMax) = fdsetSetup(c_ptrTo(fdset), fds);
   timeout.tv_sec = 0:time_t;
   timeout.tv_usec = 500_000:suseconds_t;
-  writeln(select_posix((fdMax + 1):c_int, c_ptrTo(fdset), c_nil, c_nil,
+  writeln(select_posix((fdMax + 1):c_int, c_ptrTo(fdset), nil, nil,
                        c_ptrTo(timeout)) == 0);
 }
 
@@ -81,12 +81,12 @@ proc beWriter(fds:[] c_int) {
   var timeout:struct_timeval;
   var numSent = 0;
   while numSent < numXfers {
-    chpl_task_yield();
+    currentTask.yieldExecution();
     const (fdMin, fdMax) = fdsetSetup(c_ptrTo(fdset), fds);
     timeout.tv_sec = 0:time_t;             // timeout = 0.1 sec
     timeout.tv_usec = 100_000:suseconds_t;
     const numFdsReady = select_posix((fdMax + 1):c_int,
-                                     c_nil, c_ptrTo(fdset), c_nil,
+                                     nil, c_ptrTo(fdset), nil,
                                      c_ptrTo(timeout));
     if numFdsReady < 0 {
       writeln('beWriter() select(): ', strerror(errno):string);

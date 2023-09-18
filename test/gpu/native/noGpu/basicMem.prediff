@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sed -i -e 's/0x.*/0xPREDIFFED/' $2
+sed -i -e '/<internal>/d' $2

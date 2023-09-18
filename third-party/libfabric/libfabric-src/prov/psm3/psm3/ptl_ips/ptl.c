@@ -59,7 +59,6 @@
 #include "ptl_ips.h"
 #include "psm_mq_internal.h"
 
-
 static size_t ips_ptl_sizeof(void)
 {
 	return sizeof(struct ptl_ips);
@@ -87,9 +86,11 @@ int ips_ptl_epaddr_stats_init(char **desc, uint16_t *flags)
 
 	desc[j++] = "errchecks send";
 	desc[j++] = "errchecks recv";
-#ifdef RNDV_MOD
+#if defined(PSM_VERBS)
+#ifdef PSM_HAVE_RNDV_MOD
 	desc[j++] = "err_chk_rdma send"
 	desc[j++] = "err_chk_rdma recv"
+#endif
 #endif
 	desc[j++] = "nak send";
 	desc[j++] = "nak recv";
@@ -104,8 +105,10 @@ int ips_ptl_epaddr_stats_init(char **desc, uint16_t *flags)
 	desc[j++] = "tid grants send";
 	desc[j++] = "tid grants recv";
 	desc[j++] = "send rexmit";
-#ifdef RNDV_MOD
+#if defined(PSM_VERBS)
+#ifdef PSM_HAVE_RNDV_MOD
 	desc[j++] = "rdma rexmit";
+#endif
 #endif
 	desc[j++] = "congestion packets";
 
@@ -126,21 +129,19 @@ int ips_ptl_epaddr_stats_get(psm2_epaddr_t epaddr, uint64_t *stats_o)
 }
 #endif // 0	// unused code, specific to QLogic MPI
 
+/* periodic (PSMI_CONTEXT_STATUS_CHECK_INTERVAL_MSECS (250ms)) check for
+ * health of HW and network link.
+ */
 static
 psm2_error_t
-psmi_context_check_status_callback(struct psmi_timer *t, uint64_t current)
+psm3_context_check_status_callback(struct psmi_timer *t, uint64_t current)
 {
 	struct ptl_ips *ptl = (struct ptl_ips *)t->context;
 	const uint64_t current_count = get_cycles();
 	psm2_error_t err;
 
-	err = psmi_context_check_status(ptl->context);
-	if (err == PSM2_OK || err == PSM2_OK_NO_PROGRESS)
-	{
-		int rc = psmi_hal_spio_process_events((struct ptl *)ptl);
-		err = rc >= 0 ? PSM2_OK : PSM2_INTERNAL_ERR;
-	}
-	psmi_timer_request_always(&ptl->timerq, &ptl->status_timer,
+	err = psmi_hal_context_check_status(ptl);
+	psm3_timer_request_always(&ptl->timerq, &ptl->status_timer,
 				  current_count + ptl->status_cyc_timeout);
 
 	return err;
@@ -154,14 +155,12 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	uint32_t num_of_send_bufs = ep->hfi_num_sendbufs;
 	uint32_t num_of_send_desc = ep->hfi_num_descriptors;
 	uint32_t imm_size = ep->hfi_imm_size;
-	const psmi_context_t *context = &ep->context;
-	const int enable_shcontexts = 0;
 	const uint64_t current_count = get_cycles();
 
 	/* Preconditions */
 	psmi_assert_always(ep != NULL);
 	psmi_assert_always(ep->epaddr != NULL);
-	psmi_assert_always(ep->epid != 0);
+	psmi_assert_always(!psm3_epid_zero_internal(ep->epid));
 	psmi_assert_always(ep->hfi_num_sendbufs > 0);
 
 	memset(ptl, 0, sizeof(struct ptl_ips));
@@ -170,30 +169,27 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	ptl->epid = ep->epid;	/* cache epid */
 	ptl->epaddr = ep->epaddr;	/* cache a copy */
 	ptl->ctl = ctl;
-	ptl->context = context;
 
 	memset(ctl, 0, sizeof(*ctl));
 	/* Fill in the control structure */
 	ctl->ep = ep;
 	ctl->ptl = ptl_gen;
-	ctl->ep_poll = ips_ptl_poll;
-	ctl->ep_connect = ips_ptl_connect;
-	ctl->ep_disconnect = ips_ptl_disconnect;
-	ctl->mq_send = ips_proto_mq_send;
-	ctl->mq_isend = ips_proto_mq_isend;
+	// ctl->ep_poll initialized in psmi_hal_ips_ptl_init_pre_proto_init
+	ctl->ep_connect = psm3_ips_ptl_connect;
+	ctl->ep_disconnect = psm3_ips_ptl_disconnect;
+	ctl->mq_send = psm3_ips_proto_mq_send;
+	ctl->mq_isend = psm3_ips_proto_mq_isend;
 
-	ctl->am_get_parameters = ips_am_get_parameters;
+	ctl->am_get_parameters = psm3_ips_am_get_parameters;
 
-	ctl->am_short_request = ips_am_short_request;
-	ctl->am_short_reply = ips_am_short_reply;
+	ctl->am_short_request = psm3_ips_am_short_request;
+	ctl->am_short_reply = psm3_ips_am_short_reply;
 
 #if 0	// unused code, specific to QLogic MPI
 	ctl->epaddr_stats_num = ips_ptl_epaddr_stats_num;
 	ctl->epaddr_stats_init = ips_ptl_epaddr_stats_init;
 	ctl->epaddr_stats_get = ips_ptl_epaddr_stats_get;
 #endif
-
-	ctl->msg_size_thresh_query = ips_proto_msg_size_thresh_query;
 
 	/*
 	 * Runtime flags in 'ptl' are different from runtime flags in 'context'.
@@ -210,7 +206,7 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	 * up.
 	 */
 	psmi_timer_entry_init(&ptl->status_timer,
-			      psmi_context_check_status_callback, ptl);
+			      psm3_context_check_status_callback, ptl);
 
 	/* cache the context's status timeout in cycles */
 	ptl->status_cyc_timeout =
@@ -222,11 +218,11 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	 * that they too may schedule events on the timer queue.  The timerq is
 	 * drained in the progress function.
 	 */
-	if ((err = psmi_timer_init(&ptl->timerq)))
+	if ((err = psm3_timer_init(&ptl->timerq)))
 		goto fail;
 
 	/* start the context's status timer */
-	psmi_timer_request_always(&ptl->timerq, &ptl->status_timer,
+	psm3_timer_request_always(&ptl->timerq, &ptl->status_timer,
 				  current_count + ptl->status_cyc_timeout);
 
 	/*
@@ -234,42 +230,29 @@ psm2_error_t ips_ptl_init(const psm2_ep_t ep, ptl_t *ptl_gen, ptl_ctl_t *ctl)
 	 * are added/removed by the connect portion of the ips protocol and lookup
 	 * is made by the receive queue processing component.
 	 */
-	if ((err = ips_epstate_init(&ptl->epstate, context)))
+	if ((err = psm3_ips_epstate_init(&ptl->epstate, ep)))
 		goto fail;
 
+	if ((err = psmi_hal_ips_ptl_init_pre_proto_init(ptl)))
+		goto fail;
 
 	/*
 	 * Actual ips protocol handling.
 	 */
 	if ((err =
-	     ips_proto_init(context, ptl_gen, num_of_send_bufs, num_of_send_desc,
+	     psm3_ips_proto_init(ep, ptl_gen, num_of_send_bufs, num_of_send_desc,
 			    imm_size, &ptl->timerq, &ptl->epstate, ptl->spioc,
 			    &ptl->proto)))
 		goto fail;
 
-	/*
-	 * Hardware receive hdr/egr queue, services incoming packets and issues
-	 * callbacks for protocol handling in proto_recv.  It uses the epstate
-	 * interface to determine if a packet is known or unknown.
-	 */
-	if (!enable_shcontexts) {
-		struct ips_recvhdrq_callbacks recvq_callbacks;
-		recvq_callbacks.callback_packet_unknown =
-		    ips_proto_process_unknown;
-		if ((err =
-		     ips_recvhdrq_init(context, &ptl->epstate, &ptl->proto,
-				       &recvq_callbacks,
-				       &ptl->recvq
-						)))
-			goto fail;
-	}
+	if ((err = psmi_hal_ips_ptl_init_post_proto_init(ptl)))
+		goto fail;
 
 	/*
 	 * Receive thread, always initialized but not necessary creates a
 	 * pthread.
 	 */
-	if ((err = ips_ptl_rcvthread_init(ptl_gen, &ptl->recvq)))
-		goto fail;
+	err = psm3_ips_ptl_rcvthread_init(ptl_gen, &ptl->recvq);
 fail:
 	return err;
 }
@@ -279,23 +262,23 @@ static psm2_error_t ips_ptl_fini(ptl_t *ptl_gen, int force, uint64_t timeout_in)
 	struct ptl_ips *ptl = (struct ptl_ips *)ptl_gen;
 	psm2_error_t err = PSM2_OK;
 
-	if ((err = ips_proto_fini(&ptl->proto, force, timeout_in)))
+	if ((err = psm3_ips_proto_fini(&ptl->proto, force, timeout_in)))
 		goto fail;
 
 	/* We have to cancel the thread after terminating the protocol because
 	 * connect/disconnect packets use interrupts and the kernel doesn't
 	 * like to have no pollers waiting */
-	if ((err = ips_ptl_rcvthread_fini(ptl_gen)))
+	if ((err = psm3_ips_ptl_rcvthread_fini(ptl_gen)))
 		goto fail;
 
-	if ((err = ips_epstate_fini(&ptl->epstate)))
+	if ((err = psm3_ips_epstate_fini(&ptl->epstate)))
 		goto fail;
 
-
-	if ((err = psmi_timer_fini(&ptl->timerq)))
+	if ((err = psmi_hal_ips_ptl_fini(ptl)))
 		goto fail;
 
-
+	if ((err = psm3_timer_fini(&ptl->timerq)))
+		goto fail;
 
 fail:
 	return err;
@@ -316,10 +299,10 @@ ips_ptl_optctl(const void *core_obj, int optname,
 			ips_epaddr_t *ipsaddr = (ips_epaddr_t *) epaddr;
 
 			/* If endpoint does not use IB ignore for set, complain for get */
-			if (epaddr->ptlctl->ep_connect != ips_ptl_connect) {
+			if (epaddr->ptlctl->ep_connect != psm3_ips_ptl_connect) {
 				if (get)
 					err =
-					    psmi_handle_error(PSMI_EP_LOGEVENT,
+					    psm3_handle_error(PSMI_EP_LOGEVENT,
 							      PSM2_PARAM_ERR,
 							      "Invalid EP transport");
 				goto exit_fn;
@@ -328,7 +311,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 			/* Sanity check option length */
 			if (*optlen < sizeof(uint8_t)) {
 				err =
-				    psmi_handle_error(PSMI_EP_LOGEVENT,
+				    psm3_handle_error(PSMI_EP_LOGEVENT,
 						      PSM2_PARAM_ERR,
 						      "Option value length error");
 				*optlen = sizeof(unsigned);
@@ -347,7 +330,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 				new_sl = (uint16_t) *(uint8_t *) optval;
 				if (new_sl > PSMI_SL_MAX) {
 					err =
-					    psmi_handle_error(PSMI_EP_LOGEVENT,
+					    psm3_handle_error(PSMI_EP_LOGEVENT,
 						      PSM2_PARAM_ERR,
 						      "Invalid SL value %u. %d<= SL <=%d.",
 						      new_sl, PSMI_SL_MIN, PSMI_SL_MAX);
@@ -369,7 +352,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 			/* Make sure ep is specified */
 			if (!ep) {
 				err =
-				    psmi_handle_error(PSMI_EP_LOGEVENT,
+				    psm3_handle_error(PSMI_EP_LOGEVENT,
 						      PSM2_PARAM_ERR,
 						      "Invalid PSM Endpoint");
 				goto exit_fn;
@@ -378,7 +361,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 			/* Sanity check option length */
 			if (*optlen < sizeof(uint8_t)) {
 				err =
-				    psmi_handle_error(PSMI_EP_LOGEVENT,
+				    psm3_handle_error(PSMI_EP_LOGEVENT,
 						      PSM2_PARAM_ERR,
 						      "Option value length error");
 				*optlen = sizeof(uint8_t);
@@ -395,7 +378,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 				new_sl = (uint16_t) *(uint8_t *) optval;
 				if (new_sl > PSMI_SL_MAX) {
 					err =
-					    psmi_handle_error(PSMI_EP_LOGEVENT,
+					    psm3_handle_error(PSMI_EP_LOGEVENT,
 						      PSM2_PARAM_ERR,
 						      "Invalid SL value %u. %d<= SL <=%d.",
 						      new_sl, PSMI_SL_MIN, PSMI_SL_MAX);
@@ -409,7 +392,7 @@ ips_ptl_optctl(const void *core_obj, int optname,
 		break;
 	default:
 		err =
-		    psmi_handle_error(NULL, PSM2_PARAM_ERR,
+		    psm3_handle_error(NULL, PSM2_PARAM_ERR,
 				      "Unknown PSM3_IB option %u.", optname);
 	}
 
@@ -441,48 +424,8 @@ ips_ptl_rcvthread_is_enabled(const ptl_t *ptl)
 	return psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
 }
 
-psm2_error_t ips_ptl_poll(ptl_t *ptl_gen, int _ignored)
-{
-	struct ptl_ips *ptl = (struct ptl_ips *)ptl_gen;
-	const uint64_t current_count = get_cycles();
-	const int do_lock = PSMI_LOCK_DISABLED &&
-		psmi_hal_has_sw_status(PSM_HAL_PSMI_RUNTIME_RX_THREAD_STARTED);
-	psm2_error_t err = PSM2_OK_NO_PROGRESS;
-	psm2_error_t err2;
-
-	if (do_lock && !ips_recvhdrq_trylock(&ptl->recvq))
-		return err;
-	err = ips_recvhdrq_progress(&ptl->recvq);
-	if (do_lock)
-		ips_recvhdrq_unlock(&ptl->recvq);
-	if_pf(err > PSM2_OK_NO_PROGRESS)
-		return err;
-	err2 = psmi_timer_process_if_expired(&(ptl->timerq), current_count);
-	if (err2 != PSM2_OK_NO_PROGRESS)
-		return err2;
-	else {
-		// TBD - where to best poll for this
-		(void)psm2_verbs_completion_update(ptl->ep);
-		return err;
-	}
-}
-
-
-
-
-/*
- * Legacy ips_get_stat -- do nothing.
- */
-int ips_get_stat(psm2_epaddr_t epaddr, ips_sess_stat *stats)
-{
-	memset(stats, 0, sizeof(ips_sess_stat));
-	return 0;
-}
-
-
-
 psm2_error_t
-ips_ptl_connect(ptl_t *ptl_gen, int numep, const psm2_epid_t *array_of_epid,
+psm3_ips_ptl_connect(ptl_t *ptl_gen, int numep, const psm2_epid_t *array_of_epid,
 		const int *array_of_epid_mask, psm2_error_t *array_of_errors,
 		psm2_epaddr_t *array_of_epaddr, uint64_t timeout_in)
 {
@@ -497,7 +440,7 @@ ips_ptl_connect(ptl_t *ptl_gen, int numep, const psm2_epid_t *array_of_epid,
 	int i;
 
 	PSMI_LOCK_ASSERT(ptl->ep->mq->progress_lock);
-	err = ips_proto_connect(&ptl->proto, numep, array_of_epid,
+	err = psm3_ips_proto_connect(&ptl->proto, numep, array_of_epid,
 				array_of_epid_mask, array_of_errors,
 				array_of_epaddr, timeout_in);
 	if (err)
@@ -507,7 +450,7 @@ ips_ptl_connect(ptl_t *ptl_gen, int numep, const psm2_epid_t *array_of_epid,
 	if (ptl->ep->mctxt_next == ptl->ep)
 		return err;
 
-	/* make the additional mutil-context connections. */
+	/* make the additional multi-context connections. */
 	epid_array = (psm2_epid_t *)
 	    psmi_malloc(ptl->ep, UNDEFINED, sizeof(psm2_epid_t) * numep);
 	mask_array = (int *)
@@ -549,7 +492,7 @@ ips_ptl_connect(ptl_t *ptl_gen, int numep, const psm2_epid_t *array_of_epid,
 
 		/* Make the real protocol connections. */
 		err =
-			ips_proto_connect(&((struct ptl_ips *)(ep->ptl_ips.ptl))->proto,
+			psm3_ips_proto_connect(&((struct ptl_ips *)(ep->ptl_ips.ptl))->proto,
 					  numep, epid_array, mask_array, error_array,
 					  epaddr_array, timeout_in);
 		if (err)
@@ -572,7 +515,7 @@ fail:
 }
 
 psm2_error_t
-ips_ptl_disconnect(ptl_t *ptl_gen, int force, int numep,
+psm3_ips_ptl_disconnect(ptl_t *ptl_gen, int force, int numep,
 		   psm2_epaddr_t array_of_epaddr[],
 		   const int array_of_epaddr_mask[],
 		   psm2_error_t array_of_errors[], uint64_t timeout_in)
@@ -600,7 +543,7 @@ ips_ptl_disconnect(ptl_t *ptl_gen, int force, int numep,
 		}
 	}
 
-	err = ips_proto_disconnect(&ptl->proto, force, numep, array_of_epaddr,
+	err = psm3_ips_proto_disconnect(&ptl->proto, force, numep, array_of_epaddr,
 				   array_of_epaddr_mask_internal,
 				   array_of_errors, timeout_in);
 
@@ -610,13 +553,13 @@ ips_ptl_disconnect(ptl_t *ptl_gen, int force, int numep,
 
 /* Only symbol we expose out of here */
 struct ptl_ctl_init
-psmi_ptl_ips = {
+psm3_ptl_ips = {
 	ips_ptl_sizeof, ips_ptl_init, ips_ptl_fini, ips_ptl_setopt,
 	    ips_ptl_getopt
 };
 
 struct ptl_ctl_rcvthread
-psmi_ptl_ips_rcvthread = {
+psm3_ptl_ips_rcvthread = {
 	ips_ptl_rcvthread_is_enabled,
-	ips_ptl_rcvthread_transfer_ownership,
+	psm3_ips_ptl_rcvthread_transfer_ownership,
 };

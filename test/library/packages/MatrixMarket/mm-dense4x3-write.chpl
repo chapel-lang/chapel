@@ -31,7 +31,7 @@ for l in r.lines() {
   if i <= 2 then
     write(l);
   else
-    lines.append(l);
+    lines.pushBack(l);
   i += 1;
 }
 lines.sort();

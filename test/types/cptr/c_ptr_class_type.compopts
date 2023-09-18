@@ -1,0 +1,2 @@
+-s cPtrToLogicalValue=false # c_ptr_class_type.old.good
+-s cPtrToLogicalValue=true  # c_ptr_class_type.new.good

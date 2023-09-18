@@ -72,14 +72,14 @@ static int ofi_fid_match(struct dlist_entry *entry, const void *fid)
 	return (item->fid == fid);
 }
 
-int fid_list_insert(struct dlist_entry *fid_list, fastlock_t *lock,
+int fid_list_insert(struct dlist_entry *fid_list, ofi_mutex_t *lock,
 		    struct fid *fid)
 {
 	int ret = 0;
 	struct dlist_entry *entry;
 	struct fid_list_entry *item;
 
-	fastlock_acquire(lock);
+	ofi_mutex_lock(lock);
 	entry = dlist_find_first_match(fid_list, ofi_fid_match, fid);
 	if (entry)
 		goto out;
@@ -93,19 +93,21 @@ int fid_list_insert(struct dlist_entry *fid_list, fastlock_t *lock,
 	item->fid = fid;
 	dlist_insert_tail(&item->entry, fid_list);
 out:
-	fastlock_release(lock);
+	ofi_mutex_unlock(lock);
 	return ret;
 }
 
-void fid_list_remove(struct dlist_entry *fid_list, fastlock_t *lock,
+void fid_list_remove(struct dlist_entry *fid_list, ofi_mutex_t *lock,
 		     struct fid *fid)
 {
 	struct fid_list_entry *item;
 	struct dlist_entry *entry;
 
-	fastlock_acquire(lock);
+	if (lock)
+		ofi_mutex_lock(lock);
 	entry = dlist_remove_first_match(fid_list, ofi_fid_match, fid);
-	fastlock_release(lock);
+	if (lock)
+		ofi_mutex_unlock(lock);
 
 	if (entry) {
 		item = container_of(entry, struct fid_list_entry, entry);
@@ -173,7 +175,7 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 			FI_DBG(prov, FI_LOG_CORE, "Found opened fabric\n");
 			(*info)->fabric_attr->fabric = &fabric->fabric_fid;
 
-			fastlock_acquire(&fabric->lock);
+			ofi_mutex_lock(&fabric->lock);
 			item = dlist_find_first_match(&fabric->domain_list,
 						      util_find_domain, *info);
 			if (item) {
@@ -184,7 +186,7 @@ int util_getinfo(const struct util_prov *util_prov, uint32_t version,
 				(*info)->domain_attr->domain =
 						&domain->domain_fid;
 			}
-			fastlock_release(&fabric->lock);
+			ofi_mutex_unlock(&fabric->lock);
 
 		}
 		pthread_mutex_unlock(&common_locks.util_fabric_lock);
@@ -304,8 +306,22 @@ static void util_getinfo_ifs(const struct util_prov *prov,
 	slist_foreach(&addr_list, entry, prev) {
 		addr_entry = container_of(entry, struct ofi_addr_list_entry, entry);
 
+		switch (addr_entry->ipaddr.sin.sin_family) {
+		case AF_INET:
+			addrlen = sizeof(struct sockaddr_in);
+			addr_format = FI_SOCKADDR_IN;
+			break;
+		case AF_INET6:
+			addrlen = sizeof(struct sockaddr_in6);
+			addr_format = FI_SOCKADDR_IN6;
+			break;
+		default:
+			continue;
+		}
+
 		if (hints && ((hints->caps & addr_entry->comm_caps) !=
-		    (hints->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM))))
+		    (hints->caps & (FI_LOCAL_COMM | FI_REMOTE_COMM)) ||
+		     !ofi_valid_addr_format(addr_format, hints->addr_format)))
 			continue;
 
 		cur = fi_dupinfo(src_info);
@@ -320,19 +336,6 @@ static void util_getinfo_ifs(const struct util_prov *prov,
 			(*tail)->next = cur;
 		}
 		*tail = cur;
-
-		switch (addr_entry->ipaddr.sin.sin_family) {
-		case AF_INET:
-			addrlen = sizeof(struct sockaddr_in);
-			addr_format = FI_SOCKADDR_IN;
-			break;
-		case AF_INET6:
-			addrlen = sizeof(struct sockaddr_in6);
-			addr_format = FI_SOCKADDR_IN6;
-			break;
-		default:
-			continue;
-		}
 
 		cur->caps = (cur->caps & ~(FI_LOCAL_COMM | FI_REMOTE_COMM)) |
 			    addr_entry->comm_caps;

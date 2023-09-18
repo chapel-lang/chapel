@@ -2,15 +2,9 @@
 // this used to crash during --no-local compilations
 // this issue becomes moot if we accept the proposal in #19672
 
-// code from #19244
-use CTypes;
-var ptr = c_nil;
-
-// additional code
-
+// using nil as equivalent to now-removed c_nil used in issue
 var x = nil;
 writeln(x);
-writeln(ptr);
 
 record RR {
   var value = nil;

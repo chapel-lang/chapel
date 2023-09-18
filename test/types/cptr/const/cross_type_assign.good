@@ -1,0 +1,1 @@
+cross_type_assign.chpl:6: error: element type mismatch in c_ptrConst assignment

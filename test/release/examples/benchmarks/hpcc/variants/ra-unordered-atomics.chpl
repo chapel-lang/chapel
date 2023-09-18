@@ -61,8 +61,8 @@ config const printParams = true,
 // distribution that is computed by blocking the indices 0..N_U-1
 // across the locales.
 //
-const TableDist = new dmap(new Block(boundingBox={0..m-1})),
-      UpdateDist = new dmap(new Block(boundingBox={0..N_U-1}));
+const TableDist = new blockDist(boundingBox={0..m-1}),
+      UpdateDist = new blockDist(boundingBox={0..N_U-1});
 
 //
 // TableSpace describes the index set for the table.  It is a 1D
@@ -93,7 +93,7 @@ proc main() {
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
   // i in TableSpace"
   //
-  [i in TableSpace] T(i).poke(i);
+  [i in TableSpace with (ref T)] T(i).poke(i);
 
   const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
@@ -104,7 +104,7 @@ proc main() {
   // in r.  Compute the update using r both to compute the index and
   // as the update value.
   //
-  forall (_, r) in zip(Updates, RAStream()) do
+  forall (_, r) in zip(Updates, RAStream()) with (ref T) do
     T(r & indexMask).unorderedXor(r);
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
@@ -127,7 +127,7 @@ proc printConfiguration() {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(T) {
+proc verifyResults(ref T) {
   if (!verify) then return true;
 
   //
@@ -138,7 +138,7 @@ proc verifyResults(T) {
   //
   // Reverse the updates by recomputing them.
   //
-   forall (_, r) in zip(Updates, RAStream()) do
+   forall (_, r) in zip(Updates, RAStream()) with (ref T) do
      T(r & indexMask).xor(r);
 
   //

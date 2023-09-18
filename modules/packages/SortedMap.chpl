@@ -35,23 +35,23 @@ module SortedMap {
   public use Sort only defaultComparator;
 
   // Lock code lifted from modules/standard/List.chpl.
-  pragma "no doc"
+  @chpldoc.nodoc
   type _lockType = ChapelLocks.chpl_LocalSpinlock;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkKeyType(type keyType) {
     if isGenericType(keyType) {
       compilerWarning("creating a sortedMap with key type " +
@@ -63,7 +63,7 @@ module SortedMap {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   proc _checkValType(type valType) {
     if isGenericType(valType) {
       compilerWarning("creating a sortedMap with value type " +
@@ -81,12 +81,12 @@ module SortedMap {
     and without specifying the value
     See `contains`
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class _valueWrapper {
     var val;
   }
 
-  record sortedMap {
+  record sortedMap : writeSerializable {
     /* Type of sortedMap keys. */
     type keyType;
     /* Type of sortedMap values. */
@@ -99,31 +99,31 @@ module SortedMap {
     var comparator: record = defaultComparator;
 
     // TODO: Maybe we want something like record optional for this?
-    pragma "no doc"
+    @chpldoc.nodoc
     type _eltType = (keyType, shared _valueWrapper?);
 
     /* The underlying implementation */
-    pragma "no doc"
-    var _set: sortedSet;
-
+    @chpldoc.nodoc
+    var _set: sortedSet(_eltType, parSafe=false,
+                        _keyComparator(comparator.type));
 
     //TODO: Maybe we should use the lock from the underlying implementation
-    pragma "no doc"
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    @chpldoc.nodoc
+    var _lock = if parSafe then new _LockWrapper() else none;
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     record _keyComparator {
       var comparator: record;
       proc compare(a, b) {
@@ -173,7 +173,7 @@ module SortedMap {
 
       this._set = other._set;
 
-      this.complete();
+      init this;
     }
 
     /*
@@ -184,7 +184,7 @@ module SortedMap {
         Clearing the contents of this sortedMap will invalidate all existing
         references to the elements contained in this sortedMap.
     */
-    proc clear() {
+    proc ref clear() {
       _enter(); defer _leave();
       _set.clear();
     }
@@ -198,7 +198,7 @@ module SortedMap {
     }
 
     // Return size without acquiring the lock
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc const _size {
       return _set.size;
     }
@@ -234,7 +234,7 @@ module SortedMap {
 
       :arg other: The other sortedMap
     */
-    proc update(other: sortedMap(keyType, valType, ?p)) {
+    proc ref update(other: sortedMap(keyType, valType, ?p)) {
       _enter(); defer _leave();
 
       if !isCopyableType(keyType) || !isCopyableType(valType) then
@@ -269,7 +269,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const
     where shouldReturnRvalueByValue(valType) && !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -281,7 +281,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType) const ref
     where !isNonNilableClass(valType) {
       _enter(); defer _leave();
@@ -293,7 +293,7 @@ module SortedMap {
       return result;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc const this(k: keyType)
     where isNonNilableClass(valType) {
       compilerError("Cannot access non-nilable class directly. Use an",
@@ -302,7 +302,7 @@ module SortedMap {
 
     /* Get a borrowed reference to the element at position `k`.
      */
-    proc getBorrowed(k: keyType) where isClass(valType) {
+    proc ref getBorrowed(k: keyType) where isClass(valType) {
       _enter(); defer _leave();
 
       // This could halt
@@ -316,7 +316,7 @@ module SortedMap {
     /* Get a reference to the element at position `k`. This method is not
        available for non-nilable types.
      */
-    proc getReference(k: keyType) ref
+    proc ref getReference(k: keyType) ref
     where !isNonNilableClass(valType) {
       _enter(); defer _leave();
 
@@ -343,20 +343,20 @@ module SortedMap {
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
       return result[1]!.val;
     }
     /*
       Remove the element at position `k` from the sortedMap and return its value
     */
-    proc getAndRemove(k: keyType) {
+    proc ref getAndRemove(k: keyType) {
       _enter(); defer _leave();
 
       var result: _eltType;
       var found: bool;
       (found, result) = _set.lowerBound((k, nil));
       if !found || comparator.compare(result[0], k) != 0 then
-        boundsCheckHalt("sortedMap index " + k:string + " out of bounds");
+        boundsCheckHalt(try! "sortedMap index %? out of bounds".format(k));
 
       _set.remove((k, nil));
 
@@ -408,16 +408,7 @@ module SortedMap {
       }
     }
 
-    /*
-      Writes the contents of this sortedMap to a fileWriter.
-      The format looks like:
-
-        .. code-block:: chapel
-
-           {k1: v1, k2: v2, .... , kn: vn}
-
-      :arg ch: A fileWriter to write to.
-    */
+    @chpldoc.nodoc
     proc writeThis(ch: fileWriter) throws {
       _enter(); defer _leave();
       var first = true;
@@ -431,6 +422,11 @@ module SortedMap {
         ch.write(kv[0], ": ", kv[1]!.val);
       }
       ch.write("}");
+    }
+
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*
@@ -447,7 +443,7 @@ module SortedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc add(in k: keyType, in v: valType): bool lifetime this < v {
+    proc ref add(in k: keyType, in v: valType): bool lifetime this < v {
       _enter(); defer _leave();
 
       if _set.contains((k, nil)) {
@@ -473,7 +469,7 @@ module SortedMap {
                `false` otherwise.
      :rtype: bool
     */
-    proc set(k: keyType, in v: valType): bool {
+    proc ref set(k: keyType, in v: valType): bool {
       _enter(); defer _leave();
 
       if _set.contains((k, nil)) == false {
@@ -490,7 +486,7 @@ module SortedMap {
        set it to `v`. If the sortedMap already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc ref addOrReplace(in k: keyType, in v: valType) {
       _enter(); defer _leave();
       _set.remove((k, nil));
       _set.add((k, new shared _valueWrapper(v)?));
@@ -504,7 +500,7 @@ module SortedMap {
      :returns: `false` if `k` was not in the sortedMap.  `true` if it was and removed.
      :rtype: bool
     */
-    proc remove(k: keyType): bool {
+    proc ref remove(k: keyType): bool {
       _enter(); defer _leave();
       return _set.remove((k, nil));
     }

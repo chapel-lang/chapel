@@ -76,7 +76,7 @@ static void rxm_close_conn(struct rxm_conn *conn)
 		buf = container_of(conn->deferred_sar_segments.next,
 				   struct rxm_rx_buf, unexp_msg.entry);
 		dlist_remove(&buf->unexp_msg.entry);
-		rxm_rx_buf_free(buf);
+		rxm_free_rx_buf(buf);
 	}
 
 	while (!dlist_empty(&conn->deferred_sar_msgs)) {
@@ -89,7 +89,88 @@ static void rxm_close_conn(struct rxm_conn *conn)
 	rxm_flush_msg_cq(conn->ep);
 	dlist_remove_init(&conn->loopback_entry);
 	conn->msg_ep = NULL;
+
+	if (conn->state == RXM_CM_CONNECTING || conn->state == RXM_CM_ACCEPTING)
+		conn->ep->connecting_cnt--;
+	assert(conn->ep->connecting_cnt >= 0);
 	conn->state = RXM_CM_IDLE;
+}
+
+static int rxm_bind_comp(struct rxm_ep *ep, struct fid_ep *msg_ep)
+{
+	struct rxm_cntr *cntr;
+	int ret;
+
+	ret = fi_ep_bind(msg_ep, &ep->msg_cq->fid, FI_TRANSMIT | FI_RECV);
+	if (ret) {
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+		return ret;
+	}
+
+	if (!rxm_passthru_info(ep->rxm_info))
+		return 0;
+
+	if (ep->util_ep.tx_cntr) {
+		cntr = container_of(ep->util_ep.tx_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_SEND);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rx_cntr) {
+		cntr = container_of(ep->util_ep.rx_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_RECV);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rd_cntr) {
+		cntr = container_of(ep->util_ep.rd_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_READ);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.wr_cntr) {
+		cntr = container_of(ep->util_ep.wr_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_WRITE);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rem_rd_cntr) {
+		cntr = container_of(ep->util_ep.rem_rd_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_REMOTE_READ);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	if (ep->util_ep.rem_wr_cntr) {
+		cntr = container_of(ep->util_ep.rem_wr_cntr, struct rxm_cntr,
+				    util_cntr);
+		ret = fi_ep_bind(msg_ep, &cntr->msg_cntr->fid, FI_REMOTE_WRITE);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
+			return ret;
+		}
+	}
+
+	return 0;
 }
 
 static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
@@ -97,6 +178,7 @@ static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
 	struct rxm_domain *domain;
 	struct rxm_ep *ep;
 	struct fid_ep *msg_ep;
+	fi_addr_t src_addr;
 	int ret;
 
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "open msg ep %p\n", conn);
@@ -107,46 +189,42 @@ static int rxm_open_conn(struct rxm_conn *conn, struct fi_info *msg_info)
 			      util_domain);
 	ret = fi_endpoint(domain->msg_domain, msg_info, &msg_ep, conn);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to create msg_ep: %d\n", ret);
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_endpoint", ret);
 		return ret;
 	}
 
 	ret = fi_ep_bind(msg_ep, &ep->msg_eq->fid, 0);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to bind msg EP to EQ: %d\n", ret);
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
 		goto err;
 	}
 
 	if (ep->srx_ctx) {
+		if (!strcasestr(msg_info->fabric_attr->prov_name, "tcp")) {
+			src_addr = (unsigned) conn->peer->index;
+			(void) fi_setopt(&msg_ep->fid, FI_OPT_ENDPOINT,
+					 OFI_OPT_TCP_FI_ADDR, &src_addr,
+					 sizeof(src_addr));
+		}
+
 		ret = fi_ep_bind(msg_ep, &ep->srx_ctx->fid, 0);
 		if (ret) {
-			FI_WARN(&rxm_prov, FI_LOG_EP_CTRL, "unable to bind msg "
-				"EP to shared RX ctx: %d\n", ret);
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_ep_bind", ret);
 			goto err;
 		}
 	}
 
-	ret = fi_ep_bind(msg_ep, &ep->msg_cq->fid, FI_TRANSMIT | FI_RECV);
-	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-				"unable to bind msg_ep to msg_cq: %d\n", ret);
+	ret = rxm_bind_comp(ep, msg_ep);
+	if (ret)
 		goto err;
-	}
 
 	ret = fi_enable(msg_ep);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to enable msg_ep: %d\n", ret);
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_enable", ret);
 		goto err;
 	}
 
-	ret = domain->flow_ctrl_ops->enable(msg_ep);
-	if (!ret) {
-		domain->flow_ctrl_ops->set_threshold(msg_ep,
-					ep->msg_info->rx_attr->size / 2);
-	}
+	conn->flow_ctrl = domain->flow_ctrl_ops->available(msg_ep);
 
 	if (!ep->srx_ctx) {
 		ret = rxm_prepost_recv(ep, msg_ep);
@@ -176,13 +254,16 @@ static int rxm_init_connect_data(struct rxm_conn *conn,
 	cm_data->connect.ctrl_version = RXM_CTRL_VERSION;
 	cm_data->connect.op_version = RXM_OP_VERSION;
 	cm_data->connect.endianness = ofi_detect_endianness();
-	cm_data->connect.eager_limit = conn->ep->eager_limit;
-	cm_data->connect.rx_size = conn->ep->msg_info->rx_attr->size;
+	cm_data->connect.eager_limit = (uint32_t) conn->ep->eager_limit;
+	cm_data->connect.rx_size = (uint32_t) conn->ep->msg_info->rx_attr->size;
+	cm_data->connect.flow_ctrl = conn->flow_ctrl ?
+						RXM_CM_FLOW_CTRL_PEER_ON :
+						RXM_CM_FLOW_CTRL_PEER_OFF;
 
 	ret = fi_getopt(&conn->ep->msg_pep->fid, FI_OPT_ENDPOINT,
 			FI_OPT_CM_DATA_SIZE, &cm_data_size, &opt_size);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL, "fi_getopt failed\n");
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_getopt", ret);
 		return ret;
 	}
 
@@ -192,7 +273,7 @@ static int rxm_init_connect_data(struct rxm_conn *conn,
 	}
 
 	cm_data->connect.port = ofi_addr_get_port(&conn->ep->addr.sa);
-	cm_data->connect.client_conn_id = conn->peer->index;
+	cm_data->connect.client_conn_id = rxm_conn_id(conn->peer->index);
 	return 0;
 }
 
@@ -224,10 +305,11 @@ static int rxm_send_connect(struct rxm_conn *conn)
 	ret = fi_connect(conn->msg_ep, info->dest_addr, &cm_data,
 			 sizeof(cm_data));
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL, "unable to connect msg_ep\n");
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_connect", ret);
 		goto err;
 	}
 	conn->state = RXM_CM_CONNECTING;
+	conn->ep->connecting_cnt++;
 	return 0;
 
 err:
@@ -264,14 +346,17 @@ static int rxm_connect(struct rxm_conn *conn)
 
 static void rxm_free_conn(struct rxm_conn *conn)
 {
+	struct rxm_av *av;
+
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "free conn %p\n", conn);
 	assert(ofi_ep_lock_held(&conn->ep->util_ep));
 
 	if (conn->flags & RXM_CONN_INDEXED)
 		ofi_idm_clear(&conn->ep->conn_idx_map, conn->peer->index);
 
-	rxm_put_peer(conn->peer);
-	rxm_av_free_conn(conn);
+	util_put_peer(conn->peer);
+	av = container_of(conn->ep->util_ep.av, struct rxm_av, util_av);
+	rxm_av_free_conn(av, conn);
 }
 
 void rxm_freeall_conns(struct rxm_ep *ep)
@@ -308,7 +393,7 @@ void rxm_freeall_conns(struct rxm_ep *ep)
 }
 
 static struct rxm_conn *
-rxm_alloc_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
+rxm_alloc_conn(struct rxm_ep *ep, struct util_peer_addr *peer)
 {
 	struct rxm_conn *conn;
 	struct rxm_av *av;
@@ -316,8 +401,10 @@ rxm_alloc_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
 	assert(ofi_ep_lock_held(&ep->util_ep));
 	av = container_of(ep->util_ep.av, struct rxm_av, util_av);
 	conn = rxm_av_alloc_conn(av);
-	if (!conn)
+	if (!conn) {
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "rxm_av_alloc_conn", -FI_ENOMEM);
 		return NULL;
+	}
 
 	conn->ep = ep;
 	conn->state = RXM_CM_IDLE;
@@ -337,7 +424,7 @@ rxm_alloc_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
 }
 
 static struct rxm_conn *
-rxm_add_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
+rxm_add_conn(struct rxm_ep *ep, struct util_peer_addr *peer)
 {
 	struct rxm_conn *conn;
 
@@ -352,6 +439,7 @@ rxm_add_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
 
 	if (ofi_idm_set(&ep->conn_idx_map, peer->index, conn) < 0) {
 		rxm_free_conn(conn);
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "ofi_idm_set", -FI_ENOMEM);
 		return NULL;
 	}
 
@@ -362,7 +450,7 @@ rxm_add_conn(struct rxm_ep *ep, struct rxm_peer_addr *peer)
 /* The returned conn is only valid if the function returns success. */
 ssize_t rxm_get_conn(struct rxm_ep *ep, fi_addr_t addr, struct rxm_conn **conn)
 {
-	struct rxm_peer_addr **peer;
+	struct util_peer_addr **peer;
 	ssize_t ret;
 
 	assert(ofi_ep_lock_held(&ep->util_ep));
@@ -391,18 +479,55 @@ ssize_t rxm_get_conn(struct rxm_ep *ep, fi_addr_t addr, struct rxm_conn **conn)
 	return ret;
 }
 
+static void rxm_set_peer_flow_ctrl(struct rxm_conn *conn, int cm_flow_ctrl_flag)
+{
+	switch (cm_flow_ctrl_flag) {
+	case RXM_CM_FLOW_CTRL_LOCAL:
+		/*
+		 * For backward compatibility: the flag maps to 0 paddings in
+		 * old protocol. Old protocol doesn't negotiate flow control
+		 * capability. Decision is made locally.
+		 */
+		conn->peer_flow_ctrl = conn->flow_ctrl;
+		break;
+
+	case RXM_CM_FLOW_CTRL_PEER_ON:
+		conn->peer_flow_ctrl = 1;
+		break;
+
+	case RXM_CM_FLOW_CTRL_PEER_OFF:
+		conn->peer_flow_ctrl = 0;
+		break;
+	}
+}
+
 void rxm_process_connect(struct rxm_eq_cm_entry *cm_entry)
 {
 	struct rxm_conn *conn;
+	struct rxm_domain *domain;
 
 	conn = cm_entry->fid->context;
 	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL,
 	       "processing connected for handle: %p\n", conn);
 
 	assert(ofi_ep_lock_held(&conn->ep->util_ep));
-	if (conn->state == RXM_CM_CONNECTING)
-		conn->remote_index = cm_entry->data.accept.server_conn_id;
+	if (conn->state == RXM_CM_CONNECTING) {
+		conn->remote_index = rxm_peer_index(cm_entry->data.accept.
+						    server_conn_id);
+		conn->remote_pid = rxm_peer_pid(cm_entry->data.accept.
+						server_conn_id);
+		rxm_set_peer_flow_ctrl(conn, cm_entry->data.accept.flow_ctrl);
+	}
 
+	if (conn->flow_ctrl & conn->peer_flow_ctrl) {
+		domain = container_of(conn->ep->util_ep.domain,
+				      struct rxm_domain, util_domain);
+		domain->flow_ctrl_ops->enable(conn->msg_ep,
+					      conn->ep->msg_info->rx_attr->size / 2);
+	}
+
+	conn->ep->connecting_cnt--;
+	assert(conn->ep->connecting_cnt >= 0);
 	conn->state = RXM_CM_CONNECTED;
 }
 
@@ -415,7 +540,7 @@ rxm_process_reject(struct rxm_conn *conn, struct fi_eq_err_entry *entry)
 	union rxm_cm_data *cm_data;
 	uint8_t reason;
 
-	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL,
+	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
 	       "Processing reject for handle: %p\n", conn);
 	assert(ofi_ep_lock_held(&conn->ep->util_ep));
 
@@ -441,6 +566,8 @@ rxm_process_reject(struct rxm_conn *conn, struct fi_eq_err_entry *entry)
 		rxm_close_conn(conn);
 		if (reason != RXM_REJECT_EALREADY)
 			rxm_free_conn(conn);
+		else
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "rejected, already connected\n");
 		break;
 	case RXM_CM_ACCEPTING:
 	case RXM_CM_CONNECTED:
@@ -488,30 +615,42 @@ rxm_reject_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry,
 		   uint8_t reason)
 {
 	union rxm_cm_data cm_data;
+	int ret;
 
 	cm_data.reject.version = RXM_CM_DATA_VERSION;
 	cm_data.reject.reason = reason;
 
-	fi_reject(ep->msg_pep, cm_entry->info->handle,
-		  &cm_data.reject, sizeof(cm_data.reject));
+	ret = fi_reject(ep->msg_pep, cm_entry->info->handle,
+			&cm_data.reject, sizeof(cm_data.reject));
+	if (ret)
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_reject", ret);
 }
 
 static int
 rxm_accept_connreq(struct rxm_conn *conn, struct rxm_eq_cm_entry *cm_entry)
 {
 	union rxm_cm_data cm_data;
+	int ret;
 
-	cm_data.accept.server_conn_id = conn->peer->index;
-	cm_data.accept.rx_size = cm_entry->info->rx_attr->size;
+	cm_data.accept.server_conn_id = rxm_conn_id(conn->peer->index);
+	cm_data.accept.rx_size = (uint32_t) cm_entry->info->rx_attr->size;
+	cm_data.accept.flow_ctrl = conn->flow_ctrl ? RXM_CM_FLOW_CTRL_PEER_ON :
+						     RXM_CM_FLOW_CTRL_PEER_OFF;
+	cm_data.accept.align_pad[0] = 0;
+	cm_data.accept.align_pad[1] = 0;
+	cm_data.accept.align_pad[2] = 0;
 
-	return fi_accept(conn->msg_ep, &cm_data.accept, sizeof(cm_data.accept));
+	ret = fi_accept(conn->msg_ep, &cm_data.accept, sizeof(cm_data.accept));
+	if (ret)
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_accept", ret);
+	return ret;
 }
 
 static void
 rxm_process_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry)
 {
 	union ofi_sock_ip peer_addr;
-	struct rxm_peer_addr *peer;
+	struct util_peer_addr *peer;
 	struct rxm_conn *conn;
 	struct rxm_av *av;
 	ssize_t ret;
@@ -526,15 +665,17 @@ rxm_process_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry)
 	ofi_addr_set_port(&peer_addr.sa, cm_entry->data.connect.port);
 
 	av = container_of(ep->util_ep.av, struct rxm_av, util_av);
-	peer = rxm_get_peer(av, &peer_addr);
-	if (!peer)
+	peer = util_get_peer(av, &peer_addr);
+	if (!peer) {
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "util_get_peer", -FI_ENOMEM);
 		goto reject;
+	}
 
 	conn = rxm_add_conn(ep, peer);
 	if (!conn)
 		goto remove;
 
-	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "connreq for %p\n", conn);
+	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "connreq for %p\n", conn);
 	switch (conn->state) {
 	case RXM_CM_IDLE:
 		break;
@@ -543,14 +684,20 @@ rxm_process_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry)
 		cmp = ofi_addr_cmp(&rxm_prov, &peer_addr.sa, &ep->addr.sa);
 		if (cmp < 0) {
 			/* let our request finish */
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
+				"simultaneous, reject peer %p\n", conn);
 			rxm_reject_connreq(ep, cm_entry,
-					   RXM_REJECT_ECONNREFUSED);
+					   RXM_REJECT_EALREADY);
 			goto put;
 		} else if (cmp > 0) {
 			/* accept peer's request */
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
+				"simultaneous, accept peer %p\n", conn);
 			rxm_close_conn(conn);
 		} else {
 			/* connecting to ourself, create loopback conn */
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
+				"loopback conn %p\n", conn);
 			conn = rxm_alloc_conn(ep, peer);
 			if (!conn)
 				goto remove;
@@ -561,24 +708,41 @@ rxm_process_connreq(struct rxm_ep *ep, struct rxm_eq_cm_entry *cm_entry)
 		break;
 	case RXM_CM_ACCEPTING:
 	case RXM_CM_CONNECTED:
-		goto put;
+		if (conn->remote_pid &&
+		    (conn->remote_pid == rxm_peer_pid(cm_entry->data.connect.
+		    				      client_conn_id))) {
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
+				"simultaneous, reject peer\n");
+			rxm_reject_connreq(ep, cm_entry,
+					   RXM_REJECT_EALREADY);
+			goto put;
+		} else {
+			FI_INFO(&rxm_prov, FI_LOG_EP_CTRL,
+				"old connection exists, replacing %p\n", conn);
+			rxm_close_conn(conn);
+		}
+		break;
 	default:
 		assert(0);
 		break;
 	}
 
-	conn->remote_index = cm_entry->data.connect.client_conn_id;
+	conn->remote_pid = rxm_peer_pid(cm_entry->data.connect.client_conn_id);
+	conn->remote_index = rxm_peer_index(cm_entry->data.connect.client_conn_id);
 	ret = rxm_open_conn(conn, cm_entry->info);
 	if (ret)
 		goto free;
+
+	rxm_set_peer_flow_ctrl(conn, cm_entry->data.connect.flow_ctrl);
 
 	ret = rxm_accept_connreq(conn, cm_entry);
 	if (ret)
 		goto close;
 
 	conn->state = RXM_CM_ACCEPTING;
+	conn->ep->connecting_cnt++;
 put:
-	rxm_put_peer(peer);
+	util_put_peer(peer);
 	fi_freeinfo(cm_entry->info);
 	return;
 
@@ -587,7 +751,7 @@ close:
 free:
 	rxm_free_conn(conn);
 remove:
-	rxm_put_peer(peer);
+	util_put_peer(peer);
 reject:
 	rxm_reject_connreq(ep, cm_entry, RXM_REJECT_ECONNREFUSED);
 	fi_freeinfo(cm_entry->info);
@@ -595,8 +759,10 @@ reject:
 
 void rxm_process_shutdown(struct rxm_conn *conn)
 {
-	FI_DBG(&rxm_prov, FI_LOG_EP_CTRL, "shutdown conn %p\n", conn);
 	assert(ofi_ep_lock_held(&conn->ep->util_ep));
+
+	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "shutdown conn %p (state %d)\n",
+		conn, conn->state);
 
 	switch (conn->state) {
 	case RXM_CM_IDLE:
@@ -621,16 +787,33 @@ static void rxm_handle_error(struct rxm_ep *ep)
 	ret = fi_eq_readerr(ep->msg_eq, &entry, 0);
 	if (ret != sizeof(entry)) {
 		if (ret != -FI_EAGAIN)
-			FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-				"unable to fi_eq_readerr: %zd\n", ret);
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_eq_readerr", ret);
 		return;
 	}
+
+	if (entry.err == FI_ECONNREFUSED) {
+		FI_LOG_SPARSE(&rxm_prov, FI_LOG_WARN, FI_LOG_CQ,
+			"fi_eq_readerr: err: %s (%d), prov_err: %s (%d)\n",
+			fi_strerror(entry.err), entry.err,
+			fi_eq_strerror(ep->msg_eq, entry.prov_errno,
+					entry.err_data, NULL, 0),
+			entry.prov_errno);
+	} else {
+		FI_WARN(&rxm_prov, FI_LOG_CQ,
+			"fi_eq_readerr: err: %s (%d), prov_err: %s (%d)\n",
+			fi_strerror(entry.err), entry.err,
+			fi_eq_strerror(ep->msg_eq, entry.prov_errno,
+					entry.err_data, NULL, 0),
+			entry.prov_errno);
+	}
+
+	if (!entry.fid || entry.fid->fclass != FI_CLASS_EP)
+		return;
 
 	if (entry.err == ECONNREFUSED) {
 		rxm_process_reject(entry.fid->context, &entry);
 	} else {
-		OFI_EQ_STRERROR(&rxm_prov, FI_LOG_WARN, FI_LOG_EP_CTRL,
-				ep->msg_eq, &entry);
+		rxm_process_shutdown(entry.fid->context);
 	}
 }
 
@@ -662,7 +845,7 @@ void rxm_conn_progress(struct rxm_ep *ep)
 {
 	struct rxm_eq_cm_entry cm_entry;
 	uint32_t event;
-	int ret;
+	ssize_t ret;
 
 	assert(ofi_ep_lock_held(&ep->util_ep));
 	do {
@@ -680,6 +863,7 @@ void rxm_conn_progress(struct rxm_ep *ep)
 void rxm_stop_listen(struct rxm_ep *ep)
 {
 	struct fi_eq_entry entry = {0};
+	ssize_t size_ret;
 	int ret;
 
 	FI_INFO(&rxm_prov, FI_LOG_EP_CTRL, "stopping CM thread\n");
@@ -690,39 +874,38 @@ void rxm_stop_listen(struct rxm_ep *ep)
 	ep->do_progress = false;
 	ofi_ep_lock_release(&ep->util_ep);
 
-	ret = fi_eq_write(ep->msg_eq, FI_NOTIFY, &entry, sizeof(entry), 0);
-	if (ret != sizeof(entry)) {
+	size_ret = fi_eq_write(ep->msg_eq, FI_NOTIFY, &entry, sizeof(entry), 0);
+	if (size_ret != sizeof(entry)) {
 		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL, "Unable to signal\n");
 		return;
 	}
 
 	ret = pthread_join(ep->cm_thread, NULL);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"Unable to join CM thread\n");
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "pthread_join", -ret);
 	}
 }
 
 static void rxm_flush_msg_cq(struct rxm_ep *ep)
 {
 	struct fi_cq_data_entry comp;
-	int ret;
+	ssize_t ret;
 
 	assert(ofi_ep_lock_held(&ep->util_ep));
 	do {
 		ret = fi_cq_read(ep->msg_cq, &comp, 1);
 		if (ret > 0) {
-			ret = rxm_handle_comp(ep, &comp);
+			ret = ep->handle_comp(ep, &comp);
 			if (ret) {
-				rxm_cq_write_error_all(ep, ret);
+				rxm_cq_write_error_all(ep, (int) ret);
 			} else {
 				ret = 1;
 			}
 		} else if (ret == -FI_EAVAIL) {
-			rxm_handle_comp_error(ep);
+			ep->handle_comp_error(ep);
 			ret = 1;
 		} else if (ret < 0 && ret != -FI_EAGAIN) {
-			rxm_cq_write_error_all(ep, ret);
+			rxm_cq_write_error_all(ep, (int) ret);
 		}
 	} while (ret > 0);
 }
@@ -740,17 +923,30 @@ static void *rxm_cm_progress(void *arg)
 	while (ep->do_progress) {
 		ofi_ep_lock_release(&ep->util_ep);
 
+		/* We must retrieve any event after we acquire the ep lock.
+		 * Otherwise, we could obtain an event for a msg ep that
+		 * another thread could be closing.  If we try to process that
+		 * event, we can access freed memory.  So, we use FI_PEEK here
+		 * to wait until an event is ready, then read any event after
+		 * we hold the ep lock.  Because closing an ep will free any
+		 * events queued on the eq, the event we find here may be gone
+		 * by the time we call read below.  This is what we want as it
+		 * avoids processing the stale event.
+		 */
 		ret = fi_eq_sread(ep->msg_eq, &event, &cm_entry,
-				  sizeof(cm_entry), -1, 0);
+				  sizeof(cm_entry), -1, FI_PEEK);
 
 		ofi_ep_lock_acquire(&ep->util_ep);
+		if (ret > 0) {
+			ret = fi_eq_read(ep->msg_eq, &event, &cm_entry,
+					 sizeof(cm_entry), 0);
+		}
 		if (ret > 0) {
 			rxm_handle_event(ep, event, &cm_entry, ret);
 		} else if (ret == -FI_EAVAIL) {
 			rxm_handle_error(ep);
-		} else {
-			FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-				"Fatal error reading from msg eq");
+		} else if (ret && ret != -FI_EAGAIN) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_eq_read", ret);
 			break;
 		}
 	}
@@ -778,15 +974,13 @@ static void *rxm_cm_atomic_progress(void *arg)
 			      struct rxm_fabric, util_fabric);
 	ret = fi_control(&ep->msg_eq->fid, FI_GETWAIT, &fds[0].fd);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to get msg EQ fd: %s\n", fi_strerror(ret));
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_control", ret);
 		return NULL;
 	}
 
 	ret = fi_control(&ep->msg_cq->fid, FI_GETWAIT, &fds[1].fd);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to get msg CQ fd: %s\n", fi_strerror(ret));
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_control", ret);
 		return NULL;
 	}
 
@@ -799,8 +993,7 @@ static void *rxm_cm_atomic_progress(void *arg)
 		if (!ret) {
 			ret = poll(fds, 2, -1);
 			if (ret == -1) {
-				FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-					"Select error %s\n", strerror(errno));
+				RXM_WARN_ERR(FI_LOG_EP_CTRL, "poll", -errno);
 			}
 		}
 		ep->util_ep.progress(&ep->util_ep);
@@ -820,16 +1013,14 @@ int rxm_start_listen(struct rxm_ep *ep)
 
 	ret = fi_listen(ep->msg_pep);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"unable to set msg PEP to listen state\n");
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_listen", ret);
 		return ret;
 	}
 
 	addr_len = sizeof(ep->addr);
 	ret = fi_getname(&ep->msg_pep->fid, &ep->addr, &addr_len);
 	if (ret) {
-		FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-			"Unable to get msg pep name\n");
+		RXM_WARN_ERR(FI_LOG_EP_CTRL, "fi_getname", ret);
 		return ret;
 	}
 
@@ -855,14 +1046,28 @@ int rxm_start_listen(struct rxm_ep *ep)
 
 		assert(ep->util_ep.domain->threading == FI_THREAD_SAFE);
 		ep->do_progress = true;
-		if (pthread_create(&ep->cm_thread, 0,
-				   ep->rxm_info->caps & FI_ATOMIC ?
-				   rxm_cm_atomic_progress :
-				   rxm_cm_progress, ep)) {
-			FI_WARN(&rxm_prov, FI_LOG_EP_CTRL,
-				"unable to create cm thread\n");
-			return -ofi_syserr();
+		ret = pthread_create(&ep->cm_thread, 0,
+				     ep->rxm_info->caps & FI_ATOMIC ?
+				     rxm_cm_atomic_progress : rxm_cm_progress, ep);
+		if (ret) {
+			RXM_WARN_ERR(FI_LOG_EP_CTRL, "pthread_create", -ret);
+			return -ret;
 		}
 	}
 	return 0;
+}
+
+void rxm_av_remove_handler(struct util_ep *util_ep, struct util_peer_addr *peer)
+{
+	struct rxm_ep *ep;
+	struct rxm_conn *conn;
+
+	ep = container_of(util_ep, struct rxm_ep, util_ep);
+	ofi_ep_lock_acquire(&ep->util_ep);
+	conn = ofi_idm_lookup(&ep->conn_idx_map, peer->index);
+	if (conn) {
+		rxm_close_conn(conn);
+		rxm_free_conn(conn);
+	}
+	ofi_ep_lock_release(&ep->util_ep);
 }

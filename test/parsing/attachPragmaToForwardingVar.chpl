@@ -1,14 +1,14 @@
 record A {
   var x: int;
 
-  proc assignX(){
+  proc ref assignX(){
     this.x = 1;
     writeln(this.x);
   }
 }
 
 record B {
-  pragma "no doc"
+  @chpldoc.nodoc
   forwarding var instance: A;
 }
 

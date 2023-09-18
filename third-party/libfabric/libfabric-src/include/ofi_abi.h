@@ -111,7 +111,7 @@ extern "C" {
  * name appended with the ABI version that it is compatible with.
  */
 
-#define CURRENT_ABI "FABRIC_1.5"
+#define CURRENT_ABI "FABRIC_1.6"
 
 #if  HAVE_ALIAS_ATTRIBUTE == 1
 #define DEFAULT_SYMVER_PRE(a) a##_
@@ -123,11 +123,11 @@ extern "C" {
 #if HAVE_SYMVER_SUPPORT
 
 #define COMPAT_SYMVER(name, api, ver) \
-	asm(".symver " #name "," #api "@" #ver)
+	asm(".symver " #name "," #api "@" #ver "\n")
 #define DEFAULT_SYMVER(name, api, ver) \
-	asm(".symver " #name "," #api "@@" #ver)
+	asm(".symver " #name "," #api "@@" #ver "\n")
 #define CURRENT_SYMVER(name, api) \
-	asm(".symver " #name "," #api "@@" CURRENT_ABI)
+	asm(".symver " #name "," #api "@@" CURRENT_ABI "\n")
 
 #else
 

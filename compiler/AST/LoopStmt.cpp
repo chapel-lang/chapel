@@ -28,6 +28,7 @@ LoopStmt::LoopStmt(BlockStmt* initBody) : BlockStmt(initBody)
   mOrderIndependent = false;
   mVectorizationHazard = false;
   mParallelAccessVectorizationHazard = false;
+  mLLVMMetadataList = {};
 }
 
 LabelSymbol* LoopStmt::breakLabelGet() const
@@ -92,6 +93,26 @@ bool LoopStmt::isParallelAccessVectorizable() const
   return mOrderIndependent &&
          !mVectorizationHazard &&
          !mParallelAccessVectorizationHazard;
+}
+
+bool LoopStmt::hasAdditionalLLVMMetadata() const {
+  return !mLLVMMetadataList.empty();
+}
+bool LoopStmt::hasAdditionalLLVMMetadata(const char* a) const {
+  return this->getAdditionalLLVMMetadata(a) != nullptr;
+}
+const LLVMMetadataList& LoopStmt::getAdditionalLLVMMetadata() const {
+  return mLLVMMetadataList;
+}
+LLVMMetadataPtr LoopStmt::getAdditionalLLVMMetadata(const char* a) const {
+  const char* aa = astr(a);
+  auto it = std::find_if(mLLVMMetadataList.begin(),
+                         mLLVMMetadataList.end(),
+                         [aa](auto elm) {return elm->key == aa;});
+  return it != mLLVMMetadataList.end() ? *it : nullptr;
+}
+void LoopStmt::setAdditionalLLVMMetadata(const LLVMMetadataList& al) {
+  mLLVMMetadataList = al;
 }
 
 // what if the nearest enclosing loop is a forall?

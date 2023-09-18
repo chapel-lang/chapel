@@ -82,7 +82,7 @@
 #define psmi_assert_always_loc(x, curloc)				\
 	do {								\
 	if_pf(!(x)) {							\
-		psmi_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,	\
+		psm3_handle_error(PSMI_EP_NORETURN, PSM2_INTERNAL_ERR,	\
 				"Assertion failure at %s: %s", curloc,	\
 				STRINGIFY(x));				\
 	} } while (0)
@@ -91,22 +91,17 @@
 
 #ifdef PSM_DEBUG
 #  define psmi_assert(x)	psmi_assert_always(x)
-#  define PSMI_ASSERT_INITIALIZED() psmi_assert_always(psmi_isinitialized())
+#  define PSMI_ASSERT_INITIALIZED() psmi_assert_always(psm3_isinitialized())
 #else
 #  define psmi_assert(x)
 #  define PSMI_ASSERT_INITIALIZED()
 #endif
 
-#define _PSMI_API_NAME(FN)  __ ## FN
-#define _PSMI_API_STR(FN)   _STRINGIFY(__ ## FN)
-#define PSMI_API_DECL(FN)							\
-	typeof(_PSMI_API_NAME(FN)) FN __attribute__((weak, alias(_PSMI_API_STR(FN))));
-
 #define PSMI_ERR_UNLESS_INITIALIZED(ep)					\
 	do {								\
-		if (!psmi_isinitialized()) {				\
+		if (!psm3_isinitialized()) {				\
 			PSM2_LOG_MSG("leaving");				\
-			return psmi_handle_error(ep, PSM2_INIT_NOT_INIT,	\
+			return psm3_handle_error(ep, PSM2_INIT_NOT_INIT,	\
 				"PSM3 has not been initialized");	\
 	  }								\
 	} while (0)
@@ -121,15 +116,6 @@
 
 #define PSMI_CACHEALIGN	__attribute__((aligned(64)))
 
-/* Easy way to ignore the OK_NO_PROGRESS case */
-PSMI_ALWAYS_INLINE(psm2_error_t psmi_err_only(psm2_error_t err))
-{
-	if (err > PSM2_OK_NO_PROGRESS)
-		return err;
-	else
-		return PSM2_OK;
-}
-
 #ifdef min
 #undef min
 #endif
@@ -139,6 +125,46 @@ PSMI_ALWAYS_INLINE(psm2_error_t psmi_err_only(psm2_error_t err))
 #undef max
 #endif
 #define max(a, b) ((a) > (b) ? (a) : (b))
+
+// macros taken fron IbAccess imath.h
+/* round up value to align, align must be a power of 2 */
+#ifndef ROUNDUPP2
+#define ROUNDUPP2(val, align)   \
+	(((uint32_t)(val) + (uint32_t)(align) - 1) & (~((uint32_t)(align)-1)))
+#endif
+/* force to use 64 bits in 32bit box */
+#ifndef ROUNDUP64P2
+#define ROUNDUP64P2(val, align)   \
+	(((uint64_t)(val) + (uint64_t)(align) - 1) & (~((uint64_t)(align)-1)))
+#endif
+
+/* round up value to align, align can be any value, less efficient than ROUNDUPP2 */
+#ifndef ROUNDUP
+#define ROUNDUP(val, align) \
+	((( ((uint32_t)(val)) + (uint32_t)(align) -1) / (align) ) * (align))
+#endif
+
+/* round down value to align, align must be a power of 2 */
+#ifndef ROUNDDOWNP2
+#define ROUNDDOWNP2(val, align) \
+	(((uint32_t)(val)) & (~((uint32_t)(align)-1)))
+#endif
+
+/* round down value to align, align can be any value, less efficient than ROUNDDOWNP2 */
+#ifndef ROUNDDOWN
+#define ROUNDDOWN(val, align)   \
+	((( ((uint32_t)(val))) / (align) ) * (align))
+#endif
+
+#define PSMI_NBITS_TO_MASK(NBITS)	((uint64_t)((1 << NBITS)-1))
+
+/* given a pointer to a member of a structure, ret ptr to parent struct */
+#define PARENT_STRUCT(ADDRESS, TYPE, MEMBER) \
+	((TYPE *)((char *)(ADDRESS) - offsetof(TYPE, MEMBER))) 
+
+/* how many entries are in a statically allocated table */
+#define PSMI_HOWMANY(table) (sizeof(table)/sizeof(table[0]))
+
 
 #define SEC_ULL	 1000000000ULL
 #define MSEC_ULL 1000000ULL
@@ -151,7 +177,7 @@ PSMI_ALWAYS_INLINE(psm2_error_t psmi_err_only(psm2_error_t err))
 #define PSMI_CYCLES_TO_SECSF(cycles)			\
 		((double) cycles_to_nanosecs(cycles) / 1.0e9)
 
-#define PSMI_PAGESIZE       psmi_getpagesize()
+#define PSMI_PAGESIZE       psm3_getpagesize()
 #define PSMI_POWEROFTWO(P)  (((P)&((P)-1)) == 0)
 #define PSMI_ALIGNDOWN(p, P) (((uintptr_t)(p))&~((uintptr_t)((P)-1)))
 #define PSMI_ALIGNUP(p, P)   (PSMI_ALIGNDOWN((uintptr_t)(p)+((uintptr_t)((P)-1)), (P)))
@@ -173,14 +199,14 @@ PSMI_ALWAYS_INLINE(psm2_error_t psmi_err_only(psm2_error_t err))
    so that at compile time the violations can be caught and corrected - not at
    run time.  */
 
-#define PSMI_STRICT_SIZE_DECL(member, sz) static const size_t __psm2_ss_ ## member = sz
+#define PSMI_STRICT_SIZE_DECL(member, sz) static const size_t __psm3_ss_ ## member = sz
 #define PSMI_STRICT_SIZE_VERIFY(member, sz)				\
 	do {								\
-		if (__psm2_ss_ ## member != (sz)) {			\
+		if (__psm3_ss_ ## member != (sz)) {			\
 			char errmsg[64];				\
 			snprintf(errmsg, 32, "Internal error: %s "	\
 					"size doesn't match expected %d bytes",	\
-					STRINGIFY(member), (int) __psm2_ss_ ## member);	\
+					STRINGIFY(member), (int) __psm3_ss_ ## member);	\
 			exit(-1);					\
 		}							\
 	} while (0)

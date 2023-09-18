@@ -1,3 +1,5 @@
+use Math;
+
 var c:complex;
 var c2:complex;
 var d:complex;

@@ -38,7 +38,7 @@ cobegin {
 
 config var depth: uint(64) = 1024;
 
-var sum1$, sum2$: single uint(64);
+var sum1, sum2: sync uint(64);
 
 proc recursive_sum(n: uint(64)): uint(64) {
   if n <= 1 then return n; else return n + recursive_sum(n - 1);
@@ -56,16 +56,16 @@ proc recursive_sum(n: uint(64)): uint(64) {
 cobegin {
   {
     started_1.writeEF(true);
-    sum2$.writeEF(recursive_sum(depth));
+    sum2.writeEF(recursive_sum(depth));
   }
   {
     started_1.readFE();
     started_2.writeEF(true);
-    sum1$.writeEF(recursive_sum(depth));
+    sum1.writeEF(recursive_sum(depth));
   }
   {
     started_2.readFE();
   }
 }
 
-writeln("sums are ", sum1$.readFF(), ", ", sum2$.readFF());
+writeln("sums are ", sum1.readFF(), ", ", sum2.readFF());

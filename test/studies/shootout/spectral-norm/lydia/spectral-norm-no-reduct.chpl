@@ -37,9 +37,9 @@ proc sum (i, inRange, param flip : bool, U : [] real) {
 // to inRange - 1, inRange, a boolean indicating not to flip the order for the
 // inner call and the array U
 //
-proc eval_A_times_u(U : [] real, inRange, Au : [] real)
+proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange do
+  forall i in 0..#inRange with (ref Au) do
     Au(i) = sum(i, inRange, false, U);
 }
 
@@ -48,13 +48,13 @@ proc eval_A_times_u(U : [] real, inRange, Au : [] real)
 // to inRange - 1, inRange, a boolean indicating to flip the order for the
 // inner call and the array U
 //
-proc eval_At_times_u(U : [] real, inRange, Au : [] real)
+proc eval_At_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange do
+  forall i in 0..#inRange with (ref Au) do
     Au(i) = sum(i, inRange, true, U);
 }
 
-proc eval_AtA_times_u(u, AtAu, v : [] real, inRange)
+proc eval_AtA_times_u(u, ref AtAu, ref v : [] real, inRange)
 {
      eval_A_times_u(u, inRange, v);
      eval_At_times_u(v, inRange, AtAu);
@@ -74,5 +74,5 @@ proc main() {
   const vBv = + reduce [(u,v) in zip(U,V)] (u * v);
 
   const res = sqrt(vBv/vv);
-  writeln(res, new iostyleInternal(precision=10));
+  writef("%.10r\n", res);
 }

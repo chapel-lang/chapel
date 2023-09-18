@@ -1,0 +1,7 @@
+bug: Slicing with a range that has its bounds completely outside the array should halt
+
+Currently since bounds check returns true, the slice is created and then the slice
+is sliced with the range. 
+Since the slice is an empty range and all ranges "contain" the empty range,
+bounds check returns true vaccuosly. This should be false instead.
+Similarly, the slice should not be created and the slice operation should halt.

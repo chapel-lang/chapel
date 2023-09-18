@@ -1,0 +1,7 @@
+# Test/compflags/waynew ignores.
+/*.bc
+/*.c
+/*.tmp_launcher
+/Makefile
+/*.h
+/chplmake.out

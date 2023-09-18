@@ -85,8 +85,13 @@ static int numNumaDomains;
 static hwloc_cpuset_t physAccSet = NULL;
 static hwloc_cpuset_t physReservedSet = NULL;
 static hwloc_cpuset_t logAccSet = NULL;
+static hwloc_cpuset_t logAllSet = NULL;
+
+// This is used for runtime testing and masks the accessible PUs.
+static hwloc_cpuset_t logAccMask = NULL;
 
 static void cpuInfoInit(void);
+static void partitionResources(void);
 
 // Accessible NUMA nodes
 
@@ -128,8 +133,19 @@ static void chk_err_errno_fn(const char*, int, const char*);
 #define REPORT_ERR_ERRNO(expr) \
   chk_err_errno_fn(__FILE__, __LINE__, #expr)
 
+// Partially initialize the topology layer for use during comm initialization.
+// The remainder of the initialization is done in chpl_topo_post_comm_init
+// after the comm layer has been initialized and we know how many locales
+// are running on this node.
+//
 
-void chpl_topo_init(void) {
+void chpl_topo_pre_comm_init(char *accessiblePUsMask) {
+  //
+  // accessibleMask is a string in hwloc "bitmap list" format that
+  // specifies which processing units should be considered accessible
+  // to this locale. It is intended for testing purposes only and
+  // should be NULL in production code.
+
   //
   // We only load hwloc topology information in configurations where
   // the locale model is other than "flat" or the tasking is based on
@@ -144,26 +160,17 @@ void chpl_topo_init(void) {
     return;
   }
 
-  // Check hwloc API version.
-  // Require at least hwloc version 1.11 (we need 1.11.5 to not crash
-  // in some NUMA configurations).
-  // Check both at build time and run time.
-#define REQUIRE_HWLOC_VERSION 0x00010b00
-
-#if HWLOC_API_VERSION < REQUIRE_HWLOC_VERSION
-#error hwloc version 1.11.5 or newer is required
-#endif
-
-  CHK_ERR(hwloc_get_api_version() >= REQUIRE_HWLOC_VERSION);
-
   //
   // Allocate and initialize topology object.
   //
   CHK_ERR_ERRNO(hwloc_topology_init(&topology) == 0);
 
-  // Make sure we get everything including I/O devices.
-  int flags = HWLOC_TOPOLOGY_FLAG_WHOLE_IO | HWLOC_TOPOLOGY_FLAG_IO_BRIDGES | HWLOC_TOPOLOGY_FLAG_IO_DEVICES;
+  int flags = HWLOC_TOPOLOGY_FLAG_INCLUDE_DISALLOWED;
+  flags |= HWLOC_TOPOLOGY_FLAG_IMPORT_SUPPORT; // for testing
   CHK_ERR_ERRNO(hwloc_topology_set_flags(topology, flags) == 0);
+
+  CHK_ERR_ERRNO(hwloc_topology_set_all_types_filter(topology,
+                                            HWLOC_TYPE_FILTER_KEEP_ALL) == 0);
 
   //
   // Perform the topology detection.
@@ -201,7 +208,24 @@ void chpl_topo_init(void) {
 
   root = hwloc_get_root_obj(topology);
 
+  if (accessiblePUsMask != NULL) {
+    CHK_ERR_ERRNO((logAccMask = hwloc_bitmap_alloc()) != NULL);
+    CHK_ERR(hwloc_bitmap_list_sscanf(logAccMask, accessiblePUsMask) == 0);
+    if (debug) {
+      char buf[1024];
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccMask);
+      _DBG_P("logAccMask: %s", buf);
+    }
+  }
   cpuInfoInit();
+}
+
+//
+// Finish initializing the topology layer after the comm layer has been
+// initialized.
+//
+void chpl_topo_post_comm_init(void) {
+  partitionResources();
 }
 
 
@@ -222,10 +246,19 @@ void chpl_topo_exit(void) {
     hwloc_bitmap_free(logAccSet);
     logAccSet = NULL;
   }
+  if (logAllSet != NULL) {
+    hwloc_bitmap_free(logAllSet);
+    logAllSet = NULL;
+  }
   if (numaSet != NULL) {
     hwloc_bitmap_free(numaSet);
     numaSet = NULL;
   }
+  if (logAccMask != NULL) {
+    hwloc_bitmap_free(logAccMask);
+    logAccMask = NULL;
+  }
+
   hwloc_topology_destroy(topology);
 }
 
@@ -263,115 +296,219 @@ int chpl_topo_getNumCPUsLogical(chpl_bool accessible_only) {
 }
 
 
+#define NEXT_OBJ(cpuset, type, obj)                                \
+  hwloc_get_next_obj_inside_cpuset_by_type(topology, (cpuset),     \
+                                           (type), (obj))
+
+// Filter any PUs from the cpuset whose entry in ignoreKinds is true
+static void filterPUsByKind(int numKinds, chpl_bool *ignoreKinds,
+                         hwloc_cpuset_t cpuset) {
+
+  // filtering only makes sense if there is more than one kind of PU
+  if (numKinds > 1) {
+    for (hwloc_obj_t pu = NEXT_OBJ(cpuset, HWLOC_OBJ_PU, NULL);
+         pu != NULL;
+         pu = NEXT_OBJ(cpuset, HWLOC_OBJ_PU, pu)) {
+      if (debug) {
+        char buf[1024];
+        hwloc_bitmap_list_snprintf(buf, sizeof(buf), pu->cpuset);
+        _DBG_P("filterPUsByKind PU cpuset: %s", buf);
+      }
+      int kind = hwloc_cpukinds_get_by_cpuset(topology, pu->cpuset, 0);
+      _DBG_P("kind = %d, numKinds = %d", kind, numKinds);
+      CHK_ERR_ERRNO((kind >= 0) && (kind < numKinds));
+      if (ignoreKinds[kind]) {
+        hwloc_bitmap_andnot(cpuset, cpuset, pu->cpuset);
+      }
+    }
+  }
+}
+
 //
-// Initializes information about CPUs (cores and PUs) and and NICs from the
-// topology.
+// Initializes information about all CPUs (cores and PUs) from
+// the topology. The accessible CPUs are initialized as a side-effect,
+// but they aren't partitioned until partitionResources is called.
 //
 
 static void cpuInfoInit(void) {
   _DBG_P("cpuInfoInit");
-  //
-  // accessible cores and PUs
-  //
+
   CHK_ERR_ERRNO((physAccSet = hwloc_bitmap_alloc()) != NULL);
   CHK_ERR_ERRNO((physReservedSet = hwloc_bitmap_alloc()) != NULL);
-  CHK_ERR_ERRNO((logAccSet = hwloc_bitmap_alloc()) != NULL);
-
-  // accessible NUMA nodes
-
   CHK_ERR_ERRNO((numaSet = hwloc_bitmap_alloc()) != NULL);
 
-  //
-  // Hwloc can't tell us the number of accessible cores directly, so
-  // get that by counting the parent cores of the accessible PUs.
-  //
+
+  // Determine which kind(s) of PUs we are supposed to use.
+  // hwloc returns kinds sorted by efficiency, least efficient
+  // (more performant) last. Currently, we put them into two
+  // groups, most performant ("performance") and lump all the
+  // rest into "efficiency".
+
+  int numKinds;
+  CHK_ERR_ERRNO((numKinds = hwloc_cpukinds_get_nr(topology, 0)) >= 0);
+  _DBG_P("There are %d kinds of PUs", numKinds);
+  chpl_bool *ignoreKinds = NULL;
+  if (numKinds > 1) {
+    ignoreKinds = sys_calloc(numKinds, sizeof(*ignoreKinds));
+    CHK_ERR(ignoreKinds);
+    // there are multiple kinds of PUs
+    const char *kindStr = chpl_env_rt_get("USE_PU_KIND", "performance");
+    if (!strcasecmp(kindStr, "performance")) {
+      // use only performance PUs. This is the default.
+      _DBG_P("using only performance PUs");
+      for (int i = 0; i < numKinds - 1; i++) {
+        ignoreKinds[i] = true;
+      }
+    } else if (!strcasecmp(kindStr, "efficiency")) {
+      // use only efficiency PUs
+      _DBG_P("using only efficiency PUs");
+      ignoreKinds[numKinds-1] = true;
+    } else if (!strcasecmp(kindStr, "all")) {
+      // do nothing, we'll use all kinds of PUs
+      _DBG_P("using all PUs");
+    } else {
+      char msg[200];
+      snprintf(msg, sizeof(msg),
+               "\"%s\" is not a valid value for CHPL_RT_USE_PU_KIND.\n"
+               "Must be one of \"performance\", \"efficiency\", or \"all\".",
+               kindStr);
+        chpl_error(msg, 0, 0);
+    }
+  }
 
   // accessible PUs
 
-  //
-  // We could seemingly use hwloc_topology_get_allowed_cpuset() to get
-  // the set of accessible PUs here.  But that seems not to reflect the
-  // schedaffinity settings, so use hwloc_get_proc_cpubind() instead.
-  //
-  if (topoSupport->cpubind->get_proc_cpubind) {
-    int rc = hwloc_get_proc_cpubind(topology, getpid(), logAccSet, 0);
-    CHK_ERR_ERRNO(rc == 0);
-  } else {
-    // assume all PUs are accessible
-    hwloc_bitmap_fill(logAccSet);
+  logAccSet = hwloc_bitmap_dup(hwloc_topology_get_allowed_cpuset(topology));
+  if (logAccMask) {
+    // Modify accessible PUs for testing purposes.
+    hwloc_bitmap_and(logAccSet, logAccSet, logAccMask);
   }
-  hwloc_bitmap_and(logAccSet, logAccSet,
-                   hwloc_topology_get_online_cpuset(topology));
-  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
-  CHK_ERR(numCPUsLogAcc > 0);
-  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
+  if (debug) {
+    char buf[1024];
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("logAccSet after masking: %s", buf);
+  }
 
-  //
-  // all PUs. The online set doesn't include PUs that cannot be
-  // used, e.g., if hyperthreading is turned off
-  //
-  hwloc_const_cpuset_t onlineSet = hwloc_topology_get_online_cpuset(
-                                                              topology);
-  numCPUsLogAll = hwloc_bitmap_weight(onlineSet);
-  CHK_ERR(numCPUsLogAll > 0);
-  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
+  _DBG_P("filtering logAccSet");
+  filterPUsByKind(numKinds, ignoreKinds, logAccSet);
+  numCPUsLogAcc = hwloc_bitmap_weight(logAccSet);
+  _DBG_P("numCPUsLogAcc = %d", numCPUsLogAcc);
 
 
   // accessible cores
 
-  int pusPerCore = 0;
-#define NEXT_PU(pu)                                                \
-  hwloc_get_next_obj_inside_cpuset_by_type(topology, logAccSet,    \
-                                           HWLOC_OBJ_PU, pu)
+  int maxPusPerAccCore = 0;
 
-  for (hwloc_obj_t pu = NEXT_PU(NULL); pu != NULL; pu = NEXT_PU(pu)) {
-    hwloc_obj_t core;
-    CHK_ERR_ERRNO(core = hwloc_get_ancestor_obj_by_type(topology,
-                                                         HWLOC_OBJ_CORE,
-                                                         pu));
-    int numPus = hwloc_bitmap_weight(core->cpuset);
-    CHK_ERR((pusPerCore == 0) || (pusPerCore == numPus));
-    pusPerCore = numPus;
-    // Use the smallest PU to represent the core.
-    int smallest = hwloc_bitmap_first(core->cpuset);
+  for (hwloc_obj_t core = NEXT_OBJ(logAccSet, HWLOC_OBJ_CORE, NULL);
+       core != NULL;
+       core = NEXT_OBJ(logAccSet, HWLOC_OBJ_CORE, core)) {
+    // filter the core's PUs
+    hwloc_cpuset_t cpuset = NULL;
+    CHK_ERR_ERRNO((cpuset = hwloc_bitmap_dup(core->cpuset)) != NULL);
+      char buf[1024];
+      hwloc_bitmap_list_snprintf(buf, sizeof(buf), cpuset);
+      _DBG_P("core cpuset: %s", buf);
+    // filter the core's PUs in case they are heterogeneous
+    _DBG_P("filtering core's cpuset");
+    filterPUsByKind(numKinds, ignoreKinds, cpuset);
+
+    // determine the max # PUs in a core
+    int numPus = hwloc_bitmap_weight(cpuset);
+    if (numPus > maxPusPerAccCore) {
+      maxPusPerAccCore = numPus;
+    }
+    // use the smallest PU index to represent the core in physAccSet
+    int smallest = hwloc_bitmap_first(cpuset);
     CHK_ERR(smallest != -1);
     hwloc_bitmap_set(physAccSet, smallest);
+    hwloc_bitmap_free(cpuset);
   }
 
-#undef NEXT_PU
+  if (ignoreKinds) {
+    sys_free(ignoreKinds);
+    ignoreKinds = NULL;
+  }
 
   numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
-  CHK_ERR(numCPUsPhysAcc > 0);
-  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
+  if (numCPUsPhysAcc == 0) {
+    chpl_error("No useable cores.", 0, 0);
+  }
 
   //
   // all cores
   //
-  // Note: hwloc_get_nbobjs_inside_cpuset_by_type cannot be called on
-  // onlineSet because inaccessible PUs and their cores do not have
-  // objects in the topology. pusPerCore might vary by core, but that is
-  // checked above.
 
-  numCPUsPhysAll = numCPUsLogAll / pusPerCore;
+  logAllSet = hwloc_bitmap_dup(hwloc_topology_get_complete_cpuset(topology));
+  numCPUsLogAll = hwloc_bitmap_weight(logAllSet);
+  CHK_ERR(numCPUsLogAll > 0);
+  _DBG_P("numCPUsLogAll = %d", numCPUsLogAll);
+
+  if (numCPUsLogAll == numCPUsLogAcc) {
+    // All PUs and therefore all cores are accessible
+    numCPUsPhysAll = numCPUsPhysAcc;
+  } else {
+    // Some cores are inaccessible. We estimate their number by
+    // assuming they all have the maximum number of PUs.
+    numCPUsPhysAll = numCPUsLogAll / maxPusPerAccCore;
+  }
   CHK_ERR(numCPUsPhysAll > 0);
   _DBG_P("numCPUsPhysAll = %d", numCPUsPhysAll);
+  _DBG_P("numCPUsPhysAcc = %d", numCPUsPhysAcc);
 
+  if (debug) {
+    char buf[1024];
+    _DBG_P("numCPUsLogAll: %d", numCPUsLogAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
+    _DBG_P("numCPUsLogAcc: %d logAccSet: %s", numCPUsLogAcc,
+           buf);
+
+    _DBG_P("numCPUsPhysAll: %d", numCPUsPhysAll);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), physAccSet);
+    _DBG_P("numCPUsPhysAcc: %d physAccSet: %s", numCPUsPhysAcc,
+           buf);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), numaSet);
+    _DBG_P("numaSet: %s", buf);
+
+    hwloc_const_cpuset_t set;
+
+    set = hwloc_topology_get_allowed_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("allowed cpuset: %s", buf);
+
+    set = hwloc_topology_get_complete_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("complete cpuset: %s", buf);
+
+    set = hwloc_topology_get_topology_cpuset(topology);
+    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
+    _DBG_P("topology cpuset: %s", buf);
+
+  }
+}
+
+//
+// Partitions resources when running with co-locales. Currently, only
+// partitioning based on sockets is supported.
+//
+
+static void partitionResources(void) {
+  _DBG_P("partitionResources");
   numSockets = hwloc_get_nbobjs_inside_cpuset_by_type(topology,
                       root->cpuset, HWLOC_OBJ_PACKAGE);
   _DBG_P("numSockets = %d", numSockets);
 
   int numLocalesOnNode = chpl_get_num_locales_on_node();
-  int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 0);
+  int expectedLocalesOnNode = chpl_env_rt_get_int("LOCALES_PER_NODE", 1);
   chpl_bool useSocket = chpl_env_rt_get_bool("USE_SOCKET", false);
   int rank = chpl_get_local_rank();
   _DBG_P("numLocalesOnNode = %d", numLocalesOnNode);
   _DBG_P("expectedLocalesOnNode = %d", expectedLocalesOnNode);
   _DBG_P("rank = %d", rank);
-  if ((numLocalesOnNode > 1) || (expectedLocalesOnNode > 1) || useSocket) {
-    if (numLocalesOnNode > 1) {
-      oversubscribed = true;
-    }
-
+  _DBG_P("useSocket = %d", useSocket);
+  if (numLocalesOnNode > 1) {
+    oversubscribed = true;
+  }
+  if ((expectedLocalesOnNode > 1) || useSocket) {
     // We get our own socket if all cores are accessible, we know our local
     // rank, and the number of locales on the node is less than or equal to
     // the number of sockets. It is an error if the number of locales on the
@@ -387,6 +524,7 @@ static void cpuInfoInit(void) {
         if (rank != -1) {
           // Use the socket whose logical index corresponds to our local rank.
           // See getSocketNumber below if you change this.
+          _DBG_P("confining ourself to socket %d", rank);
           socket = hwloc_get_obj_inside_cpuset_by_type(topology,
                                     root->cpuset, HWLOC_OBJ_PACKAGE, rank);
           CHK_ERR(socket != NULL);
@@ -458,17 +596,13 @@ static void cpuInfoInit(void) {
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("complete cpuset: %s", buf);
 
-    set = hwloc_topology_get_online_cpuset(topology);
-    hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
-    _DBG_P("online cpuset: %s", buf);
-
     set = hwloc_topology_get_topology_cpuset(topology);
     hwloc_bitmap_list_snprintf(buf, sizeof(buf), set);
     _DBG_P("topology cpuset: %s", buf);
-
   }
 }
 
+#undef NEXT_OBJ
 
 // If we are running in a socket then cpuInfoInit will assign each locale to
 // the socket whose logical index is equal to the locale's local rank. This
@@ -543,7 +677,7 @@ void chpl_topo_setThreadLocality(c_sublocid_t subloc) {
   CHK_ERR_ERRNO((cpuset = hwloc_bitmap_alloc()) != NULL);
 
   hwloc_cpuset_from_nodeset(topology, cpuset,
-                            getNumaObj(subloc)->allowed_nodeset);
+                            getNumaObj(subloc)->nodeset);
 
   // Only use accessible CPUs.
 
@@ -778,12 +912,12 @@ void chpl_topo_setMemLocalityByPages(unsigned char* p, size_t size,
       || !do_set_area_membind)
     return;
 
-  _DBG_P("hwloc_set_area_membind_nodeset(%p, %#zx, %d)", p, size,
-         (int) hwloc_bitmap_first(numaObj->allowed_nodeset));
+  _DBG_P("hwloc_set_area_membind(%p, %#zx, %d)", p, size,
+         (int) hwloc_bitmap_first(numaObj->nodeset));
 
   flags = HWLOC_MEMBIND_MIGRATE | HWLOC_MEMBIND_STRICT;
-  CHK_ERR_ERRNO(hwloc_set_area_membind_nodeset(topology, p, size,
-                                               numaObj->allowed_nodeset,
+  CHK_ERR_ERRNO(hwloc_set_area_membind(topology, p, size,
+                                               numaObj->nodeset,
                                                HWLOC_MEMBIND_BIND, flags)
                 == 0);
 }

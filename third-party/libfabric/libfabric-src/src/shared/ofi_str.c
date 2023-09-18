@@ -35,6 +35,7 @@
 #include <string.h>
 #include <stdlib.h>
 #include <assert.h>
+#include <ctype.h>
 
 #include <rdma/fi_errno.h>
 
@@ -74,11 +75,11 @@ char *strcasestr(const char *haystack, const char *needle)
 		goto out;
 
 	for (i = 0; i < strlen(needle); i++)
-		uneedle[i] = toupper(needle[i]);
+		uneedle[i] = (char) toupper(needle[i]);
 	uneedle[i] = '\0';
 
 	for (i = 0; i < strlen(haystack); i++)
-		uhaystack[i] = toupper(haystack[i]);
+		uhaystack[i] = (char) toupper(haystack[i]);
 	uhaystack[i] = '\0';
 
 	pos = strstr(uhaystack, uneedle);

@@ -15,7 +15,7 @@ record body {
   var v: 3*real;
   var mass: real;
 
-  proc offsetMomentum(p) {
+  proc ref offsetMomentum(p) {
     v = -p / solarMass;
   }
 }
@@ -65,14 +65,14 @@ record NBodySystem {
   var bodies = [sun, jupiter, saturn, uranus, neptune];
   const numbodies = bodies.size;
 
-  proc postinit() {
+  proc ref postinit() {
     var p: 3*real;
     for b in bodies do
       p += b.v * b.mass;  // TODO: reduce?
     bodies[0].offsetMomentum(p);
   }
 
-  proc advance(dt) {
+  proc ref advance(dt) {
     // TODO: Can we use a triangular iterator without hurting performance
     for i in 0..<numbodies {
       for j in i+1..<numbodies {
@@ -93,7 +93,7 @@ record NBodySystem {
 
 
 
-  proc energy() {
+  proc ref energy() {
     var e = 0.0;
 
     // TODO: want to use triangular iterator here too, except that we need

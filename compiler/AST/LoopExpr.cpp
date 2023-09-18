@@ -235,7 +235,7 @@ void lowerLoopExprs(BaseAST* ast) {
 
 static Expr* getShapeForZippered(Expr* tupleRef) {
   CallExpr* buildTup = toCallExpr(getDefOfTemp(toSymExpr(tupleRef)));
-  INT_ASSERT(buildTup->isNamed("_build_tuple"));
+  INT_ASSERT(buildTup->isNamedAstr(astrBuildTuple));
   // The shape comes from the first tuple component.
   return buildTup->get(1);
 }

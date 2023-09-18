@@ -12,3 +12,5 @@ foo((...t));
 var x: 1*int;
 
 writeln("x is: ", x);
+
+writeln("tuples:string are:", t:string, (1,2):string, (1,2,3):string);

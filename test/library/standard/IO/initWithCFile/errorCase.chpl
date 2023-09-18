@@ -6,7 +6,7 @@ module m {
 
   // If this test starts randomly segfaulting due to touching bad memory, it's
   // okay to remove it
-  extern proc openTestFile(): c_FILE;
+  extern proc openTestFile(): c_ptr(c_FILE);
 
   try! {
     var f = new file(openTestFile(), own=true);

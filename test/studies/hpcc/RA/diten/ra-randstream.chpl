@@ -3,6 +3,8 @@
 // of values
 //
 module RARandomStream {
+  use Math;
+
   param randWidth = 64;              // the bit-width of the random numbers
   type randType = uint(randWidth);   // the type of the random numbers
 

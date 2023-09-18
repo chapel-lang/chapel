@@ -1,1 +1,2 @@
-renameConflictInList.chpl:8: error: symbol 'baz' multiply defined
+renameConflictInList.chpl:7: In module 'M':
+renameConflictInList.chpl:8: error: 'baz' is multiply defined

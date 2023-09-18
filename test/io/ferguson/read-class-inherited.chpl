@@ -9,8 +9,10 @@ class Child : Parent {
   var z: int;
 }
 
-var a: borrowed Child = (new owned Child(x = 1, y = 2, z = 3)).borrow();
-var b: borrowed Child = (new owned Child(x = 10, y = 20, z = 30)).borrow();
+var ownA = new owned Child(x = 1, y = 2, z = 3);
+var a: borrowed Child = ownA.borrow();
+var ownB = new owned Child(x = 10, y = 20, z = 30);
+var b: borrowed Child = ownB.borrow();
 
 writeln("a is ", a);
 writeln("b is ", b);

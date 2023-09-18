@@ -7,7 +7,7 @@
 #endif
 
 #include "var-decls.cpp"
-var s$: sync int;
+var s: sync int;
 
 writeln("before cobegin");
 #include "var-writes.cpp"
@@ -23,10 +23,10 @@ cobegin {
     updateVars();
     writeln("cobegin - after updateVars");
 #include "var-writes.cpp"
-    s$ = 1;
+    s = 1;
   }
   {
-    s$;
+    s;
     writeln("cobegin - the other stmt");
 #include "var-writes.cpp"
   }

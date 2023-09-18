@@ -13,7 +13,7 @@
 
    }
   
-   private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, auxArray:[] int) {
+   private proc __radixSortMSB(array:[] int, place: int, startIndex: int, endIndex: int, ref auxArray:[] int) {
 
      // comparison sorting for <=100 elements
      if(array.size<=100) {

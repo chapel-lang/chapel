@@ -452,7 +452,7 @@ static ssize_t sock_rx_ctx_cancel(struct sock_rx_ctx *rx_ctx, void *context)
 	struct sock_rx_entry *rx_entry;
 	struct sock_pe_entry pe_entry;
 
-	fastlock_acquire(&rx_ctx->lock);
+	ofi_mutex_lock(&rx_ctx->lock);
 	for (entry = rx_ctx->rx_entry_list.next;
 	     entry != &rx_ctx->rx_entry_list; entry = entry->next) {
 
@@ -486,7 +486,7 @@ static ssize_t sock_rx_ctx_cancel(struct sock_rx_ctx *rx_ctx, void *context)
 			break;
 		}
 	}
-	fastlock_release(&rx_ctx->lock);
+	ofi_mutex_unlock(&rx_ctx->lock);
 	return ret;
 }
 
@@ -572,9 +572,9 @@ static ssize_t sock_tx_size_left(struct fid_ep *ep)
 	if (!tx_ctx->enabled)
 		return -FI_EOPBADSTATE;
 
-	fastlock_acquire(&tx_ctx->rb_lock);
+	ofi_mutex_lock(&tx_ctx->rb_lock);
 	num_left = ofi_rbavail(&tx_ctx->rb)/SOCK_EP_TX_ENTRY_SZ;
-	fastlock_release(&tx_ctx->rb_lock);
+	ofi_mutex_unlock(&tx_ctx->rb_lock);
 	return num_left;
 }
 
@@ -658,47 +658,47 @@ static int sock_ep_close(struct fid *fid)
 			ofi_atomic_dec32(&sock_ep->attr->av->ref);
 	}
 	if (sock_ep->attr->av) {
-		fastlock_acquire(&sock_ep->attr->av->list_lock);
+		ofi_mutex_lock(&sock_ep->attr->av->list_lock);
 		fid_list_remove(&sock_ep->attr->av->ep_list,
 				&sock_ep->attr->lock, &sock_ep->ep.fid);
-		fastlock_release(&sock_ep->attr->av->list_lock);
+		ofi_mutex_unlock(&sock_ep->attr->av->list_lock);
 	}
 
 	pthread_mutex_lock(&sock_ep->attr->domain->pe->list_lock);
 	if (sock_ep->attr->tx_shared) {
-		fastlock_acquire(&sock_ep->attr->tx_ctx->lock);
+		ofi_mutex_lock(&sock_ep->attr->tx_ctx->lock);
 		dlist_remove(&sock_ep->attr->tx_ctx_entry);
-		fastlock_release(&sock_ep->attr->tx_ctx->lock);
+		ofi_mutex_unlock(&sock_ep->attr->tx_ctx->lock);
 	}
 
 	if (sock_ep->attr->rx_shared) {
-		fastlock_acquire(&sock_ep->attr->rx_ctx->lock);
+		ofi_mutex_lock(&sock_ep->attr->rx_ctx->lock);
 		dlist_remove(&sock_ep->attr->rx_ctx_entry);
-		fastlock_release(&sock_ep->attr->rx_ctx->lock);
+		ofi_mutex_unlock(&sock_ep->attr->rx_ctx->lock);
 	}
 	pthread_mutex_unlock(&sock_ep->attr->domain->pe->list_lock);
 
 	if (sock_ep->attr->conn_handle.do_listen) {
-		fastlock_acquire(&sock_ep->attr->domain->conn_listener.signal_lock);
+		ofi_mutex_lock(&sock_ep->attr->domain->conn_listener.signal_lock);
 		ofi_epoll_del(sock_ep->attr->domain->conn_listener.epollfd,
 		             sock_ep->attr->conn_handle.sock);
 		sock_ep->attr->domain->conn_listener.removed_from_epollfd = true;
-		fastlock_release(&sock_ep->attr->domain->conn_listener.signal_lock);
+		ofi_mutex_unlock(&sock_ep->attr->domain->conn_listener.signal_lock);
 		ofi_close_socket(sock_ep->attr->conn_handle.sock);
 		sock_ep->attr->conn_handle.do_listen = 0;
 	}
 
-	fastlock_destroy(&sock_ep->attr->cm.lock);
+	ofi_mutex_destroy(&sock_ep->attr->cm.lock);
 
 	if (sock_ep->attr->eq) {
-		fastlock_acquire(&sock_ep->attr->eq->lock);
+		ofi_mutex_lock(&sock_ep->attr->eq->lock);
 		sock_ep_clear_eq_list(&sock_ep->attr->eq->list,
 				      &sock_ep->ep);
 		/* Any err_data if present would be freed by
 		 * sock_eq_clean_err_data_list when EQ is closed */
 		sock_ep_clear_eq_list(&sock_ep->attr->eq->err_list,
 				      &sock_ep->ep);
-		fastlock_release(&sock_ep->attr->eq->lock);
+		ofi_mutex_unlock(&sock_ep->attr->eq->lock);
 	}
 
 	if (sock_ep->attr->fclass != FI_CLASS_SEP) {
@@ -725,13 +725,13 @@ static int sock_ep_close(struct fid *fid)
 	if (sock_ep->attr->dest_addr)
 		free(sock_ep->attr->dest_addr);
 
-	fastlock_acquire(&sock_ep->attr->domain->pe->lock);
+	ofi_mutex_lock(&sock_ep->attr->domain->pe->lock);
 	ofi_idm_reset(&sock_ep->attr->av_idm, NULL);
 	sock_conn_map_destroy(sock_ep->attr);
-	fastlock_release(&sock_ep->attr->domain->pe->lock);
+	ofi_mutex_unlock(&sock_ep->attr->domain->pe->lock);
 
 	ofi_atomic_dec32(&sock_ep->attr->domain->ref);
-	fastlock_destroy(&sock_ep->attr->lock);
+	ofi_mutex_destroy(&sock_ep->attr->lock);
 	free(sock_ep->attr);
 	free(sock_ep);
 	return 0;
@@ -866,21 +866,21 @@ static int sock_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 			if (ep->attr->rx_array[i])
 				ep->attr->rx_array[i]->av = av;
 		}
-		fastlock_acquire(&av->list_lock);
+		ofi_mutex_lock(&av->list_lock);
 		ret = fid_list_insert(&av->ep_list, &ep->attr->lock, &ep->ep.fid);
 		if (ret) {
 			SOCK_LOG_ERROR("Error in adding fid in the EP list\n");
-			fastlock_release(&av->list_lock);
+			ofi_mutex_unlock(&av->list_lock);
 			return ret;
 		}
-		fastlock_release(&av->list_lock);
+		ofi_mutex_unlock(&av->list_lock);
 		break;
 
 	case FI_CLASS_STX_CTX:
 		tx_ctx = container_of(bfid, struct sock_tx_ctx, fid.stx.fid);
-		fastlock_acquire(&tx_ctx->lock);
+		ofi_mutex_lock(&tx_ctx->lock);
 		dlist_insert_tail(&ep->attr->tx_ctx_entry, &tx_ctx->ep_list);
-		fastlock_release(&tx_ctx->lock);
+		ofi_mutex_unlock(&tx_ctx->lock);
 
 		ep->attr->tx_ctx->use_shared = 1;
 		ep->attr->tx_ctx->stx_ctx = tx_ctx;
@@ -888,9 +888,9 @@ static int sock_ep_bind(struct fid *fid, struct fid *bfid, uint64_t flags)
 
 	case FI_CLASS_SRX_CTX:
 		rx_ctx = container_of(bfid, struct sock_rx_ctx, ctx);
-		fastlock_acquire(&rx_ctx->lock);
+		ofi_mutex_lock(&rx_ctx->lock);
 		dlist_insert_tail(&ep->attr->rx_ctx_entry, &rx_ctx->ep_list);
-		fastlock_release(&rx_ctx->lock);
+		ofi_mutex_unlock(&rx_ctx->lock);
 
 		ep->attr->rx_ctx->use_shared = 1;
 		ep->attr->rx_ctx->srx_ctx = rx_ctx;
@@ -1012,10 +1012,13 @@ int sock_ep_enable(struct fid_ep *ep)
 		}
 	}
 
-	if (sock_ep->attr->ep_type != FI_EP_MSG &&
-	    !sock_ep->attr->conn_handle.do_listen &&
-	    sock_conn_listen(sock_ep->attr))
-		SOCK_LOG_ERROR("cannot start connection thread\n");
+	if (sock_ep->attr->ep_type != FI_EP_MSG && !sock_ep->attr->conn_handle.do_listen) {
+		int ret = sock_conn_listen(sock_ep->attr);
+		if (ret) {
+			SOCK_LOG_ERROR("cannot start connection thread\n");
+			return ret;
+		}
+	}
 	sock_ep->attr->is_enabled = 1;
 	return 0;
 }
@@ -1134,7 +1137,7 @@ static int sock_ep_tx_ctx(struct fid_ep *ep, int index, struct fi_tx_attr *attr,
 	if (!tx_ctx)
 		return -FI_ENOMEM;
 
-	tx_ctx->tx_id = index;
+	tx_ctx->tx_id = (uint16_t) index;
 	tx_ctx->ep_attr = sock_ep->attr;
 	tx_ctx->domain = sock_ep->attr->domain;
 	if (tx_ctx->rx_ctrl_ctx && tx_ctx->rx_ctrl_ctx->is_ctrl_ctx)
@@ -1180,7 +1183,7 @@ static int sock_ep_rx_ctx(struct fid_ep *ep, int index, struct fi_rx_attr *attr,
 	if (!rx_ctx)
 		return -FI_ENOMEM;
 
-	rx_ctx->rx_id = index;
+	rx_ctx->rx_id = (uint16_t) index;
 	rx_ctx->ep_attr = sock_ep->attr;
 	rx_ctx->domain = sock_ep->attr->domain;
 	rx_ctx->av = sock_ep->attr->av;
@@ -1329,8 +1332,9 @@ static char *sock_get_fabric_name(struct sockaddr *src_addr)
 			continue;
 
 		if (ofi_equals_ipaddr(ifa->ifa_addr, src_addr)) {
-			prefix_len = ofi_mask_addr(&net_in_addr.sa,
-					ifa->ifa_addr, ifa->ifa_netmask);
+			prefix_len = (int) ofi_mask_addr(&net_in_addr.sa,
+							 ifa->ifa_addr,
+							 ifa->ifa_netmask);
 
 			switch (net_in_addr.sa.sa_family) {
 			case AF_INET:
@@ -1698,7 +1702,7 @@ int sock_alloc_endpoint(struct fid_domain *domain, struct fi_info *info,
 	ofi_atomic_initialize32(&sock_ep->attr->ref, 0);
 	ofi_atomic_initialize32(&sock_ep->attr->num_tx_ctx, 0);
 	ofi_atomic_initialize32(&sock_ep->attr->num_rx_ctx, 0);
-	fastlock_init(&sock_ep->attr->lock);
+	ofi_mutex_init(&sock_ep->attr->lock);
 
 	if (sock_ep->attr->ep_attr.tx_ctx_cnt == FI_SHARED_CONTEXT)
 		sock_ep->attr->tx_shared = 1;
@@ -1762,7 +1766,7 @@ int sock_alloc_endpoint(struct fid_domain *domain, struct fi_info *info,
 	memcpy(&sock_ep->attr->info, info, sizeof(struct fi_info));
 
 	sock_ep->attr->domain = sock_dom;
-	fastlock_init(&sock_ep->attr->cm.lock);
+	ofi_mutex_init(&sock_ep->attr->cm.lock);
 
 	if (sock_conn_map_init(sock_ep, sock_cm_def_map_sz)) {
 		SOCK_LOG_ERROR("failed to init connection map\n");
@@ -1802,7 +1806,7 @@ struct sock_conn *sock_ep_lookup_conn(struct sock_ep_attr *attr, fi_addr_t index
 
 	idx = (attr->ep_type == FI_EP_MSG) ? index : index & attr->av->mask;
 
-	conn = ofi_idm_lookup(&attr->av_idm, idx);
+	conn = ofi_idm_lookup(&attr->av_idm, (int) idx);
 	if (conn && conn != SOCK_CM_CONN_IN_PROGRESS) {
 		/* Verify that the existing connection is still usable, and
 		 * that the peer didn't restart.
@@ -1825,7 +1829,8 @@ struct sock_conn *sock_ep_lookup_conn(struct sock_ep_attr *attr, fi_addr_t index
 		if (!attr->cmap.table[i].connected)
 			continue;
 
-		if (ofi_equals_sockaddr(&attr->cmap.table[i].addr.sa, &addr->sa)) {
+		if (ofi_equals_sockaddr(&attr->cmap.table[i].addr.sa, &addr->sa) &&
+			attr->cmap.table[i].av_index == idx) {
 			conn = &attr->cmap.table[i];
 			break;
 		}
@@ -1858,19 +1863,19 @@ int sock_ep_get_conn(struct sock_ep_attr *attr, struct sock_tx_ctx *tx_ctx,
 	if (attr->ep_type == FI_EP_MSG)
 		addr = attr->dest_addr;
 	else {
-		fastlock_acquire(&attr->av->table_lock);
+		ofi_mutex_lock(&attr->av->table_lock);
 		addr = &attr->av->table[av_index].addr;
-		fastlock_release(&attr->av->table_lock);
+		ofi_mutex_unlock(&attr->av->table_lock);
 	}
 
-	fastlock_acquire(&attr->cmap.lock);
+	ofi_mutex_lock(&attr->cmap.lock);
 	conn = sock_ep_lookup_conn(attr, av_index, addr);
 	if (!conn) {
 		conn = SOCK_CM_CONN_IN_PROGRESS;
-		if (ofi_idm_set(&attr->av_idm, av_index, conn) < 0)
+		if (ofi_idm_set(&attr->av_idm, (int) av_index, conn) < 0)
 			SOCK_LOG_ERROR("ofi_idm_set failed\n");
 	}
-	fastlock_release(&attr->cmap.lock);
+	ofi_mutex_unlock(&attr->cmap.lock);
 
 	if (conn == SOCK_CM_CONN_IN_PROGRESS)
 		ret = sock_ep_connect(attr, av_index, &conn);
@@ -1886,5 +1891,5 @@ int sock_ep_get_conn(struct sock_ep_attr *attr, struct sock_tx_ctx *tx_ctx,
 
 	*pconn = conn;
 	return conn->address_published ?
-	       0 : sock_conn_send_src_addr(attr, tx_ctx, conn);
+	       0 : (int) sock_conn_send_src_addr(attr, tx_ctx, conn);
 }

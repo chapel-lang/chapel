@@ -32,7 +32,7 @@
 
 #include "ofi_mr.h"
 
-#if HAVE_LIBCUDA
+#if HAVE_CUDA
 
 #include "ofi_hmem.h"
 
@@ -67,8 +67,8 @@ static void cuda_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 }
 
 static bool cuda_mm_valid(struct ofi_mem_monitor *monitor,
-			  const void *addr, size_t len,
-			  union ofi_mr_hmem_info *hmem_info)
+			  const struct ofi_mr_info *info,
+			  struct ofi_mr_entry *entry)
 {
 	uint64_t id;
 	CUresult ret;
@@ -78,20 +78,21 @@ static bool cuda_mm_valid(struct ofi_mem_monitor *monitor,
 	 * buffer ID is associated with this mapping.
 	 */
 	ret = ofi_cuPointerGetAttribute(&id, CU_POINTER_ATTRIBUTE_BUFFER_ID,
-					(CUdeviceptr)addr);
-	if (ret == CUDA_SUCCESS && hmem_info->cuda_id == id) {
+					(CUdeviceptr)entry->info.iov.iov_base);
+	if (ret == CUDA_SUCCESS && entry->hmem_info.cuda_id == id) {
 		FI_DBG(&core_prov, FI_LOG_MR,
 		       "CUDA buffer ID %lu still valid for buffer %p\n",
-		       hmem_info->cuda_id, addr);
+		       entry->hmem_info.cuda_id, entry->info.iov.iov_base);
 		return true;
-	} else if (ret == CUDA_SUCCESS && hmem_info->cuda_id != id) {
+	} else if (ret == CUDA_SUCCESS && entry->hmem_info.cuda_id != id) {
 		FI_DBG(&core_prov, FI_LOG_MR,
 		       "CUDA buffer ID %lu invalid for buffer %p\n",
-		       hmem_info->cuda_id, addr);
+		       entry->hmem_info.cuda_id, entry->info.iov.iov_base);
 	} else {
 		FI_WARN(&core_prov, FI_LOG_MR,
 			"Failed to get CUDA buffer ID for buffer %p len %lu\n"
-			"cuPointerGetAttribute() failed: %s:%s\n", addr, len,
+			"cuPointerGetAttribute() failed: %s:%s\n",
+			entry->info.iov.iov_base, entry->info.iov.iov_len,
 			ofi_cudaGetErrorName(ret), ofi_cudaGetErrorString(ret));
 	}
 
@@ -119,8 +120,8 @@ static void cuda_mm_unsubscribe(struct ofi_mem_monitor *monitor,
 }
 
 static bool cuda_mm_valid(struct ofi_mem_monitor *monitor,
-			  const void *addr, size_t len,
-			  union ofi_mr_hmem_info *hmem_info)
+			  const struct ofi_mr_info *info,
+			  struct ofi_mr_entry *entry)
 {
 	return false;
 }
@@ -130,7 +131,7 @@ static int cuda_monitor_start(struct ofi_mem_monitor *monitor)
 	return -FI_ENOSYS;
 }
 
-#endif /* HAVE_LIBCUDA */
+#endif /* HAVE_CUDA */
 
 void cuda_monitor_stop(struct ofi_mem_monitor *monitor)
 {

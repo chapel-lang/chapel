@@ -75,6 +75,7 @@ std::string Function::dumpChildLabelInner(int i) const {
 const char* Function::returnIntentToString(ReturnIntent intent) {
   switch (intent) {
     case Function::DEFAULT_RETURN_INTENT: return "";
+    case Function::OUT:                   return "out";
     case Function::CONST:                 return "const";
     case Function::CONST_REF:             return "const ref";
     case Function::REF:                   return "ref";

@@ -12,13 +12,13 @@ class D: C {
   }
 }
 
-var c = (new owned C()).borrow();
+var c = new C();
 
 for i in c.foo(4) do
   writeln(i);
 writeln();
 
-c = (new owned D()).borrow();
+c = new D();
 
 for i in c.foo(4) do
   writeln(i);

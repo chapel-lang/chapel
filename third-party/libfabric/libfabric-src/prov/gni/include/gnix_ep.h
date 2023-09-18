@@ -190,11 +190,11 @@ static inline struct slist_entry
 {
 	struct slist_entry *e;
 
-	fastlock_acquire(&ep->int_tx_pool.lock);
+	ofi_spin_lock(&ep->int_tx_pool.lock);
 
 	e = slist_remove_head(&ep->int_tx_pool.sl);
 
-	fastlock_release(&ep->int_tx_pool.lock);
+	ofi_spin_unlock(&ep->int_tx_pool.lock);
 
 	if (e == NULL) {
 		int ret;
@@ -203,9 +203,9 @@ static inline struct slist_entry
 		if (ret != FI_SUCCESS)
 			return NULL;
 
-		fastlock_acquire(&ep->int_tx_pool.lock);
+		ofi_spin_lock(&ep->int_tx_pool.lock);
 		e = slist_remove_head(&ep->int_tx_pool.sl);
-		fastlock_release(&ep->int_tx_pool.lock);
+		ofi_spin_unlock(&ep->int_tx_pool.lock);
 	}
 
 	return e;
@@ -219,14 +219,14 @@ static inline gni_mem_handle_t _gnix_ep_get_int_tx_mdh(void *e)
 static inline void _gnix_ep_release_int_tx_buf(struct gnix_fid_ep *ep,
 					       struct slist_entry *e)
 {
-	fastlock_acquire(&ep->int_tx_pool.lock);
+	ofi_spin_lock(&ep->int_tx_pool.lock);
 
 	GNIX_DEBUG(FI_LOG_EP_DATA, "sl.head = %p, sl.tail = %p\n",
 		   ep->int_tx_pool.sl.head, ep->int_tx_pool.sl.tail);
 
 	slist_insert_head(e, &ep->int_tx_pool.sl);
 
-	fastlock_release(&ep->int_tx_pool.lock);
+	ofi_spin_unlock(&ep->int_tx_pool.lock);
 }
 
 static inline struct gnix_fab_req *

@@ -10,12 +10,12 @@ module Spam {
             {
               // test domain-based slicing
               ref arrSlice = arr.localSlice(d);
-              writeln("%s,%i:%t".format(fn, line, arrSlice));
+              writeln("%s,%i:%?".format(fn, line, arrSlice));
             }
             {
               // test range-based slicing
               ref arrSlice = arr.localSlice((...d.dims()));
-              writeln("%s,%i:%t".format(fn, line, arrSlice));
+              writeln("%s,%i:%?".format(fn, line, arrSlice));
             }
           }
         }
@@ -25,7 +25,7 @@ module Spam {
       {
         const Space = {0..#16};
         var A: [Space] int = Space;
-        var distA = Block.createArray(Space, int);
+        var distA = blockDist.createArray(Space, int);
         distA = A;
 
         sliceAndDice(getRoutineName(), getLineNumber(), A);
@@ -36,7 +36,7 @@ module Spam {
       {
         const Space = {1..4, 1..4};
         var A: [Space] int = [(i,j) in Space] (i-1)*4 + j;
-        var distA = Block.createArray(Space, int);
+        var distA = blockDist.createArray(Space, int);
         distA = A;
 
         sliceAndDice(getRoutineName(), getLineNumber(), A);
@@ -55,4 +55,3 @@ module Spam {
         return 0;
     }
 }
-

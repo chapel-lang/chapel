@@ -19,7 +19,7 @@ var f: real;
 
 // Ensures deprecation doesn't cause "no doc" symbols to turn up in
 // documentation
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated var g: int;
-pragma "no doc"
+@chpldoc.nodoc
 @deprecated(notes="h is deprecated, use z instead") var h: int;

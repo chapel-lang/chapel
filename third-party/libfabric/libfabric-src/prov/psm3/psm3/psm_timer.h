@@ -62,6 +62,9 @@
 
 
 typedef struct psmi_timer psmi_timer;
+/* when invoked by a timer, the return code from callback is ignored.  A
+ * return is allowed so a function may be used directly and as a timer callback
+ */
 typedef psm2_error_t(*psmi_timer_expire_callback_t) (struct psmi_timer *,
 						    uint64_t);
 
@@ -103,8 +106,8 @@ struct psmi_timer_ctrl {
 /*
  * Timer control initialization and finalization
  */
-psm2_error_t psmi_timer_init(struct psmi_timer_ctrl *ctrl);
-psm2_error_t psmi_timer_fini(struct psmi_timer_ctrl *ctrl);
+psm2_error_t psm3_timer_init(struct psmi_timer_ctrl *ctrl);
+psm2_error_t psm3_timer_fini(struct psmi_timer_ctrl *ctrl);
 
 /*
  * Timer entry initialization (a timer must be initialized before it can be
@@ -128,9 +131,9 @@ psmi_timer_entry_init(struct psmi_timer *t_init,
  */
 #define psmi_timer_request(ctrl, t_insert, t_cyc)			\
 	    if (!((t_insert)->flags & PSMI_TIMER_FLAG_PENDING))		\
-		psmi_timer_request_always((ctrl), (t_insert), (t_cyc))
+		psm3_timer_request_always((ctrl), (t_insert), (t_cyc))
 
-void psmi_timer_request_always(struct psmi_timer_ctrl *ctrl,
+void psm3_timer_request_always(struct psmi_timer_ctrl *ctrl,
 			       struct psmi_timer *t_insert,
 			       uint64_t t_cyc_expire);
 
@@ -139,8 +142,8 @@ void psmi_timer_request_always(struct psmi_timer_ctrl *ctrl,
  */
 #define psmi_timer_cancel(ctrl, t_remove)		    \
 	    if ((t_remove)->flags & PSMI_TIMER_FLAG_PENDING) \
-		psmi_timer_cancel_inner(ctrl, t_remove)
-void psmi_timer_cancel_inner(struct psmi_timer_ctrl *ctrl,
+		psm3_timer_cancel_inner(ctrl, t_remove)
+void psm3_timer_cancel_inner(struct psmi_timer_ctrl *ctrl,
 			     struct psmi_timer *t_remove);
 
 /*
@@ -148,13 +151,13 @@ void psmi_timer_cancel_inner(struct psmi_timer_ctrl *ctrl,
  */
 #define psmi_timer_process_if_expired(ctrl, t_cyc_expire)		\
 	    (((ctrl)->t_cyc_next_expire <= (t_cyc_expire)) ?		\
-	     psmi_timer_process_expired(ctrl, t_cyc_expire) :           \
+	     psm3_timer_process_expired(ctrl, t_cyc_expire) :           \
 	     PSM2_OK_NO_PROGRESS)
 
 #define psmi_timer_is_expired(ctrl, t_cyc_expire)			\
 	    ((ctrl)->t_cyc_next_expire <= (t_cyc_expire))
 
-psm2_error_t psmi_timer_process_expired(struct psmi_timer_ctrl *ctrl,
+psm2_error_t psm3_timer_process_expired(struct psmi_timer_ctrl *ctrl,
 				       uint64_t t_cyc_expire);
 
 #endif /* _PSMI_TIMER_H */

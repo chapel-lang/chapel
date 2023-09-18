@@ -6,6 +6,6 @@ var f = foo;
 
 f();
 
-var g = lambda() { writeln("In anon"); };
+var g = proc() { writeln("In anon"); };
 
 g();

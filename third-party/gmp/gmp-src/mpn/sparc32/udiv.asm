@@ -1,7 +1,7 @@
 dnl  SPARC v7 __udiv_qrnnd division support, used from longlong.h.
 dnl  This is for v7 CPUs with a floating-point unit.
 
-dnl  Copyright 1993, 1994, 1996, 2000 Free Software Foundation, Inc.
+dnl  Copyright 1993, 1994, 1996, 2000, 2021 Free Software Foundation, Inc.
 
 dnl  This file is part of the GNU MP Library.
 dnl
@@ -39,73 +39,53 @@ C n0		i2
 C d		i3
 
 ASM_START()
-
-ifdef(`PIC',
-`	TEXT
-L(getpc):
-	retl
-	nop')
-
-	TEXT
-	ALIGN(8)
-L(C0):	.double	0r4294967296
-L(C1):	.double	0r2147483648
-
 PROLOGUE(mpn_udiv_qrnnd)
 	save	%sp,-104,%sp
-	st	%i1,[%fp-8]
-	ld	[%fp-8],%f10
+	sethi	%hi(0x80000000),%g1
 
-ifdef(`PIC',
-`L(pc):	call	L(getpc)		C put address of this insn in %o7
-	ldd	[%o7+L(C0)-L(pc)],%f8',
-`	sethi	%hi(L(C0)),%o7
-	ldd	[%o7+%lo(L(C0))],%f8')
+	sethi	%hi(0x41e00000),%i4
+	mov	0,%i5
+	std	%i4,[%fp-8]
+	ldd	[%fp-8],%f12		C 0r2147483648
+	faddd	%f12,%f12,%f8		C 0r4294967296
+
+	mov	%i0,%i5
+
+	sub	%i1,%g1,%l0
+	sub	%i2,%g1,%l1
+	std	%l0,[%fp-8]
+	ldd	[%fp-8],%f10
 
 	fitod	%f10,%f4
-	cmp	%i1,0
-	bge	L(248)
-	mov	%i0,%i5
-	faddd	%f4,%f8,%f4
-L(248):
-	st	%i2,[%fp-8]
-	ld	[%fp-8],%f10
+	faddd	%f4,%f12,%f4
+
+	fitod	%f11,%f2
+	faddd	%f2,%f12,%f2
+
 	fmuld	%f4,%f8,%f6
-	cmp	%i2,0
-	bge	L(249)
-	fitod	%f10,%f2
-	faddd	%f2,%f8,%f2
-L(249):
-	st	%i3,[%fp-8]
+
+	sub	%i3,%g1,%l2
+	st	%l2,[%fp-8]
 	faddd	%f6,%f2,%f2
 	ld	[%fp-8],%f10
-	cmp	%i3,0
-	bge	L(250)
 	fitod	%f10,%f4
-	faddd	%f4,%f8,%f4
-L(250):
+	faddd	%f4,%f12,%f4
+
 	fdivd	%f2,%f4,%f2
-
-ifdef(`PIC',
-`	ldd	[%o7+L(C1)-L(pc)],%f4',
-`	sethi	%hi(L(C1)),%o7
-	ldd	[%o7+%lo(L(C1))],%f4')
-
-	fcmped	%f2,%f4
+	fcmped	%f2,%f12
 	nop
-	fbge,a	L(251)
-	fsubd	%f2,%f4,%f2
+	fbge,a	L(1)
+	fsubd	%f2,%f12,%f2
 	fdtoi	%f2,%f2
 	st	%f2,[%fp-8]
-	b	L(252)
+	b	L(2)
 	ld	[%fp-8],%i4
-L(251):
+L(1):
 	fdtoi	%f2,%f2
 	st	%f2,[%fp-8]
 	ld	[%fp-8],%i4
-	sethi	%hi(-2147483648),%g2
-	xor	%i4,%g2,%i4
-L(252):
+	add	%i4,%g1,%i4
+L(2):
 	wr	%g0,%i4,%y
 	sra	%i3,31,%g2
 	and	%i4,%g2,%g2
@@ -147,7 +127,7 @@ L(252):
 	rd	%y,%g3
 	subcc	%i2,%g3,%o7
 	subxcc	%i1,%i0,%g0
-	be	L(253)
+	be	L(3)
 	cmp	%o7,%i3
 
 	add	%i4,-1,%i0
@@ -155,12 +135,12 @@ L(252):
 	st	%o7,[%i5]
 	ret
 	restore
-L(253):
-	blu	L(246)
+L(3):
+	blu	L(4)
 	mov	%i4,%i0
 	add	%i4,1,%i0
 	sub	%o7,%i3,%o7
-L(246):
+L(4):
 	st	%o7,[%i5]
 	ret
 	restore

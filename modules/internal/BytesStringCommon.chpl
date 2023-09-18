@@ -23,6 +23,7 @@ module BytesStringCommon {
   private use CTypes;
   private use ByteBufferHelpers;
   private use String.NVStringFactory;
+  private use ChplConfig only compiledForSingleLocale;
 
   extern const CHPL_SHORT_STRING_SIZE : c_int;
 
@@ -67,10 +68,10 @@ module BytesStringCommon {
   enum encodePolicy { unescape, pass };
 
 
-  pragma "no doc"
+  @chpldoc.nodoc
   config param showStringBytesInitDeprWarnings = true;
 
-  pragma "no doc"
+  @chpldoc.nodoc
   param surrogateEscape = 0xdc:byteType;
 
   private proc isBytesOrStringType(type t) param: bool {
@@ -86,13 +87,13 @@ module BytesStringCommon {
 
   // 2019/8/22 Engin: This proc needs to be inlined to avoid an Intel compiler
   // issue (#448 chapel-private)
-  inline proc getCStr(const ref x: ?t): c_string {
+  inline proc getCStr(const ref x: ?t): c_ptrConst(c_char) {
     assertArgType(t, "getCStr");
-    if _local == false && x.locale_id != chpl_nodeID then
-      halt("Cannot call .c_str() on a remote " + t:string);
+    if !compiledForSingleLocale() && x.locale_id != chpl_nodeID then
+      halt("Cannot call '.c_str()' on a remote " + t:string);
 
     var buff: bufferType = x.buff;
-    var asCString = __primitive("cast", c_string, buff);
+    var asCString = __primitive("cast", c_ptrConst(c_char), buff);
     return asCString;
   }
 
@@ -109,7 +110,7 @@ module BytesStringCommon {
       throws {
     import OS.{errorCode};
     pragma "fn synchronization free"
-    extern proc qio_encode_char_buf(dst: c_void_ptr, chr: int(32)): errorCode;
+    extern proc qio_encode_char_buf(dst: c_ptr(void), chr: int(32)): errorCode;
     pragma "fn synchronization free"
     extern proc qio_nbytes_char(chr: int(32)): c_int;
 
@@ -174,7 +175,17 @@ module BytesStringCommon {
             expectedSize += 2*nInvalidBytes;
             (newBuff, allocSize) = bufferEnsureSize(newBuff, allocSize,
                                                      expectedSize);
-            for i in 0..#nInvalidBytes {
+
+            // TODO: in --baseline, range for loops resolve range._getIterator,
+            // which in turn requires allocations, which leads to decodeByteBuffer...
+            // which would then needs to resolve _getIterator again for this loop
+            // down here. Write it as a primitive loop to avoid the recursive resolution.
+            // This is probably not the ideal solution.
+            var i: int;
+            while __primitive("C for loop",
+                              __primitive( "=", i, 0),
+                              __primitive("<", i, nInvalidBytes),
+                              __primitive("+=", i, 1)) {
               qio_encode_char_buf(newBuff+decodedIdx,
                                   0xdc00+(buff[thisIdx-nInvalidBytes+i]:int(32)));
               decodedIdx += 3;
@@ -234,19 +245,19 @@ module BytesStringCommon {
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf(ref chr:int(32),
                                     ref nBytes:c_int,
-                                    buf:c_string,
+                                    buf:c_ptr(c_uchar),
                                     buflen:c_ssize_t): errorCode;
     pragma "fn synchronization free"
     extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                         ref nBytes:c_int,
-                                        buf:c_string,
+                                        buf:c_ptr(c_uchar),
                                         buffLen:c_ssize_t): errorCode;
     // esc chooses between qio_decode_char_buf_esc and
     // qio_decode_char_buf as a single wrapper function
     var chr: int(32);
     var nBytes: c_int;
     var start = offset:c_int;
-    var multibytes = (buff + start): c_string;
+    var multibytes = (buff + start): c_ptr(c_uchar);
     var maxbytes = (buffLen - start): c_ssize_t;
     var decodeRet: errorCode;
     if(allowEsc) then
@@ -276,7 +287,7 @@ module BytesStringCommon {
         // if other is remote, copy and own the buffer no matter what
         x.isOwned = true;
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
-        x.buffLen = otherLen+1;
+        x.buffSize = otherLen+1;
         if t == string then x.cachedNumCodepoints = other.cachedNumCodepoints;
       }
       else {
@@ -323,7 +334,7 @@ module BytesStringCommon {
 
     if otherLen > 0 {
       x.buffLen = otherLen;
-      if !_local && otherRemote {
+      if !compiledForSingleLocale() && otherRemote {
         // if s is remote, copy and own the buffer
         x.buff = bufferCopyRemote(other.locale_id, other.buff, otherLen);
         x.buffSize = otherLen+1;
@@ -372,9 +383,9 @@ module BytesStringCommon {
     proc simpleCaseHelper() {
       // cast the argument r to `int` to make sure that we are not dealing with
       // byteIndex
-      const intR = r:range(int, r.boundedType, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.byteIndices.boundsCheck(intR) {
+        if !x.byteIndices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for " + t:string + " with length ",
                x.numBytes);
         }
@@ -393,18 +404,18 @@ module BytesStringCommon {
         // if the low bound of the range is within the byteIndices of the
         // string, it must be the initial byte of a codepoint
         if r.hasLowBound() &&
-           x.byteIndices.boundsCheck(r.lowBound:int) &&
+           x.byteIndices.contains(r.lowBound:int) &&
            !isInitialByte(x.byte[r.lowBound:int]) {
-          throw new CodepointSplittingError(
+          throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
             "The byte at low boundary " + r.lowBound:string + " is not the first byte of a UTF-8 codepoint");
         }
         // if the "high bound of the range plus one" is within the byteIndices
         // of the string, that index must be the initial byte of a codepoint
         if r.hasHighBound() &&
-           x.byteIndices.boundsCheck(r.highBound:int+1) &&
+           x.byteIndices.contains(r.highBound:int+1) &&
            !isInitialByte(x.byte[r.highBound:int+1]) {
-          throw new CodepointSplittingError(
+          throw new CodepointSplitError(
             "Byte-based string slice is not aligned to codepoint boundaries. " +
             "The byte at high boundary " + r.highBound:string + " is not the first byte of a UTF-8 codepoint");
         }
@@ -415,7 +426,7 @@ module BytesStringCommon {
       return simpleCaseHelper();
     }
     else {  // string with codepoint indexing
-      if r.stridable {
+      if ! r.hasUnitStride() {
         // Slicing by stridable codepoint ranges is unsupported because it
         // creates an irregular sequence of bytes.  We could add support in the
         // future by refactoring the callers of _getView() to add a slow path,
@@ -428,9 +439,9 @@ module BytesStringCommon {
 
       // cast the argument r to `int` to make sure that we are not dealing with
       // codepointIdx
-      const intR = r:range(int, r.boundedType, r.stridable);
+      const intR = r:range(int, r.bounds, r.strides);
       if boundsChecking {
-        if !x.indices.boundsCheck(intR) {
+        if !x.indices.chpl_boundsCheck(intR) {
           halt("range ", r, " out of bounds for string with length ", x.size);
         }
       }
@@ -516,7 +527,7 @@ module BytesStringCommon {
           size=buffSize, numCodepoints=numCodepoints);
     }
     else {
-      return createBytesWithOwnedBuffer(x=buff, length=buffLen, size=buffSize);
+      return bytes.createAdoptingBuffer(x=buff, length=buffLen, size=buffSize);
     }
   }
 
@@ -792,7 +803,7 @@ module BytesStringCommon {
   // TODO: could use a multi-pattern search or some variant when there are
   // multiple needles. Probably wouldn't be worth the overhead for small
   // needles though
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc startsEndsWith(const ref x: ?t, needles,
                              param fromLeft: bool) : bool
                              where isHomogeneousTuple(needles) &&
@@ -901,7 +912,7 @@ module BytesStringCommon {
                                                   numCodepoints=numCodepoints);
       }
       else {
-        return createBytesWithOwnedBuffer(x=newBuff,
+        return bytes.createAdoptingBuffer(x=newBuff,
                                           length=joinedSize,
                                           size=allocSize);
       }
@@ -1137,7 +1148,7 @@ module BytesStringCommon {
     assertArgType(t, "doAssign");
 
     inline proc helpMe(ref lhs: t, rhs: t) {
-      if _local || rhs.locale_id == chpl_nodeID {
+      if compiledForSingleLocale() || rhs.locale_id == chpl_nodeID {
         if t == string {
           reinitWithNewBuffer(lhs, rhs.buff, rhs.buffLen, rhs.buffSize,
                               rhs.numCodepoints);
@@ -1160,7 +1171,7 @@ module BytesStringCommon {
       }
     }
 
-    if _local || lhs.locale_id == chpl_nodeID then {
+    if compiledForSingleLocale() || lhs.locale_id == chpl_nodeID then {
       helpMe(lhs, rhs);
     }
     else {
@@ -1207,7 +1218,7 @@ module BytesStringCommon {
                                                 x.cachedNumCodepoints*n);
     }
     else {
-      return createBytesWithOwnedBuffer(buff, buffLen, allocSize);
+      return bytes.createAdoptingBuffer(buff, buffLen, allocSize);
     }
   }
 
@@ -1377,7 +1388,7 @@ module BytesStringCommon {
     Returns true if the argument is a valid initial byte of a UTF-8
     encoded multibyte character.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   inline proc isInitialByte(b: uint(8)) : bool {
     return (b & 0xc0) != 0x80;
   }

@@ -243,7 +243,7 @@ int _gnix_dgram_alloc(struct gnix_dgram_hndl *hndl, enum gnix_dgram_type type,
 
 	GNIX_TRACE(FI_LOG_EP_CTRL, "\n");
 
-	fastlock_acquire(&hndl->lock);
+	ofi_spin_lock(&hndl->lock);
 
 	if (type == GNIX_DGRAM_WC) {
 		the_free_list = &hndl->wc_dgram_free_list;
@@ -265,7 +265,7 @@ int _gnix_dgram_alloc(struct gnix_dgram_hndl *hndl, enum gnix_dgram_type type,
 
 	}
 
-	fastlock_release(&hndl->lock);
+	ofi_spin_unlock(&hndl->lock);
 
 	if (d != NULL) {
 		d->r_index_in_buf = 0;
@@ -295,11 +295,11 @@ int _gnix_dgram_free(struct gnix_datagram *d)
 		}
 	}
 
-	fastlock_acquire(&d->d_hndl->lock);
+	ofi_spin_lock(&d->d_hndl->lock);
 	dlist_remove_init(&d->list);
 	d->state = GNIX_DGRAM_STATE_FREE;
 	dlist_insert_head(&d->list, d->free_list_head);
-	fastlock_release(&d->d_hndl->lock);
+	ofi_spin_unlock(&d->d_hndl->lock);
 	return ret;
 }
 
@@ -604,7 +604,7 @@ int _gnix_dgram_hndl_alloc(struct gnix_cm_nic *cm_nic,
 
 	the_hndl->n_dgrams = fabric->n_bnd_dgrams;
 	the_hndl->n_wc_dgrams = fabric->n_wc_dgrams;
-	fastlock_init(&the_hndl->lock);
+	ofi_spin_init(&the_hndl->lock);
 
 	n_dgrams_tot = the_hndl->n_dgrams + the_hndl->n_wc_dgrams;
 

@@ -54,6 +54,10 @@
 #ifndef PSM_CONFIG_H
 #define PSM_CONFIG_H
 
+/* This header cannot include other headers.  Low level routines
+ * depend on it not pulling in macros or inline functions for heap or HAL
+ */
+
 /*
  * The following flags can be used instead of `make` switches in order to
  * change behavior achieved when using `make` without parameters.
@@ -70,6 +74,11 @@
 #ifndef PSM_CUDA
 /* #define PSM_CUDA */
 /* #define NVIDIA_GPU_DIRECT */
+#endif
+
+#ifndef PSM_ONEAPI
+/* #define PSM_ONEAPI */
+/* #define INTEL_GPU_DIRECT */
 #endif
 
 #ifndef PSM3_BRAKE_DEBUG
@@ -104,7 +113,6 @@
 								/* must be >= PSMI_MAX_RAILS */
 
 #define AFFINITY_SHM_BASENAME			"/psm3_nic_affinity_shm"
-#define AFFINITY_SHMEMSIZE			sysconf(_SC_PAGE_SIZE)
 #define AFFINITY_SHM_REF_COUNT_LOCATION		0
 #define AFFINITY_SHM_HFI_INDEX_LOCATION		1
 #define SEM_AFFINITY_SHM_RW_BASENAME		"/psm3_nic_affinity_shm_rw_mutex"
@@ -141,33 +149,32 @@
 /* XXX TODO: Getting the gpu page size from driver at init time */
 #define PSMI_GPU_PAGESIZE 65536
 
-#define CUDA_SMALLHOSTBUF_SZ	(256*1024)
-#define CUDA_WINDOW_PREFETCH_DEFAULT	2
-#define GPUDIRECT_THRESH_RV 3
+#elif defined(PSM_ONEAPI)
 
-#define GDR_COPY_LIMIT_SEND 128
-#define GDR_COPY_LIMIT_RECV 64000
+#define PSMI_GPU_PAGESIZE 4096
+
+#endif // PSM_CUDA
+
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+#define CUDA_WINDOW_PREFETCH_DEFAULT	2
+#define CUDA_SMALLHOSTBUF_SZ	(256*1024)
+#define GPU_PAGE_OFFSET_MASK (PSMI_GPU_PAGESIZE -1)
+#define GPU_PAGE_MASK ~GPU_PAGE_OFFSET_MASK
 /* All GPU transfers beyond this threshold use
  * RNDV protocol. It is mostly a send side knob.
  */
 #define CUDA_THRESH_RNDV 8000
-#endif
 
-#define MQ_HFI_THRESH_TINY		8
+#define GPUDIRECT_THRESH_RV 3
 
-#define MQ_HFI_THRESH_EGR_SDMA		8192    /* Eager blocking */
-#define MQ_HFI_THRESH_EGR_SDMA_SQ	8192    /* Eager non-blocking */
-#define MQ_HFI_THRESH_GPU_EGR_SDMA	128    /* Eager blocking */
-#define MQ_HFI_THRESH_GPU_EGR_SDMA_SQ	128    /* Eager non-blocking */
-#define MQ_HFI_THRESH_RNDV_PHI2		200000
-#define MQ_HFI_THRESH_RNDV_XEON 	64000
+#define GDR_COPY_LIMIT_SEND 128
+#define GDR_COPY_LIMIT_RECV 64000
 
-#define MQ_HFI_WINDOW_RNDV_PHI2		4194304
-#define MQ_HFI_WINDOW_RNDV_XEON		131072
+#endif /* PSM_CUDA || PSM_ONEAPI */
 
-#ifdef PSM_CUDA
-#define MQ_HFI_WINDOW_RNDV_CUDA 2097152
-#endif
+
+#define PSM_MQ_NIC_MAX_TINY		8	/* max TINY payload allowed */
+#define PSM_MQ_NIC_MAX_RNDV_WINDOW	(4 * 1024 * 1024) /* max rndv window */
 
 #define MQ_SHM_THRESH_RNDV 16000
 
@@ -204,8 +211,7 @@
 #define PSMI_EPID_TABLOAD_FACTOR	((float)0.7)
 
 #define	PSMI_EP_HOSTNAME_LEN	64	/* hostname only */
-#define	PSMI_EP_NAME_LEN	96	/* hostname:LID:context:subcontext */
 
-#define PSMI_FAULTINJ_SPEC_NAMELEN	32
+#define PSM3_FAULTINJ_SPEC_NAMELEN	32
 
 #endif /* PSM_CONFIG_H */

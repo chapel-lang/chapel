@@ -1,0 +1,72 @@
+--- list(int(64),false) ---
+Writing list: 
+[1, 2, 3, 4]
+
+Wrote JSON: 
+[1, 2, 3, 4]
+
+Read list(int(64),false): 
+[1, 2, 3, 4]
+Equals original: true
+---------------------------
+--- list(string,false) ---
+Writing list: 
+[val1, val2, val3, val4]
+
+Wrote JSON: 
+["val1", "val2", "val3", "val4"]
+
+Read list(string,false): 
+[val1, val2, val3, val4]
+Equals original: true
+--------------------------
+--- list(R,false) ---
+Writing list: 
+[(x = 5, y = 42.0), (x = 9, y = 9.9), (x = 3, y = 3.3)]
+
+Wrote JSON: 
+[{"x":5, "y":4.200000e+01}, {"x":9, "y":9.900000e+00}, {"x":3, "y":3.300000e+00}]
+
+Read list(R,false): 
+[(x = 5, y = 42.0), (x = 9, y = 9.9), (x = 3, y = 3.3)]
+Equals original: true
+---------------------
+--- list(Z,false) ---
+Writing list: 
+[(z = red, r = (x = 1, y = 0.31)), (z = yellow, r = (x = 0, y = 0.68))]
+
+Wrote JSON: 
+[{"z":"red", "r":{"x":1, "y":3.100000e-01}}, {"z":"yellow", "r":{"x":0, "y":6.800000e-01}}]
+
+Read list(Z,false): 
+[(z = red, r = (x = 1, y = 0.31)), (z = yellow, r = (x = 0, y = 0.68))]
+Equals original: true
+---------------------
+--- list(list(int(64),false),false) ---
+Writing list: 
+[[1, 2, 3], [4, 5, 6]]
+
+Wrote JSON: 
+[[1, 2, 3], [4, 5, 6]]
+
+Read list(list(int(64),false),false): 
+[[1, 2, 3], [4, 5, 6]]
+Equals original: true
+---------------------------------------
+--- list(map(string,int(64),false),false) ---
+Writing list: 
+[{A: 1, B: 2}, {Y: 4, X: 3}]
+
+Wrote JSON: 
+[{
+  "A": 1, 
+  "B": 2
+}, {
+  "Y": 4, 
+  "X": 3
+}]
+
+Read list(map(string,int(64),false),false): 
+[{A: 1, B: 2}, {Y: 4, X: 3}]
+Equals original: true
+---------------------------------------------

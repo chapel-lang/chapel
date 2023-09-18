@@ -1,5 +1,6 @@
 class C {
   var arr: [1..3] sync int;
+  proc init() {}
 }
 
 var myC = new unmanaged C();

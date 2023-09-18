@@ -48,7 +48,7 @@ STATIC int psmx3_cm_getname(fid_t fid, void *addr, size_t *addrlen)
 	memset(&epname, 0, sizeof(epname));
 
 	if (ep->type == PSMX3_EP_REGULAR) {
-		epname.epid = ep->rx ? ep->rx->psm2_epid : 0;
+		epname.epid = ep->rx ? ep->rx->psm2_epid : psm3_epid_zeroed();
 		epname.type = ep->type;
 	} else {
 		sep = (struct psmx3_fid_sep *)ep;

@@ -1,4 +1,8 @@
+use IO, ChplFormat;
+
 var str = b"bAb\xffbAb".decode(policy=decodePolicy.escape);
+
+var chplOut = stdout.withSerializer(chplSerializer);
 
 // iterate over the string using indexing
 var idx = 0;
@@ -7,7 +11,7 @@ while idx < str.size {
   // we get all replacement characters here. we should be getting the actual
   // escape codepoint
   writef("codepoint: %xu\n", str.codepoint[idx]);
-  writef("repr: %ht\n", str[idx].encode(encodePolicy.unescape));
+  chplOut.writef("repr: %?\n", str[idx].encode(encodePolicy.unescape));
   idx += 1;
 
 }
@@ -15,7 +19,7 @@ while idx < str.size {
 writeln("default iterations");
 for s in str {
   writef("codepoint: %xu\n", s.toCodepoint());
-  writef("repr: %ht\n", s.encode(encodePolicy.unescape));
+  chplOut.writef("repr: %?\n", s.encode(encodePolicy.unescape));
 }
 writeln();
 
@@ -49,12 +53,11 @@ writeln();
 
 writeln("split");
 for s in str.split(strBad) {
-  writef("repr: %ht\n", s.encode(encodePolicy.unescape));
+  chplOut.writef("repr: %?\n", s.encode(encodePolicy.unescape));
 }
 writeln();
 
 for s in str.split(strGood) {
-  writef("repr: %ht\n", s.encode(encodePolicy.unescape));
+  chplOut.writef("repr: %?\n", s.encode(encodePolicy.unescape));
 }
 writeln();
-

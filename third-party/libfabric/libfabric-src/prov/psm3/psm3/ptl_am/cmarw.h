@@ -59,15 +59,15 @@
 /*
  * read from remote process pid
  */
-int64_t cma_get(pid_t pid, const void *src, void *dst, int64_t n);
+int64_t psm3_cma_get(pid_t pid, const void *src, void *dst, int64_t n);
 
 /*
  * write to remote process pid
  */
-int64_t cma_put(const void *src, pid_t pid, void *dst, int64_t n);
+int64_t psm3_cma_put(const void *src, pid_t pid, void *dst, int64_t n);
 
 /*
  * Test if CMA is available by trying a no-op call.
  * Returns 1 if CMA is present, 0 if not.
  */
-int cma_available(void);
+int psm3_cma_available(void);

@@ -7,7 +7,7 @@ config const testIters = 16;
 var lst = new list(listType, listLock);
 
 for i in 1..testIters by -1 do
-  lst.append(i);
+  lst.pushBack(i);
 
 writeln(lst);
 

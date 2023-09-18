@@ -69,7 +69,7 @@ iter HDFSiter(path: string, type rec, regex: string) {
 // to have a standalone parallel iterator for this).
 // Parallel IO and zippering will probably not play nice with each, due to not
 // having a priori knowledge of how records map to positions in the file.
-pragma "no doc"
+@chpldoc.nodoc
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
   where tag == iterKind.leader {
 
@@ -122,7 +122,7 @@ iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string)
     hdfs.hdfsChapelDisconnect();
   }
 
-pragma "no doc"
+@chpldoc.nodoc
 iter HDFSiter(param tag: iterKind, path: string, type rec, regex: string, followThis)
   where tag == iterKind.follower {
     yield followThis;

@@ -1,7 +1,7 @@
 use Sort;
 
 config const n = 100;
-config param useKeyComparator = true; 
+config param useKeyComparator = true;
 
 class Value {
   var x: int;
@@ -94,10 +94,10 @@ record WrapperComparator {
 record ArrayWrapper {
   var elts: [1..1] owned Value?;
   proc init() {
-    this.complete();
+    init this;
   }
   proc init(in arg: owned Value) {
-    this.complete();
+    init this;
     elts[1] = arg;
   }
 }

@@ -30,7 +30,7 @@ writeln("+match: nothing no captures");
   writeln("match ", m);
   assert(!m.matched);
   writeln("offset ", r.offset());
-  //assert(r.offset() == 0);
+  assert(r.offset() == f.size);
   r.close();
 }
 writeln("+match: one word with captures");
@@ -56,7 +56,7 @@ writeln("+match: nothing with captures");
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  //assert(r.offset() == 0);
+  assert(r.offset() == f.size);
   r.close();
 }
 writeln("+match: nothing");
@@ -69,7 +69,7 @@ writeln("+match: nothing");
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  //assert(r.offset() == 0);
+  assert(r.offset() == f.size);
   r.close();
 }
 writeln("+match: nothing with captures");
@@ -82,7 +82,7 @@ writeln("+match: nothing with captures");
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  assert(r.offset() == 0);
+  assert(r.offset() == f.size);
   r.close();
 }
 
@@ -107,7 +107,7 @@ writeln("+search: nothing no captures");
   writeln("match ", m);
   assert(!m.matched);
   writeln("offset ", r.offset());
-  assert(r.offset() == 17);
+  assert(r.offset() == f.size);
   r.close();
 }
 writeln("+search: one word with captures");
@@ -133,7 +133,7 @@ writeln("+search: nothing with captures");
   assert(!m.matched);
   writeln("cap ", s);
   writeln("offset ", r.offset());
-  assert(r.offset() == 17);
+  assert(r.offset() == f.size);
   r.close();
 }
 writeln("+search: later word");

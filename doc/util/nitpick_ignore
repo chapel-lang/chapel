@@ -23,6 +23,8 @@ chpl:chplref valueType
 
 # compiler-internals
 cpp:identifier chpl
+cpp:identifier querydetail
+cpp:identifier querydetail::QueryMapResultBase
 cpp:identifier UniqueString
 cpp:identifier ID
 cpp:identifier Location

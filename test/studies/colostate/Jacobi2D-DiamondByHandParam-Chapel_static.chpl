@@ -176,7 +176,7 @@ proc main(){
   // initialize space with values
   var generator = new RandomStream( real, globalSeed, parSafe = false );
 
-  forall (x,y) in computationDomain do{
+  forall (x,y) in computationDomain with (ref space) do{
      space[0, x, y] = 0;
      space[1, x, y] = 0;
   }
@@ -190,7 +190,7 @@ proc main(){
   timer.start();
 
   //forall (x,y) in computationDomain do
-  forall (read, write, x ,y) in DiamondTileIterator(lowerBound, upperBound, T, tau){
+  forall (read, write, x ,y) in DiamondTileIterator(lowerBound, upperBound, T, tau) with (ref space) {
   //forall (x,y) in computationDomain {
       space[write, x, y] = (space[read, x, y-1] +
                             space[read, x-1, y] +
@@ -217,14 +217,14 @@ proc main(){
 
 // return true if the current end state is the same as the
 // stencil applied to the original state, in serial iteration.
-proc verifyResult( space: [] Cell, computationalDomain: domain(2),
+proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
                    verbose: bool = true, T: int ): bool {
 
   var computationTimeRange = 1..T;
 
   var spaceEndState: [computationalDomain] Cell;
 
-  forall (x, y) in computationalDomain do
+  forall (x, y) in computationalDomain with (ref spaceEndState) do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
   var generator = new RandomStream( real, globalSeed, parSafe = false );

@@ -104,7 +104,7 @@ private proc getBuildInfo(projectHome: string, skipUpdate: bool) {
   const exampleNames = getExamples(tomlFile.borrow(), projectHome);
 
   var emptyCompopts = new list(string);
-  emptyCompopts.append("");
+  emptyCompopts.pushBack("");
 
   // Get system, and external compopts
   const compopts = getTomlCompopts(lockFile.borrow(), emptyCompopts);
@@ -174,7 +174,7 @@ private proc determineExamples(exampleNames: list(string),
         throw new owned MasonError("Mason could not find example: " + example);
       }
       else {
-        examplesToRun.append(example);
+        examplesToRun.pushBack(example);
       }
     }
     return examplesToRun;
@@ -303,7 +303,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     var strippedExamples = examples.split(',').strip('[]');
     for example in strippedExamples {
       const t = example.strip().strip('"');
-      exampleNames.append(t);
+      exampleNames.pushBack(t);
     }
     return exampleNames;
   }
@@ -311,7 +311,7 @@ private proc getExamples(toml: Toml, projectHome: string) {
     var examples = findFiles(startdir=examplePath, recursive=true, hidden=false);
     for example in examples {
       if example.endsWith(".chpl") {
-        exampleNames.append(getExamplePath(example));
+        exampleNames.pushBack(getExamplePath(example));
       }
     }
     return exampleNames;

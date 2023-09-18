@@ -71,6 +71,8 @@ namespace. The entries may not be exhaustive.
    :members:
    :undoc-members:
 
+.. doxygentypedef:: chpl::optional
+
 .. doxygentypedef:: chpl::owned
 
 .. doxygenenum:: chpl::StringifyKind

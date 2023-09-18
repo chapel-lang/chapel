@@ -18,6 +18,10 @@
  * limitations under the License.
  */
 
+@unstable("HashedDist is unstable and may change in the future")
+prototype module HashedDist {
+
+use DSIUtil;
 
 config param debugUserMapAssoc = false;
 
@@ -26,14 +30,14 @@ config param debugUserMapAssoc = false;
 // Returns an integer index into targetLocales
 // b/c this matches best with the expected use and it is
 // easy to guarantee that the returned locale is in the target set.
-pragma "no doc"
+@chpldoc.nodoc
 record AbstractMapper {
   proc this(const ref ind, const ref targetLocales: [?D] locale) : D.idxType {
     return 0;
   }
 }
 
-pragma "no doc"
+@chpldoc.nodoc
 record DefaultMapper {
   proc this(ind, targetLocales: [?D] locale) : D.idxType {
     const hash = chpl__defaultHashWrapper(ind);
@@ -113,7 +117,99 @@ The `Hashed` domain map initializer is defined as follows:
             targetLocales: [] locale = Locales)
 
  */
-class Hashed : BaseDist {
+record hashedDist : writeSerializable {
+  type idxType;
+  type mapperT;
+
+  forwarding const chpl_distHelp: chpl_PrivatizedDistHelper(unmanaged HashedImpl(idxType, _to_unmanaged(mapperT)));
+
+  proc init(type idxType,
+            mapper:?t = new DefaultMapper(),
+            targetLocales: [] locale = Locales) {
+    const value = new unmanaged HashedImpl(idxType, mapper, targetLocales);
+    this.idxType = idxType;
+    this.mapperT = _to_unmanaged(t);
+    this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                          if _isPrivatized(value)
+                            then _newPrivatizedClass(value)
+                            else nullPid,
+                          value);
+  }
+
+    proc init(_pid : int, _instance, _unowned : bool) {
+      this.idxType = _instance.idxType;
+      this.mapperT = _to_unmanaged(_instance.mapper.type);
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(_pid,
+                                                         _instance,
+                                                         _unowned);
+    }
+
+    proc init(value) {
+      this.idxType = value.idxType;
+      this.mapperT = _to_unmanaged(value.mapper.type);
+      this.chpl_distHelp = new chpl_PrivatizedDistHelper(
+                             if _isPrivatized(value)
+                               then _newPrivatizedClass(value)
+                               else nullPid,
+                             _to_unmanaged(value));
+    }
+
+    // Note: This does not handle the case where the desired type of 'this'
+    // does not match the type of 'other'. That case is handled by the compiler
+    // via coercions.
+    proc init=(const ref other : hashedDist(?)) {
+      this.init(other._value.dsiClone());
+    }
+
+    proc clone() {
+      return new hashedDist(this._value.dsiClone());
+    }
+
+  @chpldoc.nodoc
+  inline operator ==(d1: hashedDist(?), d2: hashedDist(?)) {
+    if (d1._value == d2._value) then
+      return true;
+    return d1._value.dsiEqualDMaps(d2._value);
+  }
+
+  @chpldoc.nodoc
+  inline operator !=(d1: hashedDist(?), d2: hashedDist(?)) {
+    return !(d1 == d2);
+  }
+
+  proc writeThis(x) {
+    chpl_distHelp.writeThis(x);
+  }
+
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+}
+
+
+@chpldoc.nodoc
+@unstable(category="experimental", reason="assignment between distributions is currently unstable due to lack of testing")
+operator =(ref a: hashedDist(?), b: hashedDist(?)) {
+  if a._value == nil {
+    __primitive("move", a, chpl__autoCopy(b.clone(), definedConst=false));
+  } else {
+    if a._value.type != b._value.type then
+      compilerError("type mismatch in distribution assignment");
+    if a._value == b._value {
+      // do nothing
+    } else
+        a._value.dsiAssign(b._value);
+    if _isPrivatized(a._instance) then
+      _reprivatize(a._value);
+  }
+}
+
+
+@deprecated("'Hashed' is deprecated, please use 'hashedDist' instead")
+type Hashed = hashedDist;
+
+
+class HashedImpl : BaseDist, writeSerializable {
 
   // GENERICS:
 
@@ -173,7 +269,7 @@ class Hashed : BaseDist {
   //
   proc init(type idxType,
             mapper,
-            other: unmanaged Hashed(idxType, mapper.type)) {
+            other: unmanaged HashedImpl(idxType, mapper.type)) {
     this.idxType = idxType;
     this.mapper = mapper; // normally == other.mapper;
     targetLocDom = other.targetLocDom;
@@ -187,7 +283,7 @@ class Hashed : BaseDist {
   proc dsiGetPrivatizeData() do return this.mapper;
 
   proc dsiPrivatize(privatizeData) {
-    return new unmanaged Hashed(idxType, privatizeData, _to_unmanaged(this));
+    return new unmanaged HashedImpl(idxType, privatizeData, _to_unmanaged(this));
   }
   proc dsiGetReprivatizeData() do return 0;
 
@@ -196,7 +292,7 @@ class Hashed : BaseDist {
   }
 
   proc dsiClone() {
-    return new unmanaged Hashed(idxType, mapper, targetLocales);
+    return new unmanaged HashedImpl(idxType, mapper, targetLocales);
   }
 
   // DISTRIBUTION INTERFACE:
@@ -236,14 +332,18 @@ class Hashed : BaseDist {
   // print out the distribution
   //
   proc writeThis(x) throws {
-    x.writeln("Hashed");
-    x.writeln("-------");
+    x.writeln("hashedDist");
+    x.writeln("----------");
     x.writeln("distributed using: ", mapper);
     x.writeln("across locales: ", targetLocales);
     x.writeln("indexed via: ", targetLocDom);
     x.writeln("resulting in: ");
     //for locid in targetLocDom do
     //  x.writeln("  [", locid, "] ", locDist(locid));
+  }
+
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   //
@@ -298,7 +398,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // LEFT: a pointer to the parent distribution
   //
-  const dist: unmanaged Hashed(idxType, mapperType);
+  const dist: unmanaged HashedImpl(idxType, mapperType);
 
   //
   // DOWN: an array of local domain class descriptors -- set up in
@@ -513,7 +613,7 @@ class UserMapAssocDom: BaseAssociativeDom {
   //
   // INTERNAL INTERFACE
   //
-  override proc dsiMyDist(): unmanaged Hashed(idxType, mapperType) {
+  override proc dsiMyDist(): unmanaged HashedImpl(idxType, mapperType) {
     return dist;
   }
 
@@ -560,13 +660,20 @@ class UserMapAssocDom: BaseAssociativeDom {
   }
 
   proc rank param { return 1; }
+
+  proc dsiGetDist() {
+    if _isPrivatized(dist) then
+      return new hashedDist(dist.pid, dist, _unowned=true);
+    else
+      return new hashedDist(nullPid, dist, _unowned=true);
+  }
 }
 
 
 //
 // the local domain class
 //
-class LocUserMapAssocDom {
+class LocUserMapAssocDom : writeSerializable {
 
   // GENERICS:
 
@@ -653,6 +760,10 @@ class LocUserMapAssocDom {
     x.write(myInds);
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
 
   // INTERNAL INTERFACE:
 
@@ -671,7 +782,7 @@ class LocUserMapAssocDom {
 //
 // the global array class
 //
-class UserMapAssocArr: AbsBaseArr {
+class UserMapAssocArr: AbsBaseArr(?) {
   // GENERICS:
 
   //
@@ -891,7 +1002,7 @@ class UserMapAssocArr: AbsBaseArr {
   proc dsiSerialWrite(f) {
     use IO;
 
-    var binary = f.binary();
+    var binary = f._binary();
     var arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY);
     var isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
     var ischpl = arrayStyle == QIO_ARRAY_FORMAT_CHPL && !binary;
@@ -906,6 +1017,32 @@ class UserMapAssocArr: AbsBaseArr {
     }
     if printBraces then f._writeLiteral("]");
 
+  }
+
+  proc dsiSerialWrite(f) throws where f.serializerType != nothing {
+    use IO;
+    if f.serializerType == IO.defaultSerializer {
+      var ser = f.serializer.startArray(f, dom.dsiNumIndices:int);
+      ser.startDim(dom.dsiNumIndices);
+
+      for locArr in locArrs {
+        for val in locArr!.myElems do ser.writeElement(val);
+      }
+
+      ser.endDim();
+      ser.endArray();
+    } else {
+      var ser = f.serializer.startMap(f, dom.dsiNumIndices);
+
+      for locArr in locArrs {
+        for (key, val) in zip(locArr!.myElems.domain, locArr!.myElems) {
+          ser.writeKey(key);
+          ser.writeValue(val);
+        }
+      }
+
+      ser.endMap();
+    }
   }
 
   override proc dsiDisplayRepresentation() {
@@ -928,7 +1065,7 @@ class UserMapAssocArr: AbsBaseArr {
 //
 // the local array class
 //
-class LocUserMapAssocArr {
+class LocUserMapAssocArr : writeSerializable {
 
   // GENERICS:
 
@@ -1030,6 +1167,10 @@ class LocUserMapAssocArr {
     x.write(myElems);
   }
 
+  override proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
   //
   // query for the number of local array elements
   //
@@ -1046,3 +1187,5 @@ class LocUserMapAssocArr {
     return locDom.myInds.dim(1).boundsCheck(x.dim(1));
   }
 }
+
+} // HashedDist

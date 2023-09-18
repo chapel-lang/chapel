@@ -48,3 +48,8 @@ FABRIC_1.5 {
 	global:
 		fi_open;
 } FABRIC_1.4;
+
+FABRIC_1.6 {
+	global:
+		fi_log_ready;
+} FABRIC_1.5;

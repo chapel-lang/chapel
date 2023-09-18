@@ -1,8 +1,7 @@
-use IO;
-use Path;
+use IO, Path;
 
-var f = open("f.txt", ioMode.r);
-writeln(f.path);
+// this test is here to ensure that users get a warning when they try to use the
+// 'filePathAbsolute' config param which is now inactive.
 
-// ensuring that this doesn't throw a deprecation warning from module code
-writeln(absPath(f));
+var f = open("filepath.chpl", ioMode.r);
+writeln(f.path == absPath(f));

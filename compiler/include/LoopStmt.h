@@ -22,59 +22,66 @@
 #define _LOOP_STMT_H_
 
 #include "stmt.h"
+#include "metadata.h"
 
 class LoopStmt : public BlockStmt
 {
 public:
-  static LoopStmt*       findEnclosingLoop(Expr* expr);
+  static LoopStmt*        findEnclosingLoop(Expr* expr);
 
-  static LoopStmt*       findEnclosingLoop(Expr* expr, const char* name);
+  static LoopStmt*        findEnclosingLoop(Expr* expr, const char* name);
 
-  static Stmt*           findEnclosingLoopOrForall(Expr* expr);
+  static Stmt*            findEnclosingLoopOrForall(Expr* expr);
 
 public:
-  bool                   isLoopStmt()                                    const override
-                         { return true; }
+  bool                    isLoopStmt()                                    const override
+                          { return true; }
 
-  LabelSymbol*           breakLabelGet()                                 const;
-  void                   breakLabelSet(LabelSymbol* sym);
+  LabelSymbol*            breakLabelGet()                                 const;
+  void                    breakLabelSet(LabelSymbol* sym);
 
-  LabelSymbol*           continueLabelGet()                              const;
-  void                   continueLabelSet(LabelSymbol* sym);
+  LabelSymbol*            continueLabelGet()                              const;
+  void                    continueLabelSet(LabelSymbol* sym);
 
-  bool                   isOrderIndependent()                            const;
-  void                   orderIndependentSet(bool b);
-
-  // for RV rv.loop.vectorize.enable
-  bool                   hasVectorizationHazard()                        const;
-  void                   setHasVectorizationHazard(bool v);
-
-  // for llvm.loop.parallel_accesses (and C pragmas)
-  bool                   hasParallelAccessVectorizationHazard()          const;
-  void                   setHasParallelAccessVectorizationHazard(bool v);
+  bool                    isOrderIndependent()                            const;
+  void                    orderIndependentSet(bool b);
 
   // for RV rv.loop.vectorize.enable
-  bool                   isVectorizable()                               const;
+  bool                    hasVectorizationHazard()                        const;
+  void                    setHasVectorizationHazard(bool v);
+
   // for llvm.loop.parallel_accesses (and C pragmas)
-  bool                   isParallelAccessVectorizable()                 const;
+  bool                    hasParallelAccessVectorizationHazard()          const;
+  void                    setHasParallelAccessVectorizationHazard(bool v);
+
+  // for RV rv.loop.vectorize.enable
+  bool                    isVectorizable()                                const;
+  // for llvm.loop.parallel_accesses (and C pragmas)
+  bool                    isParallelAccessVectorizable()                  const;
+
+  bool                    hasAdditionalLLVMMetadata()                     const;
+  bool                    hasAdditionalLLVMMetadata(const char* a)        const;
+  const LLVMMetadataList& getAdditionalLLVMMetadata()                     const;
+  LLVMMetadataPtr         getAdditionalLLVMMetadata(const char* a)        const;
+  void                    setAdditionalLLVMMetadata(const LLVMMetadataList& al);
 
 protected:
-                         LoopStmt(BlockStmt* initBody);
-                        ~LoopStmt() override = default;
+                          LoopStmt(BlockStmt* initBody);
+                         ~LoopStmt() override = default;
 
-  LabelSymbol*           mBreakLabel;
-  LabelSymbol*           mContinueLabel;
-  bool                   mOrderIndependent;
-  bool                   mVectorizationHazard;
-  bool                   mParallelAccessVectorizationHazard;
+  LabelSymbol*            mBreakLabel;
+  LabelSymbol*            mContinueLabel;
+  bool                    mOrderIndependent;
+  bool                    mVectorizationHazard;
+  bool                    mParallelAccessVectorizationHazard;
+  LLVMMetadataList        mLLVMMetadataList;
 
-  void                   reportVectorizable();
-
+  void                    reportVectorizable();
 
 private:
-                         LoopStmt();
+                          LoopStmt();
 
-  bool                   isNamed(const char* name)                       const;
+  bool                    isNamed(const char* name)                       const;
 };
 
 #endif

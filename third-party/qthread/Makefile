@@ -37,6 +37,8 @@ ifneq ($(CHPL_MAKE_HWLOC),none)
     ifdef CHPL_HWLOC_PREFIX
       CHPL_QTHREAD_CFG_OPTIONS += --with-hwloc-symbol-prefix=$(CHPL_HWLOC_PREFIX)hwloc_
     endif
+    # don't bother checking if we can link against hwloc
+    CHPL_QTHREAD_CFG_OPTIONS += --disable-hwloc-configure-checks
   endif
 endif
 
@@ -149,12 +151,7 @@ endif
 # immediately fail)
 ifneq (,$(CHPL_QTHREAD_SANITIZER_SUPPORT))
   CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
-endif
-
-# No fastcontext on m1, fallback to ucontext (with _XOPEN_SOURCE to allow it)
-ifeq ($(CHPL_MAKE_TARGET_PLATFORM),darwin)
   ifeq ($(CHPL_MAKE_TARGET_ARCH),arm64)
-    CHPL_QTHREAD_CFG_OPTIONS += --disable-fastcontext
     CFLAGS += -D_XOPEN_SOURCE
   endif
 endif

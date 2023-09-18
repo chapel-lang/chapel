@@ -124,6 +124,11 @@ shouldPropagateOuterArg(Symbol* sym, FnSymbol* parentFn, FnSymbol* calledFn) {
   if (calledFn && symDefParent == calledFn)
     return false;
 
+  if (sym->hasFlag(FLAG_TYPE_VARIABLE) &&
+      !sym->hasFlag(FLAG_HAS_RUNTIME_TYPE))
+    // don't propagate type variables
+    return false;
+
   if (shouldAddArgForAlwaysRvf(sym, parentFn))
     // do propagate RVF'd module-scope variable to task functions
     return true;
@@ -304,6 +309,8 @@ addVarsToFormals(FnSymbol* fn, SymbolMap* vars) {
           arg->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
       if (sym->hasFlag(FLAG_COFORALL_INDEX_VAR))
           arg->addFlag(FLAG_COFORALL_INDEX_VAR);
+      if (sym->hasFlag(FLAG_NO_RVF))
+          arg->addFlag(FLAG_NO_RVF);
       arg->addFlag(FLAG_OUTER_VARIABLE);
 
       fn->insertFormalAtTail(new DefExpr(arg));

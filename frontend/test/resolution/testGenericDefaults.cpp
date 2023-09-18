@@ -131,9 +131,37 @@ static void test3() {
   assert(subs.size() == 0);
 }
 
+static void test4() {
+  {
+    Context ctx;
+    auto context = &ctx;
+    QualifiedType qt =  resolveQualifiedTypeOfX(context,
+                           R""""(
+                           proc foo(type t = int) type do return t;
+
+                           var x : foo();
+                           )"""");
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type()->isIntType());
+  }
+  {
+    Context ctx;
+    auto context = &ctx;
+    QualifiedType qt =  resolveQualifiedTypeOfX(context,
+                           R""""(
+                           proc foo(type t = int) type do return t;
+
+                           var x : foo(string);
+                           )"""");
+    assert(qt.kind() == QualifiedType::VAR);
+    assert(qt.type()->isStringType());
+  }
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
   return 0;
 }

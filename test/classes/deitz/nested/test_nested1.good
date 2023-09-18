@@ -1,2 +1,5 @@
-test_nested1.chpl:5: error: Illegal use of identifier 'd' from enclosing type
-Note: This source location is a guess.
+test_nested1.chpl:4: In method 'bar':
+test_nested1.chpl:5: error: illegal use of identifier 'd' from enclosing type
+test_nested1.chpl:2: note: the identifier is used within class 'D', declared here
+test_nested1.chpl:1: note: however, the identifier refers to a field of an enclosing class 'C', declared here
+test_nested1.chpl:8: note: field declared here

@@ -80,7 +80,7 @@ extern "C" {
  * provides a remote procedure call mechanism. A PSM2 process can generate a
  * request to run an active message handler on a remote PSM2 process
  * identified by its end-point address (epaddr). End-point address values
- * are returned by PSM2 when connecting end-points using the psm2_ep_connect()
+ * are returned by PSM2 when connecting end-points using the psm3_ep_connect()
  * function.
  *
  * An AM handler may make local state updates, and may generate at most
@@ -106,7 +106,7 @@ extern "C" {
  * onerous for the handler.
  *
  * PSM2 has an active progress model and requires that the PSM2 library is
- * called in order to make progress. This can be achieved using the psm2_poll()
+ * called in order to make progress. This can be achieved using the psm3_poll()
  * function. A PSM2 implementatation may provide passive progress through some
  * other mechanism (e.g. a receive thread), but a PSM2 consumer must not assume
  * this and must arrange to make active progress through calls into the PSM
@@ -173,7 +173,7 @@ struct psm2_amarg {
  * @param[in] token This is an opaque token value passed into a handler.
  *                  A request handler may send at most one reply back to the
  *                  original requestor, and must pass this value as the token
- *                  parameter to the psm2_am_reply_short() function. A reply
+ *                  parameter to the psm3_am_reply_short() function. A reply
  *                  handler is also passed a token value, but must not attempt
  *                  to reply.
  * @param[in] args A pointer to the arguments provided to this handler.
@@ -198,7 +198,7 @@ int (*psm2_am_handler_fn_t) (psm2_am_token_t token,
  * @param[in] token This is an opaque token value passed into a handler.
  *                  A request handler may send at most one reply back to the
  *                  original requestor, and must pass this value as the token
- *                  parameter to the psm2_am_reply_short() function. A reply
+ *                  parameter to the psm3_am_reply_short() function. A reply
  *                  handler is also passed a token value, but must not attempt
  *                  to reply.
  * @param[in] args A pointer to the arguments provided to this handler.
@@ -236,12 +236,12 @@ void (*psm2_am_completion_fn_t) (void *context);
  * This function is used to register an array of handlers, and may be called
  * multiple times to register additonal handlers. The maximum number of
  * handlers that can be registered is limited to the max_handlers value
- * returned by psm2_am_get_parameters(). Handlers are associated with a PSM
+ * returned by psm3_am_get_parameters(). Handlers are associated with a PSM
  * end-point. The handlers are allocated index numbers in the the handler table
  * for that end-point.  The allocated index for the handler function in
  * handlers[i] is returned in handlers_idx[i] for i in (0, num_handlers]. These
- * handler index values are used in the psm2_am_request_short() and
- * psm2_am_reply_short() functions.
+ * handler index values are used in the psm3_am_request_short() and
+ * psm3_am_reply_short() functions.
  *
  * @param[in] ep End-point value
  * @param[in] handlers Array of handler functions
@@ -252,7 +252,7 @@ void (*psm2_am_completion_fn_t) (void *context);
  * @returns PSM2_OK Indicates success
  * @returns PSM2_EP_NO_RESOURCES Insufficient slots in the AM handler table
  */
-psm2_error_t psm2_am_register_handlers(psm2_ep_t ep,
+psm2_error_t psm3_am_register_handlers(psm2_ep_t ep,
 				     const psm2_am_handler_fn_t *
 				     handlers, int num_handlers,
 				     int *handlers_idx);
@@ -262,12 +262,12 @@ psm2_error_t psm2_am_register_handlers(psm2_ep_t ep,
  * This function is used to register an array of handlers, and may be called
  * multiple times to register additonal handlers. The maximum number of
  * handlers that can be registered is limited to the max_handlers value
- * returned by psm2_am_get_parameters(). Handlers are associated with a PSM
+ * returned by psm3_am_get_parameters(). Handlers are associated with a PSM
  * end-point. The handlers are allocated index numbers in the the handler table
  * for that end-point.  The allocated index for the handler function in
  * handlers[i] is returned in handlers_idx[i] for i in (0, num_handlers]. These
- * handler index values are used in the psm2_am_request_short() and
- * psm2_am_reply_short() functions.
+ * handler index values are used in the psm3_am_request_short() and
+ * psm3_am_reply_short() functions.
  *
  * @param[in] ep End-point value
  * @param[in] handlers Array of handler functions
@@ -280,7 +280,7 @@ psm2_error_t psm2_am_register_handlers(psm2_ep_t ep,
  * @returns PSM2_OK Indicates success
  * @returns PSM2_EP_NO_RESOURCES Insufficient slots in the AM handler table
  */
-psm2_error_t psm2_am_register_handlers_2(psm2_ep_t ep,
+psm2_error_t psm3_am_register_handlers_2(psm2_ep_t ep,
 				     const psm2_am_handler_2_fn_t *
 				     handlers, int num_handlers,
 				     void **hctx,
@@ -294,14 +294,14 @@ psm2_error_t psm2_am_register_handlers_2(psm2_ep_t ep,
  * @param[in] ep End-point value
  *
  */
-void psm2_am_unregister_handlers(psm2_ep_t ep);
+void psm3_am_unregister_handlers(psm2_ep_t ep);
 
 /** @brief Generate an AM request.
  *
  * This function generates an AM request causing an AM handler function to be
  * called in the PSM2 process associated with the specified end-point address.
  * The number of arguments is limited to max_nargs and the payload length in
- * bytes to max_request_short returned by the psm2_am_get_parameters() function.
+ * bytes to max_request_short returned by the psm3_am_get_parameters() function.
  * If arguments are not required, set the number of arguments to 0 and the
  * argument pointer will not be dereferenced. If payload is not required, set
  * the payload size to 0 and the payload pointer will not be dereferenced.
@@ -350,7 +350,7 @@ void psm2_am_unregister_handlers(psm2_ep_t ep);
  * @returns PSM2_OK indicates success.
  */
 psm2_error_t
-psm2_am_request_short(psm2_epaddr_t epaddr, psm2_handler_t handler,
+psm3_am_request_short(psm2_epaddr_t epaddr, psm2_handler_t handler,
 		     psm2_amarg_t *args, int nargs, void *src,
 		     size_t len, int flags,
 		     psm2_am_completion_fn_t completion_fn,
@@ -361,13 +361,13 @@ psm2_am_request_short(psm2_epaddr_t epaddr, psm2_handler_t handler,
  * This function may only be called from an AM handler called due to an AM
  * request.  If the AM request uses the PSM2_AM_FLAG_NOREPLY flag, the AM
  * handler must not call this function. Otherwise, the AM request handler may
- * call psm2_am_reply_short() at most once, and must pass in the token value
+ * call psm3_am_reply_short() at most once, and must pass in the token value
  * that it received in its own handler call-back.
  *
  * This function generates an AM reply causing an AM handler function to be
  * called in the PSM2 process associated with the specified end-point address.
  * The number of arguments is limited to max_nargs and the payload length in
- * bytes to max_reply_short returned by the psm2_am_get_parameters() function.
+ * bytes to max_reply_short returned by the psm3_am_get_parameters() function.
  * If arguments are not required, set the number of arguments to 0 and the
  * argument pointer will not be dereferenced. If payload is not required, set
  * the payload size to 0 and the payload pointer will not be dereferenced.
@@ -409,7 +409,7 @@ psm2_am_request_short(psm2_epaddr_t epaddr, psm2_handler_t handler,
  * @returns PSM2_OK indicates success.
  */
 psm2_error_t
-psm2_am_reply_short(psm2_am_token_t token, psm2_handler_t handler,
+psm3_am_reply_short(psm2_am_token_t token, psm2_handler_t handler,
 		   psm2_amarg_t *args, int nargs, void *src,
 		   size_t len, int flags,
 		   psm2_am_completion_fn_t completion_fn,
@@ -427,13 +427,13 @@ psm2_am_reply_short(psm2_am_token_t token, psm2_handler_t handler,
  * @returns PSM2_OK indicates success.
  * @returns PSM2_PARAM_ERR token is invalid or epaddr_out is NULL.
  */
-psm2_error_t psm2_am_get_source(psm2_am_token_t token,
+psm2_error_t psm3_am_get_source(psm2_am_token_t token,
 			      psm2_epaddr_t *epaddr_out);
 
 /** @brief AM parameters
  *
  * This structure is used to return PSM2 AM implementation-specific parameter
- * values back to the caller of the psm2_am_get_parameters() function. This
+ * values back to the caller of the psm3_am_get_parameters() function. This
  * API also specifies the minimum values for these parameters that an
  * implementation must at least provide:
  *   max_handlers >= 64,
@@ -457,7 +457,7 @@ struct psm2_am_parameters {
  * This function retrieves the implementation-specific AM parameter values for
  * the specified end-point.
  *
- * @param[in] ep The end-point value returned by psm2_ep_open().
+ * @param[in] ep The end-point value returned by psm3_ep_open().
  * @param[out] parameters Pointer to the struct where the parameters will be
  *                        returned.
  * @param[in] sizeof_parameters_in The size in bytes of the struct provided by
@@ -468,7 +468,7 @@ struct psm2_am_parameters {
  * @returns PSM2_OK indicates success.
  */
 psm2_error_t
-psm2_am_get_parameters(psm2_ep_t ep,
+psm3_am_get_parameters(psm2_ep_t ep,
 		      struct psm2_am_parameters *parameters,
 		      size_t sizeof_parameters_in,
 		      size_t *sizeof_parameters_out);

@@ -21,7 +21,7 @@ use FindBin;
 use lib "$FindBin::Bin";
 
 use nightlysubs;
-
+use nightly_email;
 # Mailing lists.
 $failuremail = "chapel+tests\@discoursemail.com";
 $allmail = "chapel-test-results-all\@lists.sourceforge.net";
@@ -405,54 +405,7 @@ $testdir = "$chplhomedir/test";
 print "\$chplhomedir = $chplhomedir\n";
 
 
-#
-# set mail options. Default to util/test/send_email.py, if available and
-# working. If not available or not working, default to 'mail'.
-#
-$mailer = $ENV{'CHPL_MAILER'};
-if ($mailer eq "") {
-    $hostplatform = `$utildir/chplenv/chpl_platform.py --host`; chomp($hostplatform);
-    if ($hostplatform =~ "darwin") {
-     print "[ For Mac systems use the default Mail. Defaulting to 'mail'.]\n";
-     $mailer = "mail";
-    }
-    else {
-     $chplsendemail = "$chplhomedir/util/test/send_email.py";
-    `$chplsendemail --help >/dev/null 2>&1`;
-    if ($? == 0) {
-        $header = "";
-        if ($replymail ne "") {
-          $header = "Reply-To=$replymail,";
-        }
-        $header .= "Precedence=bulk";
-        $mailer = "$chplsendemail --header=$header";
-    } else {
-        print "[Error: send_email.py failed to run. Defaulting to 'mail'.]\n";
-        $mailer = "mail";
-    }
-    }
-}
-print "\$mailer = $mailer\n";
-
-
 $launchcmd = "$ENV{'CHPL_TEST_LAUNCHCMD'}";
-
-if ($debug == 1) {
-    $subjectid = "Debug";
-    $recipient = $debugmail;
-    $nochangerecipient = $debugmail;
-} else {
-    $subjectid = "Cron";
-
-    # "email", the mailer program used on cygwin platform, requires multiple
-    # recipient addresses to be comma delimited instead of space delimited.
-    if ($mailer eq "email") {
-        $recipient = "$failuremail";
-    } else {
-        $recipient = "$failuremail";
-    }
-    $nochangerecipient = $allmail;
-}
 
 #
 # test log filenames
@@ -553,23 +506,7 @@ if ($python2 == 0 && $pythonDep == 0) {
 }
 
 if ($buildruntime == 0) {
-    $endtime = localtime;
-
-    $mailsubject = "$subjectid $config_name";
-    $mailcommand = "| $mailer -s \"$mailsubject \" $nochangerecipient";
-
-    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-        print "Mailing to minimal group\n";
-        open(MAIL, $mailcommand);
-
-        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-        print MAIL "Built compiler but not runtime, and did not run tests\n";
-        print MAIL endMailHeader();
-        print MAIL endMailChplenv();
-        close(MAIL);
-    } else {
-        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
-    }
+    print "Built compiler but not runtime, and did not run tests\n";
     exit 0;
 }
 
@@ -737,23 +674,7 @@ if (exists($ENV{"CHPL_START_TEST_ARGS"})) {
 
 
 if ($runtests == 0) {
-    $endtime = localtime;
-
-    $mailsubject = "$subjectid $config_name";
-    $mailcommand = "| $mailer -s \"$mailsubject \" $recipient";
-
-    if (!exists($ENV{"CHPL_TEST_NOMAIL"}) or grep {$ENV{"CHPL_TEST_NOMAIL"} =~ /^$_$/i} ('','\s*','0','f(alse)?','no?')) {
-        open(MAIL, $mailcommand);
-
-        print MAIL startMailHeader($revision, "<no logfile>", $starttime, $endtime, $crontab, "");
-        print MAIL "Built compiler and runtime but did not run tests\n";
-        print MAIL endMailHeader();
-        print MAIL endMailChplenv();
-
-        close(MAIL);
-    } else {
-        print "CHPL_TEST_NOMAIL: No $mailcommand\n";
-    }
+    print "Built compiler and runtime but did not run tests\n";
 
 } elsif ($python2 == 1 || $pythonDep == 1) {
 
@@ -805,6 +726,7 @@ if ($runtests == 0) {
         my $str = "syncToDreamhost.$perfConfigName/$syncsuffix";
         $str =~ s,/,-,g;
         $str =~ s,-*$,,;
+# Restore graph sync once we find a solution to our network issues
         $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnPerfDir/$performancedescription/html/ $perfConfigName/$syncsuffix --logFile $logdir/$str.errors";
         $rsyncMessage = "syncing performance graph to dreamhost -- log file at $logdir/$str.errors";
         mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
@@ -869,6 +791,7 @@ if ($runtests == 0) {
             my $str = "syncReleaseToDreamhost.$perfConfigName/releaseOverRelease/$syncsuffix";
             $str =~ s,/,-,g;
             $str =~ s,-*$,,;
+# Restore graph sync once we find a solution to our network issues
             $rsyncCommand = "$chplhomedir/util/cron/syncPerfGraphs.py $svnReleasePerfDir/html/ $perfConfigName/releaseOverRelease/$syncsuffix --logFile $logdir/$str.errors";
             $rsyncMessage = "syncing release performance graph to dreamhost -- log file at $logdir/$str.errors";
             mysystem($rsyncCommand, $rsyncMessage , 0, 1, 1);
@@ -876,8 +799,9 @@ if ($runtests == 0) {
     }
 
 # FIXME: Pass correct args here!
-    `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
-
+     # `$chplhomedir/util/cron/nightly_email.pl $status "$rawsummary" "$sortedsummary" "$prevsummary" "$mailer" "$nochangerecipient" "$recipient" "$subjectid" "$config_name" "$revision" "$rawlog" "$starttime" "$endtime" "$crontab" "$testdirs" $debug`;
+     # Write the test results to the summary log.
+     writeFile($status, "$rawsummary", "$sortedsummary", "$prevsummary", "", "$nochangerecipient", "$recipient", "$subjectid", "$config_name", "$revision", "$rawlog", "$starttime", "$endtime", "$crontab", "$testdirs", $debug);
 #
 # analyze memory leaks tests
 #
@@ -902,5 +826,5 @@ if ($runtests == 0) {
         mysystem("cd $testdir && cp $memleaksdir/$memleakslog ./$memleaksmode.exec.out.tmp && $chplhomedir/util/test/computePerfStats $memleaksmode $memleaksdir", "memLeak computePerfStats", 1, 0, 0);
     }
 }
-
 exit 0;
+

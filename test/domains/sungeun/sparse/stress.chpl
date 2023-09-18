@@ -23,15 +23,15 @@ proc test(param doSerial : bool) {
   writeln("Starting. D = ", D);
   sync serial doSerial {
     writeln("Start adding..");
-    begin with (ref D) forall i in 1..numAdds with (ref D) {
+    begin with (ref D, ref inserted) forall i in 1..numAdds with (ref D, ref inserted) {
       D += elems[i];
       inserted[i] = true;
     }
 
     writeln("Start removing..");
     var totalRemoved: sync int = 0;
-    begin with (ref D) while (totalRemoved.readXX() != numRemoves) {
-      forall i in 1..min(numAdds,numRemoves) with (ref D) {
+    begin with (ref D, ref inserted) while (totalRemoved.readXX() != numRemoves) {
+      forall i in 1..min(numAdds,numRemoves) with (ref D, ref inserted) {
         const ri = removeOrder[i];
         if inserted[ri] == true {
           D -= elems[ri];

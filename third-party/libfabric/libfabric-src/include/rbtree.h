@@ -87,6 +87,9 @@ RbtIterator rbtEnd(RbtHandle h);
 void rbtKeyValue(RbtHandle h, RbtIterator i, void **key, void **value);
 // returns key/value pair associated with iterator
 
+void ** rbtValuePtr(RbtHandle h, RbtIterator it);
+// returns pointer to the value associated with iterator
+
 RbtIterator rbtFindLeftmost(RbtHandle h, void *key,
 		int(*compare)(void *a, void *b));
 // returns iterator associated with left-most match. This is useful when a new

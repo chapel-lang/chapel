@@ -20,6 +20,7 @@ AST_SRCS =                                          \
            AggregateType.cpp                        \
            alist.cpp                                \
            astutil.cpp                              \
+					 metadata.cpp						   								\
            baseAST.cpp                              \
            bb.cpp                                   \
            build.cpp                                \
@@ -64,7 +65,6 @@ AST_SRCS =                                          \
            AstLogger.cpp                            \
            AstDump.cpp                              \
            AstDumpToHtml.cpp                        \
-           AstDumpToNode.cpp                        \
                                                     \
            AstCount.cpp                             \
                                                     \

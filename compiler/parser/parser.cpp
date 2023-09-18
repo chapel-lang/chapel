@@ -885,8 +885,8 @@ static bool shouldPrintHeaderForDecl(chpl::ID declId) {
   return ret;
 }
 
-// Print out 'in function/module/initializer' etc...
-static void maybePrintErrorHeader(chpl::ID id) {
+// Print out 'In function/module/initializer' etc...
+static void maybePrintErrorHeader(chpl::Context* context, chpl::ID id) {
 
   // No ID associated with this error, so no UAST information.
   if (id.isEmpty()) return;
@@ -901,7 +901,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
 
     auto& declLoc = chpl::parsing::locateId(gContext, declId);
     auto line = declLoc.firstLine();
-    auto path = declLoc.path();
+    auto path = context->adjustPathForErrorMsg(declLoc.path());
 
     fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
@@ -929,7 +929,7 @@ static void dynoDisplayError(chpl::Context* context,
       fprintf(stderr, "\n");
     }
   } else {
-    maybePrintErrorHeader(id);
+    maybePrintErrorHeader(context, id);
 
     switch (err.kind()) {
       case chpl::ErrorMessage::NOTE:
@@ -959,27 +959,6 @@ static DynoErrorHandler* dynoPrepareAndInstallErrorHandler(void) {
   std::ignore = gContext->installErrorHandler(std::move(handler));
   return ret;
 }
-
-//
-// TODO: The error handler would like to do something like fetch AST from
-// IDs, but it cannot due to the possibility of a query cycle:
-//
-// - The 'parseFileToBuilderResult' query is called
-// - Some errors are encountered
-// - Errors are reported to the context by the builder
-// - Which calls the custom error handler, which calls 'idToAst'...
-// - Which calls 'parseFileToBuilderResult' again!
-//
-// I'm sure there's a better way to avoid this cycle, but for right now
-// I am just going to store the errors and display them at a later point
-// after the parsing has completed.
-//
-// One option to fix this is to wield query powers and manually check
-// for and handle the recursion. Another option might be to make our
-// error handler more robust (e.g., make it a class, and separate out the
-// reporting and "realizing" of the errors, as we are doing here).
-//
-static std::vector<const chpl::ErrorBase*> dynoErrorMessages;
 
 // Only install one of these for the entire session.
 static DynoErrorHandler* gDynoErrorHandler = nullptr;

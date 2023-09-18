@@ -1,6 +1,6 @@
 if HAVE_VERBS
 _verbs_files =							\
-	prov/verbs/src/fi_verbs.h				\
+	prov/verbs/include/fi_verbs.h				\
 	prov/verbs/src/fi_verbs.c				\
 	prov/verbs/src/verbs_cm.c				\
 	prov/verbs/src/verbs_cm_xrc.c				\
@@ -15,15 +15,18 @@ _verbs_files =							\
 	prov/verbs/src/verbs_rma.c				\
 	prov/verbs/src/verbs_dgram_ep_msg.c			\
 	prov/verbs/src/verbs_dgram_av.c				\
-	prov/verbs/src/ofi_verbs_priv.h
+	prov/verbs/include/ofi_verbs_priv.h			\
+	prov/verbs/include/linux/verbs_osd.h
 
 if HAVE_VERBS_DL
 pkglib_LTLIBRARIES += libverbs-fi.la
 libverbs_fi_la_SOURCES = $(_verbs_files) $(common_srcs)
-libverbs_fi_la_CPPFLAGS = 			\
-	-I$(top_srcdir)/include			\
-	-I$(top_srcdir)/prov/verbs/src/ep_rdm	\
-	-I$(top_srcdir)/prov/verbs/src/ep_dgram	\
+libverbs_fi_la_CPPFLAGS = 				\
+	-I$(top_srcdir)/include				\
+	-I$(top_srcdir)/prov/verbs/include		\
+	-I$(top_srcdir)/prov/verbs/include/linux	\
+	-I$(top_srcdir)/prov/verbs/src/ep_rdm		\
+	-I$(top_srcdir)/prov/verbs/src/ep_dgram		\
 	$(AM_CPPFLAGS) $(verbs_CPPFLAGS)
 libverbs_fi_la_LDFLAGS =				\
 	-module -avoid-version -shared -export-dynamic	\
@@ -32,9 +35,11 @@ libverbs_fi_la_LIBADD = $(linkback) $(verbs_LIBS)
 libverbs_fi_la_DEPENDENCIES = $(linkback)
 else !HAVE_VERBS_DL
 src_libfabric_la_SOURCES += $(_verbs_files)
-src_libfabric_la_CPPFLAGS += 			\
-	-I$(top_srcdir)/prov/verbs/src/ep_rdm	\
-	-I$(top_srcdir)/prov/verbs/src/ep_dgram	\
+src_libfabric_la_CPPFLAGS += 				\
+	-I$(top_srcdir)/prov/verbs/include		\
+	-I$(top_srcdir)/prov/verbs/include/linux	\
+	-I$(top_srcdir)/prov/verbs/src/ep_rdm		\
+	-I$(top_srcdir)/prov/verbs/src/ep_dgram		\
 	$(verbs_CPPFLAGS)
 src_libfabric_la_LDFLAGS += $(verbs_LDFLAGS)
 src_libfabric_la_LIBADD += $(verbs_LIBS)

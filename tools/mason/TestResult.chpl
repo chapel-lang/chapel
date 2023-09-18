@@ -48,14 +48,14 @@ module TestResult {
     proc addError(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.errors.append((fileAdd, errMsg));
+      this.errors.pushBack((fileAdd, errMsg));
     }
 
     /*called when error occured */
     proc addFailure(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.failures.append((fileAdd, errMsg));
+      this.failures.pushBack((fileAdd, errMsg));
     }
 
     /*Called when a test has completed successfully*/
@@ -68,7 +68,7 @@ module TestResult {
     proc addSkip(testName: string, fileName: string, errMsg: string) {
       this.testRan();
       var fileAdd = fileName + ": " + testName;
-      this.skipped.append((fileAdd, errMsg));
+      this.skipped.pushBack((fileAdd, errMsg));
     }
 
     /*Tells whether or not this result was a success.*/
@@ -121,20 +121,20 @@ module TestResult {
         writeln();
         var infos: list((string));
         if testsPassed != 0 then
-          infos.append("passed = " + testsPassed: string);
+          infos.pushBack("passed = " + testsPassed: string);
         if !this.wasSuccessful() {
           write("FAILED");
           var failed = this.numFailedTests(),
             errored = this.numErroredTests();
           if failed then
-            infos.append("failures = " + failed: string);
+            infos.pushBack("failures = " + failed: string);
           if errored then
-            infos.append("errors = " + errored: string);
+            infos.pushBack("errors = " + errored: string);
         }
         else
           write("OK");
         if skipped then
-          infos.append("skipped = " + skipped: string);
+          infos.pushBack("skipped = " + skipped: string);
         if infos.size {
           write(" (");
           for info in infos do write(info, " ");

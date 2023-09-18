@@ -918,7 +918,8 @@ static void addKnownWides() {
     Symbol* defParent = var->defPoint->parentSymbol;
 
     if (usingGpuLocaleModel()) {
-      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)) {
+      if (var->type->symbol->hasFlag(FLAG_DATA_CLASS)
+          && !var->type->symbol->hasFlag(FLAG_C_PTR_CLASS)) {
         if (FnSymbol* fn = usedInOn(var)) {
           debug(var, "GPU variable used in on-statement\n");
           if (typeCanBeWide(var)) {
@@ -1747,7 +1748,7 @@ static void localizeCall(CallExpr* call) {
           }
           break;
         } else if (rhs->isPrimitive(PRIM_GET_UNION_ID)) {
-          if (rhs->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+          if (rhs->get(1)->isWideRef()) {
             insertLocalTemp(rhs->get(1));
           }
           break;
@@ -1764,7 +1765,7 @@ static void localizeCall(CallExpr* call) {
           !call->get(2)->typeInfo()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
         break;
       }
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF) &&
+      if (call->get(1)->isWideRef() &&
           !call->get(2)->isRefOrWideRef()) {
         insertLocalTemp(call->get(1));
       }
@@ -1786,7 +1787,7 @@ static void localizeCall(CallExpr* call) {
       }
       break;
     case PRIM_SET_UNION_ID:
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_WIDE_REF)) {
+      if (call->get(1)->isWideRef()) {
         insertLocalTemp(call->get(1));
       }
       break;
@@ -1860,7 +1861,7 @@ static void handleLocalBlocks() {
             queue.push(local->body);
             cache.put(fn, local);
             cache.put(local, local); // to handle recursion
-            if (local->retType->symbol->hasFlag(FLAG_WIDE_REF)) {
+            if (local->isWideRef()) {
               CallExpr* ret = toCallExpr(local->body->body.tail);
               INT_ASSERT(ret && ret->isPrimitive(PRIM_RETURN));
               // Capture the return expression in a local temp.

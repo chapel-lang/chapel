@@ -63,7 +63,7 @@
  * @var user        bitmap for detecting user key usage
  */
 struct gnix_auth_key {
-	fastlock_t lock;
+	ofi_spin_t lock;
 	struct gnix_auth_key_attr attr;
 	int enabled;
 	uint8_t ptag;

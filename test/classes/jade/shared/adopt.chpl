@@ -22,12 +22,11 @@ class A {
   writeln(a, " | ", a.type:string);
 }
 
-
 {
-  writeln("test adopt ownership transfer to shared object");
+  writeln("test assign to shared");
   var a = new unmanaged A(2, 3);
   var shr1: A = shared.adopt(a);
-  var shr2 = shared.adopt(shr1);
+  var shr2 = shr1;
   // all should refer to the same object
   writeln(a, " | ", a.type:string);
   writeln(shr1, " | ", shr1.type:string);
@@ -36,4 +35,4 @@ class A {
   writeln(a, " | ", a.type:string);
   writeln(shr1, " | ", shr1.type:string);
   writeln(shr2, " | ", shr2.type:string);
-}
+ }

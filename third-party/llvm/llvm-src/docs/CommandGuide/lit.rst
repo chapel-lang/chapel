@@ -43,6 +43,9 @@ parsing options from the command line.  ``LIT_OPTS`` is primarily useful for
 supplementing or overriding the command-line options supplied to :program:`lit`
 by ``check`` targets defined by a project's build system.
 
+:program:`lit` can also read options from response files which are specified as
+inputs using the ``@path/to/file.rsp`` syntax.
+
 Users interested in the :program:`lit` architecture or designing a
 :program:`lit` testing implementation should see :ref:`lit-infrastructure`.
 
@@ -523,6 +526,9 @@ TestRunner.py:
  %S                      source dir (directory of the file currently being run)
  %p                      same as %S
  %{pathsep}              path separator
+ %{fs-src-root}          root component of file system paths pointing to the LLVM checkout
+ %{fs-tmp-root}          root component of file system paths pointing to the test's temporary directory
+ %{fs-sep}               file system path separator
  %t                      temporary file name unique to the test
  %basename_t             The last path component of %t but without the ``.tmp`` extension
  %T                      parent directory of %t (not unique, deprecated, do not use)

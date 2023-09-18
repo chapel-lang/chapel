@@ -4,7 +4,7 @@
  * Get the hosts that the blocks of the file resides on
  * Get the blocks
  * Connect to HDFS
- * Open the file 
+ * Open the file
  * Create an array for each beer name (we have an assoc beername <==> number of
  reviews)
  * For each block
@@ -16,17 +16,17 @@
  * if we cant, say so and exit
  * Get the length (in characters) of the review in question
  * Split what you read in, so now we have ss = review in question
- * Read review in to be a record 
+ * Read review in to be a record
  * Increment the number we have read by 1
  * Record observation(s) in accumlator(s)
  * Return back the number of reviews for each beer
  ============ Procedures ================
- * IndexOf(ss: string, s: string, start: int) 
- -- Given a string s, we return the index of the 
+ * IndexOf(ss: string, s: string, start: int)
+ -- Given a string s, we return the index of the
  first occurence of the substring ss after start.
- * deserializeRecord(s: string) 
+ * deserializeRecord(s: string)
  -- Parses a review into its internal representation as a record
- * findFieldValue(s: string, fieldStart: string, base: int) 
+ * findFieldValue(s: string, fieldStart: string, base: int)
  -- Returns a tuple (field, value_of_field). i.e (beer, beerID)
  * findFieldValueReal(s: string, fieldStart: string, base: int) -- Need to talk with Brad about this one...
  * findFieldValueInt(s: string, fieldStart: string, base: int) -- Same here
@@ -45,10 +45,10 @@
 use HDFS, HDFStools;
 use OS.POSIX;
 // Second col is for running on a cluster
-config const namenode = "default";//"sealcs01"; 
+config const namenode = "default";//"sealcs01";
 var connectNumber: c_int = 0; // 54310
 
-//"localhost:9000"; 
+//"localhost:9000";
 
 config const dataFile = "/tmp/ba_sample.txt";
 config const domainSuffix = "";
@@ -94,21 +94,23 @@ sync coforall loc in Locales { // look at this more
     // 2) Find all the hosts/blocks for the file, from byte 0 to length
     // 3) On each locale, find the blocks you own and process them
     write("Connecting to HDFS on host " + here.name + "...");
-    var hdfsFS: c_void_ptr = HDFS.hdfsConnect(namenode.localize().c_str(), 
+    var localNamenode = namenode.localize();
+    var hdfsFS: c_ptr(void) = HDFS.hdfsConnect(localNamenode.c_str(),
                                               connectNumber);
     writeln("done");
-    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, dataFile.localize().c_str());
+    var localDataFile = dataFile.localize();
+    var fileInfo = HDFS.chadoopGetFileInfo(hdfsFS, localDataFile.c_str());
     //      writeln("Info for file " + dataFile + ":");
     //      writeln(fileInfo);
-    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, dataFile.localize().c_str(), 0, fileInfo.mSize);
+    var blockHosts = HDFS.hdfsGetHosts(hdfsFS, localDataFile.c_str(), 0, fileInfo.mSize);
     // ==== Get the blocks
     var blockCount = HDFS.chadoopGetBlockCount(blockHosts);
     // END
 
     // ==== Connect to HDFS
-    // ==== Open the file 
+    // ==== Open the file
     writeln("Opening file " + dataFile + " on " + here.name + "...");
-    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, dataFile.localize().c_str(), 
+    var dataFileLocal = HDFS.hdfsOpenFile(hdfsFS, localDataFile.c_str(),
                                           O_RDONLY, 0, 0, 0);
     assert(HDFS.IS_NULL(dataFileLocal) == HDFS.IS_NULL_FALSE, "Failed to open dataFileLocal");
     // assert that we opened the file successfully
@@ -194,7 +196,7 @@ sync coforall loc in Locales { // look at this more
           //writeln("Found record with start " + i + ", end " + (j - 1) + ", length " + recordLength + ": ");
 
           // Deserialize structured record from text
-          // ==== Read review in to be a record 
+          // ==== Read review in to be a record
           var rec = deserializeRecord(ss);
           // ==== Increment the number we have read by 1
           numRead += 1;

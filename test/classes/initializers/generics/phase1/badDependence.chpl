@@ -14,7 +14,7 @@ class ManyFields {
 }
 
 proc main() {
-  var c = (new owned ManyFields(2)).borrow();
+  var c = new ManyFields(2);
 
-  writeln(c.type: string);
+  writeln(c.borrow().type: string);
 }

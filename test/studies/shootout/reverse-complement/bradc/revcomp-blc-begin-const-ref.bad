@@ -1,6 +1,2 @@
-revcomp-blc-begin-const-ref.chpl:20: In function 'main':
-revcomp-blc-begin-const-ref.chpl:50: error: const actual is passed to 'ref' formal 'seq' of revcomp()
-note: to formal of type [domain(1,int(64),false)] uint(8)
-revcomp-blc-begin-const-ref.chpl:77: note: to ref formal here
-revcomp-blc-begin-const-ref.chpl:103: note: passed as ref here
-revcomp-blc-begin-const-ref.chpl:103: note: passed as ref here
+revcomp-blc-begin-const-ref.chpl:18: In function 'main':
+revcomp-blc-begin-const-ref.chpl:48: error: const actual is passed to 'ref' formal 'seq' of revcomp()

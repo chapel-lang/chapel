@@ -13,7 +13,9 @@
  *  will be made to make it a true Chapel program.
  *
  *  last revised 9/18/2008 by marybeth
- */  
+ */
+use Math;
+
 // param used below still gives errors
 param POLY:uint(64) = 7;
 
@@ -64,7 +66,7 @@ proc main() {
 
 proc RandomAccessUpdate() {
 
-  [i in TableDomain] Table(i) = i:uint(64);
+  [i in TableDomain with (ref Table)] Table(i) = i:uint(64);
   
   for j in StreamDomain {
     var ran:uint(64) = RandomStart(BigStep*j);

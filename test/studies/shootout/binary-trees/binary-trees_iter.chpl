@@ -19,7 +19,7 @@ proc main() {
   var results: [1..maxDepth, 1..2] int;
   var longLivedTree : unmanaged Tree = bottomUpTree(maxDepth);
 
-  forall depth in minDepth..maxDepth by 2 {
+  forall depth in minDepth..maxDepth by 2 with (ref results) {
     var iterations: int = 1 << (maxDepth - depth + minDepth);
     var check: int = 0;
 			

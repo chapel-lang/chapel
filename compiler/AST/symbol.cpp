@@ -56,6 +56,7 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
+Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;
@@ -72,22 +73,14 @@ Symbol *gSingleVarAuxFields = NULL;
 
 VarSymbol *gTrue = NULL;
 VarSymbol *gFalse = NULL;
-VarSymbol *gBoundsChecking = NULL;
-VarSymbol *gCastChecking = NULL;
-VarSymbol *gNilChecking = NULL;
-VarSymbol *gOverloadSetsChecks = NULL;
-VarSymbol *gDivZeroChecking = NULL;
-VarSymbol* gCacheRemote = NULL;
-VarSymbol* gPrivatization = NULL;
-VarSymbol* gLocal = NULL;
-VarSymbol* gWarnUnstable = NULL;
 VarSymbol* gIteratorBreakToken = NULL;
 VarSymbol* gNodeID = NULL;
 VarSymbol *gModuleInitIndentLevel = NULL;
 VarSymbol *gInfinity = NULL;
 VarSymbol *gNan = NULL;
 VarSymbol *gUninstantiated = NULL;
-VarSymbol *gUseIOFormatters = NULL;
+
+llvm::SmallVector<VarSymbol*, 10> gCompilerGlobalParams;
 
 void verifyInTree(BaseAST* ast, const char* msg) {
   if (ast != NULL && ast->inTree() == false) {
@@ -472,32 +465,74 @@ const char* Symbol::getUnstableMsg() const {
 const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
-void Symbol::generateDeprecationWarning(Expr* context) {
+
+void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
+  if (!this->hasFlag(FLAG_DEPRECATED)) return;
+
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
+
+  // Ignore initialization of deprecated fields in initializers.
+  if (FnSymbol* fn = toFnSymbol(contextParent)) {
+    bool isField = isTypeSymbol(this->defPoint->parentSymbol) ||
+                   this->hasFlag(FLAG_FIELD_ACCESSOR);
+    bool isInit = (fn->isInitializer() || fn->isCopyInit());
+    if (isField && isInit) {
+      return;
+    }
+  }
 
   // Traverse until we find a deprecated parent symbol, a compiler generated
   // parent symbol, or until we reach the highest outer scope
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
-         parentDeprecated != true && compilerGenerated != true) {
+         parentDeprecated != true && compilerGenerated != true &&
+         ignoreUsage != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!compilerGenerated && !parentDeprecated) {
+  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
     USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
   }
 }
 
-//based on generateDeprecationWarning
-void Symbol::generateUnstableWarning(Expr* context) {
+static bool isInvisibleModule(Symbol* sym) {
+  return sym == rootModule || sym == theProgram;
+}
+
+static bool isUnstableContext(Symbol* sym) {
+  if (sym->hasFlag(FLAG_UNSTABLE)) return true;
+  if (auto mod = toModuleSymbol(sym)) {
+    if (isInvisibleModule(mod)) return false;
+    if (mod->modTag == MOD_INTERNAL) return !fWarnUnstableInternal;
+    if (mod->modTag == MOD_STANDARD) return !fWarnUnstableStandard;
+  }
+  return false;
+}
+
+static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
+  if (!sym->hasFlag(FLAG_UNSTABLE)) return false;
+  auto mod = initialContext->getModule();
+  INT_ASSERT(mod);
+  if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+  if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  INT_ASSERT(mod->modTag == MOD_USER);
+  return fWarnUnstable;
+}
+
+//based on maybeGenerateDeprecationWarning
+void Symbol::maybeGenerateUnstableWarning(Expr* context) {
+  if (!isUnstableShouldWarn(this, context)) return;
+
   Symbol* contextParent = context->parentSymbol;
-  bool parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+  bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
   bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
 
@@ -506,10 +541,11 @@ void Symbol::generateUnstableWarning(Expr* context) {
   // outer scope.
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
+         !isInvisibleModule(contextParent) &&
          parentUnstable != true && compilerGenerated != true &&
          parentDeprecated != true) {
     contextParent = contextParent->defPoint->parentSymbol;
-    parentUnstable = contextParent->hasFlag(FLAG_UNSTABLE);
+    parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
   }
@@ -1699,27 +1735,17 @@ VarSymbol *new_CStringSymbol(const char *str) {
   return s;
 }
 
-VarSymbol* new_BoolSymbol(bool b, IF1_bool_type size) {
-  Immediate imm;
-  switch (size) {
-  default:
-    INT_FATAL( "unknown BOOL_SIZE");
 
-  case BOOL_SIZE_SYS:
-  case BOOL_SIZE_8  :
-  case BOOL_SIZE_16 :
-  case BOOL_SIZE_32 :
-  case BOOL_SIZE_64 :
-    break;
-  }
+VarSymbol* new_BoolSymbol(bool b) {
+  Immediate imm;
   imm.v_bool = b;
   imm.const_kind = NUM_KIND_BOOL;
-  imm.num_index = size;
+  imm.num_index = BOOL_SIZE_SYS;
   VarSymbol *s;
   // doesn't use uniqueConstantsHash because new_BoolSymbol is only
   // called to initialize dtBools[i]->defaultValue.
   // gTrue and gFalse are set up directly in initPrimitiveTypes.
-  PrimitiveType* dtRetType = dtBools[size];
+  PrimitiveType* dtRetType = dtBool;
   s = new VarSymbol(astr("_literal_", istr(literal_id++)), dtRetType);
   rootModule->block->insertAtTail(new DefExpr(s));
   s->immediate = new Immediate;
@@ -1934,7 +1960,7 @@ immediate_type(Immediate *imm) {
       }
     }
     case NUM_KIND_BOOL:
-      return dtBools[imm->num_index];
+      return dtBool;
     case NUM_KIND_UINT:
       return dtUInt[imm->num_index];
     case NUM_KIND_INT:
@@ -2060,14 +2086,19 @@ const char* astrSlt = NULL;
 const char* astrSlte = NULL;
 const char* astrSswap = NULL;
 const char* astrScolon = NULL;
+const char* astrScomma = NULL;
+const char* astrSstar = NULL;
+const char* astrSstarstar = NULL;
 const char* astr_defaultOf = NULL;
 const char* astrInit = NULL;
 const char* astrInitEquals = NULL;
 const char* astrNew = NULL;
 const char* astrDeinit = NULL;
 const char* astrPostinit = NULL;
+const char* astrBuildTuple = NULL;
 const char* astrTag = NULL;
 const char* astrThis = NULL;
+const char* astrThese = NULL;
 const char* astrSuper = NULL;
 const char* astr_chpl_cname = NULL;
 const char* astr_chpl_forward_tgt = NULL;
@@ -2097,14 +2128,19 @@ void initAstrConsts() {
   astrSlte = astr("<=");
   astrSswap = astr("<=>");
   astrScolon = astr(":");
+  astrScomma = astr(",");
+  astrSstar = astr("*");
+  astrSstarstar = astr("**");
   astr_defaultOf = astr("_defaultOf");
   astrInit    = astr("init");
   astrInitEquals = astr("init=");
   astrNew     = astr("_new");
   astrDeinit  = astr("deinit");
   astrPostinit  = astr("postinit");
+  astrBuildTuple = astr("_build_tuple");
   astrTag     = astr("tag");
   astrThis    = astr("this");
+  astrThese   = astr("these");
   astrSuper   = astr("super");
   astr_chpl_cname = astr("_chpl_cname");
   astr_chpl_forward_tgt = astr("_chpl_forward_tgt");

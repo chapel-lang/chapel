@@ -82,9 +82,9 @@ ssize_t sock_queue_rma_op(struct fid_ep *ep, const struct fi_msg_rma *msg,
 	trigger->ep = ep;
 	trigger->flags = flags;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	dlist_insert_tail(&trigger->entry, &cntr->trigger_list);
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 	sock_cntr_check_trigger_list(cntr);
 	return 0;
 }
@@ -124,9 +124,9 @@ ssize_t sock_queue_msg_op(struct fid_ep *ep, const struct fi_msg *msg,
 	trigger->ep = ep;
 	trigger->flags = flags;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	dlist_insert_tail(&trigger->entry, &cntr->trigger_list);
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 	sock_cntr_check_trigger_list(cntr);
 	return 0;
 }
@@ -166,9 +166,9 @@ ssize_t sock_queue_tmsg_op(struct fid_ep *ep, const struct fi_msg_tagged *msg,
 	trigger->ep = ep;
 	trigger->flags = flags;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	dlist_insert_tail(&trigger->entry, &cntr->trigger_list);
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 	sock_cntr_check_trigger_list(cntr);
 	return 0;
 }
@@ -226,9 +226,9 @@ ssize_t sock_queue_atomic_op(struct fid_ep *ep, const struct fi_msg_atomic *msg,
 	trigger->ep = ep;
 	trigger->flags = flags;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	dlist_insert_tail(&trigger->entry, &cntr->trigger_list);
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 	sock_cntr_check_trigger_list(cntr);
 	return 0;
 }
@@ -256,14 +256,14 @@ ssize_t sock_queue_cntr_op(struct fi_deferred_work *work, uint64_t flags)
 	trigger->threshold = work->threshold;
 	trigger->flags = flags;
 
-	fastlock_acquire(&cntr->trigger_lock);
+	ofi_mutex_lock(&cntr->trigger_lock);
 	dlist_insert_tail(&trigger->entry, &cntr->trigger_list);
-	fastlock_release(&cntr->trigger_lock);
+	ofi_mutex_unlock(&cntr->trigger_lock);
 	sock_cntr_check_trigger_list(cntr);
 	return 0;
 }
 
-int sock_queue_work(struct sock_domain *dom, struct fi_deferred_work *work)
+ssize_t sock_queue_work(struct sock_domain *dom, struct fi_deferred_work *work)
 {
 	struct sock_triggered_context *ctx;
 	uint64_t flags = SOCK_NO_COMPLETION | SOCK_TRIGGERED_OP | FI_TRIGGER;
@@ -295,12 +295,12 @@ int sock_queue_work(struct sock_domain *dom, struct fi_deferred_work *work)
 		if (work->op.tagged->msg.context != &work->context)
 			return -FI_EINVAL;
 		return sock_ep_trecvmsg(work->op.tagged->ep, &work->op.tagged->msg,
-					  work->op.tagged->flags | flags);
+					work->op.tagged->flags | flags);
 	case FI_OP_TSEND:
 		if (work->op.tagged->msg.context != &work->context)
 			return -FI_EINVAL;
 		return sock_ep_tsendmsg(work->op.tagged->ep, &work->op.tagged->msg,
-					  work->op.tagged->flags | flags);
+					work->op.tagged->flags | flags);
 	case FI_OP_READ:
 		if (work->op.rma->msg.context != &work->context)
 			return -FI_EINVAL;

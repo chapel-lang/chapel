@@ -1,6 +1,6 @@
 module Test {
   proc throwme() throws {
-    throw new owned IllegalArgumentError("Bozos", "Sing");
+    throw new owned IllegalArgumentError("illegal argument 'Bozos': Sing");
   }
 
   proc test() {

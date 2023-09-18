@@ -1,0 +1,3 @@
+# throws off loop attributes
+COMPOPTS <= --baseline
+CHPL_TARGET_COMPILER != llvm

@@ -32,11 +32,11 @@ var T4D: [Dom4D] real;
 var T2D32: [Dom2D32] real;
 
 proc resetTempArrays() {
-  [i in Dom1D] T1D[i] = -1;
-  [ij in Dom2D] T2D[ij] = -1;
-  [ijk in Dom3D] T3D[ijk] = -1;
-  [ijkl in Dom4D] T4D[ijkl] = -1;
-  [ij in Dom2D32] T2D32[ij] = -1;
+  [i in Dom1D with (ref T1D)] T1D[i] = -1;
+  [ij in Dom2D with (ref T2D)] T2D[ij] = -1;
+  [ijk in Dom3D with (ref T3D)] T3D[ijk] = -1;
+  [ijkl in Dom4D with (ref T4D)] T4D[ijkl] = -1;
+  [ij in Dom2D32 with (ref T2D32)] T2D32[ij] = -1;
 }
 
 
@@ -78,7 +78,7 @@ writeln("\tR2D32: ", checkRNG(R2D32, aT2D32), " errors");
 
 
 writeln("fillRandom() reindexed arrays");
-proc foo(rng, D: domain, A: [D]) {
+proc foo(rng, D: domain(?), ref A: [D]) {
   rng.fillRandom(A);
 }
 resetTempArrays();

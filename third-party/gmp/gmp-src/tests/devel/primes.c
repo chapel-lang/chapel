@@ -1,5 +1,5 @@
 /*
-Copyright 2018-2019 Free Software Foundation, Inc.
+Copyright 2018-2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -27,10 +27,11 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
      With the parameter "p" (or nothing), tests all numbers. With "c"
      only composites are tested.
 
-   ./primes n [n0] <nMax>
+   ./primes n|N [n0] <nMax>
 
      Checks mpz_nextprime() exhaustively, starting from n=n0 up to
-     nMax.
+     nMax. With "n", only the sequence of primes is checked, with "N"
+     the function is tested on every number in the interval.
 
      WARNING: The full intervall [0..nMax] is sieved at once, even if
      only a piece is needed. This may require a lot of memory!
@@ -62,37 +63,37 @@ the GNU MP Library test suite.  If not, see https://www.gnu.org/licenses/.  */
 /*********************************************************/
 
 static mp_size_t
-primesieve_size (mp_limb_t n) { return n_to_bit(n) / GMP_LIMB_BITS + 1; }
+primesieve_size (mp_limb_t n) { return n_fto_bit(n) / GMP_LIMB_BITS + 1; }
 
 /*************************************************************/
 /* Section macros: common macros, for swing/fac/bin (&sieve) */
 /*************************************************************/
 
-#define LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)			\
+#define LOOP_ON_SIEVE_CONTINUE(prime,end)			\
     __max_i = (end);						\
 								\
     do {							\
       ++__i;							\
-      if (((sieve)[__index] & __mask) == 0)			\
+      if ((*__sieve & __mask) == 0)				\
 	{							\
-          mp_limb_t prime;					\
+	  mp_limb_t prime;					\
 	  prime = id_to_n(__i)
 
 #define LOOP_ON_SIEVE_BEGIN(prime,start,end,off,sieve)		\
   do {								\
-    mp_limb_t __mask, __index, __max_i, __i;			\
+    mp_limb_t __mask, *__sieve, __max_i, __i;			\
 								\
     __i = (start)-(off);					\
-    __index = __i / GMP_LIMB_BITS;				\
+    __sieve = (sieve) + __i / GMP_LIMB_BITS;			\
     __mask = CNST_LIMB(1) << (__i % GMP_LIMB_BITS);		\
     __i += (off);						\
 								\
-    LOOP_ON_SIEVE_CONTINUE(prime,end,sieve)
+    LOOP_ON_SIEVE_CONTINUE(prime,end)
 
 #define LOOP_ON_SIEVE_STOP					\
 	}							\
       __mask = __mask << 1 | __mask >> (GMP_LIMB_BITS-1);	\
-      __index += __mask & 1;					\
+      __sieve += __mask & 1;					\
     }  while (__i <= __max_i)
 
 #define LOOP_ON_SIEVE_END					\
@@ -142,7 +143,7 @@ check_pprime (unsigned long begin, unsigned long end, int composites)
 
 	size_s = BLOCK_SIZE * 2;
 	sieve = __GMP_ALLOCATE_FUNC_LIMBS (size_s);
-	off = n_to_bit(begin) + (begin % 3 == 0);
+	off = n_cto_bit(begin);
 
 	do {
 	  TRACE (printf ("off =%li\n", off),3);
@@ -188,8 +189,8 @@ check_pprime (unsigned long begin, unsigned long end, int composites)
 	sieve = __GMP_ALLOCATE_FUNC_LIMBS (size);
 	gmp_primesieve (sieve, end);
 	start = MAX (begin, 5) | 1;
-	LOOP_ON_SIEVE_BEGIN (prime, n_to_bit(start) + (start % 3 == 0),
-			     n_to_bit (end), 0, sieve);
+	LOOP_ON_SIEVE_BEGIN (prime, n_cto_bit(start),
+			     n_fto_bit (end), 0, sieve);
 
 	do {
 	  *(g->_mp_d) = begin;
@@ -234,10 +235,11 @@ check_nprime (unsigned long begin, unsigned long end)
   if (begin < 2)
     {
       *(g->_mp_d) = begin;
+      g->_mp_size = begin;
       TRACE(printf ("%li ", begin),1);
       mpz_nextprime (g, g);
       if (mpz_cmp_ui (g, 2) != 0)
-	STOP (something_wrong (g, -1));
+	STOP (something_wrong (g, 2));
       begin = mpz_get_ui (g);
     }
   if (begin < 3)
@@ -246,7 +248,7 @@ check_nprime (unsigned long begin, unsigned long end)
       TRACE(printf ("%li ", begin),1);
       mpz_nextprime (g, g);
       if (mpz_cmp_ui (g, 3) != 0)
-	STOP (something_wrong (g, -1));
+	STOP (something_wrong (g, 3));
       begin = mpz_get_ui (g);
     }
   if (end > 4)
@@ -261,12 +263,87 @@ check_nprime (unsigned long begin, unsigned long end)
 	gmp_primesieve (sieve, end);
 	start = MAX (begin, 5) | 1;
 	*(g->_mp_d) = begin;
-	LOOP_ON_SIEVE_BEGIN (prime, n_to_bit(start) + (start % 3 == 0),
-			     n_to_bit (end), 0, sieve);
+	LOOP_ON_SIEVE_BEGIN (prime, n_cto_bit(start),
+			     n_fto_bit (end), 0, sieve);
 
 	mpz_nextprime (g, g);
 	if (mpz_cmp_ui (g, prime) != 0)
-	  STOP (something_wrong (g, -1));
+	  STOP (something_wrong (g, prime));
+
+	if (prime - start > 200)
+	  {
+	    start = prime;
+	    spinner();
+	    if (prime - begin > 0xfffffff)
+	      {
+		begin = prime;
+		printf ("%li (0x%lx)\n", begin, begin);
+	      }
+	  }
+
+	LOOP_ON_SIEVE_END;
+
+	__GMP_FREE_FUNC_LIMBS (sieve, size);
+      }
+
+  if (mpz_cmp_ui (g, end) < 0)
+    {
+      mpz_nextprime (g, g);
+      if (mpz_cmp_ui (g, end) <= 0)
+	STOP (something_wrong (g, -1));
+    }
+
+  gmp_printf ("%Zd\n", g);
+  return 0;
+}
+
+int
+check_Nprime (unsigned long begin, unsigned long end)
+{
+  mpz_t op;
+  mpz_init_set_ui (op, end);
+
+  for (;begin < 2; ++begin)
+    {
+      *(op->_mp_d) = begin;
+      op->_mp_size = begin;
+      TRACE(printf ("%li ", begin),1);
+      mpz_nextprime (g, op);
+      if (mpz_cmp_ui (g, 2) != 0)
+	STOP (something_wrong (g, 2));
+    }
+  if (begin < 3)
+    {
+      *(op->_mp_d) = begin;
+      TRACE(printf ("%li ", begin),1);
+      mpz_nextprime (g, op);
+      if (mpz_cmp_ui (g, 3) != 0)
+	STOP (something_wrong (g, 3));
+      begin = 3;
+    }
+  if (end > 4)
+      {
+	mp_limb_t *sieve;
+	mp_size_t size;
+	unsigned long start;
+	unsigned long opl;
+
+	size = primesieve_size (end);
+
+	sieve = __GMP_ALLOCATE_FUNC_LIMBS (size);
+	gmp_primesieve (sieve, end);
+	start = MAX (begin, 5) | 1;
+	opl = begin;
+	LOOP_ON_SIEVE_BEGIN (prime, n_cto_bit(start),
+			     n_fto_bit (end), 0, sieve);
+
+	do {
+	  *(op->_mp_d) = opl;
+	  mpz_nextprime (g, op);
+	  if (mpz_cmp_ui (g, prime) != 0)
+	    STOP (something_wrong (g, prime));
+	  ++opl;
+	} while (opl < prime);
 
 	if (prime - start > 200)
 	  {
@@ -312,6 +389,9 @@ main (int argc, char **argv)
     case 'n':
       mode = 1;
       break;
+    case 'N':
+      mode = 3;
+      break;
     default:
       begin = end;
       end = atol (argv[1]);
@@ -319,7 +399,7 @@ main (int argc, char **argv)
 
   if (begin >= end)
     {
-      fprintf (stderr, "usage: primes [n|p|c] [n0] <nMax>\n");
+      fprintf (stderr, "usage: primes [N|n|p|c] [n0] <nMax>\n");
       exit (1);
     }
 
@@ -328,6 +408,9 @@ main (int argc, char **argv)
   switch (mode) {
   case 1:
     ret = check_nprime (begin, end);
+    break;
+  case 3:
+    ret = check_Nprime (begin, end);
     break;
   default:
     ret = check_pprime (begin, end, mode);

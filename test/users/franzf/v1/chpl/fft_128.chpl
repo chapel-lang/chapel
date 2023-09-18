@@ -54,7 +54,7 @@ proc init_fft128() {
 
 }
 
-proc fft128(Y: [] complex, X: [] complex) {
+proc fft128(ref Y: [] complex, X: [] complex) {
   var a6079, s2448, s2449, s2450, s2451, t6445, t6446, t6447, t6448, t6449, t6450, t6451, t6452, t6453, t6454, t6455:complex;
   t6445 = (X(0) + X(64));
   t6446 = (X(0) - X(64));

@@ -270,7 +270,7 @@ int _gnix_buddy_allocator_create(void *base, uint32_t len, uint32_t max,
 		return -FI_ENOMEM;
 	}
 
-	fastlock_init(&alloc_handle[0]->lock);
+	ofi_spin_init(&alloc_handle[0]->lock);
 	alloc_handle[0]->base = base;
 	alloc_handle[0]->len = len;
 	alloc_handle[0]->max = max;
@@ -305,7 +305,7 @@ int _gnix_buddy_allocator_destroy(gnix_buddy_alloc_handle_t *alloc_handle)
 		return -FI_EINVAL;
 	}
 
-	fastlock_acquire(&alloc_handle->lock);
+	ofi_spin_lock(&alloc_handle->lock);
 
 	free(alloc_handle->lists);
 
@@ -315,8 +315,8 @@ int _gnix_buddy_allocator_destroy(gnix_buddy_alloc_handle_t *alloc_handle)
 		sleep(1);
 	}
 
-	fastlock_release(&alloc_handle->lock);
-	fastlock_destroy(&alloc_handle->lock);
+	ofi_spin_unlock(&alloc_handle->lock);
+	ofi_spin_destroy(&alloc_handle->lock);
 
 	free(alloc_handle);
 
@@ -341,16 +341,16 @@ int _gnix_buddy_alloc(gnix_buddy_alloc_handle_t *alloc_handle, void **ptr,
 	block_size = BLOCK_SIZE(len, MIN_BLOCK_SIZE);
 	i = (uint32_t) LIST_INDEX(block_size, MIN_BLOCK_SIZE);
 
-	fastlock_acquire(&alloc_handle->lock);
+	ofi_spin_lock(&alloc_handle->lock);
 
 	if (__gnix_buddy_find_block(alloc_handle, i, ptr)) {
-		fastlock_release(&alloc_handle->lock);
+		ofi_spin_unlock(&alloc_handle->lock);
 		GNIX_WARN(FI_LOG_EP_CTRL,
 			  "Could not allocate buddy block.\n");
 		return -FI_ENOMEM;
 	}
 
-	fastlock_release(&alloc_handle->lock);
+	ofi_spin_unlock(&alloc_handle->lock);
 
 	_gnix_set_bit(&alloc_handle->bitmap,
 		      __gnix_buddy_bitmap_index(*ptr, block_size,
@@ -386,14 +386,14 @@ int _gnix_buddy_free(gnix_buddy_alloc_handle_t *alloc_handle, void *ptr,
 						  alloc_handle->len,
 						  MIN_BLOCK_SIZE));
 
-	fastlock_acquire(&alloc_handle->lock);
+	ofi_spin_lock(&alloc_handle->lock);
 
 	block_size = __gnix_buddy_coalesce(alloc_handle, &ptr, block_size);
 
 	dlist_insert_tail(ptr, alloc_handle->lists +
 			  LIST_INDEX(block_size, MIN_BLOCK_SIZE));
 
-	fastlock_release(&alloc_handle->lock);
+	ofi_spin_unlock(&alloc_handle->lock);
 
 	return FI_SUCCESS;
 }

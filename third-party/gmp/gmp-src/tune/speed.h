@@ -1,6 +1,6 @@
 /* Header for speed and threshold things.
 
-Copyright 1999-2003, 2005, 2006, 2008-2017, 2019 Free Software
+Copyright 1999-2003, 2005, 2006, 2008-2017, 2019-2022 Free Software
 Foundation, Inc.
 
 This file is part of the GNU MP Library.
@@ -65,7 +65,6 @@ see https://www.gnu.org/licenses/.  */
 	 64   itanium-2 L1
 	128   itanium-2 L2
 */
-#undef CACHE_LINE_SIZE
 #define CACHE_LINE_SIZE   64 /* bytes */
 
 #define SPEED_TMP_ALLOC_ADJUST_MASK  (CACHE_LINE_SIZE/GMP_LIMB_BYTES - 1)
@@ -182,6 +181,7 @@ double speed_mpn_addmul_5 (struct speed_params *);
 double speed_mpn_addmul_6 (struct speed_params *);
 double speed_mpn_addmul_7 (struct speed_params *);
 double speed_mpn_addmul_8 (struct speed_params *);
+double speed_mpn_addaddmul_1msb0 (struct speed_params *);
 double speed_mpn_cnd_add_n (struct speed_params *);
 double speed_mpn_cnd_sub_n (struct speed_params *);
 double speed_mpn_com (struct speed_params *);
@@ -211,6 +211,8 @@ double speed_mpn_divrem_2_inv (struct speed_params *);
 double speed_mpn_div_qr_1n_pi1 (struct speed_params *);
 double speed_mpn_div_qr_1n_pi1_1 (struct speed_params *);
 double speed_mpn_div_qr_1n_pi1_2 (struct speed_params *);
+double speed_mpn_div_qr_1n_pi1_3 (struct speed_params *);
+double speed_mpn_div_qr_1n_pi1_4 (struct speed_params *);
 double speed_mpn_div_qr_1 (struct speed_params *);
 double speed_mpn_div_qr_2n (struct speed_params *);
 double speed_mpn_div_qr_2u (struct speed_params *);
@@ -386,6 +388,10 @@ double speed_mpn_mulmod_bnm1 (struct speed_params *);
 double speed_mpn_bc_mulmod_bnm1 (struct speed_params *);
 double speed_mpn_mulmod_bnm1_rounded (struct speed_params *);
 double speed_mpn_sqrmod_bnm1 (struct speed_params *);
+double speed_mpn_mulmod_bknp1 (struct speed_params *);
+double speed_mpn_sqrmod_bknp1 (struct speed_params *);
+double speed_mpn_mulmod_bnp1 (struct speed_params *);
+double speed_mpn_sqrmod_bnp1 (struct speed_params *);
 double speed_mpn_udiv_qrnnd (struct speed_params *);
 double speed_mpn_udiv_qrnnd_r (struct speed_params *);
 double speed_mpn_umul_ppmm (struct speed_params *);
@@ -408,7 +414,11 @@ double speed_mpz_fib_ui (struct speed_params *);
 double speed_mpz_fib2_ui (struct speed_params *);
 double speed_mpz_init_clear (struct speed_params *);
 double speed_mpz_init_realloc_clear (struct speed_params *);
+double speed_gmp_primesieve (struct speed_params *);
 double speed_mpz_nextprime (struct speed_params *);
+double speed_mpz_nextprime_1 (struct speed_params *);
+double speed_mpz_prevprime (struct speed_params *);
+double speed_mpz_prevprime_1 (struct speed_params *);
 double speed_mpz_jacobi (struct speed_params *);
 double speed_mpz_lucnum_ui (struct speed_params *);
 double speed_mpz_lucnum2_ui (struct speed_params *);
@@ -480,6 +490,8 @@ void speed_option_set (const char *);
 
 mp_limb_t mpn_div_qr_1n_pi1_1 (mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t, mp_limb_t);
 mp_limb_t mpn_div_qr_1n_pi1_2 (mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t, mp_limb_t);
+mp_limb_t mpn_div_qr_1n_pi1_3 (mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t, mp_limb_t);
+mp_limb_t mpn_div_qr_1n_pi1_4 (mp_ptr, mp_srcptr, mp_size_t, mp_limb_t, mp_limb_t, mp_limb_t);
 
 mp_limb_t mpn_divrem_1_div (mp_ptr, mp_size_t, mp_srcptr, mp_size_t, mp_limb_t);
 mp_limb_t mpn_divrem_1_inv (mp_ptr, mp_size_t, mp_srcptr, mp_size_t, mp_limb_t);
@@ -513,7 +525,7 @@ mp_size_t mpn_gcdext_double (mp_ptr, mp_ptr, mp_size_t *, mp_ptr, mp_size_t, mp_
 mp_size_t mpn_hgcd_lehmer (mp_ptr, mp_ptr, mp_size_t, struct hgcd_matrix *, mp_ptr);
 mp_size_t mpn_hgcd_lehmer_itch (mp_size_t);
 
-mp_size_t mpn_hgcd_appr_lehmer (mp_ptr, mp_ptr, mp_size_t, struct hgcd_matrix *, mp_ptr);
+int mpn_hgcd_appr_lehmer (mp_ptr, mp_ptr, mp_size_t, struct hgcd_matrix *, mp_ptr);
 mp_size_t mpn_hgcd_appr_lehmer_itch (mp_size_t);
 
 mp_size_t mpn_hgcd_reduce_1 (struct hgcd_matrix *, mp_ptr, mp_ptr, mp_size_t, mp_size_t, mp_ptr);
@@ -1070,6 +1082,36 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 #define SPEED_ROUTINE_MPN_UNARY_8(function)				\
   SPEED_ROUTINE_MPN_UNARY_N (function, 8)
 
+#define SPEED_ROUTINE_MPN_ADDADDMUL1_MSB0(function)			\
+  {									\
+    mp_ptr     wp;							\
+    unsigned   i;							\
+    double     t;							\
+    mp_limb_t  r;							\
+    TMP_DECL;								\
+									\
+    SPEED_RESTRICT_COND (s->size >= 1);					\
+									\
+    TMP_MARK;								\
+    SPEED_TMP_ALLOC_LIMBS (wp, s->size, s->align_wp);			\
+    speed_operand_src (s, s->xp, s->size);				\
+    speed_operand_src (s, s->yp, s->size);				\
+    speed_operand_dst (s, wp, s->size);					\
+    speed_cache_fill (s);						\
+									\
+    r = s->r != 0 ? s->r : MP_BASES_BIG_BASE_10;			\
+    r &= ~GMP_NUMB_HIGHBIT;						\
+									\
+    speed_starttime ();							\
+    i = s->reps;							\
+    do									\
+      function (wp, s->xp, s->yp, s->size, r, r);			\
+    while (--i != 0);							\
+    t = speed_endtime ();						\
+									\
+    TMP_FREE;								\
+    return t;								\
+  }
 
 /* For mpn_mul, mpn_mul_basecase, xsize=r, ysize=s->size. */
 #define SPEED_ROUTINE_MPN_MUL(function)					\
@@ -1357,6 +1399,70 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     i = s->reps;							\
     do									\
       function (wp, size, s->xp, s->size, s->yp, s->size, tp);		\
+    while (--i != 0);							\
+    t = speed_endtime ();						\
+									\
+    TMP_FREE;								\
+    return t;								\
+  }
+
+#ifndef MOD_BKNP1_USE11
+#define MOD_BKNP1_USE11 0
+#endif
+#ifndef MOD_BKNP1_ONLY3
+#define MOD_BKNP1_ONLY3 0
+#endif
+
+#define SPEED_ROUTINE_MPN_MULMOD_BNP1_CALL(call,use_r)			\
+  {									\
+    mp_ptr    wp, tp;							\
+    unsigned  i, k;							\
+    double    t;							\
+    mp_size_t itch, nk;							\
+    TMP_DECL;								\
+									\
+    SPEED_RESTRICT_COND (s->size >= 1);					\
+    SPEED_RESTRICT_COND (!use_r || (s->r == 0) ||			\
+			 (s->r == 3) || (s->r == 5) || (s->r == 7) ||	\
+			 (s->r == 13) || (s->r == 17) ||		\
+			 ((MOD_BKNP1_USE11) && (s->r == 11)));		\
+									\
+    if (!use_r || (s->r < 2))						\
+      {									\
+	if (s->size % 3 == 0) {nk = s->size / (k = 3);}			\
+	else if (s->size % 5 == 0) {nk = s->size / (k = 5);}		\
+	else if (s->size % 7 == 0) {nk = s->size / (k = 7);}		\
+	else if (s->size % 11 == 0) {nk = s->size / (k = 11);}		\
+	else if (s->size % 13 == 0) {nk = s->size / (k = 13);}		\
+	else if (s->size % 17 == 0) {nk = s->size / (k = 17);}		\
+	else nk = s->size / (k = 1);					\
+      }									\
+    else nk = s->size / (k = s->r);					\
+									\
+    if (MOD_BKNP1_ONLY3)						\
+      k = 3;								\
+    SPEED_RESTRICT_COND ((!use_r || (k > 2)) && (s->size == k * nk));	\
+    SPEED_RESTRICT_COND ((GMP_NUMB_MAX % k == 0) || (nk % 3 != 0) ||	\
+			 ((MOD_BKNP1_USE11) && (k == 11)));		\
+									\
+    itch = mpn_mulmod_bknp1_itch (s->size);				\
+									\
+    TMP_MARK;								\
+    SPEED_TMP_ALLOC_LIMBS (wp, 2 * s->size + 2, s->align_wp);		\
+    SPEED_TMP_ALLOC_LIMBS (tp, itch, s->align_wp2);			\
+									\
+    s->xp [s->size] &= 1;						\
+    s->yp [s->size] &= 1;						\
+    speed_operand_src (s, s->xp, s->size + 1);				\
+    speed_operand_src (s, s->yp, s->size + 1);				\
+    speed_operand_dst (s, wp, 2 * s->size + 2);				\
+    speed_operand_dst (s, tp, itch);					\
+    speed_cache_fill (s);						\
+									\
+    speed_starttime ();							\
+    i = s->reps;							\
+    do									\
+      call;								\
     while (--i != 0);							\
     t = speed_endtime ();						\
 									\
@@ -2576,6 +2682,52 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 #define SPEED_ROUTINE_MPZ_LUCNUM_UI(function) SPEED_ROUTINE_MPZ_UI(function)
 
 
+#define SPEED_ROUTINE_MPZ_UNARY_1(function)				\
+  {									\
+    mpz_t     z, a;							\
+    unsigned  i;							\
+    mp_limb_t ls;							\
+    double    t;							\
+									\
+    SPEED_RESTRICT_COND (s->size >= 0);					\
+									\
+    mpz_init (z);							\
+    ls = s->size;							\
+    mpz_roinit_n (a, &ls, s->size != 0);				\
+									\
+    if (s->r < 2)							\
+      {									\
+	speed_starttime ();						\
+	i = s->reps;							\
+	do								\
+	  function (z, a);						\
+	while (--i != 0);						\
+	t = speed_endtime ();						\
+      }									\
+    else								\
+      {									\
+	speed_starttime ();						\
+	i = s->reps;							\
+	do								\
+	  {								\
+	    int j = s->r;						\
+	    mpz_set (z, a);						\
+	    do								\
+	      {								\
+		function (z, z);					\
+	      }								\
+	    while (--j != 0);						\
+	  }								\
+	while (--i != 0);						\
+	t = speed_endtime ();						\
+	s->time_divisor = s->r;						\
+      }									\
+									\
+    mpz_clear (z);							\
+    return t;								\
+  }
+
+
 #define SPEED_ROUTINE_MPZ_2_UI(function)				\
   {									\
     mpz_t     z, z2;							\
@@ -2840,7 +2992,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
   }
 
 #define SPEED_ROUTINE_MPN_GCD_1(function)				\
-  SPEED_ROUTINE_MPN_GCD_1_CALL(do{}while(0) , function (&px[j-1], 1, py[j-1]))
+  SPEED_ROUTINE_MPN_GCD_1_CALL( , function (&px[j-1], 1, py[j-1]))
 
 #define SPEED_ROUTINE_MPN_GCD_11(function)				\
   SPEED_ROUTINE_MPN_GCD_1_CALL((px[i] |= 1, py[i] |= 1),		\
@@ -2868,7 +3020,6 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     unsigned   i, j;							\
     struct hgcd_matrix1 m = {{{0,0},{0,0}}};				\
     double     t;							\
-    mp_limb_t chain;							\
 									\
     speed_operand_src (s, s->xp_block, SPEED_BLOCK_SIZE);		\
     speed_operand_src (s, s->yp_block, SPEED_BLOCK_SIZE);		\
@@ -2876,7 +3027,7 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
 									\
     speed_starttime ();							\
     i = s->reps;							\
-    chain = 0;								\
+    mp_limb_t chain = 0;						\
     do									\
       {									\
 	for (j = 0; j < SPEED_BLOCK_SIZE; j+= 2)			\
@@ -3165,6 +3316,34 @@ int speed_routine_count_zeros_setup (struct speed_params *, mp_ptr, int, int);
     s->time_divisor = pieces;						\
     return t;								\
   }
+
+#define SPEED_ROUTINE_GMP_PRIMESIEVE(function)				\
+{									\
+    mp_ptr     wp;							\
+    unsigned   i;							\
+    double     t;							\
+    mp_limb_t  a = s->size * GMP_LIMB_BITS * 3;				\
+    TMP_DECL;								\
+									\
+    SPEED_RESTRICT_COND (s->size >= 1);					\
+									\
+    TMP_MARK;								\
+    SPEED_TMP_ALLOC_LIMBS (wp, s->size, s->align_wp);			\
+									\
+    speed_operand_dst (s, wp, s->size);					\
+    speed_cache_fill (s);						\
+									\
+    speed_starttime ();							\
+    i = s->reps;							\
+    do									\
+      function (wp, a);							\
+    while (--i != 0);							\
+    t = speed_endtime ();						\
+									\
+    TMP_FREE;								\
+    return t;								\
+}
+
 
 /* Calculate nextprime(n) for random n of s->size bits (not limbs). */
 #define SPEED_ROUTINE_MPZ_NEXTPRIME(function)				\

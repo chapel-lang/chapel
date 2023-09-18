@@ -411,7 +411,7 @@ sub nodes_free {
 }
 
 
-# Return true if a *.chpl, *.test.c or *.ml-test.c exists. Otherwise false.
+# Return true if a *.chpl, *.test.c, *.ml-test.c, or a PRETEST exists. Otherwise false.
 sub chpl_files {
     local (@fnames) = @_;
     local ($found);
@@ -423,6 +423,7 @@ sub chpl_files {
         if ($fname =~ /\.chpl$/     ||
             $fname =~ /\.test\.c$/  ||
             $fname =~ /\.ml-test\.c$/ ||
+            $fname =~ /PRETEST$/ ||
             $fname eq "sub_test"
         ) {
             # still a NOTEST would override
@@ -431,7 +432,6 @@ sub chpl_files {
     }
     return $found;
 }
-
 
 # Gather all the subdirectories into a flat list and return it.
 sub find_subdirs {

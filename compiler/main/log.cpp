@@ -22,7 +22,6 @@
 
 #include "AstDump.h"
 #include "AstDumpToHtml.h"
-#include "AstDumpToNode.h"
 #include "driver.h"
 #include "files.h"
 #include "misc.h"
@@ -35,11 +34,10 @@
 #include <sys/stat.h>
 
 char             log_dir   [FILENAME_MAX + 1]           = "./log";
-char             log_module[FILENAME_MAX + 1]           =      "";
+std::set<std::string> log_modules;
 
 bool             fLog                                   =    false;
 bool             fLogDir                                =    false;
-bool             fLogNode                               =    false;
 bool             fLogIds                                =    true;
 
 int              fdump_html                             =       0;
@@ -106,7 +104,7 @@ void logSelectPass(const char* arg) {
 
 void setupLogfiles() {
   // Enable logging if --log-module is passed.
-  if (log_module[0] != '\0')
+  if (!log_modules.empty())
     fLog = true;
   // Enable logging if --log-pass is used
   if (logOnlyName.size() > 0)
@@ -155,11 +153,7 @@ void logWriteLog(const char* passName, int passNum, char logTag) {
   if (fLog) {
     if ((logAll == true && logTag != LOG_NEVER) ||
         logOnlyName.count(passName) > 0) {
-      bool logNode = (fLogNode);
-      if (logNode)
-        AstDumpToNode::view(passName, passNum);
-      else
-        AstDump::view(passName, passNum);
+      AstDump::view(passName, passNum);
     }
   }
 }

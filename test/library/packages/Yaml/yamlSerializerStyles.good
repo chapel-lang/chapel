@@ -1,0 +1,46 @@
+=== Flow, Block, Single, Explicit ===
+
+--- !R1
+'item': !R2
+  'stuff': [1, 2, 3, 4, 5]
+  'data': 'hello'
+'id': 111
+'info': "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis,
+  rhoncus \n  metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere.
+  In non auctor lorem. Nullam nec dui \n  at enim pharetra efficitur vitae eget risus.
+  Praesent sollicitudin justo tortor, vel lobortis ex vehicula"
+...
+
+=== Block, Flow, Plain, Implicit ===
+
+--- !R1 {item: !R2 {stuff: [1, 2, 3, 4, 5], data: hello}, id: 111, info: "Lorem ipsum
+    dolor sit amet, consectetur adipiscing elit. In in nisl lobortis, rhoncus \n  metus
+    dapibus, molestie mi. Donec porta lacus vitae dignissim posuere. In non auctor
+    lorem. Nullam nec dui \n  at enim pharetra efficitur vitae eget risus. Praesent
+    sollicitudin justo tortor, vel lobortis ex vehicula"}
+
+=== Flow, Flow, Folded, Explicit ===
+
+--- !R1 {"item": !R2 {"stuff": [1, 2, 3, 4, 5], "data": "hello"}, "id": 111, "info": "Lorem
+    ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis, rhoncus
+    \n  metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere. In
+    non auctor lorem. Nullam nec dui \n  at enim pharetra efficitur vitae eget risus.
+    Praesent sollicitudin justo tortor, vel lobortis ex vehicula"}
+...
+
+=== default ===
+
+--- !R1
+item: !R2
+  stuff:
+  - 1
+  - 2
+  - 3
+  - 4
+  - 5
+  data: hello
+id: 111
+info: "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In in nisl lobortis,
+  rhoncus \n  metus dapibus, molestie mi. Donec porta lacus vitae dignissim posuere.
+  In non auctor lorem. Nullam nec dui \n  at enim pharetra efficitur vitae eget risus.
+  Praesent sollicitudin justo tortor, vel lobortis ex vehicula"

@@ -7,6 +7,6 @@ class B: A {
     writeln(y);
   }
 }
-
-var a = (new owned A()).borrow();
+var ownA = new owned A();
+var a = ownA.borrow();
 var b: borrowed B?;

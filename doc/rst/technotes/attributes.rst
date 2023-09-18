@@ -27,7 +27,7 @@ ability to specify a tool name for an attribute.
 
 Here are examples of what an attribute might look like:
 
-.. code-block:: text
+.. code-block:: chapel
 
     // example of an attribute without a tool name
     @attributeName(arg1="value", arg2=1, arg3=1.0, arg4=true, arg5=1..10)
@@ -105,7 +105,7 @@ Stability Attributes
     in a future release.
 
 
-.. code-block:: text
+.. code-block:: chapel
 
     // ways to use @deprecated
     @deprecated
@@ -153,7 +153,7 @@ using ``pragma "no doc"`` to suppress documentation for a symbol.
 When converting existing code, note that ``@chpldoc.nodoc`` must be placed `after`
 any remaining pragmas assigned to the symbol.
 
-.. code-block:: text
+.. code-block:: chapel
 
     // prevent the entire module from being documented
     @chpldoc.nodoc

@@ -56,7 +56,7 @@
 
 #include <signal.h>
 #include "psm2_mock_testing.h"
-#include "opa_intf.h"
+#include "utils_macros.h"
 
 #if defined( IB_IOCTL_MAGIC )
 #include <sys/ioctl.h>

@@ -62,6 +62,7 @@
 #include "chpl/uast/Implements.h"
 #include "chpl/uast/Import.h"
 #include "chpl/uast/Include.h"
+#include "chpl/uast/Init.h"
 #include "chpl/uast/Interface.h"
 #include "chpl/uast/IntLiteral.h"
 #include "chpl/uast/Label.h"

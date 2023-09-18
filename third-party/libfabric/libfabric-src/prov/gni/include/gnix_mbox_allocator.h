@@ -106,7 +106,7 @@ struct gnix_slab {
  */
 struct gnix_mbox_alloc_handle {
 	struct gnix_nic *nic_handle;
-	fastlock_t lock;
+	ofi_spin_t lock;
 	gni_cq_handle_t cq_handle;
 
 	size_t last_offset;

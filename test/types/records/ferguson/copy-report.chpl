@@ -29,7 +29,7 @@ proc R.init=(from: R) {
   writeln("    R.init=(R)"); // ie copy-init
 }
 
-proc R.deinit() {
+proc ref R.deinit() {
   delete this.ptr;
   this.ptr = nil;
 }

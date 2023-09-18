@@ -6,7 +6,7 @@ See runTest() calls for what the number of reps and
 the arrays' domains being measured.
 */
 
-use BlockDist, Time, Memory.Diagnostics, ChplConfig;
+use BlockDist, Time, MemDiagnostics, ChplConfig;
 
 config param useBlockDist = CHPL_COMM != "none";
 config const perf = false; // performance or --fast mode
@@ -91,7 +91,7 @@ proc printConfig() {
   }
 }
 
-proc initData(testArray) {
+proc initData(ref testArray) {
   testArray = 2;
   return 2 * testArray.size;
 }
@@ -99,7 +99,7 @@ proc initData(testArray) {
 ////// single measurement //////
 
 proc runTest(testName, testReps, testDRdom) {
-  const DOM = if useBlockDist then testDRdom dmapped Block(testDRdom)
+  const DOM = if useBlockDist then testDRdom dmapped blockDist(testDRdom)
                               else testDRdom;
   var ARR: [DOM] elemType;
   const expected = initData(ARR);

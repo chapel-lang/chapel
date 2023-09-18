@@ -31,7 +31,7 @@ There are two ways to mark a feature as unstable:
    and when producing the compiler warning the ":proc:" syntax and backticks
    will be filtered out.
 
-2. Add a check against ``chpl__warnUnstable`` and use ``compilerWarning()`` to
+2. Add a check against ``chpl_warnUnstable`` and use ``compilerWarning()`` to
    generate the message.  This strategy is best for features that can't be
    represented by a symbol with the ``@unstable`` attribute.
 

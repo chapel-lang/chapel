@@ -81,12 +81,12 @@ int ofi_domain_close(struct util_domain *domain)
 	if (domain->mr_map.rbtree)
 		ofi_mr_map_close(&domain->mr_map);
 
-	fastlock_acquire(&domain->fabric->lock);
+	ofi_mutex_lock(&domain->fabric->lock);
 	dlist_remove(&domain->list_entry);
-	fastlock_release(&domain->fabric->lock);
+	ofi_mutex_unlock(&domain->fabric->lock);
 
 	free(domain->name);
-	fastlock_destroy(&domain->lock);
+	ofi_genlock_destroy(&domain->lock);
 	ofi_atomic_dec32(&domain->fabric->ref);
 	return 0;
 }
@@ -98,24 +98,35 @@ static struct fi_ops_mr util_domain_mr_ops = {
 	.regattr = fi_no_mr_regattr,
 };
 
-static int util_domain_init(struct util_domain *domain,
-			    const struct fi_info *info)
+static int
+util_domain_init(struct util_domain *domain, const struct fi_info *info,
+		 enum ofi_lock_type lock_type)
 {
+	int ret;
+
 	ofi_atomic_initialize32(&domain->ref, 0);
-	fastlock_init(&domain->lock);
+	ret = ofi_genlock_init(&domain->lock, lock_type);
+	if (ret)
+		return ret;
+
 	domain->info_domain_caps = info->caps | info->domain_attr->caps;
 	domain->info_domain_mode = info->mode | info->domain_attr->mode;
 	domain->mr_mode = info->domain_attr->mr_mode;
 	domain->addr_format = info->addr_format;
 	domain->av_type = info->domain_attr->av_type;
-	domain->name = strdup(info->domain_attr->name);
 	domain->threading = info->domain_attr->threading;
 	domain->data_progress = info->domain_attr->data_progress;
-	return domain->name ? 0 : -FI_ENOMEM;
+	domain->name = strdup(info->domain_attr->name);
+	if (!domain->name) {
+		ofi_genlock_destroy(&domain->lock);
+		return -FI_ENOMEM;
+	}
+	return 0;
 }
 
 int ofi_domain_init(struct fid_fabric *fabric_fid, const struct fi_info *info,
-		   struct util_domain *domain, void *context)
+		    struct util_domain *domain, void *context,
+		    enum ofi_lock_type lock_type)
 {
 	struct util_fabric *fabric;
 	int ret;
@@ -123,7 +134,7 @@ int ofi_domain_init(struct fid_fabric *fabric_fid, const struct fi_info *info,
 	fabric = container_of(fabric_fid, struct util_fabric, fabric_fid);
 	domain->fabric = fabric;
 	domain->prov = fabric->prov;
-	ret = util_domain_init(domain, info);
+	ret = util_domain_init(domain, info, lock_type);
 	if (ret)
 		return ret;
 
@@ -141,9 +152,9 @@ int ofi_domain_init(struct fid_fabric *fabric_fid, const struct fi_info *info,
 		return ret;
 	}
 
-	fastlock_acquire(&fabric->lock);
+	ofi_mutex_lock(&fabric->lock);
 	dlist_insert_tail(&domain->list_entry, &fabric->domain_list);
-	fastlock_release(&fabric->lock);
+	ofi_mutex_unlock(&fabric->lock);
 
 	ofi_atomic_inc32(&fabric->ref);
 	return 0;

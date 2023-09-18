@@ -47,8 +47,6 @@
 #endif
 
 #define PSMX3_PROV_NAME		"psm3"
-#define PSMX3_DOMAIN_NAME	"any_verbs_ud_device"
-#define PSMX3_FABRIC_NAME	"psm3"
 
 #define PSMX3_DEFAULT_UUID	"00FF00FF-0000-0000-0000-00FF00FF00FF"
 #define PROVIDER_INI		PSM3_INI
@@ -107,14 +105,14 @@ struct psmx3_context {
 
 #define PSMX3_EP_DECL_OP_CONTEXT \
 	struct slist	free_context_list; \
-	fastlock_t	context_lock;
+	ofi_spin_t	context_lock;
 
 #define PSMX3_EP_INIT_OP_CONTEXT(ep) \
 	do { \
 		struct psmx3_context *item; \
 		int i; \
 		slist_init(&(ep)->free_context_list); \
-		fastlock_init(&(ep)->context_lock); \
+		ofi_spin_init(&(ep)->context_lock); \
 		for (i = 0; i < 64; i++) { \
 			item = calloc(1, sizeof(*item)); \
 			if (!item) { \
@@ -134,7 +132,7 @@ struct psmx3_context {
 			item = container_of(entry, struct psmx3_context, list_entry); \
 			free(item); \
 		} \
-		fastlock_destroy(&(ep)->context_lock); \
+		ofi_spin_destroy(&(ep)->context_lock); \
 	} while (0)
 
 #define PSMX3_EP_GET_OP_CONTEXT(ep, ctx) \

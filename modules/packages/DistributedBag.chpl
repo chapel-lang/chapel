@@ -202,7 +202,7 @@ module DistributedBag {
   /*
     Reference counter for DistributedBag
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class DistributedBagRC {
     type eltType;
     var _pid : int;
@@ -223,7 +223,7 @@ module DistributedBag {
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag {
+  record DistBag : serializable {
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.
@@ -234,21 +234,21 @@ module DistributedBag {
     var _impl : unmanaged DistributedBagImpl(eltType)?;
 
     // Privatized id...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _pid : int = -1;
 
     // Reference Counting...
-    pragma "no doc"
+    @chpldoc.nodoc
     var _rc : shared DistributedBagRC(eltType);
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(type eltType, targetLocales = Locales) {
       this.eltType = eltType;
       this._pid = (new unmanaged DistributedBagImpl(eltType, targetLocales = targetLocales)).pid;
       this._rc = new shared DistributedBagRC(eltType, _pid = _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc _value {
       if _pid == -1 {
         halt("DistBag is uninitialized...");
@@ -256,17 +256,22 @@ module DistributedBag {
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc readThis(f) throws {
       compilerError("Reading a DistBag is not supported");
     }
-
-    proc init(type eltType, r: fileReader) {
-      this.init(eltType);
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a DistBag is not supported");
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
+    proc init(type eltType, reader: fileReader, ref deserializer) {
+      this.init(eltType);
+      compilerError("Deserializing a DistBag is not yet supported");
+    }
+
+    @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
       var size = this.getSize();
@@ -276,23 +281,27 @@ module DistributedBag {
       }
       ch.write("]");
     }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     forwarding _value;
   }
 
-  class DistributedBagImpl : CollectionImpl {
-    pragma "no doc"
+  class DistributedBagImpl : CollectionImpl(?) {
+    @chpldoc.nodoc
     var targetLocDom : domain(1);
     /*
       The locales to allocate bags for and load balance across.
     */
     var targetLocales : [targetLocDom] locale;
-    pragma "no doc"
+    @chpldoc.nodoc
     var pid : int = -1;
 
     // Node-local fields below. These fields are specific to the privatized instance.
     // To access them from another node, make sure you use 'getPrivatizedThis'
-    pragma "no doc"
+    @chpldoc.nodoc
     var bag : unmanaged Bag(eltType)?;
 
     proc init(type eltType, targetLocales : [?targetLocDom] locale = Locales) {
@@ -301,13 +310,13 @@ module DistributedBag {
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      complete();
+      init this;
 
       this.pid           = _newPrivatizedClass(this);
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init(other, pid, type eltType = other.eltType) {
       super.init(eltType);
 
@@ -315,32 +324,32 @@ module DistributedBag {
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      complete();
+      init this;
 
       this.bag           = new unmanaged Bag(eltType, this);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       delete bag;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiPrivatize(pid) {
       return new unmanaged DistributedBagImpl(this, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc dsiGetPrivatizeData() {
       return pid;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     inline proc getPrivatizedThis {
       return chpl_getPrivatizedCopy(this.type, pid);
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     iter targetLocalesNotHere() {
       foreach loc in targetLocales {
         if loc != here {
@@ -478,7 +487,7 @@ module DistributedBag {
 
         // Allocate buffer, which holds the 'excess' elements for redistribution.
         // Then fill it.
-        var buffer = c_malloc(eltType, excess);
+        var buffer = allocate(eltType, excess.safeCast(c_size_t));
         var bufferOffset = 0;
         for loc in localThis.targetLocales do on loc {
           var average = avg;
@@ -522,7 +531,7 @@ module DistributedBag {
           segment.addElementsPtr(tmpBuffer, nLeftOvers, buffer.locale.id);
         }
 
-        c_free(buffer);
+        deallocate(buffer);
       }
 
       // Phase 3: Release all locks from first node and segment to last node and segment.
@@ -596,7 +605,7 @@ module DistributedBag {
             // Create a snapshot...
             var block = segment.headBlock;
             var bufferSz = segment.nElems.read() : int;
-            var buffer = c_malloc(eltType, bufferSz);
+            var buffer = allocate(eltType, bufferSz.safeCast(c_size_t));
             var bufferOffset = 0;
 
             while block != nil {
@@ -611,7 +620,7 @@ module DistributedBag {
             // Yield this chunk to be process...
             segment.releaseStatus();
             yield (bufferSz, buffer);
-            c_free(buffer);
+            deallocate(buffer);
           }
         }
       }
@@ -634,7 +643,7 @@ module DistributedBag {
     It should be noted that the block itself is not parallel-safe, and access must be
     synchronized.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class BagSegmentBlock {
     type eltType;
 
@@ -688,7 +697,7 @@ module DistributedBag {
         halt("DistributedBag Internal Error: Capacity is 0...");
       }
 
-      this.elems = c_malloc(eltType, capacity);
+      this.elems = allocate(eltType, capacity.safeCast(c_size_t));
       this.cap = capacity;
     }
 
@@ -700,7 +709,7 @@ module DistributedBag {
     }
 
     proc deinit() {
-      c_free(elems);
+      deallocate(elems);
     }
   }
 
@@ -708,7 +717,7 @@ module DistributedBag {
     A segment is, in and of itself an unrolled linked list. We maintain one per core
     to ensure maximum parallelism.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   record BagSegment {
     type eltType;
 
@@ -720,27 +729,38 @@ module DistributedBag {
 
     var nElems : atomic uint;
 
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
+    proc init=(other: BagSegment) {
+      this.eltType = other.eltType;
+      this.status = other.status.read();
+      this.headBlock = other.headBlock;
+      this.tailBlock = other.tailBlock;
+      this.nElems = other.nElems;
+    }
+
     inline proc isEmpty {
       return nElems.read() == 0;
     }
 
-    inline proc acquireWithStatus(newStatus) {
+    inline proc ref acquireWithStatus(newStatus) {
       return status.compareAndSwap(STATUS_UNLOCKED, newStatus);
     }
 
     // Set status with a test-and-test-and-set loop...
-    inline proc acquire(newStatus) {
+    inline proc ref acquire(newStatus) {
       while true {
         if currentStatus == STATUS_UNLOCKED && acquireWithStatus(newStatus) {
           break;
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
 
     // Set status with a test-and-test-and-set loop, but only while it is not empty...
-    inline proc acquireIfNonEmpty(newStatus) {
+    inline proc ref acquireIfNonEmpty(newStatus) {
       while !isEmpty {
         if currentStatus == STATUS_UNLOCKED && acquireWithStatus(newStatus) {
           if isEmpty {
@@ -751,7 +771,7 @@ module DistributedBag {
           }
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       return false;
@@ -765,11 +785,11 @@ module DistributedBag {
       return status.read();
     }
 
-    inline proc releaseStatus() {
+    inline proc ref releaseStatus() {
       status.write(STATUS_UNLOCKED);
     }
 
-    inline proc transferElements(destPtr, n, locId = here.id) {
+    inline proc ref transferElements(destPtr, n, locId = here.id) {
       var destOffset = 0;
       var srcOffset = 0;
       while destOffset < n {
@@ -806,7 +826,7 @@ module DistributedBag {
       nElems.sub(n : uint);
     }
 
-    proc addElementsPtr(ptr, n, locId = here.id) {
+    proc ref addElementsPtr(ptr, n, locId = here.id) {
       var offset = 0;
       while offset < n {
         var block = tailBlock;
@@ -866,7 +886,7 @@ module DistributedBag {
       return arr;
     }
 
-    inline proc takeElement() {
+    inline proc ref takeElement() {
       if isEmpty {
         var default: eltType;
         return (false, default);
@@ -891,7 +911,7 @@ module DistributedBag {
       return (true, elem);
     }
 
-    inline proc addElements(elt : eltType) {
+    inline proc ref addElements(elt : eltType) {
       var block = tailBlock;
 
       // Empty? Create a new one of initial size
@@ -921,7 +941,7 @@ module DistributedBag {
     We maintain a multiset 'bag' per node. Each bag keeps a handle to it's parent,
     which is required for work stealing.
   */
-  pragma "no doc"
+  @chpldoc.nodoc
   class Bag {
     type eltType;
 
@@ -1021,7 +1041,7 @@ module DistributedBag {
                   }
                 }
               }
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
         }
@@ -1090,7 +1110,7 @@ module DistributedBag {
                 }
 
                 // Backoff
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
 
               iterations = iterations + 1;
@@ -1164,7 +1184,7 @@ module DistributedBag {
                     segment.releaseStatus();
                     coforall segmentIdx in 0..#here.maxTaskPar {
                       var stolenWork : [{0..#numLocales}] (int, c_ptr(eltType));
-                      coforall loc in parentHandle.targetLocalesNotHere() {
+                      coforall loc in parentHandle.targetLocalesNotHere() with (ref stolenWork) {
                         if loc != here then on loc {
                           // As we jumped to the target node, 'localBag' returns
                           // the target's bag that we are attempting to steal from.
@@ -1191,7 +1211,7 @@ module DistributedBag {
                                 var toSteal = max(distributedBagWorkStealingMinElems, min(mb / sizeof(eltType), targetSegment.nElems.read() * distributedBagWorkStealingRatio)) : int;
 
                                 // Allocate storage...
-                                on stolenWork do stolenWork[loc.id] = (toSteal, c_malloc(eltType, toSteal));
+                                on stolenWork do stolenWork[loc.id] = (toSteal, allocate(eltType, toSteal.safeCast(c_size_t)));
                                 var destPtr = stolenWork[here.id][1];
                                 targetSegment.transferElements(destPtr, toSteal, stolenWork.locale.id);
                                 targetSegment.releaseStatus();
@@ -1201,7 +1221,7 @@ module DistributedBag {
                               }
 
                               // Backoff...
-                              chpl_task_yield();
+                              currentTask.yieldExecution();
                             }
                           }
                         }
@@ -1212,14 +1232,14 @@ module DistributedBag {
                       ref recvSegment = segments[segmentIdx];
                       while true {
                         if recvSegment.currentStatus == STATUS_UNLOCKED && recvSegment.acquireWithStatus(STATUS_ADD) then break;
-                        chpl_task_yield();
+                        currentTask.yieldExecution();
                       }
 
                       // Add stolen elements to segment...
                       for (nStolen, stolenPtr) in stolenWork {
                         if nStolen == 0 then continue;
                         recvSegment.addElementsPtr(stolenPtr, nStolen);
-                        c_free(stolenPtr);
+                        deallocate(stolenPtr);
 
                         // Let parent know that the bag is not empty.
                         isEmpty.write(false);
@@ -1244,7 +1264,7 @@ module DistributedBag {
               }
 
               // Backoff to maximum...
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
 

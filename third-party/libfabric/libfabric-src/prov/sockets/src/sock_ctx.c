@@ -59,7 +59,7 @@ struct sock_rx_ctx *sock_rx_ctx_alloc(const struct fi_rx_attr *attr,
 
 	rx_ctx->progress_start = &rx_ctx->rx_buffered_list;
 
-	fastlock_init(&rx_ctx->lock);
+	ofi_mutex_init(&rx_ctx->lock);
 
 	rx_ctx->ctx.fid.fclass = FI_CLASS_RX_CTX;
 	rx_ctx->ctx.fid.context = context;
@@ -80,7 +80,7 @@ void sock_rx_ctx_free(struct sock_rx_ctx *rx_ctx)
 		free(rx_buffered);
 	}
 
-	fastlock_destroy(&rx_ctx->lock);
+	ofi_mutex_destroy(&rx_ctx->lock);
 	free(rx_ctx->rx_entry_pool);
 	free(rx_ctx);
 }
@@ -107,8 +107,8 @@ static struct sock_tx_ctx *sock_tx_context_alloc(const struct fi_tx_attr *attr,
 	dlist_init(&tx_ctx->pe_entry_list);
 	dlist_init(&tx_ctx->ep_list);
 
-	fastlock_init(&tx_ctx->rb_lock);
-	fastlock_init(&tx_ctx->lock);
+	ofi_mutex_init(&tx_ctx->rb_lock);
+	ofi_mutex_init(&tx_ctx->lock);
 
 	switch (fclass) {
 	case FI_CLASS_TX_CTX:
@@ -156,8 +156,8 @@ struct sock_tx_ctx *sock_stx_ctx_alloc(const struct fi_tx_attr *attr,
 
 void sock_tx_ctx_free(struct sock_tx_ctx *tx_ctx)
 {
-	fastlock_destroy(&tx_ctx->rb_lock);
-	fastlock_destroy(&tx_ctx->lock);
+	ofi_mutex_destroy(&tx_ctx->rb_lock);
+	ofi_mutex_destroy(&tx_ctx->lock);
 
 	if (!tx_ctx->use_shared) {
 		ofi_rbfree(&tx_ctx->rb);
@@ -168,7 +168,7 @@ void sock_tx_ctx_free(struct sock_tx_ctx *tx_ctx)
 
 void sock_tx_ctx_start(struct sock_tx_ctx *tx_ctx)
 {
-	fastlock_acquire(&tx_ctx->rb_lock);
+	ofi_mutex_lock(&tx_ctx->rb_lock);
 }
 
 void sock_tx_ctx_write(struct sock_tx_ctx *tx_ctx, const void *buf, size_t len)
@@ -180,13 +180,13 @@ void sock_tx_ctx_commit(struct sock_tx_ctx *tx_ctx)
 {
 	ofi_rbcommit(&tx_ctx->rb);
 	sock_pe_signal(tx_ctx->domain->pe);
-	fastlock_release(&tx_ctx->rb_lock);
+	ofi_mutex_unlock(&tx_ctx->rb_lock);
 }
 
 void sock_tx_ctx_abort(struct sock_tx_ctx *tx_ctx)
 {
 	ofi_rbabort(&tx_ctx->rb);
-	fastlock_release(&tx_ctx->rb_lock);
+	ofi_mutex_unlock(&tx_ctx->rb_lock);
 }
 
 void sock_tx_ctx_write_op_send(struct sock_tx_ctx *tx_ctx,

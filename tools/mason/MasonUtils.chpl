@@ -21,6 +21,7 @@
 
 
 /* A helper file of utilities for Mason */
+private use CTypes;
 public use FileSystem;
 private use List;
 private use Map;
@@ -32,11 +33,11 @@ use Regex;
 
 
 /* Gets environment variables for spawn commands */
-extern proc getenv(name : c_string) : c_string;
 proc getEnv(name: string): string {
-  var cname: c_string = name.c_str();
+  extern proc getenv(name : c_ptrConst(c_char)) : c_ptrConst(c_char);
+  var cname = name.c_str();
   var value = getenv(cname);
-  return createStringWithNewBuffer(value);
+  return string.createCopyingBuffer(value);
 }
 
 
@@ -426,7 +427,7 @@ extern "struct timespec" record chpl_timespec {
 proc getLastModified(filename: string) : int {
   use CTypes;
 
-  extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = filename.c_str();
@@ -557,10 +558,10 @@ proc getDepToml(depName: string, depVersion: string) throws {
         const ver = findLatest(searchDir + dir);
         const versionZero = new VersionInfo(0, 0, 0);
         if ver != versionZero {
-          results.append(name + " (" + ver.str() + ")");
-          packages.append(name);
-          versions.append(ver.str());
-          registries.append(registry);
+          results.pushBack(name + " (" + ver.str() + ")");
+          packages.pushBack(name);
+          versions.pushBack(ver.str());
+          registries.pushBack(registry);
         }
       }
     }

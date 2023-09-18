@@ -405,8 +405,8 @@ normal input. Also produce a carry output in addition to the normal result.
 G_UMULH, G_SMULH
 ^^^^^^^^^^^^^^^^
 
-Multiply two numbers at twice the incoming bit width (signed) and return
-the high half of the result.
+Multiply two numbers at twice the incoming bit width (unsigned or signed) and
+return the high half of the result.
 
 .. code-block:: none
 
@@ -479,6 +479,16 @@ G_FCANONICALIZE
 ^^^^^^^^^^^^^^^
 
 See :ref:`i_intr_llvm_canonicalize`.
+
+G_IS_FPCLASS
+^^^^^^^^^^^^
+
+Tests if the first operand, which must be floating-point scalar or vector, has
+floating-point class specified by the second operand. The third operand
+specifies floating-point semantics of the tested value. Returns non-zero (true)
+or zero (false). It's target specific whether a true value is 1, ~0U, or some
+other non-zero value. If the first operand is a vector, the returned value is a
+vector of the same length.
 
 G_FMINNUM
 ^^^^^^^^^
@@ -674,6 +684,10 @@ Only G_LOAD is valid if the result is a vector type. If the result is larger
 than the memory size, the high elements are undefined (i.e. this is not a
 per-element, vector anyextload)
 
+Unlike in SelectionDAG, atomic loads are expressed with the same
+opcodes as regular loads. G_LOAD, G_SEXTLOAD and G_ZEXTLOAD may all
+have atomic memory operands.
+
 G_INDEXED_LOAD
 ^^^^^^^^^^^^^^
 
@@ -717,7 +731,10 @@ G_ATOMIC_CMPXCHG
 Generic atomic cmpxchg. Expects a MachineMemOperand in addition to explicit
 operands.
 
-G_ATOMICRMW_XCHG, G_ATOMICRMW_ADD, G_ATOMICRMW_SUB, G_ATOMICRMW_AND, G_ATOMICRMW_NAND, G_ATOMICRMW_OR, G_ATOMICRMW_XOR, G_ATOMICRMW_MAX, G_ATOMICRMW_MIN, G_ATOMICRMW_UMAX, G_ATOMICRMW_UMIN, G_ATOMICRMW_FADD, G_ATOMICRMW_FSUB
+G_ATOMICRMW_XCHG, G_ATOMICRMW_ADD, G_ATOMICRMW_SUB, G_ATOMICRMW_AND,
+G_ATOMICRMW_NAND, G_ATOMICRMW_OR, G_ATOMICRMW_XOR, G_ATOMICRMW_MAX,
+G_ATOMICRMW_MIN, G_ATOMICRMW_UMAX, G_ATOMICRMW_UMIN, G_ATOMICRMW_FADD,
+G_ATOMICRMW_FSUB, G_ATOMICRMW_FMAX, G_ATOMICRMW_FMIN
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Generic atomicrmw. Expects a MachineMemOperand in addition to explicit

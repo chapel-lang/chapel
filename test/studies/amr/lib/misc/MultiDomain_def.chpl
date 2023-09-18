@@ -57,16 +57,16 @@ class MultiDomain
 {
   
   param rank:      int;
-  param stridable: bool;
+  param strides:   strideKind;
       
-  var root: unmanaged MDNode(rank,stridable);
+  var root: unmanaged MDNode(rank,strides);
 
 
-  proc init (param rank=0, param stridable=false)
+  proc init (param rank=0, param strides=strideKind.one)
   {
     this.rank = rank;
-    this.stridable = stridable;
-    root = new unmanaged MDNode( rank, stridable );
+    this.strides = strides;
+    root = new unmanaged MDNode( rank, strides );
   }
 
 
@@ -75,7 +75,7 @@ class MultiDomain
 
   proc copy ()
   {
-    const new_mD = new unmanaged MultiDomain(rank,stridable);
+    const new_mD = new unmanaged MultiDomain(rank,strides);
     root.copy(new_mD.root);  // the initializer has already allocated 'root', so pass it in for re-use
     return new_mD;
   }
@@ -88,7 +88,7 @@ class MultiDomain
   }
 
 
-  proc subtract ( D: domain(rank,stridable=stridable) )
+  proc subtract ( D: domain(rank,strides=strides) )
   {
     if !isEmpty() && root.Domain(D).size>0 then 
       root.subtract(D);
@@ -96,7 +96,7 @@ class MultiDomain
   }  
   
   
-  proc add ( D: domain(rank,stridable=stridable) )
+  proc add ( D: domain(rank,strides=strides) )
   {
     if !isEmpty() then
     {
@@ -114,14 +114,14 @@ class MultiDomain
   
   
   proc add ( domain_collection )
-    where domain_collection.type != domain(rank,stridable=stridable)
+    where domain_collection.type != domain(rank,strides=strides)
   {
     for D in domain_collection do add(D);
   }
   
   
   
-  proc intersect ( D: domain(rank,stridable=stridable) )
+  proc intersect ( D: domain(rank,strides=strides) )
   {
     
     if !isEmpty()
@@ -139,7 +139,7 @@ class MultiDomain
   iter these ()
   {
     
-    const q = new unmanaged Queue( unmanaged MDNode(rank,stridable) );
+    const q = new unmanaged Queue( unmanaged MDNode(rank,strides) );
 
     q.enqueue( root );
     
@@ -160,11 +160,11 @@ class MultiDomain
   
   
   
-  iter nodes () : unmanaged MDNode(rank,stridable)
+  iter nodes () : unmanaged MDNode(rank,strides)
   {
     
-    const q = new unmanaged Queue( unmanaged MDNode(rank,stridable) );
-    var node: unmanaged MDNode(rank,stridable);
+    const q = new unmanaged Queue( unmanaged MDNode(rank,strides) );
+    var node: unmanaged MDNode(rank,strides);
   
     if root then q.enqueue( root );
     
@@ -221,14 +221,14 @@ class MDNode
 {
   
   param rank:      int;
-  param stridable: bool;
+  param strides:   strideKind;
   
-  var Domain:    domain(rank,stridable=stridable);
+  var Domain:    domain(rank,strides=strides);
 
   var bisect_dim: int = -1;  // Indicates temporary, unfilled status
   var right_low:  int = 0;
 
-  var left, right:  unmanaged MDNode(rank,stridable)?;
+  var left, right:  unmanaged MDNode(rank,strides)?;
 
 
 
@@ -242,10 +242,10 @@ class MDNode
   }
 
 
-  proc copy (in new_node_arg: unmanaged MDNode(rank, stridable)? = nil) : unmanaged MDNode(rank,stridable)
+  proc copy (in new_node_arg: unmanaged MDNode(rank, strides)? = nil) : unmanaged MDNode(rank,strides)
   {
     const new_node = if new_node_arg != nil then new_node_arg!
-                     else new unmanaged MDNode(rank, stridable);
+                     else new unmanaged MDNode(rank, strides);
 
     new_node.Domain     = Domain;
     new_node.bisect_dim = bisect_dim;
@@ -262,7 +262,7 @@ class MDNode
   //| >    method: locateBisection    | >
   //|/................................|/
 
-  proc locateBisection ( D: domain(rank,stridable=stridable) )
+  proc locateBisection ( D: domain(rank,strides=strides) )
   {
     
     //===> Choose bisection dimension ===>
@@ -338,7 +338,7 @@ class MDNode
   // bisect_dim  >  0 : Already bisected; has at least one child node.
   //-------------------------------------------------------------------
   
-  proc add ( D: domain(rank, stridable=stridable) )
+  proc add ( D: domain(rank, strides=strides) )
   {
   
     //---- Locate bisection of node is unfilled ----
@@ -409,7 +409,7 @@ class MDNode
   //| >    method: subtract    | >
   //|/.........................|/
   
-  proc subtract ( D: domain(rank, stridable=stridable) )
+  proc subtract ( D: domain(rank, strides=strides) )
   {
         
     //---- If node is filled, then either bisect or unfill ----
@@ -469,7 +469,7 @@ class MDNode
   //| >    method: intersect    | >
   //|/..........................|/
   
-  proc intersect ( D: domain(rank,stridable=stridable) )
+  proc intersect ( D: domain(rank,strides=strides) )
   {
 
     if bisect_dim == 0
@@ -555,14 +555,14 @@ class MDNode
 
 
 
-  proc intersectsLeft( D: domain(rank, stridable=stridable) )
+  proc intersectsLeft( D: domain(rank, strides=strides) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsLeft with bisect_dim<=0");
     return D.low(bisect_dim-1) <= right_low - Domain.stride(bisect_dim-1);
   }
   
   
-  proc intersectsRight( D: domain(rank, stridable=stridable) )
+  proc intersectsRight( D: domain(rank, strides=strides) )
   {
     assert( bisect_dim>0, "Error: Called MDNode.intersectsRight with bisect_dim<=0");
     return D.high(bisect_dim-1) >= right_low;
@@ -573,17 +573,17 @@ class MDNode
   {
     assert( bisect_dim>0, "Error: Called MDNode.createLeft with bisect_dim<=0.");
     
-    var subranges: rank*range(stridable=stridable);
+    var subranges: rank*range(strides=strides);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
     for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);    
     
     subranges(bisect_dim-1) = Domain.low(bisect_dim-1) .. right_low-Domain.stride(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
-    var child_domain: domain(rank, stridable=stridable) = subranges;
+    var child_domain: domain(rank, strides=strides) = subranges;
     
-    if filled then left = new unmanaged MDNode( rank, stridable, child_domain, 0 );
-    else           left = new unmanaged MDNode( rank, stridable, child_domain, -1 );
+    if filled then left = new unmanaged MDNode( rank, strides, child_domain, 0 );
+    else           left = new unmanaged MDNode( rank, strides, child_domain, -1 );
     
   }
 
@@ -592,17 +592,17 @@ class MDNode
   {
     assert( bisect_dim>0, "Error: Called MDNode.createRight with bisect_dim<=0.");
     
-    var subranges: rank*range(stridable=stridable);
+    var subranges: rank*range(strides=strides);
     
     for d in 0..rank-1          do subranges(d) = Domain.dim(d);
     for d in bisect_dim..rank-1 do subranges(d) = Domain.dim(d);
     
     subranges(bisect_dim-1) = right_low .. Domain.high(bisect_dim-1) by Domain.stride(bisect_dim-1);
     
-    var child_domain: domain(rank, stridable=stridable) = subranges;
+    var child_domain: domain(rank, strides=strides) = subranges;
     
-    if filled then right = new unmanaged MDNode( rank, stridable, child_domain, 0 );
-    else           right = new unmanaged MDNode( rank, stridable, child_domain, -1 );
+    if filled then right = new unmanaged MDNode( rank, strides, child_domain, 0 );
+    else           right = new unmanaged MDNode( rank, strides, child_domain, -1 );
   }
 
 
@@ -630,13 +630,13 @@ class MDNode
 // to the new root of the structure.
 //---------------------------------------------------------------
 
-proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged MDNode(rank,stridable)
+proc MDNode.extendToContain( D: domain(rank,strides=strides) ) : unmanaged MDNode(rank,strides)
 {
   
   // writeln("Beginning MDNode.extendToContain on node with ", Domain, " ", left!=nil, " ", filled);
   // writeln("  Input domain is ", D);
   
-  var new_root: unmanaged MDNode(rank,stridable)?;
+  var new_root: unmanaged MDNode(rank,strides)?;
   
   
   //===> Select the shortest dimension to extend ===>
@@ -675,11 +675,11 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
     var s = Domain.stride(ext_d);
     var ext_index: int;
     
-    var parent:  unmanaged MDNode(rank,stridable)?;
-    // var sibling: MDNode(rank,stridable);
+    var parent:  unmanaged MDNode(rank,strides)?;
+    // var sibling: MDNode(rank,strides);
     
-    var subranges: rank*range(stridable=stridable);
-    var D_temp:    domain(rank,stridable=stridable);
+    var subranges: rank*range(strides=strides);
+    var D_temp:    domain(rank,strides=strides);
     
     for d in 0..ext_d-1    do subranges(d) = Domain.dim(d);  
     for d in ext_d+1..rank-1 do subranges(d) = Domain.dim(d);
@@ -699,11 +699,11 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
       
       // subranges(ext_d) = D.low(ext_d) .. ext_index-s by s;
       // D_temp           = subranges;
-      // sibling          = new MDNode( rank, stridable, D_temp, false );
+      // sibling          = new MDNode( rank, strides, D_temp, false );
       
       subranges(ext_d) = D.low(ext_d) .. Domain.high(ext_d) by s;
       D_temp           = subranges;
-      parent = new unmanaged MDNode( rank, stridable, D_temp,
+      parent = new unmanaged MDNode( rank, strides, D_temp,
                                      ext_d, ext_index,
                                      // parent.left = sibling
                                      nil, _to_unmanaged(this) );
@@ -718,12 +718,12 @@ proc MDNode.extendToContain( D: domain(rank,stridable=stridable) ) : unmanaged M
 
       // subranges(ext_d) = ext_index .. D.high(ext_d) by s;
       // D_temp           = subranges;
-      // sibling          = new MDNode( rank, stridable, D_temp, false );
+      // sibling          = new MDNode( rank, strides, D_temp, false );
       // sibling.filled   = false;
       
       subranges(ext_d)  = Domain.low(ext_d) .. D.high(ext_d) by s;
       D_temp            = subranges;
-      parent = new unmanaged MDNode( rank, stridable, D_temp,
+      parent = new unmanaged MDNode( rank, strides, D_temp,
                                      ext_d, ext_index,
                                      // parent.right = sibling
                                      _to_unmanaged(this), nil );

@@ -148,17 +148,17 @@ ssize_t sock_ep_tx_atomic(struct fid_ep *ep,
 
 	memset(&tx_op, 0, sizeof(tx_op));
 	tx_op.op = SOCK_OP_ATOMIC;
-	tx_op.dest_iov_len = msg->rma_iov_count;
+	tx_op.dest_iov_len = (uint8_t) msg->rma_iov_count;
 	tx_op.atomic.op = msg->op;
 	tx_op.atomic.datatype = msg->datatype;
-	tx_op.atomic.res_iov_len = result_count;
-	tx_op.atomic.cmp_iov_len = compare_count;
+	tx_op.atomic.res_iov_len = (uint8_t) result_count;
+	tx_op.atomic.cmp_iov_len = (uint8_t) compare_count;
 
 	if (flags & FI_INJECT) {
-		tx_op.src_iov_len = src_len;
-		tx_op.atomic.cmp_iov_len = cmp_len;
+		tx_op.src_iov_len = (uint8_t) src_len;
+		tx_op.atomic.cmp_iov_len = (uint8_t) cmp_len;
 	} else {
-		tx_op.src_iov_len = msg->iov_count;
+		tx_op.src_iov_len = (uint8_t) msg->iov_count;
 	}
 
 	sock_tx_ctx_write_op_send(tx_ctx, &tx_op, flags,

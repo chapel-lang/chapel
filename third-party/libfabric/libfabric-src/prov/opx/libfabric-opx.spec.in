@@ -1,0 +1,108 @@
+#
+#  This file is provided under a dual BSD/GPLv2 license.  When using or
+#  redistributing this file, you may do so under either license.
+#
+#  GPL LICENSE SUMMARY
+#
+#  Copyright(c) 2021 Cornelis Networks.
+#
+#  This program is free software; you can redistribute it and/or modify
+#  it under the terms of version 2 of the GNU General Public License as
+#  published by the Free Software Foundation.
+#
+#  This program is distributed in the hope that it will be useful, but
+#  WITHOUT ANY WARRANTY; without even the implied warranty of
+#  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+#  General Public License for more details.
+#
+#  Contact Information:
+#  Cornelis Networks,  www.cornelisnetworks.com
+#
+#  BSD LICENSE
+#
+#  Copyright(c) 2021 Cornelis Networks.
+#
+#  Redistribution and use in source and binary forms, with or without
+#  modification, are permitted provided that the following conditions
+#  are met:
+#
+#    * Redistributions of source code must retain the above copyright
+#      notice, this list of conditions and the following disclaimer.
+#    * Redistributions in binary form must reproduce the above copyright
+#      notice, this list of conditions and the following disclaimer in
+#      the documentation and/or other materials provided with the
+#      distribution.
+#    * Neither the name of Cornelis Networks nor the names of its
+#      contributors may be used to endorse or promote products derived
+#      from this software without specific prior written permission.
+#
+#  THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+#  "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+#  LIMITED TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR
+#  A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT
+#  OWNER OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL,
+#  SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT
+#  LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE,
+#  DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY
+#  THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+#  (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+#  OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+%{!?configopts: %global configopts LDFLAGS=-Wl,--build-id,CFLAGS='-g -O3 -fPIC',CXXFLAGS='-g -O3 -fPIC'}
+%{!?provider: %define provider opx}
+%{!?provider_formal: %define provider_formal OPX}
+
+Name: libfabric-%{provider}
+Version: @VERSION@
+Release: 1%{?dist}
+Summary: Dynamic %{provider_formal} provider for user-space Open Fabric Interfaces
+Group: System Environment/Libraries
+License: GPLv2 or BSD
+Url: http://www.github.com/ofiwg/libfabric
+Source: http://www.github.org/ofiwg/%{name}/releases/download/v{%version}/libfabric-%{version}.tar.bz2
+BuildRoot: %{_tmppath}/%{name}-%{version}-%{release}-root-%(%{__id_u} -n)
+Requires: libfabric
+BuildRequires: libfabric
+
+%description
+libfabric provides a user-space API to access high-performance fabric
+services, such as RDMA.
+
+This RPM provides the %{provider_formal} provider as a "plugin" to an existing
+libfabric installation.  This plugin will override older %{provider_formal}
+provider functionality in the existing libfabric installation.
+
+%prep
+%setup -q -n libfabric-%{version}
+
+%build
+%configure %{configopts} --enable-%{provider}=dl --enable-direct=%{provider}
+make %{?_smp_mflags}
+
+%install
+rm -rf %{buildroot}
+%makeinstall installdirs
+
+%clean
+rm -rf %{buildroot}
+
+%files
+%defattr(-,root,root,-)
+%{_libdir}/libfabric/*.so
+
+%exclude %{_libdir}/libfabric.*
+%exclude %{_libdir}/libfabric/*.la
+%exclude %{_libdir}/libfabric/*.a
+%exclude %{_libdir}/pkgconfig
+%exclude %{_mandir}
+%exclude %{_includedir}
+%exclude %{_bindir}/fi_info
+%exclude %{_bindir}/fi_pingpong
+%exclude %{_bindir}/fi_strerror
+
+%changelog
+* Wed Jun 30 2021 David Gonzalez <david.gonzalez@cornelisnetworks.com>
+- First release of specfile for packaging opx dl provider.
+
+* Wed May 24 2017 Open Fabrics Interfaces Working Group <ofiwg@lists.openfabrics.org>
+- First release of specfile for packaging a single dl provider.

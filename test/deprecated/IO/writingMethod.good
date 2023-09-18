@@ -1,0 +1,4 @@
+writingMethod.chpl:3: warning: 'fileReader.writing' is deprecated and will be removed in a future release
+writingMethod.chpl:4: warning: 'fileWriter.writing' is deprecated and will be removed in a future release
+false
+true

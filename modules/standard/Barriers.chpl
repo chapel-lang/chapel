@@ -76,9 +76,9 @@ module Barriers {
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   @deprecated(notes="The 'Barrier' type is deprecated, please use 'Collectives.barrier' instead")
   record Barrier {
-    pragma "no doc"
+    @chpldoc.nodoc
     var bar: unmanaged BarrierBaseType;
-    pragma "no doc"
+    @chpldoc.nodoc
     var isowned: bool = false;
 
     /* Construct a new barrier object.
@@ -131,19 +131,19 @@ module Barriers {
       isowned = true;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init() {
       this.init(0);
     }
 
     /* copy initializer */
-    pragma "no doc"
+    @chpldoc.nodoc
     proc init=(b: Barrier) {
       this.bar = b.bar;
       this.isowned = false;
     }
 
-    pragma "no doc"
+    @chpldoc.nodoc
     proc deinit() {
       if isowned && bar != nil {
         delete bar;
@@ -190,7 +190,7 @@ module Barriers {
     }
   }
 
-  pragma "no doc"
+  @chpldoc.nodoc
   operator Barrier.=(ref lhs: Barrier, rhs: Barrier) {
     if lhs.isowned {
       delete lhs.bar;

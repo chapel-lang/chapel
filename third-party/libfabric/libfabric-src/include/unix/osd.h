@@ -90,6 +90,9 @@ struct util_shm
 	size_t		size;
 };
 
+int ofi_mmap_anon_pages(void **memptr, size_t size, int flags);
+int ofi_unmap_anon_pages(void *memptr, size_t size);
+
 static inline int ofi_memalign(void **memptr, size_t alignment, size_t size)
 {
 	return posix_memalign(memptr, alignment, size);

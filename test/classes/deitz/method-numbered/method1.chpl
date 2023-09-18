@@ -12,7 +12,8 @@ class dog {
   }
 }
 
-var d : borrowed dog = (new owned dog()).borrow();
+var ownD = new owned dog();
+var d : borrowed dog = ownD.borrow();
 
 d.weight = 38.5;
 d.paws   = 4;

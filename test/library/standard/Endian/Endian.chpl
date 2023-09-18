@@ -28,7 +28,7 @@
     and big-endian formats.
  */
 module Endian {
-  use CTypes;
+  use CTypes, OS.POSIX;
 
   private extern proc htole16(x: uint(16)): uint(16);
   private extern proc le16toh(x: uint(16)): uint(16);
@@ -120,108 +120,108 @@ module Endian {
   private proc _hostToLittleEndian(x) where numBytes(x.type) == 2 {
     var a = x;
     var b: uint(16);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htole16(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _littleEndianToHost(x) where numBytes(x.type) == 2 {
     var a = x;
     var b: uint(16);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = le16toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _hostToBigEndian(x) where numBytes(x.type) == 2 {
     var a = x;
     var b: uint(16);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htobe16(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _bigEndianToHost(x) where numBytes(x.type) == 2 {
     var a = x;
     var b: uint(16);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = be16toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _hostToLittleEndian(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htole32(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _littleEndianToHost(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = le32toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _hostToBigEndian(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htobe32(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _bigEndianToHost(x) where numBytes(x.type) == 4 {
     var a = x;
     var b: uint(32);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = be32toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _hostToLittleEndian(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htole64(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _littleEndianToHost(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = le64toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _hostToBigEndian(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = htobe64(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
 
   private proc _bigEndianToHost(x) where numBytes(x.type) == 8 {
     var a = x;
     var b: uint(64);
-    c_memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
+    memcpy(c_ptrTo(b), c_ptrTo(a), c_sizeof(b.type));
     var converted = be64toh(b);
-    c_memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
+    memcpy(c_ptrTo(a), c_ptrTo(converted), c_sizeof(a.type));
     return a;
   }
     

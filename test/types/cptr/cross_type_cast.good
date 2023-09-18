@@ -1,0 +1,9 @@
+cross_type_cast.chpl:13: warning: This cast from 'c_ptr(int(32))' to 'c_ptr(real(32))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:14: warning: This cast from 'c_ptr(int(32))' to 'c_ptr(real(64))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:28: warning: This cast from 'c_ptrConst(int(32))' to 'c_ptrConst(real(32))' casts a c_ptrConst to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:29: warning: This cast from 'c_ptrConst(int(32))' to 'c_ptrConst(real(64))' casts a c_ptrConst to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:35: warning: This cast from 'c_ptr(int(32))' to 'c_ptrConst(real(32))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:36: warning: This cast from 'c_ptrConst(int(32))' to 'c_ptr(real(32))' casts a c_ptrConst to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+cross_type_cast.chpl:42: warning: This cast from 'c_ptr(c_ptr(int(32)))' to 'c_ptr(c_ptr(real(32)))' casts a c_ptr to a pointer of non-equivalent, non-char element type, which can cause undefined behavior.
+1
+1

@@ -8,7 +8,7 @@
    With the current implementation, the first 24 MR-tests are substituted by a
    Baillie-PSW probable prime test.
 
-   This implementation the Baillie-PSW test was checked up to 31*2^46,
+   This implementation of the Baillie-PSW test was checked up to 2463*10^12,
    for smaller values no MR-test is performed, regardless of reps, and
    2 ("surely prime") is returned if the number was not proved composite.
 
@@ -19,10 +19,11 @@
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 1991, 1993, 1994, 1996-2002, 2005, 2014, 2018, 2019 Free
+Copyright 1991, 1993, 1994, 1996-2002, 2005, 2014, 2018-2022 Free
 Software Foundation, Inc.
 
 Contributed by John Amanatides.
+Changed to "BPSW, then Miller Rabin if required" by Marco Bodrato.
 
 This file is part of the GNU MP Library.
 
@@ -64,8 +65,7 @@ int
 mpz_millerrabin (mpz_srcptr n, int reps)
 {
   mpz_t nm, x, y, q;
-  unsigned long int k;
-  gmp_randstate_t rstate;
+  mp_bitcnt_t k;
   int is_prime;
   TMP_DECL;
   TMP_MARK;
@@ -79,7 +79,7 @@ mpz_millerrabin (mpz_srcptr n, int reps)
   MPZ_TMP_INIT (q, SIZ (n));
 
   /* Find q and k, where q is odd and n = 1 + 2**k * q.  */
-  k = mpz_scan1 (nm, 0L);
+  k = mpn_scan1 (PTR (nm), 0);
   mpz_tdiv_q_2exp (q, nm, k);
   ++k;
 
@@ -101,11 +101,11 @@ mpz_millerrabin (mpz_srcptr n, int reps)
 	  || SIZ (n) - 64 / GMP_NUMB_BITS == (PTR (n) [64 / GMP_NUMB_BITS] < CNST_LIMB(1) << 64 % GMP_NUMB_BITS)
 #endif
 #else
-	  /* Consider numbers up to 31*2^46 that pass the BPSW test as primes.
-	     This implementation was tested up to 31*2^46 */
-	  /* 2^4 < 31 = 0b11111 < 2^5 */
-#define GMP_BPSW_LIMB_CONST CNST_LIMB(31)
-#define GMP_BPSW_BITS_CONST (LOG2C(31) - 1)
+	  /* Consider numbers up to 35*2^46 that pass the BPSW test as primes.
+	     This implementation was tested up to 2463*10^12 > 2^51+2^47+2^46 */
+	  /* 2^5 < 35 = 0b100011 < 2^6 */
+#define GMP_BPSW_LIMB_CONST CNST_LIMB(35)
+#define GMP_BPSW_BITS_CONST (LOG2C(35) - 1)
 #define GMP_BPSW_BITS_LIMIT (46 + GMP_BPSW_BITS_CONST)
 
 #define GMP_BPSW_LIMBS_LIMIT (GMP_BPSW_BITS_LIMIT / GMP_NUMB_BITS)
@@ -142,6 +142,7 @@ mpz_millerrabin (mpz_srcptr n, int reps)
 	  reps -= 24;
 	  if (reps > 0)
 	    {
+	      gmp_randstate_t rstate;
 	      /* (n-5)/2 */
 	      mpz_sub_ui (nm, nm, 2L);
 	      ASSERT (mpz_cmp_ui (nm, 1L) >= 0);
@@ -198,25 +199,18 @@ mod_eq_m1 (mpz_srcptr x, mpz_srcptr m)
 
 static int
 millerrabin (mpz_srcptr n, mpz_ptr x, mpz_ptr y,
-	     mpz_srcptr q, unsigned long int k)
+	     mpz_srcptr q, mp_bitcnt_t k)
 {
-  unsigned long int i;
-
   mpz_powm (y, x, q, n);
 
   if (mpz_cmp_ui (y, 1L) == 0 || mod_eq_m1 (y, n))
     return 1;
 
-  for (i = 1; i < k; i++)
+  for (mp_bitcnt_t i = 1; i < k; ++i)
     {
       mpz_powm_ui (y, y, 2L, n);
       if (mod_eq_m1 (y, n))
 	return 1;
-      /* y == 1 means that the previous y was a non-trivial square root
-	 of 1 (mod n). y == 0 means that n is a power of the base.
-	 In either case, n is not prime. */
-      if (mpz_cmp_ui (y, 1L) <= 0)
-	return 0;
     }
   return 0;
 }

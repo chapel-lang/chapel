@@ -8,7 +8,8 @@ class C {
 
 }
 
-var myC = (new owned C()).borrow();
+var ownMyC = new owned C();
+var myC = ownMyC.borrow();
 
 proc foo(c: borrowed C = myC, fmt: string = "foo", x: int) {
   writeln("and got the int foo.");

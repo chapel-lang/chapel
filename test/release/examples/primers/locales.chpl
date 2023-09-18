@@ -112,7 +112,7 @@ writeln();
    on the locale
 */
 
-use Memory.Diagnostics;  // for physicalMemory()
+use MemDiagnostics; // for physicalMemory()
 config const printLocaleInfo = true;  // permit testing to turn this off
 
 if printLocaleInfo then

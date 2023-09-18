@@ -1,2 +1,0 @@
---use-io-formatters -sformat=FormatKind.default # out-of-order.default.good
---use-io-formatters -sformat=FormatKind.json # out-of-order.json.good

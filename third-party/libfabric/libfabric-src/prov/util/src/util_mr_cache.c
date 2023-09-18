@@ -316,29 +316,23 @@ free:
 	return ret;
 }
 
-int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *attr,
+int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct ofi_mr_info *info,
 			struct ofi_mr_entry **entry)
 {
-	struct ofi_mr_info info;
 	struct ofi_mem_monitor *monitor;
 	bool flush_lru;
 	int ret;
 
-	monitor = cache->monitors[attr->iface];
+	monitor = cache->monitors[info->iface];
 	if (!monitor) {
 		FI_WARN(&core_prov, FI_LOG_MR,
 			"MR cache disabled for %s memory\n",
-			fi_tostr(&attr->iface, FI_TYPE_HMEM_IFACE));
+			fi_tostr(&info->iface, FI_TYPE_HMEM_IFACE));
 		return -FI_ENOSYS;
 	}
 
-	assert(attr->iov_count == 1);
 	FI_DBG(cache->domain->prov, FI_LOG_MR, "search %p (len: %zu)\n",
-	       attr->mr_iov->iov_base, attr->mr_iov->iov_len);
-
-	info.iov = *attr->mr_iov;
-	info.iface = attr->iface;
-	info.device = attr->device.reserved;
+	       info->iov.iov_base, info->iov.iov_len);
 
 	do {
 		pthread_mutex_lock(&mm_lock);
@@ -350,24 +344,21 @@ int ofi_mr_cache_search(struct ofi_mr_cache *cache, const struct fi_mr_attr *att
 		}
 
 		cache->search_cnt++;
-		*entry = ofi_mr_rbt_find(&cache->tree, &info);
+		*entry = ofi_mr_rbt_find(&cache->tree, info);
 
 		if (*entry &&
-		    ofi_iov_within(attr->mr_iov, &(*entry)->info.iov) &&
-		    monitor->valid(monitor,
-				   (const void *)(*entry)->info.iov.iov_base,
-				   (*entry)->info.iov.iov_len,
-				   &(*entry)->hmem_info))
+		    ofi_iov_within(&info->iov, &(*entry)->info.iov) &&
+		    monitor->valid(monitor, info, *entry))
 			goto hit;
 
 		/* Purge regions that overlap with new region */
 		while (*entry) {
 			util_mr_uncache_entry(cache, *entry);
-			*entry = ofi_mr_rbt_find(&cache->tree, &info);
+			*entry = ofi_mr_rbt_find(&cache->tree, info);
 		}
 		pthread_mutex_unlock(&mm_lock);
 
-		ret = util_mr_cache_create(cache, &info, entry);
+		ret = util_mr_cache_create(cache, info, entry);
 		if (ret && ret != -FI_EAGAIN) {
 			if (ofi_mr_cache_flush(cache, true))
 				ret = -FI_EAGAIN;

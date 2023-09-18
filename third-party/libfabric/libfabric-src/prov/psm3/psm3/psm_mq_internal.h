@@ -101,7 +101,7 @@ struct psm2_mq {
 	struct mqq expected_htab[NUM_HASH_CONFIGS][NUM_HASH_BUCKETS];
 
 	/* in case the compiler can't figure out how to preserve the hashed values
-	between mq_req_match() and mq_add_to_unexpected_hashes() ... */
+	between psm3_mq_req_match() and mq_add_to_unexpected_hashes() ... */
 	unsigned hashvals[NUM_HASH_CONFIGS];
 
 	/*psm_mq_unexpected_callback_fn_t unexpected_callback; */
@@ -243,16 +243,27 @@ struct psm2_mq_req {
 	psm2_epaddr_t rts_peer;
 	uintptr_t rts_sbuf;
 
-	psm2_verbs_mr_t	mr;	// local registered memory for app buffer
+#ifdef PSM_HAVE_REG_MR
+	psm3_verbs_mr_t	mr;	// local registered memory for app buffer
+#endif
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 	uint8_t* user_gpu_buffer;	/* for recv */
-	STAILQ_HEAD(sendreq_spec_, ips_cuda_hostbuf) sendreq_prefetch;
+	STAILQ_HEAD(sendreq_spec_, ips_gpu_hostbuf) sendreq_prefetch;
 	uint32_t prefetch_send_msgoff;
-	int cuda_hostbuf_used;
+#endif
+#ifdef PSM_CUDA
 	CUipcMemHandle cuda_ipc_handle;
 	uint8_t cuda_ipc_handle_attached;
 	uint32_t cuda_ipc_offset;
+#endif
+#ifdef PSM_ONEAPI
+	ze_ipc_mem_handle_t ze_ipc_handle;
+	uint8_t ze_ipc_handle_attached;
+	uint32_t ze_ipc_offset;
+#endif
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	int gpu_hostbuf_used;
 	/*
 	 * is_sendbuf_gpu_mem - Used to always select TID path on the receiver
 	 * when send is on a device buffer
@@ -288,14 +299,14 @@ hash_32(uint32_t a))
 	return _mm_crc32_u32(0, a);
 }
 
-void MOCKABLE(psmi_mq_mtucpy)(void *vdest, const void *vsrc, uint32_t nchars);
-MOCK_DCL_EPILOGUE(psmi_mq_mtucpy);
-void psmi_mq_mtucpy_host_mem(void *vdest, const void *vsrc, uint32_t nchars);
+void MOCKABLE(psm3_mq_mtucpy)(void *vdest, const void *vsrc, uint32_t nchars);
+MOCK_DCL_EPILOGUE(psm3_mq_mtucpy);
+void psm3_mq_mtucpy_host_mem(void *vdest, const void *vsrc, uint32_t nchars);
 
 #if defined(__x86_64__)
-void psmi_mq_mtucpy_safe(void *vdest, const void *vsrc, uint32_t nchars);
+void psm3_mq_mtucpy_safe(void *vdest, const void *vsrc, uint32_t nchars);
 #else
-#define psmi_mq_mtucpy_safe psmi_mq_mtucpy
+#define psm3_mq_mtucpy_safe psm3_mq_mtucpy
 #endif
 
 /*
@@ -305,9 +316,9 @@ PSMI_ALWAYS_INLINE(
 void
 mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 {
-#ifdef PSM_CUDA
-	if (len && PSMI_IS_CUDA_ENABLED && (PSMI_IS_CUDA_MEM(dest) || PSMI_IS_CUDA_MEM(src))) {
-		PSMI_CUDA_CALL(cuMemcpy, (CUdeviceptr)dest, (CUdeviceptr)src, len);
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+	if (len && PSMI_IS_GPU_ENABLED && (PSMI_IS_GPU_MEM(dest) || PSMI_IS_GPU_MEM(src))) {
+		PSM3_GPU_MEMCPY(dest, src, len);
 		return;
 	}
 #endif
@@ -329,7 +340,7 @@ mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 	case 1:
 		break;
 	default:		/* greater than 8 */
-		psmi_mq_mtucpy(dest, src, len);
+		psm3_mq_mtucpy(dest, src, len);
 		return;
 	}
 	uint8_t *dest1 = (uint8_t *) dest;
@@ -345,7 +356,7 @@ mq_copy_tiny(uint32_t *dest, uint32_t *src, uint8_t len))
 
 typedef void (*psmi_mtucpy_fn_t)(void *dest, const void *src, uint32_t len);
 typedef void (*psmi_copy_tiny_fn_t)(uint32_t *dest, uint32_t *src, uint8_t len);
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 
 PSMI_ALWAYS_INLINE(
 void
@@ -369,7 +380,7 @@ mq_copy_tiny_host_mem(uint32_t *dest, uint32_t *src, uint8_t len))
 	case 1:
 		break;
 	default:		/* greater than 8 */
-		psmi_mq_mtucpy(dest, src, len);
+		psm3_mq_mtucpy(dest, src, len);
 		return;
 	}
 	uint8_t *dest1 = (uint8_t *) dest;
@@ -524,21 +535,22 @@ PSMI_ALWAYS_INLINE(void mq_qq_remove_which(psm2_mq_req_t req, int table))
 		q->first = req->next[table];
 }
 
-psm2_error_t psmi_mq_req_init(psm2_mq_t mq);
-psm2_error_t psmi_mq_req_fini(psm2_mq_t mq);
-psm2_mq_req_t MOCKABLE(psmi_mq_req_alloc)(psm2_mq_t mq, uint32_t type);
-MOCK_DCL_EPILOGUE(psmi_mq_req_alloc);
-#define      psmi_mq_req_free(req)  psmi_mpool_put(req)
+psm2_error_t psm3_mq_req_init(psm2_mq_t mq);
+psm2_error_t psm3_mq_req_fini(psm2_mq_t mq);
+psm2_mq_req_t MOCKABLE(psm3_mq_req_alloc)(psm2_mq_t mq, uint32_t type);
+MOCK_DCL_EPILOGUE(psm3_mq_req_alloc);
+#define      psm3_mq_req_free_internal(req)  psm3_mpool_put(req)
+psm2_mq_req_t psm3_mq_req_match(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag, int remove);
 
 /*
  * Main receive progress engine, for shmops and hfi, in mq.c
  */
-psm2_error_t psmi_mq_malloc(psm2_mq_t *mqo);
-psm2_error_t psmi_mq_initialize_defaults(psm2_mq_t mq);
-psm2_error_t psmi_mq_initstats(psm2_mq_t mq, psm2_epid_t epid);
+psm2_error_t psm3_mq_malloc(psm2_mq_t *mqo);
+psm2_error_t psm3_mq_initialize_params(psm2_mq_t mq);
+psm2_error_t psm3_mq_initstats(psm2_mq_t mq, psm2_epid_t epid);
 
-psm2_error_t MOCKABLE(psmi_mq_free)(psm2_mq_t mq);
-MOCK_DCL_EPILOGUE(psmi_mq_free);
+psm2_error_t MOCKABLE(psm3_mq_free)(psm2_mq_t mq);
+MOCK_DCL_EPILOGUE(psm3_mq_free);
 
 /* Three functions that handle all MQ stuff */
 #define MQ_RET_MATCH_OK	0
@@ -547,25 +559,24 @@ MOCK_DCL_EPILOGUE(psmi_mq_free);
 #define MQ_RET_DATA_OK 3
 #define MQ_RET_DATA_OUT_OF_ORDER 4
 
-void psmi_mq_handle_rts_complete(psm2_mq_req_t req);
-int psmi_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
+void psm3_mq_handle_rts_complete(psm2_mq_req_t req);
+int psm3_mq_handle_data(psm2_mq_t mq, psm2_mq_req_t req,
 			uint32_t offset, const void *payload, uint32_t paylen
-#ifdef PSM_CUDA
-			, int use_gdrcopy,
-			psm2_ep_t ep
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+			, int use_gdrcopy, psm2_ep_t ep
 #endif
 			);
-int psmi_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+int psm3_mq_handle_rts(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 		       struct ptl_strategy_stats *stats,
 		       uint32_t msglen, const void *payload, uint32_t paylen,
 		       int msgorder, mq_rts_callback_fn_t cb,
 		       psm2_mq_req_t *req_o);
-int psmi_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, psm2_mq_tag_t *tag,
+int psm3_mq_handle_envelope(psm2_mq_t mq, psm2_epaddr_t src, uint32_t *_tag,
 			    struct ptl_strategy_stats *stats,
 			    uint32_t msglen, uint32_t offset,
 			    const void *payload, uint32_t paylen, int msgorder,
 			    uint32_t opcode, psm2_mq_req_t *req_o);
-int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t req);
+int psm3_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t req);
 
 // perform the actual copy for a recv matching a sysbuf.  We copy from a sysbuf
 // (req->req_data.buf) to the actual user buffer (buf) and keep statistics.
@@ -574,25 +585,25 @@ int psmi_mq_handle_outoforder(psm2_mq_t mq, psm2_mq_req_t req);
 // 	can get future cache hits on other size messages in same buffer
 // not needed - msglen - negotiated total message size
 // copysz - actual amount to copy (<= msglen)
-#ifdef PSM_CUDA
-void psmi_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, uint8_t is_buf_gpu_mem,
                                 void *buf, uint32_t len, uint32_t copysz);
 #else
 PSMI_ALWAYS_INLINE(
-void psmi_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, void *buf,
+void psm3_mq_recv_copy(psm2_mq_t mq, psm2_mq_req_t req, void *buf,
                                 uint32_t len, uint32_t copysz))
 {
 	if (copysz)
-		psmi_mq_mtucpy(buf, (const void *)req->req_data.buf, copysz);
+		psm3_mq_mtucpy(buf, (const void *)req->req_data.buf, copysz);
 }
 #endif
 
 #if 0   // unused code, specific to QLogic MPI
-void psmi_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn);
+void psm3_mq_stats_register(psm2_mq_t mq, mpspawn_stats_add_fn add_fn);
 #endif
 
-void psmi_mq_fastpath_disable(psm2_mq_t mq);
-void psmi_mq_fastpath_try_reenable(psm2_mq_t mq);
+void psm3_mq_fastpath_disable(psm2_mq_t mq);
+void psm3_mq_fastpath_try_reenable(psm2_mq_t mq);
 
 PSMI_ALWAYS_INLINE(
 psm2_mq_req_t
@@ -630,7 +641,7 @@ mq_eager_match(psm2_mq_t mq, void *peer, uint16_t msg_seqnum))
 /* Not exposed in public psm, but may extend parts of PSM 2.1 to support
  * this feature before 2.3 */
 psm_mq_unexpected_callback_fn_t
-psmi_mq_register_unexpected_callback(psm2_mq_t mq,
+psm3_mq_register_unexpected_callback(psm2_mq_t mq,
 				     psm_mq_unexpected_callback_fn_t fn);
 #endif
 

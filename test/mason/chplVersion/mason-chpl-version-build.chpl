@@ -33,6 +33,6 @@ proc main() {
   lock.close();
 
   var compopts: list(string);
-  compopts.append("");
+  compopts.pushBack("");
   buildProgram(false, false, false, false, compopts, "Mason.toml", "Mason.lock");
 }

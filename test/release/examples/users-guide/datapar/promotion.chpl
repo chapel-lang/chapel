@@ -153,7 +153,7 @@ forall (v1, v2, v3) in zip(V[2..9], V[1..8], V[3..10]) do
   v1 = (v2 + v3)/2.0;
 writeln(V);
 
-forall i in 2..9 do
+forall i in 2..9 with (ref V) do
   V[i] = (V[i-1] + V[i+1]) / 2.0;
 writeln(V);
 
@@ -191,4 +191,23 @@ writeln(A);
 
 A = 0.0;
 maybeCopy(A, forall i in 1..3 do 2*i + 0.5, true);
+writeln(A);
+
+// evaluating a call only once in multi-argument promotion
+
+writeln();
+proc computeMask() {
+  writeln("computing mask...");
+  return true;
+}
+
+A = 0.0;
+B = [1.2, 3.4, 5.6];
+maybeCopy(A, B, computeMask());
+writeln(A, "\n");
+
+A = 0.0;
+var tmp = computeMask();
+forall (a, b) in zip(A, B) do
+  maybeCopy(a, b, tmp);
 writeln(A);

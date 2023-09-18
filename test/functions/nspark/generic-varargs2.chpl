@@ -5,7 +5,7 @@ class Foo {
   proc init(args..., type eltType = args.type) {
     this.eltType = eltType;
     this.args = args;
-    this.complete();
+    init this;
     writeln(eltType:string);
     writeln(val);
   }

@@ -26,9 +26,9 @@ module HTable {
   use IO;
   use Reflection;
 
-  /* Create an HDF5 table out of an array of records `arr`. 
+  /* Create an HDF5 table out of an array of records `arr`.
 
-     :arg arr:  Array to create the HDF5 table from. 
+     :arg arr:  Array to create the HDF5 table from.
      :type arr: [] R
      :arg loc: Location to create the table (as an HDF5 identifier)
      :type loc: hid_t
@@ -50,23 +50,23 @@ module HTable {
     where isRecord(R)
   {
     // This is defined in C_HDF5, but the definition there was causing isseus with
-    // field_names, field_offset, field_types, so I define an overload there. 
-    // It's more than likely I was doing something silly 
-    extern proc H5TBmake_table(table_title : c_string, file_id : hid_t, dset_name: c_string,
+    // field_names, field_offset, field_types, so I define an overload there.
+    // It's more than likely I was doing something silly
+    extern proc H5TBmake_table(table_title : c_ptrConst(c_char), file_id : hid_t, dset_name: c_ptrConst(c_char),
                                numFields : hsize_t, numRecords : hsize_t, type_size : hsize_t,
-                               field_names : c_array(c_string), field_offset : c_array(hsize_t),
+                               field_names : c_array(c_ptrConst(c_char)), field_offset : c_array(hsize_t),
                                field_types : c_array(hid_t),
-                               chunk_size : hsize_t, fill_data : c_void_ptr, compress : c_int,
-                               data : c_void_ptr);
+                               chunk_size : hsize_t, fill_data : c_ptr(void), compress : c_int,
+                               data : c_ptr(void));
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var nfields = meta.nFields : hsize_t;
     var nrecords = arr.size: hsize_t;
     var type_size = meta.Rsize : hsize_t;
     var chunk_size = chunkSize:hsize_t;
-    var fill_data = c_nil;
+    var fill_data = nil;
     var compress = (if compressTable then 1 else 0):c_int;
-    var data = if (nrecords==0) then c_nil else c_ptrTo(arr);
+    var data = if (nrecords==0) then nil else c_ptrTo(arr);
 
     H5TBmake_table(cname, loc, cname, nfields, nrecords, type_size,
                    meta.names, meta.offsets, meta.types, chunk_size, fill_data,
@@ -103,12 +103,12 @@ module HTable {
                                    numRecords : hsize_t, type_size : hsize_t,
                                    field_offset : c_array(hsize_t),
                                    field_sizes : c_array(c_size_t),
-                                   data : c_void_ptr);
+                                   data : c_ptr(void));
     var meta = new H5MetaTable(R);
     var cname = name.c_str();
     var type_size = meta.Rsize : hsize_t;
     var nrecords = arr.size: hsize_t;
-    var data = if (nrecords==0) then c_nil else c_ptrTo(arr);
+    var data = if (nrecords==0) then nil else c_ptrTo(arr);
 
     H5TBappend_records(loc, cname, nrecords, type_size,
                        meta.offsets, meta.sizes, data);
@@ -137,7 +137,7 @@ module HTable {
                                      nrecords : hsize_t, type_size : c_size_t,
                                      field_offset : c_array(hsize_t),
                                      field_sizes : c_array(c_size_t),
-                                     data : c_void_ptr);
+                                     data : c_ptr(void));
     extern proc H5TBget_table_info(loc_id : hid_t, table_name : c_string,
                                    nfields : c_ptr(hsize_t), nrecords : c_ptr(hsize_t));
     var meta = new H5MetaTable(R);
@@ -168,7 +168,7 @@ module HTable {
      The `names`, `offsets`, `types` and `sizes` elements are the most
      relevant and may be passed on directly to the HDF5 routines.
   */
-  record H5MetaTable {
+  record H5MetaTable : writeSerializable {
     /* The chplType of the record. */
     type R;
 
@@ -202,7 +202,7 @@ module HTable {
       this.R = R;
       nFields = numFields(R);
       Rsize = c_sizeof(R);
-      this.complete();
+      init this;
 
       var r : R;
       for param ii in 0..<nFields {
@@ -220,7 +220,7 @@ module HTable {
         if (fieldtype==string) then halt("String types not supported in HDF5 tables currently");
         // Arrays
         if (is_c_array(ifield)) {
-          var dim : hsize_t = ifield.size : hsize_t; 
+          var dim : hsize_t = ifield.size : hsize_t;
           types[ii] = H5Tarray_create2(getHDF5Type(ifield.eltType), 1, c_ptrTo(dim));
           ownedtypes[ii] = true;
           sizes[ii] = (c_sizeof(ifield.eltType)*dim):c_size_t;
@@ -237,9 +237,9 @@ module HTable {
     /* Debugging routine, prints a human-readable version of how the
        routine has parsed the field.
     */
-    proc writeThis(f) {
+    proc serialize(writer, ref serializer) {
       for ii in 1..nFields {
-        f.write(names[ii]:string, new ioLiteral(" "), offsets[ii], new ioNewline());
+        writer.writeln(names[ii]:string, " ", offsets[ii]);
       }
     }
 
@@ -253,11 +253,11 @@ module HTable {
 
 
 
-  
+
   // From David Iten -- thanks!
-  pragma "no doc"
+  @chpldoc.nodoc
   proc is_c_array(x: c_array(?)) param return true;
-  pragma "no doc"
+  @chpldoc.nodoc
   proc is_c_array(x) param return false;
 
 

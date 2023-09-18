@@ -19,7 +19,7 @@ proc main() {
   writeln(sum);
 }
 
-proc test(a, b) {
+proc test(ref a, b) {
   var sum = 0;
   for k in 1..n {
     sum += a[j] + b[j];

@@ -76,10 +76,10 @@ void rxd_info_to_core_mr_modes(uint32_t version, const struct fi_info *hints,
 	}
 }
 
-int rxd_info_to_core(uint32_t version, const struct fi_info *rxd_info,
+int rxd_info_to_core(uint32_t version, const struct fi_info *rxd_info_in,
 		     const struct fi_info *base_info, struct fi_info *core_info)
 {
-	rxd_info_to_core_mr_modes(version, rxd_info, core_info);
+	rxd_info_to_core_mr_modes(version, rxd_info_in, core_info);
 	core_info->caps = FI_MSG;
 	core_info->mode = FI_LOCAL_MR | FI_CONTEXT | FI_MSG_PREFIX;
 	core_info->ep_attr->type = FI_EP_DGRAM;

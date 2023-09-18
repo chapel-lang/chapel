@@ -13,7 +13,8 @@ TESTS = \
 		precond_fib \
 		task_spawn \
 		test_spawn_simple \
-		precond_spawn_simple
+		precond_spawn_simple \
+		lock_acq_rel
 
 if HAVE_LIBM
 TESTS += subteams_uts
@@ -64,6 +65,8 @@ test_spawn_simple_SOURCES = test_spawn_simple.c
 syncvar_stream_SOURCES = syncvar_stream.c
 
 feb_stream_SOURCES = feb_stream.c
+
+lock_acq_rel_SOURCES = lock_acq_rel.c
 
 if HAVE_LIBM
 subteams_uts_SOURCES = subteams_uts.c

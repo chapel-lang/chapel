@@ -1,0 +1,159 @@
+#
+# Copyright (C) 2016 by Argonne National Laboratory.
+# Copyright (C) 2022 by Cornelis Networks.
+#
+# This software is available to you under a choice of one of two
+# licenses.  You may choose to be licensed under the terms of the GNU
+# General Public License (GPL) Version 2, available from the file
+# COPYING in the main directory of this source tree, or the
+# BSD license below:
+#
+#     Redistribution and use in source and binary forms, with or
+#     without modification, are permitted provided that the following
+#     conditions are met:
+#
+#      - Redistributions of source code must retain the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer.
+#
+#      - Redistributions in binary form must reproduce the above
+#        copyright notice, this list of conditions and the following
+#        disclaimer in the documentation and/or other materials
+#        provided with the distribution.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+# MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS
+# BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN
+# ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+# CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+#
+if HAVE_OPX
+opx_files =									\
+		prov/opx/src/fi_opx_atomic.c					\
+		prov/opx/src/fi_opx_av.c					\
+		prov/opx/src/fi_opx_cm.c					\
+		prov/opx/src/fi_opx_cntr.c					\
+		prov/opx/src/fi_opx_cq.c					\
+		prov/opx/src/fi_opx_cq_ops_table_locking.c			\
+		prov/opx/src/fi_opx_cq_ops_table_locking_8192.c			\
+		prov/opx/src/fi_opx_cq_ops_table_locking_runtime.c		\
+		prov/opx/src/fi_opx_cq_ops_table_non_locking.c			\
+		prov/opx/src/fi_opx_cq_ops_table_non_locking_8192.c		\
+		prov/opx/src/fi_opx_cq_ops_table_non_locking_runtime.c		\
+		prov/opx/src/fi_opx_domain.c					\
+		prov/opx/src/fi_opx_tid_domain.c				\
+		prov/opx/src/fi_opx_ep.c					\
+		prov/opx/src/fi_opx_eq.c					\
+		prov/opx/src/fi_opx_fabric.c					\
+		prov/opx/src/fi_opx_info.c					\
+		prov/opx/src/fi_opx_init.c					\
+		prov/opx/src/fi_opx_mr.c					\
+		prov/opx/src/fi_opx_msg.c					\
+		prov/opx/src/fi_opx_rma.c					\
+		prov/opx/src/fi_opx_hfi1.c					\
+		prov/opx/src/fi_opx_hfi1_sdma.c					\
+		prov/opx/src/fi_opx_reliability.c				\
+		prov/opx/src/fi_opx_tagged.c					\
+		prov/opx/src/fi_opx_sep.c					\
+		prov/opx/src/fi_opx_sysfs.c					\
+		prov/opx/src/fi_opx_service.c					\
+		prov/opx/src/fi_opx_shm.c					\
+		prov/opx/src/fi_opx_tid_cache.c					\
+		prov/opx/src/fi_opx_hfi_select.c				\
+		prov/opx/src/opa_utils_gen1.c					\
+		prov/opx/src/opa_proto.c					\
+		prov/opx/src/fi_opx_progress.c
+
+opx_CPPFLAGS =									\
+		-I$(builddir)/prov/opx/include					\
+		-I$(srcdir)/prov/opx/include					\
+		-I$(srcdir)/prov/opx/include/linux-i386
+
+opx_LIBS = -luuid -lnuma
+
+if HAVE_OPX_DL
+pkglib_LTLIBRARIES += libopx-fi.la
+libopx_fi_la_SOURCES = $(opx_files) $(common_srcs)
+nodist_libopx_fi_la_SOURCES = $(opx_files_nodist)
+libopx_fi_la_CPPFLAGS = $(AM_CPPFLAGS) $(opx_CPPFLAGS)
+libopx_fi_la_LDFLAGS = \
+    -module -avoid-version -export-dynamic $(opx_LDFLAGS)
+libopx_fi_la_LIBADD = $(linkback) $(opx_LIBS)
+libopx_fi_la_DEPENDENCIES = $(linkback)
+else
+src_libfabric_la_SOURCES += $(opx_files)
+nodist_src_libfabric_la_SOURCES += $(opx_files_nodist)
+src_libfabric_la_CPPFLAGS += $(opx_CPPFLAGS)
+src_libfabric_la_LDFLAGS += $(opx_LDFLAGS)
+src_libfabric_la_LIBADD += $(opx_LIBS)
+endif
+
+# include $(top_srcdir)/prov/opx/src/test/Makefile.include
+
+rdma_opxincludedir = $(includedir)/rdma/opx
+
+rdma_opxinclude_HEADERS =
+
+noinst_HEADERS = \
+	$(top_srcdir)/prov/opx/include/opa_common_gen1.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_rma.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_tagged.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_endpoint.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_atomic_def.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_eq.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_cm.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_reliability.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_atomic_fifo.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_cq_ops_table.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_atomic.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_domain.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_eq.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_rma.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_fabric.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_sysfs.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_timer.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1_transport.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_fabric_progress.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1_packet.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1_fabric.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_internal.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_rma_ops.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_compiler.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_fabric_transport.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_addr.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_debug_counters.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1_sdma.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_endpoint.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_flight_recorder.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_tagged.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_hfi1_progress.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_progress.h \
+	$(top_srcdir)/prov/opx/include/rdma/opx/fi_opx_tid_domain.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_trigger.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_atomic.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct.h \
+	$(top_srcdir)/prov/opx/include/rdma/fi_direct_domain.h \
+	$(top_srcdir)/prov/opx/include/opa_user.h \
+	$(top_srcdir)/prov/opx/include/fi_opx_hfi_select.h \
+	$(top_srcdir)/prov/opx/include/fi_opx_tid.h \
+	$(top_srcdir)/prov/opx/include/fi_opx_tid_cache.h \
+	$(top_srcdir)/prov/opx/include/opa_user_gen1.h \
+	$(top_srcdir)/prov/opx/include/opa_intf.h \
+	$(top_srcdir)/prov/opx/include/hfi1_deprecated_gen1.h \
+	$(top_srcdir)/prov/opx/include/opa_byteorder.h \
+	$(top_srcdir)/prov/opx/include/opa_udebug.h \
+	$(top_srcdir)/prov/opx/include/opa_service.h \
+	$(top_srcdir)/prov/opx/include/linux-i386/bit_ops.h \
+	$(top_srcdir)/prov/opx/include/linux-i386/sysdep.h \
+	$(top_srcdir)/prov/opx/include/opx_shm.h
+
+prov_install_man_pages += man/man7/fi_opx.7
+
+endif #HAVE_OPX
+
+prov_dist_man_pages += man/man7/fi_opx.7

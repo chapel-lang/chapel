@@ -33,7 +33,7 @@ config var dist: string = "C";
 /* Initializes a 1D structure */
 proc initialize_1D(distribution) {
     var array: [distribution] real = 0.0;
-    forall i in distribution {
+    forall i in distribution with (ref array) {
         array[i] = (i - 1.0);
     }
     return array;
@@ -42,7 +42,7 @@ proc initialize_1D(distribution) {
 /* Initializes a 2D structure */
 proc initialize_2D(distribution, adder: int, divider: int) {
     var matrix: [distribution] real = 0.0;
-    forall (i,j) in distribution {
+    forall (i,j) in distribution with (ref matrix) {
         matrix[i,j] = ((i - 1.0) * (j + adder)) / divider;
     }
     return matrix;
@@ -197,12 +197,12 @@ proc main() {
         var dist_2D = dom_2D dmapped CyclicZipOpt(startIdx=dom_2D.low);
         kernel_fdtd2d(dist_1D, dist_2D, M, N);*/
     } else if dist == "C" {
-        var dist_1D = dom_1D dmapped Cyclic(startIdx=dom_1D.low);
-        var dist_2D = dom_2D dmapped Cyclic(startIdx=dom_2D.low);
+        var dist_1D = dom_1D dmapped cyclicDist(startIdx=dom_1D.low);
+        var dist_2D = dom_2D dmapped cyclicDist(startIdx=dom_2D.low);
         kernel_fdtd2d(dist_1D, dist_2D, M, N); 
     } else if dist == "B" {
-        var dist_1D = dom_1D dmapped Block(boundingBox=dom_1D);
-        var dist_2D = dom_2D dmapped Block(boundingBox=dom_2D);
+        var dist_1D = dom_1D dmapped blockDist(boundingBox=dom_1D);
+        var dist_2D = dom_2D dmapped blockDist(boundingBox=dom_2D);
         kernel_fdtd2d(dist_1D, dist_2D, M, N);
     } 
 }

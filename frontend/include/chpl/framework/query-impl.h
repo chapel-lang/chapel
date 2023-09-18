@@ -282,6 +282,14 @@ template<typename ResultType, typename... ArgTs>
 const ResultType&
 Context::queryGetSaved(const QueryMapResult<ResultType, ArgTs...>* r) {
   this->saveDependencyInParent(r);
+
+  if (errorCollectionStack.size() != 0) {
+    // Errors are being collected. Since we're using a cached result, but
+    // want to check if errors occurred, copy the already-saved errors
+    // into the collector.
+    storeErrorsFor(r);
+  }
+
   return r->result;
 }
 
@@ -326,7 +334,6 @@ Context::queryEnd(
               const std::tuple<ArgTs...>& tupleOfArgs,
               ResultType result,
               const char* traceQueryName) {
-
   // must be in a query to be running one!
   CHPL_ASSERT(queryStack.size() > 0);
 
@@ -423,6 +430,7 @@ Context::updateResultForQueryMapR(QueryMap<ResultType, ArgTs...>* queryMap,
     queryMap->oldResults.push_back(std::move(result));
   }
 
+  r->emittedErrors = errorCollectionStack.empty();
   r->lastChecked = currentRevision;
   if (changed || initialResult) {
     r->lastChanged  = currentRevision;
@@ -557,9 +565,9 @@ Context::querySetterUpdateResult(
 
 #if CHPL_QUERY_TIMING_AND_TRACE_ENABLED
 
-#define QUERY_BEGIN_TIMING() \
-  context->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
-  auto QUERY_STOPWATCH = context->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
+#define QUERY_BEGIN_TIMING(context__) \
+  context__->queryBeginTrace(BEGIN_QUERY_FUNC_NAME, BEGIN_QUERY_ARGS); \
+  auto QUERY_STOPWATCH = context__->makeQueryTimingStopwatch(BEGIN_QUERY_MAP)
 
 #else
 
@@ -581,7 +589,8 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING();
+  auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
+  QUERY_BEGIN_TIMING(context);
 
 /**
   QUERY_BEGIN_INPUT is like QUERY_BEGIN but should be used
@@ -592,7 +601,8 @@ Context::querySetterUpdateResult(
   if (QUERY_USE_SAVED()) { \
     return QUERY_GET_SAVED(); \
   } \
-  QUERY_BEGIN_TIMING();
+  auto QUERY_RECOMPUTATION_MARKER = context->markRecomputing(false); \
+  QUERY_BEGIN_TIMING(context);
 
 /**
   Write
@@ -606,8 +616,10 @@ Context::querySetterUpdateResult(
   Updates the query's last updated and last computed revisions as needed.
  */
 #define QUERY_END(result) \
+  /* Recomputation marker isn't out of scope yet, but we want queryEnd to get old state */ \
+  (QUERY_RECOMPUTATION_MARKER.restore(), \
   /* must not use BEGIN_QUERY_SEARCH1 (iterator could be invalidated) */ \
-  (BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_FUNCTION, \
+   BEGIN_QUERY_CONTEXT->queryEnd(BEGIN_QUERY_FUNCTION, \
                                  BEGIN_QUERY_MAP, \
                                  BEGIN_QUERY_FOUND, \
                                  BEGIN_QUERY_ARGS, \

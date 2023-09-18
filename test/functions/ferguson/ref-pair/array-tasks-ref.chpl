@@ -14,20 +14,20 @@ proc readit(x) {
   var tmp = x;
 }
 
-proc readCaptureCoforall(A) {
+proc readCaptureCoforall(ref A) {
   coforall i in 1..10 with (ref A) {
     readit(A);
   }
 }
 
-proc readCaptureCobegin(A) {
+proc readCaptureCobegin(ref A) {
   cobegin with (ref A) {
     readit(A);
     readit(A);
   }
 }
 
-proc readCaptureBegin(A) {
+proc readCaptureBegin(ref A) {
   sync {
     begin with (ref A) {
       readit(A);
@@ -46,26 +46,26 @@ proc writeit(ref x) {
   x = 1;
 }
 
-proc writeCaptureForall(A) {
+proc writeCaptureForall(ref A) {
   forall i in 1..10 with (ref A) {
     writeit(A);
   }
 }
 
-proc writeCaptureCoforall(A) {
+proc writeCaptureCoforall(ref A) {
   coforall i in 1..10 with (ref A) {
     writeit(A);
   }
 }
 
-proc writeCaptureCobegin(A) {
+proc writeCaptureCobegin(ref A) {
   cobegin with (ref A) {
     writeit(A);
     writeit(A);
   }
 }
 
-proc writeCaptureBegin(A) {
+proc writeCaptureBegin(ref A) {
   sync {
     begin with (ref A) {
       writeit(A);

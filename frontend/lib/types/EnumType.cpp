@@ -36,9 +36,9 @@ const EnumType* EnumType::get(Context* context, ID id, UniqueString name) {
   return EnumType::getEnumType(context, id, name).get();
 }
 
-const EnumType* EnumType::getBoundedRangeTypeType(Context* context) {
-  auto symbolPath = UniqueString::get(context, "ChapelRange.BoundedRangeType");
-  auto name = UniqueString::get(context, "BoundedRangeType");
+const EnumType* EnumType::getBoundKindType(Context* context) {
+  auto symbolPath = UniqueString::get(context, "ChapelRange.boundKind");
+  auto name = UniqueString::get(context, "boundKind");
   auto id = ID(symbolPath, -1, 0);
   return EnumType::get(context, id, name);
 }

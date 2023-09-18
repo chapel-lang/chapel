@@ -8,7 +8,7 @@ use LinearAlgebra;
 proc dgemm(
     A : [?AD] ?t,
     B : [?BD] t,
-    C : [?CD] t)
+    ref C : [?CD] t)
 {
     // Calculate (i,j) using a dot product of a row of A and a column of B.
     for i in AD.dim(0) {
@@ -24,9 +24,9 @@ proc dgemm(
 // do unblocked-LU decomposition within the specified panel, update the
 // pivot vector accordingly
 proc panelSolve(
-    A : [] ?t,
+    ref A : [] ?t,
     panel : domain(2),
-    piv : [] int)
+    ref piv : [] int)
 {
     var pnlRows = panel.dim(0);
     var pnlCols = panel.dim(1);
@@ -61,7 +61,7 @@ proc panelSolve(
 
         // update all other values below the pivot
         if k+1 <= pnlRows.high && k+1 <= pnlCols.high {
-            forall (i,j) in panel[k+1.., k+1..] {
+            forall (i,j) in panel[k+1.., k+1..] with (ref A) {
                 A[i,j] -= A[i,k] * A[k,j];
             }
         }
@@ -72,7 +72,7 @@ proc panelSolve(
 // LU decomposition.  Each step of the LU decomposition will solve a block
 // (tl for top-left) portion of a matrix. This function solves the rows to the
 // right of the block.
-proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
+proc updateBlockRow(ref A : [] ?t, tl : domain(2), tr : domain(2))
 {
     var tlRows = tl.dim(0);
     var tlCols = tl.dim(1);
@@ -82,7 +82,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
     assert(tlCols == trRows);
 
     for i in trRows {
-        forall j in trCols {
+        forall j in trCols with (ref A) {
             for k in tlRows.low..i-1 {
                 A[i, j] -= A[i, k] * A[k,j];
             }
@@ -92,7 +92,7 @@ proc updateBlockRow(A : [] ?t, tl : domain(2), tr : domain(2))
 
 // blocked LU factorization with pivoting for matrix augmented with vector of
 // RHS values.
-proc LUFactorize(n : int, A : [1..n, 1..n+1] real, piv : [1..n] int) {
+proc LUFactorize(n : int, ref A : [1..n, 1..n+1] real, ref piv : [1..n] int) {
     const ARows = A.domain.dim(0);
     const ACols = A.domain.dim(1);
 
@@ -169,7 +169,7 @@ proc matrixMult(
     const n : int,
     const A : [1..m, 1..p],
     const B : [1..p, 1..n],
-    C : [1..m, 1..n])
+    ref C : [1..m, 1..n])
 {
     C = 0;
 
@@ -180,11 +180,11 @@ proc matrixMult(
 
 // given a matrix in A in form: [L, U] multiply the L and U parts into
 // a resulting matrix C.
-proc selfMult(n : int, A : [?D] real, C : [D] real) {
+proc selfMult(n : int, A : [?D] real, ref C : [D] real) {
     assert(D.dim(0) == D.dim(1));
     C = 0;
 
-    forall (i,j) in D {
+    forall (i,j) in D with (ref C) {
         if(i <= j) {
           for k in D.dim(0).low..i-1 {
                 C[i,j] += A[i,k] * A[k,j];
@@ -203,7 +203,7 @@ proc selfMult(n : int, A : [?D] real, C : [D] real) {
 // QUESTION: I'm intending vectorIn to be passed by value in this instance
 // (since I modify it in the function but I don't want the result sent out).
 // is this function doing the trick?
-proc permuteMatrix(matrix : [?dmn], in vector) {
+proc permuteMatrix(ref matrix : [?dmn], in vector) {
     //var pdmn : sparse subdomain(dmn);
     var pdmn =
         {1..vector.domain.dim(0).size, 1..vector.domain.dim(0).size};
@@ -211,7 +211,7 @@ proc permuteMatrix(matrix : [?dmn], in vector) {
     //p.IRV = 0;
 
     // construct permutation matrix
-    forall i in vector {
+    forall i in vector with (ref p) {
         //pdmn.add((i, vector[i]));
         p[i, vector[i]] = 1;
     }
@@ -413,7 +413,7 @@ proc test_updateBlockRow(rprt = true) : bool {
     // the block row
     var recalc : [randomOffset..randomOffset+randomHeight-1,
                   randomOffset+randomHeight..(randomWidth-randomHeight)] real;
-    forall (i,j) in recalc.domain {
+    forall (i,j) in recalc.domain with (ref recalc) {
         for k in randomOffset..i-1 {
             recalc[i,j] += A[i,k] * A[k,j];
         }

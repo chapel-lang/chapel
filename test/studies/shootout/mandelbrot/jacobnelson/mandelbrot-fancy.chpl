@@ -13,7 +13,7 @@ proc main()
   const sizeRange = 0..#size:int(64);
   const myLocales = [loc in 0..#(bytesRequired:int)] Locales[loc % numLocales];
 
-  var ByteDist = new dmap(new Cyclic(rank=2, startIdx=(0, 0)));
+  var ByteDist = new cyclicDist(rank=2, startIdx=(0, 0));
 
   var ByteDom: domain(2, int(64)) dmapped ByteDist = {sizeRange, byteRange};
   var ByteArr : [ByteDom] uint(8);

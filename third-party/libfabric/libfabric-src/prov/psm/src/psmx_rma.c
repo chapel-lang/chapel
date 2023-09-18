@@ -35,9 +35,9 @@
 static inline void psmx_am_enqueue_rma(struct psmx_fid_domain *domain,
 				       struct psmx_am_request *req)
 {
-	fastlock_acquire(&domain->rma_queue.lock);
+	ofi_spin_lock(&domain->rma_queue.lock);
 	slist_insert_tail(&req->list_entry, &domain->rma_queue.list);
-	fastlock_release(&domain->rma_queue.lock);
+	ofi_spin_unlock(&domain->rma_queue.lock);
 }
 
 /* RMA protocol:

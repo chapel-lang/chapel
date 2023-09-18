@@ -532,12 +532,30 @@ all:
   02/24/23:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
+    - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
+      config: gpu
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
   03/14/23:
     - text: Eliminate extra destructions when yielding tuples (#21887)
       config: chapcs
+  03/16/23:
+    - text: Update GPU performance tests to not count launches in perf mode (#21891)
+      config: gpu
+  04/06/23:
+    - text: Make Dyno scope resolution default (#21983)
+      config: chapcs
+  05/26/23:
+    - text: Upgrade to llvm 15
+      config: chapcs
+  06/01/23:
+    - text: Remove calls to codegenInvariantStart (#22439)
+      config: chapcs
+  08/09/23:
+    - text: Deprecate c_string in user facing modules (#22622)
+      config: chapcs
+
 # End all
 
 allocate:
@@ -572,6 +590,8 @@ arrayPerformance-1d:
 arrayPerformance-2d:
   10/21/16:
     - Improvements to scalarReplace, refPropagation and copyPropagation (#4761)
+  06/02/23:
+    - Rename range.stridable to range.strides strideKind (#22441)
 
 array-assign-get:
   11/13/19:
@@ -903,6 +923,10 @@ fasta:
     - Disable enum->int casts for enums without values (#10114)
   07/14/18:
     - Optimize enum->int casts for concrete types (#10308)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 fastaredux:
   01/14/14:
@@ -1084,6 +1108,10 @@ knucleotide: &knucleotide-base
 
 knucleotide-submitted:
   <<: *knucleotide-base
+
+large_binary_io:
+  05/02/23:
+    - IO non-buffered read optimization (#22031)
 
 LCALS-raw-short: &lcals-base
   10/20/16:
@@ -1477,6 +1505,10 @@ memleaksfull:
     - IO Encoders/Decoders prototype (#21586)
   02/23/23:
     - QIO fix Free the mark stack if it has been allocated (#21662)
+  03/30/23:
+    - IO module error types cleanup (#22003)
+  03/31/23:
+    - Fix memory leaks in readAll tests (#22032)
 # End memleaksfull
 
 meteor:
@@ -1805,6 +1837,10 @@ revcomp: &revcomp-base
     - Reduce uses of Math by automatically included modules (#19885)
   03/07/23:
     - Parallelize array.find() (#21750)
+  08/23/23:
+    - Deprecate 'iokind' type and 'kind' field (#23007)
+  08/30/23:
+    - Improve performance of readBinary and writeBinary for dense arrays (#23162)
 
 revcomp-submitted:
   06/07/22:
@@ -2335,6 +2371,22 @@ arkouda: &arkouda-base
     - Add initial aggregation support for bigint (Bears-R-Us/arkouda#2290)
   03/28/23:
     - Upgrade Arkouda release testing from 1.29 to 1.30 (#21969)
+  03/30/23:
+    - Bump bigint groupby benchmark problem size (Bears-R-Us/arkouda#2326)
+  04/07/23:
+    - Fix BigInteger issue with a result parameter used as an argument (#22039)
+  04/08/23:
+    - Fix regression in BigInteger with ref arguments (#22075)
+  05/25/23:
+    - Revert SegArray to Client Side (Bears-R-Us/arkouda#2439)
+  07/22/23:
+    - new format specifier (#22766)
+  08/05/23:
+    - Resolve Arkouda deprecation warnings for 1.32 to date (Bears-R-Us/arkouda#2632)
+  07/06/23:
+    - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
+  08/29/23:
+    - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
 
 
 arkouda-string:
@@ -2372,7 +2424,17 @@ arkouda-comp:
     - Default to jemalloc for host allocator on most platforms (#20774)
   03/08/23:
     - Yield tuples by value when appropriate (#21789)
+  05/02/23:
+    - Generate write method stubs for FCF superclass types (#22195)
 
 shoc-triad-bw-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
+
+shoc-sort:
+  02/24/23:
+    - Improve SHOC-Sort implementation (#21610)
+
+chplGPU:
+  03/25/23:
+    - Upstream changes

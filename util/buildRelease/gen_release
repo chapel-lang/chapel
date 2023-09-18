@@ -167,7 +167,8 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "tools/chpldoc",
     "tools/chplvis",
     "tools/c2chapel",
-    "tools/mason"
+    "tools/mason",
+    "tools/protoc-gen-chpl"
 );
 
 

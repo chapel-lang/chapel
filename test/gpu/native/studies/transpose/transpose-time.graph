@@ -1,5 +1,5 @@
-perfkeys: Wall clock time (s):, Wall clock time (s):
-files: transpose-lowlevel.dat, transpose-naive.dat
-graphkeys: Low Level, Naive
+perfkeys: Wall clock time (s):, Wall clock time (s):, Wall clock time (s):
+files: transpose-lowlevel.dat, transpose-naive.dat, transpose-clever.dat
+graphkeys: Low Level, Naive, Clever
 ylabel: Wall Clock Time (s)
 graphtitle: Matrix Transpose Time

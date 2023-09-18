@@ -142,7 +142,7 @@
 #define IPS_SEND_FLAG_PKTCKSUM          0x02	/* Has packet checksum */
 #define IPS_SEND_FLAG_AMISTINY		0x04	/* AM is tiny, exclusive */
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 /* This flag is used to indicate to the reciever when
  * the send is issued on a device buffer. This helps in
  * selecting TID path on the recieve side regardless of
@@ -160,7 +160,7 @@
 #define IPS_SEND_FLAG_PERSISTENT	0x0200
 #define IPS_SEND_FLAG_NO_LMC		0x0400
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 /* This flag is used to indicate if the send is on
  * a GPU buffer. This helps PIO/SDMA paths to detect
  * if payload is GPU buffer without having to call
@@ -169,8 +169,17 @@
 #define IPS_SEND_FLAG_PAYLOAD_BUF_GPU   0x0800
 #endif
 
+#ifdef PSM_HAVE_REG_MR
 #define IPS_SEND_FLAG_SEND_MR          0x1000
+#endif
 
+#ifdef PSM_SOCKETS
+#define IPS_SEND_FLAG_TCP_REMAINDER	0x2000	/* TCP data was partially sent out */
+#endif
+
+#ifdef PSM_ONEAPI
+#define IPS_SEND_FLAG_USE_GDRCOPY	0x4000
+#endif
 
 /* 0x10000000, interrupt when done */
 #define IPS_SEND_FLAG_INTR		(1<<HFI_KHDR_INTR_SHIFT)
@@ -215,7 +224,7 @@
 #define IPS_PROTO_FLAG_PPOLICY_STATIC 0x1c00
 
 
-#ifdef PSM_CUDA
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
 /* Use RNDV (TID) for all message sizes */
 //#define IPS_PROTO_FLAG_ALWAYS_RNDV		0x10000	// unused
 /* Use GPUDirect RDMA for SDMA */
@@ -224,25 +233,35 @@
 #define IPS_PROTO_FLAG_GPUDIRECT_RDMA_RECV	0x40000
 #endif
 
-// These flags select the TID/RDMA expected protocol options
-// most are single bit flags except for the low 2 bits (RDMA_MASK)
-// which select one of 4 possible modes (including 0 == disable).
-// proper use of the FLAG_ENABLED is (flags & FLAG_ENABLED) which
+// These flags (8 bits) select the TID/RDMA expected protocol options.
+// Most are single bit flags except for the low 2 bits (RDMA_MASK)
+// which select one of 4 possible HAL specific modes (including 0 == disable).
+// Proper use of the FLAG_ENABLED is (flags & FLAG_ENABLED) which
 // will be true if any of the 3 RDMA modes are selected.
-// The low 2 bits are shared in connection establishment protocol so
-// If they change meaning, the ips_proto_connect.c protocol and version must be
-// reviewed and updated accordingly
+// For some HALs (verbs), the low 2 bits become ep->wiremode and are shared in
+// the connection establishment protocol so if they change meaning, the
+// ips_proto_connect.c protocol and version must be reviewed and updated
+// accordingly
+#define IPS_PROTOEXP_FLAG_ENABLED	     0x03    /* any of the 3 modes */
+/* up to 3 HAL specific modes, 0 disables RDMA */
 #define IPS_PROTOEXP_FLAG_RDMA_MASK	     0x03
-/* 0 disables RDMA */
-#define IPS_PROTOEXP_FLAG_RDMA_KERNEL    0x01	/* kernel RV module RDMA */
-#define IPS_PROTOEXP_FLAG_RDMA_USER	     0x02	/* user RC QP for RDMA only */
-#define IPS_PROTOEXP_FLAG_RDMA_USER_RC   0x03	/* user RC QP eager & RDMA */
-#define IPS_PROTOEXP_FLAG_ENABLED	     0x03	/* any of the 3 modes */
+
+#ifdef PSM_VERBS
+// verbs specific RDMA modes
+#define IPS_PROTOEXP_FLAG_RDMA_KERNEL        0x01    /* kernel RV module RDMA */
+#define IPS_PROTOEXP_FLAG_RDMA_USER          0x02    /* user RC QP for RDMA only */
+#define IPS_PROTOEXP_FLAG_RDMA_USER_RC       0x03    /* user RC QP eager & RDMA */
 #define IPS_PROTOEXP_FLAG_USER_RC_QP(flag) ((flag)&0x02) /* either RC QP mode */
 #define IPS_PROTOEXP_FLAG_KERNEL_QP(flag) \
 		(((flag)&IPS_PROTOEXP_FLAG_RDMA_MASK) == IPS_PROTOEXP_FLAG_RDMA_KERNEL)
-#define IPS_PROTOEXP_FLAG_RTS_CTS_INTERLEAVE 0x08	/* Interleave RTS handling. */
-#define IPS_PROTOEXP_FLAG_CTS_SERIALIZED 0x10	/* CTS serialized */
-#define IPS_PROTOEXP_FLAGS_DEFAULT	     0x00
+#endif
+
+// These are additional flags only applicable when RDMA is enabled.
+// If needed their values could be changed to permit additional bits for
+// RDMA modes.
+// PSM3_RTS_CTS_INTERLEAVE set's it's flag and TID_DEBUG and CTS_SERIALIZED
+// are automatically when when appropriate.  None go on the wire.
+#define IPS_PROTOEXP_FLAG_RTS_CTS_INTERLEAVE 0x08    /* Interleave RTS handling */
+#define IPS_PROTOEXP_FLAG_CTS_SERIALIZED     0x10    /* CTS serialized */
 
 #endif /* _IPS_PROTO_PARAMS_H */

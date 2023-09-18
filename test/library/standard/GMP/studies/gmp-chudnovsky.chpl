@@ -265,7 +265,7 @@ proc main() {
 }
 
 
-proc build_sieve(s: [] sieve_t) {
+proc build_sieve(ref s: [] sieve_t) {
   const n = s.sizeAs(s.idxType)*2,
         m = sqrt(n): c_long;
 
@@ -602,8 +602,8 @@ proc fg2 ref do return fgstack[top+1];
 var progress = 0.0;
 
 /*
-proc mpz_t.writeThis(f) throws {
-  var outfile = f: file;
+proc mpz_t.serialize(writer, ref serializer) throws {
+  var outfile = writer: file;
     gmp_fprintf(outfile._fp, "%Zd", this);
   if (outfile) then
 }

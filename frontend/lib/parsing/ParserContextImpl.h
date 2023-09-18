@@ -181,6 +181,13 @@ owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
   return node;
 }
 
+owned<AttributeGroup> ParserContext::popLoopAttributeGroup() {
+  CHPL_ASSERT(loopAttributes.size() > 0);
+  auto toReturn = std::move(loopAttributes.back());
+  loopAttributes.pop_back();
+  return toReturn;
+}
+
 owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl) {
   numAttributesBuilt += 1;
 
@@ -194,13 +201,16 @@ owned<AttributeGroup> ParserContext::buildAttributeGroup(YYLTYPE locationOfDecl)
       ? *(attributeGroupParts.pragmas)
       : std::set<PragmaTag>();
 
-  auto attrList = consumeList(attributeGroupParts.attributeList);
+  AstList attrList = consumeList(attributeGroupParts.attributeList);
+
   auto node = AttributeGroup::build(builder, convertLocation(locationOfDecl),
                                 std::move(pragmaCopy),
                                 attributeGroupParts.isDeprecated,
                                 attributeGroupParts.isUnstable,
+                                attributeGroupParts.isParenfulDeprecated,
                                 attributeGroupParts.deprecationMessage,
                                 attributeGroupParts.unstableMessage,
+                                attributeGroupParts.parenfulDeprecationMessage,
                                 std::move(attrList));
   return node;
 }
@@ -283,21 +293,34 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (attributeGroupParts.isStable) {
     error(loc, "cannot apply both stable and deprecated attributes to the same symbol");
   }
-  attributeGroupParts.isDeprecated = true;
+
+  bool isParenfulDeprecation = false;
   AstNode* messageStr = nullptr;
   bool allActualsNamed = true;
+
   if (actuals != nullptr && actuals->size() > 0) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name == UniqueString::get(context(), "notes").podUniqueString() ||
             actual.name == UniqueString::get(context(), "suggestion").podUniqueString()||
+            actual.name == UniqueString::get(context(), "parenful").podUniqueString() ||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@deprecated' attribute only accepts 'since', 'notes', and 'suggestion' arguments", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@deprecated' attribute only accepts 'since', 'notes', "
+                   "'parenful', and 'suggestion' arguments",
+                   actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
       }
-      if (!actual.expr->isStringLiteral()) {
+      if (actual.name == UniqueString::get(context(), "parenful").podUniqueString()) {
+        auto boolLit = actual.expr->toBoolLiteral();
+        if (!boolLit || !boolLit->value()) {
+          error(loc, "invalid value for deprecated attribute's 'parenful' "
+                     "parameter; only 'true' is supported.");
+        }
+        isParenfulDeprecation = true;
+      } else if (!actual.expr->isStringLiteral()) {
         error(loc, "deprecated attribute arguments must be string literals for now");
       }
       // TODO: Decide how this interaction should work, if we want to continue
@@ -314,10 +337,20 @@ void ParserContext::noteDeprecation(YYLTYPE loc, MaybeNamedActualList* actuals) 
   if (!allActualsNamed && actuals->size() > 1) {
     error(loc, "deprecated attribute only accepts one unnamed argument");
   }
+
+  UniqueString message;
   if (messageStr) {
     if (auto strLit = messageStr->toStringLiteral()) {
-      attributeGroupParts.deprecationMessage = strLit->value();
+      message = strLit->value();
     }
+  }
+
+  if (isParenfulDeprecation) {
+    attributeGroupParts.isParenfulDeprecated = true;
+    attributeGroupParts.parenfulDeprecationMessage = message;
+  } else {
+    attributeGroupParts.isDeprecated = true;
+    attributeGroupParts.deprecationMessage = message;
   }
 }
 
@@ -340,7 +373,9 @@ void ParserContext::noteStable(YYLTYPE loc, MaybeNamedActualList* actuals) {
     for (auto& actual : *actuals) {
       if (!(actual.name == UniqueString::get(context(), "since").podUniqueString() ||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@stable' attribute only accepts 'since' or unnamed argument", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@stable' attribute only accepts 'since' or unnamed argument",
+                   actual.name.c_str());
       }
       if (!actual.expr->isStringLiteral()) {
         error(loc, "stable attribute arguments must be string literals for now");
@@ -365,7 +400,10 @@ void ParserContext::noteUnstable(YYLTYPE loc, MaybeNamedActualList* actuals) {
             actual.name == UniqueString::get(context(), "issue").podUniqueString() ||
             actual.name == UniqueString::get(context(), "reason").podUniqueString()||
             actual.name.isEmpty())) {
-        error(loc, "unrecognized argument name '%s'. '@unstable' attribute only accepts 'category', 'issue', and 'reason' arguments", actual.name.c_str());
+        error(loc, "unrecognized argument name '%s'. "
+                   "'@unstable' attribute only accepts 'category', 'issue', "
+                   "and 'reason' arguments",
+                   actual.name.c_str());
       }
       if (actual.name.isEmpty()) {
         allActualsNamed = false;
@@ -394,7 +432,7 @@ void ParserContext::resetAttributeGroupPartsState() {
   if (hasAttributeGroupParts) {
     auto& pragmas = attributeGroupParts.pragmas;
     if (pragmas) delete pragmas;
-    attributeGroupParts = {nullptr, nullptr, false, false, false, UniqueString(), UniqueString() };
+    attributeGroupParts = {nullptr, nullptr, false, false, false, false, UniqueString(), UniqueString(), UniqueString() };
     hasAttributeGroupParts = false;
   }
 
@@ -402,9 +440,11 @@ void ParserContext::resetAttributeGroupPartsState() {
   CHPL_ASSERT(attributeGroupParts.attributeList == nullptr);
   CHPL_ASSERT(!attributeGroupParts.isDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isUnstable);
+  CHPL_ASSERT(!attributeGroupParts.isParenfulDeprecated);
   CHPL_ASSERT(!attributeGroupParts.isStable);
   CHPL_ASSERT(attributeGroupParts.deprecationMessage.isEmpty());
   CHPL_ASSERT(attributeGroupParts.unstableMessage.isEmpty());
+  CHPL_ASSERT(attributeGroupParts.parenfulDeprecationMessage.isEmpty());
   CHPL_ASSERT(!hasAttributeGroupParts);
 
   numAttributesBuilt = 0;
@@ -1006,9 +1046,9 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 
   // Own the recorded identifier to clean it up, but grab its location.
   owned<Identifier> identName = toOwned(fp.name);
-  assert(identName.get());
+  CHPL_ASSERT(identName.get());
   auto identNameLoc = builder->getLocation(identName.get());
-  assert(!identNameLoc.isEmpty());
+  CHPL_ASSERT(!identNameLoc.isEmpty());
 
   auto f = Function::build(builder, identNameLoc,
                            toOwned(fp.attributeGroup),
@@ -1492,7 +1532,7 @@ buildTupleComponent(YYLTYPE location, PODUniqueString name) {
     ret = node.release();
   } else {
     auto node = Variable::build(builder, convertLocation(location),
-                                this->buildAttributeGroup(location),
+                                /*attributeGroup*/ nullptr,
                                 visibility,
                                 linkage,
                                 consumeVarDeclLinkageName(),
@@ -1801,7 +1841,8 @@ ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(withClause),
                                  blockStyle,
                                  std::move(body),
-                                 /*isExpressionLevel*/ false);
+                                 /*isExpressionLevel*/ false,
+                                 this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1843,7 +1884,8 @@ CommentsAndStmt ParserContext::buildBracketLoopStmt(YYLTYPE locLeftBracket,
                                  toOwned(withClause),
                                  blockStyle,
                                  std::move(body),
-                                 /*isExpressionLevel*/ false);
+                                 /*isExpressionLevel*/ false,
+                                 this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1855,6 +1897,7 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                                                    AstNode* iterandExpr,
                                                    WithClause* withClause,
                                                    BlockOrDo blockOrDo) {
+                                                  //  AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1874,7 +1917,8 @@ CommentsAndStmt ParserContext::buildForallLoopStmt(YYLTYPE locForall,
                             toOwned(withClause),
                             blockStyle,
                             std::move(body),
-                            /*isExpressionLevel*/ false);
+                            /*isExpressionLevel*/ false,
+                            this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1886,6 +1930,7 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                                                     AstNode* iterandExpr,
                                                     WithClause* withClause,
                                                     BlockOrDo blockOrDo) {
+                                                    // AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1904,7 +1949,8 @@ CommentsAndStmt ParserContext::buildForeachLoopStmt(YYLTYPE locForeach,
                              toOwned(iterandExpr),
                              toOwned(withClause),
                              blockStyle,
-                             std::move(body));
+                             std::move(body),
+                             this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1915,6 +1961,7 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                                                 AstNode* indexExpr,
                                                 AstNode* iterandExpr,
                                                 BlockOrDo blockOrDo) {
+                                                // AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1927,10 +1974,6 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                     blockOrDo);
 
   auto body = consumeToBlock(locBodyAnchor, exprLst);
-  auto attributeGroup = buildAttributeGroup(locFor);
-  if (attributeGroup != nullptr) {
-     resetAttributeGroupPartsState();
-  }
 
   auto node = For::build(builder, convertLocation(locFor),
                          std::move(index),
@@ -1939,8 +1982,7 @@ CommentsAndStmt ParserContext::buildForLoopStmt(YYLTYPE locFor,
                          std::move(body),
                          /*isExpressionLevel*/ false,
                          /*isParam*/ false,
-                         std::move(attributeGroup));
-
+                         this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -1952,6 +1994,7 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                                                      AstNode* iterandExpr,
                                                      WithClause* withClause,
                                                      BlockOrDo blockOrDo) {
+                                                    //  AttributeGroup* attributeGroup) {
   auto index = indexExpr ? buildLoopIndexDecl(locIndex, toOwned(indexExpr))
                          : nullptr;
 
@@ -1970,7 +2013,8 @@ CommentsAndStmt ParserContext::buildCoforallLoopStmt(YYLTYPE locCoforall,
                               toOwned(iterandExpr),
                               toOwned(withClause),
                               blockStyle,
-                              std::move(body));
+                              std::move(body),
+                              this->popLoopAttributeGroup());
 
   return { .comments=comments, .stmt=node.release() };
 }
@@ -2157,8 +2201,9 @@ buildVisibilityClause(YYLTYPE location, owned<AstNode> symbol,
     if (limitationKind == VisibilityClause::LimitationKind::EXCEPT ||
         limitationKind == VisibilityClause::LimitationKind::ONLY) {
       if (!asExpr) {
+        auto limitationLoc = builder->getLocation(expr.get());
         error = CHPL_PARSER_REPORT(this, ExceptOnlyInvalidExpr, location,
-                                   limitationKind);
+                                   limitationLoc, limitationKind);
       }
     } else if (limitationKind == VisibilityClause::LimitationKind::BRACES) {
       CHPL_ASSERT(isImport && "braces should only be used with import statements");
@@ -2378,7 +2423,12 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
       if (elt->isComment()) delete elt;
     }
     delete vars;
-
+    // for single element decls, we attach the attribute group to the decl
+    // *note that this places the AttributeGroup as the LAST child of the decl
+    auto attributeGroup = buildAttributeGroup(locEverything);
+    if (attributeGroup) {
+      lastDecl->attachAttributeGroup(std::move(attributeGroup));
+    }
   } else {
 
     // TODO: Just embed and catch this in a tree-walk instead.
@@ -2393,7 +2443,6 @@ ParserContext::buildVarOrMultiDeclStmt(YYLTYPE locEverything,
         CHPL_PARSER_REPORT(this, MultipleExternalRenaming, locEverything);
       }
     }
-
     auto attributeGroup = buildAttributeGroup(locEverything);
     auto multi = MultiDecl::build(builder, convertLocation(locEverything),
                                   std::move(attributeGroup),
@@ -2485,23 +2534,26 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
 
   auto contentsList = consumeList(contents);
 
-  owned<Identifier> inheritIdentifier;
+  AstList inheritExprs;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
-      if (parts.tag == asttags::Record) {
-        CHPL_PARSER_REPORT(this, RecordInheritanceNotSupported, inheritLoc,
-                           parts.name.str());
-      } else if (parts.tag == asttags::Union) {
+      if (parts.tag == asttags::Union) {
+        // TODO union inheritance: unions should have support for inheriting
+        // from interfaces.
         error(inheritLoc, "unions cannot inherit.");
       } else {
-        if (optInherit->size() > 1)
-          error(inheritLoc, "only single inheritance is supported.");
-        AstNode* ast = (*optInherit)[0];
-        if (ast->isIdentifier()) {
-          inheritIdentifier = toOwned(ast->toIdentifier());
-          (*optInherit)[0] = nullptr;
-        } else {
-          syntax(inheritLoc, "non-Identifier expression cannot be inherited.");
+        for (size_t i = 0; i < optInherit->size(); i++) {
+          AstNode* ast = (*optInherit)[i];
+          bool inheritOk =
+            chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
+
+          if (inheritOk) {
+            inheritExprs.push_back(toOwned(ast));
+            (*optInherit)[i] = nullptr;
+          } else {
+            syntax(inheritLoc,
+                   "invalid parent class or interface; please specify a single class or interface name");
+          }
         }
       }
     }
@@ -2521,7 +2573,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         toOwned(parts.attributeGroup),
                         parts.visibility,
                         parts.name,
-                        std::move(inheritIdentifier),
+                        std::move(inheritExprs),
                         std::move(contentsList)).release();
   } else if (parts.tag == asttags::Record) {
     decl = Record::build(builder, convertLocation(location),
@@ -2530,6 +2582,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                          parts.linkage,
                          toOwned(parts.linkageName),
                          parts.name,
+                         std::move(inheritExprs),
                          std::move(contentsList)).release();
   } else if (parts.tag == asttags::Union) {
 

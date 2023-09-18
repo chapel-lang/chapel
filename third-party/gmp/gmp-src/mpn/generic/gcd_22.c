@@ -56,13 +56,13 @@ mpn_gcd_22 (mp_limb_t u1, mp_limb_t u0, mp_limb_t v1, mp_limb_t v0)
 
       if (UNLIKELY (t0 == 0))
 	{
-	  int c;
 	  if (t1 == 0)
 	    {
 	      g.d1 = (u1 << 1) | (u0 >> (GMP_LIMB_BITS - 1));
 	      g.d0 = (u0 << 1) | 1;
 	      return g;
 	    }
+	  int c;
 	  count_trailing_zeros (c, t1);
 
 	  /* v1 = min (u1, v1) */

@@ -1,0 +1,71 @@
+divExact 2
+divExact 2
+powMod 1
+powMod 1
+powMod 1
+powMod 1
+powMod 1
+pow 0
+pow 16
+root 2
+rootRem 2 1
+rootRem 2 1
+sqrt 3
+sqrtRem 3 1
+sqrtRem 3 1
+nextPrime 17
+gcd 4
+gcd 4
+gcd 4
+gcd 4 -1 1
+gcd 4 -1 1
+gcd 4 -1 1
+lcm 12
+lcm 12
+lcm 12
+invert 8
+invert 8
+removeFactor 5
+removeFactor 5
+bin 2
+add 11
+add 11
+add 11
+add -1
+sub -1
+sub -1
+sub -1
+sub -11
+sub 1
+mul 30
+mul 30
+mul 30
+mul 30
+addMul 35
+addMul 36
+addMul 35
+subMul -25
+subMul -24
+subMul -25
+mul2Exp 20
+neg -5
+abs 5
+div 5
+div 5
+rem 0
+rem 0
+divRem 5 0
+divRem 5 0
+div2Exp 1
+rem2Exp 1
+mod 1
+mod 1
+mod 1
+and 4
+and 4
+or 7
+or 7
+or 1267650600228229401496703205386
+xor 3
+xor 3
+com -6

@@ -14,7 +14,7 @@ config const rows = 201,
 //
 config const maxSteps = 50;
 
-// 
+//
 // The number of tasks we should spawn.
 //
 config const numTasks = here.maxTaskPar;
@@ -35,9 +35,9 @@ proc main() {
   //
   // Compute the image, using task parallelism across multiple locales
   //
-  coforall loc in Locales do              // Create a task per locale
+  coforall loc in Locales with (ref Image) do              // Create a task per locale
     on loc do                             // and place it on that locale
-      coforall tid in 0..#numTasks do     // Create a number of sibling tasks per locale
+      coforall tid in 0..#numTasks with (ref Image) do     // Create a number of sibling tasks per locale
         //
         // Each will perform a portion of the computation, based on the task and locale ID.
         //
@@ -54,7 +54,7 @@ proc main() {
 // assigned to the given task/taskID.  We'll use a simple partitioning:
 // decompose rows to tasks by blocks and columns to locales by blocks.
 //
-proc blockCompute(taskId, taskCount, Image: [?D] int) {
+proc blockCompute(taskId, taskCount, ref Image: [?D] int) {
   //
   // Get the range of rows assigned to this task.
   //
@@ -85,7 +85,7 @@ proc blockbound(id, count, r) {
   var xspan = xlim - xlow;
 
   //
-  // Special case: Task IDs are numbered from 0 to taskCount-1, 
+  // Special case: Task IDs are numbered from 0 to taskCount-1,
   // so if 'taskCount' is passed in, return one more than the high index in dim(0).
   // This ensures that we visit every index, even if xspan is not
   // evenly divisible by count.
@@ -108,7 +108,7 @@ proc compute(x, y) {
       return i;
   }
 
-  return 0;			
+  return 0;
 }
 
 //

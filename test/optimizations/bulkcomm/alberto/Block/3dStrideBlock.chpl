@@ -7,7 +7,7 @@ config const m = 4;//6;
 config const n = 4;//3;
 config const o = 4;//4;
 var e=false;
-var Dist1 = new dmap(new Block({1..m,1..n,1..o}));
+var Dist1 = new blockDist({1..m,1..n,1..o});
 var Dom: domain(3,int) dmapped Dist1 = {1..m,1..n,1..o};
 
 var A:[Dom] int(64); //real

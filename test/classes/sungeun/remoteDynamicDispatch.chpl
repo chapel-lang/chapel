@@ -20,9 +20,12 @@ proc blah(c) {
   c.foo();
 }
 
-var c = (new owned C()).borrow();
-var c0 = (new owned C0()).borrow();
-var c1 = (new owned C1()).borrow();
+var cTmp = new owned C();
+var c = cTmp.borrow();
+var c0Tmp = new owned C0();
+var c0 = c0Tmp.borrow();
+var c1Tmp = new owned C1();
+var c1 = c1Tmp.borrow();
 
 for loc in Locales do on loc {
   blah(c);

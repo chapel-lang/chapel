@@ -5,7 +5,7 @@ writeln("x is: ", x);
 var D: domain(1) = {1..4};
 var A: [D] int;
 
-forall i in D {
+forall i in D with (ref A) {
   A(i) = 3;
 }
 

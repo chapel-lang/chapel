@@ -1,0 +1,4 @@
+# Test/chpldoc/compflags/folder ignores.
+/myDocs
+/my-docs
+/my_docs

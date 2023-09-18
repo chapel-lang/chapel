@@ -86,10 +86,10 @@ struct psmi_am_token {
 	/* PTLs may add other stuff here */
 };
 
-/* AM capabilities parameters are initialized once in psmi_am_init_internal
-   and copied out in __psm2_am_get_parameters.  When debugging is enabled,
+/* AM capabilities parameters are initialized once in psm3_am_init_internal
+   and copied out in psm3_am_get_parameters.  When debugging is enabled,
    various assertions reference these parameters for sanity checking. */
-extern struct psm2_am_parameters psmi_am_parameters;
+extern struct psm2_am_parameters psm3_am_parameters;
 
 PSMI_ALWAYS_INLINE(struct psm2_ep_am_handle_entry *
 		   psm_am_get_handler_function(psm2_ep_t ep,
@@ -102,7 +102,7 @@ PSMI_ALWAYS_INLINE(struct psm2_ep_am_handle_entry *
 }
 
 /* PSM internal initialization */
-psm2_error_t psmi_am_init_internal(psm2_ep_t ep);
-void psmi_am_fini_internal(psm2_ep_t ep);
+psm2_error_t psm3_am_init_internal(psm2_ep_t ep);
+void psm3_am_fini_internal(psm2_ep_t ep);
 
 #endif

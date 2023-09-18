@@ -10,8 +10,8 @@ while readLine(line) {
   var pair = line.strip().split("-");
   Caves += pair[0];
   Caves += pair[1];
-  Corridors[pair[0]].append(pair[1]);
-  Corridors[pair[1]].append(pair[0]);
+  Corridors[pair[0]].pushBack(pair[1]);
+  Corridors[pair[1]].pushBack(pair[0]);
 }
 
 if debug {
@@ -31,7 +31,7 @@ proc findAllPaths(room, in Visited, in path) {
     writeln(path);
     numPaths.add(1);
   } else {
-    path.append(room);
+    path.pushBack(room);
     Visited[room] = true;
     forall adjRoom in Corridors[room] do
       if !adjRoom.isLower() || !Visited[adjRoom] then

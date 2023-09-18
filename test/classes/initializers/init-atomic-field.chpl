@@ -5,6 +5,9 @@ record R {
   proc init(val : int) {
     this.x = val;
   }
+  proc init=(other: R) {
+    this.x = other.x.read();
+  }
 }
 
 proc main() {

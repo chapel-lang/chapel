@@ -1,3 +1,0 @@
-unicodeSupported.chpl:1: warning: unicodeSupported is deprecated due to always returning true
-unicodeSupported.chpl:3: warning: unicodeSupported is deprecated due to always returning true
-true

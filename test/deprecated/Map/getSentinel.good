@@ -1,2 +1,2 @@
-getSentinel.chpl:7: warning: 'Map.getValue' is deprecated. Please use 'Map.get' instead.
+getSentinel.chpl:7: warning: 'map.getValue' is deprecated. Please use 'map.get' instead.
 true

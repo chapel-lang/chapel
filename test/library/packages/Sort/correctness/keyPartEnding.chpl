@@ -1,16 +1,16 @@
 use Sort;
 use List;
 
-record TwoRepeated {
+record TwoRepeated : writeSerializable {
   var first:int;
   var nFirst:int;
   var second:int;
   var nSecond:int;
 
-  proc writeThis(ch) throws {
+  proc serialize(writer, ref serializer) throws {
     var a = (first:string)*nFirst;
     var b = (second:string)*nSecond;
-    ch.write(a, b);
+    writer.write(a, b);
   }
 }
 
@@ -23,7 +23,7 @@ proc stringToTwoRepeated(arg:string) {
     if c == cur {
       n += 1;
     } else if n != 0 {
-      A.append( (cur, n) );
+      A.pushBack( (cur, n) );
       cur = c;
       n = 1;
     } else {
@@ -32,7 +32,7 @@ proc stringToTwoRepeated(arg:string) {
     }
   }
   if n != 0 then
-    A.append( (cur,n ) );
+    A.pushBack( (cur,n ) );
 
   assert(A.size == 1 || A.size == 2);
   if A.size == 1 {

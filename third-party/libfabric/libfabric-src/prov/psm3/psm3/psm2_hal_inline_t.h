@@ -50,73 +50,117 @@
   OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 */
+#ifndef  _PSM2_HAL_INLINE_T_H_
+#define  _PSM2_HAL_INLINE_T_H_
 
 /* The psm2_hal_inline_t.h file serves as a template to allow all HAL
-   instances to easily and conveniently declare their HAL methods. */
+   instances to easily and conveniently declare their HAL_INLINE functions
+   This also helps guarantee that inline functions are properly declared
+   since the DISPATCH macro won't enforce the function API signature
+ */
 
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(initialize)
-				(psmi_hal_instance_t *);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(finalize_)
-				(void);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_num_units)
-				(void);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_num_ports)
-				(void);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_unit_active)
-				(int unit);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_node_id)
-				(int unit, int *nodep);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_active)
-				(int unit, int port);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_num_contexts)
-				(int unit);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_num_free_contexts)
-				(int unit);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(close_context)
-				(psmi_hal_hw_context *);
+/* functions which are inline unless > 1 HAL or debug build */
 static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(context_open)
 				(int unit,
-				 int port,
+				 int port, int addr_index,
 				 uint64_t open_timeout,
 				 psm2_ep_t ep,
 				 psm2_uuid_t const job_key,
-				 psmi_context_t *psm_ctxt,
-				 uint32_t cap_mask,
-				 unsigned);
-static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(context_initstats)
-				 (psm2_ep_t ep);
+				 unsigned retryCnt);
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(close_context)
+				(psm2_ep_t ep);
+#ifdef PSM_FI
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(faultinj_allowed)
+				(const char *name, psm2_ep_t ep);
+#endif
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_init_pre_proto_init)
+				(struct ptl_ips *ptl);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_init_post_proto_init)
+				(struct ptl_ips *ptl);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_fini)
+				(struct ptl_ips *ptl);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_proto_init)
+				(struct ips_proto *proto, uint32_t cksum_sz);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_proto_update_linkinfo)
+				(struct ips_proto *proto);
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(ips_fully_connected)
+				(ips_epaddr_t *ipsaddr);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_set_req_params)
+				(struct ips_proto *proto,
+					ips_epaddr_t *ipsaddr,
+					const struct ips_connect_reqrep *req);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_process_connect_reply)
+                                (struct ips_proto *proto,
+                                	ips_epaddr_t *ipsaddr,
+                                	const struct ips_connect_reqrep *req);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_proto_build_connect_message)
+				(struct ips_proto *proto,
+					ips_epaddr_t *ipsaddr, uint8_t opcode,
+					struct ips_connect_reqrep *req);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_init_addressing)
+				(struct ips_proto *proto, psm2_epid_t epid,
+					ips_epaddr_t *ipsaddr, uint16_t *lidp
+					, psmi_gid128_t *gidp
+					);
 
-
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_rate)
-				(int unit, int port);
-
-
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_lid)
-				(int unit, int port);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_subnet)
-				(int unit, int port, uint64_t *subnet, uint64_t *addr,
-				uint32_t *ip_addr, uint32_t *netmask,
-				int *idx, uint64_t *hi, uint64_t *lo);
-
-
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_default_pkey)
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_init_connections)
+				(struct ips_proto *proto, psm2_epid_t epid,
+					ips_epaddr_t *ipsaddr);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_free)
+				(ips_epaddr_t *ipsaddr,
+					struct ips_proto *proto);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_flow_init)
+				(struct ips_flow *flow,
+					struct ips_proto *proto);
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(ips_ipsaddr_disconnect)
+				(struct ips_proto *proto,
+					ips_epaddr_t *ipsaddr);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ibta_init)
+				(struct ips_proto *proto);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_path_rec_init)
+				(struct ips_proto *proto,
+					struct ips_path_rec *path_rec,
+					struct _ibta_path_rec *response);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(ips_ptl_pollintr)
+				(psm2_ep_t ep, struct ips_recvhdrq *recvq,
+					int fd_pipe, int next_timeout,
+					uint64_t *pollok, uint64_t *pollcyc);
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+static PSMI_HAL_INLINE void PSMI_HAL_CAT_INL_SYM(gdr_close)
 				(void);
+static PSMI_HAL_INLINE void* PSMI_HAL_CAT_INL_SYM(gdr_convert_gpu_to_host_addr)
+				(unsigned long buf,
+					size_t size, int flags, psm2_ep_t ep);
+#endif /* PSM_CUDA || PSM_ONEAPI */
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_port_index2pkey)
+				(psm2_ep_t ep, int index);
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(poll_type)
+				(uint16_t, psm2_ep_t ep);
 
-
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(spio_transfer_frame)
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(spio_transfer_frame)
 				(struct ips_proto *proto,
 				 struct ips_flow *flow, struct ips_scb *scb,
 				 uint32_t *payload, uint32_t length,
 				 uint32_t isCtrlMsg, uint32_t cksum_valid,
-				 uint32_t cksum, psmi_hal_hw_context
-#ifdef PSM_CUDA
-				 , uint32_t is_cuda_payload
+				 uint32_t cksum
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+				 , uint32_t is_gpu_payload
 #endif
 					);
-static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(spio_process_events)
-				(const struct ptl *ptl);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(transfer_frame)
+				(struct ips_proto *proto,
+				 struct ips_flow *flow, struct ips_scb *scb,
+				 uint32_t *payload, uint32_t length,
+				 uint32_t isCtrlMsg, uint32_t cksum_valid,
+				 uint32_t cksum
+#if defined(PSM_CUDA) || defined(PSM_ONEAPI)
+				 , uint32_t is_gpu_payload
+#endif
+					);
+static PSMI_HAL_INLINE psm2_error_t PSMI_HAL_CAT_INL_SYM(drain_sdma_completions)
+				(struct ips_proto *proto);
+static PSMI_HAL_INLINE int PSMI_HAL_CAT_INL_SYM(get_node_id)
+				(int unit, int *nodep);
 
 
-static PSMI_HAL_INLINE int      PSMI_HAL_CAT_INL_SYM(get_jkey)
-				(psmi_hal_hw_context ctxt);
-
+#endif /*  _PSM2_HAL_INLINE_T_H_ */

@@ -27,14 +27,14 @@ const vecRange = 0..#order;
 const matrixSpace = {vecRange, vecRange};
 
 const matrixDom = matrixSpace dmapped if useBlockDist then
-                      new dmap(new Block(boundingBox=matrixSpace)) else
+                      new blockDist(boundingBox=matrixSpace) else
                       defaultDist;
 
 var A = Matrix(matrixDom, dtype),
     B = Matrix(matrixDom, dtype),
     C = Matrix(matrixDom, dtype);
 
-forall (i,j) in matrixDom {
+forall (i,j) in matrixDom with (ref A, ref B, ref C) {
   A[i,j] = j;
   B[i,j] = j;
   C[i,j] = 0;
@@ -76,7 +76,7 @@ if windowSize == 0 {
   for niter in 0..iterations {
     if niter==1 then t.start();
 
-    forall (i,j) in matrixSpace do
+    forall (i,j) in matrixSpace with (ref C) do
       for k in vecRange do
         C[i,j] += A[i,k] * B[k,j];
 
@@ -96,13 +96,13 @@ else {
           var subArrayA : [localDomainA.dim(0), subArrayChunk] A.eltType;
           var subArrayB : [subArrayChunk, localDomainB.dim(1)] B.eltType;
 
-          forall i in localDomainA.dim(0) {
-            forall j in subArrayChunk {
+          forall i in localDomainA.dim(0) with (ref subArrayA) {
+            forall j in subArrayChunk with (ref subArrayA) {
               subArrayA[i, j] = A[i, j];
             }
           }
-          forall i in subArrayChunk {
-            forall j in localDomainB.dim(1) {
+          forall i in subArrayChunk with (ref subArrayB) {
+            forall j in localDomainB.dim(1) with (ref subArrayB) {
               subArrayB[i, j] = B[i, j];
             }
           }

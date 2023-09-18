@@ -181,7 +181,7 @@ dnl Shared macro
 dnl
 AC_DEFUN([USNIC_CHECK_LIBNL_SADNESS],[
 	AC_ARG_WITH([libnl],
-		[AC_HELP_STRING([--with-libnl(=DIR)],
+		[AS_HELP_STRING([--with-libnl(=DIR)],
 			[Directory prefix for libnl (typically only necessary if libnl is installed in a location that the compiler/linker will not search by default)])],
 		[], [with_libnl=default])
 

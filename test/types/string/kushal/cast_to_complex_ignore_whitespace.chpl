@@ -1,3 +1,4 @@
+use CTypes;
 var a = " 10 + 9i ";
 var a1 = a:complex;
 writeln(a1);
@@ -7,7 +8,7 @@ var a3 = a:complex(128);
 writeln(a3);
 
 
-var x = " 10 + 9i ":c_string;
+var x = " 10 + 9i ":c_ptrConst(c_char);
 var x1 = x:complex;
 writeln(x1);
 var x2 = x:complex(64);

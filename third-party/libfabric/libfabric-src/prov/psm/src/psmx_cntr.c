@@ -174,9 +174,9 @@ void psmx_cntr_check_trigger(struct psmx_fid_cntr *cntr)
 		cntr->trigger = trigger->next;
 
 		if (domain->am_initialized) {
-			fastlock_acquire(&domain->trigger_queue.lock);
+			ofi_spin_lock(&domain->trigger_queue.lock);
 			slist_insert_tail(&trigger->list_entry, &domain->trigger_queue.list);
-			fastlock_release(&domain->trigger_queue.lock);
+			ofi_spin_unlock(&domain->trigger_queue.lock);
 		} else {
 			psmx_process_trigger(domain, trigger);
 		}

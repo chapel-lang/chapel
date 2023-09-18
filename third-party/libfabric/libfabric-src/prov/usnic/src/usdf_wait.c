@@ -217,7 +217,7 @@ int usdf_wait_open(struct fid_fabric *fabric, struct fi_wait_attr *attr,
 	wait_priv->object.epfd = epfd;
 
 	ofi_atomic_initialize32(&wait_priv->wait_refcnt, 0);
-	fastlock_init(&wait_priv->lock);
+	ofi_mutex_init(&wait_priv->lock);
 	dlist_init(&wait_priv->list);
 
 	ofi_atomic_inc32(&wait_priv->wait_fabric->fab_refcnt);

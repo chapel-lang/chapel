@@ -42,6 +42,7 @@ Diagnostics
 
    CommDiagnostics <standard/CommDiagnostics>
    GpuDiagnostics <standard/GpuDiagnostics>
+   MemDiagnostics <standard/MemDiagnostics>
    Memory <standard/Memory>
 
 
@@ -52,6 +53,7 @@ Files/IO
 
    FileSystem <standard/FileSystem>
    IO <standard/IO>
+   JSON <standard/JSON>
    Path <standard/Path>
 
 
@@ -102,8 +104,6 @@ System/Interoperability
    CTypes <standard/CTypes>
    OS <standard/OS>
    Subprocess <standard/Subprocess>
-   Sys <standard/Sys>
-   SysBasic <standard/SysBasic>
 
 Utilities
 ---------

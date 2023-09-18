@@ -1,9 +1,9 @@
-record myrecord {
+record myrecord : writeSerializable {
   var x: int;
   var y: real;
 
-  proc writeThis(f) throws {
-    f.write(x, " ", y);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(x, " ", y);
   }
 }
 

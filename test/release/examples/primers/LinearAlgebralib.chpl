@@ -94,8 +94,8 @@ a.shape; // (3, 5)
 writeln(a.eltType: string); // real(64)
 
 // Array type in format of:
-//   ``[domain(rank, index-type, stridable)] element-type``
-writeln(a.type: string); // [domain(2,int(64),false)] real(64)
+//   ``[domain(rank, index-type, strides)] element-type``
+writeln(a.type: string); // [domain(2,int(64),one)] real(64)
 
 // Element-wise addition (and subtraction)
 a = a + 1; // or, a += 1

@@ -3,7 +3,7 @@ use CTypes;
 proc getAddr(obj) {
   return __primitive("_wide_get_addr", obj);
 }
-proc getAddrAndLocality(obj) : (locale, c_void_ptr) {
+proc getAddrAndLocality(obj) : (locale, c_ptr(void)) {
   return (obj.locale, getAddr(obj));
 }
 class A {
@@ -16,7 +16,7 @@ class A {
  
 record B {
   var y : unmanaged A?;
-  var yinfo :(locale, c_void_ptr);
+  var yinfo :(locale, c_ptr(void));
  
   proc init() {
 

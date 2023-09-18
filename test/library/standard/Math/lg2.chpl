@@ -1,3 +1,5 @@
+use Math;
+
 config var nf = 128.1;
 
 writeln("log2(nf) = ", log2(nf):int);

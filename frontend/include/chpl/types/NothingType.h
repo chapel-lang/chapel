@@ -50,6 +50,9 @@ class NothingType final : public Type {
   ~NothingType() = default;
 
   static const NothingType* get(Context* context);
+
+  virtual void stringify(std::ostream& ss,
+                         chpl::StringifyKind stringKind) const override;
 };
 
 

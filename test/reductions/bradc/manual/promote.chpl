@@ -2,6 +2,10 @@ class mysumreduce {
   type t;
   var state: sync t;
 
+  proc init(type t) {
+    this.t = t;
+  }
+
   proc initState() {
     state.writeEF(0);
   }
@@ -21,7 +25,7 @@ var D: domain(1) = {1..n};
 
 var A: [D] int;
 
-forall i in D {
+forall i in D with (ref A) {
   A(i) = i;
 }
 

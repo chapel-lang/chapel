@@ -10,11 +10,10 @@ record myWorker {
 
 proc test() {
   var lst = new list(r);
-  lst.append(new r());
+  lst.pushBack(new r());
   writeln(lst);
   var worker = new myWorker();
   lst.update(0, worker);
   writeln(lst);
 }
 test();
-

@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# This is a wrapper around the Python unittest framework to fit it
+# into the Chapel test infrastructure.
+
+# start_test removes directories under $CHPL_HOME from the path.
+# Put them back so we can compile the test program
+
+pushd $CHPL_HOME
+source util/setchplenv.bash
+popd
+
+python3 reservation.py $@ --verbose
