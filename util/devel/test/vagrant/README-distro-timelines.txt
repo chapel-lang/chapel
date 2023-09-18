@@ -100,7 +100,7 @@ x 12.3 EOL Mar 2023
 x 13.0 EOL Aug 2022
   13.1
   13.2
-  14.0 not released yet
+  14.0 estimated release October 2023
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -146,5 +146,5 @@ x 19.10 "Eoan Ermine"       EOL July 2020
 x 20.10 "Groovy Gorilla"    EOL July 2021
 x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
-  22.10 "Kinetic Kudu"      EOL July 2023
+x 22.10 "Kinetic Kudu"      EOL July 2023
   23.04 "Lunar Lobster"     EOL Jan 2024
