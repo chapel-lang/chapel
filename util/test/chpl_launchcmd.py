@@ -623,7 +623,7 @@ class AbstractJob(object):
     @classmethod
     def _validate_args(cls, args, unparsed_args):
         for arg in unparsed_args:
-            if re.search(r'-nl', arg):
+            if re.search(r'^-nl[0-9]+$', arg):
                 # TODO parse this quietly, or turn it into an error?
                 logging.warning('Argument format {} is not supported. '
                                 'Please put a space between "-nl" and number of '
