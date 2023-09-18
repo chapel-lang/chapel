@@ -15,15 +15,21 @@ Configuration / Build / Packaging Changes
 
 New Language Features
 ---------------------
+* added support for declaring that records/classes fulfill a given interface  
+  (e.g., `record r: i { ... }` says that `r` implements the `i` interface;  
+   see TODO)
 * added support for an array creation interface that throws if out of memory  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.tryCreateArray)
 
 Language Feature Improvements
 -----------------------------
 * added promoted casts from array-of-`T` to `T` without a cast from `T` to `T`
+* first-class procedures are now printed similarly to Chapel's syntax
 
 Syntactic / Naming Changes
 --------------------------
+* replaced `[this.]complete();` with `init this;` when defining initializers
+  (see TODO)
 * `these` is now reserved as a keyword for use as the default iterator method  
   (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#the-these-method)
 * renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
@@ -32,6 +38,10 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* built-in hashing now relies on the `hashable` interface
+  (see TODO)
+* context managers now rely on the `contextManager` interface
+  (see TODO)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -40,6 +50,8 @@ Deprecated / Unstable / Removed Language Features
 * deprecated the `useNewArrayFind` config param
 * removed support for the deprecated array `.find()` overload
 * removed support for variable-width `bool` types and related queries
+* made importing tertiary methods by naming their type unstable  
+  (e.g., `import IO.string;` is no longer stable)
 
 Namespace Changes
 -----------------
@@ -66,9 +78,13 @@ Standard Domain Maps (Layouts and Distributions)
 * renamed the standard distributions to match their module names  
   (e.g., `Block` is now `blockDist`, `Cyclic` is now `cyclicDist`, etc.  
    see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html et al.)
+* marked advanced initializer arguments in `blockDist`/`cyclicDist` unstable  
+  (see TODO)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* generalized `[read|write]Binary()` to support multi-dimensional arrays  
+  (see TODO)
 * made `chpl_library_init()` issue an error if called twice
 * made `chpl_library_finalize()` no longer exit, permitting client to continue
 
@@ -89,6 +105,8 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * marked `c_fn_ptr` unstable
   (see https://chapel-lang.org/docs/1.32/technotes/extern.html#c-fn-ptr)
+* deprecated `list.first()`/`.last()` in favor of using paren-less methods  
+  (see TODO)
 * deprecated the `day` and `isoDayOfWeek` enums in favor of `dayOfWeek`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.day)
 * deprecated `MINYEAR`/`MAXYEAR` in favor of `date.[min|max].year`  
@@ -111,11 +129,18 @@ Deprecated / Unstable / Removed Library Features
    and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.init)
 * deprecated `dateTime.{isoCalendar(), toOrdinal(), weekday(), isoWeekday()}`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.toOrdinal et al.)
+* marked `Reflection.getRoutineName()` unstable within first-class procedures
 * removed deprecated `c_sizeof()` signature with formal name `x`
 
 
 GPU Computing
 -------------
+* improved performance when using arrays within kernels
+* generated GPU kernels are now named using their source filename/line number
+* added support for multi-arch GPU executables when targeting NVIDIA GPUs
+  (see TODO)
+* deprecated `assertOnGpu()` in favor of a new `@assertOnGpu` loop attribute
+  (see TODO)
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -184,10 +209,14 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * simplified error formatting when compiling C code within an `extern` block
+* fixed incorrect underlining of string literals in detailed error messages
 
 Bug Fixes
 ---------
+* fixed importing tertiary methods by naming a builtin type like `string`
 * fixed a bug in which `CHPL_UNWIND` could not be overridden on some platforms
+* fixed internal errors when using tuples as formal or return types in FCPs
+* fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
 
 Bug Fixes for Build Issues
@@ -196,6 +225,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed an assertion when running GPU programs for AMD w/ `CHPL_DEVELOPER` set
 
 Bug Fixes for Libraries
 -----------------------
@@ -232,9 +262,15 @@ Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * added an experimental driver mode, enabled using `--compiler-driver`  
   (see TODO)
+* improved `@deprecated` to handle deprecations from paren-ful to paren-less
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* numerous improvements to the 'dyno' resolver:
+  - added support for the `class` typeclass
+  - improved handling of control flow when inferring an `iter`'s `yield` type
+  - added support for the `c_ptr` type
+  - added support for opaque `extern` types
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
@@ -249,6 +285,9 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* improved how `chpldoc` generates module documentation:
+  - `where`-clauses are now printed out as part of a routine's signature
+  - individual constants within an `enum` can now have their own documentation
 
 Developer-oriented changes: Utilities
 -------------------------------------
