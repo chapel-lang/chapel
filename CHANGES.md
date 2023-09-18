@@ -27,7 +27,8 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-* deprecated the `.intIdxType` query on ranges, domains, and arrays
+* deprecated the `.intIdxType` query on ranges, domains, and arrays  
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the `useNewArrayFind` config param
 * removed support for the deprecated array `.find()` overload
 * removed support for variable-width `bool` types and related queries
@@ -43,14 +44,17 @@ Package Modules
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
-* converted standard distributions into records, obviating the need for `dmap`
-* renamed the standard distributions to match their module names
-  (e.g., `Block` is now `blockDist`, `Cyclic` is now `cyclicDist`, etc.)
+* converted standard distributions into records, removing the need for `dmap`  
+  (e.g., see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html  
+   and https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html)
+* renamed the standard distributions to match their module names  
+  (e.g., `Block` is now `blockDist`, `Cyclic` is now `cyclicDist`, etc.  
+   see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html et al.)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
-* made `chpl_library_initialize()` issue an error if called twice
-* made `chpl_finalize()` no longer exit, permitting user code to clean up
+* made `chpl_library_init()` issue an error if called twice
+* made `chpl_library_finalize()` no longer exit, permitting client to continue
 
 Name Changes in Libraries
 -------------------------
