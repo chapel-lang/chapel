@@ -204,7 +204,7 @@ Portability / Platform-specific Improvements
 * added support for processors with heterogeneous processing units  
   (see https://chapel-lang.org/docs/1.32/usingchapel/executing.html#controlling-the-kind-of-processing-units)
 * enabled support for hugepages on the HPE Cray EX platform  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/platforms/libfabric.html#hugepages-on-cray-xc-and-hpe-cray-ex-systems)
 * improved the landing zone sizing when using `CHPL_COMM=ofi`
 * fixed a linkage issue in which system libraries could override ours
 
