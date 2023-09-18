@@ -150,8 +150,20 @@ Example Codes
 Syntax Highlighting
 -------------------
 
+Generated Executable Flags
+--------------------------
+* added co-locale support to the `-nl`/`--numLocales` flag
+  (e.g., `-nl 4x2` means run on 4 nodes with 2 locales per node)
+
 Portability / Platform-specific Improvements
 --------------------------------------------
+* added support for co-locales to `CHPL_COMM=gasnet` with the `ibv` substrate  
+  (see TODO)
+* added support for processors with heterogeneous processing units  
+  (see https://chapel-lang.org/docs/1.32/usingchapel/executing.html#controlling-the-kind-of-processing-units)
+* enabled support for hugepages on the HPE Cray EX platform  
+  (see TODO)
+* improved the landing zone sizing when using `CHPL_COMM=ofi`
 * fixed a linkage issue in which system libraries could override ours
 
 Compiler Improvements
@@ -160,14 +172,14 @@ Compiler Improvements
 Compiler Flags
 --------------
 
-Generated Executable Flags
---------------------------
-
 Runtime Library Changes
 -----------------------
+* removed the ability to override the max # of endpoints with `CHPL_COMM=ofi`
 
 Launchers
 ---------
+* added co-locale support to the `[slurm|pbs]-gasnetrun_ibv` launchers
+* updated the `pbs-gasnetrun_ibv` launcher to use 'place/select' qsub syntax
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -180,6 +192,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed handling of `pkg-config --exists` exit status
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -192,6 +205,7 @@ Bug Fixes for Tools
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of hwloc to 2.9
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -224,12 +238,14 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* enabled forceable creation of a fixed heap with `CHPL_COMM=ofi`
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* removed email capability from `cron` scripts
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
