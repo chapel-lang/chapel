@@ -17,6 +17,8 @@ expected to change meaning in the future.
 version 1.32, September 2023
 ----------------------------
 
+.. _readme-evolution.c_string-deprecation:
+
 Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
 replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
 need to ``use`` or ``import`` the ``CTypes`` module to have access to

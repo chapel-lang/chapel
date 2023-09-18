@@ -222,8 +222,9 @@ called on Chapel strings that are stored on the same locale; calling
 
 .. note::
 
-  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``, which can be
-  used with corresponding functions such as ``c_ptrToConst``.
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
+  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
+  information.
 
 c_fn_ptr
 ~~~~~~~~
