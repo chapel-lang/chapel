@@ -328,7 +328,8 @@ The helper methods on ``blockDist`` have the following signatures:
 
   .. function:: proc blockDist.createDomain(dom: domain(?))
 
-    Create a block-distributed domain over an existing ``blockDist``.
+    Create a block-distributed domain over an existing ``blockDist`` by copying
+    the index space from the passed domain.
 
   .. function:: proc blockDist.createDomain(rng: range(?)...)
 

@@ -266,7 +266,8 @@ config param disableStencilLazyRAD = defaultDisableLazyRADOpt;
 
   .. function:: proc stencilDist.createDomain(dom: domain(?))
 
-    Create a stencil-distributed domain over an existing ``blockDist``.
+    Create a stencil-distributed domain over an existing ``blockDist`` by copying
+    the index space from the passed domain.
 
   .. function:: proc stencilDist.createDomain(rng: range(?)...)
 

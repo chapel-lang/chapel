@@ -230,7 +230,8 @@ The helper methods on ``Cyclic`` have the following signatures:
 
   .. function:: proc cyclicDist.createDomain(dom: domain(?))
 
-    Create a cyclic-distributed domain over an existing ``cyclicDist``.
+    Create a cyclic-distributed domain over an existing ``cyclicDist`` by copying
+    the index space from the passed domain.
 
   .. function:: proc cyclicDist.createDomain(rng: range(?)...)
 

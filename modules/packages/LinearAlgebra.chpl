@@ -3480,11 +3480,11 @@ module Sparse {
 
 
   @chpldoc.nodoc
-  /* Returns ``true`` if the array is mapped to the ``CS`` layout. */
+  /* Returns ``true`` if the array is distributed with the CS layout. */
   proc isCSArr(A: []) param { return isCSType(A.domain.distribution.type); }
 
   @chpldoc.nodoc
-  /* Returns ``true`` if the domain is mappd to the ``CS`` layout. */
+  /* Returns ``true`` if the domain is distributed with the CS layout. */
   proc isCSDom(D: domain) param { return isCSType(D.distribution.type); }
 
 

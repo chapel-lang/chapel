@@ -189,7 +189,7 @@ following expressions for convenience:
 	const CyclicSpace = cyclicDist.createDomain(Space);  
 	const CA: [CyclicSpace] int;
 
-or:c
+or:
 
 .. code-block:: chapel
 
