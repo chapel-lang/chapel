@@ -61,6 +61,9 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* added `binarySerializer` and `binaryDeserializer` types to the 'IO' module
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binarySerializer
+   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binaryDeserializer)
 * added support for casting `bool` values to `bigint`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
 * added a `compiledForSingleLocale()` query to the `ChplConfig` module  
@@ -86,6 +89,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* improved support for Serializers and Deserializers  
+  (see https://chapel-lang.org/docs/1.32/technotes/ioSerializers.html)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
   (see TODO)
 * made `chpl_library_init()` issue an error if called twice
@@ -102,6 +107,23 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated `[read|write]This()` methods in favor of `[de]serialize()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/ChapelIO.html#the-readthis-and-writethis-methods  
+   and https://chapel-lang.org/docs/1.32/modules/standard/ChapelIO.html#the-serialize-and-deserialize-methods
+   TODO: Do we want both?)
+* deprecated `iostyle` and `iokind` in favor of serializers and deserializers  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.iostyle  
+   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.iokind)
+* deprecated `io[dynamic|native|little|big]` module-scope convenience params  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.iokind)
+* deprecated `fileReader.skipField()` in favor of (de)serializers  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO/FormattedIO.html#FormattedIO.fileReader.skipField)
+* deprecated `file[Reader|Writer].kind` in favor of (de)serializers
+* deprecated the `kind` argument in various reader/writer routines  
+  (e.g., `open[URL][Reader|Writer]()`, `file.[reader|writer]()`, etc.)
+* deprecated the 'BinaryIO' module  
+  (see https://chapel-lang.org/docs/1.32/modules/packages/BinaryIO.html)
+* deprecated usage of `iokind` in the `Subprocess` module
 * deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
 * deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
@@ -286,11 +308,15 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
-* numerous improvements to the 'dyno' resolver:
+* numerous improvements to the 'dyno' resolver for types and calls:
+  - added basic support for 'forwarding' to members in a class or record
+  - added basic support for generic tuple type expressions (e.g. (?, integral))
+  - added basic support for param-folding 'select' statements
   - added support for the `class` typeclass
   - improved handling of control flow when inferring an `iter`'s `yield` type
   - added support for the `c_ptr` type
   - added support for opaque `extern` types
+  - fixed a bug involving recursive type resolution in fields
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
