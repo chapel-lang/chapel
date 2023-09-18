@@ -426,7 +426,7 @@ destroyed.
       do
         writeln("shadow var: ", tpv.id, "  yield: ", str);
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -750,6 +750,45 @@ side array expressions alias the left-hand side expression.
    This follows because, in the former code, some of the new values that
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
+
+.. _Indirect_Whole_Array_Indexing:
+
+Indirect Whole Array Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Arrays can be indexed indirectly using an array of indies.
+Given an array ``A`` and an array of indices ``B`` in the domain of ``A``,
+the function call
+
+.. code-block:: chapel
+
+   f(A[B]);
+
+is equivalent to
+
+.. code-block:: chapel
+
+   [b in B] f(A[b]);
+
+This a legal expression only if the result of the promotion ``A[B]`` is not modified.
+The following statement
+
+.. code-block:: chapel
+
+   A[B] += 3;
+
+is equivalent to
+
+.. code-block:: chapel
+
+   [b in B] A[b] += 3;
+
+which is not legal, as ``A`` cannot be modified without an explicit ``ref`` shadow variable.
+To modify the result of the promotion, the equivalent pattern can be used.
+
+.. code-block:: chapel
+
+   [b in B with (ref A)] do A[b] += 3;
 
 .. _Reductions_and_Scans:
 
