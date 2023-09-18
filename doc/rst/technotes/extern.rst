@@ -220,7 +220,7 @@ because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
 .c_str() on a non-local string will result in a runtime error.
 
-.. note::
+.. warning::
 
   ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
   :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
