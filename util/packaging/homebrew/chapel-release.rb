@@ -1,36 +1,25 @@
 class Chapel < Formula
   desc "Programming language for productive parallel computing at scale"
   homepage "https://chapel-lang.org/"
-  url "https://github.com/chapel-lang/chapel/releases/download/1.27.0/chapel-1.27.0.tar.gz"
-  sha256 "558b1376fb7757a5e1f254c717953f598a3e89850c8edd1936b8d09c464f3e8b"
+  url "https://github.com/chapel-lang/chapel/releases/download/1.31.0/chapel-1.31.0.tar.gz"
+  sha256 "4b861c9a354f6fcf66081256f7ec703d6dd2cd68ea363b400d10ac00bf308679"
   license "Apache-2.0"
+  head "https://github.com/chapel-lang/chapel.git", branch: "main"
 
   bottle do
-    sha256 arm64_monterey: "2f3b638cc2c187ac2c11f0dc128eae825466ce6745b5ad358e2fee8b96ef0187"
-    sha256 arm64_big_sur:  "90f68a1e21e3ad61165bbcea1e79306cbf09e811f5b5dd0c91068dadb07e0aca"
-    sha256 monterey:       "f33951b329c819f7ff386b33a413b3cd331fb3a31c0823f10f435d0227c29cf2"
-    sha256 big_sur:        "aeaa92c2f32435c1c16c52f737261c66b2b44ce197ec3e6f6a479f1c029d702c"
-    sha256 catalina:       "11eebc6dbc8383482c689e8a1d74359d12a4781579a48bb29417ca25779c50c4"
-    sha256 x86_64_linux:   "c4ccfadfa28118b70d76a324310dc17be9f351011490c7c29eb6dca5eb7ab093"
+    sha256 arm64_ventura:  "8563f116d96b3c89a6de8316020ab25fd27be13f7641d8f223c7c79770eba8ca"
+    sha256 arm64_monterey: "6f6da8d43cd744b9e6a8f0026962dcb66c86fe4ffb5dc684e5302a58fbd01247"
+    sha256 arm64_big_sur:  "d8e8968e2a6a885e54ae793a64f3c04808325bd9b35544605f39a4402c827a53"
+    sha256 ventura:        "fd44d28f8b6a382bda9e5674751b6a0033b9f5a42ab836ac7b305a9a3ba43167"
+    sha256 monterey:       "5a446383b71d0ceb4dec422970758814f42f938ead19691797cfb8a549e82fcf"
+    sha256 big_sur:        "d0ec7384c879c36473cd676307d4364d4275d3a9153975c1fa0a1c6057bedcec"
+    sha256 x86_64_linux:   "dfbcffa1fa5acc1f8ff983b47a3617c8cdaa40c7a218ab8db24e4b165eeef431"
   end
 
+  depends_on "cmake"
   depends_on "gmp"
-  # `chapel` scripts use python on PATH (e.g. checking `command -v python3`),
-  # so it needs to depend on the currently linked Homebrew Python version.
-  # TODO: remove from versioned_dependencies_conflicts_allowlist when
-  # when Python dependency matches LLVM's Python for all OS versions.
-  depends_on "python@3.9"
-
-  on_macos do
-    depends_on "llvm" if MacOS.version > :catalina
-    # fatal error: cannot open file './sys_basic.h': No such file or directory
-    # Issue ref: https://github.com/Homebrew/homebrew-core/issues/96915
-    depends_on "llvm@11" if MacOS.version <= :catalina
-  end
-
-  on_linux do
-    depends_on "llvm"
-  end
+  depends_on "llvm@14"
+  depends_on "python@3.11"
 
   # LLVM is built with gcc11 and we will fail on linux with gcc version 5.xx
   fails_with gcc: "5"
@@ -46,26 +35,28 @@ class Chapel < Formula
   end
 
   def install
+    # Always detect Python used as dependency rather than needing aliased Python formula
+    python = "python3.11"
+    # It should be noted that this will expand to: 'for cmd in python3.11 python3 python python2; do'
+    # in our find-python.sh script.
+    inreplace "util/config/find-python.sh", /^(for cmd in )(python3 )/, "\\1#{python} \\2"
+
     libexec.install Dir["*"]
     # Chapel uses this ENV to work out where to install.
     ENV["CHPL_HOME"] = libexec
     ENV["CHPL_GMP"] = "system"
-    # This enables a workaround for
-    #   https://github.com/llvm/llvm-project/issues/54438
-    ENV["CHPL_HOST_USE_SYSTEM_LIBCXX"] = "yes"
+    # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm
+    # package should be configured to use a reasonable GCC
+    (libexec/"chplconfig").write <<~EOS
+      CHPL_RE2=bundled
+      CHPL_GMP=system
+      CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
+      CHPL_LLVM_GCC_PREFIX=none
+    EOS
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
     cd libexec do
-      # don't try to set CHPL_LLVM_GCC_PREFIX since the llvm@13
-      # package should be configured to use a reasonable GCC
-      (libexec/"chplconfig").write <<~EOS
-        CHPL_RE2=bundled
-        CHPL_GMP=system
-        CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
-        CHPL_LLVM_GCC_PREFIX=none
-      EOS
-
       system "./util/printchplenv", "--all"
       with_env(CHPL_PIP_FROM_SOURCE: "1") do
         system "make", "test-venv"
