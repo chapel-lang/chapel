@@ -189,7 +189,7 @@ of the locale to which it is mapped.
 
     const Space = {1..8, 1..8};
     const Dist = new blockDist(boundingBox=Space);
-    const D = Space dmapped Dist;
+    const D = Dist.createDomain(Space);
     var A: [D] int;
 
     forall a in A do
@@ -272,11 +272,13 @@ The helper methods on ``blockDist`` have the following signatures:
 
   .. function:: proc type blockDist.createDomain(dom: domain, targetLocales = Locales)
 
-    Create a block-distributed domain.
+    Create a block-distributed domain. The provided domain is used as the
+    ``boundingBox``.
 
   .. function:: proc type blockDist.createDomain(rng: range(?)..., targetLocales = Locales)
 
-    Create a block-distributed domain from a series of ranges.
+    Create a block-distributed domain from a series of ranges. The ranges
+    are also used to construct the ``boundingBox``.
 
   .. function:: proc type blockDist.createArray(dom: domain, type eltType, targetLocales = Locales)
 
@@ -323,6 +325,16 @@ The helper methods on ``blockDist`` have the following signatures:
 
     .. Warning::
       ``blockDist.createArray`` with an ``initExpr`` formal is unstable and may change in a future release
+
+  .. function:: proc blockDist.createDomain(dom: domain(?))
+
+    Create a block-distributed domain over an existing ``blockDist`` by copying
+    the index space from the passed domain.
+
+  .. function:: proc blockDist.createDomain(rng: range(?)...)
+
+    Create a block-distributed domain from a series of ranges over an existing
+    ``blockDist``.
 
 **Sparse Subdomains**
 

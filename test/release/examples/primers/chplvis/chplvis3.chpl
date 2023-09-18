@@ -27,12 +27,13 @@ const space = {1..n, 1..n};
 const bspace = {0..n+1, 0..n+1};
 const bsouth = {n+1..n+1, 1..n};
 
-// Dmapped versions of the domains
-const R = space dmapped blockDist(boundingBox=bspace);
-const BigR = bspace dmapped blockDist(boundingBox=bspace);
-const South = bsouth dmapped blockDist(boundingBox=bspace);
+// distributed versions of the domains
+const bd = new blockDist(boundingBox=bspace);
+const R = bd.createDomain(space);
+const BigR = bd.createDomain(bspace);
+const South = bd.createDomain(bsouth);
 
-// Dmapped arrays
+// distributed arrays
 var A : [BigR] real;
 var Temp : [R] real;
 var Diff   : [R] real;

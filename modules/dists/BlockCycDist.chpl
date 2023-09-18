@@ -172,7 +172,7 @@ of tasks on each Locale for data parallelism.
 The ``rank`` and ``idxType`` arguments are inferred from the
 ``startIdx`` argument unless explicitly set.
 They must match the rank and index type of the domains
-"dmapped" using that blockCycDist instance.
+created using that blockCycDist instance.
 
 
 **Data-Parallel Iteration**

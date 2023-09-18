@@ -150,14 +150,15 @@ Its parallel iterator will determine how this loop is parallelized.
 if A were a distributed array, its parallel iterator would also
 determine iteration locality.
 
-Domains declared without a ``dmapped`` clause, including
-default rectangular and default associative domains, as well as
-arrays over such domains, provide both serial and parallel
-iterators. So do domains distributed over standard distributions,
-such as blockDist and cyclicDist (:ref:`primers-distributions`), and
-arrays over such domains. The parallel iterators provided
-by standard distributions place each loop iteration on the
-locale where the corresponding index or array element is placed.
+Domains declared without a distribution (see :ref:`primers-distributions`),
+including default rectangular and default associative domains,
+as well as arrays over such domains, provide both serial and parallel
+iterators. So do domains distributed over standard multi-locale distributions,
+such as blockDist and cyclicDist, and arrays over such domains. The
+parallel iterators provided by standard multi-locale distributions place each loop
+iteration on the locale where the corresponding index or array element
+is placed.
+
 
 Task Intents and Shadow Variables
 ---------------------------------

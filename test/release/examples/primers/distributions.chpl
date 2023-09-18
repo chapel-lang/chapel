@@ -54,8 +54,24 @@ const Space = {1..n, 1..n};
 // domain.
 //
 const BlkDist = new blockDist(boundingBox=Space);
-const BlockSpace = Space dmapped BlkDist;
+const BlockSpace = BlkDist.createDomain(Space);
 var BA: [BlockSpace] int;
+
+/*
+The above could also be shortened to one of the following for convenience:
+
+.. code-block:: chapel
+
+	const BlockSpace = blockDist.createDomain(Space);  
+	const BA: [BlockSpace] int;
+
+or:
+
+.. code-block:: chapel
+
+	const BA = blockDist.createArray(Space);
+
+*/
 
 //
 // To illustrate how the index set is distributed across locales,
@@ -124,7 +140,7 @@ var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
 //
 
 const BlkDist2 = new blockDist(boundingBox=Space, targetLocales=MyLocales);
-const BlockSpace2 = Space dmapped BlkDist2;
+const BlockSpace2 = BlkDist2.createDomain(Space);
 var BA2: [BlockSpace2] int;
 
 //
@@ -161,8 +177,25 @@ for (L, ML) in zip(BA2.targetLocales(), MyLocales) do
 // indices that precede the distribution's starting index.
 //
 const CycDist = new cyclicDist(startIdx=Space.low);
-const CyclicSpace = Space dmapped CycDist;
+const CyclicSpace = CycDist.createDomain(Space);
 var CA: [CyclicSpace] int;
+
+/*
+As with ``blockDist``, the above could also be shortened to one of the
+following expressions for convenience:
+
+.. code-block:: chapel
+
+	const CyclicSpace = cyclicDist.createDomain(Space);  
+	const CA: [CyclicSpace] int;
+
+or:
+
+.. code-block:: chapel
+
+	const CA = cyclicDist.createArray(Space);
+
+*/
 
 forall ca in CA do
   ca = here.id;
