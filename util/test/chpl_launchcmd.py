@@ -549,6 +549,7 @@ class AbstractJob(object):
         """
         args, unparsed_args = cls._parse_args()
         cls._setup_logging(args.verbose, args.info)
+        cls._validate_args(args, unparsed_args)
 
         logging.info('Num locales is: {0}'.format(args.numLocales))
         logging.info('Walltime is set to: {0}'.format(args.walltime))
@@ -618,6 +619,16 @@ class AbstractJob(object):
                 pass
 
         raise ValueError('Did not recognize walltime: {0}'.format(walltime_str))
+
+    @classmethod
+    def _validate_args(cls, args, unparsed_args):
+        for arg in unparsed_args:
+            if re.search(r'-nl', arg):
+                # TODO parse this quietly, or turn it into an error?
+                logging.warning('Argument format {} is not supported. '
+                                'Please put a space between "-nl" and number of '
+                                'locales, if that\'s the purpose.'.format(arg))
+
 
     @classmethod
     def _get_test_command(cls, args, unparsed_args):
