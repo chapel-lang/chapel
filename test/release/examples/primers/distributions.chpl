@@ -54,7 +54,7 @@ const Space = {1..n, 1..n};
 // domain.
 //
 const BlkDist = new blockDist(boundingBox=Space);
-const BlockSpace = BlkDist.createDomain();
+const BlockSpace = BlkDist.createDomain(Space);
 var BA: [BlockSpace] int;
 
 /*
