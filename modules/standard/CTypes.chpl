@@ -799,6 +799,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
@@ -820,6 +821,7 @@ module CTypes {
    Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
@@ -865,6 +867,7 @@ module CTypes {
 
     Halts if the ``string`` is empty and bounds checking is enabled.
   */
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
     where cPtrToLogicalValue == true
   {
@@ -886,6 +889,7 @@ module CTypes {
    Like :proc:`c_ptrTo` for :type:`~String.string`, but returns a
    :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
     where cPtrToLogicalValue == true
   {
@@ -991,6 +995,7 @@ module CTypes {
 
     Halts if the ``bytes`` is empty and bounds checking is enabled.
   */
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
     where cPtrToLogicalValue == true
   {
@@ -1012,6 +1017,7 @@ module CTypes {
    Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
    :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
     where cPtrToLogicalValue == true
   {
@@ -1042,6 +1048,7 @@ module CTypes {
     lifetime of the instance.  The returned pointer will be invalid if the
     instance is freed or even reallocated.
   */
+  @chpldoc.nodoc
   inline proc c_ptrTo(c: class?): c_ptr(void)
     where cPtrToLogicalValue == true
   {
@@ -1071,6 +1078,7 @@ module CTypes {
   /*
    Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
     where cPtrToLogicalValue == true
   {
@@ -1136,6 +1144,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
+  @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
@@ -1153,6 +1162,7 @@ module CTypes {
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
   */
+  @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
