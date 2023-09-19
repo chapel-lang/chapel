@@ -226,6 +226,13 @@ because c_string is a local-only type, the .c_str() method can only be
 called on Chapel strings that are stored on the same locale; calling
 .c_str() on a non-local string will result in a runtime error.
 
+.. note::
+
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``.
+  See :ref:`c_string deprecation <readme-evolution.c_string-deprecation>`
+  for more information.
+
+
 c_fn_ptr
 ~~~~~~~~
 
@@ -1089,9 +1096,9 @@ myprint.chpl:
 
 .. code-block:: chapel
 
-  extern proc myprint(str:c_string);
+  extern proc myprint(str:c_ptrConst(c_char));
 
-  // string literal is automatically converted to a c_string
+  // string literal is automatically converted to a c_ptrConst(c_char)
   myprint("hello");
 
   // a string variable must be converted with .c_str()
