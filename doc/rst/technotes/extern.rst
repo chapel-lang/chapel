@@ -540,7 +540,7 @@ The Chapel compiler will then rewrite any calls to `foo` like this:
 
 The Chapel compiler will also respect intents for the formal.
 The default intent will result in a call to ``c_ptrToConst``
-while an intent like ``ref`` wil result in an call to ``c_ptrTo``.
+while an intent like ``ref`` will result in a call to ``c_ptrTo``.
 
 Note that this same technique won't work for distributed rectangular arrays,
 nor for associative, sparse, or opaque arrays because their data isn't
