@@ -1107,7 +1107,7 @@ module CTypes {
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
     if isDomainType(t) then
-      compilerError("c_ptrTo domain type not supported", 2);
+      compilerError("c_ptrTo domain type not supported");
     return c_addrOf(x);
   }
 
@@ -1117,7 +1117,7 @@ module CTypes {
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
     if isDomainType(t) then
-      compilerError("c_ptrToConst domain type not supported", 2);
+      compilerError("c_ptrToConst domain type not supported");
     return c_addrOfConst(x);
   }
 
@@ -1175,7 +1175,7 @@ module CTypes {
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
-      compilerError("c_addrOf domain type not supported", 2);
+      compilerError("c_addrOf domain type not supported");
     return c_pointer_return(x);
   }
 
@@ -1185,7 +1185,7 @@ module CTypes {
   */
   inline proc c_addrOfConst(const ref x: ?t): c_ptrConst(t) {
     if isDomainType(t) then
-      compilerError("c_addrOfConst domain type not supported", 2);
+      compilerError("c_addrOfConst domain type not supported");
     return c_pointer_return_const(x);
   }
 
