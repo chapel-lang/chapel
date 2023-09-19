@@ -1407,13 +1407,15 @@ module ChapelRange {
             if hasPositiveStride() then hasLowBound() else hasHighBound();
   }
 
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  inline proc range.hasFirstForIter() do
+    return  if ! isAligned() || isEmpty() then false else
+            if hasPositiveStride() then hasLowBound() else hasHighBound();
+
   @chpldoc.nodoc
   proc range.hasFirst() param where hasFirstLastAreParam(this)
   {
-    // Issue:
-    // The call below only issues compile time warnings since this is a param
-    // For strideKind=any we need runtime information to issue the right warning
-    // Ex: a range like ..true strideKind=any should issue a warning for hasFirst
     warnUnstableFirst(this, fromHasFirst = true);
     if isFiniteIdxType(idxType) then return true;
     select bounds {
@@ -1422,6 +1424,16 @@ module ChapelRange {
       when boundKind.neither do return false;
     }
   }
+
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  proc range.hasFirstForIter() param where hasFirstLastAreParam(this) do
+    select bounds {
+      when boundKind.low     do return strides.isPositive();
+      when boundKind.high    do return strides.isNegative();
+      when boundKind.neither do return false;
+    }
+
 
   /* Returns the first value in the sequence the range represents.  If
      the range has no first index, the behavior is undefined.  See
@@ -1503,6 +1515,13 @@ module ChapelRange {
             if hasPositiveStride() then hasHighBound() else hasLowBound();
   }
 
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  inline proc range.hasLastForIter() do
+    return if ! isAligned() || isEmpty() then false else
+            if hasPositiveStride() then hasHighBound() else hasLowBound();
+
+
   @chpldoc.nodoc
   proc range.hasLast() param where hasFirstLastAreParam(this){
     warnUnstableLast(this, fromHasLast = true);
@@ -1513,6 +1532,16 @@ module ChapelRange {
       when boundKind.neither do return false;
     }
   }
+
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  proc range.hasLastForIter() param where hasFirstLastAreParam(this) do
+    select bounds {
+      when boundKind.low     do return strides.isNegative();
+      when boundKind.high    do return strides.isPositive();
+      when boundKind.neither do return false;
+    }
+
 
   /* Returns the last value in the sequence the range represents.  If
      the range has no last index, the behavior is undefined.  See also
@@ -3011,9 +3040,9 @@ private proc isBCPindex(type t) param do
     }
 
     if boundsChecking {
-      if count > 0 && !r.hasFirst() then
+      if count > 0 && !r.hasFirstForIter() then
         boundsCheckHalt("With a positive count, the range must have a first index.");
-      if count < 0 && !r.hasLast() then
+      if count < 0 && !r.hasLastForIter() then
         boundsCheckHalt("With a negative count, the range must have a last index.");
       if r.bounds == boundKind.both &&
         abs(count:chpl__maxIntTypeSameSign(count.type)):uint > r.sizeAs(uint) then
@@ -3573,7 +3602,7 @@ private proc isBCPindex(type t) param do
 
   private inline proc boundsCheckUnboundedRange(r: range(?)) {
     if boundsChecking {
-      if ! r.hasFirst() then
+      if ! r.hasFirstForIter() then
         HaltWrappers.boundsCheckHalt("iteration over range that has no first index");
 
       if hasAmbiguousAlignmentForIter(r) then
@@ -3917,7 +3946,7 @@ private proc isBCPindex(type t) param do
     if debugChapelRange then
       chpl_debug_writeln("Range = ", myFollowThis);
 
-    if boundsChecking && ! this.hasFirst() {
+    if boundsChecking && ! this.hasFirstForIter() {
       if this.isEmpty() {
         if ! myFollowThis.isEmpty() then
           HaltWrappers.boundsCheckHalt("size mismatch in zippered iteration");
@@ -3925,7 +3954,7 @@ private proc isBCPindex(type t) param do
         HaltWrappers.boundsCheckHalt("iteration over a range with no first index");
       }
     }
-    if boundsChecking && ! myFollowThis.hasFirst() {
+    if boundsChecking && ! myFollowThis.hasFirstForIter() {
       if ! (myFollowThis.isAligned() && myFollowThis.isEmpty()) then
         HaltWrappers.boundsCheckHalt("zippered iteration over a range with no first index");
     }
@@ -3934,14 +3963,14 @@ private proc isBCPindex(type t) param do
 
     if (myFollowThis.bounds == boundKind.both &&
         myFollowThis.hasPosNegUnitStride()     ) ||
-       myFollowThis.hasLast()
+       myFollowThis.hasLastForIter()
     {
       const flwlen = myFollowThis.sizeAs(myFollowThis.chpl_integralIdxType);
       if boundsChecking {
-        if this.hasLast() {
+        if this.hasLastForIter() {
           // this check is for typechecking only
           if this.bounds != boundKind.both then
-            assert(false, "hasFirst && hasLast do not imply a range is bounded");
+            assert(false, "hasFirstForIter && hasLastForIter do not imply a range is bounded");
         }
         if flwlen != 0 then
           if this.bounds == boundKind.both && myFollowThis.highBound >= this.sizeAs(uint) then
@@ -3964,10 +3993,10 @@ private proc isBCPindex(type t) param do
       for i in r do
         yield i;
     }
-    else // ! myFollowThis.hasLast()
+    else // ! myFollowThis.hasLastForIter()
     {
       // WARNING: this case has not been tested
-      if boundsChecking && this.hasLast() then
+      if boundsChecking && this.hasLastForIter() then
         HaltWrappers.zipLengthHalt("zippered iteration where a bounded range follows an unbounded iterator");
 
       const first  = this.orderToIndex(myFollowThis.first);
@@ -3995,7 +4024,7 @@ private proc isBCPindex(type t) param do
         for i in r do
           yield i;
       }
-    } // if myFollowThis.hasLast()
+    } // if myFollowThis.hasLastForIter()
   }
 
 
