@@ -8129,7 +8129,7 @@ void warnForIntUintConversion(BaseAST* context,
                               Type* formalType,
                               Type* actualType,
                               Symbol* actual) {
-  if (fWarnIntUint || fWarnUnstable) {
+  if (fWarnIntUint || shouldWarnUnstableFor(context)) {
     Type* formalVt = formalType->getValType();
     Type* actualVt = actualType->getValType();
     if (is_uint_type(formalVt) && is_int_type(actualVt)) {
