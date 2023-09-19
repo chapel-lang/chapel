@@ -2073,7 +2073,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
-    @unstable("bulkAdd() is subject to change in the future.")
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
     proc ref bulkAddNoPreserveInds(ref inds: [] _value.idxType, dataSorted=false,
         isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
@@ -2120,8 +2120,8 @@ module ChapelDomain {
 
        For sparse domains, an operation equivalent to this method is available
        with the ``+=`` operator, where the right-hand-side is an array. However,
-       in that case, default values will be used for the flags ``dataSorted``,
-       ``isUnique``, and ``preserveInds``. This method is available because in
+       in that case, default values will be used for the flags ``dataSorted`` and
+       ``isUnique``. This method is available because in
        some cases, expensive operations can be avoided by setting those flags.
        To do so, ``bulkAdd`` must be called explicitly (instead of ``+=``).
 
@@ -2137,6 +2137,13 @@ module ChapelDomain {
          addition should occur is unknown. We expect this to change in the
          future.
 
+       .. note::
+
+         This method may make a copy of ``inds`` if the data is not sorted to
+         preserve the indices used. If the data is already sorted, it is
+         possible to avoid this extra copy by using :proc:`bulkAddNoPreserveInds`,
+         which does not copy the indices and may modify ``inds`` in place.
+
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
                   an array of ``idxType``.
@@ -2146,9 +2153,6 @@ module ChapelDomain {
 
        :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
        :type isUnique: bool
-
-       :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
-       :type preserveInds: bool
 
        :arg addOn: The locale where the indices should be added. Default value
                    is ``nil`` which indicates that locale is unknown or there
@@ -2167,6 +2171,43 @@ module ChapelDomain {
       return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
     }
 
+    /*
+       Adds indices in ``inds`` to this domain in bulk.
+
+       This is nearly identical to :proc:`bulkAdd`. :proc:`bulkAdd` may
+       make a copy of ``inds`` if the data is unsorted, whereas this method will
+       modify ``inds`` in place.
+
+       .. note::
+
+         Right now, this method is only available for sparse domains.
+         In the future, we expect that this method will be available for all
+         irregular domains.
+
+       .. note::
+
+         ``nilLocale`` is a sentinel value to denote that the locale where this
+         addition should occur is unknown. We expect this to change in the
+         future.
+
+       :arg inds: Indices to be added. ``inds`` must be an array of
+                  ``rank*idxType``, except for 1-D domains, where it must be
+                  an array of ``idxType``.
+
+       :arg dataSorted: ``true`` if data in ``inds`` is sorted.
+       :type dataSorted: bool
+
+       :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
+       :type isUnique: bool
+
+       :arg addOn: The locale where the indices should be added. Default value
+                   is ``nil`` which indicates that locale is unknown or there
+                   are more than one.
+       :type addOn: locale
+
+       :returns: Number of indices added to the domain
+       :rtype: int
+    */
     @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
     proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
         dataSorted=false, isUnique=false, addOn=nilLocale)
