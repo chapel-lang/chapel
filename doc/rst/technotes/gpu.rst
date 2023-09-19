@@ -423,11 +423,6 @@ improvements in the future.
     * It's not currently possible to compile for multiple AMD GPU architectures
       at the same time.
 
-    * Certain 64-bit math functions are unsupported. To see what does
-      and doesn't work see `this test
-      <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
-      and note which operations are executed when ``excludeForRocm == true``.
-
 * Distributed arrays cannot be used within GPU kernels.
 
 * PGAS style communication is not available within GPU kernels; that is:
