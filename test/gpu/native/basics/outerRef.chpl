@@ -11,8 +11,9 @@ use GPU;
 
       writeln(A);
     }
-    exp = exp + 1; // Without this line there's no error, otherwise we used to get
-                   // garbage
+    exp = exp + 1; // Without this line there's no error because exp will be
+                   // RVFed, otherwise we used to get garbage because it is a
+                   // ref
   }
 
   testValue();
@@ -31,8 +32,9 @@ use GPU;
 
       writeln(A);
     }
-    exp = exp + 1; // Without this line there's no error, otherwise we used to get
-                   // garbage
+    exp = exp + 1; // Without this line there's no error because exp will be
+                   // RVFed, otherwise we used to get garbage because it is a
+                   // ref
   }
 
   testValue();
@@ -51,8 +53,9 @@ use GPU;
 
       writeln(A);
     }
-    exp = exp + 1; // Without this line there's no error, otherwise we used to get
-                   // garbage
+    exp = exp + 1; // Without this line there's no error because exp will be
+                   // RVFed, otherwise we used to get garbage because it is a
+                   // ref
   }
 
   testValue();
