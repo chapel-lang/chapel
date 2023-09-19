@@ -48,7 +48,7 @@ function log_success() {
 
 function apply_patch() {
   local patch_file=$@
-  echo "Applying patch ${patch_file}"
+  echo "[Applying patch ${patch_file}]"
   if ! patch -p1 < $patch_file ; then
     log_fatal_error "applying patch"
   else
@@ -58,9 +58,17 @@ function apply_patch() {
 
 function test_compile() {
   local kind=$@
+  if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+    local version=quick-shared
+    export CHPL_STOP_AFTER_PASS=${CHPL_STOP_AFTER_PASS:-denormalize}
+    echo "[Building $kind in quickstart mode. Will stop after the $CHPL_STOP_AFTER_PASS pass]"
+  else
+    local version=release
+    echo "[Building $kind in normal mode]"
+  fi
 
   test_start "make $kind"
-  make release MOD=$kind NPROCS=0 2> $kind.comp.out.tmp
+  make $version MOD=$kind NPROCS=0 2> $kind.comp.out.tmp
   local status=$?
   cat $kind.comp.out.tmp
 
@@ -71,14 +79,16 @@ function test_compile() {
   fi
   test_end
 
-  $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
-  if [[ $? -ne 0 ]] ; then
-    log_fatal_error "computing compile time stats for ${kind}"
-  fi
+  if [ -z "$CHAMPS_QUICKSTART" ]; then
+    $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp
+    if [[ $? -ne 0 ]] ; then
+      log_fatal_error "computing compile time stats for ${kind}"
+    fi
 
-  $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
-  if [[ $? -ne 0 ]] ; then
-    log_fatal_error "computing emitted code size stats for ${kind}"
+    $CHPL_HOME/util/test/computePerfStats emitted-code-size-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/emitted-code-size.perfkeys $kind.comp.out.tmp
+    if [[ $? -ne 0 ]] ; then
+      log_fatal_error "computing emitted code size stats for ${kind}"
+    fi
   fi
 }
 

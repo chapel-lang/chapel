@@ -32,7 +32,12 @@ else
 fi
 cd ${CHAMPS_HOME}
 
-CHAMPS_VERSION=$(git describe --tags --abbrev=0)
+# CHAMPS versions are tagged. Not all commits have tags, in which case this
+# command fails. Note that this is exactly as what CHAMPS Makefile does. IOW,
+# they must be seeing and ignoring the same error. To avoid triage confusion, I
+# am redirecting stderr to dev/null. (I think they should use --always
+# --abbrev=10 or something)
+CHAMPS_VERSION=$(git describe --tags --abbrev=0 2>/dev/null)
 
 # Apply patches
 for p in $CHAMPS_PATCH_PATH/*patch; do
@@ -63,33 +68,40 @@ ls $CHAMPS_HOME
 echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
 # Compile CHAMPS executables
-test_compile prep
-test_compile flow
 test_compile icing
-test_compile drop
-test_compile potential
-test_compile potentialPrep
-test_compile geo
-test_compile thermo
-test_compile postLink
-test_compile post
-test_compile stochasticIcing
-test_compile octree
-test_compile eigenSolvePost
-test_compile externalSolverPost
-test_compile meshDeformation
-test_compile continuation
-test_compile stability
-test_compile coloring
 
-# copy the input data to the filesystem we're running on
+if [ -z "$CHAMPS_QUICKSTART" ] || [ ! -z "$CHAMPS_COMPILE_ALL_EXECS" ] ; then
+  test_compile prep
+  test_compile flow
+  test_compile drop
+  test_compile potential
+  test_compile potentialPrep
+  test_compile geo
+  test_compile thermo
+  test_compile postLink
+  test_compile post
+  test_compile stochasticIcing
+  test_compile octree
+  test_compile eigenSolvePost
+  test_compile externalSolverPost
+  test_compile meshDeformation
+  test_compile continuation
+  test_compile stability
+  test_compile coloring
+fi
 
-# I can't tell whether prep is running too slow or just freezing, for now don't run it
-# cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
-# test_run prep 1
 
-test_run flow 16
+if [ -z "$CHAMPS_QUICKSTART" ] ; then
+  # copy the input data to the filesystem we're running on
+  # I can't tell whether prep is running too slow or just freezing, for now don't run it
+  # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
+  # test_run prep 1
 
-$CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
+  # copy the prepartitoned grid for 16 locales into scratch space
+  cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
+  test_run flow 16
+
+  $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
+fi
 
 subtest_end
