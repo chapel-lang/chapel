@@ -426,6 +426,11 @@ Range assignment is legal when:
 -  the ``strides`` parameter of the destination range is the same
    or more permissive than that of the source range.
 
+.. warning::
+
+   The ability to assign between two unbounded ranges with
+   incompatible idxTypes is deprecated.
+
 .. _Range_Comparisons:
 
 Range Comparisons
