@@ -789,6 +789,12 @@ module CTypes {
                              eltSize:c_ptrdiff):c_ptrdiff;
 
   /*
+   ********************************
+   Begin c_ptrTo[Const], c_addrOf[Const] definitions
+   ********************************
+  */
+
+  /*
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
     :type:`c_ptr` has no impact on the lifetime of the array.  The
@@ -1203,6 +1209,13 @@ module CTypes {
   inline proc c_addrOf(x: c_fn_ptr) {
     return x;
   }
+
+  /*
+   ********************************
+   End c_ptrTo[Const], c_addrOf[Const] definitions
+   ********************************
+  */
+
 
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
