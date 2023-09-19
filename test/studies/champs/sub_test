@@ -67,6 +67,13 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
   apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
 fi
 
+if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  echo "[Patch commit created]"
+  git commit -am "Snapshot after applying patches" >/dev/null
+  git clean -df >/dev/null
+  git status
+fi
+
 # copy the prepartitoned grid for 16 locales into scratch space for better IO
 # performance
 cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
