@@ -2070,7 +2070,7 @@ For example:
 
 The default intent for :type:`~OwnedObject.owned` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
-more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
+more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
 .. _Owned_Methods:
 
@@ -2150,7 +2150,7 @@ See :ref:`about-owned-coercions` for more details and examples.
 
 The default intent for :type:`~SharedObject.shared` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
-more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
+more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
 .. _Shared_Methods:
 
