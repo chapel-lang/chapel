@@ -495,7 +495,7 @@ iterator         0-based one-dimensional domain
    
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
-   result of the corresponding promoted expression, such as 
+   result of the corresponding promoted expression, such as
 
    .. code-block:: chapel
 
@@ -759,25 +759,19 @@ For example, an array of indices can be used to index into another array
 
    A[B];
 
-resulting in the following
+which results in the promoted expression
 
 .. code-block:: chapel
 
    [b in B] A[b];
 
-However, the following expression is not promoted and will result in a compile-time error
+However, it is an error to modify this promoted expression.
+For example, the following is an error
 
 .. code-block:: chapel
 
    A[B] += 3;
 
-the expression would become
-
-.. code-block:: chapel
-
-   [b in B] A[b] += 3;
-
-but this is not legal, as ``A`` cannot be modified in this loop expression.
 An explicit loop statement with an explicit ``ref`` shadow variable
 for ``A`` must be used to achieve this, for example
 
