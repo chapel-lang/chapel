@@ -427,14 +427,13 @@ The argument intents are:
  * :ref:`The_Const_In_Intent` ``const in``
  * :ref:`The_Const_Ref_Intent` ``const ref``
  * :ref:`The_Const_Intent` ``const``
- * :ref:`The_Default_intent` (when no intent is specified)
+ * :ref:`The_Default_intent` (when no intent is given explicitly)
 
 How should programmers choose among these intents?
 
  * The default intent and the ``const`` intent are designed to take the
-   most natural/least surprising action. For the most part, the two are
-   the same; however there are exceptions for synchronization types and
-   tuples.
+   most natural/least surprising action. The two are the same, except for
+   with synchronization types and tuples.
 
  * The ``in`` and ``const in`` intents pass by value and are important
    for transferring a value in to a function, for example, when storing a
@@ -444,9 +443,10 @@ How should programmers choose among these intents?
  * The ``ref`` and ``const ref`` intents pass by reference. The ``ref``
    intent allows modifications of the referred-to value within the
    function and can be important when the function is intended to mutate
-   something. While ``const ref`` does not allow the function itself to
-   modify the referred-to value, it allows aliasing updates to that
-   value, unlike the ``const`` or default intent.
+   its actual argument. While ``const ref`` does not allow the function
+   itself to modify the referred-to value, the formal tracks updates to
+   the actual through other variables or references, unlike the ``const``
+   or default intent.
 
  * The ``out`` intent moves a value out of the function. The ``inout``
    intent is a combination of ``in`` and ``out``.
@@ -478,7 +478,8 @@ The In Intent
 
 When ``in`` is specified as the intent, the formal argument represents a
 variable that is copy-initialized from the value of the actual argument,
-see :ref:`Copy_and_Move_Initialization`.
+see :ref:`Copy_and_Move_Initialization`. Note that in many cases, this
+copy can be elided; see :ref:`Copy_Elision`.
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -489,6 +490,7 @@ argument to the type of the formal.
 The formal can be modified within the function, but such changes are
 local to the function and not reflected back to the call site.
 
+
 .. _The_Out_Intent:
 
 The Out Intent
@@ -496,7 +498,7 @@ The Out Intent
 
 The ``out`` intent on a formal argument supports return-like behavior.
 As such, the type of an ``out`` formal is not considered when determining
-candidate function or choosing the best candidate (see
+candidate functions or choosing the best candidate (see
 :ref:`Function_Resolution`).
 
 When a function with the ``out`` intent returns, the actual argument is
@@ -578,13 +580,13 @@ The Const Ref Intent
 ~~~~~~~~~~~~~~~~~~~~
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
-modifications to the formal argument are prohibited within the dynamic
-scope of the function. Note that the the value referred to can still be
-modified by other means (such as an aliasing reference) during the
-execution of the function.
+modifications to the formal argument are prohibited within the function.
+The actual argument can still be modified by other means during the
+execution of the routine. Such modifications are observable
+by the formal argument, subject to the memory consistency model.
 
-The following example shows such aliasing. This example would not behave
-this way if it used ``const`` instead of ``const ref``.
+The following example shows such aliasing. The behavior would be
+undefined if ``c`` used ``const`` intent instead of ``const ref``.
 
   *Example (const-ref-aliasing.chpl)*.
 

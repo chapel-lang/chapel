@@ -319,8 +319,8 @@ variable.
 
 Each formal argument of a task function or iterator has the default
 intent by default.  See also :ref:`The_Default_Intent`. Note that the
-default intent usually allows the compiler to assume that the value will
-not be concurrently modified.
+default intent allows the compiler to assume that the value will not be
+concurrently modified, except for values of ``sync`` or ``atomic`` type.
 
 For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task

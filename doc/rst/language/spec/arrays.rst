@@ -129,7 +129,7 @@ in :ref:`Array_Assignment`.
 When an array is stored in a ``const`` variable, the array elements are
 immutable. Undefined behavior will result if the domain is modified (see
 :ref:`Association_of_Arrays_to_Domains`) since that would necessarily
-change one or more elements.
+add or remove elements.
 
 Array literal values can be either rectangular or associative,
 corresponding to the underlying domain which defines its indices.
