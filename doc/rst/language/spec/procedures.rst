@@ -416,7 +416,7 @@ from the default value expression.
 Argument Intents
 ----------------
 
-Argument intents specify how an actual argument is passed to a routine
+Argument intents specify how an actual argument is passed to a function
 where it is represented by the corresponding formal argument.
 
 The argument intents are:
@@ -437,18 +437,18 @@ How should programmers choose among these intents?
    tuples.
 
  * The ``in`` and ``const in`` intents pass by value and are important
-   for transferring a value in to a routine, for example, when storing a
+   for transferring a value in to a function, for example, when storing a
    value into a data structure. Using these intents for that use case can
    help to avoid unnecesary copies.
 
  * The ``ref`` and ``const ref`` intents pass by reference. The ``ref``
    intent allows modifications of the referred-to value within the
-   routine and can be important when the routine is intended to mutate
-   something. While ``const ref`` does not allow the routine itself to
+   function and can be important when the function is intended to mutate
+   something. While ``const ref`` does not allow the function itself to
    modify the referred-to value, it allows aliasing updates to that
    value, unlike the ``const`` or default intent.
 
- * The ``out`` intent moves a value out of the routine. The ``inout``
+ * The ``out`` intent moves a value out of the function. The ``inout``
    intent is a combination of ``in`` and ``out``.
 
 .. _Summary_of_Intents:
@@ -483,11 +483,11 @@ see :ref:`Copy_and_Move_Initialization`.
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
 
-An implicit conversion for a routine call occurs from the actual
+An implicit conversion for a function call occurs from the actual
 argument to the type of the formal.
 
-The formal can be modified within the routine, but such changes are
-local to the routine and not reflected back to the call site.
+The formal can be modified within the function, but such changes are
+local to the function and not reflected back to the call site.
 
 .. _The_Out_Intent:
 
@@ -496,23 +496,23 @@ The Out Intent
 
 The ``out`` intent on a formal argument supports return-like behavior.
 As such, the type of an ``out`` formal is not considered when determining
-candidate routine or choosing the best candidate (see
+candidate function or choosing the best candidate (see
 :ref:`Function_Resolution`).
 
-When a routine with the ``out`` intent returns, the actual argument is
+When a function with the ``out`` intent returns, the actual argument is
 set to the formal argument using assignment or possibly initialized
 from the formal argument according to :ref:`Split_Initialization`.
 
-Within the routine body, an ``out`` formal argument is initialized
+Within the function body, an ``out`` formal argument is initialized
 according :ref:`Split_Initialization`. It will start with its default
 value if one is supplied and can use the default value for the declared
 type if no initialization point is found. The formal argument can be
-modified within the routine.
+modified within the function.
 
 Note that the way that type inference works with generic ``out`` formal
 arguments is very different from other formal arguments. In particular,
 the type of a generic ``out`` formal argument is inferred from the
-routine body rather than from the call site.
+function body rather than from the call site.
 
 .. note::
 
@@ -533,17 +533,17 @@ The Inout Intent
 ~~~~~~~~~~~~~~~~
 
 When ``inout`` is specified as the intent, the actual argument is
-copy-initialized into the formal argument, the called routine body is
+copy-initialized into the formal argument, the called function body is
 run, and then the actual argument is set to the formal argument with
 assignment. As a result the behavior of the ``inout`` intent is a
 combination of the ``in`` and ``out`` intents.
 
 ``inout`` intent formals behave the same as ``in`` formals for the
-purposes of determining candidate routine and choosing the best
+purposes of determining candidate function and choosing the best
 candidate (see :ref:`Function_Resolution`).
 
 The actual argument must be a valid lvalue. The formal argument can be
-modified within the routine.
+modified within the function.
 
 .. _The_Ref_Intent:
 
@@ -558,10 +558,10 @@ argument must be the same as the type of the formal.
 
 The ``ref`` intent differs from the ``inout`` intent in that the
 ``inout`` intent requires copying from/to the actual argument on the way
-in/out of the routine, while ``ref`` allows direct access to the actual
+in/out of the function, while ``ref`` allows direct access to the actual
 argument through the formal argument without copies. Note that
 concurrent modifications to the ``ref`` actual argument by other tasks
-may be visible within the routine, subject to the memory consistency
+may be visible within the function, subject to the memory consistency
 model.
 
 .. _The_Const_In_Intent:
@@ -579,9 +579,9 @@ The Const Ref Intent
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
 modifications to the formal argument are prohibited within the dynamic
-scope of the routine. Note that the the value referred to can still be
+scope of the function. Note that the the value referred to can still be
 modified by other means (such as an aliasing reference) during the
-execution of the routine.
+execution of the function.
 
 The following example shows such aliasing. This example would not behave
 this way if it used ``const`` instead of ``const ref``.
@@ -615,7 +615,7 @@ The ``const`` intent is broadly similar to the ``const ref`` intent;
 however it allows the implementation more freedom to optimize.
 
 As with ``const in`` and ``const ref``, the ``const`` intent specifies
-that the routine will not and cannot modify the formal argument within
+that the function will not and cannot modify the formal argument within
 its dynamic scope.
 
 For synchronization types ``sync`` and ``atomic``, the ``const`` intent
@@ -628,11 +628,11 @@ will never cause copy initialization.
 The ``const`` intent includes the possibilty for the implementation to
 optimize by passing some or all of the referred-to data by value.  As
 such, it is appropriate when the referred-to value will not be modified
-anywhere within the routine and additionally the referred-to value will
+anywhere within the function and additionally the referred-to value will
 not be modified by other means such as aliasing references.
 
 Additionally, the ``const`` intent communicates to the compiler that it
-can make several assumptions to aid optimization within the routine using
+can make several assumptions to aid optimization within the function using
 a ``const`` formal:
 
  * the value referred to by such a formal argument will not be modified
@@ -642,10 +642,10 @@ a ``const`` formal:
    through other means (such as aliasing references)
 
  * if the formal is an array, the index set of the domain the array is
-   declared over will not be modified while the routine is running
+   declared over will not be modified while the function is running
 
  * if the formal is an ``owned`` or ``shared``, the result of borrowing
-   from it will not be modified while the routine is running
+   from it will not be modified while the function is running
 
 In the rare cases where these assumptions are not appropriate, code
 should use ``const ref`` instead of ``const`` or the default intent.
