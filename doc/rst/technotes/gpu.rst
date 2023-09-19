@@ -131,8 +131,8 @@ Requirements
     ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
     although we have not tested this.
 
-  * If targeting AMD GPUs, we require ROCm version 4.x; we suspect version 5.x
-    will work as well although we have not tested so.
+  * If targeting AMD GPUs, we require ROCm version 4.x or <5.4. ROCm versions
+    greater than 5.4 are not supported, yet.
 
 
 GPU-Related Environment Variables

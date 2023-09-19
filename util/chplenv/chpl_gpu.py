@@ -142,7 +142,17 @@ def get_sdk_path(for_gpu):
 
     if exists and returncode == 0:
         real_path = os.path.realpath(my_stdout.strip()).strip()
-        chpl_sdk_path = "/".join(real_path.split("/")[:-gpu.bin_depth])
+        path_parts = real_path.split("/")
+        # chpl_sdk_path = "/".join(real_path.split("/")[:-gpu.bin_depth])
+        chpl_sdk_path = "/"
+        for part in path_parts:
+            if len(part) == 0: continue
+            chpl_sdk_path += part
+            if not part.startswith(gpu.runtime_impl):
+                chpl_sdk_path += "/"
+            else:
+                break
+
         return chpl_sdk_path
     elif gpu_type == for_gpu:
         _reportMissingGpuReq("Can't find {} toolkit.".format(get()))

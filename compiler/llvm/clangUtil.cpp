@@ -4347,9 +4347,17 @@ static void linkGpuDeviceLibraries() {
     linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
+
     for (auto gpuArch : gpuArches) {
       linkBitCodeFile(determineOclcVersionLib(libPath, gpuArch).c_str());
     }
+
+    std::string oclcAbiVersionLibPath = libPath + "/oclc_abi_version_400.bc";
+    std::ifstream file(oclcAbiVersionLibPath);
+    if(file.good()) {
+      linkBitCodeFile(oclcAbiVersionLibPath.c_str());
+    }
+
   }
 
   // internalize all functions that are not in `externals`
