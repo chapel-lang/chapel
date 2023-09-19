@@ -1152,7 +1152,7 @@ struct RstSignatureVisitor {
 
     // Where Clause
     if (const AstNode* wc = f->whereClause()) {
-     if (isNoWhereDoc(f)) {
+     if (!isNoWhereDoc(f)) {
       os_ << " where ";
       wc->traverse(*this);
      }
