@@ -75,8 +75,6 @@ static const char* incDirsFilename = "incDirs.tmp";
 static const char* libDirsFilename = "libDirs.tmp";
 static const char* libFilesFilename = "libFiles.tmp";
 
-const char* intDirName = NULL;
-
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
 
@@ -198,29 +196,6 @@ void ensureDirExists(const char* dirname, const char* explanation,
   }
 }
 
-static const char* makeTempDir() {
- std::string tmpDirPath = gContext->tmpDir();
- ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
-
- return astr(tmpDirPath.c_str());
-}
-
-void ensureTmpDirExists() {
-  // create int dir if not done already
-  if (!intDirName) {
-    intDirName = makeTempDir();
-  }
-  // ensure intermediates dir is the same as savec dir if the latter exists
-  if (saveCDir[0] && intDirName != saveCDir) {
-    intDirName = saveCDir;
-    ensureDirExists(saveCDir, "ensuring --savec directory exists");
-    if (0 != strcmp(makeTempDir(), saveCDir)) {
-      // expected gContext to have been constructed with saveCDir
-      INT_FATAL("misconfiguration with temp dir");
-    }
-  }
-}
-
 void deleteDir(const char* dirname) {
   auto err = chpl::deleteDir(std::string(dirname));
   if (err) {
@@ -233,9 +208,7 @@ void deleteDir(const char* dirname) {
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
 
-  ensureTmpDirExists();
-
-  return astr(intDirName, slash, filename);
+  return astr(gContext->tmpDir().c_str(), slash, filename);
 }
 
 const char* getDirectory(const char* filename) {
@@ -581,9 +554,7 @@ std::string runCommand(const std::string& command) {
 }
 
 const char* getIntermediateDirName() {
-  ensureTmpDirExists();
-
-  return intDirName;
+  return gContext->tmpDir().c_str();
 }
 
 static void genCFiles(FILE* makefile) {
@@ -672,7 +643,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
-  const char* tmpDirName = intDirName;
+  const char* tmpDirName = gContext->tmpDir().c_str();
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = getLibraryExtension();
   const char* server = "";
@@ -837,8 +808,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
-    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
+    const char* client = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibClientFile);
+    const char* server = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");
