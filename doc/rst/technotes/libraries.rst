@@ -572,7 +572,7 @@ this function itself.  The following should work after replacing
     export proc chpl_library_init_ftn() {
       // Make the runtime/library initialization function visible
       extern proc chpl_library_init(argc: c_int, argv: c_ptr(c_ptr(c_char)));
-      var filename = "fake":chpl_c_string;
+      var filename = "fake":c_ptrConst(c_char);
       // Initialize the internal runtime/library
       chpl_library_init(1, c_ptrTo(filename): c_ptr(c_ptr(c_char)));
       // Initialize the main user module
