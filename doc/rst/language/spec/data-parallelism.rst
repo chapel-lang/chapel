@@ -756,7 +756,7 @@ side array expressions alias the left-hand side expression.
 Indirect Whole Array Indexing
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Arrays can be indexed indirectly using an array of indies.
+Arrays can be indexed indirectly using an array of indices.
 Given an array ``A`` and an array of indices ``B`` in the domain of ``A``,
 the function call
 
@@ -770,7 +770,7 @@ is equivalent to
 
    [b in B] f(A[b]);
 
-This a legal expression only if the result of the promotion ``A[B]`` is not modified.
+This is a legal expression only if the result of the promotion ``A[B]`` is not modified.
 The following statement
 
 .. code-block:: chapel
