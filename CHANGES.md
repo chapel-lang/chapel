@@ -199,6 +199,9 @@ Tool Improvements
 
 Language Specification Improvements
 -----------------------------------
+* documented the `require` statement  
+  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-require-statement)
+
 
 Other Documentation Improvements
 --------------------------------
