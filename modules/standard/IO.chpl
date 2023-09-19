@@ -4662,6 +4662,7 @@ inline proc fileWriter.commit() {
 
 /* Used to control the behavior of the region argument for
    :proc:`fileReader.seek` or :proc:`fileWriter.seek`. */
+@chpldoc.nodoc()
 @deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
 config param useNewSeekRegionBounds = true;
 
@@ -5083,6 +5084,7 @@ proc openReader(path:string,
 
 /* Used to control the behavior of the region argument for :proc:`openReader`.
  */
+@chpldoc.nodoc()
 @deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
 config param useNewOpenReaderRegionBounds = true;
 
@@ -5230,6 +5232,7 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 
 /* Used to control the behavior of the region argument for :proc:`file.reader`.
  */
+@chpldoc.nodoc()
 @deprecated("'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release")
 config param useNewFileReaderRegionBounds = true;
 
@@ -5342,6 +5345,7 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 
 /* Used to control the behavior of the region argument for :proc:`file.lines`.
  */
+@chpldoc.nodoc()
 @deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
 config param useNewLinesRegionBounds = true;
 
@@ -5406,6 +5410,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 
 /* Used to control the behavior of the region argument for :proc:`file.writer`.
  */
+@chpldoc.nodoc()
 @deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
 config param useNewFileWriterRegionBounds = true;
 
