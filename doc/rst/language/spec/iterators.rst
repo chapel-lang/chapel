@@ -31,6 +31,7 @@ The syntax to declare an iterator is given by:
      identifier
 
    yield-intent:
+     'const'
      'const ref'
      'ref'
      'param'
@@ -84,11 +85,19 @@ statement. A yield statement in an iterator that yields references must
 yield an lvalue expression.
 
 The iterator's ``yield-intent`` determines how each value is yielded.
-The rules for yielding are the same as the rules for returning values
-from procedures, see :ref:`Return_Intent`, except an iterator with
-the ``ref`` or ``const ref`` yield intent is allowed to yield an lvalue
-that is local to the iterator's scope.
-The rules for yielding a tuple are specified in :ref:`Tuple_Yield_Behavior`.
+The rules for yielding are similar to the rules for returning values from
+procedures (described in :ref:`Return_Intent`), with these exceptions:
+
+  1. The default yield intent is ``const``.
+
+  2. The ``const`` yield intent makes it up to the implementation to
+     choose between ``const ref`` and yielding by value.
+
+  3. An iterator with the ``ref`` or ``const ref`` yield intent is
+     allowed to yield an lvalue that is local to the iterator's scope.
+
+  4. The rules for yielding a tuple are specified in
+     :ref:`Tuple_Yield_Behavior`.
 
 When a ``return`` is encountered, the iterator finishes without yielding
 another index value. The ``return`` statements appearing in an iterator

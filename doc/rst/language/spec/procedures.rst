@@ -160,6 +160,7 @@ Procedures are defined with the following syntax:
      'type'
 
    return-intent:
+     'const'
      'const ref'
      'ref'
      'param'
@@ -927,6 +928,23 @@ The ``const ref`` return intent is also available. It is a restricted
 form of the ``ref`` return intent. Calls to functions marked with the
 ``const ref`` return intent are not lvalue expressions.
 
+.. _Const_Return_Intent:
+
+The Const Return Intent
+~~~~~~~~~~~~~~~~~~~~~~~
+
+The ``const`` return intent is similar to the ``const`` argument intent
+in that the compiler will choose between returning a ``const`` reference
+returning a value. See also :ref:`The_Const_Intent`. For any type where
+the ``const`` argument intent means ``const ref``, the ``const`` return
+intent will return a ``const`` reference. For any type where the
+``const`` argument intent means ``const in``, the ``const`` return intent
+will return by value.
+
+Calls to functions marked with the ``const`` return intent are not lvalue
+expressions.
+
+
 .. _Return_Intent_Overloads:
 
 Return Intent Overloads
@@ -1626,6 +1644,12 @@ when:
    ``const ref``, or the default (blank) return intent
 
 -  at least two of the above return intents have a best function.
+
+.. note::
+
+  It is currently undefined how return intent overloading interacts with
+  the ``const`` return or yield intent.
+
 
 In that case, the compiler is able to choose between ``ref`` return,
 ``const ref`` return, and value return functions based upon the context
