@@ -48,6 +48,7 @@ Semantic Changes / Changes to the Chapel Language
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
+* marked `scan` unstable due to uncertainty about inclusive/exclusive choice
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the `useNewArrayFind` config param
@@ -58,6 +59,8 @@ Deprecated / Unstable / Removed Language Features
 
 Namespace Changes
 -----------------
+* moved several automatically-included math symbols from 'AutoMath' to 'Math'
+  (e.g., `div[ceil|floor][pos]()`, `nearbyint()`, `rint()`)
 
 Standard Library Modules
 ------------------------
@@ -93,8 +96,46 @@ Changes / Feature Improvements in Libraries
   (see https://chapel-lang.org/docs/1.32/technotes/ioSerializers.html)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
   (see TODO)
+* added `Math.ln()` to be consistent with the constant names in 'Math'  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ln)
+* limited `AutoMath.isClose()` to only accept `real`/`imag`/`complex` args  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isClose)
+* extended `Math.gcd()` support to include overloads for all integral types  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.gcd)
 * made `chpl_library_init()` issue an error if called twice
 * made `chpl_library_finalize()` no longer exit, permitting client to continue
+
+Name Changes in 'Math'-related Libraries
+----------------------------------------
+* unified the argument names in the 'AutoMath' and 'Math' modules
+* renamed `INFINITY` and `NAN` to `inf` and `nan` in the 'AutoMath' module  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.inf  
+   and https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.nan)
+* renamed ``is[finite|inf|nan]()` to `is[Finite|Inf|Nan]` in 'AutoMath'  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isFinite et al.)
+* renamed `AutoMath.conjg()` to `AutoMath.conj()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.conj)
+* renamed `AutoMath.carg()` to `AutoMath.phase()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.phase)
+* renamed `AutoMath.cproj()` to `AutoMath.riemProj()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.riemProj)
+* renamed `div[ceil|floor][pos]()` to `div[Ceil|Floor][Pos]()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.divCeil et al.
+* renamed `AutoMath.isclose()` to `AutoMath.isClose()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isClose)
+* renamed `tgamma()` and `lgamma()` to `gamma()` and `lnGamma()` in 'Math'  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.gamma  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.lnGamma)
+* renamed `Math.ldexp()` to `Math.ldExp()` and its argument from `n` to `exp`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ldExp)
+* renamed `Math.*_pi` constants to `Math.*Pi` and marked them unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.halfPi et al.)
+* renamed `sqrt_2` and `recipr_sqrt_2` to `sqrt2` and `reciprSqrt2` in 'Math'  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.sqrt2)
+* renamed `Math.log2_e` to `Math.log2E` and `Math.log10_e` to `Math.log10E`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.log2E)
+* renamed `Math.ln_2` to `Math.ln2` and `Math.ln_10` to `Math.ln10`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ln2)
 
 Name Changes in Libraries
 -------------------------
@@ -105,8 +146,10 @@ Name Changes in Libraries
 * replaced `abs(timeDelta)` with a method `timeDelta.abs()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.timeDelta.abs)
 
-Deprecated / Unstable / Removed Library Features
-------------------------------------------------
+Deprecated / Unstable / Removed 'IO'-related Library Features
+-------------------------------------------------------------
+* marked the default-included 'ChapelIO' module name as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/ChapelIO.html)
 * deprecated `[read|write]This()` methods in favor of `[de]serialize()`
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChapelIO.html#the-readthis-and-writethis-methods  
    and https://chapel-lang.org/docs/1.32/modules/standard/ChapelIO.html#the-serialize-and-deserialize-methods
@@ -124,14 +167,43 @@ Deprecated / Unstable / Removed Library Features
 * deprecated the 'BinaryIO' module  
   (see https://chapel-lang.org/docs/1.32/modules/packages/BinaryIO.html)
 * deprecated usage of `iokind` in the `Subprocess` module
-* deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
-* deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
-* marked `c_fn_ptr` unstable
-  (see https://chapel-lang.org/docs/1.32/technotes/extern.html#c-fn-ptr)
-* deprecated `list.first()`/`.last()` in favor of using paren-less methods  
-  (see TODO)
+* deprecated a number of `config param`s in 'IO' used to transition behavior  
+  (e.g., `useNewFileReaderRegionBounds`, `useNewLinesRegionBounds`, etc.)
+* removed the deprecated `IO.open[Reader|tmp|fp|fd]()` routines
+* removed the deprecated `file.reader()` and `.writer()` overloads
+* removed the deprecated `file.check()` and `file.lines()` methods
+* removed the deprecated `fileReader.flush()` method
+* removed the deprecated `.seek()` method overloads on `file[Reader|Writer]`
+
+Deprecated / Unstable / Removed 'Math'-related Library Features
+---------------------------------------------------------------
+* marked the default-included 'AutoMath' module name as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html)
+* marked `AutoMath.signbit()` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.signbit)
+* marked `Math.nearbyint()` and `Math.rint()` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.nearbyint  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.rint)
+* marked the `log*()` functions with `int` and `uint` arguments as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.log2)
+* marked `Math.logBasePow2()` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.logBasePow2)
+* marked `Math.erf()` and `Math.erfc()` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.erf)
+* marked the Bessel functions in the 'Math' module as unstable
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.j0 et al.)
+* marked `Math.divCeilPos()` and `Math.divFloorPos()` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.divCeilPos  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.divFloorPos)
+* marked `Math.[half|quarter|recipr|twiceRecipr[Sqrt]Pi` as unstable
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.halfPi et al.)
+* marked `Math.sqrt2` and `.reciprSqrt2` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.sqrt2
+   and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.reciprSqrt2)
+* removed the deprecated Bessel functions that were included by default
+
+Deprecated / Unstable / Removed 'Time' Library Features
+-------------------------------------------------------
 * deprecated the `day` and `isoDayOfWeek` enums in favor of `dayOfWeek`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.day)
 * deprecated `MINYEAR`/`MAXYEAR` in favor of `date.[min|max].year`  
@@ -140,8 +212,6 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.Timezone)
 * deprecated `getCurrentDate()` and `getCurrentDayOfWeek()` in `Time`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.getCurrentDate)
-* marked all `CHPL_*` params in `ChplConfig` as unstable  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 * marked the default 0-argument initializers for `date` and `dateTime` unstable
 * deprecated `date.createFromTimestamp()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.createFromTimestamp)
@@ -154,7 +224,29 @@ Deprecated / Unstable / Removed Library Features
    and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.init)
 * deprecated `dateTime.{isoCalendar(), toOrdinal(), weekday(), isoWeekday()}`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.toOrdinal et al.)
+
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+* deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
+* deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
+* marked `c_fn_ptr` unstable
+  (see https://chapel-lang.org/docs/1.32/technotes/extern.html#c-fn-ptr)
+* deprecated `list.first()`/`.last()` in favor of using paren-less methods  
+  (see TODO)
+* marked all `CHPL_*` params in `ChplConfig` as unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 * marked `Reflection.getRoutineName()` unstable within first-class procedures
+* deprecated the transitional `BigInteger.bigintInitThrows` config param
+* removed the deprecated `BigInteger.Round` enum
+* removed the deprecated `bigint` initializers that halted/returned error codes
+* removed the deprecated `bigint.mpzStruct()` method
+* removed the deprecated `bigint.div_q()` method
+* removed the deprecated `bigint.powm()` method
+* removed the deprecated `bigint.sizeinbase()` and `.size()` methods
+* removed the deprecated `bigint.get_d_2exp()` method
 * removed deprecated `c_sizeof()` signature with formal name `x`
 * removed a `regex.matches()` overload with deprecated arguments
 * removed the deprecated `regex.compile()` type method
@@ -201,10 +293,29 @@ Language Specification Improvements
 -----------------------------------
 * documented the `require` statement  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-require-statement)
-
+* added a link between the `%` documentation and `AutoMath.mod()`  
+  (see https://chapel-lang.org/docs/1.32/language/spec/expressions.html#modulus-operators)
 
 Other Documentation Improvements
 --------------------------------
+* removed references to file descriptors in `stdin`/`stdout`/`stderr` docs  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.stdin)
+* improved several aspects of the 'Math' module documentation:
+  - added missing documentation for arguments of `AutoMath.isClose()`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isClose)
+  - removed an incorrect mention of "absolute value" for `Math.tgamma()`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.tgamma)
+  - improved the description for `Math.ldExp()`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ldExp)
+  - fixed the documentation for `Math.atan2()` with 32-bit arguments  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.atan2)
+  - extended the documentation for `Math.erf()`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.erf)
+  - added a link between the `AutoMath.mod()` documentation and `%`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.mod)
+  - added a link between `Math.exp()`/`Math.expm1()` and `Math.e`  
+    (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.exp  
+     and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.expm1)
 * fixed warnings in 'Map' that incorrectly referred to the `set` type
 * updated docs to mention `arm64` as a synonym for `aarch64`  
   (see TODO)
@@ -277,6 +388,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed several bugs where `chpldoc` did not handle unstable warnings correctly
 
 Third-Party Software Changes
 ----------------------------
@@ -284,6 +396,7 @@ Third-Party Software Changes
 
 Developer-oriented changes: Process
 -----------------------------------
+* moved top-level .gitignore entries to their closest subdirectory
 
 Developer-oriented changes: Documentation
 -----------------------------------------
