@@ -736,10 +736,10 @@ the beginning as if it were being specified on the command line.
 
    require "foo.h", "-lfoo";
 
-All require statements involving ``.chpl`` files must appear at
-module-level and use literal string filenames. For other file types,
-each filename in the require statement must be given by a string
-literal or an identifier that is a ``param`` string expression,
+All require statements involving ``.chpl`` files must appear at the
+module-level and each ``.chpl`` file must be given by a string literal.
+For other types, each filename in the require statement must be given
+by a string literal or an identifier that is a ``param`` string expression,
 such as a ``param`` variable or a function returning a ``param``
 string.  Only ``require`` statements in code that the compiler considers
 executable will be processed.  Thus, a ``require`` statement
