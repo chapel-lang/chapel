@@ -2142,7 +2142,7 @@ module ChapelDomain {
          This method may make a copy of ``inds`` if the data is not sorted to
          preserve the indices used. If the data is already sorted, it is
          possible to avoid this extra copy by using :proc:`bulkAddNoPreserveInds`,
-         which does not copy the indicies and may modify ``inds`` in place.
+         which does not copy the indices and may modify ``inds`` in place.
 
        :arg inds: Indices to be added. ``inds`` must be an array of
                   ``rank*idxType``, except for 1-D domains, where it must be
