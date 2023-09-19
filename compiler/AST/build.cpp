@@ -345,7 +345,10 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
-bool processStringInRequireStmt(const char* str, bool parseTime,
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
@@ -355,6 +358,9 @@ bool processStringInRequireStmt(const char* str, bool parseTime,
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
+        if (!atModuleScope) {
+          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+        }
         addSourceFile(str, NULL);
         return true;
       } else {
@@ -573,7 +579,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
 //
 // Build a 'require' statement
 //
-BlockStmt* buildRequireStmt(CallExpr* args) {
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
   BlockStmt* list = NULL;
 
   //
@@ -586,7 +592,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str, true, yyfilename)) {
+      if (processStringInRequireStmt(useArg, atModuleScope, str, true, yyfilename)) {
         continue;
       }
     }
