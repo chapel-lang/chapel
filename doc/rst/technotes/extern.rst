@@ -877,7 +877,7 @@ For example:
    // will translate automatically into
    //  extern proc setItToOne(x:c_ptr(c_int));
 
-   static void getItPlusOne(const int* x) { return *x + 1; }
+   static int getItPlusOne(const int* x) { return *x + 1; }
    // will translate automatically into
    //  extern proc getItPlusOne(x:c_ptrConst(c_int));
 
@@ -896,7 +896,7 @@ For example:
  var x:c_int;
  setItToOne(c_ptrTo(x));
 
- var y:c_int = 5
+ var y:c_int = 5;
  writeln(getItPlusOne(c_ptrToConst(y))); // could also just use c_ptrTo(y)
 
  var space:c_ptr(c_int);
