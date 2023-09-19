@@ -161,6 +161,7 @@ module BigInteger {
   /* A compile-time parameter to control the behavior of bigint initializers
      that take a string argument.
   */
+  @chpldoc.nodoc()
   @deprecated("bigint initializers will now always throw instead of halt, this config no longer impacts code and will be removed in a future release")
   config param bigintInitThrows = true;
 
