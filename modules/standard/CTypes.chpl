@@ -1106,6 +1106,8 @@ module CTypes {
 
   */
   inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+    if isDomainType(t) then
+      compilerError("c_ptrTo domain type not supported", 2);
     return c_addrOf(x);
   }
 
@@ -1114,6 +1116,8 @@ module CTypes {
     modification of the pointee.
   */
   inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
+    if isDomainType(t) then
+      compilerError("c_ptrToConst domain type not supported", 2);
     return c_addrOfConst(x);
   }
 

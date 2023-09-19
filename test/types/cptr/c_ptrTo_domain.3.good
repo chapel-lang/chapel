@@ -1,0 +1,5 @@
+$CHPL_HOME/modules/standard/Errors.chpl:647: In function 'compilerError':
+$CHPL_HOME/modules/standard/Errors.chpl:648: warning: compiler diagnostic depth value exceeds call stack depth
+  $CHPL_HOME/modules/standard/CTypes.chpl:1178: called as compilerError(param msg(0) = "c_addrOf domain type not supported", param errorDepth = 2) from function 'c_addrOf'
+  c_ptrTo_domain.chpl:10: called as c_addrOf(x: domain(1,int(64),one))
+c_ptrTo_domain.chpl:10: error: c_addrOf domain type not supported
