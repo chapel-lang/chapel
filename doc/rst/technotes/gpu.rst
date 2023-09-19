@@ -419,11 +419,11 @@ While analyzing performance, users might also wish to look at the assembly
 generate assemly). The Chapel compiler will emit a file ``chpl__gpu.s``, which
 contains AMD GCN or NVIDIA PTX instructions as appropriate.
 
-In the generated assembly, kernels are be named
-`chpl_gpu_kernel_<fileName>_line_<num>_` (with `filename` replaced with the
-file containing the outlined loop and `num` as the line number of the loop
-header. For example, a kernel on line 3 of `chpl.foo` will be named
-`chpl_gpu_kernel_foo_line_3_`).
+In the generated assembly, kernels are named
+q`chpl_gpu_kernel_<fileName>_line_<num>_`` (with ``filename`` replaced with the
+file containing the outlined loop and ``num`` as the line number of the loop
+header. For example, a kernel on line 3 of ``chpl.foo`` will be named
+``chpl_gpu_kernel_foo_line_3_``).
 
 Known Limitations
 -----------------
