@@ -1296,27 +1296,25 @@ module ChapelRange {
      behavior is undefined.
    */
   inline proc range.isEmpty() {
-    if chpl__singleValIdxType(idxType) {
-      if _low > _high then
-        return true;
-    }
-    if boundsChecking && ! isAligned() then
-      HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
-    else
-      return (this.bounds == boundKind.both || isFiniteIdxType(idxType)) && this.alignedLowAsInt > this.alignedHighAsInt;
+    return isEmptyHelp(this);
   }
 
 
   @unstable("range.isEmpty() is unstable for unbounded ranged over an enum or bool")
+  @chpldoc.nodoc
   inline proc range.isEmpty() where isFiniteIdxType(idxType) && this.bounds !=boundKind.both {
-    if chpl__singleValIdxType(idxType) {
-      if _low > _high then
+    return isEmptyHelp(this);
+  }
+
+  private inline proc isEmptyHelp(r) {
+    if chpl__singleValIdxType(r.idxType) {
+      if r._low > r._high then
         return true;
     }
-    if boundsChecking && ! isAligned() then
+    if boundsChecking && ! r.isAligned() then
       HaltWrappers.boundsCheckHalt("isEmpty() is invoked on an ambiguously-aligned range");
     else
-      return (this.bounds == boundKind.both || isFiniteIdxType(idxType)) && this.alignedLowAsInt > this.alignedHighAsInt;
+      return (r.bounds == boundKind.both || isFiniteIdxType(r.idxType)) && r.alignedLowAsInt > r.alignedHighAsInt;
   }
 
   /* Returns the number of values represented by this range as an integer.
@@ -1402,21 +1400,28 @@ module ChapelRange {
   /* Returns ``true`` if the range has a first index, ``false`` otherwise. */
   inline proc range.hasFirst() {
     warnUnstableFirst(this, fromHasFirst = true);
-    return  if ! isAligned() || isEmpty() then false else
-            if isFiniteIdxType(idxType) then true else
-            if hasPositiveStride() then hasLowBound() else hasHighBound();
+    return hasFirstForIter();
   }
 
   // Special name to avoid unstable warnings when called by iterators
   @chpldoc.nodoc
   inline proc range.hasFirstForIter() do
     return  if ! isAligned() || isEmpty() then false else
+            if isFiniteIdxType(idxType) then true else
             if hasPositiveStride() then hasLowBound() else hasHighBound();
 
+  // hasFirst current has the same behavior as hasFirstForIter
+  // However we consider hasFirst to be unstable
   @chpldoc.nodoc
   proc range.hasFirst() param where hasFirstLastAreParam(this)
   {
     warnUnstableFirst(this, fromHasFirst = true);
+    return hasFirstForIter();
+  }
+
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  proc range.hasFirstForIter() param where hasFirstLastAreParam(this) {
     if isFiniteIdxType(idxType) then return true;
     select bounds {
       when boundKind.low     do return strides.isPositive();
@@ -1424,15 +1429,6 @@ module ChapelRange {
       when boundKind.neither do return false;
     }
   }
-
-  // Special name to avoid unstable warnings when called by iterators
-  @chpldoc.nodoc
-  proc range.hasFirstForIter() param where hasFirstLastAreParam(this) do
-    select bounds {
-      when boundKind.low     do return strides.isPositive();
-      when boundKind.high    do return strides.isNegative();
-      when boundKind.neither do return false;
-    }
 
 
   /* Returns the first value in the sequence the range represents.  If
@@ -1510,21 +1506,28 @@ module ChapelRange {
   /* Returns ``true`` if the range has a last index, ``false`` otherwise. */
   inline proc range.hasLast(){
     warnUnstableLast(this, fromHasLast = true);
-    return if ! isAligned() || isEmpty() then false else
-            if isFiniteIdxType(idxType) then true else
-            if hasPositiveStride() then hasHighBound() else hasLowBound();
+    return hasLastForIter();
   }
 
   // Special name to avoid unstable warnings when called by iterators
   @chpldoc.nodoc
   inline proc range.hasLastForIter() do
     return if ! isAligned() || isEmpty() then false else
+            if isFiniteIdxType(idxType) then true else
             if hasPositiveStride() then hasHighBound() else hasLowBound();
 
 
+  // hasLast current has the same behavior as hasLastForIter
+  // However we consider hasLast to be unstable
   @chpldoc.nodoc
   proc range.hasLast() param where hasFirstLastAreParam(this){
     warnUnstableLast(this, fromHasLast = true);
+    return hasLastForIter();
+  }
+
+  // Special name to avoid unstable warnings when called by iterators
+  @chpldoc.nodoc
+  proc range.hasLastForIter() param where hasFirstLastAreParam(this) {
     if isFiniteIdxType(idxType) then return true;
     select bounds {
       when boundKind.low     do return strides.isNegative();
@@ -1532,16 +1535,6 @@ module ChapelRange {
       when boundKind.neither do return false;
     }
   }
-
-  // Special name to avoid unstable warnings when called by iterators
-  @chpldoc.nodoc
-  proc range.hasLastForIter() param where hasFirstLastAreParam(this) do
-    select bounds {
-      when boundKind.low     do return strides.isNegative();
-      when boundKind.high    do return strides.isPositive();
-      when boundKind.neither do return false;
-    }
-
 
   /* Returns the last value in the sequence the range represents.  If
      the range has no last index, the behavior is undefined.  See also
@@ -3969,7 +3962,7 @@ private proc isBCPindex(type t) param do
       if boundsChecking {
         if this.hasLastForIter() {
           // this check is for typechecking only
-          if this.bounds != boundKind.both then
+          if this.bounds != boundKind.both && ! isFiniteIdxType(idxType) then
             assert(false, "hasFirstForIter && hasLastForIter do not imply a range is bounded");
         }
         if flwlen != 0 then
