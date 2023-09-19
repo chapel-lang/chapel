@@ -97,7 +97,7 @@ to the ID of the locale to which it is mapped.
     use CyclicDist;
 
     const Dist = new cyclicDist(startIdx=(1,1));
-    const D = cyclicDist.createDomain({1..8, 1..8});
+    const D = Dist.createDomain({1..8, 1..8});
     var A: [D] int;
 
     forall a in A do
