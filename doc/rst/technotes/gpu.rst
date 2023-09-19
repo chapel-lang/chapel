@@ -184,8 +184,8 @@ code for and interacts with GPUs. These variables include:
   in the future.
 * ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
   `CPU as Device mode`_ and if set causes it so that uses of
-  :proc:`~GPU.assertOnGpu` to not generate a warning at
-  execution time. Alternatively, this behavior can be enabled by passing
+  :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute to not generate a
+  warning at execution time. Alternatively, this behavior can be enabled by passing
   ``--gpuNoCpuModeWarning`` to your application. For more information, see the
   `CPU as Device mode`_ section.
 
@@ -237,7 +237,8 @@ tests where access to GPUs may be limited. In this mode:
 * It will call the internal runtime API for GPU operations, so that features
   outlined under `Diagnostics and Utilities`_ will work as expected.
 
-  * For example, :proc:`~GPU.assertOnGpu` will fail at compile time normally.
+  * For example, :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute
+    will fail at compile time normally.
     This can allow testing if a loop is GPU-eligible. It will generate a warning
     per-iteration at execution time. The ``CHPL_GPU_NO_CPU_MODE_WARNING``
     environment can be set to suppress these warnings. Alternatively, you can
@@ -294,14 +295,16 @@ the code with calls to :proc:`~GpuDiagnostics.startVerboseGpu` and
 To get a list of all GPU eligible loops at compile-time (regardless of if they
 will actually run on a GPU or not) pass ``chpl`` the ``--report-gpu`` flag.
 
-The :mod:`GPU` module contains additional utility functions. One particularly
-useful function is :proc:`~GPU.assertOnGpu()`.  This function will conduct a
-runtime assertion that will halt execution when not being performed on a GPU.
-If :proc:`~GPU.assertOnGpu()` appears as the first line of ``forall`` or
-``foreach`` loop the Chapel compiler will do a compile-time check and produce
-an error if one of the aforementioned requirements is not met.  This check
-might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
-depending on the presence of control flow.
+Since not all Chapel loops are eligible for conversion into GPU kernels, it
+is helpful to be able to ensure that a particular loop is being executed
+on the GPU. This can be achieved by marking the loop with the ``@assertOnGpu``
+attribute. When a ``forall`` or ``foreach`` loop is marked with this attribute,
+the compiler will perform a compile-time check and produce an error if one of
+the aforementioned requirements is not met. Loops marked with the
+``@assertOnGpu`` attribute will also conduct a runtime assertion that will halt
+execution when not being performed on a GPU. This can happen when the loop
+is eligible for GPU execution, but is being executed outside of a GPU locale.
+The :mod:`GPU` module contains additional utility functions.
 
 Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
 allocations and detect memory leaks. For example, :proc:`startVerboseMem()
