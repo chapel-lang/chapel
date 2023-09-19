@@ -1063,7 +1063,11 @@ struct Converter {
       actuals->insertAtTail(conv);
     }
 
-    return buildRequireStmt(actuals);
+    auto parentId = parsing::idToParentId(context, node->id());
+    auto parentAst = parsing::idToAst(context, parentId);
+    bool atModuleScope = parentAst->isModule();
+
+    return buildRequireStmt(actuals, atModuleScope);
   }
 
   Expr* visit(const uast::Include* node) {

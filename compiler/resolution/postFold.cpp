@@ -662,7 +662,16 @@ static Expr* postFoldPrimop(CallExpr* call) {
     const char* str = NULL;
 
     if (get_string(arg, &str)) {
-      processStringInRequireStmt(str, false, call->astloc.filename());
+      // call is at the module scope if inside the module init
+      // and directly inside the module (ie no intervening blocks)
+      bool insideModuleInit =
+        call->parentSymbol && call->parentSymbol->hasFlag(FLAG_MODULE_INIT);
+      FnSymbol* moduleInit =
+        insideModuleInit ? toFnSymbol(call->parentSymbol) : nullptr;
+      BlockStmt* parentBlock = toBlockStmt(call->parentExpr);
+      bool atModuleScope = parentBlock && moduleInit && moduleInit->body == parentBlock;
+
+      processStringInRequireStmt(arg, atModuleScope, str, false, call->astloc.filename());
 
     } else {
       USR_FATAL(call, "'require' statements require string arguments");

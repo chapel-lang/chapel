@@ -95,9 +95,12 @@ ImportStmt* buildImportStmt(Expr* mod);
 ImportStmt* buildImportStmt(Expr* mod, const char* rename);
 ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names);
 void setImportPrivacy(BlockStmt* list, bool isPrivate);
-bool processStringInRequireStmt(const char* str, bool parseTime,
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename);
-BlockStmt* buildRequireStmt(CallExpr* args);
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope);
 DefExpr* buildQueriedExpr(const char *expr);
 BlockStmt* buildTupleVarDeclStmt(BlockStmt* tupleBlock, Expr* type, Expr* init);
 BlockStmt* buildLabelStmt(const char* name, Expr* stmt);
