@@ -63,10 +63,10 @@ As with the for statement, the indices may be omitted if they are
 unnecessary and the ``do`` keyword may be omitted before a block
 statement.
 
-The square bracketed form will resort to serial iteration when
-``iteratable-expression`` does not support parallel iteration. The
-``forall`` form will result in an error when parallel iteration is not
-available.
+The square bracketed form will resort to order-independent iteration
+(i.e. ``foreach``) when ``iteratable-expression`` does not support parallel
+iteration. The ``forall`` form will result in an error when parallel
+iteration is not available.
 
 The handling of the outer variables within the forall statement and the
 role of ``task-intent-clause`` are defined in
@@ -190,9 +190,10 @@ unnecessary. The ``do`` keyword is always required in the keyword-based
 notation.
 
 As with the forall statement, the square bracketed form will resort to
-serial iteration when ``iteratable-expression`` does not support
-parallel iteration. The ``forall`` form will result in an error when
-parallel iteration is not available.
+order-independent iteration (i.e. ``foreach``) when
+``iteratable-expression`` does not support parallel iteration. The
+``forall`` form will result in an error when parallel iteration is not
+available.
 
 The handling of the outer variables within the forall expression and the
 role of ``task-intent-clause`` are defined in
