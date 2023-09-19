@@ -19,7 +19,8 @@ keyword to open the statement instead of ``with``:
 The ``manage`` statement accepts a `manager` (the `myManager()` call
 in the above example). The statement calls a special method on the
 manager which lets it perform actions before executing the managed
-block.
+block. In order of a type to be recognized as a valid manager, it must
+implement the ``contextManager`` interface.
 
 The manager may optionally return a `resource`. If a developer wants
 to make use of the resource, they may capture it after the manager
@@ -27,12 +28,13 @@ expression (the `myResource` declaration in the above example).
 The resource may be of any type, and is the value returned by the
 special method called ``enterContext()``.
 
-Any aggregate type may be used as a manager as long as it defines
-two special methods called ``enterContext()`` and ``exitContext()``:
+Any aggregate type may be used as a manager as long as it implements the
+``contextManager`` interface, which requires implementing two methods
+called ``enterContext()`` and ``exitContext()``:
 
 .. code-block:: chapel
 
-   record myManager {
+   record myManager : contextManager {
      var x: int = 0;
 
      proc enterContext() ref: int {
