@@ -458,16 +458,16 @@ Summary of Intents
 
 The following table summarizes the differences between the intents:
 
-================================ ====== ========= ========= ======== ============ ============= ========= ==============
+================================ ====== ========= ========= ======== ============ ============= ========= =======
 \                                ``in`` ``out``   ``inout`` ``ref``  ``const in`` ``const ref`` ``const`` default
-================================ ====== ========= ========= ======== ============ ============= ========= ==============
+================================ ====== ========= ========= ======== ============ ============= ========= =======
 initializes formal from actual?  yes    no        yes       no       yes          no            no        no
 sets actual from formal?         no     yes       yes       no       no           no            no        no
-refers to actual argument?       no     no        no        yes      no           yes           yes \*    yes \*
+refers to actual argument?       no     no        no        yes      no           yes           maybe     maybe
 formal can be read?              yes    yes       yes       yes      yes          yes           yes       yes
-formal can be modified?          yes    yes       yes       yes      no           no            no        usually no \*
-local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       usually N/A \*
-================================ ====== ========= ========= ======== ============ ============= ========= ==============
+formal can be modified?          yes    yes       yes       yes      no           no            no        maybe
+local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       maybe
+================================ ====== ========= ========= ======== ============ ============= ========= =======
 
 See the sections on each intent for further details on what the \* means.
 
@@ -614,34 +614,35 @@ The Const Intent
 ~~~~~~~~~~~~~~~~
 
 The ``const`` intent is broadly similar to the ``const ref`` intent;
-however it allows the implementation more freedom to optimize.
+however it allows the implementation more freedom to optimize.  Generally
+speaking, the compiler will implement a ``const`` intent formal by
+choosing between ``const in`` and ``const ref`` in an
+implementation-defined manner. As such, it is appropriate when the actual
+value will not be modified anywhere within the function and additionally
+the actual value will not be modified by other means such as aliasing
+references.
 
-As with ``const in`` and ``const ref``, the ``const`` intent specifies
-that the function will not and cannot modify the formal argument within
-its dynamic scope.
-
-For synchronization types ``sync`` and ``atomic``, the ``const`` intent
-is identical to ``const ref``, and the details below do not apply.
+The ``const`` intent indicates that the function will not and cannot
+modify the formal argument within its dynamic scope.
 
 Unlike ``const in`` / ``in``, the ``const`` intent never transfers a
 value.  Additionally, for record types, passing to a ``const`` intent
 will never cause copy initialization.
 
-The ``const`` intent includes the possibilty for the implementation to
-optimize by passing some or all of the referred-to data by value.  As
-such, it is appropriate when the referred-to value will not be modified
-anywhere within the function and additionally the referred-to value will
-not be modified by other means such as aliasing references.
+For synchronization types ``sync`` and ``atomic``, the ``const``
+intent is ``const ref`` and the remainder of this section does not apply.
 
-Additionally, the ``const`` intent communicates to the compiler that it
+Otherwise, the ``const`` intent communicates to the compiler that it
 can make several assumptions to aid optimization within the function using
 a ``const`` formal:
 
  * the value referred to by such a formal argument will not be modified
-   through other means (such as aliasing references)
+   through other means (such as aliasing references) while the function
+   is running
 
- * if the formal is a ``domain``, the index set will not be modified
-   through other means (such as aliasing references)
+ * similarly, if the formal is a ``domain``, the domain will not be modified
+   through other means (such as aliasing references) while the function
+   is running
 
  * if the formal is an array, the index set of the domain the array is
    declared over will not be modified while the function is running
@@ -651,6 +652,17 @@ a ``const`` formal:
 
 In the rare cases where these assumptions are not appropriate, code
 should use ``const ref`` instead of ``const`` or the default intent.
+
+  *Implementation Notes*.
+
+  In the current compiler implementation, ``const`` means ``const in``
+  for the following types:
+
+     * for ``bool``, ``int``, ``uint``, ``real``, and ``imag`` with widths up to 64 bits
+     * for ``complex`` with widths up to 128 bits
+     * for ``borrowed`` and ``unmanaged`` class types
+     * for values of enumerated type
+
 
 .. _The_Default_Intent:
 
