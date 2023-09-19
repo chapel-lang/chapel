@@ -46,6 +46,12 @@ function log_success() {
   echo "[Success matching ${msg}]"
 }
 
+function update_nightly_repo() {
+  pushd $CHAMPS_COMMON_DIR
+  git pull
+  popd
+}
+
 function apply_patch() {
   local patch_file=$@
   echo "[Applying patch ${patch_file}]"
@@ -78,6 +84,11 @@ function test_compile() {
     log_success "make output"
   fi
   test_end
+
+  # don't leave this environment set
+  if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+    unset CHPL_STOP_AFTER_PASS
+  fi
 
   if [ -z "$CHAMPS_QUICKSTART" ]; then
     $CHPL_HOME/util/test/computePerfStats comp-time-$kind $CHPL_TEST_PERF_DIR/$CHPL_TEST_PERF_DESCRIPTION $CHAMPS_GRAPH_PATH/comp-time.perfkeys $kind.comp.out.tmp

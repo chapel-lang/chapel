@@ -3,35 +3,13 @@
 # Configure environment for CHAMPS testing
 
 
-# CHAMPS_QUICKSTART implies someone trying to source this directly, so no
-# BASH_SOURCE
-if [ ! -z "$CHAMPS_QUICKSTART" ]; then
-  CWD=$(pwd)
-  COMMON_DIR=$CWD
-else
-  CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-  COMMON_DIR=/cy/users/chapelu
-fi
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+COMMON_DIR=/cy/users/chapelu
 
 export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
 
 if [ ! -d "$CHAMPS_COMMON_DIR" ]; then
-  if [ ! -z "$CHAMPS_QUICKSTART" ]; then
-    echo "Creating $CWD/$CHAMPS_COMMON_DIR"
-    git clone git@github.com:chapelu-champs/champs-nightly.git
-  else
-    echo "Error: $CHAMPS_COMMON_DIR doesn't exist. If you are trying to build locally, set 'CHAMPS_QUICKSTART'"
-    return
-  fi
-
-fi
-
-
-pushd $CHAMPS_COMMON_DIR
-git pull
-popd
-
-if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  echo "Error: $CHAMPS_COMMON_DIR doesn't exist. If you are trying to build locally, set 'CHAMPS_QUICKSTART'"
   return
 fi
 

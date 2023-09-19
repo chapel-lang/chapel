@@ -4,14 +4,33 @@
 
 CHAMPS_BRANCH=${CHAMPS_BRANCH:-development}
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/functions.bash
+
+if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  if [ -z "$CHPL_HOME" ]; then
+    echo "[Error: \$CHPL_HOME is unset]"
+  fi
+  export CHAMPS_COMMON_DIR=$CWD/champs-nightly
+
+  if [ -d "$CHAMPS_COMMON_DIR" ]; then
+    echo "[Warning: $CHAMPS_COMMON_DIR exists, will try to git pull]"
+    update_nightly_repo
+  else 
+    echo "Creating $CHAMPS_COMMON_DIR"
+    pushd $(dirname $CHAMPS_COMMON_DIR)
+    git clone git@github.com:chapelu-champs/champs-nightly.git
+    popd
+  fi
+else
+  update_nightly_repo
+fi
+
 CHAMPS_PATCH_PATH=$CHAMPS_COMMON_DIR/patches
 CHAMPS_GRAPH_PATH=$CHAMPS_COMMON_DIR/graph-infra
 CHAMPS_DATA_PATH=$CHAMPS_COMMON_DIR/data
 CHAMPS_CFG_PATH=$CHAMPS_COMMON_DIR/configs
 CHAMPS_DEP_PATH=$CHAMPS_COMMON_DIR/deps-manual
-
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
-source $CWD/functions.bash
 
 subtest_start
 
