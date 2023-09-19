@@ -752,40 +752,34 @@ side array expressions alias the left-hand side expression.
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
 
-.. _Indirect_Whole_Array_Indexing:
-
-Indirect Whole Array Indexing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-Arrays can be indexed indirectly using an array of indices.
-Given an array ``A`` and an array of indices ``B`` in the domain of ``A``,
-the function call
+Array indexing operations can also be promoted.
+For example, an array of indices can be used to index into another array
 
 .. code-block:: chapel
 
-   f(A[B]);
+   A[B];
 
-is equivalent to
+resulting in the following
 
 .. code-block:: chapel
 
-   [b in B] f(A[b]);
+   [b in B] A[b];
 
-This is a legal expression only if the result of the promotion ``A[B]`` is not modified.
-The following statement
+However, the following expression is not promoted and will result in a compile-time error
 
 .. code-block:: chapel
 
    A[B] += 3;
 
-is equivalent to
+the expression would become
 
 .. code-block:: chapel
 
    [b in B] A[b] += 3;
 
-which is not legal, as ``A`` cannot be modified without an explicit ``ref`` shadow variable.
-To modify the result of the promotion, the equivalent pattern can be used.
+but this is not legal, as ``A`` cannot be modified in this loop expression.
+An explicit loop statement with an explicit ``ref`` shadow variable
+for ``A`` must be used to achieve this, for example
 
 .. code-block:: chapel
 
