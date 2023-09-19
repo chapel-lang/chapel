@@ -415,6 +415,7 @@ PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
 PRAGMA(NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol")
+PRAGMA(NO_WHERE_DOC, ypr, "no where doc", "do not include the where clause in chpldoc documentation for this symbol")
 PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
 
 // This flag disables initialization entirely. In contrast, `= noinit`

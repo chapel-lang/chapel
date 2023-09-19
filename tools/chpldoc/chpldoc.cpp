@@ -339,6 +339,13 @@ static bool isNoDoc(const Decl* e) {
   return false;
 }
 
+static bool isNoWhereDoc(const Function* f) {
+  if (auto attrs = f->attributeGroup())
+    if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
+      return true;
+  return false;
+}
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -1145,8 +1152,10 @@ struct RstSignatureVisitor {
 
     // Where Clause
     if (const AstNode* wc = f->whereClause()) {
+     if (isNoWhereDoc(f)) {
       os_ << " where ";
       wc->traverse(*this);
+     }
     }
 
     return false;
