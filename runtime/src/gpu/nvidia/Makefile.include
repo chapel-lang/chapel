@@ -22,4 +22,7 @@ GPU_OBJDIR = $(RUNTIME_BUILD)/$(GPU_SUBDIR)
 
 ALL_SRCS += $(CURDIR)/$(GPU_SUBDIR)/*.c
 
+RUNTIME_INCLS += $(CURDIR)/$(GPU_SUBDIR)/cub-wrappers
+
+
 include $(RUNTIME_ROOT)/$(GPU_SUBDIR)/Makefile.share
