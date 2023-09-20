@@ -2640,17 +2640,11 @@ proc fileWriter.serializer ref : serializerType {
 /*
   The default serializer used by ``fileWriter``.
 
-  Implements the 'serializeValue' method which is called by a ``fileWriter``
-  to produce a serialized representation of a value.
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Serializers and their usage.
 
-  Serializers can choose to invoke a user-defined method, 'serialize', on
-  class and record types. The 'serialize' method should match the formal names,
-  intents, and types of the following signature:
-
-    proc MyType.serialize(writer: fileWriter(?), ref serializer: writer.serializerType) throws
-
-  The compiler is expected to generate a default implementation of 'serialize'
-  methods for records and classes.
+  Otherwise, please refer to the individual methods in this type for a
+  description of the default IO format.
 */
 record defaultSerializer {
 
@@ -2665,6 +2659,35 @@ record defaultSerializer {
     }
   }
 
+  /*
+    Serialize ``val`` with ``writer``. This method will be invoked by a
+    ``fileWriter`` through calls to ``write`` or ``writeln``, but may also be
+    invoked directly.
+
+    Numeric values are serialized using the same format as ``%i`` for integers
+    and ``%r`` for ``real`` numbers. Complex numbers are serialized as ``%z``.
+    Please refer to :ref:`the section on Formatted IO<about-io-formatted-io>`
+    for more information.
+
+    Booleans are serialized as the literal strings ``true`` or ``false``.
+
+    ``string`` values are serialized using the same format as ``%s`` — that is,
+    literally and without quotes. ``bytes`` values are also serialized
+    literally without extra formatting.
+
+    Enums are serialized using the name of the corresponding value. For example
+    with an enum like ``enum colors {red, green blue}``, the value ``red``
+    would simply be serialized as ``red``.
+
+    The ``nil`` value is serialized as the text ``nil``. Nilable classes that
+    are actually ``nil`` will also be serialized as the text ``nil``.
+
+    Classes and records will have their ``serialize`` method invoked, passing
+    in ``writer`` and this serializer as arguments. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    :arg val: The value to be serialized.
+  */
   proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
@@ -2680,16 +2703,70 @@ record defaultSerializer {
     }
   }
 
+  // TODO: add ":ref:" for return type, currently can't refer to it.
+  /*
+    Start serializing a class with a ``{``
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the class type.
+    :arg size: The number of fields in the class.
+
+    :returns: A new AggregateSerializer
+  */
+  proc startClass(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("{");
+    return new AggregateSerializer(writer, _ending="}");
+  }
+
+  /*
+    Start serializing a record with a ``(``
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the record type.
+    :arg size: The number of fields in the record.
+
+    :returns: A new AggregateSerializer
+  */
+  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("(");
+    return new AggregateSerializer(writer, _ending=")");
+  }
+
+  /*
+    Returned by ``startClass`` or ``startRecord`` to enable serializing classes
+    or records.
+
+    A ``class`` with integer fields 'x' and 'y' with values '0' and '5' would
+    be serialized as:
+
+    .. code-block:: text
+
+      {x = 0, y = 5}
+
+    A ``record`` with matching fields would be serialized in the same way, but
+    would use ``(`` and ``)`` instead of ``{`` and ``}``.
+  */
   record AggregateSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _parent = false;
+    @chpldoc.nodoc
     var _first : bool = true;
+    @chpldoc.nodoc
     const _ending : string;
 
     // pointer to child's 'first' field so that we can communicate back if/when
     // a field has already been written.
+    @chpldoc.nodoc
     var _firstPtr : c_ptr(bool) = nil;
 
+    /*
+      Serialize ``field`` named ``name``.
+
+      Serializes fields in the form '<name> = <field>'. Adds a comma before the
+      name if this is no the first field.
+    */
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2699,6 +2776,34 @@ record defaultSerializer {
       writer.write(field);
     }
 
+    /*
+      Start a nested class inside the current class. In the "default" format,
+      inheritance is ignored and parent fields are printed before child fields.
+      For example, the following classes with values ``x=5`` and ``y=2.0``:
+
+      .. code-block:: chapel
+
+        class Parent {
+          var x : int;
+        }
+
+        class Child: Parent {
+          var y : real;
+        }
+
+      would be serialized as:
+
+      .. code-block:: text
+
+        {x = 5, y = 2.0}
+
+      :arg writer: The ``fileWriter`` to be used when serializing. Must match
+        writer used to create current AggregateSerializer.
+      :arg name: The name of the class type.
+      :arg size: The number of fields in the class.
+
+      :returns: A new AggregateSerializer
+    */
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
       // Note: 'size' of parent might be zero, but 'size' of grandparent might
       // be non-zero.
@@ -2706,7 +2811,12 @@ record defaultSerializer {
                                      _firstPtr=c_addrOf(_first));
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current class with a ``}``
+
+      .. note:: It is an error to call methods on an AggregateSerializer after
+                invoking 'endClass'.
+    */
     proc endClass() throws {
       if !_parent then
         writer._writeLiteral(_ending);
@@ -2714,34 +2824,59 @@ record defaultSerializer {
         _firstPtr.deref() = _first;
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current record with a ``)``
+
+      .. note:: It is an error to call methods on an AggregateSerializer after
+                invoking 'endRecord'.
+    */
     proc endRecord() throws {
       writer._writeLiteral(_ending);
     }
   }
 
-  // Class helpers
-  //
-  // TODO: If this is called in a nested way for inheriting classes, then we
-  // can increment 'size' internally to track the total number of fields...?
-  @chpldoc.nodoc
-  proc startClass(writer: fileWriter, name: string, size: int) throws {
-    writer._writeLiteral("{");
-    return new AggregateSerializer(writer, _ending="}");
-  }
+  /*
+    Start serializing a tuple with a ``(``
 
-  // Record helpers
-  @chpldoc.nodoc
-  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the tuple.
+
+    :returns: A new TupleSerializer
+  */
+  proc startTuple(writer: fileWriter, size: int) throws {
     writer._writeLiteral("(");
-    return new AggregateSerializer(writer, _ending=")");
+    return new TupleSerializer(writer, size);
   }
 
+  /*
+    Returned by ``startTuple`` to enable serializing tuples.
+
+    A tuple will be serialized as a comma-separated list between two
+    parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
+    serialized as:
+
+    .. code-block::
+
+      (1, 2, 3)
+
+    A 1-tuple will be serialized with a trailing comma. For example, the literal
+    ``(4,)`` would be serialized as ``(4,)``.
+
+  */
   record TupleSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     const size : int;
+    @chpldoc.nodoc
     var _first : bool = true;
 
+    /*
+      Serialize ``element``.
+
+      Writes a leading comma before serializing the element if this is not the
+      first element in the tuple.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2749,7 +2884,12 @@ record defaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current tuple with a ``)``.
+
+      Adds a comma between the last value and ``)`` if there was only one
+      element.
+    */
     proc endTuple() throws {
       if size == 1 then
         writer._writeLiteral(",)");
@@ -2758,17 +2898,44 @@ record defaultSerializer {
     }
   }
 
-  // Tuple helpers
-  @chpldoc.nodoc
-  proc startTuple(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("(");
-    return new TupleSerializer(writer, size);
+  /*
+    Start serializing a list with a ``[``
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the list.
+
+    :returns: A new ListSerializer
+  */
+  proc startList(writer: fileWriter, size: int) throws {
+    writer._writeLiteral("[");
+    return new ListSerializer(writer);
   }
 
+  /*
+    Returned by ``startList`` to enable serializing lists.
+
+    A list will be serialized as a comma-separated series of serialized
+    elements between two square brackets. For example, serializing a list
+    with elements ``1``, ``2``, and ``3`` will produce the text:
+
+    .. code-block:: text
+
+      [1, 2, 3]
+
+    Empty lists will be serialized as ``[]``.
+  */
   record ListSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _first : bool = true;
 
+    /*
+      Serialize ``element``.
+
+      Writes a leading comma before serializing the element if this is not the
+      first element in the list.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2776,25 +2943,79 @@ record defaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current list with a ``]``.
+    */
     proc endList() throws {
       writer._writeLiteral("]");
     }
   }
-  // List helpers
-  @chpldoc.nodoc
-  proc startList(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("[");
-    return new ListSerializer(writer);
+
+  /*
+    Start serializing an array.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the array.
+
+    :returns: A new ArraySerializer
+  */
+  proc startArray(writer: fileWriter, size: int) throws {
+    return new ArraySerializer(writer);
   }
 
+  /*
+    Returned by ``startArray`` to enable serializing arrays.
+
+    In the default format, an array will be serialized as a
+    whitespace-separated series of serialized elements.
+
+    A 1D array is serialized simply using spaces:
+
+    ::
+
+      1 2 3 4
+
+    A 2D array is serialized using spaces between elements in a row, and
+    prints newlines for new rows:
+
+    ::
+
+      1 2 3
+      4 5 6
+      7 8 9
+
+    Arrays with three or more dimensions will be serialized as a series of
+    2D "panes", with multiple newlines separating new dimensions:
+
+    ::
+
+      1 2 3
+      4 5 6
+      7 8 9
+
+      10 11 12
+      13 14 15
+      16 17 18
+
+      19 20 21
+      22 23 24
+      25 26 27
+
+    Empty arrays result in no output to the ``fileWriter``.
+  */
   record ArraySerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _arrayDim : int;
+    @chpldoc.nodoc
     var _arrayMax : int;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Start a new dimension of size ``size``.
+    */
     proc ref startDim(size: int) throws {
       _arrayDim += 1;
 
@@ -2804,13 +3025,19 @@ record defaultSerializer {
         _arrayMax = _arrayDim;
     }
 
-    @chpldoc.nodoc
+    /*
+      End the current dimension.
+    */
     proc ref endDim() throws {
       _arrayDim -= 1;
       _first = true;
     }
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``element``.
+
+      Adds a space if this is not the first element in the row.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(" ");
       else _first = false;
@@ -2818,24 +3045,49 @@ record defaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      End serialization of the current array.
+    */
     proc endArray() throws { }
   }
 
-  // Array helpers
-  //
-  // BHARSH TODO: what should we do for sparse arrays? The current format is
-  // kind of weird. I'd personally lean towards writing them as a map.
-  @chpldoc.nodoc
-  proc startArray(writer: fileWriter, size: int) throws {
-    return new ArraySerializer(writer);
+  /*
+    Start serializing a map with a ``{``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of entries in the map.
+
+    :returns: A new MapSerializer
+  */
+  proc startMap(writer: fileWriter, size: int) throws {
+    writer._writeLiteral("{");
+    return new MapSerializer(writer);
   }
 
+  /*
+    Returned by ``startMap`` to enable serializing maps.
+
+    Maps are serialized as a comma-separated series of pairs between curly
+    braces. For example, the keys ``1``, ``2``, and ``3`` with values
+    corresponding to their squares would be serialized as:
+
+    ::
+
+      {1: 1, 2: 4, 3: 9}
+
+    Empty maps be serialized as ``{}``.
+  */
   record MapSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``key``.
+
+      Adds a leading comma if this is not the first pair in the map.
+    */
     proc ref writeKey(const key: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2843,28 +3095,21 @@ record defaultSerializer {
       writer.write(key);
     }
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``val``, preceded by a colon.
+    */
     proc writeValue(const val: ?) throws {
       writer._writeLiteral(": ");
       writer.write(val);
     }
 
-    @chpldoc.nodoc
+    /*
+      End serialization of the current map with a ``}``
+    */
     proc endMap() throws {
       writer._writeLiteral("}");
     }
   }
-
-  // Map helpers
-  @chpldoc.nodoc
-  proc startMap(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("{");
-    return new MapSerializer(writer);
-  }
-
-  // TODO: How should we handle types that don't have a format-specific
-  // representation, like domains or ranges? Is there a way we can determine
-  // that such types should just be printed inside a string for compatibility?
 }
 
 @deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
