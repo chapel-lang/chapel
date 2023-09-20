@@ -3,9 +3,9 @@
 .. default-domain:: chpl
 
 
-========================================
-Interface in the Chapel Standard Library
-========================================
+=========================================
+Interfaces in the Chapel Standard Library
+=========================================
 
 Interfaces in Chapel are similar to a feature of the same name in object-oriented
 languages such as Java, and to `traits in Rust <https://doc.rust-lang.org/book/ch10-02-traits.html>`_.
@@ -87,7 +87,7 @@ interface is typically called a `witness`.
 
 When a type is marked as implementing an interface, the Chapel compiler will
 ensure that it satisfies all of the interface's requirements. The compiler will
-do so by checking the current scope, and resolving any functions that fit the
+do so by checking the current scope and resolving any functions that fit the
 interface criteria. Note that because only the current scope is searched,
 methods defined in other files (and not made available by a ``use`` or ``import``
 statement) cannot be used as witnesses for an interface.
@@ -183,7 +183,7 @@ reduce the boilerplate for types that don't require custom logic. For some
 interfaces (described in this section), the compiler will also automatically
 generate an implementation if the required methods were generated.
 
-For or instance, consider the following snippet:
+For instance, consider the following snippet:
 
 .. code-block:: chapel
 
@@ -200,7 +200,7 @@ domain and printed out using ``writeln``. Using these features requires the
 record to be hashable and serializable, respectively. However, the user was
 not required to manually implement ``hashable`` and ``writeSerializable``.
 
-Generally (and with the exception of transitory measures; see `Migration Support`_),
+Generally (except for transitory measures; see `Migration Support`_),
 the compiler will not generate methods if a user-defined method with
 the same name exists; it will therefore also not generate the corresponding
 interface. Additionally, certain other situations will stop the compiler from

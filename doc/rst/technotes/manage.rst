@@ -19,7 +19,7 @@ keyword to open the statement instead of ``with``:
 The ``manage`` statement accepts a `manager` (the `myManager()` call
 in the above example). The statement calls a special method on the
 manager which lets it perform actions before executing the managed
-block. In order of a type to be recognized as a valid manager, it must
+block. For a type to be recognized as a valid manager, it must
 implement the ``contextManager`` interface.
 
 The manager may optionally return a `resource`. If a developer wants
