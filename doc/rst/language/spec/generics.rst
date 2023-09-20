@@ -1036,7 +1036,7 @@ communicates to a reader of the code that ``T`` is a generic type.
 
 Marking is not necessary for the built-in generic types listed in
 :ref:`Built_in_Generic_Types`. For fully defaulted generic types
-(:ref:`_Fully_Defaulted_Generic_Types`), marking indicates the generic
+(:ref:`Fully_Defaulted_Generic_Types`), marking indicates the generic
 type rather than the instantiation with the defaults.
 
 Otherwise, generic types used in the following situations should be
