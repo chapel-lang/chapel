@@ -8423,6 +8423,7 @@ void resolveInitVar(CallExpr* call) {
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
                                                      definedConst);
+    bool wasSplitInit = call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT);
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -8432,6 +8433,13 @@ void resolveInitVar(CallExpr* call) {
       // since the initCopy might be removed later in compilation.
       inTryResolve++;
       tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
+      if (wasSplitInit && dst->type->symbol->hasFlag(FLAG_GENERIC)) {
+        // var tup:_tuple=(1,); => works and dst->type==dtUnknown here
+        // var tup:_tuple; tup=(1,); => 'tup' would keep its generic type
+        // without this adjustment; so we mimic the working case
+        dst->type = dtUnknown;
+      }
 
       resolveExpr(initCopy);
       resolveMove(call);
@@ -14177,6 +14185,12 @@ static void replaceRuntimeTypeVariableTypes() {
       // mapping is stored in `valueToRuntimeTypeMap`. We probably want RTT for
       // arrayviews as well.
       if (!rt) {
+        if (def->sym->type->symbol->hasFlag(FLAG_GENERIC)) {
+          // Also, ignore symbols with still-generic types, ex.:
+          //proc f():(domain(?),int) do return (LocaleSpace,0); writeln(f);
+          continue;
+        }
+
         rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
       }
       // This assert might fail for code that is no longer traversed
