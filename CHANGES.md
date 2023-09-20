@@ -20,13 +20,18 @@ New Language Features
    see TODO)
 * added support for an array creation interface that throws if out of memory  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.tryCreateArray)
+* added support for applying attributes to loops
 
 Language Feature Improvements
 -----------------------------
 * added new routines to create multidimensional arrays from C pointers
   (see TODO)
+* improved handling of intents on array formals in extern functions
 * added promoted casts from array-of-`T` to `T` without a cast from `T` to `T`
 * first-class procedures are now printed similarly to Chapel's syntax
+* added support for a new `bulkAddNoPreserveInds()` method to sparse domains  
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html?highlight=bulkadd#ChapelDomain.bulkAddNoPreserveInds)
+* improved support for casts in formal argument type expressions
 
 Syntactic / Naming Changes
 --------------------------
@@ -40,6 +45,10 @@ Syntactic / Naming Changes
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
+* began changing the default argument/task intent for arrays to `const`  
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
+* began changing the default receiver intent for records to `const`  
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
 * built-in hashing now relies on the `hashable` interface
   (see TODO)
 * context managers now rely on the `contextManager` interface
@@ -49,8 +58,18 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * marked `scan` unstable due to uncertainty about inclusive/exclusive choice
+* marked explicit calls to `this()` methods as unstable
+* marked serial `these()` iterators taking arguments as unstable
 * marked default initialization of low- and high-bounded ranges as unstable
   (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#default-values)
+* marked `extern` procedures with array arguments as unstable  
+* marked the `[string|bytes].createBorrowingBuffer` factory method unstable  
+  (see https://chapel-lang.org/docs/1.32/language/spec/strings.html#String.string.createBorrowingBuffer  
+  and https://chapel-lang.org/docs/1.32/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer)
+* deprecated returning `sync`, `single`, or `atomic` by value
+* deprecated relying on default initializers for `sync`, `single`, and `atomic`
+* deprecated the `owned.borrow` type method
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#OwnedObject.owned.borrow)
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the default cast from arrays to `string`
@@ -59,6 +78,8 @@ Deprecated / Unstable / Removed Language Features
 * removed support for variable-width `bool` types and related queries
 * made importing tertiary methods by naming their type unstable  
   (e.g., `import IO.string;` is no longer stable)
+* removed the `preserveInds` argument to `bulkAdd` on sparse domains  
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html?highlight=bulkadd#ChapelDomain.bulkAdd)
 
 Namespace Changes
 -----------------
@@ -71,6 +92,7 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* marked the 'Random', 'CommDiagnostics', and 'Communication' modules unstable
 * added `binarySerializer` and `binaryDeserializer` types to the 'IO' module
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binarySerializer
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binaryDeserializer)
@@ -85,12 +107,15 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* marked all package modules as being unstable  
+  (see https://chapel-lang.org/docs/1.32/modules/packages.html)
 * added `isEye` and `isZero()` routines to the 'LinearAlgebra' package module  
   (see https://chapel-lang.org/docs/1.32/modules/packages/LinearAlgebra.html#LinearAlgebra.isEye  
    and https://chapel-lang.org/docs/1.32/modules/packages/LinearAlgebra.html#LinearAlgebra.isZero)
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
+* marked all domain maps other than `blockDist` and `cyclicDist` as unstable
 * converted standard distributions into records, removing the need for `dmap`  
   (e.g., see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html  
    and https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html)
@@ -160,6 +185,42 @@ Name Changes in 'Math'-related Libraries
 * renamed `Math.ln_2` to `Math.ln2` and `Math.ln_10` to `Math.ln10`
   (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ln2)
 
+Name Changes in the 'BigInteger' module
+---------------------------------------
+* generally unified argument names in these routines to 'x', 'y', ...
+* renamed the enum `round` to `roundingMode`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.roundingMode)
+* renamed `[set|tst|com|clr]bit()` to `[set|get|toggle|clear]Bit()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.bigint.setBit)
+* renamed `divQ()`/`divR()`/`divQR()` to `div()`/`rem()`/`divRem()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.divQ)
+* renamed `divexact()` to `divExact()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.divExact)
+* renamed `scan[0|1]()` to `findNext[0|1]()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.bigint.findNext0)
+* renamed `popcount()` to `popCount()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.bigint.popCount)
+* renamed `ior()` to `or()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.or)
+* renamed `[root|sqrt]rem()` to `[root|sqrt]Rem()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.rootRem
+  and https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.sqrtRem)
+* renamed `[add|sub]mul()` to `[add|sub]Mul()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.addMul
+  and https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.subMul)
+* renamed `hamdist()` to the now unstable `hammingDistance()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.bigint.hammingDistance)
+* renamed `nextprime()` to the now unstable `nextPrime()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.nextPrime)
+* renamed `lucnum[2]()` to the now unstable `lucNum[2]()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.lucNum)
+* renamed `mul_2exp()` to the now unstable `mul2Exp()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.mul2Exp)
+* renamed `divQ2Exp()` to the now unstable `div2Exp()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.div2Exp)
+* renamed `divR2Exp()` to the now unstable `rem2Exp()`  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.rem2Exp)
+
 Name Changes in Libraries
 -------------------------
 * renamed all serializer/deserializer types to use camelCasing  
@@ -216,6 +277,9 @@ Deprecated / Unstable / Removed 'IO'-related Library Features
 * removed the deprecated `.seek()` method overloads on `file[Reader|Writer]`
 * removed deprecated `%<` and `%>` format specifiers for designating endianness
 * removed the deprecated overload of `file.path` that provided a relative path
+* removed the deprecated `openMemFile()` and `[read|write]Bits()` procedures
+* removed the deprecated `openreader()` and `openwriter()` procedures
+* removed the deprecated types `iomode`, `ioBits`, and `ioChar`
 
 Deprecated / Unstable / Removed 'Math'-related Library Features
 ---------------------------------------------------------------
@@ -289,6 +353,11 @@ Deprecated / Unstable / Removed Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 * marked `Reflection.getRoutineName()` unstable within first-class procedures
 * deprecated the transitional `BigInteger.bigintInitThrows` config param
+* deprecated `BigInteger.get_str()` in favor of a cast to `string`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
+* marked several 'BigInteger' procedures as unstable
+  (i.e., `jacobi()`, `legendre()`, `kronecker()`, `gcd()`, `lcm()`, `fac()`,
+   `bin()`, `fib()`, `fib2()`, `probablyPrime()`)
 * removed the deprecated `BigInteger.Round` enum
 * removed the deprecated `bigint` initializers that halted/returned error codes
 * removed the deprecated `bigint.mpzStruct()` method
@@ -297,6 +366,10 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `bigint.powm()` method
 * removed the deprecated `bigint.sizeinbase()` and `.size()` methods
 * removed the deprecated `bigint.get_d_2exp()` method
+* removed several deprecated procedures from 'BigInteger'
+  (i.e., `scan0())`, `scan1()`, `divexact()`, qcdext()`, `probab_prime_p()`,
+   `divisible_[2xp_]p()`, `congruent_[2exp_]p()`, `div_r()`, `div_qr()`,
+   `div_[q|r]_2exp()`)
 * removed deprecated `c_sizeof()` signature with formal name `x`
 * removed a `regex.matches()` overload with deprecated arguments
 * removed the deprecated `regex.compile()` type method
@@ -343,6 +416,13 @@ Language Specification Improvements
 -----------------------------------
 * documented the `require` statement  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-require-statement)
+* simplified the explanation of default intents
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
+* adjusted the default type of `owned` and `shared` to be `const`  (TODO: ???)
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#owned-default-intent
+  and https://chapel-lang.org/docs/1.32/language/spec/classes.html#shared-default-intent)
+* reformatted the classes section to hide implementation details
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html)
 * added a link between the `%` documentation and `AutoMath.mod()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/expressions.html#modulus-operators)
 
@@ -364,6 +444,11 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#locking-behavior-of-filereaders-and-filewriters)
 * removed references to file descriptors in `stdin`/`stdout`/`stderr` docs  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.stdin)
+* refactored documentation for `IO.ioMode` and `IO.ioendian`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode
+  and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioendian)
+* refactored `where` clauses in `IO` to improve the generated documentation
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html)
 * improved several aspects of the 'Math' module documentation:
   - added missing documentation for arguments of `AutoMath.isClose()`  
     (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isClose)
@@ -380,6 +465,13 @@ Other Documentation Improvements
   - added a link between `Math.exp()`/`Math.expm1()` and `Math.e`  
     (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.exp  
      and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.expm1)
+* refactored and expanded `BigInteger` documentation to be more comprehensive
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html)
+* refactored documentation for `DynamicIters.Method`, and `Subprocess.pipeStyle`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/DynamicIters.html#DynamicIters.Method
+  and https://chapel-lang.org/docs/1.32/modules/standard/Subprocess.html#Subprocess.pipeStyle)
+
+
 * fixed warnings in 'Map' that incorrectly referred to the `set` type
 * updated docs to mention `arm64` as a synonym for `aarch64`  
   (see TODO)
@@ -410,6 +502,8 @@ Portability / Platform-specific Improvements
 
 Compiler Improvements
 ---------------------
+* added `@llvm.assertVectorized` and `@llvm.metadata` as attributes on loops  
+  (see TODO)
 
 Compiler Flags
 --------------
@@ -426,6 +520,7 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * simplified error formatting when compiling C code within an `extern` block
+* improved errors when calling `Reflection.getFieldRef()` on an internal type  
 * fixed incorrect underlining of string literals in detailed error messages
 
 Bug Fixes
@@ -433,9 +528,12 @@ Bug Fixes
 * fixed importing tertiary methods by naming a builtin type like `string`
 * fixed a bug in which `CHPL_UNWIND` could not be overridden on some platforms
 * fixed internal errors when using tuples as formal or return types in FCPs
+* fixed declaring a variable with an explicitly generic type
+  (e.g., `var d: domain(?) = {1..5}` now works)
 * fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
 * fixed a bug when using array type expression actuals within loop bodies
+* removed extra borrow when casting from a managed class to an unmanaged class
 
 Bug Fixes for Build Issues
 --------------------------
@@ -449,13 +547,18 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed `regex.split()` when matching to a pattern with an empty group
+* fixed error-checking logic for `regex` that was being optimized away
 * fixed a bug where `%r`/`%n` ignored precision arguments for integer values
 * fixed bug that prevented deserialization of `bytes` in JSON and CHPL formats
 * fixed bug where the `JsonDeserializer` could fail to parse a list
+* removed unintended warning when calling `Types.isCopyableType()` on a `sync`
 
 Bug Fixes for Tools
 -------------------
 * fixed several bugs where `chpldoc` did not handle unstable warnings correctly
+* fixed procedure signatures not rendering correctly in `chpldoc` HTML output
+* fixed documentation-generation script for distributions to preserve warnings
 
 Third-Party Software Changes
 ----------------------------
@@ -473,6 +576,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Module changes
 ------------------------------------------
+* improved the `BigInteger` module organization to reduce maintenance burden
 
 Developer-oriented changes: Performance improvements
 ----------------------------------------------------
@@ -482,6 +586,10 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added `--llvm-remarks[-function]` to report LLVM optimization information  
+  (see https://chapel-lang.org/docs/1.32/technotes/llvm.html#inspecting-llvm-optimizations)
+* improved `--log-module` to support logging multiple modules at a time
+* removed the broken `--log-node` command
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
@@ -519,6 +627,10 @@ Developer-oriented changes: Tool Improvements
 * improved how `chpldoc` generates module documentation:
   - `where`-clauses are now printed out as part of a routine's signature
   - individual constants within an `enum` can now have their own documentation
+* added `:enum[constant]:` to the list of 'chpldoc'-supported inline markup  
+  (see https://chapel-lang.org/docs/1.32/tools/chpldoc/chpldoc.html#inline-markup-2)
+* added support for Chapel AST syntax highlighting
+* added sphinx message filter for `:enumconstant:`
 
 Developer-oriented changes: Utilities
 -------------------------------------
