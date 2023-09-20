@@ -1,0 +1,1 @@
+readWriteMultidimArray-old.chpl:13: error: writeBinary() only supports local, rectangular, non-strided arrays or simple types
