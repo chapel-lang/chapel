@@ -170,8 +170,8 @@ Other Attributes
       proc foo() { }
 
 * ``@llvm.assertVectorized`` is an experimental attribute which can be applied
-  to all statement level loops. When added to a loop, it applies a post-codegen
-  check for the LLVM backend to ensure the loop was *vectorized*.
+  to all statement-level loops. When used on a loop, it applies a post-codegen
+  check for the LLVM backend to ensure the loop was vectorized.
   If the loop is not vectorized, a compile time warning will be emitted.
   This is based on LLVM's definition for a successful vectorization and
   the result may not actually contain vector instructions.
@@ -186,7 +186,7 @@ Other Attributes
 * ``@llvm.metadata`` is an experimental attribute which can be used to adjust
   the code generation when using the LLVM backend.
   It can take any number of arguments which are either string literals or
-  2-tuples (single element tuples of string literals can be used as a
+  2-tuples (1-tuples of string literals can be used as a
   convenience). The first element of the 2-tuple must be a string literal and
   the second element can be a string literal, an int literal, a bool literal,
   or another valid 2-tuple. The arguments are encoded directly
