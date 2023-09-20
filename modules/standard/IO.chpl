@@ -8445,7 +8445,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
-  compilerError("writeBinary() only supports local, rectangular, non-strided arrays or simple types");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
 
 
