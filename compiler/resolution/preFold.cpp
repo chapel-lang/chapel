@@ -1241,6 +1241,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_COERCE: {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (dtDomain && se->symbol() == dtDomain->symbol) {
+        // coercing a domain to 'domain(?)' is a no-op
+        Type* from = call->get(1)->getValType();
+        if (! from->symbol->hasFlag(FLAG_DOMAIN))
+          USR_FATAL(call, "cannot coerce '%s' to 'domain(?)'",
+                    toString(from));
+        retval = call->get(1);
+        call->replace(retval->remove());
+      }
+    }
+    break;
+  }
+
   case PRIM_IS_ATOMIC_TYPE: {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
