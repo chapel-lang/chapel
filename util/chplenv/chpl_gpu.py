@@ -16,11 +16,10 @@ def _validate_rocm_version():
     return _validate_rocm_version_impl()
 
 class gpu_type:
-    def __init__(self, sdk_path_env, compiler, bin_depth, default_arch,
-                 llvm_target, runtime_impl, version_validator):
+    def __init__(self, sdk_path_env, compiler, default_arch, llvm_target,
+                 runtime_impl, version_validator):
         self.sdk_path_env = sdk_path_env
         self.compiler = compiler
-        self.bin_depth = bin_depth
         self.default_arch = default_arch
         self.llvm_target = llvm_target
         self.runtime_impl = runtime_impl
@@ -33,21 +32,18 @@ class gpu_type:
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
                        compiler="nvcc",
-                       bin_depth=2,
                        default_arch="sm_60",
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
                        version_validator=_validate_cuda_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
-                    bin_depth=3,
                     default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
                     version_validator=_validate_rocm_version),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
-                    bin_depth=-1,
                     default_arch="",
                     llvm_target="",
                     runtime_impl="cpu",
@@ -141,9 +137,11 @@ def get_sdk_path(for_gpu):
                                                                       gpu.compiler])
 
     if exists and returncode == 0:
+        # Walk up from directories from the one containing the gpu compiler
+        # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
+        # `runtime_impl` (e.g `cuda` or `rocm`)
         real_path = os.path.realpath(my_stdout.strip()).strip()
         path_parts = real_path.split("/")
-        # chpl_sdk_path = "/".join(real_path.split("/")[:-gpu.bin_depth])
         chpl_sdk_path = "/"
         for part in path_parts:
             if len(part) == 0: continue
