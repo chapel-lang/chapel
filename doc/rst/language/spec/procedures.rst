@@ -491,6 +491,66 @@ argument to the type of the formal.
 The formal can be modified within the function, but such changes are
 local to the function and not reflected back to the call site.
 
+This example shows a case where the ``in`` intent accepts a record
+but the code does not copy initialize:
+
+  *Example (copy-elision-in.chpl)*
+
+   .. BLOCK-test-chapelpre
+
+      record R {
+        var x: int = 0;
+        proc init() {
+          this.x = 0;
+          writeln("init (default)");
+        }
+        proc init(arg:int) {
+          this.x = arg;
+          writeln("init ", arg, " ", arg);
+        }
+        proc init=(other: R) {
+          this.x = other.x;
+          writeln("init= ", other.x);
+        }
+      }
+      operator R.=(ref lhs:R, rhs:R) {
+        writeln("lhs ", lhs.x, " = rhs ", rhs.x);
+        lhs.x = rhs.x;
+      }
+
+
+   .. code-block:: chapel
+
+      proc makeRecord() {
+        return new R(); // creates a new R record
+      }
+
+      proc acceptWithIn(in arg) { }
+
+      proc elideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' is elided because 'x' is used again
+        writeln("block ending");
+      }
+      elideCopy();
+
+      proc noElideCopy() {
+        var x = makeRecord();
+        acceptWithIn(x); // copy to 'in arg' remains because 'x' is used again
+        writeln(x); // 'x' used here
+        writeln("block ending");
+      }
+      noElideCopy();
+
+   .. BLOCK-test-chapeloutput
+
+      init (default)
+      block ending
+      init (default)
+      init= 0
+      (x = 0)
+      block ending
+
 
 .. _The_Out_Intent:
 
