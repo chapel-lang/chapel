@@ -8,6 +8,7 @@ CHAMPS_PATCH_PATH=$CHAMPS_COMMON_DIR/patches
 CHAMPS_GRAPH_PATH=$CHAMPS_COMMON_DIR/graph-infra
 CHAMPS_DATA_PATH=$CHAMPS_COMMON_DIR/data
 CHAMPS_CFG_PATH=$CHAMPS_COMMON_DIR/configs
+CHAMPS_DEP_PATH=$CHAMPS_COMMON_DIR/deps-manual
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 source $CWD/functions.bash
@@ -42,6 +43,17 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
   apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
 fi
 
+# copy the prepartitoned grid for 16 locales into scratch space
+cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
+cp $CHAMPS_CFG_PATH/flow.in $CHAMPS_HOME/
+cp -r $CHAMPS_DEP_PATH $CHAMPS_HOME/
+export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_HOME/deps-manual
+
+echo "contents of $CHAMPS_HOME"
+ls $CHAMPS_HOME
+
+echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
+
 # Compile CHAMPS executables
 #test_compile prep
 test_compile flow
@@ -68,9 +80,7 @@ test_compile flow
 # cp $CHAMPS_DATA_PATH/CRMHL_coarse.cgns $CHAMPS_HOME/
 # test_run prep 1
 
-# copy the prepartitoned grid for 16 locales into scratch space
-cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
-cp $CHAMPS_CFG_PATH/flow.in $CHAMPS_HOME/
+
 test_run flow 16
 
 $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"

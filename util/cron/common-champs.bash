@@ -68,11 +68,11 @@ export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$INTELROOT/lib/intel64
 export MPIROOT=$(dirname $(dirname $(which mpicc)))
 export HDF5ROOT=$(dirname $(dirname $(which h5pcc)))
 
-CHAMPS_DEP_DIR=$CHAMPS_COMMON_DIR/deps-manual
-if [ -d "$CHAMPS_DEP_DIR" ]; then
-  export METISROOT=${METISROOT:-$CHAMPS_DEP_DIR}
-  export CGNSROOT=${CGNSROOT:-$CHAMPS_DEP_DIR}
-  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_DEP_DIR/lib
+CHAMPS_DEP_PATH=$CHAMPS_COMMON_DIR/deps-manual
+if [ -d "$CHAMPS_DEP_PATH" ]; then
+  export METISROOT=${METISROOT:-$CHAMPS_DEP_PATH}
+  export CGNSROOT=${CGNSROOT:-$CHAMPS_DEP_PATH}
+  export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_DEP_PATH/lib
 fi
 
 export CPATH=$CPATH:$MPIROOT/include
