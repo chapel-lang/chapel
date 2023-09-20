@@ -3831,15 +3831,29 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'r.withDeserializer(defaultDeserializer)`
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileReader`` configured to use
+  ``deserializerType`` for deserialization. The provided ``deserializerType``
+  must be able to be default-initialized.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileReader``.
+*/
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this._kind, this.locking, deserializerType) {
   var des : deserializerType;
   return withDeserializer(des);
 }
 
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileReader`` configured to use
+  ``deserializer`` for deserialization.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileReader``.
+*/
 proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, this.locking, dt) {
   var ret = new fileReader(this._kind, this.locking, dt);
   ret._deserializer = new shared _serializeWrapper(dt, deserializer);
@@ -3852,15 +3866,29 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, 
   return ret;
 }
 
-// Convenience for forms like 'w.withSerializer(defaultSerializer)`
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileWriter`` configured to use
+  ``serializerType`` for serialization. The provided ``serializerType`` must be
+  able to be default-initialized.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileWriter``.
+*/
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this._kind, this.locking, serializerType) {
   var ser : serializerType;
   return withSerializer(ser);
 }
 
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileWriter`` configured to use
+  ``serializer`` for serialization.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileWriter``.
+*/
 proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this.locking, st) {
   var ret = new fileWriter(this._kind, this.locking, st);
   ret._serializer = new shared _serializeWrapper(st, serializer);
