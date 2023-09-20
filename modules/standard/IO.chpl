@@ -2662,10 +2662,10 @@ record defaultSerializer {
   /*
     Serialize ``val`` with ``writer``.
 
-    Numeric values are serialized using the same format as ``%i`` for integers
-    and ``%r`` for ``real`` numbers. Complex numbers are serialized as ``%z``.
-    Please refer to :ref:`the section on Formatted IO<about-io-formatted-io>`
-    for more information.
+    Numeric values are serialized as though they were written with the format
+    as ``%i`` for integers and ``%r`` for ``real`` numbers. Complex numbers are
+    serialized as ``%z``. Please refer to :ref:`the section on Formatted
+    IO<about-io-formatted-io>` for more information.
 
     Booleans are serialized as the literal strings ``true`` or ``false``.
 
@@ -2677,15 +2677,15 @@ record defaultSerializer {
     with an enum like ``enum colors {red, green blue}``, the value ``red``
     would simply be serialized as ``red``.
 
-    The ``nil`` value is serialized as the text ``nil``. Nilable classes that
-    are actually ``nil`` will also be serialized as the text ``nil``.
+    The ``nil`` value and nilable class variables storing ``nil`` will be
+    serialized as the text ``nil``.
 
     Classes and records will have their ``serialize`` method invoked, passing
     in ``writer`` and this Serializer as arguments. Please see the
     :ref:`serializers technote<ioSerializers>` for more.
 
-    Classes and records are expected to implement the `writeSerializable`
-    interface. The `serializable` interface is also acceptable.
+    Classes and records are expected to implement the ``writeSerializable``
+    or ``serializable`` interface.
 
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
@@ -2707,7 +2707,7 @@ record defaultSerializer {
 
   // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
-    Start serializing a class by writing a ``{``.
+    Start serializing a class by writing the character ``{``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg name: The name of the class type.
@@ -2721,7 +2721,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a record by writing a ``(``.
+    Start serializing a record by writing the character ``(``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg name: The name of the record type.
@@ -2779,9 +2779,9 @@ record defaultSerializer {
     }
 
     /*
-      Start serializing a nested class inside the current class. In the
-      "default" format, inheritance is ignored and parent fields are printed
-      before child fields. For example, the following classes with values
+      Start serializing a nested class inside the current class. In this format
+      inheritance is not represented and parent fields are printed before child
+      fields. For example, the following classes with values
       ``x=5`` and ``y=2.0``:
 
       .. code-block:: chapel
@@ -2815,7 +2815,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current class by writing a ``}``
+      Ends serialization of the current class by writing the character ``}``
 
       .. note:: It is an error to call methods on an AggregateSerializer after
                 invoking 'endClass'.
@@ -2828,7 +2828,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current record by writing a ``)``
+      Ends serialization of the current record by writing the character ``)``
 
       .. note:: It is an error to call methods on an AggregateSerializer after
                 invoking 'endRecord'.
@@ -2839,7 +2839,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a tuple by writing a ``(``.
+    Start serializing a tuple by writing the character ``(``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the tuple.
@@ -2888,7 +2888,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current tuple by writing a ``)``.
+      Ends serialization of the current tuple by writing the character ``)``.
 
       Adds a comma between the last value and ``)`` if there was only one
       element.
@@ -2902,7 +2902,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a list by writing a ``[``.
+    Start serializing a list by writing the character ``[``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the list.
@@ -2947,7 +2947,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current list by writing a ``]``.
+      Ends serialization of the current list by writing the character ``]``.
     */
     proc endList() throws {
       writer._writeLiteral("]");
@@ -3056,7 +3056,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a map by writing a ``{``.
+    Start serializing a map by writing the character ``{``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of entries in the map.
@@ -3072,8 +3072,9 @@ record defaultSerializer {
     Returned by ``startMap`` to provide the API for serializing maps.
 
     Maps are serialized as a comma-separated series of pairs between curly
-    braces. For example, the keys ``1``, ``2``, and ``3`` with values
-    corresponding to their squares would be serialized as:
+    braces. Pairs are serialized with a ``:`` separating the key and value. For
+    example, the keys ``1``, ``2``, and ``3`` with values corresponding to
+    their squares would be serialized as:
 
     ::
 
@@ -3100,7 +3101,7 @@ record defaultSerializer {
     }
 
     /*
-      Serialize ``val``, preceded by a colon.
+      Serialize ``val``, preceded by a ``:``.
     */
     proc writeValue(const val: ?) throws {
       writer._writeLiteral(": ");
@@ -3108,7 +3109,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current map by writing a ``}``
+      Ends serialization of the current map by writing the character ``}``
     */
     proc endMap() throws {
       writer._writeLiteral("}");
@@ -3127,13 +3128,13 @@ type DefaultSerializer = defaultSerializer;
 
   Otherwise, please refer to :type:`defaultSerializer` for a description
   of the default IO format. Individual methods on this type may clarify
-  behavior specific to deserialization
+  behavior specific to deserialization.
 
   .. note::
 
     Prior to the 1.32 release and the advent of the 'serializers' feature, the
     default implementation for reading classes and records permitted reading
-    fields out of order. This functionality is not present in the
+    fields out of order. This functionality is not supported by the
     ``defaultDeserializer``.
 
     For an unspecified amount of time this module will retain the ability to
@@ -3221,7 +3222,7 @@ record defaultDeserializer {
   }
 
   /*
-    Start deserializing a class by reading a ``{``.
+    Start deserializing a class by reading the character ``{``.
 
     :arg reader: The ``fileReader`` to use when deserializing.
     :arg name: The name of the class type
@@ -3234,7 +3235,7 @@ record defaultDeserializer {
   }
 
   /*
-    Start deserializing a record by reading a ``(``.
+    Start deserializing a record by reading the character ``(``.
 
     :arg reader: The ``fileReader`` to use when deserializing.
     :arg name: The name of the record type
@@ -3297,7 +3298,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current class by reading a ``}``.
+      End deserialization of the current class by reading the character ``}``.
     */
     proc endClass() throws {
       if !_parent then
@@ -3305,7 +3306,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current record by reading a ``)``.
+      End deserialization of the current record by reading the character ``)``.
     */
     proc endRecord() throws {
       reader.readLiteral(")");
@@ -3313,7 +3314,7 @@ record defaultDeserializer {
   }
 
   /*
-    Start deserializing a tuple by reading a ``(``.
+    Start deserializing a tuple by reading the character ``(``.
 
     :arg reader: The ``fileReader`` to use when deserializing.
 
@@ -3354,7 +3355,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current tuple by reading a ``)``.
+      End deserialization of the current tuple by reading the character ``)``.
     */
     proc endTuple() throws {
       reader.readLiteral(")");
@@ -3362,7 +3363,7 @@ record defaultDeserializer {
   }
 
   /*
-    Start deserializing a list by reading a ``[``.
+    Start deserializing a list by reading the character ``[``.
 
     :arg reader: The ``fileReader`` to use when deserializing.
 
@@ -3406,7 +3407,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current list by reading a ``]``.
+      End deserialization of the current list by reading the character ``]``.
     */
     proc endList() throws {
       reader._readLiteral("]");
@@ -3503,7 +3504,7 @@ record defaultDeserializer {
   }
 
   /*
-    Start deserializing a map by reading a ``{``.
+    Start deserializing a map by reading the character ``{``.
 
     :arg reader: The ``fileReader`` to use when deserializing.
 
@@ -3565,7 +3566,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current map by reading a ``}``.
+      End deserialization of the current map by reading the character ``}``.
     */
     proc endMap() throws {
       reader._readLiteral("}");
@@ -3659,8 +3660,8 @@ record binarySerializer {
     :ref:`serializers technote<ioSerializers>` for more on the ``serialize``
     method.
 
-    Classes and records are expected to implement the `writeSerializable`
-    interface. The `serializable` interface is also acceptable.
+    Classes and records are expected to implement the ``writeSerializable``
+    interface. The ``serializable`` interface is also acceptable.
 
     .. note::
 
@@ -4284,7 +4285,7 @@ record binaryDeserializer {
     }
 
     /*
-      End deserialization of the current list by reading a ``]``.
+      End deserialization of the current list.
 
       :throws: A ``BadFormatError`` if there are remaining elements.
     */
