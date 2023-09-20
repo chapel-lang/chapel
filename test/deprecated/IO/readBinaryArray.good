@@ -1,7 +1,7 @@
-readBinaryArray.chpl:9: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
-readBinaryArray.chpl:14: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
-readBinaryArray.chpl:19: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
-readBinaryArray.chpl:25: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant
+readBinaryArray.chpl:9: warning: The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload
+readBinaryArray.chpl:14: warning: The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload
+readBinaryArray.chpl:19: warning: The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload
+readBinaryArray.chpl:25: warning: The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload
 false
 0 0 0 0 0 0 0 0
 true

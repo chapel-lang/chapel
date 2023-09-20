@@ -8651,11 +8651,8 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
     if EOF is reached before filling the array.
   * when ``true``: the new methods are called. These return an ``int`` with the
     number of values that were read.
-
-  This ``param`` can be set to true by compiling your program with
-  ``-sReadBinaryArrayReturnInt=true``
 */
-config param ReadBinaryArrayReturnInt = false;
+config param ReadBinaryArrayReturnInt = true;
 
 /*
    Read an array of binary numbers from a fileReader
@@ -8678,7 +8675,7 @@ config param ReadBinaryArrayReturnInt = false;
    :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size``
                                values are read.
 */
-@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
+@deprecated(notes="The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload")
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
     isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
@@ -8812,7 +8809,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    :throws UnexpectedEofError: Thrown if EOF is encountered before
                                ``data.size`` values are read.
 */
-@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
+@deprecated(notes="The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload")
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
     isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
