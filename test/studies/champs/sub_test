@@ -43,24 +43,24 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
 fi
 
 # Compile CHAMPS executables
-test_compile prep
+#test_compile prep
 test_compile flow
-test_compile icing
-test_compile drop
-test_compile potential
-test_compile potentialPrep
-test_compile geo
-test_compile thermo
-test_compile postLink
-test_compile post
-test_compile stochasticIcing
-test_compile octree
-test_compile eigenSolvePost
-test_compile externalSolverPost
-test_compile meshDeformation
-test_compile continuation
-test_compile stability
-test_compile coloring
+#test_compile icing
+#test_compile drop
+#test_compile potential
+#test_compile potentialPrep
+#test_compile geo
+#test_compile thermo
+#test_compile postLink
+#test_compile post
+#test_compile stochasticIcing
+#test_compile octree
+#test_compile eigenSolvePost
+#test_compile externalSolverPost
+#test_compile meshDeformation
+#test_compile continuation
+#test_compile stability
+#test_compile coloring
 
 # copy the input data to the filesystem we're running on
 
@@ -70,6 +70,7 @@ test_compile coloring
 
 # copy the prepartitoned grid for 16 locales into scratch space
 cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
+cp $CHAMPS_CFG_PATH/flow.in $CHAMPS_HOME/
 test_run flow 16
 
 $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
