@@ -22,9 +22,9 @@
 #include "Server.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
+#include <cinttypes>
 #include <iostream>
 #include <fstream>
-#include <inttypes.h>
 
 namespace chpldef {
 
