@@ -8445,7 +8445,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
-  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays or simple types");
 }
 
 
@@ -8484,7 +8484,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 {
-  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
 
 /*
@@ -8878,13 +8878,25 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 {
-  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
 }
 
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
 {
-  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
 }
 
 
