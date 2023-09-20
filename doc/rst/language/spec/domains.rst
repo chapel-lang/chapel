@@ -181,21 +181,21 @@ where ``named-expression-list`` allows specifying the values of ``rank``,
    *Example (typeFunctionDomain.chpl)*.
 
    The following declarations both create an uninitialized rectangular
-   domain with three dimensions, with ``int`` indices: 
+   domain with three dimensions, with ``int`` indices:
 
    .. code-block:: chapel
 
       var D1 : domain(rank=3, idxType=int, strides=strideKind.one);
       var D2 : domain(3);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(D1);
       writeln(D2);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -261,7 +261,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 
    *Example*.
 
-   In the code 
+   In the code
 
    .. code-block:: chapel
 
@@ -298,7 +298,7 @@ for type:
           A[i,j] = 7 * i**2 + j;
       writeln(A);
 
-   produces 
+   produces
 
    .. code-block:: printoutput
 
@@ -313,6 +313,16 @@ type and can be used to describe sets or to create dictionary-style
 arrays (hash tables). The type of indices of an associative domain, or
 its ``idxType``, can be any primitive type except ``void`` or any class
 type.
+
+
+   .. warning::
+
+      Associative domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+      Chapel provides stable `map` and `set` data types
+      [see modules :mod:`Set` and :mod:`Map`]
+      that can be used instead in many cases.
+
 
 .. _Associative_Domain_Types:
 
@@ -372,7 +382,7 @@ the indices does not match a compiler error will be issued.
    .. note::
 
       *Future*
-      
+
       Due to implementation of ``==`` over arrays it is currently not possible
       to use arrays as indices within an associative domain.
 
@@ -386,14 +396,14 @@ the indices does not match a compiler error will be issued.
    associative domain are iterated is not the same as their
    specification order.
 
-   This code 
+   This code
 
    .. code-block:: chapel
 
       var D : domain(string) = {"bar", "foo"};
       writeln(D);
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -480,6 +490,12 @@ parent domain.
 
 Sparse Subdomain Types and Values
 ---------------------------------
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
 
 .. code-block:: syntax
 

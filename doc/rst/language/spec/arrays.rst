@@ -241,6 +241,13 @@ list of index-to-value bindings within square brackets. It is expected
 that the indices in the listing match in type and, likewise, the types
 of values in the listing also match. A trailing comma is allowed.
 
+.. warning::
+
+   Associative domains and arrays are currently unstable.
+   Their functionality is likely to change in the future.
+   Chapel provides stable `map` and `set` data types
+   [see modules :mod:`Set` and :mod:`Map`]
+   that can be used instead in many cases.
 
 
 .. code-block:: syntax
@@ -882,6 +889,13 @@ the *zero value*, but we refer to it as the *implicitly replicated
 value* or *IRV* since it can take on any value of the array’s element
 type in practice including non-zero numeric values, a class reference, a
 record or tuple value, etc.
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
+
 
 An array declared over a sparse domain can be indexed using any of the
 indices in the sparse domain’s parent domain. If it is read using an
