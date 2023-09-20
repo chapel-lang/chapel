@@ -448,21 +448,21 @@ proc solveHelper(piece) {
         pieceNoMask = 1 << piece,
         maxRots = pieceCounts[piece][cell];
 
-  avail ^= pieceNoMask;
+  avail ^= pieceNoMask: uint;
   for rotation in 0..(maxRots-1) {
     if !((board & pieces[piece][cell][rotation]):bool) {
       solNums[depth] = piece;
       solMasks[depth] = pieces[piece][cell][rotation];
-      board |= pieces[piece][cell][rotation];
+      board |= pieces[piece][cell][rotation] : uint;
       if !boardHasIslands(nextCell[piece][cell][rotation], board) {
         solveLinear(1, nextCell[piece][cell][rotation],
                     board, avail, solNums, solMasks);
       }
-      board ^= pieces[piece][cell][rotation];
+      board ^= pieces[piece][cell][rotation] : uint;
     }
   }
 
-  avail ^= pieceNoMask;
+  avail ^= pieceNoMask : uint;
 }
 
 /* Calculate islands while solving the board. */
@@ -493,7 +493,7 @@ proc solveLinear(in depth, in cell, in board, in avail, ref solNums, ref solMask
     if !((avail & pieceNoMask):bool) then
       continue;
 
-    avail ^= pieceNoMask;
+    avail ^= pieceNoMask: uint;
 
     const maxRots = pieceCounts[piece][cell];
 
@@ -504,19 +504,19 @@ proc solveLinear(in depth, in cell, in board, in avail, ref solNums, ref solMask
         if depth == 9 {
           /* Solution found!!!!!11!!ONE! */
           recordSolution(solNums, solMasks);
-          avail ^= pieceNoMask;
+          avail ^= pieceNoMask : uint;
           return;
         }
-        board |= pieces[piece][cell][rotation];
+        board |= pieces[piece][cell][rotation] : uint;
         if !boardHasIslands(nextCell[piece][cell][rotation], board) {
           solveLinear(depth + 1, nextCell[piece][cell][rotation],
                       board, avail, solNums, solMasks);
         }
-        board ^= pieces[piece][cell][rotation];
+        board ^= pieces[piece][cell][rotation] : uint;
       }
     }
 
-    avail ^= pieceNoMask;
+    avail ^= pieceNoMask: uint;
   }
 }
 
