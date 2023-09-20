@@ -190,4 +190,21 @@ proc main() {
   var x = new unmanaged DefaultClass(new B((33, 3.3)));
   test(x, dcu);
   delete x, dcu;
+
+  // Make sure the standard types clear themselves before adding elements
+
+  {
+    var li = new list(int);
+    for i in 1..4 do li.pushBack(i);
+    var copy = li;
+    test(li, copy);
+  }
+
+  {
+    var m = new map(int, int);
+    for i in 1..4 do m.add(i, i**2);
+    var copy = new map(int, int);
+    for i in 5..7 do copy.add(i, i**2);
+    test(m, copy);
+  }
 }

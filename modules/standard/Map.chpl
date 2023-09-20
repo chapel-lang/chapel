@@ -639,6 +639,8 @@ module Map {
           keyType == bytes || valType == bytes) then
         compilerError("Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.");
 
+      this.clear();
+
       _enter(); defer _leave();
 
       var des = deserializer.startMap(r);
