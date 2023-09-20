@@ -1394,13 +1394,17 @@ the above rules will be checked with :math:`T(A_i)` == ``int``.
 Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given a set of candidate functions, the following steps are applied to
+Given a set of candidate functions, several steps are applied to
 remove candidates from the set. After the process completes, the
 remaining candidates in the set are the most specific functions.
 
-1. If any candidate is more visible (or shadows) another candidate,
-   discard all candidates that are less visible than (or shadowed by)
-   another candidate.
+Before applying these steps, if there both non-operator method candidates
+and non-operator non-method candidates, issue an ambiguity error without
+doing further candidate selection.
+
+1. If any non-method candidate is more visible (or shadows) another
+   non-method candidate, discard all non-method candidates that are less
+   visible than (or shadowed by) another non-method candidate.
 
 2. If at least one candidate requires promotion and at least one
    candidate does not use promotion, discard all candidates that use
