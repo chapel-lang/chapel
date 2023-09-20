@@ -791,7 +791,8 @@ module CTypes {
   /*
     Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
     :proc:`c_ptrToConst` is used for :type:`~String.string`,
-    :type:`~Bytes.bytes`, and class type arguments.
+    :type:`~Bytes.bytes`, and class type arguments. (The behavior of
+    :proc:`c_ptrTo` with array type arguments is unaffected.)
 
     The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
     underlying buffer of the ``string`` or ``bytes``, or to the heap instance of
