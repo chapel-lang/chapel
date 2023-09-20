@@ -22,6 +22,7 @@
 #include "Server.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
+#include <cinttypes>
 #include <iostream>
 #include <fstream>
 
@@ -89,7 +90,7 @@ Transport::Status Transport::readJson(Server* ctx, JsonValue& j) {
   }
 
   // Failed to parse.
-  ctx->verbose("Failed to parse JSON object of length: %lld\n", length);
+  ctx->verbose("Failed to parse JSON object of size: %" PRId64 "\n", length);
   ctx->trace("String is: %s\n", line.c_str());
   return ERROR_JSON_PARSE_FAILED;
 }

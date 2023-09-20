@@ -239,23 +239,32 @@ public:
     CHPL_BUMP_REVISION   = 1,
   };
 
-  /** Execute code with controlled access to the Chapel context. */
-  template <typename F, typename ...Ns>
-  auto withChapel(WithChapelConfig c, F&& f, Ns&&... ns)
-  -> decltype(f(&chapel_, std::forward<Ns>(ns)...)) {
+private:
+  inline void withChapelPrelude(WithChapelConfig c) {
     if (shouldGarbageCollect()) chapel_.collectGarbage();
     if (c & CHPL_BUMP_REVISION) {
       chapel_.advanceToNextRevision(shouldPrepareToGarbageCollect());
       ++revision_;
     }
+  }
+
+public:
+  /** Execute code with controlled access to the Chapel context. */
+  template <typename F, typename ...Ns>
+  auto withChapel(WithChapelConfig c, F&& f, Ns&&... ns)
+  -> decltype(f(&chapel_, std::forward<Ns>(ns)...)) {
+    withChapelPrelude(c);
     return f(&chapel_, std::forward<Ns>(ns)...);
   }
 
   /** Execute code with controlled access to the Chapel context. */
   template <typename F, typename ...Ns>
   auto withChapel(F&& f, Ns&&... ns)
-  -> decltype(withChapel(CHPL_NO_MASK, f, std::forward<Ns>(ns)...)) {
-    return withChapel(CHPL_NO_MASK, f, std::forward<Ns>(ns)...);
+  -> decltype(f(&chapel_, std::forward<Ns>(ns)...)) {
+
+    // Calling 'withChapel' leads to infinite instantiation under GCC...
+    withChapelPrelude(CHPL_NO_MASK);
+    return f(&chapel_, std::forward<Ns>(ns)...);
   }
 
   template <typename T>

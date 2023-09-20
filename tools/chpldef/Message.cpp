@@ -27,17 +27,20 @@
 
 namespace chpldef {
 
-/** Forward declare specializations so that they are instantiated. */
+/** Forward declare specializations so that they are instantiated. This
+    needs to be done so that these specializations are preferred by the
+    linker. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-  template chpl::owned<name__> name__::create(JsonValue id, Params p); \
+  template chpl::owned<name__> \
+  name__::create(JsonValue id, name__::Params p); \
   template chpl::owned<name__> \
   name__::createFromJson(JsonValue id, JsonValue j); \
   template opt<JsonValue> name__::pack() const; \
   template void name__::handle(Server* ctx); \
   template void name__::handle(Server* ctx, Response* r); \
-  template void name__::handle(Server* ctx, Result r); \
+  template void name__::handle(Server* ctx, name__::Result r); \
   template<> name__::ComputeResult \
-  name__::compute(Server* ctx, ComputeParams p); \
+  name__::compute(Server* ctx, name__::ComputeParams p); \
   template name__::~name__();
 #include "message-macro-list.h"
 #undef CHPLDEF_MESSAGE
@@ -450,19 +453,42 @@ public:
   }
 
   void logComputationEpilogue(const ComputeResult& cr) {
+    auto dsc = this->dsc();
+    auto fmt = this->fmt();
     if (cr.error != Message::OK) {
-      ctx_->message("The %s %s failed with code '%s'\n", dsc(), fmt().c_str(),
+      ctx_->message("The %s %s failed with code '%s'\n", dsc, fmt.c_str(),
                     Message::errorToString(cr.error));
     } else {
-      ctx_->message("The %s '%s' is complete...\n", dsc(), fmt().c_str());
+      ctx_->message("The %s '%s' is complete...\n", dsc, fmt.c_str());
+    }
+  }
+
+  // This pattern of constexpr folding is used over specialization because
+  // of defect CWG727 (cannot specialize in class scope) which still has
+  // not been fixed by GCC.
+  template <Message::Behavior B>
+  void issueComputationCall() {
+    if constexpr (B == Message::INCOMING_REQUEST) {
+      computeIncomingRequest();
+    } else if constexpr (B == Message::INCOMING_NOTIFY) {
+      computeIncomingNotify();
+    // Outbound messages cannot be handled without a result.
+    } else {
+      std::abort();
     }
   }
 
   template <Message::Behavior B>
-  void issueComputationCall() {}
+  void issueComputationCall(Result r) {
+    if constexpr (B == Message::OUTBOUND_REQUEST) {
+      computeOutboundRequest(std::move(r));
+    // Outbound notifications should never be handled.
+    } else {
+      std::abort();
+    }
+  }
 
-  template <>
-  void issueComputationCall<Message::INCOMING_REQUEST>() {
+  void computeIncomingRequest() {
     logComputationPrelude();
     auto cr = M::compute(ctx_, msg_->p);
     logComputationEpilogue(cr);
@@ -475,18 +501,13 @@ public:
     }
   }
 
-  template <>
-  void issueComputationCall<Message::INCOMING_NOTIFY>() {
-    issueComputationCall<Message::INCOMING_REQUEST>();
+  void computeIncomingNotify() {
+    computeIncomingRequest();
   }
 
-  template <Message::Behavior B>
-  void issueComputationCall(Result r) {}
-
-  template <>
-  void issueComputationCall<Message::OUTBOUND_REQUEST>(Result r) {
+  void computeOutboundRequest(Result r) {
     logComputationPrelude();
-    msg_->r = std::move(r);
+    std::swap(msg_->r, r);
     auto cr = M::compute(ctx_, msg_->r);
     logComputationEpilogue(cr);
     if (cr.isProgressingCallAgain) CHPLDEF_TODO();
