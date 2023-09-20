@@ -1107,19 +1107,39 @@ module CTypes {
 
   /*
     Returns a :type:`c_ptr` to any Chapel object.
-    Note that the existence of the :type:`c_ptr` has no impact of the lifetime
-    of the object. In many cases the object will be stack allocated and
-    could go out of scope even if this :type:`c_ptr` remains.
 
-    :arg x: the by-reference argument to get a pointer to. Domains are not
-            supported, and will cause a compiler error. Records, class
-            instances, integral, real, imag, and complex types are supported.
-            See overloads taking arrays, strings, bytes, or class variables
-            which provide special behavior for those types.
-    :returns: a pointer to the argument passed by reference
+    For most types, the returned :type:`c_ptr` will simply point to the memory
+    address of the Chapel variable, and have element type matching the type of
+    the passed-in variable. However, this procedure has special behavior for
+    variables of the following types, and will return a pointer that is
+    potentially more useful:
+
+    * ``array`` types: Returns a pointer to the first element of the array, with
+      pointer element type matching the array's element type.
+    * ``class`` types: Returns a ``c_ptr(void)`` to the heap instance of the
+      class variable.
+    * ``string`` type: Returns a ``c_ptr(c_uchar)`` to the underlying buffer of
+      the ``string``.
+    * ``bytes`` type: Returns a ``c_ptr(c_uchar)`` to the underlying buffer of
+      the ``bytes``.
+
+    To avoid this special behavior and just get the variable address naively
+    regardless of type, use :proc:`c_addrOf` instead. ``c_ptrTo`` has identical
+    behavior to ``c_addrOf`` on types other than those with special behavior
+    listed above.
+
+    Note that the existence of the ``c_ptr`` has no impact of the lifetime
+    of the object. In many cases the object will be stack allocated and
+    could go out of scope even if this ``c_ptr`` remains.
+
+    :arg x:   The by-reference argument to get a pointer to. Domains are not
+              supported, and will cause a compiler error.
+    :returns: A :type:`c_ptr` to the argument passed by reference, with address
+              and element type potentially depending on special behavior for the
+              the type as described above.
 
   */
-  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
+  inline proc c_ptrTo(ref x:?t) {
     if isDomainType(t) then
       compilerError("c_ptrTo domain type not supported");
     return c_addrOf(x);
@@ -1183,11 +1203,12 @@ module CTypes {
   }
 
   /*
-    Returns a :type:`c_ptr` to the address of any chapel object.
+    Returns a :type:`c_ptr` to the address of any Chapel object.
 
-    Note that the behavior of this procedure is identical to :func:`c_ptrTo`
+    Note that the behavior of this procedure is identical to :proc:`c_ptrTo`
     for scalar types and records. It only differs for arrays, strings, bytes,
-    and class variables.
+    and class variables; see documentation of :proc:`c_ptrTo` for special
+    behavior on those types.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
