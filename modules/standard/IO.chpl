@@ -8651,6 +8651,10 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
     if EOF is reached before filling the array.
   * when ``true``: the new methods are called. These return an ``int`` with the
     number of values that were read.
+
+  .. warning::
+
+    This flag is deprecated and will be removed in a future release.
 */
 config param ReadBinaryArrayReturnInt = true;
 
