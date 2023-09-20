@@ -1,4 +1,4 @@
-Block Array Index Map
+Block Array Ownership Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
@@ -8,7 +8,9 @@ Block Array Index Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 
-Block Array Index Map
+Locale 0 owns the following indices of BA: {1..8, 1..8}
+
+Block Array Ownership Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
@@ -18,7 +20,7 @@ Block Array Index Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 
-Cyclic Array Index Map
+Cyclic Array Ownership Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
@@ -28,23 +30,4 @@ Cyclic Array Index Map
 0 0 0 0 0 0 0 0
 0 0 0 0 0 0 0 0
 
-Block-Cyclic Array Index Map
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-
-Dimensional2D(Replicated,BlockCyclic) Array Index Map from LOCALE0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-0 0 0 0 0 0 0 0
-
+Locale 0 owns the following indices of CA: {1..8, 1..8}
