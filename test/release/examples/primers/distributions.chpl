@@ -1,41 +1,51 @@
 // Distributions
 
 /*
-  This primer introduces the concept of the *distribution* in Chapel
-  and then illustrates the use of a few of Chapel's standard
+  This primer introduces Chapel's features for distributed domains and
+  arrays, illustrating them using a few of Chapel's standard
   distributions.
+
+  Local vs. Distributed Domains and Arrays
+  ========================================
 
   In Chapel, *distributions* are recipes for implementing arrays and
   their index sets (*domains*).  Each distribution indicates how a
-  domain's indices and array's elements should be mapped to locales,
-  stored in each locale's memory, accessed, iterated over, etc.  This
-  primer will assume you already have some familiarity with the
-  concepts of :ref:`arrays <primers-arrays>`, :ref:`domains
-  <primers-domains>`, and :ref:`locales <primers-locales>`; refer to
-  their respective primers for more information.
+  domain's indices should be mapped to locales.  It also specifies how
+  arrays declared over such distributed domains should be stored in
+  each locale's memory, accessed, iterated over, etc.  This primer
+  will assume you already have some familiarity with Chapel's concepts
+  of :ref:`arrays <primers-arrays>`, :ref:`domains <primers-domains>`,
+  and :ref:`locales <primers-locales>`; if not, refer to their
+  respective primers for more information.
 
-  By default, a task declaring a new domain or array will map all the
-  domain's indices and array's elements to the locale on which it's
-  running.  This can be thought of as a _degenerate_ distribution, or
-  a _layout_.  However, as this primer will demonstrate, domains and
-  arrays can also be declared in terms of a specific distribution
-  instance to select alternative implementations.
+  By default, a task declaring a new domain will consider all of the
+  domain's indices to be owned by the locale on which it's running.
+  Similarly, an array declared over such a domain will store all of
+  its elements in the current locale's local memory.  For this reason,
+  we say that Chapel domains and arrays are *local* by default, since
+  they only use a single locale's resources for their implementation.
+  However, as this primer will demonstrate, domains and arrays can
+  also be declared in terms of a distribution as a means of leveraging
+  multiple locales, their memory, and processors.
 
-  Crucially, the operations supported by domains and arrays are
-  independent of whether they are stored on a single locale or
+  Crucially, the operations supported by domains and arrays in Chapel
+  are independent of whether they are stored on a single locale or
   distributed across multiple.  The only difference is how and where
   the operations are implemented, which can have impacts on
-  performance and scalability (positive or negative).  This property
+  performance and scalability—positive or negative.  This property
   makes it easy to implement and debug an algorithm on a single node,
   and then deploy it on a large-scale supercomputer.  It also permits
-  you to change the distributions used by your program to alter its
+  you to change the distributions used by a program to alter its
   implementation.
-  
+
+  Properties of Typical Distributions
+  ===================================
+
   Distributions for rectangular arrays can be thought of as
   distributing a *d*-dimensional space of possible indices to a
   *d*-dimensional array of locales.  Most distribution types are
   characterized by this *rank*, *d*, as well as the index type
-  (``idxType``) used to represent indices in each dimension.  For
+  (*idxType*) used to represent indices in each dimension.  For
   example, a 3D distribution might map ``(int, int, int)`` indices to
   a 3D array of locales, defining which one owns any given index ``(i,
   j, k)``.  It would also specify how the array elements corresponding
@@ -58,6 +68,9 @@
   single distributed domain, they are guaranteed to be aligned, since
   they all share the same distribution.
 
+  Getting Started with Block and Cyclic Distributions
+  ===================================================
+
   In this primer, we'll introduce two common distributions: the first
   maps indices to locales using contiguous rectilinear blocks; the
   other deals indices out to locales in a round-robin fashion.  To use
@@ -68,7 +81,7 @@ use BlockDist, CyclicDist;
 
 //
 // A third and somewhat atypical distribution, ``replicatedDist``, is
-// covered in the :ref:`primers-replicated` primer.  It does not
+// covered in :ref:`its own primer <primers-replicated>`.  It does not
 // adhere to some of the characterizations described as "typical"
 // above.
 //
@@ -90,7 +103,7 @@ use BlockDist, CyclicDist;
 //
 
 //
-// First, we'll declare the problem size we'll use for our 2D domains
+// First, we'll declare the problem size to use for our 2D domains
 // and arrays, configurable from the command-line:
 //
 config const n = 8;
@@ -101,8 +114,8 @@ config const n = 8;
 //
 const Space = {1..n, 1..n};
 
-// blockDist (and distribution basics)
-// -----------------------------------
+// The Block Distribution
+// ----------------------
 //
 // The ``blockDist`` distribution partitions a *d*-dimensional
 // bounding box across the *d*-dimensional target locale array.  The
@@ -126,44 +139,57 @@ var BA: [BlockSpace] int;
 
   .. code-block:: chapel
 
-	  const BlockSpace = blockDist.createDomain(Space);  
-	  const BA: [BlockSpace] int;
+    // create the domain using an anonymous distribution
+    const BlockSpace = blockDist.createDomain({1..n, 1..n});
+    const BA: [BlockSpace] int;
 
   or:
 
   .. code-block:: chapel
 
-  	  const BA = blockDist.createArray(Space);
+    // create the array using an anonymous distribution and domain
+    const BA = blockDist.createArray({1..n, 1..n}, int);
 
+  Or, in both versions, `Space` could be substituted for the domain
+  literal, if preferred.
 
-  However, since we'll be declaring multiple domains using the same
-  distribution, it's useful to declare the distribution instance,
-  domain, and array as distinct variables.
+  In this primer, we'll be illustrating the creation of multiple
+  aligned domains, which is only possible by declaring the
+  distribution as a distinct variable.  And in real programs, it can
+  be useful to create named domains in order to have multiple arrays
+  share them and amortize the overheads that they incur (since
+  creating any distributed object requires communication and memory).
+
 */
 
+// Reasoning About Ownership
+// ~~~~~~~~~~~~~~~~~~~~~~~~~
 //
-// To illustrate how the distributed domain and array are mapped to
-// locales, let's use a forall loop that assigns each array element
-// using the locale ID that stores that index/element/iteration.
+// To illustrate how our block-distributed domain and array are mapped
+// to locales, let's use a forall loop that assigns each array element
+// the locale ID that stores that index/element/iteration.
 //
 forall ba in BA do
   ba = here.id;
 
-// As mentioned above, Chapel's owner-computes model means that each
-// locale will execute the iterations of this forall loop that it owns
-// using its local processor cores.  As a result, each value of ``BA``
-// will end up indicating which locale owns it.  We can see this
+// This loop relies on Chapel's owner-computes model by querying the
+// locale on which a given iteration is running using ``here.id``.  As
+// mentioned above, the forall loop will be executed such that each
+// locale will use its local processor cores to execute the iterations
+// that were mapped to it.  As a result, each value of ``BA`` will end
+// up storing the ID of the locale that owns it.  We can see this
 // ownership map by printing the array out:
 
 writeln("Block Array Ownership Map");
 writeln(BA);
 writeln();
 
+
 // We can also determine which indices a given locale owns using the
 // ``.localSubdomain()`` query.  This method returns a non-distributed
-// domain representing the indices that are local to that locale.  For
-// example, we can use it to determine which indices a given locale,
-// like locale 0, owns:
+// domain representing the indices that are local to the current
+// locale.  As an example, the following line prints the indices that
+// locale 0 owns, since that is where the current task is running:
 
 writeln("Locale 0 owns the following indices of BA: ", BA.localSubdomain());
 writeln();
@@ -183,27 +209,36 @@ coforall L in Locales {
 }
 
 
+// Creating an Aligned Domain
+// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 // Domains declared in terms of a ``blockDist`` distribution can also
 // include indices outside of the bounding box. That is, the bounding
-// box is only used to compute a partitioning of the *d*-dimensional
-// space, **not** to constrain legal domain indices.  Any indices
-// located outside the bounding box will be owned by the locale owning
-// the nearest index within it.  For example, we can declare a larger
-// distribution than ``BlockSpace`` as follows:
+// box is only used to compute a partitioning of the complete
+// *d*-dimensional space of indices and does not impose a constraint
+// on legal domain indices.  Any indices located outside the bounding
+// box will be mapped to the locale that owns the nearest index within
+// it.  For example, we can declare a larger domain than
+// ``BlockSpace`` as follows:
 
 const BigBlockSpace = blockDist.createDomain({0..n+1, 0..n+1});
 
 // In this case, the rows and columns numbered ``0`` and ``n+1`` fall
-// outside of the bounding box, and such indices, like ``(0, i)`` will
-// be owned by the same locale that owns ``(1, i)`` within the box.
-// Because ``BigBlockSpace`` shares a distribution with ``BlockSpace``
-// we know that any indices that they both contain will be owned by
-// the same locale, and that the domains are *aligned*.
+// outside of the bounding box.  As a result, indices like ``(0, i)``
+// will be owned by the same locale that owns ``(1, i)`` within the
+// box.  Similarly, index ``(n+1, 0)`` will be owned by the locale
+// that owns ``(n, 1)``. Because ``BigBlockSpace`` shares its
+// distribution with ``BlockSpace``, we know that any indices common to
+// both domains will be owned by the same locale, and that the domains
+// are *aligned*.
+
+// Specifying Target Locales
+// ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 //
 // As mentioned above, most Chapel distributions support an optional
-// ``targetLocales`` argument that permits you to pass in your own
-// array of locales to be targeted.  In general, the targetLocales
+// ``targetLocales`` argument that permits you to specify your own
+// array of locales to be targeted.  In general, the *targetLocales*
 // argument will match the rank of the distribution.  For example, to
 // block-distribute a domain such that each locale owns a block of
 // rows but all of the columns, we can create a ``numLocales x 1``
@@ -211,17 +246,16 @@ const BigBlockSpace = blockDist.createDomain({0..n+1, 0..n+1});
 
 //
 // We start by creating our own ``MyLocales`` array of locale values.
-// Here, we use the standard array reshape function for convenience.
-// More generally, this array can be declared and created like any
-// other.
+// Here, we use the standard array ``reshape()`` procedure for
+// convenience.  More generally, this array can be declared and
+// created like any other.
 //
 
-const MyLocaleView = {0..<numLocales, 0..0};
-var MyLocales: [MyLocaleView] locale = reshape(Locales, MyLocaleView);
+var MyLocales = reshape(Locales, {0..<numLocales, 0..0});
 
 //
-// Then we declare a distributed domain/array that targets
-// this view of the locales:
+// Then we declare a new distribution, domain, and array that makes
+// use of this arrangement of the locales:
 //
 
 const BlkDist2 = new blockDist(boundingBox=Space, targetLocales=MyLocales);
@@ -229,8 +263,8 @@ const BlockSpace2 = BlkDist2.createDomain(Space);
 var BA2: [BlockSpace2] int;
 
 //
-// Now we can do a similar computation as before to verify where
-// each array element ended up:
+// Now we can do a similar computation as before to see where each
+// domain index/array element ended up:
 //
 forall ba2 in BA2 do
   ba2 = here.id;
@@ -240,8 +274,8 @@ writeln(BA2);
 writeln();
 
 //
-// We can use the ``targetLocales`` method supported by an array to
-// get the locales array that it's mapped to:
+// We can also use the ``targetLocales()`` on any array to query the
+// locales array to which it's mapped:
 //
 forall (l, ml) in zip(BA2.targetLocales(), MyLocales) do
   if l != ml then
@@ -249,10 +283,10 @@ forall (l, ml) in zip(BA2.targetLocales(), MyLocales) do
 
 
 
-// cyclicDist
-// ----------
+// The Cyclic Distribution
+// -----------------------
 //
-// Next, we'll perform a similar computation for the ``cyclicDist``
+// Next, we'll run through a similar example for the ``cyclicDist``
 // distribution.  This distribution also maps indices of
 // *d*-dimensional space out to a set of target locales arranged in a
 // conceptual *d*-dimensional grid.  However, where ``blockDist``
@@ -273,16 +307,18 @@ the following expressions for convenience:
 
 .. code-block:: chapel
 
-	const CyclicSpace = cyclicDist.createDomain(Space);  
+	const CyclicSpace = cyclicDist.createDomain({1..n, 1..n});
 	const CA: [CyclicSpace] int;
 
 or:
 
 .. code-block:: chapel
 
-	const CA = cyclicDist.createArray(Space);
+	const CA = cyclicDist.createArray({1..n, 1..n}, int);
 
 */
+
+// We can then compute which locale owns each index as before:
 
 forall ca in CA do
   ca = here.id;
@@ -292,16 +328,23 @@ writeln(CA);
 writeln();
 
 //
-// When using the ``localSubdomain`` query with ``cyclicDist``, the
+// And query the indices owned by a given locale.  Note that when
+// using the ``localSubdomain()`` query with ``cyclicDist``, the
 // result will be a strided set of indices for any dimension that has
-// more than one target locale.  For example, locale 0's ownership
-// of CA is:
+// more than one target locale due to the round-robin nature.  For
+// example, locale 0's ownership of CA is:
 //
 writeln("Locale 0 owns the following indices of CA: ", CA.localSubdomain());
 
+// However, despite the fact that the logical indices owned by a
+// locale are strided, the array elements will still be stored
+// compactly in a dense block of memory.
+
+// Conclusion
+// ==========
 
 // That wraps up this brief introduction to distributions in Chapel
 // and their use in declaring distributed domains and arrays.  Keep in
 // mind that while we demonstrated only very trivial computations in
-// this example, all of Chapel's rich operations on domains and arrays
-// are available whether they are local or distributed.
+// this example, all of Chapel's rich set of domain and array
+// operations are available whether they are local or distributed.
