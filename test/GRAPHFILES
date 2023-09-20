@@ -11,7 +11,6 @@ release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
 release/examples/benchmarks/hpcc/ptrans.graph
 release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -38,7 +37,6 @@ studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/ptrans.graph
 release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
 release/examples/benchmarks/lcals/LCALS-parallel-short.graph
 release/examples/benchmarks/lcals/LCALS-parallel-long.graph
@@ -94,6 +92,7 @@ users/npadmana/twopt/twopt-paircount.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
 # suite: HPC Challenge
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
@@ -103,7 +102,7 @@ release/examples/benchmarks/hpcc/ra_performance.graph
 release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans_performance.graph
 release/examples/benchmarks/hpcc/fft_performance.graph
-release/examples/benchmarks/hpcc/hpl_performance.graph
+studies/hpcc/HPL/hpl_performance.graph
 studies/hpcc/STREAM_study_performance.graph
 studies/ssca2/main/performance.graph
 # suite: Proxy apps
@@ -250,7 +249,7 @@ performance/elliot/no-op.graph
 # suite: MAX_LOGICAL comparison
 npb/ep/ep.graph
 npb/ep/ep-b.graph
-release/examples/benchmarks/hpcc/hpl.graph
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph

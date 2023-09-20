@@ -13,7 +13,7 @@ approximately as follows:
 * The STREAM and RA benchmarks are scalable but have outstanding
   performance and elegance improvements that we plan to address.
 
-* The FFT, PTRANS, and HPL benchmarks run on distributed memory, but
+* The FFT, and PTRANS benchmarks run on distributed memory, but
   need additional work (both in the source code and the Chapel
   implementation) to scale and perform well.
 
@@ -30,7 +30,6 @@ The main files for these benchmarks are as follows:
      ra-atomics.chpl        : a lossless version of RA using atomic vars
      fft.chpl               : the global 1D FFT benchmark
      ptrans.chpl            : the global PTRANS benchmark
-     hpl.chpl               : the High Performance Linpack benchmark
 
 Other files with the same base filenames as the Chapel test programs but
 different filename extensions, are for use by the automated test system.
@@ -56,7 +55,6 @@ These benchmarks can be compiled using the following commands:
      chpl --fast -o ra-atomics ra-atomics.chpl
      chpl --fast -o fft fft.chpl
      chpl --fast -o ptrans ptrans.chpl
-     chpl --fast -o hpl hpl.chpl
 
 The presence of the --fast flag turns on optimizations, turns off
 runtime correctness checks, and permits IEEE math to be relaxed for
@@ -71,7 +69,6 @@ using:
     gmake ra-atomics
     gmake fft
     gmake ptrans
-    gmake hpl
 
 Or to make them all, use:
 
