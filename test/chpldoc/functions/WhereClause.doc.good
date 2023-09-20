@@ -33,6 +33,8 @@ or
 
 .. function:: proc processRange(r: range) where r.low > 1
 
+.. function:: proc processRangeNW(r: range)
+
 .. function:: proc foo(type t) where isSubtype(t, int)
 
 .. function:: operator +(a: int, b: int) where a > 0

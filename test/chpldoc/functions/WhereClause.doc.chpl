@@ -30,6 +30,11 @@ module M {
         writeln("processRange 2");
     }
 
+    pragma "no where doc"
+    proc processRangeNW(r: range) where r.low > 1 {
+        writeln("processRange no where");
+    }
+
     // From borrowed-in-where.chpl
     proc foo(type t) where isSubtype(t, int) {
         writeln("In foo where");
