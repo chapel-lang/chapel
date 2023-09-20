@@ -43,21 +43,29 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
   apply_patch $CHAMPS_PATCH_PATH/optional/llvm.patch
 fi
 
-# copy the prepartitoned grid for 16 locales into scratch space
+# copy the prepartitoned grid for 16 locales into scratch space for better IO
+# performance
 cp $CHAMPS_DATA_PATH/CRMHL_coarse_1152B.cgns $CHAMPS_HOME/
+
+# in the system where we run this, compute nodes don't have access to our shared
+# non-scratch space. I do not want to store those in the scratch space for good.
+# So, what we are doing here is to copy the stuff from CHAMPS_CFG_PATH and
+# CHAMPS_DEP_PATH to the scratch space for running the code.
 cp $CHAMPS_CFG_PATH/flow.in $CHAMPS_HOME/
+
+# ... and this is where it really gets unfortunate.
 cp -r $CHAMPS_DEP_PATH $CHAMPS_HOME/
 export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$CHAMPS_HOME/deps-manual/lib
 
+# some debugging output before starting the run
 echo "contents of $CHAMPS_HOME"
 ls $CHAMPS_HOME
-
 echo LD_LIBRARY_PATH=$LD_LIBRARY_PATH
 
 # Compile CHAMPS executables
 #test_compile prep
-test_compile flow
-#test_compile icing
+#test_compile flow
+test_compile icing
 #test_compile drop
 #test_compile potential
 #test_compile potentialPrep
@@ -81,7 +89,7 @@ test_compile flow
 # test_run prep 1
 
 
-test_run flow 16
+#test_run flow 16
 
 $CHPL_HOME/util/test/genGraphs --configs $CHPL_TEST_PERF_CONFIGS --annotate $CHPL_HOME/test/ANNOTATIONS.yaml --name $CHPL_TEST_PERF_CONFIG_NAME --perfdir $CHPL_TEST_PERF_DIR --outdir $CHPL_TEST_PERF_DIR/html --graphlist $CHAMPS_GRAPH_PATH/GRAPHLIST --testdir $CHAMPS_GRAPH_PATH --alttitle "CHAMPS Performance Graphs"
 
