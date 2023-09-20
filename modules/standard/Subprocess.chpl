@@ -131,8 +131,8 @@ The Deprecated 'kind' Field
 ---------------------------
 
 Prior to the 1.32 release, configuring a :type:`subprocess` record to use
-binary IO required using the ``kind`` field (of type ``iokind``) to set the
-desired endianness. The 1.32 release introduced
+binary IO required using the ``kind`` field (of type ``iokind``) to enable
+binary IO and set the desired endianness. The 1.32 release introduced
 :ref:`serializers<ioSerializers>`, and deprecated use of the ``iokind`` type in
 favor of using Serializers and Deserializers to configure a given
 :type:`~IO.fileWriter` or :type:`~IO.fileReader` for a desired format.
@@ -166,6 +166,9 @@ This program prints:
 
   00000000  01 02 03 04 05 06 07 08  09 0a                    |..........|
   0000000a
+
+Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
+for more information on their supported format.
 
  */
 module Subprocess {
