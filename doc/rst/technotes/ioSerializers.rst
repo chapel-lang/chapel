@@ -196,6 +196,8 @@ As of Chapel 1.31 generic types and borrowed classes are no longer valid
 arguments to the versions of ``read`` and ``readln`` that accept a ``type``
 argument. Note that fully-instantiated generic types are still allowed.
 
+.. _io-serializer-API:
+
 Serializer API
 --------------
 
@@ -246,6 +248,9 @@ named arguments "writer" and "serializer":
 
    proc T.serialize(writer: fileWriter(?), ref serializer: ?st) throws
 
+Types implementing this method must also indicate that they satisfy the
+``writeSerializable`` interface.
+
 For classes, the ``serialize`` method signature must include ``override`` to
 account for the ``serialize`` method on the ``RootClass`` type.
 
@@ -260,6 +265,8 @@ constraint exists to allow for child classes to pass helper objects created by
 Serializers to parent class ``serialize`` methods. See the
 :ref:`serializer inheritance<serializerInheritance>` section for more
 information.
+
+.. _io-serializer-user-API:
 
 The User-Facing Serializer API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -488,6 +495,8 @@ User Facing API Notes
    This document does not define what errors these methods may or may not
    throw.
 
+.. _io-deserializer-API:
+
 Deserializer API
 ----------------
 
@@ -530,6 +539,13 @@ For classes, the ``deserializeValue`` method has the freedom to potentially
 free the given class and/or reassign it, depending on the needs of the
 Deserializer.
 
+The arguments ``val`` or ``readType`` are defined to be a "primitive" type or a
+type that implements at least one of the following interfaces:
+
+- ``readDeserializable``
+- ``initDeserializable``
+- ``serializable``
+
 In both methods, the given ``fileReader`` is guaranteed to have a
 ``deserializerType`` identical to the type whose method was called. The
 ``fileReader`` is also defined to be non-locking.
@@ -548,6 +564,9 @@ including the argument names "reader" and "deserializer":
 
    proc T.init(reader: fileReader(?),
                ref deserializer: ?dt) throws
+
+Types implementing this method must also indicate that they satisfy the
+``initDeserializable`` interface.
 
 By default, the compiler will generate a suitable initializer with this
 signature provided that no other user-defined initializers exist.
@@ -616,8 +635,13 @@ For classes, this signature must be slightly different:
 By default, the compiler will generate a suitable ``deserialize`` method with
 this signature provided.
 
-The User-Facing Serializer API
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+Types implementing this method must also indicate that they satisfy the
+``readDeserializable`` interface.
+
+.. _io-deserializer-user-API:
+
+The User-Facing Deserializer API
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 Like the Serializer API, the user-facing part of the Deserializer API is
 relatively large and supports the same set of type kinds as a Serializer. Also
@@ -813,15 +837,13 @@ The returned object must implement the following API:
   // End the map according to the deserialization format.
   proc MapHelper.endMap() throws;
 
-Compiler-Generated Methods
---------------------------
+The 'serializable' Interface
+----------------------------
 
-Generation of the deserializing initializer, or the ``serialize`` and
-``deserialize`` methods can be disabled with the flag
-``--no-io-gen-serialization``.
+The ``serializable`` interface mentioned on this document is intended to be
+an interface that requires implementation of all three kinds of user-defined
+methods: ``serialize``, ``deserialize``, and a deserializing initializer.
 
-If the compiler sees a user-defined implementation of the ``serialize`` method,
-the ``deserialize`` method, or the deserializing initializer, then the compiler
-may choose to not automatically generate any of the other unimplemented
-methods. This is out of concern that the user has intentionally deviated from
-the compiler's default implementation of serialization and deserialization.
+A formal definition of this interface is pending, following the standardization
+of interfaces in the language.
+
