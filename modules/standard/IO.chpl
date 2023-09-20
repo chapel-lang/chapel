@@ -8681,7 +8681,7 @@ config param ReadBinaryArrayReturnInt = false;
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8815,7 +8815,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
