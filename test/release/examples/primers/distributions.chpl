@@ -18,14 +18,14 @@
   and :ref:`locales <primers-locales>`; if not, refer to their
   respective primers for more information.
 
-  By default, a task declaring a new domain will consider all of the
-  domain's indices to be owned by the locale on which it's running.
-  Similarly, an array declared over such a domain will store all of
-  its elements in the current locale's local memory.  For this reason,
-  we say that Chapel domains and arrays are *local* by default, since
-  they only use a single locale's resources for their implementation.
-  However, as this primer will demonstrate, domains and arrays can
-  also be declared in terms of a distribution as a means of leveraging
+  By default, when a domain is declared, all of its indices are owned
+  by the locale on which the current task is running.  Similarly, an
+  array declared over such a domain will store all of its elements in
+  the current locale's memory.  For this reason, we say that Chapel
+  domains and arrays are *local* by default, since they only use a
+  single locale's resources for their implementation.  However, as
+  this primer will demonstrate, domains and arrays can also be
+  declared in terms of a distribution as a means of leveraging
   multiple locales, their memory, and processors.
 
   Crucially, the operations supported by domains and arrays in Chapel
@@ -42,7 +42,7 @@
   ===================================
 
   Distributions for rectangular arrays can be thought of as
-  distributing a *d*-dimensional space of possible indices to a
+  distributing a *d*-dimensional space of possible indices over a
   *d*-dimensional array of locales.  Most distribution types are
   characterized by this *rank*, *d*, as well as the index type
   (*idxType*) used to represent indices in each dimension.  For
@@ -153,12 +153,11 @@ var BA: [BlockSpace] int;
   Or, in both versions, `Space` could be substituted for the domain
   literal, if preferred.
 
-  In this primer, we'll be illustrating the creation of multiple
-  aligned domains, which is only possible by declaring the
-  distribution as a distinct variable.  And in real programs, it can
-  be useful to create named domains in order to have multiple arrays
-  share them and amortize the overheads that they incur (since
-  creating any distributed object requires communication and memory).
+  One motivation for declaring explicit distribution and domain
+  variables as we've done here is to support the creation of aligned
+  domains and arrays.  Another is to amortize the overheads incurred
+  by such types, since creating any distributed object requires
+  communication and memory.
 
 */
 
@@ -293,10 +292,8 @@ forall (l, ml) in zip(BA2.targetLocales(), MyLocales) do
 // distributes contiguous blocks of indices, ``cyclicDist`` deals
 // indices to locales in a round-robin fashion.  A designated
 // ``startIdx`` is given to the initial locale, and others are dealt
-// out cyclically in each dimension from there in all directions.  As
-// with ``blockDist``, domains declared using ``cyclicDist`` may have
-// indices that precede the distribution's starting index.
-//
+// out cyclically in each dimension from there.
+
 const CycDist = new cyclicDist(startIdx=Space.low);
 const CyclicSpace = CycDist.createDomain(Space);
 var CA: [CyclicSpace] int;
