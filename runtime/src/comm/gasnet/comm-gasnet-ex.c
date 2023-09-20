@@ -23,7 +23,6 @@
 #include "gasnet.h"
 #include "gasnet_vis.h"
 #include "gasnet_coll.h"
-#include "gasnet_tools.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
@@ -258,7 +257,6 @@ typedef enum {
   PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
   FREE,                 // free data at addr
   SHUTDOWN,             // tell nodes to get ready for shutdown
-  BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
   DO_COPY_PAYLOAD       // copy AM payload to another address
 } AM_handler_function_idx_t;
@@ -542,20 +540,6 @@ static void AM_shutdown(gasnet_token_t token) {
   chpl_signal_shutdown();
 }
 
-//
-// This global and routine are used to broadcast the seginfo_table at the outset
-// of the program's execution.  It is designed to only be used once.  This code
-// was modeled after the _test_segbcast() routine in
-// third-party/gasnet/gasnet-src/tests/test.h
-//
-static int bcast_seginfo_done = 0;
-static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
-  assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-  chpl_memcpy(seginfo_table, buf, nbytes);
-  gasnett_local_wmb();
-  bcast_seginfo_done = 1;
-}
-
 // Put from arg->src (which is local to the AM handler) back to
 // arg->dst (which is local to the caller of this AM).
 // nbytes is < gasnet_AMMaxLongReply here (see chpl_comm_get).
@@ -597,7 +581,6 @@ static gex_AM_Entry_t ftable[] = {
   {PRIV_BCAST_LARGE, AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
   {FREE,             AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
   {SHUTDOWN,         AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
-  {BCAST_SEGINFO,    AM_bcast_seginfo,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_bcast_seginfo"    },
   {DO_REPLY_PUT,     AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
   {DO_COPY_PAYLOAD,  AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
 };
@@ -907,18 +890,13 @@ void chpl_comm_pre_mem_init(void) {
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numNodes));
 #ifdef GASNET_SEGMENT_EVERYTHING
   //
-  // For SEGMENT_EVERYTHING, there is no GASNet-provided memory
-  // segment, so instead we're going to create our own fake segment
-  // in order to share the code that refers to it and avoid any
-  // assumptions that global variables in the generated C code will
-  // be stored at the same address in all instances of the executable
-  // (something that is typically true, but turns out not to be on,
-  // for example, OS X Lion).  This technique was modeled after the
-  // _test_attach() routine from third-party/gasnet/gasnet-src/tests/test.h
-  // but is significantly simplified for our purposes.
+  // For SEGMENT_EVERYTHING, there is no GASNet-provided memory segment, so
+  // instead we're going to create our own fake segment in order to share the
+  // code that refers to it and avoid any assumptions that global variables in
+  // the generated C code will be stored at the same address in all instances
+  // of the executable (something that is not true with ASLR)
   //
   if (chpl_nodeID == 0) {
-    int i;
     //
     // Only locale #0 really needs the seginfo_table to store anything since it owns all
     // of the global variable locations; everyone else will just peek at its copy.  So
@@ -930,34 +908,20 @@ void chpl_comm_pre_mem_init(void) {
                                       (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 :
                                        (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
     seginfo_table[0].size = global_table_size;
-    //
-    // ...and then zeroes out everyone else's
-    //
-    for (i=1; i<chpl_numNodes; i++) {
-      seginfo_table[i].addr = NULL;
-      seginfo_table[i].size = 0;
-    }
   }
+  // Zero out non-locale 0 values
+  for (int i=1; i<chpl_numNodes; i++) {
+    seginfo_table[i].addr = NULL;
+    seginfo_table[i].size = 0;
+  }
+
   //
   // Then we're going to broadcast the seginfo_table to everyone so that each locale
   // has its own copy of it and knows where everyone else's segment lives (or, really,
   // where locale #0's lives since we're not using anyone else's at this point).
   //
   chpl_comm_barrier("getting ready to broadcast addresses");
-  //
-  // This is a naive O(numLocales) broadcast; we could do something
-  // more scalable with more effort
-  //
-  if (chpl_nodeID == 0) {
-    int i;
-    // Skip loc 0, since that would end up memcpy'ing seginfo_table to itself
-    for (i=1; i < chpl_numNodes; i++) {
-      GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table,
-                                          chpl_numNodes*sizeof(gasnet_seginfo_t)));
-    }
-  } else {
-    GASNET_BLOCKUNTIL(bcast_seginfo_done);
-  }
+  gex_Event_Wait(gex_Coll_BroadcastNB(myteam, 0, seginfo_table, seginfo_table, sizeof(gasnet_seginfo_t), GEX_NO_FLAGS));
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
 
