@@ -752,28 +752,40 @@ side array expressions alias the left-hand side expression.
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
 
+.. _Promoted_Array_Indexing:
+
+Promoted Array Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
 Array indexing operations can also be promoted.
-For example, an array of indices can be used to index into another array
+For example, an array of indices can be used to index into another array,
+as in the following expression:
 
 .. code-block:: chapel
 
-   A[B];
+   A[B]
 
-which results in the promoted expression
+which results in the promoted expression:
 
 .. code-block:: chapel
 
-   [b in B] A[b];
+   [b in B] A[b]
 
-However, it is an error to modify this promoted expression.
-For example, the following is an error
+However, it is an error to modify promoted expressions like this one.
+For example, the following is an error:
 
 .. code-block:: chapel
 
    A[B] += 3;
 
-An explicit loop statement with an explicit ``ref`` shadow variable
-for ``A`` must be used to achieve this, for example
+If this was promoted, it would become the following:
+
+.. code-block:: chapel
+
+   [b in B] A[b] += 3;
+
+This is illegal, as ``A`` cannot be modified without an explicit ``ref`` shadow
+variable. An explicit loop statement must be used, for example:
 
 .. code-block:: chapel
 
