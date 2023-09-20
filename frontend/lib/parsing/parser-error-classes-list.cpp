@@ -448,6 +448,21 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
   // wr.codeForLocation(attr);
 }
 
+void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {
+  auto implements = std::get<const uast::Implements*>(info);
+  auto ident = std::get<const uast::Identifier*>(info);
+
+  auto typeName = ident->name();
+  if (typeName == USTR("domain")) {
+    wr.heading(kind_, type_, ident, "type '", typeName, "' cannot implement an interface.");
+  } else {
+    wr.heading(kind_, type_, ident, "invalid identifier '", typeName,
+                                     "' on the left of an 'implements' keyword.");
+  }
+  wr.message("In the following 'implements' statement:");
+  wr.code(implements, { ident });
+}
+
 void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {
   auto attributeGroup = std::get<const uast::AttributeGroup*>(info);
   auto appliedTo = std::get<const uast::AstNode*>(info);

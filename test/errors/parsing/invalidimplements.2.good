@@ -1,0 +1,48 @@
+─── error in invalidimplements.chpl:1 [InvalidImplementsIdent] ───
+  Type 'domain' cannot implement an interface.
+  In the following 'implements' statement:
+      |
+    1 | domain implements hashable;
+      | ⎺⎺⎺⎺⎺⎺
+      |
+
+─── error in invalidimplements.chpl:2 [InvalidImplementsIdent] ───
+  Invalid identifier 'none' on the left of an 'implements' keyword.
+  In the following 'implements' statement:
+      |
+    2 | none implements hashable;
+      | ⎺⎺⎺⎺
+      |
+
+─── error in invalidimplements.chpl:3 [InvalidImplementsIdent] ───
+  Invalid identifier 'this' on the left of an 'implements' keyword.
+  In the following 'implements' statement:
+      |
+    3 | this implements hashable;
+      | ⎺⎺⎺⎺
+      |
+
+─── error in invalidimplements.chpl:4 [InvalidImplementsIdent] ───
+  Invalid identifier 'false' on the left of an 'implements' keyword.
+  In the following 'implements' statement:
+      |
+    4 | false implements hashable;
+      | ⎺⎺⎺⎺⎺
+      |
+
+─── error in invalidimplements.chpl:5 [InvalidImplementsIdent] ───
+  Invalid identifier 'true' on the left of an 'implements' keyword.
+  In the following 'implements' statement:
+      |
+    5 | true implements hashable;
+      | ⎺⎺⎺⎺
+      |
+
+─── error in invalidimplements.chpl:6 [InvalidImplementsIdent] ───
+  Invalid identifier 'index' on the left of an 'implements' keyword.
+  In the following 'implements' statement:
+      |
+    6 | index implements hashable;
+      | ⎺⎺⎺⎺⎺
+      |
+

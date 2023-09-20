@@ -145,6 +145,7 @@ struct Visitor {
   void checkExternBlockAtModuleScope(const ExternBlock* node);
   void checkLambdaDeprecated(const Function* node);
   void checkCStringLiteral(const CStringLiteral* node);
+  void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -183,6 +184,7 @@ struct Visitor {
   void visit(const FnCall* node);
   void visit(const Function* node);
   void visit(const FunctionSignature* node);
+  void visit(const Implements* node);
   void visit(const Import* node);
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
@@ -1461,6 +1463,24 @@ void Visitor::visit(const Foreach* node) {
 void Visitor::visit(const Use* node) {
   for (auto clause : node->visibilityClauses()) {
     checkVisibilityClauseValid(node, clause);
+  }
+}
+
+void Visitor::checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node) {
+  auto typeName = node->name();
+  if (typeName == USTR("none") ||
+      typeName == USTR("this") ||
+      typeName == USTR("false") ||
+      typeName == USTR("true") ||
+      typeName == USTR("domain") ||
+      typeName == USTR("index")) {
+    CHPL_REPORT(context_, InvalidImplementsIdent, impl, node);
+  }
+}
+
+void Visitor::visit(const Implements* node) {
+  if (auto typeIdent = node->typeIdent()) {
+    checkAllowedImplementsTypeIdent(node, typeIdent);
   }
 }
 
