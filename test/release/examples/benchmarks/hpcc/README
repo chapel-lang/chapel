@@ -13,7 +13,7 @@ approximately as follows:
 * The STREAM and RA benchmarks are scalable but have outstanding
   performance and elegance improvements that we plan to address.
 
-* The PTRANS benchmark runs on distributed memory, needs additional
+* The PTRANS benchmark runs on distributed memory, but needs additional
   work (both in the source code and the Chapel implementation) to scale
   and perform well.
 
