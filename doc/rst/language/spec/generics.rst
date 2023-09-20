@@ -1034,9 +1034,13 @@ generic type, the syntax ``T(?)`` can be used. This syntax will generate
 an error if ``T`` is not a generic type. As a result, writing ``T(?)``
 communicates to a reader of the code that ``T`` is a generic type.
 
-When generic types other than those listed in
-:ref:`Built_in_Generic_Types` are used in the following situations, they
-should be marked with ``(?)``:
+Marking is not necessary for the built-in generic types listed in
+:ref:`Built_in_Generic_Types`. For fully defaulted generic types
+(:ref:`_Fully_Defaulted_Generic_Types`), marking indicates the generic
+type rather than the instantiation with the defaults.
+
+Otherwise, generic types used in the following situations should be
+marked with ``(?)``:
 
  * fields declared with generic type (see :ref:`Fields_with_Generic_Types`)
 
@@ -1045,6 +1049,8 @@ should be marked with ``(?)``:
 
  * formal argument type expressions  (see
    :ref:`Formal_Arguments_of_Generic_Type`)
+
+ * declared return or yield types (see :ref:`Return_Types`)
 
  * ``class-inherit`` expressions (see :ref:`Inheritance`)
 
