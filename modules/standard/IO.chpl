@@ -2660,9 +2660,7 @@ record defaultSerializer {
   }
 
   /*
-    Serialize ``val`` with ``writer``. This method will be invoked by a
-    ``fileWriter`` through calls to ``write`` or ``writeln``, but may also be
-    invoked directly.
+    Serialize ``val`` with ``writer``.
 
     Numeric values are serialized using the same format as ``%i`` for integers
     and ``%r`` for ``real`` numbers. Complex numbers are serialized as ``%z``.
@@ -2683,9 +2681,13 @@ record defaultSerializer {
     are actually ``nil`` will also be serialized as the text ``nil``.
 
     Classes and records will have their ``serialize`` method invoked, passing
-    in ``writer`` and this serializer as arguments. Please see the
+    in ``writer`` and this Serializer as arguments. Please see the
     :ref:`serializers technote<ioSerializers>` for more.
 
+    Classes and records are expected to implement the `writeSerializable`
+    interface. The `serializable` interface is also acceptable.
+
+    :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
   */
   proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
@@ -2705,13 +2707,13 @@ record defaultSerializer {
 
   // TODO: add ":ref:" for return type, currently can't refer to it.
   /*
-    Start serializing a class with a ``{``
+    Start serializing a class by writing a ``{``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg name: The name of the class type.
     :arg size: The number of fields in the class.
 
-    :returns: A new AggregateSerializer
+    :returns: A new :type:`AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
     writer._writeLiteral("{");
@@ -2719,7 +2721,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a record with a ``(``
+    Start serializing a record by writing a ``(``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg name: The name of the record type.
@@ -2777,9 +2779,10 @@ record defaultSerializer {
     }
 
     /*
-      Start a nested class inside the current class. In the "default" format,
-      inheritance is ignored and parent fields are printed before child fields.
-      For example, the following classes with values ``x=5`` and ``y=2.0``:
+      Start serializing a nested class inside the current class. In the
+      "default" format, inheritance is ignored and parent fields are printed
+      before child fields. For example, the following classes with values
+      ``x=5`` and ``y=2.0``:
 
       .. code-block:: chapel
 
@@ -2812,7 +2815,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current class with a ``}``
+      Ends serialization of the current class by writing a ``}``
 
       .. note:: It is an error to call methods on an AggregateSerializer after
                 invoking 'endClass'.
@@ -2825,7 +2828,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current record with a ``)``
+      Ends serialization of the current record by writing a ``)``
 
       .. note:: It is an error to call methods on an AggregateSerializer after
                 invoking 'endRecord'.
@@ -2836,7 +2839,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a tuple with a ``(``
+    Start serializing a tuple by writing a ``(``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the tuple.
@@ -2885,7 +2888,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current tuple with a ``)``.
+      Ends serialization of the current tuple by writing a ``)``.
 
       Adds a comma between the last value and ``)`` if there was only one
       element.
@@ -2899,7 +2902,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a list with a ``[``
+    Start serializing a list by writing a ``[``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of elements in the list.
@@ -2944,7 +2947,7 @@ record defaultSerializer {
     }
 
     /*
-      Ends serialization of the current list with a ``]``.
+      Ends serialization of the current list by writing a ``]``.
     */
     proc endList() throws {
       writer._writeLiteral("]");
@@ -3014,7 +3017,8 @@ record defaultSerializer {
     var _first : bool = true;
 
     /*
-      Start a new dimension of size ``size``.
+      Inform the ``ArraySerializer`` to start serializing a new dimension of
+      size ``size``.
     */
     proc ref startDim(size: int) throws {
       _arrayDim += 1;
@@ -3052,7 +3056,7 @@ record defaultSerializer {
   }
 
   /*
-    Start serializing a map with a ``{``.
+    Start serializing a map by writing a ``{``.
 
     :arg writer: The ``fileWriter`` to be used when serializing.
     :arg size: The number of entries in the map.
@@ -3104,7 +3108,7 @@ record defaultSerializer {
     }
 
     /*
-      End serialization of the current map with a ``}``
+      End serialization of the current map by writing a ``}``
     */
     proc endMap() throws {
       writer._writeLiteral("}");
@@ -3118,42 +3122,54 @@ type DefaultSerializer = defaultSerializer;
 /*
   The default deserializer used by ``fileReader``.
 
-  Implements the 'deserializeType' and 'deserializeValue' methods which are
-  called by a ``fileReader`` to deserialize a serialized representation of
-  a type or value.
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Deserializers and their usage.
 
-  Deserializers may choose to invoke certain user-defined methods or
-  initializers on class and record types. When deserializing a type,
-  deserializers should first attempt to invoke an initializer on the type:
+  Otherwise, please refer to :type:`defaultSerializer` for a description
+  of the default IO format. Individual methods on this type may clarify
+  relevant behavior in certain cases.
 
-    proc MyType.init(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
+  .. note::
 
-  If this initializer is not available or cannot be resolved, the deserializer
-  may then attempt to invoke a user-defined type method 'deserializeFrom' as a
-  factory method that will produce the type:
+    Prior to the 1.32 release and the advent of the 'serializers' feature, the
+    default implementation for reading classes and records permitted reading
+    fields out of order. This functionality is not present in the
+    ``defaultDeserializer``.
 
-    proc type MyType.deserializeFrom(reader: fileReader(?)
-                                     ref deserializer: reader.deserializerType) : MyType throws
+    For an unspecified amount of time this module will retain the ability to
+    disable automatic use of the ``defaultDeserializer`` by recompiling
+    programs with the config-param ``useIOSerializers`` set to ``false``.
 
-  If neither of these methods are available, the deserializer may attempt to
-  default-initialize the desired type and invoke the value-reading form of
-  deserialization. If the value-reading form of deserialization cannot be
-  resolved, then a compiler error may be issued.
-
-  The value-reading form of deserialization may attempt to invoke a
-  user-defined 'deserialize' method on classes and records:
-
-    proc MyType.deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
-
-  If this method is unavailable, the value-reading form of deserialization may
-  attempt to invoke the type-reading form of deserialization, and assign the
-  result into the original value.
-
-  The compiler is expected to generate a default implementation of
-  'deserialize' methods and deserializing initializers for records and classes.
+    Eventually, however, users must update their programs to account for
+    reading fields out of order.
 */
 record defaultDeserializer {
 
+  /*
+    Deserialize type ``readType`` with ``reader``.
+
+    Numeric values are deserialized using the same format as ``%i`` for
+    integers and ``%r`` for ``real`` numbers. Complex numbers are deserialized
+    as ``%z``. Please refer to :ref:`the section on Formatted IO<about-io-formatted-io>` for more information.
+
+    The ``nil`` value is deserialized as the text ``nil``. If ``readType`` is a
+    nilable class type and the input from ``reader`` is the word ``nil``, then
+    a ``nil`` class of type ``readType`` will be returned.
+
+    Classes and records will be deserialized using an appropriate initializer,
+    passing in ``reader`` and this Deserializer as arguments. If an
+    initializer is unavailable, this method may invoke the class or record's
+    ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg readType: The type to be deserialized.
+
+    :returns: A value of type ``readType``.
+  */
   proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
@@ -3177,6 +3193,23 @@ record defaultDeserializer {
     }
   }
 
+  /*
+    Deserialize from ``reader`` directly into ``val``.
+
+    Like :proc:`deserializeType`, but reads into an initialized value rather
+    than creating a new value. For classes and records, this method will first
+    attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
+    is unavailable, this method may fall back on invoking a suitable
+    initializer and assigning the resulting value into ``val``.. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg val: The value into which this Deserializer will deserialize.
+  */
   proc ref deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
@@ -3195,11 +3228,50 @@ record defaultDeserializer {
     }
   }
 
+  /*
+    Start deserializing a class by reading a ``{``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the class type
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
+  proc startClass(reader: fileReader, name: string) throws {
+    reader.readLiteral("{");
+    return new AggregateDeserializer(reader);
+  }
+
+  /*
+    Start deserializing a record by reading a ``(``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the record type
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
+  proc startRecord(reader: fileReader, name: string) throws {
+    reader.readLiteral("(");
+    return new AggregateDeserializer(reader);
+  }
+
+  /*
+    Returned by ``startClass`` or ``startRecord`` to enable deserializing
+    classes or records.
+
+    See :type:`~IO.defaultSerializer.AggregateSerializer` for details of the
+    default format for classes and records.
+  */
   record AggregateDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _parent : bool = false;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize a field named ``name`` of type ``fieldType``.
+
+      :returns: A deserialized value of type ``fieldType``.
+    */
     proc readField(name: string, type fieldType) : fieldType throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
@@ -3209,7 +3281,9 @@ record defaultDeserializer {
       return ret;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize a field named ``name`` in-place.
+    */
     proc readField(name: string, ref field) throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
@@ -3218,88 +3292,137 @@ record defaultDeserializer {
       reader.matchLiteral(",");
     }
 
+    /*
+      Start deserializing a nested class inside the current class.
+
+      See ``defaultSerializer.AggregateSerializer.startClass`` for details
+      on inheritance on the default format.
+
+      :returns: A new AggregateDeserializer
+    */
     proc startClass(reader: fileReader, name: string) throws {
       return new AggregateDeserializer(reader, _parent=true);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current class by reading a ``}``.
+    */
     proc endClass() throws {
       if !_parent then
         reader.readLiteral("}");
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current record by reading a ``)``.
+    */
     proc endRecord() throws {
       reader.readLiteral(")");
     }
   }
 
-  // Class helpers
-  @chpldoc.nodoc
-  proc startClass(reader: fileReader, name: string) throws {
-    reader.readLiteral("{");
-    return new AggregateDeserializer(reader);
-  }
+  /*
+    Start deserializing a tuple by reading a ``(``.
 
-  // Record helpers
-  @chpldoc.nodoc
-  proc startRecord(reader: fileReader, name: string) throws {
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`TupleDeserializer`
+  */
+  proc startTuple(reader: fileReader) throws {
     reader.readLiteral("(");
-    return new AggregateDeserializer(reader);
+    return new TupleDeserializer(reader);
   }
 
+  /*
+    Returned by ``startTuple`` to enable deserializing tuples.
+
+    See ``defaultSerializer.TupleSerializer`` for details of the default format
+    for tuples.
+  */
   record TupleDeserializer {
+    @chpldoc.nodoc
     var reader;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the tuple.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc readElement(type eltType) : eltType throws {
       var ret = reader.read(eltType);
       reader.matchLiteral(",");
       return ret;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``element`` in-place as an element of the tuple.
+    */
     proc readElement(ref element) throws {
       reader.read(element);
       reader.matchLiteral(",");
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current tuple by reading a ``)``.
+    */
     proc endTuple() throws {
       reader.readLiteral(")");
     }
   }
 
-  // Tuple helpers
-  @chpldoc.nodoc
-  proc startTuple(reader: fileReader) throws {
-    reader.readLiteral("(");
-    return new TupleDeserializer(reader);
+  /*
+    Start deserializing a list by reading a ``[``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ListDeserializer`
+  */
+  proc ref startList(reader: fileReader) throws {
+    reader._readLiteral("[");
+    return new ListDeserializer(reader);
   }
 
+  /*
+    Returned by ``startList`` to enable deserializing lists.
+
+    See ``defaultSerializer.ListSerializer`` for details of the default format
+    for lists.
+  */
   record ListDeserializer {
     var reader;
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
       return reader.read(eltType);
     }
-    @chpldoc.nodoc
+
+    /*
+      Deserialize ``element`` in-place as an element of the list.
+    */
     proc ref readElement(ref element) throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
       reader.read(element);
     }
-    @chpldoc.nodoc
+
+    /*
+      End deserialization of the current list by reading a ``]``.
+    */
     proc endList() throws {
       reader._readLiteral("]");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+    */
     proc hasMore() : bool throws {
       reader.mark();
       defer reader.revert();
@@ -3307,20 +3430,36 @@ record defaultDeserializer {
     }
   }
 
-  // List helpers
-  @chpldoc.nodoc
-  proc ref startList(reader: fileReader) throws {
-    reader._readLiteral("[");
-    return new ListDeserializer(reader);
+  /*
+    Start deserializing an array.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ArrayDeserializer`
+  */
+  proc startArray(reader: fileReader) throws {
+    return new ArrayDeserializer(reader);
   }
 
+  /*
+    Returned by ``startArray`` to enable deserializing arrays.
+
+    See ``defaultSerializer.ArraySerializer`` for details of the default format
+    for arrays.
+  */
   record ArrayDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _first : bool = true;
+    @chpldoc.nodoc
     var _arrayDim : int;
+    @chpldoc.nodoc
     var _arrayMax : int;
 
-    @chpldoc.nodoc
+    /*
+      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+    */
     proc ref startDim() throws {
       _arrayDim += 1;
 
@@ -3333,14 +3472,20 @@ record defaultDeserializer {
       }
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current dimension.
+    */
     proc ref endDim() throws {
       _arrayDim -= 1;
 
       _first = true;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the array.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
@@ -3348,7 +3493,9 @@ record defaultDeserializer {
       return reader.read(eltType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``element`` in-place as an element of the array.
+    */
     proc ref readElement(ref element) throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
@@ -3356,22 +3503,40 @@ record defaultDeserializer {
       reader.read(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  // Array helpers
-  @chpldoc.nodoc
-  proc startArray(reader: fileReader) throws {
-    return new ArrayDeserializer(reader);
+  /*
+    Start deserializing a map by reading a ``{``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`MapDeserializer`
+  */
+  proc startMap(reader: fileReader) throws {
+    reader._readLiteral("{");
+    return new MapDeserializer(reader);
   }
 
+  /*
+    Returned by ``startMap`` to enable deserializing maps.
+
+    See ``defaultSerializer.MapSerializer`` for details of the default
+    format for map.
+  */
   record MapDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize and return a key of type ``keyType``.
+    */
     proc ref readKey(type keyType) : keyType throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
@@ -3379,7 +3544,9 @@ record defaultDeserializer {
       return reader.read(keyType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``key`` in-place as a key of the map.
+    */
     proc ref readKey(ref key) throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
@@ -3387,39 +3554,44 @@ record defaultDeserializer {
       reader.read(key);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize and return a value of type ``valType``.
+    */
     proc readValue(type valType) : valType throws {
       reader._readLiteral(": ");
 
       return reader.read(valType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``value`` in-place as a value of the map.
+    */
     proc readValue(ref value) throws {
       reader._readLiteral(": ");
 
       reader.read(value);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current array by reading a ``}``.
+    */
     proc endMap() throws {
       reader._readLiteral("}");
     }
 
-    // Note: behavior undefined if called between readKey/readValue
-    @chpldoc.nodoc
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+
+      .. warning::
+
+        Behavior of 'hasMore' is undefined when called between ``readKey`` and
+        ``readValue``.
+    */
     proc hasMore() : bool throws {
       reader.mark();
       defer reader.revert();
       return !reader.matchLiteral("}");
     }
-  }
-
-  // Map helpers
-  @chpldoc.nodoc
-  proc startMap(reader: fileReader) throws {
-    reader._readLiteral("{");
-    return new MapDeserializer(reader);
   }
 }
 
