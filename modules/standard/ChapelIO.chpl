@@ -44,7 +44,7 @@ The 'serialize' and 'deserialize' Methods
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 A Chapel program can implement ``serialize`` and ``deserialize`` methods
-on a custom data type to define how that type is deserialized from a
+on a user-defined data type to define how that type is deserialized from a
 ``fileReader`` or serialized to a ``fileWriter``. The method signatures for
 non-class types are:
 
@@ -100,18 +100,25 @@ Using Serializers and Deserializers
 :ref:`Deserializers<io-deserializer-user-API>` support a variety of methods
 to support serializing various kinds of types. These methods can be used
 to serialize or deserialize a type in a format-agnostic way. For example,
-consider a simple 'Point' type:
+consider a simple 'point' type:
 
 .. code-block:: chapel
 
-  record Point : writeSerializable {
+  record point : writeSerializable {
     var x : int;
     var y : int;
   }
 
+The default implementation of ``point``'s ``serialize`` method will naturally
+serialize ``point`` as a record. In the default serialization format, this
+would look something like ``(x = 2, y = 4)``. In the JSON serialization format,
+the output would instead be ``{"x":4, "y":2}``. While this may be perfectly
+acceptable, what if the author of ``point`` wished to always serialize a
+``point`` as a tuple?
+
 Serializers and Deserializers have "start" methods that begin serialization
 or deserialization of a type, and then return a helper object that implements
-methods to continue the process. To begin serializing ``Point`` as a tuple,
+methods to continue the process. To begin serializing ``point`` as a tuple,
 a user may invoke the ``startTuple`` method on the ``serializer``, passing in
 the ``fileWriter`` to use when writing serialized output and the number of
 elements in the tuple. The returned value from ``startTuple`` is a helper
@@ -119,7 +126,7 @@ object that implements ``writeElement`` and ``endTuple`` methods:
 
 .. code-block:: chapel
 
-    proc Point.serialize(writer: fileWriter(locking=false, ?),
+    proc point.serialize(writer: fileWriter(locking=false, ?),
                          ref serializer: ?st) {
       // Start serializing and get the helper object
       // '2' represents the number of tuple elements to be serialized
@@ -133,14 +140,14 @@ object that implements ``writeElement`` and ``endTuple`` methods:
     }
 
 Now, when using different Serializers like the :type:`~IO.defaultSerializer` or
-the :type:`~JSON.jsonSerializer`, the ``Point`` type can be serialized without
+the :type:`~JSON.jsonSerializer`, the ``point`` type can be serialized without
 introducing special cases for each format:
 
 .. code-block:: chapel
 
   use IO, JSON;
 
-  var p = new Point(4, 2);
+  var p = new point(4, 2);
 
   // Prints '(4, 2)' in the default serialization format
   stdout.writeln(p);
@@ -149,9 +156,11 @@ introducing special cases for each format:
   var jsonWriter = stdout.withSerializer(jsonSerializer);
   jsonWriter.writeln(p);
 
-Please refer to the :ref:`IO Serializers<ioSerializers>` technote for more
-detail on the various kinds of types that can be serialized. As of Chapel 1.32
-the supported type kinds are Classes, Records, Tuples, Arrays, Lists, and Maps.
+A similar API exists for deserialization that would allow for deserializing a
+``point`` as a tuple. Please refer to the
+:ref:`IO Serializers technote<ioSerializers>` for more detail on the various
+kinds of types that can be serialized and deserialized. As of Chapel 1.32 the
+supported type-kinds are Classes, Records, Tuples, Arrays, Lists, and Maps.
 
 Compiler-Generated Default Methods
 ----------------------------------
@@ -159,11 +168,11 @@ Compiler-Generated Default Methods
 Default ``serialize`` methods are created for all types for which a
 user-defined ``serialize`` method is not provided.
 
-Classes will be serialized as a 'Class' type kind using the Serializer API,
+Classes will be serialized as a 'Class' type-kind using the Serializer API,
 and will invoke their parent ``serialize`` method before serializing their
 own fields.
 
-Records will be serialized as a 'Record' type kind using the Serializer API,
+Records will be serialized as a 'Record' type-kind using the Serializer API,
 and will serialize each field in the record.
 
 Default ``deserialize`` methods are created for all types for which a
