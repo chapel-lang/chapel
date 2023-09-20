@@ -784,8 +784,8 @@ If this was promoted, it would become the following:
 
    [b in B] A[b] += 3;
 
-This is illegal, as ``A`` cannot be modified without an explicit ``ref`` shadow
-variable. An explicit loop statement must be used, for example:
+This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
+An explicit loop statement must be used, for example:
 
 .. code-block:: chapel
 
