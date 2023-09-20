@@ -415,7 +415,7 @@ you would use one or the other). Correspondingly, ``const int* ptrArg`` can be
 represented with ``c_ptrConst(int)`` or the ``const ref`` intent.
 
 Note that, for numeric and pointer types, the default intent in Chapel is
-equivalent to ``const in`` for an ``extern proc``.
+already ``const in`` (see the spec section :ref:`The_Default_Intent`).
 
 As of 1.23, there are several limitations on what types can be passed to
 or returned from ``extern`` or ``export`` functions and what intents can

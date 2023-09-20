@@ -428,7 +428,7 @@ The argument intents are:
  * :ref:`The_Const_In_Intent` ``const in``
  * :ref:`The_Const_Ref_Intent` ``const ref``
  * :ref:`The_Const_Intent` ``const``
- * :ref:`The_Default_intent` (when no intent is given explicitly)
+ * :ref:`The_Default_Intent` (when no intent is given explicitly)
 
 How should programmers choose among these intents?
 
@@ -445,11 +445,11 @@ How should programmers choose among these intents?
    intent allows modifications of the referred-to value within the
    function and can be important when the function is intended to mutate
    its actual argument. While ``const ref`` does not allow the function
-   itself to modify the referred-to value, the formal tracks updates to
-   the actual through other variables or references, unlike the ``const``
-   or default intent.
+   itself to modify the referred-to value, the formal can be relied upon
+   to track updates to the referred-to value through other variables or
+   references, unlike the ``const`` or default intent.
 
- * The ``out`` intent moves a value out of the function. The ``inout``
+ * The ``out`` transfers a value out of the function. The ``inout``
    intent is a combination of ``in`` and ``out``.
 
 .. _Summary_of_Intents:
@@ -459,18 +459,18 @@ Summary of Intents
 
 The following table summarizes the differences between the intents:
 
-================================ ====== ========= ========= ======== ============ ============= ========= =======
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
 \                                ``in`` ``out``   ``inout`` ``ref``  ``const in`` ``const ref`` ``const`` default
-================================ ====== ========= ========= ======== ============ ============= ========= =======
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
 initializes formal from actual?  yes    no        yes       no       yes          no            no        no
 sets actual from formal?         no     yes       yes       no       no           no            no        no
 refers to actual argument?       no     no        no        yes      no           yes           maybe     maybe
 formal can be read?              yes    yes       yes       yes      yes          yes           yes       yes
 formal can be modified?          yes    yes       yes       yes      no           no            no        maybe
-local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       maybe
-================================ ====== ========= ========= ======== ============ ============= ========= =======
+local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       N/A or yes
+================================ ====== ========= ========= ======== ============ ============= ========= ==========
 
-See the sections on each intent for further details on what the \* means.
+See the sections on each intent for further details.
 
 .. _The_In_Intent:
 
@@ -478,9 +478,9 @@ The In Intent
 ~~~~~~~~~~~~~
 
 When ``in`` is specified as the intent, the formal argument represents a
-variable that is copy-initialized from the value of the actual argument,
-see :ref:`Copy_and_Move_Initialization`. Note that in many cases, this
-copy can be elided; see :ref:`Copy_Elision`.
+variable that is initialized from the value of the actual argument (see
+:ref:`Copy_and_Move_Initialization`). Note that a copy is not necessarily
+created for an ``in`` intent (see :ref:`Copy_Elision` for details).
 
 For example, for integer arguments, the formal argument will store a copy
 of the actual argument.
@@ -542,7 +542,7 @@ assignment. As a result the behavior of the ``inout`` intent is a
 combination of the ``in`` and ``out`` intents.
 
 ``inout`` intent formals behave the same as ``in`` formals for the
-purposes of determining candidate function and choosing the best
+purposes of determining candidate functions and choosing the best
 candidate (see :ref:`Function_Resolution`).
 
 The actual argument must be a valid lvalue. The formal argument can be
@@ -582,12 +582,14 @@ The Const Ref Intent
 
 The ``const ref`` intent is identical to the ``ref`` intent, except that
 modifications to the formal argument are prohibited within the function.
-The actual argument can still be modified by other means during the
+The referred-to value can still be modified by other means during the
 execution of the routine. Such modifications are observable
 by the formal argument, subject to the memory consistency model.
 
-The following example shows such aliasing. The behavior would be
-undefined if ``c`` used ``const`` intent instead of ``const ref``.
+The following example shows such modification by means other than the
+``const ref`` formal. This program would have implementation-dependent
+behavior if ``c`` used ``const`` intent instead of ``const ref`` (see
+:ref:`The_Const_Intent`).
 
   *Example (const-ref-aliasing.chpl)*.
 
@@ -620,15 +622,16 @@ speaking, the compiler will implement a ``const`` intent formal by
 choosing between ``const in`` and ``const ref`` in an
 implementation-defined manner. As such, it is appropriate when the actual
 value will not be modified anywhere within the function and additionally
-the actual value will not be modified by other means such as aliasing
-references.
+the actual value will not be modified through other means than the
+``const ref`` formal. See the example in :ref:`The_Const_Ref_Intent` for
+an example of modification through other means.
 
 The ``const`` intent indicates that the function will not and cannot
 modify the formal argument within its dynamic scope.
 
-Unlike ``const in`` / ``in``, the ``const`` intent never transfers a
-value.  Additionally, for record types, passing to a ``const`` intent
-will never cause copy initialization.
+Unlike ``const in`` / ``in``, the ``const`` intent cannot be relied upon
+to transfer a value. For record types, passing to a ``const`` intent will
+never cause copy initialization.
 
 For synchronization types ``sync`` and ``atomic``, the ``const``
 intent is ``const ref`` and the remainder of this section does not apply.
@@ -638,30 +641,33 @@ can make several assumptions to aid optimization within the function using
 a ``const`` formal:
 
  * the value referred to by such a formal argument will not be modified
-   through other means (such as aliasing references) while the function
-   is running
+   while the function is running
 
- * similarly, if the formal is a ``domain``, the domain will not be modified
-   through other means (such as aliasing references) while the function
-   is running
+ * similarly, if the formal is a ``domain``, the domain will not be
+   while the function is running
 
- * if the formal is an array, the index set of the domain the array is
+ * if the formal is an array, value of the domain that the array is
    declared over will not be modified while the function is running
 
- * if the formal is an ``owned`` or ``shared``, the result of borrowing
-   from it will not be modified while the function is running
+ * if the formal is an ``owned`` or ``shared``, the ``owned`` or
+   ``shared`` will not be modified to point to a different object while
+   the function is running.
 
 In the rare cases where these assumptions are not appropriate, code
-should use ``const ref`` instead of ``const`` or the default intent.
+should use ``const ref`` or ``const in`` as appropriate.
 
   *Implementation Notes*.
 
   In the current compiler implementation, ``const`` means ``const in``
   for the following types:
 
-     * for ``bool``, ``int``, ``uint``, ``real``, and ``imag`` with widths up to 64 bits
-     * for ``complex`` with widths up to 128 bits
+     * for ``bool``, ``int``, ``uint``, ``real``, and ``imag`` with
+       widths less than or equal to 64 bits
+
+     * for ``complex`` with widths less than or equal to  128 bits
+
      * for ``borrowed`` and ``unmanaged`` class types
+
      * for values of enumerated type
 
 
@@ -675,9 +681,9 @@ is applied. The default intent is designed to take the most natural/least
 surprising action for the argument.
 
 For most types, the default intent is the same as the ``const`` intent.
-See the description of the ``const`` intent :ref:`The_Const_intent` for
-details including  assumptions that the compiler can make about default
-intent and ``const`` formals when optimizing.
+See the description of the ``const`` intent in :ref:`The_Const_intent`
+for details including  assumptions that the compiler can make about
+default intent and ``const`` formals when optimizing.
 
 However, the default intent for ``atomic`` and ``sync`` is ``ref`` because
 modification is considered part of their nature.
@@ -698,7 +704,8 @@ the ``in`` or ``const in`` intent. Note that passing an actual argument of type
 :type:`~OwnedObject.owned` to a ``const in`` formal can change the
 actual argument's value since it transfers ownership out of it.
 Such ownership transfer will leave a value of nilable class type storing
-``nil`` and leave a value of non-nilable class type dead.
+``nil`` and leave a value of non-nilable class type dead (see
+:ref:`Variable_Lifetimes`).
 
    *Example (owned-any-intent.chpl)*.
 
@@ -933,13 +940,10 @@ form of the ``ref`` return intent. Calls to functions marked with the
 The Const Return Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
-The ``const`` return intent is similar to the ``const`` argument intent
-in that the compiler will choose between returning a ``const`` reference
-returning a value. See also :ref:`The_Const_Intent`. For any type where
-the ``const`` argument intent means ``const ref``, the ``const`` return
-intent will return a ``const`` reference. For any type where the
-``const`` argument intent means ``const in``, the ``const`` return intent
-will return by value.
+The ``const`` return intent makes it up to the implementation to return a
+``const`` reference or to return a value.  When making this choice for a
+the implementation should make decisions consistent with ``const`` formal
+argument intents (see :ref:`The_Const_Intent`).
 
 Calls to functions marked with the ``const`` return intent are not lvalue
 expressions.
