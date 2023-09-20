@@ -200,6 +200,7 @@ Serializer API
 --------------
 
 The API for a Serializer can be split into a few parts:
+
 1. The part that ``fileWriter`` will invoke
 2. The user-defined ``serialize`` method that Serializers may invoke
 3. The part defined for user interaction inside a ``serialize`` method
@@ -491,11 +492,10 @@ Deserializer API
 ----------------
 
 The API for a Deserializer can be split into a few parts:
+
 1. The part that ``fileReader`` will invoke
-2. The user-defined ``deserialize`` method and initializer that Deserializers
-   may invoke
-3. The part defined for user interaction inside a ``deserialize`` method or
-   intializer.
+2. The user-defined ``deserialize`` method and initializer that Deserializers may invoke
+3. The part defined for user interaction inside a ``deserialize`` method or intializer.
 
 The fileReader-Facing Serializer API
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -672,7 +672,7 @@ Deserializer API to allow for the ClassHelper to be passed to parent
 initializers and parent ``deserialize`` methods.
 
 The Record Helper
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~
 
 Users may begin deserializing a Record type kind by invoking the
 ``startRecord`` method on a Deserializer. This method takes a ``name`` argument
@@ -756,7 +756,7 @@ performance:
   proc ArrayHelper.readBulkElements(data: c_ptr(?eltType), n: int) throws;
 
 The List Helper
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~
 
 Users may begin deserializing a List type kind by invoking the ``startList``
 method on a Deserializer.
@@ -782,7 +782,7 @@ The returned object must implement the following API:
   proc ListHelper.endList() throws;
 
 The Map Helper
-~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~
 
 Users may begin deserializing a Map type kind by invoking the ``startMap``
 method on a Deserializer.
