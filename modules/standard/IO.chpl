@@ -8473,7 +8473,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
-  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
 
 
@@ -8512,7 +8512,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 @chpldoc.nodoc
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
 {
-  compilerError("writeBinary() only supports local, rectangular, non-strided arrays");
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
 
 /*
@@ -8709,7 +8709,7 @@ config param ReadBinaryArrayReturnInt = false;
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
   where ReadBinaryArrayReturnInt == false &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var e : errorCode = 0,
@@ -8754,7 +8754,7 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
   Binary values of the type ``data.eltType`` are consumed from the fileReader
   until ``data`` is full or EOF is reached.
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array to read into – existing values are overwritten.
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
@@ -8827,7 +8827,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
    is thrown if EOF is reached before the array is filled.
 
-   Note that this routine currently requires a local rectangular non-strided array.
+   Note that this routine currently requires a 1D rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8843,7 +8843,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 @deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
   where ReadBinaryArrayReturnInt == false &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var rv: bool = false;
@@ -8906,13 +8906,25 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 {
-  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
 }
 
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
 {
-  compilerError("readBinary() only supports local, rectangular, non-strided arrays");
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
 }
 
 
