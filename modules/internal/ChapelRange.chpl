@@ -1843,6 +1843,7 @@ proc range.safeCast(type t: range(?)) {
    the original bounds and/or stride do not fit in the new idxType
    or when the original stride is not legal for the new `strides` parameter.
  */
+pragma "no where doc"
 proc range.tryCast(type t: range(?)) where chpl_tryCastIsSafe(this, t) {
   const r = this;
   checkBounds(t, r);
