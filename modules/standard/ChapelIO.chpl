@@ -96,7 +96,7 @@ and ``fileWriter`` arguments. For example:
 Using Serializers and Deserializers
 -----------------------------------
 
-:ref:`Serializers<io-serializer-user-API>` and 
+:ref:`Serializers<io-serializer-user-API>` and
 :ref:`Deserializers<io-deserializer-user-API>` support a variety of methods
 to support serializing various kinds of types. These methods can be used
 to serialize or deserialize a type in a format-agnostic way. For example,
@@ -196,7 +196,7 @@ The readThis() and writeThis() Methods
 
 .. warning::
 
-  ``readThis`` and ``writeThis`` methods are deprecated. Please use 
+  ``readThis`` and ``writeThis`` methods are deprecated. Please use
   :ref:`serialize and deserialize<serialize-deserialize>` methods instead.
   Until ``readThis`` and ``writeThis`` methods are removed, any
   compiler-generated implementations of the 'serialize' and 'deserialize'
