@@ -2638,7 +2638,7 @@ proc fileWriter.serializer ref : serializerType {
 }
 
 /*
-  The default serializer used by ``fileWriter``.
+  The default Serializer used by ``fileWriter``.
 
   See :ref:`the serializers technote<ioSerializers>` for a general overview
   of Serializers and their usage.
@@ -2735,8 +2735,8 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startClass`` or ``startRecord`` to enable serializing classes
-    or records.
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    serializing classes or records.
 
     A ``class`` with integer fields 'x' and 'y' with values '0' and '5' would
     be serialized as:
@@ -2852,7 +2852,7 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startTuple`` to enable serializing tuples.
+    Returned by ``startTuple`` to provide the API for serializing tuples.
 
     A tuple will be serialized as a comma-separated list between two
     parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
@@ -2915,7 +2915,7 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startList`` to enable serializing lists.
+    Returned by ``startList`` to provide the API for serializing lists.
 
     A list will be serialized as a comma-separated series of serialized
     elements between two square brackets. For example, serializing a list
@@ -2967,7 +2967,7 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startArray`` to enable serializing arrays.
+    Returned by ``startArray`` to provide the API for serializing arrays.
 
     In the default format, an array will be serialized as a
     whitespace-separated series of serialized elements.
@@ -3050,7 +3050,7 @@ record defaultSerializer {
     }
 
     /*
-      End serialization of the current array.
+      Ends serialization of the current array.
     */
     proc endArray() throws { }
   }
@@ -3069,7 +3069,7 @@ record defaultSerializer {
   }
 
   /*
-    Returned by ``startMap`` to enable serializing maps.
+    Returned by ``startMap`` to provide the API for serializing maps.
 
     Maps are serialized as a comma-separated series of pairs between curly
     braces. For example, the keys ``1``, ``2``, and ``3`` with values
@@ -3108,7 +3108,7 @@ record defaultSerializer {
     }
 
     /*
-      End serialization of the current map by writing a ``}``
+      Ends serialization of the current map by writing a ``}``
     */
     proc endMap() throws {
       writer._writeLiteral("}");
@@ -3120,14 +3120,14 @@ record defaultSerializer {
 type DefaultSerializer = defaultSerializer;
 
 /*
-  The default deserializer used by ``fileReader``.
+  The default Deserializer used by ``fileReader``.
 
   See :ref:`the serializers technote<ioSerializers>` for a general overview
   of Deserializers and their usage.
 
   Otherwise, please refer to :type:`defaultSerializer` for a description
   of the default IO format. Individual methods on this type may clarify
-  relevant behavior in certain cases.
+  behavior specific to deserialization
 
   .. note::
 
@@ -3147,14 +3147,6 @@ record defaultDeserializer {
 
   /*
     Deserialize type ``readType`` with ``reader``.
-
-    Numeric values are deserialized using the same format as ``%i`` for
-    integers and ``%r`` for ``real`` numbers. Complex numbers are deserialized
-    as ``%z``. Please refer to :ref:`the section on Formatted IO<about-io-formatted-io>` for more information.
-
-    The ``nil`` value is deserialized as the text ``nil``. If ``readType`` is a
-    nilable class type and the input from ``reader`` is the word ``nil``, then
-    a ``nil`` class of type ``readType`` will be returned.
 
     Classes and records will be deserialized using an appropriate initializer,
     passing in ``reader`` and this Deserializer as arguments. If an
@@ -3255,8 +3247,8 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startClass`` or ``startRecord`` to enable deserializing
-    classes or records.
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    deserializing classes or records.
 
     See :type:`~IO.defaultSerializer.AggregateSerializer` for details of the
     default format for classes and records.
@@ -3333,7 +3325,7 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startTuple`` to enable deserializing tuples.
+    Returned by ``startTuple`` to provide the API for deserializing tuples.
 
     See ``defaultSerializer.TupleSerializer`` for details of the default format
     for tuples.
@@ -3382,7 +3374,7 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startList`` to enable deserializing lists.
+    Returned by ``startList`` to provide the API for deserializing lists.
 
     See ``defaultSerializer.ListSerializer`` for details of the default format
     for lists.
@@ -3442,7 +3434,7 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startArray`` to enable deserializing arrays.
+    Returned by ``startArray`` to provide the API for deserializing arrays.
 
     See ``defaultSerializer.ArraySerializer`` for details of the default format
     for arrays.
@@ -3523,7 +3515,7 @@ record defaultDeserializer {
   }
 
   /*
-    Returned by ``startMap`` to enable deserializing maps.
+    Returned by ``startMap`` to provide the API for deserializing maps.
 
     See ``defaultSerializer.MapSerializer`` for details of the default
     format for map.
@@ -3573,7 +3565,7 @@ record defaultDeserializer {
     }
 
     /*
-      End deserialization of the current array by reading a ``}``.
+      End deserialization of the current map by reading a ``}``.
     */
     proc endMap() throws {
       reader._readLiteral("}");
@@ -3599,7 +3591,13 @@ record defaultDeserializer {
 type DefaultDeserializer = defaultDeserializer;
 
 /*
-  An unstructured binary Serializer to be used with ``fileWriter``.
+  A basic binary Serializer.
+
+  This Serializer supports an ``endian`` field which may be configured at
+  execution time.
+
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Serializers and their usage.
 */
 record binarySerializer {
   /*
@@ -3633,10 +3631,43 @@ record binarySerializer {
   }
 
   /*
-    Serialize a value in this basic binary format.
+    Serialize ``val`` with ``writer``.
 
-    :arg writer: the ``fileWriter`` to which the serialized output will be written.
-    :arg val: the value to be serialized.
+    Numeric values like integers, real numbers, and complex numbers are
+    serialized directly to the associated ``fileWriter`` as binary data in the
+    specified endianness.
+
+    Booleans are serialized as single byte unsigned values of either ``0`` or
+    ``1``.
+
+    ``string`` values are serialized beginning with a length represented by a
+    variable-length byte scheme (which is always the same no matter what
+    endianness). In this scheme, the high bit of each encoded length byte records
+    whether or not there are more length bytes (and the remaining bits encode the
+    length in a big-endian manner). Then, the raw binary data of the string is
+    written to the ``writer``.
+
+    The ``nil`` value is serialized as a single unsigned byte of value ``0``.
+
+    Classes are serialized beginning with a single unsigned byte of either ``0``
+    or ``1`` indicating ``nil``. Nilable classes that are ``nil`` will always
+    serialize as ``0``, and non-nilable classes will always begin serializing
+    as ``1``.
+
+    Classes and records will have their ``serialize`` method invoked, passing
+    in ``writer`` and this Serializer as arguments. Please see the
+    :ref:`serializers technote<ioSerializers>` for more on the ``serialize``
+    method.
+
+    Classes and records are expected to implement the `writeSerializable`
+    interface. The `serializable` interface is also acceptable.
+
+    .. note::
+
+      Serializing and deserializing enums is not stable in this format.
+
+    :arg writer: The ``fileWriter`` used to write serialized output.
+    :arg val: The value to be serialized.
   */
   proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
@@ -3668,74 +3699,207 @@ record binarySerializer {
     }
   }
 
-  record AggregateSerializer {
-    var writer : fileWriter(false, binarySerializer);
+  /*
+    Start serializing a class and return a new ``AggregateSerializer``.
 
-    proc writeField(name: string, const field: ?T) throws {
-      writer.write(field);
-    }
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the class type.
+    :arg size: The number of fields in the class.
 
-    proc startClass(writer, name: string, size: int) throws {
-      return this;
-    }
-
-    proc endClass() throws {
-    }
-    proc endRecord() throws {
-    }
-  }
-
+    :returns: A new :type:`AggregateSerializer`
+  */
   proc startClass(writer: fileWriter(?), name: string, size: int) throws {
     return new AggregateSerializer(writer);
   }
 
+  /*
+    Start serializing a record and return a new ``AggregateSerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the record type.
+    :arg size: The number of fields in the class.
+
+    :returns: A new :type:`AggregateSerializer`
+  */
   proc startRecord(writer: fileWriter(?), name: string, size: int) throws {
     return new AggregateSerializer(writer);
   }
 
-  record TupleSerializer {
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    serializing classes or records.
+
+    In this basic binary format, classes and records do not begin or end with
+    any bytes indicating size, and instead serialize their field values in
+    ``binarySerializer``'s format.
+
+    For example, a record with two ``uint(8)`` fields with values ``1`` and
+    ``2`` would be serialized as ``0x01`` followed by ``0x02`` (in raw binary).
+  */
+  record AggregateSerializer {
+    @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
 
-    proc writeElement(const element: ?T) throws {
-      writer.write(element);
+    /*
+      Serialize ``field`` in ``binarySerializer``'s format.
+    */
+    proc writeField(name: string, const field: ?T) throws {
+      writer.write(field);
     }
-    proc endTuple() throws {
+
+    /*
+      Start serializing a nested class inside the current class. In this
+      binary format, this has no impact on the serialized output.
+    */
+    proc startClass(writer, name: string, size: int) throws {
+      return this;
+    }
+
+    /*
+      End deserialization of this class.
+    */
+    proc endClass() throws {
+    }
+
+    /*
+      End deserialization of this record.
+    */
+    proc endRecord() throws {
     }
   }
 
+  /*
+    Start serializing a tuple and return a new ``TupleSerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the tuple.
+
+    :returns: A new TupleSerializer
+  */
   proc startTuple(writer: fileWriter(?), size: int) throws {
     return new TupleSerializer(writer);
   }
 
-  record ListSerializer {
+  /*
+    Returned by ``startTuple`` to provide the API for serializing tuples.
+
+    In this basic binary format, tuples do not begin or end with any bytes
+    indicating size, and instead serialize their elements sequentially in
+    ``binarySerializer``'s format.
+  */
+  record TupleSerializer {
+    @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
 
-    proc writeElement(const element: ?) throws {
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
+    proc writeElement(const element: ?T) throws {
       writer.write(element);
     }
-    proc endList() throws {
+
+    /*
+      Ends serialization of the current tuple.
+    */
+    proc endTuple() throws {
     }
   }
 
+  /*
+    Start serializing a list by serializing ``size``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the list.
+
+    :returns: A new ListSerializer
+  */
   proc startList(writer: fileWriter(?), size: int) throws {
     writer.write(size);
     return new ListSerializer(writer);
   }
 
+  /*
+    Returned by ``startList`` to provide the API for serializing lists.
 
-  record ArraySerializer {
+    In this basic binary format, lists begin with the serialization of an
+    ``int`` representing the size of the list. This data is then followed by
+    the binary serialization of the specified number of elements.
+  */
+  record ListSerializer {
+    @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
-    const endian : ioendian;
 
-    proc startDim(size: int) throws {
-    }
-    proc endDim() throws {
-    }
-
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
     proc writeElement(const element: ?) throws {
       writer.write(element);
     }
 
+    /*
+      Ends serialization of  the current list.
+    */
+    proc endList() throws {
+    }
+  }
+
+  /*
+    Start serializing an array and return a new ``ArraySerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the array.
+
+    :returns: A new ArraySerializer
+  */
+  proc startArray(writer: fileWriter(?), size: int) throws {
+    return new ArraySerializer(writer, endian);
+  }
+
+  /*
+    Returned by ``startArray`` to provide the API for serializing arrays.
+
+    In this basic binary format, arrays are serialized element by element
+    in the order indicated by the caller of ``writeElement``. Dimensions and
+    the start or end of the array are not represented.
+  */
+  record ArraySerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
+    @chpldoc.nodoc
+    const endian : ioendian;
+
+    /*
+      Start serializing a new dimension of the array.
+    */
+    proc startDim(size: int) throws {
+    }
+
+    /*
+      Ends serialization of this dimension.
+    */
+    proc endDim() throws {
+    }
+
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
+    proc writeElement(const element: ?) throws {
+      writer.write(element);
+    }
+
+    /*
+      Serialize ``numElements`` number of elements in ``data``, provided that
+      the element type of ``data`` is a numeric type.
+
+      This performance-motivated implementation of the optional
+      ``writeBulkElements`` will write the elements of ``data`` in the order
+      in which they are represented in memory.
+
+      .. note::
+
+        This method is only optimized for the case where the
+        ``binarySerializer`` has been configured for ``native`` endianness.
+    */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
@@ -3746,32 +3910,58 @@ record binarySerializer {
       }
     }
 
+    /*
+      Ends serialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  proc startArray(writer: fileWriter(?), size: int) throws {
-    return new ArraySerializer(writer, endian);
+  /*
+    Start serializing a map by serializing ``size``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of entries in the map.
+
+    :returns: A new MapSerializer
+  */
+  proc startMap(writer: fileWriter(?), size: int) throws {
+    writer.write(size);
+    return new MapSerializer(writer);
   }
 
+  /*
+    Returned by ``startMap`` to provide the API for serializing maps.
+
+    In this basic binary format, maps begin with the serialization of an
+    ``int`` representing the size of the map. This data is then followed by the
+    binary serialization of the specified number of key-value pairs. The binary
+    serialization of a key-value pair has no structure, and simply consists of
+    the serialization of the key followed by the serialization of the value.
+  */
   record MapSerializer {
+    @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
 
+    /*
+      Serialize ``key`` in ``binarySerializer``'s format.
+    */
     proc writeKey(const key: ?) throws {
       writer.write(key);
     }
 
+    /*
+      Serialize ``val`` in ``binarySerializer``'s format.
+    */
     proc writeValue(const val: ?) throws {
       writer.write(val);
     }
 
+    /*
+      Ends serialization of the current map.
+    */
     proc endMap() throws {
     }
-  }
-
-  proc startMap(writer: fileWriter(?), size: int) throws {
-    writer.write(size);
-    return new MapSerializer(writer);
   }
 }
 
@@ -3779,7 +3969,17 @@ record binarySerializer {
 type BinarySerializer = binarySerializer;
 
 /*
-  An unstructured binary Deserializer to be used with ``fileReader``.
+  A basic binary Deserializer.
+
+  This Deserializer supports an ``endian`` field which may be configured at
+  execution time.
+
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Deserializers and their usage.
+
+  Otherwise, please refer to :type:`binarySerializer` for a description of the
+  binary format. Individual methods on this type may clarify relevant behavior
+  specific to deserialization
 */
 record binaryDeserializer {
   /*
@@ -3833,10 +4033,21 @@ record binaryDeserializer {
   }
 
   /*
-    Deserialize and return a value of the given type in this basic binary format.
+    Deserialize type ``readType`` with ``reader``.
 
-    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
-    :arg readType: the type to be deserialized.
+    Classes and records will be deserialized using an appropriate initializer,
+    passing in ``reader`` and this Deserializer as arguments. If an
+    initializer is unavailable, this method may invoke the class or record's
+    ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg readType: The type to be deserialized.
+
+    :returns: A value of type ``readType``.
   */
   proc ref deserializeType(reader:fileReader(?), type readType) : readType throws {
     if isClassType(readType) {
@@ -3875,10 +4086,21 @@ record binaryDeserializer {
   }
 
   /*
-    Deserialize a value in-place.
+    Deserialize from ``reader`` directly into ``val``.
 
-    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
-    :arg val: the value to be deserialized in-place.
+    Like :proc:`deserializeType`, but reads into an initialized value rather
+    than creating a new value. For classes and records, this method will first
+    attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
+    is unavailable, this method may fall back on invoking a suitable
+    initializer and assigning the resulting value into ``val``.. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
     if isClassType(readType) {
@@ -3894,56 +4116,152 @@ record binaryDeserializer {
     }
   }
 
+  /*
+    Start deserializing a class by returning an ``AggregateDeserializer``.
 
-  record AggregateDeserializer {
-    var reader : fileReader(false, binaryDeserializer);
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the class type.
 
-    proc readField(name: string, type fieldType) : fieldType throws {
-      return reader.read(fieldType);
-    }
-    proc readField(name: string, ref field) throws {
-      reader.read(field);
-    }
-    proc startClass(reader, name: string) throws {
-      return this;
-    }
-    proc endClass() throws {
-    }
-    proc endRecord() throws {
-    }
-  }
-
+    :returns: A new :type:`AggregateDeserializer`
+  */
   proc startClass(reader: fileReader(?), name: string) throws {
     return new AggregateDeserializer(reader);
   }
 
+  /*
+    Start deserializing a record by returning an ``AggregateDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the record type.
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
   proc startRecord(reader: fileReader(?), name: string) throws {
     return new AggregateDeserializer(reader);
   }
 
-  record TupleDeserializer {
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    deserializing classes or records.
+
+    See ``binarySerializer.AggregateSerializer`` for details of the
+    default format for classes and records.
+  */
+  record AggregateDeserializer {
+    @chpldoc.nodoc
     var reader : fileReader(false, binaryDeserializer);
 
-    proc readElement(type eltType) : eltType throws {
-      return reader.read(eltType);
+    /*
+      Deserialize and return a value of type ``fieldType``.
+    */
+    proc readField(name: string, type fieldType) : fieldType throws {
+      return reader.read(fieldType);
     }
 
-    proc readElement(ref element) throws {
-      reader.read(element);
+    /*
+      Deserialize ``field`` in-place.
+    */
+    proc readField(name: string, ref field) throws {
+      reader.read(field);
     }
 
-    proc endTuple() throws {
+    /*
+      Start deserializing a nested class inside the current class.
+
+      See ``binarySerializer.AggregateSerializer.startClass`` for details
+      on inheritance on the default format.
+
+      :returns: A new AggregateDeserializer
+    */
+    proc startClass(reader, name: string) throws {
+      return this;
+    }
+
+    /*
+      End deserialization of the current class.
+    */
+    proc endClass() throws {
+    }
+
+    /*
+      End deserialization of the current record.
+    */
+    proc endRecord() throws {
     }
   }
 
+  /*
+    Start deserializing a tuple by returning a ``TupleDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`TupleDeserializer`
+  */
   proc startTuple(reader: fileReader(?)) throws {
     return new TupleDeserializer(reader);
   }
 
-  record ListDeserializer {
+  /*
+    Returned by ``startTuple`` to provide the API for deserializing tuples.
+
+    See ``binarySerializer.TupleSerializer`` for details of the default format
+    for tuples.
+  */
+  record TupleDeserializer {
+    @chpldoc.nodoc
     var reader : fileReader(false, binaryDeserializer);
+
+    /*
+      Deserialize an element of the tuple.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
+    proc readElement(type eltType) : eltType throws {
+      return reader.read(eltType);
+    }
+
+    /*
+      Deserialize ``element`` in-place as an element of the tuple.
+    */
+    proc readElement(ref element) throws {
+      reader.read(element);
+    }
+
+    /*
+      End deserialization of the current tuple.
+    */
+    proc endTuple() throws {
+    }
+  }
+
+  /*
+    Start deserializing a list by returning a ``ListDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ListDeserializer`
+  */
+  proc startList(reader: fileReader(?)) throws {
+    return new ListDeserializer(reader, reader.read(uint));
+  }
+
+  /*
+    Returned by ``startList`` to provide the API for deserializing lists.
+
+    See ``binarySerializer.ListSerializer`` for details of the default format
+    for lists.
+  */
+  record ListDeserializer {
+    @chpldoc.nodoc
+    var reader : fileReader(false, binaryDeserializer);
+    @chpldoc.nodoc
     var _numElements : uint;
 
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
@@ -3953,6 +4271,9 @@ record binaryDeserializer {
       return reader.read(eltType);
     }
 
+    /*
+      Deserialize ``element`` in-place as an element of the list.
+    */
     proc ref readElement(ref element) throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
@@ -3962,38 +4283,88 @@ record binaryDeserializer {
       reader.read(element);
     }
 
+    /*
+      End deserialization of the current list by reading a ``]``.
+
+      :throws: A ``BadFormatError`` if there are remaining elements.
+    */
     proc endList() throws {
       if _numElements != 0 then
         throw new BadFormatError("read too few elements for list");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+    */
     proc hasMore() : bool throws {
       return _numElements > 0;
     }
   }
 
-  proc startList(reader: fileReader(?)) throws {
-    return new ListDeserializer(reader, reader.read(uint));
+  /*
+    Start deserializing an array by returning an ``ArrayDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ArrayDeserializer`
+  */
+  proc startArray(reader: fileReader(?)) throws {
+    return new ArrayDeserializer(reader, endian);
   }
 
+  /*
+    Returned by ``startArray`` to provide the API for deserializing arrays.
 
+    See ``binarySerializer.ArraySerializer`` for details of the default format
+    for arrays.
+  */
   record ArrayDeserializer {
+    @chpldoc.nodoc
     var reader : fileReader(false, binaryDeserializer);
+    @chpldoc.nodoc
     const endian : ioendian;
 
+    /*
+      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+    */
     proc startDim() throws {
     }
+
+    /*
+      End deserialization of the current dimension.
+    */
     proc endDim() throws {
     }
 
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
     }
 
+    /*
+      Deserialize ``element`` in-place as an element of the array.
+    */
     proc readElment(ref element) throws {
       reader.read(element);
     }
 
+    /*
+      Deserialize ``numElements`` number of elements in ``data``, provided that
+      the element type of ``data`` is a numeric type.
+
+      This performance-motivated implementation of the optional
+      ``readBulkElements`` will read the elements of ``data`` in the order in
+      which they are represented in memory.
+
+      .. note::
+
+        This method is only optimized for the case where the
+        ``binaryDeserializer`` has been configured for ``native`` endianness.
+    */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
@@ -4006,19 +4377,40 @@ record binaryDeserializer {
       }
     }
 
+    /*
+      End deserialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  proc startArray(reader: fileReader(?)) throws {
-    return new ArrayDeserializer(reader, endian);
+
+  /*
+    Start deserializing a map by returning a ``MapDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`MapDeserializer`
+  */
+  proc startMap(reader: fileReader(?)) throws {
+    return new MapDeserializer(reader, reader.read(uint));
   }
 
+  /*
+    Returned by ``startMap`` to provide the API for deserializing maps.
 
+    See ``binarySerializer.MapSerializer`` for details of the default
+    format for map.
+  */
   record MapDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _numElements : uint;
 
+    /*
+      Deserialize and return a key of type ``keyType``.
+    */
     proc ref readKey(type keyType) : keyType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
@@ -4028,6 +4420,9 @@ record binaryDeserializer {
       return reader.read(keyType);
     }
 
+    /*
+      Deserialize ``key`` in-place as a key of the map.
+    */
     proc ref readKey(ref key) throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
@@ -4037,26 +4432,41 @@ record binaryDeserializer {
       reader.read(key);
     }
 
+    /*
+      Deserialize and return a value of type ``valType``.
+    */
     proc readValue(type valType) : valType throws {
       return reader.read(valType);
     }
 
+    /*
+      Deserialize ``value`` in-place as a value of the map.
+    */
     proc readValue(ref value) throws {
       reader.read(value);
     }
 
+    /*
+      End deserialization of the current map.
+
+      :throws: A ``BadFormatError`` if there are entries remaining.
+    */
     proc endMap() throws {
       if _numElements != 0 then
         throw new BadFormatError("failed to read all expected elements in map");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+
+      .. warning::
+
+        Behavior of 'hasMore' is undefined when called between ``readKey`` and
+        ``readValue``.
+    */
     proc hasMore() : bool throws {
       return _numElements > 0;
     }
-  }
-
-  proc startMap(reader: fileReader(?)) throws {
-    return new MapDeserializer(reader, reader.read(uint));
   }
 }
 
