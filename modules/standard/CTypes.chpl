@@ -1024,6 +1024,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
     where cPtrToLogicalValue == false
   {
@@ -1046,6 +1047,7 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
     where cPtrToLogicalValue == false
   {
@@ -1076,6 +1078,7 @@ module CTypes {
     return c_addrOfConst(c);
   }
   @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
     where cPtrToLogicalValue == false
   {
