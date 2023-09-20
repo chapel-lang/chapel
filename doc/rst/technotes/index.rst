@@ -24,6 +24,7 @@ Base Language Features
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
    Attributes <attributes>
+   Interfaces <interfaces>
 
 Initializers and Generic Programming
 ------------------------------------
