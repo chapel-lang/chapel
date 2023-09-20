@@ -195,8 +195,7 @@ static void initializeClass(Expr* stmt, Symbol* sym);
 static void handleRuntimeTypes();
 static void buildRuntimeTypeInitFns();
 static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType);
-static void replaceTypeFormalsWithRuntimeTypes();
-static void replaceReturnedTypesWithRuntimeTypes();
+static void replaceRuntimeTypesInFunctionHeaders();
 static void replaceRuntimeTypeVariableTypes();
 static FnSymbol* findGenMainFn();
 static void printCallGraph(FnSymbol* startPoint = NULL,
@@ -8423,6 +8422,7 @@ void resolveInitVar(CallExpr* call) {
     Symbol *definedConst = dst->hasFlag(FLAG_CONST)? gTrue : gFalse;
     CallExpr* initCopy = new CallExpr(astr_initCopy, srcExpr->remove(),
                                                      definedConst);
+    bool wasSplitInit = call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT);
     call->insertAtTail(initCopy);
     call->primitive = primitives[PRIM_MOVE];
 
@@ -8432,6 +8432,13 @@ void resolveInitVar(CallExpr* call) {
       // since the initCopy might be removed later in compilation.
       inTryResolve++;
       tryResolveStates.push_back(CHECK_CALLABLE_ONLY);
+
+      if (wasSplitInit && dst->type->symbol->hasFlag(FLAG_GENERIC)) {
+        // var tup:_tuple=(1,); => works and dst->type==dtUnknown here
+        // var tup:_tuple; tup=(1,); => 'tup' would keep its generic type
+        // without this adjustment; so we mimic the working case
+        dst->type = dtUnknown;
+      }
 
       resolveExpr(initCopy);
       resolveMove(call);
@@ -12521,8 +12528,7 @@ static void handleRuntimeTypes()
   // record R { var A: [1..1][1..1] real; }
   populateRuntimeTypeMap();
   buildRuntimeTypeInitFns();
-  replaceTypeFormalsWithRuntimeTypes();
-  replaceReturnedTypesWithRuntimeTypes();
+  replaceRuntimeTypesInFunctionHeaders();
   replaceRuntimeTypeVariableTypes();
 }
 
@@ -12837,38 +12843,33 @@ static void buildRuntimeTypeInitFn(FnSymbol* fn, Type* runtimeType)
   fn->replaceBodyStmtsWithStmts(block);
 }
 
-static void replaceTypeFormalsWithRuntimeTypes()
-{
+static bool replacedOneRuntimeType(Type*& type) {
+  if (FnSymbol* fn = valueToRuntimeTypeMap.get(type->getValType())) {
+    Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
+                fn->retType : runtimeTypeMap.get(fn->retType);
+    INT_ASSERT(rt);
+    type = rt;
+    return true;
+  }
+  return false;
+}
+
+static void replaceRuntimeTypesInFunctionHeaders() {
   for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
+
       for_formals(formal, fn) {
         if (formal->hasFlag(FLAG_TYPE_VARIABLE) &&
             formal->getValType()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          if (FnSymbol* fn = valueToRuntimeTypeMap.get(formal->getValType())) {
-            Type* rt = (fn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE)) ?
-                        fn->retType : runtimeTypeMap.get(fn->retType);
-            INT_ASSERT(rt);
-            formal->type =  rt;
+          if (replacedOneRuntimeType(formal->type)) {
             formal->removeFlag(FLAG_TYPE_VARIABLE);
           }
         }
       }
-  }
-}
 
-static void replaceReturnedTypesWithRuntimeTypes()
-{
-  for_alive_in_Vec(FnSymbol, fn, gFnSymbols) {
       if (fn->retTag == RET_TYPE) {
         VarSymbol* ret = toVarSymbol(fn->getReturnSymbol());
         if (ret && ret->type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-          if (FnSymbol* rtfn = valueToRuntimeTypeMap.get(ret->type)) {
-            Type* rt = NULL;
-            if (rtfn->retType->symbol->hasFlag(FLAG_RUNTIME_TYPE_VALUE))
-              rt = rtfn->retType;
-            else
-              rt = runtimeTypeMap.get(rtfn->retType);
-            INT_ASSERT(rt);
-            ret->type = rt;
+          if (replacedOneRuntimeType(ret->type)) {
             fn->retType = ret->type;
             fn->retTag = RET_VALUE;
           }
@@ -14177,6 +14178,12 @@ static void replaceRuntimeTypeVariableTypes() {
       // mapping is stored in `valueToRuntimeTypeMap`. We probably want RTT for
       // arrayviews as well.
       if (!rt) {
+        if (def->sym->type->symbol->hasFlag(FLAG_GENERIC)) {
+          // Also, ignore symbols with still-generic types, ex.:
+          //proc f():(domain(?),int) do return (LocaleSpace,0); writeln(f);
+          continue;
+        }
+
         rt = valueToRuntimeTypeMap.get(def->sym->type)->retType;
       }
       // This assert might fail for code that is no longer traversed

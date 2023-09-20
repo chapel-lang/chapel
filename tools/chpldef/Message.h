@@ -413,7 +413,8 @@ protected:
   }
 
 public:
-  virtual ~TemplatedMessage() = default;
+  // Cannot use 'default' because of a conflict with specialization on GCC.
+  virtual ~TemplatedMessage() override {}
 
   /** Create a message using a JSON id and parameters. */
   static chpl::owned<Self> create(JsonValue id, Params p);
@@ -440,13 +441,13 @@ public:
       For incoming notifications, a JSON 'null' value is returned, as there
       is nothing to pack.
   */
-  virtual opt<JsonValue> pack() const final;
+  virtual opt<JsonValue> pack() const final override;
 
   /** For incoming messages, compute a result using the input parameters. */
-  virtual void handle(Server* ctx) final;
+  virtual void handle(Server* ctx) final override;
 
   /** For outbound messages, compute using a response sent by the client. */
-  virtual void handle(Server* ctx, Response* r) final;
+  virtual void handle(Server* ctx, Response* r) final override;
 
   /** For outbound messages, compute using results sent by the client. */
   void handle(Server* ctx, Result r);
@@ -469,8 +470,7 @@ public:
 
 /** Create aliases for each specialization over a message tag. */
 #define CHPLDEF_MESSAGE(name__, x1__, x2__, x3__) \
-  template <> class TemplatedMessage<MessageTag::name__>; \
-  using name__ = TemplatedMessage<MessageTag::name__>;
+  using name__ = class TemplatedMessage<MessageTag::name__>;
 #include "message-macro-list.h"
 #undef CHPLDEF_MESSAGE
 

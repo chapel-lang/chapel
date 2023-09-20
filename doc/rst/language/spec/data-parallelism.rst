@@ -495,7 +495,7 @@ iterator         0-based one-dimensional domain
    
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
-   result of the corresponding promoted expression, such as 
+   result of the corresponding promoted expression, such as
 
    .. code-block:: chapel
 
@@ -752,44 +752,44 @@ side array expressions alias the left-hand side expression.
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
 
-.. _Indirect_Whole_Array_Indexing:
+.. _Promoted_Array_Indexing:
 
-Indirect Whole Array Indexing
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Promoted Array Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Arrays can be indexed indirectly using an array of indices.
-Given an array ``A`` and an array of indices ``B`` in the domain of ``A``,
-the function call
-
-.. code-block:: chapel
-
-   f(A[B]);
-
-is equivalent to
+Array indexing operations can also be promoted.
+For example, an array of indices can be used to index into another array,
+as in the following expression:
 
 .. code-block:: chapel
 
-   [b in B] f(A[b]);
+   A[B]
 
-This is a legal expression only if the result of the promotion ``A[B]`` is not modified.
-The following statement
+which results in the promoted expression:
+
+.. code-block:: chapel
+
+   [b in B] A[b]
+
+However, it is an error to modify promoted expressions like this one.
+For example, the following is an error:
 
 .. code-block:: chapel
 
    A[B] += 3;
 
-is equivalent to
+If this was promoted, it would become the following:
 
 .. code-block:: chapel
 
    [b in B] A[b] += 3;
 
-which is not legal, as ``A`` cannot be modified without an explicit ``ref`` shadow variable.
-To modify the result of the promotion, the equivalent pattern can be used.
+This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
+An explicit loop statement must be used, for example:
 
 .. code-block:: chapel
 
-   [b in B with (ref A)] do A[b] += 3;
+   [b in B with (ref A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 

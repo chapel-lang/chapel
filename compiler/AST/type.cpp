@@ -191,6 +191,8 @@ const char* toString(Type* type, bool decorateAllClasses) {
     retval = "<type unknown>";
   } else if (type == dtAny) {
     retval = "<any type>";
+  } else if (type == dtDomain) {
+    retval = "domain(?)";
   } else if (auto fnType = toFunctionType(type)) {
     retval = fnType->toString();
   } else {

@@ -13,9 +13,9 @@ approximately as follows:
 * The STREAM and RA benchmarks are scalable but have outstanding
   performance and elegance improvements that we plan to address.
 
-* The FFT, and PTRANS benchmarks run on distributed memory, but
-  need additional work (both in the source code and the Chapel
-  implementation) to scale and perform well.
+* The PTRANS benchmark runs on distributed memory, needs additional
+  work (both in the source code and the Chapel implementation) to scale
+  and perform well.
 
 Our intention is to continue improving the implementation of all of
 these benchmarks over time.  Please refer to the Chapel website
@@ -28,7 +28,6 @@ The main files for these benchmarks are as follows:
      stream-ep.chpl         : the EP STREAM Triad benchmark
      ra.chpl                : the global Random Access (RA) benchmark
      ra-atomics.chpl        : a lossless version of RA using atomic vars
-     fft.chpl               : the global 1D FFT benchmark
      ptrans.chpl            : the global PTRANS benchmark
 
 Other files with the same base filenames as the Chapel test programs but
@@ -53,7 +52,6 @@ These benchmarks can be compiled using the following commands:
      chpl --fast -o stream-ep stream-ep.chpl
      chpl --fast -o ra ra.chpl
      chpl --fast -o ra-atomics ra-atomics.chpl
-     chpl --fast -o fft fft.chpl
      chpl --fast -o ptrans ptrans.chpl
 
 The presence of the --fast flag turns on optimizations, turns off
@@ -67,7 +65,6 @@ using:
     gmake stream-ep
     gmake ra
     gmake ra-atomics
-    gmake fft
     gmake ptrans
 
 Or to make them all, use:

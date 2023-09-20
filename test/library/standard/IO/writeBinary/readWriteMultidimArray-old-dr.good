@@ -1,0 +1,1 @@
+readWriteMultidimArray-old.chpl:19: error: readBinary() only supports 1-dimensional, rectangular, non-strided arrays of simple types
