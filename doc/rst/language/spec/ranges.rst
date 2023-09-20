@@ -444,7 +444,7 @@ Ranges can be compared using equality and inequality.
    when one of the ranges is bounded and the other is unbounded
    is currently unstable.
    We currently treat both ranges as being bounded.
-   This functionality is likely to change in the future.
+   This might change in the future.
 
 
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
