@@ -8,7 +8,6 @@ TARGETS = \
 	stream-ep \
 	ra \
 	ra-atomics \
-	fft \
 	ptrans \
 	hpl \
 
@@ -32,9 +31,6 @@ ra: ra.chpl HPCCProblemSize.chpl RARandomStream.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ra-atomics: ra-atomics.chpl HPCCProblemSize.chpl RARandomStream.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-fft: fft.chpl HPCCProblemSize.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ptrans: ptrans.chpl HPCCProblemSize.chpl
