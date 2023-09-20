@@ -789,7 +789,7 @@ variable. An explicit loop statement must be used, for example:
 
 .. code-block:: chapel
 
-   forall b in B with (ref A) do A[b] += 3;
+   [b in B with (ref A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 
