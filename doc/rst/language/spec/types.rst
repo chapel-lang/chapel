@@ -64,7 +64,7 @@ The concrete primitive types are: ``void``, ``nothing``, ``bool``,
 ``bytes``. They are defined in this section.
 
 In addition, there are several generic primitive types that are
-described in :ref:`Built_in_Generic_types`.
+described in :ref:`Built_in_Generic_Types`.
 
 The primitive types are summarized by the following syntax:
 

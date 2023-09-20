@@ -570,9 +570,10 @@ Otherwise the class inherits from the predefined ``RootClass`` class
 parent class.
 
 It is possible for a class to inherit from a generic class. Suppose for
-example that a class ``C`` inherits from class ``ParentC``. In this
-situation, ``C`` will have type constructor arguments based upon generic
-fields in the ``ParentC`` as described
+example that ``ParentC`` is a generic class. A class ``C`` can inherits
+from it by writing ``class C : ParentC(?)``.
+In this situation, ``C`` will have type constructor arguments based upon
+generic fields in the ``ParentC`` as described
 in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
 will be a subclass of a corresponding fully specified ``ParentC``.
 
