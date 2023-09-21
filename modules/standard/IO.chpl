@@ -3080,7 +3080,7 @@ record defaultSerializer {
 
       {1: 1, 2: 4, 3: 9}
 
-    Empty maps be serialized as ``{}``.
+    Empty maps will be serialized as ``{}``.
   */
   record MapSerializer {
     @chpldoc.nodoc
@@ -3101,7 +3101,7 @@ record defaultSerializer {
     }
 
     /*
-      Serialize ``val``, preceded by a ``:``.
+      Serialize ``val``, preceded by the character ``:``.
     */
     proc writeValue(const val: ?) throws {
       writer._writeLiteral(": ");
@@ -3155,8 +3155,9 @@ record defaultDeserializer {
     ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
-    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
-    ``serializable`` interface is also acceptable.
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+    Alternatively, types implementing the entire ``serializable`` interface
+    are also accepted.
 
     :arg reader: The ``fileReader`` from which types are deserialized.
     :arg readType: The type to be deserialized.
@@ -3197,8 +3198,9 @@ record defaultDeserializer {
     :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
-    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
-    ``serializable`` interface is also acceptable.
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+    Alternatively, types implementing the entire ``serializable`` interface
+    are also accepted.
 
     :arg reader: The ``fileReader`` from which values are deserialized.
     :arg val: The value into which this Deserializer will deserialize.
