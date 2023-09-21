@@ -21,6 +21,12 @@
 /*
 This module provides mathematical constants and functions.
 
+.. warning::
+
+   The module name 'AutoMath' is unstable.  If you want to use qualified naming
+   on the symbols within it, please ``use`` or ``import`` the :mod:`Math`
+   module.
+
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
 as described in Section 7.12.  Please consult that standard for an

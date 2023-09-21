@@ -74,11 +74,11 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>
    Math <standard/Math>
+   Automatically-included Math symbols <standard/AutoMath>
    Random <standard/Random>
 
 
