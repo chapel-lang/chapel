@@ -177,7 +177,9 @@ static int propagate_environment(char* buf, size_t size)
 }
 
 static char* chpl_launch_create_command(int argc, char* argv[],
-                                        int32_t numLocales) {
+                                        int32_t numLocales,
+                                        int32_t numLocalesPerNode) {
+
   int i;
   int size;
   char baseCommand[2*FILENAME_MAX];
@@ -192,7 +194,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   char* nodeAccessEnv = NULL;
   pid_t mypid;
   char  jobName[128];
-  int32_t localesPerNode = 1;
 
   if (basenamePtr == NULL) {
       basenamePtr = argv[0];
@@ -202,6 +203,8 @@ static char* chpl_launch_create_command(int argc, char* argv[],
   chpl_launcher_get_job_name(basenamePtr, jobName, sizeof(jobName));
 
   chpl_compute_real_binary_name(argv[0]);
+
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
   // command line walltime takes precedence over env var
   if (!walltime) {
@@ -249,16 +252,6 @@ static char* chpl_launch_create_command(int argc, char* argv[],
     chpl_warning("unsupported 'CHPL_LAUNCHER_NODE_ACCESS' option", 0, 0);
     nodeAccessStr = "exclusive";
   }
-
-  localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
-  if (localesPerNode <= 0) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
-    chpl_warning(msg, 0, 0);
-    localesPerNode = 1;
-  }
-
-  int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
 
   if (debug) {
     mypid = 0;
@@ -371,12 +364,8 @@ int chpl_launch(int argc, char* argv[], int32_t numLocales,
 
   debug = getenv("CHPL_LAUNCHER_DEBUG");
 
-  if (numLocalesPerNode > 1) {
-    chpl_launcher_no_colocales_error(NULL);
-  }
-
   retcode = chpl_launch_using_system(chpl_launch_create_command(argc, argv,
-                                          numLocales),
+                                          numLocales, numLocalesPerNode),
             argv[0]);
   chpl_launch_cleanup();
   return retcode;
