@@ -9,7 +9,6 @@ TARGETS = \
 	ra \
 	ra-atomics \
 	ptrans \
-	hpl \
 
 REALS = $(TARGETS:%=%_real)
 
@@ -34,9 +33,6 @@ ra-atomics: ra-atomics.chpl HPCCProblemSize.chpl RARandomStream.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 ptrans: ptrans.chpl HPCCProblemSize.chpl
-	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
-
-hpl: hpl.chpl HPCCProblemSize.chpl
 	+$(CHPL) -o $@ $(CHPL_FLAGS) $<
 
 variants: FORCE
