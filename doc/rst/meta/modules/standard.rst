@@ -77,7 +77,6 @@ Math/Numerical
    BitOps <standard/BitOps>
    GMP <standard/GMP>
    Math <standard/Math>
-   Automatically-included Math symbols <standard/AutoMath>
    Random <standard/Random>
 
 

@@ -20,7 +20,7 @@
 
 /*
 
-This module provides less frequently used mathematical constants and functions.
+This module provides frequently used mathematical constants and functions.
 
 .. note::
 
@@ -47,15 +47,71 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+THE FOLLOWING SYMBOLS ARE AUTOMATICALLY AVAILABLE TO ALL PROGRAMS
+=================================================================
 
-HEY HERE ARE SOME AUTO_AVAILABLE SYMBOLS
-========================================
+.. _automath-roots:
 
-.. include:: AutoMath.rst
+Roots
+-----
+:proc:`cbrt`
+:proc:`sqrt`
+
+.. _automath-rounding:
+
+Rounding
+--------
+:proc:`ceil`
+:proc:`floor`
+:proc:`round`
+:proc:`trunc`
+
+.. _automath-complex:
+
+Computations Involving Complex Numbers
+--------------------------------------
+:proc:`conj`
+:proc:`phase`
+:proc:`riemProj`
+
+.. _automath-inf-nan:
+
+Infinity and NaN
+----------------
+:proc:`inf`
+:proc:`nan`
+:proc:`isFinite`
+:proc:`isInf`
+:proc:`isNan`
+
+.. _automath-comparison:
+
+Comparison Functions
+--------------------
+:proc:`max`
+:proc:`min`
+:proc:`isClose`
+
+.. _automath-sign:
+
+Sign Functions
+--------------
+:proc:`sgn`
+:proc:`signbit`
+
+.. _automath-other:
+
+Remaining Functions
+-------------------
+:proc:`abs`
+:proc:`mod`
+
+Constant and Function Definitions
+---------------------------------
 
 
-AND NOW BACK TO OUR REGULAR PROGRAM
-===================================
+AND THE FOLLOWING CATEGORIES ARE NOT AUTOMATICALLY AVAILABLE
+============================================================
 
 
 .. _math-constants:
@@ -159,6 +215,16 @@ Bessel Functions
 
 Constant and Function Definitions
 ---------------------------------
+
+HEY HERE COME THE DEFINITIONS OF THE AUTO-AVAILABLE SYMBOLS
+===========================================================
+
+.. include:: AutoMath.rst
+
+
+AND NOW BACK TO OUR REGULAR PROGRAM
+===================================
+
 
 */
 module Math {
