@@ -659,10 +659,6 @@ METHOD_TABLE(EnumElement,
 );
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
-  static PyMethodDef NAME##Object_methods[] = { \
-    {NULL}  /* Sentinel */ \
-  }; \
-  \
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
     .tp_name = #NAME, \
