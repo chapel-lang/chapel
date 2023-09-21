@@ -967,6 +967,11 @@ ft:
 ft-a:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+
+heat_2d_dist.ml-time:
+  08/31/23:
+    - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+
 hpl:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
@@ -1630,6 +1635,8 @@ parOpEquals:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
   05/24/19:
     - Increased usage of initializers for domains and distributions (#13018)
+  09/12/23:
+    - Deprecate modifying an array in a promoted expression (#23208)
 
 pidigits: &pidigits-base
   05/16/16:
