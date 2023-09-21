@@ -6,7 +6,7 @@
   distributions.
 
   Local vs. Distributed Domains and Arrays
-  ========================================
+  ----------------------------------------
 
   In Chapel, *distributions* are recipes for implementing arrays and
   their index sets (*domains*).  Each distribution indicates how a
@@ -39,7 +39,7 @@
   implementation.
 
   Properties of Typical Distributions
-  ===================================
+  -----------------------------------
 
   Distributions for rectangular arrays can be thought of as
   distributing a *d*-dimensional space of possible indices over a
@@ -69,7 +69,7 @@
   they all share the same distribution.
 
   Getting Started with Block and Cyclic Distributions
-  ===================================================
+  ---------------------------------------------------
 
   In this primer, we'll introduce two common distributions: the first
   maps indices to locales using contiguous rectilinear blocks; the
@@ -162,7 +162,7 @@ var BA: [BlockSpace] int;
 */
 
 // Reasoning About Ownership
-// ~~~~~~~~~~~~~~~~~~~~~~~~~
+// -------------------------
 //
 // To illustrate how our block-distributed domain and array are mapped
 // to locales, let's use a forall loop that assigns each array element
@@ -209,7 +209,7 @@ coforall L in Locales {
 
 
 // Creating an Aligned Domain
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+// --------------------------
 
 // Domains declared in terms of a ``blockDist`` distribution can also
 // include indices outside of the bounding box. That is, the bounding
@@ -232,7 +232,7 @@ const BigBlockSpace = blockDist.createDomain({0..n+1, 0..n+1});
 // are *aligned*.
 
 // Specifying Target Locales
-// ~~~~~~~~~~~~~~~~~~~~~~~~~
+// -------------------------
 
 //
 // As mentioned above, most Chapel distributions support an optional
@@ -338,7 +338,7 @@ writeln("Locale 0 owns the following indices of CA: ", CA.localSubdomain());
 // compactly in a dense block of memory.
 
 // Conclusion
-// ==========
+// ----------
 
 // That wraps up this brief introduction to distributions in Chapel
 // and their use in declaring distributed domains and arrays.  Keep in
