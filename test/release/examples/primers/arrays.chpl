@@ -129,9 +129,9 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // Array ``A2`` above will have the implicit domain ``{0..4}`` to
 // represent the five values in its initializing expression.
 //
-// When an array is modified without being specified in the iterand inside
-// of a parallel construct (like ``forall`` in the example below), it needs
-// an explicit ``ref`` intent.
+// The explicit ``ref`` intent is required for ``B`` in the example below
+// because ``B`` is not modifed directly through the loop's index variable (in
+// this case ``i`` and ``j``).
 //
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For

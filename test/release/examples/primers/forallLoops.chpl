@@ -32,8 +32,9 @@ an expression. Both kinds are shown in the following sections.
 "Must-parallel" forall statement
 --------------------------------
 
-In the following example, the forall loop iterates over the array indices
-in parallel. Since the loop indirectly loops over ``A`` and the body modifies it, an explicit ``ref`` intent must be used.
+In the following example, the forall loop iterates over the array indices in
+parallel. Since the loop iterates over ``1..n`` and not ``A``, an explicit
+``ref`` intent must be used to allow modification of ``A``.
 */
 
 config const n = 5;
@@ -81,8 +82,8 @@ provide a "leader" iterator and all iterables provide "follower" iterators.
 These are described in the :ref:`parallel iterators primer
 <primers-parIters-leader-follower>`.
 
-Here we illustrate zippering arrays and domains. Since ``C`` is not directly
-iterated over, we must explicitly mark it as modified with a ``ref`` intent.
+Here we illustrate zippering arrays and domains. In this example, we must
+explicitly mark ``C`` as modified with a ``ref`` intent.
 */
 
 var C: [1..n] real;
