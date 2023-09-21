@@ -269,7 +269,7 @@ SSH can be configured analogously.
 
      # Specify that ssh should be used
      export GASNET_SPAWNFN=S
-     # Specify the list of nodes to use
+     # Specify the list of nodes to use; SSH_SERVERS can also be used
      export GASNET_SSH_SERVERS=`scontrol show hostnames | xargs echo`
      # Run the program on the 2 reserved nodes.
      ./hello6-taskpar-dist -nl 2
