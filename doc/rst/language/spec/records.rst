@@ -208,6 +208,10 @@ The compiler-generated default initializer for a record is defined in the
 same way as the default initializer for a class
 (:ref:`The_Compiler_Generated_Initializer`).
 
+Records containing fields without types or fields with generic types (see
+:ref:`Fields_without_Types` and :ref:`Fields_with_Generic_Types`) cannot
+be default-initialized.
+
 To create a record as an expression, i.e. without binding it to a
 variable, the ``new`` operator is required. In this case, storage is
 allocated and reclaimed as for a record variable declaration

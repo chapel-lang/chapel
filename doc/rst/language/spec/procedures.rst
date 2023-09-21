@@ -287,6 +287,9 @@ how the actual argument is passed to the function. If no intent is
 specified, the default intent (:ref:`The_Default_Intent`) is
 applied, resulting in type-dependent behavior.
 
+A formal argument can include a type (e.g. ``arg: int``) and possibly a
+default value (e.g. ``arg = ""``).
+
 .. _Named_Arguments:
 
 Named Arguments
