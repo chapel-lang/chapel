@@ -100,7 +100,7 @@ proc main() {
   //
   // In parallel, initialize the table such that each position
   // contains its index.  "[i in TableSpace]" is shorthand for "forall
-  // i in TableSpace"
+  // i in TableSpace".  "with (ref T)" is required since we are modifying "T".
   //
   [i in TableSpace with (ref T)] T(i) = i;
   for loc in Locales {

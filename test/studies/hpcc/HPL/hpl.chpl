@@ -170,7 +170,7 @@ proc LUFactorize(n: int, ref Ab: [?AbD] elemType,
 //     |aaaaa|.....|.....|.....|  function but called AD here.  Similarly,
 //     +-----+-----+-----+-----+  'b' was 'tr' in the calling code, but BD
 //     |aaaaa|.....|.....|.....|  here.
-//     |aaaaa|.....|.....|.....|  
+//     |aaaaa|.....|.....|.....|
 //     |aaaaa|.....|.....|.....|
 //     +-----+-----+-----+-----+
 //
