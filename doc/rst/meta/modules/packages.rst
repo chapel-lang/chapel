@@ -40,6 +40,7 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
+   DistributedBag_DFS <packages/DistributedBag_DFS>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
