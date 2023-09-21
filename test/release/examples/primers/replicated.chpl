@@ -1,7 +1,13 @@
 // replicatedDist Distribution
 
 /*
-  This primer demonstrates uses of the replicatedDist Distribution.
+  This primer demonstrates uses of the Replicated Distribution.
+
+  .. warning::
+
+    The Replicated Distribution is currently unstable.
+    Its functionality is likely to change in the future.
+
   To use this distribution in a Chapel program, the following module must be
   used:
 */
