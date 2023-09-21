@@ -64,7 +64,7 @@ compiling and running multilocale Chapel programs.
    .. code-block:: bash
 
      export GASNET_SPAWNFN=S
-     export GASNET_SSH_SERVERS="host1 host2 host3 ..."
+     export GASNET_SSH_SERVERS="host1 host2 host3 ..."  # or SSH_SERVERS
 
 #. Specify the number of locales on the command line. For example:
 
