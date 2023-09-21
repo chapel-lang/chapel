@@ -315,6 +315,7 @@ module CommDiagnostics
     */
     var cache_readahead_waited : uint(64);
 
+    @chpldoc.nodoc
     proc writeThis(c) throws {
       use Reflection;
 
@@ -334,6 +335,7 @@ module CommDiagnostics
       c.write(")");
     }
 
+    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writeThis(writer);
     }
