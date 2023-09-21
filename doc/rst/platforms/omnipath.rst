@@ -9,12 +9,9 @@ an Intel Omni-Path cluster. :ref:`readme-multilocale` describes
 general information about running Chapel in a multilocale
 configuration.
 
-.. warning::
-    GASNet's ofi (libfabric) conduit is used to target Omni-Path.
-    This conduit is technically experimental, but has been stable in
-    our own testing.
-
-    Note that ``CHPL_COMM=ofi`` is not supported for Omni-Path
+.. note::
+    Only ``CHPL_COMM=gasnet`` with the ofi substrate is supported for
+    Omni-Path. ``CHPL_COMM=ofi`` is not supported.
 
 .. contents::
 
