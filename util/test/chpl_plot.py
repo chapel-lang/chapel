@@ -666,16 +666,18 @@ def loadDatFile(filename):
         for dn in datanames:
           results[dn] = []
       else:
-        # read one config var and the rest are data
-        if not l.split()[0].isnumeric():
-            areYValuesNumbers = False
-        
-        if areYValuesNumbers:
-            config_vars.append(float(l.split()[0]))
-        else:
-            config_vars.append(l.split()[0])
+        splitEntries = shlex.split(l)
 
-        for dn, data in zip(datanames, l.split()[1:]):
+        # read one config var and the rest are data
+        if not splitEntries[0].isnumeric():
+          areYValuesNumbers = False
+
+        if areYValuesNumbers:
+          config_vars.append(float(splitEntries[0]))
+        else:
+          config_vars.append(splitEntries[0])
+
+        for dn, data in zip(datanames, splitEntries[1:]):
           results[dn].append(float(data))
 
   return Table(None, filename, config_vars, results, kvPairs)
