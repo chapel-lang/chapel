@@ -38,9 +38,11 @@ module JSON {
     Implements the 'serializeValue' method which is called by a ``fileWriter``
     to produce a serialized representation of a value in JSON format.
 
-    This serializer is designed to generate valid JSON; however, no
-    guarantees are made about the exact formatting w.r.t. whitespace,
-    newlines or indentation.
+    .. warning::
+
+      This serializer is designed to generate valid JSON; however, no
+      guarantees are made about the exact formatting w.r.t. whitespace,
+      newlines or indentation.
 
     See the :ref:`IO Serializers<ioSerializers>` technote for more information
     about serializers in general.
@@ -67,7 +69,7 @@ module JSON {
       Serialize ``val`` with ``writer``.
 
       Numeric values are serialized as though they were written with the format
-      as ``%i`` for integers and ``%er`` for ``real`` numbers. Please refer to
+      of ``%i`` for integers and ``%er`` for ``real`` numbers. Please refer to
       :ref:`the section on Formatted IO<about-io-formatted-io>` for more
       information.
 
@@ -91,8 +93,8 @@ module JSON {
       Classes and records are expected to implement the ``writeSerializable``
       or ``serializable`` interface.
 
-      :arg writer: The ``fileWriter`` used to write serialized output.
-      :arg val: The value to be serialized.
+      :arg writer: The ``fileWriter`` used to write serialized output
+      :arg val: The value to be serialized
     */
     proc ref serializeValue(writer: jsonWriter, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
@@ -114,9 +116,9 @@ module JSON {
     /*
       Start serializing a class by writing the character ``{``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg name: The name of the class type.
-      :arg size: The number of fields in the class.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg name: The name of the class type
+      :arg size: The number of fields in the class
 
       :returns: A new :type:`AggregateSerializer`
     */
@@ -128,9 +130,9 @@ module JSON {
     /*
       Start serializing a record by writing the character ``{``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg name: The name of the class type.
-      :arg size: The number of fields in the class.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg name: The name of the class type
+      :arg size: The number of fields in the class
 
       :returns: A new :type:`AggregateSerializer`
     */
@@ -144,12 +146,8 @@ module JSON {
       serializing classes or records.
 
       Classes and records are serialized as JSON objects. For example, a
-      ``class`` or ``record`` with integer fields 'x' and 'y' with values '0'
-      and '5' would be serialized as:
-
-      .. code-block:: text
-
-        {"x":0, "y":5}
+      ``class`` or ``record`` with integer fields ``x`` and ``y`` with values
+      ``0`` and ``5`` would be serialized as ``{"x":0, "y":5}``.
 
     */
     record AggregateSerializer {
@@ -167,8 +165,8 @@ module JSON {
       /*
         Serialize ``field`` named ``name``.
 
-        Serializes fields in the form '"<name>":<field>'. Adds a comma before the
-        name if this is no the first field.
+        Serializes fields in the form ``"<name>":<field>``. Adds a comma before
+        the name if this is not the first field.
       */
       proc ref writeField(name: string, const field: ?) throws {
         if !_first then writer._writeLiteral(", ");
@@ -202,9 +200,9 @@ module JSON {
           {"x":5, "y":2}
 
         :arg writer: The ``fileWriter`` to be used when serializing. Must match
-          writer used to create current AggregateSerializer.
-        :arg name: The name of the class type.
-        :arg size: The number of fields in the class.
+          the writer used to create current AggregateSerializer
+        :arg name: The name of the class type
+        :arg size: The number of fields in the class
 
         :returns: A new AggregateSerializer
       */
@@ -214,7 +212,7 @@ module JSON {
       }
 
       /*
-        Ends serialization of the current class by writing the character ``}``
+        Ends serialization of the current class by writing the character ``}``.
       */
       proc endClass() throws {
         if !_parent then
@@ -224,7 +222,8 @@ module JSON {
       }
 
       /*
-        Ends serialization of the current record by writing the character ``}``
+        Ends serialization of the current record by writing the character
+        ``}``.
       */
       proc endRecord() throws {
         writer._writeLiteral(_ending);
@@ -237,10 +236,10 @@ module JSON {
       In this format tuples are serialized as JSON lists. For example, the
       tuple ``(1, 2, 3)`` would be serialized as ``[1, 2, 3]``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg size: The number of elements in the tuple.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the tuple
 
-      :returns: A new ListSerializer
+      :returns: A new :type:`ListSerializer`
     */
     proc startTuple(writer: jsonWriter, size: int) throws {
       writer.writeLiteral("[");
@@ -250,10 +249,10 @@ module JSON {
     /*
       Start serializing a list by writing the character ``[``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg size: The number of elements in the list.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the list
 
-      :returns: A new ListSerializer
+      :returns: A new :type:`ListSerializer`
     */
     proc startList(writer: jsonWriter, size: int) throws {
       writer.writeLiteral("[");
@@ -311,10 +310,10 @@ module JSON {
     /*
       Start serializing an array.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg size: The number of elements in the array.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the array
 
-      :returns: A new ArraySerializer
+      :returns: A new :type:`ArraySerializer`
     */
     proc startArray(writer: jsonWriter, size: int) throws {
       return new ArraySerializer(writer);
@@ -456,10 +455,10 @@ module JSON {
     /*
       Start serializing a map by writing the character ``{``.
 
-      :arg writer: The ``fileWriter`` to be used when serializing.
-      :arg size: The number of entries in the map.
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of entries in the map
 
-      :returns: A new MapSerializer
+      :returns: A new :type:`MapSerializer`
     */
     proc startMap(writer: jsonWriter, size: int) throws {
       writer._writeLiteral("{");
@@ -493,15 +492,17 @@ module JSON {
       /*
         Serialize ``key``.
 
-        JSON itself only supports strings as names in objects. This library
-        provides support for non-string key types by serializing a non-string
-        key as an escaped JSON string containing the serialized key. For a
-        simple integer key, this results in output like ``"123"``. For a record
-        key with two integer fields, the output could look like:
+        .. note::
 
-        .. code-block:: text
+          JSON itself only supports strings as names in objects. This library
+          provides support for non-string key types by serializing a non-string
+          key as an escaped JSON string containing the serialized key. For a
+          simple integer key, this results in output like ``"123"``. For a
+          record key with two integer fields, the output could look like:
 
-          "{\"x\":1, \"y\":2}"
+          .. code-block:: text
+
+            "{\"x\":1, \"y\":2}"
 
         Adds a leading comma if this is not the first pair in the map.
       */
@@ -540,7 +541,7 @@ module JSON {
       }
 
       /*
-        Ends serialization of the current map by writing the character ``}``
+        Ends serialization of the current map by writing the character ``}``.
       */
       proc endMap() throws {
         writer.writeNewline();
@@ -642,8 +643,8 @@ module JSON {
       Alternatively, types implementing the entire ``serializable`` interface
       are also accepted.
 
-      :arg reader: The ``fileReader`` from which types are deserialized.
-      :arg readType: The type to be deserialized.
+      :arg reader: The ``fileReader`` from which types are deserialized
+      :arg readType: The type to be deserialized
 
       :returns: A value of type ``readType``.
     */
@@ -693,8 +694,8 @@ module JSON {
       Alternatively, types implementing the entire ``serializable`` interface
       are also accepted.
 
-      :arg reader: The ``fileReader`` from which values are deserialized.
-      :arg val: The value into which this Deserializer will deserialize.
+      :arg reader: The ``fileReader`` from which values are deserialized
+      :arg val: The value into which this Deserializer will deserialize
     */
     proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
@@ -707,7 +708,7 @@ module JSON {
     /*
       Start deserializing a class by reading the character ``{``.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
       :arg name: The name of the class type
 
       :returns: A new :type:`AggregateDeserializer`
@@ -726,7 +727,7 @@ module JSON {
     /*
       Start deserializing a record by reading the character ``{``.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
       :arg name: The name of the record type
 
       :returns: A new :type:`AggregateDeserializer`
@@ -874,7 +875,7 @@ module JSON {
     /*
       Start deserializing a tuple by reading the character ``[``.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
 
       :returns: A new :type:`ListDeserializer`
     */
@@ -885,7 +886,7 @@ module JSON {
     /*
       Start deserializing a list by reading the character ``[``.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
 
       :returns: A new :type:`ListDeserializer`
     */
@@ -970,7 +971,7 @@ module JSON {
     /*
       Start deserializing an array.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
 
       :returns: A new :type:`ArrayDeserializer`
     */
@@ -1072,7 +1073,7 @@ module JSON {
     /*
       Start deserializing a map by reading the character ``{``.
 
-      :arg reader: The ``fileReader`` to use when deserializing.
+      :arg reader: The ``fileReader`` to use when deserializing
 
       :returns: A new :type:`MapDeserializer`
     */

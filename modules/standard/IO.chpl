@@ -2767,7 +2767,7 @@ record defaultSerializer {
       Serialize ``field`` named ``name``.
 
       Serializes fields in the form '<name> = <field>'. Adds a comma before the
-      name if this is no the first field.
+      name if this is not the first field.
     */
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
@@ -2801,7 +2801,7 @@ record defaultSerializer {
         {x = 5, y = 2.0}
 
       :arg writer: The ``fileWriter`` to be used when serializing. Must match
-        writer used to create current AggregateSerializer.
+        the writer used to create current AggregateSerializer.
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
