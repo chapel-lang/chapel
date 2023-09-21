@@ -1009,17 +1009,17 @@ indicates the fully generic type and ignores the defaults.
         param p = 2;
       }
       var x:fullyDefaulted; // here, 'fullyDefaulted' uses the defaults
-      writeln(x.t:string); // 'int'
+      writeln(x.t:string); // 'int(64)'
       writeln(x.p:string); // '2'
       var y: fullyDefaulted(real, 0); // but, other instantiations are possible
-      writeln(y.t:string); // 'real'
+      writeln(y.t:string); // 'real(64)'
       writeln(y.p:string); // '0'
 
    .. BLOCK-test-chapeloutput
 
-      int
+      int(64)
       2
-      real
+      real(64)
       0
 
 
