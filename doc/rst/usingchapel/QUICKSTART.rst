@@ -10,11 +10,11 @@ understand Chapel's configuration options, build process, and
 installation more thoroughly, please refer to :ref:`readme-chplenv`
 and :ref:`readme-building` instead.
 
-These instructions first have you build a minimal, stripped-down
-version of Chapel to reduce build times and the potential for
-third-party portability issues.  Once you are interested in a
-full-featured version of Chapel, refer to
-:ref:`using-a-more-full-featured-chapel` below.
+These instructions first have you build a minimal, low-performance
+configuration of Chapel to reduce build times and the potential for
+third-party portability issues.  Once you are interested in getting
+better performance or using a full-featured version of Chapel, refer
+to :ref:`using-a-more-full-featured-chapel` below.
 
 
 0) See :ref:`readme-prereqs` for information about system tools and
