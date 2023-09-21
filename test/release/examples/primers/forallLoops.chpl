@@ -328,11 +328,9 @@ Task Intents Inside Record Methods
 When the forall loop occurs inside a method on a record,
 the fields of the receiver record are represented in the loop body
 with shadow variables as if they were outer variables.
-This, for example, allows the forall loop body to update
-record fields of array types.
 
-At present, the record fields, as well as the method receiver ``this``,
-are always passed by default intent and cannot be listed in a with-clause.
+To modify the fields within the body of a forall loop,
+a ``ref`` for ``this`` can be used.
 */
 
 record MyRecord {
@@ -341,9 +339,9 @@ record MyRecord {
 }
 
 proc ref MyRecord.myMethod() {
-  forall i in 1..n {
+  forall i in 1..n with (ref this) {
     arrField[i] = i * 2;  // beware of potential for data races
-    // intField += 1;     // would cause "illegal assignment" error
+    intField += 1;        // beware of potential for data races
   }
 }
 
