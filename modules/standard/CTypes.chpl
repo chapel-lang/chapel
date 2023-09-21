@@ -789,6 +789,74 @@ module CTypes {
                              eltSize:c_ptrdiff):c_ptrdiff;
 
   /*
+    Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
+    :proc:`c_ptrToConst` is used for :type:`~String.string`,
+    :type:`~Bytes.bytes`, and class type arguments. (The behavior of
+    :proc:`c_ptrTo` with array type arguments is unaffected.)
+
+    The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
+    underlying buffer of the ``string`` or ``bytes``, or to the heap instance of
+    a class type. The deprecated behavior is to return a
+    :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or ``bytes`` itself, or
+    the stack representation of the class — this matches the behavior of
+    :proc:`c_addrOf`/:proc:`c_addrOfConst`.
+
+    The deprecated behavior is on by default. To opt-in to the new behavior,
+    compile your program with the following argument:
+    ``-s cPtrToLogicalValue=true``.
+  */
+  config param cPtrToLogicalValue = false;
+
+  // Begin c_ptrTo overloads
+
+  /*
+    Returns a :type:`c_ptr` to any Chapel object.
+
+    For most types, the returned :type:`c_ptr` will simply point to the memory
+    address of the Chapel variable, and have element type matching the type of
+    the passed-in variable. However, this procedure has special behavior for
+    variables of the following types, and will return a pointer that is
+    potentially more useful:
+
+    * ``array`` types: Returns a pointer to the first element of the array, with
+      pointer element type matching the array's element type.
+    * ``class`` types: Returns a ``c_ptr(void)`` to the heap instance of the
+      class variable.
+    * ``string`` type: Returns a ``c_ptr(c_uchar)`` to the underlying buffer of
+      the ``string``.
+    * ``bytes`` type: Returns a ``c_ptr(c_uchar)`` to the underlying buffer of
+      the ``bytes``.
+
+    To avoid this special behavior and just get the variable address naively
+    regardless of type, use :proc:`c_addrOf` instead. ``c_ptrTo`` has identical
+    behavior to ``c_addrOf`` on types other than those with special behavior
+    listed above.
+
+    .. note::
+
+      The existence of the ``c_ptr`` has no impact on the lifetime
+      of the object it points to. In many cases the object will be stack
+      allocated and could go out of scope even if this ``c_ptr`` remains.
+
+    :arg x:   The by-reference argument to get a pointer to. Domains are not
+              supported, and will cause a compiler error.
+    :returns: A :type:`c_ptr` to the argument passed by reference, with address
+              and element type potentially depending on special behavior for the
+              the type as described above.
+
+  */
+  inline proc c_ptrTo(ref x:?t) {
+    if isDomainType(t) then
+      compilerError("c_ptrTo domain type not supported");
+    return c_addrOf(x);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo(x: c_fn_ptr) {
+    return x;
+  }
+
+  /*
     Returns a :type:`c_ptr` to the elements of a non-distributed
     Chapel rectangular array.  Note that the existence of this
     :type:`c_ptr` has no impact on the lifetime of the array.  The
@@ -799,6 +867,7 @@ module CTypes {
     :arg arr: the array for which a pointer should be returned
     :returns: a pointer to the array's elements
   */
+  @chpldoc.nodoc
   inline proc c_ptrTo(ref arr: []): c_ptr(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrTo() at present");
@@ -816,10 +885,114 @@ module CTypes {
 
     return c_pointer_return(arr[arr.domain.low]);
   }
+
+  /*
+    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the ``string``.  The returned pointer will be invalid if the ``string`` is
+    freed or even reallocated.
+
+    Halts if the ``string`` is empty and bounds checking is enabled.
+  */
+  @chpldoc.nodoc
+  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
+    where cPtrToLogicalValue == true
+  {
+    if boundsChecking {
+      if (s.buffLen == 0) then
+        halt("Can't create a C pointer for an empty string.");
+    }
+    return c_pointer_return(s.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref s: string): c_ptr(string)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOf(s);
+  }
+
+  /*
+    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~Bytes.bytes`
+
+    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
+    the ``bytes``.  The returned pointer will be invalid if the ``bytes`` is
+    freed or even reallocated.
+
+    Halts if the ``bytes`` is empty and bounds checking is enabled.
+  */
+  @chpldoc.nodoc
+  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
+    where cPtrToLogicalValue == true
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return(b.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOf(b);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrTo(c: class): c_ptr(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+  /*
+    Returns a ``c_ptr(void)`` to the heap instance of a class type.
+
+    Note that the existence of this ``c_ptr(void)`` has no impact on the
+    lifetime of the instance.  The returned pointer will be invalid if the
+    instance is freed or even reallocated.
+  */
+  @chpldoc.nodoc
+  inline proc c_ptrTo(c: class?): c_ptr(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptr(void), c.borrow());
+  }
+
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
+  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOf(c);
+  }
+  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOf(c);
+  }
+
+  // End c_ptrTo overloads
+
+  // Begin c_ptrToConst overloads
+
+  /*
+    Like :proc:`c_ptrTo`, but returns a :type:`c_ptrConst` which disallows direct
+    modification of the pointee.
+  */
+  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
+    if isDomainType(t) then
+      compilerError("c_ptrToConst domain type not supported");
+    return c_addrOfConst(x);
+  }
+
   /*
    Like :proc:`c_ptrTo` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const arr: []): c_ptrConst(arr.eltType) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_ptrToConst() at present");
@@ -839,53 +1012,10 @@ module CTypes {
   }
 
   /*
-    Toggles whether the new or deprecated behavior of :proc:`c_ptrTo` and
-    :proc:`c_ptrToConst` is used for :type:`~String.string`,
-    :type:`~Bytes.bytes`, and class type arguments.
-
-    The new behavior is to return a :type:`c_ptr`/:type:`c_ptrConst` to the
-    underlying buffer of the ``string`` or ``bytes``, or to the heap instance of
-    a class type. The deprecated behavior is to return a
-    :type:`c_ptr`/:type:`c_ptrConst` to the ``string`` or ``bytes`` itself, or
-    the stack representation of the class — this matches the behavior of
-    :proc:`c_addrOf`/:proc:`c_addrOfConst`.
-
-    The deprecated behavior is on by default. To opt in to the new behavior,
-    compile your program with the following argument:
-    ``-s cPtrToLogicalValue=true``.
-  */
-  config param cPtrToLogicalValue = false;
-
-  /*
-    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~String.string`
-
-    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
-    the ``string``.  The returned pointer will be invalid if the ``string`` is
-    freed or even reallocated.
-
-    Halts if the ``string`` is empty and bounds checking is enabled.
-  */
-  inline proc c_ptrTo(ref s: string): c_ptr(c_uchar)
-    where cPtrToLogicalValue == true
-  {
-    if boundsChecking {
-      if (s.buffLen == 0) then
-        halt("Can't create a C pointer for an empty string.");
-    }
-    return c_pointer_return(s.buff[0]);
-  }
-
-  @deprecated(notes="The c_ptrTo(string) overload that returns a c_ptr(string) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref s: string): c_ptr(string)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOf(s);
-  }
-
-  /*
    Like :proc:`c_ptrTo` for :type:`~String.string`, but returns a
    :type:`c_ptrConst` which disallows direct modification of the pointee.
    */
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(c_uchar)
     where cPtrToLogicalValue == true
   {
@@ -897,11 +1027,68 @@ module CTypes {
   }
 
   @deprecated(notes="The c_ptrToConst(string) overload that returns a c_ptrConst(string) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
   inline proc c_ptrToConst(const ref s: string): c_ptrConst(string)
     where cPtrToLogicalValue == false
   {
     return c_addrOfConst(s);
   }
+
+  /*
+   Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
+   :type:`c_ptrConst` which disallows direct modification of the pointee.
+   */
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
+    where cPtrToLogicalValue == true
+  {
+    if boundsChecking {
+      if (b.buffLen == 0) then
+        halt("Can't create a C pointer for an empty bytes.");
+    }
+    return c_pointer_return_const(b.buff[0]);
+  }
+
+  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOfConst(b);
+  }
+
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const c: class): c_ptrConst(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptrConst(void), c.borrow());
+  }
+  /*
+   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
+   */
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
+    where cPtrToLogicalValue == true
+  {
+    return __primitive("cast", c_ptrConst(void), c.borrow());
+  }
+
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOfConst(c);
+  }
+  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
+  @chpldoc.nodoc
+  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
+    where cPtrToLogicalValue == false
+  {
+    return c_addrOfConst(c);
+  }
+
+  // End c_ptrToConst overloads
 
   /****************************************************************************
     Temporary helper functions while deprecating c_ptr(string) etc
@@ -982,149 +1169,7 @@ module CTypes {
     End of temporary helper functions while deprecating c_ptr(string) etc
   *****************************************************************************/
 
-  /*
-    Returns a :type:`c_ptr` to the underlying buffer of a :type:`~Bytes.bytes`
-
-    Note that the existence of this ``c_ptr`` has no impact on the lifetime of
-    the ``bytes``.  The returned pointer will be invalid if the ``bytes`` is
-    freed or even reallocated.
-
-    Halts if the ``bytes`` is empty and bounds checking is enabled.
-  */
-  inline proc c_ptrTo(ref b: bytes): c_ptr(c_uchar)
-    where cPtrToLogicalValue == true
-  {
-    if boundsChecking {
-      if (b.buffLen == 0) then
-        halt("Can't create a C pointer for an empty bytes.");
-    }
-    return c_pointer_return(b.buff[0]);
-  }
-
-  @deprecated(notes="The c_ptrTo(bytes) overload that returns a c_ptr(bytes) is deprecated. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref b: bytes): c_ptr(bytes)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOf(b);
-  }
-
-  /*
-   Like :proc:`c_ptrTo` for :type:`~Bytes.bytes`, but returns a
-   :type:`c_ptrConst` which disallows direct modification of the pointee.
-   */
-  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(c_uchar)
-    where cPtrToLogicalValue == true
-  {
-    if boundsChecking {
-      if (b.buffLen == 0) then
-        halt("Can't create a C pointer for an empty bytes.");
-    }
-    return c_pointer_return_const(b.buff[0]);
-  }
-
-  @deprecated(notes="The c_ptrToConst(bytes) overload that returns a c_ptrConst(bytes) is deprecated. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrToConst(const ref b: bytes): c_ptrConst(bytes)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOfConst(b);
-  }
-
-  @chpldoc.nodoc
-  inline proc c_ptrTo(c: class): c_ptr(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptr(void), c.borrow());
-  }
-  /*
-    Returns a ``c_ptr(void)`` to the heap instance of a class type.
-
-    Note that the existence of this ``c_ptr(void)`` has no impact on the
-    lifetime of the instance.  The returned pointer will be invalid if the
-    instance is freed or even reallocated.
-  */
-  inline proc c_ptrTo(c: class?): c_ptr(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptr(void), c.borrow());
-  }
-
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  @chpldoc.nodoc
-  inline proc c_ptrTo(ref c: class): c_ptr(c.type)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOf(c);
-  }
-  @deprecated(notes="The c_ptrTo(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOf' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrTo(ref c: class?): c_ptr(c.type)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOf(c);
-  }
-
-  @chpldoc.nodoc
-  inline proc c_ptrToConst(const c: class): c_ptrConst(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptrConst(void), c.borrow());
-  }
-  /*
-   Like :proc:`c_ptrTo` for class types, but also accepts ``const`` data.
-   */
-  inline proc c_ptrToConst(const c: class?): c_ptrConst(void)
-    where cPtrToLogicalValue == true
-  {
-    return __primitive("cast", c_ptrConst(void), c.borrow());
-  }
-
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  @chpldoc.nodoc
-  inline proc c_ptrToConst(const ref c: class): c_ptrConst(c.type)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOfConst(c);
-  }
-  @deprecated(notes="The c_ptrToConst(class) overload that returns a pointer to the class representation on the stack is deprecated. Default behavior will soon change to return a pointer to the heap instance. Please use 'c_addrOfConst' instead, or recompile with '-s cPtrToLogicalValue=true' to opt-in to the new behavior.")
-  inline proc c_ptrToConst(const ref c: class?): c_ptrConst(c.type)
-    where cPtrToLogicalValue == false
-  {
-    return c_addrOfConst(c);
-  }
-
-  /*
-    Returns a :type:`c_ptr` to any Chapel object.
-    Note that the existence of the :type:`c_ptr` has no impact of the lifetime
-    of the object. In many cases the object will be stack allocated and
-    could go out of scope even if this :type:`c_ptr` remains.
-
-    :arg x: the by-reference argument to get a pointer to. Domains are not
-            supported, and will cause a compiler error. Records, class
-            instances, integral, real, imag, and complex types are supported.
-            See overloads taking arrays, strings, bytes, or class variables
-            which provide special behavior for those types.
-    :returns: a pointer to the argument passed by reference
-
-  */
-  inline proc c_ptrTo(ref x:?t):c_ptr(t) {
-    if isDomainType(t) then
-      compilerError("c_ptrTo domain type not supported");
-    return c_addrOf(x);
-  }
-
-  /*
-    Like :proc:`c_ptrTo`, but returns a :type:`c_ptrConst` which disallows direct
-    modification of the pointee.
-  */
-  inline proc c_ptrToConst(const ref x:?t): c_ptrConst(t) {
-    if isDomainType(t) then
-      compilerError("c_ptrToConst domain type not supported");
-    return c_addrOfConst(x);
-  }
-
-  @chpldoc.nodoc
-  inline proc c_ptrTo(x: c_fn_ptr) {
-    return x;
-  }
+  // Begin c_addrOf[Const] definitions
 
   /*
     Returns a :type:`c_ptr` to the address of an array.
@@ -1136,6 +1181,7 @@ module CTypes {
     Note that the existence of this :type:`c_ptr` has no impact on the lifetime
     of the array. The returned pointer will be invalid if the array is freed.
   */
+  @chpldoc.nodoc
   inline proc c_addrOf(ref arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOf() at present");
@@ -1153,6 +1199,7 @@ module CTypes {
    Like :proc:`c_addrOf` for arrays, but returns a :type:`c_ptrConst` which
    disallows direct modification of the pointee.
   */
+  @chpldoc.nodoc
   inline proc c_addrOfConst(const arr: []) {
     if (!arr.isRectangular() || !arr.domain.distribution._value.dsiIsLayout()) then
       compilerError("Only single-locale rectangular arrays support c_addrOfConst() at present");
@@ -1167,11 +1214,12 @@ module CTypes {
   }
 
   /*
-    Returns a :type:`c_ptr` to the address of any chapel object.
+    Returns a :type:`c_ptr` to the address of any Chapel object.
 
-    Note that the behavior of this procedure is identical to :func:`c_ptrTo`
+    Note that the behavior of this procedure is identical to :proc:`c_ptrTo`
     for scalar types and records. It only differs for arrays, strings, bytes,
-    and class variables.
+    and class variables; see documentation of :proc:`c_ptrTo` for special
+    behavior on those types.
   */
   inline proc c_addrOf(ref x: ?t): c_ptr(t) {
     if isDomainType(t) then
@@ -1193,6 +1241,8 @@ module CTypes {
   inline proc c_addrOf(x: c_fn_ptr) {
     return x;
   }
+
+  // End c_addrOf[Const] definitions
 
   // Offset the CHPL_RT_MD constant in order to preserve the value through
   // calls to chpl_here_alloc. See comments on offset_STR_* in String.chpl
