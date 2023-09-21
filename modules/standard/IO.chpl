@@ -3592,7 +3592,7 @@ record defaultDeserializer {
 type DefaultDeserializer = defaultDeserializer;
 
 /*
-  A basic binary Serializer.
+  A binary Serializer that implements a simple binary format.
 
   This Serializer supports an ``endian`` field which may be configured at
   execution time.
@@ -3730,7 +3730,7 @@ record binarySerializer {
     Returned by ``startClass`` or ``startRecord`` to provide the API for
     serializing classes or records.
 
-    In this basic binary format, classes and records do not begin or end with
+    In this simple binary format, classes and records do not begin or end with
     any bytes indicating size, and instead serialize their field values in
     ``binarySerializer``'s format.
 
@@ -3784,7 +3784,7 @@ record binarySerializer {
   /*
     Returned by ``startTuple`` to provide the API for serializing tuples.
 
-    In this basic binary format, tuples do not begin or end with any bytes
+    In this simple binary format, tuples do not begin or end with any bytes
     indicating size, and instead serialize their elements sequentially in
     ``binarySerializer``'s format.
   */
@@ -3822,7 +3822,7 @@ record binarySerializer {
   /*
     Returned by ``startList`` to provide the API for serializing lists.
 
-    In this basic binary format, lists begin with the serialization of an
+    In this simple binary format, lists begin with the serialization of an
     ``int`` representing the size of the list. This data is then followed by
     the binary serialization of the specified number of elements.
   */
@@ -3859,7 +3859,7 @@ record binarySerializer {
   /*
     Returned by ``startArray`` to provide the API for serializing arrays.
 
-    In this basic binary format, arrays are serialized element by element
+    In this simple binary format, arrays are serialized element by element
     in the order indicated by the caller of ``writeElement``. Dimensions and
     the start or end of the array are not represented.
   */
@@ -3934,7 +3934,7 @@ record binarySerializer {
   /*
     Returned by ``startMap`` to provide the API for serializing maps.
 
-    In this basic binary format, maps begin with the serialization of an
+    In this simple binary format, maps begin with the serialization of an
     ``int`` representing the size of the map. This data is then followed by the
     binary serialization of the specified number of key-value pairs. The binary
     serialization of a key-value pair has no structure, and simply consists of
@@ -3970,7 +3970,7 @@ record binarySerializer {
 type BinarySerializer = binarySerializer;
 
 /*
-  A basic binary Deserializer.
+  A binary Deserializer that implements a simple binary format.
 
   This Deserializer supports an ``endian`` field which may be configured at
   execution time.
@@ -4146,7 +4146,7 @@ record binaryDeserializer {
     deserializing classes or records.
 
     See ``binarySerializer.AggregateSerializer`` for details of the
-    default format for classes and records.
+    binary format for classes and records.
   */
   record AggregateDeserializer {
     @chpldoc.nodoc
@@ -4170,7 +4170,7 @@ record binaryDeserializer {
       Start deserializing a nested class inside the current class.
 
       See ``binarySerializer.AggregateSerializer.startClass`` for details
-      on inheritance on the default format.
+      on inheritance on the binary format.
 
       :returns: A new AggregateDeserializer
     */
@@ -4205,7 +4205,7 @@ record binaryDeserializer {
   /*
     Returned by ``startTuple`` to provide the API for deserializing tuples.
 
-    See ``binarySerializer.TupleSerializer`` for details of the default format
+    See ``binarySerializer.TupleSerializer`` for details of the binary format
     for tuples.
   */
   record TupleDeserializer {
@@ -4249,7 +4249,7 @@ record binaryDeserializer {
   /*
     Returned by ``startList`` to provide the API for deserializing lists.
 
-    See ``binarySerializer.ListSerializer`` for details of the default format
+    See ``binarySerializer.ListSerializer`` for details of the binary format
     for lists.
   */
   record ListDeserializer {
@@ -4316,7 +4316,7 @@ record binaryDeserializer {
   /*
     Returned by ``startArray`` to provide the API for deserializing arrays.
 
-    See ``binarySerializer.ArraySerializer`` for details of the default format
+    See ``binarySerializer.ArraySerializer`` for details of the binary format
     for arrays.
   */
   record ArrayDeserializer {
@@ -4354,8 +4354,8 @@ record binaryDeserializer {
     }
 
     /*
-      Deserialize ``numElements`` number of elements in ``data``, provided that
-      the element type of ``data`` is a numeric type.
+      Deserialize ``numElements`` number of elements into ``data``, provided
+      that the element type of ``data`` is a numeric type.
 
       This performance-motivated implementation of the optional
       ``readBulkElements`` will read the elements of ``data`` in the order in
@@ -4400,7 +4400,7 @@ record binaryDeserializer {
   /*
     Returned by ``startMap`` to provide the API for deserializing maps.
 
-    See ``binarySerializer.MapSerializer`` for details of the default
+    See ``binarySerializer.MapSerializer`` for details of the binary
     format for map.
   */
   record MapDeserializer {
