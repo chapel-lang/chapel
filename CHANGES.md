@@ -411,6 +411,8 @@ Memory Improvements
 Tool Improvements
 -----------------
 * made `c2chapel` generate `c_ptr[Const]`s for multidimensional arrays
+* added `:enum[constant]:` to the list of 'chpldoc'-supported inline markup  
+  (see https://chapel-lang.org/docs/1.32/tools/chpldoc/chpldoc.html#inline-markup-2)
 
 Language Specification Improvements
 -----------------------------------
@@ -418,7 +420,7 @@ Language Specification Improvements
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-require-statement)
 * simplified the explanation of default intents
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
-* adjusted the default type of `owned` and `shared` to be `const`  (TODO: ???)
+* updated the default intent of `owned`/`shared` to reflect that it's `const`  
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#owned-default-intent
   and https://chapel-lang.org/docs/1.32/language/spec/classes.html#shared-default-intent)
 * reformatted the classes section to hide implementation details
@@ -627,8 +629,6 @@ Developer-oriented changes: Tool Improvements
 * improved how `chpldoc` generates module documentation:
   - `where`-clauses are now printed out as part of a routine's signature
   - individual constants within an `enum` can now have their own documentation
-* added `:enum[constant]:` to the list of 'chpldoc'-supported inline markup  
-  (see https://chapel-lang.org/docs/1.32/tools/chpldoc/chpldoc.html#inline-markup-2)
 * added support for Chapel AST syntax highlighting
 * added sphinx message filter for `:enumconstant:`
 
