@@ -16,10 +16,10 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    Errors <standard/Errors>
-   IO Support <standard/ChapelIO>
    Types <standard/Types>
+   A subset of the IO symbols <standard/ChapelIO>
+   A subset of the Math symbols <standard/AutoMath>
 
 
 Data Structures
@@ -74,11 +74,11 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>
    Math <standard/Math>
+   Automatically-included Math symbols <standard/AutoMath>
    Random <standard/Random>
 
 

@@ -22,6 +22,12 @@
 
 This module provides less frequently used mathematical constants and functions.
 
+.. note::
+
+   Automatically-included Math symbols can be found :doc:`here <AutoMath>`.
+   These symbols can also be accessed using ``Math.`` as their qualified access
+   prefix.
+
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
 as described in Section 7.12.  Please consult that standard for an
