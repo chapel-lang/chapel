@@ -19,6 +19,9 @@ version 1.32, September 2023
 
 .. _readme-evolution.c_string-deprecation:
 
+``c_string`` deprecation
+************************
+
 Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
 replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
 need to ``use`` or ``import`` the ``CTypes`` module to have access to
@@ -52,6 +55,9 @@ An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
 ``CTypes`` module.
 
 .. _readme-evolution.ref-if-modified-deprecation:
+
+The default intent for arrays and records
+*****************************************
 
 In version 1.32, arrays and records now always have a default intent of
 ``const``. Previously, these types would be passed by ``const ref`` intent,
@@ -123,9 +129,9 @@ definition:
      }
    }
 
-  Without knowing what the body of ``doSomething`` does, it is not clear
-  whether ``x`` may be modified. In version 1.32, if ``x`` is modified the
-  method must be marked as a modifying record using a this-intent.
+Without knowing what the body of ``doSomething`` does, it is not clear
+whether ``x`` may be modified. In version 1.32, if ``x`` is modified the
+method must be marked as a modifying record using a this-intent.
 
 .. code-block:: chapel
 
@@ -136,7 +142,7 @@ definition:
      }
    }
 
-   Now it is clear that the method may modify ``x``.
+Now it is clear that the method may modify ``x``.
 
 version 1.31, June 2023
 -----------------------
