@@ -19,7 +19,6 @@ default:
    Errors <standard/Errors>
    Types <standard/Types>
    A subset of the IO symbols <standard/ChapelIO>
-   A subset of the Math symbols <standard/AutoMath>
 
 
 Data Structures

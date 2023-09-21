@@ -47,6 +47,17 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+
+HEY HERE ARE SOME AUTO_AVAILABLE SYMBOLS
+========================================
+
+.. include:: AutoMath.rst
+
+
+AND NOW BACK TO OUR REGULAR PROGRAM
+===================================
+
+
 .. _math-constants:
 
 Constants

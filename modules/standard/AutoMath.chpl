@@ -1111,7 +1111,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divCeil` and its argument names have changed to 'x' and 'y'")
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to `divCeil`` and its argument names have changed to 'x' and 'y'")
   proc divceil(param m: integral, param n: integral) param do
     return chpl_divceil(m, n);
 
@@ -1133,7 +1133,8 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divCeil` and its argument names have changed to 'x' and 'y'")
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divCeil`` and its argument names have changed to 'x' and 'y'")
   proc divceil(m: integral, n: integral) do return chpl_divceil(m, n);
 
   proc chpl_divceil(m: integral, n: integral) do return
@@ -1153,7 +1154,8 @@ module AutoMath {
     (not 0) and are of a signed integer type (not `uint`).
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divCeilPos` and its argument names have changed to 'x' and 'y'")
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'divceilpos' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divCeilPos`` and its argument names have changed to 'x' and 'y'")
   proc divceilpos(m: integral, n: integral) {
     return chpl_divceilpos(m, n);
   }
@@ -1174,7 +1176,8 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divFloor` and its argument names have changed to 'x' and 'y'")
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divFloor`` and its argument names have changed to 'x' and 'y'")
   proc divfloor(param m: integral, param n: integral) param do return
     chpl_divfloor(m, n);
 
@@ -1196,7 +1199,8 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divFloor` and its argument names have changed to 'x' and 'y'")
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'divfloor' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divFloor`` and its argument names have changed to 'x' and 'y'")
   proc divfloor(m: integral, n: integral) do return chpl_divfloor(m, n);
 
   proc chpl_divfloor(m: integral, n: integral) do return
@@ -1216,7 +1220,8 @@ module AutoMath {
     (not 0) and are of a signed integer type (not `uint`).
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to :proc:`~Math.divFloorPos` and its argument names have changed to 'x' and 'y'")
+  @chpldoc.nodoc
+  @deprecated(notes="In an upcoming release 'divfloorpos' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divFloorPos`` and its argument names have changed to 'x' and 'y'")
   proc divfloorpos(m: integral, n: integral) {
     return chpl_divfloorpos(m, n);
   }
