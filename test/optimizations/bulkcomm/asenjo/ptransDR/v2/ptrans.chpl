@@ -24,7 +24,7 @@ record localInfo {
 }
 
 // set up the data arrays
-const gridDist = gridDom dmapped Block(gridDom, gridLocales);
+const gridDist = gridDom dmapped blockDist(gridDom, gridLocales);
 var Data: [gridDist] localInfo;
 
 // make sure we got it right
@@ -90,7 +90,7 @@ proc transpose() {
   forall dat in Data {
     local {
       ref B = dat.B, C = dat.C;
-      forall (i,j) in dat.domB do C[j,i] = B[i,j];
+      forall (i,j) in dat.domB with (ref C) do C[j,i] = B[i,j];
     }
   }  
   // global transpose (comms)

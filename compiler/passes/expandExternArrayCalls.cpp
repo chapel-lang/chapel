@@ -64,7 +64,13 @@ bool ExpandExternArrayCalls::shouldProcess(FnSymbol* fn) {
   if (!fn->hasFlag(FLAG_EXTERN)) return false;
 
   for_formals(formal, fn) {
-    if (isFormalArray(formal)) return true;
+    if (isFormalArray(formal)) {
+      if (shouldWarnUnstableFor(formal))
+        USR_WARN(fn,
+                 "using a Chapel array type in an 'extern proc' is unstable "
+                 "and may change in the future");
+      return true;
+    }
   }
 
   return false;

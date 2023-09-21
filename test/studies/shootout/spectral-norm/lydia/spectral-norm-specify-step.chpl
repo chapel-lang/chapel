@@ -54,7 +54,7 @@ proc finishUp (i, inRange, U, ref Au, flip: bool) {
 
 proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange { 
+  forall i in 0..#inRange with (ref Au) { 
     Au(i) = + reduce [j in 0..#inRange by step] (sum(i, j, inRange, false, U));
     finishUp(i, inRange, U, Au, false);
   }
@@ -62,7 +62,7 @@ proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 
 proc eval_At_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange {
+  forall i in 0..#inRange with (ref Au) {
     Au(i) = + reduce [j in 0..#inRange by step] (sum(i, j, inRange, true, U));
     finishUp(i, inRange, U, Au, true);
   }

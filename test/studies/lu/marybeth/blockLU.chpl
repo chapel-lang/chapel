@@ -23,7 +23,7 @@ proc main() {
 
   var piv: [A1D] int;
 
-  [i in A1D] piv(i) = i;
+  [i in A1D with (ref piv)] piv(i) = i;
 
   writeln("Unfactored Matrix:");
   writeln(A);

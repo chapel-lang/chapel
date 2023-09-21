@@ -249,7 +249,7 @@ module HDFS {
       this.nameNode = nameNode;
       this.port = port;
       this.hfs = hdfsConnect(this.nameNode.c_str(), this.port.safeCast(uint(16)));
-      this.complete();
+      init this;
       refCount.write(1);
     }
     @chpldoc.nodoc
@@ -268,19 +268,6 @@ module HDFS {
     proc release() {
       var oldValue = refCount.fetchSub(1);
       return oldValue - 1;
-    }
-
-    pragma "last resort"
-    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
-    proc open(path:string, mode:iomode,
-              style:iostyle,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return open(path, IO.convertIoMode(mode), style, flags, bufferSize,
-                replication, blockSize);
     }
 
     pragma "last resort"
@@ -317,19 +304,6 @@ module HDFS {
       return openHelper(path, mode, flags=flags, bufferSize=bufferSize,
                         replication=replication, blockSize=blockSize);
     }
-
-    pragma "last resort"
-    @deprecated(notes="open with an iomode argument is deprecated - please use :enum:`~IO.ioMode`")
-    proc open(path:string, mode:iomode,
-              in flags:c_int = 0, // default to based on mode
-              bufferSize:c_int = 0,    // 0 -> use hdfs default value
-              replication:c_short = 0, // 0 -> use hdfs default value
-              blockSize:tSize = 0      // 0 -> use hdfs default value
-             ) throws {
-      return open(path, IO.convertIoMode(mode), flags=flags,
-        bufferSize=bufferSize, replication=replication, blockSize=blockSize);
-    }
-
 
     @chpldoc.nodoc
     proc openHelper(path:string, mode:ioMode,

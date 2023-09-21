@@ -1116,7 +1116,12 @@ GenRet doCodegenFieldPtr(
   // Reduce the Chapel reference or wide reference cases
   // to GEN_PTR or GEN_WIDE_PTR cases.
   if (baseType->symbol->hasEitherFlag(FLAG_REF,FLAG_WIDE_REF)) {
-    base = codegenDeref(base);
+    if (baseType->getValType()->symbol->hasFlag(FLAG_WIDE_CLASS)) {
+      base = codegenDeref(base);
+      base = codegenValue(base);
+    } else {
+      base = codegenDeref(base);
+    }
     return doCodegenFieldPtr(base, c_field_name, chpl_field_name, special);
   }
 
@@ -5262,12 +5267,12 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
       Type* actualValType = actual->typeInfo()->getValType();
 
       // TODO can we use codegenArgForFormal instead of this logic?
-      if (isClass(actualValType) || !isAggregateType(actualValType)) {
+      if (isClass(actualValType) || (!actualSym->isRef() &&
+                                     !isAggregateType(actualValType))) {
         args.push_back(codegenAddrOf(codegenValuePtr(actual)));
         args.push_back(new_IntSymbol(0));
       }
       else if (actualSym->isRef()) {
-        INT_ASSERT(isAggregateType(actualValType));
         args.push_back(actual->codegen());
         args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
       }

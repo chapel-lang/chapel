@@ -333,7 +333,7 @@ module Time {
   }
 
 /* A record representing a date */
-  record date {
+  record date : serializable {
     var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
@@ -619,9 +619,14 @@ module Time {
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  /* Writes this `date` formatted as ``YYYY-MM-DD`` */
+  @chpldoc.nodoc
   proc date.writeThis(f) throws {
     f.write(this:string);
+  }
+
+  /* Writes this `date` formatted as ``YYYY-MM-DD`` */
+  proc date.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
@@ -636,14 +641,14 @@ module Time {
     chpl_day = f.read(int);
   }
 
-  /* Reads this `date` with the same format used by :proc:`date.writeThis` */
+  @chpldoc.nodoc
   proc ref date.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -652,6 +657,11 @@ module Time {
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `date` with the same format used by :proc:`date.serialize` */
+  proc ref date.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -706,7 +716,7 @@ module Time {
 
 
   /* A record representing a time */
-  record time {
+  record time : serializable {
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     var chpl_tz: shared Timezone?;
 
@@ -941,14 +951,19 @@ module Time {
     return str;
   }
 
-  /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
-     followed by ``±hh:mm`` if a timezone is specified
-   */
+  @chpldoc.nodoc
   proc time.writeThis(f) throws {
     f.write(this:string);
   }
 
-  // Exists to support some common functionality for `dateTime.readThis`
+  /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+   */
+  proc time.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
+  // Exists to support some common functionality for `dateTime.deserialize`
   @chpldoc.nodoc
   proc ref time._readCore(f) throws {
     const colon = ":";
@@ -962,14 +977,14 @@ module Time {
     chpl_microsecond = f.read(int);
   }
 
-  /* Reads this `time` with the same format used by :proc:`time.writeThis` */
+  @chpldoc.nodoc
   proc ref time.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -978,6 +993,11 @@ module Time {
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `time` with the same format used by :proc:`time.serialize` */
+  proc ref time.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -1115,7 +1135,7 @@ module Time {
   type datetime = dateTime;
 
   /* A record representing a combined `date` and `time` */
-  record dateTime {
+  record dateTime : serializable {
     var chpl_date: date;
     var chpl_time: time;
 
@@ -1672,23 +1692,26 @@ module Time {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
-     followed by ``±hh:mm`` if a timezone is specified
-  */
+  @chpldoc.nodoc
   proc dateTime.writeThis(f) throws {
     f.write(this:string);
   }
 
-  /* Reads this `dateTime` with the same format used by
-     :proc:`dateTime.writeThis`
-   */
+  /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+  */
+  proc dateTime.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
+  @chpldoc.nodoc
   proc ref dateTime.readThis(f) throws {
-    import JSON.JsonDeserializer;
+    import JSON.jsonDeserializer;
 
     const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
           isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
-            isSubtype(f.deserializerType, JsonDeserializer);
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1699,6 +1722,13 @@ module Time {
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `dateTime` with the same format used by
+     :proc:`dateTime.serialize`
+   */
+  proc ref dateTime.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -2152,26 +2182,22 @@ module Time {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The `timeDelta` for daylight saving time */
     proc dst(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The name of this time zone */
     @unstable("'tzname' is unstable")
     proc tzname(dt: dateTime): string {
       HaltWrappers.pureVirtualMethodHalt();
-      return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromUtc(dt: dateTime): dateTime {
       HaltWrappers.pureVirtualMethodHalt();
-      return new dateTime(0,0,0);
     }
 
   }
@@ -2467,7 +2493,6 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 // converts microseconds to another unit
@@ -2482,7 +2507,6 @@ private proc _convert_microseconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 }

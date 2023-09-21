@@ -61,8 +61,8 @@ proc main() {
   // twiddle values and is a 1D domain indexed by 64-bit ints from 0
   // to m/4-1.  Twiddles is the vector of twiddle values.
   //
-  //const TwiddleDist = new Cyclic(startIdx=0:idxType, tasksPerLocale=tasksPerLocale);
-  const TwiddleDist = new Block(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales);
+  //const TwiddleDist = new cyclicDist(startIdx=0:idxType, tasksPerLocale=tasksPerLocale);
+  const TwiddleDist = new blockDist(rank=1, idxType=idxType, boundingBox={0..m/4-1}, targetLocales=Locales);
   const TwiddleDom: domain(1, int(64)) dmapped TwiddleDist = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
@@ -72,14 +72,14 @@ proc main() {
   // from 0 to m-1.  It is distributes the vectors Z and z across the
   // locales using the Block distribution.
   //
-  const BlkDist = new Block(rank=1, idxType=idxType, boundingBox={0..m-1},
+  const BlkDist = new blockDist(rank=1, idxType=idxType, boundingBox={0..m-1},
                                      targetLocales=Locales,
                                      dataParTasksPerLocale=tasksPerLocale,
                                      dataParIgnoreRunningTasks=true);
   const BlkDom: domain(1, int(64)) dmapped BlkDist = {0..m-1};
   var Z, z: [BlkDom] elemType;
 
-  const CycDist = new Cyclic(startIdx=0:idxType, targetLocales=Locales,
+  const CycDist = new cyclicDist(startIdx=0:idxType, targetLocales=Locales,
                              dataParTasksPerLocale=tasksPerLocale,
                              dataParIgnoreRunningTasks=true);
   const CycDom: domain(1, int(64)) dmapped CycDist = {0..m-1};
@@ -172,13 +172,13 @@ proc dfft(ref A: [?ADom], W, phase) {
     // problem size is a power of 4
     //
     if (str*radix == numElements) then
-      forall lo in 0..#str do
+      forall lo in 0..#str with (ref A) do
         butterfly(1.0, 1.0, 1.0, A, lo.. by str #radix);
     //
     // ...otherwise using a simple radix-2 butterfly scheme
     //
     else
-      forall lo in 0..#str {
+      forall lo in 0..#str with (ref A) {
         const a = A(lo),
               b = A(lo+str);
         A(lo)     = a + b;
@@ -279,7 +279,7 @@ proc computeTwiddles(ref Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
                           in (x, x): elemType;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
           y = sin(delta*i);
     Twiddles(i)            = (x, y): elemType;

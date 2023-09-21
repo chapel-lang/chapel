@@ -119,7 +119,7 @@
 
     /* Aims at selecting the leader from a set of nodes. */
     proc leader_elect() {
-        forall (i,p) in zip(D,processSet) {
+        forall (i,p) in zip(D,processSet) with (ref nval) {
             var x : int = (i + 1) % (processes);
             var sval : int = p!.send;
             sendMessage(x, sval);
@@ -127,7 +127,7 @@
             if(loadValue != 0) then nval[i] = loadweight(nval[i]+i);
         }
 
-        forall (i,pQ) in zip(D,processSet) {
+        forall (i,pQ) in zip(D,processSet) with (ref nval) {
             const p = pQ!;
             if(p.receivedId > p.leaderId) {
                 p.send = p.receivedId;

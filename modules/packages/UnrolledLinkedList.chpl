@@ -57,14 +57,14 @@ module UnrolledLinkedList {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -110,7 +110,7 @@ module UnrolledLinkedList {
     }
   };
 
-  record unrolledLinkedList {
+  record unrolledLinkedList : writeSerializable {
 
     /* The type of the elements contained in this unrolledLinkedList. */
     type eltType;
@@ -128,7 +128,7 @@ module UnrolledLinkedList {
     var _size = 0;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
 
     @chpldoc.nodoc
@@ -170,7 +170,7 @@ module UnrolledLinkedList {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
     }
 
     /*
@@ -193,7 +193,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -218,7 +218,7 @@ module UnrolledLinkedList {
       this.eltType = t;
       this.parSafe = parSafe;
       this.nodeCapacity = nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -238,7 +238,7 @@ module UnrolledLinkedList {
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
       this.nodeCapacity = other.nodeCapacity;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -271,13 +271,13 @@ module UnrolledLinkedList {
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
     @chpldoc.nodoc
@@ -608,26 +608,6 @@ module UnrolledLinkedList {
       _leave();
 
       return result;
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: unrolledLinkedList(eltType, ?p)) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      append(other);
-    }
-
-    @deprecated(notes="unrolledLinkedList.extend is deprecated, please use unrolledLinkedList.append")
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      append(other);
     }
 
     @chpldoc.nodoc
@@ -1188,6 +1168,11 @@ module UnrolledLinkedList {
       ch.write("]");
 
       _leave();
+    }
+
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*

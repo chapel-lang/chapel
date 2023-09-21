@@ -9,7 +9,7 @@ const Space = {1:myIntType..n,
                1:myIntType..n};
 
 proc dit(D, ref A, ref B, ref C) {
-  forall i in D {
+  forall i in D with (ref A, ref B, ref C) {
     var (i0,i1,i2,i3,i4,i5) = (i);
     A(i) = (i0+i1)/i2:real;
     B(i) = (i3+i4)/i5:real;
@@ -60,12 +60,12 @@ var DA, DB, DC: [DDom] real;
 dit(DDom, DA, DB, DC);
 checkdit("Default", DA, DB, DC);
 
-const BDom = Space dmapped new Block(boundingBox=Space);
+const BDom = Space dmapped new blockDist(boundingBox=Space);
 var BA, BB, BC: [BDom] real;
 dit(BDom, BA, BB, BC);
 checkdit("Block", BA, BB, BC);
 
-const CDom = Space dmapped new Cyclic(startIdx=(1:myIntType,
+const CDom = Space dmapped new cyclicDist(startIdx=(1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,
                                                          1:myIntType,

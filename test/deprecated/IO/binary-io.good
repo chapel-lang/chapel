@@ -1,2 +1,6 @@
 binary-io.chpl:2: warning: BinaryIO module is deprecated; please use the IO module instead
+binary-io.chpl:5: In function 'main':
+binary-io.chpl:8: warning: 'BinarySerializer' is deprecated; please use 'binarySerializer' instead
+binary-io.chpl:11: warning: 'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead
+hello, world
 hello, world

@@ -64,3 +64,4 @@ proc main() {
   w.writef("%i %i\n", n, n);
   w.write(image);
 }
+use Compat;

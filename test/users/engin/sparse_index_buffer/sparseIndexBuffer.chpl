@@ -4,11 +4,11 @@ use List;
 
 var parentDom1D = {1..100};
 var parentDom2D = {1..100, 1..100};
-var distParentDom1D = {1..100} dmapped Block({1..100});
-var distParentDom2DCOO = {1..100, 1..100} dmapped Block({1..100, 1..100});
-var distParentDom2DCSR = {1..100, 1..100} dmapped Block({1..100, 1..100},
+var distParentDom1D = {1..100} dmapped blockDist({1..100});
+var distParentDom2DCOO = {1..100, 1..100} dmapped blockDist({1..100, 1..100});
+var distParentDom2DCSR = {1..100, 1..100} dmapped blockDist({1..100, 1..100},
     sparseLayoutType=CS(compressRows=true));
-var distParentDom2DCSC = {1..100, 1..100} dmapped Block({1..100, 1..100},
+var distParentDom2DCSC = {1..100, 1..100} dmapped blockDist({1..100, 1..100},
     sparseLayoutType=CS(compressRows=false));
 
 const indexRange = 10..90 by 20;

@@ -1,16 +1,16 @@
 use IO, IO.FormattedIO;
 
-record R {
+record R : writeSerializable, readDeserializable {
   var x: int;
 
-  proc writeThis(fw: fileWriter) throws {
-    fw.write("<", x, ">");
+  proc serialize(writer, ref serializer) throws {
+    writer.write("<", x, ">");
   }
 
-  proc ref readThis(fr: fileReader) throws {
-    fr.readLiteral("<");
-    this.x = fr.read(int);
-    fr.readLiteral(">");
+  proc ref deserialize(reader, ref deserializer) throws {
+    reader.readLiteral("<");
+    this.x = reader.read(int);
+    reader.readLiteral(">");
   }
 }
 

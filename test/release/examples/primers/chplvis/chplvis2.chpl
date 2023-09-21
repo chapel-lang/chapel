@@ -13,7 +13,7 @@ proc main() {
 
    // Create a couple of domains and a block mapped data array.
    const Domain = { 1 .. ncells };
-   const mapDomain = Domain dmapped Block(Domain);
+   const mapDomain = blockDist.createDomain(Domain);
 
    var  data : [mapDomain] int = 1;
 
@@ -23,8 +23,8 @@ proc main() {
    // First computation step ... a simple forall
    // Even though the data is distributed, the computation is
    // on Locale 0.  chplvis shows no computation on locales
-   // other than 0.   Domain is not dmapped.
-   forall i in Domain do data[i] += here.id + 1;
+   // other than 0.   Domain is not distributed.
+   forall i in Domain with (ref data) do data[i] += here.id + 1;
    
    // Write the result, we want to see the results of the above
    // so we tag before we continue.  Computation only on locale 0.
@@ -35,7 +35,7 @@ proc main() {
    // in the forall and thus computation is distributed.  Again,
    // chplvis shows computation on all locales.
    tagVdebug("step 2");
-   forall i in mapDomain do data[i] += here.id+1;
+   forall i in mapDomain with (ref data) do data[i] += here.id+1;
 
    // Don't capture the writeln
    pauseVdebug();

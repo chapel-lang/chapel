@@ -45,7 +45,7 @@ record MyRec1 {
   param PP;
 }
 
-proc reqFun(cgFormal: MyRec1,
+proc reqFun(cgFormal: MyRec1(?),
             atFormal1: cgFormal.AT1,
             atFormal2: cgFormal.AT2,
             atFormal3: cgFormal.AT3,
@@ -70,13 +70,13 @@ record MyRec2 {
 
 // would be incorrect: MyRec2 implements IFC1;
 
-proc reqFun(cgFormal1: MyRec1, cgFormal2: MyRec2): void {
+proc reqFun(cgFormal1: MyRec1(?), cgFormal2: MyRec2(?)): void {
   writeln("  reqFun.MyRec1.MyRec2");
   writeln("    cgFormal1  = ", cgFormal1,  " : ", cgFormal1.type: string);
   writeln("    cgFormal2  = ", cgFormal2,  " : ", cgFormal2.type: string);
 }
 
-proc reqFun(cgFormal2: MyRec2, cgFormal1: MyRec1): void {
+proc reqFun(cgFormal2: MyRec2(?), cgFormal1: MyRec1(?)): void {
   writeln("  reqFun.MyRec2.MyRec1");
   writeln("    cgFormal2  = ", cgFormal2,  " : ", cgFormal2.type: string);
   writeln("    cgFormal1  = ", cgFormal1,  " : ", cgFormal1.type: string);

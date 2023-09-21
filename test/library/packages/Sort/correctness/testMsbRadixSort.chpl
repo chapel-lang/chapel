@@ -9,7 +9,7 @@ use BitOps;
  config const printStats = false;
  config const size = 10000;
 
- var chplout = stdout.withSerializer(ChplSerializer);
+ var chplout = stdout.withSerializer(chplSerializer);
 
  record uintCriterion8 {
    inline

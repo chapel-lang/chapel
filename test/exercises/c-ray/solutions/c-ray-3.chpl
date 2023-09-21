@@ -154,7 +154,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixels.domain do
+  forall (y, x) in pixels.domain with (ref pixels) do
     pixels[y, x] = computePixel(y, x, scene, rands);
 
   /* OR, using a 2-tuple index 'yx'

@@ -2,19 +2,19 @@ use BlockDist, CommDiagnostics;
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dom = {1..10} dmapped Block({1..10});
+var dom = {1..10} dmapped blockDist({1..10});
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dom2 = Block.createDomain({1..10});
+var dom2 = blockDist.createDomain({1..10});
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 
 resetCommDiagnostics();
 startCommDiagnostics();
-var dist = new Block({1..10});
+var dist = new blockDist({1..10});
 stopCommDiagnostics();
 printCommDiagnosticsTable();
 

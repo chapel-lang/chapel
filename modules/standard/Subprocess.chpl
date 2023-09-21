@@ -121,11 +121,54 @@ other task is consuming it.
 
 .. note::
 
-  Creating a subprocess that uses :type:`pipeStyle` ``pipeStyle.pipe`` to
+  Creating a subprocess that uses :enumconstant:`pipeStyle.pipe` to
   provide input or capture output does not work when using the ugni
   communications layer with hugepages enabled and when using more than one
   locale. In this circumstance, the program will halt with an error message.
   These scenarios do work when using GASNet instead of the ugni layer.
+
+The Deprecated 'kind' Field
+---------------------------
+
+Prior to the 1.32 release, configuring a :type:`subprocess` record to use
+binary IO required using the ``kind`` field (of type ``iokind``) to enable
+binary IO and set the desired endianness. The 1.32 release introduced
+:ref:`serializers<ioSerializers>`, and deprecated use of the ``iokind`` type in
+favor of using Serializers and Deserializers to configure a given
+:type:`~IO.fileWriter` or :type:`~IO.fileReader` for a desired format.
+
+Users may now create aliases of ``stdin`` and ``stdout`` with different
+serialization formatting by using the :proc:`~IO.fileWriter.withSerializer` and
+:proc:`~IO.fileReader.withDeserializer` methods. For example, consider the
+following program that writes the numbers ``1`` through ``10`` in binary to the
+``hexdump`` utility:
+
+.. code-block:: chapel
+
+  use IO, Subprocess;
+
+  var sub = spawn(["hexdump", "-C"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+
+  // Use 'withSerializer' to create a binary-serializing alias of 'sub.stdin'
+  var bin = sub.stdin.withSerializer(binarySerializer);
+
+  for i in 1..10 do bin.write(i:uint(8));
+
+  sub.communicate();
+
+  var line : string;
+  while sub.stdout.readLine(line) do
+    write(line);
+
+This program prints:
+
+.. code-block:: text
+
+  00000000  01 02 03 04 05 06 07 08  09 0a                    |..........|
+  0000000a
+
+Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
+for more information on their supported format.
 
  */
 module Subprocess {
@@ -317,35 +360,38 @@ module Subprocess {
   private extern const QIO_FD_TO_STDOUT:c_int;
   private extern const QIO_FD_BUFFERED_PIPE:c_int;
 
-  /*
-     Styles of piping to use in a subprocess.
-
-     ``forward`` indicates that the child process should inherit
-     the stdin/stdout/stderr of this process.
-
-     ``close`` indicates that the child process should close
-     its stdin/stdout/stderr.
-
-     ``pipe`` indicates that the spawn operation should set up
-     a pipe between the parent process and the child process
-     so that the parent process can provide input to the
-     child process or capture its output.
-
-     ``stdout`` indicates that the stderr stream of the child process
-     should be forwarded to its stdout stream.
-
-     ``bufferAll`` is the same as pipe, but when used for stdin causes all data
-     to be buffered and sent on the communicate() call. This avoids certain
-     deadlock scenarios where stdout or stderr are ``pipe``. In particular,
-     without ``bufferAll``, the sub-process might block on writing output
-     which will not be consumed until the communicate() call.
-
-   */
+  /* Styles of piping to use in a subprocess. */
   enum pipeStyle {
+    /*
+      ``forward`` indicates that the child process should inherit
+      the stdin/stdout/stderr of this process.
+    */
     forward,
+    /*
+      ``close`` indicates that the child process should close
+      its stdin/stdout/stderr.
+    */
     close,
+    /*
+      ``pipe`` indicates that the spawn operation should set up
+      a pipe between the parent process and the child process
+      so that the parent process can provide input to the
+      child process or capture its output.
+    */
     pipe,
+    /*
+      ``stdout`` indicates that the stderr stream of the child process
+      should be forwarded to its stdout stream.
+    */
     stdout,
+    /*
+      ``bufferAll`` is the same as :enumconstant:`~pipeStyle.pipe`, but when used
+      for stdin causes all data to be buffered and sent on the communicate()
+      call. This avoids certain deadlock scenarios where stdout or stderr are
+      :enumconstant:`~pipeStyle.pipe`. In particular,
+      without ``bufferAll``, the sub-process might block on writing output
+      which will not be consumed until the communicate() call.
+    */
     bufferAll
   }
 
@@ -417,22 +463,22 @@ module Subprocess {
                       found by searching the PATH.
 
      :arg stdin: indicates how the standard input of the child process
-                 should be handled. It could be :type:`pipeStyle`
-                 ``pipeStyle.forward``, ``pipeStyle.close``,
-                 ``pipeStyle.pipe``, or a file descriptor number to use.
-                 Defaults to ``pipeStyle.forward``.
+                 should be handled. It could be
+                 :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                 :enumconstant:`pipeStyle.pipe`, or a file descriptor number to use.
+                 Defaults to :enumconstant:`pipeStyle.forward`.
 
      :arg stdout: indicates how the standard output of the child process
-                  should be handled. It could be :type:`pipeStyle`
-                  ``pipeStyle.forward``, ``pipeStyle.close``,
-                  ``pipeStyle.pipe``, or a file descriptor number to use.
-                  Defaults to ``pipeStyle.forward``.
+                  should be handled. It could be
+                  :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                  :enumconstant:`pipeStyle.pipe`, or a file descriptor number to use.
+                  Defaults to :enumconstant:`pipeStyle.forward`.
 
      :arg stderr: indicates how the standard error of the child process
-                  should be handled. It could be :type:`pipeStyle`
-                  ``pipeStyle.forward``, ``pipeStyle.close``,
-                  ``pipeStyle.pipe``, ``pipeStyle.stdout``, or a file
-                  descriptor number to use. Defaults to ``pipeStyle.forward``.
+                  should be handled. It could be
+                  :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                  :enumconstant:`pipeStyle.pipe`, :enumconstant:`pipeStyle.stdout`, or a file
+                  descriptor number to use. Defaults to :enumconstant:`pipeStyle.forward`.
 
      :arg locking: Should channels created use locking?
                    This argument is used to set :attr:`subprocess.locking`
@@ -655,23 +701,23 @@ module Subprocess {
                process.
 
      :arg stdin: indicates how the standard input of the child process
-                 should be handled. It could be :type:`pipeStyle`
-                 ``pipeStyle.forward``, ``pipeStyle.close``,
-                 ``pipeStyle.pipe``, or a file descriptor number to use.
-                 Defaults to ``pipeStyle.forward``.
+                 should be handled. It could be
+                 :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                 :enumconstant:`pipeStyle.pipe`, or a file descriptor number to use.
+                 Defaults to :enumconstant:`pipeStyle.forward`.
 
      :arg stdout: indicates how the standard output of the child process
-                  should be handled. It could be :type:`pipeStyle`
-                  ``pipeStyle.forward``, ``pipeStyle.close``,
-                  ``pipeStyle.pipe``, or a file descriptor number to use.
-                  Defaults to ``pipeStyle.forward``.
+                  should be handled. It could be
+                  :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                  :enumconstant:`pipeStyle.pipe`, or a file descriptor number to use.
+                  Defaults to :enumconstant:`pipeStyle.forward`.
 
      :arg stderr: indicates how the standard error of the child process
-                  should be handled. It could be :type:`pipeStyle`
-                  ``pipeStyle.forward``, ``pipeStyle.close``,
-                  ``pipeStyle.pipe``, ``pipeStyle.stdout``, or a file
+                  should be handled. It could be
+                  :enumconstant:`pipeStyle.forward`, :enumconstant:`pipeStyle.close`,
+                  :enumconstant:`pipeStyle.pipe`, :enumconstant:`pipeStyle.stdout`, or a file
                   descriptor number to use. Defaults to
-                  ``pipeStyle.forward``.
+                  :enumconstant:`pipeStyle.forward`.
 
      :arg executable: By default, the executable argument is "/bin/sh".
                       That directs the subprocess to run the /bin/sh shell
@@ -899,7 +945,7 @@ module Subprocess {
     by the subprocess.
 
     This function handles cases in which stdin, stdout, or stderr
-    for the child process is :type:`pipeStyle` ``pipe`` by writing any
+    for the child process is :enumconstant:`pipeStyle.pipe` by writing any
     input to the child process and buffering up the output
     of the child process as necessary while waiting for
     it to terminate.

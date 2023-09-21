@@ -1,3 +1,8 @@
+day18-bug.chpl:11: In initializer:
+day18-bug.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'l' because this type is generic
+day18-bug.chpl:11: warning: need '(?)' on the type 'Node' of the formal 'r' because this type is generic
+day18-bug.chpl:23: warning: please use '?' when declaring a routine with a generic return type
+day18-bug.chpl:23: note: for example with 'Node(?)'
 day18-bug.chpl:26: warning: please use '?' when declaring a variable with generic type
 day18-bug.chpl:26: note: for example with 'Node(?)'
 day18-bug.chpl:26: warning: please use '?' when declaring a variable with generic type

@@ -96,7 +96,8 @@ extern "C" {
   m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",       true ), \
   m(MLI_DATA,             "multilocale interop data",                 true ), \
   m(GPU_DATA,             "user data allocation on gpu",              true ), \
-  m(GPU_KERNEL_ARG,       "kernel data allocation on gpu",            true ), \
+  m(GPU_KERNEL_ARG,       "kernel data allocation on gpu",            false), \
+  m(GPU_UTIL,             "gpu layer utility space",                  false), \
   m(NUM,                  "*** this must be the last entry ***",      true )
 
 

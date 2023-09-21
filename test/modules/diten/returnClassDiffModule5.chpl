@@ -3,14 +3,14 @@ module M1 {
   private use IO;
 
   var a = 1;
-  class C {
+  class C : writeSerializable {
     var b = 2;
     proc foo() {
       return a+b;
     }
-    override proc writeThis(f) throws {
-      f.writeln("How does this get found?");
-      f.write("{a = ", a, ", b = ", b, "}");
+    override proc serialize(writer, ref serializer) throws {
+      writer.writeln("How does this get found?");
+      writer.write("{a = ", a, ", b = ", b, "}");
     }
   }
 }

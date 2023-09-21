@@ -3,6 +3,7 @@
 # GPU native testing on a Cray CS (using gasnet for CHPL_COMM)
 
 CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
+source $CWD/common-slurm-gasnet-cray-cs.bash
 source $CWD/common-native-gpu.bash
 
 export CHPL_GPU=amd

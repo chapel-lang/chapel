@@ -8,7 +8,7 @@ record MyRecord {
 
 writef("testing default stdout: %?\n", new MyRecord(1,2));
 stdout
-  .withSerializer(JsonSerializer)
+  .withSerializer(jsonSerializer)
   .writef("testing json stdout: %?\n", new MyRecord(1,2));
 
 var f = openTempFile();
@@ -22,7 +22,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -43,7 +43,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -65,7 +65,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
   var got: bool;
@@ -90,7 +90,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -110,7 +110,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -131,7 +131,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -152,7 +152,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -172,7 +172,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -194,7 +194,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -215,7 +215,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -235,7 +235,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -255,7 +255,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 
@@ -275,7 +275,7 @@ var f = openTempFile();
 }
 
 {
-  var reader = f.reader(deserializer = new JsonDeserializer());
+  var reader = f.reader(deserializer = new jsonDeserializer());
 
   var r:MyRecord;
 

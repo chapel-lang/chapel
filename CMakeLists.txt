@@ -349,11 +349,12 @@ add_subdirectory(compiler)
 add_subdirectory(frontend)
 add_subdirectory(tools/chpldoc)
 
-# We are not ready to include 'chpldef' in an official release just yet.
-if (NOT CMAKE_BUILD_TYPE STREQUAL "Release")
-  if (EXISTS tools/chpldef)
-    add_subdirectory(tools/chpldef)
-  endif()
+# We are not ready to include 'chpldef' in an official release just yet. This
+# check works because the 'chpldef' source files are currently not included
+# in source releases.
+if (EXISTS ${CMAKE_CURRENT_SOURCE_DIR}/tools/chpldef)
+  # Exclude the language server from being included in 'make all'.
+  add_subdirectory(tools/chpldef EXCLUDE_FROM_ALL)
 endif()
 
 # Adjust the install rpath for chpl and chpldoc

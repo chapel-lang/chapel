@@ -97,7 +97,7 @@ config var reproducible = false, verbose = false;
   // We use 'AbD' instead of 'MatVectSpace' throughout.
   //
   const AbD: domain(2, indexType)
-          dmapped DimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
+          dmapped dimensionalDist2D(targetLocales, bdim1, bdim2, "dim")
           = {1..n, 1..n+1},
         MatrixSpace = AbD[.., ..n];
 
@@ -109,9 +109,9 @@ config var reproducible = false, verbose = false;
   //
   const
     replAD = {1..n, 1..blkSize}
-      dmapped DimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
+      dmapped dimensionalDist2D(targetLocales, bdim1, rdim2, "distBR"),
     replBD = {1..blkSize, 1..n+1}
-      dmapped DimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
+      dmapped dimensionalDist2D(targetLocales, rdim1, bdim2, "distRB");
 
   var replA: [replAD] elemType,
       replB: [replBD] elemType;
@@ -217,7 +217,7 @@ proc LUFactorize(n: indexType,
 // locale only stores one copy of each block it requires for all of
 // its rows/columns.
 //
-proc schurComplement(AD: domain, BD: domain, Rest: domain) {
+proc schurComplement(AD: domain(?), BD: domain(?), Rest: domain(?)) {
 
   // Prevent replication of unequal-sized slices
   if Rest.size == 0 then return;
@@ -237,7 +237,7 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
       replB = Ab[BD.dim(0), 1..n+1];
 
   // do local matrix-multiply on a block-by-block basis
-  forall (row,col) in Rest by (blkSize, blkSize) {
+  forall (row,col) in Rest by (blkSize, blkSize) with (ref Ab) {
     // localize Rest explicitly as a workaround;
     // also hoist the innerRange computation
     const outterRange = Rest.dim(0)(row..#blkSize),
@@ -257,7 +257,7 @@ proc schurComplement(AD: domain, BD: domain, Rest: domain) {
 // pivot vector accordingly
 //
 proc panelSolve(
-               panel: domain,
+               panel: domain(?),
                ref piv: [] indexType) {
 
   for k in panel.dim(1) {             // iterate through the columns
@@ -287,7 +287,7 @@ proc panelSolve(
     Ab[k+1.., k..k] /= pivotVal;
     
     // update all other values below the pivot
-    forall (i,j) in panel[k+1.., k+1..] do
+    forall (i,j) in panel[k+1.., k+1..] with (ref Ab) do
       Ab[i,j] -= Ab[i,k] * Ab[k,j];
   }
 }
@@ -299,14 +299,14 @@ proc panelSolve(
 // solves the rows to the right of the block.
 //
 proc updateBlockRow(
-                   tl: domain,
-                   tr: domain) {
+                   tl: domain(?),
+                   tr: domain(?)) {
 
   for row in tr.dim(0) {
     const activeRow = tr[row..row, ..],
           prevRows = tr.dim(0).low..row-1;
 
-    forall (i,j) in activeRow do
+    forall (i,j) in activeRow with (ref Ab) do
       for k in prevRows do
         Ab[i, j] -= Ab[i, k] * Ab[k,j];
   }
@@ -394,7 +394,7 @@ proc gaxpyMinus(A: [],
                 y: [?yD]) {
   var res: [1..n] elemType;
 
-  forall i in 1..n do
+  forall i in 1..n with (ref res) do
     res[i] = (+ reduce [j in xD] (A[i,j] * x[j])) - y[i,n+1];
 
   return res;

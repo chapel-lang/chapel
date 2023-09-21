@@ -1,0 +1,6 @@
+#!/bin/bash
+
+grep "Always sync with host:" $2 >> $2.tmp
+grep "Eagerly synchronizing stream" $2 | cut -d" " -f1,2,3>> $2.tmp
+
+mv $2.tmp $2

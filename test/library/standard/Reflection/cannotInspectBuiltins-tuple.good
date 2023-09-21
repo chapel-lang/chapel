@@ -1,0 +1,1 @@
+FILE.chpl:n: error: 2*int(64) is not a class, record, or union type

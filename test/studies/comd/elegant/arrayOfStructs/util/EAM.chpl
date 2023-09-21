@@ -21,7 +21,7 @@ class InterpolationObject {
     this.invDx  = 1.0/dx;
     this.nSpace = {-1..n+1};
 
-    this.complete();
+    init this;
 
     values[0..n-1] = buf;
 

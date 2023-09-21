@@ -683,7 +683,7 @@ proc bulkCommConvertCoordinate(ind, bView:domain, aView:domain)
   return result;
 }
 
-record chpl_PrivatizedDistHelper {
+record chpl_PrivatizedDistHelper : writeSerializable {
 //  type instanceType;
   var _pid:int;  // only used when privatized
   pragma "owned"
@@ -776,6 +776,14 @@ record chpl_PrivatizedDistHelper {
                          definedConst: bool = false) {
     var ranges: rank*range(idxType, boundKind.both, strides);
     return newRectangularDom(rank, idxType, strides, ranges, definedConst);
+  }
+
+  proc newAssociativeDom(type idxType, param parSafe: bool=true) {
+    var x = _value.dsiNewAssociativeDom(idxType, parSafe);
+    if x.linksDistribution() {
+      _value.add_dom(x);
+    }
+    return x;
   }
 
   proc newSparseDom(param rank: int, type idxType, dom: domain) {

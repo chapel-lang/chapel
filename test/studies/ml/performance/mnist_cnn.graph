@@ -1,0 +1,5 @@
+perfkeys: time:, time:, time:, time:, time:, time:, time:
+files: mnist_cnn_batch.dat, mnist_cnn_no_batch.dat, mnist_cnn_big_everything.dat, mnist_cnn_deep.dat, mnist_cnn_no_stride.dat, mnist_cnn_stride.dat, mnist_cnn_with_dense.dat
+graphkeys: big-batch, no-batch, big-everything, deep-network, no-stride, stride, with-dense
+ylabel: Time (seconds)
+graphtitle: Training Time of Multiple CNNs With Different Architectures and Hyperparameters

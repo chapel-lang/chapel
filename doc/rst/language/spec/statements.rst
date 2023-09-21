@@ -28,6 +28,7 @@ Chapel provides the following statements:
      break-statement
      continue-statement
      param-for-statement
+     require-statement
      use-statement
      import-statement
      defer-statement
@@ -699,6 +700,67 @@ A ``break`` statement cannot be used to exit a parallel loop
         }
       }
 
+.. _The_Require_statement:
+
+The Require Statement
+---------------------
+
+The require statement provides a means to specify required files from
+within the program. It has an effect similar to adding the specified
+files to the Chapel compiler's command line. The filenames are relative
+to the directory from which the Chapel compiler was invoked. Any
+directories specified using the Chapel compiler's -I or -L flags will
+also be searched for matching files.
+
+.. code-block:: syntax
+
+   require-statement:
+     'require' string-or-identifier-list ;
+
+   string-or-identifier-list:
+     string-or-identifier
+     string-or-identifier ',' string-or-identifier-list
+
+   string-or-identifier:
+     string-literal
+     identifier
+
+The require keyword must be followed by list of filenames. Each
+filename must be a Chapel source file (*.chpl), a C source file (*.c),
+a C header file (*.h), a precompiled C object file (*.o), or a
+precompiled library archive (lib*.a). When using precompiled library
+archives, remove the lib and .a parts of the filename and add -l to
+the beginning as if it were being specified on the command line.
+
+.. code-block:: chapel
+
+   require "foo.h", "-lfoo";
+
+All require statements involving ``.chpl`` files must appear at the
+module-level and each ``.chpl`` file must be given by a string literal.
+For other types, each filename in the require statement must be given
+by a string literal or an identifier that is a ``param`` string expression,
+such as a ``param`` variable or a function returning a ``param``
+string.  Only ``require`` statements in code that the compiler considers
+executable will be processed.  Thus, a ``require`` statement
+guarded by a ``param`` conditional that the compiler folds out, or
+in a module that does not appear in the program's ``use``
+statements will not be added to the program's requirements.  For
+example, the following code either requires ``foo.h`` or whatever
+requirement is specified by *defaultHeader* (``bar.h`` by default)
+depending on the value of *requireFoo*:
+
+    .. code-block:: chapel
+
+       config param requireFoo=true,
+                    defaultHeader="bar.h";
+
+       if requireFoo then
+         require "foo.h";
+       else
+         require defaultHeader;
+
+
 .. _The_Use_Statement:
 
 The Use Statement
@@ -977,10 +1039,12 @@ context managers. The syntax of the manage statement is given by
     expression 'as' identifier
     expression
 
-Classes or records that wish to be used as context managers must
-define two special methods. The code sample below turns a record
-type named ``IntWrapper`` into a context manager and then uses it
-in a manage statement.
+Classes or records that wish to be used as context managers must implement
+the ``contextManager`` interface. This is done by defining the methods
+``enterContext`` and ``exitContext``, and by adjusting the declaration of the
+class or record to say that it implements ``contextManager``. The code sample
+below declares a context manager record ``IntWrapper`` and then uses it in a
+manage statement.
 
    *Example (manage1.chpl)*.
 
@@ -988,7 +1052,7 @@ in a manage statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
@@ -1045,7 +1109,7 @@ Resource storage may also be specified explicitly.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 
@@ -1112,7 +1176,7 @@ statement.
 
    .. code-block:: chapel
 
-      record IntWrapper {
+      record IntWrapper : contextManager {
         var x: int;
       }
 

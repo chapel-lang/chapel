@@ -24,6 +24,7 @@ Base Language Features
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
    Attributes <attributes>
+   Interfaces <interfaces>
 
 Initializers and Generic Programming
 ------------------------------------
@@ -79,6 +80,7 @@ Compiler Features
    Checking for Nil Dereferences <nilChecking>
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
+   Compiler Driver Mode <driver>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 

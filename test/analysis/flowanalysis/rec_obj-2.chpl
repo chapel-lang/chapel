@@ -3,7 +3,7 @@ class Cons {
   var cdr; 
 };
 
-proc print(c : borrowed Cons) {
+proc print(c : borrowed Cons(?)) {
   if (c != nil) {
      writeln(c.car);
      print(c.cdr);

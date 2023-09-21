@@ -4,13 +4,13 @@ var targetLocDom = {0..numLocales-2};
 var targetLocales = Locales[targetLocDom];
 
 var n = 10;
-var B = new Block({1..n}, targetLocales);
+var B = new blockDist({1..n}, targetLocales);
 var D = {1..n} dmapped B;
 var A: [D] real;
 
 targetLocales[numLocales-2] = Locales[numLocales-1];
 
-B = new Block({1..2*n}, targetLocales); // error b/c targets differ
+B = new blockDist({1..2*n}, targetLocales); // error b/c targets differ
 
 inspectDist(A);
 

@@ -444,7 +444,7 @@ module ZMQ {
     proc init() {
       this.ctx = zmq_ctx_new();
       this.home = here;
-      this.complete();
+      init this;
       if this.ctx == nil {
         var errmsg: string;
         try! {
@@ -483,14 +483,14 @@ module ZMQ {
     proc init() {
       this.classRef = new unmanaged ContextClass();
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
     proc init=(c: Context) {
       this.classRef = c.classRef;
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -536,7 +536,7 @@ module ZMQ {
     proc init(ctx: Context, sockType: int) {
       this.socket = zmq_socket(ctx.classRef.ctx, sockType:c_int);
       this.home = here;
-      this.complete();
+      init this;
       if this.socket == nil {
         var errmsg: string;
         try! {
@@ -593,7 +593,7 @@ module ZMQ {
     proc init=(s: Socket) {
       this.classRef = s.classRef;
       this.classRef.incRefCount();
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc
@@ -614,7 +614,7 @@ module ZMQ {
 
       this.classRef = makeClass(ctx, sockType);
       this.context = ctx;
-      this.complete();
+      init this;
     }
 
     @chpldoc.nodoc

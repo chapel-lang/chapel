@@ -7,8 +7,8 @@ config const epsilon = 0.01;
 config const printArrays = false;
 
 const LocDom = {1..n  , 1..n  },
-         Dom = LocDom dmapped Block(LocDom),
-      BigDom = {0..n+1, 0..n+1} dmapped Block(LocDom);
+         Dom = LocDom dmapped blockDist(LocDom),
+      BigDom = {0..n+1, 0..n+1} dmapped blockDist(LocDom);
 
 var A, B: [BigDom] real;
 
@@ -27,7 +27,7 @@ var numIters = 0;
 do {
   numIters += 1;
 
-  forall (i,j) in Dom do
+  forall (i,j) in Dom with (ref B) do
     B[i,j] = 0.25   * A[i,j]
            + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
            + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);

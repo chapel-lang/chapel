@@ -456,33 +456,32 @@ iter adaptive(c:range(?), numTasks:int=0) {
 
 
 // Parallel iterator
-/*
-The enum used to represent adaptive methods.
-
-- ``Whole``
-  Each task without work tries to steal from its neighbor range
-  until it exhausts that range. Then the task continues with the next
-  neighbor range, and so on until there is no more work. This is the default
-  policy.
-
-- ``RoundRobin``
-  Each task without work tries to steal once from its neighbor range, next
-  from the following neighbor range and so on in a round-robin way until
-  there is no more work.
-
-- ``WholeTail``
-  Similar to the ``Whole`` method, but now the splitting in the victim
-  range is performed from its tail.
-*/
+/* The enum used to represent adaptive methods. */
 enum Method {
+  /*
+    Each task without work tries to steal from its neighbor range
+    until it exhausts that range. Then the task continues with the next
+    neighbor range, and so on until there is no more work. This is the default
+    policy.
+  */
   Whole = 0,
+  /*
+    Each task without work tries to steal once from its neighbor range, next
+    from the following neighbor range and so on in a round-robin way until
+    there is no more work.
+  */
   RoundRobin = 1,
+  /*
+    Similar to the :enumconstant:`~Method.Whole` method, but now the splitting
+    in the victim range is performed from its tail.
+  */
   WholeTail = 2
 };
 
 /*
-  Used to select the adaptive stealing method. Defaults to ``Whole``.
-  See :data:`Method` for more information.
+  Used to select the adaptive stealing method.
+  Defaults to :enumconstant:`~Method.Whole`.
+  See :enum:`Method` for more information.
 */
 config param methodStealing = Method.Whole;
 

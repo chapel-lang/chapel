@@ -12,19 +12,19 @@ proc alloc() {
   return ret;
 }
 
-record R {
+record R : writeSerializable {
   var x : c_ptr(int);
   var home : locale;
 
   proc init() {
-    this.complete();
+    init this;
     this.x = alloc();
     home = here;
     set(42);
   }
 
   proc init=(other: R) {
-    this.complete();
+    init this;
     this.x = alloc();
     home = here;
     set(other.get());
@@ -43,7 +43,7 @@ record R {
     Communication.put(x, src, home.id, numBytes(int));
   }
 
-  proc writeThis(writer) {
+  proc serialize(writer, ref serializer) {
     writer.write("{", get(), "}");
   }
 }

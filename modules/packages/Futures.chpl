@@ -117,7 +117,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       refcnt.write(0);
       state.clear();
     }
@@ -145,7 +145,7 @@ module Futures {
     @chpldoc.nodoc
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       // sets this=classRef = the new one and bumps the ref count
       // from 0 to 1
       acquire(new unmanaged FutureClass(retType));
@@ -153,7 +153,7 @@ module Futures {
 
     proc init=(x: Future) {
       this.retType = x.retType;
-      this.complete();
+      init this;
       // set this.classRef = x.classRef and bumps the reference count
       this.acquire(x.classRef);
     }

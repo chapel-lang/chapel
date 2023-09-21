@@ -225,7 +225,7 @@ module Errors {
     proc init(ref group:chpl_TaskErrors) {
       var head: unmanaged Error? = group._head;
       group._head = nil;
-      this.complete();
+      init this;
 
       var cur: unmanaged Error?;
 
@@ -280,7 +280,7 @@ module Errors {
     proc init(err: unmanaged Error) {
       nErrors = 1;
       errorsArray = allocate(owned Error?, 1, clear=true);
-      this.complete();
+      init this;
       err._next = nil;
       errorsArray[0] = owned.adopt(err);
     }
@@ -571,10 +571,9 @@ module Errors {
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
+  proc chpl_enum_cast_error_no_int(enumName: string, constName: string): int throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                           constName + "' has no integer value");
-    return 0;
   }
 
 

@@ -19,7 +19,7 @@ record MyRec {
     if a < 10 then
       writeln('Then does not contain an init');
     else
-      this.complete();
+      init this;
 
     writeln('Init(int) Done');
     writeln();

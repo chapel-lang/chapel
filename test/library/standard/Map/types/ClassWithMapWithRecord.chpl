@@ -49,7 +49,7 @@ use ChapelHashtable;
 // To preserve this future behavior after map updates,
 // a snapshot of `map` was taken at the time of this future
 // creation
-record map {
+record map : writeSerializable {
   type keyType;
   type valType;
 
@@ -120,26 +120,26 @@ record map {
     }
   }
 
-  proc writeThis(fw: fileWriter) throws {
+  proc serialize(writer, ref serializer) throws {
     var first = true;
 
-    fw.writeLiteral("{");
+    writer.writeLiteral("{");
     for slot in table.allSlots() {
       if table.isSlotFull(slot) {
         if first {
           first = false;
         } else {
-          fw.writeLiteral(", ");
+          writer.writeLiteral(", ");
         }
         ref tabEntry = table.table[slot];
         ref key = tabEntry.key;
         ref val = tabEntry.val;
-        fw.write(key);
-        fw.writeLiteral(": ");
-        fw.write(val);
+        writer.write(key);
+        writer.writeLiteral(": ");
+        writer.write(val);
       }
     }
-    fw.writeLiteral("}");
+    writer.writeLiteral("}");
   }
 
   class KeyNotFoundError : Error {

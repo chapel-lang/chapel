@@ -30,6 +30,7 @@
 
 // The well-known types
 AggregateType* dtArray;
+AggregateType* dtDomain;
 AggregateType* dtBaseArr;
 AggregateType* dtBaseDom;
 AggregateType* dtCFI_cdesc_t;
@@ -136,6 +137,7 @@ struct WellKnownAggregateType
 // These types are a required part of the compiler/module interface.
 static WellKnownAggregateType sWellKnownAggregateTypes[] = {
   { "_array",                &dtArray,            false },
+  { "_domain",               &dtDomain,           false },
   { "BaseArr",               &dtBaseArr,          true  },
   { "BaseDom",               &dtBaseDom,          true  },
   { "BaseDist",              &dtDist,             true  },
@@ -309,6 +311,7 @@ void gatherWellKnownTypes() {
     removeIfUndefinedGlobalType(dtString);
     removeIfUndefinedGlobalType(dtBytes);
     removeIfUndefinedGlobalType(dtLocale);
+    removeIfUndefinedGlobalType(dtRange);
     removeIfUndefinedGlobalType(dtOwned);
     removeIfUndefinedGlobalType(dtShared);
   }

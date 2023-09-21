@@ -43,7 +43,7 @@ module SortedSet {
   private use IO;
   public use Sort only defaultComparator;
 
-  record sortedSet {
+  record sortedSet : writeSerializable {
     /* The type of the elements contained in this sortedSet. */
     type eltType;
 
@@ -122,7 +122,7 @@ module SortedSet {
       this.instance = new treap(this.eltType, this.parSafe,
                                             other.instance.comparator);
 
-      this.complete();
+      init this;
 
 
       if !isCopyableType(eltType) then
@@ -140,6 +140,11 @@ module SortedSet {
     */
     inline proc const writeThis(ch: fileWriter) throws {
       instance.writeThis(ch);
+    }
+
+    @chpldoc.nodoc
+    inline proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*

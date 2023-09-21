@@ -14,7 +14,7 @@ record R2 {
 var sout = new file(1);
 
 var a = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Flow,
         YamlMappingStyle.Block,
         YamlScalarStyle.SingleQuoted,
@@ -23,7 +23,7 @@ var a = sout.writer(
       );
 
 var b = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Block,
         YamlMappingStyle.Flow,
         YamlScalarStyle.Plain,
@@ -32,7 +32,7 @@ var b = sout.writer(
       );
 
 var c = sout.writer(
-      serializer = new YamlSerializer(
+      serializer = new yamlSerializer(
         YamlSequenceStyle.Flow,
         YamlMappingStyle.Flow,
         YamlScalarStyle.Folded,
@@ -40,7 +40,7 @@ var c = sout.writer(
         )
       );
 
-var d = sout.writer(serializer = new YamlSerializer());
+var d = sout.writer(serializer = new yamlSerializer());
 
 var defaultFormat = sout.writer();
 

@@ -22,9 +22,11 @@
 //
 module DefaultRectangular {
   import HaltWrappers;
-
+  @unstable("The variable 'dataParTasksPerLocale' is unstable and its interface is subject to change in the future")
   config const dataParTasksPerLocale = 0;
+  @unstable("The variable 'dataParIgnoreRunningTasks' is unstable and its interface is subject to change in the future")
   config const dataParIgnoreRunningTasks = false;
+  @unstable("The variable 'dataParMinGranularity' is unstable and its interface is subject to change in the future")
   config const dataParMinGranularity: int = 1;
 
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
@@ -94,6 +96,7 @@ module DefaultRectangular {
     return ret;
   }
 
+  @unstable("DefaultDist is unstable and may change in the future")
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
                                        param strides: strideKind, inds) {
@@ -1087,7 +1090,7 @@ module DefaultRectangular {
       this.callPostAlloc = false;
       this.deinitElts = deinitElts;
 
-      this.complete();
+      init this;
       this.setupFieldsAndAllocate(initElts);
     }
 
@@ -1714,6 +1717,26 @@ module DefaultRectangular {
     rwLiteral("}");
   }
 
+  proc DefaultRectangularDom.dsiSerialWrite(f) throws
+  where _supportsSerializers(f) && f.serializerType != IO.defaultSerializer {
+    if chpl_warnUnstable then
+      compilerWarning("Serialization of rectangular domains with non-default Serializer is unstable, and may change in the future");
+    var ser = f.serializer.startList(f, rank);
+    for i in 0..<rank do ser.writeElement(dsiDim(i));
+    ser.endList();
+  }
+
+  // TODO: There is currently a bug when returning domains from
+  // 'deserializeFrom', so this isn't tested yet.
+  proc DefaultRectangularDom.dsiSerialRead(f) throws
+  where _supportsSerializers(f) && f.deserializerType != IO.defaultDeserializer {
+    if chpl_warnUnstable then
+      compilerWarning("Deserialization of rectangular domains with non-default Deserializer is unstable, and may change in the future");
+    var des = f.deserializer.startList(f);
+    for i in 0..<rank do ranges(i) = des.readElement(ranges(i).type);
+    des.endList();
+  }
+
   proc DefaultRectangularDom.doiToString() {
     var str = "{" + ranges(0):string;
     for i in 1..<rank do
@@ -2075,7 +2098,7 @@ module DefaultRectangular {
     // 2. we are either not doing communication or doing a PUT
     // See: https://github.com/Cray/chapel-private/issues/1365
     const isSizeAboveThreshold = len:int*elemsizeInBytes >= parallelAssignThreshold;
-    const isFullyLocal = Alocid == Blocid;
+    const isFullyLocal = Alocid == Blocid && Asublocid == Bsublocid;
     var doParallelAssign = isSizeAboveThreshold && isFullyLocal;
 
     if enableParallelGetsInAssignment || enableParallelPutsInAssignment {

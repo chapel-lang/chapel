@@ -22,7 +22,7 @@ proc main() {
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
+  forall (y, xelt) in dynamic(image.domain, chunkSize) with (ref image) { // for all elements
 
     var buff: eltType;                         // a single-element pixel buffer
 
@@ -55,10 +55,9 @@ proc main() {
   // Get a lock-free, binary fileWriter on 'stdout', write the file header,
   // and the image array.
   //
-  var w = (new file(1)).writer(locking=false,
-                               serializer=new BinarySerializer());
+  var w = (new file(1)).writer(locking=false);
 
   w.writef("P4\n");
   w.writef("%i %i\n", n, n);
-  w.write(image);
+  w.writeBinary(image);
 }

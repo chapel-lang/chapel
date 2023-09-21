@@ -37,8 +37,8 @@ if printTiming then
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
 st = timeSinceEpoch().totalSeconds();
-forall i in 1..n do
-  forall j in 1..m do
+forall i in 1..n with (ref A) do
+  forall j in 1..m with (ref A) do
     A[i,j] = B[i,j];
 dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
@@ -50,7 +50,7 @@ if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
 st = timeSinceEpoch().totalSeconds();
 for i in 1..n do
-  forall j in 1..m do
+  forall j in 1..m with (ref A) do
     A[i,j] = B[i,j];
 dt = timeSinceEpoch().totalSeconds()-st;
 if printOutput then
@@ -61,7 +61,7 @@ if printTiming then
 if initialize then
   fillRandom(B, 31415, algorithm=RNG.NPB);
 st = timeSinceEpoch().totalSeconds();
-forall i in 1..n do
+forall i in 1..n with (ref A) do
   for j in 1..m do
     A[i,j] = B[i,j];
 dt = timeSinceEpoch().totalSeconds()-st;

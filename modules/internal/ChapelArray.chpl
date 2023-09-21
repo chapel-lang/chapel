@@ -256,11 +256,8 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
-  /* The traditional one-argument form of :proc:`.find()` on arrays
-     has been deprecated in favor of a new interface.  Compiling with
-     this set to `true` will opt into that new interface.  Note that
-     there is also a new two-argument form that is available
-     regardless of this setting. */
+  @chpldoc.nodoc
+  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
   config param useNewArrayFind = false;
 
 
@@ -677,7 +674,7 @@ module ChapelArray {
   }
 
   proc chpl__buildDistType(type t: record) type {
-    compilerWarning("The use of 'dmap' is depreacted for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
+    compilerWarning("The use of 'dmap' is deprecated for this distribution; please replace 'dmap(<DistName>(<args>))' with '<DistName>(<args>)'");
     return t;
   }
 
@@ -717,7 +714,7 @@ module ChapelArray {
   pragma "distribution"
   pragma "ignore noinit"
   @chpldoc.nodoc
-  record _distribution {
+  record _distribution : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDist
@@ -856,6 +853,11 @@ module ChapelArray {
       f.read(_value);
     }
 
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
+    }
+
     // TODO: Can't this be an initializer?
     @chpldoc.nodoc
     proc type deserializeFrom(reader, ref deserializer) throws {
@@ -956,7 +958,7 @@ module ChapelArray {
   // the serialize routines to fire, when their where-clause permits.
   pragma "always RVF"
   /* The array type */
-  record _array {
+  record _array : writeSerializable, readDeserializable {
     var _pid:int;  // only used when privatized
     pragma "owned"
     pragma "alias scope from this"
@@ -1143,6 +1145,7 @@ module ChapelArray {
     // array element access
     // When 'this' is 'const', so is the returned l-value.
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
@@ -1197,6 +1200,7 @@ module ChapelArray {
         return value.dsiAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "removable array access"
     pragma "alias scope from this"
@@ -1216,6 +1220,7 @@ module ChapelArray {
       return this(i);
 
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1279,6 +1284,7 @@ module ChapelArray {
           return value.dsiLocalAccess(i(0));
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "alias scope from this"
     @chpldoc.nodoc // ref version
@@ -1306,6 +1312,7 @@ module ChapelArray {
     // dense case because we can represent a domain by a tuple of
     // ranges, but in the sparse case, is there a general representation?
     //
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1340,6 +1347,7 @@ module ChapelArray {
     }
 
     // array slicing by a tuple of ranges
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1378,6 +1386,7 @@ module ChapelArray {
     }
 
     // array rank change
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1442,6 +1451,7 @@ module ChapelArray {
 
     // Special cases of local slices for DefaultRectangularArrs because
     // we can't take an alias of the ddata class within that class
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1453,6 +1463,7 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(dom);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1463,6 +1474,18 @@ module ChapelArray {
       return chpl__localSliceDefaultArithArrHelp(d);
     }
 
+    @unstable("tryCopy() is subject to change in the future.")
+    proc tryCopy() throws {
+      use Reflection;
+      if !(__primitive("resolves", this.domain.
+                       tryCreateArray(this.eltType))) then
+        compilerError("cannot call 'tryCopy' on arrays that do not" +
+                      " support a 'tryCreateArray' method.");
+      var res = this.domain.tryCreateArray(this.eltType);
+      res = this;
+      return res;
+    }
+
     pragma "no copy return"
     proc chpl__localSliceDefaultArithArrHelp(d: domain) {
       if (_value.locale != here) then
@@ -1470,6 +1493,7 @@ module ChapelArray {
              _value.locale.id, " from locale ", here.id);
       return this(d);
     }
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1480,6 +1504,7 @@ module ChapelArray {
       return _value.dsiLocalSlice(r);
     }
 
+    pragma "no promotion when by ref"
     pragma "reference to const when const this"
     pragma "fn returns aliasing array"
     @chpldoc.nodoc
@@ -1894,20 +1919,6 @@ module ChapelArray {
       }
     }
 
-    /* Return a tuple containing ``true`` and the index of the first
-       instance of ``val`` in the array, or if ``val`` is not found, a
-       tuple containing ``false`` and an unspecified value is returned.
-     */
-     @deprecated(notes="The tuple-returning version of '.find()' on arrays is deprecated; to opt into the new index-returning version, recompile with '-suseNewArrayFind'.  Also, note that there is a new two-argument '.find()' that may be preferable in some situations, and it requires no compiler flag to use.")
-     proc find(val: this.eltType): (bool, index(this.domain)) where !useNewArrayFind {
-      for i in this.domain {
-        if this[i] == val then return (true, i);
-      }
-      var arbInd: index(this.domain);
-      return (false, arbInd);
-    }
-
-
     /*
 
       Search an array for ``val``, returning whether or not it is
@@ -2199,9 +2210,16 @@ module ChapelArray {
 
   // How to cast arrays to strings
   @chpldoc.nodoc
+  @deprecated(notes="casting arrays to string is deprecated; please use 'try! \"%?\".format()' from IO.FormattedIO instead")
   operator :(x: [], type t:string) {
     import IO.FormattedIO.string;
     return try! "%?".format(x);
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  operator :(in x: [] ?et, type t: et) where t == et {
+    return x;
   }
 
   pragma "fn returns aliasing array"
@@ -2450,7 +2468,7 @@ module ChapelArray {
   pragma "ignore transfer errors"
   private proc initCopyAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         pragma "no auto destroy"
         var copy: a.eltType = aa; // run copy initializer
@@ -2522,7 +2540,7 @@ module ChapelArray {
 
   private proc fixEltRuntimeTypesAfterTransfer(ref a: []) {
     if needsInitWorkaround(a.eltType) {
-      forall ai in a.domain {
+      forall ai in a.domain with (ref a) {
         ref aa = a[ai];
         fixRuntimeType(a.eltType, aa);
       }
@@ -2720,7 +2738,7 @@ module ChapelArray {
     } else {
       if kind==_tElt.move {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             __primitive("=", aa, __primitive("steal", bb));
             fixRuntimeType(a.eltType, aa);
@@ -2734,7 +2752,7 @@ module ChapelArray {
         }
       } else if kind==_tElt.initCopy {
         if needsInitWorkaround(a.eltType) {
-          [ (ai, bb) in zip(a.domain, b) ] {
+          [ (ai, bb) in zip(a.domain, b) with (ref a) ] {
             ref aa = a[ai];
             pragma "no auto destroy"
             var copy: a.eltType = bb; // init copy
@@ -3732,7 +3750,7 @@ module ChapelArray {
       }
     } else {
       if needsInitWorkaround(result.eltType) {
-        forall (ri, src) in zip(result.domain, ir) {
+        forall (ri, src) in zip(result.domain, ir) with (ref result) {
           ref r = result[ri];
           pragma "no auto destroy"
           var copy = src; // init copy, might be elided

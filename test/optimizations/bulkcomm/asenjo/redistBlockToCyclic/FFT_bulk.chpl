@@ -216,7 +216,7 @@ proc main() {
   // Twiddles is the vector of twiddle values.
   //
   const TwiddleDom:
-    domain(1, idxType) dmapped Block(boundingBox={0..m/4-1}) = {0..m/4-1};
+    domain(1, idxType) dmapped blockDist(boundingBox={0..m/4-1}) = {0..m/4-1};
   var Twiddles: [TwiddleDom] elemType;
 
   //
@@ -231,7 +231,7 @@ proc main() {
   // (used for the first half of the FFT phases).
   //
   const BlkDom:
-    domain(1, idxType) dmapped Block(boundingBox=ProblemSpace) = ProblemSpace;
+    domain(1, idxType) dmapped blockDist(boundingBox=ProblemSpace) = ProblemSpace;
   var Zblk, z: [BlkDom] elemType;
 
   //
@@ -240,7 +240,7 @@ proc main() {
   // phases.
   //
   const CycDom:
-    domain(1, idxType) dmapped Cyclic(startIdx=0:idxType) = ProblemSpace;
+    domain(1, idxType) dmapped cyclicDist(startIdx=0:idxType) = ProblemSpace;
 
   var Zcyc: [CycDom] elemType;
 
@@ -363,7 +363,7 @@ proc dfft(ref A: [?ADom], W, cyclicPhase) {
     // ...otherwise using a simple radix-2 butterfly scheme
     //
     else
-      forall lo in 0..#str do
+      forall lo in 0..#str with (ref A) do
         on ADom.distribution.idxToLocale(lo) do
           local {
             const a = A(lo),
@@ -449,7 +449,7 @@ proc computeTwiddles(ref Twiddles) {
   Twiddles(0) = 1.0;
   Twiddles(numTwdls/2) = let x = cos(delta * numTwdls/2)
     in (x, x): elemType;
-  forall i in 1..numTwdls/2-1 {
+  forall i in 1..numTwdls/2-1 with (ref Twiddles) {
     const x = cos(delta*i),
       y = sin(delta*i);
     Twiddles(i)            = (x, y): elemType;

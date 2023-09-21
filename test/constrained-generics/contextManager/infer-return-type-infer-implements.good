@@ -1,0 +1,4 @@
+infer-return-type-infer-implements.chpl:13: warning: R is being used in a 'manage' statement via its 'enterContext' and 'exitContext' methods. However, R does not implement contextManager. In the future, this will result in an error.
+entering
+inside
+exiting

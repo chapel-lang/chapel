@@ -339,6 +339,13 @@ static bool isNoDoc(const Decl* e) {
   return false;
 }
 
+static bool isNoWhereDoc(const Function* f) {
+  if (auto attrs = f->attributeGroup())
+    if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
+      return true;
+  return false;
+}
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -1145,8 +1152,10 @@ struct RstSignatureVisitor {
 
     // Where Clause
     if (const AstNode* wc = f->whereClause()) {
+     if (!isNoWhereDoc(f)) {
       os_ << " where ";
       wc->traverse(*this);
+     }
     }
 
     return false;
@@ -1456,15 +1465,29 @@ struct RstResultBuilder {
   void showUnstableWarning(const Decl* node, bool indentComment=true) {
     if (auto attrs = node->attributeGroup()) {
       if (attrs->isUnstable()) {
-        int commentShift = 0;
+        auto comment = previousComment(context_, node->id());
+        if (comment && !comment->str().empty() &&
+            comment->str().substr(0, 2) == "/*" &&
+            comment->str().find("unstable") != std::string::npos ) {
+          // do nothing because unstable was mentioned in doc comment
+        } else {
+          // write the unstable warning and message
+          int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
             commentShift = 1;
           }
           os_ << ".. warning::\n\n";
           indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
-        os_ << strip(attrs->unstableMessage().c_str());
-        os_ << "\n\n";
+          if (attrs->unstableMessage().isEmpty()) {
+            // write a generic message because there wasn't a specific one
+            os_ << getNodeName((AstNode*) node) << " is unstable";
+          } else {
+            // use the specific unstable message
+            os_ << strip(attrs->unstableMessage().c_str());
+          }
+          os_ << "\n\n";
+        }
       }
     }
   }
@@ -1680,8 +1703,7 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
-    // TODO: Are we not printing these for modules?
-    // showUnstableWarning(m, false);
+    showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);

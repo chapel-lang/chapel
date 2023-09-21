@@ -261,7 +261,7 @@ when one type is a subtype of another.
    *Example (subtype-int8-integral.chpl)*
 
    However, ``int(8)`` is a subtype of the generic type ``integral``
-   according to the first rule above (:ref:`Built_in_Generic_types`).
+   according to the first rule above (:ref:`Built_in_Generic_Types`).
 
    .. BLOCK-test-chapelpre
 

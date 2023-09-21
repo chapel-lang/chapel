@@ -40,8 +40,8 @@ module DefaultAssociative {
   }
 
   private proc _isDefaultDeser(f) param : bool {
-    if f._writing then return f.serializerType == IO.DefaultSerializer;
-    else return f.deserializerType == IO.DefaultDeserializer;
+    if f._writing then return f.serializerType == IO.defaultSerializer;
+    else return f.deserializerType == IO.defaultDeserializer;
   }
 
   // helps to move around array elements when rehashing the domain
@@ -94,7 +94,7 @@ module DefaultAssociative {
       this.parSafe = parSafe;
       this.dist = dist;
       this.table = new chpl__hashtable(idxType, nothing);
-      this.complete();
+      init this;
 
       // set the rehash helpers
       this.table.rehashHelpers =
@@ -490,7 +490,7 @@ module DefaultAssociative {
       this.data = dom.table.allocateData(tableSize, eltType);
       this.tmpData = nil;
       this.eltsNeedDeinit = initElts;
-      this.complete();
+      init this;
 
       if initElts {
         if isNonNilableClass(this.eltType) {
@@ -583,7 +583,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 
@@ -600,7 +599,6 @@ module DefaultAssociative {
         return data(slotNum);
       } else {
         halt("array index out of bounds: ", idx);
-        return data(0);
       }
     }
 

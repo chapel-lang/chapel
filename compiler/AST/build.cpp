@@ -345,7 +345,10 @@ static BlockStmt* buildUseList(BaseAST* module, const char* newName,
 // (i.e., function resolution time) then we add the string to our list
 // of library information or to our list of source files.
 //
-bool processStringInRequireStmt(const char* str, bool parseTime,
+bool processStringInRequireStmt(Expr* expr,
+                                bool atModuleScope,
+                                const char* str,
+                                bool parseTime,
                                 const char* modFilename) {
   if (strncmp(str, "-l", 2) == 0) {
     if (!parseTime) {
@@ -355,6 +358,9 @@ bool processStringInRequireStmt(const char* str, bool parseTime,
   } else {
     if (isChplSource(str)) {
       if (parseTime) {
+        if (!atModuleScope) {
+          USR_WARN(expr, "using 'require' on a Chapel source file not at module scope is deprecated");
+        }
         addSourceFile(str, NULL);
         return true;
       } else {
@@ -573,7 +579,7 @@ ImportStmt* buildImportStmt(Expr* mod, std::vector<PotentialRename*>* names) {
 //
 // Build a 'require' statement
 //
-BlockStmt* buildRequireStmt(CallExpr* args) {
+BlockStmt* buildRequireStmt(CallExpr* args, bool atModuleScope) {
   BlockStmt* list = NULL;
 
   //
@@ -586,7 +592,7 @@ BlockStmt* buildRequireStmt(CallExpr* args) {
     // if this is a string literal, process it if we should
     //
     if (const char* str = toImmediateString(useArg)) {
-      if (processStringInRequireStmt(str, true, yyfilename)) {
+      if (processStringInRequireStmt(useArg, atModuleScope, str, true, yyfilename)) {
         continue;
       }
     }
@@ -1589,6 +1595,9 @@ DefExpr* buildClassDefExpr(const char*               name,
   } else if (strcmp("_locale", name) == 0) {
     ct = installInternalType(ct, dtLocale);
     ts = ct->symbol;
+  } else if (strcmp("_range", name) == 0) {
+    ct = installInternalType(ct, dtRange);
+    ts = ct->symbol;
   } else if (strcmp("_object", name) == 0) {
     ct = installInternalType(ct, dtObject);
     ts = ct->symbol;
@@ -1968,6 +1977,7 @@ static TryStmt* buildTryCatchForManagerBlock(VarSymbol* managerHandle,
 
   {
     TEMP ref manager = PRIM_ADDR_OF(myManager());
+    chpl__verifyTypeContext(manager);
     USER [var/ref/const] myResource = manager.enterContext();
     TEMP errorCaught = false;
 
@@ -1997,7 +2007,10 @@ BlockStmt* buildManagerBlock(Expr* managerExpr, std::set<Flag>* flags,
   auto moveIntoHandle = new CallExpr(PRIM_MOVE, managerHandle, addrOfExpr);
   ret->insertAtTail(moveIntoHandle);
 
-  // Build call to 'enterContext()', but don't insert into the tree yet.
+  auto verifyCall = new CallExpr("chpl__verifyTypeContext", new SymExpr(managerHandle));
+  ret->insertAtTail(verifyCall);
+
+  // Build call to 'enterContext', but don't insert into the tree yet.
   auto seManager = new SymExpr(managerHandle);
   auto enterContext = new CallExpr("enterContext", gMethodToken, seManager);
 

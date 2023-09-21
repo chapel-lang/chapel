@@ -16,7 +16,7 @@ var str: string;         test("string", str);
 var cls: borrowed C = clsObj.borrow();     test("class", cls);
 var rec: R;              test("record", rec);
 var uni: U;              test("union", uni);
-var dm1 = new Block(LocaleSpace); test("dist", dm1);
+var dm1 = new blockDist(LocaleSpace); test("dist", dm1);
 
 var dom: domain(1);      test("domain", dom);
 var arr: [dom] int;      test("array", arr);

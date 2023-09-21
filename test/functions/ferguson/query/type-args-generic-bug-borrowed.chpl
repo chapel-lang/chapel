@@ -9,7 +9,7 @@ class G {
   proc init(type t) { this.t = t; }
 }
 
-proc foo(type t : borrowed G) {
+proc foo(type t : borrowed G(?)) {
   writeln("G");
 }
 

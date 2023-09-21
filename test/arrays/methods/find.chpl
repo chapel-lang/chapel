@@ -9,7 +9,7 @@ writeln(A.find(1));
 writeln();
 
 var B: [1..3, 1..3] int;
-forall (i,j) in {1..3, 1..3} do
+forall (i,j) in {1..3, 1..3} with (ref B) do
   B[i,j] = (i-1)*3 + j;
 B[2,1] = 2;
 

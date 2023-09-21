@@ -1,0 +1,4 @@
+bug: outer refs are not handled properly
+
+NOTE: we may decide not to support the code in this future, in which case it is
+safe to remove it.

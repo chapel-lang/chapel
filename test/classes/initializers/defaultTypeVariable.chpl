@@ -5,7 +5,7 @@ record LocalAtomicObject {
 
   proc init(type objType) {
     this.objType = objType;
-    this.complete();
+    init this;
     _atomicVar.write(0);
   }
 }

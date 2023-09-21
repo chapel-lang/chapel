@@ -1,1 +1,1 @@
-config var n$ : atomic int;
+config var n : atomic int;

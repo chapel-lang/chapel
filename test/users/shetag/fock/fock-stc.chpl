@@ -16,8 +16,8 @@ proc buildjk() {
     buildjk_atom4(blk);
 
   cobegin with (ref jmat2T, ref kmat2T) {
-    [(i,j) in matD] jmat2T(i,j) = jmat2(j,i);
-    [(i,j) in matD] kmat2T(i,j) = kmat2(j,i);
+    [(i,j) in matD with (ref jmat2T)] jmat2T(i,j) = jmat2(j,i);
+    [(i,j) in matD with (ref kmat2T)] kmat2T(i,j) = kmat2(j,i);
   }
 
   cobegin with (ref jmat2, ref kmat2) {

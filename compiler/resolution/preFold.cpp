@@ -1241,6 +1241,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_COERCE: {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (dtDomain && se->symbol() == dtDomain->symbol) {
+        // coercing a domain to 'domain(?)' is a no-op
+        Type* from = call->get(1)->getValType();
+        if (! from->symbol->hasFlag(FLAG_DOMAIN))
+          USR_FATAL(call, "cannot coerce '%s' to 'domain(?)'",
+                    toString(from));
+        retval = call->get(1);
+        call->replace(retval->remove());
+      }
+    }
+    break;
+  }
+
   case PRIM_IS_ATOMIC_TYPE: {
     if (isAtomicType(call->get(1)->typeInfo())) {
       retval = new SymExpr(gTrue);
@@ -1731,6 +1746,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  address of a by-value argument). An outer variable might be a
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
+
+        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // No need to take address of a type arg. The flag is used here
+          // because the intent is unreliable, and may be INTENT_BLANK.
 
         } else {
           Expr* stmt = call->getStmtExpr();
@@ -2978,7 +2997,19 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   } else {
     Vec<Symbol*> args;
-    int             position      = var->immediate->int_value();
+    int position = var->immediate->int_value();
+
+    // A couple of variables to help us deal with the deprecated 'kind' field
+    // in fileReader and fileWriter.
+    bool isReaderWriter = false;
+    bool specifiesKind = false;
+
+    {
+      AggregateType* root = at->getRootInstantiation();
+      isReaderWriter = root->getModule() == ioModule &&
+          (strcmp(root->symbol->name, "fileReader") == 0 ||
+           strcmp(root->symbol->name, "fileWriter") == 0);
+    }
 
     if (at->symbol->hasFlag(FLAG_TUPLE)) {
       return at->getField(position);
@@ -3015,12 +3046,23 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
+      if (isReaderWriter &&
+          strcmp("kind", var->immediate->v_string.c_str()) == 0) {
+        specifiesKind = true;
+      }
+
       for (int j = 0; j < args.n; j++) {
         if (args.v[j] != NULL &&
             strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
+    }
+
+    // Need to increment by one so that expressions like 'fileWriter(false)'
+    // match up correctly.
+    if (isReaderWriter && !specifiesKind) {
+      position += 1;
     }
 
     forv_Vec(Symbol, arg, args) {

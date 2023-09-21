@@ -4,13 +4,13 @@ const D = {1..n};
 
 var A: [D] complex;
 
-[i in D] A(i) = i:real*2;
+[i in D with (ref A)] A(i) = i:real*2;
 writeln("A is: ", A);
 
-[i in D] A(i) = (i:real)*3;
+[i in D with (ref A)] A(i) = (i:real)*3;
 writeln("A is: ", A);
 
-[i in D] A(i) = 4*i:real;
+[i in D with (ref A)] A(i) = 4*i:real;
 writeln("A is: ", A);
 
 

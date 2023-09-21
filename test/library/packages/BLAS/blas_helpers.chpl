@@ -97,7 +97,7 @@ proc zeroTri(ref A:[?Adom], uplo:Uplo) where Adom.rank == 2 {
 proc zeroTri(ref A:[?Adom], zeroLow:bool=true) where Adom.rank == 2 {
   type t = A.eltType;
   const zero = 0 : t;
-  forall (i,j) in Adom {
+  forall (i,j) in Adom with (ref A) {
     if (i > j) & zeroLow then A[i,j] = zero;
     if (i < j) & !zeroLow then A[i,j] = zero;
   }
@@ -108,7 +108,7 @@ proc makeUnit(ref A : [?Adom], val:real = 1.0) {
   type t = A.eltType;
   const zero = 0 : t;
   const diag = (val*1) : t;
-  forall (i,j) in Adom {
+  forall (i,j) in Adom with (ref A) {
     if (i!=j) then A[i,j] = zero;
               else A[i,i] = diag;
   }
@@ -243,7 +243,7 @@ proc makeRandomInvertible (ref A: [?Adom] ?t) {
   makeUnit(I);
 
   var A2: [Adom] t;
-  forall (i,j) in A.domain do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
+  forall (i,j) in A.domain with (ref A2) do A2[i,j] = + reduce (A[i,..]*conj(A[..,j]));
 
   const n = Adom.shape(1);
   const scale = (1/n**2) : t;

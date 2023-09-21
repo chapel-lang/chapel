@@ -84,6 +84,13 @@ writeln(RDtrans_n);
 //
 // Create rectangular subdomains.
 //
+/*
+  .. warning::
+
+    Sparse domains and arrays are currently unstable.
+    Their functionality is likely to change in the future.
+
+*/
 var RSD1, RSD2 : subdomain(RD);
 
 // A subdomain is initially empty.

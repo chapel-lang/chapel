@@ -1,0 +1,1 @@
+multiDimArraySlices.chpl:15: error: writeBinary() only supports local, rectangular, non-strided arrays of simple types

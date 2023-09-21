@@ -101,12 +101,13 @@ void ErrorCommentEOF::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorExceptOnlyInvalidExpr::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
+  auto loc = std::get<0>(info);
+  auto limitLoc = std::get<1>(info);
   auto limitationKind = std::get<uast::VisibilityClause::LimitationKind>(info);
   wr.heading(kind_, type_, loc, "incorrect expression in '", limitationKind,
              "' list, identifier expected.");
   wr.message("In the '", limitationKind, "' list here:");
-  wr.code(loc);
+  wr.code<Location>(loc, { limitLoc });
 }
 
 void ErrorExternUnclosedPair::write(ErrorWriterBase& wr) const {
@@ -445,6 +446,21 @@ void ErrorInvalidGpuAssertion::write(ErrorWriterBase& wr) const {
   // For now, attribute locations aren't correctly computed, so this is unhelpful.
   // wr.note(attr, "marked for GPU execution here:");
   // wr.codeForLocation(attr);
+}
+
+void ErrorInvalidImplementsIdent::write(ErrorWriterBase& wr) const {
+  auto implements = std::get<const uast::Implements*>(info);
+  auto ident = std::get<const uast::Identifier*>(info);
+
+  auto typeName = ident->name();
+  if (typeName == USTR("domain")) {
+    wr.heading(kind_, type_, ident, "type '", typeName, "' cannot implement an interface.");
+  } else {
+    wr.heading(kind_, type_, ident, "invalid identifier '", typeName,
+                                     "' on the left of an 'implements' keyword.");
+  }
+  wr.message("In the following 'implements' statement:");
+  wr.code(implements, { ident });
 }
 
 void ErrorInvalidParenfulDeprecation::write(ErrorWriterBase& wr) const {

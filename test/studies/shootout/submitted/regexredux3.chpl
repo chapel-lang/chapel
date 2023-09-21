@@ -59,3 +59,4 @@ proc main(args: [] string) {
   writeln(data.size);
   writeln(copy.size);
 }
+use Compat, CompatRE2;

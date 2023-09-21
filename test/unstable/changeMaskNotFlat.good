@@ -1,0 +1,3 @@
+changeMaskNotFlat.chpl:4: warning: 'umask' is unstable on locale models other than 'flat'
+changeMaskNotFlat.chpl:5: warning: 'umask' is unstable on locale models other than 'flat'
+Phew, the returned umask value matched what I sent it!

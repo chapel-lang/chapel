@@ -5,7 +5,7 @@ for a in A1D do a = next();
 forall (a,i) in zip(A1D, 1.. by 2) do
   a = i;
 
-forall (i,j) in zip(Dom1D, 1.. by 2) do
+forall (i,j) in zip(Dom1D, 1.. by 2) with (ref A1D) do
   A1D(i) += j;
 
 writeln(A1D);

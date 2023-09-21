@@ -63,10 +63,10 @@ As with the for statement, the indices may be omitted if they are
 unnecessary and the ``do`` keyword may be omitted before a block
 statement.
 
-The square bracketed form will resort to serial iteration when
-``iteratable-expression`` does not support parallel iteration. The
-``forall`` form will result in an error when parallel iteration is not
-available.
+The square bracketed form will resort to order-independent iteration
+(i.e. ``foreach``) when ``iteratable-expression`` does not support parallel
+iteration. The ``forall`` form will result in an error when parallel
+iteration is not available.
 
 The handling of the outer variables within the forall statement and the
 role of ``task-intent-clause`` are defined in
@@ -128,7 +128,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      forall i in 1..N do
+      forall i in 1..N with (ref a) do
         a(i) = b(i);
 
    the user has stated that the element-wise assignments can execute
@@ -139,7 +139,7 @@ the current iteration of the forall loop.
 
    .. code-block:: chapel
 
-      [i in 1..N] a(i) = b(i);
+      [i in 1..N with (ref a)] a(i) = b(i);
 
    
 
@@ -190,9 +190,10 @@ unnecessary. The ``do`` keyword is always required in the keyword-based
 notation.
 
 As with the forall statement, the square bracketed form will resort to
-serial iteration when ``iteratable-expression`` does not support
-parallel iteration. The ``forall`` form will result in an error when
-parallel iteration is not available.
+order-independent iteration (i.e. ``foreach``) when
+``iteratable-expression`` does not support parallel iteration. The
+``forall`` form will result in an error when parallel iteration is not
+available.
 
 The handling of the outer variables within the forall expression and the
 role of ``task-intent-clause`` are defined in
@@ -426,7 +427,7 @@ destroyed.
       do
         writeln("shadow var: ", tpv.id, "  yield: ", str);
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -494,7 +495,7 @@ iterator         0-based one-dimensional domain
    
    We would like to allow the iterator author to specify the shape of
    the iterator, i.e. the domain of the array that would capture the
-   result of the corresponding promoted expression, such as 
+   result of the corresponding promoted expression, such as
 
    .. code-block:: chapel
 
@@ -750,6 +751,45 @@ side array expressions alias the left-hand side expression.
    This follows because, in the former code, some of the new values that
    are assigned to ``A`` may be read to compute the sum depending on the
    number of tasks used to implement the data parallel statement.
+
+.. _Promoted_Array_Indexing:
+
+Promoted Array Indexing
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+Array indexing operations can also be promoted.
+For example, an array of indices can be used to index into another array,
+as in the following expression:
+
+.. code-block:: chapel
+
+   A[B]
+
+which results in the promoted expression:
+
+.. code-block:: chapel
+
+   [b in B] A[b]
+
+However, it is an error to modify promoted expressions like this one.
+For example, the following is an error:
+
+.. code-block:: chapel
+
+   A[B] += 3;
+
+If this was promoted, it would become the following:
+
+.. code-block:: chapel
+
+   [b in B] A[b] += 3;
+
+This is illegal, as ``A`` cannot be modified without an explicit ``ref`` intent.
+An explicit loop statement must be used, for example:
+
+.. code-block:: chapel
+
+   [b in B with (ref A)] A[b] += 3;
 
 .. _Reductions_and_Scans:
 

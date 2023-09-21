@@ -5,7 +5,7 @@ var f = open(filename, ioMode.r);
 
 for loc in Locales do on loc {
   var firstval: int(8);
-  var ch = f.reader(deserializer=new BinaryDeserializer());
+  var ch = f.reader(deserializer=new binaryDeserializer());
   ch.read(firstval);
   writeln(loc, " read ", firstval);
 }

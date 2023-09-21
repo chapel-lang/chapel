@@ -25,7 +25,7 @@ module block_triangular_solve_variants {
     // block and not parallel within each row, due to the triangular solve.
     // (each row is the result of a triangular solve.)
 
-    forall i in L21_rows do
+    forall i in L21_rows with (ref L21) do
       for j in L11_cols do {
 	L21 (i,j) -=  +reduce [k in L11_cols (.. j-1)] L21 (i,k) * L11 (j,k);
 	L21 (i,j) /= L11 (j,j);
@@ -115,7 +115,7 @@ module block_triangular_solve_variants {
 	// apply outer product modification to the remainder of the 
 	// active block row, omitting the final diagonal block
 
-	forall (i,j,k) in {A11_rc_indices, trailing_cols, active_cols} do
+	forall (i,j,k) in {A11_rc_indices, trailing_cols, active_cols} with (ref A) do
 	  A (i,j) -= A (i,k) * L (j,k);
       }
   }
@@ -163,7 +163,7 @@ module block_triangular_solve_variants {
 	// active block row, omitting the final diagonal block
 
 	for later_block_col in vector_block_partition (trailing_cols) do
-	  forall (i,j,k) in {A11_rc_indices, later_block_col, active_cols} do
+	  forall (i,j,k) in {A11_rc_indices, later_block_col, active_cols} with (ref A) do
 	    A (i,j) -= A (i,k) * L (j,k);
       }
   }

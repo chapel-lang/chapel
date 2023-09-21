@@ -32,7 +32,7 @@ proc main() {
 
   for trial in 1..numTrials {
     const startTime = timeSinceEpoch().totalSeconds();
-    [i in ProblemSpace] A(i) = B(i) + alpha * C(i);
+    [i in ProblemSpace with (ref A)] A(i) = B(i) + alpha * C(i);
     execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;
   }
 

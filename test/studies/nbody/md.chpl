@@ -20,7 +20,7 @@ config const
 config const n = 1000;
 const D_dr = {1..n};
 
-const D_distrib = D_dr dmapped Block(D_dr);
+const D_distrib = D_dr dmapped blockDist(D_dr);
 var A, B: [D_distrib] real;
 
 proc computeOne(b_i, b_j) {
@@ -35,7 +35,7 @@ proc try1() {
 
   // "forall": parallel, distributed over D_distrib
   // compute all A[i] in parallel
-  forall i in D_distrib {
+  forall i in D_distrib with (ref A) {
 
     // "for": sequential, local; over a privitized copy of D_distrib
     // accumulate into A[i] sequentially

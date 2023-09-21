@@ -455,6 +455,8 @@ void resolveSpecifiedReturnType(FnSymbol* fn) {
 
   resolveBlockStmt(fn->retExprType);
 
+  checkSurprisingGenericDecls(fn, fn->retExprType->body.tail, nullptr);
+
   retType = fn->retExprType->body.tail->typeInfo();
 
   if (SymExpr* se = toSymExpr(fn->retExprType->body.tail)) {
@@ -1046,6 +1048,8 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
       ! ret->type->symbol->hasFlag(FLAG_TUPLE) &&
       ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
       ! ret->type->symbol->hasFlag(FLAG_DOMAIN) ) return;
+
+  // As of this writing, at this point 'ref' is always defined in 'fn'.
 
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {

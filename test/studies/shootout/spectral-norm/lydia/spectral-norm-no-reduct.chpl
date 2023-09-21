@@ -39,7 +39,7 @@ proc sum (i, inRange, param flip : bool, U : [] real) {
 //
 proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange do
+  forall i in 0..#inRange with (ref Au) do
     Au(i) = sum(i, inRange, false, U);
 }
 
@@ -50,7 +50,7 @@ proc eval_A_times_u(U : [] real, inRange, ref Au : [] real)
 //
 proc eval_At_times_u(U : [] real, inRange, ref Au : [] real)
 {
-  forall i in 0..#inRange do
+  forall i in 0..#inRange with (ref Au) do
     Au(i) = sum(i, inRange, true, U);
 }
 

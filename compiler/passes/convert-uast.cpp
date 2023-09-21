@@ -1063,7 +1063,11 @@ struct Converter {
       actuals->insertAtTail(conv);
     }
 
-    return buildRequireStmt(actuals);
+    auto parentId = parsing::idToParentId(context, node->id());
+    auto parentAst = parsing::idToAst(context, parentId);
+    bool atModuleScope = parentAst->isModule();
+
+    return buildRequireStmt(actuals, atModuleScope);
   }
 
   Expr* visit(const uast::Include* node) {
@@ -1169,6 +1173,12 @@ struct Converter {
 
     inImportOrUse = false;
     return ret;
+  }
+
+  Expr* visit(const uast::Init* node) {
+    // target should always be "this", aka the method receiver.
+    auto toInit = convertAST(node->target());
+    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("chpl__initThisType")));
   }
 
   CallExpr* visit(const uast::New* node) {
@@ -4120,7 +4130,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
-    case typetags::AnyBoolType:                  return dtAnyBool;
     case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
     case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
     case typetags::AnyBorrowedType:              return dtBorrowed;
@@ -4245,20 +4254,6 @@ Type* Converter::convertUnionType(const types::QualifiedType qt) {
 
 // helper functions to convert a type to a size
 
-static IF1_bool_type getBoolSize(const types::BoolType* t) {
-  if (t->isDefaultWidth())
-    return BOOL_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 8)  return BOOL_SIZE_8;
-  else if (width == 16) return BOOL_SIZE_16;
-  else if (width == 32) return BOOL_SIZE_32;
-  else if (width == 64) return BOOL_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return BOOL_SIZE_DEFAULT;
-}
-
 static IF1_complex_type getComplexSize(const types::ComplexType* t) {
   if (t->isDefaultWidth())
     return COMPLEX_SIZE_DEFAULT;
@@ -4326,8 +4321,7 @@ static IF1_int_type getUintSize(const types::UintType* t) {
 
 
 Type* Converter::convertBoolType(const types::QualifiedType qt) {
-  const types::BoolType* t = qt.type()->toBoolType();
-  return dtBools[getBoolSize(t)];
+  return dtBool;
 }
 
 Type* Converter::convertComplexType(const types::QualifiedType qt) {
@@ -4362,8 +4356,7 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   INT_ASSERT(p && t);
 
   if (auto bp = p->toBoolParam()) {
-    const types::BoolType* bt = t->toBoolType();
-    return new_BoolSymbol(bp->value(), getBoolSize(bt));
+    return new_BoolSymbol(bp->value());
   } else if (auto cp = p->toComplexParam()) {
     const types::ComplexType* ct = t->toComplexType();
     types::Param::ComplexDouble tmp = cp->value();

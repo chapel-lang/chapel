@@ -41,7 +41,7 @@ module SharedObject {
     // a 'ReferenceCount' should only ever be initialized during 'shared' initialization
     // 'weak' references should only get a non-nil 'ReferenceCount' by copying from a 'shared'
     proc init() {
-      this.complete();
+      init this;
       strongCount.write(1);
       totalCount.write(1);
     }
@@ -116,7 +116,7 @@ module SharedObject {
     This is currently implemented with task-safe reference counting.
   */
   pragma "managed pointer"
-  record _shared {
+  record _shared : writeSerializable, readDeserializable {
     type chpl_t;         // contained type (class type)
 
     // contained pointer (class type)
@@ -207,7 +207,7 @@ module SharedObject {
     this.chpl_p = p;
     this.chpl_pn = rc;
 
-    this.complete();
+    init this;
   }
 
   /*
@@ -273,7 +273,7 @@ module SharedObject {
     this.chpl_p = p;
     this.chpl_pn = rc;
 
-    this.complete();
+    init this;
 
     if isNonNilableClass(this.type) && isNilableClass(take) then
       compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
@@ -295,7 +295,7 @@ module SharedObject {
     this.chpl_p = src.chpl_p;
     this.chpl_pn = src.chpl_pn;
 
-    this.complete();
+    init this;
 
     if this.chpl_pn != nil then
       this.chpl_pn!.retain();
@@ -551,9 +551,17 @@ module SharedObject {
     _readWriteHelper(f);
   }
 
+  proc ref _shared.deserialize(reader, ref deserializer) throws {
+    _readWriteHelper(reader);
+  }
+
   @chpldoc.nodoc
   proc _shared.writeThis(f) throws {
     _readWriteHelper(f);
+  }
+
+  proc _shared.serialize(writer, ref serializer) throws {
+    _readWriteHelper(writer);
   }
 
   // Don't print out 'chpl_p' when printing an Shared, just print class pointer
@@ -746,7 +754,7 @@ Weak pointers are implemented using task-safe reference counting.
 module WeakPointer {
   use Errors, Atomics, ChapelBase;
 
-  record weak {
+  record weak : writeSerializable {
     /* The shared class type referenced by this pointer */
     type classType;
 
@@ -801,7 +809,7 @@ module WeakPointer {
         if ptr != nil then count!.incrementWeak(); else count = nil;
 
         this.classType = shared c.chpl_t;
-        // this.complete();
+        // init this;
 
         this.chpl_p = ptr;
         this.chpl_pn = count;
@@ -1029,6 +1037,10 @@ module WeakPointer {
     } else {
       ch.write("nil-object");
     }
+  }
+
+  proc weak.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
 }

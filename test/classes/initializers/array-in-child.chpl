@@ -4,7 +4,7 @@ class Parent {
   proc init(dom : domain(1)) {
     D = dom;
 
-    complete();
+    init this;
   }
 }
 
@@ -14,7 +14,7 @@ class Child : Parent {
   proc init(dom : domain(1)) {
     super.init(dom);
 
-    complete();
+    init this;
   }
 }
 

@@ -28,11 +28,11 @@ module ChainTable {
       this.keyType = keyType;
       this.valType = valType;
       this.numBuckets = initialCapacity;
-      this.complete();
+      init this;
       this.numEntries.write(0);
     }
 
-    proc init=(other: chainTable) {
+    proc init=(other: chainTable(?)) {
       this.keyType = other.keyType;
       this.valType = other.valType;
       this.numBuckets = other.numBuckets;

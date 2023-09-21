@@ -167,9 +167,10 @@ proc randomMake(desc, nuclInfo: [?nuclInds], n) {
 //
 var lastRand = seed;
 
-proc getRands(n, ref arr) {
+proc getRands(n, arr) {
   for i in 0..#n {
     lastRand = (lastRand * IA + IC) % IM;
     arr[i] = lastRand;
   }
 }
+use Compat;

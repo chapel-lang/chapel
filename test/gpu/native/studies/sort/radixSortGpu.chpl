@@ -43,7 +43,7 @@ module RadixSort {
       while offset <= buckets {
           var prefixSumBuffer = prefixSum;
           @assertOnGpu
-          forall i in offset..<buckets { // foreach causes error? Investigate later
+          forall i in offset..<buckets with (ref prefixSum) { // foreach causes error? Investigate later
             prefixSum[i] = prefixSumBuffer[i] + prefixSumBuffer[i-offset];
           }
           offset = offset << 1;

@@ -2,13 +2,13 @@
   A distributed 2D finite-difference heat/diffusion equation solver
 
   Computation is executed over a 2D distributed array.
-  The array distribution is managed by the `Block` distribution.
+  The array distribution is managed by the `blockDist` distribution.
   Tasks are spawned manually with a `coforall` loop and synchronization
   is done manually using a `barrier`. Halo regions are shared across
   locales manually via direct assignment between locally owned arrays.
 */
 
-import BlockDist.Block,
+import BlockDist.blockDist,
        Collectives.barrier,
        Time.stopwatch;
 
@@ -28,7 +28,7 @@ config const nx = 256,      // number of grid points in x
              solutionStd = 0.221167; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
-const Indices = Block.createDomain(0..nx+1, 0..ny+1),
+const Indices = blockDist.createDomain(0..nx+1, 0..ny+1),
       IndicesInner = Indices[1..nx, 1..ny];
 
 // define distributed 2D arrays over the above domain
@@ -47,10 +47,10 @@ record localArray {
 }
 
 // set up an arrays of local arrays over same distribution as 'u.targetLocales'
-var OnePerLocale = Block.createDomain(u.targetLocales().domain);
+var OnePerLocale = blockDist.createDomain(u.targetLocales().domain);
 var uTaskLocal, unTaskLocal: [OnePerLocale] localArray;
 
-// number of tasks per dimension based on Block distributions decomposition
+// number of tasks per dimension based on blockDist's decomposition
 const tidXMax = OnePerLocale.dim(0).high,
       tidYMax = OnePerLocale.dim(1).high;
 
@@ -87,7 +87,7 @@ proc work(tidX: int, tidY: int) {
         localIndicesBuffered = myGlobalIndices.expand(1),
         localIndicesInner = IndicesInner.localSubdomain(here);
 
-  // initialize this tasks local arrays using indices from `Block` dist.
+  // initialize this task's local arrays using indices from `blockDist`.
   uTaskLocal[tidX, tidY] = new localArray(localIndicesBuffered);
   unTaskLocal[tidX, tidY] = new localArray(localIndicesBuffered);
 

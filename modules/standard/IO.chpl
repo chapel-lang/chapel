@@ -456,6 +456,171 @@ recovered from separately from a ``SystemError``. See the following example:
     writeln("something else went wrong...");
   }
 
+
+.. _io-transactions:
+
+I/O Transactions
+----------------
+
+An *I/O transaction* is a common pattern afforded by the IO interface that
+provides the ability to temporarily hold a particular region of a file in a
+:record:`fileReader` or :record:`fileWriter`'s buffer. This allows I/O
+operations within that region of the file to easily be undone in the event
+of some unexpected data or other errors.
+
+To support *I/O transactions*, each ``fileReader`` and ``fileWriter`` is fitted
+with a *mark stack* which contains a series of file offsets. The region of the
+file between the minimum and maximum offset on the *mark stack* will always be
+retained in the buffer.
+
+The steps of a typical *I/O transaction* are as follows:
+
+* ``mark`` the current file offset with :proc:`fileReader.mark` or
+  :proc:`fileWriter.mark`. This pushes the current offset onto the *mark stack*
+* do a speculative I/O operation:
+    * reading example: read 200 bytes followed by a `b`.
+    * writing example: write 200 bytes without exceeding the ``fileWriter``'s region.
+* if the operation fails, ``revert`` the operation by calling :proc:`fileReader.revert`
+  or :proc:`fileWriter.revert`. Subsequent operations will continue from the
+  originally marked offset as if nothing happened.
+* if the operation is successful, call :proc:`fileReader.commit` or
+  :proc:`fileWriter.commit` to pop the value from the *mark stack* and continue
+  performing I/O operations from the current offset.
+
+Note that when the mark stack is emptied, a ``fileWriter`` is allowed to flush
+any portion of its buffer to its file and a ``fileReader`` is allowed to discard
+any portion of its buffer.
+
+See the following example of a simple I/O transaction:
+
+.. code-block:: chapel
+
+  use IO;
+
+  var fr = openReader("file.txt");
+
+  // mark the current channel position
+  fr.mark();
+
+  // read an array of bytes
+  var a: [0..<200] uint(8);
+  fr.read(a);
+
+  // try to match a pattern
+  if fr.matchLiteral("b") {
+    fr.commit(); // "b" was found, continue reading from the current offset
+  } else {
+    fr.revert(); // "b" was't found, revert back to the marked position
+
+    // try to read something else from the file, throw an error, etc.
+  }
+
+.. _filereader-filewriter-regions:
+
+Specifying the region of a FileReader or FileWriter
+---------------------------------------------------
+
+The :record:`fileReader` and :record:`fileWriter` types can be configured to
+own a specific *region* of their associated file.
+
+When a ``fileReader`` or ``fileWriter`` is initialized using one of the
+following routines, the optional ``region`` argument can be set to designate
+some region of the file (a zero-based :ref:`range<Chapter-Ranges>` of integers
+in bytes) that can be read from or written to:
+
+* :proc:`file.reader`
+* :proc:`file.writer`
+* :proc:`openReader`
+
+I/O operations that fall outside of the *region* are illegal. The ``region``
+argument defaults to ``0..``, meaning that the owned region starts at the 0th
+byte, and extends indefinitely.
+
+Note that :proc:`fileReader.seek` and :proc:`fileWriter.seek` can be used to
+adjust a ``fileReader`` or ``fileWriter``'s region after initialization.
+
+Creating a ``fileReader`` or ``fileWriter`` that points to a sub-region of
+a file can be useful for concurrently reading from or writing to multiple
+portions of a file from separate tasks. See the following example, which
+uses multiple tasks to concurrently read bytes from a binary file into an
+array of bytes:
+
+.. code-block:: chapel
+
+  use IO;
+
+  // the number of tasks to use
+  config const nWorkers = 8;
+
+  // open a (large) binary file
+  var f = open("file.dat", ioMode.r);
+
+  // compute how many bytes each worker will read
+  const nBytes = f.size,
+        nPerLoc = nBytes/ nWorkers;
+
+  // create an array to hold the file contents
+  var a: [0..<nBytes] uint(8);
+
+  // concurrently read each worker's region into 'a'
+  coforall w in 0..<nWorkers {
+    const myRegion = (w*nPerLoc)..<((w+1) * nPerLoc),
+          fr = f.reader(region=myRegion, locking=false);
+
+    fr.readBinary(a[myRegion]);
+  }
+
+
+.. _locking-filereaders-and-filewriters:
+
+Locking Behavior of FileReaders and FileWriters
+-----------------------------------------------
+
+The :record:`fileReader` and :record:`fileWriter` types can be configured to
+lock access to their file when executing I/O operations to avoid race conditions
+with other ``fileReader`` or ``fileWriter`` instances that may be accessing the
+same file.
+
+The ``locking`` field is a ``param`` and is thus part of the ``fileReader``
+and ``fileWriter`` type. As such, it is possible to use type constraints to
+designate whether a reader or writer is locking. For example this could be
+useful in a procedure that relies on a ``reader`` argument being locking:
+
+.. code-block:: chapel
+
+  use IO;
+
+  proc readSomething(reader: fileReader(locking=true, ?)) {
+    // use 'reader' concurrently with another fileReader/fileWriter   ...
+  }
+
+By default, a ``fileReader`` or ``fileWriter`` will lock. A non-locking reader
+or writer can be created by setting ``locking=false`` in one of the following
+routines:
+
+* :proc:`file.reader`
+* :proc:`file.writer`
+* :proc:`openReader`
+* :proc:`openWriter`
+
+With a locking ``fileReader`` or ``fileWriter``, one can obtain a lock manually
+by calling :proc:`fileReader.lock` or :proc:`fileWriter.lock`, and then release a
+lock by calling :proc:`fileReader.unlock` or :proc:`fileWriter.unlock`.
+
+.. note::
+  The following methods will not automatically acquire/release a lock for
+  ``locking=true``:
+
+  * :proc:`fileReader.mark`
+  * :proc:`fileWriter.mark`
+  * :proc:`fileReader.commit`
+  * :proc:`fileWriter.commit`
+  * :proc:`fileReader.revert`
+  * :proc:`fileWriter.revert`
+  * :proc:`fileReader.offset`
+  * :proc:`fileWriter.offset`
+
+
 .. _about-io-ensuring-successful-io:
 
 Ensuring Successful I/O
@@ -515,8 +680,6 @@ module IO {
     - Fancy features, like adding a bytes or buffer object to a fileReader or
       fileWriter (so that the fileReader or fileWriter just refers to it and
       does not copy it) are implemented but not well tested.
-    - It would be nice if ioBits:string printed itself in binary instead of
-      decimal.
     - Cleaning up to reduce the number of exported symbols, and using enums for
       all constants once 'use enum' is available and we have a way to get
       C constants into Chapel enums.
@@ -538,68 +701,48 @@ import OS.{errorCode};
 use CTypes;
 public use OS;
 private use Reflection;
+public use ChapelIO only write, writeln, writef;
 
 /*
-
 The :type:`ioMode` type is an enum. When used as arguments when opening files, its
-constants have the same meaning as the following strings passed to ``fopen()`` in C:
-
-.. list-table::
-   :widths: 8 8 64
-   :header-rows: 1
-
-   * - :type:`ioMode`
-     - ``fopen()`` argument
-     - Description
-   * - ``ioMode.r``
-     - ``"r"``
-     - open an existing file for reading.
-   * - ``ioMode.rw``
-     - ``"r+"``
-     - open an existing file for reading and writing.
-   * - ``ioMode.cw``
-     - ``"w"``
-     - create a new file for writing. If the file already exists, its contents are truncated.
-   * - ``ioMode.cwr``
-     - ``"w+"``
-     - same as ``ioMode.cw``, but reading from the file is also allowed.
-   * - ``ioMode.a``
-     - ``"a"``
-     - open a file for appending, creating it if it does not exist.
-
-.. TODO: Support append / create-exclusive modes:
-   * - ``ioMode.ar``
-     - ``"a+"``
-     - same as ``ioMode.a``, but reading from the file is also allowed.
-   * - ``ioMode.cwx``
-     - ``"wx"``
-     - open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
-   * - ``ioMode.cwrx``
-     - ``"w+x"``
-     - same as ``ioMode.cwx``, but reading from the file is also allowed.
-
+constants have the same meaning as the listed strings passed to ``fopen()`` in C.
 However, :proc:`open()` in Chapel does not necessarily invoke ``fopen()`` in C.
-
-.. warning::
-
-   ``ioMode.a`` is unstable and subject to change. It currently only supports
-   one :record:`fileWriter` at a time.
 */
 enum ioMode {
+  /*
+    Open an existing file for reading.
+    (``fopen()`` string is "r")
+  */
   r = 1,
+  /*
+    Create a new file for writing.
+    If the file already exists, its contents are truncated.
+    (``fopen()`` string is "w")
+  */
   cw = 2,
+  /*
+    Open an existing file for reading and writing.
+    (``fopen()`` string is "r+")
+  */
   rw = 3,
+  /*
+    Same as :enumconstant:`ioMode.cw`, but reading from the file is also allowed.
+    (``fopen()`` string is "w+")
+  */
   cwr = 4,
-  @unstable("append mode is unstable")
+  /*
+    Open a file for appending, creating it if it does not exist.
+    (``fopen()`` string is "a")
+  */
+  @unstable(":enumconstant:`ioMode.a` is unstable and subject to change. It currently only supports one :record:`fileWriter` at a time.")
   a = 5,
-}
+  // same as ``ioMode.a``, but reading from the file is also allowed.
+  // ar, "a+"
+  // open a file for writing, throwing an error if it already exists. (The test for file's existence and the file's creation are atomic on POSIX.)
+  // cwx, "wx"
+  // same as ``ioMode.cwx``, but reading from the file is also allowed.
+  // cwrx, w+x
 
-@deprecated(notes="enum iomode is deprecated - please use :enum:`ioMode` instead")
-enum iomode {
-  r = 1,
-  cw = 2,
-  rw = 3,
-  cwr = 4,
 }
 
 @chpldoc.nodoc
@@ -677,23 +820,17 @@ param iobig = _iokind.big;
 param iolittle = _iokind.little;
 
 /*
-
 The :type:`ioendian` type is an enum. When used as an argument to the
 :record:`fileReader` or :record:`fileWriter` methods, its constants have the
 following meanings:
-
-* ``ioendian.big`` means binary I/O is performed in big-endian byte order.
-
-* ``ioendian.little`` means binary I/O is performed in little-endian byte order.
-
-* ``ioendian.native`` means binary I/O is performed in the byte order that is native
-  to the target platform.
-
 */
-
 enum ioendian {
+  /* ``native`` means binary I/O is performed in the byte order that is native
+  to the target platform. */
   native = 0,
+  /* ``big`` means binary I/O is performed in big-endian byte order.*/
   big = 1,
+  /* ``little`` means binary I/O is performed in little-endian byte order. */
   little = 2
 }
 
@@ -1694,7 +1831,7 @@ record file {
 proc file.init(x: file) {
   this._home = x._home;
   this._file_internal = x._file_internal;
-  this.complete();
+  init this;
   on this._home {
     qio_file_retain(_file_internal);
   }
@@ -1878,17 +2015,6 @@ proc file.checkAssumingLocal() throws {
     throw createSystemError(EBADF, "Operation attempted on an invalid file");
   if !qio_file_isopen(_file_internal) then
     throw createSystemError(EBADF, "Operation attempted on closed file");
-}
-
-/* Throw an error if `this` is not a valid representation of an OS file.
-
-   :throws SystemError: Indicates that `this` does not represent an OS file.
-*/
- @deprecated(notes="'file.check()' is deprecated, please use :proc:`file.isOpen` instead")
-proc file.check() throws {
-  on this._home {
-    this.checkAssumingLocal(); // Remove this function, too?
-  }
 }
 
 /* Indicates if the file is currently open.  Will return ``false`` for both
@@ -2118,32 +2244,6 @@ proc _modestring(mode:ioMode) {
   }
 }
 
-pragma "compiler generated"
-@chpldoc.nodoc
-proc convertIoMode(mode:iomode):ioMode {
-  import HaltWrappers;
-  select mode {
-    when iomode.r do return ioMode.r;
-    when iomode.rw do return ioMode.rw;
-    when iomode.cw do return ioMode.cw;
-    when iomode.cwr do return ioMode.cwr;
-    otherwise do HaltWrappers.exhaustiveSelectHalt("Invalid iomode");
-  }
-}
-
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return open(path, convertIoMode(mode), hints, style);
-}
-
-@deprecated("open with a 'style' argument is deprecated")
-proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
-          style:iostyle): file throws {
-  return openHelper(path, mode, hints, style:iostyleInternal);
-}
-
 /*
 
 Open a file on a filesystem. Note that once the file is open, you will need to
@@ -2169,10 +2269,11 @@ proc open(path:string, mode:ioMode, hints=ioHintSet.empty): file throws {
   return openHelper(path, mode, hints);
 }
 
-pragma "last resort"
-@deprecated(notes="open with an iomode argument is deprecated - please use :enum:`ioMode`")
-proc open(path:string, mode:iomode, hints=ioHintSet.empty): file throws {
-  return open(path, convertIoMode(mode), hints);
+
+@deprecated("open with a 'style' argument is deprecated")
+proc open(path:string, mode:ioMode, hints=ioHintSet.empty,
+          style:iostyle): file throws {
+  return openHelper(path, mode, hints, style:iostyleInternal);
 }
 
 private proc openHelper(path:string, mode:ioMode, hints=ioHintSet.empty,
@@ -2253,140 +2354,8 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
   return ret;
 }
 
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfdHelper(fd, hints, style: iostyleInternal);
-}
-
-/*
-
-Create a Chapel file that works with a system file descriptor.  Note that once
-the file is open, you will need to use a :proc:`file.reader` to create a
-fileReader or :proc:`file.writer` to create a fileWriter to actually perform I/O
-operations
-
-The system file descriptor will be closed when the Chapel file is closed.
-
-.. note::
-
-  This function can be used to create Chapel files that refer to system file
-  descriptors that do not support the ``seek`` functionality. For example, file
-  descriptors that represent pipes or open socket connections have this
-  property. In that case, the resulting file value should only be used with one
-  :record:`fileReader` or :record:`fileWriter` at a time.  The I/O system will
-  ignore the fileReader or fileWriter offsets when reading or writing to files
-  backed by non-seekable file descriptors.
-
-
-:arg fd: a system file descriptor.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` using the specified file descriptor.
-
-:throws SystemError: Thrown if the file descriptor could not be retrieved.
-*/
-@deprecated(notes="openfd is deprecated, please use the file initializer with a 'c_int' argument instead")
-proc openfd(fd: c_int, hints = ioHintSet.empty):file throws {
-  return openfdHelper(fd, hints);
-}
-
-private proc openfdHelper(fd: c_int, hints = ioHintSet.empty,
-                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
-  var local_style = style;
-  var ret:file;
-  ret._home = here;
-  extern proc chpl_cnullfile():c_ptr(chpl_cFile);
-  var err = qio_file_init(ret._file_internal, chpl_cnullfile(), fd, hints._internal, local_style, 0);
-
-  // On return, either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
-  // err should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fd(fd, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    try ioerror(err, "in openfd", path);
-  }
-  return ret;
-}
-
-@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp, hints=ioHintSet.empty, style:iostyle):file throws {
-  return openfpHelper(fp, hints, style: iostyleInternal);
-}
-
-/*
-
-Create a Chapel :record:`file` that wraps around an open C file. A pointer to
-a C ``FILE`` object can be obtained via Chapel's
-:ref:`C Interoperability <primers-C-interop-using-C>` functionality.
-
-Once the Chapel file is created, you will need to use a :proc:`file.reader` to
-create a fileReader or :proc:`file.writer` to create a fileWriter to perform I/O
-operations on the C file.
-
-.. note::
-
-  The resulting file value should only be used with one :record:`fileReader` or
-  :record:`fileWriter` at a time. The I/O system will ignore the fileReader or
-  fileWriter offsets when reading or writing to a file opened with
-  :proc:`openfp`.
-
-
-:arg fp: a pointer to a C ``FILE``. See :type:`~CTypes.c_FILE`.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open :record:`file` corresponding to the C file.
-
-:throws SystemError: Thrown if the C file could not be retrieved.
- */
-@deprecated(notes="openfp is deprecated, please use the file initializer with a 'c_FILE' argument instead")
-proc openfp(fp, hints=ioHintSet.empty):file throws {
-  return openfpHelper(fp, hints);
-}
-
-pragma "last resort"
-@deprecated(notes="'_file' is deprecated; use the file initializer that takes a 'c_FILE' instead")
-proc openfp(fp: _file, hints=ioHintSet.empty):file throws {
-  return openfpHelper(fp, hints);
-}
-
-private proc openfpHelper(fp: ?t, hints=ioHintSet.empty,
-                          style:iostyleInternal = defaultIOStyleInternal()):file throws {
-
-  // check if the user passed in a c_FILE rather than a c_ptr(c_FILE)
-  // (TODO: this can be removed when deprecation is complete (along with the type query))
-  if !cFileTypeHasPointer && t == chpl_cFile
-    then compilerError("Cannot initialize a `file` with a `c_FILE` object. ",
-                         "Please pass a pointer to the `c_FILE` object instead.");
-
-  var local_style = style;
-  var ret:file;
-  ret._home = here;
-  var err = qio_file_init(ret._file_internal, fp, -1, hints._internal, local_style, 1);
-
-  // On return either ret._file_internal.ref_cnt == 1, or ret._file_internal is NULL.
-  // error should be nonzero in the latter case.
-  if err {
-    var path_cs:c_ptrConst(c_char);
-    var path_err = qio_file_path_for_fp(fp, path_cs);
-    var path = if path_err then "unknown"
-                           else string.createCopyingBuffer(path_cs,
-                                                          policy=decodePolicy.replace);
-    deallocate(path_cs);
-    try ioerror(err, "in openfp", path);
-  }
-  return ret;
-}
-
 @deprecated("openTempFile with a 'style' argument is deprecated")
 proc openTempFile(hints=ioHintSet.empty, style:iostyle):file throws {
-  return opentmpHelper(hints, style: iostyleInternal);
-}
-
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty, style:iostyle):file throws {
   return opentmpHelper(hints, style: iostyleInternal);
 }
 
@@ -2415,11 +2384,6 @@ proc openTempFile(hints=ioHintSet.empty):file throws {
   return opentmpHelper(hints);
 }
 
-@deprecated(notes="opentmp is deprecated, please use :proc:`openTempFile` instead")
-proc opentmp(hints=ioHintSet.empty):file throws {
-  return opentmpHelper(hints);
-}
-
 private proc opentmpHelper(hints=ioHintSet.empty,
                            style:iostyleInternal = defaultIOStyleInternal()):file throws {
   var local_style = style;
@@ -2430,16 +2394,6 @@ private proc opentmpHelper(hints=ioHintSet.empty,
   var err = qio_file_open_tmp(ret._file_internal, hints._internal, local_style);
   if err then try ioerror(err, "in opentmp");
   return ret;
-}
-
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem(style:iostyle):file throws {
-  return openMemFile(style);
-}
-
-@deprecated(notes="openmem is deprecated - please use :proc:`openMemFile` instead")
-proc openmem():file throws {
-  return openMemFile();
 }
 
 @deprecated("openMemFile with a 'style' argument is deprecated")
@@ -2475,22 +2429,40 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
-config param useIOSerializers = false;
+config param useIOSerializers = true;
 
-private proc defaultSerializeType(param writing : bool) type {
+private proc defaultSerializeType(param writing : bool,
+                                  param kind : _iokind = _iokind.dynamic) type {
   if !useIOSerializers then return nothing;
-  if writing then return DefaultSerializer;
-  else return DefaultDeserializer;
+
+  // Compatibility with 'iokind'
+  if kind != _iokind.dynamic {
+    if writing then return binarySerializer;
+    else return binaryDeserializer;
+  }
+
+  if writing then return defaultSerializer;
+  else return defaultDeserializer;
 }
 
-private proc defaultSerializeVal(param writing : bool) {
+private proc defaultSerializeVal(param writing : bool,
+                                 param kind : _iokind = _iokind.dynamic) {
   if !useIOSerializers then return none;
-  if writing then return new DefaultSerializer();
-  else return new DefaultDeserializer();
+
+  if kind != _iokind.dynamic {
+    var endian = if kind == _iokind.native then ioendian.native
+                 else if kind == _iokind.big then ioendian.big
+                 else ioendian.little;
+    if writing then return new binarySerializer(endian, _structured=false);
+    else return new binaryDeserializer(endian, _structured=false);
+  }
+
+  if writing then return new defaultSerializer();
+  else return new defaultDeserializer();
 }
 
 @chpldoc.nodoc
-class _serializeWrapper {
+class _serializeWrapper : writeSerializable {
   type T;
   var member: T;
   // TODO: Needed to avoid a weird memory error in the following test in
@@ -2542,7 +2514,7 @@ record fileReader {
      deserializerType indicates the type of the deserializer that this
      fileReader will use to deserialize data.
    */
-  type deserializerType = defaultSerializeType(/* writing= */ false);
+  type deserializerType = defaultSerializeType(/* writing= */ false, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2623,7 +2595,7 @@ record fileWriter {
      serializerType indicates the type of the serializer that this fileWriter
      will use to serialize data.
    */
-  type serializerType = defaultSerializeType(/* writing */ true);
+  type serializerType = defaultSerializeType(/* writing */ true, kind);
 
   @chpldoc.nodoc
   var _home:locale = here;
@@ -2666,21 +2638,15 @@ proc fileWriter.serializer ref : serializerType {
 }
 
 /*
-  The default serializer used by ``fileWriter``.
+  The default Serializer used by ``fileWriter``.
 
-  Implements the 'serializeValue' method which is called by a ``fileWriter``
-  to produce a serialized representation of a value.
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Serializers and their usage.
 
-  Serializers can choose to invoke a user-defined method, 'serialize', on
-  class and record types. The 'serialize' method should match the formal names,
-  intents, and types of the following signature:
-
-    proc MyType.serialize(writer: fileWriter(?), ref serializer: writer.serializerType) throws
-
-  The compiler is expected to generate a default implementation of 'serialize'
-  methods for records and classes.
+  Otherwise, please refer to the individual methods in this type for a
+  description of the default IO format.
 */
-record DefaultSerializer {
+record defaultSerializer {
 
   @chpldoc.nodoc
   proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
@@ -2693,13 +2659,44 @@ record DefaultSerializer {
     }
   }
 
+  /*
+    Serialize ``val`` with ``writer``.
+
+    Numeric values are serialized as though they were written with the format
+    as ``%i`` for integers and ``%r`` for ``real`` numbers. Complex numbers are
+    serialized as ``%z``. Please refer to :ref:`the section on Formatted
+    IO<about-io-formatted-io>` for more information.
+
+    Booleans are serialized as the literal strings ``true`` or ``false``.
+
+    ``string`` values are serialized using the same format as ``%s`` — that is,
+    literally and without quotes. ``bytes`` values are also serialized
+    literally without extra formatting.
+
+    Enums are serialized using the name of the corresponding value. For example
+    with an enum like ``enum colors {red, green blue}``, the value ``red``
+    would simply be serialized as ``red``.
+
+    The ``nil`` value and nilable class variables storing ``nil`` will be
+    serialized as the text ``nil``.
+
+    Classes and records will have their ``serialize`` method invoked, passing
+    in ``writer`` and this Serializer as arguments. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement the ``writeSerializable``
+    or ``serializable`` interface.
+
+    :arg writer: The ``fileWriter`` used to write serialized output.
+    :arg val: The value to be serialized.
+  */
   proc ref serializeValue(writer: fileWriter, const val: ?t) : void throws {
     if isNumericType(t) || isBoolType(t) || isEnumType(t) ||
        t == string || t == bytes {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer._writeLiteral("nil");
-    } else if isClassType(t) || chpl_isAnyCPtr(t) {
+    } else if isClassType(t) || chpl_isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
       val.writeThis(writer);
@@ -2708,12 +2705,70 @@ record DefaultSerializer {
     }
   }
 
+  // TODO: add ":ref:" for return type, currently can't refer to it.
+  /*
+    Start serializing a class by writing the character ``{``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the class type.
+    :arg size: The number of fields in the class.
+
+    :returns: A new :type:`AggregateSerializer`
+  */
+  proc startClass(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("{");
+    return new AggregateSerializer(writer, _ending="}");
+  }
+
+  /*
+    Start serializing a record by writing the character ``(``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the record type.
+    :arg size: The number of fields in the record.
+
+    :returns: A new AggregateSerializer
+  */
+  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    writer._writeLiteral("(");
+    return new AggregateSerializer(writer, _ending=")");
+  }
+
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    serializing classes or records.
+
+    A ``class`` with integer fields 'x' and 'y' with values '0' and '5' would
+    be serialized as:
+
+    .. code-block:: text
+
+      {x = 0, y = 5}
+
+    A ``record`` with matching fields would be serialized in the same way, but
+    would use ``(`` and ``)`` instead of ``{`` and ``}``.
+  */
   record AggregateSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _parent = false;
+    @chpldoc.nodoc
     var _first : bool = true;
+    @chpldoc.nodoc
     const _ending : string;
 
+    // pointer to child's 'first' field so that we can communicate back if/when
+    // a field has already been written.
+    @chpldoc.nodoc
+    var _firstPtr : c_ptr(bool) = nil;
+
+    /*
+      Serialize ``field`` named ``name``.
+
+      Serializes fields in the form '<name> = <field>'. Adds a comma before the
+      name if this is no the first field.
+    */
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2723,45 +2778,108 @@ record DefaultSerializer {
       writer.write(field);
     }
 
+    /*
+      Start serializing a nested class inside the current class. In this format
+      inheritance is not represented and parent fields are printed before child
+      fields. For example, the following classes with values
+      ``x=5`` and ``y=2.0``:
+
+      .. code-block:: chapel
+
+        class Parent {
+          var x : int;
+        }
+
+        class Child: Parent {
+          var y : real;
+        }
+
+      would be serialized as:
+
+      .. code-block:: text
+
+        {x = 5, y = 2.0}
+
+      :arg writer: The ``fileWriter`` to be used when serializing. Must match
+        writer used to create current AggregateSerializer.
+      :arg name: The name of the class type.
+      :arg size: The number of fields in the class.
+
+      :returns: A new AggregateSerializer
+    */
     proc ref startClass(writer: fileWriter, name: string, size: int) throws {
-      _first = size == 0;
-      return new AggregateSerializer(writer, _parent=true);
+      // Note: 'size' of parent might be zero, but 'size' of grandparent might
+      // be non-zero.
+      return new AggregateSerializer(writer, _parent=true,
+                                     _firstPtr=c_addrOf(_first));
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current class by writing the character ``}``
+
+      .. note:: It is an error to call methods on an AggregateSerializer after
+                invoking 'endClass'.
+    */
     proc endClass() throws {
       if !_parent then
         writer._writeLiteral(_ending);
+      else if _firstPtr != nil then
+        _firstPtr.deref() = _first;
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current record by writing the character ``)``
+
+      .. note:: It is an error to call methods on an AggregateSerializer after
+                invoking 'endRecord'.
+    */
     proc endRecord() throws {
       writer._writeLiteral(_ending);
     }
   }
 
-  // Class helpers
-  //
-  // TODO: If this is called in a nested way for inheriting classes, then we
-  // can increment 'size' internally to track the total number of fields...?
-  @chpldoc.nodoc
-  proc startClass(writer: fileWriter, name: string, size: int) throws {
-    writer._writeLiteral("{");
-    return new AggregateSerializer(writer, _ending="}");
-  }
+  /*
+    Start serializing a tuple by writing the character ``(``.
 
-  // Record helpers
-  @chpldoc.nodoc
-  proc startRecord(writer: fileWriter, name: string, size: int) throws {
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the tuple.
+
+    :returns: A new TupleSerializer
+  */
+  proc startTuple(writer: fileWriter, size: int) throws {
     writer._writeLiteral("(");
-    return new AggregateSerializer(writer, _ending=")");
+    return new TupleSerializer(writer, size);
   }
 
+  /*
+    Returned by ``startTuple`` to provide the API for serializing tuples.
+
+    A tuple will be serialized as a comma-separated list between two
+    parentheses. For example, the tuple literal ``(1, 2, 3)`` would be
+    serialized as:
+
+    .. code-block::
+
+      (1, 2, 3)
+
+    A 1-tuple will be serialized with a trailing comma. For example, the literal
+    ``(4,)`` would be serialized as ``(4,)``.
+
+  */
   record TupleSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     const size : int;
+    @chpldoc.nodoc
     var _first : bool = true;
 
+    /*
+      Serialize ``element``.
+
+      Writes a leading comma before serializing the element if this is not the
+      first element in the tuple.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2769,7 +2887,12 @@ record DefaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current tuple by writing the character ``)``.
+
+      Adds a comma between the last value and ``)`` if there was only one
+      element.
+    */
     proc endTuple() throws {
       if size == 1 then
         writer._writeLiteral(",)");
@@ -2778,17 +2901,44 @@ record DefaultSerializer {
     }
   }
 
-  // Tuple helpers
-  @chpldoc.nodoc
-  proc startTuple(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("(");
-    return new TupleSerializer(writer, size);
+  /*
+    Start serializing a list by writing the character ``[``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the list.
+
+    :returns: A new ListSerializer
+  */
+  proc startList(writer: fileWriter, size: int) throws {
+    writer._writeLiteral("[");
+    return new ListSerializer(writer);
   }
 
+  /*
+    Returned by ``startList`` to provide the API for serializing lists.
+
+    A list will be serialized as a comma-separated series of serialized
+    elements between two square brackets. For example, serializing a list
+    with elements ``1``, ``2``, and ``3`` will produce the text:
+
+    .. code-block:: text
+
+      [1, 2, 3]
+
+    Empty lists will be serialized as ``[]``.
+  */
   record ListSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _first : bool = true;
 
+    /*
+      Serialize ``element``.
+
+      Writes a leading comma before serializing the element if this is not the
+      first element in the list.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2796,25 +2946,80 @@ record DefaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current list by writing the character ``]``.
+    */
     proc endList() throws {
       writer._writeLiteral("]");
     }
   }
-  // List helpers
-  @chpldoc.nodoc
-  proc startList(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("[");
-    return new ListSerializer(writer);
+
+  /*
+    Start serializing an array.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the array.
+
+    :returns: A new ArraySerializer
+  */
+  proc startArray(writer: fileWriter, size: int) throws {
+    return new ArraySerializer(writer);
   }
 
+  /*
+    Returned by ``startArray`` to provide the API for serializing arrays.
+
+    In the default format, an array will be serialized as a
+    whitespace-separated series of serialized elements.
+
+    A 1D array is serialized simply using spaces:
+
+    ::
+
+      1 2 3 4
+
+    A 2D array is serialized using spaces between elements in a row, and
+    prints newlines for new rows:
+
+    ::
+
+      1 2 3
+      4 5 6
+      7 8 9
+
+    Arrays with three or more dimensions will be serialized as a series of
+    2D "panes", with multiple newlines separating new dimensions:
+
+    ::
+
+      1 2 3
+      4 5 6
+      7 8 9
+
+      10 11 12
+      13 14 15
+      16 17 18
+
+      19 20 21
+      22 23 24
+      25 26 27
+
+    Empty arrays result in no output to the ``fileWriter``.
+  */
   record ArraySerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _arrayDim : int;
+    @chpldoc.nodoc
     var _arrayMax : int;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Inform the ``ArraySerializer`` to start serializing a new dimension of
+      size ``size``.
+    */
     proc ref startDim(size: int) throws {
       _arrayDim += 1;
 
@@ -2824,13 +3029,19 @@ record DefaultSerializer {
         _arrayMax = _arrayDim;
     }
 
-    @chpldoc.nodoc
+    /*
+      End the current dimension.
+    */
     proc ref endDim() throws {
       _arrayDim -= 1;
       _first = true;
     }
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``element``.
+
+      Adds a space if this is not the first element in the row.
+    */
     proc ref writeElement(const element: ?) throws {
       if !_first then writer._writeLiteral(" ");
       else _first = false;
@@ -2838,24 +3049,50 @@ record DefaultSerializer {
       writer.write(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current array.
+    */
     proc endArray() throws { }
   }
 
-  // Array helpers
-  //
-  // BHARSH TODO: what should we do for sparse arrays? The current format is
-  // kind of weird. I'd personally lean towards writing them as a map.
-  @chpldoc.nodoc
-  proc startArray(writer: fileWriter, size: int) throws {
-    return new ArraySerializer(writer);
+  /*
+    Start serializing a map by writing the character ``{``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of entries in the map.
+
+    :returns: A new MapSerializer
+  */
+  proc startMap(writer: fileWriter, size: int) throws {
+    writer._writeLiteral("{");
+    return new MapSerializer(writer);
   }
 
+  /*
+    Returned by ``startMap`` to provide the API for serializing maps.
+
+    Maps are serialized as a comma-separated series of pairs between curly
+    braces. Pairs are serialized with a ``:`` separating the key and value. For
+    example, the keys ``1``, ``2``, and ``3`` with values corresponding to
+    their squares would be serialized as:
+
+    ::
+
+      {1: 1, 2: 4, 3: 9}
+
+    Empty maps be serialized as ``{}``.
+  */
   record MapSerializer {
+    @chpldoc.nodoc
     var writer;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``key``.
+
+      Adds a leading comma if this is not the first pair in the map.
+    */
     proc ref writeKey(const key: ?) throws {
       if !_first then writer._writeLiteral(", ");
       else _first = false;
@@ -2863,70 +3100,69 @@ record DefaultSerializer {
       writer.write(key);
     }
 
-    @chpldoc.nodoc
+    /*
+      Serialize ``val``, preceded by a ``:``.
+    */
     proc writeValue(const val: ?) throws {
       writer._writeLiteral(": ");
       writer.write(val);
     }
 
-    @chpldoc.nodoc
+    /*
+      Ends serialization of the current map by writing the character ``}``
+    */
     proc endMap() throws {
       writer._writeLiteral("}");
     }
   }
-
-  // Map helpers
-  @chpldoc.nodoc
-  proc startMap(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("{");
-    return new MapSerializer(writer);
-  }
-
-  // TODO: How should we handle types that don't have a format-specific
-  // representation, like domains or ranges? Is there a way we can determine
-  // that such types should just be printed inside a string for compatibility?
 }
 
+@deprecated(notes="'DefaultSerializer' is deprecated; please use 'defaultSerializer' instead")
+type DefaultSerializer = defaultSerializer;
 
 /*
-  The default deserializer used by ``fileReader``.
+  The default Deserializer used by ``fileReader``.
 
-  Implements the 'deserializeType' and 'deserializeValue' methods which are
-  called by a ``fileReader`` to deserialize a serialized representation of
-  a type or value.
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Deserializers and their usage.
 
-  Deserializers may choose to invoke certain user-defined methods or
-  initializers on class and record types. When deserializing a type,
-  deserializers should first attempt to invoke an initializer on the type:
+  Otherwise, please refer to :type:`defaultSerializer` for a description
+  of the default IO format. Individual methods on this type may clarify
+  behavior specific to deserialization.
 
-    proc MyType.init(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
+  .. note::
 
-  If this initializer is not available or cannot be resolved, the deserializer
-  may then attempt to invoke a user-defined type method 'deserializeFrom' as a
-  factory method that will produce the type:
+    Prior to the 1.32 release and the advent of the 'serializers' feature, the
+    default implementation for reading classes and records permitted reading
+    fields out of order. This functionality is not supported by the
+    ``defaultDeserializer``.
 
-    proc type MyType.deserializeFrom(reader: fileReader(?)
-                                     ref deserializer: reader.deserializerType) : MyType throws
+    For an unspecified amount of time this module will retain the ability to
+    disable automatic use of the ``defaultDeserializer`` by recompiling
+    programs with the config-param ``useIOSerializers`` set to ``false``.
 
-  If neither of these methods are available, the deserializer may attempt to
-  default-initialize the desired type and invoke the value-reading form of
-  deserialization. If the value-reading form of deserialization cannot be
-  resolved, then a compiler error may be issued.
-
-  The value-reading form of deserialization may attempt to invoke a
-  user-defined 'deserialize' method on classes and records:
-
-    proc MyType.deserialize(reader: fileReader(?), ref deserializer: reader.deserializerType) throws
-
-  If this method is unavailable, the value-reading form of deserialization may
-  attempt to invoke the type-reading form of deserialization, and assign the
-  result into the original value.
-
-  The compiler is expected to generate a default implementation of
-  'deserialize' methods and deserializing initializers for records and classes.
+    Eventually, however, users must update their programs to account for
+    reading fields out of order.
 */
-record DefaultDeserializer {
+record defaultDeserializer {
 
+  /*
+    Deserialize type ``readType`` with ``reader``.
+
+    Classes and records will be deserialized using an appropriate initializer,
+    passing in ``reader`` and this Deserializer as arguments. If an
+    initializer is unavailable, this method may invoke the class or record's
+    ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg readType: The type to be deserialized.
+
+    :returns: A value of type ``readType``.
+  */
   proc ref deserializeType(reader:fileReader, type readType) : readType throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
@@ -2950,6 +3186,23 @@ record DefaultDeserializer {
     }
   }
 
+  /*
+    Deserialize from ``reader`` directly into ``val``.
+
+    Like :proc:`deserializeType`, but reads into an initialized value rather
+    than creating a new value. For classes and records, this method will first
+    attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
+    is unavailable, this method may fall back on invoking a suitable
+    initializer and assigning the resulting value into ``val``.. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg val: The value into which this Deserializer will deserialize.
+  */
   proc ref deserializeValue(reader: fileReader, ref val: ?readType) : void throws {
     if isNilableClassType(readType) {
       if reader.matchLiteral("nil") {
@@ -2968,11 +3221,50 @@ record DefaultDeserializer {
     }
   }
 
+  /*
+    Start deserializing a class by reading the character ``{``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the class type
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
+  proc startClass(reader: fileReader, name: string) throws {
+    reader.readLiteral("{");
+    return new AggregateDeserializer(reader);
+  }
+
+  /*
+    Start deserializing a record by reading the character ``(``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the record type
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
+  proc startRecord(reader: fileReader, name: string) throws {
+    reader.readLiteral("(");
+    return new AggregateDeserializer(reader);
+  }
+
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    deserializing classes or records.
+
+    See :type:`~IO.defaultSerializer.AggregateSerializer` for details of the
+    default format for classes and records.
+  */
   record AggregateDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _parent : bool = false;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize a field named ``name`` of type ``fieldType``.
+
+      :returns: A deserialized value of type ``fieldType``.
+    */
     proc readField(name: string, type fieldType) : fieldType throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
@@ -2982,7 +3274,9 @@ record DefaultDeserializer {
       return ret;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize a field named ``name`` in-place.
+    */
     proc readField(name: string, ref field) throws {
       reader.readLiteral(name);
       reader.readLiteral("=");
@@ -2991,88 +3285,137 @@ record DefaultDeserializer {
       reader.matchLiteral(",");
     }
 
+    /*
+      Start deserializing a nested class inside the current class.
+
+      See ``defaultSerializer.AggregateSerializer.startClass`` for details
+      on inheritance on the default format.
+
+      :returns: A new AggregateDeserializer
+    */
     proc startClass(reader: fileReader, name: string) throws {
       return new AggregateDeserializer(reader, _parent=true);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current class by reading the character ``}``.
+    */
     proc endClass() throws {
       if !_parent then
         reader.readLiteral("}");
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current record by reading the character ``)``.
+    */
     proc endRecord() throws {
       reader.readLiteral(")");
     }
   }
 
-  // Class helpers
-  @chpldoc.nodoc
-  proc startClass(reader: fileReader, name: string) throws {
-    reader.readLiteral("{");
-    return new AggregateDeserializer(reader);
-  }
+  /*
+    Start deserializing a tuple by reading the character ``(``.
 
-  // Record helpers
-  @chpldoc.nodoc
-  proc startRecord(reader: fileReader, name: string) throws {
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`TupleDeserializer`
+  */
+  proc startTuple(reader: fileReader) throws {
     reader.readLiteral("(");
-    return new AggregateDeserializer(reader);
+    return new TupleDeserializer(reader);
   }
 
+  /*
+    Returned by ``startTuple`` to provide the API for deserializing tuples.
+
+    See ``defaultSerializer.TupleSerializer`` for details of the default format
+    for tuples.
+  */
   record TupleDeserializer {
+    @chpldoc.nodoc
     var reader;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the tuple.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc readElement(type eltType) : eltType throws {
       var ret = reader.read(eltType);
       reader.matchLiteral(",");
       return ret;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``element`` in-place as an element of the tuple.
+    */
     proc readElement(ref element) throws {
       reader.read(element);
       reader.matchLiteral(",");
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current tuple by reading the character ``)``.
+    */
     proc endTuple() throws {
       reader.readLiteral(")");
     }
   }
 
-  // Tuple helpers
-  @chpldoc.nodoc
-  proc startTuple(reader: fileReader) throws {
-    reader.readLiteral("(");
-    return new TupleDeserializer(reader);
+  /*
+    Start deserializing a list by reading the character ``[``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ListDeserializer`
+  */
+  proc ref startList(reader: fileReader) throws {
+    reader._readLiteral("[");
+    return new ListDeserializer(reader);
   }
 
+  /*
+    Returned by ``startList`` to provide the API for deserializing lists.
+
+    See ``defaultSerializer.ListSerializer`` for details of the default format
+    for lists.
+  */
   record ListDeserializer {
     var reader;
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
       return reader.read(eltType);
     }
-    @chpldoc.nodoc
+
+    /*
+      Deserialize ``element`` in-place as an element of the list.
+    */
     proc ref readElement(ref element) throws {
       if !_first then reader._readLiteral(",");
       else _first = false;
 
       reader.read(element);
     }
-    @chpldoc.nodoc
+
+    /*
+      End deserialization of the current list by reading the character ``]``.
+    */
     proc endList() throws {
       reader._readLiteral("]");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+    */
     proc hasMore() : bool throws {
       reader.mark();
       defer reader.revert();
@@ -3080,20 +3423,36 @@ record DefaultDeserializer {
     }
   }
 
-  // List helpers
-  @chpldoc.nodoc
-  proc ref startList(reader: fileReader) throws {
-    reader._readLiteral("[");
-    return new ListDeserializer(reader);
+  /*
+    Start deserializing an array.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ArrayDeserializer`
+  */
+  proc startArray(reader: fileReader) throws {
+    return new ArrayDeserializer(reader);
   }
 
+  /*
+    Returned by ``startArray`` to provide the API for deserializing arrays.
+
+    See ``defaultSerializer.ArraySerializer`` for details of the default format
+    for arrays.
+  */
   record ArrayDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _first : bool = true;
+    @chpldoc.nodoc
     var _arrayDim : int;
+    @chpldoc.nodoc
     var _arrayMax : int;
 
-    @chpldoc.nodoc
+    /*
+      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+    */
     proc ref startDim() throws {
       _arrayDim += 1;
 
@@ -3106,14 +3465,20 @@ record DefaultDeserializer {
       }
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current dimension.
+    */
     proc ref endDim() throws {
       _arrayDim -= 1;
 
       _first = true;
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize an element of the array.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
@@ -3121,7 +3486,9 @@ record DefaultDeserializer {
       return reader.read(eltType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``element`` in-place as an element of the array.
+    */
     proc ref readElement(ref element) throws {
       if !_first then reader._readLiteral(" ");
       else _first = false;
@@ -3129,22 +3496,40 @@ record DefaultDeserializer {
       reader.read(element);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  // Array helpers
-  @chpldoc.nodoc
-  proc startArray(reader: fileReader) throws {
-    return new ArrayDeserializer(reader);
+  /*
+    Start deserializing a map by reading the character ``{``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`MapDeserializer`
+  */
+  proc startMap(reader: fileReader) throws {
+    reader._readLiteral("{");
+    return new MapDeserializer(reader);
   }
 
+  /*
+    Returned by ``startMap`` to provide the API for deserializing maps.
+
+    See ``defaultSerializer.MapSerializer`` for details of the default
+    format for map.
+  */
   record MapDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _first : bool = true;
 
-    @chpldoc.nodoc
+    /*
+      Deserialize and return a key of type ``keyType``.
+    */
     proc ref readKey(type keyType) : keyType throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
@@ -3152,7 +3537,9 @@ record DefaultDeserializer {
       return reader.read(keyType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``key`` in-place as a key of the map.
+    */
     proc ref readKey(ref key) throws {
       if !_first then reader._readLiteral(", ");
       else _first = false;
@@ -3160,46 +3547,60 @@ record DefaultDeserializer {
       reader.read(key);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize and return a value of type ``valType``.
+    */
     proc readValue(type valType) : valType throws {
       reader._readLiteral(": ");
 
       return reader.read(valType);
     }
 
-    @chpldoc.nodoc
+    /*
+      Deserialize ``value`` in-place as a value of the map.
+    */
     proc readValue(ref value) throws {
       reader._readLiteral(": ");
 
       reader.read(value);
     }
 
-    @chpldoc.nodoc
+    /*
+      End deserialization of the current map by reading the character ``}``.
+    */
     proc endMap() throws {
       reader._readLiteral("}");
     }
 
-    // Note: behavior undefined if called between readKey/readValue
-    @chpldoc.nodoc
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+
+      .. warning::
+
+        Behavior of 'hasMore' is undefined when called between ``readKey`` and
+        ``readValue``.
+    */
     proc hasMore() : bool throws {
       reader.mark();
       defer reader.revert();
       return !reader.matchLiteral("}");
     }
   }
-
-  // Map helpers
-  @chpldoc.nodoc
-  proc startMap(reader: fileReader) throws {
-    reader._readLiteral("{");
-    return new MapDeserializer(reader);
-  }
 }
 
+@deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
+type DefaultDeserializer = defaultDeserializer;
+
 /*
-  An unstructured binary Serializer to be used with ``fileWriter``.
+  A binary Serializer that implements a simple binary format.
+
+  This Serializer supports an ``endian`` field which may be configured at
+  execution time.
+
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Serializers and their usage.
 */
-record BinarySerializer {
+record binarySerializer {
   /*
     'endian' represents the endianness of the binary output produced by this
     Serializer.
@@ -3214,7 +3615,7 @@ record BinarySerializer {
   // types
   @chpldoc.nodoc
   proc _oldWrite(ch: fileWriter(?), const val:?t) throws {
-    var _def = new DefaultSerializer();
+    var _def = new defaultSerializer();
     var dc = ch.withSerializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3231,12 +3632,45 @@ record BinarySerializer {
   }
 
   /*
-    Serialize a value in this basic binary format.
+    Serialize ``val`` with ``writer``.
 
-    :arg writer: the ``fileWriter`` to which the serialized output will be written.
-    :arg val: the value to be serialized.
+    Numeric values like integers, real numbers, and complex numbers are
+    serialized directly to the associated ``fileWriter`` as binary data in the
+    specified endianness.
+
+    Booleans are serialized as single byte unsigned values of either ``0`` or
+    ``1``.
+
+    ``string`` values are serialized beginning with a length represented by a
+    variable-length byte scheme (which is always the same no matter what
+    endianness). In this scheme, the high bit of each encoded length byte records
+    whether or not there are more length bytes (and the remaining bits encode the
+    length in a big-endian manner). Then, the raw binary data of the string is
+    written to the ``writer``.
+
+    The ``nil`` value is serialized as a single unsigned byte of value ``0``.
+
+    Classes are serialized beginning with a single unsigned byte of either ``0``
+    or ``1`` indicating ``nil``. Nilable classes that are ``nil`` will always
+    serialize as ``0``, and non-nilable classes will always begin serializing
+    as ``1``.
+
+    Classes and records will have their ``serialize`` method invoked, passing
+    in ``writer`` and this Serializer as arguments. Please see the
+    :ref:`serializers technote<ioSerializers>` for more on the ``serialize``
+    method.
+
+    Classes and records are expected to implement the ``writeSerializable``
+    interface. The ``serializable`` interface is also acceptable.
+
+    .. note::
+
+      Serializing and deserializing enums is not stable in this format.
+
+    :arg writer: The ``fileWriter`` used to write serialized output.
+    :arg val: The value to be serialized.
   */
-  proc ref serializeValue(writer: fileWriter(serializerType=BinarySerializer, locking=false, ?),
+  proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
@@ -3266,74 +3700,207 @@ record BinarySerializer {
     }
   }
 
-  record AggregateSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+  /*
+    Start serializing a class and return a new ``AggregateSerializer``.
 
-    proc writeField(name: string, const field: ?T) throws {
-      writer.write(field);
-    }
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the class type.
+    :arg size: The number of fields in the class.
 
-    proc startClass(writer, name: string, size: int) throws {
-      return this;
-    }
-
-    proc endClass() throws {
-    }
-    proc endRecord() throws {
-    }
-  }
-
+    :returns: A new :type:`AggregateSerializer`
+  */
   proc startClass(writer: fileWriter(?), name: string, size: int) throws {
     return new AggregateSerializer(writer);
   }
 
+  /*
+    Start serializing a record and return a new ``AggregateSerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg name: The name of the record type.
+    :arg size: The number of fields in the class.
+
+    :returns: A new :type:`AggregateSerializer`
+  */
   proc startRecord(writer: fileWriter(?), name: string, size: int) throws {
     return new AggregateSerializer(writer);
   }
 
-  record TupleSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    serializing classes or records.
 
-    proc writeElement(const element: ?T) throws {
-      writer.write(element);
+    In this simple binary format, classes and records do not begin or end with
+    any bytes indicating size, and instead serialize their field values in
+    ``binarySerializer``'s format.
+
+    For example, a record with two ``uint(8)`` fields with values ``1`` and
+    ``2`` would be serialized as ``0x01`` followed by ``0x02`` (in raw binary).
+  */
+  record AggregateSerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
+
+    /*
+      Serialize ``field`` in ``binarySerializer``'s format.
+    */
+    proc writeField(name: string, const field: ?T) throws {
+      writer.write(field);
     }
-    proc endTuple() throws {
+
+    /*
+      Start serializing a nested class inside the current class. In this
+      binary format, this has no impact on the serialized output.
+    */
+    proc startClass(writer, name: string, size: int) throws {
+      return this;
+    }
+
+    /*
+      End deserialization of this class.
+    */
+    proc endClass() throws {
+    }
+
+    /*
+      End deserialization of this record.
+    */
+    proc endRecord() throws {
     }
   }
 
+  /*
+    Start serializing a tuple and return a new ``TupleSerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the tuple.
+
+    :returns: A new TupleSerializer
+  */
   proc startTuple(writer: fileWriter(?), size: int) throws {
     return new TupleSerializer(writer);
   }
 
-  record ListSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+  /*
+    Returned by ``startTuple`` to provide the API for serializing tuples.
 
-    proc writeElement(const element: ?) throws {
+    In this simple binary format, tuples do not begin or end with any bytes
+    indicating size, and instead serialize their elements sequentially in
+    ``binarySerializer``'s format.
+  */
+  record TupleSerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
+
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
+    proc writeElement(const element: ?T) throws {
       writer.write(element);
     }
-    proc endList() throws {
+
+    /*
+      Ends serialization of the current tuple.
+    */
+    proc endTuple() throws {
     }
   }
 
+  /*
+    Start serializing a list by serializing ``size``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the list.
+
+    :returns: A new ListSerializer
+  */
   proc startList(writer: fileWriter(?), size: int) throws {
     writer.write(size);
     return new ListSerializer(writer);
   }
 
+  /*
+    Returned by ``startList`` to provide the API for serializing lists.
 
-  record ArraySerializer {
-    var writer : fileWriter(false, BinarySerializer);
-    const endian : ioendian;
+    In this simple binary format, lists begin with the serialization of an
+    ``int`` representing the size of the list. This data is then followed by
+    the binary serialization of the specified number of elements.
+  */
+  record ListSerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
 
-    proc startDim(size: int) throws {
-    }
-    proc endDim() throws {
-    }
-
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
     proc writeElement(const element: ?) throws {
       writer.write(element);
     }
 
+    /*
+      Ends serialization of  the current list.
+    */
+    proc endList() throws {
+    }
+  }
+
+  /*
+    Start serializing an array and return a new ``ArraySerializer``.
+
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of elements in the array.
+
+    :returns: A new ArraySerializer
+  */
+  proc startArray(writer: fileWriter(?), size: int) throws {
+    return new ArraySerializer(writer, endian);
+  }
+
+  /*
+    Returned by ``startArray`` to provide the API for serializing arrays.
+
+    In this simple binary format, arrays are serialized element by element
+    in the order indicated by the caller of ``writeElement``. Dimensions and
+    the start or end of the array are not represented.
+  */
+  record ArraySerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
+    @chpldoc.nodoc
+    const endian : ioendian;
+
+    /*
+      Start serializing a new dimension of the array.
+    */
+    proc startDim(size: int) throws {
+    }
+
+    /*
+      Ends serialization of this dimension.
+    */
+    proc endDim() throws {
+    }
+
+    /*
+      Serialize ``element`` in ``binarySerializer``'s format.
+    */
+    proc writeElement(const element: ?) throws {
+      writer.write(element);
+    }
+
+    /*
+      Serialize ``numElements`` number of elements in ``data``, provided that
+      the element type of ``data`` is a numeric type.
+
+      This performance-motivated implementation of the optional
+      ``writeBulkElements`` will write the elements of ``data`` in the order
+      in which they are represented in memory.
+
+      .. note::
+
+        This method is only optimized for the case where the
+        ``binarySerializer`` has been configured for ``native`` endianness.
+    */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
@@ -3344,39 +3911,78 @@ record BinarySerializer {
       }
     }
 
+    /*
+      Ends serialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  proc startArray(writer: fileWriter(?), size: int) throws {
-    return new ArraySerializer(writer, endian);
-  }
+  /*
+    Start serializing a map by serializing ``size``.
 
-  record MapSerializer {
-    var writer : fileWriter(false, BinarySerializer);
+    :arg writer: The ``fileWriter`` to be used when serializing.
+    :arg size: The number of entries in the map.
 
-    proc writeKey(const key: ?) throws {
-      writer.write(key);
-    }
-
-    proc writeValue(const val: ?) throws {
-      writer.write(val);
-    }
-
-    proc endMap() throws {
-    }
-  }
-
+    :returns: A new MapSerializer
+  */
   proc startMap(writer: fileWriter(?), size: int) throws {
     writer.write(size);
     return new MapSerializer(writer);
   }
+
+  /*
+    Returned by ``startMap`` to provide the API for serializing maps.
+
+    In this simple binary format, maps begin with the serialization of an
+    ``int`` representing the size of the map. This data is then followed by the
+    binary serialization of the specified number of key-value pairs. The binary
+    serialization of a key-value pair has no structure, and simply consists of
+    the serialization of the key followed by the serialization of the value.
+  */
+  record MapSerializer {
+    @chpldoc.nodoc
+    var writer : fileWriter(false, binarySerializer);
+
+    /*
+      Serialize ``key`` in ``binarySerializer``'s format.
+    */
+    proc writeKey(const key: ?) throws {
+      writer.write(key);
+    }
+
+    /*
+      Serialize ``val`` in ``binarySerializer``'s format.
+    */
+    proc writeValue(const val: ?) throws {
+      writer.write(val);
+    }
+
+    /*
+      Ends serialization of the current map.
+    */
+    proc endMap() throws {
+    }
+  }
 }
 
+@deprecated(notes="'BinarySerializer' is deprecated; please use 'binarySerializer' instead")
+type BinarySerializer = binarySerializer;
+
 /*
-  An unstructured binary Deserializer to be used with ``fileReader``.
+  A binary Deserializer that implements a simple binary format.
+
+  This Deserializer supports an ``endian`` field which may be configured at
+  execution time.
+
+  See :ref:`the serializers technote<ioSerializers>` for a general overview
+  of Deserializers and their usage.
+
+  Otherwise, please refer to :type:`binarySerializer` for a description of the
+  binary format. Individual methods on this type may clarify relevant behavior
+  specific to deserialization
 */
-record BinaryDeserializer {
+record binaryDeserializer {
   /*
     'endian' represents the endianness that this Deserializer should use when
     deserializing input.
@@ -3390,13 +3996,13 @@ record BinaryDeserializer {
   proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
     this.endian = endian;
     this._structured = _structured;
-    this.complete();
+    init this;
   }
 
   // TODO: rewrite in terms of writef, or something
   @chpldoc.nodoc
   proc _oldRead(ch: fileReader(?), ref val:?t) throws {
-    var _def = new DefaultDeserializer();
+    var _def = new defaultDeserializer();
     var dc = ch.withDeserializer(_def);
     var st = dc._styleInternal();
     var orig = st; defer { dc._set_styleInternal(orig); }
@@ -3428,10 +4034,21 @@ record BinaryDeserializer {
   }
 
   /*
-    Deserialize and return a value of the given type in this basic binary format.
+    Deserialize type ``readType`` with ``reader``.
 
-    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
-    :arg readType: the type to be deserialized.
+    Classes and records will be deserialized using an appropriate initializer,
+    passing in ``reader`` and this Deserializer as arguments. If an
+    initializer is unavailable, this method may invoke the class or record's
+    ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which types are deserialized.
+    :arg readType: The type to be deserialized.
+
+    :returns: A value of type ``readType``.
   */
   proc ref deserializeType(reader:fileReader(?), type readType) : readType throws {
     if isClassType(readType) {
@@ -3470,10 +4087,21 @@ record BinaryDeserializer {
   }
 
   /*
-    Deserialize a value in-place.
+    Deserialize from ``reader`` directly into ``val``.
 
-    :arg reader: the ``fileReader`` whose input will be used to deserialize the value.
-    :arg val: the value to be deserialized in-place.
+    Like :proc:`deserializeType`, but reads into an initialized value rather
+    than creating a new value. For classes and records, this method will first
+    attempt to invoke a ``deserialize`` method. If the ``deserialize`` method
+    is unavailable, this method may fall back on invoking a suitable
+    initializer and assigning the resulting value into ``val``.. Please see the
+    :ref:`serializers technote<ioSerializers>` for more.
+
+    Classes and records are expected to implement either the
+    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
+    ``serializable`` interface is also acceptable.
+
+    :arg reader: The ``fileReader`` from which values are deserialized.
+    :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
     if isClassType(readType) {
@@ -3489,56 +4117,152 @@ record BinaryDeserializer {
     }
   }
 
+  /*
+    Start deserializing a class by returning an ``AggregateDeserializer``.
 
-  record AggregateDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the class type.
 
-    proc readField(name: string, type fieldType) : fieldType throws {
-      return reader.read(fieldType);
-    }
-    proc readField(name: string, ref field) throws {
-      reader.read(field);
-    }
-    proc startClass(reader, name: string) throws {
-      return this;
-    }
-    proc endClass() throws {
-    }
-    proc endRecord() throws {
-    }
-  }
-
+    :returns: A new :type:`AggregateDeserializer`
+  */
   proc startClass(reader: fileReader(?), name: string) throws {
     return new AggregateDeserializer(reader);
   }
 
+  /*
+    Start deserializing a record by returning an ``AggregateDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+    :arg name: The name of the record type.
+
+    :returns: A new :type:`AggregateDeserializer`
+  */
   proc startRecord(reader: fileReader(?), name: string) throws {
     return new AggregateDeserializer(reader);
   }
 
-  record TupleDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+  /*
+    Returned by ``startClass`` or ``startRecord`` to provide the API for
+    deserializing classes or records.
 
-    proc readElement(type eltType) : eltType throws {
-      return reader.read(eltType);
+    See ``binarySerializer.AggregateSerializer`` for details of the
+    binary format for classes and records.
+  */
+  record AggregateDeserializer {
+    @chpldoc.nodoc
+    var reader : fileReader(false, binaryDeserializer);
+
+    /*
+      Deserialize and return a value of type ``fieldType``.
+    */
+    proc readField(name: string, type fieldType) : fieldType throws {
+      return reader.read(fieldType);
     }
 
-    proc readElement(ref element) throws {
-      reader.read(element);
+    /*
+      Deserialize ``field`` in-place.
+    */
+    proc readField(name: string, ref field) throws {
+      reader.read(field);
     }
 
-    proc endTuple() throws {
+    /*
+      Start deserializing a nested class inside the current class.
+
+      See ``binarySerializer.AggregateSerializer.startClass`` for details
+      on inheritance on the binary format.
+
+      :returns: A new AggregateDeserializer
+    */
+    proc startClass(reader, name: string) throws {
+      return this;
+    }
+
+    /*
+      End deserialization of the current class.
+    */
+    proc endClass() throws {
+    }
+
+    /*
+      End deserialization of the current record.
+    */
+    proc endRecord() throws {
     }
   }
 
+  /*
+    Start deserializing a tuple by returning a ``TupleDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`TupleDeserializer`
+  */
   proc startTuple(reader: fileReader(?)) throws {
     return new TupleDeserializer(reader);
   }
 
+  /*
+    Returned by ``startTuple`` to provide the API for deserializing tuples.
+
+    See ``binarySerializer.TupleSerializer`` for details of the binary format
+    for tuples.
+  */
+  record TupleDeserializer {
+    @chpldoc.nodoc
+    var reader : fileReader(false, binaryDeserializer);
+
+    /*
+      Deserialize an element of the tuple.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
+    proc readElement(type eltType) : eltType throws {
+      return reader.read(eltType);
+    }
+
+    /*
+      Deserialize ``element`` in-place as an element of the tuple.
+    */
+    proc readElement(ref element) throws {
+      reader.read(element);
+    }
+
+    /*
+      End deserialization of the current tuple.
+    */
+    proc endTuple() throws {
+    }
+  }
+
+  /*
+    Start deserializing a list by returning a ``ListDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ListDeserializer`
+  */
+  proc startList(reader: fileReader(?)) throws {
+    return new ListDeserializer(reader, reader.read(uint));
+  }
+
+  /*
+    Returned by ``startList`` to provide the API for deserializing lists.
+
+    See ``binarySerializer.ListSerializer`` for details of the binary format
+    for lists.
+  */
   record ListDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    @chpldoc.nodoc
+    var reader : fileReader(false, binaryDeserializer);
+    @chpldoc.nodoc
     var _numElements : uint;
 
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc ref readElement(type eltType) : eltType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
@@ -3548,6 +4272,9 @@ record BinaryDeserializer {
       return reader.read(eltType);
     }
 
+    /*
+      Deserialize ``element`` in-place as an element of the list.
+    */
     proc ref readElement(ref element) throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more list elements remain");
@@ -3557,38 +4284,88 @@ record BinaryDeserializer {
       reader.read(element);
     }
 
+    /*
+      End deserialization of the current list.
+
+      :throws: A ``BadFormatError`` if there are remaining elements.
+    */
     proc endList() throws {
       if _numElements != 0 then
         throw new BadFormatError("read too few elements for list");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+    */
     proc hasMore() : bool throws {
       return _numElements > 0;
     }
   }
 
-  proc startList(reader: fileReader(?)) throws {
-    return new ListDeserializer(reader, reader.read(uint));
+  /*
+    Start deserializing an array by returning an ``ArrayDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`ArrayDeserializer`
+  */
+  proc startArray(reader: fileReader(?)) throws {
+    return new ArrayDeserializer(reader, endian);
   }
 
+  /*
+    Returned by ``startArray`` to provide the API for deserializing arrays.
 
+    See ``binarySerializer.ArraySerializer`` for details of the binary format
+    for arrays.
+  */
   record ArrayDeserializer {
-    var reader : fileReader(false, BinaryDeserializer);
+    @chpldoc.nodoc
+    var reader : fileReader(false, binaryDeserializer);
+    @chpldoc.nodoc
     const endian : ioendian;
 
+    /*
+      Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+    */
     proc startDim() throws {
     }
+
+    /*
+      End deserialization of the current dimension.
+    */
     proc endDim() throws {
     }
 
+    /*
+      Deserialize an element of the list.
+
+      :returns: A deserialized value of type ``eltType``.
+    */
     proc readElement(type eltType) : eltType throws {
       return reader.read(eltType);
     }
 
+    /*
+      Deserialize ``element`` in-place as an element of the array.
+    */
     proc readElment(ref element) throws {
       reader.read(element);
     }
 
+    /*
+      Deserialize ``numElements`` number of elements into ``data``, provided
+      that the element type of ``data`` is a numeric type.
+
+      This performance-motivated implementation of the optional
+      ``readBulkElements`` will read the elements of ``data`` in the order in
+      which they are represented in memory.
+
+      .. note::
+
+        This method is only optimized for the case where the
+        ``binaryDeserializer`` has been configured for ``native`` endianness.
+    */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
       if endian == ioendian.native {
@@ -3601,19 +4378,40 @@ record BinaryDeserializer {
       }
     }
 
+    /*
+      End deserialization of the current array.
+    */
     proc endArray() throws {
     }
   }
 
-  proc startArray(reader: fileReader(?)) throws {
-    return new ArrayDeserializer(reader, endian);
+
+  /*
+    Start deserializing a map by returning a ``MapDeserializer``.
+
+    :arg reader: The ``fileReader`` to use when deserializing.
+
+    :returns: A new :type:`MapDeserializer`
+  */
+  proc startMap(reader: fileReader(?)) throws {
+    return new MapDeserializer(reader, reader.read(uint));
   }
 
+  /*
+    Returned by ``startMap`` to provide the API for deserializing maps.
 
+    See ``binarySerializer.MapSerializer`` for details of the binary
+    format for map.
+  */
   record MapDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _numElements : uint;
 
+    /*
+      Deserialize and return a key of type ``keyType``.
+    */
     proc ref readKey(type keyType) : keyType throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
@@ -3623,6 +4421,9 @@ record BinaryDeserializer {
       return reader.read(keyType);
     }
 
+    /*
+      Deserialize ``key`` in-place as a key of the map.
+    */
     proc ref readKey(ref key) throws {
       if _numElements <= 0 then
         throw new BadFormatError("no more map elements remain!");
@@ -3632,28 +4433,46 @@ record BinaryDeserializer {
       reader.read(key);
     }
 
+    /*
+      Deserialize and return a value of type ``valType``.
+    */
     proc readValue(type valType) : valType throws {
       return reader.read(valType);
     }
 
+    /*
+      Deserialize ``value`` in-place as a value of the map.
+    */
     proc readValue(ref value) throws {
       reader.read(value);
     }
 
+    /*
+      End deserialization of the current map.
+
+      :throws: A ``BadFormatError`` if there are entries remaining.
+    */
     proc endMap() throws {
       if _numElements != 0 then
         throw new BadFormatError("failed to read all expected elements in map");
     }
 
+    /*
+      :returns: Returns ``true`` if there are more elements to read.
+
+      .. warning::
+
+        Behavior of 'hasMore' is undefined when called between ``readKey`` and
+        ``readValue``.
+    */
     proc hasMore() : bool throws {
       return _numElements > 0;
     }
   }
-
-  proc startMap(reader: fileReader(?)) throws {
-    return new MapDeserializer(reader, reader.read(uint));
-  }
 }
+
+@deprecated(notes="'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead")
+type BinaryDeserializer = binaryDeserializer;
 
 @chpldoc.nodoc
 operator fileReader.=(ref lhs:fileReader, rhs:fileReader) {
@@ -3716,7 +4535,7 @@ proc fileReader.init=(x: fileReader) {
   this._channel_internal = x._channel_internal;
   this._deserializer = new shared _serializeWrapper(deserializerType, x._deserializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
@@ -3735,7 +4554,7 @@ proc fileWriter.init=(x: fileWriter) {
   this._channel_internal = x._channel_internal;
   this._serializer = new shared _serializeWrapper(serializerType, x._serializer!.member);
   this._readWriteThisFromLocale = x._readWriteThisFromLocale;
-  this.complete();
+  init this;
   on x._home {
     qio_channel_retain(x._channel_internal);
   }
@@ -3840,15 +4659,29 @@ proc ref fileWriter.deinit() {
   }
 }
 
-// Convenience for forms like 'r.withDeserializer(DefaultDeserializer)`
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileReader`` configured to use
+  ``deserializerType`` for deserialization. The provided ``deserializerType``
+  must be able to be default-initialized.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileReader``.
+*/
 proc fileReader.withDeserializer(type deserializerType) :
   fileReader(this._kind, this.locking, deserializerType) {
   var des : deserializerType;
   return withDeserializer(des);
 }
 
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileReader`` configured to use
+  ``deserializer`` for deserialization.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileReader``.
+*/
 proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, this.locking, dt) {
   var ret = new fileReader(this._kind, this.locking, dt);
   ret._deserializer = new shared _serializeWrapper(dt, deserializer);
@@ -3861,15 +4694,29 @@ proc fileReader.withDeserializer(in deserializer: ?dt) : fileReader(this._kind, 
   return ret;
 }
 
-// Convenience for forms like 'w.withSerializer(DefaultSerializer)`
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileWriter`` configured to use
+  ``serializerType`` for serialization. The provided ``serializerType`` must be
+  able to be default-initialized.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileWriter``.
+*/
 proc fileWriter.withSerializer(type serializerType) :
   fileWriter(this._kind, this.locking, serializerType) {
   var ser : serializerType;
   return withSerializer(ser);
 }
 
-@chpldoc.nodoc
+/*
+  Create and return an alias of this ``fileWriter`` configured to use
+  ``serializer`` for serialization.
+
+  .. warning::
+
+    It is an error for the returned alias to outlive the original ``fileWriter``.
+*/
 proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this.locking, st) {
   var ret = new fileWriter(this._kind, this.locking, st);
   ret._serializer = new shared _serializeWrapper(st, serializer);
@@ -3885,7 +4732,7 @@ proc fileWriter.withSerializer(in serializer: ?st) : fileWriter(this._kind, this
 // represents a Unicode codepoint
 // used to pass codepoints to read and write to avoid duplicating code
 @chpldoc.nodoc
-record _internalIoChar {
+record _internalIoChar : writeSerializable {
   /* The codepoint value */
   var ch:int(32);
   @chpldoc.nodoc
@@ -3893,6 +4740,19 @@ record _internalIoChar {
     // ioChar.writeThis should not be called;
     // I/O routines should handle ioChar directly
     assert(false);
+  }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+}
+
+@chpldoc.nodoc
+inline operator :(x: _internalIoChar, type t:string) {
+  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
+  // The caller has responsibility for freeing the returned string.
+  try! {
+    return string.createAdoptingBuffer(csc);
   }
 }
 
@@ -3918,25 +4778,6 @@ proc fileReader._getFp(): (bool, c_ptr(c_FILE)) {
   }
 }
 
-/*
-
-Represents a Unicode codepoint. I/O routines (such as :proc:`fileReader.read`
-and :proc:`fileWriter.write`) can use arguments of this type in order to read or
-write a single Unicode codepoint.
-
- */
-@deprecated(notes="ioChar type is deprecated - please use :proc:`fileReader.readCodepoint` and :proc:`fileWriter.writeCodepoint` instead")
-type ioChar = _internalIoChar;
-
-@chpldoc.nodoc
-inline operator :(x: _internalIoChar, type t:string) {
-  var csc: c_ptrConst(c_char) =  qio_encode_to_string(x.ch);
-  // The caller has responsibility for freeing the returned string.
-  try! {
-    return string.createAdoptingBuffer(csc);
-  }
-}
-
 
 /*
 
@@ -3955,7 +4796,7 @@ When reading an ioNewline, read routines will skip any character sequence
 type ioNewline = chpl_ioNewline;
 
 @chpldoc.nodoc
-record chpl_ioNewline {
+record chpl_ioNewline : writeSerializable {
   /*
     Normally, we will skip anything at all to get to a ``\n``,
     but if skipWhitespaceOnly is set, it will be an error
@@ -3994,7 +4835,7 @@ will return an error for incorrectly formatted input
 type ioLiteral = chpl_ioLiteral;
 
 @chpldoc.nodoc
-record chpl_ioLiteral {
+record chpl_ioLiteral : writeSerializable {
   /* The value of the literal */
   var val: string;
   /* Should read operations using this literal ignore and consume
@@ -4004,6 +4845,10 @@ record chpl_ioLiteral {
   proc writeThis(f) throws {
     // Normally this is handled explicitly in read/write.
     f.write(val);
+  }
+  @chpldoc.nodoc
+  proc serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 }
 
@@ -4022,15 +4867,6 @@ record _internalIoBits {
   // keep the old names for compatibility with old ioBits
   proc v: x.type {return x;}
   proc nbits:numBits.type {return numBits;}
-}
-
-@deprecated(notes="ioBits type is deprecated - please use :proc:`fileReader.readBits` and :proc:`fileWriter.writeBits` instead")
-type ioBits = _internalIoBits;
-
-@chpldoc.nodoc
-inline operator :(x: _internalIoBits, type t:string) {
-  const ret = "ioBits(v=" + x.v:string + ", nbits=" + x.nbits:string + ")";
-  return ret;
 }
 
 /*
@@ -4149,7 +4985,8 @@ proc fileWriter._ch_ioerror(errstr:string, msg:string) throws {
 }
 
 /*
-   Acquire a fileReader's lock.
+   Acquire a fileReader's lock. See :ref:`locking-filereaders-and-filewriters`
+   for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
@@ -4169,7 +5006,8 @@ inline proc fileReader.lock() throws {
 }
 
 /*
-   Acquire a fileWriter's lock.
+   Acquire a fileWriter's lock. See :ref:`locking-filereaders-and-filewriters`
+   for more details.
 
    :throws SystemError: Thrown if the lock could not be acquired.
  */
@@ -4189,7 +5027,8 @@ inline proc fileWriter.lock() throws {
 }
 
 /*
-   Release a fileReader's lock.
+   Release a fileReader's lock. See :ref:`locking-filereaders-and-filewriters`
+   for more details.
  */
 inline proc fileReader.unlock() {
   if locking {
@@ -4200,7 +5039,8 @@ inline proc fileReader.unlock() {
 }
 
 /*
-   Release a fileWriter's lock.
+   Release a fileWriter's lock. See :ref:`locking-filereaders-and-filewriters`
+   for more details.
  */
 inline proc fileWriter.unlock() {
   if locking {
@@ -4299,13 +5139,22 @@ proc fileWriter.offset():int(64)
 proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
 
 /*
-   Move a fileReader offset forward.
+   Move a :record:`fileReader` offset forward.
 
-   This function will consume the next ``amount`` bytes. If EOF is reached, the
-   fileReader offset may be left at the EOF.
+   This routine will consume the next ``amount`` bytes from the file, storing
+   them in the ``fileReader``'s buffer. This can be useful for advancing to some
+   known offset in the file before reading.
+
+   Note that calling :proc:`fileReader.mark` before advancing will cause at
+   least ``amount`` bytes to be retained in memory until
+   :proc:`~fileReader.commit` or :proc:`~fileReader.revert` are called. As such,
+   it is typical to advance by a small number of bytes during an I/O transaction.
+
+   To make large adjustments to the offset, consider creating a new
+   ``fileReader`` or using :proc:`~fileReader.seek` instead.
 
    :throws EofError: If EOF is reached before the requested number of bytes can
-                     be consumed.
+                     be consumed. The offset will be left at EOF.
    :throws SystemError: For other failures, for which fileReader offset is not
                         moved.
  */
@@ -4319,14 +5168,30 @@ proc fileReader.advance(amount:int(64)) throws {
 }
 
 /*
-   Move a fileWriter offset forward.
+   Move a :record:`fileWriter` offset forward.
 
-   This function will write ``amount`` zeros - or some other data if it is
-   stored in the fileWriter's buffer, for example with :proc:`fileWriter.mark`
-   and :proc:`fileWriter.revert`.
+   This routine will populate the ``fileWriter``'s buffer as the offset is moved
+   forward by ``amount`` bytes. The buffer can be populated with any of the
+   following data depending on the ``fileWriter``'s configuration and whether
+   it was marked before advancing:
+
+   * zeros
+   * bytes directly from the file
+   * bytes from a previously buffered portion of the file
+
+   The contents of the buffer will subsequently be written to the file by the
+   buffering mechanism.
+
+   Note that calling :proc:`fileWriter.mark` before advancing will cause at
+   least ``amount`` bytes to be retained in memory until
+   :proc:`~fileWriter.commit` or :proc:`~fileWriter.revert` are called. As such,
+   it is typical to advance by a small number of bytes during an I/O transaction.
+
+   To make large adjustments to the offset, consider creating a new
+   ``fileWriter`` or using :proc:`~fileWriter.seek` instead.
 
    :throws EofError: If EOF is reached before the offset can be advanced by the
-                      requested number of bytes.
+                     requested number of bytes. The offset will be left at EOF.
    :throws SystemError: For other failures, for which fileWriter offset is not
                         moved.
  */
@@ -4514,6 +5379,8 @@ private inline proc markHelper(fileRW) throws {
    after the mark has been committed with :proc:`~fileReader.commit` or reverted
    with :proc:`~fileReader.revert`.
 
+   See :ref:`io-transactions` for more.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -4555,6 +5422,8 @@ proc fileReader.mark() throws do return markHelper(this);
    after the mark has been committed with :proc:`~fileWriter.commit` or reverted
    with :proc:`~fileWriter.revert`.
 
+   See :ref:`io-transactions` for more.
+
   .. note::
 
     Note that it is possible to request an entire file be buffered in memory
@@ -4574,8 +5443,8 @@ proc fileWriter.mark() throws do return markHelper(this);
 
 /*
    Abort an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
-   and adjusting its position to that offset. See :proc:`fileReader.mark` for a
-   full description of an *I/O transaction*.
+   and adjusting its position to that offset. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileReader that has already
    been marked. If called on a fileReader with ``locking=true``, the fileReader
@@ -4588,8 +5457,8 @@ inline proc fileReader.revert() {
 
 /*
    Abort an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
-   and adjusting its position to that offset. See :proc:`fileWriter.mark` for a
-   full description of an *I/O transaction*.
+   and adjusting its position to that offset. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileWriter that has already
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
@@ -4602,8 +5471,8 @@ inline proc fileWriter.revert() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileReader``'s *mark stack*
-   and leaving its position in the file unchanged. See :proc:`fileReader.mark` for
-   a full description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileReader that has already
    been marked. If called on a fileReader with ``locking=true``, the fileReader
@@ -4616,8 +5485,8 @@ inline proc fileReader.commit() {
 
 /*
    Commit an *I/O transaction* by popping from the ``fileWriter``'s *mark stack*
-   and leaving its position in the file unchanged. See :proc:`fileWriter.mark` for
-   a full description of an *I/O transaction*.
+   and leaving its position in the file unchanged. See :ref:`io-transactions` for
+   more.
 
    This routine should only be called on a fileWriter that has already
    been marked. If called on a fileWriter with ``locking=true``, the fileWriter
@@ -4629,26 +5498,29 @@ inline proc fileWriter.commit() {
 }
 
 /* Used to control the behavior of the region argument for
-   :proc:`fileReader.seek` or :proc:`fileWriter.seek`.  When set to ``true``,
-   the region argument will fully specify the bounds of the seek.  When set to
-   ``false``, the region argument will exclude the high bound.  Defaults to
-   ``false``, the original behavior.  */
-config param useNewSeekRegionBounds = false;
+   :proc:`fileReader.seek` or :proc:`fileWriter.seek`. */
+@chpldoc.nodoc()
+@deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
+config param useNewSeekRegionBounds = true;
 
 /*
-   Reset a fileReader to point to a new part of a file.
-   This function allows one to jump to a different part of a
-   file without creating a new fileReader. It can only be called
-   on a fileReader with ``locking==false``.
+   Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
+   discarded.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileReader will not
-   try to read data outside of the region.
+   This routine has the following constraints:
 
-   This function will, in most cases, discard the fileReader's buffer.
+    * the underlying file must be seekable (sockets and pipes are not seekable)
+    * the ``fileReader`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
+    * the ``fileReader`` must not be marked (see: :proc:`fileReader.mark`)
 
-   :arg region: the new region, measured in bytes and counting from 0
+   If the ``fileReader`` offset needs to be updated during an I/O transaction
+   or if discarding the buffer will incur a performance penalty, consider using
+   :proc:`fileReader.advance` instead.
+
+   :arg region: the new region, measured in bytes and counting from 0. An upper
+                bound can be omitted (e.g., ``r.seek(range=42..)``). See
+                :ref:`region <filereader-filewriter-regions>` for more.
 
    .. warning::
 
@@ -4659,8 +5531,7 @@ config param useNewSeekRegionBounds = false;
                          fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileReader.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileReader");
@@ -4686,20 +5557,23 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
 }
 
 /*
-   Reset a fileWriter to point to a new part of a file.
-   This function allows one to jump to a different part of a
-   file without creating a new fileWriter. It can only be called
-   on a fileWriter with ``locking==false``.
+   Adjust a :record:`fileWriter`'s region. The ``fileWriter``'s buffer will be
+   discarded.
 
-   The region specified must have a lower bound, but does not need to have
-   a high bound for correctness.  Specifying the high bound might be
-   an important performance optimization since the fileWriter will not
-   try to read data outside of the region.
+   This routine has the following constraints:
 
-   This function will, in most cases, discard the fileWriter's buffer.
-   The data will be saved to the file before discarding.
+    * the underlying file must be seekable (sockets and pipes are not seekable)
+    * the ``fileWriter`` must be non-locking (to avoid race conditions if two
+      tasks seek and read simultaneously)
+    * the ``fileWriter`` must not be marked (see: :proc:`fileWriter.mark`)
 
-   :arg region: the new region, measured in bytes and counting from 0
+   If the ``fileWriter`` offset needs to be updated during an I/O transaction
+   or if discarding the buffer will incur a performance penalty, consider using
+   :proc:`fileWriter.advance` instead.
+
+   :arg region: the new region, measured in bytes and counting from 0. An upper
+                bound can be omitted (e.g., ``w.seek(range=42..)``). See
+                :ref:`region <filereader-filewriter-regions>` for more.
 
    .. warning::
 
@@ -4707,11 +5581,10 @@ proc fileReader.seek(region: range(?)) throws where (!region.hasHighBound() ||
 
    :throws SystemError: if seeking failed. Possible reasons include
                          that the file is not seekable, or that the
-                         fileWriter is marked.
+                         fileReader is marked.
    :throws IllegalArgumentError: if region argument did not have a lower bound
  */
-proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
-                                                     useNewSeekRegionBounds) {
+proc fileWriter.seek(region: range(?)) throws {
 
   if this.locking then
     compilerError("Cannot seek on a locking fileWriter");
@@ -4733,34 +5606,6 @@ proc fileWriter.seek(region: range(?)) throws where (!region.hasHighBound() ||
       if err then
         throw createSystemError(err);
     }
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileReader.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
-  }
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewSeekRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc fileWriter.seek(region: range(?)) throws where (region.hasHighBound() &&
-                                                     !useNewSeekRegionBounds) {
-  if (!region.hasLowBound()) {
-    throw new IllegalArgumentError("illegal argument 'region': must have a lower bound");
-
-  } else {
-    const err = qio_channel_seek(_channel_internal, region.low, region.high);
-
-    if err then
-      throw createSystemError(err);
   }
 }
 
@@ -5062,16 +5907,6 @@ proc fileWriter.filePlugin() : borrowed QioPluginFile? {
   return vptr:borrowed QioPluginFile?;
 }
 
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=_iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty,
-                style:iostyle)
-    : fileReader(kind, locking) throws {
-  return openReader(path, kind, locking, start, end, hints, style);
-}
-
 
 @deprecated("openReader with a 'style' argument is deprecated, please pass a Deserializer to the 'deserializer' argument instead")
 proc openReader(path:string,
@@ -5079,69 +5914,21 @@ proc openReader(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws {
+    : fileReader(kind, locking, defaultSerializeType(false, kind)) throws {
   return openReaderHelper(path, kind, locking, start..end, hints,
                           style: iostyleInternal);
 }
 
 /* Used to control the behavior of the region argument for :proc:`openReader`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :type:`fileReader`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewOpenReaderRegionBounds = false;
+@chpldoc.nodoc()
+@deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
+config param useNewOpenReaderRegionBounds = true;
 
 // We can simply call fileReader.close() on these, since the underlying file
 // will be closed once we no longer have any references to it (which in this
 // case, since we only will have one reference, will be right after we close
 // this fileReader presumably).
-
-/*
-
-Open a file at a particular path and return a :record:`fileReader` for it.
-This function is equivalent to calling :proc:`open` and then
-:proc:`file.reader` on the resulting file.
-
-:arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-            corresponding parameter of the :record:`fileReader` type. Defaults
-            to ``iokind.dynamic``, meaning that the associated
-            :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              fileReader should use locking; sets the
-              corresponding parameter of the :record:`fileReader` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg region: zero-based byte offset indicating where in the file the
-            fileReader should start and stop reading. Defaults to
-            ``0..``, meaning from the start of the file to no specified end
-            point.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open fileReader to the requested resource.
-
-.. warning::
-
-   The region argument will ignore any specified stride other than 1.
-
-:throws FileNotFoundError: Thrown if part of the provided path did not exist
-:throws PermissionError: Thrown if part of the provided path had inappropriate
-                         permissions
-:throws NotADirectoryError: Thrown if part of the provided path was expected to
-                            be a directory but was not
-:throws SystemError: Thrown if a fileReader could not be returned.
-:throws IllegalArgumentError: Thrown if trying to read explicitly prior to byte
-                              0.
- */
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
-  return openReader(path, kind, locking, region, hints);
-}
-
 
 /*
 
@@ -5179,8 +5966,7 @@ This function is equivalent to calling :proc:`open` and then
 proc openReader(path:string, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
                 in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(locking, dt) throws where (!region.hasHighBound() ||
-                                            useNewOpenReaderRegionBounds) {
+    : fileReader(locking, dt) throws {
   return openReaderHelper(path, _iokind.dynamic, locking, region, hints, deserializer=deserializer);
 }
 
@@ -5189,28 +5975,9 @@ pragma "last resort"
 proc openReader(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 region: range(?) = 0.., hints=ioHintSet.empty,
-                in deserializer: ?dt = defaultSerializeVal(false))
-    : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
-                                              useNewOpenReaderRegionBounds) {
+                in deserializer: ?dt = defaultSerializeVal(false,kind))
+    : fileReader(kind, locking, dt) throws {
   return openReaderHelper(path, kind, locking, region, hints, deserializer=deserializer);
-}
-
-@deprecated(notes="openreader is deprecated - please use :proc:`openReader` instead")
-proc openreader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReader(path, kind, locking, region, hints);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewOpenReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc openReader(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                region: range(?) = 0.., hints=ioHintSet.empty)
-    : fileReader(kind, locking, defaultSerializeType(false)) throws where (region.hasHighBound() &&
-                                              !useNewOpenReaderRegionBounds) {
-  return openReaderHelper(path, kind, locking, region, hints);
 }
 
 private proc openReaderHelper(path:string,
@@ -5218,23 +5985,12 @@ private proc openReaderHelper(path:string,
                               region: range(?) = 0..,
                               hints=ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in deserializer: ?dt = defaultSerializeVal(false))
+                              in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
 
   var fl:file = try open(path, ioMode.r);
   return try fl.readerHelper(kind, locking, region, hints, style,
-                             fromOpenReader=true,
                              deserializer=deserializer);
-}
-
-@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                start:int(64) = 0, end:int(64) = max(int(64)),
-                hints=ioHintSet.empty,
-                style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
-  return openWriter(path, kind, locking, start, end, hints, style);
 }
 
 @deprecated("openWriter with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
@@ -5243,47 +5999,9 @@ proc openWriter(path:string,
                 start:int(64) = 0, end:int(64) = max(int(64)),
                 hints=ioHintSet.empty,
                 style:iostyle)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
+    : fileWriter(kind, locking, defaultSerializeType(true,kind)) throws {
   return openWriterHelper(path, kind, locking, start, end, hints,
                     style: iostyleInternal);
-}
-
-
-/*
-
-Open a file at a particular path and return a :record:`fileWriter` for it.
-This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
-:proc:`file.writer` on the resulting file.
-
-:arg path: which file to open (for example, "some/file.txt").
-:arg kind: :type:`iokind` compile-time argument to determine the
-           corresponding parameter of the :record:`fileWriter` type. Defaults
-           to ``iokind.dynamic``, meaning that the associated
-           :record:`iostyle` controls the formatting choices.
-:arg locking: compile-time argument to determine whether or not the
-              fileWriter should use locking; sets the
-              corresponding parameter of the :record:`fileWriter` type.
-              Defaults to true, but when safe, setting it to false
-              can improve performance.
-:arg hints: optional argument to specify any hints to the I/O system about
-            this file. See :record:`ioHintSet`.
-:returns: an open fileWriter to the requested resource.
-
-:throws FileNotFoundError: Thrown if part of the provided path did not exist
-:throws PermissionError: Thrown if part of the provided path had inappropriate
-                         permissions
-:throws NotADirectoryError: Thrown if part of the provided path was expected to
-                            be a directory but was not
-:throws SystemError: Thrown if a fileWriter could not be returned.
-:throws IllegalArgumentError: Thrown if trying to write explicitly prior to byte
-                              0.
-*/
-@deprecated(notes="openwriter is deprecated - please use :proc:`openWriter` instead")
-proc openwriter(path:string,
-                param kind=iokind.dynamic, param locking=true,
-                hints = ioHintSet.empty)
-    : fileWriter(kind, locking, defaultSerializeType(true)) throws {
-  return openWriter(path, kind, locking, hints);
 }
 
 /*
@@ -5323,7 +6041,7 @@ pragma "last resort"
 proc openWriter(path:string,
                 param kind=iokind.dynamic, param locking=true,
                 hints = ioHintSet.empty,
-                in serializer: ?st = defaultSerializeVal(true))
+                in serializer: ?st = defaultSerializeVal(true,kind))
     : fileWriter(kind, locking, st) throws {
   return openWriterHelper(path, kind, locking, hints=hints, serializer=serializer);
 }
@@ -5333,7 +6051,7 @@ private proc openWriterHelper(path:string,
                               start:int(64) = 0, end:int(64) = max(int(64)),
                               hints = ioHintSet.empty,
                               style:iostyleInternal = defaultIOStyleInternal(),
-                              in serializer: ?st = defaultSerializeVal(true))
+                              in serializer: ?st = defaultSerializeVal(true,kind))
   : fileWriter(kind, locking, st) throws {
 
   var fl:file = try open(path, ioMode.cw);
@@ -5350,11 +6068,10 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.reader`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :type:`fileReader`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewFileReaderRegionBounds = false;
+@chpldoc.nodoc()
+@deprecated("'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release")
+config param useNewFileReaderRegionBounds = true;
 
 /*
    Create a :record:`fileReader` that supports reading from a file. See
@@ -5396,8 +6113,7 @@ config param useNewFileReaderRegionBounds = false;
 proc file.reader(param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(locking, dt) throws where (!region.hasHighBound() ||
-                                          useNewFileReaderRegionBounds) {
+  : fileReader(locking, dt) throws {
   return this.readerHelper(_iokind.dynamic, locking, region, hints,
                            deserializer=deserializer);
 }
@@ -5406,30 +6122,17 @@ pragma "last resort"
 @deprecated("reader with a 'kind' argument is deprecated, please use Deserializers instead")
 proc file.reader(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(kind, locking, dt) throws where (!region.hasHighBound() ||
-                                                useNewFileReaderRegionBounds) {
+                 in deserializer: ?dt = defaultSerializeVal(false,kind))
+  : fileReader(kind, locking, dt) throws {
   return this.readerHelper(kind, locking, region, hints,
                            deserializer=deserializer);
 }
 
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileReaderRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.reader(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in deserializer: ?dt = defaultSerializeVal(false))
-  : fileReader(kind, locking, dt) throws where (region.hasHighBound() &&
-                                            !useNewFileReaderRegionBounds) {
-  return this.readerHelper(kind, locking, region, hints, deserializer=deserializer);
-}
-
-// TODO: remove fromOpenReader and fromOpenUrlReader when deprecated versions
-// are removed
 @chpldoc.nodoc
 proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenReader=false, fromOpenUrlReader=false,
-                       in deserializer: ?dt = defaultSerializeVal(false))
+                       in deserializer: ?dt = defaultSerializeVal(false,kind))
   : fileReader(kind, locking, dt) throws {
   if (region.hasLowBound() && region.low < 0) {
     throw new IllegalArgumentError("illegal argument 'region': file region's lowest accepted bound is 0");
@@ -5445,46 +6148,16 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      // This is to ensure the user sees consistent behavior and can control it.
-      // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // - Only calls from `file.reader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        start = region.low;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      // This is to ensure the user sees consistent behavior and can control it.
-      // - All calls from `openUrlReader` should use the new behavior.
-      // - Only calls from `openReader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // - Only calls from `file.reader` that are compiled with the flag that
-      //   controls its region argument should affect its behavior.
-      // Calls from `openReader` should not be impacted by `file.reader`'s flag
-      // and vice versa.
-      if ((fromOpenReader && useNewOpenReaderRegionBounds) ||
-          fromOpenUrlReader ||
-          (!fromOpenReader && useNewFileReaderRegionBounds)) {
-        start = 0;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else {
       start = 0;
@@ -5508,11 +6181,10 @@ proc file.lines(param locking:bool = true, start:int(64) = 0,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.lines`.
-   When set to ``true``, the region argument will fully specify the bounds that
-   this function would cover.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
  */
-config param useNewLinesRegionBounds = false;
+@chpldoc.nodoc()
+@deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
+config param useNewLinesRegionBounds = true;
 
 /* Iterate over all of the lines in a file.
 
@@ -5522,18 +6194,9 @@ config param useNewLinesRegionBounds = false;
  */
 @deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
 proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (!region.hasHighBound() ||
-                                                       useNewLinesRegionBounds) {
+                hints = ioHintSet.empty) throws {
   return this.linesHelper(locking, region, hints);
 }
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewLinesRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws where (region.hasHighBound() &&
-                                                       !useNewLinesRegionBounds) {
-  return this.linesHelper(locking, region, hints);
-}
-
 
 @chpldoc.nodoc
 proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
@@ -5550,28 +6213,16 @@ proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = region.low;
-        end = region.high + 1;
-
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewLinesRegionBounds) {
-        start = 0;
-        end = region.high + 1;
-
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = region.high + 1;
 
     } else {
       start = 0;
@@ -5595,12 +6246,10 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 }
 
 /* Used to control the behavior of the region argument for :proc:`file.writer`.
-   When set to ``true``, the region argument will fully specify the bounds of
-   the :record:`fileWriter`.  When set to ``false``, the region argument will
-   exclude the high bound.  Defaults to ``false``, the original behavior.
-
  */
-config param useNewFileWriterRegionBounds = false;
+@chpldoc.nodoc()
+@deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
+config param useNewFileWriterRegionBounds = true;
 
 /*
    Create a :record:`fileWriter` that supports writing to a file. See
@@ -5648,8 +6297,7 @@ config param useNewFileWriterRegionBounds = false;
 proc file.writer(param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
                  in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(locking,st) throws where (!region.hasHighBound() ||
-                                                      useNewFileWriterRegionBounds) {
+                 fileWriter(locking,st) throws {
   return this.writerHelper(_iokind.dynamic, locking, region, hints, serializer=serializer);
 }
 
@@ -5657,18 +6305,8 @@ pragma "last resort"
 @deprecated("writer with a 'kind' argument is deprecated, please use Serializers instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(kind,locking,st) throws where (!region.hasHighBound() ||
-                                                        useNewFileWriterRegionBounds) {
-  return this.writerHelper(kind, locking, region, hints, serializer=serializer);
-}
-
-@deprecated(notes="Currently the region argument's high bound specifies the first location in the file that is not included.  This behavior is deprecated, please compile your program with `-suseNewFileWriterRegionBounds=true` to have the region argument specify the entire segment of the file covered, inclusive.")
-proc file.writer(param kind=iokind.dynamic, param locking=true,
-                 region: range(?) = 0.., hints = ioHintSet.empty,
-                 in serializer:?st = defaultSerializeVal(true)):
-                 fileWriter(kind,locking,st) throws where (region.hasHighBound() &&
-                                                        !useNewFileWriterRegionBounds) {
+                 in serializer:?st = defaultSerializeVal(true,kind)):
+                 fileWriter(kind,locking,st) throws {
   return this.writerHelper(kind, locking, region, hints, serializer=serializer);
 }
 
@@ -5676,8 +6314,7 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
 proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
                        region: range(?) = 0.., hints = ioHintSet.empty,
                        style:iostyleInternal = this._style,
-                       fromOpenUrlWriter = false,
-                       in serializer:?st = defaultSerializeVal(true)):
+                       in serializer:?st = defaultSerializeVal(true,kind)):
   fileWriter(kind,locking,st) throws {
 
   if (region.hasLowBound() && region.low < 0) {
@@ -5695,28 +6332,16 @@ proc file.writerHelper(param kind=_iokind.dynamic, param locking=true,
     var end : region.idxType;
     try this.checkAssumingLocal();
     if (region.hasLowBound() && region.hasHighBound()) {
-      // TODO: remove the fromOpenUrlWriter arg when the deprecated version is
-      // removed
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = region.low;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = region.low;
-        end = region.high;
-      }
+      start = region.low;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else if (region.hasLowBound()) {
       start = region.low;
       end = max(region.idxType);
 
     } else if (region.hasHighBound()) {
-      if (useNewFileWriterRegionBounds || fromOpenUrlWriter) {
-        start = 0;
-        end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
-      } else {
-        start = 0;
-        end = region.high;
-      }
+      start = 0;
+      end = if region.high == max(region.idxType) then max(region.idxType) else region.high + 1;
 
     } else {
       start = 0;
@@ -6488,8 +7113,11 @@ proc fileReader._readLiteral(literal:string,
   If the string is not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
   the end of the fileReader is encountered in which case an :class:`OS.EofError`
-  will be thrown. By default this method will ignore leading whitespace when
-  attempting to read a literal.
+  will be thrown.
+
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the string to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6511,8 +7139,11 @@ proc fileReader.readLiteral(literal:string,
   If the bytes are not matched exactly, then the fileReader's offset is
   unchanged. In such cases a :class:`OS.BadFormatError` will be thrown, unless
   the end of the ``fileReader`` is encountered in which case an
-  :class:`OS.EofError` will be thrown. By default this method will ignore
-  leading whitespace when attempting to read a literal.
+  :class:`OS.EofError` will be thrown.
+
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the bytes to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6594,8 +7225,9 @@ proc fileReader._matchLiteralCommon(literal, ignore : bool) : bool throws {
   :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
-  By default this method will ignore leading whitespace when attempting to
-  read a literal.
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the string to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -6619,8 +7251,9 @@ proc fileReader.matchLiteral(literal:string,
   :proc:`fileReader.readLiteral` would throw a :class:`OS.BadFormatError` or an
   :class:`OS.EofError`.
 
-  By default this method will ignore leading whitespace when attempting to
-  read a literal.
+  By default this method will ignore leading whitespace in the file when
+  attempting to read a literal (leading whitespace in the ``literal`` itself
+  is still matched against whitespace in the file).
 
   :arg literal: the bytes to be matched.
   :arg ignoreWhitespace: determines whether leading whitespace is ignored.
@@ -8151,11 +8784,6 @@ private proc readBytesOrString(ch: fileReader, ref out_var: ?t, len: int(64)) : 
 
 }
 
-@deprecated(notes="fileReader.readbits is deprecated - please use :proc:`fileReader.readBits` instead")
-proc fileReader.readbits(ref v:integral, nbits:integral):bool throws {
-    return this.readBits(v, nbits:int);
-}
-
 /*
    Read bits with binary I/O
 
@@ -8207,12 +8835,6 @@ proc fileReader.readBits(type resultType, numBits:int):resultType throws {
   var ret = try this.readBits(tmp, numBits);
   if !ret then throw new EofError("EOF Encountered in readBits");
   return tmp;
-}
-
-
-@deprecated(notes="fileWriter.writebits is deprecated - please use :proc:`fileWriter.writeBits` instead")
-proc fileWriter.writebits(v:integral, nbits:integral) throws {
-  this.writeBits(v, nbits:int);
 }
 
 /*
@@ -8472,7 +9094,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
   :arg arg: number to be written
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to write the number. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8610,15 +9232,20 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
   }
 }
 
+@chpldoc.nodoc
+private proc isSuitableForBinaryReadWrite(arr: _array) param {
+  return chpl__isDROrDRView(arr);
+}
+
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the numbers. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8627,28 +9254,28 @@ proc fileWriter.writeBinary(b: bytes, size: int = b.size) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
-  var e : errorCode = 0;
+  var err : string,      // errors from invalid invocation of this function
+      e : errorCode = 0; // errors from performing the IO
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
     const tSize = c_sizeof(t) : c_ssize_t;
 
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if endian == ioendian.native && data.locale == this._home && denseDR {
+    if !data._value.isDataContiguous(d._value) {
+      err = "writeBinary() array data must be contiguous";
+    } else if data.locale != this._home {
+      err = "writeBinary() array data must be on same locale as 'fileWriter'";
+    } else if endian == ioendian.native {
       e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
-
-      if e != 0 then
-        throw createSystemOrChplError(e);
     } else {
       for b in data {
         select (endian) {
           when ioendian.native {
-            e = try _write_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
@@ -8658,17 +9285,30 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
           }
         }
 
-        if e != 0 then
-          throw createSystemOrChplError(e);
+        if e != 0 then break;
       }
     }
   }
+
+  // Throwing moved outside of the 'on' block due to a bug in throwing methods
+  // under GASNET.
+  //
+  // https://github.com/chapel-lang/chapel/issues/23400
+  if !err.isEmpty() then throw new IllegalArgumentError(err);
+  if e != 0 then throw createSystemOrChplError(e);
 }
+
+
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
+}
+
 
 /*
   Write an array of binary numbers to a ``fileWriter``
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
   :arg endian: :type:`ioendian` specifies the byte order in which
@@ -8681,7 +9321,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
-  where data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
@@ -8697,13 +9337,19 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
   }
 }
 
+@chpldoc.nodoc
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+{
+  compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
+}
+
 /*
   Read a binary number from the ``fileReader``
 
   :arg arg: number to be read
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the number. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
             the ``fileReader`` was already at EOF).
 
@@ -8936,12 +9582,12 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
   Binary values of the type ``data.eltType`` are consumed from the fileReader
   until ``data`` is full or EOF is reached.
 
-  Note that this routine currently requires a 1D rectangular non-strided array.
+  Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array to read into – existing values are overwritten.
   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
                order in which to read the numbers in. Defaults to
-               ``ioendian.native``.
+               :enumconstant:`ioendian.native`.
   :returns: the number of values that were read into the array. This can be
             less than ``data.size`` if EOF was reached, or an error occurred,
             before filling the array.
@@ -8951,27 +9597,27 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
-  var e : errorCode = 0,
+  var err : string,       // errors from invalid invocation of this function
+      e : errorCode = 0,  // errors from perform the IO
       numRead : c_ssize_t = 0;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
-    // Allow either DefaultRectangular arrays or dense slices of DR arrays
-    const denseDR = chpl__isDROrDRView(data) &&
-                    data._value.isDataContiguous(d._value);
-    if data.locale == this._home && denseDR && endian == ioendian.native {
+    if !data._value.isDataContiguous(d._value) {
+      err = "readBinary() array data must be contiguous";
+    } else if data.locale != this._home {
+      err = "readBinary() array data must be on same locale as 'fileReader'";
+    } else if endian == ioendian.native {
       e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
-
-      if e != 0 && e != EEOF then throw createSystemOrChplError(e);
     } else {
       for (i, b) in zip(data.domain, data) {
         select (endian) {
           when ioendian.native {
-            e = try _read_binary_internal(this._channel_internal, _iokind.native, b);
+            compilerError("unreachable");
           }
           when ioendian.big {
             e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
@@ -8984,13 +9630,20 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
         if e == EEOF {
           break;
         } else if e != 0 {
-          throw createSystemOrChplError(e);
+          break;
         } else {
           numRead += 1;
         }
       }
     }
   }
+
+  // Throwing moved outside of the 'on' block due to a bug in throwing methods
+  // under GASNET.
+  //
+  // https://github.com/chapel-lang/chapel/issues/23400
+  if !err.isEmpty() then throw new IllegalArgumentError(err);
+  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
 
   return numRead : int;
 }
@@ -9044,7 +9697,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
    Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached.
 
-   Note that this routine currently requires a 1D rectangular non-strided array.
+   Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
    :arg endian: :type:`ioendian` specifies the byte order in which
@@ -9058,7 +9711,7 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   where ReadBinaryArrayReturnInt == true &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
+    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
@@ -9077,6 +9730,31 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 
   return nr;
 }
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+{
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
+}
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
+{
+  if ReadBinaryArrayReturnInt == true {
+    compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+  } else {
+    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
+                  "non-strided arrays of simple types");
+  }
+}
+
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
@@ -9212,9 +9890,14 @@ proc fileReader.read(type t) throws {
   // Need 'do not RVF' here so that 'ret' is passed by reference across the
   // on-stmt. Otherwise it would be serialized/bit-copied and we couldn't
   // return the value that we just read.
+  //
+  // Currently need to use nilable for unmanaged classes due to unknown
+  // "dead value" error in compiler.
+  param specialUnmanaged = isUnmanagedClassType(t) && isNonNilableClassType(t);
+  type retType = if specialUnmanaged then _to_nilable(t) else t;
   pragma "no init"
   pragma "do not RVF"
-  var ret : t;
+  var ret : retType;
 
   on this._home {
     try this.lock(); defer { this.unlock(); }
@@ -9229,7 +9912,8 @@ proc fileReader.read(type t) throws {
     }
   }
 
-  return ret;
+  if specialUnmanaged then return ret!;
+  else return ret;
 }
 
 /*
@@ -9385,15 +10069,6 @@ proc fileWriter.writeln(const args ...?k) throws {
 @deprecated("writeln with a 'style' argument is deprecated")
 proc fileWriter.writeln(const args ...?k, style:iostyle) throws {
   try this.writeHelper((...args), new chpl_ioNewline(), style=style);
-}
-
-@deprecated(notes="fileReader.flush is deprecated; it has no replacement because 'flush' has no effect on 'fileReader'")
-proc fileReader.flush() throws {
-  var err:errorCode = 0;
-  on this._home {
-    err = qio_channel_flush(locking, _channel_internal);
-  }
-  if err then try this._ch_ioerror(err, "in fileReader.flush");
 }
 
 /*
@@ -9553,18 +10228,18 @@ record itemReaderInternal {
 
 // And now, the toplevel items.
 
-/* standard input, otherwise known as file descriptor 0 */
+/* A locking :record:`fileReader` instance that reads from standard input. */
 const stdin:fileReader(true);
 stdin = try! (new file(0)).reader();
 
 extern proc chpl_cstdout():chpl_cFilePtr;
-/* standard output, otherwise known as file descriptor 1 */
+/* A locking :record:`fileWriter` instance that writes to standard output. */
 const stdout:fileWriter(true);
 stdout = try! (new file(chpl_cstdout())).writer();
 
 
 extern proc chpl_cstderr():chpl_cFilePtr;
-/* standard error, otherwise known as file descriptor 2 */
+/* A locking :record:`fileWriter` instance that writes to standard error. */
 const stderr:fileWriter(true);
 stderr = try! (new file(chpl_cstderr())).writer();
 
@@ -10110,10 +10785,10 @@ General Conversions
           r: R;
 
       // write an 'R' in JSON format
-      f.writer(serializer = new JsonSerializer()).writef("%?", new R(/* ... */));
+      f.writer(serializer = new jsonSerializer()).writef("%?", new R(/* ... */));
 
       // read into an 'R' from JSON format
-      f.reader(deserializer = new JsonDeserializer()).readf("%?", r);
+      f.reader(deserializer = new jsonDeserializer()).readf("%?", r);
 
 ``%ht``
  read or write an object in Chapel syntax using readThis/writeThis
@@ -10131,14 +10806,14 @@ General Conversions
         // fields...
       }
 
-      var f = open("data.json"),
+      var f = open("data.txt"),
           r: R;
 
       // write an 'R' in Chapel Syntax format
-      f.writer(serializer = new ChplSerializer()).writef("%?", new R(/* ... */))
+      f.writer(serializer = new chplSerializer()).writef("%?", new R(/* ... */))
 
       // read into an 'R' from Chapel Syntax format
-      f.reader(deserializer = new ChplDeserializer()).readf("%?", r);
+      f.reader(deserializer = new chplDeserializer()).readf("%?", r);
 
 ``%|t``
  read or write an object in binary native-endian with readThis/writeThis *(deprecated)*
@@ -10869,7 +11544,7 @@ proc _toRegex(x:?t)
 }
 
 @chpldoc.nodoc
-class _channel_regex_info {
+class _channel_regex_info : writeSerializable {
   var hasRegex = false;
   var matchedRegex = false;
   var releaseRegex = false;
@@ -12078,7 +12753,7 @@ proc readf(fmt:string):bool throws {
    :throws UnexpectedEofError: Thrown if EOF encountered skipping field.
    :throws SystemError: Thrown if the field could not be skipped.
  */
-@deprecated("skipField is deprecated, please use JsonDeserializer instead.")
+@deprecated("skipField is deprecated, please use jsonDeserializer instead.")
 proc fileReader.skipField() throws {
   this._skipField();
 }

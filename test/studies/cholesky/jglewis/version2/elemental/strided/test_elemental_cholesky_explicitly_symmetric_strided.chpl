@@ -33,11 +33,11 @@ module test_elemental_explicitly_strided_cholesky {
 		               index_base .. by stride #n };
 
     const strided_mat_dom : domain (2, strides = strideKind.any) 
-          dmapped Cyclic ( startIdx = strided_MatIdx.lowBound )
+          dmapped cyclicDist ( startIdx = strided_MatIdx.lowBound )
       =   strided_MatIdx;
 
     const unstrided_mat_dom : domain (2, strides = strideKind.one) 
-          dmapped Cyclic ( startIdx = unstrided_MatIdx.lowBound )
+          dmapped cyclicDist ( startIdx = unstrided_MatIdx.lowBound )
       =   unstrided_MatIdx;
 
     const distribution_type = "cyclic";
@@ -76,7 +76,7 @@ module test_elemental_explicitly_strided_cholesky {
 
     A = 0.0;
 
-    forall (i,j) in unstrided_mat_dom do
+    forall (i,j) in unstrided_mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in unstrided_mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 

@@ -6,7 +6,7 @@ module OuterModule {
     var ffout : shared H5File?;
 
     proc init() {
-      this.complete();
+      init this;
       ffout = createH5File();
       writeScalarAttribute(ffout);
     }

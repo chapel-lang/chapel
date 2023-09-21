@@ -93,14 +93,14 @@ module List {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -142,7 +142,7 @@ module List {
 
     Unlike an array, the set of indices of a list is always `0..<size`.
   */
-  record list {
+  record list : serializable {
 
     /* The type of the elements contained in this list. */
     type eltType;
@@ -155,7 +155,7 @@ module List {
     var _size = 0;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     var _arrays: _ddata(_ddata(eltType)) = nil;
@@ -184,7 +184,7 @@ module List {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = false;
-      this.complete();
+      init this;
       this._firstTimeInitializeArrays();
     }
 
@@ -202,7 +202,7 @@ module List {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       this._firstTimeInitializeArrays();
     }
 
@@ -220,7 +220,7 @@ module List {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = other.parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -243,7 +243,7 @@ module List {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -263,7 +263,7 @@ module List {
 
       this.eltType = t;
       this.parSafe = false;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -288,7 +288,7 @@ module List {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -317,7 +317,7 @@ module List {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -351,7 +351,7 @@ module List {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -371,7 +371,7 @@ module List {
       this.eltType = t;
       this.parSafe = false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -396,7 +396,7 @@ module List {
       this.eltType = t;
       this.parSafe = parSafe;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -423,7 +423,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -449,7 +449,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -483,7 +483,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -508,7 +508,7 @@ module List {
                      then this.type.parSafe
                      else false;
 
-      this.complete();
+      init this;
       _commonInitFromIterable(other);
     }
 
@@ -596,13 +596,13 @@ module List {
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
     @chpldoc.nodoc
@@ -1034,21 +1034,6 @@ module List {
       _leave();
 
       return result;
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: list(eltType, ?p)) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: [?d] eltType) lifetime this < other {
-      pushBack(other);
-    }
-
-    @deprecated(notes="list.extend is deprecated, please use list.append")
-    proc ref extend(other: range(eltType, ?b, ?d)) lifetime this < other {
-      pushBack(other);
     }
 
     /*

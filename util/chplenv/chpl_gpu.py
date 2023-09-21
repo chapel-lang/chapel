@@ -16,11 +16,10 @@ def _validate_rocm_version():
     return _validate_rocm_version_impl()
 
 class gpu_type:
-    def __init__(self, sdk_path_env, compiler, bin_depth, default_arch,
-                 llvm_target, runtime_impl, version_validator):
+    def __init__(self, sdk_path_env, compiler, default_arch, llvm_target,
+                 runtime_impl, version_validator):
         self.sdk_path_env = sdk_path_env
         self.compiler = compiler
-        self.bin_depth = bin_depth
         self.default_arch = default_arch
         self.llvm_target = llvm_target
         self.runtime_impl = runtime_impl
@@ -33,21 +32,18 @@ class gpu_type:
 GPU_TYPES = {
     "nvidia": gpu_type(sdk_path_env="CHPL_CUDA_PATH",
                        compiler="nvcc",
-                       bin_depth=2,
                        default_arch="sm_60",
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
                        version_validator=_validate_cuda_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
-                    bin_depth=3,
                     default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
                     version_validator=_validate_rocm_version),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
-                    bin_depth=-1,
                     default_arch="",
                     llvm_target="",
                     runtime_impl="cpu",
@@ -141,8 +137,20 @@ def get_sdk_path(for_gpu):
                                                                       gpu.compiler])
 
     if exists and returncode == 0:
+        # Walk up from directories from the one containing the gpu compiler
+        # (e.g.  `nvcc` or `hipcc`) until we find a directory that starts with
+        # `runtime_impl` (e.g `cuda` or `rocm`)
         real_path = os.path.realpath(my_stdout.strip()).strip()
-        chpl_sdk_path = "/".join(real_path.split("/")[:-gpu.bin_depth])
+        path_parts = real_path.split("/")
+        chpl_sdk_path = "/"
+        for part in path_parts:
+            if len(part) == 0: continue
+            chpl_sdk_path += part
+            if not part.startswith(gpu.runtime_impl):
+                chpl_sdk_path += "/"
+            else:
+                break
+
         return chpl_sdk_path
     elif gpu_type == for_gpu:
         _reportMissingGpuReq("Can't find {} toolkit.".format(get()))
@@ -200,7 +208,7 @@ def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "7"
-    MAX_REQ_VERSION = "12"
+    MAX_REQ_VERSION = "13"
 
     chpl_cuda_path = get_sdk_path('nvidia')
     version_file_json = '%s/version.json' % chpl_cuda_path
@@ -236,14 +244,29 @@ def _validate_cuda_version_impl():
             (MIN_REQ_VERSION, MAX_REQ_VERSION, cudaVersion))
       return False
 
+    # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
+    if is_ver_in_range(cudaVersion, "12", "13"):
+        llvm = chpl_llvm.get()
+        if llvm == "system":
+            llvm_config = chpl_llvm.find_system_llvm_config()
+            llvm_ver_str = chpl_llvm.get_llvm_config_version(llvm_config).strip()
+            if is_ver_in_range(llvm_ver_str, "0", "16"):
+                _reportMissingGpuReq(
+                        "LLVM versions before 16 do not support CUDA 12. "
+                        "Your LLVM (CHPL_LLVM=system) version is {}. "
+                        "You can use CUDA 11, or set CHPL_LLVM=bundled to use "
+                        "CUDA 12.".format(llvm_ver_str), suggestNone=False,
+                        allowExempt=False)
+                return False
+
     return True
 
 
 def _validate_rocm_version_impl():
-    """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
+    """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
     MIN_REQ_VERSION = "4"
-    MAX_REQ_VERSION = "6"
+    MAX_REQ_VERSION = "5.5"
 
     chpl_rocm_path = get_sdk_path('amd')
     files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,

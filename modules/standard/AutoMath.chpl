@@ -104,6 +104,7 @@ Constant and Function Definitions
 
 */
 pragma "module included by default"
+@unstable("The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module")
 module AutoMath {
   import HaltWrappers;
   private use CTypes;
@@ -2044,6 +2045,10 @@ module AutoMath {
 
      The result is always >= 0 if `y` > 0.
      It is an error if `y` == 0.
+
+     .. note::
+        This does not have the same behavior as the :ref:`Modulus_Operators` (%)
+        when `y` is negative.
   */
   proc mod(param x: integral, param y: integral) param {
     param temp = x % y;
@@ -2067,6 +2072,10 @@ module AutoMath {
 
      The result is always >= 0 if `y` > 0.
      It is an error if `y` == 0.
+
+     .. note::
+        This does not have the same behavior as the :ref:`Modulus_Operators` (%)
+        when `y` is negative.
   */
   proc mod(x: integral, y: integral) {
     const temp = x % y;
@@ -2090,6 +2099,7 @@ module AutoMath {
     // Is there a more efficient implementation for reals?
     return x - y*floor(x/y);
   }
+
   /* Computes the mod operator on the two numbers, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
   */
@@ -2690,18 +2700,14 @@ module AutoMath {
   pragma "last resort"
   @deprecated(notes="In an upcoming release 'gcd' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
   proc gcd(in a: int,in b: int): int {
+    (a, b) = (abs(a), abs(b));
     return chpl_gcd(a, b);
   }
 
-  proc chpl_gcd(in a: int,in b: int): int {
-     a = abs(a);
-     b = abs(b);
-     var r: int;
-     while(b != 0) {
-       r = a % b;
-       a = b;
-       b = r;
-     }
+  proc chpl_gcd(in a,in b) {
+    while(b != 0) {
+      (a, b) = (b, a % b);
+    }
     return a;
   }
 
@@ -2740,228 +2746,6 @@ module AutoMath {
       HaltWrappers.boundsCheckHalt("Input value for atol must be positive");
     var diff: real = abs(x-y);
     return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
-  }
-
-  inline proc chpl_j0(x: real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_j0(x: real(32)): real(32);
-    return chpl_float_j0(x);
-  }
-
-  inline proc chpl_j0(x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc j0(x: real(64)): real(64);
-    return j0(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j0 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j0(x: real(32)): real(32) {
-    return chpl_j0(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j0 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j0(x: real(64)): real(64) {
-    return chpl_j0(x);
-  }
-
-  inline proc chpl_j1(x: real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_j1(x: real(32)): real(32);
-    return chpl_float_j1(x);
-  }
-
-  inline proc chpl_j1(x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc j1(x: real(64)): real(64);
-    return j1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j1(x: real(32)): real(32) {
-    return chpl_j1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_j1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="j1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc j1(x: real(64)): real(64) {
-    return chpl_j1(x);
-  }
-
-  inline proc chpl_jn(n: int, x: real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_jn(n: c_int, x: real(32)): real(32);
-    return chpl_float_jn(n.safeCast(c_int), x);
-  }
-
-  inline proc chpl_jn(n: int, x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc jn(n: c_int, x: real(64)): real(64);
-    return jn(n.safeCast(c_int), x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_jn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc jn(n: int, x: real(32)): real(32) {
-    return chpl_jn(n, x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_jn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="jn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc jn(n: int, x: real(64)): real(64) {
-    return chpl_jn(n, x);
-  }
-
-  inline proc chpl_y0(x: real(32)): real(32) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_y0(x: real(32)): real(32);
-    return chpl_float_y0(x);
-  }
-
-  inline proc chpl_y0(x: real(64)): real(64) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for y0() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc y0(x: real(64)): real(64);
-    return y0(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_y0 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc y0(x: real(32)): real(32) {
-    return chpl_y0(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_y0 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="y0 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc y0(x: real(64)): real(64) {
-    return chpl_y0(x);
-  }
-
-  inline proc chpl_y1(x: real(32)): real(32) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_y1(x: real(32)): real(32);
-    return chpl_float_y1(x);
-  }
-
-  inline proc chpl_y1(x: real(64)): real(64) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for y1() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc y1(x: real(64)): real(64);
-    return y1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_y1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc y1(x: real(32)): real(32) {
-    return chpl_y1(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_y1 and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="y1 will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc y1(x: real(64)): real(64) {
-    return chpl_y1(x);
-  }
-
-  inline proc chpl_yn(n: int, x: real(32)): real(32) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc chpl_float_yn(n: c_int, x: real(32)): real(32);
-    return chpl_float_yn(n.safeCast(c_int), x);
-  }
-
-  inline proc chpl_yn(n: int, x: real(64)): real(64) {
-    if boundsChecking && x < 0 then
-      HaltWrappers.boundsCheckHalt("Input value for yn() must be non-negative");
-
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc yn(n: c_int, x: real(64)): real(64);
-    return yn(n.safeCast(c_int), x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_yn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc yn(n: int, x: real(32)): real(32) {
-    return chpl_yn(n, x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_yn and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="yn will soon stop being included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc yn(n: int, x: real(64)): real(64) {
-    return chpl_yn(n, x);
   }
 
   /* Returns true if the sign of `x` is negative, else returns false. It detects

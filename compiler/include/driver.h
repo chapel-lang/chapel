@@ -160,6 +160,11 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+// begin compiler driver control flags
+extern bool fDriverDoMonolithic;
+extern bool fDriverPhaseOne;
+extern bool fDriverPhaseTwo;
+// end compiler driver control flags
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
@@ -271,6 +276,7 @@ extern std::set<std::string> gpuArches;
 extern char stopAfterPass[128];
 
 // code generation strings
+extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 

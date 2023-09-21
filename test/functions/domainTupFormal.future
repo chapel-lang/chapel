@@ -1,0 +1,2 @@
+bug: parser does not allow plain 'domain' in tuple formal type
+#23483

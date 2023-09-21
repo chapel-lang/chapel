@@ -200,11 +200,7 @@ void ResolveScope::addBuiltIns() {
   extend(gNone);
   extend(gVoid);
 
-  extend(dtBools[BOOL_SIZE_SYS]->symbol);
-  extend(dtBools[BOOL_SIZE_8]->symbol);
-  extend(dtBools[BOOL_SIZE_16]->symbol);
-  extend(dtBools[BOOL_SIZE_32]->symbol);
-  extend(dtBools[BOOL_SIZE_64]->symbol);
+  extend(dtBool->symbol);
 
   extend(dtInt[INT_SIZE_8]->symbol);
   extend(dtInt[INT_SIZE_16]->symbol);
@@ -241,7 +237,6 @@ void ResolveScope::addBuiltIns() {
   extend(gSingleVarAuxFields);
 
   extend(dtAny->symbol);
-  extend(dtAnyBool->symbol);
   extend(dtAnyComplex->symbol);
   extend(dtAnyEnumerated->symbol);
   extend(dtAnyImag->symbol);

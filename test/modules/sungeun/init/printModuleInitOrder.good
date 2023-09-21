@@ -24,6 +24,7 @@ Initializing Modules:
          ChapelDomain
           FormattedIO
            IO
+            ChapelIO
             Types
            Regex
             RegexIoSupport
@@ -43,12 +44,12 @@ Initializing Modules:
       LocaleModelHelpRuntime
      LocaleModelHelpMem
     LocalesArray
-    ChapelIO
     ChapelTaskTable
     MemTracking
     ChapelUtil
     ExportWrappers
     ChapelGpuSupport
+    ChapelContext
     AlignedTSupport
     CopyAggregation
      AggregationPrimitives

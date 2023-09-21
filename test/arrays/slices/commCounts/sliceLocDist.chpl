@@ -5,7 +5,7 @@ config const printArray = true;
 
 proc main() {
   {
-    const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = D[3..8, 3..8];
 
@@ -14,7 +14,7 @@ proc main() {
     testit(A, DInner);
   }
   {
-    const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
+    const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
     var A: [D] real;
     const DInner = {3..8, 3..8};
 
@@ -24,7 +24,7 @@ proc main() {
   }
   {
     const DLoc = {1..10, 1..10};
-    const D = DLoc dmapped Block({1..10, 1..10});
+    const D = DLoc dmapped blockDist({1..10, 1..10});
     var A: [DLoc] real;
     const DInner = D[3..8, 3..8];
 
@@ -63,7 +63,7 @@ proc testit(ref A: [?DA], DInner) {
   writeln("-------------------------");
 
   startTrial();
-  forall ij in B.domain do
+  forall ij in B.domain with (ref B) do
     B[ij] += 0.1;
   stopTrial();
 
@@ -106,7 +106,7 @@ proc testit(ref A: [?DA], DInner) {
     writeln("---------------------------------");
 
     startTrial();
-    forall ij in D do
+    forall ij in D with (ref X) do
       X[ij] += 0.1;
     stopTrial();
   }

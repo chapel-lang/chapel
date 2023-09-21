@@ -2,13 +2,13 @@
   A distributed 2D finite-difference heat/diffusion equation solver
 
   Computation is executed over a 2D distributed array.
-  The array distribution is managed by the `Block` distribution.
+  The array distribution is managed by the `blockDist` distribution.
   Tasks are spawned manually with a `coforall` loop and synchronization
   is done manually using a `barrier`. Halo regions are shared across
   locales manually via halo/buffer arrays.
 */
 
-import BlockDist.Block,
+import BlockDist.blockDist,
        Collectives.barrier,
        Time.stopwatch;
 
@@ -28,7 +28,7 @@ config const nx = 256,      // number of grid points in x
              solutionStd = 0.221167; // known solution for the default parameters
 
 // define distributed domains and block-distributed array
-const Indices = Block.createDomain(0..nx+1, 0..ny+1),
+const Indices = blockDist.createDomain(0..nx+1, 0..ny+1),
       IndicesInner = Indices[1..nx, 1..ny];
 
 // define distributed 2D arrays over the above domain
@@ -48,14 +48,14 @@ record haloArray {
 }
 
 // set up array of halo buffers over same distribution as 'u.targetLocales'
-var OnePerLocale = Block.createDomain(u.targetLocales().domain);
+var OnePerLocale = blockDist.createDomain(u.targetLocales().domain);
 var HaloArrays: [OnePerLocale] [0..<4] haloArray;
 
 // buffer edge indices: North, East, South, West
 param N = 0, S = 1, E = 2, W = 3;
 
 // number of tasks that will be created per dimension based on the
-//  Block distribution's 2D decomposition (with one task per locale)
+//  blockDist distribution's 2D decomposition (with one task per locale)
 const tidXMax = OnePerLocale.dim(0).high,
       tidYMax = OnePerLocale.dim(1).high;
 
@@ -67,7 +67,7 @@ proc main() {
 
   // solve, spawning one task for each locale
   t.start();
-  forall (tidX, tidY) in OnePerLocale {
+  forall (tidX, tidY) in OnePerLocale with (ref HaloArrays) {
     const localDom = u.localSubdomain(here);
 
     // allocate halo arrays
@@ -125,7 +125,7 @@ proc work(tidX: int, tidY: int) {
     b.barrier();
 
     // compute inner portion of FD kernel in parallel
-    forall (i, j) in localIndicesInner do
+    forall (i, j) in localIndicesInner with (ref u) do
       u.localAccess[i, j] = un.localAccess[i, j] + alpha * (
         un.localAccess[i-1, j] + un.localAccess[i, j-1] +
         un.localAccess[i+1, j] + un.localAccess[i, j+1] -
@@ -134,7 +134,7 @@ proc work(tidX: int, tidY: int) {
 
     // North edge
     if tidX > 0 {
-      forall j in localIndicesInner.dim(1) do
+      forall j in localIndicesInner.dim(1) with (ref u) do
         u.localAccess[nEdge, j] = un.localAccess[nEdge, j] + alpha * (
           HaloArrays[tidX, tidY][N].v[j] + un.localAccess[nEdge, j-1] +
           un.localAccess[nEdge+1, j]     + un.localAccess[nEdge, j+1] -
@@ -144,7 +144,7 @@ proc work(tidX: int, tidY: int) {
 
     // South edge
     if tidX < tidXMax {
-      forall j in localIndicesInner.dim(1) do
+      forall j in localIndicesInner.dim(1) with (ref u) do
         u.localAccess[sEdge, j] = un.localAccess[sEdge, j] + alpha * (
           un.localAccess[sEdge-1, j]     + un.localAccess[sEdge, j-1] +
           HaloArrays[tidX, tidY][S].v[j] + un.localAccess[sEdge, j+1] -
@@ -154,7 +154,7 @@ proc work(tidX: int, tidY: int) {
 
     // East edge
     if tidY < tidYMax {
-      forall i in localIndicesInner.dim(0) do
+      forall i in localIndicesInner.dim(0) with (ref u) do
         u.localAccess[i, eEdge] = un.localAccess[i, eEdge] + alpha * (
           un.localAccess[i-1, eEdge] + un.localAccess[i, eEdge-1] +
           un.localAccess[i+1, eEdge] + HaloArrays[tidX, tidY][E].v[i] -
@@ -164,7 +164,7 @@ proc work(tidX: int, tidY: int) {
 
     // West edge
     if tidY > 0 {
-      forall i in localIndicesInner.dim(0) do
+      forall i in localIndicesInner.dim(0) with (ref u) do
         u.localAccess[i, wEdge] = un.localAccess[i, wEdge] + alpha * (
           un.localAccess[i-1, wEdge] + HaloArrays[tidX, tidY][W].v[i] +
           un.localAccess[i+1, wEdge] + un.localAccess[i, wEdge+1] -

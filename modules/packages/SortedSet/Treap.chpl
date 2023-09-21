@@ -129,7 +129,7 @@ module Treap {
     }
   }
 
-  record treap {
+  record treap : writeSerializable {
     /* The type of the elements contained in this sortedSet.*/
     type eltType;
 
@@ -217,7 +217,7 @@ module Treap {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparator = comparator;
-      this.complete();
+      init this;
 
       for elem in iterable do _add(elem);
     }
@@ -821,6 +821,11 @@ module Treap {
       _enter();
       _visit(ch);
       _leave();
+    }
+
+    @chpldoc.nodoc
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*

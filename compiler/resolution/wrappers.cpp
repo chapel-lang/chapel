@@ -2252,9 +2252,14 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
       if (isRecordWrappedType(actualType) == true) {
         makeRefType(actualType);
 
-        actualType = actualType->refType;
+        if (actualType->refType == nullptr) {
+          // ex. the tuple type `(domain(?), int)`
+          // todo: when can we have promotion in this case?
+          INT_ASSERT(actualType->symbol->hasFlag(FLAG_GENERIC));
+          continue;
+        }
 
-        INT_ASSERT(actualType);
+        actualType = actualType->refType;
       }
 
       // Operator calls are allowed to have actuals for a method token and
@@ -2416,6 +2421,11 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   // B. will generate it too many times
   fn->maybeGenerateDeprecationWarning(info.call);
   fn->maybeGenerateUnstableWarning(info.call);
+
+  // if the fn is marked with NO_PROMOTION_WHEN_BY_REF, mark the wrapper
+  if (fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+    retval->addFlag(FLAG_NO_PROMOTION_WHEN_BY_REF);
+  }
 
   BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
                                        fastFollowerChecks);

@@ -41,7 +41,7 @@ proc eval_AtA_times_u(u,ref AtAu,ref v : [] real, inRange)
 }
 
 proc main() {
-  var Dist = new Block(rank=1, idxType=int(64), boundingBox={0..#n},
+  var Dist = new blockDist(rank=1, idxType=int(64), boundingBox={0..#n},
                                       dataParTasksPerLocale=here.maxTaskPar);
   var Dom : domain(1, int(64)) dmapped Dist = {0..#n};
 

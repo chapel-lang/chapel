@@ -25,7 +25,7 @@ class MyBlock {
   type  idxType          = int;
   type  sparseLayoutType = DefaultDist;
 
-  proc init(boundingBox:   domain,
+  proc init(boundingBox:   domain(?),
             targetLocales: [] locale  = Locales,
 
             param rank                = boundingBox.rank,

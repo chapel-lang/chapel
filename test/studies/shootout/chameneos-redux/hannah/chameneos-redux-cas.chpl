@@ -30,7 +30,7 @@ class MeetingPlace {
   /* constructor for MeetingPlace, sets the
      number of meetings to take place */
   proc init() {
-    this.complete();
+    init this;
     state.write((numMeetings << MEET_COUNT_SHIFT) : uint(32));
   }
 
