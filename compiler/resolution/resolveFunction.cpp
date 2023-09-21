@@ -3005,6 +3005,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               from = rhsSe->symbol();
             } else {
               // Store the RHS into a temporary
+              SET_LINENO(rhs);
               Symbol* tmp = NULL;
               tmp = newTemp("_cast_tmp_", rhs->typeInfo());
               call->insertBefore(new DefExpr(tmp));
