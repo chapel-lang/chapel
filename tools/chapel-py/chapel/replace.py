@@ -60,9 +60,7 @@ class ReplacementContext:
         return range_start - self.lines[self.lines_back[range_start]]
 
 def rename_formals(rc, fn, renames):
-    for child in fn:
-        if not isinstance(child, chapel.core.Formal): continue
-
+    for child in fn.formals():
         name = child.name()
         if name not in renames: continue
 

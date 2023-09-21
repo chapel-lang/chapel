@@ -504,6 +504,7 @@ PLAIN_GETTER(Function, kind, "s", return chpl::uast::Function::kindToString(node
 PLAIN_GETTER(Function, is_method, "b", return node->isMethod());
 PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
 PLAIN_GETTER(Function, this_formal, "O", return wrapAstNode(contextObject, node->thisFormal()));
+PLAIN_GETTER(Function, formals, "O", return wrapIterPair(contextObject, node->formals()));
 PLAIN_GETTER(FnCall, used_square_brackets, "b", return node->callUsedSquareBrackets());
 PLAIN_GETTER(FnCall, called_expression, "O", return wrapAstNode(contextObject, node->calledExpression()));
 PLAIN_GETTER(OpCall, op, "s", return node->op());
@@ -615,6 +616,7 @@ METHOD_TABLE(Function,
   {"is_method", FunctionObject_is_method, METH_NOARGS, "Check if this function is a method"},
   {"is_primary_method", FunctionObject_is_primary_method, METH_NOARGS, "Check if this function is a primary method"},
   {"this_formal", FunctionObject_this_formal, METH_NOARGS, "Get the 'this' formal from this function, if any"},
+  {"formals", FunctionObject_formals, METH_NOARGS, "Get an iterator of this function's formals"},
 );
 
 METHOD_TABLE(FnCall,
