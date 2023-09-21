@@ -462,11 +462,11 @@ The following table summarizes the differences between the intents:
 ================================ ====== ========= ========= ======== ============ ============= ========= ==========
 \                                ``in`` ``out``   ``inout`` ``ref``  ``const in`` ``const ref`` ``const`` default
 ================================ ====== ========= ========= ======== ============ ============= ========= ==========
-initializes formal from actual?  yes    no        yes       no       yes          no            no        no
+initializes formal from actual?  yes    no        yes       no       yes          no            maybe     maybe
 sets actual from formal?         no     yes       yes       no       no           no            no        no
 refers to actual argument?       no     no        no        yes      no           yes           maybe     maybe
 formal can be read?              yes    yes       yes       yes      yes          yes           yes       yes
-formal can be modified?          yes    yes       yes       yes      no           no            no        maybe
+formal can be modified?          yes    yes       yes       yes      no           no            no        no or yes
 local changes affect the actual? no     on return on return at once  N/A          N/A           N/A       N/A or yes
 ================================ ====== ========= ========= ======== ============ ============= ========= ==========
 
@@ -529,7 +529,8 @@ but the code does not copy initialize:
 
       proc elideCopy() {
         var x = makeRecord();
-        acceptWithIn(x); // copy to 'in arg' is elided because 'x' is used again
+        acceptWithIn(x); // copy to 'in arg' is elided
+                         // because 'x' is not used again
         writeln("block ending");
       }
       elideCopy();
@@ -647,9 +648,8 @@ execution of the routine. Such modifications are observable
 by the formal argument, subject to the memory consistency model.
 
 The following example shows such modification by means other than the
-``const ref`` formal. This program would have implementation-dependent
-behavior if ``c`` used ``const`` intent instead of ``const ref`` (see
-:ref:`The_Const_Intent`).
+``const ref`` formal. This program would be invalid if ``c`` used
+``const`` intent instead of ``const ref`` (see :ref:`The_Const_Intent`).
 
   *Example (const-ref-aliasing.chpl)*.
 
@@ -682,16 +682,16 @@ speaking, the compiler will implement a ``const`` intent formal by
 choosing between ``const in`` and ``const ref`` in an
 implementation-defined manner. As such, it is appropriate when the actual
 value will not be modified anywhere within the function and additionally
-the actual value will not be modified through other means than the
-``const ref`` formal. See the example in :ref:`The_Const_Ref_Intent` for
-an example of modification through other means.
+the actual value will not be modified by other means during the call.
+See the example in :ref:`The_Const_Ref_Intent` for an example of
+modification through other means.
 
 The ``const`` intent indicates that the function will not and cannot
 modify the formal argument within its dynamic scope.
 
 Unlike ``const in`` / ``in``, the ``const`` intent cannot be relied upon
-to transfer a value. For record types, passing to a ``const`` intent will
-never cause copy initialization.
+to transfer the ownership of a value. For record types, passing to a
+``const`` intent will not invoke a user-defined copy initializer.
 
 For synchronization types ``sync`` and ``atomic``, the ``const``
 intent is ``const ref`` and the remainder of this section does not apply.
@@ -703,18 +703,15 @@ a ``const`` formal:
  * the value referred to by such a formal argument will not be modified
    while the function is running
 
- * similarly, if the formal is a ``domain``, the domain will not be
-   while the function is running
+ * if the formal is an array, the domain that the array is declared over
+   will not be modified while the function is running
 
- * if the formal is an array, value of the domain that the array is
-   declared over will not be modified while the function is running
+ * if the formal is an ``owned`` or ``shared``, the actual will not be
+   modified to point to a different object or ``nil`` while the function
+   is running.
 
- * if the formal is an ``owned`` or ``shared``, the ``owned`` or
-   ``shared`` will not be modified to point to a different object while
-   the function is running.
-
-In the rare cases where these assumptions are not appropriate, code
-should use ``const ref`` or ``const in`` as appropriate.
+In the cases where these assumptions are not appropriate, code should use
+``const ref`` or ``const in`` as appropriate.
 
   *Implementation Notes*.
 
@@ -757,15 +754,15 @@ Default and 'const' Intents for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 The default intent for :type:`~OwnedObject.owned` and
-:type:`~SharedObject.shared` arguments is ``const``. To transfer the ownership
-from an :type:`~OwnedObject.owned` actual argument or to share the ownership
-with a :type:`~SharedObject.shared` actual argument, the formal argument can use
-the ``in`` or ``const in`` intent. Note that passing an actual argument of type
-:type:`~OwnedObject.owned` to a ``const in`` formal can change the
-actual argument's value since it transfers ownership out of it.
-Such ownership transfer will leave a value of nilable class type storing
-``nil`` and leave a value of non-nilable class type dead (see
-:ref:`Variable_Lifetimes`).
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the
+ownership from an :type:`~OwnedObject.owned` actual argument or to share
+the ownership with a :type:`~SharedObject.shared` actual argument, the
+formal argument needs to use the ``in`` or ``const in`` intent. Note that
+passing an actual argument of type :type:`~OwnedObject.owned` to a
+``const in`` formal will change the actual argument's value since it
+transfers ownership out of it.  Such ownership transfer will leave a
+value of nilable class type storing ``nil`` and leave a value of
+non-nilable class type dead (see :ref:`Variable_Lifetimes`).
 
    *Example (owned-any-intent.chpl)*.
 
@@ -1003,12 +1000,8 @@ The Const Return Intent
 ~~~~~~~~~~~~~~~~~~~~~~~
 
 The ``const`` return intent makes it up to the implementation to return a
-``const`` reference or to return a value.  When making this choice for a
-the implementation should make decisions consistent with ``const`` formal
-argument intents (see :ref:`The_Const_Intent`).
-
-Calls to functions marked with the ``const`` return intent are not lvalue
-expressions.
+``const`` reference or to return a value.  Calls to functions marked with
+the ``const`` return intent are not lvalue expressions.
 
 
 .. _Return_Intent_Overloads:

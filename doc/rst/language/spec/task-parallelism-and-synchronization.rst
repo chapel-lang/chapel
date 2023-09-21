@@ -474,12 +474,10 @@ corresponding shadow variable.
 Each formal argument of a task function has the default argument intent
 by default. See also :ref:`The_Default_Intent`. Note that the default
 intent usually allows the compiler to assume that the value will not be
-concurrently modified.
-
-For variables of primitive and class types, this has the
-effect of capturing the value of the variable at task creation time and
-referencing that value instead of the original variable within the
-lexical scope of the task construct.
+concurrently modified. For variables of primitive and class types, this
+has the effect of capturing the value of the variable at task creation
+time and referencing that value instead of the original variable within
+the lexical scope of the task construct.
 
 A formal can be given another argument intent explicitly by listing it
 with that intent in the optional ``task-intent-clause``. For example,
