@@ -6,7 +6,7 @@ GPU Programming
 ===============
 
 Chapel can be used to program GPUs. Currently  NVIDIA and AMD GPUs are
-supported.
+supported. Support for Intel GPUs is planned but not implemented, yet.
 
 .. warning::
 
@@ -90,12 +90,13 @@ Benchmark examples
 * `Stream <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/streamPrototype/stream.chpl>`_ -- GPU enabled version of Stream benchmark
 * `SHOC Triad (Direct) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triad.chpl>`_ -- a transliterated version of the SHOC Triad benchmark 
 * `SHOC Triad (Chapeltastic) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triadchpl.chpl>`_ -- a version of the SHOC benchmark simplified to use Chapel language features (such as promotion)
-* `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/sort.chpl>`_ -- SHOC radix sort benchmark
+* `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/shocsort.chpl>`_ -- SHOC radix sort benchmark
+* `asyncTaskComm <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/asynchrony/asyncTaskComm.chpl>`_ -- a synthetic benchmark to test overlap performance using multiple Chaple tasks.
 
 Test examples
 ~~~~~~~~~~~~~
 * `assertOnFailToGpuize <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/assertOnFailToGpuize.chpl>`_ -- various examples of loops that are not eligible for GPU execution
-* `math <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/math.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
+* `mathOps <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/mathOps.chpl>`_ -- calls to various math functions within kernels that call out to the CUDA Math library
 * `measureGpuCycles <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/measureGpuCycles.chpl>`_ -- measuring time within a GPU kernel
 * `promotion2 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/promotion2.chpl>`_ -- GPU kernels from promoted expressions
 
@@ -129,7 +130,7 @@ Requirements
 * Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
   (unless using `CPU-as-Device mode`_)
 
-  * For targeting NVIDIA GPUs, we support CUDA versions from 10.x to 12.0
+  * For targeting NVIDIA GPUs, we support CUDA versions from 10.x to 12.x
     (inclusive).
 
     * If using version 10.x you must set ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
@@ -236,8 +237,7 @@ set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
 <https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html#linux-supported-gpus>`_
 has possible architecture values (see the "LLVM Target" column). For NVIDIA, see
-the `CUDA Programming Guide
-<https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_.
+the `CUDA Compute Capability <https://developer.nvidia.com/cuda-gpus>`_ table.
 
 For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
 list. This causes the Chapel compiler to generate device code for each of the
@@ -445,8 +445,8 @@ file containing the outlined loop and ``num`` as the line number of the loop
 header. For example, a kernel on line 3 of ``chpl.foo`` will be named
 ``chpl_gpu_kernel_foo_line_3_``).
 
-Oversubscribing GPUs With Chapel Tasks
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Chapel Tasks and GPU Execution
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Chapel runtime will use a GPU stream per-task, per-device by default. While
 individual streams are synchronized with the host after each operation (e.g.,
 whole array operations and kernel launches will return only when the operation
