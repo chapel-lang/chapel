@@ -1,7 +1,8 @@
-// replicatedDist Distribution
+// Replicated Distribution
 
 /*
-  This primer demonstrates uses of the Replicated Distribution.
+  This primer demonstrates uses of replicatedDist,
+  the Replicated Distribution.
 
   .. warning::
 
@@ -23,7 +24,8 @@
 // locales does a nice job of illustrating the distribution
 // characteristics.
 //
-// Like other distributions, replicatedDist supports options to map to a different
+// Like other distributions, ``replicatedDist`` supports options
+// to map to a different
 // virtual locale grid than the one used by default (a multidimensional
 // factoring of the built-in ``Locales`` array), as well as
 // to control the amount of parallelism used in data parallel
@@ -43,8 +45,8 @@ config const n = 8;
 const Space = {1..n, 1..n};
 
 
-// replicatedDist
-// --------------
+// Replicated Distribution
+// -----------------------
 //
 // The ``replicatedDist`` distribution is different from other distributions:
 // each of the original domain's indices is replicated onto

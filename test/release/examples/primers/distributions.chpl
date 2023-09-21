@@ -162,7 +162,7 @@ var BA: [BlockSpace] int;
 */
 
 // Reasoning About Ownership
-// ~~~~~~~~~~~~~~~~~~~~~~~~~
+// -------------------------
 //
 // To illustrate how our block-distributed domain and array are mapped
 // to locales, let's use a forall loop that assigns each array element
@@ -209,7 +209,7 @@ coforall L in Locales {
 
 
 // Creating an Aligned Domain
-// ~~~~~~~~~~~~~~~~~~~~~~~~~~
+// --------------------------
 
 // Domains declared in terms of a ``blockDist`` distribution can also
 // include indices outside of the bounding box. That is, the bounding
@@ -232,7 +232,7 @@ const BigBlockSpace = blockDist.createDomain({0..n+1, 0..n+1});
 // are *aligned*.
 
 // Specifying Target Locales
-// ~~~~~~~~~~~~~~~~~~~~~~~~~
+// -------------------------
 
 //
 // As mentioned above, most Chapel distributions support an optional
