@@ -467,6 +467,7 @@ PLAIN_GETTER(Function, is_primary_method, "b", return node->isPrimaryMethod());
 PLAIN_GETTER(Function, this_formal, "O", return wrapAstNode(contextObject, node->thisFormal()));
 PLAIN_GETTER(FnCall, used_square_brackets, "b", return node->callUsedSquareBrackets());
 PLAIN_GETTER(FnCall, called_expression, "O", return wrapAstNode(contextObject, node->calledExpression()));
+PLAIN_GETTER(OpCall, op, "s", return node->op());
 PLAIN_GETTER(Dot, field, "s", return node->field());
 PLAIN_GETTER(VisibilityClause, symbol, "O", return wrapAstNode(contextObject, node->symbol()));
 PLAIN_GETTER(Identifier, name, "s", return node->name());
@@ -581,6 +582,10 @@ METHOD_TABLE(FnCall,
   {"used_square_brackets", FnCallObject_used_square_brackets, METH_NOARGS, "Check whether or not this function call was made using square brackets"},
   {"called_expression", FnCallObject_called_expression, METH_NOARGS, "Get the expression invoked by this FnCall node"},
   {"actuals", FnCallObject_actuals, METH_NOARGS, "Get the actuals of this function call"},
+);
+
+METHOD_TABLE(OpCall,
+  {"op", OpCallObject_op, METH_NOARGS, "Get the operation used in this operator call"},
 );
 
 METHOD_TABLE(Dot,
