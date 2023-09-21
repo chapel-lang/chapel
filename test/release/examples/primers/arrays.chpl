@@ -104,10 +104,11 @@ writeln("Initially, B is:\n", B, "\n");
 
 //
 // An array's elements can be iterated over using Chapel's standard
-// loop forms like ``for``, ``foreach``, or ``forall``.  These cause
-// the index variable to refer to an array element in each iteration.
-// For example, the following loop increments each of ``B``'s elements
-// by 1, in parallel:
+// loop forms like ``for``, ``foreach``, or ``forall`` (see the
+// :ref:`Loops Primer <primers-loops>` for details).  These cause the
+// index variable to refer to an array element in each iteration.  For
+// example, the following loop increments each of ``B``'s elements by
+// 1, in parallel:
 //
 
 forall b in B do
