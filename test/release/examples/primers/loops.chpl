@@ -106,7 +106,7 @@ use IO;  // enable access to the readln() call that we use below
   Specifically, in Chapel a for-loop always invokes a *serial
   iterator*.  In more detail:
 
-  Chapel for-loops generally take the form: ``for [inds] in [expr]``
+  Chapel for-loops generally take the form: ``for [inds] in [expr]``,
   where ``[expr]`` is the *iterand expression* that the loop is
   traversing.  When this iterand is a call to a Chapel iterator, the
   loop will invoke that iterator (see the :ref:`Iterators Primer
@@ -439,10 +439,10 @@ use IO;  // enable access to the readln() call that we use below
   you can think of there as being a *join* operation on all tasks that
   are helping to implement the forall-loop.
 
-  Looking at some simple examples, when run on a k-core processor, for
-  large enough values of ``n``, each of the following loops will
-  typically use ``k`` tasks to implement the loop's iterations in
-  parallel:
+  Looking at some simple examples, when run on a k-core processor,
+  each of the following loops will typically use ``k`` tasks to
+  implement the loop's iterations in parallel (at least, when ``k >
+  n``):
 
 */
 
@@ -800,18 +800,17 @@ use IO;  // enable access to the readln() call that we use below
   loop from ``forall`` to ``foreach`` may be negligible.
 
   In summary, there is nothing magical about nested loops.  When
-  reasoning about what a given loop nest does, simply consider the
-  loops one at a time.  For example, what does the outer loop do?
-  ("It's a ``forall``, so it will invoke the parallel iterator
-  specified by its iterand.")  OK, what about the next loop?  ("It's a
-  `coforall`, so it will literally create a task per iteration
-  regardless of how many are already running).  What about the next
-  loop?  ("It's a ``foreach``, so it will try to use SIMD/SIMT
-  features in the task's current target processor to implement its
-  iterations").  Chapel's implementation of parallel loops is very
-  imperative, where the most complex case is being familiar with the
-  parallelism implemented by any iterand expressions of a ``forall``
-  loop.
+  reasoning about what a given loop nest does, consider the loops one
+  at a time.  For example, what does the outer loop do?  ("It's a
+  ``forall``, so it will invoke the parallel iterator specified by its
+  iterand.")  OK, what about the next loop?  ("It's a `coforall`, so
+  it will literally create a task per iteration regardless of how many
+  are already running).  What about the next loop?  ("It's a
+  ``foreach``, so it will try to use SIMD/SIMT features in the task's
+  current target processor to implement its iterations").  Chapel's
+  implementation of parallel loops is very imperative, where the most
+  complex case is being familiar with the parallelism implemented by
+  any iterand expressions of a ``forall`` loop.
 
 
   When to Use Which Loop Form?
@@ -826,11 +825,12 @@ use IO;  // enable access to the readln() call that we use below
   an array, domain, range, or list, the for-loop can often be the
   clearest and most elegant loop form.  Or, if a serial iterator
   exists that does what you want, the for-loop is also an obvious
-  choice.  But if you want to do something more general, or unrelated
-  to an iterator, the while-loop can serve as a more general fallback.
-  Alternatively, you can abstract your loop structure into a new
-  iterator that you write yourself and then use a for-loop to invoke
-  it.
+  choice.  But if you want to do something more general that is not
+  currently supported by an iterator, the while-loop can serve as a
+  more general fallback.  Or you could write an iterator of your own
+  that wraps your serial loop structure, and then use a for-loop to
+  invoke it.  Refer to the :ref:`Iterators Primer <primers-iterators>`
+  for more information about doing this.
 
   When choosing between the parallel loop forms, one consideration
   should be how many iterations the loop has.  For example, if you're
