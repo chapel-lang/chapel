@@ -473,8 +473,7 @@ Implicit Conversions for Function Calls
 An implicit conversion for a function call - also called a *coercion* -
 occurs when the actual argument of a function call is converted to the
 type of the corresponding formal argument, if the formal’s intent is
-``param``, ``in``, ``const in``, or an abstract intent
-(:ref:`Abstract_Intents`) with the semantics of ``in`` or ``const in``.
+``param``, ``in``, ``const in``, ``const``, or the default intent.
 
 Implicit conversions for function calls are allowed between numeric
 and boolean types (:ref:`Implicit_NumBool_Conversions`), numeric types

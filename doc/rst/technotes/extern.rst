@@ -417,8 +417,9 @@ An argument such as ``int* ptrArg`` can be represented either with
 you would use one or the other). Correspondingly, ``const int* ptrArg`` can be
 represented with ``c_ptrConst(int)`` or the ``const ref`` intent.
 
-Note that, for numeric and pointer types, the default intent in Chapel is
-already ``const in`` (see the spec section :ref:`Abstract_Intents`).
+For the formal arguments of extern functions of numeric and pointer
+types, the default and ``const`` intents mean ``const in``
+(:ref:`The_Const_In_Intent`).
 
 As of 1.23, there are several limitations on what types can be passed to
 or returned from ``extern`` or ``export`` functions and what intents can

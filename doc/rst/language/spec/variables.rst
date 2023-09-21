@@ -587,11 +587,11 @@ the variable being aliased. For example, an update to a ref variable is
 visible via the original variable, and visa versa.
 
 If the expression being aliased is a runtime constant variable, a formal
-argument with a ``const ref`` concrete intent
-(:ref:`Concrete Intents`), or a call to a function with a
-``const ref`` return intent (:ref:`Const_Ref_Return_Intent`),
-the corresponding ref variable must be declared as ``const ref``.
-Parameter constants and expressions cannot be aliased.
+argument with a ``const ref`` intent (:ref:`The_Const_Ref_Intent`), or a
+call to a function with a ``const ref`` return intent
+(:ref:`Const_Ref_Return_Intent`), the corresponding ref variable must be
+declared as ``const ref``.  Parameter constants and expressions cannot be
+aliased.
 
    *Open issue*.
 

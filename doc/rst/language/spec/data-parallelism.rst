@@ -319,7 +319,11 @@ the forall construct implicitly refer to the corresponding shadow
 variable.
 
 Each formal argument of a task function or iterator has the default
-intent by default. For variables of primitive, enum, and class types,
+intent by default.  See also :ref:`The_Default_Intent`. Note that the
+default intent allows the compiler to assume that the value will not be
+concurrently modified, except for values of ``sync`` or ``atomic`` type.
+
+For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task
 creation time. Within the lexical scope of the forall construct, the
 variable name references the captured value instead of the original

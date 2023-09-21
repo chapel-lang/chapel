@@ -124,9 +124,12 @@ Array Values
 
 An array’s value is the collection of its elements’ values. Assignments
 between array variables are performed by value as described
-in :ref:`Array_Assignment`. Chapel semantics are defined so that
-the compiler will never need to insert temporary arrays of the same size
-as a user array variable.
+in :ref:`Array_Assignment`.
+
+When an array is stored in a ``const`` variable, the array elements are
+immutable. Undefined behavior will result if the domain is modified (see
+:ref:`Association_of_Arrays_to_Domains`) since that would necessarily
+add or remove elements.
 
 Array literal values can be either rectangular or associative,
 corresponding to the underlying domain which defines its indices.
