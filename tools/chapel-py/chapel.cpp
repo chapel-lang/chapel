@@ -492,6 +492,7 @@ PLAIN_GETTER(NamedDecl, name, "s", return node->name());
 PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
 PLAIN_GETTER(Variable, kind, "s", return chpl::uast::qualifierToString((chpl::uast::Qualifier) node->kind()));
 PLAIN_GETTER(Attribute, name, "s", return node->name());
+PLAIN_GETTER(AttributeGroup, is_unstable, "b", return node->isUnstable());
 PLAIN_GETTER(Comment, text, "s", return node->c_str());
 
 PLAIN_GETTER(BoolLiteral, value, "s",
@@ -638,6 +639,10 @@ METHOD_TABLE(Dot,
 METHOD_TABLE(Attribute,
   {"actuals", AttributeObject_actuals, METH_NOARGS, "Get the actuals for this Attribute node"},
   {"name", AttributeObject_name, METH_NOARGS, "Get the name of this Attribute node"},
+);
+
+METHOD_TABLE(AttributeGroup,
+  {"is_unstable", AttributeGroupObject_is_unstable, METH_NOARGS, "Check if the attribute group contains the 'unstable' attribute"},
 );
 
 METHOD_TABLE(VisibilityClause,
