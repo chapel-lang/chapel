@@ -51,6 +51,93 @@ Additionally, several ``c_string`` methods are deprecated without replacement:
 An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
 ``CTypes`` module.
 
+.. _readme-evolution.ref-if-modified-deprecation:
+
+In version 1.32, arrays and records now always have a default intent of
+``const``. Previously, these types would be passed by ``const ref`` intent,
+unless they were modified and then they were passed by ``ref`` intent. This
+change was motivated by improving the consistency across types and making
+potential problems more apparent.
+
+Consider the following code segment, which contains a ``forall`` statement
+which modifies local variables. Prior to version 1.32, this code compiled and
+worked without warning.
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   forall i in 2..9 with (ref myInt) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+Note that to modify ``myInt``, an explicit ``ref`` intent must be used whereas
+``myArray`` can be modified freely. The changes to the default intent for
+arrays is an attempt to remove this inconsistency and make the treatment of
+types in Chapel more uniform. This code also modifies both ``myInt`` and
+``myArray`` in a way that can produce race conditions. With ``myInt``, it is
+very apparent that there is something different than a simple serial iteration
+occurring and this can signal to users to more careful inspect their code for
+potential bugs. However ``myArray`` can be used without that same restriction,
+which can be a source of subtle bugs. In 1.32, the loop is written as:
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   forall i in 2..9 with (ref myInt, ref myArray) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+This removes the inconsistency and makes the potential issues much more clear.
+
+This change also applies to procedures. Consider the following procedure:
+
+.. code-block:: chapel
+
+   proc computeAndPrint(ref myInt: int, myArray: []) {
+     ...
+   }
+
+It is clear that ``myInt`` may be modified and a user of this function can save
+this value beforehand if they need the value later. But without knowing what is
+contained in this function, it is impossible to tell if ``myArray`` is going to
+be modified. Making the default intent for arrays ``const`` removes this
+ambiguity.
+
+This consistency is extended to records as well. Consider the following record
+definition:
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc doSomething() {
+       ...
+     }
+   }
+
+  Without knowing what the body of ``doSomething`` does, it is not clear
+  whether ``x`` may be modified. In version 1.32, if ``x`` is modified the
+  method must be marked as a modifying record using a this-intent.
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc ref doSomething() {
+       ...
+     }
+   }
+
+   Now it is clear that the method may modify ``x``.
+
 version 1.31, June 2023
 -----------------------
 
