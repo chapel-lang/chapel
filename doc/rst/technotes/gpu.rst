@@ -454,6 +454,12 @@ is completed), this allows efficiently oversubscribing GPUs by running multiple
 tasks on them to gain more performance by allowing CUDA to overlap data movement
 with computation.
 
+* This behavior is disabled for ``CHPL_GPU_MEM_STRATEGY=unified_memory``.
+
+* It can also be disabled for the default
+  ``CHPL_GPU_MEM_STRATEGY=array_on_device``, by running the application with
+  ``--gpuUseStreamPerTask=false``.
+
 See the `asyncTaskComm
 <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/asynchrony/asyncTaskComm.chpl>`_
 benchmark for a full example of a pattern that benefits from oversubscribing
