@@ -11,10 +11,14 @@ Highlights (see subsequent sections for further details)
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* updated arm-based (M1/M2) Macs to default to `CHPL_TASKS=qthreads`
+* updated arm-based (M1/M2) Macs to default to `CHPL_MEM=jemalloc`
 * improved the equivalence of `arm64` and `aarch64` in our scripting
 
 New Language Features
 ---------------------
+* added a user-facing task yield mechanism, `currentTask.yieldExecution()`
+  (see https://chapel-lang.org/docs/1.32/language/spec/task-parallelism-and-synchronization.html#yielding-task-execution)
 * added support for declaring that records/classes fulfill a given interface  
   (e.g., `record r: i { ... }` says that `r` implements the `i` interface;  
    see TODO)
@@ -41,7 +45,8 @@ Syntactic / Naming Changes
   (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#the-these-method)
 * renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
-
+* renamed `sync` formals from `x: valtype` to `val: valType`
+* renamed `atomic` formals and formal types from `value: T` to `val: valType`
 
 Semantic Changes / Changes to the Chapel Language
 -------------------------------------------------
@@ -58,6 +63,8 @@ Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * marked `scan` unstable due to uncertainty about inclusive/exclusive choice
+* marked `compareAndSwap()` on `atomic` variables as unstable
+* marked `sync.[readXX|writeFF|writeXF|reset|isFull]()` unstable
 * marked explicit calls to `this()` methods as unstable
 * marked serial `these()` iterators taking arguments as unstable
 * marked default initialization of low- and high-bounded ranges as unstable
@@ -66,6 +73,7 @@ Deprecated / Unstable / Removed Language Features
 * marked the `[string|bytes].createBorrowingBuffer` factory method unstable  
   (see https://chapel-lang.org/docs/1.32/language/spec/strings.html#String.string.createBorrowingBuffer  
   and https://chapel-lang.org/docs/1.32/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer)
+* deprecated `single` variables
 * deprecated returning `sync`, `single`, or `atomic` by value
 * deprecated relying on default initializers for `sync`, `single`, and `atomic`
 * deprecated the `owned.borrow` type method
@@ -400,6 +408,8 @@ Performance Optimizations / Improvements
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
+* improved the performance of aggregators on HPE Cray EX systems
+* improved task creation and switching performance on ARM processors
 
 Compilation-Time / Generated Code Improvements
 ----------------------------------------------
@@ -480,6 +490,8 @@ Other Documentation Improvements
 
 Example Codes
 -------------
+* updated sync primer to reflect stable methods and variable naming conventions
+  (see https://chapel-lang.org/docs/1.32/primers/syncs.html)
 
 Syntax Highlighting
 -------------------
@@ -495,6 +507,7 @@ Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for co-locales to `CHPL_COMM=gasnet` with the `ibv` substrate  
   (see TODO)
+* resolved sporadic memory consistency issues on ARM processors
 * added support for processors with heterogeneous processing units  
   (see https://chapel-lang.org/docs/1.32/usingchapel/executing.html#controlling-the-kind-of-processing-units)
 * enabled support for hugepages on the HPE Cray EX platform  
@@ -534,6 +547,7 @@ Bug Fixes
   (e.g., `var d: domain(?) = {1..5}` now works)
 * fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
+* fixed `fifo` guard pages when using `jemalloc` allocator on arm-based macs
 * fixed a bug when using array type expression actuals within loop bodies
 * removed extra borrow when casting from a managed class to an unmanaged class
 
@@ -564,7 +578,10 @@ Bug Fixes for Tools
 
 Third-Party Software Changes
 ----------------------------
+* updated the bundled version of GASNet-EX to 2023.3.0
+* updated the bundled version of Qthreads to 1.19
 * updated the bundled version of hwloc to 2.9
+* updated the bundled version of GMP to version 6.3.0
 
 Developer-oriented changes: Process
 -----------------------------------
@@ -613,7 +630,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added a new runtime shim for the GASNet-EX API upgrade
 * enabled forceable creation of a fixed heap with `CHPL_COMM=ofi`
+* pinned ofi `fi_getinfo` API version to 1.9
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
@@ -623,6 +642,8 @@ Developer-oriented changes: Testing System
 * modified `start_test` to not look for performance keys on a non-zero exit
 * added a warning when a line in a `.graph` file is unrecognized
 * removed email capability from `cron` scripts
+* throttled compile-only tests when the execution limiter is enabled
+* improved `chpl_launchcmd` support for systems with queues and prologues
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
