@@ -162,6 +162,7 @@ Procedures are defined with the following syntax:
    return-intent:
      'const'
      'const ref'
+     'out'
      'ref'
      'param'
      'type'
@@ -927,6 +928,15 @@ The Default Return Intent
 ~~~~~~~~~~~~~~~~~~~~~~~~~
 
 When no ``return-intent`` is specified explicitly, the function returns
+a value in the same way as the ``out`` return intent,
+see :ref:`Out_Return_Intent`.
+
+.. _Out_Return_Intent:
+
+The Out Return Intent
+~~~~~~~~~~~~~~~~~~~~~
+
+A function with the ``out`` return intent returns
 a value that cannot be used as an lvalue. This value is obtained
 by copy-initialization from the returned expression,
 see :ref:`Copy_and_Move_Initialization`.
