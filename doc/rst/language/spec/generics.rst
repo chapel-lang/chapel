@@ -741,10 +741,10 @@ Parameters in Generic Types
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 If a class or record defines a parameter field, the class or record is
-generic over the value that is bound to that field.  Similarly to
-``type`` fields, a ``param`` field is always generic, whether or not it
-includes a default.  The field can be accessed from a class or record
-instance or from the instantiated class or record type itself.
+generic over the value that is bound to that field. A parameter field is
+always generic, whether or not includes a default. The field can be
+accessed from a class or record instance or from the instantiated class
+or record type itself.
 
 The parameter becomes an argument with intent ``param`` to the
 compiler-generated initializer
@@ -922,7 +922,7 @@ The types for such fields must either be a built-in generic type (see
    *Example (fieldWithGenericType.chpl)*.
 
    This code defines a generic record ``queue`` and then a generic record
-   ``wrapper`` that uses a field to hold a.
+   ``wrapper`` that uses a field to hold a ``queue``.
 
    .. code-block:: chapel
 
@@ -947,20 +947,19 @@ The Type Constructor
 ~~~~~~~~~~~~~~~~~~~~
 
 A type constructor is automatically created for each class or record. A
-type constructor is a type function (:ref:`Type_Return_Intent`)
-that has the same name as the class or record. It takes one argument per
-the class’s or record’s generic field, including fields inherited from
-the superclasses, if any. The formal argument has intent ``type`` for a
-type alias field and is a parameter for a parameter field. It accepts
-the type to be bound to the type alias and the value to be bound to the
-parameter, respectively. For a generic ``var`` or ``const`` field, the
-corresponding formal argument also has intent ``type``. It accepts the
-type of the field, as opposed to a value as is the case for a parameter
-field. The formal arguments occur in the same order as the fields are
-declared and formals for ``type``/``param`` fields have the same names
-as the corresponding fields. Unlike the
-compiler-generated initializer, the type constructor only has arguments
-that correspond to generic fields.
+type constructor is a type function (:ref:`Type_Return_Intent`) that has
+the same name as the class or record. It takes one argument per the
+class’s or record’s generic field, including fields inherited from the
+superclasses, if any. The formal argument has intent ``type`` for a type
+alias field and is a parameter for a parameter field. It accepts the type
+to be bound to the type alias and the value to be bound to the parameter,
+respectively. For a generic ``var`` or ``const`` field, the corresponding
+formal argument also has intent ``type``. It accepts the type of the
+field, as opposed to a value as is the case for a parameter field. The
+formal arguments occur in the same order as the fields are declared and
+formals for ``type``/``param`` fields have the same names as the
+corresponding fields. Unlike the compiler-generated initializer, the type
+constructor only has arguments that correspond to generic fields.
 
 A call to a type constructor accepts actual types and parameter values
 and returns the type of the class or record that is instantiated
