@@ -119,6 +119,24 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
   return toReturn;
 }
 
+template <typename Node>
+static PyObject* wrapIterPair(ContextObject* context, const chpl::uast::AstListIteratorPair<Node>& pair) {
+  auto argList = Py_BuildValue("(O)", (PyObject*) context);
+  auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
+  auto astIterObject = (AstIterObject*) astIterObjectPy;
+
+  // Perform a very unsafe cast from the list iterator pair of an arbitrary
+  // AST node pointer to one for the general AST node.
+  auto pairMem = (const void*) &pair;
+  auto pairAstNode = (const chpl::uast::AstListIteratorPair<chpl::uast::AstNode>*) pairMem;
+
+  astIterObject->current = pairAstNode->begin();
+  astIterObject->end = pairAstNode->end();
+
+  Py_XDECREF(argList);
+  return astIterObjectPy;
+}
+
 static PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag) {
 #define AST_NODE(NAME)
 #define AST_LEAF(NAME)
@@ -140,14 +158,13 @@ static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwa
   PyObject* astObjectPy;
   if (!PyArg_ParseTuple(args, "O", &astObjectPy))
       return -1;
-  // TODO: unsafe cast! We're just lucky because we generate the same "shape" for each node type
-  auto astObject = (AstNodeObject*) astObjectPy;
 
-  auto iterPair = astObject->astNode->children();
-  Py_INCREF(astObject->contextObject);
-  new (&self->current) chpl::uast::AstListIterator<chpl::uast::AstNode>(iterPair.begin());
-  new (&self->end) chpl::uast::AstListIterator<chpl::uast::AstNode>(iterPair.end());
-  self->contextObject = astObject->contextObject;
+  auto contextObject = (ContextObject*) astObjectPy;
+
+  Py_INCREF(contextObject);
+  new (&self->current) chpl::uast::AstListIterator<chpl::uast::AstNode>();
+  new (&self->end) chpl::uast::AstListIterator<chpl::uast::AstNode>();
+  self->contextObject = (PyObject*) contextObject;
 
   return 0;
 }
@@ -155,6 +172,11 @@ static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwa
 static void AstIterObject_dealloc(AstIterObject* self) {
   Py_XDECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+static PyObject* AstIterObject_iter(AstIterObject *self) {
+  Py_INCREF(self);
+  return (PyObject*) self;
 }
 
 static PyObject* AstIterObject_next(AstIterObject *self) {
@@ -175,6 +197,7 @@ PyTypeObject AstIterType = {
   .tp_dealloc = (destructor) AstIterObject_dealloc,
   .tp_flags = Py_TPFLAGS_DEFAULT,
   .tp_doc = PyDoc_STR("An iterator over Chapel AST nodes"),
+  .tp_iter = (getiterfunc) AstIterObject_iter,
   .tp_iternext = (iternextfunc) AstIterObject_next,
   .tp_init = (initproc) AstIterObject_init,
   .tp_new = PyType_GenericNew,
@@ -396,10 +419,7 @@ static PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(i
 }
 
 static PyObject* AstNodeObject_iter(AstNodeObject *self) {
-  auto argList = Py_BuildValue("(O)", (PyObject*) self);
-  auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
-  Py_XDECREF(argList);
-  return astIterObjectPy;
+  return wrapIterPair((ContextObject*) self->contextObject, self->astNode->children());
 }
 
 static PyObject* AstNodeObject_location(AstNodeObject *self) {
