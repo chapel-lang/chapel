@@ -49,7 +49,7 @@ source $CWD/common-perf.bash
 CHAMPS_PERF_DIR=${CHAMPS_PERF_DIR:-$COMMON_DIR/NightlyPerformance/champs}
 export CHPL_TEST_PERF_CONFIG_NAME='16-node-apollo-hdr'
 export CHPL_TEST_PERF_DIR=$CHAMPS_PERF_DIR/$CHPL_TEST_PERF_CONFIG_NAME
-export CHPL_TEST_PERF_START_DATE=01/21/22
+export CHPL_TEST_PERF_START_DATE=09/17/23
 
 # Run champs correctness and performance testing
 export CHPL_NIGHTLY_TEST_DIRS=studies/champs/
