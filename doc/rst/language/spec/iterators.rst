@@ -90,11 +90,9 @@ procedures (described in :ref:`Return_Intent`), with these exceptions:
 
   1. The default yield intent is ``const``.
 
-  2. The ``const`` yield intent (as well as the default yield intent)
-     make it up to the implementation to choose between ``const ref``
-     and yielding by value. The implementation should make decisions
-     consistent with ``const`` formal argument intents (see
-     :ref:`The_Const_Intent`).
+  2. The default and the ``const`` yield intents make it up to the
+     implementation to choose between yielding with ``const ref`` or
+     ``out``.
 
   3. An iterator with the ``ref`` or ``const ref`` yield intent is
      allowed to yield an lvalue that is local to the iterator's scope.
