@@ -64,17 +64,26 @@ function apply_patch() {
 
 function test_compile() {
   local kind=$@
+  local make_vars="MOD=$kind NPROCS=0"
+
   if [ ! -z "$CHAMPS_QUICKSTART" ]; then
     local version=quick-shared
     export CHPL_STOP_AFTER_PASS=${CHPL_STOP_AFTER_PASS:-denormalize}
+
+    # CHAMPS' Makefile runs `time` in an unportable way causing failures on
+    # darwin. Measuring time and memory in this setting is probably useless
+    # anyway. So, disable that for quickstart.
+    make_vars+=" MONITOR_MAKE=false"
+
     echo "[Building $kind in quickstart mode. Will stop after the $CHPL_STOP_AFTER_PASS pass]"
   else
     local version=release
+
     echo "[Building $kind in normal mode]"
   fi
 
   test_start "make $kind"
-  make $version MOD=$kind NPROCS=0 2> $kind.comp.out.tmp
+  make $version $make_vars 2> $kind.comp.out.tmp
   local status=$?
   cat $kind.comp.out.tmp
 
