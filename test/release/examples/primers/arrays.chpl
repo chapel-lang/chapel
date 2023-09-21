@@ -128,7 +128,11 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // from the ranges specified within the array type's square brackets.
 // Array ``A2`` above will have the implicit domain ``{0..4}`` to
 // represent the five values in its initializing expression.
-
+//
+// When an array is modified without being specified in the iterand inside
+// of a parallel construct (like ``forall`` in the example below), it needs
+// an explicit ``ref`` intent.
+//
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For
 // example, here's a loop that iterates over B's indices in parallel
@@ -158,7 +162,7 @@ proc negateAndPrintArr(ref X: [?D] real) {
 negateAndPrintArr(B);
 
 //
-// Arrays are passed to routines by constant reference (``const ref``) by
+// Arrays are passed to routines by constant (``const``) by
 // default, which does not allow them to be modified within the routine.
 // The above procedure ``negateAndPrintArr()`` must use a non-constant
 // reference intent (``ref``) explicitly, so that its modifications of ``X``
