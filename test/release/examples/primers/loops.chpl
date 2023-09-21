@@ -45,7 +45,7 @@ use IO;  // enable access to the readln() call that we use below
 
 /*
 
-  In the event that the loop body only consists of a single statement,
+  In the event that the loop body consists of only a single statement,
   you can use the ``do`` keyword to define it rather than curly
   brackets (a *compound statement*).  For example:
 
@@ -91,7 +91,7 @@ use IO;  // enable access to the readln() call that we use below
   ---------
 
   Chapel's other serial loop form is the *for-loop*.  Here is a sample
-  for-loop that iterates over the integers 1 through 10, inclusive:
+  for-loop that iterates over the integers 1 through 3, inclusive:
 
 */
 
@@ -299,7 +299,7 @@ use IO;  // enable access to the readln() call that we use below
 
   This concludes this primer's summary of Chapel's serial loop forms.
 
-Parallel Loops
+  Parallel Loops
   ==============
 
   Next, let's look at Chapel's parallel loop forms, all of which are
@@ -433,11 +433,11 @@ Parallel Loops
   the locales that own a subset of the domain's indices or array's
   elements.
 
-  It is guaranteed that all tasks created by the parallel iterator to
-  run the loop's iterations will complete before the original task
-  encountering the forall-loop proceeds.  Logically, you can think of
-  there as being a logical *join* operation on all tasks that are
-  helping to implement the forall-loop.
+  The task that originally encountered the forall-loop will not
+  proceed past the loop until all tasks created by the parallel
+  iterator to run the loop's iterations have completed.  Logically,
+  you can think of there as being a *join* operation on all tasks that
+  are helping to implement the forall-loop.
 
   Looking at some simple examples, when run on a k-core processor, for
   large enough values of ``n``, each of the following loops will
@@ -569,7 +569,7 @@ Parallel Loops
   As a result, the parallel calls to ``foo()`` will be executed using
   the available processor cores on each of the locales that own a
   portion of ``C`` since ``C`` is the first iterand in the `zip`
-  expression..
+  expression.
   
 
   A final note on data-parallel loops and legality / races
@@ -699,8 +699,11 @@ Parallel Loops
 
   coforall loc in Locales {
     on loc {
-      coforall tid in 1..numTasks {
-        /* This loop body will be executed once per core per locale */
+      coforall tid in 1..here.maxTaskPar {
+        /* `here.maxTaskPar` queries the number of parallel tasks that
+           can run on this locale and is typically equal to the number
+           of local processor cores.  So this loop body will be
+           executed once per core per locale */
       }
     }
   }
@@ -716,9 +719,9 @@ Parallel Loops
   iterations will literally create a million tasks.  If you don't have
   a million cores to run them on, this is likely to be overkill,
   requiring more memory and processing power than may be warranted.
-  If there is no explicit synchronization between the iterations,
-  perhaps a forall loop would be a better choice, since it would use a
-  number of tasks proportional to the targeted hardware parallelism?
+  If there is no explicit synchronization between the iterations, a
+  forall loop may be a better choice, since it would use a number of
+  tasks proportional to the targeted hardware parallelism.
 
 
   Closing Discussions
@@ -736,10 +739,10 @@ Parallel Loops
   definitions are the same whether they are an outer or inner loop.  A
   nested for-loop will perform nested serial iterations as in other
   languages.  A nested coforall-loop will create a number of tasks
-  equal to outer loop's trip count and the sum of all the inner loops'
-  counts.  For example, the following loop will logically create
-  ~`x**2` tasks, since each iteration of both loops will create its
-  own task.
+  equal to the outer loop's trip count and the sum of all the inner
+  loops' counts.  For example, the following loop will logically
+  create ~`x**2` tasks, since each iteration of both loops will create
+  its own task.
 
 */
 
@@ -792,9 +795,9 @@ Parallel Loops
 
 /*
 
-  That said, such overheads are relatively modest, so loop bodies that
-  are computationally intense, the benefit for changing the inner loop
-  from ``forall`` to ``foreach`` may be negligible.
+  That said, such overheads are relatively modest, so for loop bodies
+  that are computationally intense, the benefit of changing the inner
+  loop from ``forall`` to ``foreach`` may be negligible.
 
   In summary, there is nothing magical about nested loops.  When
   reasoning about what a given loop nest does, simply consider the
