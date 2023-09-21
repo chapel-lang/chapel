@@ -801,7 +801,7 @@ module CTypes {
     the stack representation of the class — this matches the behavior of
     :proc:`c_addrOf`/:proc:`c_addrOfConst`.
 
-    The deprecated behavior is on by default. To opt in to the new behavior,
+    The deprecated behavior is on by default. To opt-in to the new behavior,
     compile your program with the following argument:
     ``-s cPtrToLogicalValue=true``.
   */
@@ -832,9 +832,11 @@ module CTypes {
     behavior to ``c_addrOf`` on types other than those with special behavior
     listed above.
 
-    Note that the existence of the ``c_ptr`` has no impact of the lifetime
-    of the object. In many cases the object will be stack allocated and
-    could go out of scope even if this ``c_ptr`` remains.
+    .. note::
+
+      The existence of the ``c_ptr`` has no impact on the lifetime
+      of the object it points to. In many cases the object will be stack
+      allocated and could go out of scope even if this ``c_ptr`` remains.
 
     :arg x:   The by-reference argument to get a pointer to. Domains are not
               supported, and will cause a compiler error.
