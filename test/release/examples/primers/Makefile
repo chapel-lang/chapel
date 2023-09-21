@@ -19,6 +19,7 @@ TARGETS = \
 	learnChapelInYMinutes \
 	listOps \
 	locales \
+	loops \
 	modules \
 	nothingVariables \
 	parIters \
