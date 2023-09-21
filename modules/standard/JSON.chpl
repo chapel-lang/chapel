@@ -494,11 +494,11 @@ module JSON {
 
         .. note::
 
-          JSON itself only supports strings as names in objects. This library
-          provides support for non-string key types by serializing a non-string
-          key as an escaped JSON string containing the serialized key. For a
-          simple integer key, this results in output like ``"123"``. For a
-          record key with two integer fields, the output could look like:
+          JSON itself only supports strings as names in objects. This module
+          supports non-string key types by serializing them as an escaped JSON
+          string containing the serialized key. For a simple integer key, this
+          results in output like ``"123"``. For a record key with two integer
+          fields, the output could look like:
 
           .. code-block:: text
 
