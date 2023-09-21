@@ -58,10 +58,10 @@ Task Arguments
 --------------
 
 The task argument in a call to :proc:`async()` or :proc:`Future.andThen()`
-may be a :ref:`first-class function <readme-firstClassFns>`, a
-:ref:`lambda function <readme-lambdaFns>`, or a specially-constructed
-class or record.  Such a record must have both a `proc this()` method for the
-desired computation and a `proc retType type` method that returns the return
+may be a :ref:`first-class function <readme-firstClassProcedures>`, or a
+specially-constructed class or record.
+Such a record must have both a `proc this()` method for the desired
+computation and a `proc retType type` method that returns the return
 type of the `this()` method.  (The requirement for the `retType` method is
 a currently limitation that is intended to be resolved in the future.)
 For example:
@@ -117,7 +117,7 @@ module Futures {
 
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       refcnt.write(0);
       state.clear();
     }
@@ -145,7 +145,7 @@ module Futures {
     @chpldoc.nodoc
     proc init(type retType) {
       this.retType = retType;
-      this.complete();
+      init this;
       // sets this=classRef = the new one and bumps the ref count
       // from 0 to 1
       acquire(new unmanaged FutureClass(retType));
@@ -153,13 +153,13 @@ module Futures {
 
     proc init=(x: Future) {
       this.retType = x.retType;
-      this.complete();
+      init this;
       // set this.classRef = x.classRef and bumps the reference count
       this.acquire(x.classRef);
     }
 
     @chpldoc.nodoc
-    proc deinit() {
+    proc ref deinit() {
       release();
     }
 
@@ -236,7 +236,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc acquire(newRef: unmanaged FutureClass?) {
+    proc ref acquire(newRef: unmanaged FutureClass?) {
       if isValid() then halt("acquire(newRef) called on valid future!");
       classRef = newRef;
       if classRef then classRef!.incRefCount();
@@ -249,7 +249,7 @@ module Futures {
     }
 
     @chpldoc.nodoc
-    proc release() {
+    proc ref release() {
       if classRef == nil then halt("release() called on nil future");
       var rc = classRef!.decRefCount();
       if rc == 1 {

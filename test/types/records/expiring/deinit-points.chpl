@@ -1,6 +1,6 @@
 record R {
   var x:int = 0;
-  proc deinit() {
+  proc ref deinit() {
     assert(x == 0);
     x = 99;
     writeln("deinit");
@@ -565,3 +565,7 @@ writeln("end t36");
 writeln("t37");
 var t37glob = g(makeR());
 writeln("end t37");
+
+writeln("t38");
+const ref t38glob = g(makeR());
+writeln("end t38");

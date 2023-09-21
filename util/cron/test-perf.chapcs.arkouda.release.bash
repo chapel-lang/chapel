@@ -13,9 +13,9 @@ if [ -n "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" ]; then
   # release that does not support our latest available LLVM. Cases can be
   # removed when we no longer care about testing against that release.
   if [ "$CHPL_WHICH_RELEASE_FOR_ARKOUDA" = "1.30.0" ]; then
-    # use LLVM 14, latest supported by 1.30.0
+    # use LLVM 15, latest supported by 1.31.0
     if [ -f /data/cf/chapel/setup_system_llvm.bash ] ; then
-      source /data/cf/chapel/setup_system_llvm.bash 14
+      source /data/cf/chapel/setup_system_llvm.bash 15
     fi
   else
     # Default to using latest LLVM.

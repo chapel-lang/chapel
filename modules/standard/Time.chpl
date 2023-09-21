@@ -23,77 +23,130 @@
 
 /* Support for routines related to measuring the passing of time.
 
-   This module provides support for querying wall time in the local
-   timezone and implements a record :record:`~stopwatch` that can measure
-   the execution time of sections of a program. The stopwatch has the
-   potential for microsecond resolution and is intended to be useful for
-   performance testing.
+   This module provides support for querying local wall time or UTC time,
+   and structures for manipulating dates and times. Note that timezone-naive
+   local and UTC time querying methods will produce different results if the
+   local time is not UTC, including potentially different calendar dates.
+
+   It also implements a record :record:`~stopwatch` that can measure the
+   execution time of sections of a program. The stopwatch has the potential for
+   microsecond resolution and is intended to be useful for performance testing.
  */
 
 module Time {
   import HaltWrappers;
   private use CTypes;
 
-// Returns the number of seconds since midnight.  Has the potential for
-// microsecond resolution if supported by the runtime platform
-private extern proc chpl_now_time():real;
+  // Returns the number of seconds since midnight.  Has the potential for
+  // microsecond resolution if supported by the runtime platform
+  private extern proc chpl_now_time():real;
 
 
 
 
-@chpldoc.nodoc
-// This is comparable to a Posix struct timeval
-extern type _timevalue;
+  @chpldoc.nodoc
+  // This is comparable to a Posix struct timeval
+  extern type _timevalue;
 
 
 
-private extern proc chpl_null_timevalue(): _timevalue;
+  private extern proc chpl_null_timevalue(): _timevalue;
 
 
 
-// The number of seconds/microseconds since Jan 1, 1970 in UTC
-private extern proc chpl_now_timevalue():  _timevalue;
+  // The number of seconds/microseconds since Jan 1, 1970 in UTC
+  private extern proc chpl_now_timevalue():  _timevalue;
 
 
 
-// The components of time in the local time zone
-private extern proc chpl_timevalue_parts(t:           _timevalue,
+  // The components of time in the local time zone
+  private extern proc chpl_timevalue_parts(t:           _timevalue,
 
-                                         out seconds: int(32),
-                                         out minutes: int(32),
-                                         out hours:   int(32),
-                                         out mday:    int(32),
-                                         out month:   int(32),
-                                         out year:    int(32),
-                                         out wday:    int(32),
-                                         out yday:    int(32),
-                                         out isdst:   int(32));
+                                           out seconds: int(32),
+                                           out minutes: int(32),
+                                           out hours:   int(32),
+                                           out mday:    int(32),
+                                           out month:   int(32),
+                                           out year:    int(32),
+                                           out wday:    int(32),
+                                           out yday:    int(32),
+                                           out isdst:   int(32));
 
-/* Specifies the units to be used when certain functions return a time */
-@deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
-enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
+  /* Specifies the units to be used when certain functions return a time */
+  @deprecated(notes="The 'TimeUnits' type is deprecated. Please specify times in seconds in this module.")
+  enum TimeUnits { microseconds, milliseconds, seconds, minutes, hours }
 
-@deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
-enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-/* Specifies the day of the week */
-enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  /* Days in the week, starting with `Monday` = 0 */
+  /* Begin day-of-week enums */
+
+  /* Controls whether :type:`dayOfWeek` starts with `Monday = 0` or
+  `Monday = 1`.
+
+    - If true, :type:`dayOfWeek` represents Monday as day 1.
+    - If false, :type:`dayOfWeek` represents Monday as day 0. This behavior is
+      deprecated and will be removed in an upcoming release.
+
+    The deprecated behavior is on by default. To opt-in to the new behavior,
+    recompile your program with ``-scIsoDayOfWeek=true``.
+
+  */
+  config param cIsoDayOfWeek = false;
+  @chpldoc.nodoc
+  param firstDayOfWeekNum = (if cIsoDayOfWeek then 1 else 0);
+  // This enum has a compiler-implemented deprecation warning for change-of-behavior
+  // controlled by `-scIsoDayOfWeek`, due to implementation issues with a
+  // @deprecated conditional on a config value.
+  /*
+     Days in the week, starting with Monday.
+     Monday is represented as 0 when :var:`cIsoDayOfWeek` is false (deprecated),
+     or 1 otherwise (future default).
+
+    .. warning::
+
+      In an upcoming release 'dayOfWeek' will represent Monday as 1 instead of
+      0 by default. During the deprecation period this behavior can be
+      controlled with :var:`cIsoDayOfWeek`.
+   */
   enum dayOfWeek {
-    Monday =    0,
-    Tuesday =   1,
-    Wednesday = 2,
-    Thursday =  3,
-    Friday =    4,
-    Saturday =  5,
-    Sunday =    6
+    Monday = firstDayOfWeekNum,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday
+  }
+  @chpldoc.nodoc
+  enum _old_dayOfWeek {
+    Monday = 0,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday
+  }
+  @chpldoc.nodoc
+  enum _iso_dayOfWeek {
+    Monday = 1,
+    Tuesday,
+    Wednesday,
+    Thursday,
+    Friday,
+    Saturday,
+    Sunday
   }
 
+  @deprecated(notes="enum 'Day' is deprecated. Please use :enum:`day` instead")
+  enum Day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+  /* Specifies the day of the week */
+  @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
+  enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
   @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
   }
-
   /* Days in the week, starting with `Monday` = 1 */
+  @deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum isoDayOfWeek {
     Monday =    1,
     Tuesday =   2,
@@ -103,16 +156,23 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     Saturday =  6,
     Sunday =    7
   }
-
   @chpldoc.nodoc
   proc ISODayOfWeek {
     compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
+  /* End day-of-week enums */
+
   /* The minimum year allowed in `date` objects */
+  @deprecated("'MINYEAR' is deprecated; use `date.min.year` instead")
   param MINYEAR = 1;
   /* The maximum year allowed in `date` objects */
+  @deprecated("'MAXYEAR' is deprecated; use `date.max.year` instead")
   param MAXYEAR = 9999;
+  @chpldoc.nodoc
+  param _MINYEAR = 1;
+  @chpldoc.nodoc
+  param _MAXYEAR = 9999;
 
   private const DAYS_IN_MONTH = (-1, 31, 28, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31);
   private const DAYS_BEFORE_MONTH = init_days_before_month();
@@ -142,7 +202,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     if CHPL_TARGET_PLATFORM == "darwin" then
       return c_ptr(c_char); // char *
     else
-      return c_string; // const char *
+      return c_ptrConst(c_char); // const char *
   }
 
   /* Get the `time` since Unix Epoch in seconds
@@ -254,7 +314,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return true if `year` is a leap year */
-  proc isLeapYear(year: int) {
+  proc isLeapYear(year: int) : bool {
     return (year % 4 == 0) && ((year % 100 != 0) || (year % 400 == 0));
   }
 
@@ -263,7 +323,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
      :throws IllegalArgumentError: Thrown if `month` is out of range.
 */
-  proc daysInMonth(year: int, month: int) throws {
+  proc daysInMonth(year: int, month: int) : int throws {
     if month < 1 || month > 12 then
       throw new owned IllegalArgumentError("month must be between 1 and 12");
     if month == 2 && isLeapYear(year) then
@@ -273,36 +333,36 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
 /* A record representing a date */
-  record date {
+  record date : serializable {
     var chpl_year, chpl_month, chpl_day: int;
 
     /* The year represented by this `date` value */
-    proc year {
+    proc year : int {
       return chpl_year;
     }
 
     /* The month represented by this `date` value */
-    proc month {
+    proc month : int {
       return chpl_month;
     }
 
     /* The day represented by this `date` value */
-    proc day {
+    proc day : int {
       return chpl_day;
     }
 
     /* The minimum representable `date` */
-    proc type min {
-      return new date(MINYEAR, 1, 1);
+    proc type min : date {
+      return new date(_MINYEAR, 1, 1);
     }
 
     /* The maximum representable `date` */
-    proc type max {
-      return new date(MAXYEAR, 12, 31);
+    proc type max : date {
+      return new date(_MAXYEAR, 12, 31);
     }
 
     /* The minimum non-zero difference between two dates */
-    proc type resolution {
+    proc type resolution : timeDelta {
       return new timeDelta(days=1);
     }
   }
@@ -311,6 +371,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* initializers/factories for date values */
 
   @chpldoc.nodoc
+  @unstable("initializing a 'date' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'date' sentinel value in the future")
   proc date.init() {
   }
 
@@ -325,7 +386,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      1 <= `day` <= the number of days in the given month and year
   */
   proc date.init(year: int, month: int, day: int) {
-    if year < MINYEAR-1 || year > MAXYEAR+1 then
+    if year < _MINYEAR-1 || year > _MAXYEAR+1 then
       HaltWrappers.initHalt("year is out of the valid range");
     if month < 1 || month > 12 then
       HaltWrappers.initHalt("month is out of the valid range");
@@ -338,8 +399,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     this.chpl_day = day;
   }
 
-  /* A `date` object representing the current day */
-  proc type date.today() {
+  /* A `date` object representing the current day, using naive local time */
+  proc type date.today() : date {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timeDelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
@@ -347,13 +408,25 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return unixEpoch.getDate() + td;
   }
 
-  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'date.createFromTimestamp' instead")
-  proc type date.fromTimestamp(timestamp) {
+  /* A `date` object representing the current day, using naive UTC time */
+  proc type date.utcToday() : date {
+    var now = chpl_now_timevalue();
+
+    var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
+
+    chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
+
+    return new date(year + 1900, month + 1, mday);
+  }
+
+  @deprecated(notes="'date.fromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
+  proc type date.fromTimestamp(timestamp) : date {
     return date.createFromTimestamp(timestamp);
   }
 
   /* The date that is `timestamp` seconds from the epoch */
-  proc type date.createFromTimestamp(timestamp: real) {
+  @deprecated(notes="'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead")
+  proc type date.createFromTimestamp(timestamp: real) : date {
     const sec = timestamp: int;
     const us = ((timestamp-sec) * 1000000 + 0.5): int;
     const td = new timeDelta(seconds=sec, microseconds=us);
@@ -361,12 +434,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @deprecated(notes="'date.fromOrdinal' is deprecated, please use 'date.createFromOrdinal' instead")
-  proc type date.fromOrdinal(ord) {
+  proc type date.fromOrdinal(ord) : date {
     return date.createFromOrdinal(ord);
   }
 
   /* The `date` that is `ordinal` days from 1-1-0001 */
-  proc type date.createFromOrdinal(ordinal: int) {
+  proc type date.createFromOrdinal(ordinal: int) : date {
     if ordinal < 0 || ordinal > 1+date.max.toOrdinal() then
       halt("ordinal (", ordinal, ") out of range");
     const (y,m,d) = ordToYmd(ordinal);
@@ -375,18 +448,19 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Methods on date values */
 
-  /* Replace the `year`, `month` and/or `day` in a date to create a
-     new `date` */
-  proc date.replace(year=0, month=0, day=0) {
-    const newYear = if year > 0 then year else this.year;
-    const newMonth = if month > 0 then month else this.month;
-    const newDay = if day > 0 then day else this.day;
+  /* Get a new `date` based on this one, optionally with the `year`, `month`
+     and/or `day` replaced.
+  */
+  proc date.replace(year=-1, month=-1, day=-1) : date {
+    const newYear = if year != -1 then year else this.year;
+    const newMonth = if month != -1 then month else this.month;
+    const newDay = if day != -1 then day else this.day;
     return new date(newYear, newMonth, newDay);
   }
 
   /* Return a filled record matching the C `struct tm` type for the given date */
   @unstable("'date.timetuple' is unstable")
-  proc date.timetuple() {
+  proc date.timetuple() : tm {
     var timeStruct: tm;
 
     timeStruct.tm_hour = 0;
@@ -396,38 +470,48 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = weekday(): int(32);
+    timeStruct.tm_wday = this._old_weekday(): int(32);
     timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
     timeStruct.tm_isdst = (-1): int(32);
     return timeStruct;
   }
 
   /* Return the number of days since 1-1-0001 this `date` represents */
-  proc date.toOrdinal() {
+  proc date.toOrdinal() : int {
     return ymdToOrd(year, month, day);
   }
 
-  /* Return the day of the week as a `dayOfWeek`.
-     `Monday` == 0, `Sunday` == 6
+  /* Return the day of the week.
    */
-  proc date.weekday() {
+  proc date.weekday() : dayOfWeek where cIsoDayOfWeek {
     // January 1 0001 is a Monday
-    return try! ((toOrdinal() + 6) % 7): dayOfWeek;
+    return try! (((toOrdinal() + 6) % 7) + 1): dayOfWeek;
+  }
+  @deprecated(notes="The version of 'date.weekday' returning a :enum:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
+  proc date.weekday() : dayOfWeek where !cIsoDayOfWeek {
+    return try! this._old_weekday():int:dayOfWeek;
+  }
+  @chpldoc.nodoc
+  proc date._old_weekday() : _old_dayOfWeek {
+    // January 1 0001 is a Monday
+    return try! (((toOrdinal() + 6) % 7)):_old_dayOfWeek;
   }
 
   /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7 */
-  proc date.isoWeekday() {
-    return try! (weekday(): int + 1): isoDayOfWeek;
+  @deprecated(notes="'date.isoWeekday' is deprecated; use :proc:`date.weekday` instead")
+  proc date.isoWeekday() : isoDayOfWeek {
+    var offsetForIso = (if cIsoDayOfWeek then 0 else 1);
+    return try! (weekday(): int + offsetForIso): isoDayOfWeek;
   }
 
-  /* Return the ISO date as a tuple containing the ISO year, ISO week number,
-     and ISO day of the week
+  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
+     ISO week number, and ISO weekday number.
    */
-  proc date.isoCalendar() {
+  proc date.isoWeekDate() : (int, int, int) {
     proc findThursday(d: date) {
-      var wd = d.weekday();
-      return d + new timeDelta(days = (dayOfWeek.Thursday:int - wd:int));
+      var wd = d._old_weekday();
+      return d + new timeDelta(days = (_old_dayOfWeek.Thursday:int - wd:int));
     }
 
     proc findyear(d: date) {
@@ -447,33 +531,49 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     const firstDay = findFirstDayOfYear(y);
     const delta = this - firstDay;
 
-    return (y, 1+delta.days/7, isoWeekday(): int);
+    return (y, 1+delta.days/7, (_old_weekday(): int) + 1);
   }
 
-  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
-  proc date.isoFormat() {
-    var yearstr = year: string;
-    var monthstr = month: string;
-    var daystr = day: string;
+  /* Return the ISO week date as a tuple containing the ISO week-numbering year,
+     ISO week number, and ISO weekday number.
+   */
+  @deprecated(notes="`date.isoCalendar` is deprecated; use :proc:`date.isoWeekDate` instead")
+  proc date.isoCalendar() : (int, int, int) {
+    return this.isoWeekDate();
+  }
 
-    if year < 10 then
+  /* Get a `string` representation of this `date` in ISO format
+     ``YYYY-MM-DD``.
+  */
+  operator date.:(x: date, type t: string) {
+    var yearstr = x.year: string;
+    var monthstr = x.month: string;
+    var daystr = x.day: string;
+
+    if x.year < 10 then
       yearstr = "000" + yearstr;
-    else if year < 100 then
+    else if x.year < 100 then
       yearstr = "00" + yearstr;
-    else if year < 1000 then
+    else if x.year < 1000 then
       yearstr = "0" + yearstr;
 
-    if month < 10 then
+    if x.month < 10 then
       monthstr = "0" + monthstr;
-    if day < 10 then
+    if x.day < 10 then
       daystr = "0" + daystr;
 
     return yearstr + "-" + monthstr + "-" + daystr;
   }
 
+  /* Return the date as a `string` in ISO 8601 format: "YYYY-MM-DD" */
+  @deprecated(notes="`date.isoFormat` is deprecated; use cast to string instead")
+  proc date.isoFormat() : string {
+    return this:string;
+  }
+
   /* Return a `string` representing the date */
   @unstable("'date.ctime' is unstable")
-  proc date.ctime() {
+  proc date.ctime() : string {
     const month = strftime("%b");
     const wday = strftime("%a");
 
@@ -484,8 +584,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return a formatted `string` matching the `format` argument and the date */
   @unstable("'date.strftime' is unstable")
-  proc date.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+  proc date.strftime(fmt: string) : string {
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -500,13 +600,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (_old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this - new date(year, 1, 1)).days: int(32);
 
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
     return str;
   }
@@ -519,14 +619,19 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   @chpldoc.nodoc
   proc date._chpldoc_workaround() { }
 
-  /* Writes this `date` in ISO 8601 format: YYYY-MM-DD */
+  @chpldoc.nodoc
   proc date.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
+  }
+
+  /* Writes this `date` formatted as ``YYYY-MM-DD`` */
+  proc date.serialize(writer, ref serializer) throws {
+    writeThis(writer);
   }
 
   // Exists to support some common functionality for `dateTime.readThis`
   @chpldoc.nodoc
-  proc date._readCore(f) throws {
+  proc ref date._readCore(f) throws {
     const dash = "-";
 
     chpl_year = f.read(int);
@@ -536,11 +641,14 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     chpl_day = f.read(int);
   }
 
-  /* Reads this `date` from ISO 8601 format: YYYY-MM-DD */
-  proc date.readThis(f) throws {
-    const binary = f.binary(),
+  @chpldoc.nodoc
+  proc ref date.readThis(f) throws {
+    import JSON.jsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = (arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary) ||
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -549,6 +657,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `date` with the same format used by :proc:`date.serialize` */
+  proc ref date.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -582,53 +695,54 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator date.<(d1: date, d2: date) {
+  operator date.<(d1: date, d2: date) : bool {
     return d1.toOrdinal() < d2.toOrdinal();
   }
 
   @chpldoc.nodoc
-  operator date.<=(d1: date, d2: date) {
+  operator date.<=(d1: date, d2: date) : bool {
     return d1.toOrdinal() <= d2.toOrdinal();
   }
 
   @chpldoc.nodoc
-  operator date.>(d1: date, d2: date) {
+  operator date.>(d1: date, d2: date) : bool {
     return d1.toOrdinal() > d2.toOrdinal();
   }
 
   @chpldoc.nodoc
-  operator date.>=(d1: date, d2: date) {
+  operator date.>=(d1: date, d2: date) : bool {
     return d1.toOrdinal() >= d2.toOrdinal();
   }
 
 
   /* A record representing a time */
-  record time {
+  record time : serializable {
     var chpl_hour, chpl_minute, chpl_second, chpl_microsecond: int;
     var chpl_tz: shared Timezone?;
 
     /* The hour represented by this `time` value */
-    proc hour {
+    proc hour : int {
       return chpl_hour;
     }
 
     /* The minute represented by this `time` value */
-    proc minute {
+    proc minute : int {
       return chpl_minute;
     }
 
     /* The second represented by this `time` value */
-    proc second {
+    proc second : int {
       return chpl_second;
     }
 
     /* The microsecond represented by this `time` value */
-    proc microsecond {
+    proc microsecond : int {
       return chpl_microsecond;
     }
 
     /* The timezone represented by this `time` value */
-    proc timezone {
+    @unstable("timezone is unstable")
+    proc timezone : shared Timezone? {
       return chpl_tz;
     }
 
@@ -639,17 +753,17 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
 
     /* The minimum representable `time` */
-    proc type min {
+    proc type min : time {
       return new time();
     }
 
     /* The maximum representable `time` */
-    proc type max {
+    proc type max : time {
       return new time(23, 59, 59, 999999);
     }
 
     /* The minimum non-zero difference between two times */
-    proc type resolution {
+    proc type resolution : timeDelta {
       return new timeDelta(microseconds=1);
     }
   }
@@ -706,10 +820,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Methods on time values */
 
-  /* Replace the `hour`, `minute`, `second`, `microsecond` in a
-     `time` to create a new `time`. All arguments are optional.
-   */
-  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) {
+  /* Get a new `time` based on this one, optionally with the `hour` `minute`,
+     `second`, and/or `microsecond` replaced.
+  */
+  proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1) : time {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -718,12 +832,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return new time(newhour, newminute, newsecond, newmicrosecond);
   }
 
-  /* Replace the `hour`, `minute`, `second`, `microsecond` and `tz` in a
-     `time` to create a new `time`. All arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `hour` `minute`,
+     `second`, `microsecond` and/or `tz` replaced.
+  */
   @unstable("tz is unstable; its type may change in the future")
   proc time.replace(hour=-1, minute=-1, second=-1, microsecond=-1,
-                    in tz) {
+                    in tz) : time {
     const newhour = if hour != -1 then hour else this.hour;
     const newminute = if minute != -1 then minute else this.minute;
     const newsecond = if second != -1 then second else this.second;
@@ -732,8 +846,10 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return new time(newhour, newminute, newsecond, newmicrosecond, tz);
   }
 
-  /* Return a `string` representing the `time` in ISO format */
-  proc time.isoFormat() {
+  /* Get a `string` representation of this `time` in ISO format
+     ``hh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is specified.
+  */
+  operator time.:(x: time, type t: string) {
     proc makeNDigits(n, d) {
       var ret = d: string;
       while ret.size < n {
@@ -742,15 +858,15 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       return ret;
     }
 
-    var ret = makeNDigits(2, hour) + ":" +
-              makeNDigits(2, minute) + ":" +
-              makeNDigits(2, second);
+    var ret = makeNDigits(2, x.hour) + ":" +
+              makeNDigits(2, x.minute) + ":" +
+              makeNDigits(2, x.second);
 
-    if microsecond != 0 {
-      ret = ret + "." + makeNDigits(6, microsecond);
+    if x.microsecond != 0 {
+      ret = ret + "." + makeNDigits(6, x.microsecond);
     }
-    var offset = utcOffset();
-    if timezone.borrow() != nil {
+    var offset = x.utcOffset();
+    if x.timezone.borrow() != nil {
       var sign: string;
       if offset.days < 0 {
         offset = -offset;
@@ -764,8 +880,14 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     return ret;
   }
 
+  @deprecated(notes="`time.isoFormat` is deprecated; use cast to string instead")
+  proc time.isoFormat() : string {
+    return this:string;
+  }
+
   /* Return the offset from UTC */
-  proc time.utcOffset() {
+  @unstable("'utcOffset' is unstable")
+  proc time.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
     } else {
@@ -774,7 +896,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the daylight saving time offset */
-  proc time.dst() {
+  @unstable("'dst' is unstable")
+  proc time.dst() : timeDelta {
     if timezone.borrow() == nil {
       return new timeDelta();
     } else {
@@ -784,7 +907,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the name of the timezone for this `time` value */
   @unstable("'tzname' is unstable")
-  proc time.tzname() {
+  proc time.tzname() : string {
     if timezone.borrow() == nil then
       return "";
     else
@@ -793,8 +916,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return a `string` matching the `format` argument for this `time` */
   @unstable("'time.strftime' is unstable")
-  proc time.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+  proc time.strftime(fmt: string) : string {
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -806,11 +929,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_mday = 1;
     timeStruct.tm_mon = 1;
 
-    timeStruct.tm_wday = ((new date(1900, 1, 1)).weekday():int(32) + 1) % 7;
+    timeStruct.tm_wday = ((new date(1900, 1, 1))._old_weekday():int(32) + 1) % 7;
     timeStruct.tm_yday = 0;
 
     if timezone.borrow() != nil {
-      timeStruct.tm_gmtoff = abs(utcOffset()).seconds: c_long;
+      timeStruct.tm_gmtoff = utcOffset().abs().seconds: c_long;
       timeStruct.tm_zone = __primitive("cast", tm_zoneType, tzname().c_str());
       timeStruct.tm_isdst = dst().seconds: int(32);
     } else {
@@ -822,20 +945,27 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     strftime(c_ptrTo(buf), bufLen, fmt.c_str(), timeStruct);
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;
   }
 
-  /* Writes this `time` in ISO format: hh:mm:ss.sss */
+  @chpldoc.nodoc
   proc time.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
   }
 
-  // Exists to support some common functionality for `dateTime.readThis`
+  /* Writes this `time` formatted as  ``hh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+   */
+  proc time.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
+  // Exists to support some common functionality for `dateTime.deserialize`
   @chpldoc.nodoc
-  proc time._readCore(f) throws {
+  proc ref time._readCore(f) throws {
     const colon = ":";
 
     chpl_hour = f.read(int);
@@ -847,11 +977,14 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     chpl_microsecond = f.read(int);
   }
 
-  /* Reads this `time` from ISO format: hh:mm:ss.sss */
-  proc time.readThis(f) throws {
-    const binary = f.binary(),
+  @chpldoc.nodoc
+  proc ref time.readThis(f) throws {
+    import JSON.jsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary  ||
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -860,6 +993,11 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `time` with the same format used by :proc:`time.serialize` */
+  proc ref time.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -876,13 +1014,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   @chpldoc.nodoc
   operator time.==(t1: time, t2: time): bool {
-    var dt1 = dateTime.combine(d=new date(2000, 1, 1), t=t1);
-    var dt2 = dateTime.combine(d=new date(2000, 1, 1), t=t2);
+    var dt1 = new dateTime(d=new date(2000, 1, 1), t=t1);
+    var dt2 = new dateTime(d=new date(2000, 1, 1), t=t2);
     return dt1 == dt2;
   }
 
   @chpldoc.nodoc
-  operator time.!=(t1: time, t2: time) {
+  operator time.!=(t1: time, t2: time) : bool {
     return !(t1 == t2);
   }
 
@@ -916,8 +1054,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       //
       // This compares the time on a specific date, and factors in the
       // time zones.
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 < dt2;
       //return (t1.replace(tz=nil) - t1.utcOffset()) <
       //       (t2.replace(tz=nil) - t2.utcOffset());
@@ -941,8 +1079,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 <= dt2;
     }
   }
@@ -964,8 +1102,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 > dt2;
     }
   }
@@ -987,8 +1125,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       else
         return false;
     } else {
-      const dt1 = dateTime.combine(new date(1900, 1, 1), t1);
-      const dt2 = dateTime.combine(new date(1900, 1, 1), t2);
+      const dt1 = new dateTime(new date(1900, 1, 1), t1);
+      const dt2 = new dateTime(new date(1900, 1, 1), t2);
       return dt1 >= dt2;
     }
   }
@@ -997,62 +1135,63 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   type datetime = dateTime;
 
   /* A record representing a combined `date` and `time` */
-  record dateTime {
+  record dateTime : serializable {
     var chpl_date: date;
     var chpl_time: time;
 
     /* The minimum representable `date` and `time` */
-    proc type min {
-      return this.combine(date.min, time.min);
+    proc type min : dateTime {
+      return new dateTime(date.min, time.min);
     }
 
     /* The maximum representable `date` and `time` */
-    proc type max {
-      return this.combine(date.max, time.max);
+    proc type max : dateTime {
+      return new dateTime(date.max, time.max);
     }
 
     /* The minimum non-zero difference between two dateTimes */
-    proc type resolution {
+    proc type resolution : timeDelta {
       return new timeDelta(microseconds=1);
     }
 
     /* The year represented by this `dateTime` value */
-    proc year {
+    proc year : int {
       return chpl_date.year;
     }
 
     /* The month represented by this `dateTime` value */
-    proc month {
+    proc month : int {
       return chpl_date.month;
     }
 
     /* The day represented by this `dateTime` value */
-    proc day {
+    proc day : int {
       return chpl_date.day;
     }
 
     /* The hour represented by this `dateTime` value */
-    proc hour {
+    proc hour : int {
       return chpl_time.hour;
     }
 
     /* The minute represented by this `dateTime` value */
-    proc minute {
+    proc minute : int {
       return chpl_time.minute;
     }
 
     /* The second represented by this `dateTime` value */
-    proc second {
+    proc second : int {
       return chpl_time.second;
     }
 
     /* The microsecond represented by this `dateTime` value */
-    proc microsecond {
+    proc microsecond : int {
       return chpl_time.microsecond;
     }
 
     /* The timezone represented by this `dateTime` value */
-    proc timezone {
+    @unstable("timezone is unstable")
+    proc timezone : shared Timezone? {
       return chpl_time.timezone;
     }
 
@@ -1066,6 +1205,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* initializers/factories for dateTime values */
 
   @chpldoc.nodoc
+  @unstable("initializing a 'dateTime' without arguments is unstable; it may become illegal or be replaced with a specific uninitialized 'dateTime' sentinel value in the future")
   proc dateTime.init() {
   }
 
@@ -1082,7 +1222,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Initialize a new `dateTime` value from the given `year`, `month`, `day`,
-     `hour`, `minute`, `second`, `microsecond` and timezone.  The `year`,
+     `hour`, `minute`, `second`, and `microsecond`.  The `year`,
      `month`, and `day` arguments are required, the rest are optional.
    */
   proc dateTime.init(year:int, month:int, day:int,
@@ -1092,13 +1232,15 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Initialize a new `dateTime` value from the given `date` and `time` */
-  proc dateTime.init(d: date, t: time) {
+  proc dateTime.init(d: date, t: time = new time()) {
     chpl_date = d;
     chpl_time = t;
   }
 
-  /* Return a `dateTime` value representing the current time and date */
-  proc type dateTime.now() {
+  /* Return a `dateTime` value representing the current time and date,
+     in naive local time.
+  */
+  proc type dateTime.now() : dateTime {
     const timeSinceEpoch = getTimeOfDay();
     const lt = getLocalTime(timeSinceEpoch);
     return new dateTime(year=lt.tm_year+1900, month=lt.tm_mon+1,
@@ -1108,7 +1250,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `dateTime` value representing the current time and date */
-  proc type dateTime.now(in tz: shared Timezone?) {
+  @unstable("tz is unstable; its type may change in the future")
+  proc type dateTime.now(in tz: shared Timezone?) : dateTime {
     if tz.borrow() == nil {
       const timeSinceEpoch = getTimeOfDay();
       const lt = getLocalTime(timeSinceEpoch);
@@ -1127,7 +1270,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return a `dateTime` value representing the current time and date in UTC */
-  proc type dateTime.utcNow() {
+  proc type dateTime.utcNow() : dateTime {
     const timeSinceEpoch = getTimeOfDay();
     const td = new timeDelta(seconds=timeSinceEpoch(0),
                              microseconds=timeSinceEpoch(1));
@@ -1135,25 +1278,27 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
-  proc type dateTime.fromTimestamp(timestamp: real) {
+  proc type dateTime.fromTimestamp(timestamp: real) : dateTime {
     return dateTime.createFromTimestamp(timestamp, nil);
   }
 
   @deprecated(notes="'dateTime.fromTimestamp' is deprecated, please use 'dateTime.createFromTimestamp' instead")
   proc type dateTime.fromTimestamp(timestamp: real,
-                                   in tz: shared Timezone?) {
+                                   in tz: shared Timezone?) : dateTime {
     return dateTime.createFromTimestamp(timestamp, tz);
   }
 
-  /* The `dateTime` that is `timestamp` seconds from the epoch */
-  proc type dateTime.createFromTimestamp(timestamp: real) {
+  /* The `dateTime` that is `timestamp` seconds from the epoch,
+     in naive local time.
+  */
+  proc type dateTime.createFromTimestamp(timestamp: real) : dateTime {
     return dateTime.createFromTimestamp(timestamp, nil);
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch */
   @unstable("tz is unstable; its type may change in the future")
   proc type dateTime.createFromTimestamp(timestamp: real,
-                                   in tz: shared Timezone?) {
+                                   in tz: shared Timezone?) : dateTime {
     if tz.borrow() == nil {
       var t = (timestamp: int, ((timestamp - timestamp: int)*1000000): int);
       const lt = getLocalTime(t);
@@ -1168,45 +1313,46 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @deprecated(notes="'dateTime.utcFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp' instead")
-  proc type dateTime.utcFromTimestamp(timestamp) {
+  proc type dateTime.utcFromTimestamp(timestamp) : dateTime {
     return dateTime.createUtcFromTimestamp(timestamp);
   }
 
   /* The `dateTime` that is `timestamp` seconds from the epoch in UTC */
-  proc type dateTime.createUtcFromTimestamp(timestamp) {
+  proc type dateTime.createUtcFromTimestamp(timestamp) : dateTime {
     return unixEpoch + new timeDelta(seconds=timestamp: int, microseconds=((timestamp-timestamp: int)*1000000): int);
   }
 
-  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'dateTime.createFromOrdinal' instead")
-  proc type dateTime.fromOrdinal(ordinal) {
+  @deprecated(notes="'dateTime.fromOrdinal' is deprecated, please use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
+  proc type dateTime.fromOrdinal(ordinal) : dateTime {
     return dateTime.createFromOrdinal(ordinal);
   }
 
   /* The `dateTime` that is `ordinal` days from 1-1-0001 */
-  proc type dateTime.createFromOrdinal(ordinal: int) {
-    return dateTime.combine(date.createFromOrdinal(ordinal), new time());
+  @deprecated(notes="'dateTime.createFromOrdinal' is deprecated; use 'new dateTime(date.createFromOrdinal(ordinal))' instead")
+  proc type dateTime.createFromOrdinal(ordinal: int) : dateTime {
+    return new dateTime(date.createFromOrdinal(ordinal));
   }
 
   /* Form a `dateTime` value from a given `date` and `time` */
-  proc type dateTime.combine(d: date, t: time) {
-    return new dateTime(d.year, d.month, d.day,
-                        t.hour, t.minute, t.second, t.microsecond, t.timezone);
+  @deprecated(notes="`dateTime.combine` is deprecated; use `new dateTime` taking a `date` and `time` argument instead")
+  proc type dateTime.combine(d: date, t: time) : dateTime {
+    return new dateTime(d, t);
   }
 
   /* Methods on dateTime values */
 
   @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
-  proc dateTime.getdate() {
+  proc dateTime.getdate() : date {
     return chpl_date;
   }
 
   /* Get the `date` portion of the `dateTime` value */
-  proc dateTime.getDate() {
+  proc dateTime.getDate() : date {
     return chpl_date;
   }
 
   @deprecated(notes="'dateTime.gettime' is deprecated. Please use :proc:`dateTime.getTime` instead")
-  proc dateTime.gettime() {
+  proc dateTime.gettime() : time {
     if chpl_time.timezone.borrow() == nil then
       return chpl_time;
     else
@@ -1215,7 +1361,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Get the `time` portion of the `dateTime` value, with `tz` = nil */
-  proc dateTime.getTime() {
+  proc dateTime.getTime() : time {
     if chpl_time.timezone.borrow() == nil then
       return chpl_time;
     else
@@ -1226,31 +1372,38 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Get the `time` portion of the `dateTime` value including the
      `tz` field
    */
-  proc dateTime.timetz() {
+  @unstable("tz is unstable; its type may change in the future")
+  proc dateTime.timetz() : time {
     return chpl_time;
   }
 
-  /* Replace the `year`, `month`, `day`, `hour`, `minute`, `second`,
-     `microsecond`, or `tz` to form a new `dateTime` object. All
-     arguments are optional.
-   */
+  /* Get a new `time` based on this one, optionally with the `year`, `month`,
+     `day`, `hour` `minute`, `second`, and/or `microsecond` replaced.
+  */
+  proc dateTime.replace(year=-1, month=-1, day=-1,
+                        hour=-1, minute=-1, second=-1, microsecond=-1)
+                        : dateTime {
+    return new dateTime(
+        chpl_date.replace(year, month, day),
+        chpl_time.replace(hour, minute, second, microsecond)
+    );
+  }
+  /* Get a new `time` based on this one, optionally with the `year`, `month`,
+     `day`, `hour` `minute`, `second`, `microsecond` and/or `tz` replaced.
+  */
+  @unstable("tz is unstable; its type may change in the future")
   proc dateTime.replace(year=-1, month=-1, day=-1,
                         hour=-1, minute=-1, second=-1, microsecond=-1,
-                        in tz=this.timezone) {
-    return dateTime.combine(
-      new date(if year == -1 then this.year else year,
-               if month == -1 then this.month else month,
-               if day == -1 then this.day else day),
-      new time(if hour == -1 then this.hour else hour,
-               if minute == -1 then this.minute else minute,
-               if second == -1 then this.second else second,
-               if microsecond == -1 then this.microsecond else microsecond,
-               tz));
+                        in tz=this.timezone) : dateTime {
+    return new dateTime(
+        chpl_date.replace(year, month, day),
+        chpl_time.replace(hour, minute, second, microsecond, tz)
+    );
   }
 
   /* Return the date and time converted into the timezone in the argument */
   @unstable("tz is unstable; its type may change in the future")
-  proc dateTime.astimezone(in tz: shared Timezone) {
+  proc dateTime.astimezone(in tz: shared Timezone) : dateTime {
     if timezone == tz {
       return this;
     }
@@ -1259,7 +1412,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the offset from UTC */
-  proc dateTime.utcOffset() {
+  @unstable("'utcOffset' is unstable")
+  proc dateTime.utcOffset() : timeDelta {
     if timezone.borrow() == nil {
       halt("utcOffset called on naive dateTime");
     } else {
@@ -1267,7 +1421,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     }
   }
   /* Return the daylight saving time offset */
-  proc dateTime.dst() {
+  @unstable("'dst' is unstable")
+  proc dateTime.dst() : timeDelta {
     if timezone.borrow() == nil then
       halt("dst() called with nil timezone");
     return timezone!.dst(this);
@@ -1275,7 +1430,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Return the name of the timezone for this `dateTime` value */
   @unstable("'tzname' is unstable")
-  proc dateTime.tzname() {
+  proc dateTime.tzname() : string {
     if timezone.borrow() == nil then
       return "";
     return timezone!.tzname(this);
@@ -1284,7 +1439,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Return a filled record matching the C `struct tm` type for the given
      `dateTime` */
   @unstable("'dateTime.timetuple' is unstable")
-  proc dateTime.timetuple() {
+  proc dateTime.timetuple() : tm {
     var timeStruct: tm;
     timeStruct.tm_sec = second: int(32);
     timeStruct.tm_min = minute: int(32);
@@ -1292,8 +1447,9 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_mday = day: int(32);
     timeStruct.tm_mon = month: int(32);
     timeStruct.tm_year = year: int(32);
-    timeStruct.tm_wday = weekday(): int(32);
-    timeStruct.tm_yday = (toOrdinal() - (new date(year, 1, 1)).toOrdinal() + 1): int(32);
+    timeStruct.tm_wday = getDate()._old_weekday(): int(32);
+    timeStruct.tm_yday = (getDate().toOrdinal() -
+        (new date(year, 1, 1)).toOrdinal() + 1): int(32);
 
     if timezone.borrow() == nil {
       timeStruct.tm_isdst = -1;
@@ -1310,7 +1466,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      `dateTime` in UTC
    */
   @unstable("'dateTime.utctimetuple' is unstable")
-  proc dateTime.utctimetuple() {
+  proc dateTime.utctimetuple() : tm {
     if timezone.borrow() == nil {
       var ret = timetuple();
       ret.tm_isdst = 0;
@@ -1324,45 +1480,90 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   /* Return the number of days since 1-1-0001 this `dateTime` represents */
-  proc dateTime.toOrdinal() {
+  @deprecated(notes="`dateTime.toOrdinal` is deprecated; use `dateTime.getDate().toOrdinal()` instead")
+  proc dateTime.toOrdinal() : int {
     return getDate().toOrdinal();
   }
 
-  /* Return the day of the week as a `dayOfWeek`.
-     `Monday` == 0, `Sunday` == 6
+  /* Return the day of the week.
    */
-  proc dateTime.weekday() {
+  @deprecated(notes="`dateTime.weekday` is deprecated; use `dateTime.getDate().weekday()` instead")
+  proc dateTime.weekday() : dayOfWeek where cIsoDayOfWeek {
+    return getDate().weekday();
+  }
+  @deprecated(notes="The version of 'dateTime.weekday' returning a :type:`dayOfWeek` starting with `Monday = 0` is deprecated. Recompile with ``-sCIsoDayOfWeek=true`` to opt in to the new behavior of `Monday = 1`")
+  proc dateTime.weekday() : dayOfWeek where !cIsoDayOfWeek {
     return getDate().weekday();
   }
 
   /* Return the day of the week as an `isoDayOfWeek`.
      `Monday` == 1, `Sunday` == 7
    */
-  proc dateTime.isoWeekday() {
+  @deprecated(notes="`dateTime.isoWeekday` is deprecated; use `dateTime.getDate().weekday()` instead")
+  proc dateTime.isoWeekday() : isoDayOfWeek {
     return getDate().isoWeekday();
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="'isoweekday' is deprecated, please use 'isoWeekday' instead")
-  proc dateTime.isoweekday() {
+  @deprecated(notes="`dateTime.isoweekday` is deprecated, please use `dateTime.getDate().weekday()` instead")
+  proc dateTime.isoweekday() : isoDayOfWeek {
     return isoWeekday();
   }
 
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
-  proc dateTime.isoCalendar() {
+  @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
+  proc dateTime.isoCalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
 
   @chpldoc.nodoc
-  @deprecated(notes="'isocalendar' is deprecated, please use 'isoCalendar' instead")
-  proc dateTime.isocalendar() {
+  @deprecated(notes="`dateTime.isocalendar` is deprecated, please use `dateTime.getDate().isoWeekDate()` instead")
+  proc dateTime.isocalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
 
+  /* Get a `string` representation of this `dateTime` in ISO format
+     ``YYYY-MM-DDThh:mm:ss.ssssss``, followed by ``±hh:mm`` if a timezone is
+     specified
+  */
+  operator dateTime.:(x: dateTime, type t: string) {
+    proc zeroPad(nDigits: int, i: int) {
+      var numStr = i: string;
+      for i in 1..nDigits-numStr.size {
+        numStr = "0" + numStr;
+      }
+      return numStr;
+    }
+    var micro = if x.microsecond > 0 then "." + zeroPad(6, x.microsecond) else "";
+    var offset: string;
+    if x.timezone.borrow() != nil {
+      var utcoff = x.utcOffset();
+      var sign: string;
+      if utcoff < new timeDelta(0) {
+        sign = '-';
+        utcoff = utcoff.abs();
+      } else {
+        sign = '+';
+      }
+      var hours = utcoff.seconds / (60*60);
+      var minutes = (utcoff.seconds % (60*60)) / 60;
+      offset = sign +
+               (if hours < 10 then "0" + hours: string else hours: string) +
+               ":" +
+               (if minutes < 10 then "0" + minutes: string else minutes: string);
+    }
+
+    // on our Linux64 systems, the "%Y" format doesn't zero-pad to 4
+    // characters on its own, so do it manually.
+    var year = zeroPad(4, try! x.strftime("%Y"):int);
+    return x.strftime(year + "-%m-%d" + "T" + "%H:%M:%S" + micro + offset);
+  }
+
   /* Return the `dateTime` as a `string` in ISO format */
-  proc dateTime.isoFormat(sep="T") {
+  @deprecated(notes="`dateTime.isoFormat` is deprecated; use cast to string instead")
+  proc dateTime.isoFormat(sep="T") : string {
     proc zeroPad(nDigits: int, i: int) {
       var numStr = i: string;
       for i in 1..nDigits-numStr.size {
@@ -1377,7 +1578,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       var sign: string;
       if utcoff < new timeDelta(0) {
         sign = '-';
-        utcoff = abs(utcoff);
+        utcoff = utcoff.abs();
       } else {
         sign = '+';
       }
@@ -1400,8 +1601,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      the format strings of C's strptime().
   */
   @unstable("'dateTime.strptime' is unstable")
-  proc type dateTime.strptime(date_string: string, format: string) {
-    extern proc strptime(buf: c_string, format: c_string, ref ts: tm);
+  proc type dateTime.strptime(date_string: string, format: string) :dateTime {
+    extern proc strptime(buf: c_ptrConst(c_char), format: c_ptrConst(c_char), ref ts: tm);
     var timeStruct: tm;
     strptime(date_string.c_str(), format.c_str(), timeStruct);
     return new dateTime(timeStruct.tm_year + 1900,
@@ -1414,8 +1615,8 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
   /* Create a `string` from a `dateTime` matching the `format` string */
   @unstable("'dateTime.strftime' is unstable")
-  proc dateTime.strftime(fmt: string) {
-    extern proc strftime(s: c_void_ptr, size: c_size_t, format: c_string, ref timeStruct: tm);
+  proc dateTime.strftime(fmt: string) : string {
+    extern proc strftime(s: c_ptr(void), size: c_size_t, format: c_ptrConst(c_char), ref timeStruct: tm);
     const bufLen: c_size_t = 100;
     var buf: [1..bufLen] c_char;
     var timeStruct: tm;
@@ -1437,7 +1638,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     timeStruct.tm_year = (year-1900): int(32); // 1900 based
     timeStruct.tm_mon = (month-1): int(32);    // 0 based
     timeStruct.tm_mday = day: int(32);
-    timeStruct.tm_wday = (weekday(): int(32) + 1) % 7; // shift Sunday to 0
+    timeStruct.tm_wday = (this.getDate()._old_weekday(): int(32) + 1) % 7; // shift Sunday to 0
     timeStruct.tm_yday = (this.replace(tz=nil) - new dateTime(year, 1, 1)).days: int(32);
 
     // Iterate over format specifiers in strftime(), replacing %f with microseconds
@@ -1477,7 +1678,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     var str: string;
     try! {
-      str = string.createCopyingBuffer(c_ptrTo(buf):c_string);
+      str = string.createCopyingBuffer(c_ptrTo(buf));
     }
 
     return str;
@@ -1487,20 +1688,30 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
      Wed Dec  4 20:30:40 2002
   */
   @unstable("'dateTime.ctime' is unstable")
-  proc dateTime.ctime() {
+  proc dateTime.ctime() : string {
     return this.strftime("%a %b %e %T %Y");
   }
 
-  /* Writes this `dateTime` in ISO format: YYYY-MM-DDThh:mm:ss.sss */
+  @chpldoc.nodoc
   proc dateTime.writeThis(f) throws {
-    f.write(isoFormat());
+    f.write(this:string);
   }
 
-  /* Reads this `dateTime` from ISO format: YYYY-MM-DDThh:mm:ss.sss */
-  proc dateTime.readThis(f) throws {
-    const binary = f.binary(),
+  /* Writes this `dateTime` formatted as ``YYYY-MM-DDThh:mm:ss.ssssss``,
+     followed by ``±hh:mm`` if a timezone is specified
+  */
+  proc dateTime.serialize(writer, ref serializer) throws {
+    writeThis(writer);
+  }
+
+  @chpldoc.nodoc
+  proc ref dateTime.readThis(f) throws {
+    import JSON.jsonDeserializer;
+
+    const binary = f._binary(),
           arrayStyle = f.styleElement(QIO_STYLE_ELEMENT_ARRAY),
-          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary;
+          isjson = arrayStyle == QIO_ARRAY_FORMAT_JSON && !binary ||
+            isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
       f._readLiteral('"');
@@ -1511,6 +1722,13 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
 
     if isjson then
       f._readLiteral('"');
+  }
+
+  /* Reads this `dateTime` with the same format used by
+     :proc:`dateTime.serialize`
+   */
+  proc ref dateTime.deserialize(reader, ref deserializer) throws {
+    readThis(reader);
   }
 
   //
@@ -1528,7 +1746,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Operators on dateTime values */
 
   @chpldoc.nodoc
-  operator dateTime.+(td: timeDelta, dt: dateTime) {
+  operator dateTime.+(td: timeDelta, dt: dateTime) : dateTime {
     var newmicro = dt.microsecond + td.microseconds;
     var newsec = dt.second + td.seconds;
     var newmin = dt.minute;
@@ -1547,7 +1765,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     var adddays = td.days + newhour / 24;
     newhour %= 24;
 
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
+    return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()+adddays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1555,12 +1773,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator dateTime.+(dt: dateTime, td: timeDelta) {
+  operator dateTime.+(dt: dateTime, td: timeDelta) : dateTime {
     return td + dt;
   }
 
   @chpldoc.nodoc
-  operator dateTime.-(dt: dateTime, td: timeDelta) {
+  operator dateTime.-(dt: dateTime, td: timeDelta) : dateTime {
     var deltasec  = td.seconds % 60;
     var deltamin  = (td.seconds / 60) % 60;
     var deltahour = td.seconds / (60*60);
@@ -1588,7 +1806,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
       subDays += 1;
       newhour += 24;
     }
-    return dateTime.combine(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
+    return new dateTime(date.createFromOrdinal(dt.getDate().toOrdinal()-subDays),
                             new time(hour=newhour, minute=newmin,
                                      second=newsec, microsecond=newmicro,
                                      tz=dt.timezone));
@@ -1605,7 +1823,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
             newsec = dt1.second - dt2.second,
             newmin = dt1.minute - dt2.minute,
             newhour = dt1.hour - dt2.hour,
-            newday = dt1.toOrdinal() - dt2.toOrdinal();
+            newday = dt1.getDate().toOrdinal() - dt2.getDate().toOrdinal();
       return new timeDelta(days=newday, hours=newhour, minutes=newmin,
                            seconds=newsec, microseconds=newmicro);
     } else {
@@ -1638,7 +1856,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator dateTime.!=(dt1: dateTime, dt2: dateTime) {
+  operator dateTime.!=(dt1: dateTime, dt2: dateTime) : bool {
     return !(dt1 == dt2);
   }
 
@@ -1733,27 +1951,27 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     var chpl_microseconds: int;
 
     /* The number of days this `timeDelta` represents */
-    proc days {
+    proc days : int {
       return chpl_days;
     }
 
     /* The number of seconds this `timeDelta` represents */
-    proc seconds {
+    proc seconds : int {
       return chpl_seconds;
     }
 
     /* The number of microseconds this `timeDelta` represents */
-    proc microseconds {
+    proc microseconds : int {
       return chpl_microseconds;
     }
 
     /* Return the minimum representable `timeDelta` object. */
-    proc type min {
+    proc type min : timeDelta {
       return new timeDelta(days=-999999999);
     }
 
     /* Return the maximum representable `timeDelta` object. */
-    proc type max {
+    proc type max : timeDelta {
       return new timeDelta(days=999999999, hours=23, minutes=59,
                            seconds=59, microseconds=999999);
     }
@@ -1761,7 +1979,7 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
     /* Return the smallest positive value representable by a `timeDelta`
        object.
      */
-    proc type resolution {
+    proc type resolution : timeDelta {
       return new timeDelta(microseconds=1);
     }
   }
@@ -1825,17 +2043,17 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Operators on timeDelta values */
 
   @chpldoc.nodoc
-  operator timeDelta.*(i: int, t: timeDelta) {
+  operator timeDelta.*(i: int, t: timeDelta) : timeDelta {
     return new timeDelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   @chpldoc.nodoc
-  operator timeDelta.*(t: timeDelta, i: int) {
+  operator timeDelta.*(t: timeDelta, i: int) : timeDelta {
     return new timeDelta(days=i*t.days, seconds=i*t.seconds, microseconds=i*t.microseconds);
   }
 
   @chpldoc.nodoc
-  operator timeDelta./(t: timeDelta, i: int) {
+  operator timeDelta./(t: timeDelta, i: int) : timeDelta {
     var day = t.days / i;
     var second = t.seconds + (t.days % i)*24*60*60;
     var microsecond = t.microseconds + (second % i)*1000000;
@@ -1850,31 +2068,31 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator timeDelta.+(t: timeDelta) {
+  operator timeDelta.+(t: timeDelta) : timeDelta {
     return t;
   }
 
   @chpldoc.nodoc
-  operator timeDelta.-(t: timeDelta) {
+  operator timeDelta.-(t: timeDelta) : timeDelta {
     return new timeDelta(days=-t.days, seconds=-t.seconds, microseconds=-t.microseconds);
   }
 
   @chpldoc.nodoc
-  operator timeDelta.+(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.+(lhs: timeDelta, rhs: timeDelta) : timeDelta {
     return new timeDelta(days=lhs.days+rhs.days,
                          seconds=lhs.seconds+rhs.seconds,
                          microseconds=lhs.microseconds+rhs.microseconds);
   }
 
   @chpldoc.nodoc
-  operator timeDelta.-(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.-(lhs: timeDelta, rhs: timeDelta) : timeDelta {
     return new timeDelta(days=lhs.days-rhs.days,
                          seconds=lhs.seconds-rhs.seconds,
                          microseconds=lhs.microseconds-rhs.microseconds);
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : timeDelta {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -1883,12 +2101,12 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>=(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.>=(lhs: timeDelta, rhs: timeDelta) : bool {
     return lhs > rhs || lhs == rhs;
   }
 
   @chpldoc.nodoc
-  operator timeDelta.<(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.<(lhs: timeDelta, rhs: timeDelta) : bool {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls < rs then return true;
@@ -1897,22 +2115,30 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   }
 
   @chpldoc.nodoc
-  operator timeDelta.<=(lhs: timeDelta, rhs: timeDelta) {
+  operator timeDelta.<=(lhs: timeDelta, rhs: timeDelta) : bool {
     return lhs < rhs || lhs == rhs;
+  }
+
+  /* Return the absolute value of this `timeDelta`. If is negative, then returns
+     its negation, else returns it as-is.
+   */
+  proc timeDelta.abs() : timeDelta {
+    if this.days < 0 then
+      return -this;
+    else
+      return this;
   }
 
   /* Return the absolute value of `t`.  If `t` is negative, then returns `-t`,
      else returns `t`.
    */
-  proc abs(t: timeDelta) {
-    if t.days < 0 then
-      return -t;
-    else
-      return t;
+  @deprecated(notes="`abs` as a free function is deprecated; use :proc:`timeDelta.abs` instead")
+  proc abs(t: timeDelta) : timeDelta {
+    return t.abs();
   }
 
   @chpldoc.nodoc
-  operator :(t: timeDelta, type s:string) {
+  operator :(t: timeDelta, type s:string) : string {
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";
@@ -1951,30 +2177,27 @@ enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturda
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
      derived from it. */
+  @unstable("Timezone functionality is unstable and may change in the future")
   class Timezone {
     /* The offset from UTC this class represents */
     proc utcOffset(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The `timeDelta` for daylight saving time */
     proc dst(dt: dateTime): timeDelta {
       HaltWrappers.pureVirtualMethodHalt();
-      return new timeDelta();
     }
 
     /* The name of this time zone */
     @unstable("'tzname' is unstable")
     proc tzname(dt: dateTime): string {
       HaltWrappers.pureVirtualMethodHalt();
-      return "";
     }
 
     /* Convert a `time` in UTC to this time zone */
     proc fromUtc(dt: dateTime): dateTime {
       HaltWrappers.pureVirtualMethodHalt();
-      return new dateTime(0,0,0);
     }
 
   }
@@ -1999,20 +2222,17 @@ proc getCurrentTime(unit: TimeUnits = TimeUnits.seconds) : real(64) do
    The month is in the range 1 to 12.
    The day   is in the range 1 to 31
 */
-proc getCurrentDate() {
-  var now = chpl_now_timevalue();
-
-  var seconds, minutes, hours, mday, month, year, wday, yday, isdst:int(32);
-
-  chpl_timevalue_parts(now, seconds, minutes, hours, mday, month, year, wday, yday, isdst);
-
-  return (year + 1900, month + 1, mday);
+@deprecated(notes="'getCurrentDate' is deprecated; access the individual fields of 'date.utcToday()' as needed instead, or use 'date.today()' for local wall time")
+proc getCurrentDate() : (int, int, int) {
+  var today = date.utcToday();
+  return (today.year, today.month, today.day);
 }
 
 /*
-   :returns: The current day of the week
-   :rtype:   :type:`Day`
+   :returns: The current day of the week, calculated from UTC time.
+   :rtype:   :type:`day`
  */
+@deprecated("'getCurrentDayOfWeek' is deprecated; please use 'date.utcToday().weekday()' instead, or 'date.today().weekday()' for local wall time")
 proc getCurrentDayOfWeek() : day {
   var now = chpl_now_timevalue();
 
@@ -2086,7 +2306,7 @@ record stopwatch {
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.
   */
-  proc clear() : void {
+  proc ref clear() : void {
     accumulated = 0.0;
 
     if running {
@@ -2095,7 +2315,7 @@ record stopwatch {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2105,7 +2325,7 @@ record stopwatch {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 
@@ -2117,7 +2337,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is stopped */
-  proc reset() {
+  proc ref reset() : void {
     if running {
       stop();
     }
@@ -2125,7 +2345,7 @@ record stopwatch {
   }
 
   /* Clear the elapsed time and ensure the stopwatch is running */
-  proc restart() {
+  proc ref restart() : void {
     clear();
     if !running {
       start();
@@ -2201,7 +2421,7 @@ record Timer {
   }
 
   /* Starts the timer. A warning is emitted if the timer is already running. */
-  proc start() : void {
+  proc ref start() : void {
     if !running {
       running = true;
       time    = chpl_now_timevalue();
@@ -2211,7 +2431,7 @@ record Timer {
   }
 
   /* Stops the timer. A warning is emitted if the timer is not running. */
-  proc stop() : void {
+  proc ref stop() : void {
     if running {
       var time2: _timevalue = chpl_now_timevalue();
 
@@ -2273,7 +2493,6 @@ private proc _convert_to_seconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 // converts microseconds to another unit
@@ -2288,7 +2507,6 @@ private proc _convert_microseconds(unit: TimeUnits, us: real) {
   }
 
   HaltWrappers.exhaustiveSelectHalt("unknown timeunits type");
-  return -1.0;
 }
 
 }

@@ -46,14 +46,14 @@ module Vector {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -65,7 +65,7 @@ module Vector {
                     "here: ", t:string);
     }
   }
-  record vector {
+  record vector : writeSerializable, readDeserializable {
     /* The type of the elements contained in this vector. */
     type eltType;
     /* If `true`, this vector will perform parallel safe operations. */
@@ -91,7 +91,7 @@ module Vector {
     var _data: [_domain] eltType;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     /*
       Initializes an empty list.
@@ -105,7 +105,7 @@ module Vector {
       _checkType(eltType);
       this.eltType = eltType;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
     }
 
     /*
@@ -126,7 +126,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -149,7 +149,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -167,7 +167,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -192,7 +192,7 @@ module Vector {
 
       this.eltType = t;
       this.parSafe = parSafe;
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -225,7 +225,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
     }
@@ -244,7 +244,7 @@ module Vector {
 
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -263,7 +263,7 @@ module Vector {
                       "cannot be copied");
       this.eltType = this.type.eltType;
       this.parSafe = this.type.parSafe;
-      this.complete();
+      init this;
 
       _requestCapacity(d.size);
       _commonInitFromIterable(other);
@@ -293,7 +293,7 @@ module Vector {
         compilerError(msg);
       }
 
-      this.complete();
+      init this;
 
       _requestCapacity(other.size);
       _commonInitFromIterable(other);
@@ -302,17 +302,17 @@ module Vector {
     @chpldoc.nodoc
     inline proc _enter() {
       if parSafe then
-        _lock$.lock();
+        _lock.lock();
     }
 
     @chpldoc.nodoc
     inline proc _leave() {
       if parSafe then
-        _lock$.unlock();
+        _lock.unlock();
     }
 
     @chpldoc.nodoc
-    proc _commonInitFromIterable(iterable) {
+    proc ref _commonInitFromIterable(iterable) {
       for x in iterable do {
         _append(x);
       }
@@ -943,7 +943,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _requestCapacity(newCap: int) {
+    proc ref _requestCapacity(newCap: int) {
       if (_capacity >= newCap) then return;
       if (_capacity == 0) {
         _capacity = _initialCapacity;
@@ -956,7 +956,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc _maybeDecreaseCapacity() {
+    proc ref _maybeDecreaseCapacity() {
 
       const threshold = _capacity/2;
 
@@ -1067,14 +1067,14 @@ module Vector {
 
       :yields: A reference to one of the elements contained in this vector.
     */
-    iter these() ref {
+    iter ref these() ref {
       for i in 0..#_size {
         yield _data[i];
       }
     }
 
     @chpldoc.nodoc
-    iter these(param tag: iterKind) ref where tag == iterKind.standalone {
+    iter ref these(param tag: iterKind) ref where tag == iterKind.standalone {
       const osz = _size;
       const minChunkSize = 64;
       const hasOneChunk = osz <= minChunkSize;
@@ -1082,7 +1082,7 @@ module Vector {
       const chunkSize = floor(osz / numTasks):int;
       const trailing = osz - chunkSize * numTasks;
 
-      coforall tid in 0..#numTasks {
+      coforall tid in 0..#numTasks with (ref this) {
         var chunk = _computeChunk(tid, chunkSize, trailing);
         for i in chunk(0) do
           yield this[i];
@@ -1105,7 +1105,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag) ref where tag == iterKind.leader {
+    iter ref these(param tag) ref where tag == iterKind.leader {
       const osz = _size;
       const minChunkSize = 32;
       const hasOneChunk = osz <= minChunkSize;
@@ -1121,7 +1121,7 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    iter these(param tag, followThis) ref where tag == iterKind.follower {
+    iter ref these(param tag, followThis) ref where tag == iterKind.follower {
       for i in followThis(0) do
         yield this[i];
     }
@@ -1158,16 +1158,13 @@ module Vector {
     }
 
     @chpldoc.nodoc
-    proc readThis(ch: fileReader) throws {
+    proc deserialize(reader, ref deserializer) throws {
       compilerError("Reading a Vector is not supported");
     }
 
-    /*
-      Write the contents of this vector to a fileWriter.
-
-      :arg ch: A fileWriter to write to.
-    */
-    proc writeThis(ch: fileWriter) throws {
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       _enter();
 
       ch.write("[");
@@ -1286,17 +1283,17 @@ module Vector {
   }
 
   @chpldoc.nodoc
-  operator :(rhs:list, type t: vector) {
+  operator :(rhs:list(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:[], type t: vector) {
+  operator :(rhs:[], type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }
   @chpldoc.nodoc
-  operator :(rhs:range(?), type t: vector) {
+  operator :(rhs:range(?), type t: vector(?)) {
     var tmp: t = rhs;
     return rhs;
   }

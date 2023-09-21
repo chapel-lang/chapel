@@ -247,12 +247,10 @@ static bool isNonNilableOwned(Type* t) {
 static void setRecordCopyableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
         setRecordCopyableFlags(eltTypeAt);
@@ -260,36 +258,45 @@ static void setRecordCopyableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_INIT_EQUAL_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
       }
 
     } else {
-      // Try resolving a test init= to set the flags
-      const char* err = NULL;
-      FnSymbol* initEq = findCopyInitFn(at, err);
-      if (initEq == NULL) {
-        ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-      } else if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
-      } else {
-        // formals are mt, this, other
-        ArgSymbol* other = initEq->getFormal(3);
-        IntentTag intent = concreteIntentForArg(other);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      // TODO Jade 6/27/23:
+      // special case since while implicit reads of sync/single are not yet removed
+      // with their removal, the init= that throws a warning will be gone
+      FnSymbol* initEq = NULL;
+      if(!ts->hasFlag(FLAG_SYNC) && !ts->hasFlag(FLAG_SINGLE)) {
+        // Try resolving a test init= to set the flags
+        const char* err = NULL;
+        initEq = findCopyInitFn(at, err);
+      }
+      else {
+        // sync/single variables are technically copyable until after the
+        // deprecation is removed, mark then as such
+        ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+      }
+      if (initEq != NULL) {
+        if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          // formals are mt, this, other
+          ArgSymbol* other = initEq->getFormal(3);
+          IntentTag intent = concreteIntentForArg(other);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF);
+          }
         }
       }
     }
@@ -299,12 +306,10 @@ static void setRecordCopyableFlags(AggregateType* at) {
 static void setRecordAssignableFlags(AggregateType* at) {
   TypeSymbol* ts = at->symbol;
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF) &&
-      !ts->hasFlag(FLAG_TYPE_ASSIGN_MISSING)) {
+      !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
     if (isNonNilableOwned(at)) {
-      ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-
+      // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -314,42 +319,40 @@ static void setRecordAssignableFlags(AggregateType* at) {
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF))
           at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else if (eltType->symbol->hasFlag(FLAG_TYPE_ASSIGN_MISSING))
-          at->symbol->addFlag(FLAG_TYPE_ASSIGN_MISSING);
       } else {
         at->symbol->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
       }
-
     } else {
       // Try resolving a test = to set the flags
       FnSymbol* assign = findAssignFn(at);
-      if (assign == NULL) {
-        ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-      } else if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
-        if (recordContainsNonNilableOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_MISSING);
-        else if (recordContainsOwned(at))
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
-        else
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
-      } else {
-        // formals are lhs, rhs
-        int rhsNum = 2;
-        if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
-          // Sometimes operators are defined as operator methods, in which case
-          // there are an extra two arguments and we need to adjust where we
-          // look for the rhs
-          rhsNum += 2;
-        }
-        ArgSymbol* rhs = assign->getFormal(rhsNum);
-        IntentTag intent = concreteIntentForArg(rhs);
-        if (intent == INTENT_IN ||
-            intent == INTENT_CONST_IN ||
-            intent == INTENT_CONST_REF) {
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+      if (assign != NULL) {
+
+        if (assign->hasFlag(FLAG_COMPILER_GENERATED)) {
+          if (recordContainsNonNilableOwned(at))
+            ; // do nothing for this case
+          else if (recordContainsOwned(at))
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          else
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
         } else {
-          // this case includes INTENT_REF_MAYBE_CONST
-          ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          // formals are lhs, rhs
+          int rhsNum = 2;
+          if (assign->hasFlag(FLAG_OPERATOR) && assign->hasFlag(FLAG_METHOD)) {
+            // Sometimes operators are defined as operator methods, in which case
+            // there are an extra two arguments and we need to adjust where we
+            // look for the rhs
+            rhsNum += 2;
+          }
+          ArgSymbol* rhs = assign->getFormal(rhsNum);
+          IntentTag intent = concreteIntentForArg(rhs);
+          if (intent == INTENT_IN ||
+              intent == INTENT_CONST_IN ||
+              intent == INTENT_CONST_REF) {
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_CONST);
+          } else {
+            // this case includes INTENT_REF_MAYBE_CONST
+            ts->addFlag(FLAG_TYPE_ASSIGN_FROM_REF);
+          }
         }
       }
     }
@@ -423,6 +426,27 @@ static void setRecordDefaultValueFlags(AggregateType* at) {
             }
           }
         }
+
+        // default initialization is not currently allowed
+        // for records like 'record R { var x; }'
+        if (!at->symbol->hasFlag(FLAG_TUPLE)) {
+          AggregateType* root = at->getRootInstantiation();
+          for (auto elem: sortedSymbolMapElts(at->substitutions)) {
+            const char* keyName = elem.key->name;
+
+            Symbol* field = root->getField(keyName);
+            bool hasDefault = false;
+            bool isGenericField = root->fieldIsGeneric(field, hasDefault);
+
+            if (field->isParameter() || field->hasFlag(FLAG_TYPE_VARIABLE)) {
+              // OK, it's a param or type field
+            } else if (isGenericField) {
+              failsDefaultInit = true;
+              break;
+            }
+          }
+        }
+
         if (failsDefaultInit) {
           ts->addFlag(FLAG_TYPE_NO_DEFAULT_VALUE);
           return;
@@ -523,7 +547,7 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       //
       //    manage man as res do ...;
       //
-      // It means that multiple candidates were found for 'man.enterThis()'.
+      // It means that multiple candidates were found for 'man.enterContext()'.
       // We currently don't specify a disambiguation order in this case,
       // which means we have no way to determine the storage of 'res'.
       //
@@ -589,12 +613,12 @@ static Expr* preFoldPrimInitVarForManagerResource(CallExpr* call) {
       // case multiple overloads either do not exist, or if they do there
       // is no ambiguity at the callsite.
       } else {
-        auto enterThisCall = toCallExpr(moveIntoTemp->get(2));
+        auto enterContextCall = toCallExpr(moveIntoTemp->get(2));
 
-        INT_ASSERT(enterThisCall);
+        INT_ASSERT(enterContextCall);
 
         // If this doesn't fire, then there was already a resolution error.
-        if (FnSymbol* fn = enterThisCall->resolvedFunction()) {
+        if (FnSymbol* fn = enterContextCall->resolvedFunction()) {
           bool isTagConstRef = fn->retTag == RET_CONST_REF;
           bool isTagRef = fn->retTag == RET_REF;
 
@@ -968,6 +992,55 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   } // PRIM_CALL_RESOLVES, PRIM_METHOD_CALL_RESOLVES
 
+  case PRIM_IMPLEMENTS_INTERFACE: {
+    Expr* typeExpr = call->get(1);
+    Expr* interfaceExpr = call->get(2);
+
+    TypeSymbol* type = nullptr;
+    InterfaceSymbol* interface = nullptr;
+    if (auto se = toSymExpr(typeExpr)) {
+      type = se->typeInfo()->symbol;
+      INT_ASSERT(type);
+    }
+
+    if (auto se = toSymExpr(interfaceExpr)) {
+      interface = toInterfaceSymbol(se->symbol());
+      INT_ASSERT(interface);
+    }
+
+    auto newConstraint =
+      IfcConstraint::build(interface, new CallExpr(PRIM_ACTUALS_LIST, type));
+    SymbolMap substitutions;
+    auto cs = trySatisfyConstraintAtCallsite(call, nullptr, newConstraint,
+                                             substitutions);
+
+    // return one of three values:
+    // 0 - found a user-specified interface
+    // 1 - found a compiler-generated interface
+    // 2 - did not find an interface at all (or shouldn't)
+
+    int val;
+    if (cs.istm) {
+      if (!cs.istm->iConstraint->entirelyGenerated) {
+        // implicit interface using user-provided witnesses: bad.
+        val = 2;
+      } else if (cs.istm->iConstraint->shouldBeGeneratedOnly) {
+        // impliit interface using compiler-provided witnesses; fine.
+        val = 1;
+      } else {
+        // explicit interface.
+        val = 0;
+      }
+    } else {
+      val = 2;
+    }
+
+    retval = new SymExpr(new_IntSymbol(val));
+    call->replace(retval);
+
+    break;
+  }
+
   case PRIM_DEREF: {
     // remove deref if arg is already a value
     if (!call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
@@ -1165,6 +1238,21 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       }
     }
 
+    break;
+  }
+
+  case PRIM_COERCE: {
+    if (SymExpr* se = toSymExpr(call->get(2))) {
+      if (dtDomain && se->symbol() == dtDomain->symbol) {
+        // coercing a domain to 'domain(?)' is a no-op
+        Type* from = call->get(1)->getValType();
+        if (! from->symbol->hasFlag(FLAG_DOMAIN))
+          USR_FATAL(call, "cannot coerce '%s' to 'domain(?)'",
+                    toString(from));
+        retval = call->get(1);
+        call->replace(retval->remove());
+      }
+    }
     break;
   }
 
@@ -1548,6 +1636,19 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_IS_FCF_TYPE: {
+    Type* t = call->get(1)->typeInfo();
+
+    if (t->symbol->hasFlag(FLAG_FUNCTION_CLASS))
+      retval = new SymExpr(gTrue);
+    else
+      retval = new SymExpr(gFalse);
+
+    call->replace(retval);
+
+    break;
+  }
+
   case PRIM_IS_UNION_TYPE: {
     AggregateType* classType = toAggregateType(call->get(1)->typeInfo());
 
@@ -1645,6 +1746,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
           //  address of a by-value argument). An outer variable might be a
           //  type if the symbol represents a field, and taking the address of
           //  a type does not make sense.
+
+        } else if (argSym && argSym->hasFlag(FLAG_TYPE_VARIABLE)) {
+          // No need to take address of a type arg. The flag is used here
+          // because the intent is unreliable, and may be INTENT_BLANK.
 
         } else {
           Expr* stmt = call->getStmtExpr();
@@ -2351,6 +2456,27 @@ static bool isMethodCall(CallExpr* call) {
   return false;
 }
 
+static const char* getParenfulDeprecationMessage(Symbol* thisActual) {
+  if (!thisActual->hasFlag(FLAG_TEMP)) return nullptr;
+  SymExpr* def = thisActual->getSingleDef();
+  if (def == nullptr) return nullptr;
+
+  CallExpr* move = toCallExpr(def->parentExpr);
+  if (!move->isPrimitive(PRIM_MOVE)) return nullptr;
+
+  auto assignedFromCall = toCallExpr(move->get(2));
+  if (!assignedFromCall) return nullptr;
+
+  if (auto calledSym = toSymExpr(assignedFromCall->baseExpr)) {
+    if (auto fnSym = toFnSymbol(calledSym->symbol())) {
+      if (fnSym->hasFlag(FLAG_DEPRECATED_PARENFUL)) {
+        return fnSym->getSanitizedMsg(fnSym->getParenfulDeprecationMsg());
+      }
+    }
+  }
+
+  return nullptr;
+}
 
 static Expr* preFoldNamed(CallExpr* call) {
   Expr* retval = NULL;
@@ -2410,6 +2536,10 @@ static Expr* preFoldNamed(CallExpr* call) {
         if (Expr* expr = resolveTupleIndexing(call, base->symbol())) {
           retval = expr;  // call was replaced by expr
         }
+      } else if (auto deprecationMessage = getParenfulDeprecationMessage(sym)) {
+        USR_WARN(call, "%s", deprecationMessage);
+        retval = new SymExpr(sym);
+        call->replace(retval);
       }
     }
 
@@ -2464,7 +2594,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           bool fromEnum = is_enum_type(oldType);
           bool fromString = (oldType == dtString ||
-                             oldType == dtStringC);
+                             oldType == dtStringC ||
+                             isCPtrConstChar(oldType));
           bool fromBytes = oldType == dtBytes;
           bool fromIntUint = is_int_type(oldType) ||
                              is_uint_type(oldType);
@@ -2475,7 +2606,8 @@ static Expr* preFoldNamed(CallExpr* call) {
 
           bool toEnum = is_enum_type(newType);
           bool toString = (newType == dtString ||
-                           newType == dtStringC);
+                           newType == dtStringC ||
+                           isCPtrConstChar(newType));
           bool toBytes = newType == dtBytes;
           bool toIntUint = is_int_type(newType) ||
                            is_uint_type(newType);
@@ -2535,14 +2667,12 @@ static Expr* preFoldNamed(CallExpr* call) {
             } else {
               retval = call;
             }
-
-          // Handle string:c_string and c_string:string casts
           } else if (imm != NULL && fromString && toString) {
-
-            if (newType == dtStringC)
+            if (newType == dtStringC || isCPtrConstChar(newType)) {
               retval = new SymExpr(new_CStringSymbol(imm->v_string.c_str()));
-            else
+            } else {
               retval = new SymExpr(new_StringSymbol(imm->v_string.c_str()));
+            }
 
             call->replace(retval);
 
@@ -2587,7 +2717,7 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
 
   // BHARSH TODO: Move the dtUninstantiated stuff over to resolveTypeComparisonCall
-  } else if (call->isNamed("==")) {
+  } else if (call->isNamedAstr(astrSeq)) {
     bool isMethodCall = false;
     if (call->partialTag == false) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2615,7 +2745,7 @@ static Expr* preFoldNamed(CallExpr* call) {
     }
 
 
-  } else if (call->isNamed("!=")) {
+  } else if (call->isNamedAstr(astrSne)) {
     bool isMethodCall = false;
     if (call->partialTag == false) {
       if (SymExpr* se = toSymExpr(call->get(1))) {
@@ -2697,6 +2827,19 @@ static Expr* preFoldNamed(CallExpr* call) {
 
       if (retval != NULL)
         call->replace(retval);
+    }
+  } else if (fWarnUnstable && call->numActuals() == 2 &&
+             (call->isNamedAstr(astrSstar) || call->isNamed(astrSstarstar))) {
+    // Is the first argument a range?
+    if (call->get(1)->typeInfo()->getValType()->symbol->hasFlag(FLAG_RANGE)) {
+      Type* t2 = call->get(2)->typeInfo()->getValType();
+      if (call->isNamedAstr(astrSstar)) {
+        if (t2->symbol->hasFlag(FLAG_RANGE)) USR_WARN(call,
+          "(range * range) is unstable and may change in the future");
+      } else if (call->isNamedAstr(astrSstarstar)) {
+        if (is_int_type(t2) || is_uint_type(t2)) USR_WARN(call,
+          "(range ** integer) is unstable and may change in the future");
+      }
     }
   } else if (isMethodCall(call)) {
     // Handle a reference to an interface associated type, if applicable.
@@ -2854,7 +2997,19 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   } else {
     Vec<Symbol*> args;
-    int             position      = var->immediate->int_value();
+    int position = var->immediate->int_value();
+
+    // A couple of variables to help us deal with the deprecated 'kind' field
+    // in fileReader and fileWriter.
+    bool isReaderWriter = false;
+    bool specifiesKind = false;
+
+    {
+      AggregateType* root = at->getRootInstantiation();
+      isReaderWriter = root->getModule() == ioModule &&
+          (strcmp(root->symbol->name, "fileReader") == 0 ||
+           strcmp(root->symbol->name, "fileWriter") == 0);
+    }
 
     if (at->symbol->hasFlag(FLAG_TUPLE)) {
       return at->getField(position);
@@ -2891,12 +3046,23 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
       INT_ASSERT(var->immediate->const_kind == CONST_KIND_STRING);
 
+      if (isReaderWriter &&
+          strcmp("kind", var->immediate->v_string.c_str()) == 0) {
+        specifiesKind = true;
+      }
+
       for (int j = 0; j < args.n; j++) {
         if (args.v[j] != NULL &&
             strcmp(args.v[j]->name, var->immediate->v_string.c_str()) == 0) {
           args.v[j] = NULL;
         }
       }
+    }
+
+    // Need to increment by one so that expressions like 'fileWriter(false)'
+    // match up correctly.
+    if (isReaderWriter && !specifiesKind) {
+      position += 1;
     }
 
     forv_Vec(Symbol, arg, args) {
@@ -3004,4 +3170,3 @@ static bool isNormalField(Symbol* field)
 
   return true;
 }
-

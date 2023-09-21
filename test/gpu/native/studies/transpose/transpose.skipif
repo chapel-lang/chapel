@@ -1,1 +1,3 @@
-CHPL_GPU_MEM_STRATEGY==array_on_device
+# This test makes direct calls to gpu primitives that we don't support with
+# cpu-as-device mode
+CHPL_GPU==cpu

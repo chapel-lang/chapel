@@ -106,7 +106,7 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
       type = QualifiedType(QualifiedType::PARAM,
-                           BoolType::get(context, 0),
+                           BoolType::get(context),
                            BoolParam::get(context, isBound));
       break;
     }
@@ -250,7 +250,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   }
 
   return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context, 0),
+                       BoolType::get(context),
                        BoolParam::get(context, callAndFnResolved));
 
 }
@@ -351,6 +351,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_NILABLE_CLASS_TYPE:
     case PRIM_IS_NON_NILABLE_CLASS_TYPE:
     case PRIM_IS_RECORD_TYPE:
+    case PRIM_IS_FCF_TYPE:
     case PRIM_IS_UNION_TYPE:
     case PRIM_IS_EXTERN_UNION_TYPE:
     case PRIM_IS_ATOMIC_TYPE:
@@ -365,6 +366,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
+      CHPL_ASSERT(false && "not implemented yet");
+      break;
 
     case PRIM_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
@@ -381,6 +384,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_RESOLVES:
+    case PRIM_IMPLEMENTS_INTERFACE:
       CHPL_ASSERT(false && "not implemented yet");
       break;
 
@@ -392,7 +396,7 @@ CallResolutionResult resolvePrimCall(Context* context,
             result = tt->isStarTuple();
 
         type = QualifiedType(QualifiedType::PARAM,
-                             BoolType::get(context, 0),
+                             BoolType::get(context),
                              BoolParam::get(context, result));
       }
       break;
@@ -437,13 +441,20 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_STRING_SELECT:
 
     /* primitives that always return bool */
-    case PRIM_UNARY_LNOT:
     case PRIM_EQUAL:
+      if (ci.actual(0).type().isType() && ci.actual(1).type().isType()) {
+        bool isEqual = ci.actual(0).type().type() == ci.actual(1).type().type();
+        type = QualifiedType(QualifiedType::PARAM,
+                             BoolType::get(context),
+                             BoolParam::get(context, isEqual));
+        break;
+      }
     case PRIM_NOTEQUAL:
     case PRIM_LESSOREQUAL:
     case PRIM_GREATEROREQUAL:
     case PRIM_LESS:
     case PRIM_GREATER:
+    case PRIM_UNARY_LNOT:
     case PRIM_TESTCID:
     case PRIM_LOGICAL_AND:
     case PRIM_LOGICAL_OR:
@@ -452,7 +463,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_PTR_NOTEQUAL:
     case PRIM_BLOCK_C_FOR_LOOP:
       type = QualifiedType(QualifiedType::CONST_VAR,
-                           BoolType::get(context, 0));
+                           BoolType::get(context));
       break;
 
     /* Primitives that return the type of the 1st operand.
@@ -587,6 +598,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_SET_BLOCKSIZE:
     case PRIM_ASSERT_ON_GPU:
+    case PRIM_GPU_ELIGIBLE:
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_INIT_FIELDS:

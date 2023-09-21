@@ -5,7 +5,7 @@
 //
 
 // import standard modules to generate random number and use timers
-use Random, Time;
+use Random, Time, Math;
 
 // configuration constants
 config const printRandomNumbers: bool = true, // print random numbers to screen
@@ -51,25 +51,25 @@ writeln("Histogram computed in ", timer.elapsed(), " seconds\n");
 if printHistogram then
   outputHistogram(Y);
 
-proc computeHistogram(X: [] real, Y: [] int) {
-  var lock$: sync bool;
+proc computeHistogram(X: [] real, ref Y: [] int) {
+  var lock: sync bool;
   coforall t in 1..numThreads {
     var low = 1+(t-1)*numNumbers/numThreads;
     var high = if t == numThreads then numNumbers else t*numNumbers/numThreads;
     var myY: [1..numBuckets] int;
     for x in X(low..high) do
       myY(1 + (x / (1.0 / numBuckets)): int) += 1;
-    lock$.writeEF(true);
+    lock.writeEF(true);
     Y += myY;
-    lock$.readFE();
+    lock.readFE();
   }
 }
 
 // outputHistogram: output histogram array
 proc outputHistogram(Y: [] int) {
   var bucketMax = max reduce Y;
-  var rowSize = divceil(bucketMax,10);
-  var numRows = divceil(bucketMax, rowSize);
+  var rowSize = divCeil(bucketMax,10);
+  var numRows = divCeil(bucketMax, rowSize);
   for i in 1..numRows by -1 {
     write(" ");
     for j in 1..numBuckets do

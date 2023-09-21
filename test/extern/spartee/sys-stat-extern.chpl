@@ -10,7 +10,7 @@ extern "struct timespec" record chpl_timespec {
 }
 
 proc getLastModified(filename: string) : int {
-  extern proc sys_stat(filename: c_string, ref chpl_stat): c_int;
+  extern proc sys_stat(filename: c_ptrConst(c_char), ref chpl_stat): c_int;
 
   var file_buf: chpl_stat;
   var file_path = filename.c_str();

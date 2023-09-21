@@ -300,7 +300,7 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
   switch (literal->tag()) {
     case asttags::BoolLiteral:
-      typePtr = BoolType::get(context, 0);
+      typePtr = BoolType::get(context);
       break;
     case asttags::ImagLiteral:
       typePtr = ImagType::get(context, 0);
@@ -412,6 +412,30 @@ static ID parentFunctionId(Context* context, ID functionId) {
   return ID();
 }
 
+static void checkForParenlessMethodFieldRedefinition(Context* context,
+                                                     const Function* fn,
+                                                     Resolver& visitor) {
+
+  if (fn->isMethod() && fn->isParenless()) {
+    QualifiedType receiverType;
+    ID receiverId;
+    if (visitor.getMethodReceiver(&receiverType, &receiverId)) {
+      if (receiverType.type()) {
+        // use the type information, if it is present
+        if (auto ct = receiverType.type()->getCompositeType()) {
+          receiverId = ct->id();
+        }
+      }
+      if (!receiverId.isEmpty()) {
+        if (parsing::idContainsFieldWithName(context, receiverId, fn->name())) {
+          context->error(fn, "parenless proc redeclares the field '%s'",
+                         fn->name().c_str());
+        }
+      }
+    }
+  }
+}
+
 static const TypedFnSignature* const&
 typedSignatureInitialQuery(Context* context,
                            const UntypedFnSignature* untypedSig) {
@@ -459,6 +483,8 @@ typedSignatureInitialQuery(Context* context,
         whereResult = whereClauseResult(context, fn, r, needsInstantiation);
       }
     }
+
+    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
 
     result = TypedFnSignature::get(context,
                                    untypedSig,
@@ -638,10 +664,12 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
 
     for (auto child: ad->children()) {
       // Ignore everything other than VarLikeDecl, MultiDecl, TupleDecl
+      bool isForwardingField = child->isForwardingDecl() &&
+                               child->toForwardingDecl()->expr()->isDecl();
       if (child->isVarLikeDecl() ||
           child->isMultiDecl() ||
           child->isTupleDecl() ||
-          child->isForwardingDecl()) {
+          isForwardingField) {
         const ResolvedFields& resolvedFields =
           resolveFieldDecl(context, ct, child->id(), defaultsPolicy);
         // Copy resolvedFields into result
@@ -652,12 +680,7 @@ const ResolvedFields& fieldsForTypeDeclQuery(Context* context,
                           resolvedFields.fieldDeclId(i),
                           resolvedFields.fieldType(i));
         }
-        // Copy resolved forwarding statements into the result
-        n = resolvedFields.numForwards();
-        for (int i = 0; i < n; i++) {
-          result.addForwarding(resolvedFields.forwardingStmt(i),
-                               resolvedFields.forwardingToType(i));
-        }
+        result.addForwarding(resolvedFields);
       }
     }
 
@@ -696,6 +719,48 @@ const ResolvedFields& fieldsForTypeDecl(Context* context,
 
   // Otherwise, use the value we just computed.
   return f;
+}
+
+// Resolve all statements like 'forwarding _value;' in 'ct'
+static
+const ResolvedFields& resolveForwardingExprs(Context* context,
+                                             const CompositeType* ct) {
+  QUERY_BEGIN(resolveForwardingExprs, context, ct);
+
+  ResolvedFields result;
+
+  CHPL_ASSERT(ct);
+  result.setType(ct);
+
+  bool isObjectType = false;
+  if (auto bct = ct->toBasicClassType()) {
+    isObjectType = bct->isObjectType();
+  }
+  bool isMissingBundledType =
+    CompositeType::isMissingBundledType(context, ct->id());
+
+  if (isObjectType || isMissingBundledType) {
+    // no need to try to resolve the fields for the object type,
+    // which doesn't have a real uAST ID.
+    // for built-in types like Errors when we didn't parse the standard library
+    // don't try to resolve the fields
+  } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    CHPL_ASSERT(ast && ast->isAggregateDecl());
+    auto ad = ast->toAggregateDecl();
+
+    // TODO: don't rely on 'ResolvedFields' or 'resolveFieldDecl' here...
+    for (auto child: ad->children()) {
+      if (child->isForwardingDecl() &&
+          !child->toForwardingDecl()->expr()->isDecl()) {
+        const ResolvedFields& resolvedFields =
+          resolveFieldDecl(context, ct, child->id(), DefaultsPolicy::USE_DEFAULTS);
+        result.addForwarding(resolvedFields);
+      }
+    }
+  }
+
+  return QUERY_END(result);
 }
 
 static bool typeUsesForwarding(Context* context, const Type* receiverType) {
@@ -961,6 +1026,17 @@ Type::Genericity getTypeGenericityIgnoring(Context* context, const Type* t,
 
   if (t->isUnknownType())
     return Type::MAYBE_GENERIC;
+
+  if (auto pt = t->toCPtrType()) {
+    // Mimics the fields logic: if any field is non-concrete, the whole
+    // type is generic. Logically, the c_ptr has a single field, the element
+    // type.
+    if (getTypeGenericityIgnoring(context, pt->eltType(), ignore) == Type::CONCRETE) {
+      return Type::CONCRETE;
+    } else {
+      return Type::GENERIC;
+    }
+  }
 
   // MAYBE_GENERIC should only be returned for CompositeType /
   // ClassType right now.
@@ -1642,8 +1718,8 @@ const TypedFnSignature* instantiateSignature(Context* context,
                                                      poiScope, r);
     // visit the parent type
     if (auto cls = ad->toClass()) {
-      if (auto parentClassExpr = cls->parentClass()) {
-        parentClassExpr->traverse(visitor);
+      for (int i = 0; i < cls->numInheritExprs(); i++) {
+        cls->inheritExpr(i)->traverse(visitor);
       }
     }
 
@@ -1725,8 +1801,8 @@ resolveFunctionByPoisQuery(Context* context,
   return QUERY_END(result);
 }
 
-// this wrapper around resolveFunctionByPoisQuery helps to avoid
-// 'possibly dangling reference to a temporary' warnings from GCC 13.
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
 static const owned<ResolvedFunction>&
 resolveFunctionByPoisQueryWrapper(Context* context,
                                   const TypedFnSignature* sig,
@@ -2031,6 +2107,8 @@ scopeResolveFunctionQuery(Context* context, ID id) {
       }
     }
 
+    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
+
     sig = visitor.typedSignature;
   }
 
@@ -2224,6 +2302,22 @@ doIsCandidateApplicableInitial(Context* context,
   }
 
   CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
+
+  if (ci.isMethodCall() && ci.name() == "init") {
+    // TODO: test when record has defaults for type/param fields
+    auto recv = ci.calledType();
+    auto fn = parsing::idToAst(context, candidateId)->toFunction();
+    ResolutionResultByPostorderID r;
+    auto vis = Resolver::createForInitialSignature(context, fn, r);
+    fn->thisFormal()->traverse(vis);
+    auto res = vis.byPostorder.byAst(fn->thisFormal());
+
+    auto got = canPass(context, recv, res.type());
+    if (!got.passes()) {
+      return nullptr;
+    }
+  }
+
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
@@ -2290,8 +2384,8 @@ filterCandidatesInitial(Context* context,
   return QUERY_END(result);
 }
 
-// this wrapper around filterCandidatesInitial helps to avoid
-// 'possibly dangling reference to a temporary' warnings from GCC 13.
+// TODO: remove this workaround now that the build uses
+// -Wno-dangling-reference
 static const std::vector<const TypedFnSignature*>&
 filterCandidatesInitialWrapper(Context* context,
                                std::vector<BorrowedIdsWithName>&& lst,
@@ -2478,8 +2572,6 @@ static const Type* getNumericType(Context* context,
         return AnyIntType::get(context);
       } else if (name == USTR("uint")) {
         return AnyUintType::get(context);
-      } else if (name == USTR("bool")) {
-        return AnyBoolType::get(context);
       } else if (name == USTR("real")) {
         return AnyRealType::get(context);
       } else if (name == USTR("imag")) {
@@ -2535,6 +2627,67 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  UniqueString name = ci.name();
+
+  if (name == USTR("c_ptr")) {
+    // Should we compute the generic version of the type (e.g. c_ptr(?))
+    bool useGenericType = false;
+
+    // There should be 0 or 1 actuals depending on if it is ?
+    if (ci.hasQuestionArg()) {
+      // handle c_ptr(?)
+      if (ci.numActuals() != 0) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+      useGenericType = true;
+    } else {
+      // handle c_ptr(?t) or c_ptr(eltT)
+      if (ci.numActuals() != 1) {
+        context->error(astForErr, "invalid c_ptr type construction");
+        return ErroneousType::get(context);
+      }
+
+      QualifiedType qt = ci.actual(0).type();
+      if (qt.type() && qt.type()->isAnyType()) {
+        useGenericType = true;
+      }
+    }
+
+    if (useGenericType) {
+      return CPtrType::get(context);
+    }
+
+    QualifiedType qt;
+    if (ci.numActuals() > 0)
+      qt = ci.actual(0).type();
+
+    const Type* t = qt.type();
+    if (t == nullptr) {
+      // Details not yet known so return UnknownType
+      return UnknownType::get(context);
+    }
+    if (t->isUnknownType() || t->isErroneousType()) {
+      // Just propagate the Unknown / Erroneous type
+      // without raising any errors
+      return t;
+    }
+
+    if (!qt.isType()) {
+      // raise an error b/c of type mismatch
+      context->error(astForErr, "invalid c_ptr type construction");
+      return ErroneousType::get(context);
+    }
+
+    return CPtrType::get(context, qt.type());
+  }
+
+  return nullptr;
+}
+
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
   const ClassType* ct = nullptr;
@@ -2561,6 +2714,8 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 static const Type* resolveFnCallSpecialType(Context* context,
                                             const AstNode* astForErr,
                                             const CallInfo& ci) {
+  // none of the special type function calls are methods; we can stop here.
+  if (ci.isMethodCall()) return nullptr;
 
   if (ci.name() == USTR("?")) {
     if (ci.numActuals() > 0) {
@@ -2586,6 +2741,10 @@ static const Type* resolveFnCallSpecialType(Context* context,
   }
 
   if (auto t = getNumericType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getCPtrType(context, astForErr, ci)) {
     return t;
   }
 
@@ -2649,7 +2808,7 @@ static bool resolveFnCallSpecial(Context* context,
     }
     auto got = canPass(context, ci.actual(0).type(), ci.actual(1).type());
     bool result = got.passes();
-    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context, 0),
+    exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                 BoolParam::get(context, result));
     return true;
   }
@@ -2846,7 +3005,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
   // Resolve the forwarding expression's types & decide if we
   // want to consider forwarding.
-  const ResolvedFields* forwards = nullptr;
+  ResolvedFields forwards;
   UniqueString name = ci.name();
   if (name == USTR("init") || name == USTR("init=") || name == USTR("deinit")) {
     // these are exempt from forwarding
@@ -2854,23 +3013,31 @@ gatherAndFilterCandidatesForwarding(Context* context,
     auto useDefaults = DefaultsPolicy::USE_DEFAULTS;
     const ResolvedFields& fields = fieldsForTypeDecl(context, ct,
                                                      useDefaults);
-    if (fields.numForwards() > 0) {
+    const ResolvedFields& exprs = resolveForwardingExprs(context, ct);
+    if (fields.numForwards() > 0 ||
+        exprs.numForwards() > 0) {
       // and check for cycles
       bool cycleFound = emitErrorForForwardingCycles(context, ct);
       if (cycleFound == false) {
-        forwards = &fields;
+        forwards.addForwarding(fields);
+        forwards.addForwarding(exprs);
       }
     }
   }
 
-  if (forwards) {
+  if (forwards.numForwards() > 0) {
     // Construct CallInfos with the receiver replaced for each
     // of the forwarded-to types.
     std::vector<CallInfo> forwardingCis;
 
-    int numForwards = forwards->numForwards();
+    int numForwards = forwards.numForwards();
     for (int i = 0; i < numForwards; i++) {
-      QualifiedType forwardType = forwards->forwardingToType(i);
+      QualifiedType forwardType = forwards.forwardingToType(i);
+
+      // an error occurred, skip it
+      if (forwardType.isUnknown() || forwardType.hasTypePtr() == false)
+        continue;
+
       std::vector<CallInfoActual> actuals;
       // compute the actuals
       // first, the method receiver (from the forwarded type)
@@ -2997,6 +3164,28 @@ gatherAndFilterCandidatesForwarding(Context* context,
   }
 }
 
+// TODO: Could/should this be a parsing query?
+static bool isInsideForwarding(Context* context, const Call* call) {
+  bool insideForwarding = false;
+  if (call != nullptr) {
+    auto p = parsing::parentAst(context, call);
+    while (p != nullptr) {
+      // If we encounter an aggregate or function, we're definitely not in
+      // a forwarding statement.
+      if (p->isAggregateDecl() || p->isFunction()) break;
+
+      if (p->isForwardingDecl()) {
+        insideForwarding = true;
+        break;
+      }
+
+      p = parsing::parentAst(context, p);
+    }
+  }
+
+  return insideForwarding;
+}
+
 // Returns candidates (including instantiating candidates)
 // for resolving CallInfo 'ci'.
 //
@@ -3077,7 +3266,28 @@ gatherAndFilterCandidates(Context* context,
   // If no candidates were found and it's a method, try forwarding
   if (candidates.empty() && ci.isMethodCall() && ci.numActuals() >= 1) {
     const Type* receiverType = ci.actual(0).type().type();
-    if (typeUsesForwarding(context, receiverType)) {
+
+    // TODO: Should this information come as a boolean argument set by the
+    // Resolver? It would be less expensive to set a boolean on Resolver once
+    // we encounter a ForwardingDecl.
+    //
+    // Possible recursion here when resolving a function call in a forwarding
+    // statement:
+    //     record R { forwarding foo(); }
+    // We need to try resolving 'foo()' as a method on 'R', which eventually
+    // leads us back to this path here.
+    //
+    // By skipping the gathering of forwarding candidates below, we also
+    // prevent forwarding statements from containing expressions that
+    // themselves require forwarding. For example, if you had a couple of
+    // forwarding statements like:
+    //     forwarding b;
+    //     forwarding bar();
+    // The 'isInsideForwarding' check below would prevent resolving a method
+    // 'bar()' on 'b'.
+
+    if (typeUsesForwarding(context, receiverType) &&
+        !isInsideForwarding(context, call)) {
       CandidatesVec nonPoiCandidates;
       CandidatesVec poiCandidates;
       ForwardingInfoVec nonPoiForwardingTo;
@@ -3598,7 +3808,7 @@ QualifiedType paramTypeFromValue(Context* context, T value);
 template <>
 QualifiedType paramTypeFromValue<bool>(Context* context, bool value) {
   return QualifiedType(QualifiedType::PARAM,
-                       BoolType::get(context, 0),
+                       BoolType::get(context),
                        BoolParam::get(context, value));
 }
 
@@ -3615,6 +3825,27 @@ getCompilerGeneratedGlobals(Context* context) {
   #undef COMPILER_GLOBAL
 
   return QUERY_END(result);
+}
+
+static const bool&
+reportInvalidMultipleInheritanceImpl(Context* context,
+                                     const uast::Class* node,
+                                     const uast::AstNode* firstParent,
+                                     const uast::AstNode* secondParent) {
+  QUERY_BEGIN(reportInvalidMultipleInheritanceImpl, context, node, firstParent, secondParent);
+  CHPL_REPORT(context, MultipleInheritance, node, firstParent, secondParent);
+  auto result = false;
+  return QUERY_END(result);
+}
+
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent) {
+
+  std::ignore = reportInvalidMultipleInheritanceImpl(context, node,
+                                                     firstParent, secondParent);
 }
 
 

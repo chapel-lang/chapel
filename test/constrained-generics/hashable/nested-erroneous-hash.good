@@ -1,0 +1,2 @@
+nested-erroneous-hash.chpl:11: warning: 'Inner' has a hash function that is being used by the standard library. However, 'Inner' does not implement hashable. In the future, this will result in an error.
+nested-erroneous-hash.chpl:11: warning: to make 'Inner' implement hashable, add the interface to its declaration: 'record Inner : hashable'

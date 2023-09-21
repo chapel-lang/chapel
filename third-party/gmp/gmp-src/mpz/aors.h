@@ -1,7 +1,7 @@
 /* mpz_add, mpz_sub -- add or subtract integers.
 
-Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2011, 2012 Free Software
-Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 2000, 2001, 2011, 2012, 2020 Free
+Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -88,25 +88,31 @@ FUNCTION (mpz_ptr w, mpz_srcptr u, mpz_srcptr v)
 	{
 	  mpn_sub (wp, up, abs_usize, vp, abs_vsize);
 	  wsize = abs_usize;
-	  MPN_NORMALIZE (wp, wsize);
+	  MPN_NORMALIZE_NOT_ZERO (wp, wsize);
 	  if (usize < 0)
-	    wsize = -wsize;
-	}
-      else if (mpn_cmp (up, vp, abs_usize) < 0)
-	{
-	  mpn_sub_n (wp, vp, up, abs_usize);
-	  wsize = abs_usize;
-	  MPN_NORMALIZE (wp, wsize);
-	  if (usize >= 0)
 	    wsize = -wsize;
 	}
       else
 	{
-	  mpn_sub_n (wp, up, vp, abs_usize);
-	  wsize = abs_usize;
-	  MPN_NORMALIZE (wp, wsize);
-	  if (usize < 0)
-	    wsize = -wsize;
+	  int cmp = mpn_cmp (up, vp, abs_usize);
+	  if (cmp < 0)
+	    {
+	      mpn_sub_n (wp, vp, up, abs_usize);
+	      wsize = abs_usize;
+	      MPN_NORMALIZE_NOT_ZERO (wp, wsize);
+	      if (usize >= 0)
+		wsize = -wsize;
+	    }
+	  else if (cmp > 0)
+	    {
+	      mpn_sub_n (wp, up, vp, abs_usize);
+	      wsize = abs_usize;
+	      MPN_NORMALIZE_NOT_ZERO (wp, wsize);
+	      if (usize < 0)
+		wsize = -wsize;
+	    }
+	  else
+	    wsize = 0;
 	}
     }
   else

@@ -48,6 +48,7 @@
 #include "parser.h"
 #include "resolution.h"
 #include "ResolveScope.h"
+#include "metadata.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -110,6 +111,20 @@ struct ConvertedSymbolsMap {
   }
 
   void applyFixups(Context* context, const uast::AstNode* inAst, bool trace);
+};
+
+struct LoopAttributeInfo {
+  // LLVM metadata from various @llvm attributes.
+  LLVMMetadataList llvmMetadata;
+  // The @assertOnGpu attribute, if one is provided by the user.
+  const uast::Attribute* assertOnGpuAttr = nullptr;
+
+  void insertGpuEligibilityAssertion(BlockStmt* body) {
+    if (assertOnGpuAttr) {
+      body->insertAtHead(new CallExpr(PRIM_ASSERT_ON_GPU,
+                                      new SymExpr(gTrue)));
+    }
+  }
 };
 
 // TODO: replace this global variable with a field in Converter
@@ -189,7 +204,9 @@ struct Converter {
 
   // type conversion helpers
   Type* convertClassType(const types::QualifiedType qt);
+  Type* convertCPtrType(const types::QualifiedType qt);
   Type* convertEnumType(const types::QualifiedType qt);
+  Type* convertExternType(const types::QualifiedType qt);
   Type* convertFunctionType(const types::QualifiedType qt);
   Type* convertBasicClassType(const types::QualifiedType qt);
   Type* convertRecordType(const types::QualifiedType qt);
@@ -312,6 +329,87 @@ struct Converter {
     return nullptr;
   }
 
+  LLVMMetadataPtr tupleToLLVMMetadata(const uast::Tuple* node) {
+    if (node->numActuals() != 1 && node->numActuals() != 2) return nullptr;
+
+    if (!node->actual(0)->isStringLiteral()) return nullptr;
+    auto attrName = node->actual(0)->toStringLiteral()->value().astr(context);
+
+    if (node->numActuals() == 1) {
+      return LLVMMetadata::construct(attrName);
+    } else {
+      auto attrVal = node->actual(1);
+
+      if (auto str = attrVal->toStringLiteral())
+        return LLVMMetadata::constructString(attrName, str->value().astr(context));
+      else if (auto int_ = attrVal->toIntLiteral())
+        return LLVMMetadata::constructInt(attrName, int_->value());
+      else if (auto bool_ = attrVal->toBoolLiteral())
+        return LLVMMetadata::constructBool(attrName, bool_->value());
+      else if (auto tup = attrVal->toTuple()) {
+        auto v = tupleToLLVMMetadata(tup);
+        if (v == nullptr) return nullptr;
+        return LLVMMetadata::constructMetadata(attrName, v);
+      }
+      else return nullptr;
+    }
+  }
+
+  LLVMMetadataPtr nodeToLLVMMetadata(const uast::AstNode* node) {
+    if (node->isTuple()) {
+      return tupleToLLVMMetadata(node->toTuple());
+    } else if (node->isStringLiteral()) {
+      auto attrName = node->toStringLiteral()->value().astr(context);
+      return LLVMMetadata::construct(attrName);
+    } else {
+      return nullptr;
+    }
+  }
+
+  LLVMMetadataList buildLLVMMetadataList(const uast::Attribute* node) {
+    LLVMMetadataList llvmAttrs;
+
+    for (auto act: node->actuals()) {
+      auto attr = nodeToLLVMMetadata(act);
+      if (attr != nullptr) {
+        llvmAttrs.push_back(attr);
+      } else {
+        auto loc = chpl::parsing::locateId(context, node->id());
+        std::string msg = "Invalid value for '" + node->name().str() + "'";
+        auto err = GeneralError::get(ErrorBase::ERROR, loc, msg);
+        context->report(std::move(err));
+      }
+    }
+    return llvmAttrs;
+  }
+
+  LLVMMetadataPtr buildAssertVectorize(const uast::Attribute* node) {
+    auto attrName = astr("chpl.loop.assertvectorized");
+    return LLVMMetadata::constructBool(attrName, true);
+  }
+
+  LoopAttributeInfo buildLoopAttributes(const uast::Loop* node) {
+    auto attrs = node->attributeGroup();
+    if (attrs == nullptr) return {};
+
+    auto llvmMetadata = UniqueString::get(context, "llvm.metadata");
+    auto assertVectorized = UniqueString::get(context, "llvm.assertVectorized");
+    auto assertOnGpu = UniqueString::get(context, "assertOnGpu");
+
+    LoopAttributeInfo toReturn;
+
+    if (auto a = attrs->getAttributeNamed(llvmMetadata)) {
+      auto userAttrs = buildLLVMMetadataList(a);
+      toReturn.llvmMetadata.insert(toReturn.llvmMetadata.end(), userAttrs.begin(), userAttrs.end());
+    }
+    if (auto a = attrs->getAttributeNamed(assertVectorized)) {
+      toReturn.llvmMetadata.push_back(buildAssertVectorize(a));
+    }
+    toReturn.assertOnGpuAttr = attrs->getAttributeNamed(assertOnGpu);
+
+    return toReturn;
+  }
+
   Expr* visit(const uast::AttributeGroup* node) {
     INT_FATAL("Should not be called directly!");
     return nullptr;
@@ -344,10 +442,6 @@ struct Converter {
 
     if (!attr) return;
 
-    if (!attr->isDeprecated()) {
-      INT_ASSERT(attr->deprecationMessage().isEmpty());
-    }
-
     if (attr->isDeprecated()) {
       INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED));
       sym->addFlag(FLAG_DEPRECATED);
@@ -356,10 +450,8 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->deprecationMsg = astr(msg);
       }
-    }
-
-    if (!attr->isUnstable()) {
-      INT_ASSERT(attr->unstableMessage().isEmpty());
+    } else {
+      INT_ASSERT(attr->deprecationMessage().isEmpty());
     }
 
     if (attr->isUnstable()) {
@@ -370,6 +462,25 @@ struct Converter {
       if (!msg.isEmpty()) {
         sym->unstableMsg = astr(msg);
       }
+    } else {
+      INT_ASSERT(attr->unstableMessage().isEmpty());
+    }
+
+    if (attr->isParenfulDeprecated()) {
+      auto fnSym = toFnSymbol(sym);
+      // post-parse checks have ensured that decl is a parenless function,
+      // so the resulting symbol is a FnSymbol.
+      INT_ASSERT(fnSym);
+
+      INT_ASSERT(!sym->hasFlag(FLAG_DEPRECATED_PARENFUL));
+      sym->addFlag(FLAG_DEPRECATED_PARENFUL);
+
+      auto msg = attr->parenfulDeprecationMessage();
+      if (!msg.isEmpty()) {
+        fnSym->parenfulDeprecationMsg = astr(msg);
+      }
+    } else {
+      INT_ASSERT(attr->parenfulDeprecationMessage().isEmpty());
     }
 
     for (auto pragma : attr->pragmas()) {
@@ -390,6 +501,29 @@ struct Converter {
     return new CallExpr(PRIM_ERROR);
   }
 
+  UnresolvedSymExpr* reservedWordToInternalName(UniqueString name) {
+    static std::unordered_map<UniqueString, const char*> map = {
+      { USTR("owned"), "_owned" },
+      { USTR("shared"), "_shared" },
+      { USTR("sync"), "_syncvar" },
+      { USTR("single"), "_singlevar" },
+      { USTR("domain"), "_domain" },
+      { USTR("align"), "chpl_align" },
+      { USTR("by"), "chpl_by" },
+
+      // if "index" becomes an actual type, rather than magic:
+      //
+      // { USTR("index"), "_index" },
+    };
+
+    auto it = map.find(name);
+    if (it != map.end()) {
+      return new UnresolvedSymExpr(it->second);
+    }
+
+    return nullptr;
+  }
+
   Expr* reservedWordRemapForIdent(UniqueString name) {
     if (name == USTR("?")) {
       return new SymExpr(gUninstantiated);
@@ -399,16 +533,6 @@ struct Converter {
       return new SymExpr(dtBytes->symbol);
     } else if (name == USTR("string")) {
       return new SymExpr(dtString->symbol);
-    } else if (name == USTR("owned")) {
-      return new UnresolvedSymExpr("_owned");
-    } else if (name == USTR("shared")) {
-      return new UnresolvedSymExpr("_shared");
-    } else if (name == USTR("sync")) {
-      return new UnresolvedSymExpr("_syncvar");
-    } else if (name == USTR("single")) {
-      return new UnresolvedSymExpr("_singlevar");
-    } else if (name == USTR("domain")) {
-      return new UnresolvedSymExpr("_domain");
     } else if (name == USTR("index")) {
       return new UnresolvedSymExpr("_index");
     } else if (name == USTR("nil")) {
@@ -425,17 +549,13 @@ struct Converter {
       return new SymExpr(dtReal[FLOAT_SIZE_DEFAULT]->symbol);
     } else if (name == USTR("complex")) {
       return new SymExpr(dtComplex[COMPLEX_SIZE_DEFAULT]->symbol);
-    } else if (name == USTR("align")) {
-      return new UnresolvedSymExpr("chpl_align");
-    } else if (name == USTR("by")) {
-      return new UnresolvedSymExpr("chpl_by");
     } else if (name == USTR("_")) {
       return new UnresolvedSymExpr("chpl__tuple_blank");
     } else if (name == USTR("void")) {
       return new SymExpr(dtVoid->symbol);
     }
 
-    return nullptr;
+    return reservedWordToInternalName(name);
   }
 
   Expr* resolvedIdentifier(const uast::Identifier* node) {
@@ -585,8 +705,20 @@ struct Converter {
 
     // check for a reserved word
     auto name = node->name();
-    if (auto remap = reservedWordRemapForIdent(name)) {
-      return remap;
+    if (inImportOrUse) {
+      if (auto remap = reservedWordToInternalName(name)) {
+        return remap;
+      }
+    } else {
+      if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
+      }
+
+      if (auto remap = reservedWordRemapForIdent(name)) {
+        return remap;
+      }
     }
 
     // otherwise use an UnresolvedSymExpr
@@ -908,6 +1040,13 @@ struct Converter {
       if (auto ret = convertModuleDot(node)) {
         return ret;
       }
+      if (inImportOrUse) {
+        // Skip "special" things like .locale handling if we're in
+        // something like `import M.locale`, which _should_ be valid for
+        // importing tertiary methods.
+
+        return new CallExpr(".", base, new_CStringSymbol(member.c_str()));
+      }
       return buildDotExpr(base, member.c_str());
     }
   }
@@ -924,7 +1063,11 @@ struct Converter {
       actuals->insertAtTail(conv);
     }
 
-    return buildRequireStmt(actuals);
+    auto parentId = parsing::idToParentId(context, node->id());
+    auto parentAst = parsing::idToAst(context, parentId);
+    bool atModuleScope = parentAst->isModule();
+
+    return buildRequireStmt(actuals, atModuleScope);
   }
 
   Expr* visit(const uast::Include* node) {
@@ -1030,6 +1173,12 @@ struct Converter {
 
     inImportOrUse = false;
     return ret;
+  }
+
+  Expr* visit(const uast::Init* node) {
+    // target should always be "this", aka the method receiver.
+    auto toInit = convertAST(node->target());
+    return new CallExpr(new CallExpr(".", toInit, new_CStringSymbol("chpl__initThisType")));
   }
 
   CallExpr* visit(const uast::New* node) {
@@ -1544,7 +1693,10 @@ struct Converter {
   BlockStmt* visit(const uast::DoWhile* node) {
     Expr* condExpr = toExpr(convertAST(node->condition()));
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return DoWhileStmt::build(condExpr, body);
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return DoWhileStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   BlockStmt* visit(const uast::While* node) {
@@ -1559,7 +1711,10 @@ struct Converter {
       condExpr = toExpr(convertAST(node->condition()));
     }
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
-    return WhileDoStmt::build(condExpr, body);
+    auto loopAttributes = buildLoopAttributes(node);
+    if (loopAttributes.assertOnGpuAttr)
+      CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
+    return WhileDoStmt::build(condExpr, body, std::move(loopAttributes.llvmMetadata));
   }
 
   /// IndexableLoops ///
@@ -1669,6 +1824,8 @@ struct Converter {
         INT_ASSERT(intents);
       }
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1743,8 +1900,11 @@ struct Converter {
       BlockStmt* block = toBlockStmt(body);
       INT_ASSERT(block);
 
+      auto loopAttributes = buildLoopAttributes(node);
+      if (loopAttributes.assertOnGpuAttr)
+        CHPL_REPORT(context, InvalidGpuAssertion, node, loopAttributes.assertOnGpuAttr);
       ret = ForLoop::buildForLoop(index, iteratorExpr, block, zippered,
-                                  isForExpr);
+                                  isForExpr, std::move(loopAttributes.llvmMetadata));
     }
 
     INT_ASSERT(ret != nullptr);
@@ -1800,6 +1960,8 @@ struct Converter {
       bool zippered = node->iterand()->isZip();
       bool serialOK = false;
 
+      auto loopAttributes = buildLoopAttributes(node);
+      loopAttributes.insertGpuEligibilityAssertion(body);
       return ForallStmt::build(indices, iterator, intents, body, zippered,
                                serialOK);
     }
@@ -1825,9 +1987,11 @@ struct Converter {
     // convert these for now, despite the error, so that symbols are converted.
     convertWithClause(node->withClause(), node);
 
+    auto loopAttributes = buildLoopAttributes(node);
+    loopAttributes.insertGpuEligibilityAssertion(body);
     auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
                                          zippered,
-                                         isForExpr);
+                                         isForExpr, std::move(loopAttributes.llvmMetadata));
 
     return ret;
   }
@@ -2011,10 +2175,21 @@ struct Converter {
 
   /// Calls ///
 
-  Expr* convertCalledKeyword(const uast::AstNode* node) {
+  Expr* convertCalledKeyword(const uast::AstNode* node,
+                             const uast::Call* inCall) {
     astlocMarker markAstLoc(node->id());
 
     Expr* ret = nullptr;
+
+    // check to see if the call actuals are just a ?
+    bool justQuestionMark = false;
+    if (inCall->numActuals() == 1) {
+      if (auto ident = inCall->actual(0)->toIdentifier()) {
+        if (ident->name() == USTR("?")) {
+          justQuestionMark = true;
+        }
+      }
+    }
 
     if (auto ident = node->toIdentifier()) {
       auto name = ident->name();
@@ -2022,6 +2197,9 @@ struct Converter {
       if (name == USTR("atomic")) {
         ret = new UnresolvedSymExpr("chpl__atomicType");
       } else if (name == USTR("single")) {
+        if (currentModuleType == MOD_USER) {
+          USR_WARN(node->id(), "'single' variables are deprecated - please use 'sync' variables instead");
+        }
         ret = new UnresolvedSymExpr("_singlevar");
       } else if (name == USTR("subdomain")) {
         ret = new CallExpr("chpl__buildSubDomainType");
@@ -2030,9 +2208,13 @@ struct Converter {
       } else if (name == USTR("index")) {
         ret = new CallExpr("chpl__buildIndexType");
       } else if (name == USTR("domain")) {
-        auto base = "chpl__buildDomainRuntimeType";
-        auto dist = new UnresolvedSymExpr("defaultDist");
-        ret = new CallExpr(base, dist);
+        if (justQuestionMark) {
+          ret = new UnresolvedSymExpr("_domain");
+        } else {
+          auto base = "chpl__buildDomainRuntimeType";
+          auto dist = new UnresolvedSymExpr("defaultDist");
+          ret = new CallExpr(base, dist);
+        }
       } else if (name == USTR("unmanaged")) {
         ret = new CallExpr(PRIM_TO_UNMANAGED_CLASS_CHECKED);
       } else if (name == USTR("borrowed")) {
@@ -2124,7 +2306,7 @@ struct Converter {
       INT_ASSERT(nodeTypeExpr);
 
       // Try to convert a called keyword, if not then use defaults.
-      Expr* typeExpr = convertCalledKeyword(nodeTypeExpr);
+      Expr* typeExpr = convertCalledKeyword(nodeTypeExpr, node);
       bool isCalledKeyword = true;
       if (!typeExpr) {
         typeExpr = convertAST(nodeTypeExpr);
@@ -2151,7 +2333,7 @@ struct Converter {
       return expr;
 
     // If a keyword produces a call, just use that instead of making one.
-    } else if (Expr* expr = convertCalledKeyword(calledExpression)) {
+    } else if (Expr* expr = convertCalledKeyword(calledExpression, node)) {
       ret = isCallExpr(expr) ? toCallExpr(expr) : new CallExpr(expr);
       addArgsTo = ret;
     } else if (CallExpr* callExpr = convertModuleDotCall(node)) {
@@ -2624,7 +2806,7 @@ struct Converter {
   static RetTag convertRetTag(uast::Function::ReturnIntent returnIntent) {
     switch (returnIntent) {
       case uast::Function::DEFAULT_RETURN_INTENT:
-        return RET_VALUE;
+      case uast::Function::OUT:
       case uast::Function::CONST:
         return RET_VALUE;
       case uast::Function::CONST_REF:
@@ -3756,6 +3938,21 @@ struct Converter {
     return AGGREGATE_CLASS;
   }
 
+  template <typename Iterable>
+  void convertInheritsExprs(const Iterable& iterable,
+                            std::vector<Expr*>& inherits,
+                            bool& inheritMarkedGeneric) {
+    for (auto inheritExpr : iterable) {
+      bool thisInheritMarkedGeneric = false;
+      const uast::Identifier* ident =
+        uast::Class::getInheritExprIdent(inheritExpr, thisInheritMarkedGeneric);
+      if (auto converted = convertExprOrNull(ident)) {
+        inherits.push_back(converted);
+      }
+      inheritMarkedGeneric |= thisInheritMarkedGeneric;
+    }
+  }
+
   Expr* convertAggregateDecl(const uast::AggregateDecl* node) {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
@@ -3766,10 +3963,13 @@ struct Converter {
 
     const char* name = astr(node->name());
     const char* cname = name;
-    Expr* inherit = nullptr;
+    bool inheritMarkedGeneric = false;
 
+    std::vector<Expr*> inherits;
     if (auto cls = node->toClass()) {
-      inherit = convertExprOrNull(cls->parentClass());
+      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
+    } else if (auto rec = node->toRecord()) {
+      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {
@@ -3787,13 +3987,17 @@ struct Converter {
       INT_ASSERT(externFlag == FLAG_UNKNOWN);
     }
 
-    auto ret = buildClassDefExpr(name, cname, tag, inherit,
+    auto ret = buildClassDefExpr(name, cname, tag,
+                                 inherits,
                                  decls,
                                  externFlag);
     INT_ASSERT(ret->sym);
 
     attachSymbolAttributes(node, ret->sym);
     attachSymbolVisibility(node, ret->sym);
+    if (inheritMarkedGeneric) {
+      ret->sym->addFlag(FLAG_SUPERCLASS_MARKED_GENERIC);
+    }
 
     // Note the type is converted so we can wire up SymExprs later
     noteConvertedSym(node, ret->sym);
@@ -3926,7 +4130,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
-    case typetags::AnyBoolType:                  return dtAnyBool;
     case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
     case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
     case typetags::AnyBorrowedType:              return dtBorrowed;
@@ -3955,6 +4158,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     // declared types
     case typetags::ClassType:   return convertClassType(qt);
     case typetags::EnumType:   return convertEnumType(qt);
+    case typetags::ExternType:   return convertExternType(qt);
     case typetags::FunctionType:   return convertFunctionType(qt);
 
     case typetags::ArrayType: return dtUnknown;
@@ -3972,6 +4176,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::IntType:   return convertIntType(qt);
     case typetags::RealType:   return convertRealType(qt);
     case typetags::UintType:   return convertUintType(qt);
+    case typetags::CPtrType:   return convertCPtrType(qt);
 
     // implementation detail tags (should not be reachable)
     case typetags::START_ManageableType:
@@ -3995,12 +4200,22 @@ Type* Converter::convertType(const types::QualifiedType qt) {
   return nullptr;
 }
 
+Type* Converter::convertCPtrType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
 Type* Converter::convertClassType(const types::QualifiedType qt) {
   INT_FATAL("not implemented yet");
   return nullptr;
 }
 
 Type* Converter::convertEnumType(const types::QualifiedType qt) {
+  INT_FATAL("not implemented yet");
+  return nullptr;
+}
+
+Type* Converter::convertExternType(const types::QualifiedType qt) {
   INT_FATAL("not implemented yet");
   return nullptr;
 }
@@ -4038,20 +4253,6 @@ Type* Converter::convertUnionType(const types::QualifiedType qt) {
 }
 
 // helper functions to convert a type to a size
-
-static IF1_bool_type getBoolSize(const types::BoolType* t) {
-  if (t->isDefaultWidth())
-    return BOOL_SIZE_DEFAULT;
-
-  int width = t->bitwidth();
-  if      (width == 8)  return BOOL_SIZE_8;
-  else if (width == 16) return BOOL_SIZE_16;
-  else if (width == 32) return BOOL_SIZE_32;
-  else if (width == 64) return BOOL_SIZE_64;
-
-  INT_FATAL("should not be reached");
-  return BOOL_SIZE_DEFAULT;
-}
 
 static IF1_complex_type getComplexSize(const types::ComplexType* t) {
   if (t->isDefaultWidth())
@@ -4120,8 +4321,7 @@ static IF1_int_type getUintSize(const types::UintType* t) {
 
 
 Type* Converter::convertBoolType(const types::QualifiedType qt) {
-  const types::BoolType* t = qt.type()->toBoolType();
-  return dtBools[getBoolSize(t)];
+  return dtBool;
 }
 
 Type* Converter::convertComplexType(const types::QualifiedType qt) {
@@ -4156,8 +4356,7 @@ Symbol* Converter::convertParam(const types::QualifiedType qt) {
   INT_ASSERT(p && t);
 
   if (auto bp = p->toBoolParam()) {
-    const types::BoolType* bt = t->toBoolType();
-    return new_BoolSymbol(bp->value(), getBoolSize(bt));
+    return new_BoolSymbol(bp->value());
   } else if (auto cp = p->toComplexParam()) {
     const types::ComplexType* ct = t->toComplexType();
     types::Param::ComplexDouble tmp = cp->value();

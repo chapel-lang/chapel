@@ -1,0 +1,2 @@
+# stop after checks occur, prevents issues with unsupported asm on Mac, linking, etc
+--stop-after-pass parseAndConvertUast

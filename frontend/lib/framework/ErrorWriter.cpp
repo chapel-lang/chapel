@@ -104,8 +104,11 @@ static TermColorName kindColor(ErrorBase::Kind kind) {
   return CLEAR;
 }
 
-static void writeFile(std::ostream& oss, const Location& loc) {
-  auto pathUstr = loc.path();
+static void writeFile(Context* context,
+                      std::ostream& oss,
+                      const Location& loc) {
+  UniqueString pathUstr = loc.path();
+  if (context) pathUstr = context->adjustPathForErrorMsg(pathUstr);
   auto path = pathUstr.c_str();
   int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
@@ -126,7 +129,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   oss_ << kindText(kind);
   setColor(CLEAR);
   oss_ << " in ";
-  writeFile(oss_, errordetail::locate(context, loc));
+  writeFile(context, oss_, errordetail::locate(context, loc));
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
     const char* name = ErrorBase::getTypeName(type);
@@ -148,7 +151,7 @@ void ErrorWriter::writeNote(IdOrLocation loc, const std::string& str) {
   if (outputFormat_ == BRIEF) {
     // Indent notes in brief mode to make things easier to organize
     oss_ << "  note in ";
-    writeFile(oss_, errordetail::locate(context, loc));
+    writeFile(context, oss_, errordetail::locate(context, loc));
     oss_ << ": ";
   } else {
     // In detailed mode, the body is indented.

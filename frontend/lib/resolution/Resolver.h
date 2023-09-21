@@ -63,6 +63,7 @@ struct Resolver {
   bool signatureOnly = false;
   bool fieldOrFormalsComputed = false;
   bool scopeResolveOnly = false;
+  bool fieldTypesOnly = false;
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
@@ -469,11 +470,17 @@ struct Resolver {
   bool enter(const uast::Conditional* cond);
   void exit(const uast::Conditional* cond);
 
+  bool enter(const uast::Select* sel);
+  void exit(const uast::Select* sel);
+
   bool enter(const uast::Literal* literal);
   void exit(const uast::Literal* literal);
 
   bool enter(const uast::Identifier* ident);
   void exit(const uast::Identifier* ident);
+
+  bool enter(const uast::Init* init);
+  void exit(const uast::Init* init);
 
   bool enter(const uast::TypeQuery* tq);
   void exit(const uast::TypeQuery* tq);

@@ -1172,10 +1172,15 @@ static void      addArgCoercion(FnSymbol*  fn,
                                 SymExpr*   actual,
                                 bool&      checkAgain);
 
+static void warnForDeprecatedImplicitConversion(ArgSymbol* formal,
+                                                SymExpr* actual);
+
 static void handleCoercion(FnSymbol* fn, CallExpr* call,
                            ArgSymbol* formal, SymExpr* actual,
                            SymbolMap& copyMap,
                            SymbolMap& inTmpToActualMap) {
+
+  warnForDeprecatedImplicitConversion(formal, actual);
 
   if (fn->retTag == RET_PARAM) {
     //
@@ -1644,6 +1649,34 @@ static void addArgCoercion(FnSymbol*  fn,
   }
 }
 
+static void warnForDeprecatedImplicitConversion(ArgSymbol* formal,
+                                                SymExpr* actual) {
+  if (formal->getModule()->modTag == MOD_USER) {
+    Type* formalType = formal->getValType();
+    Type* actualType = actual->getValType();
+    if (formal->hasFlag(FLAG_DEPRECATED_IMPLICIT_CONVERSION) &&
+        formalType != actualType) {
+      const char* actualTypeStr = toString(actualType);
+      const char* formalInsnTypeStr = toString(formalType);
+      const char* formalTypeStr = "?";
+      if      (is_bool_type(formalType))    formalTypeStr = "bool";
+      else if (is_int_type(formalType))     formalTypeStr = "int";
+      else if (is_uint_type(formalType))    formalTypeStr = "uint";
+      else if (is_real_type(formalType))    formalTypeStr = "real";
+      else if (is_imag_type(formalType))    formalTypeStr = "imag";
+      else if (is_complex_type(formalType)) formalTypeStr = "complex";
+
+      USR_WARN(actual, "deprecated use of implicit conversion "
+                       "when passing to a generic formal");
+      USR_PRINT(actual, "actual with type '%s'", actualTypeStr);
+      USR_PRINT(formal, "is passed to formal with type '%s(?w)'",
+                formalTypeStr);
+      USR_PRINT("consider adding a cast to '%s' or an overload to handle '%s'",
+                formalInsnTypeStr, actualTypeStr);
+    }
+  }
+}
+
 // A wrapper that mimics the state during default_arg creation, so that we can
 // share code with that implementation.
 static void copyFormalTypeExprWrapper(FnSymbol* fn,
@@ -1703,12 +1736,13 @@ static bool typeExprReturnsType(ArgSymbol* formal) {
 // Do not create copies for the bogus actuals added for PRIM_TO_FOLLOWER.
 static bool checkAnotherFunctionsFormal(FnSymbol* calleeFn, CallExpr* call,
                                         Symbol* actualSym) {
+  if (!isFollowerIterator(calleeFn)) return false;
+
   bool result = isArgSymbol(actualSym) &&
                 (call->parentSymbol != actualSym->defPoint->parentSymbol);
 
   if (result                                   &&
-      propagateNotPOD(actualSym->getValType()) &&
-      isFollowerIterator(calleeFn)             )
+      propagateNotPOD(actualSym->getValType()))
     USR_FATAL_CONT(calleeFn, "follower iterators accepting a non-POD argument by in-intent are not implemented");
 
   return result;
@@ -2218,9 +2252,14 @@ bool isPromotionRequired(FnSymbol* fn, CallInfo& info,
       if (isRecordWrappedType(actualType) == true) {
         makeRefType(actualType);
 
-        actualType = actualType->refType;
+        if (actualType->refType == nullptr) {
+          // ex. the tuple type `(domain(?), int)`
+          // todo: when can we have promotion in this case?
+          INT_ASSERT(actualType->symbol->hasFlag(FLAG_GENERIC));
+          continue;
+        }
 
-        INT_ASSERT(actualType);
+        actualType = actualType->refType;
       }
 
       // Operator calls are allowed to have actuals for a method token and
@@ -2382,6 +2421,11 @@ static FnSymbol* buildPromotionWrapper(PromotionInfo& promotion,
   // B. will generate it too many times
   fn->maybeGenerateDeprecationWarning(info.call);
   fn->maybeGenerateUnstableWarning(info.call);
+
+  // if the fn is marked with NO_PROMOTION_WHEN_BY_REF, mark the wrapper
+  if (fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
+    retval->addFlag(FLAG_NO_PROMOTION_WHEN_BY_REF);
+  }
 
   BlockStmt* loop = buildPromotionLoop(promotion, instantiationPt, info,
                                        fastFollowerChecks);
@@ -2675,10 +2719,6 @@ static void initPromotionWrapper(PromotionInfo& promotion,
 
   retval->addFlag(FLAG_PROMOTION_WRAPPER);
   retval->addFlag(FLAG_FN_RETURNS_ITERATOR);
-
-  if (fn->hasFlag(FLAG_OPERATOR)) {
-    retval->addFlag(FLAG_OPERATOR);
-  }
 
   int i = 0;
   for_formals(formal, fn) {
@@ -3173,7 +3213,10 @@ static FnSymbol* buildEmptyWrapper(FnSymbol* fn) {
   if (fn->hasFlag(FLAG_METHOD_PRIMARY)) wrapper->addFlag(FLAG_METHOD_PRIMARY);
   if (fn->hasFlag(FLAG_ASSIGNOP))       wrapper->addFlag(FLAG_ASSIGNOP);
   if (fn->hasFlag(FLAG_LAST_RESORT))    wrapper->addFlag(FLAG_LAST_RESORT);
+  if (fn->hasFlag(FLAG_OPERATOR))       wrapper->addFlag(FLAG_OPERATOR);
 
+  if (   fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))
+    wrapper->addFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS);
   if (   fn->hasFlag(FLAG_VOID_NO_RETURN_VALUE))
     wrapper->addFlag(FLAG_VOID_NO_RETURN_VALUE);
   if (   fn->hasFlag(FLAG_FN_RETURNS_ITERATOR))

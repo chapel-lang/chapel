@@ -1,5 +1,6 @@
-extern proc foo(s: c_string);
-extern proc bar(i: int): c_string;
+use CTypes;
+extern proc foo(s: c_ptrConst(c_char));
+extern proc bar(i: int): c_ptrConst(c_char);
 
 foo("hello world");
 var s = bar(12);

@@ -1,2 +1,2 @@
-extern proc printf(f:c_string);
+extern proc printf(f);
 printf(c"Hello, Minimal World!\n");

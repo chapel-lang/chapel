@@ -876,7 +876,7 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
   // allocate data into shared memory (takes one parameter: number of bytes to allocate)
-  // and returns a c_void_ptr
+  // and returns a raw_c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
 
   // synchronize threads in a GPU kernel (equivalent to CUDA __syncThreads)
@@ -888,6 +888,7 @@ initPrimitive() {
 
   // Generates call that produces runtime error when not run by a GPU
   prim_def(PRIM_ASSERT_ON_GPU, "chpl_assert_on_gpu", returnInfoVoid, true, true);
+  prim_def(PRIM_GPU_ELIGIBLE, "gpu eligible", returnInfoVoid, true, true);
 
   // task primitives
   // get serial state
@@ -1130,6 +1131,7 @@ initPrimitive() {
   prim_def(PRIM_IS_NILABLE_CLASS_TYPE, "is nilable class type", returnInfoBool);
   prim_def(PRIM_IS_NON_NILABLE_CLASS_TYPE, "is non nilable class type", returnInfoBool);
   prim_def(PRIM_IS_RECORD_TYPE, "is record type", returnInfoBool);
+  prim_def(PRIM_IS_FCF_TYPE, "is fcf type", returnInfoBool);
   prim_def(PRIM_IS_UNION_TYPE, "is union type", returnInfoBool);
   prim_def(PRIM_IS_EXTERN_UNION_TYPE, "is extern union type", returnInfoBool);
   prim_def(PRIM_IS_ATOMIC_TYPE, "is atomic type", returnInfoBool);
@@ -1160,6 +1162,8 @@ initPrimitive() {
   prim_def(PRIM_CALL_AND_FN_RESOLVES, "call and fn resolves", returnInfoBool);
   prim_def(PRIM_METHOD_CALL_AND_FN_RESOLVES, "method call and fn resolves", returnInfoBool);
   prim_def(PRIM_RESOLVES, "resolves", returnInfoBool);
+
+  prim_def(PRIM_IMPLEMENTS_INTERFACE, "implements interface", returnInfoInt64);
 
   prim_def(PRIM_START_RMEM_FENCE, "chpl_rmem_consist_acquire", returnInfoVoid, true, true);
   prim_def(PRIM_FINISH_RMEM_FENCE, "chpl_rmem_consist_release", returnInfoVoid, true, true);

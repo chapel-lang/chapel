@@ -1,0 +1,16 @@
+1..10   1..10
+1..10 by 2   1..9
+1..10 by 2 align 0   2..10
+
+red..violet   red..violet
+red..violet by 3   red..violet
+orange..violet by 3   orange..blue
+orange..violet by 3 align yellow   yellow..indigo
+
+{1..10}   {1..10}
+{1..10 by 2}   {1..9}
+{1..10 by 2 align 0}   {2..10}
+
+{1..10, 1..10 by 2}   {1..10, 1..9}
+{1..10 by 2 align 0, 1..10 by 3}   {2..10, 1..10}
+{1..10 by -3, 1..10 by -2 align 1, 1..10 by -1}   {1..10, 1..9, 1..10}

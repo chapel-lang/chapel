@@ -8,15 +8,15 @@ var A1 : [D1] int;
 var A2 : [D2] int;
 var A3 : [D3] int;
 
-forall i in D1 {
+forall i in D1 with (ref A1) {
   A1(i) = 0;
 }
 
-forall (i,j) in D2 {
+forall (i,j) in D2 with (ref A2) {
   A2(i,j) = 0;
 }
 
-forall (i,j,k) in D3 {
+forall (i,j,k) in D3 with (ref A3) {
   A3(i,j,k) = 0;
 }
 

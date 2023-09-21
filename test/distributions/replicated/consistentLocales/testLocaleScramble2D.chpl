@@ -10,10 +10,10 @@ var Grid = reshape(Locales, GridD);
 
 writeln("Grid is: ", Grid);
 
-const D = {1..3} dmapped Replicated(Grid);
+const D = {1..3} dmapped replicatedDist(Grid);
 var A: [D] real;
 
-coforall loc in Locales do
+coforall loc in Locales with (ref A) do
   on loc do
     for i in 1..3 do
       A[i] = here.id + i/10.0;
@@ -25,7 +25,7 @@ for loc in Locales do on loc {
   writeln(A);
 }
 
-coforall (i,j) in GridD do
+coforall (i,j) in GridD with (ref A) do
   on Grid[i,j] do
     A = here.id + i/10.0 + j/100.0;
 

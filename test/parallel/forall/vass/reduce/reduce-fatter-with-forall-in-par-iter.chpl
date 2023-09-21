@@ -12,7 +12,7 @@ config const locs = 3;
 config const mm = 3;
 
 //
-// myiter() iterator ensures deterministic execution (using cnt$)
+// myiter() iterator ensures deterministic execution (using cnt)
 // while still creating bona fide parallel tasks
 //
 
@@ -26,15 +26,15 @@ iter myiter() {
 }
 
 iter myiter(param tag: iterKind) where tag == iterKind.standalone {
-  var cnt$: sync int = 1;
+  var cnt: sync int = 1;
   coforall curloc in MyLocales do on curloc {
-      const current = cnt$.readFE();
-    writef("myiter start %t\n", current);
+      const current = cnt.readFE();
+    writef("myiter start %i\n", current);
     for jjj in 1..mm {
       yield current * 100 + jjj;
     }
-    writef("myiter done  %t\n", current);
-    cnt$.writeEF(current + 1);
+    writef("myiter done  %i\n", current);
+    cnt.writeEF(current + 1);
   }
 }
 
@@ -77,7 +77,7 @@ proc test1 {
     const before2 = result2;
     result1 += iii;
     result2 += iii;
-    writef("loop %t    %t -> %t    %t -> %t\n",
+    writef("loop %?    %? -> %?    %? -> %?\n",
            iii, before1, result1, before2, result2);
   }
   writeln("result1 = ", result1);
@@ -91,7 +91,7 @@ proc test2 {
     const before2 = result2;
     result1 += iii;
     result2 += iii;
-    writef("loop %t    %t -> %t    %t -> %t\n",
+    writef("loop %?    %? -> %?    %? -> %?\n",
            iii, before1, result1, before2, result2);
   }
   writeln("result1 = ", result1);

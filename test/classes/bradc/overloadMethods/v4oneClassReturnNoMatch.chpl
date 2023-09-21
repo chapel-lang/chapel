@@ -1,7 +1,7 @@
 class C {
-  proc bbox(x: int) {
+  proc bbox(x: int): range(strides=strideKind.negOne) {
     halt("bbox() not implemented for this class");
-    return 0..-1 by -1;
+    // return 0..-1 by -1; // this line would be ignored
   }
 }
 
@@ -19,7 +19,8 @@ class D : C {
   }
 }
 
-var d:borrowed C = (new owned D(4)).borrow();
+var dd = new owned D(4);
+var d:borrowed C = dd.borrow();
 writeln(d.bbox(1));
 writeln(d.bbox(2));
 writeln(d.bbox(3));

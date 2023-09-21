@@ -9,7 +9,8 @@ proc main {
       var a: int;
       var b: int;
     }
-    var c = (new owned C(1,2)).borrow();
+    var ownC = new owned C(1,2);
+    var c = ownC.borrow();
     writeln(c);
     swap(c.a, c.b);
     writeln(c);
@@ -52,8 +53,10 @@ proc main {
     class C {
       var a, b: int;
     }
-    var c1 = (new owned C(1,2)).borrow();
-    var c2 = (new owned C(3,4)).borrow();
+    var ownC1 = new owned C(1,2);
+    var c1 = ownC1.borrow();
+    var ownC2 = new owned C(3,4);
+    var c2 = ownC2.borrow();
     writeln(c1, c2);
     swap(c1, c2);
     writeln(c1, c2);

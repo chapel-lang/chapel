@@ -95,7 +95,7 @@ module matrix_matrix_multiply_schur_complement {
   // Symmetric Block Outer Product Modification for a single diagonal block
   // ======================================================================
 
-  proc symmetric_diagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_diagonal_low_rank_modification ( L : [], ref A : [] ) {
 
     // -----------------------------------------------------------
     // form diagonal block A (K,K) = A (K,K) - L (K,J) L^T (J,K) 
@@ -110,8 +110,8 @@ module matrix_matrix_multiply_schur_complement {
     const AKK_rc_indices = A.domain.dim (0),
           LJ_col_indices = L.domain.dim (1);
 
-    forall i in AKK_rc_indices do 
-      forall j in AKK_rc_indices (..i) do
+    forall i in AKK_rc_indices with (ref A) do 
+      forall j in AKK_rc_indices (..i) with (ref A) do
 	A (i,j) -= + reduce [k in LJ_col_indices] L (i,k) * L (j,k);
   }
       
@@ -120,7 +120,7 @@ module matrix_matrix_multiply_schur_complement {
   // Symmetric Block Outer Product Modification for a single offdiagonal block
   // =========================================================================
 
-  proc symmetric_offdiagonal_low_rank_modification ( L : [], A : [] ) {
+  proc symmetric_offdiagonal_low_rank_modification ( L : [], ref A : [] ) {
 
     // -------------------------------------------------------------
     // Form a single offdiagonal block 
@@ -134,7 +134,7 @@ module matrix_matrix_multiply_schur_complement {
           AIK_col_indices = A.domain.dim(1),
           LJ_col_indices  = L.domain.dim (1);
 
-    forall (i,j, k) in { AIK_row_indices, AIK_col_indices, LJ_col_indices } do 
+    forall (i,j, k) in { AIK_row_indices, AIK_col_indices, LJ_col_indices } with (ref A) do 
       A (i,j) -= L (i,k) * L (j,k);
   }
 }

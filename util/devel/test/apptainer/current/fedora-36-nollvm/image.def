@@ -8,4 +8,4 @@ From: fedora:36
     /provision-scripts/dnf-deps.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

@@ -45,6 +45,13 @@ module Aggregator {
       bufferSize = buffSize;
     }
 
+    proc init=(other: aggregator(?)) {
+      this.client = other.client;
+      this.updater = other.updater;
+      this.bufferSize = other.bufferSize;
+      this.buffers = other.buffers; // should this be allowed?
+    }
+
     // TODO: document
     proc update(key: client.keyType) {
       var loc: int = client.getLocaleForKey(key);

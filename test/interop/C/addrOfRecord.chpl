@@ -15,4 +15,4 @@ const ptr_r_const = c_ptrToConst(r1),
 writeln(cmp(ptr_r, addr_r));
 writeln(cmp(ptr_r_const, addr_r_const));
 
-proc cmp (x, y): bool do return (x: c_void_ptr) == (y: c_void_ptr);
+proc cmp (x, y): bool do return (x: c_ptr(void)) == (y: c_ptr(void));

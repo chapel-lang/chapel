@@ -1,6 +1,6 @@
 proc foo() {
    var A: [1..3] [1..3] real;
-   forall (i,j) in {1..3, 1..3} do
+   forall (i,j) in {1..3, 1..3} with (ref A) do
        A[i][j] = i + j/10.0;
 
    ref myA = A[2];

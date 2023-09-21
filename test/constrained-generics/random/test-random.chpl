@@ -49,10 +49,6 @@ module StandardInterfaces {
   }
 
   bool implements StdOps;
-/*// currently does not work because: == is implemented for args of the type
-  // "bool"; need coercions to call it; coercions are not supported
-  chpl_anybool implements StdOps;
-*/
   numeric implements StdOps;
   string  implements StdOps;
   private proc stdTypeString(arg) do return arg.type :string;
@@ -142,7 +138,7 @@ module RandomInterface {
   }
 
   // a simplified IC version of fillRandom()
-  proc icFillRandom(stream: ?Stream, arr: ?ARR)
+  proc icFillRandom(stream: ?Stream, ref arr: ?ARR)
     where Stream implements PCGRandomStreamImpl &&
           ARR implements Array1d(stream.eltType)
     // would also like: Stream.eltType == ARR.eltType
@@ -159,7 +155,7 @@ module RandomInterface {
   implements PCGRandomStreamImpl(borrowed PCGRandomStream(?));
   // how about other management strategies?
 
-  proc PCGRandomStream.startCursor(D: domain) {
+  proc PCGRandomStream.startCursor(D: domain(?)) {
     import MyRandom.PCGRandom.randlc_skipto;
     type resultType = eltType;
     _lock();
@@ -210,9 +206,12 @@ module User {
 
   proc main {
     import MyRandom.createRandomStream;
-    const rs1 = createRandomStream(int, 123).borrow(),
-          rs2 = createRandomStream(int, 123).borrow(),
-          rs3 = createRandomStream(int, 123).borrow();
+    const ownRs1 = createRandomStream(int, 123);
+    const ownRs2 = createRandomStream(int, 123);
+    const ownRs3 = createRandomStream(int, 123);
+    const rs1 = ownRs1.borrow(),
+          rs2 = ownRs2.borrow(),
+          rs3 = ownRs3.borrow();
     writeln("created three of ", rs1.type:string);
     testGetNth(rs1, rs2, rs3);
 

@@ -50,7 +50,7 @@ module interopWithC {
 /*
    To generate a library from a Chapel code file, compile the Chapel file with
    the ``--library`` flag.  For example:
-*/   
+*/
 
 /*
    .. code-block:: bash
@@ -81,7 +81,7 @@ module interopWithC {
 /*
    To access the symbols in the generated Chapel library from a C program,
    ``#include`` the generated header file:
-*/ 
+*/
 
 /*
    .. literalinclude:: ../../../test/release/examples/primers/cClient.test.c
@@ -89,13 +89,13 @@ module interopWithC {
       :lines: 1-2
 */
 
-/*   
+/*
    Before calling any of the functions defined by the library, the Chapel
    runtime and internal libraries must be initialized.  This is done by calling
    ``chpl_library_init``, which is defined in
    ``$CHPL_HOME/runtime/include/chpl-init.h`` and accessible with the above
    ``#include``.
-*/ 
+*/
 
 /*
    .. literalinclude:: ../../../test/release/examples/primers/cClient.test.c
@@ -103,12 +103,12 @@ module interopWithC {
       :lines: 5-7
 */
 
-/*   
+/*
    Then, if the exported functions rely upon any global variables, the module
    initialization function declared in the header file must be called.  If there
    is uncertainty about whether doing so is necessary, it is recommended to call
    this function.  In this example, this call occurs like this:
-*/ 
+*/
 
 /*
    .. literalinclude:: ../../../test/release/examples/primers/cClient.test.c
@@ -132,7 +132,7 @@ module interopWithC {
 /*
    When ending the C program, the user must explicitly shut down the Chapel
    runtime and module code.  This is done by calling ``chpl_library_finalize``:
-*/ 
+*/
 
 /*
    .. literalinclude:: ../../../test/release/examples/primers/cClient.test.c
@@ -157,7 +157,7 @@ module interopWithC {
    Compiling C code with the generated Chapel library file is generally complex,
    but can be made simpler through the use of the ``--library-makefile`` flag
    as described in :ref:`readme-libraries-linking`.
-   
+
    An example of compiling a C program with a generated Chapel library using
   the generated Makefile can be found under the `interopWithC` target in the
   `Makefile
@@ -167,7 +167,7 @@ module interopWithC {
   <https://github.com/chapel-lang/chapel/blob/main/test/release/examples/primers/Makefile.cClient>`_.
   To build the C client, first run `make interopWithC` then run `make -f
   Makefile.cClient`.
-*/ 
+*/
 
 /*
    .. _primers-C-interop-using-C:
@@ -179,7 +179,7 @@ module interopWithC {
 /*
    Chapel has support for C code but we need to tell the compiler
    about the C symbols using the ``extern`` keyword.
-   Using the ``extern`` keyword for declaring external 
+   Using the ``extern`` keyword for declaring external
    functions can be done as follows:
 */
 
@@ -204,9 +204,9 @@ module interopWithC {
 // You can tell the chapel compiler where to look for these C functions by adding a
 // require statement:
    require "cHelper.h", "cHelper.c";
-// When requiring a C file, object file, or archived library, 
+// When requiring a C file, object file, or archived library,
 // the appropriate header file must also be required.
- 
+
 
 // Chapel also supports require statements for ``.o`` files and
 // for archived libraries using the ``-l`` flag:
@@ -241,9 +241,9 @@ module interopWithC {
 
 /*
    Chapel also has a standard module named :mod:`CTypes` (located in
-   ``$CHPL_HOME/modules/standard/``). 
-   This module defines a few C types which align with the C compiler 
-   specification and do not require the ``extern`` keyword, 
+   ``$CHPL_HOME/modules/standard/``).
+   This module defines a few C types which align with the C compiler
+   specification and do not require the ``extern`` keyword,
    such as ``c_int`` and ``c_char``. For more information about these types see
    the :ref:`readme-extern` Technical Note.
 */
@@ -263,7 +263,7 @@ module interopWithC {
 // Therefore, the C function must also accept an array of type ``int64_t`` .
    writeln("Sum of Array: ", sumArray(arr, 10:c_int));
 
-// While dealing with ``extern proc`` s, you can also assign default arguments to them 
+// While dealing with ``extern proc`` s, you can also assign default arguments to them
 // which then can be omitted at the call site as usual. For example:
 
    extern proc sum(a: c_int, b: c_int = 1): int;
@@ -302,14 +302,14 @@ module interopWithC {
 // under another name simply state its external name after the ``extern`` keyword:
 
    extern "struct person" record person{
-      var name: c_string;
+      var name: c_ptrConst(c_char);
       var age: c_int;
    }
 
 // ``extern proc`` s can also be renamed in a similar fashion.
 //
 // Since most functions dealing with structs often return pointers, you can use the
-// ref intent for function arguments when their C counterparts are dealing with 
+// ref intent for function arguments when their C counterparts are dealing with
 // pointers.
 
    require "fact.c", "fact.h";

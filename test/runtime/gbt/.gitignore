@@ -1,0 +1,3 @@
+# Test/runtime/gbt ignores.
+/numThreadsSymbolicLogical.good
+/numThreadsSymbolicPhysical.good

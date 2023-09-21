@@ -1,0 +1,10 @@
+rangeIdxType.chpl:4: warning: the idxType of this range literal 0..1 with the low bound of the type int(64) and the high bound of the type int(8) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+rangeIdxType.chpl:5: warning: the idxType of this range literal 0..1 with the low bound of the type int(64) and the high bound of the type uint(8) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+rangeIdxType.chpl:6: warning: the idxType of this range literal 0..1 with the low bound of the type int(8) and the high bound of the type int(64) is currently int(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+rangeIdxType.chpl:7: warning: the idxType of this range literal 0..1 with the low bound of the type uint(8) and the high bound of the type int(64) is currently uint(8). In a future release it will be switched to int(64). To switch to this new typing and turn off this warning, compile with -snewRangeLiteralType.
+range(uint(8),both,one)
+range(uint(32),both,one)
+range(int(8),both,one)
+range(uint(8),both,one)
+range(int(8),both,one)
+range(uint(8),both,one)

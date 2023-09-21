@@ -1,0 +1,32 @@
+─── syntax in stringLiteralLocations.chpl:4 [ExceptOnlyInvalidExpr] ───
+  Incorrect expression in 'except' list, identifier expected.
+  In the 'except' list here:
+      |
+    4 | use IO except "hello";
+      |               ⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── syntax in stringLiteralLocations.chpl:5 [ExceptOnlyInvalidExpr] ───
+  Incorrect expression in 'except' list, identifier expected.
+  In the 'except' list here:
+      |
+    5 | use IO except b"hello";
+      |               ⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── syntax in stringLiteralLocations.chpl:6 [ExceptOnlyInvalidExpr] ───
+  Incorrect expression in 'except' list, identifier expected.
+  In the 'except' list here:
+      |
+    6 | use IO except """hello""";
+      |               ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+
+─── syntax in stringLiteralLocations.chpl:7 [ExceptOnlyInvalidExpr] ───
+  Incorrect expression in 'except' list, identifier expected.
+  In the 'except' list here:
+      |
+    7 | use IO except b"""hello""";
+      |               ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+

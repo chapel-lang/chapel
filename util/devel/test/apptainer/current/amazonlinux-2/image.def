@@ -11,4 +11,4 @@ From: amazonlinux:2
     yum -y install llvm-devel clang clang-devel
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

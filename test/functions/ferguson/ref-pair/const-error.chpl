@@ -8,15 +8,15 @@ proc getter(const ref arg) const ref {
   return arg;
 }
 
-proc setElement(x) {
+proc setElement(ref x) {
   x[1] = 1;
 }
 
-proc callSetElement(x) {
+proc callSetElement(ref x) {
   setElement(x);
 }
 
-proc callSetElementWithGetter(x) {
+proc callSetElementWithGetter(ref x) {
   setElement(getter(x));
 }
 

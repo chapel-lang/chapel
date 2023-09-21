@@ -8,6 +8,7 @@ class StoreSomeInts {
   }
 }
 
-var powers = (new owned StoreSomeInts(1, 2, 3)).borrow();
+var ownPowers = new owned StoreSomeInts(1, 2, 3);
+var powers = ownPowers.borrow();
 
 writeln("powers = ", powers);

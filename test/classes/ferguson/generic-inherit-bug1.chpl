@@ -22,7 +22,7 @@ module Structure {
 
   }
 
-  class SubParent : Parent {
+  class SubParent : Parent(?) {
     type eltType;
   }
 
@@ -63,7 +63,7 @@ module Structure {
 module Impl {
   use Structure;
 
-  class Child : SubParent {
+  class Child : SubParent(?) {
     var x:eltType;
     
     override proc foo( arg: rank*range(idxType, boundKind.both, strides) ) {
@@ -84,7 +84,8 @@ module Impl {
     writeln(aa);
 
     var a = new unmanaged Child(rank=1, idxType=int, strides=strideKind.one, eltType=int);
-    var d = (new owned ListerParent(rank=1, idxType=int, strides=strideKind.one)).borrow();
+    var ownD = new owned ListerParent(rank=1, idxType=int, strides=strideKind.one);
+    var d = ownD.borrow();
     d.lst.append(a);
 
     test(d);

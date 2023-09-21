@@ -185,6 +185,8 @@ PRAGMA(DEFAULT_INTENT_IS_REF_MAYBE_CONST, ypr,
        "The default intent for this type is ref if modified const "
        "ref otherwise")
 
+PRAGMA(NO_PROMOTION_WHEN_BY_REF, ypr, "no promotion when by ref", ncm)
+
 PRAGMA(COPY_INIT, npr, "copy initializer", ncm)
 PRAGMA(DEFAULT_INIT, npr, "default initializer", ncm)
 PRAGMA(DESTRUCTOR, npr,
@@ -193,6 +195,15 @@ PRAGMA(DESTRUCTOR, npr,
 PRAGMA(DEPRECATED, npr,
        "deprecated",
        "applied to symbols that are deprecated")
+PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
+       "deprecated impliict conversions",
+       "implicit conversions when passing to this formal are deprecated")
+PRAGMA(DEPRECATED_PARENFUL, npr,
+       "deprecated parenful",
+       "applied to parenless functions whose parenful forms are deprecated")
+PRAGMA(IGNORE_DEPRECATED_USE, ypr,
+       "ignore deprecated use",
+       "applied to symbols that are allowed to use other deprecated symbols")
 PRAGMA(DISTRIBUTION, ypr, "distribution", ncm)
 PRAGMA(DOCS_ONLY, ypr,
        "docs only",
@@ -294,6 +305,7 @@ PRAGMA(INFER_CUSTOM_TYPE, ypr, "infer custom type", ncm)
 PRAGMA(MANAGER_HANDLE, npr, "manager handle", ncm)
 PRAGMA(MANAGER_RESOURCE_INFER_STORAGE, npr, "manager resource infer storage", ncm)
 
+PRAGMA(IFC_ANY_RETURN_INTENT, ypr, "ifc any return intent", "allow a function with any return intent to be a witness for this interface requirement")
 // This can also mark a temp that serves as an intermediate step of
 // destructuring a tuple-typed INDEX_OF_INTEREST variable
 // into loop index variables.
@@ -363,12 +375,15 @@ PRAGMA(LOCAL_ON, npr, "local on", ncm)
 PRAGMA(LOOP_BODY_ARGUMENT_CLASS, npr, "loop body argument class", ncm)
 PRAGMA(MANAGED_POINTER, ypr, "managed pointer", "e.g. Owned and Shared")
 PRAGMA(MANAGED_POINTER_NONNILABLE, npr, "managed pointer nonnilable", "e.g. non-nilable Owned and Shared")
-PRAGMA(MARKED_GENERIC, npr, "marked generic", "formal is marked generic using the type query syntax")
+PRAGMA(MARKED_GENERIC, npr, "marked generic", "marked generic using the type query syntax")
+PRAGMA(RET_TYPE_MARKED_GENERIC, npr, "ret type marked generic", "ret type marked generic with (?)")
+PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "supreclass marked generic", "superclass is marked generic")
 PRAGMA(MAYBE_ARRAY_TYPE, npr, "maybe array type", "function may be computing array type")
 PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early due to copy elision")
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
 PRAGMA(MAYBE_REF, npr, "maybe ref", "symbol can resolve to a ref")
 PRAGMA(SPLIT_INITED, npr, "split inited", "variable was initialized with split init")
+PRAGMA(USED_IN_TYPE, npr, "used in type", "call-expr temporary used in creating a type")
 PRAGMA(MAYBE_TYPE, npr, "maybe type", "symbol can resolve to a type")
 PRAGMA(MEMORY_ORDER_TYPE, ypr, "memory order type", "type implementing chpl memory order (normally called memoryOrder)")
 PRAGMA(C_MEMORY_ORDER_TYPE, ypr, "c memory order type", "type implementing c memory order (normally called memory_order)")
@@ -400,6 +415,7 @@ PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
 PRAGMA(NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol")
+PRAGMA(NO_WHERE_DOC, ypr, "no where doc", "do not include the where clause in chpldoc documentation for this symbol")
 PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
 
 // This flag disables initialization entirely. In contrast, `= noinit`
@@ -573,10 +589,8 @@ PRAGMA(STAR_TUPLE_ACCESSOR, ypr, "star tuple accessor", "this function for star 
 
 PRAGMA(TYPE_ASSIGN_FROM_CONST, npr, "type has = from const", "type supports assignment from a const rhs")
 PRAGMA(TYPE_ASSIGN_FROM_REF, npr, "type has = from ref", "type supports assignment from a potentially non-const rhs")
-PRAGMA(TYPE_ASSIGN_MISSING, npr, "type has no =", "type has no assign overload")
 PRAGMA(TYPE_INIT_EQUAL_FROM_CONST,  npr, "type has init= from const", "type supports init= with const other")
 PRAGMA(TYPE_INIT_EQUAL_FROM_REF,  npr, "type has init= from ref", "type supports init= from a potentially non-const other argument")
-PRAGMA(TYPE_INIT_EQUAL_MISSING, npr, "type has no init=", "type has no init=")
 PRAGMA(TYPE_DEFAULT_VALUE, npr, "type has default value", "type has a default value")
 PRAGMA(TYPE_NO_DEFAULT_VALUE, npr, "type has no default value", "type has no default value")
 

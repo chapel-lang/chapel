@@ -15,6 +15,8 @@ proc foo(n) {
 }
 
 
+const host = here;
+
 startVerboseGpu();
 on here.gpus[0] {
   var A: [0..#n] real;
@@ -23,7 +25,11 @@ on here.gpus[0] {
     A[i] = foo(i);      // This will cause n kernel launches from `foo`
   }
 
-  writeln(A);
+  on host { // copy data back to avoid interleaving output with verbose GPU
+            // chatter
+    var locA = A;
+    writeln(locA);
+  }
 
   var x = foo(n); // This should cause 1 more launch
   writeln(x);

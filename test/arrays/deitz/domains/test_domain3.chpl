@@ -71,7 +71,8 @@ class mydomain {
   }
 }
 
-var D : borrowed mydomain(rank=2) = (new owned mydomain(rank=2)).borrow();
+var ownD = new owned mydomain(rank=2);
+var D : borrowed mydomain(rank=2) = ownD.borrow();
 D.dimInit(1, 1, 3, 1);
 D.dimInit(2, 1, 4, 1);
 writeln(D);

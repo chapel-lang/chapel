@@ -33,3 +33,5 @@ query(r);
   writeln(boundedHigh);                 // d: boundedHigh
   writeln(boundedNone);                 // d: boundedNone
 }
+
+writeln(r.type.boundedType);            // d: boundedType

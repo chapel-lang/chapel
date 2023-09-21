@@ -28,9 +28,11 @@
 #ifdef HAVE_LLVM
 
 #include "llvm/ADT/Statistic.h"
+#include "llvm/Analysis/LoopInfo.h"
 #include "llvm/IR/Function.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+
 using namespace llvm;
 
 void DumpIR::run(Function &F) {
@@ -45,6 +47,18 @@ void DumpIR::run(Function &F) {
 PreservedAnalyses DumpIRPass::run(Function& function,
                                   FunctionAnalysisManager& analysisManager) {
   pass.run(function);
+  // We don't modify the program, so we preserve all analyses.
+  return llvm::PreservedAnalyses::all();
+}
+
+PreservedAnalyses DumpIRPass::run(Loop& L,
+                                  LoopAnalysisManager& AM,
+                                  LoopStandardAnalysisResults& AR,
+                                  LPMUpdater& U) {
+  llvm::BasicBlock* bb = L.getHeader();
+  assert(bb);
+  llvm::Function* function = bb->getParent();
+  pass.run(*function);
   // We don't modify the program, so we preserve all analyses.
   return llvm::PreservedAnalyses::all();
 }

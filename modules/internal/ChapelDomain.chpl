@@ -69,7 +69,7 @@ module ChapelDomain {
   // Support for domain types
   //
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+  proc chpl__buildDomainRuntimeType(dist, param rank: int,
                                     type idxType = int,
                                     param strides: strideKind = strideKind.one
                                     ) type {
@@ -78,7 +78,7 @@ module ChapelDomain {
 
   // deprecated by Vass in 1.31 to implement #17131
   @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__buildDomainRuntimeType(dist: _distribution, param rank: int,
+  proc chpl__buildDomainRuntimeType(dist, param rank: int,
                                     type idxType = int,
                                     param stridable: bool) type {
     return chpl__buildDomainRuntimeType(dist, rank, idxType,
@@ -86,7 +86,8 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
+  @unstable("Associative domains are unstable and their behavior may change in the future")
+  proc chpl__buildDomainRuntimeType(dist, type idxType,
                                     param parSafe: bool = true) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
@@ -103,7 +104,7 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  proc chpl__buildSparseDomainRuntimeType(dist: _distribution,
+  proc chpl__buildSparseDomainRuntimeType(dist,
                                           parentDom: domain) type {
     if ! isUltimatelyRectangularParent(parentDom) then
       compilerError("sparse subdomains are currently supported only for " +
@@ -126,7 +127,7 @@ module ChapelDomain {
                   " please supply a domain value instead");
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        param rank: int,
                                        type idxType = int,
                                        param strides: strideKind,
@@ -137,7 +138,7 @@ module ChapelDomain {
 
   // deprecated by Vass in 1.31 to implement #17131
   @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        param rank: int,
                                        type idxType = int,
                                        param stridable: bool,
@@ -147,14 +148,14 @@ module ChapelDomain {
                        definedConst);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution, type idxType,
+  proc chpl__convertRuntimeTypeToValue(dist, type idxType,
                                        param parSafe: bool,
                                        param isNoInit: bool,
                                        definedConst: bool) {
     return new _domain(dist, idxType, parSafe);
   }
 
-  proc chpl__convertRuntimeTypeToValue(dist: _distribution,
+  proc chpl__convertRuntimeTypeToValue(dist,
                                        parentDom: domain,
                                        param isNoInit: bool,
                                        definedConst: bool) {
@@ -163,18 +164,18 @@ module ChapelDomain {
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseRectangularDom) {
-    return chpl__buildDomainRuntimeType(dom.dist, dom._value.rank,
+    return chpl__buildDomainRuntimeType(dom.distribution, dom._value.rank,
                                       dom._value.idxType, dom._value.strides);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseAssociativeDom) {
-    return chpl__buildDomainRuntimeType(dom.dist, dom._value.idxType, dom._value.parSafe);
+    return chpl__buildDomainRuntimeType(dom.distribution, dom._value.idxType, dom._value.parSafe);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type
    where isSubtype(dom._value.type, BaseSparseDom) {
-    return chpl__buildSparseDomainRuntimeType(dom.dist, dom._value.parentDom);
+    return chpl__buildSparseDomainRuntimeType(dom.distribution, dom._value.parentDom);
   }
 
   proc chpl__convertValueToRuntimeType(dom: domain) type {
@@ -223,7 +224,8 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  proc chpl__buildDomainExpr(keys..., definedConst) {
+  @unstable("Associative domains are unstable and their behavior may change in the future")
+  proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;
@@ -349,7 +351,7 @@ module ChapelDomain {
     for param i in 0..dom.rank-1 do
       ranges(i) = ranges(i) # counts(i);
 
-    return new _domain(dom.dist, dom.rank, dom.idxType, dom.strides, ranges);
+    return new _domain(dom.distribution, dom.rank, dom.idxType, dom.strides, ranges);
   }
 
   @chpldoc.nodoc
@@ -376,35 +378,48 @@ module ChapelDomain {
                   "' using count(s) of type ", counts.type:string);
   }
 
-  @chpldoc.nodoc
-  operator +(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  //
+  // Disallow additions and subtractions to rectangular domains of these types
+  // with a specific message, to avoid surpises.
+  // Note: add/sub of a rectangular domain and another type will either
+  // produce a generic error message or compile as a promoted expression.
+  //
+  private proc noRDadds(type t) param do return
+    isPrimitive(t) || isRange(t) || isTuple(t) || isEnum(t);
 
   @chpldoc.nodoc
-  operator +(i, d: domain) where isSubtype(i.type, index(d)) && !d.isIrregular() {
-    if d.isRectangular() then
-      compilerError("Cannot add indices to a rectangular domain");
-    else
-      compilerError("Cannot add indices to this domain type");
-  }
+  operator +(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of a rectangular domain and ", t:string,
+                  " is currently not supported");
 
   @chpldoc.nodoc
+  operator +(i: ?t, d: domain) where d.isRectangular() && noRDadds(t) do
+    compilerError("addition of ", t:string,
+                  " and a rectangular domain is currently not supported");
+
+  @chpldoc.nodoc
+  operator -(d: domain, i: ?t) where d.isRectangular() && noRDadds(t) do
+    compilerError("subtraction of a rectangular domain and ", t:string,
+                  " is currently not supported");
+
+  // addition and subtraction on irregular domains has set semantics
+
+  @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(in d: domain, i: index(d)) where d.isIrregular() {
     d.add(i);
     return d;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(i, in d: domain) where isSubtype(i.type,index(d)) && d.isIrregular() {
     d.add(i);
     return d;
   }
 
   @chpldoc.nodoc
+  @unstable("'+' on domains is unstable and may change in the future")
   operator +(in d1: domain, d2: domain) where
                                     d1.type == d2.type &&
                                     d1.isIrregular() &&
@@ -423,19 +438,14 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, idx) { D.add(idx); }
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   inline operator +=(ref D: domain, param idx) { D.add(idx); }
 
   @chpldoc.nodoc
-  operator -(d: domain, i: index(d)) {
-    if d.isRectangular() then
-      compilerError("Cannot remove indices from a rectangular domain");
-    else
-      compilerError("Cannot remove indices from this domain type");
-  }
-
-  @chpldoc.nodoc
+  @unstable("'-' on domains is unstable and may change in the future")
   operator -(in d: domain, i: index(d)) where d.isIrregular() {
     d.remove(i);
     return d;
@@ -459,8 +469,10 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   inline operator -=(ref D: domain, idx) { D.remove(idx); }
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   inline operator -=(ref D: domain, param idx) { D.remove(idx); }
 
   @chpldoc.nodoc
@@ -552,6 +564,7 @@ module ChapelDomain {
            (d1.isSparse()      && d2.isSparse()     );
 
   @chpldoc.nodoc
+  @unstable("'-' on domains is unstable and may change in the future")
   operator -(a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -567,6 +580,7 @@ module ChapelDomain {
      occurs.
   */
   @chpldoc.nodoc
+  @unstable("'-=' on domains is unstable and may change in the future")
   operator -=(ref a :domain, b :domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -575,12 +589,14 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'|' on domains is unstable and may change in the future")
   operator |(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     return a + b;
   }
 
   @chpldoc.nodoc
+  @unstable("'|=' on domains is unstable and may change in the future")
   operator |=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -593,6 +609,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'+=' on domains is unstable and may change in the future")
   operator +=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     a |= b;
@@ -604,6 +621,7 @@ module ChapelDomain {
      occurs.
   */
   @chpldoc.nodoc
+  @unstable("'&' on domains is unstable and may change in the future")
   operator &(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -615,6 +633,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'&=' on domains is unstable and may change in the future")
   operator &=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var removeSet: domain(a.idxType);
@@ -631,6 +650,7 @@ module ChapelDomain {
   }
 
   @chpldoc.nodoc
+  @unstable("'^' on domains is unstable and may change in the future")
   operator ^(a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     var newDom : a.type;
@@ -651,6 +671,7 @@ module ChapelDomain {
      added to the LHS.
   */
   @chpldoc.nodoc
+  @unstable("'^=' on domains is unstable and may change in the future")
   operator ^=(ref a :domain, b: domain) where (a.type == b.type) &&
     a.isAssociative() {
     for e in b do
@@ -692,7 +713,7 @@ module ChapelDomain {
     // Once an interface supports it:
     // if sd.RMO && d.RMO then rowSorted = true;
 
-    sd._value.dsiBulkAdd(arr, rowSorted, true, false);
+    sd._value.dsiBulkAddNoPreserveInds(arr, rowSorted, true);
   }
 
   // TODO: Implement bulkRemove
@@ -808,7 +829,7 @@ module ChapelDomain {
     var t = _makeIndexTuple(a.rank, b, "step", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, newStrides, r);
   }
 
   @chpldoc.nodoc
@@ -818,7 +839,7 @@ module ChapelDomain {
     var r: a.rank*range(a._value.idxType, boundKind.both, newStrides);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) by b;
-    return new _domain(a.dist, a.rank, a._value.idxType, newStrides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, newStrides, r);
   }
 
   // This is the definition of the 'align' operator for domains.
@@ -831,13 +852,13 @@ module ChapelDomain {
     var t = _makeIndexTuple(a.rank, b, "alignment", expand=true);
     for param i in 0..a.rank-1 do
       r(i) = a.dim(i) align t(i);
-    return new _domain(a.dist, a.rank, a._value.idxType, a.strides, r);
+    return new _domain(a.distribution, a.rank, a._value.idxType, a.strides, r);
   }
 
   // This function exists to avoid communication from computing _value when
   // the result is param.
   proc domainDistIsLayout(d: domain) param {
-    return d.dist._value.dsiIsLayout();
+    return d.distribution._value.dsiIsLayout();
   }
 
   pragma "find user line"
@@ -988,7 +1009,7 @@ module ChapelDomain {
   pragma "domain"
   pragma "has runtime type"
   pragma "ignore noinit"
-  record _domain {
+  record _domain : writeSerializable, readDeserializable {
     var _pid:int; // only used when privatized
     pragma "owned"
     var _instance; // generic, but an instance of a subclass of BaseDom
@@ -1027,7 +1048,7 @@ module ChapelDomain {
       this._instance = value;
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param strides = strideKind.one,
@@ -1035,7 +1056,7 @@ module ChapelDomain {
       this.init(d.newRectangularDom(rank, idxType, strides, definedConst));
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param strides = strideKind.one,
@@ -1047,7 +1068,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param stridable: bool,
@@ -1057,7 +1078,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc init(d: _distribution,
+    proc init(d,
               param rank : int,
               type idxType = int,
               param stridable: bool,
@@ -1067,14 +1088,14 @@ module ChapelDomain {
                 chpl_convertRangeTuple(ranges, stridable), definedConst);
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               type idxType,
               param parSafe: bool = true,
               definedConst: bool = false) {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
 
-    proc init(d: _distribution,
+    proc init(d,
               dom: domain,
               definedConst: bool = false) {
       this.init(d.newSparseDom(dom.rank, dom._value.idxType, dom));
@@ -1084,15 +1105,15 @@ module ChapelDomain {
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
     proc init=(const ref other : domain) where other.isRectangular() {
-      this.init(other.dist, other.rank, other.idxType, other.strides,
+      this.init(other.distribution, other.rank, other.idxType, other.strides,
                 other.dims());
     }
 
     proc init=(const ref other : domain) {
       if other.isAssociative() {
-        this.init(other.dist, other.idxType, other.parSafe);
+        this.init(other.distribution, other.idxType, other.parSafe);
       } else if other.isSparse() {
-        this.init(other.dist, other.parentDom);
+        this.init(other.distribution, other.parentDom);
       } else {
         compilerError("cannot initialize '", this.type:string, "' from '", other.type:string, "'");
         this.init(nil);
@@ -1160,7 +1181,19 @@ module ChapelDomain {
 
     /* Return the domain map that implements this domain */
     pragma "return not owned"
-    proc dist do return _getDistribution(_value.dist);
+    proc distribution {
+      use Reflection;
+      if canResolveMethod(_value, "dsiGetDist") {
+        return _value.dsiGetDist();
+      } else {
+        // TODO: Remove this branch and conditional once _distribution is
+        // retired
+        return _getDistribution(_value.dist);
+      }
+    }
+
+    @deprecated("domain.dist is deprecated, please use domain.distribution instead")
+    proc dist do return this.distribution;
 
     /* Return the number of dimensions in this domain */
     proc rank param {
@@ -1192,7 +1225,12 @@ module ChapelDomain {
     /* The ``idxType`` as represented by an integer type.  When
        ``idxType`` is an enum type, this evaluates to ``int``.
        Otherwise, it evaluates to ``idxType``. */
+    @deprecated("'.intIdxType' on domains is deprecated; please let us know if you're relying on it")
     proc intIdxType type {
+      return chpl_integralIdxType;
+    }
+
+    proc chpl_integralIdxType type {
       return chpl__idxTypeToIntIdxType(_value.idxType);
     }
 
@@ -1292,7 +1330,7 @@ module ChapelDomain {
       for param i in 0..rank-1 {
         r(i) = myDims(i)[ranges(i)];
       }
-      return new _domain(dist, rank, _value.idxType, r(0).strides, r);
+      return new _domain(distribution, rank, _value.idxType, r(0).strides, r);
     }
 
     // domain rank change
@@ -1336,8 +1374,8 @@ module ChapelDomain {
           upranges(d) = emptyrange;
       }
 
-      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=dist._pid,
-                                                 downDistInst=dist._instance,
+      const rcdist = new unmanaged ArrayViewRankChangeDist(downDistPid=distribution._pid,
+                                                 downDistInst=distribution._instance,
                                                  collapsedDim=collapsedDim,
                                                  idx = idx);
       // TODO: Should this be set?
@@ -1377,9 +1415,10 @@ module ChapelDomain {
      */
     proc dim(d : int) {
       use HaltWrappers;
+      import IO.FormattedIO.string;
       if boundsChecking then
         if (d < 0 || d >= rank) then
-          HaltWrappers.boundsCheckHalt("dim(" + d:string + ") is out-of-bounds; must be 0.." + (rank-1):string);
+          HaltWrappers.boundsCheckHalt(try! "dim(%i) is out-of-bounds; must be 0..%i".format(d, rank-1));
       return _value.dsiDim(d);
     }
 
@@ -1487,6 +1526,101 @@ module ChapelDomain {
       return _newArray(x);
     }
 
+    /*
+      Invoking this method will attempt to create and return an array
+      declared over the domain instance. If there is not enough memory
+      to satisfy the allocation, an error will be thrown, allowing
+      the program to continue if handled, as opposed to halting and
+      thus stopping program execution.
+
+      This method will be most reliable in configurations that use a
+      fixed heap (e.g., when using ``CHPL_GASNET_SEGMENT=large``), but
+      can be called in all configurations. In the case of a dynamic
+      heap, it is possible that overcommit will cause the array
+      allocation to succeed, even if there is not enough physical
+      memory to satisfy the allocation, which will then fail with a bus
+      error when attempting to access the array.
+
+      This method can be called on all domains that implement a
+      'doiTryCreateArray' method.
+
+      Throws an `ArrayOomError` when out of memory allocating elements.
+    */
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType) throws {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+
+      return _newArray(x);
+    }
+
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: ?t) throws
+      where isSubtype(t, _iteratorRecord) || isCoercible(t, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
+    pragma "no copy return"
+    @unstable("tryCreateArray() is subject to change in the future.")
+    proc tryCreateArray(type eltType, initExpr: [?dom] ?arrayEltType) throws
+      where this.rank == dom.rank && isCoercible(arrayEltType, eltType) {
+      if !(__primitive("resolves", _value.doiTryCreateArray(eltType))) then
+        compilerError("cannot call 'tryCreateArray' on domains that do not" +
+                      " support a 'doiTryCreateArray' method.");
+      if boundsChecking then
+        for (d, ad, i) in zip(this.dims(), dom.dims(), 0..) do
+          if d.size != ad.size then halt("Domain size mismatch in 'tryCreateArray' dimension " + i:string);
+
+      chpl_checkEltType(eltType);
+      chpl_checkNegativeStride();
+
+      var x = _value.doiTryCreateArray(eltType);
+      pragma "dont disable remote value forwarding"
+      proc help() {
+        _value.add_arr(x);
+      }
+      help();
+
+      chpl_incRefCountsForDomainsInArrayEltTypes(x, x.eltType);
+      var res = _newArray(x);
+      res = initExpr;
+
+      return res;
+    }
+
     // assumes that data is already initialized
     pragma "no copy return"
     @chpldoc.nodoc
@@ -1530,7 +1664,7 @@ module ChapelDomain {
       domain will be default-initialized. They can be set to desired
       values as usual, for example using an assignment operator.
     */
-    record unsafeAssignManager {
+    record unsafeAssignManager : contextManager {
       @chpldoc.nodoc
       var _lhsInstance;
 
@@ -1544,7 +1678,7 @@ module ChapelDomain {
       var _rhsPid: int;
 
       @chpldoc.nodoc
-      var _oldLhsDomainCopy: domain;
+      var _oldLhsDomainCopy: domain(?);
 
       @chpldoc.nodoc
       param _checks: bool;
@@ -1684,7 +1818,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _ensureNoLongerManagingThis() {
+      proc ref _ensureNoLongerManagingThis() {
         if !_isActiveManager then return; else _isActiveManager = false;
 
         // Possible runtime checks, reset the resize policy of owned arrays.
@@ -1698,7 +1832,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc deinit() {
+      proc ref deinit() {
         _ensureNoLongerManagingThis();
       }
 
@@ -1708,7 +1842,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc _moveInitializeElement(arr, idx, in value) {
+      proc _moveInitializeElement(ref arr, idx, in value) {
         import MemMove.moveInitialize;
         ref elem = arr[idx];
         moveInitialize(elem, value);
@@ -1737,11 +1871,12 @@ module ChapelDomain {
 
         It is an error if `idx` is not a valid index in `arr`.
       */
-      proc initialize(arr: [?d], idx, in value: arr.eltType) {
+      proc initialize(ref arr: [?d], idx, in value: arr.eltType) {
+        import IO.FormattedIO.string;
 
         // Check to make sure value and array element types match.
         if arr.eltType != value.type then
-          compilerError('Initialization value type \'' + value:string +
+          compilerError('Initialization value type \'' + value.type:string +
                         '\' does not match array element type \'' +
                         arr.eltType:string + '\'');
 
@@ -1765,15 +1900,11 @@ module ChapelDomain {
                'the domain being resized');
 
         if !arr.domain.contains(idx) then
-          halt('Array index out of bounds: ' + idx:string);
-
-        // Get a reference to the array slot.
-        ref elem = arr[idx];
+          halt(try! 'Array index out of bounds: %?'.format(idx));
 
         if _checks {
           if isElementInitialized(arr, idx) {
-            halt('Element at array index \'' + idx:string + '\' ' +
-                 'is already initialized');
+            halt(try! "Element at array index '%?' is already initialized".format(idx));
           }
         }
 
@@ -1781,7 +1912,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc enterThis() ref {
+      proc ref enterContext() ref {
 
         // TODO: Is it possible to nest unsafe assignments? Future work...
         if _isActiveManager {
@@ -1835,7 +1966,7 @@ module ChapelDomain {
       }
 
       @chpldoc.nodoc
-      proc leaveThis(in err: owned Error?) throws {
+      proc ref exitContext(in err: owned Error?) throws {
         _ensureNoLongerManagingThis();
         if err then throw err;
       }
@@ -1934,11 +2065,21 @@ module ChapelDomain {
     @chpldoc.nodoc
     @unstable("bulkAdd() is subject to change in the future.")
     proc ref bulkAdd(inds: [] _value.idxType, dataSorted=false,
-        isUnique=false, preserveInds=true, addOn=nilLocale)
+        isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank==1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    @chpldoc.nodoc
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.idxType, dataSorted=false,
+        isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank==1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     /*
@@ -1979,8 +2120,8 @@ module ChapelDomain {
 
        For sparse domains, an operation equivalent to this method is available
        with the ``+=`` operator, where the right-hand-side is an array. However,
-       in that case, default values will be used for the flags ``dataSorted``,
-       ``isUnique``, and ``preserveInds``. This method is available because in
+       in that case, default values will be used for the flags ``dataSorted`` and
+       ``isUnique``. This method is available because in
        some cases, expensive operations can be avoided by setting those flags.
        To do so, ``bulkAdd`` must be called explicitly (instead of ``+=``).
 
@@ -1989,6 +2130,59 @@ module ChapelDomain {
          Right now, this method and the corresponding ``+=`` operator are
          only available for sparse domains. In the future, we expect that
          these methods will be available for all irregular domains.
+
+       .. note::
+
+         ``nilLocale`` is a sentinel value to denote that the locale where this
+         addition should occur is unknown. We expect this to change in the
+         future.
+
+       .. note::
+
+         This method may make a copy of ``inds`` if the data is not sorted to
+         preserve the indices used. If the data is already sorted, it is
+         possible to avoid this extra copy by using :proc:`bulkAddNoPreserveInds`,
+         which does not copy the indices and may modify ``inds`` in place.
+
+       :arg inds: Indices to be added. ``inds`` must be an array of
+                  ``rank*idxType``, except for 1-D domains, where it must be
+                  an array of ``idxType``.
+
+       :arg dataSorted: ``true`` if data in ``inds`` is sorted.
+       :type dataSorted: bool
+
+       :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
+       :type isUnique: bool
+
+       :arg addOn: The locale where the indices should be added. Default value
+                   is ``nil`` which indicates that locale is unknown or there
+                   are more than one.
+       :type addOn: locale
+
+       :returns: Number of indices added to the domain
+       :rtype: int
+    */
+    @unstable("bulkAdd() is subject to change in the future.")
+    proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, addOn=nilLocale)
+        where this.isSparse() && _value.rank>1 {
+      if inds.isEmpty() then return 0;
+
+      return _value.dsiBulkAdd(inds, dataSorted, isUnique, addOn);
+    }
+
+    /*
+       Adds indices in ``inds`` to this domain in bulk.
+
+       This is nearly identical to :proc:`bulkAdd`. :proc:`bulkAdd` may
+       make a copy of ``inds`` if the data is unsorted, whereas this method will
+       modify ``inds`` in place.
+
+       .. note::
+
+         Right now, this method is only available for sparse domains.
+         In the future, we expect that this method will be available for all
+         irregular domains.
 
        .. note::
 
@@ -2006,9 +2200,6 @@ module ChapelDomain {
        :arg isUnique: ``true`` if data in ``inds`` has no duplicates.
        :type isUnique: bool
 
-       :arg preserveInds: ``true`` if data in ``inds`` needs to be preserved.
-       :type preserveInds: bool
-
        :arg addOn: The locale where the indices should be added. Default value
                    is ``nil`` which indicates that locale is unknown or there
                    are more than one.
@@ -2017,18 +2208,23 @@ module ChapelDomain {
        :returns: Number of indices added to the domain
        :rtype: int
     */
-    @unstable("bulkAdd() is subject to change in the future.")
-    proc ref bulkAdd(inds: [] _value.rank*_value.idxType,
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale)
+    @unstable("bulkAddNoPreserveInds() is subject to change in the future.")
+    proc ref bulkAddNoPreserveInds(ref inds: [] _value.rank*_value.idxType,
+        dataSorted=false, isUnique=false, addOn=nilLocale)
         where this.isSparse() && _value.rank>1 {
       if inds.isEmpty() then return 0;
 
-      return _value.dsiBulkAdd(inds, dataSorted, isUnique, preserveInds, addOn);
+      return _value.dsiBulkAddNoPreserveInds(inds, dataSorted, isUnique, addOn);
     }
 
     pragma "last resort" @chpldoc.nodoc
     proc bulkAdd(args...) {
       compilerError("incompatible argument(s) or this domain type does not support 'bulkAdd'");
+    }
+
+    pragma "last resort" @chpldoc.nodoc
+    proc bulkAddNoPreserveInds(args...) {
+      compilerError("incompatible argument(s) or this domain type does not support 'bulkAddNoPreserveInds'");
     }
 
     /* Remove index ``idx`` from this domain */
@@ -2141,7 +2337,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
-    proc contains(idx: rank*_value.idxType) {
+    proc contains(const idx: rank*_value.idxType) {
       if this.isRectangular() || this.isSparse() then
         return _value.dsiMember(_makeIndexTuple(rank, idx, "index"));
       else
@@ -2152,7 +2348,7 @@ module ChapelDomain {
        For sparse domains, only indices with a value are considered
        to be contained in the domain.
      */
-    inline proc contains(idx: _value.idxType ...rank) {
+    inline proc contains(const idx: _value.idxType ...rank) {
       return contains(idx);
     }
 
@@ -2208,6 +2404,7 @@ module ChapelDomain {
 
       :returns: Domain index for a given order in the domain.
     */
+    @unstable("domain.orderToIndex() is unstable and its behavior may change in the future")
     proc orderToIndex(order: int) where (this.isRectangular() && isNumericType(this.idxType)){
 
       if boundsChecking then
@@ -2260,7 +2457,7 @@ module ChapelDomain {
 
     @chpldoc.nodoc
     proc position(i) {
-      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*intIdxType;
+      var ind = _makeIndexTuple(rank, i, "index"), pos: rank*chpl_integralIdxType;
       for d in 0..rank-1 do
         pos(d) = _value.dsiDim(d).indexOrder(ind(d));
       return pos;
@@ -2277,6 +2474,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: integral ...rank) do return expand(off);
 
     /* Return a new domain that is the current domain expanded by
@@ -2288,6 +2486,7 @@ module ChapelDomain {
        it means to expand a range.
 
      */
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2297,7 +2496,7 @@ module ChapelDomain {
         }
       }
 
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain expanded by
@@ -2307,11 +2506,12 @@ module ChapelDomain {
        See :proc:`ChapelRange.range.expand` for further information about what
        it means to expand a range.
      */
+    @unstable("domain.expand() is unstable and its behavior may change in the future")
     proc expand(off: integral) where rank > 1 {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).expand(off);
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc
@@ -2325,6 +2525,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off: integral ...rank) do return exterior(off);
 
     /* Return a new domain that is the exterior portion of the
@@ -2337,11 +2538,12 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).exterior(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the exterior portion of the
@@ -2354,6 +2556,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.exterior() is unstable and its behavior may change in the future")
     proc exterior(off:integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2372,6 +2575,7 @@ module ChapelDomain {
     }
 
     @chpldoc.nodoc
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: integral ...rank) do return interior(off);
 
     /* Return a new domain that is the interior portion of the
@@ -2384,6 +2588,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do {
@@ -2393,7 +2598,7 @@ module ChapelDomain {
         }
         ranges(i) = _value.dsiDim(i).interior(off(i));
       }
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the interior portion of the
@@ -2406,6 +2611,7 @@ module ChapelDomain {
        it means to compute the exterior of a range.
 
      */
+    @unstable("domain.interior() is unstable and its behavior may change in the future")
     proc interior(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2431,6 +2637,7 @@ module ChapelDomain {
     // index type.  This is handled in the range.translate().
     //
     @chpldoc.nodoc
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: integral ...rank) do return translate(off);
 
     /* Return a new domain that is the current domain translated by
@@ -2440,11 +2647,12 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: rank*integral) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = _value.dsiDim(i).translate(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     /* Return a new domain that is the current domain translated by
@@ -2454,6 +2662,7 @@ module ChapelDomain {
        what it means to translate a range.
 
      */
+    @unstable("domain.translate() is unstable and its behavior may change in the future")
     proc translate(off: integral) where rank != 1 {
       var offTup: rank*off.type;
       for i in 0..rank-1 do
@@ -2470,11 +2679,11 @@ module ChapelDomain {
     // intended for internal use only:
     //
     proc chpl__unTranslate(off: integral ...rank) do return chpl__unTranslate(off);
-    proc chpl__unTranslate(off: rank*intIdxType) {
+    proc chpl__unTranslate(off: rank*chpl_integralIdxType) {
       var ranges = dims();
       for i in 0..rank-1 do
         ranges(i) = dim(i).chpl__unTranslate(off(i));
-      return new _domain(dist, rank, _value.idxType, strides, ranges);
+      return new _domain(distribution, rank, _value.idxType, strides, ranges);
     }
 
     @chpldoc.nodoc
@@ -2501,6 +2710,11 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc ref readThis(f) throws {
       _value.dsiSerialRead(f);
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      readThis(reader);
     }
 
     // TODO: Can we convert this to an initializer despite the potential issues
@@ -2570,13 +2784,22 @@ module ChapelDomain {
       // could add e.g. dsiDefaultSparseDist to the DSI interface
       // and have this function use _value.dsiDefaultSparseDist()
       // (or perhaps _value.dist.dsiDefaultSparseDist() ).
-      return _getDistribution(_value.dist);
+      return this.distribution;
+    }
+
+    // returns a default rectangular domain
+    @chpldoc.nodoc proc boundingBox() where this.isRectangular() {
+      var dst: rank*range(this.idxType, boundKind.both, strideKind.one);
+      const src = this.dims();
+      for param dim in 0..rank-1 do dst[dim] = src[dim].boundingBox();
+      return {(...dst)};
     }
 
     /* Cast a rectangular domain to another rectangular domain type.
        If the old type is stridable and the new type is not stridable,
        ensure that the stride was 1.
      */
+    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
     proc safeCast(type t:_domain)
       where chpl__isRectangularDomType(t) && this.isRectangular() {
       var tmpD: t;
@@ -2616,6 +2839,7 @@ module ChapelDomain {
 
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
+    @unstable("'hasSingleLocalSubdomain' on domains is unstable and may change in the future")
     proc hasSingleLocalSubdomain() param {
       return _value.dsiHasSingleLocalSubdomain();
     }
@@ -2629,7 +2853,7 @@ module ChapelDomain {
     */
     proc localSubdomain(loc: locale = here) {
       if !_value.dsiHasSingleLocalSubdomain() then
-        compilerError("Domain's local domain is not a single domain");
+        compilerError("the domain may have multiple local subdomains");
 
       return _value.dsiLocalSubdomain(loc);
     }
@@ -2641,6 +2865,7 @@ module ChapelDomain {
                  place (defaults to `here`)
        :type loc: locale
     */
+    @unstable("'localSubdomains' on domains is unstable and may change in the future")
     iter localSubdomains(loc: locale = here) {
       if _value.dsiHasSingleLocalSubdomain() {
         yield localSubdomain(loc);
@@ -2659,39 +2884,94 @@ module ChapelDomain {
       return _value.dsiIteratorYieldsLocalElements();
     }
 
-    /* Cast a rectangular domain to a new rectangular domain type.  If the old
-       type was stridable and the new type is not stridable then assume the
-       stride was 1 without checking.
-
-       For example:
-       {1..10 by 2}:domain(stridable=false)
-
-       results in the domain '{1..10}'
+    /* Cast a rectangular domain to a new rectangular domain type.
+       Throw an IllegalArgumentError when the original bounds and/or stride(s)
+       do not fit in the new idxType or when the original stride(s)
+       are not legal for the new `strides` parameter.
      */
-    @chpldoc.nodoc
-    operator :(d: _domain, type t:_domain) where chpl__isRectangularDomType(t) && d.isRectangular() {
-      var tmpD: t;
-      if tmpD.rank != d.rank then
-        compilerError("rank mismatch in cast");
-      if tmpD.idxType != d.idxType then
-        // todo: relax this restriction
-        compilerError("idxType mismatch in cast");
+    proc tryCast(type t: domain)
+      where chpl__isRectangularDomType(t) && this.isRectangular()
+        &&  this.chpl_domainTryCastIsSafe(t)
+    do
+      return try! this.chpl_domainTryCastHelper(t);
 
-      if tmpD.strides == d.strides then
-        return d;
-      else if ! chpl_assignStrideIsSafe(tmpD.strides, d.strides) {
+    // This overload catches unsupported cases.
+    @chpldoc.nodoc
+    proc tryCast(type t: domain) throws
+    do
+      if ! chpl__isRectangularDomType(t) || ! this.isRectangular() then
+        compilerError("tryCast() from ", this.type:string, " to ",
+                      t:string, " is not available");
+      else
+        return this.chpl_domainTryCastHelper(t);
+
+    // identical to chpl_domainCastHelper except uses tryCast instead of ':'
+    inline proc chpl_domainTryCastHelper(type t:_domain) throws {
+      var tmpD: t;
+      const ref d = this;
+      if tmpD.rank != d.rank then
+        compilerError("rank mismatch in tryCast()");
+      else {
         var inds = d.getIndices();
         var newInds: tmpD.getIndices().type;
+        for param i in 0..tmpD.rank-1 {
+          newInds(i) = inds(i).tryCast( newInds(i).type );
+        }
+        tmpD.setIndices(newInds);
+        return tmpD;
+      }
+    }
 
+    proc chpl_domainTryCastIsSafe(type t: domain) param {
+      var dst: t;
+      // this is implemented only for rectangular domains
+      compilerAssert(this.isRectangular() && dst.isRectangular());
+      return chpl_tryCastIsSafe(this.dim(0), dst.dim(0).type);
+    }
+
+    /* Cast a rectangular domain to a new rectangular domain type.
+       The overload below throws when the original bounds and/or stride
+       do not fit in the new type or 'strides'.
+       TODO: should we allow 't' to be generic?
+     */
+    @chpldoc.nodoc
+    operator :(d: _domain, type t:_domain)
+      where chpl__isRectangularDomType(t) && d.isRectangular()
+        &&  d.chpl_domainCastIsSafe(t)
+    do
+      return try! d.chpl_domainCastHelper(t);
+
+    // This overload catches unsupported cases.
+    @chpldoc.nodoc
+    operator :(d: _domain, type t: domain) throws
+    do
+      if ! chpl__isRectangularDomType(t) || ! d.isRectangular() then
+        compilerError("cast from ", d.type:string, " to ",
+                      t:string, " is not available");
+      else
+        return d.chpl_domainCastHelper(t);
+
+    inline proc chpl_domainCastHelper(type t:_domain) throws {
+      var tmpD: t;
+      const ref d = this;
+      if tmpD.rank != d.rank then
+        compilerError("rank mismatch in cast");
+      else {
+        var inds = d.getIndices();
+        var newInds: tmpD.getIndices().type;
         for param i in 0..tmpD.rank-1 {
           newInds(i) = inds(i): newInds(i).type;
         }
         tmpD.setIndices(newInds);
         return tmpD;
-      } else { // cast is always safe
-        tmpD = d;
-        return tmpD;
       }
+    }
+
+    proc chpl_domainCastIsSafe(type t: domain) param {
+      var dst: t;
+      // this is implemented only for rectangular domains
+      compilerAssert(this.isRectangular() && dst.isRectangular());
+      return chpl_castIsSafe(this.dim(0), dst.dim(0).type);
     }
 
     @chpldoc.nodoc
@@ -2700,8 +2980,8 @@ module ChapelDomain {
       if canResolveMethod(val._value, "doiToString") {
         return val._value.doiToString();
       } else {
-        use IO;
-        return stringify(val);
+        import IO.FormattedIO.string;
+        return try! "%?".format(val);
       }
     }
 

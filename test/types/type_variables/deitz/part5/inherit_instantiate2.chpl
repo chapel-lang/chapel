@@ -3,10 +3,11 @@ class C {
   var x : t;
 }
 
-class D : C {
+class D : C(?) {
   var y : int;
 }
 
-var d = (new owned D(real)).borrow();
+var ownD = new owned D(real);
+var d = ownD.borrow();
 
 writeln(d);

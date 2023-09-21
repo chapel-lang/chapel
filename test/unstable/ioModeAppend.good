@@ -1,0 +1,1 @@
+ioModeAppend.chpl:6: warning: ioMode.a is unstable and subject to change. It currently only supports one fileWriter at a time.

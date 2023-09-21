@@ -538,6 +538,8 @@ class GraphStuff:
                 graphs[currgraph].numseries = int(rest.strip())
             elif key == 'sort':
                 graphs[currgraph].sort = rest.lower() in ('true', 't', '1', 'on', 'y', 'yes')
+            else:
+                sys.stdout.write('WARNING: Invalid graph file key {0} in {1}\n'.format(key, fullFname))
 
         try:
             graphs[currgraph].generateGraphData(self, currgraph)

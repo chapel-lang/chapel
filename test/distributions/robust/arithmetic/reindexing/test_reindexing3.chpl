@@ -1,9 +1,9 @@
 use driver_arrays;
 
-proc foo(TD: domain, A: [TD] int, TA) {
+proc foo(TD: domain(?), ref A: [TD] int, TA) {
   var errs = 0;
   var offset = if (TD.rank==1) then o5:TD.idxType else fill(TD.rank, o5:TD.idxType);
-  [i in TD] A[i] += 1;
+  [i in TD with (ref A)] A[i] += 1;
   for i in TD do
     if A[i].locale != TA[i+offset].locale {
       writeln("A[",i,"] Incorrect reindex");

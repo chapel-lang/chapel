@@ -9,7 +9,7 @@ use Random;
 
 // Configuration variables for program:
 
-config var 
+config var
    n = 100,           // Size of computational grid
    max_iter = 100,    // max_iter
    eps = 1.0e-6,      // Error tolerance [back-ported from v3]
@@ -17,15 +17,15 @@ config var
 
 config var initial_spike = 1000.0;
 
-   
+
 proc main() {
 
    const ProblemSpace = {1..n, 1..n},       // domain for interior grid points
          BigDomain    = {0..n+1, 0..n+1};   // domain with boundary points
 
-   var 
-      grid1,   // 
-      grid2 :  // 
+   var
+      grid1,   //
+      grid2 :  //
          [BigDomain] real = 0.0;
 
    /* --------------------- */
@@ -33,8 +33,8 @@ proc main() {
    /* --------------------- */
 
    // Initialize grid1.
-   
-   if ( verbose ) 
+
+   if ( verbose )
       {
          var
            spike_loc_i = sqrt ( n ) : int,       // Row location of initial heat source.
@@ -45,10 +45,10 @@ proc main() {
    else
       fillRandom(grid1);
 
-   var 
+   var
       iteration = 0;                    // iteration counter
 
-   do 
+   do
       {
          /* ------------------------------------------- */
          /* Compute next approximation, store in grid2. */
@@ -74,15 +74,15 @@ proc main() {
 }
 
 
-proc computeNextApproximation(ProblemSpace, newGrid, oldGrid, iteration) {
-  forall (i,j) in ProblemSpace do
-  
-    newGrid(i,j) = (                 oldGrid(i-1,j) + 
-                    oldGrid(i,j-1) + oldGrid(  i,j) + oldGrid(i,j+1) + 
+proc computeNextApproximation(ProblemSpace, ref newGrid, oldGrid, iteration) {
+  forall (i,j) in ProblemSpace with (ref newGrid) do
+
+    newGrid(i,j) = (                 oldGrid(i-1,j) +
+                    oldGrid(i,j-1) + oldGrid(  i,j) + oldGrid(i,j+1) +
                                      oldGrid(i+1,j)                    )
                     / 5.0;
-                           
-  if ( verbose ) 
+
+  if ( verbose )
      {
        if ( iteration < ( n / 2 ) )
           {

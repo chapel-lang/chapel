@@ -1,0 +1,69 @@
+.TH "hwloc_cl_device_topology_amd" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwloc_cl_device_topology_amd
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <opencl\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "struct {"
+.br
+.ti -1c
+.RI "   cl_uint \fBtype\fP"
+.br
+.ti -1c
+.RI "   cl_uint \fBdata\fP [5]"
+.br
+.ti -1c
+.RI "} \fBraw\fP"
+.br
+.ti -1c
+.RI "struct {"
+.br
+.ti -1c
+.RI "   cl_uint \fBtype\fP"
+.br
+.ti -1c
+.RI "   cl_char \fBunused\fP [17]"
+.br
+.ti -1c
+.RI "   cl_char \fBbus\fP"
+.br
+.ti -1c
+.RI "   cl_char \fBdevice\fP"
+.br
+.ti -1c
+.RI "   cl_char \fBfunction\fP"
+.br
+.ti -1c
+.RI "} \fBpcie\fP"
+.br
+.in -1c
+.SH "Field Documentation"
+.PP 
+.SS "cl_char hwloc_cl_device_topology_amd::bus"
+
+.SS "cl_uint hwloc_cl_device_topology_amd::data[5]"
+
+.SS "cl_char hwloc_cl_device_topology_amd::device"
+
+.SS "cl_char hwloc_cl_device_topology_amd::function"
+
+.SS "struct { \&.\&.\&. }  hwloc_cl_device_topology_amd::pcie"
+
+.SS "struct { \&.\&.\&. }  hwloc_cl_device_topology_amd::raw"
+
+.SS "cl_uint hwloc_cl_device_topology_amd::type"
+
+.SS "cl_char hwloc_cl_device_topology_amd::unused[17]"
+
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

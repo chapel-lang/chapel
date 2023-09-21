@@ -1,0 +1,1 @@
+castFormalType-4.chpl:7: error: Formal 'x' cannot be declared 'void'. Consider using 'nothing' instead.

@@ -20,7 +20,7 @@ record r3 {
 }
 
 type t3 = r3(real);
-var z: t3(int);
+//var z: t3(int); // currently an error
 
 
 record r4 {

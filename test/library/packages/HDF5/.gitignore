@@ -1,0 +1,4 @@
+# Test/library/packages/HDF5 ignores.
+/mydata.h5
+/ex_lite1.h5
+/ex_lite3.h5

@@ -2,5 +2,5 @@ class MyClass {
   var field:int;
 }
 
-var x = (new owned MyClass(1)).borrow();
+var xx = new MyClass(1); var x = xx.borrow();
 delete x;

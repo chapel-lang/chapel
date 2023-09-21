@@ -26,7 +26,7 @@ config const printParams = true,
 proc main() {
   printConfiguration();   // print the problem size, number of trials, etc.
 
-  const ProblemSpace: domain(1) dmapped Block(boundingBox={1..m}) = {1..m};
+  const ProblemSpace: domain(1) dmapped blockDist(boundingBox={1..m}) = {1..m};
 
   var A, B: [ProblemSpace] elemType;
 
@@ -37,7 +37,7 @@ proc main() {
   for trial in 1..numTrials {                        // loop over the trials
     const startTime = timeSinceEpoch().totalSeconds();              // capture the start time
 
-    forall i in ProblemSpace do
+    forall i in ProblemSpace with (ref A) do
       A[i] = B[i+0];
 
     execTime(trial) = timeSinceEpoch().totalSeconds() - startTime;  // store the elapsed time
@@ -62,7 +62,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVector(B) {
+proc initVector(ref B) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);

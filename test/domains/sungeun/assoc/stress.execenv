@@ -1,4 +1,4 @@
-CHPL_RT_CALL_STACK_SIZE=128k
+CHPL_RT_CALL_STACK_SIZE=256k
 #
 # We turn off guard pages for this test as it creates many little tasks
 #

@@ -965,9 +965,9 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
   if (node->symbol()->hasFlag(FLAG_ARG_THIS)) {
     if (DefExpr* parentDef = toDefExpr(node->parentExpr)) {
       if (parentDef->sym->hasFlag(FLAG_REF_VAR)) {
-        USR_FATAL_CONT(node, "cannot take a reference to \"this\" before this.complete()");
+        USR_FATAL_CONT(node, "cannot take a reference to \"this\" before \"init this\"");
       } else {
-        USR_FATAL_CONT(node, "cannot initialize a variable from \"this\" before this.complete()");
+        USR_FATAL_CONT(node, "cannot initialize a variable from \"this\" before \"init this\"");
       }
     } else {
       CallExpr* call = NULL;
@@ -984,7 +984,7 @@ void ProcessThisUses::visitSymExpr(SymExpr* node) {
         if (state->isPhase0()) {
           USR_FATAL_CONT(node, "cannot pass \"this\" to a function before calling super.init() or this.init()");
         } else if (state->type()->isRecord()) {
-          USR_FATAL_CONT(node, "cannot pass a record to a function before this.complete()");
+          USR_FATAL_CONT(node, "cannot pass a record to a function before \"init this\"");
         }
       }
 
@@ -1031,7 +1031,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
     } else if (isCallExpr(node->parentExpr)) {
       // this.myField.something
       if (typeHasMethod(type, field->sym->name)) {
-        USR_FATAL_CONT(node, "cannot call field-accessor method \"%s\" before this.complete()", field->sym->name);
+        USR_FATAL_CONT(node, "cannot call field-accessor method \"%s\" before \"init this\"", field->sym->name);
       }
       node->baseExpr->remove();
       node->baseExpr = NULL;
@@ -1066,7 +1066,7 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       USR_FATAL_CONT(node, "cannot call a method before super.init() or this.init()");
       return false;
     } else if (type->isRecord()) {
-      USR_FATAL_CONT(node, "cannot call a method on a record before this.complete()");
+      USR_FATAL_CONT(node, "cannot call a method on a record before \"init this\"");
       return false;
     } else {
       Immediate*     imm        = getSymbolImmediate(toSymExpr(node->get(2))->symbol());
@@ -1074,15 +1074,15 @@ bool ProcessThisUses::enterCallExpr(CallExpr* node) {
       AggregateType* parentType = type->dispatchParents.v[0];
 
       if (typeHasMethod(parentType, methodName) == false) {
-        USR_FATAL_CONT(node, "cannot call method \"%s\" on type \"%s\" before this.complete()", methodName, type->symbol->name);
-        USR_PRINT(node, "before this.complete() \"this\" is treated as parent type \"%s\" for method calls", parentType->symbol->name);
+        USR_FATAL_CONT(node, "cannot call method \"%s\" on type \"%s\" before \"init this\"", methodName, type->symbol->name);
+        USR_PRINT(node, "before \"init this\" \"this\" is treated as parent type \"%s\" for method calls", parentType->symbol->name);
         return false;
       }
     }
   } else if (node->isPrimitive(PRIM_CAST) || node->isNamedAstr(astrScolon)) {
     if (SymExpr* se = toSymExpr(node->get(1))) {
       if (se->symbol()->hasFlag(FLAG_ARG_THIS)) {
-        USR_FATAL_CONT(node, "cannot cast \"this\" before this.complete()");
+        USR_FATAL_CONT(node, "cannot cast \"this\" before \"init this\"");
         return false;
       }
     }

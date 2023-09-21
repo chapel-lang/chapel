@@ -26,11 +26,11 @@ config const numMessages = 100;
 //
 // Here, we declare a `domain` (an index set) named `MessageSpace`
 // that represents the indices ``1..numMessages`` and is `domain
-// mapped` (``dmapped``) using the standard `Cyclic` distribution.
+// mapped` (``dmapped``) using the standard `cyclicDist` distribution.
 // This causes its indices to be distributed across the locales in a
 // round-robin fashion where `startIdx` is mapped to locale #0.
 //
-const MessageSpace = {1..numMessages} dmapped Cyclic(startIdx=1);
+const MessageSpace = {1..numMessages} dmapped cyclicDist(startIdx=1);
 
 //
 // By using the distributed domain `MessageSpace` to drive the
@@ -47,7 +47,7 @@ forall msg in MessageSpace do
 
 //
 // Note that by changing the domain map of `MessageSpace` above
-// (either by changing the arguments to `Cyclic` or switching to
+// (either by changing the arguments to `cyclicDist` or switching to
 // another domain map altogether), we can alter the distribution and
 // scheduling of the forall-loop's iterations without changing the
 // loop itself.

@@ -72,7 +72,7 @@ module ChapelArray {
     var _unowned:bool;
   }
 
-  proc _array.these() : this.eltType {
+  iter _array.these() : this.eltType {
     var i : this.eltType;
     yield i;
   }

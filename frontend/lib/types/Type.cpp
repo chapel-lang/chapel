@@ -26,6 +26,7 @@
 #include "chpl/types/CStringType.h"
 #include "chpl/types/ClassType.h"
 #include "chpl/types/ComplexType.h"
+#include "chpl/types/CPtrType.h"
 #include "chpl/types/DomainType.h"
 #include "chpl/types/ImagType.h"
 #include "chpl/types/IntType.h"
@@ -64,11 +65,7 @@ void gatherPrimitiveType(Context* context,
 void Type::gatherBuiltins(Context* context,
                           std::unordered_map<UniqueString,const Type*>& map) {
 
-  gatherPrimitiveType(context, map, BoolType::get(context, 0));
-  gatherPrimitiveType(context, map, BoolType::get(context, 8));
-  gatherPrimitiveType(context, map, BoolType::get(context, 16));
-  gatherPrimitiveType(context, map, BoolType::get(context, 32));
-  gatherPrimitiveType(context, map, BoolType::get(context, 64));
+  gatherPrimitiveType(context, map, BoolType::get(context));
 
   gatherPrimitiveType(context, map, IntType::get(context, 8));
   gatherPrimitiveType(context, map, IntType::get(context, 16));
@@ -120,11 +117,17 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "locale", localeType);
   gatherType(context, map, "_locale", localeType);
 
+  auto rangeType = CompositeType::getRangeType(context);
+  gatherType(context, map, "range", rangeType);
+  gatherType(context, map, "_range", rangeType);
+
   gatherType(context, map, "Error", CompositeType::getErrorType(context));
 
   gatherType(context, map, "domain", DomainType::getGenericDomainType(context));
 
   gatherType(context, map, "class", AnyClassType::get(context));
+
+  gatherType(context, map, "c_ptr", CPtrType::get(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }

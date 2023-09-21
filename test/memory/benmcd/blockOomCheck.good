@@ -1,0 +1,3 @@
+uncaught TaskErrors: 1 errors: Error: Could not allocate memory
+  blockOomCheck.chpl:8: thrown here
+  blockOomCheck.chpl:8: uncaught here

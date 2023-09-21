@@ -18,7 +18,7 @@ var A: [D] int;
 var B: [D] real;
 var C: [D] string;
 
-forall i in D {
+forall i in D with (ref A, ref B, ref C) {
   A(i) = i;
   B(i) = i;
   C(i) = i:string;

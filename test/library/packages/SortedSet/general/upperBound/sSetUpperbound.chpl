@@ -16,7 +16,7 @@ proc upperBound(arr: [?d] int, target: int, out result:int): bool {
   return false;
 }
 
-proc doTest(arr: [?d] int) {
+proc doTest(ref arr: [?d] int) {
   var s1 = new sortedSet(int, false, defaultComparator);
 
   for x in arr {

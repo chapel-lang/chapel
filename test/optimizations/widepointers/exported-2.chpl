@@ -11,6 +11,7 @@ var globalArr : [globalDom] atomic real;
 class GlobalBuffer {
   var dom : domain(1, int);
   var arr : [dom] atomic real;
+  proc init() {}
 }
 
 var alternative = new GlobalBuffer();
@@ -37,18 +38,18 @@ export proc foo(sendBuf : c_ptr(real), recvBuf : c_ptr(real), count : c_ptr(c_in
     arr.write(0, memoryOrder.relaxed);
   }
 
-  // Make sure locale 0 has had the chance to resize before proceeding          
+  // Make sure locale 0 has had the chance to resize before proceeding
   allLocalesBarrier.barrier();
   assert(arr.size >= n);
 
-  // Have all locales atomically add their results to the atomicBuff            
-  forall i in indices do
+  // Have all locales atomically add their results to the atomicBuff
+  forall i in indices with (ref arr) do
     arr[i].add(sendBuf[i], memoryOrder.relaxed);
 
-  // Make sure all locales have accumulated their contributions                 
+  // Make sure all locales have accumulated their contributions
   allLocalesBarrier.barrier();
 
-  // Have each locale copy the results out into its buffer                      
+  // Have each locale copy the results out into its buffer
   forall i in indices do
     recvBuf[i] = arr[i].read();
 }

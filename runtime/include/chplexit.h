@@ -27,6 +27,8 @@
 extern "C" {
 #endif
 
+void chpl_finalize(int status, int all);
+
 void cleanup_for_exit(void);    // must be exposed to avoid dead-code elim.
 
 void chpl_exit_all(int status);  // must be called by all threads

@@ -19,7 +19,7 @@ proc writelnSorted(arr) {
   writeln();
 }
 
-proc writelnSorted(dom: domain) {
+proc writelnSorted(dom: domain(?)) {
   var first = true;
   for elem in sorted(dom) {
     if first then {

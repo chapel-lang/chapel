@@ -20,6 +20,8 @@
 #include "chpl/uast/AggregateDecl.h"
 
 #include "chpl/uast/Builder.h"
+#include "chpl/uast/FnCall.h"
+#include "chpl/uast/Identifier.h"
 
 namespace chpl {
 namespace uast {
@@ -48,6 +50,39 @@ bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
 }
 
 AggregateDecl::~AggregateDecl() {
+}
+
+const Identifier* AggregateDecl::getInheritExprIdent(const AstNode* ast,
+                                                     bool& markedGeneric) {
+  if (ast != nullptr) {
+    if (ast->isIdentifier()) {
+      // inheriting from e.g. Parent is OK
+      markedGeneric = false;
+      return ast->toIdentifier();
+    } else if (auto call = ast->toFnCall()) {
+      const AstNode* calledExpr = call->calledExpression();
+      if (calledExpr != nullptr && calledExpr->isIdentifier() &&
+          call->numActuals() == 1) {
+        if (const AstNode* actual = call->actual(0)) {
+          if (auto id = actual->toIdentifier()) {
+            if (id->name() == USTR("?")) {
+              // inheriting from e.g. Parent(?) is OK
+              markedGeneric = true;
+              return calledExpr->toIdentifier();
+            }
+          }
+        }
+      }
+    }
+  }
+
+  markedGeneric = false;
+  return nullptr;
+}
+
+bool AggregateDecl::isAcceptableInheritExpr(const AstNode* ast) {
+  bool ignoredMarkedGeneric = false;
+  return getInheritExprIdent(ast, ignoredMarkedGeneric) != nullptr;
 }
 
 

@@ -1,3 +1,6 @@
+c_ptr(void)
+c_ptrConst(void)
+
 true
 true
 true
@@ -17,5 +20,5 @@ true
 
 false
 5
-c_void_ptr
+c_ptr(void)
 5

@@ -42,7 +42,7 @@ proc Launcher(exec: string) {
                       "--memLeaks=" + memLeaks:string],
                      executable=exec);
 
-  var workers: [1..numWorkers] subprocess(kind=iokind.dynamic, locking=true);
+  var workers: [1..numWorkers] subprocess(locking=true);
   coforall (worker,i,zipc) in zip(workers, workers.domain,
                                   zipcodes(numWorkers)) do
     worker = spawn(["worker%i".format(i), "--mode=Worker",
@@ -56,7 +56,7 @@ proc Launcher(exec: string) {
 }
 
 proc Master(exec: string) {
-  var rand = (new owned RandomStream(real,13)).borrow(); rand.getNext();
+  var rand = new RandomStream(real,13); rand.getNext();
   var ctxt: Context;
   var sock = ctxt.socket(ZMQ.PUB);
   sock.bind("tcp://*:5556");

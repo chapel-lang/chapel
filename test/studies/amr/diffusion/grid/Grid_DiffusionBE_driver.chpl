@@ -11,7 +11,7 @@ use GridVariable_DiffusionBE;
 use GridSolution_DiffusionBE;
 use GridBC_DiffusionBE;
 
-
+use Math;
 
 private proc main {
 

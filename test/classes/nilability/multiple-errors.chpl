@@ -22,12 +22,12 @@ module M {
   }
 
   proc bar() {
-    var c : borrowed C? = (new owned C(123)).borrow();
+    var ownC = new owned C(123); var c : borrowed C? = ownC.borrow();
     var x = new R(c);
   }
 
   proc testInit() {
-    var c : borrowed C? = (new owned C(42)).borrow();
+    var ownC = new owned C(42); var c : borrowed C? = ownC.borrow();
 
     var x = new R(c);
     var y = new R(c);
@@ -37,7 +37,7 @@ module M {
   }
 
   proc main() {
-    var a: borrowed C? = (new owned C()).borrow();
+    var ownC = new owned C(); var a: borrowed C? = ownC.borrow();
     a.foo();
     a.bar();
     baz(a);

@@ -372,7 +372,7 @@ concrete* for the purpose of function resolution.
 
    .. code-block:: chapel
 
-      proc g(c: C(?t,?u,Container)) {
+      proc g(c: C(?t,?u,Container(?))) {
         // ...
       }
 
@@ -411,7 +411,7 @@ Homogeneous tuple arguments of generic type are also supported:
       record Number {
         var n;
       }
-      proc f(tuple: 2*Number) {
+      proc f(tuple: 2*Number(?)) {
       }
 
 
@@ -1250,11 +1250,11 @@ Example: A Generic Stack
         type itemType;             // type of items
         var top: unmanaged MyNode(itemType)?; // top node on stack linked list
 
-        proc push(item: itemType) {
+        proc ref push(item: itemType) {
           top = new unmanaged MyNode(itemType, item, top);
         }
 
-        proc pop() {
+        proc ref pop() {
           if isEmpty then
             halt("attempt to pop an item off an empty stack");
           var oldTop = top;

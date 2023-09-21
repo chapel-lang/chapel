@@ -21,4 +21,9 @@ or
 
    enum documentation 
 
+   .. enumconstant:: enum constant Red
+
+      first constant doc 
+
+   .. enumconstant:: enum constant Yellow
 

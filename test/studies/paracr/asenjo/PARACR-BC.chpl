@@ -31,8 +31,8 @@ if (RedistStage>stages)
 var error:int=0;
 
 const Space = {1..n};
-const Dom = Space dmapped Block(boundingBox=Space);
-const DomC = Space dmapped Cyclic(startIdx=(0));
+const Dom = Space dmapped blockDist(boundingBox=Space);
+const DomC = Space dmapped cyclicDist(startIdx=(0));
 
 var Dstages: domain(1,int)={1..stages};
 var AA,BB,CC,DD, XX:[Dom] real;
@@ -152,12 +152,12 @@ proc Check()
     }
 }
 
-proc ComputeStage(A,B,C,D,AA,BB,CC,DD,j,Dom, msg="")
+proc ComputeStage(ref A,ref B,ref C,ref D,AA,BB,CC,DD,j,Dom, msg="")
 {
   //  writeln("ComputeStage", msg, " j=", j);
   // if timer then t3=timeSinceEpoch().totalSeconds();
   const TtS:int=1<<(j-1); //// TtS stand for "Two to the Stage (minus 1)" which is = 2**(j-1)
-  forall i in Dom do{
+  forall i in Dom with (ref A, ref B, ref C, ref D) do{
     //writeln("i ",i, " j ",j);
     const lo=i-TtS;
     const hi=i+TtS;
@@ -206,14 +206,14 @@ proc PrintV(X)
 
 proc SetExampleMatrix()
 {
-  forall (i) in Dom{
+  forall (i) in Dom with (ref A, ref B, ref C) {
     A(i)=1.0;
     B(i)=2.0;
     C(i)=1.0;
   }
   
   A(1)=0;C(n)=0;
-  forall i in 1..(n+1)/2 do {
+  forall i in 1..(n+1)/2 with (ref D) do {
     D(i)=i;
     D(n-i+1)=i;
   }

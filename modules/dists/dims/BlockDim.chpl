@@ -27,10 +27,10 @@ private use DimensionalDist2D;
 
 /*
 This Block dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+:mod:`dimensionalDist2D <DimensionalDist2D>` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockDist.Block` distribution.
+that would be produced by a 1D :class:`~BlockDist.blockDist` distribution.
 
 **Initializer Arguments**
 
@@ -57,8 +57,8 @@ a convenient replacement for the ``boundingBox`` argument,
 which specifies the bounding box in this dimension.
 
 The ``idxType``, whether provided or inferred, must match
-the index type of the domains "dmapped" using the corresponding
-``DimensionalDist2D`` distribution.
+the index type of the domains created using the corresponding
+``dimensionalDist2D`` distribution.
 */
 record BlockDim {
   // the type of bbStart, bbLength
@@ -146,7 +146,7 @@ proc Block1dom.dsiGetReprivatizeData1d() {
   return (wholeR,);
 }
 
-proc Block1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref Block1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR = reprivatizeData(0);
 }
 
@@ -219,7 +219,7 @@ proc BlockDim.dsiIndexToLocale1d(indexx): locIdT {
   return result:locIdT;
 }
 
-proc Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref Block1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   wholeR = rangeArg;
 }
 
@@ -236,7 +236,7 @@ proc Block1dom._dsiComputeMyRange(locId): rangeT {
   return chunk;
 }
 
-proc Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
+proc ref Block1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT) {
   myRange = globDD._dsiComputeMyRange(locId);
   return myRange;
 }

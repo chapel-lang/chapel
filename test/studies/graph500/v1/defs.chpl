@@ -23,7 +23,7 @@ module Graph500_defs
 
   const edgelist_domain =
     if DISTRIBUTION_TYPE == "BLOCK" then
-      {1..N_RAWEDGES} dmapped Block ( {1..N_RAWEDGES} )
+      {1..N_RAWEDGES} dmapped blockDist ( {1..N_RAWEDGES} )
     else
       {1..N_RAWEDGES} ;
 
@@ -44,7 +44,7 @@ module Graph500_defs
 
     const vertex_domain =
       if DISTRIBUTION_TYPE == "BLOCK" then
-        {1..N_VERTICES} dmapped Block ( {1..N_VERTICES} )
+        {1..N_VERTICES} dmapped blockDist ( {1..N_VERTICES} )
       else
         {1..N_VERTICES} ;
 
@@ -57,9 +57,21 @@ module Graph500_defs
       var neighbor_count: int=0;
       var self_edges: int=0;
       var duplicates: int=0;
-      var vlock$: sync bool = true;
+      var vlock: sync bool = true;
 
-   
+      proc init(nd: domain(1) = {1..0}) {
+        this.nd = nd;
+      }
+      proc init=(other: vertex_struct) {
+        this.nd = other.nd;
+        this.Neighbors = other.Neighbors;
+        this.neighbor_count = other.neighbor_count;
+        this.self_edges = other.self_edges;
+        this.duplicates = other.duplicates;
+        this.vlock = other.vlock.readXX();
+      }
+
+
       proc is_a_neighbor (new_vertex_ID: vertex_id) {
          var is_member: bool = false;
          forall n in Neighbors (1..neighbor_count) {
@@ -67,21 +79,21 @@ module Graph500_defs
          }
          return is_member;
       }
-        
+
       proc add_self_edge () {
-         vlock$.readFE();
+         vlock.readFE();
          self_edges += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
- 
+
       proc add_duplicate () {
-         vlock$.readFE();
+         vlock.readFE();
          duplicates += 1;
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
 
       proc add_Neighbor (new_vertex_ID: vertex_id) {
-         vlock$.readFE();
+         vlock.readFE();
          var ID: vertex_id = new_vertex_ID;
 //       Check again to make sure another thread did not recently
 //       add v to u's neighbor list
@@ -91,15 +103,15 @@ module Graph500_defs
          else
          {
            if (neighbor_count >= Neighbors.size) {
-             grow_helper(); 
+             grow_helper();
            }
            neighbor_count += 1;
            Neighbors[neighbor_count]= new_vertex_ID;
          }
-         vlock$.writeEF(true);
+         vlock.writeEF(true);
       }
-         
-      proc grow_helper() { 
+
+      proc grow_helper() {
           var new_nd = Neighbors.size + 1;
           nd = {1..new_nd};
       }
@@ -123,7 +135,7 @@ module Graph500_defs
 // SSCA2 code uses level sets. The set of vertices at a particular distance
 // from the starting vertex form a level set
 // The class allows the full set of vertices visited to be partitioned into a
-// linked list of level sets 
+// linked list of level sets
 
 class Level_Set {
   type Vertex_List;

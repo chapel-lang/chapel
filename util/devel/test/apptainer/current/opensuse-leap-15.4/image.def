@@ -10,4 +10,4 @@ From: opensuse/leap:15.4
     /provision-scripts/zypper-llvm.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

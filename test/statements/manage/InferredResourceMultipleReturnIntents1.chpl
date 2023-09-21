@@ -1,10 +1,10 @@
 use TrackingRecord;
 
-proc r.enterThis() {
+proc r.enterContext() {
   writeln('entering');
 }
 
-proc r.leaveThis(in err: owned Error?) {
+proc r.exitContext(in err: owned Error?) {
   writeln('leaving');
   if err then try! { throw err; }
 }
@@ -17,25 +17,25 @@ record res {
 
 var globalRes = new res();
 
-record man {
+record man : contextManager {
   var x = new r();
 
-  proc enterThis() ref {
-    writeln('proc man.enterThis() ref: res');
+  proc enterContext() ref {
+    writeln('proc man.enterContext() ref: res');
     return globalRes;
   }
 
-  proc enterThis() const ref {
-    writeln('proc man.enterThis() const ref: res');
+  proc enterContext() const ref {
+    writeln('proc man.enterContext() const ref: res');
     return globalRes;
   }
 
-  proc enterThis() {
-    writeln('proc man.enterThis(): res');
+  proc enterContext() {
+    writeln('proc man.enterContext(): res');
     return globalRes;
   }
 
-  proc leaveThis(in err: owned Error?) {
+  proc exitContext(in err: owned Error?) {
     writeln('leaving');
     if err then try! { throw err; }
   }

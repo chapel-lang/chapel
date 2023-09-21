@@ -87,6 +87,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Heap.chpl \
 	standard/Help.chpl \
 	standard/IO.chpl \
+	standard/JSON.chpl \
 	standard/List.chpl \
 	standard/Map.chpl \
 	standard/Math.chpl \
@@ -102,7 +103,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Regex.chpl \
 	standard/Set.chpl \
 	standard/Subprocess.chpl \
-	standard/Sys.chpl \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
@@ -131,7 +131,6 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Futures.chpl \
 	packages/HDF5.chpl \
 	packages/HDFS.chpl \
-	packages/Json.chpl \
 	packages/LAPACK.chpl \
 	packages/LinearAlgebra.chpl \
 	packages/LinkedLists.chpl \
@@ -156,7 +155,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/UnorderedCopy.chpl \
 	packages/UnrolledLinkedList.chpl \
 	packages/VisualDebug.chpl \
-	packages/Yaml.chpl \
+	packages/YAML.chpl \
 	packages/ZMQ.chpl \
 
 

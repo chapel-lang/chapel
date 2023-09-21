@@ -17,17 +17,17 @@ record r {
   var ptr = makeSharedPtr();
 
   proc init() {
-    this.complete();
+    init this;
     debugln('default-init ', this);
   }
 
   proc init(other: r) {
-    this.complete();
+    init this;
     debugln(this, ', init from ', other);
   }
 
   proc init=(rhs: r) {
-    this.complete();
+    init this;
     debugln(this, ', init= from ', rhs);
   }
 

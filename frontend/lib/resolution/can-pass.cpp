@@ -352,6 +352,22 @@ bool CanPassResult::canConvertNumeric(Context* context,
 }
 
 bool
+CanPassResult::canConvertCPtr(Context* context,
+                              const Type* actualT,
+                              const Type* formalT) {
+  if (actualT->isCPtrType()) {
+    if (auto formalPtr = formalT->toCPtrType()) {
+      return formalPtr->isVoidPtr();
+    } else {
+      // Check for old c_void_ptr behavior.
+      return formalT->isCVoidPtrType();
+    }
+  }
+
+  return false;
+}
+
+bool
 CanPassResult::canConvertParamNarrowing(Context* context,
                                         const QualifiedType& actualQT,
                                         const QualifiedType& formalQT) {
@@ -579,8 +595,8 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
     }
   }
 
-  // TODO: c_ptr -> c_void_ptr
-  // TODO: c_array -> c_void_ptr, c_array(t) -> c_ptr(t)
+  // TODO: c_ptr(t) -> c_ptr(void)
+  // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
 
   return fail();
 }
@@ -662,6 +678,10 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (canConvertParamNarrowing(context, actualQT, formalQT))
     return convert(PARAM_NARROWING);
 
+  if (canConvertCPtr(context, actualT, formalT)) {
+    return convert(OTHER);
+  }
+
   // can we convert tuples?
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
@@ -685,9 +705,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
                                           const Type* formalT) {
   if (formalT->isAnyType())
     return true;
-
-  if (formalT->isAnyBoolType() && actualT->isBoolType())
-      return true;
 
   if (formalT->isAnyBorrowedNilableType())
     if (auto ct = actualT->toClassType())
@@ -824,7 +841,24 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
   } else if (auto actualCt = actualT->toCompositeType()) {
     // check for instantiating records/unions/tuples
     if (auto formalCt = formalT->toCompositeType()) {
+      // Quick check to disallow passing tuples of mismatching sizes when the
+      // sizes are known.
+      if (actualCt->isTupleType() && formalCt->isTupleType()) {
+        auto at = actualCt->toTupleType();
+        auto ft = formalCt->toTupleType();
+        if (at->isKnownSize() && ft->isKnownSize() &&
+            at->numElements() != ft->numElements()) {
+          return fail();
+        }
+      }
+
       if (actualCt->isInstantiationOf(context, formalCt)) {
+        return instantiate();
+      }
+    }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      if (actualPt->isInstantiationOf(context, formalPt)) {
         return instantiate();
       }
     }

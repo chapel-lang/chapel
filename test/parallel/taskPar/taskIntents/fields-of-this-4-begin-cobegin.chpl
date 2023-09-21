@@ -2,7 +2,7 @@
 
 const RNG = 1..4;
 
-var s$: sync int;
+var s: sync int;
 
 record QQ {
   var data: [RNG] int;
@@ -13,12 +13,12 @@ var rec3 = new QQ();
 proc const QQ.bgn() {
   begin {
     data[2] = 234;  // illegal because it is a field of a const
-    s$.writeEF(1);
+    s.writeEF(1);
   }
 }
 
 rec3.bgn();
-s$.readFE();
+s.readFE();
 writeln(rec3);
 
 proc const QQ.cob() {
@@ -42,12 +42,12 @@ var rec4 = new RR();
 proc RR.bgn() {
   begin {
     data[2] = 234;  // illegal because it is a const field
-    s$.writeEF(1);
+    s.writeEF(1);
   }
 }
 
 rec4.bgn();
-s$.readFE();
+s.readFE();
 writeln(rec4);
 
 proc RR.cob() {
@@ -59,4 +59,3 @@ proc RR.cob() {
 
 rec4.cob();
 writeln(rec4);
-

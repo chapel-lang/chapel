@@ -14,7 +14,7 @@ enum IteratorType { leader, follower };
 //
 // The distribution class
 //
-class Block1DDist {
+class Block1DDist : writeSerializable {
   //
   // The distribution's index type and domain's global index type
   //
@@ -112,15 +112,15 @@ class Block1DDist {
   //
 
 
-  proc writeThis(x) throws {
-    x.writeln("BradsBlock1DPar");
-    x.writeln("---------------");
-    x.writeln("distributes: ", boundingBox);
-    x.writeln("across locales: ", targetLocs);
-    x.writeln("indexed via: ", targetLocDom);
-    x.writeln("resulting in: ");
+  proc serialize(writer, ref serializer) throws {
+    writer.writeln("BradsBlock1DPar");
+    writer.writeln("---------------");
+    writer.writeln("distributes: ", boundingBox);
+    writer.writeln("across locales: ", targetLocs);
+    writer.writeln("indexed via: ", targetLocDom);
+    writer.writeln("resulting in: ");
     for locid in targetLocDom do
-      x.writeln("  [", locid, "] ", locDist(locid));
+      writer.writeln("  [", locid, "] ", locDist(locid));
   }
 
 
@@ -165,7 +165,7 @@ class Block1DDist {
 //
 // A per-locale local distribution class
 //
-class LocBlock1DDist {
+class LocBlock1DDist : writeSerializable {
   // 
   // The distribution's index type and domain's global index type
   //
@@ -211,8 +211,8 @@ class LocBlock1DDist {
   proc procToData(x, lo)
     return (lo + (x: lo.type) + (x:real != x:int:real));
 
-  proc writeThis(x) throws {
-    x.write("locale ", loc.id, " owns chunk: ", myChunk);
+  proc serialize(writer, ref serializer) throws {
+    writer.write("locale ", loc.id, " owns chunk: ", myChunk);
   }
 }
 
@@ -220,7 +220,7 @@ class LocBlock1DDist {
 //
 // The global domain class
 //
-class Block1DDom {
+class Block1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -327,8 +327,8 @@ class Block1DDom {
   //
   // the print method for the domain
   //
-  proc writeThis(x) throws {
-    x.write(whole);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(whole);
   }
 
   //
@@ -358,7 +358,7 @@ class Block1DDom {
 //
 // the local domain class
 //
-class LocBlock1DDom {
+class LocBlock1DDom : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -408,8 +408,8 @@ class LocBlock1DDom {
   //
   // how to write out this locale's indices
   //
-  proc writeThis(x) throws {
-    x.write(myBlock);
+  proc serialize(writer, ref serializer) throws {
+    writer.write(myBlock);
   }
 
   //
@@ -432,7 +432,7 @@ class LocBlock1DDom {
 //
 // the global array class
 //
-class Block1DArr {
+class Block1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -511,7 +511,7 @@ class Block1DArr {
   //
   // how to print out the whole array, sequentially
   //
-  proc writeThis(x) throws {
+  proc serialize(writer, ref serializer) throws {
     var first = true;
     for loc in dom.dist.targetLocDom {
       // May want to do something like the following:
@@ -521,9 +521,9 @@ class Block1DArr {
           if (first) {
             first = false;
           } else {
-            x.write(" ");
+            writer.write(" ");
           }
-          x.write(locArr(loc));
+          writer.write(locArr(loc));
         }
         //    }
       stdout.flush();
@@ -542,7 +542,7 @@ class Block1DArr {
 //
 // the local array class
 //
-class LocBlock1DArr {
+class LocBlock1DArr : writeSerializable {
   //
   // The index types of the global and local domain portions
   //
@@ -607,11 +607,11 @@ class LocBlock1DArr {
   //
   // prints out this locale's piece of the array
   //
-  proc writeThis(x) throws {
+  proc serialize(writer, ref serializer) throws {
     // May want to do something like the following:
     //      on loc {
     // but it causes deadlock -- see writeThisUsingOn.chpl
-    x.write(myElems);
+    writer.write(myElems);
   }
 
   //

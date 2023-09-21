@@ -121,25 +121,34 @@ module Errors {
       super.init(msg);
     }
 
-    // This won't actually produce a deprecation message. It's here for documentation purposes only.
+    /*
+      .. warning::
+        ``new IllegalArgumentError(info=)`` is deprecated; please use the initializer that takes a formal ``msg`` instead.
+    */
     pragma "last resort"
-    @deprecated(notes="`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.")
     proc init(info: string) {
+      compilerWarning("`new IllegalArgumentError(info=)` is deprecated; please use the initializer that takes a formal `msg` instead.");
       super.init(info);
     }
 
+    /*
+      .. warning::
+        IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.
+    */
     proc init(formal: string, info: string) {
+      compilerWarning("IllegalArgumentError's two-argument initializer is deprecated; please use the single-arg initializer instead.");
       var msg = "illegal argument '" + formal + "': " + info;
       super.init(msg);
     }
   }
 
+
   /*
-   A `CodepointSplittingError` is thrown if an attempt to slice a string with
-   byteIndex-based ranges where the range boundaries does not align with
-   codepoint boundaries.
-   */
-  class CodepointSplittingError: Error {
+    A ``CodepointSplitError`` is thrown when slicing a string with
+    byteIndex-based ranges where the range boundaries do not align
+    with codepoint boundaries.
+  */
+  class CodepointSplitError: Error {
     proc init(info: string) {
       super.init(info);
     }
@@ -148,6 +157,17 @@ module Errors {
       return "Attempting to split a multi-byte codepoint. " + _msg;
     }
   }
+
+  @unstable("`ArrayOomError` is unstable; expect this error to change in the future.")
+  class ArrayOomError: Error {
+    @chpldoc.nodoc
+    override proc message() {
+      return "out of memory allocating array elements";
+    }
+  }
+
+  @deprecated(notes=":class:`CodepointSplittingError` is deprecated; please use :class:`CodepointSplitError` instead")
+  type CodepointSplittingError = CodepointSplitError;
 
   // Used by the runtime to accumulate errors. This type
   // supports adding errors concurrently but need not support
@@ -159,7 +179,7 @@ module Errors {
     var _head: unmanaged Error? = nil;
     var _errorsLock: chpl_LocalSpinlock;
 
-    proc append(err: unmanaged Error) {
+    proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
         var tmp = _head;
@@ -205,7 +225,7 @@ module Errors {
     proc init(ref group:chpl_TaskErrors) {
       var head: unmanaged Error? = group._head;
       group._head = nil;
-      this.complete();
+      init this;
 
       var cur: unmanaged Error?;
 
@@ -260,7 +280,7 @@ module Errors {
     proc init(err: unmanaged Error) {
       nErrors = 1;
       errorsArray = allocate(owned Error?, 1, clear=true);
-      this.complete();
+      init this;
       err._next = nil;
       errorsArray[0] = owned.adopt(err);
     }
@@ -402,10 +422,10 @@ module Errors {
 
   proc chpl_error_type_name(err: borrowed Error) : string {
     var cid =  __primitive("getcid", err);
-    var nameC: c_string = __primitive("class name by id", cid);
+    var nameC = __primitive("class name by id", cid);
     var nameS: string;
     try! {
-      nameS = string.createCopyingBuffer(nameC);
+      nameS = string.createCopyingBuffer(nameC:c_ptrConst(c_char));
     }
     return nameS;
   }
@@ -490,21 +510,21 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_uncaught_error(err: unmanaged Error) {
-    extern proc chpl_error_preformatted(c_string);
+    extern proc chpl_error_preformatted(ptr:c_ptrConst(c_char));
 
-    const myFileC:c_string = __primitive("chpl_lookupFilename",
+    const myFileC = __primitive("chpl_lookupFilename",
                                          __primitive("_get_user_file"));
     var myFileS: string;
     try! {
-      myFileS = string.createCopyingBuffer(myFileC);
+      myFileS = string.createCopyingBuffer(myFileC:c_ptrConst(c_char));
     }
     const myLine = __primitive("_get_user_line");
 
-    const thrownFileC:c_string = __primitive("chpl_lookupFilename",
+    const thrownFileC = __primitive("chpl_lookupFilename",
                                              err.thrownFileId);
     var thrownFileS: string;
     try! {
-      thrownFileS = string.createCopyingBuffer(thrownFileC);
+      thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
     }
     const thrownLine = err.thrownLine;
 
@@ -546,15 +566,14 @@ module Errors {
   pragma "insert line file info"
   pragma "always propagate line file info"
   proc chpl_enum_cast_error(casted: integral, enumName: string) throws {
-    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName, "'");
+    throw new owned IllegalArgumentError("bad cast from int '" + casted:string + "' to enum '" + enumName + "'");
   }
 
   pragma "insert line file info"
   pragma "always propagate line file info"
-  proc chpl_enum_cast_error_no_int(enumName: string, constName: string) throws {
+  proc chpl_enum_cast_error_no_int(enumName: string, constName: string): int throws {
     throw new owned IllegalArgumentError("bad cast: enum '" + enumName + "." +
                                           constName + "' has no integer value");
-    return 0;
   }
 
 
@@ -585,7 +604,7 @@ module Errors {
   pragma "always propagate line file info"
   proc assert(test: bool) {
     if !test then
-      __primitive("chpl_error", c"assert failed");
+      __primitive("chpl_error", "assert failed".c_str());
   }
 
 
@@ -720,7 +739,7 @@ module Errors {
   pragma "function terminates program"
   pragma "always propagate line file info"
   proc halt() {
-    __primitive("chpl_error", c"halt reached");
+    __primitive("chpl_error", "halt reached".c_str());
   }
 
   pragma "function terminates program"

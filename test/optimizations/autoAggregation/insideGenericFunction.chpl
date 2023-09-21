@@ -1,17 +1,17 @@
 use BlockDist;
 
-var myArr = Block.createArray({0..10}, int);
+var myArr = blockDist.createArray({0..10}, int);
 
 proc main() {
   foo(myArr);
 }
 
-proc foo(a) {
-  var b = Block.createArray({0..10}, int);
+proc foo(ref a) {
+  var b = blockDist.createArray({0..10}, int);
   for bb in b do bb = 1;
 
   writeln("Loop 1");
-  forall i in a.domain {
+  forall i in a.domain with (ref a) {
     a[i] = b[10-i];
   }
   writeln("End Loop 1");

@@ -16,7 +16,7 @@ extern {
 
     srand(0);
     X = rand() % 100;
-    
+
     checkCudaErrors(cuMemcpyHtoD(devBufferX, &X, sizeof(double)));
 
     return devBufferX;
@@ -55,7 +55,9 @@ on here.gpus[0] {
 
   var deviceBuffer = getDeviceBufferPointer();
   // arguments are: fatbin path, function name, grid size, block size, arguments
-  __primitive("gpu kernel launch flat", c"add_nums", 1, 1, deviceBuffer);
+  __primitive("gpu kernel launch flat",
+               "add_nums":chpl_c_string,
+               1, 1, deviceBuffer);
   output = getDataFromDevice(deviceBuffer);
 }
 

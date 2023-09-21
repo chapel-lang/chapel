@@ -53,13 +53,13 @@ proc main() {
 
   //
   // ProblemSpace describes the index set for the three vectors.  It
-  // is a 1D domain that is distributed according to a Block
-  // distribution.  In this case, the Block distribution is 1D
+  // is a 1D domain that is distributed according to a blockDist
+  // distribution.  In this case, the blockDist distribution is 1D
   // distribution computed by blocking the bounding box 1..m across
   // the set of locales.  The ProblemSpace domain also contains the
   // indices 1..m.
   //
-  const ProblemSpace: domain(1) dmapped Block(boundingBox={1..m}) = {1..m};
+  const ProblemSpace: domain(1) dmapped blockDist(boundingBox={1..m}) = {1..m};
 
   //
   // A, B, and C are the three distributed vectors, declared to store
@@ -104,7 +104,7 @@ proc printConfiguration() {
 // Initialize vectors B and C using a random stream of values and
 // optionally print them to the console
 //
-proc initVectors(B, C) {
+proc initVectors(ref B, ref C) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
@@ -119,7 +119,7 @@ proc initVectors(B, C) {
 //
 // Verify that the computation is correct
 //
-proc verifyResults(A, B, C) {
+proc verifyResults(A, ref B, C) {
   if (printArrays) then writeln("A is:     ", A, "\n");  // optionally print A
 
   //

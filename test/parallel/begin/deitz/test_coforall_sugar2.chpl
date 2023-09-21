@@ -4,7 +4,7 @@ config var n: int = 5;
 
 var A: [1..n] int;
 
-coforall i in 1..n {
+coforall i in 1..n with (ref A) {
   sleep(i:uint);
   A(i) = i;
 }

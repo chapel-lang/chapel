@@ -2,19 +2,19 @@ module transposed_block_triangular_solve  {
 
 
   // =================================================
-  // Special Block Triangular Solve used in Block Inner 
+  // Special Block Triangular Solve used in Block Inner
   // and Outer Product and Dataflow Cholesky codes
   // ==================================================
 
   proc transposed_block_triangular_solve ( L_diag    : [],
-					  L_offdiag : [] ) {
-    
+					  ref L_offdiag : [] ) {
+
     // ------------------------------------------------------
     // Solve the block equation
     //      L_offdiag = A_offdiag * L_diag^{-T}
     //           or
     //      L_offdiag^T = L_diag^{-1} A_offdiag^T
-    // by triangular solve. 
+    // by triangular solve.
     // This code is specialized to a factorization case where
     // L and A are submatrices of a common larger matrix.  L
     // overwrites the values of A.
@@ -27,10 +27,10 @@ module transposed_block_triangular_solve  {
     // block and not parallel within each row, due to the triangular solve.
     // (each row is the result of a triangular solve.)
 
-    forall i in offdiag_block_rows do
+    forall i in offdiag_block_rows with (ref L_offdiag) do
       for j in diag_block_cols do {
-	L_offdiag (i,j) -= 
-	  +reduce [k in diag_block_cols (.. j-1)] 
+	L_offdiag (i,j) -=
+	  +reduce [k in diag_block_cols (.. j-1)]
 	           L_offdiag (i,k) * L_diag (j,k);
 	L_offdiag (i,j) /= L_diag (j,j);
       }

@@ -6,7 +6,7 @@ Contributed to the GNU project by Marco Bodrato.
    CERTAIN TO BE SUBJECT TO INCOMPATIBLE CHANGES OR DISAPPEAR COMPLETELY IN
    FUTURE GNU MP RELEASES.
 
-Copyright 2001, 2002, 2005, 2009, 2018 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2005, 2009, 2018, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -38,8 +38,7 @@ see https://www.gnu.org/licenses/.  */
 #include "gmp-impl.h"
 
 
-#if HAVE_NATIVE_mpn_rsblsh1_n || HAVE_NATIVE_mpn_sublsh1_n
-#else
+#if ! HAVE_NATIVE_mpn_rsblsh1_n && ! HAVE_NATIVE_mpn_sublsh1_n
 /* Stores |{ap,n}-{bp,n}| in {rp,n},
    returns the sign of {ap,n}-{bp,n}. */
 static int

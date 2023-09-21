@@ -108,7 +108,7 @@
 
   .. code-block:: chpl
 
-    var dom = {1..N} dmapped Cyclic(startIdx=1);
+    var dom = {1..N} dmapped cyclicDist(startIdx=1);
     var manager = new EpochManager();
     forall i in dom with (var token = manager.register(), var numOps : int) {
       token.pin();
@@ -219,7 +219,7 @@ module EpochManager {
       proc init(type objType, delete_val : bool = true) {
         this.objType = objType;
         this.delete_val = delete_val;
-        this.complete();
+        init this;
         var _node = new unmanaged Node(objType);
         _head.write(_node);
         _tail.write(_node);
@@ -421,7 +421,7 @@ module EpochManager {
 
     config param VectorGrowthRate : real = 1.5;
 
-    class Vector {
+    class Vector : serializable {
       type eltType;
       const growthRate : real;
       var dom = {0..-1};
@@ -434,7 +434,7 @@ module EpochManager {
         this.growthRate = growthRate;
         // Right now 0..#initialSize is bugged if initialSize is 0, it becomes 1..0
         this.dom = {0..initialSize : int - 1};
-        this.complete();
+        init this;
         this.cap = dom.size;
       }
 
@@ -442,7 +442,7 @@ module EpochManager {
         this.eltType = eltType;
         this.growthRate = growthRate;
         this.dom = {0..#D.size};
-        this.complete();
+        init this;
         this.arr = arr;
         this.cap = arr.size;
         this.sz = arr.size;
@@ -516,6 +516,10 @@ module EpochManager {
       proc readThis(f) throws {
         compilerError("Reading a Vector is not supported");
       }
+      @chpldoc.nodoc
+      proc deserialize(reader, ref deserializer) throws {
+        compilerError("Reading a Vector is not supported");
+      }
 
       @chpldoc.nodoc
       proc init(type eltType, reader: fileReader, ref deserializer) {
@@ -525,6 +529,10 @@ module EpochManager {
 
       proc writeThis(f) throws {
         f.write("(Vector) {", this.toArray(), "}");
+      }
+      @chpldoc.nodoc
+      override proc serialize(writer, ref serializer) throws {
+        writeThis(writer);
       }
     }
 
@@ -575,7 +583,7 @@ module EpochManager {
       allocated_list = new unmanaged LockFreeLinkedList(unmanaged _token);
       free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
       limbo_list = for i in 1..EBR_EPOCHS do new unmanaged LimboList();
-      this.complete();
+      init this;
 
       // Initialise the free list pool with here.maxTaskPar tokens
       // Do we want this to be a 'coforall' ?
@@ -869,7 +877,7 @@ module EpochManager {
       this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
       this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged RootClass?);
 
-      this.complete();
+      init this;
       this.pid = _newPrivatizedClass(this);
 
       this.initializeMembers();
@@ -884,7 +892,7 @@ module EpochManager {
       this.free_list = new unmanaged LockFreeQueue(unmanaged _token, false);
       this.limbo_list = forall 1..EBR_EPOCHS do new unmanaged LimboList();
       this.objsToDelete = forall LocaleSpace do new unmanaged Vector(unmanaged RootClass?);
-      this.complete();
+      init this;
 
       this.initializeMembers();
       this.pid = privatizedData;
@@ -1091,7 +1099,7 @@ module EpochManager {
     var is_setting_epoch : atomic bool;
 
     proc init(x : uint) {
-      this.complete();
+      init this;
       epoch.write(x);
     }
 

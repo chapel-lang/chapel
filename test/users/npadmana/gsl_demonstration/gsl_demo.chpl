@@ -71,7 +71,7 @@ gsl_rng_free(rng2);
 
 // Set up a simple function
 var x : [0.. #10] real(64);
-[i in x.domain] x[i]=i*0.1;
+[i in x.domain with (ref x)] x[i]=i*0.1;
 var y : [0.. #10] real(64) = x**3 + 2*x;
 writeln('x:',x);
 writeln('y:',y);
@@ -96,7 +96,7 @@ gsl_spline_free(sp);
 record Payload {
   var alpha : real;
 }
-export proc func1(x : real, p : c_void_ptr) : real {
+export proc func1(x : real, p : c_ptr(void)) : real {
   var r = (p : c_ptr(Payload)).deref();
   return log(r.alpha*x)/sqrt(x);
 }

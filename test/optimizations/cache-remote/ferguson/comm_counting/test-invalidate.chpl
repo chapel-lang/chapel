@@ -4,7 +4,7 @@ use CommDiagnostics;
 use Random;
 
 pragma "insert line file info"
-extern proc chpl_cache_invalidate(node:c_int, raddr:c_void_ptr,
+extern proc chpl_cache_invalidate(node:c_int, raddr:c_ptr(void),
                                   size: c_size_t);
 
 config const verbose = false;
@@ -61,7 +61,7 @@ proc doRead(start:int, size:int) {
 proc test_invalidate_mode(const start:int, const size:int, const mode:int,
                           const challengeOffset:int, const challengeSize:int) {
 
-  const eltPtr:c_void_ptr = c_ptrTo(A[start]):c_void_ptr;
+  const eltPtr:c_ptr(void) = c_ptrTo(A[start]):c_ptr(void);
   // this is a workaround for this error:
   //   references to remote data cannot be passed to external routines like
   //   'c_pointer_return'

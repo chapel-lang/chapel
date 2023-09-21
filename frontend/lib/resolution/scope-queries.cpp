@@ -265,6 +265,7 @@ bool createsScope(asttags::AstTag tag) {
          || asttags::isCobegin(tag)
          || asttags::isConditional(tag)
          || asttags::isSelect(tag)
+         || asttags::isWhen(tag)
          || asttags::isTry(tag)
          || asttags::isCatch(tag)
          || asttags::isSync(tag);
@@ -1484,6 +1485,14 @@ bool isWholeScopeVisibleFromScope(Context* context,
                                         checked);
 }
 
+static const bool& isNameBuiltinType(Context* context, UniqueString name) {
+  QUERY_BEGIN(isNameBuiltinType, context, name);
+  std::unordered_map<UniqueString,const Type*> typeMap;
+  Type::gatherBuiltins(context, typeMap);
+  bool toReturn = typeMap.find(name) != typeMap.end();
+  return QUERY_END(toReturn);
+}
+
 static void errorIfNameNotInScope(Context* context,
                                   const Scope* scope,
                                   const ResolvedVisibilityScope* resolving,
@@ -1498,14 +1507,50 @@ static void errorIfNameNotInScope(Context* context,
                         LOOKUP_DECLS |
                         LOOKUP_IMPORT_AND_USE |
                         LOOKUP_EXTERN_BLOCKS |
-                        LOOKUP_METHODS;
+                        LOOKUP_METHODS |
+                        LOOKUP_SKIP_PRIVATE_VIS;
 
   bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
                                checkedScopes, result,
                                /* traceCurPath */ nullptr,
                                /* traceResult */ nullptr);
 
-  if (got == false || result.size() == 0) {
+  bool found = got && result.size() > 0;
+  bool foundViaPrivate = false;
+  bool foundViaBuiltin = false;
+
+  if (!found) {
+    // Relax the private visibilities condition, in case the user is trying to
+    // import something like Module.SomeRecord to get some tertiary method
+    // Module defines on SomeRecord. In that case, SomeRecord would be visible
+    // in Module, but likely not public. This is made unstable by:
+    //
+    // https://github.com/chapel-lang/chapel/issues/22761
+
+    config &= ~LOOKUP_SKIP_PRIVATE_VIS;
+    bool got = helpLookupInScope(context, scope, {}, resolving, name, config,
+                                 checkedScopes, result,
+                                 /* traceCurPath */ nullptr,
+                                 /* traceResult */ nullptr);
+
+    found = got && result.size() > 0;
+
+    foundViaPrivate |= found;
+  }
+
+  if (!found) {
+    // Builtins aren't explicitly visible in the scope, but can be used therein
+    // and so are valid in imports and uses.
+    //
+    // Such cases are instances of importing a type to get its methods (e.g. import IO.string).
+    // This is made unstable by:
+    //
+    // https://github.com/chapel-lang/chapel/issues/22761
+
+    found = foundViaBuiltin = isNameBuiltinType(context, name);
+  }
+
+  if (!found) {
     CHPL_REPORT(context, UseImportUnknownSym, name.c_str(),
                 exprForError,
                 clauseForError,
@@ -1513,6 +1558,29 @@ static void errorIfNameNotInScope(Context* context,
                 useOrImport,
                 isRename);
     return;
+  }
+
+  if ((foundViaPrivate || foundViaBuiltin) &&
+      parsing::shouldWarnUnstableForId(context, exprForError->id())) {
+    // try to avoid throwing the warning if the user imports a (private) method
+    // from a module. If that's what they're doing, it's not really a tertiary
+    // import, it's just an error, which they will be shown later.
+    bool shouldWarnForTertiaryImport = false;
+    if (foundViaBuiltin) {
+      shouldWarnForTertiaryImport = true;
+    } else if (foundViaPrivate) {
+      for (auto& ids : result) {
+        for (auto& id : ids) {
+          if (asttags::isTypeDecl(parsing::idToTag(context, id))) {
+            shouldWarnForTertiaryImport = true;
+          }
+        }
+      }
+    }
+
+    if (shouldWarnForTertiaryImport) {
+      CHPL_REPORT(context, TertiaryUseImportUnstable, name, exprForError, clauseForError, scope, useOrImport);
+    }
   }
 
   // If there is a single ID, then go ahead and try to emit warnings. If
@@ -2744,6 +2812,7 @@ static void countReturnIntents(Context* context,
       Function::ReturnIntent reti = parsing::idToFnReturnIntent(context, id);
       switch (reti) {
         case Function::DEFAULT_RETURN_INTENT:
+        case Function::OUT:
         case Function::CONST:
           nValue++;
           break;

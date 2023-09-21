@@ -13,7 +13,8 @@ proc test1() {
   // the instance referred to by 'b' is deleted at end of scope
   var c: shared MyClass = new shared MyClass();
   // the instance referred to by 'c' is reference counted
-  var d: borrowed MyClass = (new owned MyClass()).borrow();
+  var dOwn = new owned MyClass();
+  var d: borrowed MyClass = dOwn.borrow();
   // the instance referred to by 'd' will be deleted at the end of scope
 
   writeln(a.type:string);
@@ -33,7 +34,8 @@ proc test2() {
   // the instance referred to by 'b' is deleted at end of scope
   var c                 = new shared MyClass();
   // the instance referred to by 'c' is reference counted
-  var d                   = (new owned MyClass()).borrow();
+  var dOwn = new owned MyClass();
+  var d                   = dOwn.borrow();
   // the instance referred to by 'd' will be deleted at the end of scope
 
   writeln(a.type:string);

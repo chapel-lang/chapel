@@ -42,7 +42,7 @@ testZip(AUint, AUint2);
 testZip(AReal, AReal2);
 testZip(AString, AString2);
 
-proc testZip(D1: domain, D2: domain) {
+proc testZip(D1: domain(?), D2: domain(?)) {
   type idxType1 = D1.idxType;
   type idxType2 = D2.idxType;
   var success = true;
@@ -53,7 +53,7 @@ proc testZip(D1: domain, D2: domain) {
           if success then "SUCCESS" else "FAILED");
 }
 
-proc testZip(D1: domain, A2: []) {
+proc testZip(D1: domain(?), A2: []) {
   type idxType1 = D1.idxType;
   type idxType2 = A2.domain.idxType;
   var success = true;
@@ -64,7 +64,7 @@ proc testZip(D1: domain, A2: []) {
           if success then "SUCCESS" else "FAILED");
 }
 
-proc testZip(A1: [], D2: domain) {
+proc testZip(A1: [], D2: domain(?)) {
   type idxType1 = A1.domain.idxType;
   type idxType2 = D2.idxType;
   var success = true;

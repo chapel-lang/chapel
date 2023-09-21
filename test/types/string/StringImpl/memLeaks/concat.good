@@ -196,3 +196,19 @@ sr
 s0
 === concat: c_string + remote string
 s0
+=== concat: string + c_ptrConst(c_char)
+s0
+=== concat: string + c_ptrConst(c_char)
+s0
+=== concat: c_ptrConst(c_char) + string
+s0
+=== concat: c_ptrConst(c_char) + string
+s0
+=== concat: remote string + c_ptrConst(c_char)
+sr
+=== concat: remote string + c_ptrConst(c_char)
+sr
+=== concat: c_ptrConst(c_char) + remote string
+s0
+=== concat: c_ptrConst(c_char) + remote string
+s0

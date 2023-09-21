@@ -11,7 +11,7 @@ proc fr(ref s: string) { checkType(s.type); }
 f("hi");
 fi("hi");
 if errorCase == 1 {
-  fo("hi"); 
+  fo("hi");
   fio("hi");
   fr("hi");
 }
@@ -30,8 +30,8 @@ if errorCase == 1 {
   gr("hi");
 }
 
-var hi_c = c"hi";
-var ss = string.createCopyingBuffer(hi_c)+ string.createCopyingBuffer(hi_c);
+var hi_c = "hi".c_str();
+var ss = string.createCopyingBuffer(hi_c) + string.createCopyingBuffer(hi_c);
 var s = ss.c_str();
 
 f(string.createCopyingBuffer(s));

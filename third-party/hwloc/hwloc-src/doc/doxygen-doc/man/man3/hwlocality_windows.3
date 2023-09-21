@@ -1,0 +1,54 @@
+.TH "hwlocality_windows" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwlocality_windows \- Windows-specific helpers
+.SH SYNOPSIS
+.br
+.PP
+.SS "Functions"
+
+.in +1c
+.ti -1c
+.RI "int \fBhwloc_windows_get_nr_processor_groups\fP (\fBhwloc_topology_t\fP topology, unsigned long flags)"
+.br
+.ti -1c
+.RI "int \fBhwloc_windows_get_processor_group_cpuset\fP (\fBhwloc_topology_t\fP topology, unsigned pg_index, \fBhwloc_cpuset_t\fP cpuset, unsigned long flags)"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+These functions query Windows processor groups\&. These groups partition the operating system into virtual sets of up to 64 neighbor PUs\&. Threads and processes may only be bound inside a single group\&. Although Windows processor groups may be exposed in the hwloc hierarchy as hwloc Groups, they are also often merged into existing hwloc objects such as NUMA nodes or Packages\&. This API provides explicit information about Windows processor groups so that applications know whether binding to a large set of PUs may fail because it spans over multiple Windows processor groups\&. 
+.SH "Function Documentation"
+.PP 
+.SS "int hwloc_windows_get_nr_processor_groups (\fBhwloc_topology_t\fP topology, unsigned long flags)"
+
+.PP
+Get the number of Windows processor groups\&. \fCflags\fP must be 0 for now\&.
+.PP
+\fBReturns\fP
+.RS 4
+at least \fC1\fP on success\&. 
+.PP
+-1 on error, for instance if the topology does not match the current system (e\&.g\&. loaded from another machine through XML)\&. 
+.RE
+.PP
+
+.SS "int hwloc_windows_get_processor_group_cpuset (\fBhwloc_topology_t\fP topology, unsigned pg_index, \fBhwloc_cpuset_t\fP cpuset, unsigned long flags)"
+
+.PP
+Get the CPU-set of a Windows processor group\&. Get the set of PU included in the processor group specified by \fCpg_index\fP\&. \fCpg_index\fP must be between \fC0\fP and the value returned by \fBhwloc_windows_get_nr_processor_groups()\fP minus 1\&.
+.PP
+\fCflags\fP must be 0 for now\&.
+.PP
+\fBReturns\fP
+.RS 4
+\fC0\fP on success\&. 
+.PP
+\fC-1\fP on error, for instance if \fCpg_index\fP is invalid, or if the topology does not match the current system (e\&.g\&. loaded from another machine through XML)\&. 
+.RE
+.PP
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

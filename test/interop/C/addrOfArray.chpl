@@ -26,7 +26,7 @@ if verbose {
   writeln("address of const a[0]: ", addr_a0_const);
 }
 
-proc cmp (x, y): bool do return (x: c_void_ptr) == (y: c_void_ptr);
+proc cmp (x, y): bool do return (x: c_ptr(void)) == (y: c_ptr(void));
 
 writeln(cmp(ptr_a, ptr_a0));
 writeln(cmp(ptr_a, addr_a0));

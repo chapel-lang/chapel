@@ -67,7 +67,7 @@ module ChapelAutoLocalAccess {
         return true;
 
       // or at least if they were distributed the same way
-      if accessBase.domain.dist == loopDomain.dist then return true;
+      if accessBase.domain.distribution == loopDomain.distribution then return true;
 
       // if we are iterating over a rectangular that's:
       // 1. not remote

@@ -1,0 +1,3 @@
+#!/bin/bash
+echo Compiling foo.chpl
+$3 --library --static foo.chpl

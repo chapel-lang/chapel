@@ -3,4 +3,4 @@
 65535
 4294967295
 9223372036854775807
-uint_int.chpl:7: error: halt reached - casting uint(64) with a value greater than the maximum of int(64) to int(64)
+uint_int.chpl:7: error: halt reached - bad cast from uint(64) with a value greater than the maximum of int(64) to int(64)

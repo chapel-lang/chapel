@@ -27,12 +27,13 @@ const space = {1..n, 1..n};
 const bspace = {0..n+1, 0..n+1};
 const bsouth = {n+1..n+1, 1..n};
 
-// Dmapped versions of the domains
-const R = space dmapped Block(boundingBox=bspace);
-const BigR = bspace dmapped Block(boundingBox=bspace);
-const South = bsouth dmapped Block(boundingBox=bspace);
+// distributed versions of the domains
+const bd = new blockDist(boundingBox=bspace);
+const R = bd.createDomain(space);
+const BigR = bd.createDomain(bspace);
+const South = bd.createDomain(bsouth);
 
-// Dmapped arrays
+// distributed arrays
 var A : [BigR] real;
 var Temp : [R] real;
 var Diff   : [R] real;
@@ -42,17 +43,17 @@ tagVdebug("init phase");
 // Initialize Temp because the computation step
 // copies Temp and then computes a new Temp
 
-forall (i,j) in BigR {
+forall (i,j) in BigR with (ref A) {
   A(i,j) = 0.0;
 }
 
-forall (i,j) in R {
+forall (i,j) in R with (ref Temp) {
   Temp(i,j) = 0.0;
 }
 
 tagVdebug("boundary");
 
-forall (i,j) in South {
+forall (i,j) in South with (ref A) {
   A(i,j) = 1.0;
 }
 
@@ -75,15 +76,15 @@ while (delta > epsilon) {
   tagVdebug("computation");
 
   for t in 1 .. compLoop do {
-    forall (i,j) in R do
+    forall (i,j) in R with (ref A) do
       A(i,j) = Temp(i,j);
-    forall (i,j) in R do
+    forall (i,j) in R with (ref Temp) do
       Temp(i,j) = (A(i-1,j) + A(i+1,j) + A(i,j-1) + A(i,j+1)) / 4.0;
   }
   
   // tag the reduction part of this loop.
   tagVdebug("max");
-  forall (i,j) in R {
+  forall (i,j) in R with (ref Diff) {
     Diff(i,j) = abs(Temp(i,j)-A(i,j));
   }
   delta = max reduce Diff;

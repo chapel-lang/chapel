@@ -45,6 +45,7 @@ module String {
   use CTypes;
   use ByteBufferHelpers;
   use BytesStringCommon;
+  use ChplConfig only compiledForSingleLocale;
   import OS.{errorCode};
 
   use CString;
@@ -56,15 +57,15 @@ module String {
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf(ref chr:int(32),
                                           ref nbytes:c_int,
-                                          buf:c_string,
+                                          buf:c_ptrConst(c_char),
                                           buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
   private extern proc qio_decode_char_buf_esc(ref chr:int(32),
                                               ref nbytes:c_int,
-                                              buf:c_string,
+                                              buf:c_ptrConst(c_char),
                                               buflen:c_ssize_t): errorCode;
   pragma "fn synchronization free"
-  private extern proc qio_encode_char_buf(dst:c_void_ptr, chr:int(32)):errorCode;
+  private extern proc qio_encode_char_buf(dst:c_ptr(void), chr:int(32)):errorCode;
   pragma "fn synchronization free"
   private extern proc qio_nbytes_char(chr:int(32)):c_int;
 
@@ -75,7 +76,7 @@ module String {
 
   pragma "plain old data"
   @chpldoc.nodoc
-  record byteIndex {
+  record byteIndex : writeSerializable {
     @chpldoc.nodoc
     var _bindex  : int;
 
@@ -89,6 +90,9 @@ module String {
     proc writeThis(f) throws {
       f.write(_bindex);
     }
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     operator :(val: byteIndex, type t:string) {
       return val._bindex: string;
@@ -97,7 +101,7 @@ module String {
 
   pragma "plain old data"
   @chpldoc.nodoc
-  record codepointIndex {
+  record codepointIndex : writeSerializable {
     @chpldoc.nodoc
     var _cpindex  : int;
 
@@ -111,6 +115,10 @@ module String {
 
     proc writeThis(f) throws {
       f.write(_cpindex);
+    }
+
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     operator :(val: codepointIndex, type t:string) {
@@ -157,12 +165,6 @@ module String {
 
   inline proc chpl__intToIdx(type idxType: codepointIndex, i: int) do
     return i: codepointIndex;
-
-  proc chpl__idxTypeToIntIdxType(type idxType: byteIndex) type do
-    return int;
-
-  proc chpl__idxTypeToIntIdxType(type idxType: codepointIndex) type do
-    return int;
 
   @chpldoc.nodoc inline operator byteIndex.>(x: byteIndex, y: byteIndex) {
     return x: int > y: int;
@@ -371,14 +373,14 @@ module String {
   //
 
   /*
-    Creates a new string which borrows the internal buffer of another string. If
+    Creates a new :type:`string` which borrows the internal buffer of another string. If
     the buffer is freed before the string returned from this function, accessing
     it is undefined behavior.
 
     :arg x: Object to borrow the buffer from
     :type x: `string`
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
   @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
   inline proc createStringWithBorrowedBuffer(x: string) : string {
@@ -386,15 +388,16 @@ module String {
   }
 
   /*
-    Creates a new string which borrows the internal buffer of another string. If
+    Creates a new :type:`string` which borrows the internal buffer of another string. If
     the buffer is freed before the string returned from this function, accessing
     it is undefined behavior.
 
     :arg x: Object to borrow the buffer from
     :type x: `string`
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type string.createBorrowingBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
@@ -404,8 +407,8 @@ module String {
   }
 
   /*
-    Creates a new string which borrows the internal buffer of a `c_string`. If
-    the buffer is freed before the string returned from this function, accessing
+    Creates a new :type:`string` which borrows the internal buffer of a `c_string`. If
+    the buffer is freed before the :type:`string` returned from this function, accessing
     it is undefined behavior.
 
     :arg x: Object to borrow the buffer from
@@ -415,9 +418,10 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-    :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
   @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
   inline proc createStringWithBorrowedBuffer(x: c_string,
@@ -428,39 +432,66 @@ module String {
   }
 
   /*
-    Creates a new string which borrows the internal buffer of a `c_string`. If
-    the buffer is freed before the string returned from this function, accessing
+    Creates a new :type:`string` which borrows the memory allocated for a :class:`~CTypes.c_ptr`. If
+    the buffer is freed before the :type:`string` returned from this function, accessing
     it is undefined behavior.
 
-    :arg x: Object to borrow the buffer from
-    :type x: `c_string`
+    :arg x: The buffer to borrow from
+    :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
     :arg length: Length of the string stored in `x` in bytes, excluding the
                  terminating null byte.
     :type length: `int`
 
-    :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+     characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
-  inline proc type string.createBorrowingBuffer(x: c_string,
-                                             length=x.size) : string throws {
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type string.createBorrowingBuffer(x: c_ptr(?t),
+                                                length=strLen(x)) : string throws {
     return string.createBorrowingBuffer(x:bufferType,
                                         length=length,
                                         size=length+1);
   }
 
-  proc chpl_createStringWithLiteral(buffer: c_string,
+  /*
+    Creates a new :type:`string` which borrows the memory allocated for a :class:`~CTypes.c_ptrConst`. If
+    the buffer is freed before the :type:`string` returned from this function, accessing
+    it is undefined behavior.
+
+    :arg x: The buffer to borrow from
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
+
+    :arg length: Length of the string stored in `x` in bytes, excluding the
+                 terminating null byte.
+    :type length: `int`
+
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+     characters.
+
+    :returns: A new :type:`string`
+  */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
+  inline proc type string.createBorrowingBuffer(x: c_ptrConst(?t),
+                                                length=strLen(x)) : string throws {
+    return string.createBorrowingBuffer(x:bufferType,
+                                        length=length,
+                                        size=length+1);
+  }
+
+  proc chpl_createStringWithLiteral(buffer: chpl_c_string,
                                     offset: int,
-                                    x: c_string,
+                                    x: chpl_c_string,
                                     length: int,
                                     numCodepoints: int) : string {
     // copy the string to the combined buffer
-    var buf = buffer:c_void_ptr:c_ptr(uint(8));
+    var buf = buffer:c_ptr(void):c_ptr(uint(8));
     buf = buf + offset;
     import OS.POSIX.memcpy;
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
-    memcpy(buf:c_void_ptr, x:c_void_ptr, length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
+    memcpy(buf:c_ptr(void), x:c_ptr(void), length.safeCast(c_size_t));
     // add null byte
     buf[length] = 0;
 
@@ -474,12 +505,12 @@ module String {
   }
 
   /*
-     Creates a new string which borrows the memory allocated for a `c_ptr`. If
-     the buffer is freed before the string returned from this function,
+     Creates a new :type:`string` which borrows the memory allocated for a :class:`~CTypes.c_ptr`. If
+     the buffer is freed before the :type:`string` returned from this function,
      accessing it is undefined behavior.
 
-     :arg x: Object to borrow the buffer from
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: The buffer to borrow from
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -488,9 +519,10 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
   @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
   inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
@@ -500,12 +532,12 @@ module String {
   }
 
   /*
-     Creates a new string which borrows the memory allocated for a `c_ptr`. If
-     the buffer is freed before the string returned from this function,
+     Creates a new :type:`string` which borrows the memory allocated for a :class:`~CTypes.c_ptr`. If
+     the buffer is freed before the :type:`string` returned from this function,
      accessing it is undefined behavior.
 
-     :arg x: Object to borrow the buffer from
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: The buffer to borrow from
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -514,14 +546,16 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
+  @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   proc type string.createBorrowingBuffer(x: c_ptr(?t),
                                          length: int,
                                          size: int) : string throws {
-    if t != byteType && t != c_char {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
     var ret: string;
@@ -536,9 +570,18 @@ module String {
     compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
   }
 
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type string.createBorrowingBuffer(x: chpl_c_string,
+                                                length=x.size) : string throws {
+    return string.createBorrowingBuffer(x:bufferType,
+                                        length=length,
+                                        size=length+1);
+  }
+
   /*
-    Creates a new string which takes ownership of the internal buffer of a
-    `c_string`. The buffer will be freed when the string is deinitialized.
+    Creates a new :type:`string` which takes ownership of the internal buffer of a
+    `c_string`. The buffer will be freed when the :type:`string` is deinitialized.
 
     :arg x: Object to take ownership of the buffer from
     :type x: `c_string`
@@ -547,9 +590,10 @@ module String {
                  terminating null byte.
     :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+     characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
   @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
   inline proc createStringWithOwnedBuffer(x: c_string,
@@ -560,33 +604,67 @@ module String {
   }
 
   /*
-    Creates a new string which takes ownership of the internal buffer of a
-    `c_string`. The buffer will be freed when the string is deinitialized.
+    Creates a new :type:`string` which takes ownership of the memory allocated for a
+    :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
 
-    :arg x: Object to take ownership of the buffer from
-    :type x: `c_string`
+    :arg x: The buffer to take ownership of
+    :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
     :arg length: Length of the string stored in `x` in bytes, excluding the
                  terminating null byte.
     :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+     characters.`DecodeError` if `x` contains non-UTF-8 characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
-  proc type string.createAdoptingBuffer(x: c_string,
-                                        length=x.size) : string throws {
+  proc type string.createAdoptingBuffer(x: c_ptr(?t),
+                                        length=strLen(x)) : string throws {
+    return string.createAdoptingBuffer(x:bufferType,
+                                       length=length,
+                                       size=length+1);
+  }
+
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createAdoptingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type string.createAdoptingBuffer(x: chpl_c_string,
+                                               length=x.size) : string throws {
+    return string.createAdoptingBuffer(x:bufferType,
+                                       length=length,
+                                       size=length+1);
+  }
+
+    /*
+    Creates a new :type:`string` which takes ownership of the memory allocated for a
+    :class:`~CTypes.c_ptrConst`. The buffer will be freed when the :type:`string`
+    is deinitialized.
+
+    :arg x: The buffer to take ownership of
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
+
+    :arg length: Length of the string stored in `x` in bytes, excluding the
+                 terminating null byte.
+    :type length: `int`
+
+    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+     characters.
+
+    :returns: A new :type:`string`
+  */
+  proc type string.createAdoptingBuffer(x: c_ptrConst(?t),
+                                        length=strLen(x)) : string throws {
     return string.createAdoptingBuffer(x:bufferType,
                                        length=length,
                                        size=length+1);
   }
 
   /*
-     Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr`. The buffer will be freed when the string is deinitialized.
+     Creates a new :type:`string` which takes ownership of the memory allocated for a
+     :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
 
      :arg x: Object to take ownership of the buffer from
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -595,9 +673,10 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
   @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
   inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
@@ -607,11 +686,11 @@ module String {
   }
 
   /*
-     Creates a new string which takes ownership of the memory allocated for a
-     `c_ptr`. The buffer will be freed when the string is deinitialized.
+     Creates a new :type:`string` which takes ownership of the memory allocated for a
+     :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
 
-     :arg x: Object to take ownership of the buffer from
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :arg x: The buffer to take ownership of
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -620,14 +699,15 @@ module String {
      :arg size: Size of memory allocated for `x` in bytes
      :type length: `int`
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
+      characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
   inline proc type string.createAdoptingBuffer(x: c_ptr(?t),
                                                length: int,
                                                size: int) : string throws {
-    if t != byteType && t != c_char {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
     var ret: string;
@@ -637,14 +717,14 @@ module String {
   }
 
   /*
-    Creates a new string by creating a copy of the buffer of another string.
+    Creates a new :type:`string` by creating a copy of the buffer of another :type:`string`.
 
     :arg x: Object to copy the buffer from
     :type x: `string`
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
-  @deprecated("createStringWithNewBuffer(x: string) is deprecated")
+  @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
   inline proc createStringWithNewBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
     var ret: string;
@@ -654,7 +734,7 @@ module String {
   }
 
   /*
-    Creates a new string by creating a copy of the buffer of a `c_string`.
+    Creates a new :type:`string` by creating a copy of the buffer of a `c_string`.
 
     :arg x: Object to copy the buffer from
     :type x: `c_string`
@@ -670,10 +750,10 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws DecodeError: if `decodePolicy.strict` is passed to the `policy`
-            argument and `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
   @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
   inline proc createStringWithNewBuffer(x: c_string, length=x.size,
@@ -681,14 +761,14 @@ module String {
     return string.createCopyingBuffer(x, length, policy);
   }
 
-  /*
-    Creates a new string by creating a copy of the buffer of a `c_string`.
 
-    :arg x: Object to copy the buffer from
-    :type x: `c_string`
+    /*
+    Creates a new :type:`string` by creating a copy of the memory allocated for a :class:`~CTypes.c_ptrConst`.
 
-    :arg length: Length of the string stored in `x` in bytes, excluding the
-                 terminating null byte.
+    :arg x: The buffer to copy
+    :type x: `c_ptrConst(uint(8))` or `c_ptrConst(int(8))`
+
+    :arg length: Length of `x` in bytes, excluding the terminating null byte.
     :type length: `int`
 
     :arg policy: - `decodePolicy.strict` raises an error
@@ -698,13 +778,13 @@ module String {
                  - `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-    :throws: `DecodeError` if `decodePolicy.strict` is passed to the `policy`
-             argument and `x` contains non-UTF-8 characters.
+    :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
-    :returns: A new `string`
+    :returns: A new :type:`string`
   */
-  inline proc type string.createCopyingBuffer(x: c_string,
-                                              length=x.size,
+  inline proc type string.createCopyingBuffer(x: c_ptrConst(?t),
+                                              length=strLen(x),
                                               policy=decodePolicy.strict
                                               ) : string throws {
     return string.createCopyingBuffer(x: bufferType,
@@ -714,10 +794,10 @@ module String {
   }
 
   /*
-     Creates a new string by creating a copy of a buffer.
+     Creates a new :type:`string` by creating a copy of a buffer.
 
      :arg x: The buffer to copy
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -727,15 +807,16 @@ module String {
                 ignored by this function.
      :type size: `int`
 
-      :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
+     :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
                    character, `decodePolicy.drop` drops the data silently,
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws DecodeError: if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
   @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
   inline proc createStringWithNewBuffer(x: c_ptr(?t),
@@ -746,10 +827,10 @@ module String {
   }
 
   /*
-     Creates a new string by creating a copy of a buffer.
+     Creates a new :type:`string` by creating a copy of a buffer.
 
      :arg x: The buffer to copy
-     :type x: `c_ptr(uint(8))` or `c_ptr(c_char)`
+     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
 
      :arg length: Length of the string stored in `x` in bytes, excluding the
                   terminating null byte.
@@ -759,27 +840,40 @@ module String {
                 ignored by this function.
      :type size: `int`
 
-      :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
+     :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
                    replaces the malformed character with UTF-8 replacement
                    character, `decodePolicy.drop` drops the data silently,
                    `decodePolicy.escape` escapes each illegal byte with private
                    use codepoints
 
-     :throws: `DecodeError` if `x` contains non-UTF-8 characters.
+     :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
+      passed to the `policy` argument and `x` contains non-UTF-8 characters.
 
-     :returns: A new `string`
+     :returns: A new :type:`string`
   */
   proc type string.createCopyingBuffer(x: c_ptr(?t),
-                                       length: int,
+                                       length=strLen(x),
                                        size=length+1,
                                        policy=decodePolicy.strict) : string throws {
-    if t != byteType && t != c_char {
+    if t != uint(8) && t != int(8) {
       compilerError("Cannot create a string with a buffer of ", t:string);
     }
     // size argument is not used, because we're allocating our own buffer
     // anyways. But it has a default and probably it's good to keep it here for
     // interface consistency
     return decodeByteBuffer(x:bufferType, length, policy);
+  }
+
+  @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createCopyingBuffer' that takes a 'c_ptrConst(c_char)' instead")
+  inline proc type string.createCopyingBuffer(x: chpl_c_string,
+                                              length=x.size,
+                                              policy=decodePolicy.strict
+                                              ) : string throws {
+    return string.createCopyingBuffer(x:bufferType,
+                                      length=length,
+                                      size=length+1,
+                                      policy);
   }
 
   // non-validating string factory functions are in this submodule. This
@@ -833,7 +927,7 @@ module String {
   pragma "ignore noinit"
   pragma "no default functions" // avoid the default (read|write)This routines
   @chpldoc.nodoc
-  record _string {
+  record _string : writeSerializable {
     var buffLen: int = 0; // length of string in bytes
     var buffSize: int = 0; // size of the buffer we own
     var cachedNumCodepoints: int = 0;
@@ -850,7 +944,7 @@ module String {
     }
 
     proc init=(s: string) {
-      this.complete();
+      init this;
       initWithNewBuffer(this, s);
     }
 
@@ -904,15 +998,16 @@ module String {
 
     inline proc byteIndices do return 0..<this.numBytes;
 
-    inline proc param c_str() param : c_string {
-      return this:c_string; // folded out in resolution
-    }
+    // TODO: Support param c_ptr/c_ptrConst
+    // inline proc param c_str() param : c_ptrConst(c_char) {
+    //   return this:c_ptrConst(c_char); // folded out in resolution
+    // }
 
 
     // assumes that 'this' is already localized
     proc _cpIndexLenHelpNoAdjustment(ref start: int) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -999,7 +1094,7 @@ module String {
                            const splitCount: int, const noSplits: bool,
                            const limitSplits: bool, const iEnd: byteIndex) {
       if boundsChecking {
-        if !_local && this.locale_id != chpl_nodeID {
+        if !compiledForSingleLocale() && this.locale_id != chpl_nodeID {
           halt("internal error -- method requires localized string");
         }
       }
@@ -1202,7 +1297,7 @@ module String {
     }
 
     /*
-      :returns: A new string with the first character in uppercase (if it is a
+      :returns: A new :type:`string` with the first character in uppercase (if it is a
                 case character), and all other case characters in lowercase.
                 Uncased characters are copied with no changes.
     */
@@ -1226,23 +1321,23 @@ module String {
   } // end record string
 
   /*
-    :returns: The number of codepoints in the string.
+    :returns: The number of codepoints in the :type:`string`.
   */
   inline proc const string.size : int do return numCodepoints;
 
   /*
-    :returns: The indices that can be used to index into the string
+    :returns: The indices that can be used to index into the :type:`string`
               (i.e., the range ``0..<this.size``)
   */
   inline proc string.indices : range do return 0..<size;
 
   /*
-    :returns: The number of bytes in the string.
+    :returns: The number of bytes in the :type:`string`.
   */
   inline proc string.numBytes : int do return buffLen;
 
   /*
-    :returns: The number of codepoints in the string, assuming the
+    :returns: The number of codepoints in the :type:`string`, assuming the
               string is correctly-encoded UTF-8.
   */
   inline proc const string.numCodepoints : int {
@@ -1261,8 +1356,9 @@ module String {
      :returns: A shallow copy if the :type:`string` is already on the
                current locale, otherwise a deep copy is performed.
   */
+  @unstable("string.localize() is unstable and may change in a future release")
   inline proc string.localize() : string {
-    if _local || this.locale_id == chpl_nodeID {
+    if compiledForSingleLocale() || this.locale_id == chpl_nodeID {
       return string.createBorrowingBuffer(this);
     } else {
       const x:string = this; // assignment makes it local
@@ -1271,7 +1367,8 @@ module String {
   }
 
   /*
-    Get a `c_string` from a :type:`string`.
+    Get a `c_ptrConst(c_char)` from a :type:`string`. The returned
+    :class:`~CTypes.c_ptrConst` shares the buffer with the :type:`string`.
 
     .. warning::
 
@@ -1290,12 +1387,15 @@ module String {
       }
 
     :returns:
-        A `c_string` that points to the underlying buffer used by this
-        :type:`string`. The returned `c_string` is only valid when used
+        A `c_ptrConst(c_char)` that points to the underlying buffer used by this
+        :type:`string`. The returned `c_ptrConst(c_char)` is only valid when used
         on the same locale as the string.
    */
-  inline proc string.c_str() : c_string {
-    return getCStr(this);
+  pragma "last resort"
+  @deprecated("'string.c_str()' has moved to 'CTypes'. Please 'use CTypes' to access ':proc:`~CTypes.string.c_str`'")
+  inline proc string.c_str() : c_ptrConst(c_char) {
+    use CTypes only c_str;
+    return this.c_str();
   }
 
   /*
@@ -1327,7 +1427,7 @@ module String {
                                                    offset=readIdx,
                                                    allowEsc=true);
         if (0xdc80<=cp && cp<=0xdcff) {
-          buff[writeIdx] = (cp-0xdc00):byteType;
+          buff[writeIdx] = (cp-0xdc00):uint(8);
           writeIdx += 1;
         }
         else if (decodeRet != 0) {
@@ -1350,7 +1450,7 @@ module String {
   }
 
   /*
-    Iterates over the string character by character.
+    Iterates over the :type:`string` character by character.
 
     For example:
 
@@ -1394,7 +1494,7 @@ module String {
   }
 
   /*
-    Iterates over the string character by character, yielding 1-codepoint
+    Iterates over the :type:`string` character by character, yielding 1-codepoint
     strings. (A synonym for :iter:`string.items`)
 
     For example:
@@ -1419,7 +1519,7 @@ module String {
   }
 
   /*
-    Iterates over the string byte by byte.
+    Iterates over the :type:`string` byte by byte.
   */
   pragma "chpldoc ignore chpl prefix"
   iter string.chpl_bytes() : uint(8) {
@@ -1431,7 +1531,7 @@ module String {
   }
 
   /*
-    Iterates over the string Unicode character by Unicode character.
+    Iterates over the :type:`string` Unicode character by Unicode character.
   */
   iter string.codepoints() : int(32) {
     const localThis = this.localize();
@@ -1442,7 +1542,7 @@ module String {
   }
 
   /*
-    :returns: The value of a single-byte string as an integer.
+    :returns: The value of a single-byte :type:`string` as an integer.
   */
   proc string.toByte() : uint(8) {
     if this.buffLen != 1 then
@@ -1460,7 +1560,7 @@ module String {
   }
 
   /*
-    :returns: The value of a single-codepoint string as an integer.
+    :returns: The value of a single-codepoint :type:`string` as an integer.
    */
   proc string.toCodepoint() : int(32) {
     // TODO: Engin: at least we can check whether the length is less than 4
@@ -1510,7 +1610,7 @@ module String {
           return cp;
         j += 1;
       }
-      // We have reached the end of the string without finding our index.
+      // We have reached the end of the :type:`string` without finding our index.
       if boundsChecking then
         halt("index ", idx, " out of bounds for string with length ", this.size);
       return 0: int(32);
@@ -1518,9 +1618,9 @@ module String {
   }
 
   /*
-    Return the codepoint starting at the `i` th byte in the string
+    Return the codepoint starting at the `i` th byte in the :type:`string`
 
-    :returns: A string with the complete multibyte character starting at the
+    :returns: A new :type:`string` with the complete multibyte character starting at the
               specified byte index from ``0..#string.numBytes``
    */
   proc string.this(i: byteIndex) : string {
@@ -1549,9 +1649,9 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string. (A synonym for :proc:`string.item`)
+    Return the `i` th codepoint in the :type:`string`. (A synonym for :proc:`string.item`)
 
-    :returns: A string with the complete multibyte character starting at the
+    :returns: A new :type:`string` with the complete multibyte character starting at the
               specified codepoint index from ``0..#string.numCodepoints``
    */
   proc string.this(i: codepointIndex) : string {
@@ -1559,9 +1659,9 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string. (A synonym for :proc:`string.item`)
+    Return the `i` th codepoint in the :type:`string`. (A synonym for :proc:`string.item`)
 
-    :returns: A string with the complete multibyte character starting at the
+    :returns: A new :type:`string` with the complete multibyte character starting at the
               specified codepoint index from ``1..string.numCodepoints``
    */
   inline proc string.this(i: int) : string {
@@ -1569,9 +1669,9 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string
+    Return the `i` th codepoint in the :type:`string`
 
-    :returns: A string with the complete multibyte character starting at the
+    :returns: A new :type:`string` with the complete multibyte character starting at the
               specified codepoint index from ``1..string.numCodepoints``
    */
   proc string.item(i: codepointIndex) : string {
@@ -1603,9 +1703,9 @@ module String {
   }
 
   /*
-    Return the `i` th codepoint in the string
+    Return the `i` th codepoint in the :type:`string`
 
-    :returns: A string with the complete multibyte character starting at the
+    :returns: A new :type:`string` with the complete multibyte character starting at the
               specified codepoint index from ``0..#string.numCodepoints``
    */
   inline proc string.item(i: int) : string {
@@ -1613,16 +1713,16 @@ module String {
   }
 
   /*
-    Slice a string. Halts if r is non-empty and not completely inside the
+    Slice a :type:`string`. Halts if r is non-empty and not completely inside the
     range ``0..<string.size`` when compiled with `--checks`. `--fast`
     disables this check.
 
-    :arg r: range of the indices the new string should be made from
+    :arg r: range of the indices the new :type:`string` should be made from
 
-    :throws CodepointSplittingError: if slicing results in splitting a
-            multi-byte codepoint.
+    :throws: throws a :class:`~Errors.CodepointSplitError`: if slicing results
+      in splitting a multi-byte codepoint.
 
-    :returns: a new string that is a substring within ``0..<string.size``. If
+    :returns: A new :type:`string` that is a substring within ``0..<string.size``. If
               the length of `r` is zero, an empty string is returned.
    */
   inline proc string.this(r: range(?)): string throws where r.idxType == byteIndex {
@@ -1636,7 +1736,7 @@ module String {
   }
 
   /*
-    :returns: * `true`  -- when the string is empty
+    :returns: * `true`  -- when the :type:`string` is empty
               * `false` -- otherwise
    */
   inline proc string.isEmpty() : bool {
@@ -1646,7 +1746,7 @@ module String {
   /*
     :arg patterns: A varargs list of strings to match against.
 
-    :returns: * `true`  -- when the string begins with one or more of the `patterns`
+    :returns: * `true`  -- when the :type:`string` begins with one or more of the `patterns`
               * `false` -- otherwise
    */
   inline proc string.startsWith(patterns: string ...) : bool {
@@ -1656,7 +1756,7 @@ module String {
   /*
     :arg patterns: A varargs list of strings to match against.
 
-    :returns: * `true`  -- when the string ends with one or more of the `patterns`
+    :returns: * `true`  -- when the :type:`string` ends with one or more of the `patterns`
               * `false` -- otherwise
    */
   inline proc string.endsWith(patterns: string ...) : bool {
@@ -1664,13 +1764,13 @@ module String {
   }
 
   /*
-    :arg pattern: the string to search for
+    :arg pattern: the :type:`string` to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
 
     :returns: the index of the first occurrence of `pattern` within a
-              string, or -1 if the `pattern` is not in the string.
+              :type:`string`, or -1 if the `pattern` is not in the string.
    */
 
   inline proc string.find(pattern: string,
@@ -1682,7 +1782,7 @@ module String {
   }
 
   /*
-    :arg pattern: the string to search for
+    :arg pattern: the :type:`string` to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
@@ -1701,7 +1801,7 @@ module String {
   }
 
   /*
-    :arg pattern: the string to search for
+    :arg pattern: the :type:`string` to search for
     :arg indices: an optional range defining the substring to search within,
                  default is the whole string. Halts if the range is not
                  within ``0..<string.size``
@@ -1717,12 +1817,12 @@ module String {
   }
 
   /*
-    :arg pattern: the string to search for
-    :arg replacement: the string to replace `pattern` with
+    :arg pattern: the :type:`string` to search for
+    :arg replacement: the :type:`string` to replace `pattern` with
     :arg count: an optional integer specifying the number of replacements to
                 make, values less than zero will replace all occurrences
 
-    :returns: a copy of the string where `replacement` replaces `pattern` up
+    :returns: a copy of the :type:`string` where `replacement` replaces `pattern` up
               to `count` times
    */
   inline proc string.replace(pattern: string, replacement: string,
@@ -1731,7 +1831,7 @@ module String {
   }
 
   /*
-    Splits the string on `sep` yielding the substring between each
+    Splits the :type:`string` on `sep` yielding the substring between each
     occurrence, up to `maxsplit` times.
 
     :arg sep: The delimiter used to break the string into chunks.
@@ -1751,7 +1851,7 @@ module String {
   /*
     Works as above, but uses runs of whitespace as the delimiter.
 
-    :arg maxsplit: The number of times to split the string, negative values
+    :arg maxsplit: The number of times to split the :type:`string`, negative values
                    indicate no limit.
    */
   iter string.split(maxsplit: int = -1) : string {
@@ -1775,7 +1875,7 @@ module String {
 
     :arg x: :type:`string` values to be joined
 
-    :returns: A :type:`string`
+    :returns: A new :type:`string`
   */
   inline proc string.join(const ref x: string ...) : string {
     return doJoin(this, x);
@@ -1797,7 +1897,7 @@ module String {
 
     :arg x: An array or tuple of :type:`string` values to be joined
 
-    :returns: A :type:`string`
+    :returns: A new :type:`string`
   */
   inline proc string.join(const ref x) : string {
     // this overload serves as a catch-all for unsupported types.
@@ -1809,14 +1909,14 @@ module String {
 
 
   /*
-    :arg chars: A string containing each character to remove.
+    :arg chars: A :type:`string` containing each character to remove.
                 Defaults to `" \\t\\r\\n"`.
     :arg leading: Indicates if leading occurrences should be removed.
                   Defaults to `true`.
     :arg trailing: Indicates if trailing occurrences should be removed.
                     Defaults to `true`.
 
-    :returns: A new string with `leading` and/or `trailing` occurrences of
+    :returns: A new :type:`string` with `leading` and/or `trailing` occurrences of
               characters in `chars` removed as appropriate.
   */
   proc string.strip(chars: string = " \t\r\n", leading=true,
@@ -1876,7 +1976,7 @@ module String {
   }
 
 
-  /* Remove indentation from each line of string.
+  /* Remove indentation from each line of a :type:`string`.
 
       This can be useful when applied to multi-line strings that are indented
       in the source code, but should not be indented in the output.
@@ -1898,7 +1998,7 @@ module String {
                         common leading whitespace, and make no changes to the
                         first line.
 
-      :returns: A new `string` with indentation removed.
+      :returns: A new :type:`string` with indentation removed.
   */
   @unstable("string.dedent is subject to change in the future.")
   proc string.dedent(columns=0, ignoreFirst=true) : string {
@@ -1906,7 +2006,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are either uppercase (A-Z) or
+    Checks if all the characters in the :type:`string` are either uppercase (A-Z) or
     uncased (not a letter).
 
     :returns: * `true`  -- if the string contains at least one uppercase character and no lowercase characters, ignoring uncased characters.
@@ -1933,7 +2033,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are either lowercase (a-z) or
+    Checks if all the characters in the :type:`string` are either lowercase (a-z) or
     uncased (not a letter).
 
     :returns: * `true`  -- when there are no uppercase characters in the string.
@@ -1960,7 +2060,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are whitespace ('  ', '\\t',
+    Checks if all the characters in the :type:`string` are whitespace ('  ', '\\t',
     '\\n', '\\v', '\\f', '\\r').
 
     :returns: * `true`  -- when all the characters are whitespace.
@@ -1983,7 +2083,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are alphabetic (a-zA-Z).
+    Checks if all the characters in the :type:`string` are alphabetic (a-zA-Z).
 
     :returns: * `true`  -- when the characters are alphabetic.
               * `false` -- otherwise
@@ -2005,7 +2105,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are digits (0-9).
+    Checks if all the characters in the :type:`string` are digits (0-9).
 
     :returns: * `true`  -- when the characters are digits.
               * `false` -- otherwise
@@ -2027,7 +2127,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are alphanumeric (a-zA-Z0-9).
+    Checks if all the characters in the :type:`string` are alphanumeric (a-zA-Z0-9).
 
     :returns: * `true`  -- when the characters are alphanumeric.
               * `false` -- otherwise
@@ -2049,7 +2149,7 @@ module String {
   }
 
   /*
-    Checks if all the characters in the string are printable.
+    Checks if all the characters in the :type:`string` are printable.
 
     :returns: * `true`  -- when the characters are printable.
               * `false` -- otherwise
@@ -2111,7 +2211,7 @@ module String {
   }
 
   /*
-    :returns: A new string with all uppercase characters replaced with their
+    :returns: A new :type:`string` with all uppercase characters replaced with their
               lowercase counterpart.
 
     .. note::
@@ -2135,7 +2235,7 @@ module String {
   }
 
   /*
-    :returns: A new string with all lowercase characters replaced with their
+    :returns: A new :type:`string` with all lowercase characters replaced with their
               uppercase counterpart.
 
     .. note::
@@ -2159,7 +2259,7 @@ module String {
   }
 
   /*
-    :returns: A new string with all cased characters following an uncased
+    :returns: A new :type:`string` with all cased characters following an uncased
               character converted to uppercase, and all cased characters
               following another cased character converted to lowercase.
 
@@ -2230,7 +2330,7 @@ module String {
 
 
   /*
-     Copies the string `rhs` into the string `lhs`.
+     Copies the :type:`string` `rhs` into the :type:`string` `lhs`.
   */
   operator =(ref lhs: string, rhs: string) : void {
     doAssign(lhs, rhs);
@@ -2240,15 +2340,15 @@ module String {
   // Concatenation
   //
   /*
-     :returns: A new string which is the result of concatenating `s0` and `s1`
+     :returns: A new :type:`string` which is the result of concatenating `s0` and `s1`
   */
   operator string.+(s0: string, s1: string) : string {
     return doConcat(s0, s1);
   }
 
   /*
-     :returns: A new string which is the result of repeating `s` `n` times.
-               If `n` is less than or equal to 0, an empty string is returned.
+     :returns: A new :type:`string` which is the result of repeating `s` `n` times.
+               If `n` is less than or equal to 0, an empty :type:`string` is returned.
 
      The operation is commutative.
      For example:
@@ -2486,7 +2586,7 @@ module String {
   }
 
   /*
-     :returns: A string storing the complete multibyte character sequence
+     :returns: A new :type:`string` storing the complete multibyte character sequence
                that corresponds to the codepoint value `i`.
   */
   inline proc codepointToString(i: int(32)) : string {
@@ -2503,16 +2603,12 @@ module String {
   // Casts (casts to & from other primitive types are in StringCasts)
   //
 
-  @chpldoc.nodoc
-  inline operator :(cs: c_string, type t: bufferType)  {
-    return __primitive("cast", t, cs);
-  }
-
   // Cast from c_string to string
   @chpldoc.nodoc
+  @deprecated("the type 'c_string' is deprecated; please use one of the 'string.create*ingBuffer' methods that takes a 'c_ptrConst(c_char)' instead")
   operator :(cs: c_string, type t: string)  {
     try {
-      return string.createCopyingBuffer(cs);
+      return string.createCopyingBuffer(cs:c_ptrConst(c_char));
     }
     catch {
       halt("Casting a non-UTF-8 c_string to string");
@@ -2555,6 +2651,7 @@ module String {
   inline proc string.hash(): uint {
     return getHash(this);
   }
+  string implements hashable;
 
   @chpldoc.nodoc
   operator string.<=>(ref x: string, ref y: string) {

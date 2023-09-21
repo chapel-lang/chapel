@@ -29,10 +29,10 @@ module RunParallelRawLoops {
             const eosvmax = loop_data.RealArray_scalars[3];
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len {
+              forall i in 0..#len with (ref bvc) {
                 bvc[i] = cls * (compression[i] + 1.0);
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref p_new) {
                 p_new[i] = bvc[i] * e_old[i];
                 if ( abs(p_new[i]) <  p_cut ) then p_new[i] = 0.0;
                 if ( vnewc[i] >= eosvmax ) then p_new[i] = 0.0;
@@ -73,11 +73,11 @@ module RunParallelRawLoops {
 
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len {
+              forall i in 0..#len with (ref e_new) {
                 e_new[i] = e_old[i] - 0.5 * delvc[i] *
                            (p_old[i] + q_old[i]) + 0.5 * work[i];
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref q_new) {
                 if delvc[i] > 0.0 {
                   q_new[i] = 0.0;
                 } else {
@@ -92,15 +92,15 @@ module RunParallelRawLoops {
                   q_new[i] = ssc*ql_old[i] + qq_old[i];
                 }
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref e_new) {
                 e_new[i] = e_new[i] + 0.5 * delvc[i] * (3.0*(p_old[i] + q_old[i]) - 4.0*(pHalfStep[i] + q_new[i]));
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref e_new) {
                 e_new[i] += 0.5 * work[i];
                 if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
                 if e_new[i] < emin then e_new[i] = emin;
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref e_new) {
                 var q_tilde = 0.0;
                 if delvc[i] > 0.0 {
                   q_tilde = 0;
@@ -117,7 +117,7 @@ module RunParallelRawLoops {
                 if abs(e_new[i]) < e_cut then e_new[i] = 0.0;
                 if e_new[i] < emin then e_new[i] = emin;
               }
-              forall i in 0..#len {
+              forall i in 0..#len with (ref q_new) {
                 if delvc[i] <= 0.0 {
                   var ssc = (pbvc[i] * e_new[i]
                              + vnewc[i] * vnewc[i] * bvc[i] * p_new[i]) / rho0;
@@ -176,7 +176,7 @@ module RunParallelRawLoops {
             const vnormq = 0.083333333333333333;
             ltimer.start();
             for 0..#num_samples {
-              forall i in dom.fpz..dom.lpz {
+              forall i in dom.fpz..dom.lpz with (ref vol) {
                 const x71 = x7[i] - x1[i],
                       x72 = x7[i] - x2[i],
                       x74 = x7[i] - x4[i],
@@ -266,7 +266,7 @@ module RunParallelRawLoops {
             const half = 0.5;
             ltimer.start();
             for 0..#num_samples {
-              forall ii in 0..#dom.n_real_zones with (ref dom) {
+              forall ii in 0..#dom.n_real_zones with (ref dom, ref div) {
                 const i  = dom.real_zones[ii];
 
                 const xi  = half * (x1[i]  + x2[i]  - x3[i]  - x4[i]);
@@ -317,7 +317,7 @@ module RunParallelRawLoops {
             const ireal = 0.0 + 1.0i;
             ltimer.start();
             for 0..#num_samples {
-              forall k in kmin..kmax-1 {
+              forall k in kmin..kmax-1 with (ref t0, ref t1, ref t2) {
                 for j in jmin..jmax-1 {
                   var it0    = (k*(jmax+1) + j) * (imax+1);
                   var idenac = (k*(jmax+2) + j) * (imax+2);
@@ -348,15 +348,15 @@ module RunParallelRawLoops {
                     // new A1
                     var r = zac1*cslamt + zac2;
                     var z5 = c2*a2t,
-                        z4 = conjg(c1) * z5 * (cslamt-1);
-                    z3 = conjg(c1) * a0t * snlamt;
+                        z4 = conj(c1) * z5 * (cslamt-1);
+                    z3 = conj(c1) * a0t * snlamt;
                     t1[it0+i] = a1t*r + z4 - ireal*z3;
 
                     // new A2
                     r = zac1 + zac2*cslamt;
                     z5 = c1*a1t;
-                    z4 = conjg(c2) * z5 * (cslamt-1);
-                    z3 = conjg(c2) * a0t * snlamt;
+                    z4 = conj(c2) * z5 * (cslamt-1);
+                    z3 = conj(c2) * a0t * snlamt;
                     t2[it0+i] = (a2t*r + z4 - ireal*z3) * r_fratio;
                   }
                 }
@@ -379,7 +379,7 @@ module RunParallelRawLoops {
 
             ltimer.start();
             for isamp in 0..#num_samples {
-              forall i in 0..#len_minus_coeff {
+              forall i in 0..#len_minus_coeff with (ref output) {
                 var sum = 0.0;
                 for j in 0..#coefflen {
                   sum += coeff[j]*input[i+j];
@@ -401,7 +401,7 @@ module RunParallelRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len {
+              forall i in 0..#len with (ref out1, ref out2, ref out3) {
                 const res = -in1[i] - in2[i];
                 out3[i] = res;
                 out2[i] = res;
@@ -420,7 +420,7 @@ module RunParallelRawLoops {
             ref in2  = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len {
+              forall i in 0..#len with (ref out1, ref out2, ref out3) {
                 out1[i] = in1[i] * in2[i];
                 out2[i] = in1[i] + in2[i];
                 out3[i] = in1[i] - in2[i];
@@ -438,7 +438,7 @@ module RunParallelRawLoops {
             ref x2 = loop_data.RealArray_1D[4];
             ltimer.start();
             for 0..#num_samples {
-              forall i in 0..#len {
+              forall i in 0..#len with (ref x1, ref x2) {
                 var s = b[i]*b[i] - 4.0*a[i]*c[i];
                 if s >= 0 {
                   s = sqrt(s);
@@ -500,7 +500,7 @@ module RunParallelRawLoops {
 
             // initialize the array of atomics to match the 'h' array so
             // it can be updated in parallel
-            for (aH, init) in zip(atomicH, h) do aH.write(init);
+            for (aH, initial) in zip(atomicH, h) do aH.write(initial);
             proc overIndexMapper(i,j) {
               /* The reference version of this kernel is over-indexing a
                  logical Nx25 array using indices like (16,26).  With bounds
@@ -509,7 +509,7 @@ module RunParallelRawLoops {
               return (i+j/25, j%25);
             }
             for 0..#num_samples {
-              forall ip in 0..#len {
+              forall ip in 0..#len with (ref atomicH, ref p) {
                 var i1, j1, i2, j2: int;
                 // These casts to int(32) overflow and behave differently
                 // than if they were cast to default sized int (int(64)).

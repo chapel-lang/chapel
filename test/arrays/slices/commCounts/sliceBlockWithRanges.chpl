@@ -4,7 +4,7 @@ use CommDiagnostics;
 config const printArray = true;
 
 proc main() {
-  const D = {1..10, 1..10} dmapped Block({1..10, 1..10});
+  const D = {1..10, 1..10} dmapped blockDist({1..10, 1..10});
   var A: [D] real;
 
   forall a in A do
@@ -24,7 +24,7 @@ proc main() {
   writeln("-------------------------");
 
   startTrial();
-  forall ij in B.domain do
+  forall ij in B.domain with (ref B) do
     B[ij] += 0.1;
   stopTrial();
 
@@ -61,17 +61,17 @@ proc main() {
       writeln("\nA is:\n", A);
   }
 
-  proc increment(X, D) {
+  proc increment(ref X, D) {
     writeln("Incrementing in routine by access");
     writeln("---------------------------------");
 
     startTrial();
-    forall ij in D do
+    forall ij in D with (ref X) do
       X[ij] += 0.1;
     stopTrial();
   }
 
-  proc increment(X) {
+  proc increment(ref X) {
     writeln("Incrementing in routine by iteration");
     writeln("------------------------------------");
 

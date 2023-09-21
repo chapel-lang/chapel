@@ -29,10 +29,10 @@ proc main() {
 
   var   allExecTime: [LocaleSpace] [1..numTrials] real;
   var   allValidAnswer: [LocaleSpace] bool;
-  
-  coforall loc in Locales {
+
+  coforall loc in Locales with (ref allExecTime, ref allValidAnswer) {
     on loc {
-      const MyProblemSpace: domain(1, indexType) 
+      const MyProblemSpace: domain(1, indexType)
                           = BlockPartition(ProblemSpace, here.id, numLocales);
 
       var A, B, C: [MyProblemSpace] elemType;
@@ -49,7 +49,7 @@ proc main() {
     }
   }
 
-  const execTime: [1..numTrials] real 
+  const execTime: [1..numTrials] real
                 = [t in 1..numTrials] max reduce [loc in LocaleSpace] allExecTime(loc)(t);
 
   const validAnswer = & reduce allValidAnswer;
@@ -66,7 +66,7 @@ proc printConfiguration() {
 }
 
 
-proc initVectors(B, C, ProblemSpace) {
+proc initVectors(ref B, ref C, ProblemSpace) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low-1);

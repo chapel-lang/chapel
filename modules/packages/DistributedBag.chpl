@@ -223,7 +223,7 @@ module DistributedBag {
     the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag {
+  record DistBag : serializable {
     type eltType;
 
     // This is unused, and merely for documentation purposes. See '_value'.
@@ -260,6 +260,10 @@ module DistributedBag {
     proc readThis(f) throws {
       compilerError("Reading a DistBag is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a DistBag is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
@@ -277,11 +281,15 @@ module DistributedBag {
       }
       ch.write("]");
     }
+    @chpldoc.nodoc
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
 
     forwarding _value;
   }
 
-  class DistributedBagImpl : CollectionImpl {
+  class DistributedBagImpl : CollectionImpl(?) {
     @chpldoc.nodoc
     var targetLocDom : domain(1);
     /*
@@ -302,7 +310,7 @@ module DistributedBag {
       this.targetLocDom  = targetLocDom;
       this.targetLocales = targetLocales;
 
-      complete();
+      init this;
 
       this.pid           = _newPrivatizedClass(this);
       this.bag           = new unmanaged Bag(eltType, this);
@@ -316,7 +324,7 @@ module DistributedBag {
       this.targetLocales = other.targetLocales;
       this.pid           = pid;
 
-      complete();
+      init this;
 
       this.bag           = new unmanaged Bag(eltType, this);
     }
@@ -721,27 +729,38 @@ module DistributedBag {
 
     var nElems : atomic uint;
 
+    proc init(type eltType) {
+      this.eltType = eltType;
+    }
+    proc init=(other: BagSegment) {
+      this.eltType = other.eltType;
+      this.status = other.status.read();
+      this.headBlock = other.headBlock;
+      this.tailBlock = other.tailBlock;
+      this.nElems = other.nElems;
+    }
+
     inline proc isEmpty {
       return nElems.read() == 0;
     }
 
-    inline proc acquireWithStatus(newStatus) {
+    inline proc ref acquireWithStatus(newStatus) {
       return status.compareAndSwap(STATUS_UNLOCKED, newStatus);
     }
 
     // Set status with a test-and-test-and-set loop...
-    inline proc acquire(newStatus) {
+    inline proc ref acquire(newStatus) {
       while true {
         if currentStatus == STATUS_UNLOCKED && acquireWithStatus(newStatus) {
           break;
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
     }
 
     // Set status with a test-and-test-and-set loop, but only while it is not empty...
-    inline proc acquireIfNonEmpty(newStatus) {
+    inline proc ref acquireIfNonEmpty(newStatus) {
       while !isEmpty {
         if currentStatus == STATUS_UNLOCKED && acquireWithStatus(newStatus) {
           if isEmpty {
@@ -752,7 +771,7 @@ module DistributedBag {
           }
         }
 
-        chpl_task_yield();
+        currentTask.yieldExecution();
       }
 
       return false;
@@ -766,11 +785,11 @@ module DistributedBag {
       return status.read();
     }
 
-    inline proc releaseStatus() {
+    inline proc ref releaseStatus() {
       status.write(STATUS_UNLOCKED);
     }
 
-    inline proc transferElements(destPtr, n, locId = here.id) {
+    inline proc ref transferElements(destPtr, n, locId = here.id) {
       var destOffset = 0;
       var srcOffset = 0;
       while destOffset < n {
@@ -807,7 +826,7 @@ module DistributedBag {
       nElems.sub(n : uint);
     }
 
-    proc addElementsPtr(ptr, n, locId = here.id) {
+    proc ref addElementsPtr(ptr, n, locId = here.id) {
       var offset = 0;
       while offset < n {
         var block = tailBlock;
@@ -867,7 +886,7 @@ module DistributedBag {
       return arr;
     }
 
-    inline proc takeElement() {
+    inline proc ref takeElement() {
       if isEmpty {
         var default: eltType;
         return (false, default);
@@ -892,7 +911,7 @@ module DistributedBag {
       return (true, elem);
     }
 
-    inline proc addElements(elt : eltType) {
+    inline proc ref addElements(elt : eltType) {
       var block = tailBlock;
 
       // Empty? Create a new one of initial size
@@ -1022,7 +1041,7 @@ module DistributedBag {
                   }
                 }
               }
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
         }
@@ -1091,7 +1110,7 @@ module DistributedBag {
                 }
 
                 // Backoff
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
 
               iterations = iterations + 1;
@@ -1165,7 +1184,7 @@ module DistributedBag {
                     segment.releaseStatus();
                     coforall segmentIdx in 0..#here.maxTaskPar {
                       var stolenWork : [{0..#numLocales}] (int, c_ptr(eltType));
-                      coforall loc in parentHandle.targetLocalesNotHere() {
+                      coforall loc in parentHandle.targetLocalesNotHere() with (ref stolenWork) {
                         if loc != here then on loc {
                           // As we jumped to the target node, 'localBag' returns
                           // the target's bag that we are attempting to steal from.
@@ -1202,7 +1221,7 @@ module DistributedBag {
                               }
 
                               // Backoff...
-                              chpl_task_yield();
+                              currentTask.yieldExecution();
                             }
                           }
                         }
@@ -1213,7 +1232,7 @@ module DistributedBag {
                       ref recvSegment = segments[segmentIdx];
                       while true {
                         if recvSegment.currentStatus == STATUS_UNLOCKED && recvSegment.acquireWithStatus(STATUS_ADD) then break;
-                        chpl_task_yield();
+                        currentTask.yieldExecution();
                       }
 
                       // Add stolen elements to segment...
@@ -1245,7 +1264,7 @@ module DistributedBag {
               }
 
               // Backoff to maximum...
-              chpl_task_yield();
+              currentTask.yieldExecution();
             }
           }
 

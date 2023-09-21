@@ -3,7 +3,7 @@ class C {
 }
 
 class D {
-  var c: C = new unmanaged C(2);
+  var c: unmanaged C(?) = new unmanaged C(2);
   param y: int = c.x;
 }
 

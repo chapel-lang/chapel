@@ -3,8 +3,8 @@ record GenericRecord {
 }
 
 class GenericClass {
-  var f:GenericRecord;
-  proc init(arg:GenericRecord) {
+  var f:GenericRecord(?);
+  proc init(arg:GenericRecord(?)) {
     this.f = arg;
   }
 }

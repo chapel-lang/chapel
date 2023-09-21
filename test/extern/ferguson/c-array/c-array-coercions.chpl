@@ -2,11 +2,11 @@ use CTypes;
 proc f(ptr:c_ptr(int)) {
   writeln(ptr.deref());
 }
-proc g(ptr:c_void_ptr) {
+proc g(ptr:c_ptr(void)) {
   writeptr(ptr);
 }
 
-proc writeptr(ptr:c_void_ptr) {
+proc writeptr(ptr:c_ptr(void)) {
   var p = ptr:c_ptr(int);
   writeln(p.deref());
 }
@@ -30,7 +30,7 @@ proc main() {
   f(a); // prints a[0]
  
   a[0] += 1;
-  var vptr: c_void_ptr = a; // ptr points to &a[0]
+  var vptr: c_ptr(void) = a; // ptr points to &a[0]
   writeptr(vptr);
 
   a[0] += 1;
@@ -38,7 +38,7 @@ proc main() {
   writeptr(vptr);
  
   a[0] += 1;
-  vptr = a:c_void_ptr;
+  vptr = a:c_ptr(void);
   writeptr(vptr);
  
   a[0] += 1;

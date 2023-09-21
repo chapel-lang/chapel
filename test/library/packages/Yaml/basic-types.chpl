@@ -24,7 +24,7 @@ proc test(val, type T = val.type) {
     {
       var readVal = f.reader().withDeserializer(FormatReader).read(T);
       writeln("--- read: ---");
-      stdout.withSerializer(DefaultSerializer).writeln(readVal);
+      stdout.withSerializer(defaultSerializer).writeln(readVal);
       writeln("-------------");
 
       var compare = if isNilableClassType(val.type) then
@@ -52,7 +52,7 @@ record SimpleRecord {
   var y : real;
 }
 
-record CustomizedRecord {
+record CustomizedRecord : writeSerializable, initDeserializable {
   var x : int;
   var y : real;
 
@@ -61,7 +61,7 @@ record CustomizedRecord {
     this.y = y;
   }
 
-  proc init(reader: fileReader, ref deserializer) throws {
+  proc init(reader: fileReader(?), ref deserializer) throws {
     const ref r = reader;
     this.init();
     r.readLiteral("<");
@@ -71,7 +71,7 @@ record CustomizedRecord {
     r.readLiteral(">");
   }
 
-  proc serialize(writer: fileWriter, ref serializer) {
+  proc serialize(writer, ref serializer) throws {
     writer.writeLiteral("<");
     writer.write(x);
     writer.writeLiteral(", ");

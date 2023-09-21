@@ -8,7 +8,8 @@ use mydef only Mytype;    // error
 
 proc main()
 {
-    var a = (new owned Mytype()).borrow();
+    var ownA = new owned Mytype();
+    var a = ownA.borrow();
     writeln( a );
 
     var file = openWriter( "test.dat" );

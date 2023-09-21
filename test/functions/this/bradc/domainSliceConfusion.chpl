@@ -10,7 +10,7 @@ class D {
   }
 }
 
-var myD = (new owned D()).borrow();
+var myD = new D();
 
 writeln("myD = ", myD);
 

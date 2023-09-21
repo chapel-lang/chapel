@@ -1,4 +1,1 @@
 $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: warning: chpl_unstableInternalSymbolForTesting is unstable
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: In function 'warmupRuntime':
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'allocate' is unstable, and may be renamed or moved
-$CHPL_HOME/modules/internal/ChapelLocale.chpl:nnnn: warning: 'deallocate' is unstable, and may be renamed or moved

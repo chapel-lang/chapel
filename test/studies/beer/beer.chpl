@@ -31,7 +31,7 @@ var LyricsSpace: domain(1) = {1..numVerses};
 var Lyrics: [LyricsSpace] string;
 
 // parallel computation of lyrics array
-[verse in LyricsSpace] Lyrics(verse) = computeLyric(verse);
+[verse in LyricsSpace with (ref Lyrics)] Lyrics(verse) = computeLyric(verse);
 
 // as in any good parallel language, I/O to stdout is serialized.
 // (Note that I/O to a file could be parallelized using a parallel

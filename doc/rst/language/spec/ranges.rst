@@ -378,6 +378,11 @@ the type’s ``bounds`` parameter as follows:
    ``high``-bounded range (or visa versa) produces an empty range,
    matching the default value for a ``both``-bounded range
 
+.. warning::
+
+   Default initialization of ranges with ``boundKind.low`` or
+   ``boundKind.high`` is unstable.
+
 Default values of ranges with boolean ``idxType`` are similar, but
 substituting ``false`` and ``true`` for 0 and 1 above.  Ranges with
 ``enum`` ``idxType`` use the 0th and 1st values in the enumeration in
@@ -426,12 +431,26 @@ Range assignment is legal when:
 -  the ``strides`` parameter of the destination range is the same
    or more permissive than that of the source range.
 
+.. warning::
+
+   The ability to assign between two unbounded ranges with
+   incompatible idxTypes is deprecated.
+
 .. _Range_Comparisons:
 
 Range Comparisons
 ~~~~~~~~~~~~~~~~~
 
 Ranges can be compared using equality and inequality.
+
+.. warning::
+
+   Equality comparisons for ranges over ``enum`` or ``bool`` types
+   when one of the ranges is bounded and the other is unbounded
+   is currently unstable.
+   We currently treat both ranges as being bounded.
+   This might change in the future.
+
 
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 

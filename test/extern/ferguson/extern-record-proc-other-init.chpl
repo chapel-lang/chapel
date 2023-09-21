@@ -13,7 +13,7 @@ extern record R {
     this.i = 9;
     this.j = 0;
     this.k = 1;
-    this.complete();
+    init this;
   }
 }
 

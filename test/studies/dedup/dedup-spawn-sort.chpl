@@ -19,13 +19,13 @@ proc main(args:[] string)
   // Now create a distributed-memory version of paths.
 
   var n:int = paths.size;
-  var BlockN = {1..n} dmapped Block({1..n});
+  var BlockN = {1..n} dmapped blockDist({1..n});
   var distributedPaths:[BlockN] string;
   distributedPaths = paths.toArray();
-  var BlockNumLocales = {0..#numLocales} dmapped Block({0..#numLocales});
+  var BlockNumLocales = {0..#numLocales} dmapped blockDist({0..#numLocales});
   var distributedBuffers: [BlockNumLocales] file;
   var distributedWriters: [BlockNumLocales]
-    fileWriter(kind=iokind.native, locking=true);
+    fileWriter(locking=true);
   
   // Open up buffers to store the hashes 
   forall (f,w) in zip(distributedBuffers, distributedWriters) {

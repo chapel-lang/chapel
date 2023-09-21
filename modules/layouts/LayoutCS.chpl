@@ -18,6 +18,9 @@
  * limitations under the License.
  */
 
+@unstable("LayoutCS is unstable and may change in the future")
+prototype module LayoutCS {
+
 import RangeChunk;
 
 @chpldoc.nodoc
@@ -105,7 +108,7 @@ class CS: BaseDist {
 } // CS
 
 
-class CSDom: BaseSparseDomImpl {
+class CSDom: BaseSparseDomImpl(?) {
   param compressRows;
   param sortedIndices;
   param strides;
@@ -147,7 +150,7 @@ class CSDom: BaseSparseDomImpl {
                   then {rowRange.lowBound..rowRange.highBound+1}
                   else {colRange.lowBound..colRange.highBound+1};
 
-    this.complete();
+    init this;
 
     nnzDom = {0..#_nnz};
     dsiClear();
@@ -176,8 +179,9 @@ class CSDom: BaseSparseDomImpl {
       // Optimized COO -> CSR/CSC
 
       // Note: only COO->CSR can take advantage of COO having sorted indices
-      this.dsiBulkAdd(rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
-                      dataSorted=this.compressRows, isUnique=true);
+      this.dsiBulkAdd(
+          rhs._instance._indices[rhs.nnzDom.lowBound..#rhs._nnz],
+          dataSorted=this.compressRows, isUnique=true);
     } else {
       // Unoptimized generic case
       chpl_assignDomainWithIndsIterSafeForRemoving(this, rhs);
@@ -340,7 +344,6 @@ class CSDom: BaseSparseDomImpl {
       }
     }
     halt("Something went wrong in dsiFirst");
-    return (0, 0);
   }
 
   override proc dsiLast {
@@ -407,7 +410,7 @@ class CSDom: BaseSparseDomImpl {
     return 1;
   }
 
-  override proc bulkAdd_help(inds: [?indsDom] rank*idxType,
+  override proc bulkAdd_help(ref inds: [?indsDom] rank*idxType,
       dataSorted=false, isUnique=false, addOn=nilLocale) {
     import Sort;
 
@@ -646,7 +649,7 @@ class CSDom: BaseSparseDomImpl {
 } // CSDom
 
 
-class CSArr: BaseSparseArrImpl {
+class CSArr: BaseSparseArrImpl(?) {
 
   proc init(type eltType,
             param rank : int,
@@ -747,3 +750,5 @@ class CSArr: BaseSparseArrImpl {
     }
   }
 } // CSArr
+
+} // LayoutCS

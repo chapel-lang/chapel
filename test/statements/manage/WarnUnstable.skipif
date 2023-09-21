@@ -1,0 +1,3 @@
+# because we already explicitly throw memleaks, we'll get duplicate warnings
+# due to the flag being unstable
+EXECOPTS <= memLeaks

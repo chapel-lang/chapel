@@ -35,6 +35,8 @@ extern "C" {
 extern bool chpl_gpu_debug;
 extern int chpl_gpu_num_devices;
 extern bool chpl_gpu_no_cpu_mode_warning;
+extern bool chpl_gpu_sync_with_host;
+extern bool chpl_gpu_use_stream_per_task;
 
 
 #ifdef HAS_GPU_LOCALE
@@ -51,7 +53,7 @@ static inline void CHPL_GPU_DEBUG(const char *str, ...) {
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
 // returns time from epoch in milliseconds. Used in macros below.
-static inline long double get_time() {
+static inline long double get_time(void) {
   struct timeval tv;
 
   gettimeofday(&tv, NULL);
@@ -81,6 +83,8 @@ static inline bool chpl_gpu_running_on_gpu_locale(void) {
 }
 
 void chpl_gpu_init(void);
+void chpl_gpu_task_end(void);
+void chpl_gpu_task_fence(void);
 void chpl_gpu_support_module_finished_initializing(void);
 
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
@@ -109,10 +113,28 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 void chpl_gpu_mem_free(void* memAlloc, int32_t lineno, int32_t filename);
 void chpl_gpu_hostmem_register(void *memAlloc, size_t size);
 
-void* chpl_gpu_memmove(void* dst, const void* src, size_t n);
+void chpl_gpu_memcpy(c_sublocid_t dst_subloc, void* dst,
+                     c_sublocid_t src_subloc, const void* src,
+                     size_t n, int32_t commID, int ln, int32_t fn);
+void chpl_gpu_comm_put(c_nodeid_t dst_node, c_sublocid_t dst_subloc, void *dst,
+                       c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn);
+
+void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
+                       c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
+                       size_t size, int32_t commID, int ln, int32_t fn);
+
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
-void chpl_gpu_copy_device_to_host(void* dst, const void* src, size_t n);
-void chpl_gpu_copy_host_to_device(void* dst, const void* src, size_t n);
+void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
+void chpl_gpu_copy_host_to_device(c_sublocid_t dst_dev, void* dst,
+                                  const void* src, size_t n, int32_t commID,
+                                  int ln, int32_t fn);
+void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
+                                    c_sublocid_t src_dev, const void* src,
+                                    size_t n, int32_t commID, int ln,
+                                    int32_t fn);
 void* chpl_gpu_comm_async(void *dst, void *src, size_t n);
 void chpl_gpu_comm_wait(void *stream);
 

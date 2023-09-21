@@ -1,8 +1,8 @@
 /* mpz_add_ui, mpz_sub_ui -- Add or subtract an mpz_t and an unsigned
    one-word integer.
 
-Copyright 1991, 1993, 1994, 1996, 1999-2002, 2004, 2012, 2013, 2015
-Free Software Foundation, Inc.
+Copyright 1991, 1993, 1994, 1996, 1999-2002, 2004, 2012, 2013, 2015,
+2020 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -86,21 +86,26 @@ FUNCTION (mpz_ptr w, mpz_srcptr u, unsigned long int vval)
 
   abs_usize = ABS (usize);
 
-  /* If not space for W (and possible carry), increase space.  */
-  wp = MPZ_REALLOC (w, abs_usize + 1);
-
-  /* These must be after realloc (U may be the same as W).  */
-  up = PTR (u);
-
   if (usize VARIATION_CMP 0)
     {
       mp_limb_t cy;
+
+      /* If not space for W (and possible carry), increase space.  */
+      wp = MPZ_REALLOC (w, abs_usize + 1);
+      /* These must be after realloc (U may be the same as W).  */
+      up = PTR (u);
+
       cy = mpn_add_1 (wp, up, abs_usize, (mp_limb_t) vval);
       wp[abs_usize] = cy;
       wsize = VARIATION_NEG (abs_usize + cy);
     }
   else
     {
+      /* If not space for W, increase space.  */
+      wp = MPZ_REALLOC (w, abs_usize);
+      /* These must be after realloc (U may be the same as W).  */
+      up = PTR (u);
+
       /* The signs are different.  Need exact comparison to determine
 	 which operand to subtract from which.  */
       if (abs_usize == 1 && up[0] < vval)

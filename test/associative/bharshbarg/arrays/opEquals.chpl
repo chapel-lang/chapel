@@ -1,7 +1,7 @@
 use Map;
 use Sort;
 
-proc pretty(ref a : map) {
+proc pretty(ref a : map(?)) {
   write("{ ");
   var first = true;
   for k in sorted(a.keysToArray()) {

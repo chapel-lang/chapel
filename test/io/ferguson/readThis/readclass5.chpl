@@ -1,36 +1,37 @@
 use IO;
 
-class mything {
+class mything : serializable {
   var x:int;
   var y:int;
   proc init(x: int = 0, y: int = 0) {
     this.x = x;
     this.y = y;
   }
-  proc init(r: fileReader) {
-    this.x = r.read(int);
-    r.readLiteral(" ");
-    this.y = r.read(int);
-    r.readNewline();
+  proc init(reader, ref deserializer) {
+    this.x = reader.read(int);
+    reader.readLiteral(" ");
+    this.y = reader.read(int);
+    reader.readNewline();
   }
 
-  proc readThis(r: fileReader) throws {
-    x = r.read(int);
-    r.readLiteral(" ");
-    y = r.read(int);
-    r.readNewline();
+  override proc deserialize(reader, ref deserializer) throws {
+    x = reader.read(int);
+    reader.readLiteral(" ");
+    y = reader.read(int);
+    reader.readNewline();
   }
 
-  proc writeThis(w: fileWriter) throws {
-    w.write(x);
-    w.writeLiteral(" ");
-    w.write(y);
-    w.writeNewline();
+  override proc serialize(writer, ref serializer) throws {
+    writer.write(x);
+    writer.writeLiteral(" ");
+    writer.write(y);
+    writer.writeNewline();
   }
 }
 
 {
-  var a = (new owned mything(1)).borrow();
+  var ownA = new owned mything(1);
+  var a = ownA.borrow();
 
   writeln("Writing ", a);
 
@@ -42,7 +43,8 @@ class mything {
 
   var r = f.reader();
 
-  var b = (new owned mything(2)).borrow();
+  var ownB = new owned mything(2);
+  var b = ownB.borrow();
   r.read(b);
 
   r.close();

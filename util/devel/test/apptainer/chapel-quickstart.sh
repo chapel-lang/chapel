@@ -3,4 +3,8 @@
 # Checks if a Quickstart build basses make check
 # Prints a summary at the end.
 
-./tryit.sh ../../provision-scripts/chapel-quickstart.sh
+# apptainer forwards env vars to container by default, so unset
+# CHPL_DEVELOPER b/c it can change warning behavior
+unset CHPL_DEVELOPER
+
+./tryit.py ../../provision-scripts/chapel-quickstart.sh

@@ -111,6 +111,5 @@ proc fannkuch(idxMin:int, idxMax:int) {
   checks.add(checkSum);
 
   var curMax = flips.read();
-  while curMax < maxFlips && !flips.compareAndSwap(curMax, maxFlips) do
-    curMax = flips.read();
+  while curMax < maxFlips && !flips.compareExchangeWeak(curMax, maxFlips) { }
 }

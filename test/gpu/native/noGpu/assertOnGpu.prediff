@@ -1,0 +1,4 @@
+#!/bin/sh
+
+sed -i -e 's/chpl:[[:digit:]]\+:/chpl:X:/' $2
+

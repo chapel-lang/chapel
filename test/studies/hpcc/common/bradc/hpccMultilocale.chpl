@@ -1,17 +1,17 @@
-var myTurn$: [LocaleSpace] sync bool;
-myTurn$(0).writeEF(true);
+var myTurn: [LocaleSpace] sync bool;
+myTurn(0).writeEF(true);
 
 
 proc waitForTurn() {
-  myTurn$(here.id).readFE();
+  myTurn(here.id).readFE();
 }
 
 
 proc passTurn() {
-  myTurn$((here.id + 1) % numLocales).writeEF(true);
+  myTurn((here.id + 1) % numLocales).writeEF(true);
   if (here.id == 0) then {
-    myTurn$(here.id).readFE();
-    myTurn$(here.id).writeEF(true);
+    myTurn(here.id).readFE();
+    myTurn(here.id).writeEF(true);
   }
 }
 

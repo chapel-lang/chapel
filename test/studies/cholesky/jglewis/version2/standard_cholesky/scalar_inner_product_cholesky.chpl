@@ -46,7 +46,7 @@ module scalar_inner_product_cholesky {
   // matrix-vector product form.
   // =========================================================================
     
-  proc scalar_inner_product_cholesky ( A : [] ) 
+  proc scalar_inner_product_cholesky ( ref A : [] ) 
 
     where ( A.domain.rank == 2 ) 
     {

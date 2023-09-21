@@ -23,26 +23,16 @@ proc callout(out x) {
 
 proc callinout(inout x) {
   writeln("in callinout, x is: ", x);
-  forall i in D {
+  forall i in D with (ref x) {
     x(i) += 1.0;
   }
   writeln("re-assigned to be: ", x);
 }
-
-
-proc callblank(x) {
-  writeln("in callblank, x is: ", x);
-  forall i in D {
-    x(i) += 1.0;
-  }
-  writeln("re-assigned to be: ", x);
-}
-
 
 proc main() {
   var A: [D] real;
 
-  forall i in D {
+  forall i in D with (ref A) {
     A(i) = i;
   }
 
@@ -55,9 +45,5 @@ proc main() {
   writeln();
 
   callinout(A);
-  writeln("back at callsite, A is: ", A);
-  writeln();
-
-  callblank(A);
   writeln("back at callsite, A is: ", A);
 }

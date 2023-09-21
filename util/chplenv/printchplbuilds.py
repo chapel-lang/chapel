@@ -96,9 +96,7 @@ nextStates = {
 
 def ProcessDebug(fields, config):
     global used
-    print(fields)
     var = prefixes[fields[0]]
-    print(var)
     value = '-'.join(fields[1:])
     if var in ("CHPL_COMM", "CHPL_HWLOC", "CHPL_TASKS"):
         debug = var + "_DEBUG"

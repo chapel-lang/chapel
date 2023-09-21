@@ -60,7 +60,7 @@ proc RR.reqMeth23(formal2: int, formal3: AT3) {
           formal2, ", ", formal3, ": ", formal3.type:string, ")");
 }
 
-proc reqFunS(formal: RR) {
+proc reqFunS(formal: RR(?)) {
   writeln("reqFunS(", formal, ": ", formal.type:string, ")");
 }
 proc reqFun123(formal1: int, formal2, formal3: bool) {

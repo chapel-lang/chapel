@@ -1,10 +1,10 @@
 // Do some computation on gpus across multiple locales, collect results
 // together in some cycically distributed array
 use CyclicDist;
-const Dom = {0..<numLocales} dmapped Cyclic(startIdx=0);
+const Dom = {0..<numLocales} dmapped cyclicDist(startIdx=0);
 var A : [Dom] int;
 
-coforall loc in Locales do on loc {
+coforall loc in Locales with (ref A) do on loc {
   on here.gpus[0] {
     var B : [0..10] int;
     foreach i in 0..10 {

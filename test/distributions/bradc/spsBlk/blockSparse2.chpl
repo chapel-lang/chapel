@@ -13,7 +13,7 @@ config const n = 8;
 // The block-distributed dense domain that will serve as the parent
 // domain for the sparse one.
 //
-const Elems = {0..#n, 0..#n} dmapped Block({0..#n, 0..#n});
+const Elems = {0..#n, 0..#n} dmapped blockDist({0..#n, 0..#n});
 
 //
 // The sparse subdomain.  In the current code framework, the parent
@@ -49,7 +49,7 @@ var Dns: [Elems] int;
 // For all indices in the sparse domain, set the dense value as a
 // function of the owning locale's ID.
 //
-forall ij in MatElems do
+forall ij in MatElems with (ref Dns) do
   Dns[ij] = here.id + 1;
 
 //
@@ -65,7 +65,7 @@ var Sps: [MatElems] int;
 //
 // Fill it similarly to the dense above.
 //
-forall ij in MatElems do
+forall ij in MatElems with (ref Sps) do
   Sps[ij] = here.id + 1;
 
 //

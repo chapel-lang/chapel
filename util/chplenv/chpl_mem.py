@@ -2,16 +2,14 @@
 import optparse
 import sys
 
-import chpl_arch, chpl_platform, overrides
+import chpl_platform, overrides
 from utils import error, memoize, warning
 
 @memoize
 def get(flag='host'):
-    arch_val = chpl_arch.get(flag)
     platform_val = chpl_platform.get(flag)
     cygwin = platform_val.startswith('cygwin')
     mac = platform_val == 'darwin'
-    mac_arm = mac and arch_val == 'arm64'
     chpl_host_mem = overrides.get('CHPL_HOST_MEM')
     chpl_target_mem = overrides.get('CHPL_TARGET_MEM')
     chpl_mem = overrides.get('CHPL_MEM')
@@ -24,7 +22,7 @@ def get(flag='host'):
                         "taking value from CHPL_TARGET_MEM")
         elif chpl_mem:
             mem_val = chpl_mem
-        elif cygwin or mac_arm:
+        elif cygwin:
             mem_val = 'cstdlib'
         else:
             mem_val = 'jemalloc'

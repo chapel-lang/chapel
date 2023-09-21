@@ -10,8 +10,8 @@ extern "struct stat" record chpl_stat {
   var st_size: off_t;
 }
 
-proc getFileSize(path:c_string) : int {
-  extern proc stat(x: c_string, ref chpl_stat): c_int;
+proc getFileSize(path:c_ptrConst(c_char)) : int {
+  extern proc stat(x: c_ptrConst(c_char), ref chpl_stat): c_int;
   var buf: chpl_stat;
 
   if (stat(path, buf) == 0) {

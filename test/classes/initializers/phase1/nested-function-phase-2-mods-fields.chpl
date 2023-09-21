@@ -7,7 +7,7 @@ class Foo {
   proc init(val) {
     field = val;
     nested();
-    this.complete();
+    init this;
 
     // Where the function definition was placed shouldn't impact its viability,
     // but where it is called should.  This function modifies a field, doesn't

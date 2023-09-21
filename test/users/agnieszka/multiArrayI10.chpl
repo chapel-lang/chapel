@@ -24,7 +24,7 @@ proc multi_array(P: int=100) {
   var D: domain(1) = {1..numLocales*4-1};
   // elements of array A used to write/read
   // the product and for synchronization
-  var A$: [D] sync int;
+  var A: [D] sync int;
 
   cobegin {
     // Producer
@@ -33,7 +33,7 @@ proc multi_array(P: int=100) {
       for i in 1..P {
         // put product in all array elements
         forall k in D do
-          A$(k).writeEF(put);
+          A(k).writeEF(put);
 
         // writeln("Put: ",put);
         // create new product
@@ -45,7 +45,7 @@ proc multi_array(P: int=100) {
       var  get :int;
       for i in 1..P {
         // read the product
-        get = A$(j).readFE();
+        get = A(j).readFE();
       }
     }
   }

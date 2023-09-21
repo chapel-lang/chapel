@@ -41,7 +41,7 @@ syserr chpl_qio_channel_close(void* ch);
 // get the length of a file
 syserr chpl_qio_filelength(void* file, int64_t* length);
 // get the path to a file
-syserr chpl_qio_getpath(void* file, const char** str, int64_t* len);
+syserr chpl_qio_getpath(void* file, uint8_t** str, int64_t* len);
 // sync the file to disk
 syserr chpl_qio_fsync(void* file);
 // get the optimal i/o size for the channel

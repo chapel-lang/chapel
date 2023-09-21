@@ -118,7 +118,7 @@ class RecordReader {
   /* The regular expression to read (using match on the channel) */
   var matchRegex: regex(string);
   @chpldoc.nodoc
-  param num_fields = numFields(t); // Number of fields in record
+  param num_fields = getNumFields(t); // Number of fields in record
 
   /* Create a RecordReader to match an auto-generated regular expression
      for a record created by the :proc:`createRegex` routine.
@@ -130,7 +130,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
       this.matchRegex = new regex(createRegex());
     }
@@ -148,7 +148,7 @@ class RecordReader {
     this.t = t;
     this.myReader = myReader;
     // TODO: remove the following once we can throw from init() calls
-    this.complete();
+    init this;
     try! {
         this.matchRegex = new regex(mRegex);
     }

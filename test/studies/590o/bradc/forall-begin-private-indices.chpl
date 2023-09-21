@@ -29,7 +29,7 @@ proc main {
   sync {
     for x in StartIndices {
       for y in EndIndices {
-        begin {
+        begin with (ref A) {
           if (x <= y) {
             A[x, y] = (x+1) + (y+1)/10.0;
           }

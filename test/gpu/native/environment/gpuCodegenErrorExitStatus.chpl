@@ -10,8 +10,8 @@ pragma "codegen for GPU"
 extern proc foo() : void;
 
 on here.gpus[0] {
+  @assertOnGpu
   foreach i in 0..10 {
-    assertOnGpu();
     foo();
   }
 }

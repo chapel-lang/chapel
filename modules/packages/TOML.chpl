@@ -106,11 +106,10 @@ proc parseToml(input: string) : shared Toml {
   var D: domain(string);
   var table: [D] shared Toml?;
   var rootTable = new shared Toml(table);
-  const source = new unmanaged Source(input);
+  const source = new shared Source(input);
   const parser = new unmanaged Parser(source, rootTable);
   const tomlData = parser.parseLoop();
   delete parser;
-  delete source;
   return tomlData;
 }
 
@@ -149,7 +148,7 @@ module TomlParser {
   @chpldoc.nodoc
   class Parser {
 
-    var source: Source;
+    var source: shared Source;
     var rootTable: shared Toml;
     var curTable: string;
 
@@ -423,7 +422,6 @@ module TomlParser {
         // Error
         else {
           throw new owned TomlError("Line "+ debugCounter:string +": Unexpected Token -> " + getToken(source));
-          return new shared Toml(val);
         }
       }
       catch e: IllegalArgumentError {
@@ -580,7 +578,7 @@ module TomlParser {
 Class to hold various types parsed from input
 used to recursively hold tables and respective values
 */
-  class Toml {
+  class Toml : writeSerializable {
 
     @chpldoc.nodoc
     var i: int,
@@ -608,14 +606,14 @@ used to recursively hold tables and respective values
 
     // Toml
     proc init(A: [?D] shared Toml) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
 
     @chpldoc.nodoc
     proc init(A: [?D] shared Toml?) where D.isAssociative() {
-      this.complete();
+      init this;
       for i in D do this.A[i] = A[i];
       this.tag = fieldToml;
     }
@@ -686,7 +684,7 @@ used to recursively hold tables and respective values
     // Clone
     proc init(root: Toml) {
       // INIT TODO: Can this be written in phase one?
-      this.complete();
+      init this;
       this.boo = root.boo;
       this.i = root.i;
       this.re = root.re;
@@ -845,6 +843,10 @@ used to recursively hold tables and respective values
     /* Write a Table to channel f in TOML format */
     override proc writeThis(f) throws {
       writeTOML(f);
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /* Write a Table to channel f in TOML format */
@@ -1067,12 +1069,11 @@ used to recursively hold tables and respective values
         when fieldReal do return val.re:string;
         when fieldString do return ('"' + val.s + '"');
         when fieldEmpty do return ""; // empty
-        when fieldDate do return val.ld.isoFormat();
-        when fieldTime do return val.ti.isoFormat();
-        when fieldDateTime do return val.dt.isoFormat();
+        when fieldDate do return val.ld:string;
+        when fieldTime do return val.ti:string;
+        when fieldDateTime do return val.dt:string;
         otherwise {
           throw new owned TomlError("Error in printing " + val.s);
-          return val.s;
         }
       }
     }
@@ -1113,7 +1114,6 @@ used to recursively hold tables and respective values
         when fieldToml do return 'toml';
         otherwise {
           throw new owned TomlError("Unknown type");
-          return "nil";
         }
       }
     }
@@ -1188,7 +1188,7 @@ module TomlReader {
 
     proc init(tomlStr: string) {
      this.tomlStr = tomlStr;
-     this.complete();
+     init this;
      genTokenlist(tomlStr);
     }
 
@@ -1319,7 +1319,7 @@ module TomlReader {
 
 
   /* Array wrapper */
-  class Tokens {
+  class Tokens : serializable {
     var A: list(string);
 
     proc init(A: list(string)) {
@@ -1357,15 +1357,23 @@ module TomlReader {
     proc readThis(f) throws {
       compilerError("Reading a Tokens type is not supported");
     }
+    @chpldoc.nodoc
+    proc deserialize(reader, ref deserializer) throws {
+      compilerError("Reading a Tokens type is not supported");
+    }
 
     @chpldoc.nodoc
     proc init(reader: fileReader, ref deserializer) {
-      this.complete();
+      init this;
       compilerError("Reading a Tokens type is not supported");
     }
 
     override proc writeThis(f) throws {
       f.write(this.A.toArray());
+    }
+    @chpldoc.nodoc
+    override proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
   }
 }

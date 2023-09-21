@@ -61,7 +61,7 @@ coforall tid in 0..3 with (ref lst2) {
   order. The contents of ``lst2`` might be out of order even though our loop
   size is small (only 4 tasks).
 
-  We can call ``list.sort()`` on our list to be on the safe side.
+  We can call :proc:`~List.list.sort()` on our list to be on the safe side.
 */
 
 if !quiet then

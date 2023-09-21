@@ -13,7 +13,7 @@ module LCALSLoops {
       s_loop_suite_run_info.cache_flush_data_len;
   }
 
-  proc initData(ca: [] complex, id: int) {
+  proc initData(ref ca: [] complex, id: int) {
     const factor = if id % 2 != 0 then 0.1+0.2i else 0.2+0.3i;
 
     for (a,j) in zip(ca, 0..) {
@@ -21,7 +21,7 @@ module LCALSLoops {
     }
   }
 
-  proc initData(ia: [] int, id: int) {
+  proc initData(ref ia: [] int, id: int) {
     ia = 0;
   }
 
@@ -32,7 +32,7 @@ module LCALSLoops {
     }
   }
 
-  proc initData(ra: [] real, id: int) {
+  proc initData(ref ra: [] real, id: int) {
     const factor: Real_type = if id % 2 != 0 then 0.1 else 0.2;
     for (r,j) in zip(ra, 0..) {
       r = factor*(j + 1.1)/(j + 1.12345);
@@ -352,7 +352,7 @@ module LCALSLoops {
     stat.loop_chksum[ilength] = tchk;
   }
 
-  proc updateChksum(stat: LoopStat, ilength: LoopLength, ra: [] real, scale_factor: real = 1.0) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ref ra: [] real, scale_factor: real = 1.0) {
     use LongDouble;
 
     ref data = ra;
@@ -368,7 +368,7 @@ module LCALSLoops {
   proc updateChksum(stat: LoopStat, ilength: LoopLength, val: real) {
     stat.loop_chksum[ilength] += val;
   }
-  proc updateChksum(stat: LoopStat, ilength: LoopLength, ca: [] complex, scale_factor: real = 1.0) {
+  proc updateChksum(stat: LoopStat, ilength: LoopLength, ref ca: [] complex, scale_factor: real = 1.0) {
     ref data = ca;
     var len = ca.size;
     var tchk = stat.loop_chksum[ilength];

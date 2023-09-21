@@ -1,3 +1,6 @@
+generic-management-field2-borrow.chpl:6: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
 {x = 3}
 In the explicit initializer
 (f = {x = 3})

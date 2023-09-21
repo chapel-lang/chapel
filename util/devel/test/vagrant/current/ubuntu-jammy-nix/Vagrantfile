@@ -1,0 +1,32 @@
+# -*- mode: ruby -*-
+# vi: set ft=ruby :
+
+# All Vagrant configuration is done below. The "2" in Vagrant.configure
+# configures the configuration version (we support older styles for
+# backwards compatibility). Please don't change it unless you know what
+# you're doing.
+Vagrant.configure("2") do |config|
+  config.vm.box = "ubuntu/jammy64"
+
+  config.vm.provision "file",
+    source: "../../provision-scripts/chpl-nix-deps.nix",
+    destination: "chpl-nix-deps.nix"
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/apt-get-and-nix-install-1.sh"
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/apt-get-and-nix-install-2.sh"
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/git-clone-chapel.sh"
+
+  config.vm.provision "shell", privileged: false,
+    path: "../../provision-scripts/make-chapel-quick.sh"
+
+  config.vm.provider "virtualbox" do |vb|
+    vb.memory = 8192
+    vb.cpus = 4
+  end
+
+end

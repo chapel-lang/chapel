@@ -2,7 +2,7 @@ use BlockCycDist;
 
 config const n = 25;
 
-var MyBlkCyc = new dmap(new BlockCyclic(startIdx=(1,), blocksize=(4,)));
+var MyBlkCyc = new blockCycDist(startIdx=(1,), blocksize=(4,));
 
 writeln("Declaring D:");
 var D: domain(1) dmapped MyBlkCyc = {1..n};
@@ -18,10 +18,10 @@ writeln("D2 is: ", D2);
 var A: [D] real;
 var A2: [D2] real;
 
-forall i in D do
+forall i in D with (ref A) do
   A(i) = i;
          
-forall i in D2 do
+forall i in D2 with (ref A2) do
   A2(i) = i;
 
 writeln("A is: ", A);

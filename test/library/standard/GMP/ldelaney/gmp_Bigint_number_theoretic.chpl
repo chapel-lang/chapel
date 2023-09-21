@@ -40,10 +40,10 @@ proc prime_parse(val, isProbPrime) {
 // Compute a sequence of primes
 //
 
-nextprime(a, a);
+nextPrime(a, a);
 writeln(a);
 
-nextprime(a, a);
+nextPrime(a, a);
 writeln(a);
 
 writeln();
@@ -160,8 +160,8 @@ writeln();
 // Lucas number
 //
 
-lucnum(a, 7);
+lucNum(a, 7);
 writeln("the 7th Lucas number is ", a);
 
-lucnum2(a, b, 6);
+lucNum2(a, b, 6);
 writeln("the 5th and 6th Lucas numbers are ", b, " and ", a);

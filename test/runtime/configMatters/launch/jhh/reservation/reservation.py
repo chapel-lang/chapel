@@ -65,11 +65,9 @@ class SrunTests(unittest.TestCase):
         if skipReason is not None:
             self.skipTest(skipReason)
         self.env = os.environ.copy()
-        try:
-            del self.env['CHPL_LAUNCHER_PARTITION']
-            del self.env['CHPL_LAUNCHER_USE_SBATCH']
-        except:
-            pass
+        self.env.pop('CHPL_LAUNCHER_PARTITION', None)
+        self.env.pop('CHPL_LAUNCHER_CORES_PER_LOCALE', None)
+        self.env.pop('CHPL_LAUNCHER_USE_SBATCH', None)
 
     def runCmd(self, cmd):
         output = runCmd(cmd, self.env);

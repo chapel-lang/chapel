@@ -1,1 +1,0 @@
-channelWriteln.chpl:7: warning: writeln with a style argument is unstable

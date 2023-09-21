@@ -25,7 +25,7 @@ class MyClass {
   B = 3;
 
   // this is the very basic case and optimzed completely
-  forall i in dom {
+  forall i in dom with (ref A) {
     A[i] = B[i] +
            C[i] +
            D[i] +

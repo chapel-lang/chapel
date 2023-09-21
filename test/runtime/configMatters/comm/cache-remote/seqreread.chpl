@@ -2,7 +2,7 @@ use Time, CTypes;
 
 config const n = 10000;
 extern proc chpl_cache_print();
-extern proc printf(fmt: c_string, vals...?numvals): int;
+extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 proc doit(memory:locale, running:locale) {
   on memory {

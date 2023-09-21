@@ -22,8 +22,8 @@ proc main() {
 
 // Put the stencil of X in Y
 // Return the max difference between the new and old stencils
-proc stencil(X,Y) {
-  forall (i,j) in Inner {
+proc stencil(X,ref Y) {
+  forall (i,j) in Inner with (ref Y) {
     Y(i,j) = (X(i+1,j) + X(i-1,j) + X(i,j+1) + X(i,j-1)) / 4;
   }
   return max reduce [i in Inner] abs(X(i) - Y(i));
@@ -32,7 +32,7 @@ proc stencil(X,Y) {
 // Initialize everything but the south boundary to 0.0
 // Initialize the south boundary to 1.0
 proc initialize() {
-  forall i in {n..n,1..n} {
+  forall i in {n..n,1..n} with (ref A, ref B) {
     A(i) = 1.0;
     B(i) = 1.0;
   }

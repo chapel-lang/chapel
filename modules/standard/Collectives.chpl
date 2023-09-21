@@ -61,6 +61,7 @@
 module Collectives {
   import HaltWrappers;
   import ChplConfig;
+  use CTypes;
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
@@ -261,7 +262,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -271,7 +272,7 @@ module Collectives {
       this.reusable = reusable;
       this.procAtomics = procAtomics;
       this.hackIntoCommBarrier = hackIntoCommBarrier;
-      this.complete();
+      init this;
       reset(n);
     }
 
@@ -293,8 +294,8 @@ module Collectives {
         const myc = count.fetchSub(1);
         if myc<=1 {
           if hackIntoCommBarrier {
-            extern proc chpl_comm_barrier(msg: c_string);
-            chpl_comm_barrier(c"local barrier call");
+            extern proc chpl_comm_barrier(msg: c_ptrConst(c_char));
+            chpl_comm_barrier("local barrier call");
           }
           const alreadySet = done.testAndSet();
           if boundsChecking && alreadySet {
@@ -378,7 +379,7 @@ module Collectives {
      */
     proc init(n: int, param reusable: bool) {
       this.reusable = reusable;
-      this.complete();
+      init this;
       reset(n);
     }
 

@@ -102,10 +102,10 @@ void collectForallStmts(BaseAST* ast, std::vector<ForallStmt*>& forallStmts) {
     forallStmts.push_back(forall);
 }
 
-void collectCForLoopStmts(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
-  AST_CHILDREN_CALL(ast, collectCForLoopStmts, cforloopStmts);
+void collectCForLoopStmtsPreorder(BaseAST* ast, std::vector<CForLoop*>& cforloopStmts) {
   if (CForLoop* cforloop = toCForLoop(ast))
     cforloopStmts.push_back(cforloop);
+  AST_CHILDREN_CALL(ast, collectCForLoopStmtsPreorder, cforloopStmts);
 }
 
 void collectCallExprs(BaseAST* ast, std::vector<CallExpr*>& callExprs) {
@@ -814,8 +814,7 @@ static bool isNumericTypeSymExpr(Expr* expr) {
     Type* t = sym->type;
     // if it's the actual type symbol for that type
     if (t->symbol == sym && sym->hasFlag(FLAG_TYPE_VARIABLE))
-      return is_bool_type(t) ||
-             is_int_type(t) ||
+      return is_int_type(t) ||
              is_uint_type(t) ||
              is_real_type(t) ||
              is_imag_type(t) ||
@@ -1328,4 +1327,75 @@ void convertToQualifiedRefs() {
     }
   }
 #undef fixRefSymbols
+}
+
+bool shouldWarnUnstableFor(BaseAST* ast) {
+  if (auto mod = ast->getModule()) {
+    if (mod->modTag == MOD_INTERNAL) return fWarnUnstableInternal;
+    else if (mod->modTag == MOD_STANDARD) return fWarnUnstableStandard;
+  }
+  return fWarnUnstable;
+}
+
+// this is `symExprIsUsedAsConstRef` when `constRef=true`
+bool symExprIsUsedAsRef(
+  SymExpr* use,
+  bool constRef,
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove) {
+   if (CallExpr* call = toCallExpr(use->parentExpr)) {
+    if (FnSymbol* calledFn = call->resolvedFunction()) {
+      ArgSymbol* formal = actual_to_formal(use);
+
+      if(constRef) {
+        // generally, use const-ref-return if passing to const ref formal
+        if (formal->intent == INTENT_CONST_REF) {
+          // but make an exception for initCopy calls
+          if (calledFn->hasFlag(FLAG_INIT_COPY_FN))
+            return false;
+
+          // TODO: tuples of types with blank intent
+          // being 'in' should perhaps use the value version.
+          return true;
+        }
+      } else {
+        if (formal->intent == INTENT_REF ||
+          formal->intent == INTENT_OUT ||
+          formal->intent == INTENT_INOUT) {
+          return true;
+        }
+      }
+
+    } else if (call->isPrimitive(PRIM_RETURN) ||
+               call->isPrimitive(PRIM_YIELD)) {
+      FnSymbol* inFn = toFnSymbol(call->parentSymbol);
+
+      auto retTag = constRef ? RET_CONST_REF : RET_REF;
+
+      // use const-ref-return if returning by const ref intent
+      if (inFn->retTag == retTag)
+        return true;
+
+    } else if (call->isPrimitive(PRIM_WIDE_GET_LOCALE) ||
+               call->isPrimitive(PRIM_WIDE_GET_NODE)) {
+      // If we are extracting a field from the wide pointer,
+      // we need to keep it as a pointer.
+
+      // use const-ref-return if querying locale
+      return true;
+
+    } else {
+      // Check for the case that sym is moved to a compiler-introduced
+      // variable, possibly with PRIM_MOVE tmp, PRIM_ADDR_OF sym
+      if (call->isPrimitive(PRIM_ADDR_OF) ||
+          call->isPrimitive(PRIM_SET_REFERENCE) ||
+          call->isPrimitive(PRIM_GET_MEMBER) ||
+          call->isPrimitive(PRIM_GET_SVEC_MEMBER))
+        call = toCallExpr(call->parentExpr);
+
+      if (call->isPrimitive(PRIM_MOVE) && checkForMove(use, call)) {
+        return true;
+      }
+    }
+  }
+  return false;
 }

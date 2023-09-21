@@ -160,6 +160,11 @@ extern char fExplainInstantiation[256];
 /// resolution.
 extern bool fExplainVerbose;
 extern bool fParseOnly;
+// begin compiler driver control flags
+extern bool fDriverDoMonolithic;
+extern bool fDriverPhaseOne;
+extern bool fDriverPhaseTwo;
+// end compiler driver control flags
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
 extern bool fPrintCallStackOnError;
@@ -261,16 +266,17 @@ extern int breakOnID;
 extern int breakOnRemoveID;
 
 extern int fGPUBlockSize;
-const int gpuArchNameLen = 16;
+const int gpuArchNameLen = 256;
 extern char fGpuArch[gpuArchNameLen+1];
 extern bool fGpuPtxasEnforceOpt;
 extern bool fGpuSpecialization;
 extern const char* gGpuSdkPath;
-extern char gpuArch[gpuArchNameLen+1];
+extern std::set<std::string> gpuArches;
 
 extern char stopAfterPass[128];
 
 // code generation strings
+extern const char* compileCommandFilename;
 extern const char* compileCommand;
 extern char compileVersion[64];
 
@@ -289,6 +295,8 @@ extern bool fIncrementalCompilation;
 
 // LLVM flags (-mllvm)
 extern std::string llvmFlags;
+extern std::string llvmRemarksFilters;
+extern std::vector<std::string> llvmRemarksFunctionsToShow;
 
 extern bool fPrintAdditionalErrors;
 

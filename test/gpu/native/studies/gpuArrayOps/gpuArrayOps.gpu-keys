@@ -1,0 +1,4 @@
+Cpu Array Init (s): 
+Gpu Array Init (s):
+host to device copy (GB/s):
+device to host copy (GB/s):

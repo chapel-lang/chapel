@@ -40,7 +40,7 @@ config const n: int = 8;
 var A: [1..n] int;
 
 writeln("foo");
-forall i in foo(1, n) do
+forall i in foo(1, n) with (ref A) do
   A(i) = i;
 
 writeln(A);
@@ -48,7 +48,7 @@ writeln(A);
 A = 0;
 
 writeln("bar");
-forall i in bar(1, n) do
+forall i in bar(1, n) with (ref A) do
   A(i) = i;
 
 writeln(A);

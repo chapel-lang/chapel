@@ -754,10 +754,10 @@ module OS {
     // Note: O_RSYNC
     // is documented in POSIX but doesn't seem to exist on Mac OS
 
-    extern proc creat(path:c_string, mode:mode_t = 0):c_int;
-    inline proc open(path:c_string, oflag:c_int, mode:mode_t = 0:mode_t)
+    extern proc creat(path:c_ptrConst(c_char), mode:mode_t = 0):c_int;
+    inline proc open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t = 0:mode_t)
                   :c_int {
-      extern proc chpl_os_posix_open(path:c_string, oflag:c_int, mode:mode_t)
+      extern proc chpl_os_posix_open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t)
                     :c_int;
       return chpl_os_posix_open(path, oflag, mode);
     }
@@ -765,13 +765,13 @@ module OS {
     //
     // stdlib.h
     //
-    extern proc getenv(name:c_string):c_ptr(c_char);
+    extern proc getenv(name:c_ptrConst(c_char)):c_ptr(c_char);
 
     //
     // string.h
     //
-    extern proc strerror(errnum:c_int):c_string;
-    extern proc strlen(s:c_string):c_size_t;
+    extern proc strerror(errnum:c_int):c_ptrConst(c_char);
+    extern proc strlen(s:c_ptrConst(c_char)):c_size_t;
 
     //
     // sys/select.h
@@ -890,8 +890,8 @@ module OS {
       var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
     }
 
-    extern proc chmod(path:c_string, mode:mode_t):c_int;
-    extern 'chpl_os_posix_stat' proc stat(path:c_string,
+    extern proc chmod(path:c_ptrConst(c_char), mode:mode_t):c_int;
+    extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_char),
                                           buf:c_ptr(struct_stat)):c_int;
 
     //
@@ -950,8 +950,8 @@ module OS {
     //
     extern proc close(fildes:c_int):c_int;
     extern proc pipe(fildes:c_ptr(c_array(c_int, 2))):c_int;
-    extern proc read(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
-    extern proc write(fildes:c_int, buf:c_void_ptr, size:c_size_t):c_ssize_t;
+    extern proc read(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+    extern proc write(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
 
     /*
       Copies n potentially overlapping bytes from memory area src to memory
@@ -964,9 +964,9 @@ module OS {
       :arg n: the number of bytes from src to copy to dest
     */
     pragma "fn synchronization free"
-    inline proc memmove(dest:c_void_ptr, const src:c_void_ptr, n: c_size_t) {
+    inline proc memmove(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
       pragma "fn synchronization free"
-      extern proc memmove(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+      extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memmove(dest, src, n);
     }
 
@@ -981,9 +981,9 @@ module OS {
       :arg n: the number of bytes from src to copy to dest
     */
     pragma "fn synchronization free"
-    inline proc memcpy(dest:c_void_ptr, const src:c_void_ptr, n: c_size_t) {
+    inline proc memcpy(dest:c_ptr(void), const src:c_ptr(void), n: c_size_t) {
       pragma "fn synchronization free"
-      extern proc memcpy(dest: c_void_ptr, const src: c_void_ptr, n: c_size_t);
+      extern proc memcpy(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
       memcpy(dest, src, n);
     }
 
@@ -997,9 +997,9 @@ module OS {
                 to match, or be greater than the first n bytes of s2.
     */
     pragma "fn synchronization free"
-    inline proc memcmp(const s1:c_void_ptr, const s2:c_void_ptr, n: c_size_t): int {
+    inline proc memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: c_size_t): int {
       pragma "fn synchronization free"
-      extern proc memcmp(const s1: c_void_ptr, const s2: c_void_ptr, n: c_size_t): c_int;
+      extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t): c_int;
       return memcmp(s1, s2, n).safeCast(int);
     }
 
@@ -1015,9 +1015,9 @@ module OS {
       :returns: s
     */
     pragma "fn synchronization free"
-    inline proc memset(s:c_void_ptr, c:integral, n: c_size_t) {
+    inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
       pragma "fn synchronization free"
-      extern proc memset(s: c_void_ptr, c: c_int, n: c_size_t): c_void_ptr;
+      extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t): c_ptr(void);
       memset(s, c.safeCast(c_int), n);
       return s;
     }
@@ -1544,7 +1544,7 @@ module OS {
   sys_strerror_syserr_str(error
                           : errorCode, out err_in_strerror
                           : c_int)
-      : c_string;
+      : c_ptrConst(c_char);
 
   /* This function takes in a string and returns it in double-quotes,
      with internal double-quotes escaped with backslash.
@@ -1552,11 +1552,11 @@ module OS {
   private proc quote_string(s:string, len:c_ssize_t) {
     extern const QIO_STRING_FORMAT_CHPL: uint(8);
     extern proc qio_quote_string(s:uint(8), e:uint(8), f:uint(8),
-                                 ptr: c_string, len:c_ssize_t,
-                                 ref ret:c_string, ti: c_void_ptr): errorCode;
-    extern proc qio_strdup(s: c_string): c_string;
+                                 ptr:c_ptrConst(c_char), len:c_ssize_t,
+                                 ref ret:c_ptrConst(c_char), ti: c_ptr(void)): errorCode;
+    extern proc qio_strdup(s): c_ptrConst(c_char);
 
-    var ret: c_string;
+    var ret: c_ptrConst(c_char);
     // 34 is ASCII double quote
     var err: errorCode = qio_quote_string(34:uint(8), 34:uint(8),
                                       QIO_STRING_FORMAT_CHPL,

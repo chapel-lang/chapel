@@ -1,5 +1,5 @@
 // isx-per-task.chpl
-// 
+//
 // This is a port of ISx to Chapel, developed by Ben Harshbarger as a
 // variant on the isx-bucket-spmd.chpl version co-developed by Brad Chamberlain,
 // Lydia Duncan, and Jacob Hemstad.
@@ -103,7 +103,7 @@ if !quiet && mode != scaling.weakISO && isoBucketWidth != 0 then
 //
 // The maximum key value to use.  When debugging, use a small size.
 //
-config const maxKeyVal = (if mode == scaling.weakISO 
+config const maxKeyVal = (if mode == scaling.weakISO
                             then (numTasks * isoBucketWidth)
                             else (if testrun then 32 else 2**28)): keyType;
 
@@ -139,7 +139,7 @@ if printConfig then
 
 
 const LocTaskSpace  = {0..#numTasks};
-const DistTaskSpace = LocTaskSpace dmapped Block(LocTaskSpace);
+const DistTaskSpace = LocTaskSpace dmapped blockDist(LocTaskSpace);
 
 var allBucketKeys: [DistTaskSpace] [0..#recvBuffSize] keyType;
 var recvOffset: [DistTaskSpace] atomic int;
@@ -219,7 +219,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     bucketizeTime.localAccess[taskID][trial] = subTimer.elapsed();
     subTimer.clear();
   }
-  
+
   exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys);
   bar.barrier();
 
@@ -237,7 +237,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
     if subtime then
       countKeysTime.localAccess[taskID][trial] = subTimer.elapsed();
     totalTime.localAccess[taskID][trial] = totalTimer.elapsed();
-  }    
+  }
 
   if (verify) then
     verifyResults(taskID, keysInMyBucket, myLocalKeyCounts);
@@ -250,7 +250,7 @@ proc bucketSort(taskID : int, trial: int, time = false, verify = false) {
 }
 
 
-proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
+proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, ref myBucketedKeys) {
   var bucketOffsets: [LocTaskSpace] int;
 
   bucketOffsets = sendOffsets;
@@ -267,7 +267,7 @@ proc bucketizeLocalKeys(taskID, myKeys, sendOffsets, myBucketedKeys) {
 }
 
 
-proc countLocalBucketSizes(myKeys, bucketSizes) {
+proc countLocalBucketSizes(myKeys, ref bucketSizes) {
   for key in myKeys {
     const bucketIndex = key / bucketWidth;
     bucketSizes[bucketIndex] += 1;
@@ -285,14 +285,14 @@ proc exchangeKeys(taskID, sendOffsets, bucketSizes, myBucketedKeys) {
     const dstOffset = recvOffset[dstlocid].fetchAdd(transferSize);
     const srcOffset = sendOffsets[dstlocid];
 
-    allBucketKeys[dstlocid][dstOffset..#transferSize] = 
+    allBucketKeys[dstlocid][dstOffset..#transferSize] =
              myBucketedKeys[srcOffset..#transferSize];
   }
 
 }
 
 
-proc countLocalKeys(taskID, myBucketSize, myLocalKeyCounts) {
+proc countLocalKeys(taskID, myBucketSize, ref myLocalKeyCounts) {
   const myMinKeyVal = taskID * bucketWidth;
 
   ref myBucket = allBucketKeys[taskID];
@@ -300,7 +300,7 @@ proc countLocalKeys(taskID, myBucketSize, myLocalKeyCounts) {
     myLocalKeyCounts[myBucket[i]] += 1;
 
   if debug then
-    writeln(taskID, ": myLocalKeyCounts[", myMinKeyVal, "..] = ", 
+    writeln(taskID, ": myLocalKeyCounts[", myMinKeyVal, "..] = ",
             myLocalKeyCounts);
 }
 
@@ -338,7 +338,7 @@ proc verifyResults(taskID, myBucketSize, myLocalKeyCounts) {
 }
 
 
-proc makeInput(taskID, myKeys) {
+proc makeInput(taskID, ref myKeys) {
   use Random.PCGRandom;
   use Random.PCGRandomLib;
 
@@ -357,7 +357,7 @@ proc makeInput(taskID, myKeys) {
   //
 
   for key in myKeys do key = pcg.bounded_random(inc, maxKeyVal:uint(32)):keyType;
-    
+
   if (debug) then
     writeln(taskID, ": myKeys: ", myKeys);
 

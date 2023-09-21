@@ -82,14 +82,14 @@ module Set {
   //
   @chpldoc.nodoc
   class _LockWrapper {
-    var lock$ = new _lockType();
+    var lockVar = new _lockType();
 
     inline proc lock() {
-      lock$.lock();
+      lockVar.lock();
     }
 
     inline proc unlock() {
-      lock$.unlock();
+      lockVar.unlock();
     }
   }
 
@@ -131,14 +131,17 @@ module Set {
     The set type is not parallel safe by default. For situations in which
     such protections are desirable, parallel safety can be enabled by setting
     `parSafe = true` in any set constructor. A set constructed from another
-    set inherits the parallel safety mode of that set by default.
+    set inherits the parallel safety mode of that set by default. Note that
+    the ``parSafe`` mode is currently unstable and will eventually be replaced
+    by a standalone parallel-safe set type.
   */
-  record set {
+  record set : serializable {
 
     /* The type of the elements contained in this set. */
     type eltType;
 
     /* If `true`, this set will perform parallel safe operations. */
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     param parSafe = false;
 
     /*
@@ -157,7 +160,7 @@ module Set {
     const resizeThreshold = defaultHashTableResizeThreshold;
 
     @chpldoc.nodoc
-    var _lock$ = if parSafe then new _LockWrapper() else none;
+    var _lock = if parSafe then new _LockWrapper() else none;
 
     @chpldoc.nodoc
     var _htb: chpl__hashtable(eltType, nothing);
@@ -189,7 +192,7 @@ module Set {
                                       initialCapacity);
     }
 
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     proc init(type eltType, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16) {
@@ -238,12 +241,12 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
 
-    @unstable("'Map.parSafe' is unstable")
+    @unstable("'set.parSafe' is unstable and is expected to be replaced by a separate set type in the future")
     proc init(type eltType, iterable, param parSafe,
               resizeThreshold=defaultHashTableResizeThreshold,
               initialCapacity=16)
@@ -261,7 +264,7 @@ module Set {
       }
       this._htb = new chpl__hashtable(eltType, nothing, this.resizeThreshold,
                                       initialCapacity);
-      this.complete();
+      init this;
 
       for elem in iterable do _addElem(elem);
     }
@@ -281,7 +284,7 @@ module Set {
       this.resizeThreshold = other.resizeThreshold;
       this._htb = new chpl__hashtable(eltType, nothing,
                                       resizeThreshold);
-      this.complete();
+      init this;
 
       // TODO: Relax this to allow if 'isCoercible(t, this.eltType)'?
       if eltType != t {
@@ -301,7 +304,7 @@ module Set {
     // Do things the slow/copy way if the element is serializable.
     // See issue: #17477
     @chpldoc.nodoc
-    proc _addElem(in elem: eltType): bool
+    proc ref _addElem(in elem: eltType): bool
     where _isSerializable(eltType) {
         var result = false;
 
@@ -320,7 +323,7 @@ module Set {
     // For types that aren't serializable, avoid an extra copy by moving
     // the value across locales.
     @chpldoc.nodoc
-    proc _addElem(pragma "no auto destroy" in elem: eltType): bool {
+    proc ref _addElem(pragma "no auto destroy" in elem: eltType): bool {
       use MemMove;
 
       var result = false;
@@ -355,7 +358,7 @@ module Set {
     inline proc _enter() {
       if parSafe then
         on this {
-          _lock$.lock();
+          _lock.lock();
         }
     }
 
@@ -363,7 +366,7 @@ module Set {
     inline proc _leave() {
       if parSafe then
         on this {
-          _lock$.unlock();
+          _lock.unlock();
         }
     }
 
@@ -539,11 +542,7 @@ module Set {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
     }
 
-    /*
-      Write the contents of this set to a channel.
-
-      :arg ch: A channel to write to.
-    */
+    @chpldoc.nodoc
     proc const writeThis(ch: fileWriter) throws {
       on this {
         _enter(); defer _leave();
@@ -562,6 +561,60 @@ module Set {
 
         ch.write("}");
       }
+    }
+
+    /*
+      Write the contents of this set to a fileWriter.
+
+      :arg writer: A fileWriter to write to.
+      :arg serializer: The serializer to use when writing.
+    */
+    proc const serialize(writer:fileWriter(?), ref serializer) throws {
+      if serializer.type == IO.defaultSerializer {
+        writeThis(writer);
+      } else {
+        on this {
+          _enter(); defer _leave();
+          var ser = serializer.startList(writer, this.size);
+          for x in this do ser.writeElement(x);
+          ser.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc ref deserialize(reader, ref deserializer) throws {
+      on this {
+        _enter(); defer _leave();
+
+        this.clear();
+
+        if deserializer.type == IO.defaultDeserializer {
+          reader.readLiteral("{");
+
+          do {
+            this.add(reader.read(eltType));
+          } while reader.matchLiteral(",");
+
+          reader.readLiteral("}");
+        } else {
+          var des = deserializer.startList(reader);
+          while des.hasMore() do
+            this.add(des.readElement(eltType));
+          des.endList();
+        }
+      }
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, param parSafe : bool,
+              reader, ref deserializer) throws {
+      this.eltType = eltType;
+      this.parSafe = parSafe;
+
+      init this;
+
+      this.deserialize(reader, deserializer);
     }
 
     /*

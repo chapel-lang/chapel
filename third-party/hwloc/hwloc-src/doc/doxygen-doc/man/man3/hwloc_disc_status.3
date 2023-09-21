@@ -1,0 +1,46 @@
+.TH "hwloc_disc_status" 3 "Wed Dec 14 2022" "Version 2.9.0" "Hardware Locality (hwloc)" \" -*- nroff -*-
+.ad l
+.nh
+.SH NAME
+hwloc_disc_status
+.SH SYNOPSIS
+.br
+.PP
+.PP
+\fC#include <plugins\&.h>\fP
+.SS "Data Fields"
+
+.in +1c
+.ti -1c
+.RI "\fBhwloc_disc_phase_t\fP \fBphase\fP"
+.br
+.ti -1c
+.RI "unsigned \fBexcluded_phases\fP"
+.br
+.ti -1c
+.RI "unsigned long \fBflags\fP"
+.br
+.in -1c
+.SH "Detailed Description"
+.PP 
+Discovery status structure\&. 
+
+Used by the core and backends to inform about what has been/is being done during the discovery process\&. 
+.SH "Field Documentation"
+.PP 
+.SS "unsigned hwloc_disc_status::excluded_phases"
+
+.PP
+Dynamically excluded phases\&. If a component decides during discovery that some phases are no longer needed\&. 
+.SS "unsigned long hwloc_disc_status::flags"
+
+.PP
+OR'ed set of hwloc_disc_status_flag_e\&. 
+.SS "\fBhwloc_disc_phase_t\fP hwloc_disc_status::phase"
+
+.PP
+The current discovery phase that is performed\&. Must match one of the phases in the component phases field\&. 
+
+.SH "Author"
+.PP 
+Generated automatically by Doxygen for Hardware Locality (hwloc) from the source code\&.

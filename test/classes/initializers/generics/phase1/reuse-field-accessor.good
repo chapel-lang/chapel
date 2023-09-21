@@ -1,2 +1,4 @@
 reuse-field-accessor.chpl:11: In initializer:
-reuse-field-accessor.chpl:13: error: cannot call field-accessor method "x" before this.complete()
+reuse-field-accessor.chpl:12: error: cannot pass a record to a function before "init this"
+reuse-field-accessor.chpl:13: error: can't omit initialization of field "x_", no type or default value provided
+reuse-field-accessor.chpl:13: error: cannot pass a record to a function before "init this"

@@ -39,7 +39,7 @@ proc init_fft2() {
 
 }
 
-proc fft2(Y: [] complex, X: [] complex) {
+proc fft2(ref Y: [] complex, X: [] complex) {
   Y(0) = (X(0) + X(1));
   Y(1) = (X(0) - X(1));
 

@@ -1,3 +1,2 @@
--s locking=true -s ioKind=iokind.dynamic
--s locking=false -s ioKind=iokind.dynamic
--s locking=true -s ioKind=iokind.native
+-s locking=true
+-s locking=false

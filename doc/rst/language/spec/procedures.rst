@@ -586,9 +586,27 @@ modify the formal argument within its dynamic scope. Whether ``const``
 is interpreted as ``const in`` or ``const ref`` intent depends on the
 argument type.  Generally, small values, such as scalar types, will be
 passed by ``const in``; while larger values, such as domains and
-arrays, will be passed by ``const ref`` intent. The
-:ref:`Abstract_Intents_Table` below lists the meaning of the ``const``
-intent for each type.
+arrays, will be passed by ``const ref`` intent.
+
+For the following types, the ``const`` intent means ``const in``:
+
+  * scalar types (``bool``, ``int``, ``uint``, ``real``, ``imag``, ``complex``)
+  * ranges
+  * non-managed classes (``borrowed``, ``unmanaged``)
+
+For the following types, the ``const`` intent means ``const ref``:
+
+  * string-like types (``string``, ``bytes``)
+  * domains / domain maps
+  * arrays
+  * records
+  * auto-managed classes (``owned``, ``shared``) - see :ref:`Default_Intent_for_owned_and_shared`
+  * unions ``const ref``
+  * synchronization types (``atomic``, ``sync``)
+
+The ``const`` intent for tuples applies the ``const`` intent to each tuple
+component as if it was passed as a separate argument.
+See :ref:`Tuple_Argument_Intents`.
 
 .. _The_Default_Intent:
 
@@ -596,99 +614,36 @@ The Default Intent
 ^^^^^^^^^^^^^^^^^^
 
 When no intent is specified for a formal argument, the *default
-intent* is applied.  It is designed to take the most natural/least
-surprising action for the argument, based on its type.  In practice,
+intent* is applied. It is designed to take the most natural/least
+surprising action for the argument, based on its type. In practice,
 this is ``const`` for most types (as defined by
-:ref:`The_Const_Intent`) to avoid surprises for programmers coming
-from languages where everything is passed by ``in`` or ``ref`` intent
-by default.  Exceptions are made for types where modification is
-considered part of their nature, such as types used for synchronization
-(like ``atomic``) and arrays.
+:ref:`The_Const_Intent`) to avoid surprises for programmers coming from
+languages where everything is passed by ``in`` or ``ref`` intent by default.
+
+Exceptions are made for types where modification is considered part of their nature.
+In particular, the the default intent for the following types is ``ref``:
+
+  * ``atomic``
+  * ``sync``
 
 Default argument passing for tuples applies the default
 argument passing strategy to each tuple component as if it
 was passed as a separate argument. See :ref:`Tuple_Argument_Intents`.
-
-The :ref:`Abstract_Intents_Table` that follows defines the default
-intent for each type.
-
-.. _Abstract_Intents_Table:
-
-Abstract Intents Table
-^^^^^^^^^^^^^^^^^^^^^^
-
-The following table summarizes what these abstract intents mean for each
-type:
-
-.. table::
-    :widths: 28 18 22 32
-
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    |                         | ``const`` intent     |                         |                                                      |
-    | Type                    | meaning              | Default intent meaning  | Notes                                                |
-    +=========================+======================+=========================+======================================================+
-    | scalar types            |  ``const in``        | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``bool``,              |                      |                         |                                                      |
-    | ``int``, ``uint``,      |                      |                         |                                                      |
-    | ``real``, ``imag``,     |                      |                         |                                                      |
-    | ``complex``)            |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | string-like types       | ``const ref``        | ``const ref``           |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``string``, ``bytes``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | ranges                  | ``const in``         | ``const in``            |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | domains / domain maps   | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | arrays                  | ``const ref``        | ``ref`` / ``const ref`` | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | records                 | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_Arrays_and_Record_this` |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | auto-managed classes    | ``const ref``        | ``const ref``           | see :ref:`Default_Intent_for_owned_and_shared`       |
-    | (``owned``, ``shared``) |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | non-managed classes     | ``const in``         | ``const in``            |                                                      |
-    |                         |                      |                         |                                                      |
-    | (``borrowed``,          |                      |                         |                                                      |
-    | ``unmanaged``)          |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | tuples                  | per-element          | per-element             | see :ref:`Tuple_Argument_Intents`                    |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | unions                  | ``const ref``        | ``const ref``           |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-    | synchronization types   | ``const ref``        | ``ref``                 |                                                      |
-    | (``atomic``,            |                      |                         |                                                      |
-    | ``sync``, ``single``)   |                      |                         |                                                      |
-    +-------------------------+----------------------+-------------------------+------------------------------------------------------+
-
-.. _Default_Intent_for_Arrays_and_Record_this:
-
-Default Intent for Arrays and Record ’this’
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-The default intent for arrays and for a ``this`` argument of record
-type (see :ref:`Method_receiver_and_this`) is ``ref`` or
-``const ref``. It is ``ref`` if the formal argument is modified inside
-the function, otherwise it is ``const ref``. Note that neither of these
-cause an array or record to be copied by default. The choice between
-``ref`` and ``const ref`` is similar to and interacts with return intent
-overloads (see :ref:`Return_Intent_Overloads`).
 
 .. _Default_Intent_for_owned_and_shared:
 
 Default Intent for ’owned’ and ’shared’
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-The default intent for ``owned`` and ``shared`` arguments is
-``const ref``. Arguments can use the ``in`` or ``const in`` intents to
-transfer or share ownership if those arguments apply to ``owned`` or
-``shared`` types.
+The default intent for :type:`~OwnedObject.owned` and
+:type:`~SharedObject.shared` arguments is ``const``. To transfer the ownership
+from an :type:`~OwnedObject.owned` actual argument or to share the ownership
+with a :type:`~SharedObject.shared` actual argument, the formal argument can use
+the ``in`` or ``const in`` intent.
 
    *Example (owned-any-intent.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -706,6 +661,10 @@ transfer or share ownership if those arguments apply to ``owned`` or
 
       owned SomeClass
       true
+
+If the default intent or ``const`` intent is used for an
+:type:`~OwnedObject.owned` or :type:`~SharedObject.shared` argument, then the
+actual argument is assumed to remain unchanged during the call.
 
 .. _Variable_Length_Argument_Lists:
 
@@ -1435,13 +1394,17 @@ the above rules will be checked with :math:`T(A_i)` == ``int``.
 Determining Most Specific Functions
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Given a set of candidate functions, the following steps are applied to
+Given a set of candidate functions, several steps are applied to
 remove candidates from the set. After the process completes, the
 remaining candidates in the set are the most specific functions.
 
-1. If any candidate is more visible (or shadows) another candidate,
-   discard all candidates that are less visible than (or shadowed by)
-   another candidate.
+Before applying these steps, if there both non-operator method candidates
+and non-operator non-method candidates, issue an ambiguity error without
+doing further candidate selection.
+
+1. If any non-method candidate is more visible (or shadows) another
+   non-method candidate, discard all non-method candidates that are less
+   visible than (or shadowed by) another non-method candidate.
 
 2. If at least one candidate requires promotion and at least one
    candidate does not use promotion, discard all candidates that use

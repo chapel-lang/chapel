@@ -1,3 +1,0 @@
-sliceWithUnbounded.chpl:8: warning: when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning
-sliceWithUnbounded.chpl:8: error: halt reached - array slice out of bounds
-note: slice index was 1.. by -2 but array bounds are 1..10

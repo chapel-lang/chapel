@@ -1,0 +1,5 @@
+--help      #configInCmd.base.good
+--configVar=foo         #configInCmd.var.good
+--configConst=foo       #configInCmd.const.good
+--configInCmd.privateConfigVar=foo      #configInCmd.private.good
+

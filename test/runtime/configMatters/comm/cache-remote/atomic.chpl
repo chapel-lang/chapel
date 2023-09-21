@@ -9,11 +9,11 @@ use BlockDist, PrivateDist;
 config var n: int = 8;
 
 var P: [PrivateSpace] atomic int;
-//var D: domain(1) dmapped new dmap(new Block(boundingBox={1..n})) = {1..n};
+//var D: domain(1) dmapped new blockDist(boundingBox={1..n}) = {1..n};
 //var A: [D] int;
 
 //startCommDiagnostics();
-coforall loc in Locales do on loc {
+coforall loc in Locales with (ref P) do on loc {
   P(loc.id).write(100+loc.id);
 }
 //stopCommDiagnostics();

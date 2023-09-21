@@ -7,7 +7,8 @@ proc main {
   writeln(D);
   writeln(D.locale.id);
   on Locales(1) {
-    var c = (new owned C({1..10})).borrow();
+    var cObj = new owned C({1..10});
+    var c = cObj.borrow();
     writeln(D.locale.id);
     D = c.D;
     writeln(c.D.locale.id);

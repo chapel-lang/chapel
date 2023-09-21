@@ -131,8 +131,8 @@ Requirements
     ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``. Versions as early as 7.x may work,
     although we have not tested this.
 
-  * If targeting AMD GPUs, we require ROCm version 4.x; we suspect version 5.x
-    will work as well although we have not tested so.
+  * If targeting AMD GPUs, we require ROCm version 4.x or <5.5. ROCm versions
+    greater than 5.4 are not supported, yet.
 
 
 GPU-Related Environment Variables
@@ -184,8 +184,8 @@ code for and interacts with GPUs. These variables include:
   in the future.
 * ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
   `CPU as Device mode`_ and if set causes it so that uses of
-  :proc:`~GPU.assertOnGpu` to not generate a warning at
-  execution time. Alternatively, this behavior can be enabled by passing
+  :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute to not generate a
+  warning at execution time. Alternatively, this behavior can be enabled by passing
   ``--gpuNoCpuModeWarning`` to your application. For more information, see the
   `CPU as Device mode`_ section.
 
@@ -218,6 +218,12 @@ values (see the "processor" column). For NVIDIA, see the `CUDA Programming
 Guide
 <https://docs.nvidia.com/cuda/cuda-c-programming-guide/#features-and-technical-specifications>`_.
 
+For NVIDIA, the ``CHPL_GPU_ARCH`` variable can also be set to a comma-separated
+list. This causes the Chapel compiler to generate device code for each of the
+given compute capabilities, and to bundle the different versions in a single
+executable. When the program is executed, the compute capability best suited
+for the available GPU will be loaded by the CUDA runtime. Support for this
+feature for AMD GPUs is planned, but not currently available.
 
 CPU as Device Mode
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -231,17 +237,19 @@ tests where access to GPUs may be limited. In this mode:
 * It will call the internal runtime API for GPU operations, so that features
   outlined under `Diagnostics and Utilities`_ will work as expected.
 
-  * For example, :proc:`~GPU.assertOnGpu` will fail at compile time normally.
-    This can allow testing if a loop is GPU-eligible.
+  * For example, :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute
+    will fail at compile time normally.
+    This can allow testing if a loop is GPU-eligible. It will generate a warning
+    per-iteration at execution time. The ``CHPL_GPU_NO_CPU_MODE_WARNING``
+    environment can be set to suppress these warnings. Alternatively, you can
+    pass ``--gpuNoCpuModeWarning`` to your application to the same effect.
 
-  * It will generate a warning per-iteration at execution time.
+  * Note that data movements between device and host will not be captured by the
+    :mod:`GpuDiagnostics` module in this mode.
 
-  * The ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress
-    these warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to your
-    application to the same effect.
-
-* Even though the GPU diagnostics are collected, the loop will be executed for
-  correctness testing and there will not be any kernel launch
+* Even though the kernel launches will be registered by GPU diagnostics, the
+  loop will be executed for correctness testing and there will not be any kernel
+  launch
 
 * Advanced features like ``syncThreads`` and ``createSharedArray`` will compile
   and run, but in all likelihood code that uses those features will not
@@ -253,6 +261,12 @@ tests where access to GPUs may be limited. In this mode:
 * There will be one GPU sublocale per locale by default.
   ``CHPL_RT_NUM_GPUS_PER_LOCALE`` can be set to control how many GPU sublocales
   will be created per locale.
+
+* Inner loops in loop nests that consist of GPU-eligible loops will be reported
+  as kernel launch whereas in regular GPU modes, such loops will not be launched
+  as a kernel as the execution will already be on the GPU. This may cause in
+  increased kernel launches reported by the :mod:`GpuDiagnostics` utilities with
+  loop nests and multidimensional loops.
 
 .. warning::
 
@@ -281,14 +295,16 @@ the code with calls to :proc:`~GpuDiagnostics.startVerboseGpu` and
 To get a list of all GPU eligible loops at compile-time (regardless of if they
 will actually run on a GPU or not) pass ``chpl`` the ``--report-gpu`` flag.
 
-The :mod:`GPU` module contains additional utility functions. One particularly
-useful function is :proc:`~GPU.assertOnGpu()`.  This function will conduct a
-runtime assertion that will halt execution when not being performed on a GPU.
-If :proc:`~GPU.assertOnGpu()` appears as the first line of ``forall`` or
-``foreach`` loop the Chapel compiler will do a compile-time check and produce
-an error if one of the aforementioned requirements is not met.  This check
-might also occur if :proc:`~GPU.assertOnGpu()` is placed elsewhere in the loop
-depending on the presence of control flow.
+Since not all Chapel loops are eligible for conversion into GPU kernels, it
+is helpful to be able to ensure that a particular loop is being executed
+on the GPU. This can be achieved by marking the loop with the ``@assertOnGpu``
+attribute. When a ``forall`` or ``foreach`` loop is marked with this attribute,
+the compiler will perform a compile-time check and produce an error if one of
+the aforementioned requirements is not met. Loops marked with the
+``@assertOnGpu`` attribute will also conduct a runtime assertion that will halt
+execution when not being performed on a GPU. This can happen when the loop
+is eligible for GPU execution, but is being executed outside of a GPU locale.
+The :mod:`GPU` module contains additional utility functions.
 
 Utilities in the :mod:`MemDiagnostics` module can be used to monitor GPU memory
 allocations and detect memory leaks. For example, :proc:`startVerboseMem()
@@ -397,6 +413,21 @@ can reduce execution performance significantly, making profiling less valuable.
 To avoid this, please use ``--gpu-ptxas-enforce-optimization`` while compiling
 alongside ``-g``, and of course, ``--fast``.
 
+Examining Generated Assembly
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+While analyzing performance, users might also wish to look at the assembly
+``chpl`` generates for GPU kernels. To do this pass ``chpl`` ``--savec
+<dirName>`` (replacing ``<dirname>`` with a directory name to contain the
+generate assemly). The Chapel compiler will emit a file ``chpl__gpu.s``, which
+contains AMD GCN or NVIDIA PTX instructions as appropriate.
+
+In the generated assembly, kernels are named
+``chpl_gpu_kernel_<fileName>_line_<num>_`` (with ``filename`` replaced with the
+file containing the outlined loop and ``num`` as the line number of the loop
+header. For example, a kernel on line 3 of ``chpl.foo`` will be named
+``chpl_gpu_kernel_foo_line_3_``).
+
 Known Limitations
 -----------------
 
@@ -407,10 +438,8 @@ improvements in the future.
 
 * For AMD GPUs:
 
-    * Certain 64-bit math functions are unsupported. To see what does
-      and doesn't work see `this test
-      <https://github.com/chapel-lang/chapel/blob/release/1.30/test/gpu/native/math.chpl>`_
-      and note which operations are executed when ``excludeForRocm == true``.
+    * It's not currently possible to compile for multiple AMD GPU architectures
+      at the same time.
 
 * Distributed arrays cannot be used within GPU kernels.
 

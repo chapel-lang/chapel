@@ -6,12 +6,12 @@ def extend2(x, y):
     x[0].extend(y[0])
     x[1].extend(y[1])
 
-# Remove duplicates, keeping last occurrence and preserving order
+# Remove duplicate -l arguments, keeping last occurrence and preserving order
 # e.g. "-lhwloc -lqthread -lhwloc ..." -> "-lqthread -lhwloc ...
 def dedup(args):
     seen = set()
     ret = [arg for arg in reversed(args)
-           if not (arg in seen or seen.add(arg))]
+           if not arg.startswith("-l") or (not (arg in seen or seen.add(arg)))]
     return reversed(ret)
 
 # Returns the runtime includes and defines according
@@ -147,19 +147,6 @@ def compute_internal_compile_link_args(runtime_subdir):
     extend2(tgt_compile, chpl_hwloc.get_compile_args())
     extend2(tgt_link, chpl_hwloc.get_link_args())
 
-    if chpl_comm.get() == 'ofi':
-        extend2(tgt_compile, chpl_libfabric.get_compile_args())
-        extend2(tgt_link, chpl_libfabric.get_link_args())
-    elif chpl_comm.get() == 'gasnet':
-        extend2(tgt_compile, chpl_gasnet.get_compile_args())
-        extend2(tgt_link, chpl_gasnet.get_link_args())
-    elif chpl_comm.get() == 'ugni':
-        # If there isn't a hugepage module loaded, we need to request
-        # libhugetlbfs ourselves.
-        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
-        if pe_product_list and 'HUGETLB' in pe_product_list:
-            tgt_link[1].append('-lhugetlbfs')
-
     if chpl_tasks.get() == 'qthreads':
         extend2(tgt_compile, chpl_qthreads.get_compile_args())
         extend2(tgt_link, chpl_qthreads.get_link_args())
@@ -176,6 +163,25 @@ def compute_internal_compile_link_args(runtime_subdir):
     if chpl_re2.get() != 'none':
         extend2(tgt_compile, chpl_re2.get_compile_args())
         extend2(tgt_link, chpl_re2.get_link_args())
+
+    # The following communication-oriented options have been moved to
+    # the end of this sequence of third-party package options because
+    # GASNet can involve system library paths which we want to come
+    # after all of our bundled/local arguments to avoid conflicts.
+    # See issue #23362 for a potential way to do this in a more
+    # principled way going forward.
+    if chpl_comm.get() == 'ofi':
+        extend2(tgt_compile, chpl_libfabric.get_compile_args())
+        extend2(tgt_link, chpl_libfabric.get_link_args())
+    elif chpl_comm.get() == 'gasnet':
+        extend2(tgt_compile, chpl_gasnet.get_compile_args())
+        extend2(tgt_link, chpl_gasnet.get_link_args())
+    elif chpl_comm.get() == 'ugni':
+        # If there isn't a hugepage module loaded, we need to request
+        # libhugetlbfs ourselves.
+        pe_product_list = os.environ.get('PE_PRODUCT_LIST', None)
+        if pe_product_list and 'HUGETLB' in pe_product_list:
+            tgt_link[1].append('-lhugetlbfs')
 
     aux_filesys = chpl_aux_filesys.get()
     if 'lustre' in aux_filesys:

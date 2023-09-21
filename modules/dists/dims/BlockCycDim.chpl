@@ -42,10 +42,10 @@ type bcdPosInt = int;
 //
 /*
 This Block-Cyclic dimension specifier is for use with the
-:class:`DimensionalDist2D` distribution.
+:mod:`dimensionalDist2D <DimensionalDist2D>` distribution.
 
 It specifies the mapping of indices in its dimension
-that would be produced by a 1D :class:`~BlockCycDist.BlockCyclic` distribution.
+that would be produced by a 1D :class:`~BlockCycDist.blockCycDist` distribution.
 
 **Initializer Arguments**
 
@@ -66,7 +66,7 @@ The arguments are as follows:
       to be distributed over
   ``lowIdx``, ``blockSize``
       are the counterparts to ``startIdx`` and ``blocksize``
-      in the :class:`~BlockCycDist.BlockCyclic` distribution
+      in the :class:`~BlockCycDist.blockCycDist` distribution
   ``cycleSizePos``
       is used internally by the implementation and
       should not be specified by the user code
@@ -151,7 +151,7 @@ proc BlockCyclic1dom.dsiGetReprivatizeData1d() {
   return (wholeR, wholeRstrideAbs, storagePerCycle);
 }
 
-proc BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
+proc ref BlockCyclic1dom.dsiReprivatize1d(reprivatizeData) {
   this.wholeR          = reprivatizeData(0);
   this.wholeRstrideAbs = reprivatizeData(1);
   this.storagePerCycle = reprivatizeData(2);
@@ -181,7 +181,7 @@ inline proc _checkFitsWithin(src: integral, type destT)
   where isIntegralType(destT)
 {
   inline proc ensure(arg:bool) {
-    if !arg then halt("When creating a domain mapped using DimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
+    if !arg then halt("When creating a domain mapped using dimensionalDist2D with a BlockCyclicDim specifier, could not fit BlockCyclicDim's adjusted lowIdx of ", src, " in the domain's idxType ", destT:string);
   }
   type maxuT = uint(64); // the largest unsigned type
   type srcT = src.type;
@@ -255,7 +255,7 @@ proc BlockCyclicDim.dsiNewRectangularDom1d(type idxType, param strides,
 proc BlockCyclic1dom.dsiIsReplicated1d() param do return false;
 
 proc BlockCyclic1dom.dsiNewLocalDom1d(type stoIndexT, locId: locIdT) {
-  const result = new BlockCyclic1locdom(idxType = this.idxType,
+  var result = new BlockCyclic1locdom(idxType = this.idxType,
                              stoIndexT = stoIndexT,
                              locId = locId);
   return result;
@@ -492,14 +492,14 @@ inline proc BlockCyclicDim.dsiIndexToLocale1d(ind: uint(64)): locIdT {
   return doDsiIndexToLocale1d(ind:convT);
 }
 
-proc BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
+proc ref BlockCyclic1dom.dsiSetIndices1d(rangeArg: rangeT): void {
   // For now, require the user to provide unambiguous ranges only.
   // This requirement could potentially be avoided (as long as no arrays
   // are declared over the domain), but it simplifies/speeds up our code.
   //
   // todo: document this in the spec for this distribution.
   // see also an assert is dsiSetLocalIndices1d()
-  assert(!rangeArg.isAmbiguous());
+  assert(rangeArg.isAligned());
 
   const prevStoragePerCycle = storagePerCycle;
   dsiSetIndicesUnimplementedCase = false;
@@ -568,7 +568,7 @@ inline proc BlockCyclic1dom._dsiStorageHigh(locId: locIdT): stoIndexT {
   return hiCycNo * storagePerCycle:stoIndexT + hiIdxAdj;
 }
 
-proc BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
+proc ref BlockCyclic1locdom.dsiSetLocalIndices1d(globDD, locId: locIdT): range(stoIndexT) {
   const stoLow = globDD._dsiStorageLow(locId);
   const stoHigh = globDD._dsiStorageHigh(locId);
 

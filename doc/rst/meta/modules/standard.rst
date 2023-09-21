@@ -53,6 +53,7 @@ Files/IO
 
    FileSystem <standard/FileSystem>
    IO <standard/IO>
+   JSON <standard/JSON>
    Path <standard/Path>
 
 
@@ -103,7 +104,6 @@ System/Interoperability
    CTypes <standard/CTypes>
    OS <standard/OS>
    Subprocess <standard/Subprocess>
-   Sys <standard/Sys>
 
 Utilities
 ---------

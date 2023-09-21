@@ -9,7 +9,7 @@ use BlockDist;
 const dummyBB: domain(1) = {1..1}; // or whatever bounding box type you want eventually
 
 // Create a distribution without knowing its bounding box dimensions.
-const dist = new unmanaged Block(dummyBB);
+const dist = new unmanaged BlockImpl(dummyBB);
 
 // Any computations here, should not involve 'dist'. //
 
@@ -25,7 +25,7 @@ for idx in 0..9 do writeln("A:  ", idx, " maps to ",
                            dist.dsiIndexToLocale(idx));
 
 // This domain will be distributed according to dist's current bounding box.
-var D: domain(1) dmapped new dmap(dist);
+var D: domain(1) dmapped new blockDist(dist);
 
 // Show the distribution in action.
 D = {0..9};
@@ -36,8 +36,8 @@ for idx in D do writeln("B:  ", idx, "  maps to ", A[idx].locale);
 /*
 WARNING: currently, the following will not work when compiled with --local:
 
-  var dist = new Block(...);
-  var dm   = new dmap(dist);
+  var dist = new unmanaged BlockImpl(...);
+  var dm   = new blockDist(dist);
   dist.changeBoundingBox(...);
 
 This is because "new dmap(ARG)" retains a copy of ARG
@@ -46,8 +46,8 @@ and destroys the original. We have a .future on this.
 For now, do this instead:
 */
 
-const distTemp = new unmanaged Block(dummyBB);
-const DM = new dmap(distTemp);
+const distTemp = new unmanaged BlockImpl(dummyBB);
+const DM = new blockDist(distTemp);
 
 DM.changeBoundingBox(1..4);
 for idx in 0..6 do writeln("C:  ", idx, " maps to ",
@@ -71,13 +71,13 @@ calling changeBoundingBox() will affect only future domains/arrays
 created using 'this' - it will not redistribute already-existing
 domains/arrays.
 */
-proc Block.changeBoundingBox(newBB) {
+proc BlockImpl.changeBoundingBox(newBB) {
   // Comment out this check if desired. NB Block-distributed domains created
   // using 'this' will not be re-distributed upon changeBoundingBox().
   if _doms_containing_dist != 0 then
     halt("changeBoundingBox: the distribution already has declared domain(s)");
 
-  // From Block.dsiAssign, with mods.
+  // From BlockImpl.dsiAssign, with mods.
   boundingBox = newBB;
   coforall locid in targetLocDom do
     on targetLocales(locid) {

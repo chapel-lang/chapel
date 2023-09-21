@@ -20,7 +20,7 @@ function declaration in a header file:
 
 .. code-block:: chapel
 
-  extern proc foo(str: c_string, n : c_int) : void;
+  extern proc foo(str: c_ptr(c_char), n : c_int) : void;
 
 
 Prerequisites

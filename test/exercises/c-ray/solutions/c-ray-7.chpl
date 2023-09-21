@@ -27,7 +27,7 @@
 use Image;    // use helper module related to writing out images
 use List;
 use IO;       // allow use of stderr, stdin, ioMode
-import Math.quarter_pi;
+import Math.pi;
 
 //
 // =================================================
@@ -46,7 +46,7 @@ config const size = "800x600",            // size of output image
              imgType = extToFmt(image),   // the image file format
              usage = false,               // print usage message?
 
-             fieldOfView = quarter_pi,    // field of view in radians
+             fieldOfView = pi/4,          // field of view in radians
              maxRayDepth = 5,             // raytrace recursion limit
              rayMagnitude = 1000.0,       // trace rays of this magnitude
              errorMargin = 1e-6,          // margin to avoid surface acne
@@ -139,7 +139,7 @@ proc main() {
   // A local domain, distributed domain, and array representing the image
   //
   const imageSize = {0..#yres, 0..#xres};
-  const pixelPlane = imageSize dmapped Block(imageSize);
+  const pixelPlane = imageSize dmapped blockDist(imageSize);
   var pixels: [pixelPlane] pixelType;
 
   //
@@ -172,7 +172,7 @@ proc main() {
   //
   // The main loop that computes the image in parallel.
   //
-  forall (y, x) in pixelPlane {
+  forall (y, x) in pixelPlane with (ref pixels) {
     // If uncommented, the following line will print out where each
     // iteration is running to sanity check that the work is
     // distributed:

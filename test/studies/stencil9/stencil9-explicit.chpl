@@ -18,8 +18,8 @@ config const printLocaleData = false,
 // such logic so many times in your life before it gets really old.
 //
 const LocDom = {1..n  , 1..n  },
-         Dom = LocDom dmapped Block(LocDom),
-      BigDom = {0..n+1, 0..n+1} dmapped Block(LocDom);
+         Dom = LocDom dmapped blockDist(LocDom),
+      BigDom = {0..n+1, 0..n+1} dmapped blockDist(LocDom);
 
 //
 // query out the domain and array of the locales we're targeting
@@ -58,8 +58,8 @@ if printLocaleData {
 // synchronization variables to coordinate between all of our locales
 // once we switch into "fragmented" mode
 //
-var takeTurns$: sync int = 0;
-var delta$: sync real = 0;
+var takeTurns: sync int = 0;
+var delta: sync real = 0;
 
 //
 // a little helper class to store a domain/array pair
@@ -82,7 +82,7 @@ var numIters: atomic int;
 
 var b = new barrier(LocaleGridDom.size);
 
-coforall (lr,lc) in LocaleGridDom {
+coforall (lr,lc) in LocaleGridDom with (ref LocalDomArrs) {
   on LocaleGrid[lr,lc] {
     //
     // What I own; and extended to include overlap with neighbors ("fluff")
@@ -127,10 +127,10 @@ coforall (lr,lc) in LocaleGridDom {
       //
       // Debug print what each locale owns
       //
-      while (takeTurns$.readXX() != here.id) { }
+      while (takeTurns.readXX() != here.id) { }
       writeln("\nlocale #", here.id, " panels:");
       writeln(Panels);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      takeTurns.writeXF((here.id + 1)%numLocales);
     }
 
 
@@ -174,11 +174,11 @@ coforall (lr,lc) in LocaleGridDom {
       //
       // Debug print to make sure everything got set up right
       //
-      while (takeTurns$.readXX() != here.id) { }
+      while (takeTurns.readXX() != here.id) { }
       if here.id == 0 then
         writeln("Initial A:");
       writeln("locale #", here.id, "'s slab:\n", A[MyLocDom]);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      takeTurns.writeXF((here.id + 1)%numLocales);
     }
 
     //
@@ -224,16 +224,16 @@ coforall (lr,lc) in LocaleGridDom {
             // for both source and destination; and slicing is a nice
             // way to express the copy.
             //
-            // 
+            //
             A[Panels[ij]] = LocalDomArrs[neighbor]!.Arr[Panels[ij]];
           }
         }
       }
 
       /* Old debug print
-      while (takeTurns$.readXX() != here.id) { }
+      while (takeTurns.readXX() != here.id) { }
       writeln("locale #", here.id, "'s slab:\n", A[MyLocDom]);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      takeTurns.writeXF((here.id + 1)%numLocales);
       */
 
       //
@@ -241,15 +241,15 @@ coforall (lr,lc) in LocaleGridDom {
       //
       // TODO: wrap this in a local block.  Big perf boost expected
       //
-      forall (i,j) in MyLocDom do
+      forall (i,j) in MyLocDom with (ref B) do
         B[i,j] = 0.25   * A[i,j]
                + 0.125  * (A[i+1,j  ] + A[i-1,j  ] + A[i  ,j-1] + A[i  ,j+1])
                + 0.0625 * (A[i-1,j-1] + A[i-1,j+1] + A[i+1,j-1] + A[i+1,j+1]);
 
       /* Old debug print
-      while (takeTurns$.readXX() != here.id) { }
+      while (takeTurns.readXX() != here.id) { }
       writeln("locale #", here.id, "'s slab:\n", A[MyLocDom]);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      takeTurns.writeXF((here.id + 1)%numLocales);
       */
 
       //
@@ -272,9 +272,9 @@ coforall (lr,lc) in LocaleGridDom {
       }
 
       //
-      // global reduction -- everybody accumulate into the global delta$
-      // I wrapped each of the following two idioms in the takeTurns$
-      // framework in order to guarantee that nobody read delta$ before
+      // global reduction -- everybody accumulate into the global delta
+      // I wrapped each of the following two idioms in the takeTurns
+      // framework in order to guarantee that nobody read delta before
       // everyone had written to it; another approach would be to insert
       // a barrier between the two idioms (e.g., potentially using the
       // poor man's barrier from above?).  But I think what we have here
@@ -283,25 +283,25 @@ coforall (lr,lc) in LocaleGridDom {
       // TODO: Should consider using an atomic with CAS rather than a
       // sync here...
       //
-      while (takeTurns$.readXX() != here.id) { }
-      const prevDelta = delta$.readFE();
+      while (takeTurns.readXX() != here.id) { }
+      const prevDelta = delta.readFE();
       if (locDelta > prevDelta) then
-        delta$.writeEF(locDelta);
+        delta.writeEF(locDelta);
       else
-        delta$.writeEF(prevDelta);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+        delta.writeEF(prevDelta);
+      takeTurns.writeXF((here.id + 1)%numLocales);
 
-      // Now delta$ holds the global max delta
+      // Now delta holds the global max delta
 
       // See whether we're done
-      while (takeTurns$.readXX() != here.id) { }
-      const done = (delta$.readXX() <= epsilon);
-      takeTurns$.writeXF((here.id + 1)%numLocales);
+      while (takeTurns.readXX() != here.id) { }
+      const done = (delta.readXX() <= epsilon);
+      takeTurns.writeXF((here.id + 1)%numLocales);
 
       // reset delta for next iteration (TODO: could do this only
       // when !done).  And increment the # of iterations
       if here.id == numLocales-1 {
-        delta$.writeXF(0);
+        delta.writeXF(0);
         numIters.add(1);
       }
 
@@ -310,7 +310,7 @@ coforall (lr,lc) in LocaleGridDom {
 }
 
 //
-// 
+//
 //
 if printArrays {
   //

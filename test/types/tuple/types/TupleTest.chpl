@@ -3,6 +3,15 @@ proc test(type t) where isTuple(t) {
   assert(a.size == 2);
 }
 
+proc test(type t) where isBorrowedClass(t) {
+  type useT = (t:owned);
+  var elt1 = new useT(1);
+  var elt2 = new useT(2);
+
+  var a = (elt1.borrow(), elt2.borrow());
+  assert(a.size == 2);
+}
+
 proc test(type t) {
   var a = (new t(1), new t(2));
   assert(a.size == 2);

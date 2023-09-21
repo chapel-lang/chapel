@@ -799,6 +799,11 @@ qioerr qio_file_init(qio_file_t** file_out, FILE* fp, fd_t fd, qio_hint_t iohint
   if( err ) {
     return err;
   } else {
+    // if append, set the initial position to be the length
+    if( rc & O_APPEND ) {
+      initial_pos = initial_length;
+    }
+
     rc &= O_ACCMODE;
     // When setting the file mode, we pretend no matter what
     // that stdin is read-only and stdout/stderr are write-only.
@@ -1304,7 +1309,7 @@ qioerr qio_file_path(qio_file_t* f, const char** string_out)
   if (f->fd != -1)
     return qio_file_path_for_fd(f->fd, string_out);
   else if (f->file_info != NULL)
-    return chpl_qio_getpath(f->file_info, string_out, &len);
+    return chpl_qio_getpath(f->file_info, (uint8_t**) string_out, &len);
   else
     QIO_RETURN_CONSTANT_ERROR(ENOSYS, "no fd or plugin");
 }

@@ -3,8 +3,8 @@ record GenericRecord {
 }
 
 record Wrapper {
-  var f:GenericRecord;
-  proc init(f : GenericRecord) {
+  var f:GenericRecord(?);
+  proc init(f : GenericRecord(?)) {
     this.f = f;
   }
 }

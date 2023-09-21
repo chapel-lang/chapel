@@ -1,0 +1,1 @@
+--perGpuVecSize=100_000_000 --usePromotion=false --validate=false --reportAggregate=true

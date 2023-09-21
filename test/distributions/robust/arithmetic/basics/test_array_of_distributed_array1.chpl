@@ -9,6 +9,6 @@ for i in 1..3 do
 for i in 1..3 do
   writeln(AA1D(i));
 
-writeln(dist_eq(AA1D(1).domain.dist, Dist1D));
-writeln(dist_eq(AA1D(2).domain.dist, Dist1D));
-writeln(dist_eq(AA1D(3).domain.dist, Dist1D));
+writeln(dist_eq(AA1D(1).domain.distribution, Dist1D));
+writeln(dist_eq(AA1D(2).domain.distribution, Dist1D));
+writeln(dist_eq(AA1D(3).domain.distribution, Dist1D));

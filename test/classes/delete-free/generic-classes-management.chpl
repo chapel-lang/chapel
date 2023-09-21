@@ -83,12 +83,13 @@ module testmodule {
   }
 
   proc main() {
-
     var myOwnedNilable:owned MyClass? = new owned MyClass();
     var mySharedNonNilable:shared MyClass = new shared MyClass();
     var mySharedNilable:shared MyClass? = new shared MyClass();
-    var myBorrowedNonNilable:borrowed MyClass = (new owned MyClass()).borrow();
-    var myBorrowedNilable:borrowed MyClass? = (new owned MyClass()).borrow();
+    var myBorrowedNonNilableOwn = new owned MyClass();
+    var myBorrowedNonNilable:borrowed MyClass = myBorrowedNonNilableOwn.borrow();
+    var myBorrowedNilableOwn = new owned MyClass();
+    var myBorrowedNilable:borrowed MyClass? = myBorrowedNilableOwn.borrow();
     var myUnmanagedNonNilable:unmanaged MyClass = new unmanaged MyClass();
     var myUnmanagedNilable:unmanaged MyClass? = new unmanaged MyClass?();
     var myInt = 1;

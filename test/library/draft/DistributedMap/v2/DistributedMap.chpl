@@ -28,7 +28,7 @@ module DistributedMap {
   private use Aggregator;
 
   // TODO: document
-  record distributedMap {
+  record distributedMap : serializable {
     type keyType;
     type valType;
     @chpldoc.nodoc
@@ -48,9 +48,9 @@ module DistributedMap {
     }
 
     proc init(type keyType, type valType,
-              reader: fileReader, ref deserializer) throws {
+              reader: fileReader(?), ref deserializer) throws {
       this.init(keyType, valType);
-      readThis(reader);
+      deserialize(reader, deserializer);
     }
 
     proc clear() {
@@ -58,17 +58,17 @@ module DistributedMap {
       m!.mapClear();
     }
 
-    proc readThis(ch: fileReader) throws {
-      m!.readThis(ch);
+    proc ref deserialize(reader, ref deserializer) throws {
+      m!.deserialize(reader, deserializer);
     }
 
-    proc writeThis(ch: fileWriter) throws {
-      m!.writeThis(ch);
+    proc serialize(writer, ref serializer) throws {
+      m!.serialize(writer, serializer);
     }
   }
 
   // TODO: document type, methods
-  class distributedMapImpl {
+  class distributedMapImpl : serializable {
     /* Type of map keys. */
     type keyType;
     /* Type of map values. */
@@ -79,7 +79,7 @@ module DistributedMap {
 
     @chpldoc.nodoc
     const locDom = {0..<targetLocales.size}
-      dmapped Cyclic(startIdx=0, targetLocales=targetLocales);
+      dmapped cyclicDist(startIdx=0, targetLocales=targetLocales);
 
     @chpldoc.nodoc
     var tables: [locDom] chpl__hashtable(keyType, valType);
@@ -235,8 +235,7 @@ module DistributedMap {
 
     // TODO: Is it necessary to lock everything?  Maybe can do something fancy
     // like figure out all the locales needed and then lock?
-    proc extend(pragma "intent ref maybe const formal"
-                m: map(keyType, valType)) {
+    proc extend(ref m: map(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }
@@ -266,8 +265,7 @@ module DistributedMap {
       :arg m: The other map
       :type m: distributedMap with matching keyType and valType
     */
-    proc extend(pragma "intent ref maybe const formal"
-                m: distributedMap(keyType, valType)) {
+    proc extend(ref m: distributedMap(keyType, valType)) {
       for i in locDom {
         locks[i].lock();
       }
@@ -401,12 +399,13 @@ module DistributedMap {
       }
     }
 
-    proc init(type keyType, type valType, r: fileReader) {
+    proc init(type keyType, type valType,
+              reader: fileReader(?), ref deserializer) {
       this.init(keyType, valType);
-      readThis(r);
+      deserialize(reader, deserializer);
     }
 
-    // TODO: if writeThis encodes the locale hash, this should react to it
+    // TODO: if serialize encodes the locale hash, this should react to it
     // Right now, it's not easy to call read with a distributedMap as a type
     // argument because of how we store the hasher object.
     /*
@@ -418,7 +417,8 @@ module DistributedMap {
 
       :arg ch: A fileReader to read from.
     */
-    proc readThis(ch: fileReader) throws {
+    override proc deserialize(reader, ref deserializer) throws {
+      var ch = reader;
       for i in locDom {
         locks[i].lock();
       }
@@ -445,7 +445,7 @@ module DistributedMap {
         ch._readLiteral(": ");
         ch.read(val);
 
-        this.addOrSetUnlocked(key, val);
+        this.addOrReplaceUnlocked(key, val);
       }
 
       ch._readLiteral("}");
@@ -465,7 +465,8 @@ module DistributedMap {
 
       :arg ch: A fileWriter to write to.
     */
-    proc writeThis(ch: fileWriter) throws {
+    override proc serialize(writer, ref serializer) throws {
+      var ch = writer;
       for i in locDom {
         locks[i].lock();
       }
@@ -591,7 +592,7 @@ module DistributedMap {
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
     @chpldoc.nodoc
-    proc setUnlocked(k: keyType, in v: valType): bool {
+    proc setUnlocked(in k: keyType, in v: valType): bool {
       var loc: int = this.getLocaleForKey(k);
 
       var res: bool;
@@ -612,7 +613,7 @@ module DistributedMap {
        set it to `v`. If the map already contains a value at position
        `k`, update it to the value `v`.
      */
-    proc addOrSet(in k: keyType, in v: valType) {
+    proc addOrReplace(in k: keyType, in v: valType) {
       var loc: int = this.getLocaleForKey(k);
 
       on loc {
@@ -629,7 +630,7 @@ module DistributedMap {
     // only be used when you know you control the accesses to the map and will
     // be managing race conditions yourself
     @chpldoc.nodoc
-    proc addOrSetUnlocked(in k: keyType, in v: valType) {
+    proc addOrReplaceUnlocked(in k: keyType, in v: valType) {
       var loc: int = this.getLocaleForKey(k);
 
       on loc {

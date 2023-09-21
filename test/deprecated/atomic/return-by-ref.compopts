@@ -1,0 +1,16 @@
+-stestnum=1 -sretType='atomic int' # return-by-ref-warning.good
+-stestnum=2 -sretType='atomic int' # return-by-ref-warning.good
+-stestnum=3 -sretType='atomic int'
+-stestnum=1 -sretType='[0..2] atomic int' # return-by-ref-warning.good
+-stestnum=2 -sretType='[0..2] atomic int' # return-by-ref-warning.good
+-stestnum=1 -sretType='[0..2] [0..2] atomic int' # return-by-ref-warning.good
+-stestnum=2 -sretType='[0..2] [0..2] atomic int' # return-by-ref-warning.good
+-stestnum=1 -sretType='(int, atomic int)' # return-by-ref-warning.good
+-stestnum=2 -sretType='(int, atomic int)' # return-by-ref-warning.good
+-stestnum=3 -sretType='(int, atomic int)'
+-stestnum=1 -sretType='(int, (int, atomic int))' # return-by-ref-warning.good
+-stestnum=2 -sretType='(int, (int, atomic int))' # return-by-ref-warning.good
+-stestnum=3 -sretType='(int, (int, atomic int))'
+-stestnum=1 -sretType='(int, [0..2] atomic int)' # return-by-ref-warning.good
+-stestnum=2 -sretType='(int, [0..2] atomic int)' # return-by-ref-warning.good
+-stestnum=3 -sretType='(int, [0..2] atomic int)'

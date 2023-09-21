@@ -1,1 +1,6 @@
+generic-field-nil.chpl:n: warning: field is declared with generic memory management
+note: consider adding 'owned', 'shared', or 'borrowed'
+note: if generic memory management is desired, use a 'type' field to store the class type
+generic-field-nil.chpl:n: warning: please use '?' when declaring a field with generic type
+generic-field-nil.chpl:n: note: for example with 'A(?)'
 generic-field-nil.chpl:n: error: could not coerce a value of type 'nil' to type '_formal_type'

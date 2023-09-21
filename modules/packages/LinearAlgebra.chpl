@@ -503,7 +503,7 @@ proc Vector(Dom: domain(1), type eltType=real) {
 
 /* Return a vector (1D array) with domain and values of ``A`` */
 proc Vector(A: [?Dom] ?Atype, type eltType=Atype ) {
-  var V: [Dom] eltType = A: eltType;
+  var V: [Dom] eltType = if eltType == Atype then A else A: eltType;
   return V;
 }
 
@@ -529,7 +529,7 @@ proc Vector(x: ?t, Scalars...?n, type eltType) where isNumericType(t) {
 
   V[0] = x: eltType;
 
-  forall i in 1..n {
+  forall i in 1..n with (ref V) {
     V[i] = Scalars[i-1]: eltType;
   }
 
@@ -577,7 +577,7 @@ proc Matrix(Dom: domain, type eltType=real) where Dom.rank == 2 {
 proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where isDenseMatrix(A)
 {
-  var M: [Dom] eltType = A: eltType;
+  var M: [Dom] eltType = if eltType == Atype then A else A: eltType;
   return M;
 }
 
@@ -588,7 +588,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
 {
   var M: [Dom.parentDom] eltType;
 
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref M) {
     M[i, j] = A[i, j]: eltType;
   }
 
@@ -601,7 +601,7 @@ proc Matrix(A: [?Dom] ?Atype, type eltType=Atype)
   where Dom.rank == 2 && isDefaultSparseArr(A)
 {
   var M: [Dom.parentDom] eltType;
-  forall (i,j) in Dom {
+  forall (i,j) in Dom with (ref M) {
     M[i,j] = A[i,j]: eltType;
   }
   return M;
@@ -664,7 +664,7 @@ proc Matrix(const Arrays ...?n, type eltType) {
   var M: [{dim1, dim2}] eltType;
 
   if (isHomogeneousTuple(Arrays)) {
-    forall i in dim1 do {
+    forall i in dim1 with (ref Arrays) do {
       if Arrays(i).size != Arrays(0).size then halt("Matrix() expected arrays of equal length");
       M[i, ..] = Arrays(i): eltType;
     }
@@ -738,7 +738,7 @@ proc setDiag (ref X: [?D] ?eltType, in k: int = 0, val: eltType = 0)
     start = -k;
     end = D.shape(0);
   }
-  forall row in start..<end {
+  forall row in start..<end with (ref Xref) {
     Xref[row, row+k] = val;
   }
 }
@@ -781,7 +781,7 @@ proc transpose(A: [?Dom] ?eltType) where isDenseMatrix(A) {
     const rDom = {Dom.dim(1), Dom.dim(0)};
     var C: [rDom] eltType;
 
-    [(i, j) in Dom] C[j, i] = A[i, j];
+    [(i, j) in Dom with (ref C)] C[j, i] = A[i, j];
 
     return C;
   }
@@ -961,10 +961,10 @@ proc isDistributed(a) param {
   else if a.domain.isSparse() {
     // TODO: is there a better way to check for distributed sparse domains?
     use BlockDist;
-    return isSubtype(a.domain.dist.type, Block);
+    return isSubtype(a.domain.distribution.type, blockDist);
   }
   else {
-    return !isSubtype(a.domain.dist.type, DefaultDist);
+    return !isSubtype(a.domain.distribution.type, DefaultDist);
   }
 }
 
@@ -985,15 +985,15 @@ proc inner(const ref A: [?Adom] ?eltType, const ref B: [?Bdom]) {
 
     var localResults: [Locales.domain] eltType = 0;
 
-    coforall l in Locales do on l {
+    coforall l in Locales with (ref localResults) do on l {
       const maxThreads = if dataParTasksPerLocale==0
                          then here.maxTaskPar else dataParTasksPerLocale;
       const localDomain = A.localSubdomain();
-      const iterPerThread = divceil(localDomain.size, maxThreads);
+      const iterPerThread = divCeil(localDomain.size, maxThreads);
       var localResult: eltType = 0;
       var threadResults: [0..#maxThreads] eltType = 0;
 
-      coforall tid in 0..#maxThreads {
+      coforall tid in 0..#maxThreads with (ref threadResults) {
         const startid = localDomain.lowBound + tid * iterPerThread;
         const temp_endid = startid + iterPerThread - 1;
         const endid = if localDomain.highBound < temp_endid
@@ -1026,7 +1026,7 @@ proc outer(A: [?Adom] ?eltType, B: [?Bdom] eltType) {
     compilerError("Ranks are not 1");
 
   var C: [{Adom.dim(0), Bdom.dim(0)}] eltType;
-  forall (i,j) in C.domain do
+  forall (i,j) in C.domain with (ref C) do
     C[i, j] = A[i]*B[j];
   return C;
 }
@@ -1049,12 +1049,12 @@ proc _matvecMult(A: [?Adom] ?eltType, X: [?Xdom] eltType, trans=false)
   if !trans {
     if Adom.shape(1) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y) do
       Y[i] = + reduce (A[i,..]*X[..]);
   } else {
     if Adom.shape(0) != Xdom.shape(0) then
       halt("Mismatched shape in matrix-vector multiplication");
-    forall i in Ydom do
+    forall i in Ydom with (ref Y) do
       Y[i] = + reduce (A[.., i]*X[..]);
   }
 
@@ -1098,8 +1098,8 @@ proc _matmatMult(A: [?Adom] ?eltType, B: [?Bdom] eltType)
 
 @chpldoc.nodoc
 /* Helper for Generic matrix-matrix multiplication */
-proc _matmatMultHelper(ref AMat: [?Adom] ?eltType,
-                       ref BMat : [?Bdom] eltType,
+proc _matmatMultHelper(AMat: [?Adom] ?eltType,
+                       BMat : [?Bdom] eltType,
                        ref CMat : [] eltType)
 {
   // TODO - Add logic to calculate blockSize
@@ -1287,7 +1287,7 @@ private proc _diag_vec(A:[?Adom] ?eltType) {
   var diagonal : [0..#diagSize] eltType;
   forall (i, j, diagInd) in zip (Adom.dim(0)#diagSize,
                                  Adom.dim(1)#diagSize,
-                                 0..) do
+                                 0..) with (ref diagonal) do
     diagonal[diagInd] = A[i,j];
 
   return diagonal;
@@ -1306,7 +1306,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..) with (ref diagonal) do
       diagonal[diagInd] = A[i, j+offset];
 
     return diagonal;
@@ -1322,7 +1322,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 
     forall (i, j, diagInd) in zip(Adom.dim(0)#length,
                                   Adom.dim(1)#length,
-                                  0..) do
+                                  0..) with (ref diagonal) do
       diagonal[diagInd] = A[i+offset, j];
 
     return diagonal;
@@ -1332,7 +1332,7 @@ private proc _diag_vec(A:[?Adom] ?eltType, k) {
 private proc _diag_mat(A:[?Adom] ?eltType){
   var diagonal = Matrix(Adom.dim(0), eltType);
 
-  forall i in Adom.dim(0) do
+  forall i in Adom.dim(0) with (ref diagonal) do
     diagonal[i, i] = A[i];
 
   return diagonal;
@@ -1380,7 +1380,7 @@ proc tril(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var L = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref L) do
     if (i < j-k) then L[i, j] = 0: eltType;
   return L;
 }
@@ -1427,7 +1427,7 @@ proc triu(A: [?D] ?eltType, k=0) {
   if D.rank != 2 then
     compilerError("Rank is not 2");
   var U = Matrix(A);
-  forall (i, j) in D do
+  forall (i, j) in D with (ref U) do
     if (i > j-k) then U[i, j] = 0;
   return U;
 }
@@ -1450,6 +1450,42 @@ private proc _isDiag(A: [?D] ?eltType) {
   return true;
 }
 
+/* Return `true` if matrix is the additive identity (zero matrix). */
+proc isZero(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isZero(A);
+}
+
+private proc _isZero(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  for (i, j) in D {
+    if A[i, j] != 0 then return false;
+  }
+  return true;
+}
+
+private proc _isEye(A: [?D] ?eltType) {
+  if D.rank != 2 then
+    compilerError("Rank is not 2");
+
+  if !isSquare(A) then return false;
+
+  for (i, j) in D {
+    if i == j {
+      if A[i, j] != 1 then return false;
+    } else {
+      if A[i, j] != 0 then return false;
+    }
+  }
+
+  return true;
+}
+
+/* Return `true` if matrix is the multiplicative identity (identity matrix).  */
+proc isEye(A: [?D] ?eltType) where isDenseMatrix(A) {
+  return _isEye(A);
+}
 
 /* Return `true` if matrix is Hermitian */
 proc isHermitian(A: [?D]) where isDenseMatrix(A) {
@@ -1460,7 +1496,7 @@ proc isHermitian(A: [?D]) where isDenseMatrix(A) {
 
   for (i, j) in D {
     if i > j {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
   }
   return true;
@@ -1563,21 +1599,21 @@ private proc _lu(in A: [?Adom] ?eltType) {
       numSwap += 1;
     }
 
-    forall k in i..<n {
+    forall k in i..<n with (ref U) {
       const sum = + reduce (L[i,..] * U[..,k]);
       U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
-    forall k in (i+1)..<n {
+    forall k in (i+1)..<n with (ref L) {
       const sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
   }
 
   LU = L + U;
-  forall i in dim {
+  forall i in dim with (ref LU) {
     LU(i,i) = U(i,i);
   }
 
@@ -1615,12 +1651,12 @@ private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
 
   if Adom.rank == 1 {
     if transpose {
-      forall (i,pi) in zip(dim, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) with (ref B) {
         B[i] = A[pi];
       }
     }
     else {
-      forall (i,pi) in zip(dim, ipiv) {
+      forall (i,pi) in zip(dim, ipiv) with (ref B) {
         B[pi] = A[i];
       }
     }
@@ -1763,7 +1799,7 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
     y(i) = sol;
 
     if (i < n - 1) {
-      forall j in (i+1)..<n {
+      forall j in (i+1)..<n with (ref y) {
         y(j) -= L(j,i) * sol;
       }
     }
@@ -1784,7 +1820,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
     y(i) = sol;
 
     if (i > 0) {
-      forall j in 0..<i by -1 {
+      forall j in 0..<i by -1 with (ref y) {
         y(j) -= U(j,i) * sol;
       }
     }
@@ -1795,7 +1831,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
 */
-proc solve(A: [?Adom] ?eltType, b: [?bdom] eltType) {
+proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
   b = permute (ipiv, b, true);
   var z = solve_tril(LU, b);
@@ -1901,7 +1937,7 @@ proc vander(x: [?d], in N=0) where d.rank == 1 {
   var resultDom = {d.dim(0), 0..<N};
   var result: [resultDom] x.eltType;
 
-  forall (i,j) in resultDom {
+  forall (i,j) in resultDom with (ref result) {
     result[i, j] = x[i]**(N-1-j);
   }
 
@@ -1970,7 +2006,7 @@ proc cholesky(A: [] ?t, lower = true)
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigvalsh(ref A: [] ?t, lower=true, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigvalsh does not support distributed vectors/matrices");
   return eigh(A, lower=lower, overwrite=overwrite, eigvalsOnly=true);
@@ -2000,7 +2036,7 @@ proc eigvalsh(A: [] ?t, lower=true, param overwrite=false) throws where (A.domai
       compiler error if ``lapackImpl`` is ``off``.
 
 */
-proc eigh(A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
+proc eigh(ref A: [] ?t, lower=true, param eigvalsOnly=false, param overwrite=false) throws where (A.domain.rank == 2) && (usingLAPACK) {
   if isDistributed(A) then
     compilerError("eigh does not support distributed vectors/matrices");
 
@@ -2223,7 +2259,18 @@ proc eig(A: [] ?t, param left = false, param right = false)
 
   .. note::
 
-   A temporary copy of ``A`` will be created within this computation.
+    A temporary copy of ``A`` will be created within this computation.
+
+  .. note::
+
+    Arrays with strided domains are not supported.
+
+  .. note::
+
+    Arrays whose domains have nonzero offsets are supported. ``U`` inherits the
+    row indexing of ``A``, while ``Vh`` inherits the column indexing of ``A``.
+    The columns of ``U``, rows of ``Vh``, and ``s`` all share the same 0-based
+    indexing.
 
   .. note::
 
@@ -2231,7 +2278,8 @@ proc eig(A: [] ?t, param left = false, param right = false)
     compiler error if ``lapackImpl`` is ``off``.
 */
 proc svd(A: [?Adom] ?t) throws
-  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2 {
+  where isLAPACKType(t) && usingLAPACK && Adom.rank == 2
+    && Adom.strides == strideKind.one {
   if isDistributed(A) then
     compilerError("svd does not support distributed vectors/matrices");
 
@@ -2248,11 +2296,11 @@ proc svd(A: [?Adom] ?t) throws
   // Results
 
   // Stores singular values, sorted
-  var s: [0..<min((...A.shape))] realType;
-  // Unitary matrix, U
-  var u: [0..<m, 0..<m] t;
-  // Unitary matrix V^T (or V^H)
-  var vt: [0..<n, 0..<n] t;
+  var s: [0..<min(m,n)] realType;
+  // Unitary matrix, U, inherits row offset of A
+  var u: [Adom.dim(0), 0..<m] t;
+  // Unitary matrix V^T (or V^H), inherits column offset of A
+  var vt: [0..<n, Adom.dim(1)] t;
 
   // if return code 'info' > 0, then this stores unconverged superdiagonal
   // elements of upper bidiagonal matrix 'B' whose diagonal is in 's'.
@@ -2299,7 +2347,7 @@ proc jacobi(A: [?Adom] ?eltType, ref X: [?Xdom] eltType,
 
   while (itern < maxiter) {
     itern = itern + 1;
-    forall i in Adom.dim(0) {
+    forall i in Adom.dim(0) with (ref t) {
       var sigma = 0.0;
       for j in Adom.dim(1) {
         if i!=j then sigma += A(i,j) * X(j);
@@ -2341,7 +2389,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 
   var C = Matrix(rowA*rowB, colA*colB, eltType=eltType);
 
-  forall (i, j) in A1Dom {
+  forall (i, j) in A1Dom with (ref C) {
     const stR = i*rowB,
           stC = j*colB;
     for (k, l) in B1Dom {
@@ -2458,7 +2506,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   // Matrix Q (which is redundant in this case
   // since we could get away with a single LU calls
   // for all the N iterations).
-  forall j in D.dim(1) {
+  forall j in D.dim(1) with (ref P) {
       P[.., j] = solve(Q, P[.., j]);
     }
 
@@ -2559,7 +2607,7 @@ proc isLocalArr(A: [?D]) param : bool {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is dense N-dimensional non-distributed domain. */
 proc isLocalDom(D: domain) param : bool {
-  return D.dist.type == defaultDist.type;
+  return D.distribution.type == defaultDist.type;
 }
 
 // TODO: Add this to public interface eventually
@@ -2583,7 +2631,7 @@ proc type _array.rank param {
 @chpldoc.nodoc
 /* Returns ``true`` if the domain is ``DefaultSparse`` */
 private proc isDefaultSparseDom(D: domain) param {
-  return isSubtype(_to_borrowed(D.dist.type), DefaultDist) && D.isSparse();
+  return isSubtype(_to_borrowed(D.distribution.type), DefaultDist) && D.isSparse();
 }
 
 @chpldoc.nodoc
@@ -2757,7 +2805,7 @@ module Sparse {
     casted to ``eltType``
    */
   proc CSRMatrix(A: [?Dom] ?Atype, type eltType=Atype) where isCSArr(A) {
-    var M: [Dom] eltType = A: eltType;
+    var M: [Dom] eltType = if eltType == Atype then A else A: eltType;
     return M;
   }
 
@@ -2880,13 +2928,13 @@ module Sparse {
     var C: [resDom] A.eltType;
 
     if isCSArr(A) && !isCSArr(B) {
-      forall i in 0..<B.domain.shape(1) {
+      forall i in 0..<B.domain.shape(1) with (ref C) {
         C[.., i] = dot(A, B[.., i]);
       }
       return C;
     }
     else {
-      forall i in 0..<A.domain.shape(0) {
+      forall i in 0..<A.domain.shape(0) with (ref C) {
         C[i, ..] = dot(A[i, ..], B);
       }
       return C;
@@ -2922,7 +2970,7 @@ module Sparse {
       if Adom.shape(1) != Xdom.shape(0) then
         halt("Mismatched shape in matrix-vector multiplication");
         // TODO: Loop over non-zero rows only
-        forall i in Adom.dim(0) {
+        forall i in Adom.dim(0) with (ref Y) {
           for j in Adom.dimIter(1, i) {
             Y[i] += A[i, j] * X[j];
           }
@@ -2999,7 +3047,7 @@ module Sparse {
 
 
   /* Populate indPtr and total nnz (last element of indPtr) */
-  private proc pass1(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr) {
+  private proc pass1(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr) {
     // TODO: Parallelize - mask -> atomic ints,
     //                   - Write a scan to compute idxPtr in O(log(n))
 
@@ -3045,7 +3093,7 @@ module Sparse {
   }
 
   /* Populate indices and data */
-  private proc pass2(ref A: [?ADom] ?eltType, ref B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
+  private proc pass2(A: [?ADom] ?eltType, B: [?BDom] eltType, ref indPtr, ref ind, ref data) {
     // TODO: Parallelize - next, sums -> task-private stacks
 
     /* Aliases for readability */
@@ -3156,7 +3204,7 @@ module Sparse {
     var Dom = transpose(Adom);
     var B: [Dom] eltType;
 
-    forall i in Adom.dim(0) {
+    forall i in Adom.dim(0) with (ref B) {
       for j in Adom.dimIter(1, i) {
         B[j, i] = A[i, j];
       }
@@ -3175,7 +3223,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] + A[i,j];
     }
     return S;
@@ -3190,7 +3238,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] + A[i,j];
     }
     return S;
@@ -3204,7 +3252,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] - A[i,j];
     }
     return S;
@@ -3219,7 +3267,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] - A[i,j];
     }
     return S;
@@ -3233,7 +3281,7 @@ module Sparse {
     // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
+    forall (i,j) in B.domain with (ref B) do B[i,j] = this[i,j];
 
     // If domain indices do not match, bulk add A's indices to B
     if this.domain != A.domain {
@@ -3241,7 +3289,7 @@ module Sparse {
     }
 
     // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] *= A[i,j];
+    forall (i,j) in A.domain with (ref B) do B[i,j] *= A[i,j];
 
     return B;
   }
@@ -3257,7 +3305,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in sps {
+    forall (i,j) in sps with (ref S) {
       S[i,j] = this[i,j] * A[i,j];
     }
     return S;
@@ -3271,7 +3319,7 @@ module Sparse {
     // Create copy of 'this'
     var BDom = this.domain;
     var B: [BDom] this.eltType;
-    forall (i,j) in B.domain do B[i,j] = this[i,j];
+    forall (i,j) in B.domain with (ref B) do B[i,j] = this[i,j];
 
     // If domain indices do not match, bulk add A's indices to B
     if this.domain != A.domain {
@@ -3279,7 +3327,7 @@ module Sparse {
     }
 
     // Do in-place addition of A into B
-    forall (i,j) in A.domain do B[i,j] /= A[i,j];
+    forall (i,j) in A.domain with (ref B) do B[i,j] /= A[i,j];
 
     return B;
   }
@@ -3295,7 +3343,7 @@ module Sparse {
     sps += this.domain;
     sps += Adom;
     var S: [sps] eltType;
-    forall (i,j) in Adom {
+    forall (i,j) in Adom with (ref S) {
       S[i,j] = this[i,j] / A[i,j];
     }
     return S;
@@ -3338,7 +3386,7 @@ module Sparse {
 
     while (itern < maxiter) {
       itern = itern + 1;
-      forall i in Adom.dim(0) {
+      forall i in Adom.dim(0) with (ref t) {
         var sigma = 0.0;
         for j in Adom.dimIter(1,i) {
           if i!=j then sigma += A(i,j) * X(j);
@@ -3373,11 +3421,11 @@ module Sparse {
         end = D.shape(0);
       }
       var indices : [start..end] (D.idxType, D.idxType);
-      forall ind in {start..end} {
+      forall ind in {start..end} with (ref indices) {
         indices[ind] = (ind, ind+k);
       }
       D.bulkAdd(indices, dataSorted=true, isUnique=true, preserveInds=false);
-      forall ind in indices {
+      forall ind in indices with (ref X) {
         X(ind) = val;
       }
   }
@@ -3388,6 +3436,15 @@ module Sparse {
     return _isDiag(A);
   }
 
+  /* Return `true` if sparse matrix is the additive identity (zero matrix). */
+  proc isZero(A: [?D] ?eltType) where A.isSparse() {
+    return _isZero(A);
+  }
+
+  /* Return `true` if sparse matrix is the multiplicative identity (identity matrix).  */
+  proc isEye(A: [?D] ?eltType) where A.isSparse() {
+    return _isEye(A);
+  }
 
   /* Return ``true`` if matrix is Hermitian. Supports CSR and COO arrays. */
   proc isHermitian(A: [?D]) where A.isSparse() {
@@ -3397,7 +3454,7 @@ module Sparse {
       return false;
 
     for (i, j) in D {
-      if A[i, j] != conjg(A[j, i]) then return false;
+      if A[i, j] != conj(A[j, i]) then return false;
     }
     return true;
   }
@@ -3423,12 +3480,12 @@ module Sparse {
 
 
   @chpldoc.nodoc
-  /* Returns ``true`` if the array is dmapped to ``CS`` layout. */
-  proc isCSArr(A: []) param { return isCSType(A.domain.dist.type); }
+  /* Returns ``true`` if the array is distributed with the CS layout. */
+  proc isCSArr(A: []) param { return isCSType(A.domain.distribution.type); }
 
   @chpldoc.nodoc
-  /* Returns ``true`` if the domain is dmapped to ``CS`` layout. */
-  proc isCSDom(D: domain) param { return isCSType(D.dist.type); }
+  /* Returns ``true`` if the domain is distributed with the CS layout. */
+  proc isCSDom(D: domain) param { return isCSType(D.distribution.type); }
 
 
 } // submodule LinearAlgebra.Sparse

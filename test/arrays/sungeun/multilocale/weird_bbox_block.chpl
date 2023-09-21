@@ -11,9 +11,9 @@ const minSpace = {m..m+1};
 const maxSpace = {n-1..n};
 const aSpace = {aLow..aLow+1};
 
-const BlockD: domain(1) dmapped new dmap(new Block(rank=1,boundingBox=bbox)) = aSpace;
-const BlockmaxD: domain(1) dmapped new dmap(new Block(rank=1,boundingBox=bbox)) = maxSpace;
-const BlockminD: domain(1) dmapped new dmap(new Block(rank=1,boundingBox=bbox)) = minSpace;
+const BlockD: domain(1) dmapped new blockDist(rank=1,boundingBox=bbox) = aSpace;
+const BlockmaxD: domain(1) dmapped new blockDist(rank=1,boundingBox=bbox) = maxSpace;
+const BlockminD: domain(1) dmapped new blockDist(rank=1,boundingBox=bbox) = minSpace;
 
 var A: [BlockD] int;
 A = -1;

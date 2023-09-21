@@ -1,6 +1,6 @@
 /* Test mpz_addmul, mpz_addmul_ui, mpz_submul, mpz_submul_ui.
 
-Copyright 2001, 2002 Free Software Foundation, Inc.
+Copyright 2001, 2002, 2022 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library test suite.
 
@@ -155,7 +155,8 @@ check_one (mpz_srcptr w, mpz_srcptr x, mpz_srcptr y)
       abort ();
     }
 
-  mpz_mul (want, x, y);
+
+  mpz_sub (want, want, w);
   mpz_sub (want, w, want);
   mpz_set (got, w);
   mpz_submul (got, x, y);
@@ -164,6 +165,45 @@ check_one (mpz_srcptr w, mpz_srcptr x, mpz_srcptr y)
     {
       printf ("mpz_submul fail\n");
       goto fail;
+    }
+
+  mpz_clear (want);
+  mpz_clear (got);
+}
+
+void
+check_sqr (mpz_srcptr w, mpz_srcptr x)
+{
+  mpz_t  want, got;
+
+  mpz_init (want);
+  mpz_init (got);
+
+  mpz_mul (want, x, x);
+  mpz_add (want, w, want);
+  mpz_set (got, w);
+  mpz_addmul (got, x, x);
+  MPZ_CHECK_FORMAT (got);
+  if (mpz_cmp (want, got) != 0)
+    {
+      printf ("mpz_addmul xx fail\n");
+    sqrfail:
+      mpz_trace ("w", w);
+      mpz_trace ("x", x);
+      mpz_trace ("want", want);
+      mpz_trace ("got ", got);
+      abort ();
+    }
+
+  mpz_sub (want, want, w);
+  mpz_sub (want, w, want);
+  mpz_set (got, w);
+  mpz_submul (got, x, x);
+  MPZ_CHECK_FORMAT (got);
+  if (mpz_cmp (want, got) != 0)
+    {
+      printf ("mpz_submul xx fail\n");
+      goto sqrfail;
     }
 
   mpz_clear (want);
@@ -235,6 +275,9 @@ check_all (mpz_ptr w, mpz_ptr x, mpz_ptr y)
 
                   mpz_neg (y, y);
                 }
+
+	      check_sqr (w, x);
+
               mpz_neg (x, x);
             }
           mpz_neg (w, w);

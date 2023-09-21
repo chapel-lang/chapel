@@ -1,0 +1,14 @@
+#!/usr/bin/env python3
+
+#
+# skip this test when FFTW_DIR and NETCDF_DIR is not set
+#
+
+import os
+hasFFTW = ('FFTW_DIR' in os.environ)
+hasNetCDF = ('NETCDF_DIR' in os.environ)
+
+if hasFFTW and hasNetCDF:
+  print(False)   # Don't skip
+else:
+  print(True)    # skip

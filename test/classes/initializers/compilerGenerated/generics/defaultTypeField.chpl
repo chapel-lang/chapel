@@ -8,7 +8,7 @@ class Parent {
   type idxType;
 }
 
-class Child : Parent {
+class Child : Parent(?) {
   type foo = 2*idxType;
   var x : foo;
 }

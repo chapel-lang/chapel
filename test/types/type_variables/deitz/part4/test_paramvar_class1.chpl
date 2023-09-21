@@ -3,8 +3,10 @@ class foo {
   var str : string;
 }
 
-var f1 : borrowed foo(2) = (new owned foo(x=2)).borrow();
-var f2 : borrowed foo(3) = (new owned foo(x=3)).borrow();
+var ownF1 = new owned foo(x=2);
+var f1 : borrowed foo(2) = ownF1.borrow();
+var ownF2 = new owned foo(x=3);
+var f2 : borrowed foo(3) = ownF2.borrow();
 
 f1.str = "hello";
 f2.str = "world";

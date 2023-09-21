@@ -22,7 +22,7 @@ proc main() {
       else if verbose then
         writeln(s + " resulted in kernel launch");
 
-      const isCorrect = if A.eltType == bool then A[0]==A[1] else isclose(A[0],A[1]);
+      const isCorrect = A[0]==A[1];
       if !isCorrect then
         writeln(s + " computed wrong result. ("+A[0]:string+", "+A[1]:string+")");
       else if verbose then

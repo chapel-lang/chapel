@@ -5,7 +5,7 @@ proc main() {
 
   var A: [D] real;
 
-  coforall t in 1..2 {
+  coforall t in 1..2 with (ref A) {
     for i in t..n by 2 {
       for j in 1..n {
         A(i,j) += i + j/10.0;

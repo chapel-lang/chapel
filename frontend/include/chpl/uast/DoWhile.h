@@ -48,11 +48,12 @@ class DoWhile final : public Loop {
  private:
   DoWhile(AstList children, BlockStyle blockStyle,
           int loopBodyChildNum,
-          int conditionChildNum)
+          int conditionChildNum,
+          int attributeGroupChildNum)
     : Loop(asttags::DoWhile, std::move(children),
            blockStyle,
            loopBodyChildNum,
-           NO_CHILD /*attributeGroup*/),
+           attributeGroupChildNum),
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
@@ -92,7 +93,8 @@ class DoWhile final : public Loop {
   static owned<DoWhile> build(Builder* builder, Location loc,
                               BlockStyle blockStyle,
                               owned<Block> body,
-                              owned<AstNode> condition);
+                              owned<AstNode> condition,
+                              owned<AttributeGroup> attributeGroup = nullptr);
 
 
   /**

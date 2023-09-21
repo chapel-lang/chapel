@@ -290,7 +290,7 @@ module ChapelLocale {
     by the corresponding concrete classes.
    */
   @chpldoc.nodoc
-  class BaseLocale {
+  class BaseLocale : writeSerializable {
     //- Constructor
     @chpldoc.nodoc
     proc init() { }
@@ -328,7 +328,7 @@ module ChapelLocale {
     proc localeid : chpl_localeID_t do return __primitive("_wide_get_locale", this);
 
     proc hostname: string {
-      extern proc chpl_nodeName(): c_string;
+      extern proc chpl_nodeName(): c_ptrConst(c_char);
       var hname: string;
       on this {
         try! {
@@ -398,23 +398,19 @@ module ChapelLocale {
     // concrete classes.
     proc chpl_id() : int {
       HaltWrappers.pureVirtualMethodHalt();
-      return -1;
     }
 
     proc chpl_localeid() : chpl_localeID_t {
       HaltWrappers.pureVirtualMethodHalt();
-      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
     }
 
     proc chpl_name() : string {
       HaltWrappers.pureVirtualMethodHalt();
-      return "";
     }
 
     @chpldoc.nodoc
     proc _getChildCount() : int {
       HaltWrappers.pureVirtualMethodHalt();
-      return 0;
     }
 
 // Part of the required locale interface.

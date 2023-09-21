@@ -1,0 +1,2 @@
+params-and-assigns.chpl:7: warning: 1-1
+(red..<red, red..<red, {red..<red}, {1..0 by -1}, {red..<red by -1}, {red..<red by -1}, {red..<red by -1, red..<red by -1}, {red..<red by -1, red..<red by -1})

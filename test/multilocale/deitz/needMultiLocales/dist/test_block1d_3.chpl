@@ -2,7 +2,7 @@ use BlockDist;
 
 config var n = 8, tpl=1;
 
-var Dist = new dmap(new Block(rank=1, boundingBox={2..n-1},dataParTasksPerLocale=tpl));
+var Dist = new blockDist(rank=1, boundingBox={2..n-1},dataParTasksPerLocale=tpl);
 var Dom: domain(1) dmapped Dist = {-n..n};
 var A: [Dom] real;
 
@@ -25,7 +25,7 @@ writeln();
 writeln("initialized array");
 writeln(A);
 
-forall i in Dom do {
+forall i in Dom with (ref A) do {
   A(i) = 0;
 }
 

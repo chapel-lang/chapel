@@ -4,8 +4,8 @@
 use IO;
 
   proc chpl_stringify_wrapper(const args ...):string {
-    use IO only stringify;
-    return stringify((...args));
+    use IO only chpl_stringify;
+    return chpl_stringify((...args));
   }
 
   /* Equivalent to ``try! stdout.write``. See :proc:`IO.fileWriter.write` */
@@ -21,6 +21,12 @@ use IO;
   @chpldoc.nodoc
   proc writeln() {
     try! stdout.writeln();
+  }
+
+  proc writef(fmt:?t, const args ...?k)
+    where isStringType(t) || isBytesType(t)
+  {
+    try! { stdout.writef(fmt, (...args)); }
   }
 
   //
@@ -39,4 +45,3 @@ use IO;
 proc testchapelio() {
   writeln("In my ChapelIO!");
 }
-

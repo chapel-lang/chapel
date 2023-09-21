@@ -1,0 +1,4 @@
+tupleTypeAccessClassesField.chpl:13: In method 'accept':
+tupleTypeAccessClassesField.chpl:15: error: unresolved call '(borrowed GoodStudent,borrowed ExcellentStudent)(0)'
+tupleTypeAccessClassesField.chpl:15: note: because no functions named (borrowed GoodStudent,borrowed ExcellentStudent) found in scope
+  tupleTypeAccessClassesField.chpl:24: called as (AdvancedBasketWeaving((borrowed GoodStudent,borrowed ExcellentStudent))).accept(student: borrowed Student)

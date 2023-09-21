@@ -106,6 +106,11 @@ public:
   IntentTag                  thisTag;
   RetTag                     retTag;
 
+  // If the parenful version of this function is deprecated, the deprecation
+  // message.
+  std::string                parenfulDeprecationMsg;
+  const char*                getParenfulDeprecationMsg() const;
+
   // Support for iterator lowering.
   IteratorInfo*              iteratorInfo;
   // Pointers to other iterator variants - serial, standalone, etc.
@@ -245,6 +250,7 @@ public:
   bool                       isInitializer()                             const;
   bool                       isPostInitializer()                         const;
   bool                       isDefaultInit()                             const;
+  bool                       isDefaultCopyInit()                         const;
   bool                       isCopyInit()                                const;
 
   bool                       isGeneric()                                 const;

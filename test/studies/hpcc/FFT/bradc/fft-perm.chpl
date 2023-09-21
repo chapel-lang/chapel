@@ -15,7 +15,8 @@ Perm(6) = 4;
 writeln("B is: ", B);
 writeln("Perm is: ", Perm);
 
-A(Perm) = B;
+// A(Perm) = B;
+forall (p, b) in zip(Perm, B) with (ref A) do A[p] = b;
 
 writeln("A is: ", A);
 

@@ -80,7 +80,10 @@ public:
   // and false for
   //    class C { type t; }
   bool                        isGenericWithDefaults()                    const;
+  // similar, but some (not all) generic fields have defaults
+  bool                        isGenericWithSomeDefaults()                const;
   void                        markAsGenericWithDefaults();
+  void                        markAsGenericWithSomeDefaults();
 
   const char*                 classStructName(bool standalone);
 
@@ -119,7 +122,8 @@ public:
   AggregateType*              getInstantiationParent(AggregateType* pt);
 
   AggregateType*              generateType(CallExpr* call,
-                                           const char* callString);
+                                           const char* callString,
+                                           bool allowAllNamedArgs=false);
   AggregateType*              generateType(SymbolMap& subs,
                                            CallExpr* call,
                                            const char* callString,
@@ -252,7 +256,9 @@ private:
 
   AggregateType*              getNewInstantiation(Symbol* sym, Type* symType, Expr* insnPoint = NULL);
 
-  AggregateType*              discoverParentAndCheck(Expr* storesName);
+  void                        discoverParentAndCheck(Expr* storesName,
+                                                     AggregateType* &outParent,
+                                                     InterfaceSymbol* &outIfc);
 
   bool                        isFieldInThisClass(const char* name)       const;
 
@@ -263,17 +269,17 @@ private:
   void                        fieldToArg(FnSymbol*              fn,
                                          std::set<const char*>& names,
                                          SymbolMap&             fieldArgMap,
-                                         ArgSymbol*             fileReader,
-                                         ArgSymbol*             formatter);
+                                         Symbol*             formatter);
 
   void                        fieldToArgType(DefExpr*   fieldDef,
                                              ArgSymbol* arg);
 
-  bool                        handleSuperFields(FnSymbol*                    fn,
+  bool                        badParentInit();
+  void                        handleSuperFields(FnSymbol*                    fn,
                                                 const std::set<const char*>& names,
                                                 SymbolMap&                   fieldArgMap,
-                                                ArgSymbol* fileReader = nullptr,
-                                                ArgSymbol* deser = nullptr);
+                                                Symbol* fileReader,
+                                                Symbol* desHelper);
 
   std::vector<AggregateType*> instantiations;
 
@@ -288,6 +294,7 @@ private:
 
   bool                        mIsGeneric;
   bool                        mIsGenericWithDefaults;
+  bool                        mIsGenericWithSomeDefaults;
 };
 
 // support for deprecation by Vass in 1.31 to implement #17131
@@ -300,6 +307,7 @@ extern AggregateType* dtObject;
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
+extern AggregateType* dtRange;
 extern AggregateType* dtOwned;
 extern AggregateType* dtShared;
 

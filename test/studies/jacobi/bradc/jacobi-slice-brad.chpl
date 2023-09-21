@@ -18,7 +18,7 @@ proc main() {
   var B: [D] real;
 
   // initialize south boundary to 1.0
-  [ij in D.exterior(south)] A(ij) = 1.0;
+  [ij in D.exterior(south) with (ref A)] A(ij) = 1.0;
 
   // it's a shame not to be able to declare this when it's used
   var bigdiff: real;
@@ -30,7 +30,7 @@ proc main() {
 
     bigdiff = max reduce [ij in D] abs(A(ij) - B(ij));
 
-    [ij in D] A(ij) = B(ij);
+    [ij in D with (ref A)] A(ij) = B(ij);
   } while (bigdiff > epsilon);
 
   writeln("Final A is: \n", A[D]);

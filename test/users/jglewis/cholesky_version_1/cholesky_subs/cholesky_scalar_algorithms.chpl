@@ -7,11 +7,11 @@ module cholesky_scalar_algorithms {
   //
   //               A(i,j) = + reduce ( L (i, ..) L (j, ..)
   //
-  // As written, these equations do not recognize the symmetry of A and the 
+  // As written, these equations do not recognize the symmetry of A and the
   // triangular structure of L.  Recognizing those two facts allows us to turn
   // these equations into an algorithm for computing the decomposition.
   //
-  // Main diagonal:  
+  // Main diagonal:
   //    L(j,j) = sqrt ( A(j,j) - (+ reduce [k in ..j-1] L(j,k)**2 ) )
   // Below main diagonal:
   //    L(i,j) = ( A(i,j) - (+ reduce [k in ..j-1] L(i,k) * L(j,k) ) ) / L(j,j)
@@ -22,45 +22,45 @@ module cholesky_scalar_algorithms {
   // other entries in the first column.  The order in which the entries overall
   // must be computed is specified only by the data dependencies expressed in
   // the two equations above.  There are many orderings of these operations that
-  // satisfy the dependency constraints.  Three standard orderings of those 
+  // satisfy the dependency constraints.  Three standard orderings of those
   // operations are given in this file; these compute L one row or one column at
   // a time.  these do not begin to exhaust the possible orerings.  To show the
   // potential for much more general orderings , a data-flow version of the
   // algorithm will be implemented separately.
 
   // Conventionally only one array argument, A, is used in factorization
-  // routines, and only the lower triangle is used.  On output the entries of 
-  // L overwrite the entries of A.  The partial sums of the reductions are 
+  // routines, and only the lower triangle is used.  On output the entries of
+  // L overwrite the entries of A.  The partial sums of the reductions are
   // accumulated during the course of the algorithm also in the space occupied
   // by the input matrix  A.  Conventionally, the entries in the upper
-  // triangle of A are left untouched. 
+  // triangle of A are left untouched.
   // =========================================================================
- 
+
 
   // =========================================================================
   // The outer product Cholesky factorization computes one column of L at each
-  // step. During each step the remaining columns of A are modified by a single 
+  // step. During each step the remaining columns of A are modified by a single
   // outer product operation -- the reduce operations are accumulated one step
   // at a time for each entry in the yet unfactored part of the matrix.  The
   // computed entries of L will not otherwise need to be referenced again in
-  // the factorization.  
+  // the factorization.
   // =========================================================================
-    
-  proc scalar_outer_product_cholesky ( A : [] )
 
-    where ( A.domain.rank == 2 ) 
+  proc scalar_outer_product_cholesky ( ref A : [] )
+
+    where ( A.domain.rank == 2 )
 
   {
     // -----------------------------------------------------------------------
-    // the input argument is a square symmetric matrix, whose entries will be 
-    // overwritten by the entries of the Cholesky factor.  Only the entries in 
+    // the input argument is a square symmetric matrix, whose entries will be
+    // overwritten by the entries of the Cholesky factor.  Only the entries in
     // the lower triangule are referenced and modified.
     // The procedure additionally returns a success / failure flag, which is
     //   true if the matrix is numerically positive definite
     //   false if the matrix is not positive definite
-    // Note that while a factorization is computable for positive 
+    // Note that while a factorization is computable for positive
     // semi-definite matrices, we do not compute it because this factorization
-    // is designed for use in a context of solving a system of linear 
+    // is designed for use in a context of solving a system of linear
     // equations.
     // -----------------------------------------------------------------------
 
@@ -99,24 +99,24 @@ module cholesky_scalar_algorithms {
   // each step, in a manner reflecting the reduction form of the defining
   // equations.  During each step the previous columns of L are read to
   // implement the separate reduction operations for each entry of the current
-  // column.  For efficiency, the reduction operations are combined into a 
+  // column.  For efficiency, the reduction operations are combined into a
   // matrix-vector product form.
   // =========================================================================
-    
-  proc scalar_inner_product_cholesky ( A : [] ) 
 
-    where ( A.domain.rank == 2 ) 
+  proc scalar_inner_product_cholesky ( ref A : [] )
+
+    where ( A.domain.rank == 2 )
     {
     // -----------------------------------------------------------------------
-    // the input argument is a square symmetric matrix, whose entries will be 
-    // overwritten by the entries of the Cholesky factor.  Only the entries in 
+    // the input argument is a square symmetric matrix, whose entries will be
+    // overwritten by the entries of the Cholesky factor.  Only the entries in
     // the lower triangule are referenced and modified.
     // The procedure additionally returns a success / failure flag, which is
     //   true if the matrix is numerically positive definite
     //   false if the matrix is not positive definite
-    // Note that while a factorization is computable for positive 
+    // Note that while a factorization is computable for positive
     // semi-definite matrices, we do not compute it because this factorization
-    // is designed for use in a context of solving a system of linear 
+    // is designed for use in a context of solving a system of linear
     // equations.
     // -----------------------------------------------------------------------
 
@@ -141,7 +141,7 @@ module cholesky_scalar_algorithms {
 	A (j, j)      = sqrt ( A (j, j) );
 	A (j+1.., j ) = A (j+1.., j) / A (j, j);
       }
-      else 
+      else
 
 	// error return if matrix is not positive definite
 	return false;
@@ -154,33 +154,33 @@ module cholesky_scalar_algorithms {
   // =========================================================================
   // The bordering Cholesky factorization computes one row of L at each step.
   // The leading entries in each row are computed first, in an operation that
-  // can be viewed as a triangular system solve, using the leading rows of L 
-  // as the coefficient matrix and the leading entries of the active row as 
-  // the right-hand side vector.  Because solves are nasty to parallelize, 
+  // can be viewed as a triangular system solve, using the leading rows of L
+  // as the coefficient matrix and the leading entries of the active row as
+  // the right-hand side vector.  Because solves are nasty to parallelize,
   // this ordering of operations is rarely used.
-  // The key equation driving this form of the factorization is the 
+  // The key equation driving this form of the factorization is the
   // equation that defines most of the Ith block row of the factorization
   //    L(i,..i-1) = A(i,..i-1) * L (..i-1,..i-1)^T
   // This equation can be derived most simply by taking a block version of
-  // the equations above, developed by taking a block partitioning of the 
-  // matrix into rows and columns (..i-1), row and column i, and 
+  // the equations above, developed by taking a block partitioning of the
+  // matrix into rows and columns (..i-1), row and column i, and
   // rows and columns (i+1..).
   // =========================================================================
-    
-  proc scalar_bordering_cholesky ( A : [] )  
+
+  proc scalar_bordering_cholesky ( ref A : [] )
 
     where ( A.domain.rank == 2 ) {
 
     // -----------------------------------------------------------------------
-    // the input argument is a square symmetric matrix, whose entries will be 
-    // overwritten by the entries of the Cholesky factor.  Only the entries in 
+    // the input argument is a square symmetric matrix, whose entries will be
+    // overwritten by the entries of the Cholesky factor.  Only the entries in
     // the lower triangule are referenced and modified.
     // The procedure additionally returns a success / failure flag, which is
     //   true if the matrix is numerically positive definite
     //   false if the matrix is not positive definite
-    // Note that while a factorization is computable for positive 
+    // Note that while a factorization is computable for positive
     // semi-definite matrices, we do not compute it because this factorization
-    // is designed for use in a context of solving a system of linear 
+    // is designed for use in a context of solving a system of linear
     // equations.
     // -----------------------------------------------------------------------
 
@@ -216,4 +216,3 @@ module cholesky_scalar_algorithms {
   }
 
 }
-	

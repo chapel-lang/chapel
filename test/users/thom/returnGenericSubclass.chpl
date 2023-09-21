@@ -7,13 +7,13 @@ class C {
   var n;
 }
 
-class D: C {
+class D: C(?) {
   var m;
 }
 
 config const flag = false;
 
-proc baz(): unmanaged C {
+proc baz(): unmanaged C(?) {
  if flag then
   return new unmanaged C(3);
  else

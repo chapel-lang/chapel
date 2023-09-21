@@ -3,7 +3,7 @@ record GenericRecord {
 }
 
 record Wrapper {
-  var f:GenericRecord;
+  var f:GenericRecord(?);
 }
 
 proc test1() {

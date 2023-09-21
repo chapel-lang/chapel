@@ -49,15 +49,15 @@ PROLOGUE(mpn_submul_1)
 	lghi	%r12, 0
 	slgr	%r11, %r11
 
-L(top):	lg	%r1, 0(%r12, up)
-	lg	%r10, 0(%r12, rp)
+L(top):	lg	%r1, 0(%r12,up)
+	lg	%r10, 0(%r12,rp)
 	mlgr	%r0, v0
 	slbgr	%r10, %r1
 	slbgr	%r9, %r9
 	slgr	%r0, %r9		C conditional incr
 	slgr	%r10, %r11
 	lgr	%r11, %r0
-	stg	%r10, 0(%r12, rp)
+	stg	%r10, 0(%r12,rp)
 	la	%r12, 8(%r12)
 	brctg	%r4,  L(top)
 

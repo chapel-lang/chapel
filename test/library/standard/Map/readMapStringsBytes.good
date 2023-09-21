@@ -1,0 +1,7 @@
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method 'deserialize':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: error: Default IO format for 'map' does not support reading when the key or value type is  'string' or 'bytes'.
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (map(string,string,false)).deserialize(reader: fileReader(false,defaultDeserializer), deserializer: defaultDeserializer) from method 'deserializeValue'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as defaultDeserializer.deserializeValue(reader: fileReader(false,defaultDeserializer), val: map(string,string,false)) from method '_deserializeOne'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,defaultDeserializer))._deserializeOne(x: map(string,string,false), loc: locale) from method '_readInner'
+  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,defaultDeserializer))._readInner(args(0): map(string,string,false)) from method 'read'
+  readMapStringsBytes.chpl:6: called as (fileReader(true,defaultDeserializer)).read(args(0): map(string,string,false))

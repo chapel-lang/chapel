@@ -1,13 +1,13 @@
-record R {
+record R : hashable {
 	type t;
 	var a : [1..10] t;
 }
 
-operator R.==(a: R, b: R) {
+operator R.==(a: R(?), b: R(?)) {
   return && reduce (a.a == b.a);
 }
 
-operator R.!=(a: R, b: R) {
+operator R.!=(a: R(?), b: R(?)) {
   return || reduce (a.a != b.a);
 }
 

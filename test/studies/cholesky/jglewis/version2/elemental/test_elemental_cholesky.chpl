@@ -22,7 +22,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
-    const mat_dom : domain (2) dmapped Cyclic ( startIdx = MatIdx.low )
+    const mat_dom : domain (2) dmapped cyclicDist ( startIdx = MatIdx.low )
       = MatIdx;
 
     const distribution_type = "cyclic";
@@ -60,7 +60,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
     A = 0.0;
 
-    forall (i,j) in mat_dom do
+    forall (i,j) in mat_dom with (ref A) do
       A (i,j) = + reduce (  [k in mat_dom.dim (0) ] 
     			    B (i, k) * B (j, k) );
 

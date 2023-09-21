@@ -10,8 +10,6 @@ release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
 release/examples/benchmarks/hpcc/ptrans.graph
-release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -37,8 +35,6 @@ studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/ptrans.graph
-release/examples/benchmarks/hpcc/fft.graph
-release/examples/benchmarks/hpcc/hpl.graph
 release/examples/benchmarks/lcals/LCALS-raw-long.graph
 release/examples/benchmarks/lcals/LCALS-parallel-short.graph
 release/examples/benchmarks/lcals/LCALS-parallel-long.graph
@@ -94,17 +90,19 @@ users/npadmana/twopt/twopt-paircount.graph
 studies/jacobi/jacobi.graph
 library/standard/List/perf/listBenchmark1.graph
 # suite: HPC Challenge
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
+studies/hpcc/FFT/fft.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
 release/examples/benchmarks/hpcc/stream-ep_performance.graph
 release/examples/benchmarks/hpcc/ptrans_performance.graph
-release/examples/benchmarks/hpcc/fft_performance.graph
-release/examples/benchmarks/hpcc/hpl_performance.graph
 studies/hpcc/STREAM_study_performance.graph
+studies/hpcc/FFT/fft_performance.graph
+studies/hpcc/HPL/hpl_performance.graph
 studies/ssca2/main/performance.graph
 # suite: Proxy apps
 studies/ssca2/main/SSCA2_main.graph
@@ -250,7 +248,7 @@ performance/elliot/no-op.graph
 # suite: MAX_LOGICAL comparison
 npb/ep/ep.graph
 npb/ep/ep-b.graph
-release/examples/benchmarks/hpcc/hpl.graph
+studies/hpcc/HPL/hpl.graph
 studies/hpcc/STREAM_study_fragmented.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
 studies/shootout/spectral-norm/spectralnorm.graph
@@ -288,6 +286,9 @@ io/corrado/qio_buf_optimization_perf/large_binary_io.graph
 studies/colostate/Jacobi1D.graph
 studies/colostate/Jacobi2D.graph
 studies/colostate/cfd-mini.graph
+# suite: ML
+studies/ml/performance/mnist_cnn.graph
+studies/ml/performance/xor_mlp.graph
 # suite: Nikhil Padmanabhan
 users/npadmana/twopt/twopt-buildtrees.graph
 users/npadmana/twopt/twopt-paircount.graph

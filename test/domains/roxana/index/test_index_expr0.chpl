@@ -13,6 +13,6 @@ var iD : index(D);
 
 //writeln("A:\n", A);
 
-[i in D] A(i) = 2;
+[i in D with (ref A)] A(i) = 2;
 
 writeln("A:\n", A);

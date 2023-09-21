@@ -4,7 +4,7 @@ param M = 10;
 
 var D: domain(1) = {1..M};
 var I: [D] int;
-forall i in D do {
+forall i in D with (ref I) do {
   I(i) = i;
 }
 writeln( "\nI[D] = ", I);
@@ -13,7 +13,7 @@ writeln( "max reduce I[D] = ", max reduce I);
 writeln( "+ reduce I[D] = ", + reduce I);
 writeln( "* reduce I[D] = ", * reduce I);
 
-forall i in D do {
+forall i in D with (ref I) do {
   I(i) = -1 * i;
 }
 writeln( "\nI[D] = ", I);
@@ -38,7 +38,7 @@ writeln( "+ reduce I[D] = ", + reduce I);
 writeln( "* reduce I[D] = ", * reduce I);
 
 var UI: [D] int;
-forall i in D do {
+forall i in D with (ref UI) do {
   UI(i) = i;
 }
 writeln( "\nUI[D] = ", UI);

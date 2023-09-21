@@ -1,0 +1,20 @@
+BlockDom(1,int(64),one,unmanaged DefaultDist)
+blockDist(1,int(64),unmanaged DefaultDist)
+true
+
+SparseBlockDom(1,int(64),BlockDom(1,int(64),one,unmanaged DefaultDist),unmanaged DefaultDist,one)
+blockDist(1,int(64),unmanaged DefaultDist)
+true
+
+SparseBlockDom(1,int(64),BlockDom(1,int(64),one,unmanaged DefaultDist),unmanaged DefaultDist,one)
+blockDist(1,int(64),unmanaged DefaultDist)
+true
+
+BlockDom(1,int(64),one,unmanaged DefaultDist)
+blockDist(1,int(64),unmanaged DefaultDist)
+true
+
+SparseBlockDom(1,int(64),BlockDom(1,int(64),one,unmanaged DefaultDist),unmanaged DefaultDist,one)
+blockDist(1,int(64),unmanaged DefaultDist)
+true
+

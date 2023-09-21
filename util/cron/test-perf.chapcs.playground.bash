@@ -26,10 +26,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 
 # Test perf of IO serializers branch
-GITHUB_USER=mppf
-GITHUB_BRANCH=remove-llvm-lifetime
-SHORT_NAME=remove-llvm-lifetime
-START_DATE=06/07/23
+GITHUB_USER=e-kayrakli
+GITHUB_BRANCH=inline-tuple-access
+SHORT_NAME=inline-tuple-access
+START_DATE=07/19/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

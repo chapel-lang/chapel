@@ -54,6 +54,13 @@
 #include "llvm/IR/Module.h"
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
+
+#include "llvm/IR/DiagnosticInfo.h"
+#include "llvm/IR/DiagnosticPrinter.h"
+#include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/Remarks/RemarkSerializer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Remarks/RemarkStreamer.h"
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -279,7 +286,8 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #endif
 
 static void
-genGlobalInt(const char* cname, int value, bool isHeader) {
+genGlobalInt(const char* cname, int value, bool isHeader,
+             bool isConstant=true) {
   GenInfo* info = gGenInfo;
   if( info->cfile ) {
     if(isHeader)
@@ -292,7 +300,7 @@ genGlobalInt(const char* cname, int value, bool isHeader) {
         info->module->getOrInsertGlobal(
           cname, llvm::IntegerType::getInt32Ty(info->module->getContext())));
     globalInt->setInitializer(info->irBuilder->getInt32(value));
-    globalInt->setConstant(true);
+    globalInt->setConstant(isConstant);
     info->lvt->addGlobalValue(cname, globalInt, GEN_PTR, false, dtInt[INT_SIZE_32]);
 #endif
   }
@@ -827,9 +835,8 @@ genVirtualMethodTable(std::vector<TypeSymbol*>& types, bool isHeader) {
 static void genFilenameTable() {
   const char *name = "chpl_filenameTable";
   const char *sizeName = "chpl_filenameTableSize";
-  const char *eltType = "c_string";
+  const char *eltType = dtStringC->symbol->cname;
 
-  // Compute the element type
   GenRet cstringType = codegenTypeByName(eltType);
 
   // Construct the table elements
@@ -884,7 +891,7 @@ static void genUnwindSymbolTable(){
   // Generate the cname, Chapel name table
   {
     const char *name = "chpl_funSymTable";
-    const char *eltType = "c_string";
+    const char *eltType = dtStringC->symbol->cname;
 
     // Compute the element type
     GenRet cstringType = codegenTypeByName(eltType);
@@ -936,7 +943,7 @@ static void genUnwindSymbolTable(){
 
 static void
 genClassNames(std::vector<TypeSymbol*> & typeSymbol, bool isHeader) {
-  const char* eltType = "c_string";
+  const char* eltType = dtStringC->symbol->cname;
   const char* name = "chpl_classNames";
 
   if(isHeader) {
@@ -1170,6 +1177,14 @@ static void codegen_aggregate_def(AggregateType* ct) {
   ct->symbol->codegenDef();
 }
 
+static void retrieveCompileCommand() {
+  fileinfo* file = openTmpFile(compileCommandFilename, "r");
+  char buf[4096];
+  INT_ASSERT(fgets(buf, sizeof(buf), file->fptr));
+  compileCommand = astr(buf);
+  closefile(file);
+}
+
 static void genConfigGlobalsAndAbout() {
   GenInfo* info = gGenInfo;
 
@@ -1177,6 +1192,11 @@ static void genConfigGlobalsAndAbout() {
     genComment("Compilation Info");
     fprintf(info->cfile, "\n#include <stdio.h>");
     fprintf(info->cfile, "\n#include \"chpltypes.h\"\n\n");
+  }
+
+  // if we are running as compiler-driver, retrieve compile command saved to tmp
+  if (!fDriverDoMonolithic) {
+    retrieveCompileCommand();
   }
 
   genGlobalString("chpl_compileCommand", compileCommand);
@@ -2027,6 +2047,20 @@ static void codegen_header_addons() {
   }
 }
 
+#ifdef HAVE_LLVM
+// this is used in passing string arguments to config variable handlers in the
+// runtime. We can expand/copy it to C backend, but that doesn't seem to be too
+// repetitive as of today.
+static llvm::Value* genStringArg(const char* str) {
+  GenInfo* info = gGenInfo;
+  GenRet gen = new_CStringSymbol(str)->codegen();
+  llvm::Type* eltType = tryComputingPointerElementType(gen.val);
+  INT_ASSERT(eltType); // it should have been a global variable
+  return info->irBuilder->CreateLoad(eltType, gen.val);
+}
+#endif
+
+
 static void
 codegen_config() {
   GenInfo* info = gGenInfo;
@@ -2045,6 +2079,7 @@ codegen_config() {
 
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
+    genGlobalInt("warnUnstable", fWarnUnstable, false);
 
     fprintf(outfile, "void CreateConfigVarTable(void) {\n");
     fprintf(outfile, "initConfigVarTable();\n");
@@ -2068,7 +2103,11 @@ codegen_config() {
         fprintf(outfile,", /* private = */ %d", var->hasFlag(FLAG_PRIVATE));
         fprintf(outfile,", /* deprecated = */ %d",
                 var->hasFlag(FLAG_DEPRECATED));
-        fprintf(outfile,", \"%s\");\n", var->getDeprecationMsg());
+        fprintf(outfile,", \"%s\"\n", var->getDeprecationMsg());
+        fprintf(outfile,", /* unstable = */ %d",
+                var->hasFlag(FLAG_UNSTABLE));
+        fprintf(outfile,", \"%s\"\n", var->getUnstableMsg());
+        fprintf(outfile,");\n");
 
       }
     }
@@ -2086,6 +2125,7 @@ codegen_config() {
     llvm::Function *createConfigFunc;
     genGlobalInt("mainHasArgs", mainHasArgs, false);
     genGlobalInt("mainPreserveDelimiter", mainPreserveDelimiter, false);
+    genGlobalInt("warnUnstable", fWarnUnstable, false);
     if((createConfigFunc = getFunctionLLVM("CreateConfigVarTable"))) {
       createConfigType = createConfigFunc->getFunctionType();
     }
@@ -2110,7 +2150,7 @@ codegen_config() {
 
     forv_expanding_Vec(VarSymbol, var, gVarSymbols) {
       if (var->hasFlag(FLAG_CONFIG) && !var->isType()) {
-        std::vector<llvm::Value *> args (6);
+        std::vector<llvm::Value *> args (8);
         {
           GenRet gen = new_CStringSymbol(var->name)->codegen();
           llvm::Type* eltType = tryComputingPointerElementType(gen.val);
@@ -2128,35 +2168,20 @@ codegen_config() {
         if (type->symbol->hasFlag(FLAG_WIDE_CLASS)) {
           type = type->getField("addr")->type;
         }
-        {
-          GenRet gen = new_CStringSymbol(type->symbol->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[1] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[1] = genStringArg(type->symbol->name);
 
         if (var->getModule()->modTag == MOD_INTERNAL) {
-          GenRet gen = new_CStringSymbol("Built-in")->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg("Built-in");
         }
         else {
-          GenRet gen = new_CStringSymbol(var->getModule()->name)->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[2] = info->irBuilder->CreateLoad(eltType, gen.val);
+          args[2] = genStringArg(var->getModule()->name);
         }
-
         args[3] = info->irBuilder->getInt32(var->hasFlag(FLAG_PRIVATE));
-
         args[4] = info->irBuilder->getInt32(var->hasFlag(FLAG_DEPRECATED));
-        {
-          GenRet gen = new_CStringSymbol(var->getDeprecationMsg())->codegen();
-          llvm::Type* eltType = tryComputingPointerElementType(gen.val);
-          INT_ASSERT(eltType); // it should have been a global variable
-          args[5] = info->irBuilder->CreateLoad(eltType, gen.val);
-        }
+        args[5] = genStringArg(var->getDeprecationMsg());
+        args[6] = info->irBuilder->getInt32(var->hasFlag(FLAG_UNSTABLE));
+        args[7] = genStringArg(var->getUnstableMsg());
+
         info->irBuilder->CreateCall(installConfigFunc, args);
       }
     }
@@ -2305,14 +2330,49 @@ static const char* getClangBuiltinWrappedName(const char* name)
 }
 #endif
 
-// Set the executable name to the name of the file containing the
-// main module (minus its path and extension) if it isn't set
-// already.  If in library mode, set the name of the header file as well.
-static void setupDefaultFilenames() {
-  if (executableFilename[0] == '\0') {
+// Gets the name of the main module as an astr.
+// If we are not in a backend-only run, the result will be stored in the tmpdir.
+// If we are in a backend-only run, we cannot calculate the main module and will
+// expect a file in the tmpdir to have that information available to retrieve.
+static const char* getMainModuleFilename() {
+  static const char* mainModTmpFilename = "mainmodpath.tmp";
+
+  const char* filename;
+  fileinfo* mainModTmpFile;
+  if (fDriverPhaseTwo) {
+    // we are in the backend, retrieve saved result from tmpdir
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
+    char nameReadIn[FILENAME_MAX];
+    INT_ASSERT(fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr));
+    filename = astr(nameReadIn);
+  } else {
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename();
-    const char* filename = stripdirectories(mainModFilename);
+    const char* strippedFilename = stripdirectories(mainModFilename);
+    // stripdirectories returns an astr, so pointer is fine
+    filename = strippedFilename;
+
+    // save result in tmp file for future usage
+    mainModTmpFile = openTmpFile(mainModTmpFilename, "w");
+    fprintf(mainModTmpFile->fptr, "%s", filename);
+  }
+
+  closefile(mainModTmpFile);
+  return filename;
+}
+
+
+// Set the executable name to the name of the file containing the
+// main module (minus its path and extension) if it isn't set
+// already. If in library mode, set the name of the header file as well.
+void setupDefaultFilenames() {
+  if (executableFilename[0] == '\0') {
+    // Retrieve module for use in errors in phase one. It can't be retrieved in
+    // phase two, but that's not a problem because the errors would have already
+    // been hit (and are fatal) in phase one.
+    ModuleSymbol* mainMod =
+        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
+    const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
     // and just the main module name in normal compilation.
@@ -2329,6 +2389,9 @@ static void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
@@ -2346,6 +2409,9 @@ static void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
+          INT_ASSERT(!fDriverPhaseTwo &&
+                     "encountered error in phase two that should only be "
+                     "reachable in phase one");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     pythonModulename);
@@ -2366,6 +2432,9 @@ static void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
+      INT_ASSERT(!fDriverPhaseTwo &&
+                 "encountered error in phase two that should only be "
+                 "reachable in phase one");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
@@ -2504,18 +2573,132 @@ static void embedGpuCode() {
 }
 
 static void codegenGpuGlobals() {
-  genGlobalInt("chpl_nodeID", 0, false);
+  genGlobalInt("chpl_nodeID", -1, false, false);
+}
+#endif
+
+#ifdef HAVE_LLVM
+// Implements the RemarkSerializer interface for LLVM
+// For each remark to be outputted (after filtering for pass names), `emit()` is called
+// We can then do further filtering and  control how the remarks are printed
+struct ChapelRemarkSerializer : public llvm::remarks::RemarkSerializer {
+  ChapelRemarkSerializer(llvm::raw_ostream& OS)
+      : llvm::remarks::RemarkSerializer(
+            llvm::remarks::Format::Unknown, OS,
+            llvm::remarks::SerializerMode::Standalone) {}
+
+  void emit(const llvm::remarks::Remark& Remark) override {
+
+    llvm::StringRef funcCName = Remark.FunctionName;
+    const char* astr_funcCName = astr(funcCName.str());
+    auto funcIt = gGenInfo->functionCNameAstrToSymbol.find(astr_funcCName);
+    FnSymbol* fn = nullptr;
+    if (funcIt != gGenInfo->functionCNameAstrToSymbol.end()) {
+      fn = funcIt->second;
+    }
+
+    // TODO: if the function was not in `functionCNameAstrToSymbol`, then `fn`
+    // could still be a nullptr. In non-developer runs this will get filtered
+    // out, but in a developer run it would be nice to be able to get better
+    // source information for these functions
+
+    // if fn is still nullptr and not developer, skip it
+    if(fn == nullptr && !developer) return;
+
+    // if not developer, skip all non user functions
+    if (fn != nullptr && !developer) {
+        auto mod = fn->getModule();
+        if(mod == nullptr || mod->modTag != MOD_USER)
+        return;
+    }
+    // if we declared any filter functions, we need to filter based on them
+    if(fn != nullptr && !llvmRemarksFunctionsToShow.empty()) {
+      bool shouldSkip = true;
+      for (auto filterFuncName: llvmRemarksFunctionsToShow) {
+        if(filterFuncName == std::string(fn->name)) shouldSkip = false;
+      }
+      if(shouldSkip) return;
+    }
+
+    if (auto Loc = Remark.Loc) {
+      OS << Loc->SourceFilePath << ":" << Loc->SourceLine << ":" << Loc->SourceColumn;
+    } else {
+      // no file location available, deduce a best guess from FunctionName if possible
+      const char* filename = fn ? cleanFilename(fn->fname()) : nullptr;
+      int linenum = fn ? fn->linenum() : 0;
+      if(filename) OS << filename << ":" << linenum << ":0";
+      else OS << Remark.FunctionName;
+    }
+    OS << ": opt " << typeToString(Remark.RemarkType);
+    OS << " for '" << Remark.PassName << "'";
+    OS << " - " << Remark.getArgsAsMsg() << "\n";
+  }
+  // just use the YAML (default) meta serializer, which gets encoded in the asm
+  std::unique_ptr<llvm::remarks::MetaSerializer> metaSerializer(
+      llvm::raw_ostream& OS,
+      chpl::optional<llvm::StringRef> ExternalFilename = chpl::empty) override {
+    return std::make_unique<llvm::remarks::YAMLMetaSerializer>(
+        OS, ExternalFilename);
+  }
+  private:
+  std::string typeToString(llvm::remarks::Type t) {
+    switch (t) {
+      case llvm::remarks::Type::Passed:           return "passed";
+      case llvm::remarks::Type::Missed:           return "missed";
+      case llvm::remarks::Type::Analysis:
+      case llvm::remarks::Type::AnalysisFPCommute:
+      case llvm::remarks::Type::AnalysisAliasing: return "analysis";
+      case llvm::remarks::Type::Failure:          return "failure";
+      default:                                    return "unknown";
+    }
+  }
+};
+
+// based on `llvm::setupLLVMOptimizationRemarks`
+static llvm::Error setupRemarks(llvm::LLVMContext& Context,
+                                llvm::raw_ostream& OS,
+                                llvm::StringRef RemarksPasses) {
+  std::unique_ptr<llvm::remarks::RemarkSerializer> RemarkSerializer =
+      std::make_unique<ChapelRemarkSerializer>(OS);
+
+  // Create the main remark streamer.
+  Context.setMainRemarkStreamer(std::make_unique<llvm::remarks::RemarkStreamer>(
+      std::move(RemarkSerializer)));
+
+  // Create LLVM's optimization remarks streamer.
+  Context.setLLVMRemarkStreamer(std::make_unique<llvm::LLVMRemarkStreamer>(
+      *Context.getMainRemarkStreamer()));
+
+  if (!RemarksPasses.empty())
+    if (llvm::Error E = Context.getMainRemarkStreamer()->setFilter(RemarksPasses))
+      return llvm::make_error<llvm::LLVMRemarkSetupPatternError>(std::move(E));
+
+  return llvm::Error::success();
+}
+
+static bool shouldShowLLVMRemarks() {
+  return !llvmRemarksFilters.empty() || !llvmRemarksFunctionsToShow.empty();
 }
 #endif
 
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
-  // Initialize the global gGenInfo for C code generation.
-  gGenInfo = new GenInfo();
+  initializeGenInfo();
 
   if (fMultiLocaleInterop) {
     codegenMultiLocaleInteropWrappers();
   }
+
+#ifdef HAVE_LLVM
+  if (fLlvmCodegen) {
+    if(shouldShowLLVMRemarks()) {
+      auto err = setupRemarks(gGenInfo->llvmContext, llvm::outs(), llvmRemarksFilters);
+      if (err) {
+        USR_FATAL("failed to add optimization remarks reporting");
+      }
+    }
+  }
+#endif
 
   if (fLlvmCodegen) {
 #ifndef HAVE_LLVM
@@ -2772,6 +2955,10 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
+  // makeBinary shouldn't run in a phase-one invocation.
+  // (Unless we're doing GPU codegen, which currently happens in phase one.)
+  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
+
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
    makeBinaryLLVM();
@@ -2811,9 +2998,7 @@ GenInfo::GenInfo()
              noAliasScopes(),
              noAliasScopeLists(),
              noAliasLists(),
-             globalToWideInfo(),
-             FPM_postgen(nullptr),
-             clangInfo(nullptr)
+             globalToWideInfo()
 #endif
 {
 #ifdef LLVM_NO_OPAQUE_POINTERS
@@ -2821,6 +3006,11 @@ GenInfo::GenInfo()
   llvmContext.setOpaquePointers(false);
 #endif
 #endif
+}
+
+void initializeGenInfo(void) {
+  assert(!gGenInfo && "tried to initialize GenInfo but it already exists");
+  gGenInfo = new GenInfo();
 }
 
 std::string numToString(int64_t num)

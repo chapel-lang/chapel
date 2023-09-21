@@ -10,8 +10,8 @@ var C: [1..n, 1..n] arr33c;
 var D: [1..n, 1..n] 3*vec3;
 var F: [1..n, 1..n] 3*(3*real);
 
-forall (i,j) in {1..n, 1..n} {
-  forall (x,y) in {0..2, 0..2} {
+forall (i,j) in {1..n, 1..n} with (ref A, ref C, ref D, ref F) {
+  forall (x,y) in {0..2, 0..2} with (ref A, ref C, ref D, ref F) {
     A(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
     C(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;
     D(i,j)(x)(y) = (i-1)*9*n + (j-1)*9 + x*3 + y + 1;

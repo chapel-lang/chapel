@@ -25,6 +25,8 @@ module ExplicitRefCount {
 
     var refcnt: atomic int;
 
+    proc init() {}
+
     /*
       Increment the reference count and return the reference count value before
       the increment operation.

@@ -66,6 +66,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <sstream>
+#include <cstring>
 
 #include <inttypes.h>
 #include <stdint.h>
@@ -87,6 +88,7 @@
 // these are sets of astrs
 static std::set<const char*> llvmPrintIrNames;
 static std::set<const char*> llvmPrintIrCNames;
+static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
 llvmStageNum_t llvmPrintIrStageNum = llvmStageNum::NOPRINT;
 
@@ -192,6 +194,40 @@ void completePrintLlvmIrStage(llvmStageNum_t numStage) {
 }
 
 
+// If running in compiler-driver mode, save cnames to print IR for to disk.
+// This is so that handlePrintAsm can access them later from phase two, when
+// we don't have a way to determine name->cname correspondence.
+static void savePrintIrCNamesIfNeeded() {
+  if (fDriverPhaseOne) {
+    fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "w");
+    for (const auto& cname : llvmPrintIrCNames) {
+      fprintf(cnamesToPrintFile->fptr, "%s\n", cname);
+    }
+    closefile(cnamesToPrintFile);
+  }
+}
+
+void restorePrintIrCNames() {
+  assert(llvmPrintIrCNames.empty() &&
+         "tried to restore list of cnames to print from disk, but we already "
+         "have them in memory");
+
+  fileinfo* cnamesToPrintFile = openTmpFile(cnamesToPrintFilename, "r");
+
+  char cnameBuf[4096];
+  while (fgets(cnameBuf, sizeof(cnameBuf), cnamesToPrintFile->fptr)) {
+    // remove trailing newline from fgets
+    // using strlen here is fine because fgets guarantees null termination
+    size_t len = strlen(cnameBuf);
+    assert(cnameBuf[len-1] == '\n' && "stored cname exceeds maximum length");
+    cnameBuf[--len] = '\0';
+
+    addCNameToPrintLlvmIr(cnameBuf);
+  }
+
+  closefile(cnamesToPrintFile);
+}
+
 void preparePrintLlvmIrForCodegen() {
   if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
     return;
@@ -228,6 +264,8 @@ void preparePrintLlvmIrForCodegen() {
       }
     }
   } while (changed);
+
+  savePrintIrCNamesIfNeeded();
 }
 
 /******************************** | *********************************
@@ -266,24 +304,8 @@ llvm::Value* codegenImmediateLLVM(Immediate* i)
     case NUM_KIND_BOOL:
       switch(i->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           ret = llvm::ConstantInt::get(
               llvm::Type::getInt8Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_16:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt16Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_32:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt32Ty(info->module->getContext()),
-              i->bool_value());
-          break;
-        case BOOL_SIZE_64:
-          ret = llvm::ConstantInt::get(
-              llvm::Type::getInt64Ty(info->module->getContext()),
               i->bool_value());
           break;
       }
@@ -432,17 +454,7 @@ GenRet VarSymbol::codegenVarSymbol(bool lhsInSetReference) {
         const char* castString = "(";
         switch (immediate->num_index) {
         case BOOL_SIZE_SYS:
-        case BOOL_SIZE_8:
           castString = "UINT8(";
-          break;
-        case BOOL_SIZE_16:
-          castString = "UINT16(";
-          break;
-        case BOOL_SIZE_32:
-          castString = "UINT32(";
-          break;
-        case BOOL_SIZE_64:
-          castString = "UINT64(";
           break;
         default:
           INT_FATAL("Unexpected immediate->num_index: %d\n", immediate->num_index);
@@ -971,16 +983,9 @@ void VarSymbol::codegenDef() {
     llvm::AllocaInst *varAlloca = createVarLLVM(varType, cname);
 
     // Update the alignment if necessary
-#if HAVE_LLVM_VER >= 100
-    if (alignment.hasValue()) {
-      varAlloca->setAlignment(alignment.getValue());
+    if (alignment) {
+      varAlloca->setAlignment(*alignment);
     }
-#else
-    if (alignment > 1) {
-      varAlloca->setAlignment(alignment);
-    }
-#endif
-
 
     info->lvt->addValue(cname, varAlloca, GEN_PTR, ! is_signed(type));
 
@@ -1033,7 +1038,11 @@ bool ArgSymbol::requiresCPtr(void) {
 static Type* getArgSymbolCodegenType(ArgSymbol* arg) {
   QualifiedType q = arg->qualType();
   Type* useType = q.type();
-
+  // TODO: this is a hack to make python module generation work by substituting
+  // `const char *` instead of `int8_t *` or `uint8_t *` in the exported header
+  if (isCPtrConstChar(useType)) {
+    return dtStringC;
+  }
   if (q.isRef() && !q.isRefType())
     useType = getOrMakeRefTypeDuringCodegen(useType);
 
@@ -1146,8 +1155,12 @@ static std::string getFortranTypeName(Type* type, Symbol* sym) {
 
   if (typeName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string cTypeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        cTypeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran type generating interface for C type: %s", cTypeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;
@@ -1162,8 +1175,12 @@ static std::string getFortranKindName(Type* type, Symbol* sym) {
 
   if (kindName.empty()) {
     if (warnedSymbols.count(sym) == 0) {
+      std::string typeName = type->symbol->cname;
+      if (type->symbol->type == dtStringC) {
+        typeName = "c_string";
+      }
       // TODO: Maybe issue an error instead?
-      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", type->symbol->cname);
+      USR_WARN(sym->defPoint, "Unknown Fortran KIND generating interface for C type: %s", typeName.c_str());
       warnedSymbols.insert(sym);
     }
     return type->symbol->cname;
@@ -1447,7 +1464,7 @@ void TypeSymbol::codegenMetadata() {
 #ifdef HAVE_LLVM
   // Don't do anything if we've already visited this type,
   // or the type is void so we don't need metadata.
-  if (llvmTbaaTypeDescriptor || type == dtNothing) return;
+  if (llvmTbaaTypeDescriptor || type == dtNothing || type == dtVoid) return;
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info->tbaaRootNode);
@@ -2511,8 +2528,6 @@ void FnSymbol::codegenDef() {
 
     llvm::IRBuilder<>* irBuilder = info->irBuilder;
     const llvm::DataLayout& layout = info->module->getDataLayout();
-    llvm::LLVMContext &ctx = info->llvmContext;
-
     unsigned int stackSpace = layout.getAllocaAddrSpace();
 
     func = getFunctionLLVM(cname);
@@ -2695,8 +2710,7 @@ void FnSymbol::codegenDef() {
             if (srcSize <= dstSize) {
               storeAdr = irBuilder->CreatePointerCast(ptr, coercePtrTy);
             } else {
-              storeAdr = makeAllocaAndLifetimeStart(irBuilder, layout, ctx,
-                                                    sTy, "coerce");
+              storeAdr = createAllocaInFunctionEntry(irBuilder, sTy, "coerce");
             }
 
             unsigned nElts = sTy->getNumElements();
@@ -2840,7 +2854,7 @@ void FnSymbol::codegenDef() {
 
     // (note, in particular, the default pass manager's
     //  populateFunctionPassManager does not include vectorization)
-    info->FPM_postgen->run(*func);
+    simplifyFunction(func);
 #endif
   }
 

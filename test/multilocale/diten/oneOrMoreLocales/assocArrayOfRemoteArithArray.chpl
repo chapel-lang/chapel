@@ -8,8 +8,8 @@ proc main {
   // A lives entirely on Locales(0).
   var A: [D] [1..size] real;
   sync {
-    [loc in D] begin on loc {
-      [i in 1..size]
+    [loc in D with (ref A)] begin with (ref A) on loc {
+      [i in 1..size with (ref A)]
         A(loc)(i) = loc.id + i / 10.0;
     }
   }

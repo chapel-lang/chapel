@@ -4,8 +4,8 @@ use IO;
 record R {
   var x : int;
 
-  proc writeThis(f) {
-    f.write("writeThis: ", x);
+  proc writeThis(writer) {
+    writer.write("writeThis: ", x);
   }
 }
 

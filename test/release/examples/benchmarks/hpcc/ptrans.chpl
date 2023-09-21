@@ -63,20 +63,20 @@ proc main() {
   // Create Block-Cyclic distributions for both the Matrix and its
   // transpose:
   //
-  const MatrixDist = new unmanaged BlockCyclic(startIdx=(1,1),
+  const MatrixDist = new blockCycDist(startIdx=(1,1),
                                      blocksize=(rowBlkSize, colBlkSize));
 
-  const TransposeDist = new unmanaged BlockCyclic(startIdx=(1,1),
+  const TransposeDist = new blockCycDist(startIdx=(1,1),
                                         blocksize=(colBlkSize, rowBlkSize));
 
   //
   // Declare domains (index sets) for the Matrix and its transpose
   // using the distributions above:
   //
-  const MatrixDom     : domain(2) dmapped new dmap(MatrixDist) 
+  const MatrixDom     : domain(2) dmapped MatrixDist
                       = {1..numrows, 1..numcols},
 
-        TransposeDom  : domain(2) dmapped new dmap(TransposeDist) 
+        TransposeDom  : domain(2) dmapped TransposeDist
                        = {1..numcols, 1..numrows};
 
   //
@@ -94,15 +94,15 @@ proc main() {
   const startTime = timeSinceEpoch().totalSeconds();
     
   if (beta == 1.0) then
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] += A[j,i];
 
   else if (beta == 0.0) then
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] = A[j,i];
 
   else
-    forall (i,j) in TransposeDom do
+    forall (i,j) in TransposeDom with (ref C) do
       C[i,j] = beta * C[i,j]  +  A[j,i];
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;
@@ -131,11 +131,11 @@ proc printConfiguration() {
 // We substitute less expensive test matrices that are still likely
 // to detect any addressing errors.
 //
-proc initArrays(A, C) {
-  forall (i,j) in A.domain do
+proc initArrays(ref A, ref C) {
+  forall (i,j) in A.domain with (ref A) do
     A[i,j] = erf(i:eltType) * cos(j:eltType);
 
-  forall (i,j) in C.domain do
+  forall (i,j) in C.domain with (ref C) do
     C[i,j] = sin(j:eltType) * cbrt(i:eltType);
 
   const norm_A = sqrt( + reduce A**2 ),

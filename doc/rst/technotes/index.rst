@@ -17,13 +17,14 @@ Base Language Features
    Associative Set Operations <sets>
    Avoiding Array Element Initialization with noinit <noinit>
    Error Handling Modes and Prototype Modules <errorHandling>
-   First-class Functions in Chapel <firstClassFns>
+   First-class Procedures in Chapel <firstClassProcedures>
    Including Sub-Modules from Separate Files <module_include>
    main() Functions <main>
    Module Search Paths <module_search>
    Operator Methods <operatorMethods>
    The 'manage' Statement <manage>
    Attributes <attributes>
+   Interfaces <interfaces>
 
 Initializers and Generic Programming
 ------------------------------------
@@ -79,6 +80,7 @@ Compiler Features
    Checking for Nil Dereferences <nilChecking>
    Checking Overload Sets <overloadSets>
    Checking Variable Lifetimes <lifetimeChecking>
+   Compiler Driver Mode <driver>
    LLVM Support <llvm>
    Variables to Detect Compilation Configuration <globalvars>
 

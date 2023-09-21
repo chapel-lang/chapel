@@ -52,7 +52,7 @@ module Rosslyn
     }
 
 
-    class BenchmarkFactory
+    class BenchmarkFactory : writeSerializable
     {
         //abstract
         proc getInstance() : unmanaged Benchmark
@@ -63,7 +63,7 @@ module Rosslyn
         }
 
 
-        proc writeThis(w) throws
+        override proc serialize(writer, ref serializer) throws
         {
             assert(false,"BenchmarkFactory.writeThis() should be",
                          "overridden in the subclass");

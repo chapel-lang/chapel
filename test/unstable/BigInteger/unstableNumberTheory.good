@@ -1,0 +1,46 @@
+unstableNumberTheory.chpl:6: warning: nextPrime is unstable and may change in the future
+unstableNumberTheory.chpl:12: warning: lucNum is unstable and may change in the future
+unstableNumberTheory.chpl:19: warning: lucNum2 is unstable and may change in the future
+unstableNumberTheory.chpl:26: warning: jacobi is unstable and may change in the future
+unstableNumberTheory.chpl:33: warning: legendre is unstable and may change in the future
+unstableNumberTheory.chpl:40: warning: kronecker is unstable and may change in the future
+unstableNumberTheory.chpl:42: warning: kronecker is unstable and may change in the future
+unstableNumberTheory.chpl:44: warning: kronecker is unstable and may change in the future
+unstableNumberTheory.chpl:46: warning: kronecker is unstable and may change in the future
+unstableNumberTheory.chpl:48: warning: kronecker is unstable and may change in the future
+unstableNumberTheory.chpl:56: warning: gcd is unstable and may change in the future
+unstableNumberTheory.chpl:58: warning: gcd is unstable and may change in the future
+unstableNumberTheory.chpl:60: warning: gcd is unstable and may change in the future
+unstableNumberTheory.chpl:62: warning: gcd is unstable and may change in the future
+unstableNumberTheory.chpl:70: warning: lcm is unstable and may change in the future
+unstableNumberTheory.chpl:72: warning: lcm is unstable and may change in the future
+unstableNumberTheory.chpl:74: warning: lcm is unstable and may change in the future
+unstableNumberTheory.chpl:81: warning: fac is unstable and may change in the future
+unstableNumberTheory.chpl:88: warning: bin is unstable and may change in the future
+unstableNumberTheory.chpl:90: warning: bin is unstable and may change in the future
+unstableNumberTheory.chpl:97: warning: fib is unstable and may change in the future
+unstableNumberTheory.chpl:104: warning: fib2 is unstable and may change in the future
+unstableNumberTheory.chpl:110: warning: bigint.probablyPrime is unstable and may change in the future
+nextPrime 19
+lucNum 11
+lucNum2 (29, 18)
+jacobi 1
+legendre -1
+kronecker 0
+kronecker 0
+kronecker 0
+kronecker 1
+kronecker 1
+gcd 6
+gcd 3
+gcd 18
+gcd (6, 2, -1)
+lcm 30
+lcm 30
+lcm 30
+fac 720
+bin 0
+bin 126
+fib 13
+fib2 (144, 89)
+probablyPrime notPrime

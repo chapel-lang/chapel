@@ -38,7 +38,7 @@ writeln("Initial Grid");
 // reached, max k generations.
 //
 for i in 1..k {
-  forall (i,j) in D {
+  forall (i,j) in D with (ref NextGrid) {
     const neighbors =
       Grid(i-1,j-1) + Grid(i-1,j) + Grid(i-1,j+1) +
       Grid(i  ,j-1) +               Grid(i  ,j+1) +

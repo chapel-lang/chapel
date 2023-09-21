@@ -471,6 +471,86 @@ static void test17() {
   assert(tt->elementType(2).type()->isIntType());
 }
 
+static void argHelper(std::string formal, std::string actual,
+                           bool shouldResolve) {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string program = R"""(
+    operator =(ref lhs: _tuple, const ref rhs: _tuple) {}
+
+    proc foo(arg: )""" + formal + R"""() {
+      return arg;
+    }
+
+    var actual = )""" + actual + R"""(;
+    var x = foo(actual);
+    )""";
+
+  auto m = parseModule(context, std::move(program));
+  auto x = findVariable(m, "x");
+  auto a = findVariable(m ,"actual");
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  if (shouldResolve) {
+    // 'x' and 'actual' should have the same type
+    auto xt = rr.byAst(x).type();
+    auto at = rr.byAst(a).type();
+    assert(xt.isUnknown() == false);
+    assert(xt.isErroneousType() == false);
+    assert(xt.hasTypePtr());
+    assert(xt.type()->isTupleType());
+    assert(xt.type() == at.type());
+
+    auto t = xt.type()->toTupleType();
+    std::stringstream str;
+    t->stringify(str, chpl::StringifyKind::CHPL_SYNTAX);
+    printf("  success: passing %s to %s\n", str.str().c_str(), formal.c_str());
+  } else {
+    std::string msg = "Cannot resolve call to 'foo': no matching candidates";
+    assert(guard.numErrors() == 1);
+    assert(guard.error(0)->message() == msg);
+    guard.clearErrors();
+    printf("  success: cannot pass %s to %s\n", actual.c_str(), formal.c_str());
+  }
+}
+
+static void testTupleGeneric() {
+  printf("testTupleGeneric\n");
+
+  // Basic all-generic cases
+  argHelper("(?,)", "(5,)", true);
+  argHelper("(?,)", "('hello',)", true);
+  argHelper("(?,?)", "(5, 1.0)", true);
+  argHelper("(?,?)", "(5, 'hello')", true);
+  argHelper("(?,?,?)", "(5, 1.0,'hello')", true);
+
+  // Mixed concrete and generic, still expecting to pass
+  argHelper("(int, ?)", "(5, 1.0)", true);
+  argHelper("(int, ?)", "(5, 'hello')", true);
+  argHelper("(int, ?)", "('hello', 5)", false);
+
+  argHelper("(int, ?, string)", "(5, 42.0, 'hello')", true);
+  argHelper("(int, ?, string)", "(5, 5, 'hello')", true);
+  argHelper("(int, ?, string)", "(5, 'hi', 'hello')", true);
+  argHelper("(int, ?, string)", "('hi', 42.0, 'hello')", false);
+  argHelper("(int, ?, string)", "(5, 42.0, 5)", false);
+
+  // Passing a tuples of incorrect size
+  argHelper("(int, ?)", "(5,5,5)", false);
+  argHelper("(int, ?, ?)", "(5,5)", false);
+
+  // Some 'integral' and 'numeric' tests
+  argHelper("(integral, integral)", "(5, 5)", true);
+  argHelper("(integral, integral)", "(5, 'hello')", false);
+
+  argHelper("(numeric, numeric)", "(5, 5)", true);
+  argHelper("(numeric, numeric)", "(5, 42.0)", true);
+  argHelper("(numeric, numeric)", "(5, 'hi')", false);
+}
+
 int main() {
   test1();
   test2();
@@ -489,6 +569,8 @@ int main() {
   test15();
   test16();
   test17();
+
+  testTupleGeneric();
 
   return 0;
 }

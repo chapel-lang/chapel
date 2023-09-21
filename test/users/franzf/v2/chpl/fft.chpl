@@ -33,7 +33,7 @@ THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
 OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 ******************************************************************/
 
-use omega, fft_2, fft_4, fft_8, fft_16, fft_32, fft_64, fft_128, 
+use omega, fft_2, fft_4, fft_8, fft_16, fft_32, fft_64, fft_128,
     fft_256, fft_512, fft_1024, fft_2048;
 
 proc init_fft(n : int) {
@@ -53,7 +53,7 @@ proc init_fft(n : int) {
     }
 }
 
-proc fft(n: int, Y, X) {
+proc fft(n: int, ref Y, X) {
     select n {
         when 2 do fft2(Y, X);
         when 4 do fft4(Y, X);
@@ -68,5 +68,5 @@ proc fft(n: int, Y, X) {
         when 2048 do fft2048(Y, X);
         otherwise writeln("Error: unsupported FFT size.");
     }
-   
+
 }

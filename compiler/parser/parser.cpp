@@ -885,8 +885,8 @@ static bool shouldPrintHeaderForDecl(chpl::ID declId) {
   return ret;
 }
 
-// Print out 'in function/module/initializer' etc...
-static void maybePrintErrorHeader(chpl::ID id) {
+// Print out 'In function/module/initializer' etc...
+static void maybePrintErrorHeader(chpl::Context* context, chpl::ID id) {
 
   // No ID associated with this error, so no UAST information.
   if (id.isEmpty()) return;
@@ -901,7 +901,7 @@ static void maybePrintErrorHeader(chpl::ID id) {
 
     auto& declLoc = chpl::parsing::locateId(gContext, declId);
     auto line = declLoc.firstLine();
-    auto path = declLoc.path();
+    auto path = context->adjustPathForErrorMsg(declLoc.path());
 
     fprintf(stderr, "%s:%d: In %s:\n", path.c_str(), line, declLabelStr);
 
@@ -929,7 +929,7 @@ static void dynoDisplayError(chpl::Context* context,
       fprintf(stderr, "\n");
     }
   } else {
-    maybePrintErrorHeader(id);
+    maybePrintErrorHeader(context, id);
 
     switch (err.kind()) {
       case chpl::ErrorMessage::NOTE:

@@ -183,6 +183,7 @@
   often necessary to run a small test program twice, once with that
   module present and once without it.
  */
+@unstable("The CommDiagnostics module is unstable and may change in the future")
 module CommDiagnostics
 {
   /*
@@ -319,7 +320,7 @@ module CommDiagnostics
 
       var first = true;
       c.write("(");
-      for param i in 0..<numFields(chpl_commDiagnostics) {
+      for param i in 0..<getNumFields(chpl_commDiagnostics) {
         param name = getFieldName(chpl_commDiagnostics, i);
         const val = getField(this, i);
         if val != 0 {
@@ -332,12 +333,18 @@ module CommDiagnostics
       if first then c.write("<no communication>");
       c.write(")");
     }
+
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
   };
 
   /*
     The Chapel record type inherits the comm layer definition of it.
    */
   type commDiagnostics = chpl_commDiagnostics;
+
+  commDiagnostics implements writeSerializable;
 
   private extern proc chpl_comm_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
@@ -474,7 +481,7 @@ module CommDiagnostics
     var CommDiags = getCommDiagnostics();
 
     // cache number of fields and store vector of whether field is active
-    param nFields = numFields(chpl_commDiagnostics);
+    param nFields = getNumFields(chpl_commDiagnostics);
 
     // How wide should the column be for this field?  A negative value
     // indicates an unstable field.  0 indicates that the field should

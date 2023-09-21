@@ -1,0 +1,11 @@
+===== writing: =====
+(x = 5, y = 42.0)
+--------------------
+--- !R
+x: 5
+y: 42.0
+
+====================
+uncaught SystemError: Invalid argument: reset not supported for marked channel
+  percent-q.chpl:21: thrown here
+  percent-q.chpl:21: uncaught here

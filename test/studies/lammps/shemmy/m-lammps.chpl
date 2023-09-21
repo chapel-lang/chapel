@@ -20,16 +20,16 @@ const dts:3*real = (stepSize, 0.5*stepSize, 0.5*stepSize/mass);
 const bounds:3*real = (33.5919,33.5919,33.5919);
 
 const atomsExt:domain(1) = {0..numAtoms-1};
-const atomsDist:domain(1) dmapped Block(atomsExt)=atomsExt;
+const atomsDist:domain(1) dmapped blockDist(atomsExt)=atomsExt;
 
 const locExt:domain(1) = {0..numLocales-1};
-const locDist:domain(1) dmapped Block(locExt) = locExt;
+const locDist:domain(1) dmapped blockDist(locExt) = locExt;
 
 const locGridExt:domain(2) = {0..numLocales-1,1..1};		
 const locGrid:[locGridExt] locale = reshape(Locales,locGridExt);
 
 const copyExt:domain(2) = {0..numLocales-1, 0..numAtoms-1};
-const copyDist:domain(2) dmapped Block(copyExt,locGrid) = copyExt;
+const copyDist:domain(2) dmapped blockDist(copyExt,locGrid) = copyExt;
 
 
 var   positionsLoc:[copyDist] 3*real;
@@ -42,7 +42,7 @@ var   velocities:[atomsDist] 3*real;
 var   forces:[atomsDist] 3*real;
 
 const neighborExt:domain(2) = {0..numAtoms-1,0..maxSize-1};
-const neighborDist:domain(2) dmapped Block(neighborExt,locGrid)=neighborExt;
+const neighborDist:domain(2) dmapped blockDist(neighborExt,locGrid)=neighborExt;
 var   neighbors:[neighborDist] int;
 var   membcounts:[atomsDist] int;
 
@@ -104,7 +104,7 @@ if perfTest then writeln("TIME   :",timer.elapsed());
 //writeln("LOCALES:",numLocales);
 proc computeForces()
 {
-    forall i in atomsDist
+    forall i in atomsDist with (ref forces)
     {
 	local
 	{
@@ -139,7 +139,7 @@ proc computeForce(dist2:real,d:3*real)
 
 proc updatePositions()
 { 
-    forall i in atomsDist
+    forall i in atomsDist with (ref velocities, ref positionsLoc)
     {
 	local
 	{
@@ -153,12 +153,12 @@ proc updatePositions()
 	}
     }
     
-    forall (loc,i) in copyDist
+    forall (loc,i) in copyDist with (ref needsUpdate)
     {
 	local do needsUpdate[loc,i]=true;
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref positions, ref needsUpdate)
     {
 	local 
 	{
@@ -167,7 +167,7 @@ proc updatePositions()
 	}
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref positionsLoc, ref needsUpdate)
     {
 	locks[here.id].writeEF(true);
 	for m in 0..membcounts[i]-1
@@ -185,17 +185,17 @@ proc updatePositions()
 
 proc updateNeighbors()
 {
-    forall ii in atomsDist
+    forall ii in atomsDist with (ref positions)
     {
 	local do positions[ii]=positionsLoc[here.id,ii];
     }
 
-    forall (loc,i) in copyDist
+    forall (loc,i) in copyDist with (ref positionsLoc)
     {
 	positionsLoc[loc,i]=positions[i];
     }
 
-    forall i in atomsDist
+    forall i in atomsDist with (ref neighbors, ref membcounts)
     {
 	local
 	{
@@ -213,7 +213,7 @@ proc updateNeighbors()
 			if(cnt<maxSize)
 			{
 			    neighbors[i,cnt]=j;
-			    cnt+=1;	
+			    cnt+=1;
 			}
 		    }
 		}
@@ -229,7 +229,7 @@ proc loadParticles(filename:string, p:[?D], v:[D])
 {
     use IO;
     var rawFile=open(filename, ioMode.r, ioHintSet.sequential);
-    var fileIn=rawFile.reader(iokind.dynamic,true,0.., ioHintSet.sequential);
+    var fileIn=rawFile.reader(true,0.., ioHintSet.sequential);
 
     for i in D
     {
@@ -238,7 +238,7 @@ proc loadParticles(filename:string, p:[?D], v:[D])
 	positions[i]=(p0,p1,p2);
 	velocities[i]=(v0,v1,v2);
     }
-    forall i in atomsDist
+    forall i in atomsDist with (ref positionsLoc)
     {
 	positionsLoc[here.id,i]=positions[i];
     }

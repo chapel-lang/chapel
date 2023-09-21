@@ -3,7 +3,7 @@ use MemMove;
 var n: nothing;
 var A: [1..3] real;
 var D = {1..3};
-var dist = D.dist;
+var dist = D.distribution;
 var i: int;
 var r: real;
 

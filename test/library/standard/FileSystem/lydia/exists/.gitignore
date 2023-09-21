@@ -1,0 +1,7 @@
+# Test/library/standard/FileSystem/lydia/exists ignores.
+/broken_link
+/dir
+/dir_link
+/file
+/file_link
+/going_away

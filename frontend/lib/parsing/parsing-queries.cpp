@@ -688,11 +688,19 @@ filePathIsInInternalModule(Context* context, UniqueString filePath) {
   return filePath.startsWith(prefix);
 }
 
-static bool
+bool
 filePathIsInBundledModule(Context* context, UniqueString filePath) {
   UniqueString prefix = bundledModulePath(context);
-  if (prefix.isEmpty()) return false;
-  return filePath.startsWith(prefix);
+  if (!prefix.isEmpty() && filePath.startsWith(prefix))
+    return true;
+
+  for (auto& path : prependedInternalModulePath(context))
+    if (filePath.startsWith(path)) return true;
+
+  for (auto& path : prependedStandardModulePath(context))
+    if (filePath.startsWith(path)) return true;
+
+  return false;
 }
 
 bool
@@ -713,22 +721,19 @@ filePathIsInStandardModule(Context* context, UniqueString filePath) {
 
 bool idIsInInternalModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInInternalModule(context, filePath);
 }
 
 bool idIsInBundledModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInBundledModule(context, filePath);
 }
 
 bool idIsInStandardModule(Context* context, ID id) {
   UniqueString filePath;
-  UniqueString parentSymbolPath;
-  bool found = context->filePathForId(id, filePath, parentSymbolPath);
+  bool found = context->filePathForId(id, filePath);
   return found && filePathIsInStandardModule(context, filePath);
 }
 
@@ -827,14 +832,12 @@ getIncludedSubmoduleQuery(Context* context, ID includeModuleId) {
 
   ID parentModuleId;
   UniqueString parentModulePath;
-  UniqueString parentParentSymbolPath;
   bool found = false;
   if (include != nullptr) {
     // find the ID of the module containing the 'module include'
     parentModuleId = idToParentModule(context, includeModuleId);
     // find some other information about that parent module
-    found = context->filePathForId(parentModuleId, parentModulePath,
-                                   parentParentSymbolPath);
+    found = context->filePathForId(parentModuleId, parentModulePath);
 
     // check that the computed filename matches
     std::string name1 = Builder::filenameToModulename(parentModulePath.c_str());
@@ -1402,9 +1405,53 @@ static bool isAstDeprecated(Context* context, const AstNode* ast) {
   return attr && attr->isDeprecated();
 }
 
-static bool isAstUnstable(Context* context, const AstNode* ast) {
-  auto attr = parsing::idToAttributeGroup(context, ast->id());
-  return attr && attr->isUnstable();
+static bool isUnstablePackageModule(Context* context, const ID& id) {
+  auto node = parsing::idToAst(context, id);
+  if (!node) return false;
+
+  // If the node is deprecated, no unstable warning is needed
+  if (isAstDeprecated(context, node)) return false;
+
+  bool isPackageModule = false;
+  if (node->isModule()) {
+    UniqueString path;
+    if (context->filePathForId(id, path)) {
+      path = context->adjustPathForErrorMsg(path);
+      isPackageModule = path.startsWith("$CHPL_HOME/modules/packages/");
+    }
+  }
+
+  // Some package modules may be stable, those exceptions should be encoded here
+
+  return isPackageModule;
+}
+
+static bool isIdUnstable(Context* context, const ID& id) {
+  auto attr = parsing::idToAttributeGroup(context, id);
+  return (attr && ( attr->isUnstable() || attr->hasPragma(PRAGMA_UNSTABLE) ))
+          || isUnstablePackageModule(context, id);
+}
+
+bool
+shouldWarnUnstableForPath(Context* context, UniqueString filepath) {
+  if (filePathIsInInternalModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
+
+  else if (filePathIsInBundledModule(context, filepath))
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
+
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
+}
+
+bool
+shouldWarnUnstableForId(Context* context, const ID& id) {
+  UniqueString filepath;
+  bool found = context->filePathForId(id, filepath);
+  if (found)
+    return shouldWarnUnstableForPath(context, filepath);
+  else
+    return isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE);
 }
 
 static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
@@ -1414,20 +1461,6 @@ static bool isAstCompilerGenerated(Context* context, const AstNode* ast) {
 
 static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
-}
-
-static bool
-isAstSuppressedStandardModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInStandardModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_STANDARD);
-}
-
-static bool
-isAstSuppressedInternalModule(Context* context, const AstNode* ast) {
-  if (!ast->isModule()) return false;
-  if (!idIsInInternalModule(context, ast->id())) return false;
-  return !isCompilerFlagSet(context, CompilerFlags::WARN_UNSTABLE_INTERNAL);
 }
 
 // Skip if any parent is deprecated (we want to show deprecation messages
@@ -1444,11 +1477,11 @@ shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
 // deprecated things are likely to be removed soon.
 static bool
 shouldSkipUnstableWarning(Context* context, const AstNode* ast) {
-  return isAstUnstable(context, ast)                  ||
+  return isIdUnstable(context, ast->id())             ||
          isAstDeprecated(context, ast)                ||
          isAstCompilerGenerated(context, ast)         ||
-         isAstSuppressedStandardModule(context, ast)  ||
-         isAstSuppressedInternalModule(context, ast);
+         (ast->isModule() &&
+          !shouldWarnUnstableForId(context, ast->id()));
 }
 
 static std::string
@@ -1465,30 +1498,69 @@ createDefaultUnstableMessage(Context* context, const NamedDecl* target) {
   return ret;
 }
 
+// Hack for deprecating symbols that can't be deprecated in module code for
+// whatever reason.
+static std::string hardcodedDeprecationForId(Context* context, ID idMention,
+    ID idTarget) {
+  std::string deprecationMsg;
+
+  // Time.dayOfWeek behavior change
+  {
+    if (idIsInStandardModule(context, idTarget) &&
+        idTarget.parentSymbolId(context).symbolName(context) == "Time" &&
+        idTarget.symbolName(context) == "dayOfWeek") {
+      // skip warning if -scIsoDayOfWeek=true
+      bool newBehaviorOptIn = false;
+      const ConfigSettingsList& configs = parsing::configSettings(context);
+      for (const auto& config : configs) {
+        if (config.first == "cIsoDayOfWeek" && config.second == "true") {
+          newBehaviorOptIn = true;
+          break;
+        }
+      }
+      if (!newBehaviorOptIn) {
+        deprecationMsg =
+            "in an upcoming release 'dayOfWeek' will represent "
+            "Monday as 1 instead of 0. Recompile with '-scIsoDayOfWeek=true' "
+            "to opt-in to the new behavior";
+      }
+    }
+  }
+
+  return deprecationMsg;
+}
+
 static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
+  std::string msg;
+
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
-
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
-                      attributes->isDeprecated();
-  if (!isDeprecated) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
   CHPL_ASSERT(mention && target);
-
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
-  auto storedMsg = attributes->deprecationMessage();
-  std::string msg = storedMsg.isEmpty()
-      ? createDefaultDeprecationMessage(context, targetNamedDecl)
-      : storedMsg.c_str();
+  std::string hardcodedMsg = hardcodedDeprecationForId(context, idMention,
+      idTarget);
+  if (!hardcodedMsg.empty()) {
+    msg = hardcodedMsg;
+  } else {
+    auto attributes = parsing::idToAttributeGroup(context, idTarget);
+    if (!attributes) return false;
 
-  msg = removeSphinxMarkup(msg);
+    bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
+                        attributes->isDeprecated();
+    if (!isDeprecated) return false;
+
+    auto storedMsg = attributes->deprecationMessage();
+    msg = storedMsg.isEmpty()
+        ? createDefaultDeprecationMessage(context, targetNamedDecl)
+        : storedMsg.c_str();
+
+    msg = removeSphinxMarkup(msg);
+  }
 
   CHPL_ASSERT(msg.size() > 0);
   CHPL_REPORT(context, Deprecation, msg, mention, targetNamedDecl);
@@ -1506,12 +1578,7 @@ static bool
 unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   if (idMention.isEmpty() || idTarget.isEmpty()) return false;
 
-  auto attributes = parsing::idToAttributeGroup(context, idTarget);
-  if (!attributes) return false;
-
-  bool isUnstable = attributes->hasPragma(PRAGMA_UNSTABLE) ||
-                    attributes->isUnstable();
-  if (!isUnstable) return false;
+  if (!isIdUnstable(context, idTarget)) return false;
 
   auto mention = parsing::idToAst(context, idMention);
   auto target = parsing::idToAst(context, idTarget);
@@ -1520,7 +1587,8 @@ unstableWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   auto targetNamedDecl = target->toNamedDecl();
   if (!targetNamedDecl) return false;
 
-  auto storedMsg = attributes->unstableMessage();
+  auto attributes = parsing::idToAttributeGroup(context, idTarget);
+  auto storedMsg = attributes ? attributes->unstableMessage() : UniqueString();
   std::string msg = storedMsg.isEmpty()
       ? createDefaultUnstableMessage(context, targetNamedDecl)
       : storedMsg.c_str();
@@ -1559,40 +1627,29 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
+  // skip checks if we have a harcoded deprecation for this symbol
+  if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
+    auto attr = parsing::idToAttributeGroup(context, idTarget);
 
-  // Nothing to do, symbol is not deprecated.
-  if (!attr || !attr->isDeprecated()) return;
+    // Nothing to do, symbol is not deprecated.
+    if (!attr || !attr->isDeprecated()) return;
 
-  // Don't warn for 'this' formals with deprecated types.
-  if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
+    // Don't warn for 'this' formals with deprecated types.
+    if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;
 
-  // See filter function for skip policy.
-  if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
-    return;
+    // See filter function for skip policy.
+    if (anyParentMatches(context, idMention, shouldSkipDeprecationWarning)) {
+      return;
+    }
   }
 
   deprecationWarningForIdQuery(context, idMention, idTarget);
 }
 
-static bool
-isUnstableAndShouldWarn(Context* context, ID idMention, ID idTarget) {
-  auto attr = parsing::idToAttributeGroup(context, idTarget);
-  if (!attr || !attr->isUnstable()) return false;
-
-  auto flag = CompilerFlags::WARN_UNSTABLE;
-  if (idIsInInternalModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_INTERNAL;
-  } else if (idIsInStandardModule(context, idMention)) {
-    flag = CompilerFlags::WARN_UNSTABLE_STANDARD;
-  }
-
-  return isCompilerFlagSet(context, flag);
-}
-
 void
 reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
-  if (!isUnstableAndShouldWarn(context, idMention, idTarget)) return;
+  if (!isIdUnstable(context, idTarget) ||
+      !shouldWarnUnstableForId(context, idMention)) return;
 
   // Don't warn for 'this' formals with unstable types.
   if (isMentionOfWarnedTypeInReceiver(context, idMention, idTarget)) return;

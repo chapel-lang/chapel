@@ -1,2 +1,2 @@
-justCheck()
+proc justCheck(i: int) { ... }
 r

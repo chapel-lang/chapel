@@ -6,7 +6,7 @@
    SAFE TO REACH THEM THROUGH DOCUMENTED INTERFACES.  IN FACT, IT IS ALMOST
    GUARANTEED THAT THEY WILL CHANGE OR DISAPPEAR IN A FUTURE GNU MP RELEASE.
 
-Copyright 2007-2012, 2019 Free Software Foundation, Inc.
+Copyright 2007-2012, 2019-2021 Free Software Foundation, Inc.
 
 This file is part of the GNU MP Library.
 
@@ -85,17 +85,17 @@ see https://www.gnu.org/licenses/.  */
 #include "longlong.h"
 
 #undef MPN_REDC_0
-#define MPN_REDC_0(rp, up, mp, invm)					\
+#define MPN_REDC_0(r0, u1, u0, m0, invm)				\
   do {									\
-    mp_limb_t p1, r0, u0, _dummy;					\
-    u0 = *(up);								\
-    umul_ppmm (p1, _dummy, *(mp), (u0 * (invm)) & GMP_NUMB_MASK);	\
-    ASSERT (((u0 + _dummy) & GMP_NUMB_MASK) == 0);			\
-    p1 += (u0 != 0);							\
-    r0 = (up)[1] + p1;							\
-    if (p1 > r0)							\
-      r0 -= *(mp);							\
-    *(rp) = r0;								\
+    mp_limb_t _p1, _u1, _u0, _m0, _r0, _dummy;				\
+    _u0 = (u0);								\
+    _m0 = (m0);								\
+    umul_ppmm (_p1, _dummy, _m0, (_u0 * (invm)) & GMP_NUMB_MASK);	\
+    ASSERT (((_u0 - _dummy) & GMP_NUMB_MASK) == 0);			\
+    _u1 = (u1);								\
+    _r0 = _u1 - _p1;							\
+    _r0 = _u1 < _p1 ? _r0 + _m0 : _r0; /* _u1 < _r0 */			\
+    (r0) = _r0 & GMP_NUMB_MASK;						\
   } while (0)
 
 #undef MPN_REDC_1
@@ -142,7 +142,7 @@ getbits (const mp_limb_t *p, mp_bitcnt_t bi, int nbits)
   mp_limb_t r;
   mp_size_t i;
 
-  if (bi < nbits)
+  if (bi <= nbits)
     {
       return p[0] & (((mp_limb_t) 1 << bi) - 1);
     }
@@ -163,8 +163,8 @@ static inline int
 win_size (mp_bitcnt_t eb)
 {
   int k;
-  static mp_bitcnt_t x[] = {0,7,25,81,241,673,1793,4609,11521,28161,~(mp_bitcnt_t)0};
-  for (k = 1; eb > x[k]; k++)
+  static mp_bitcnt_t x[] = {7,25,81,241,673,1793,4609,11521,28161,~(mp_bitcnt_t)0};
+  for (k = 0; eb > x[k++]; )
     ;
   return k;
 }
@@ -182,6 +182,377 @@ redcify (mp_ptr rp, mp_srcptr up, mp_size_t un, mp_srcptr mp, mp_size_t n)
   MPN_ZERO (tp, n);
   MPN_COPY (tp + n, up, un);
   mpn_tdiv_qr (qp, rp, 0L, tp, un + n, mp, n);
+  TMP_FREE;
+}
+
+#if ! HAVE_NATIVE_mpn_rsblsh1_n_ip2
+#undef mpn_rsblsh1_n_ip2
+#if HAVE_NATIVE_mpn_rsblsh1_n
+#define mpn_rsblsh1_n_ip2(a,b,n)	mpn_rsblsh1_n(a,b,a,n)
+#else
+#define mpn_rsblsh1_n_ip2(a,b,n)				\
+  do								\
+    {								\
+      mpn_lshift (a, a, n, 1);					\
+      mpn_sub_n (a, a, b, n);					\
+    } while (0)
+#endif
+#endif
+
+#define INNERLOOP2						\
+  do								\
+    {								\
+      MPN_SQR (tp, rp, n);					\
+      MPN_REDUCE (rp, tp, mp, n, mip);				\
+      if (mpn_cmp (rp, mp, n) >= 0)				\
+	ASSERT_NOCARRY (mpn_sub_n (rp, rp, mp, n));		\
+      if (getbit (ep, ebi) != 0)				\
+	{							\
+	  if (rp[n - 1] >> (mbi - 1) % GMP_LIMB_BITS == 0)	\
+	    ASSERT_NOCARRY (mpn_lshift (rp, rp, n, 1));		\
+	  else							\
+	    mpn_rsblsh1_n_ip2 (rp, mp, n);			\
+	}							\
+    } while (--ebi != 0)
+
+/* rp[n-1..0] = 2 ^ ep[en-1..0] mod mp[n-1..0]
+   Requires that mp[n-1..0] is odd and > 1.
+   Requires that ep[en-1..0] is > 1.
+   Uses scratch space at tp of MAX(mpn_binvert_itch(n),2n) limbs.  */
+static void
+mpn_2powm (mp_ptr rp, mp_srcptr ep, mp_size_t en,
+	  mp_srcptr mp, mp_size_t n, mp_ptr tp)
+{
+  mp_limb_t ip[2], *mip;
+  mp_bitcnt_t ebi, mbi, tbi;
+  mp_size_t tn;
+  int count;
+  TMP_DECL;
+
+  ASSERT (en > 1 || (en == 1 && ep[0] > 1));
+  ASSERT (n > 0 && (mp[0] & 1) != 0);
+
+  MPN_SIZEINBASE_2EXP(ebi, ep, en, 1);
+  MPN_SIZEINBASE_2EXP(mbi, mp, n, 1);
+
+  if (LIKELY (mbi <= GMP_NUMB_MAX))
+    {
+      count_leading_zeros(count, (mp_limb_t) mbi);
+      count = GMP_NUMB_BITS - (count - GMP_NAIL_BITS);
+    }
+  else
+    {
+      mp_bitcnt_t tc = mbi;
+
+      count = 0;
+      do { ++count; } while ((tc >>= 1) != 0);
+    }
+
+  tbi = getbits (ep, ebi, count);
+  if (tbi >= mbi)
+    {
+      --count;
+      ASSERT ((tbi >> count) == 1);
+      tbi >>= 1;
+      ASSERT (tbi < mbi);
+      ASSERT (ebi > count);
+    }
+  else if (ebi <= count)
+    {
+      MPN_FILL (rp, n, 0);
+      rp[tbi / GMP_LIMB_BITS] = CNST_LIMB (1) << (tbi % GMP_LIMB_BITS);
+      return;
+    }
+  ebi -= count;
+
+  if (n == 1)
+    {
+      mp_limb_t r0, m0, invm;
+      m0 = *mp;
+
+      /* redcify (rp, tp, tn + 1, mp, n); */
+      /* TODO: test direct use of udiv_qrnnd */
+      ASSERT (tbi < GMP_LIMB_BITS);
+      tp[1] = CNST_LIMB (1) << tbi;
+      tp[0] = CNST_LIMB (0);
+      r0 = mpn_mod_1 (tp, 2, m0);
+
+      binvert_limb (invm, m0);
+      do
+	{
+	  mp_limb_t t0, t1, t2;
+	  /* MPN_SQR (tp, rp, n);			*/
+	  umul_ppmm (t1, t0, r0, r0);
+	  /* MPN_REDUCE (rp, tp, mp, n, mip);		*/
+	  MPN_REDC_0(r0, t1, t0, m0, invm);
+
+	  t2 = r0 << 1;
+	  t2 = r0 > (m0 >> 1) ? t2 - m0 : t2;
+	  r0 = getbit (ep, ebi) != 0 ? t2 : r0;
+	} while (--ebi != 0);
+
+      /* tp[1] = 0; tp[0] = r0;	*/
+      /* MPN_REDUCE (rp, tp, mp, n, mip);	*/
+      MPN_REDC_0(*rp, 0, r0, m0, invm);
+
+      return;
+    }
+
+  TMP_MARK;
+
+#if WANT_REDC_2
+  if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_2_THRESHOLD))
+    {
+      mip = ip;
+      binvert_limb (ip[0], mp[0]);
+      ip[0] = -ip[0];
+    }
+  else if (BELOW_THRESHOLD (n, REDC_2_TO_REDC_N_THRESHOLD))
+    {
+      mip = ip;
+      mpn_binvert (ip, mp, 2, tp);
+      ip[0] = -ip[0]; ip[1] = ~ip[1];
+    }
+#else
+  if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_N_THRESHOLD))
+    {
+      mip = ip;
+      binvert_limb (ip[0], mp[0]);
+      ip[0] = -ip[0];
+    }
+#endif
+  else
+    {
+      mip = TMP_ALLOC_LIMBS (n);
+      mpn_binvert (mip, mp, n, tp);
+    }
+
+  tn = tbi / GMP_LIMB_BITS;
+  MPN_ZERO (tp, tn);
+  tp[tn] = CNST_LIMB (1) << (tbi % GMP_LIMB_BITS);
+
+  redcify (rp, tp, tn + 1, mp, n);
+
+#if WANT_REDC_2
+  if (REDC_1_TO_REDC_2_THRESHOLD < MUL_TOOM22_THRESHOLD)
+    {
+      if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_2_THRESHOLD))
+	{
+	  if (REDC_1_TO_REDC_2_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	}
+      else if (BELOW_THRESHOLD (n, MUL_TOOM22_THRESHOLD))
+	{
+	  if (MUL_TOOM22_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_2 (rp, tp, mp, n, mip)
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_2 (rp, tp, mp, n, mip)
+	      INNERLOOP2;
+	    }
+	}
+      else if (BELOW_THRESHOLD (n, REDC_2_TO_REDC_N_THRESHOLD))
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_2 (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+      else
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+    }
+  else
+    {
+      if (BELOW_THRESHOLD (n, MUL_TOOM22_THRESHOLD))
+	{
+	  if (MUL_TOOM22_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	}
+      else if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_2_THRESHOLD))
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	  INNERLOOP2;
+	}
+      else if (BELOW_THRESHOLD (n, REDC_2_TO_REDC_N_THRESHOLD))
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_2 (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+      else
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+    }
+
+#else  /* WANT_REDC_2 */
+
+  if (REDC_1_TO_REDC_N_THRESHOLD < MUL_TOOM22_THRESHOLD)
+    {
+      if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_N_THRESHOLD))
+	{
+	  if (REDC_1_TO_REDC_N_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	}
+      else if (BELOW_THRESHOLD (n, MUL_TOOM22_THRESHOLD))
+	{
+	  if (MUL_TOOM22_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	      INNERLOOP2;
+	    }
+	}
+      else
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+    }
+  else
+    {
+      if (BELOW_THRESHOLD (n, MUL_TOOM22_THRESHOLD))
+	{
+	  if (MUL_TOOM22_THRESHOLD < SQR_BASECASE_THRESHOLD
+	      || BELOW_THRESHOLD (n, SQR_BASECASE_THRESHOLD))
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_mul_basecase (r,a,n,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	  else
+	    {
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr_basecase (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	      INNERLOOP2;
+	    }
+	}
+      else if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_N_THRESHOLD))
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_1 (rp, tp, mp, n, mip[0])
+	  INNERLOOP2;
+	}
+      else
+	{
+#undef MPN_SQR
+#undef MPN_REDUCE
+#define MPN_SQR(r,a,n)			mpn_sqr (r,a,n)
+#define MPN_REDUCE(rp,tp,mp,n,mip)	mpn_redc_n (rp, tp, mp, n, mip)
+	  INNERLOOP2;
+	}
+    }
+#endif  /* WANT_REDC_2 */
+
+  MPN_COPY (tp, rp, n);
+  MPN_FILL (tp + n, n, 0);
+
+#if WANT_REDC_2
+  if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_2_THRESHOLD))
+    MPN_REDC_1 (rp, tp, mp, n, ip[0]);
+  else if (BELOW_THRESHOLD (n, REDC_2_TO_REDC_N_THRESHOLD))
+    MPN_REDC_2 (rp, tp, mp, n, mip);
+#else
+  if (BELOW_THRESHOLD (n, REDC_1_TO_REDC_N_THRESHOLD))
+    MPN_REDC_1 (rp, tp, mp, n, ip[0]);
+#endif
+  else
+    mpn_redc_n (rp, tp, mp, n, mip);
+
+  if (mpn_cmp (rp, mp, n) >= 0)
+    mpn_sub_n (rp, rp, mp, n);
+
   TMP_FREE;
 }
 
@@ -205,6 +576,12 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
 
   ASSERT (en > 1 || (en == 1 && ep[0] > 1));
   ASSERT (n >= 1 && ((mp[0] & 1) != 0));
+
+  if (bn == 1 && bp[0] == 2)
+    {
+      mpn_2powm (rp, ep, en, mp, n, tp);
+      return;
+    }
 
   TMP_MARK;
 
@@ -264,7 +641,7 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
   mpn_sqr (tp, this_pp, n);
 #if 0
   if (n == 1) {
-    MPN_REDC_0 (rp, tp, mp, mip[0]);
+    MPN_REDC_0 (rp[0], tp[1], tp[0], mp[0], -mip[0]);
   } else
 #endif
 #if WANT_REDC_2
@@ -285,7 +662,7 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
     if (n == 1) {
       umul_ppmm((tp)[1], *(tp), *(this_pp), *(rp));
       ++this_pp ;
-      MPN_REDC_0 (this_pp, tp, mp, mip[0]);
+      MPN_REDC_0 (*this_pp, tp[1], tp[0], *mp, -mip[0]);
     } else
 #endif
     {
@@ -305,11 +682,9 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
     }
 
   expbits = getbits (ep, ebi, windowsize);
-  if (ebi < windowsize)
-    ebi = 0;
-  else
-    ebi -= windowsize;
+  ebi -= windowsize;
 
+  /* THINK: Should we initialise the case expbits % 4 == 0 with a mul? */
   count_trailing_zeros (cnt, expbits);
   ebi += cnt;
   expbits >>= cnt;
@@ -332,18 +707,11 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
 	 significant bit is 1.  */					\
 									\
       expbits = getbits (ep, ebi, windowsize);				\
-      this_windowsize = windowsize;					\
-      if (ebi < windowsize)						\
-	{								\
-	  this_windowsize -= windowsize - ebi;				\
-	  ebi = 0;							\
-	}								\
-      else								\
-        ebi -= windowsize;						\
+      this_windowsize = MIN (ebi, windowsize);				\
 									\
       count_trailing_zeros (cnt, expbits);				\
       this_windowsize -= cnt;						\
-      ebi += cnt;							\
+      ebi -= this_windowsize;						\
       expbits >>= cnt;							\
 									\
       do								\
@@ -365,7 +733,7 @@ mpn_powm (mp_ptr rp, mp_srcptr bp, mp_size_t bn,
 #undef MPN_REDUCE
 #define MPN_MUL_N(r,a,b,n)		umul_ppmm((r)[1], *(r), *(a), *(b))
 #define MPN_SQR(r,a,n)			umul_ppmm((r)[1], *(r), *(a), *(a))
-#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_0(rp, tp, mp, mip[0])
+#define MPN_REDUCE(rp,tp,mp,n,mip)	MPN_REDC_0(*(rp), (tp)[1], (tp)[0], *(mp), - *(mip))
       INNERLOOP;
     }
   else

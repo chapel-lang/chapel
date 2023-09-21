@@ -40,7 +40,7 @@ module CSV {
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: fileWriter, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileWriter(?), sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
@@ -52,7 +52,7 @@ module CSV {
        :arg hasHeader: (optional) If true, treat the first line of data
                        as a header and skip it
      */
-    proc init(ch: fileReader, sep: string=",", hasHeader: bool=false) {
+    proc init(ch: fileReader(?), sep: string=",", hasHeader: bool=false) {
       this.ch = ch;
       this.sep = sep;
       this.hasHeader = hasHeader;
@@ -72,7 +72,7 @@ module CSV {
         if line.size == 0 then
           continue;
         const vals = line.split(sep);
-        for param i in 0..numFields(t)-1 {
+        for param i in 0..getNumFields(t)-1 {
           getFieldRef(r, i) = vals[i]: getField(r, i).type;
         }
         if skipHeader {
@@ -158,9 +158,9 @@ module CSV {
       use Reflection;
       if !writing then compilerError("writing to a reading channel");
 
-      for param i in 0..<numFields(t) {
+      for param i in 0..<getNumFields(t) {
         ch.write(getField(r, i));
-        if i != numFields(t)-1 then
+        if i != getNumFields(t)-1 then
           ch.write(sep);
       }
       ch.writeln();

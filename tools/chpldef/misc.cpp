@@ -59,4 +59,14 @@ bool cast(std::string str, int& out) noexcept {
   return true;
 }
 
+bool cast(std::string str, int64_t& out) noexcept {
+  char* end = nullptr;
+  const char* cstr = str.c_str();
+  errno = 0;
+  int64_t x = std::strtoll(cstr, &end, 10);
+  if (errno == ERANGE || end == cstr) return false;
+  out = x;
+  return true;
+}
+
 } // end namespace 'chpldef'

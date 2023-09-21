@@ -1,0 +1,2 @@
+dmapConstRecord.chpl:5: warning: 'Block' is deprecated, please use 'blockDist' instead
+dmapConstRecord.chpl:6: warning: The use of 'dmap' is deprecated for this distribution; please replace 'new dmap(new <DistName>(<args>))' with 'new <DistName>(<args>)'

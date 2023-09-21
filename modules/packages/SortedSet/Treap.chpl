@@ -129,7 +129,7 @@ module Treap {
     }
   }
 
-  record treap {
+  record treap : writeSerializable {
     /* The type of the elements contained in this sortedSet.*/
     type eltType;
 
@@ -217,7 +217,7 @@ module Treap {
       this.eltType = eltType;
       this.parSafe = parSafe;
       this.comparator = comparator;
-      this.complete();
+      init this;
 
       for elem in iterable do _add(elem);
     }
@@ -365,10 +365,10 @@ module Treap {
        Used by sortedMap
      */
     @chpldoc.nodoc
-    proc _getReference(element: eltType) ref {
+    proc ref _getReference(element: eltType) ref {
       var node = _findRef(_root, element);
       if node == nil then
-        boundsCheckHalt("index " + element:string + " out of bounds");
+        boundsCheckHalt(try! "index %? out of bounds".format(element));
       ref result = node!.element;
       return result;
     }
@@ -384,7 +384,7 @@ module Treap {
     proc const _getValue(element: eltType) const {
       var node = _find(_root, element);
       if node == nil then
-        boundsCheckHalt("index " + element:string + " out of bounds");
+        boundsCheckHalt(try! "index %? out of bounds".format(element));
       var result = node!.element;
       return result;
     }
@@ -821,6 +821,11 @@ module Treap {
       _enter();
       _visit(ch);
       _leave();
+    }
+
+    @chpldoc.nodoc
+    proc const serialize(writer, ref serializer) throws {
+      writeThis(writer);
     }
 
     /*

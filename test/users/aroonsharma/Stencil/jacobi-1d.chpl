@@ -33,7 +33,7 @@ config var dist: string = "B";
 /* Initializes a 1D structure */
 proc initialize_1D(distribution, adder: int, divider: int) {
     var array: [distribution] real = 0.0;
-    forall i in distribution {
+    forall i in distribution with (ref array) {
         array[i] = (i - 1.0 + adder) / divider;
     }
     return array;
@@ -128,13 +128,13 @@ proc main() {
         var dist_1D = dom_1D dmapped CyclicZipOpt(startIdx=dom_1D.low);
         kernel_jacobi1d(dist_1D, M);
     } */else if dist == "C" {
-        var dist_1D = dom_1D dmapped Cyclic(startIdx=dom_1D.low);
+        var dist_1D = dom_1D dmapped cyclicDist(startIdx=dom_1D.low);
         kernel_jacobi1d(dist_1D, M); 
     } else if dist == "B" {
-        var dist_1D = dom_1D dmapped Block(boundingBox=dom_1D);
+        var dist_1D = dom_1D dmapped blockDist(boundingBox=dom_1D);
         kernel_jacobi1d(dist_1D, M);
     } else if dist == "BC" {
-        var dist_1D = dom_1D dmapped BlockCyclic(startIdx = dom_1D.low, blocksize=bsize);
+        var dist_1D = dom_1D dmapped blockCycDist(startIdx = dom_1D.low, blocksize=bsize);
         kernel_jacobi1d(dist_1D, M);
     } /*else if dist == "BCM" {
         var dist_1D = dom_1D dmapped MyBlockCyclic(startIdx = dom_1D.low, blocksize=bsize);

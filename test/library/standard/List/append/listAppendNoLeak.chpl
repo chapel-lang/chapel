@@ -18,7 +18,7 @@ for i in 0..#n do
 record WrappedList {
   var List: list(int);
 
-  proc pushBack(node) {
+  proc ref pushBack(node) {
     this.List.pushBack(node);
   }
 }

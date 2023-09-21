@@ -204,6 +204,8 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
 
   if (_thisAt->isGeneric() == true) {
     subs.put(_this, ct->symbol);
+  } else {
+    INT_ASSERT(!_thisAt->symbol->hasFlag(FLAG_GENERIC));
   }
 
   for (int i = 3; i <= cfn->numFormals(); i++) {
@@ -232,7 +234,9 @@ static FnSymbol* getInstantiatedFunction(FnSymbol* pfn,
     // A smaller test case:
     //   types/type_variables/deitz/test_point_of_instantiation3.chpl
     //
-    fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    if (fn->instantiationPoint() == NULL) {
+      fn->setInstantiationPoint(ct->symbol->instantiationPoint);
+    }
 
     return fn;
   }
@@ -450,6 +454,7 @@ static void resolveOverrideAndAdjustMaps(FnSymbol* pfn, FnSymbol* cfn) {
       evaluateWhereClause(cfn) &&
       evaluateWhereClause(pfn)) {
 
+    resolveSpecifiedReturnType(cfn);
     resolveFunction(cfn);
 
     // check to see if we are using defaulted actual fns
@@ -825,6 +830,7 @@ static void buildVirtualMethodTable() {
 static void addVirtualMethodTableEntry(Type*     type,
                                        FnSymbol* fn,
                                        bool      exclusive) {
+  type = type->getValType();
   Vec<FnSymbol*>* fns   = virtualMethodTable.get(type);
   bool            found = false;
 

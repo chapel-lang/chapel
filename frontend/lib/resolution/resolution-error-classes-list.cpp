@@ -295,6 +295,17 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
+  auto externBlockId = std::get<ID>(info);
+  auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);
+  wr.heading(kind_, type_, externBlockId,
+             "running clang on extern block failed",
+             (errors.size() > 0 ? " -- clang errors follow" : ""));
+  for (const auto& error : errors) {
+    wr.note(error.first, error.second);
+  }
+}
+
 void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
   auto formal = std::get<const uast::Formal*>(info);
   const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
@@ -627,6 +638,22 @@ void ErrorMultipleEnumElems::write(ErrorWriterBase& wr) const {
   wr.message("An enum cannot have repeated elements of the same name.");
 }
 
+void ErrorMultipleInheritance::write(ErrorWriterBase& wr) const {
+  auto theClass = std::get<const uast::Class*>(info);
+  auto firstParent = std::get<1>(info);
+  auto secondParent = std::get<2>(info);
+
+  wr.heading(kind_, type_, theClass,
+             "invalid use of multiple inheritance in class '", theClass->name(),
+             "'; only single inheritance is supported.");
+  wr.message("The first class being inherited from is here:");
+  wr.code(justOneLine(firstParent), { firstParent });
+  wr.message("The second class being inherited from is here:");
+  wr.code(justOneLine(secondParent), { secondParent });
+  wr.message("Although a class can implement multiple interfaces, it cannot ",
+             "inherit from multiple parent classes.");
+}
+
 void ErrorMultipleQuestionArgs::write(ErrorWriterBase& wr) const {
   auto call = std::get<const uast::FnCall*>(info);
   auto firstQuestion = std::get<1>(info);
@@ -717,6 +744,20 @@ void ErrorNotInModule::write(ErrorWriterBase& wr) const {
   //wr.note(moduleId, "module '", moduleName, "' declared here");
 
   return;
+}
+
+void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto& others = std::get<std::vector<ID>>(info);
+
+  const char* markerType = node->isInit() ? "init this" : "this.complete()";
+  wr.heading(kind_, type_, node,
+             "use of '", markerType, "' after type has been initialized.");
+  wr.code(node, { node });
+
+  auto previousMarker = others.at(0);
+  wr.note(previousMarker, "the type was previously marked as initialized here:");
+  wr.code<ID>(previousMarker, { previousMarker });
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {
@@ -910,6 +951,22 @@ void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   wr.note(mod->id(), "module '", mod->name(), "' was declared at the ",
                      "top level here:");
   wr.codeForLocation(mod);
+}
+
+void ErrorTertiaryUseImportUnstable::write(ErrorWriterBase& wr) const {
+  auto name = std::get<UniqueString>(info);
+  auto node = std::get<const uast::AstNode*>(info);
+  auto clause = std::get<const uast::VisibilityClause*>(info);
+  auto searchedScope = std::get<const resolution::Scope*>(info);
+  auto useOrImport = std::get<resolution::VisibilityStmtKind>(info);
+  auto useOrImportStr = (useOrImport == resolution::VIS_USE) ? "a 'use'"
+                                                             : "an 'import'";
+  wr.heading(kind_, type_, clause,
+             "using a type's name ('", name, "' in this case) in ", useOrImportStr,
+             " statement to access its tertiary methods is an unstable feature.");
+  wr.message("In the following clause:");
+  wr.code(clause, { node });
+  wr.message("The type '", name, "' is not defined in '", searchedScope->name(), "'.");
 }
 
 void ErrorTupleDeclMismatchedElems::write(ErrorWriterBase& wr) const {
@@ -1181,7 +1238,6 @@ void ErrorValueUsedAsType::write(ErrorWriterBase& wr) const {
   wr.code(typeExpr, { typeExpr });
   // wr.message("Did you mean to use '.type'?");
 }
-
 
 /* end resolution errors */
 

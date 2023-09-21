@@ -9,6 +9,10 @@ fundamental enough or because they are not yet mature enough for
 inclusion there.  Over time, we expect many of these to become
 ``mason`` packages.
 
+.. warning::
+
+   All package modules are currently unstable and may change in the future.
+
 Algorithms
 ----------
 .. toctree::
@@ -54,11 +58,10 @@ File Formats and I/O
    ChplFormat <packages/ChplFormat>
    HDF5 <packages/HDF5>
    HDFS <packages/HDFS>
-   Json <packages/Json>
    NetCDF <packages/NetCDF>
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
-   Yaml <packages/Yaml>
+   YAML <packages/YAML>
 
 Math / Numerical Computing
 --------------------------

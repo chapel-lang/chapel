@@ -1,10 +1,10 @@
 #!/usr/bin/env bash
 
-NAME_MAX=`getconf NAME_MAX /`
+VAL="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
+NAME_MAX=`getconf NAME_MAX $VAL`
 REDUCTIONMAXLENGTH=16
 LIMIT=$((NAME_MAX - REDUCTIONMAXLENGTH))
 OUTOFBOUND=$((LIMIT + 1))
-VAL="$( cd "$( dirname "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )"
 
 repeatChar() {
     local input="$1"

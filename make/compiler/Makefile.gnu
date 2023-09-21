@@ -170,7 +170,7 @@ GEN_CFLAGS += $(C_STD)
 # On Ubuntu, gcc complains about multiline comments in some versions
 # of Clang header files.
 #
-WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing
+WARN_COMMONFLAGS = -Wall -Werror -Wpointer-arith -Wwrite-strings -Wno-strict-aliasing -Wno-error=missing-braces
 WARN_CXXFLAGS = $(WARN_COMMONFLAGS) -Wno-comment -Wmissing-braces
 WARN_CFLAGS = $(WARN_COMMONFLAGS) -Wmissing-prototypes -Wstrict-prototypes -Wmissing-format-attribute
 WARN_GEN_CFLAGS = $(WARN_CFLAGS)
@@ -180,6 +180,16 @@ ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -gt 5; echo "$$?"),0)
 # We'd like to know about missing overrides but don't let it
 # abort the build since there might be some in LLVM headers.
 WARN_CXXFLAGS += -Wsuggest-override -Wno-error=suggest-override
+endif
+
+# Don't warn about const qualifiers that are discarded on assignment
+# this is a temporary workaround to the issue that c_ptrConst types don't
+# currently include the const qualifier in generated code
+# see https://github.com/chapel-lang/chapel/pull/22122
+# which removed the const qualifiers
+# maybe added in gcc 4.6.0?
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 5; echo "$$?"),0)
+SQUASH_WARN_GEN_CFLAGS += -Wno-discarded-qualifiers
 endif
 
 #
@@ -333,6 +343,16 @@ ifneq ($(CHPL_MAKE_SANITIZE), none)
 ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 12; echo "$$?"),0)
 WARN_CXXFLAGS += -Wno-maybe-uninitialized
 endif
+endif
+
+#
+# Avoid a spurious warning in gcc 13, about a "possibly dangling reference"
+# when a function returns a reference (even though it's something guaranteed to
+# be allocated on the heap). For more info see
+# https://gcc.gnu.org/bugzilla/show_bug.cgi?id=108165
+#
+ifeq ($(shell test $(GNU_GPP_MAJOR_VERSION) -ge 13; echo "$$?"),0)
+WARN_CXXFLAGS += -Wno-dangling-reference
 endif
 
 #

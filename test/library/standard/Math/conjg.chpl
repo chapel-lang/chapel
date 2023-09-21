@@ -18,7 +18,7 @@ typetest(uint(64));
 /* Check that input type always matches output type */
 proc typetest(type t) {
   var input: t;
-  var output = conjg(input);
+  var output = conj(input);
   if input.type != output.type {
     writeln('Failed on type ', input.type:string,
             ', received: ', output.type:string);

@@ -199,8 +199,6 @@ module ChapelDistribution {
 
     proc dsiMyDist(): unmanaged BaseDist {
       halt("internal error: dsiMyDist is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDist; // nil
-      return ret;
     }
 
     // default overloads to provide clear compile-time error messages
@@ -451,16 +449,14 @@ module ChapelDistribution {
 
     proc dsiAdd(in x) {
       compilerError("Cannot add indices to a rectangular domain");
-      return 0;
     }
 
     proc dsiRemove(x) {
       compilerError("Cannot remove indices from a rectangular domain");
-      return 0;
     }
   }
 
-  class BaseSparseDomImpl : BaseSparseDom {
+  class BaseSparseDomImpl : BaseSparseDom(?) {
 
     var nnzDom = {1..0};
 
@@ -469,22 +465,21 @@ module ChapelDistribution {
     }
 
     override proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true, addOn=nilLocale){
+        dataSorted=false, isUnique=false, addOn=nilLocale){
 
-      if !dataSorted && preserveInds {
-        var _inds = inds;
-        return bulkAdd_help(_inds, dataSorted, isUnique, addOn);
-      }
-      else {
-        return bulkAdd_help(inds, dataSorted, isUnique, addOn);
-      }
+      var inds_ = inds;
+      return bulkAdd_help(inds_, dataSorted, isUnique, addOn);
     }
 
-    proc bulkAdd_help(inds: [?indsDom] index(rank, idxType),
+    override proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
         dataSorted=false, isUnique=false, addOn=nilLocale){
-      halt("Helper function called on the BaseSparseDomImpl");
 
-      return -1;
+      return bulkAdd_help(inds, dataSorted, isUnique, addOn);
+    }
+
+    proc bulkAdd_help(ref inds: [?indsDom] index(rank, idxType),
+        dataSorted=false, isUnique=false, addOn=nilLocale): int {
+      halt("Helper function called on the BaseSparseDomImpl");
     }
 
     // TODO: Would ChapelArray.resizeAllocRange() be too expensive?
@@ -544,7 +539,7 @@ module ChapelDistribution {
     // (1) sorts indices if !dataSorted
     // (2) verifies the flags are set correctly if boundsChecking
     // (3) checks OOB if boundsChecking
-    proc bulkAdd_prepareInds(inds, dataSorted, isUnique, cmp) {
+    proc bulkAdd_prepareInds(ref inds, dataSorted, isUnique, cmp) {
       use Sort;
       if !dataSorted then sort(inds, comparator=cmp);
 
@@ -626,7 +621,7 @@ module ChapelDistribution {
 
   record SparseIndexBuffer {
     param rank: int;
-    var obj: BaseSparseDom;
+    var obj: borrowed BaseSparseDom(?);
 
     type idxType = if rank==1 then int else rank*int;
     var bufDom = domain(1);
@@ -639,11 +634,11 @@ module ChapelDistribution {
       bufDom = {0..#size};
     }
 
-    proc deinit() {
+    proc ref deinit() {
       commit();
     }
 
-    proc add(idx: idxType) {
+    proc ref add(idx: idxType) {
       buf[cur] = idx;
       cur += 1;
 
@@ -651,7 +646,7 @@ module ChapelDistribution {
         commit();
     }
 
-    proc commit() {
+    proc ref commit() {
       if cur >= 1 then
         obj.dsiBulkAdd(buf[..cur-1]);
       cur = 0;
@@ -685,11 +680,17 @@ module ChapelDistribution {
     }
 
     proc dsiBulkAdd(inds: [] index(rank, idxType),
-        dataSorted=false, isUnique=false, preserveInds=true,
+        dataSorted=false, isUnique=false,
         addOn=nilLocale): int {
 
       halt("Bulk addition is not supported by this sparse domain");
-      return 0;
+    }
+
+    proc dsiBulkAddNoPreserveInds(ref inds: [] index(rank, idxType),
+        dataSorted=false, isUnique=false,
+        addOn=nilLocale): int {
+
+      halt("Bulk addition is not supported by this sparse domain");
     }
 
     proc boundsCheck(ind: index(rank, idxType)):void {
@@ -720,15 +721,11 @@ module ChapelDistribution {
     override proc dsiHigh { return parentDom.highBound; }
     override proc dsiStride { return parentDom.stride; }
     override proc dsiAlignment { return parentDom.alignment; }
-    override proc dsiFirst {
+    override proc dsiFirst: rank*idxType {
       halt("dsiFirst is not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
-    override proc dsiLast {
+    override proc dsiLast: rank*idxType {
       halt("dsiLast not implemented");
-      const _tmp: rank*idxType;
-      return _tmp;
     }
     override proc dsiAlignedLow { return parentDom.low; }
     override proc dsiAlignedHigh { return parentDom.high; }
@@ -753,7 +750,6 @@ module ChapelDistribution {
 
     proc dsiAdd(in idx) {
       compilerError("Index addition is not supported by this domain");
-      return 0;
     }
 
     proc rank param {
@@ -796,8 +792,6 @@ module ChapelDistribution {
 
     proc dsiGetBaseDom(): unmanaged BaseDom {
       halt("internal error: dsiGetBaseDom is not implemented");
-      pragma "unsafe" var ret: unmanaged BaseDom; // nil
-      return ret;
     }
 
     // takes 'rmFromList' which indicates whether the array should
@@ -830,17 +824,14 @@ module ChapelDistribution {
 
     proc chpl_isElementTypeDefaultInitializable(): bool {
       halt("chpl_isElementTypeDefaultInitializable must be defined");
-      return false;
     }
 
     proc chpl_isElementTypeNonNilableClass(): bool {
       halt("chpl_isElementTypeNonNilableClass must be defined");
-      return false;
     }
 
-    proc chpl_unsafeAssignIsClassElementNil(manager, idx) {
+    proc chpl_unsafeAssignIsClassElementNil(manager, idx): bool {
       halt("chpl_unsafeAssignIsClassElementNil must be defined");
-      return false;
     }
 
     proc chpl_unsafeAssignHaltUninitializedElement(idx) {
@@ -1003,7 +994,7 @@ module ChapelDistribution {
   }
 
   pragma "base array"
-  class BaseRectangularArr: BaseArrOverRectangularDom {
+  class BaseRectangularArr: BaseArrOverRectangularDom(?) {
     /* rank, idxType, strides are from BaseArrOverRectangularDom */
     type eltType;
 
@@ -1040,7 +1031,7 @@ module ChapelDistribution {
    * implementing sparse array classes.
    */
   pragma "base array"
-  class BaseSparseArr: AbsBaseArr {
+  class BaseSparseArr: AbsBaseArr(?) {
     param rank : int;
     type idxType;
 
@@ -1058,7 +1049,7 @@ module ChapelDistribution {
    * go here.
    */
   pragma "base array"
-  class BaseSparseArrImpl: BaseSparseArr {
+  class BaseSparseArrImpl: BaseSparseArr(?) {
 
     pragma "local field" pragma "unsafe"
     // may be initialized separately
@@ -1201,7 +1192,7 @@ module ChapelDistribution {
 
     var result: rank * resultType;
     for param i in 0..rank-1 do
-      result(i) = from(i).safeCast(resultType);
+      result(i) = from(i) : resultType;
 
     return result;
   }

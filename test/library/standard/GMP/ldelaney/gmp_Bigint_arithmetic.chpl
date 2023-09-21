@@ -20,19 +20,19 @@ writeln(c);
 writeln(a);
 
 // a = a + (b * c)
-addmul(a, b, c);                      // a =   248
-addmul(a, b, 10);                     // a =   268
+addMul(a, b, c);                      // a =   248
+addMul(a, b, 10);                     // a =   268
 writeln(a);
 
 // a = a - (b * c)
-submul(a, b, c);                      // a =   668
-submul(a, b, 4);                      // a =   660
+subMul(a, b, c);                      // a =   668
+subMul(a, b, 4);                      // a =   660
 writeln(a);
 
-mul_2exp(a, c, 3);                    // a = -1600
+mul2Exp(a, c, 3);                    // a = -1600
 writeln(a);
 
-divQ2Exp(a, a, 3);                    //a =   -200
+div2Exp(a, a, 3);                    //a =   -200
 writeln(a);
 
 neg(a, b);                            // a =    -2

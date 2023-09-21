@@ -694,7 +694,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
   const blocksPerTask = divceil(blocksPerLocale, nTasksPerLocale);
   const nTasks = nLocales*nTasksPerLocale; // aka 't' in the paper
   const DistributedTasks = {0..#nTasks};
-//                             dmapped Block(boundingBox={0..#nTasks},
+//                             dmapped blockDist(boundingBox={0..#nTasks},
 //                                           targetLocales=A.targetLocales());
 
   if debug {
@@ -1334,7 +1334,7 @@ proc parallelInPlacePartition(start_n: int, end_n: int,
             // Make sure no other task is currently reading this block
             on bp {
               while (bp.isReading()) {
-                chpl_task_yield();
+                currentTask.yieldExecution();
               }
             }
             // Write the block

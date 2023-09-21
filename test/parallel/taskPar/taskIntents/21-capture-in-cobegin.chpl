@@ -63,7 +63,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -176,10 +176,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -269,7 +269,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -382,10 +382,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -447,7 +447,7 @@ writeln("done");
 test();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a begin ===");
-var sbegin$: sync int;
+var sbegin: sync int;
 begin {
 // Verify that values are captured upon a 'cobegin'.
 // This needs #include "support-decls.cpp".
@@ -478,7 +478,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -591,10 +591,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -652,9 +652,9 @@ writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
 writeln("done");
-  sbegin$.writeEF(1);
+  sbegin.writeEF(1);
 }
-sbegin$.readFE();
+sbegin.readFE();
 /////////////////////////////////////////////////////////////////////////////
 writeln("=== in a cobegin ===");
 cobegin {
@@ -689,7 +689,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -802,10 +802,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -898,7 +898,7 @@ var dom1: DomType1;
 var dom2: DomType2;
 var arr1: ArrType1;
 var arr2: ArrType2;
-var s$: sync int;
+var s: sync int;
 writeln("before cobegin");
 // write out all the variables
 writeln("b0", " ", b0);
@@ -1011,10 +1011,10 @@ writeln("dom1", " ", dom1);
 writeln("dom2", " ", dom2);
 writeln("arr1", " ", arr1);
 writeln("arr2", " ", arr2);
-    s$.writeEF(1);
+    s.writeEF(1);
   }
   {
-    s$.readFE();
+    s.readFE();
     writeln("cobegin - the other stmt");
 // write out all the variables
 writeln("b0", " ", b0);

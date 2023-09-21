@@ -1135,6 +1135,7 @@ class AssociatedAction {
     NEW_INIT,
     REDUCE_SCAN,  // resolution of "generate" for a reduce/scan operation.
     INFER_TYPE,
+    COMPARE,      // == , e.g., for select-statements
   };
 
  private:
@@ -1644,6 +1645,12 @@ class ResolvedFields {
 
   void addForwarding(ID forwardingId, types::QualifiedType receiverType) {
     forwarding_.push_back(ForwardingDetail(forwardingId, receiverType));
+  }
+
+  void addForwarding(const ResolvedFields& other) {
+    for (int i = 0; i < other.numForwards(); i++) {
+      addForwarding(other.forwardingStmt(i), other.forwardingToType(i));
+    }
   }
 
   void finalizeFields(Context* context);

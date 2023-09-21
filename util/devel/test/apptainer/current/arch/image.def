@@ -9,4 +9,4 @@ From: archlinux:base-devel
     /provision-scripts/pacman-llvm14.sh
 
 %runscript
-    ../../provision-scripts/run.sh
+    ../../provision-scripts/run.sh "$@"

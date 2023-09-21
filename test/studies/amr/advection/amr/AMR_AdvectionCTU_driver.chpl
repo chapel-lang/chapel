@@ -26,18 +26,18 @@ class GradientFlagger: Flagger {
   // of 'level_solution' with neighboring cells.  The cell is flagged
   // if this value exceeds 'tolerance'.
   //----------------------------------------------------------------------
-  
+
   override proc setFlags (
-    level_solution: unmanaged LevelSolution, 
-    flags:          [level_solution.level.possible_cells] bool )
+    level_solution: unmanaged LevelSolution,
+    ref flags:          [level_solution.level.possible_cells] bool )
   {
-    
+
     //---- Alias and prepare level_solution.current_data ----
     const current_data = level_solution.current_data;
     current_data.extrapolateGhostData();
     current_data.fillOverlaps();
     
-    
+
     //===> Test each cell for flagging ===>
     
     for grid in level_solution.level.grids {

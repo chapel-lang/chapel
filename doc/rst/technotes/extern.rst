@@ -100,7 +100,6 @@ The Chapel names for C types are:
   c_ushort
   ssize_t
   size_t
-  c_void_ptr
   c_ptr(T)
   c_ptrConst(T)
   c_array(T,n)
@@ -115,29 +114,28 @@ Chapel types to always be usable):
   c_float  // (a real(32) in Chapel)
   c_double // (a real(64) in Chapel)
 
-c_void_ptr, c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
+c_string, c_ptr(T), c_ptrConst(T), and c_array(T,n) are
 described in the next section.
 
 
 Pointer and String Types
 ------------------------
 
-Chapel supports the following C pointer types: c_void_ptr, c_ptr(T),
+Chapel supports the following C pointer types: c_ptr(T),
 c_ptrConst(T), c_string, and c_fn_ptr. In addition, it supports c_array(T,n).
 
 These types are the same as C types:
 
 .. code-block:: text
 
-  c_void_ptr is void*
   c_ptr(T) is T*
   c_ptrConst(T) is const T*
-  c_string is const char*
+  c_string is const char* (c_string is deprecated in favor of c_ptrConst(c_char))
   c_fn_ptr represents a C function pointer (with unspecified arg and return types)
   c_array(T,n) is T[n]
 
 Note that in some cases, a ref argument intent may be used in place of
-c_void_ptr or c_ptr(T), and const ref intent in place of c_ptrConst(T).
+c_ptr(T), and const ref intent in place of c_ptrConst(T).
 
 These pointer types may only point to local memory. The intent is
 that they will be used to interoperate with C libraries that run within a
@@ -149,14 +147,6 @@ longer valid, or to memory that has been freed. The Chapel language makes no
 effort to extend a variable's lifetime if it is converted in some manner to a C
 pointer.
 
-c_void_ptr
-~~~~~~~~~~
-
-The c_void_ptr type is provided as an opaque C pointer. Since the type is
-unknown, there is no way to dereference this pointer. In addition, it is not
-possible to construct a c_void_ptr directly in Chapel. Normally, a C function
-will return the void pointer, which will be passed to other C functions.
-
 c_ptr(T)
 ~~~~~~~~
 
@@ -166,6 +156,10 @@ communication will be generated when it is dereferenced.  Of course, the
 pointed-to type T should be one that is supported in C interoperability if the
 c_ptr(T) is used for C interoperability. The c_ptr(T) type supports
 indexing to get a reference to the i'th element (starting from 0).
+
+The c_ptr(void) type represents the C ``void*`` type. There is no way to
+dereference such a pointer in Chapel code without first casting it to one with
+a different underlying type.
 
 c_ptrConst(T)
 ~~~~~~~~~~~~~
@@ -218,21 +212,30 @@ Analogously, const ref may be used instead of c_ptrConst(T).
 c_string
 ~~~~~~~~
 
+.. warning::
+
+  ``c_string`` is deprecated in favor of ``c_ptrConst(c_char)``. See
+  :ref:`c_string deprecation <readme-evolution.c_string-deprecation>` for more
+  information.
+
 The c_string type maps to a constant C string (that is, const char*)
 that is intended for use locally. A c_string can be obtained from a
-Chapel string using the method :proc:`~String.string.c_str`. A Chapel string can be
-constructed from a C string using the cast operator. Note however that
-because c_string is a local-only type, the .c_str() method can only be
-called on Chapel strings that are stored on the same locale; calling
-.c_str() on a non-local string will result in a runtime error.
+Chapel string using the method :proc:`~CTypes.string.c_str` and casting the
+result to c_string. A Chapel string can be constructed from a C string using
+:proc:`~String.string.createCopyingBuffer` or one of the other similarly named
+string creation methods. Note however, that because c_string is a local-only
+type, the .c_str() method can only be called on Chapel strings that are stored
+on the same locale; calling .c_str() on a non-local string will result in a
+runtime error.
 
-.. note::
-
-  ``c_string`` is expected to be deprecated in a future release in favor
-  of instead using ``c_ptr`` types such as ``c_ptrConst(c_char)``.
 
 c_fn_ptr
 ~~~~~~~~
+
+.. warning::
+
+  ``c_fn_ptr`` is unstable and expected to be replaced with more feature-rich
+  functionality in the future.
 
 The c_fn_ptr type is useful for representing arguments to external
 functions that accept function pointers.  At present, there is no way
@@ -486,7 +489,7 @@ function:
 
 .. code-block:: chapel
 
-       extern proc printf(fmt: c_string, vals...?numvals): int;
+       extern proc printf(fmt: c_ptrConst(c_char), vals...?numvals): int;
 
 Note that it can also be prototyped more trivially/less accurately
 as follows:
@@ -536,7 +539,11 @@ The Chapel compiler will then rewrite any calls to `foo` like this:
 
 .. code-block:: chapel
 
-      foo(x, 10); // -> foo(c_ptrTo(x), 10);
+      foo(x, 10); // -> foo(c_ptrToConst(x), 10);
+
+The Chapel compiler will also respect intents for the formal.
+The default intent will result in a call to ``c_ptrToConst``
+while an intent like ``ref`` will result in a call to ``c_ptrTo``.
 
 Note that this same technique won't work for distributed rectangular arrays,
 nor for associative, sparse, or opaque arrays because their data isn't
@@ -691,8 +698,8 @@ for the type is ``struct stat``:
     var st_size: off_t;
   }
 
-  proc getFileSize(path:c_string) : int {
-    extern proc stat(x: c_string, ref buf:chpl_stat_type): c_int;
+  proc getFileSize(path:c_ptrConst(c_char)) : int {
+    extern proc stat(x: c_ptrConst(c_char), ref buf:chpl_stat_type): c_int;
     var buf: chpl_stat_type;
 
     if (chpl_stat_function(path, buf) == 0) {
@@ -795,7 +802,7 @@ block will be usable.
 This feature strives to support C global variables, functions, structures,
 typedefs, enums, and some #defines. Structures always generate a Chapel record,
 and pointers to a structure are represented with c_ptr(struct type). Also,
-pointer arguments to functions are always represented with c_ptr or c_string
+pointer arguments to functions are always represented with c_ptr or c_ptrConst
 instead of the ref intent.
 
 Note that functions or variables declared within an extern block should either
@@ -858,8 +865,7 @@ Pointer Types
 See the section `Pointer and String Types`_ above for background on
 how the Chapel programs can work with C pointer types. Any pointer type used in
 an extern block will be made visible to the Chapel program as c_ptr(T),
-c_ptrConst(T) (for const pointer types besides char) or c_string
-(for const char* types).
+c_ptrConst(T).
 
 For example:
 
@@ -870,7 +876,7 @@ For example:
    // will translate automatically into
    //  extern proc setItToOne(x:c_ptr(c_int));
 
-   static void getItPlusOne(const int* x) { return *x + 1; }
+   static int getItPlusOne(const int* x) { return *x + 1; }
    // will translate automatically into
    //  extern proc getItPlusOne(x:c_ptrConst(c_int));
 
@@ -889,15 +895,15 @@ For example:
  var x:c_int;
  setItToOne(c_ptrTo(x));
 
- var y:c_int = 5
+ var y:c_int = 5;
  writeln(getItPlusOne(c_ptrToConst(y))); // could also just use c_ptrTo(y)
 
  var space:c_ptr(c_int);
  setSpace(c_ptrTo(space));
 
- var str:c_string;
+ var str:c_ptrConst(c_char);
  setString(c_ptrTo(str));
- writeln(toString(str));
+ writeln(string.createBorrowingBuffer(str));
 
 As you can see in this example, using the extern block might result in
 more calls to c_ptrTo() when using the generated extern declarations,
@@ -1030,10 +1036,10 @@ operator in C.
 There is also special behavior for ``c_ptrTo`` on class types. In Chapel, a
 class variable is actually some information on the stack containing a pointer to
 the "real" instance on the heap. Calling ``c_ptrTo()`` on a class type will give
-a ``c_void_ptr`` to the instance on the heap. Memory-managed heap instances will
-still be deallocated according to Chapel memory-management rules regardless of
-any pointer created to them this way. In the case of an ``unmanaged`` instance,
-it is possible to safely go back the other direction:
+a ``c_ptr(void)`` to the instance on the heap. Memory-managed heap instances
+will still be deallocated according to Chapel memory-management rules regardless
+of any pointer created to them this way. In the case of an ``unmanaged``
+instance, it is possible to safely go back the other direction:
 
 .. code-block:: chapel
 
@@ -1051,7 +1057,7 @@ it is possible to safely go back the other direction:
     writeln(c.getX());
 
     // get pointer to instance
-    var p: c_void_ptr = c_ptrTo(c);
+    var p: c_ptr(void) = c_ptrTo(c);
     writeln(p);
 
     // create another unmanaged Foo pointing to the same instance
@@ -1066,10 +1072,10 @@ it is possible to safely go back the other direction:
 Working with strings
 --------------------
 
-If you need to call a C function and provide a Chapel string, you may need to
-convert the Chapel string to a C string first.  Chapel string literals will
-automatically convert to C strings.  A Chapel string variable can be converted
-using the :proc:`~String.string.c_str` method.
+If you need to call a C function and provide a Chapel string, you will need to
+convert the Chapel string to a c_ptrConst(c_char) first.  Chapel string literals
+will automatically convert to c_ptrConst(c_char). A Chapel string variable can
+be converted using the :proc:`~CTypes.string.c_str` method.
 
 myprint.h:
 
@@ -1089,9 +1095,9 @@ myprint.chpl:
 
 .. code-block:: chapel
 
-  extern proc myprint(str:c_string);
+  extern proc myprint(str:c_ptrConst(c_char));
 
-  // string literal is automatically converted to a c_string
+  // string literal is automatically converted to a c_ptrConst(c_char)
   myprint("hello");
 
   // a string variable must be converted with .c_str()

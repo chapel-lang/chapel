@@ -76,7 +76,7 @@ proc offset_momentum(nbodies:int, B : [] borrowed Planet) {
 
 proc main() {
   param NBODIES = 5;
-  var bodies : [0..#NBODIES] borrowed Planet =
+  var ownBodies : [0..#NBODIES] owned Planet =
     [new Planet(0, 0, 0, 0, 0, 0, solar_mass),
      new Planet(4.84143144246472090e+00,
                 -1.16032004402742839e+00,
@@ -107,6 +107,7 @@ proc main() {
                 -9.51592254519715870e-05 * days_per_year,
                 5.15138902046611451e-05 * solar_mass)
     ];
+  var bodies : [0..#NBODIES] borrowed Planet = ownBodies.borrow();
 
   offset_momentum(NBODIES, bodies);
   writef("%{#.#########}\n", energy(NBODIES, bodies));

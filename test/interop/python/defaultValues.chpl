@@ -1,4 +1,9 @@
-export proc cstringDefault(in x: c_string = "blah") {
+use CTypes;
+export proc cstringDefault(in x: chpl_c_string = "blah") {
+  writeln(string.createCopyingBuffer(x:c_ptrConst(c_char)));
+}
+
+export proc cPtrConstDefault(in x: c_ptrConst(c_char) = "blah") {
   writeln(string.createCopyingBuffer(x));
 }
 

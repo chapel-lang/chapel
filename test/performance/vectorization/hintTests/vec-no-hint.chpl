@@ -19,7 +19,7 @@ proc main() {
   writeln(A[1], " ", A[n]);
 }
 
-proc kernel7(A, C) {
+proc kernel7(ref A, C) {
   var m = 0.0;
   // Fancy reductions that aren't likely
   // to be recognized by the back-end don't
@@ -31,24 +31,24 @@ proc kernel7(A, C) {
   A[n] = 0;
 }
 
-proc kernel8(A) {
+proc kernel8(ref A) {
   // regular for loops don't get the vectorization hint
   for i in 1..n {
     A[i] = i;
   }
 }
 
-proc kernel9(A) {
+proc kernel9(ref A) {
   // variables declared within a loop inhibit vectorization
   // if they require stack space - but loop still has parallel access data
-  forall i in 1..n {
+  forall i in 1..n with (ref A) {
     var x = i;
     x *= 2;
     A[i] = x;
   }
 }
 
-proc kernel10(A) {
+proc kernel10(ref A) {
   // synchronizing within a forall loop inhibits vectorization
   // (critical sections, waiting for other tasks)
   var sum: atomic int;
@@ -63,7 +63,7 @@ proc doIncrement(sum: atomic int) {
   sum.add(1);
 }
 
-proc kernel11(A) {
+proc kernel11(ref A) {
   // synchronizing within a forall loop inhibits vectorization
   // (critical sections, waiting for other tasks)
   // detected even if they are called indirectly

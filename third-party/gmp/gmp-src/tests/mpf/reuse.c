@@ -150,7 +150,7 @@ main (int argc, char **argv)
 	  unsigned long this_in2i = in2i;
 
 	  /* Don't divide by 0.  */
-	  if (dsi_funcs[i] == mpf_div_ui && this_in2i == 0)
+	  if (i == 0 && this_in2i == 0) /* dsi_funcs[i] == mpf_div_ui */
 	    continue;
 
 	  /* Avoid overflow/underflow in the exponent.  */
@@ -173,7 +173,7 @@ main (int argc, char **argv)
       for (i = 0; i < sizeof (dis_funcs) / sizeof (dis_func); i++)
 	{
 	  /* Don't divide by 0.  */
-	  if (dis_funcs[i] == mpf_ui_div
+	  if (i == 0 /* dis_funcs[i] == mpf_ui_div */
 	      && mpf_cmp_ui (in2, 0) == 0)
 	    continue;
 

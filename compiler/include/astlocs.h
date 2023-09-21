@@ -62,6 +62,7 @@ public:
   int compare(const astlocT& other) const;
   void convertIdToFileLine(const char*& filename, int& lineno) const;
   const char* stringLoc() const;
+  const char* stringLineno() const;
 
   bool isEmpty() const {
     if (filename_ != nullptr)

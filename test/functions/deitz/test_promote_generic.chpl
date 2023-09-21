@@ -3,7 +3,7 @@ class C {
   var x: t;
 }
 
-proc foo(c: unmanaged C) {
+proc foo(c: unmanaged C(?)) {
   return c.x;
 }
 

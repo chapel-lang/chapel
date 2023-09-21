@@ -1,5 +1,5 @@
-/* 
- *   Producer-Consumer Example. 
+/*
+ *   Producer-Consumer Example.
  *
  *   This example uses a shared array of synchronization variables to
  *   implement a simple buffered producer/consumer relationship
@@ -21,7 +21,7 @@ config const buffersize = 1024,        // size of the circular buffer
 // reads to these variables will block until they are "full", leaving
 // them "empty".  Writes will block until "empty", leaving "full".
 //
-var buff$: [0..buffersize-1] sync int;
+var buff: [0..buffersize-1] sync int;
 
 
 //
@@ -45,11 +45,11 @@ proc main() {
 proc producer() {
   for i in 1..numItems {
     const buffInd = (i-1) % buffersize;
-    buff$(buffInd).writeEF(i);
+    buff(buffInd).writeEF(i);
 
     if (verbose) then writeln("producer wrote value #", i);
   }
-  buff$(numItems % buffersize).writeEF(-1);
+  buff(numItems % buffersize).writeEF(-1);
 }
 
 
@@ -70,13 +70,13 @@ proc consumer() {
 // the sentinel value of -1, it exits.
 //
 iter readFromBuff() {
-  var ind = 0,              
-      nextVal = buff$(0).readFE();
+  var ind = 0,
+      nextVal = buff(0).readFE();
 
   while (nextVal != -1) {
     yield nextVal;
 
     ind = (ind + 1)%buffersize;
-    nextVal = buff$(ind).readFE();
+    nextVal = buff(ind).readFE();
   }
 }

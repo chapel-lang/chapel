@@ -56,7 +56,7 @@ test4();
 // The below is a reproducer for part of LAPACK_Matrix_test.
 writeln("reproducer");
 
-proc putInto2D( arrayOfArrays: [?D1] ?t, twoArray: [?D2] ?o): void{
+proc putInto2D( arrayOfArrays: [?D1] ?t, ref twoArray: [?D2] ?o): void{
   writeln("in putInto2D");
   writeln("D1 is ", D1);
   writeln("arrayOfArrays is ", arrayOfArrays);

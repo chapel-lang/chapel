@@ -43,6 +43,7 @@ _chpl ()
 --comm \
 --comm-substrate \
 --compile-time-nil-checking \
+--compiler-driver \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -56,6 +57,10 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
+--driver-debug-phase \
+--driver-phase-one \
+--driver-phase-two \
+--driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
 --dyno \
@@ -134,6 +139,8 @@ _chpl ()
 --llvm \
 --llvm-print-ir \
 --llvm-print-ir-stage \
+--llvm-remarks \
+--llvm-remarks-function \
 --llvm-wide-opt \
 --local \
 --local-checks \
@@ -145,7 +152,6 @@ _chpl ()
 --log-dir \
 --log-ids \
 --log-module \
---log-node \
 --log-pass \
 --loop-invariant-code-motion \
 --main-module \

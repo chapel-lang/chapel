@@ -1,0 +1,3 @@
+unstableAutoMath.chpl:1: warning: The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the Math module
+3.0
+2.0

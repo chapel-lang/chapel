@@ -339,6 +339,13 @@ static bool isNoDoc(const Decl* e) {
   return false;
 }
 
+static bool isNoWhereDoc(const Function* f) {
+  if (auto attrs = f->attributeGroup())
+    if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
+      return true;
+  return false;
+}
+
 static std::vector<std::string> splitLines(const std::string& s) {
   std::stringstream ss(s);
   std::string line;
@@ -952,9 +959,15 @@ struct RstSignatureVisitor {
 
   bool enter(const Class* c) {
     os_ << c->name().c_str();
-    if (c->parentClass()) {
+    if (c->numInheritExprs() > 0) {
       os_ << " : ";
-      c->parentClass()->traverse(*this);
+      bool printComma = false;
+      for (auto inheritExpr : c->inheritExprs()) {
+        if (printComma) os_ << ", ";
+        printComma = true;
+
+        inheritExpr->traverse(*this);
+      }
     }
     return false;
   }
@@ -1137,6 +1150,14 @@ struct RstSignatureVisitor {
     // throws
     if (f->throws()) os_ << " throws";
 
+    // Where Clause
+    if (const AstNode* wc = f->whereClause()) {
+     if (!isNoWhereDoc(f)) {
+      os_ << " where ";
+      wc->traverse(*this);
+     }
+    }
+
     return false;
   }
 
@@ -1192,6 +1213,17 @@ struct RstSignatureVisitor {
     // TODO: Shouldn't this be record, not Record?
     if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
+
+    if (r->numInterfaceExprs() > 0) {
+      os_ << " : ";
+      bool printComma = false;
+      for (auto interfaceExpr : r->interfaceExprs()) {
+        if (printComma) os_ << ", ";
+        printComma = true;
+
+        interfaceExpr->traverse(*this);
+      }
+    }
     return false;
   }
 
@@ -1219,6 +1251,10 @@ struct RstSignatureVisitor {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
     return false;
   }
+
+  // TODO union inheritance: unions should have support for inheriting
+  // from interfaces, which means printing the interfaces for chpldoc
+  // signatures.
 
   bool enter(const Use* node) {
     node->stringify(os_, StringifyKind::CHPL_SYNTAX);
@@ -1403,13 +1439,18 @@ struct RstResultBuilder {
 
     if (!textOnly_) os_ << ".. " << kind << ":: ";
     RstSignatureVisitor ppv{os_};
+
+    if (node->isEnumElement()) {
+      os_ << "enum constant ";
+    }
+
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
+
     bool commentShown = showComment(node, indentComment);
     // TODO: Fix all this because why are we checking for specific node types
     //  just to add a newline?
-    if (commentShown && !textOnly_ && (node->isEnum() ||
-                                       node->isClass() ||
+    if (commentShown && !textOnly_ && (node->isClass() ||
                                        node->isRecord() ||
                                        node->isModule())) {
       os_ << "\n";
@@ -1424,15 +1465,29 @@ struct RstResultBuilder {
   void showUnstableWarning(const Decl* node, bool indentComment=true) {
     if (auto attrs = node->attributeGroup()) {
       if (attrs->isUnstable()) {
-        int commentShift = 0;
+        auto comment = previousComment(context_, node->id());
+        if (comment && !comment->str().empty() &&
+            comment->str().substr(0, 2) == "/*" &&
+            comment->str().find("unstable") != std::string::npos ) {
+          // do nothing because unstable was mentioned in doc comment
+        } else {
+          // write the unstable warning and message
+          int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
             commentShift = 1;
           }
           os_ << ".. warning::\n\n";
           indentStream(os_, (indentDepth_ + commentShift) * indentPerDepth);
-        os_ << strip(attrs->unstableMessage().c_str());
-        os_ << "\n\n";
+          if (attrs->unstableMessage().isEmpty()) {
+            // write a generic message because there wasn't a specific one
+            os_ << getNodeName((AstNode*) node) << " is unstable";
+          } else {
+            // use the specific unstable message
+            os_ << strip(attrs->unstableMessage().c_str());
+          }
+          os_ << "\n\n";
+        }
       }
     }
   }
@@ -1509,6 +1564,14 @@ struct RstResultBuilder {
   owned<RstResult> visit(const Enum* e) {
     if (isNoDoc(e)) return {};
     show("enum", e);
+    visitChildren(e);
+    return getResult(true);
+  }
+
+  owned<RstResult> visit(const EnumElement* e) {
+    if (isNoDoc(e)) return {};
+    indentDepth_++;
+    show("enumconstant", e);
     return getResult();
   }
 
@@ -1640,8 +1703,7 @@ struct RstResultBuilder {
     if (textOnly_) indentDepth_ --;
     showComment(m, textOnly_);
     showDeprecationMessage(m, false);
-    // TODO: Are we not printing these for modules?
-    // showUnstableWarning(m, false);
+    showUnstableWarning(m, false);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
@@ -1875,6 +1937,7 @@ struct CommentVisitor {
 
   DEF_ENTER(Module, true)
   DEF_ENTER(TypeDecl, true)
+  DEF_ENTER(EnumElement, false)
   DEF_ENTER(Function, false)
   DEF_ENTER(Variable, false)
 
@@ -2076,7 +2139,9 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
   Args ret;
   init_args(&sArgState, argv[0], mainAddr);
   init_arg_desc(&sArgState, docs_arg_desc);
-  process_args(&sArgState, argc, argv);
+  if(!process_args(&sArgState, argc, argv)) {
+    clean_exit(1);
+  }
   ret.author = std::string(fDocsAuthor);
   if (fDocsCommentLabel[0] != '\0') {
     ret.commentStyle = std::string(fDocsCommentLabel);
