@@ -183,10 +183,11 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    /* Print this pointer */
+    @chpldoc.nodoc
     inline proc writeThis(ch) throws {
       (this:c_ptr(void)).writeThis(ch);
     }
+    /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
       (this:c_ptr(void)).writeThis(writer);
     }
@@ -235,10 +236,11 @@ module CTypes {
       }
       return __primitive("array_get", this, 0);
     }
-    /* Print this pointer */
+    @chpldoc.nodoc
     inline proc writeThis(ch) throws {
       (this:c_ptr(void)).writeThis(ch);
     }
+    /* Print this pointer */
     inline proc serialize(writer, ref serializer) throws {
       (this:c_ptr(void)).writeThis(writer);
     }
@@ -345,8 +347,7 @@ module CTypes {
       return __primitive("array_get", this, i);
     }
 
-
-    /* Print the elements */
+    @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.writeLiteral("[");
       var first = true;
@@ -360,6 +361,7 @@ module CTypes {
       ch.writeLiteral("]");
     }
 
+    /* Print the elements */
     proc const serialize(writer, ref serializer) throws {
       writeThis(writer);
     }
