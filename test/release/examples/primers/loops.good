@@ -20,7 +20,11 @@ Within the first for-loop, i is 3
 Within the first for-loop, i is 1
 Within the first for-loop, i is 2
 Within the first for-loop, i is 3
-The second for-loop is Doubling 1.2The second for-loop is Doubling 3.4The second for-loop is Doubling 5.6The second for-loop is Doubling 7.8After the second for-loop, A is: 2.4 6.8 11.2 15.6
+The second for-loop is doubling 1.2
+The second for-loop is doubling 3.4
+The second for-loop is doubling 5.6
+The second for-loop is doubling 7.8
+After the second for-loop, A is: 2.4 6.8 11.2 15.6
 In the third for-loop, element 0 of A is 2.4
 In the third for-loop, element 1 of A is 6.8
 In the third for-loop, element 2 of A is 11.2
@@ -80,7 +84,9 @@ After the forall loop over a distributed array, C is:
 412.002 412.004 412.006 412.008 612.01 612.012 612.014 612.016
 414.002 414.004 414.006 414.008 614.01 614.012 614.014 614.016
 416.002 416.004 416.006 416.008 616.01 616.012 616.014 616.016
-After the first square bracket loop, C is:
+After the first square bracket loop, B is:
+-13.621 -22.431 -31.241 -4.811 -13.621 -22.431 -31.241 -4.811
+After the second square bracket loop, C is:
 2.001 2.003 2.005 2.007 202.009 202.011 202.013 202.015
 4.001 4.003 4.005 4.007 204.009 204.011 204.013 204.015
 6.001 6.003 6.005 6.007 206.009 206.011 206.013 206.015
