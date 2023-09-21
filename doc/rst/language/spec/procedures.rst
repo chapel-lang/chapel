@@ -1305,8 +1305,8 @@ function call and one of the following conditions is met:
   and the call qualifies the function name with the module name,
   see also :ref:`Importing_Modules`.
 
-- :math:`X` is a method and it is defined in the same module that defines
-  the receiver type.
+- :math:`X` is a method and it is visible in the module that defines the
+  receiver type.
 
 .. _Determining_Candidate_Functions:
 
