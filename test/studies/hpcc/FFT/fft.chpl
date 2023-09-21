@@ -205,7 +205,7 @@ proc dfft(ref A: [?ADom], W, cyclicPhase) {
 
 //
 // this is the radix-4 butterfly routine that takes multipliers wk1,
-// wk2, and wk3 and a 4-element array (slice) A.
+// wk2, and wk3 and a 4-element array (slice) X.
 //
 proc butterfly(wk1, wk2, wk3, ref X:[?D]) {
   const i0 = D.low,
