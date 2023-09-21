@@ -2768,7 +2768,7 @@ record defaultSerializer {
       Serialize ``field`` named ``name``.
 
       Serializes fields in the form '<name> = <field>'. Adds a comma before the
-      name if this is no the first field.
+      name if this is not the first field.
     */
     proc ref writeField(name: string, const field: ?) throws {
       if !_first then writer._writeLiteral(", ");
@@ -2802,7 +2802,7 @@ record defaultSerializer {
         {x = 5, y = 2.0}
 
       :arg writer: The ``fileWriter`` to be used when serializing. Must match
-        writer used to create current AggregateSerializer.
+        the writer used to create current AggregateSerializer.
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
@@ -3081,7 +3081,7 @@ record defaultSerializer {
 
       {1: 1, 2: 4, 3: 9}
 
-    Empty maps be serialized as ``{}``.
+    Empty maps will be serialized as ``{}``.
   */
   record MapSerializer {
     @chpldoc.nodoc
@@ -3102,7 +3102,7 @@ record defaultSerializer {
     }
 
     /*
-      Serialize ``val``, preceded by a ``:``.
+      Serialize ``val``, preceded by the character ``:``.
     */
     proc writeValue(const val: ?) throws {
       writer._writeLiteral(": ");
@@ -3156,8 +3156,9 @@ record defaultDeserializer {
     ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
-    ``initDeserializable`` or ``readDeserializable`` interfaces (or both). The
-    ``serializable`` interface is also acceptable.
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+    Alternatively, types implementing the entire ``serializable`` interface
+    are also accepted.
 
     :arg reader: The ``fileReader`` from which types are deserialized.
     :arg readType: The type to be deserialized.
@@ -3198,8 +3199,9 @@ record defaultDeserializer {
     :ref:`serializers technote<ioSerializers>` for more.
 
     Classes and records are expected to implement either the
-    ``readDeserializable`` or ``initDeserializable`` interfaces (or both). The
-    ``serializable`` interface is also acceptable.
+    ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+    Alternatively, types implementing the entire ``serializable`` interface
+    are also accepted.
 
     :arg reader: The ``fileReader`` from which values are deserialized.
     :arg val: The value into which this Deserializer will deserialize.
