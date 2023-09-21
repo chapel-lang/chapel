@@ -42,6 +42,7 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
   if verbose_gpu then startVerboseGpu();
 
   
+  
   @assertOnGpu
   foreach i in centerPoints.dim(0) {
     // Only these need to be real(64) in order to guarantee non-negative outputs
@@ -184,15 +185,16 @@ proc main(args: [] string) {
           var (outRowStart, outRowEnd) =
              _computeChunkStartEnd(Inner.dim(0).size,
                                    loc.gpus.size*numWorkers*numChunksPerWorker,
-                                   globalChunkId);
+                                   globalChunkId+1);
           // offset for 1-based support function and start offset
           outRowStart += Inner.dim(0).low-1;
           outRowEnd += Inner.dim(0).low-1;
 
+          /*writeln(gpuId, " started ", Inner.dim(0).size, " ", loc.gpus.size);*/
           var (inRowStart, inRowEnd) =
               _computeChunkStartEnd(Array.domain.dim(1).size,
                                     loc.gpus.size*numWorkers*numChunksPerWorker,
-                                    globalChunkId);
+                                    globalChunkId+1);
 
           // offset for halo
           inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);
@@ -200,7 +202,7 @@ proc main(args: [] string) {
 
 
 
-          writeln(globalChunkId, " chunk computed", outRowStart, " ", outRowEnd);
+          /*writeln(globalChunkId, " chunk computed", outRowStart, " ", outRowEnd);*/
           const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
 
           /*writeln(gpuId, " MyInner ", MyInner);*/
@@ -211,8 +213,11 @@ proc main(args: [] string) {
 
           const MyArrayDom = {1..5, inRowStart..inRowEnd, Array.domain.dim(1)};
           writeln(globalChunkId, " MyArrayDom ", MyArrayDom);
+          writeln(globalChunkId, " Array.domain ", Array.domain);
 
           var locArray : [MyArrayDom] Array.eltType;
+
+          writeln(globalChunkId, " here ");
 
           /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
 

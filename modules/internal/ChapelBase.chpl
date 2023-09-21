@@ -1483,6 +1483,7 @@ module ChapelBase {
 
     return initMethod;
   }
+  extern proc printf(s...);
 
   proc init_elts(x, s, type t, lo=0:s.type) : void {
 
@@ -1508,6 +1509,7 @@ module ChapelBase {
       when ArrayInit.gpuInit {
         // This branch should only occur when we're on a GPU sublocale and the
         // following `foreach` loop will become a kernel
+        printf("%d %d\n", lo, s-1);
         foreach i in lo..s-1 {
           //assertOnGpu(); TODO: this assertion fails for a hello world style
           // program investigate why (I don't think it's erroring out in user
