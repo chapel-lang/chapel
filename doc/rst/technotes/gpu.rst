@@ -13,17 +13,16 @@ supported.
   This work is under active development. As such, the interface is unstable and
   expected to change.
 
-The Chapel compiler will generate GPU kernels for certain ``forall`` and
-``foreach`` loops and launch these onto a GPU when the current locale (e.g.
-``here``) is assigned to a special (sub)locale representing a GPU.
-
 .. contents::
 
 Overview
 --------
 
-To deploy code to a GPU, put the relevant code in an ``on`` statement targeting
-a GPU sublocale (i.e. ``here.gpus[0]``).
+The Chapel compiler will generate GPU kernels for certain ``forall`` and
+``foreach`` loops and launch these onto a GPU when the current locale (e.g.
+``here``) is assigned to a special (sub)locale representing a GPU. To deploy
+code to a GPU, put the relevant code in an ``on`` statement targeting a GPU
+sublocale (i.e. ``here.gpus[0]``).
 
 Any arrays that are declared by tasks executing on a GPU sublocale will, by
 default, be allocated into unified memory and be accessible on the GPU (see the
@@ -128,8 +127,8 @@ Requirements
       Older versions may work; however, we only make efforts to test GPU support
       with this version.
 
-*  Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
-   (unless using `CPU-as-Device mode`_)
+* Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
+  (unless using `CPU-as-Device mode`_)
 
   * For targeting NVIDIA GPUs, we support CUDA versions from 10.x to 12.0
     (inclusive).
@@ -156,42 +155,45 @@ before building Chapel. Several other variables affect how Chapel generates
 code for and interacts with GPUs. These variables include:
 
 * ``CHPL_GPU`` --- may be set to ``nvidia``, ``amd``, or ``cpu``. If unset, as
-  part of its build process, Chapel will attempt to automatically determine
-  what type of GPU you're trying to target. Changing this variable requires
-  rebuilding the Chapel runtime. For more information, see the `Vendor Portability`_
-  section.
+  part of its build process, Chapel will attempt to automatically determine what
+  type of GPU you're trying to target. Changing this variable requires
+  rebuilding the Chapel runtime. For more information, see the `Vendor
+  Portability`_ section.
 
 * ``CHPL_GPU_ARCH`` --- specifies GPU architecture to generate kernel code for.
-  If unset and targeting NVIDIA GPUs, will default to ``sm_60``. This must be
-  set while targeting AMD GPUs.
-
-  This may also be set by passing the ``chpl`` compiler
-  ``--gpu-arch=<architecture>``. For more information, see the `Vendor
+  This must be set while targeting AMD GPUs.  If unset and targeting NVIDIA
+  GPUs, will default to ``sm_60``. This may also be set by passing the ``chpl``
+  compiler ``--gpu-arch=<architecture>``. For more information, see the `Vendor
   Portability`_ section.
 
 * ``CHPL_CUDA_PATH`` --- specifies path to CUDA toolkit.  If unset, Chapel tries
   to automatically determine this path based on the location of ``nvcc``. This
   variable is unused if not targeting NVIDIA GPUs. For more information, see
   the `Vendor Portability`_ section.
+
 * ``CHPL_ROCM_PATH`` --- specifies the path to the ROCm library. If unset,
   Chapel tries to automatically determine this path based on the location of
   ``hipcc``.  This variable is unused if not targeting AMD GPUs. For more
   information, see the `Vendor Portability`_ section.
+
 * ``CHPL_RT_NUM_GPUS_PER_LOCALE`` --- sets how many GPU sublocales to have per
   locale. If using ``CHPL_GPU=cpu``, may be set to any non negative value,
   otherwise it may be set to any value equal to or lower than the number of GPUs
   available on each node.  If unset, defaults to the number of GPUs available on
   each node, except for when ``CHPL_GPU=cpu``, in which case it defaults to 1.
   For more information, see the `CPU-as-Device mode`_ section.
+
 * ``CHPL_GPU_MEM_STRATEGY`` --- dictates how to allocate data when on a GPU
   locale.  May be set to ``unified_memory`` or ``array_on_device``. If unset,
   defaults to ``array_on_device``. Changing this variable requires rebuilding
   Chapel. For more information, see the `Memory Strategies`_ section.
+
 * ``CHPL_GPU_BLOCK_SIZE`` --- specifies default block size when launching
   kernels. If unset, defaults to 512. This variable may also be set by passing
   the ``chpl`` compiler ``--gpu-block-size=<block_size>``. It can also be
   overwritten on a per-kernel basis by using the :proc:`~GPU.setBlockSize`
   function.
+
 * ``CHPL_GPU_SPECIALIZATION`` --- if set, outlines bodies of 'on' statements
   and clones all functions reachable from that block. The 'on' statement is
   rewritten to call the cloned version of the outlined function when on a  GPU
@@ -200,6 +202,7 @@ code for and interacts with GPUs. These variables include:
   accordingly. This may also be set by passing the ``chpl`` compiler the
   ``--gpu-specialization`` flag. This is an experimental mode subject to change
   in the future.
+
 * ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
   `CPU-as-Device mode`_ and if set, uses of
   :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute do not generate
@@ -505,8 +508,20 @@ not supported by the above ``clang`` compilation.
 Tested Configurations
 ---------------------
 
-* NVIDIA RTX A2000, P100, V100, A100 and H100
-* AMD MI60, MI100 and MI250X
+We have experience with the following hardware and software versions. The ones
+marked with * are covered in our nightly testing configuration.
+
+* NVIDIA
+
+  * Hardware: RTX A2000, P100*, V100*, A100* and H100
+
+  * Software: CUDA 11.0*, 11.6, 11.8*, 12.0*
+
+* AMD
+
+  * Hardware: MI60*, MI100 and MI250X
+
+  * Software:ROCm 4.2*, 4.4, 5.4
 
 
 Further Information
