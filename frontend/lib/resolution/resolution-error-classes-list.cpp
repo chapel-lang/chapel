@@ -73,7 +73,6 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 //
 // 'start' indicates where in the trace to start, since sometimes
 // the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
 //
 // 'intro' will be emitted before the first message for a trace
 // (only relevant if start==0). If it is not empty, it should probably
@@ -761,22 +760,48 @@ void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
-  auto id = std::get<ID>(info);
-  auto name = std::get<UniqueString>(info);
-  auto shadowStart = std::get<int>(info);
-  auto& matches = std::get<std::vector<resolution::BorrowedIdsWithName>>(info);
+  auto id = std::get<0>(info);
+  auto name = std::get<1>(info);
+  auto& result = std::get<2>(info);
+  auto& traceResult = std::get<3>(info);
+  auto& shadowed = std::get<4>(info);
+  auto& traceShadowed = std::get<5>(info);
 
   wr.heading(kind_, type_, id,
              "potentially surprising shadowing for '", name.c_str(), "'");
   wr.code<ID,ID>(id, { id });
   // only print out two matches
-  if (matches.size() > 0 && matches.size() > (size_t) shadowStart) {
-    ID first = matches[0].firstId();
-    ID shadowed = matches[shadowStart].firstId();
-    wr.note(first, "it refers to the symbol declared here");
-    wr.code<ID, ID>(first, { first });
-    wr.note(shadowed, "because this symbol can only be found through a shadow scope");
-    wr.code<ID, ID>(shadowed, { shadowed });
+  if (result.size() > 0 && shadowed.size() > 0) {
+    const char* intro = "it refers to a symbol found ";
+    bool encounteredAutoModule = false;
+    UniqueString from;
+    bool needsIntroText = false;
+
+    ID firstId = result[0].firstId();
+
+    describeSymbolTrace(wr, id, name,
+                        traceResult[0], /* start */ 0, intro,
+                        encounteredAutoModule, from, needsIntroText);
+
+    if (needsIntroText) {
+      wr.note(locationOnly(firstId), "it refers to the symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(firstId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(firstId, { firstId });
+
+    const char* intro2 = "but there is a shadowed symbol found ";
+    describeSymbolTrace(wr, id, name,
+                        traceShadowed[0], /* start */ 0, intro2,
+                        encounteredAutoModule, from, needsIntroText);
+
+    ID otherId = shadowed[0].firstId();
+    if (needsIntroText) {
+      wr.note(locationOnly(otherId), "but there is a shadowed symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(otherId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(otherId, { otherId });
   }
 }
 
