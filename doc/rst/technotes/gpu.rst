@@ -25,9 +25,8 @@ code to a GPU, put the relevant code in an ``on`` statement targeting a GPU
 sublocale (i.e. ``here.gpus[0]``).
 
 Any arrays that are declared by tasks executing on a GPU sublocale will, by
-default, be allocated into unified memory and be accessible on the GPU (see the
-`Memory Strategies`_ subsection for more information about alternate memory
-strategies).
+default, be accessible on the GPU (see the `Memory Strategies`_ subsection for
+more information about alternate memory strategies).
 
 Chapel will launch kernels for all eligible loops that are encountered by tasks
 executing on a GPU sublocale.  Loops are eligible when:
