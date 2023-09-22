@@ -143,6 +143,7 @@ module ChapelRange {
                      else chpl__rangeStrideType(idxType); // alignment or -1
   }
 
+  /* Returns the type of the range's stride. */
   proc range.strType type do return chpl__rangeStrideType(idxType);
 
   proc range.chpl__promotionType() type do return idxType;
@@ -2474,9 +2475,11 @@ private proc isBCPindex(type t) param do
 
   /////////// operators + and - ///////////
 
+  @chpldoc.nodoc
   operator +(r1: range(?), r2: range(?)) do
     compilerError("range addition is currently not supported");
 
+  @chpldoc.nodoc
   operator -(r1: range(?), r2: range(?)) do
     compilerError("range subtraction is currently not supported");
 
