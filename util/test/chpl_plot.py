@@ -578,6 +578,23 @@ class Table:
 
     return res
 
+  def csv(self, dataFmt="%f"):
+    res = f"### {self.title}\n"
+
+    res += " "
+    for col_num in range(len(self.yData)):
+      res += ", " + list(self.yData.keys())[col_num]
+
+    for row_num in range(len(self.xData)):
+      res += "\n"
+      res += "%s" % self.xData[row_num]
+      for col_num in range(len(self.yData)):
+        cur_col = list(self.yData.keys())[col_num]
+        res += ", %s" % str(dataFmt % self.yData[cur_col][row_num])
+
+    return res
+
+
   def plot(self, **plotArgs):
     return plot(self, **plotArgs)
 
