@@ -78,6 +78,12 @@ static std::string fileText(Context* context, const Location& loc) {
   return fileText.text();
 }
 
+bool ErrorWriter::noteLastFilePath(std::string newPath) {
+  bool toReturn = lastFilePath_ != newPath;
+  lastFilePath_ = std::move(newPath);
+  return toReturn;
+}
+
 void ErrorWriter::setColor(TermColorName color) {
   if (useColor_) {
     oss_ << getColorFormat(color);
@@ -104,18 +110,29 @@ static TermColorName kindColor(ErrorBase::Kind kind) {
   return CLEAR;
 }
 
-static void writeFile(Context* context,
-                      std::ostream& oss,
-                      const Location& loc) {
+static std::string locToPath(Context* context, const Location& loc) {
   UniqueString pathUstr = loc.path();
   if (context) pathUstr = context->adjustPathForErrorMsg(pathUstr);
   auto path = pathUstr.c_str();
-  int lineno = loc.line();
   bool validPath = (path != nullptr && path[0] != '\0');
+  if (validPath) return path;
+  return "";
+}
 
-  if (validPath && lineno > 0) oss << path << ":" << lineno;
-  else if (validPath) oss << path;
-  else oss << "(unknown location)";
+static void writeFile(Context* context,
+                      std::ostream& oss,
+                      const Location& loc,
+                      std::string* outFilePath = nullptr) {
+  int lineno = loc.line();
+  auto path = locToPath(context, loc);
+  if (outFilePath) *outFilePath = path;
+
+  if (!path.empty()) {
+    if (lineno > 0) oss << path << ":" << lineno;
+    else oss << path;
+  } else {
+    oss << "(unknown location)";
+  }
 }
 
 void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
@@ -129,7 +146,13 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   oss_ << kindText(kind);
   setColor(CLEAR);
   oss_ << " in ";
-  writeFile(context, oss_, errordetail::locate(context, loc));
+
+  // Printing the header prints the file path, so we need to update the
+  // 'lastFilePath_' field.
+  std::string printedPath;
+  writeFile(context, oss_, errordetail::locate(context, loc), &printedPath);
+  noteLastFilePath(std::move(printedPath));
+
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
     const char* name = ErrorBase::getTypeName(type);
@@ -206,6 +229,14 @@ void ErrorWriter::writeCode(const Location& location,
   // message indent and the one extra space of padding.
   size_t codeIndent = gutterSize+3;
   int lineNumber = location.firstLine();
+
+  // Print the file path if it's changed since the last code block. Printing
+  // a code block will display the file path if needed, so lastFilePath_ needs
+  // to be updated.
+  if (noteLastFilePath(locToPath(context, location))) {
+    printBlank(oss_, codeIndent - 1);
+    oss_ << "--> " << lastFilePath_ << std::endl;
+  }
 
   printBlank(oss_, codeIndent);
   oss_ << "|";

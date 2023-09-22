@@ -393,6 +393,9 @@ class ErrorWriter : public ErrorWriterBase {
   std::ostream& oss_;
   ErrorWriterBase::OutputFormat outputFormat_;
   bool useColor_;
+  std::string lastFilePath_;
+
+  bool noteLastFilePath(std::string newPath);
 
   void setColor(TermColorName color);
 
