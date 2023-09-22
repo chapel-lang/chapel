@@ -54,57 +54,57 @@ THE FOLLOWING SYMBOLS ARE AUTOMATICALLY AVAILABLE TO ALL PROGRAMS
 
 Roots
 -----
-:proc:`cbrt`
-:proc:`sqrt`
+:proc:`~AutoMath.cbrt`
+:proc:`~AutoMath.sqrt`
 
 .. _automath-rounding:
 
 Rounding
 --------
-:proc:`ceil`
-:proc:`floor`
-:proc:`round`
-:proc:`trunc`
+:proc:`~AutoMath.ceil`
+:proc:`~AutoMath.floor`
+:proc:`~AutoMath.round`
+:proc:`~AutoMath.trunc`
 
 .. _automath-complex:
 
 Computations Involving Complex Numbers
 --------------------------------------
-:proc:`conj`
-:proc:`phase`
-:proc:`riemProj`
+:proc:`~AutoMath.conj`
+:proc:`~AutoMath.phase`
+:proc:`~AutoMath.riemProj`
 
 .. _automath-inf-nan:
 
 Infinity and NaN
 ----------------
-:proc:`inf`
-:proc:`nan`
-:proc:`isFinite`
-:proc:`isInf`
-:proc:`isNan`
+:proc:`~AutoMath.inf`
+:proc:`~AutoMath.nan`
+:proc:`~AutoMath.isFinite`
+:proc:`~AutoMath.isInf`
+:proc:`~AutoMath.isNan`
 
 .. _automath-comparison:
 
 Comparison Functions
 --------------------
-:proc:`max`
-:proc:`min`
-:proc:`isClose`
+:proc:`~AutoMath.max`
+:proc:`~AutoMath.min`
+:proc:`~AutoMath.isClose`
 
 .. _automath-sign:
 
 Sign Functions
 --------------
-:proc:`sgn`
-:proc:`signbit`
+:proc:`~AutoMath.sgn`
+:proc:`~AutoMath.signbit`
 
 .. _automath-other:
 
 Remaining Functions
 -------------------
-:proc:`abs`
-:proc:`mod`
+:proc:`~AutoMath.abs`
+:proc:`~AutoMath.mod`
 
 Constant and Function Definitions
 ---------------------------------
@@ -118,99 +118,99 @@ AND THE FOLLOWING CATEGORIES ARE NOT AUTOMATICALLY AVAILABLE
 
 Constants
 ---------
-:param:`e`
-:param:`log2E`
-:param:`log10E`
-:param:`ln2`
-:param:`ln10`
-:param:`pi`
-:param:`halfPi`
-:param:`quarterPi`
-:param:`reciprPi`
-:param:`twiceReciprPi`
-:param:`twiceReciprSqrtPi`
-:param:`sqrt2`
-:param:`reciprSqrt2`
+:param:`~Math.e`
+:param:`~Math.log2E`
+:param:`~Math.log10E`
+:param:`~Math.ln2`
+:param:`~Math.ln10`
+:param:`~Math.pi`
+:param:`~Math.halfPi`
+:param:`~Math.quarterPi`
+:param:`~Math.reciprPi`
+:param:`~Math.twiceReciprPi`
+:param:`~Math.twiceReciprSqrtPi`
+:param:`~Math.sqrt2`
+:param:`~Math.reciprSqrt2`
 
 .. _math-trigonometry:
 
 Trigonometric Functions
 -----------------------
-:proc:`acos`
-:proc:`acosh`
-:proc:`asin`
-:proc:`asinh`
-:proc:`atan`
-:proc:`atan2`
-:proc:`atanh`
-:proc:`cos`
-:proc:`cosh`
-:proc:`sin`
-:proc:`sinh`
-:proc:`tan`
-:proc:`tanh`
+:proc:`~Math.acos`
+:proc:`~Math.acosh`
+:proc:`~Math.asin`
+:proc:`~Math.asinh`
+:proc:`~Math.atan`
+:proc:`~Math.atan2`
+:proc:`~Math.atanh`
+:proc:`~Math.cos`
+:proc:`~Math.cosh`
+:proc:`~Math.sin`
+:proc:`~Math.sinh`
+:proc:`~Math.tan`
+:proc:`~Math.tanh`
 
 .. _math-log:
 
 Log Functions
 -------------
-:proc:`ln`
-:proc:`log`
-:proc:`log10`
-:proc:`log1p`
-:proc:`logBasePow2`
-:proc:`log2`
+:proc:`~Math.ln`
+:proc:`~Math.log`
+:proc:`~Math.log10`
+:proc:`~Math.log1p`
+:proc:`~Math.logBasePow2`
+:proc:`~Math.log2`
 
 .. _math-exponential:
 
 Exponential Functions
 ---------------------
-:proc:`exp`
-:proc:`exp2`
-:proc:`expm1`
-:proc:`ldExp`
+:proc:`~Math.exp`
+:proc:`~Math.exp2`
+:proc:`~Math.expm1`
+:proc:`~Math.ldExp`
 
 .. _math-rounding:
 
 Rounding
 --------
-:proc:`divCeil`
-:proc:`divCeilPos`
-:proc:`divFloor`
-:proc:`divFloorPos`
-:proc:`nearbyint`
-:proc:`rint`
+:proc:`~Math.divCeil`
+:proc:`~Math.divCeilPos`
+:proc:`~Math.divFloor`
+:proc:`~Math.divFloorPos`
+:proc:`~Math.nearbyint`
+:proc:`~Math.rint`
 
 .. _math-gamma:
 
 Gamma Functions
 ---------------
-:proc:`gamma`
-:proc:`lnGamma`
+:proc:`~Math.gamma`
+:proc:`~Math.lnGamma`
 
 .. _math-error:
 
 Error Functions
 ---------------
-:proc:`erf`
-:proc:`erfc`
+:proc:`~Math.erf`
+:proc:`~Math.erfc`
 
 .. _math-algorithms:
 
 Algorithms
 ----------
-:proc:`gcd`
+:proc:`~Math.gcd`
 
 .. _math-bessel:
 
 Bessel Functions
 ----------------
-:proc:`j0`
-:proc:`j1`
-:proc:`jn`
-:proc:`y0`
-:proc:`y1`
-:proc:`yn`
+:proc:`~Math.j0`
+:proc:`~Math.j1`
+:proc:`~Math.jn`
+:proc:`~Math.y0`
+:proc:`~Math.y1`
+:proc:`~Math.yn`
 
 
 Constant and Function Definitions
@@ -220,6 +220,8 @@ HEY HERE COME THE DEFINITIONS OF THE AUTO-AVAILABLE SYMBOLS
 ===========================================================
 
 .. include:: AutoMath.rst
+
+
 
 
 AND NOW BACK TO OUR REGULAR PROGRAM
