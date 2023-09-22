@@ -1,23 +1,6 @@
 Release Changes List
 ====================
 
-* check sorting of categories
-* check placement of items into categories
-* check for ' vs `
-* fulfill TODOs
-* check man page
-* check test/release/examples
-* check for docs/1.32/ links
-* check forced linebreaks
-o check links
-* check initial '*'
-* check initial 'A-Z'
-* check 'see:'
-* check for double linefeeds
-* check for changes put too far down in file
-* add highlights
-o spellcheck
-
 
 version 1.32.0
 ==============
@@ -63,7 +46,7 @@ Language Feature Improvements
   (e.g., `var A: [1..3] int = 1..3; writeln(A[..2 by 2]);` prints 1)
 * casts between ranges now check the validity of the stride  
   (see https://chapel-lang.org/docs/1.32/language/spec/conversions.html#explicit-range-conversions)
-* enabled assigning and initilizing integral ranges from bool ranges  
+* enabled assigning and initializing integral ranges from bool ranges  
   (e.g., `var r: range(int(8)) = false..true;` is now supported)
 * added a compiler warning when range slicing might halt execution  
   (e.g., `var r1 = 1.. by 2, r2 = 2.. by 2; writeln(r1[r2]);`)
@@ -701,7 +684,7 @@ Bug Fixes
   (e.g., `var d: domain(?) = {1..5}` now works)
 * fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
-* fiexd a bug in which unstable warnings were generated when using `_`
+* fixed a bug in which unstable warnings were generated when using `_`
 * fixed `fifo` guard pages when using `CHPL_MEM=jemalloc` on arm-based macs
 * fixed a bug when using array type expression actuals within loop bodies
 * removed extra borrow when casting from a managed class to an unmanaged class
@@ -758,7 +741,7 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
-* added protypical support for LLVM 16
+* added prototypical support for LLVM 16
 * added an experimental driver mode, enabled using `--compiler-driver`  
   (see https://chapel-lang.org/docs/1.32/technotes/driver.html)
 * improved `@deprecated` to handle deprecations from paren-ful to paren-less
