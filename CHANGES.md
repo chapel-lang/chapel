@@ -39,6 +39,15 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
+* added a warning when inheriting from a generic class if `(?)` is not used  
+  (e.g., `class C: D` must now be written `class C: D(?)` for generic `D`)
+* added warnings for non-fully-defaulted generic types lacking `(?)` when:
+  - declaring fields or variables
+  - declaring formal arguments
+  - declaring the return type of a routine
+  (e.g., `var t: T;` should be written `var t: T(?);` if `T` is such a type)
+* added a warning for type signatures like 'T()' if 'T' is not fully defaulted
+* added a warning for fields with generic class management to avoid confusion
 * replaced `[this.]complete();` with `init this;` when defining initializers
   (see TODO)
 * `these` is now reserved as a keyword for use as the default iterator method  
@@ -58,11 +67,32 @@ Semantic Changes / Changes to the Chapel Language
   (see TODO)
 * context managers now rely on the `contextManager` interface
   (see TODO)
+* adjusted the deinit point for nested call expressions in `var`/`const` decls
+  (see https://chapel-lang.org/docs/1.32/language/spec/variables.html#deinit-points)
+* a call that could refer to a method or a non-method is now an ambiguity
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#determining-most-specific-functions)
+* methods are no longer included in the more-visible disambiguation check
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#determining-most-specific-functions)
+* declaring a paren-less method with the same name as a field is now an error  
+  (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#methods-without-parentheses)
+* removed some capabilities from records with generic `var`/`const` fields  
+  (e.g., 'record R { var x; }' or 'record S { var y: integral; }')
+  - variables of such types can no longer be default-initialized
+  - type signatures w/ named arguments are no longer supported (`R(x=int)`)  
+    (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#fields-without-types)
+* split initialization is now allowed into a `sync` block  
+  (see https://chapel-lang.org/docs/1.32/language/spec/variables.html#split-initialization)
+* numeric `param`s can now be passed to `const ref` formals
+  (e.g. given `proc f(const ref arg)`, `f(1)` is now supported)
+* l-value checking now applies to nested call expressions returning arrays
+  (e.g., 'modifyArray(returnsArray)' will now emit an l-value error)
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * marked `scan` unstable due to uncertainty about inclusive/exclusive choice
+* deprecated implicit conversions for formals with generic numeric types  
+  (e.g., given `proc f(r: real(?w)) {}`, `f(1)` will not compile in the future)
 * marked `compareAndSwap()` on `atomic` variables as unstable
 * marked `sync.[readXX|writeFF|writeXF|reset|isFull]()` unstable
 * marked explicit calls to `this()` methods as unstable
@@ -417,6 +447,7 @@ Compilation-Time / Generated Code Improvements
 
 Memory Improvements
 -------------------
+* fixed a sporadic memory leak in the 'Futures' package module
 
 Tool Improvements
 -----------------
@@ -519,6 +550,8 @@ Compiler Improvements
 ---------------------
 * added `@llvm.assertVectorized` and `@llvm.metadata` as attributes on loops  
   (see TODO)
+* stopped applying `-Wall` and `Werror` when compiling `extern` blocks
+* improved the behavior of `--mllvm` when it is passed an unknown flag
 
 Compiler Flags
 --------------
@@ -534,6 +567,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* shortened paths displayed in some error messages with `$CHPL_HOME`
 * simplified error formatting when compiling C code within an `extern` block
 * improved errors when calling `Reflection.getFieldRef()` on an internal type  
 * fixed incorrect underlining of string literals in detailed error messages
@@ -612,9 +646,12 @@ Developer-oriented changes: Compiler Flags
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* added protypical support for LLVM 16
 * added an experimental driver mode, enabled using `--compiler-driver`  
   (see TODO)
 * improved `@deprecated` to handle deprecations from paren-ful to paren-less
+* stopped generating LLVM lifetime and invariant hints
+* put and get primitives now assume a `ref` / `const ref` is passed to them
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
