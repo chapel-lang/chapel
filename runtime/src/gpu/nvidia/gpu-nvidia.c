@@ -469,24 +469,5 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
     CUDA_CALL(cuStreamSynchronize(stream));
   }
 }
-/*
-#include <cub/cub.cuh>
-
-int* chpl_gpu_aux_sum_reduce(int* data, int n) {
-
-  int* result;
-  void* temp = NULL;
-  size_t temp_bytes = 0;
-  cub::DeviceReduce::Sum(temp, temp_bytes, data, result, n);
-
-  // Allocate temporary storage
-  cuMemAlloc(&(CUdeviceptr)temp, temp_bytes);
-
-  // Run sum-reduction
-  cub::DeviceReduce::Sum(temp, temp_bytes, d_in, d_out, num_items);
-
-  printf("Result %d\n", *d_out);
-}
-*/
 
 #endif // HAS_GPU_LOCALE
