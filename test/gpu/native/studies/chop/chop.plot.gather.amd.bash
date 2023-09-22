@@ -14,6 +14,7 @@ fi
 # Build and run tests
 # -----------------------------------------------------------------------------
 cd ChOp/other_codes/hip
+sed -i.bak 's/CC.*=.*hipcc.*$/CC = hipcc --offload-arch='"$CHPL_GPU_ARCH"'/g' Makefile
 make clean
 make
 
