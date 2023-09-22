@@ -522,6 +522,7 @@ struct LookupHelper {
                                 IdAndFlags::Flags filterFlags,
                                 const IdAndFlags::FlagSet& excludeFilter,
                                 VisibilitySymbols::ShadowScope shadowScope,
+                                bool* foundInAllContents,
                                 std::unordered_set<ID>* foundInClauses,
                                 std::unordered_set<ID>* ignoreClauses);
 
@@ -593,6 +594,7 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    IdAndFlags::Flags filterFlags,
                                    const IdAndFlags::FlagSet& excludeFilter,
                                    VisibilitySymbols::ShadowScope shadowScope,
+                                   bool* foundInAllContents,
                                    std::unordered_set<ID>* foundInClauses,
                                    std::unordered_set<ID>* ignoreClauses) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
@@ -685,7 +687,16 @@ bool LookupHelper::doLookupInImportsAndUses(
           traceCurPath->push_back(std::move(elt));
         }
 
-        found |= doLookupInScope(symScope, {}, nameToLookUp, newConfig);
+        bool foundHere = doLookupInScope(symScope, {}, nameToLookUp, newConfig);
+        found |= foundHere;
+        // note if we found it from the contents in a bulk
+        // operation like 'use M'
+        if (is.kind() == VisibilitySymbols::ALL_CONTENTS ||
+            is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
+          if (foundHere && foundInAllContents) {
+            *foundInAllContents = true;
+          }
+        }
 
         if (trace) {
           traceCurPath->pop_back();
@@ -1109,12 +1120,14 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     }
     if (checkUseImport) {
       bool gotLocalDecls = got;
+      bool foundInAll = false;
       got |= doLookupInImportsAndUses(scope, r, name, config,
                                       curFilter, excludeFilter,
                                       VisibilitySymbols::REGULAR_SCOPE,
+                                      &foundInAll,
                                       /* foundInClauses */ nullptr,
                                       /* ignoreClauses */ nullptr);
-      if (got && !gotLocalDecls && canCheckMoreForWarning) {
+      if (got && !gotLocalDecls && canCheckMoreForWarning && foundInAll) {
         // if we only found it in a 'public use' etc,
         // check the other scopes in addition, to potentially warn.
         checkMoreForWarning = true;
@@ -1131,6 +1144,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     got |= doLookupInImportsAndUses(scope, r, name, config,
                                     curFilter, excludeFilter,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                    /* foundInAllContents */ nullptr,
                                     &foundInShadowScopeOneClauses,
                                     /* ignoreClauses */ nullptr);
 
@@ -1161,6 +1175,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     got = doLookupInImportsAndUses(scope, r, name, config,
                                    curFilter, excludeFilter,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                   /* foundInAllContents */ nullptr,
                                    /* foundInClauses */ nullptr,
                                    ignoreClausesForShadowScope2);
     if (got && canCheckMoreForWarning && !checkMoreForWarning) {
