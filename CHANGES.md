@@ -1,6 +1,21 @@
 Release Changes List
 ====================
 
+o check sorting of categories
+o check placement of items into categories
+o check man page
+o check test/release/examples
+o check for docs/1.32/ links
+o check forced linebreaks
+o check links
+o check initial '*'
+o check initial 'A-Z'
+o check 'see:'
+o check for changes put too far down in file
+o add highlights
+o spellcheck
+
+
 version 1.32.0
 ==============
 
@@ -9,15 +24,9 @@ released September 28, 2023
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
-Configuration / Build / Packaging Changes
------------------------------------------
-* updated arm-based (M1/M2) Macs to default to `CHPL_TASKS=qthreads`
-* updated arm-based (M1/M2) Macs to default to `CHPL_MEM=jemalloc`
-* improved the equivalence of `arm64` and `aarch64` in our scripting
-
 New Language Features
 ---------------------
-* added explicit `out` return and yield intents
+* added explicit `out` return and yield intents  
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-out-return-intent  
    and https://chapel-lang.org/docs/1.32/language/spec/iterators.html#the-yield-statement)
 * added a user-facing task yield mechanism, `currentTask.yieldExecution()`
@@ -637,6 +646,9 @@ Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for co-locales to `CHPL_COMM=gasnet` with the `ibv` substrate  
   (see https://chapel-lang.org/docs/1.32/usingchapel/multilocale.html#co-locales)
+* updated arm-based (M1/M2) Macs to default to `CHPL_TASKS=qthreads`
+* updated arm-based (M1/M2) Macs to default to `CHPL_MEM=jemalloc`
+* improved the equivalence of `arm64` and `aarch64` in our scripting
 * resolved sporadic memory consistency issues on ARM processors
 * added support for processors with heterogeneous processing units  
   (see https://chapel-lang.org/docs/1.32/usingchapel/executing.html#controlling-the-kind-of-processing-units)
