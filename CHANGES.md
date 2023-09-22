@@ -118,10 +118,10 @@ Semantic Changes / Changes to the Chapel Language
   (e.g., `{1..2, 1..2} - 1` is now an error)
 * built-in hashing now relies on the `hashable` interface  
   (see https://chapel-lang.org/docs/1.32/language/spec/records.html#hashing-a-record  
-   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
+   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html)
 * context managers now rely on the `contextManager` interface  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement  
-   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
+   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html)
 * removed some capabilities from records with generic `var`/`const` fields  
   (e.g., `record R { var x; }` or `record S { var y: integral; }`)
   - variables of such types can no longer be default-initialized
@@ -189,7 +189,7 @@ Deprecated / Removed Language Features
 * deprecated `single` variables
 * deprecated returning `sync`, `single`, or `atomic` by value
 * deprecated relying on default initializers for `sync`, `single`, and `atomic`
-* deprecated the `owned.borrow` type method  
+* deprecated the `owned.borrow()` type method  
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#OwnedObject.owned.borrow)
 * deprecated assignment between unbounded ranges of incompatible `idxtype`
 * deprecated `range.isAmbiguous()` in favor of `!range.isAligned()`
@@ -226,7 +226,6 @@ Standard Library Modules
 * added new `%<`, `%^`, and `%>` format specifiers for justification  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO/FormattedIO.html#id1)
 * added support for casting `bool` values to `bigint`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
 * began an update to the definition of `dayOfWeek` to use ISO numbering  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.cIsoDayOfWeek)
 * added `date.utcToday` as a UTC version of local-time `date.today`  
@@ -246,10 +245,10 @@ Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
 * marked all domain maps other than `blockDist` and `cyclicDist` as unstable
 * converted standard distributions into records, removing the need for `dmap`  
-  (e.g., see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html)
+  (e.g., see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist)
 * renamed the standard distributions to match their module names  
   (e.g., `Block` is now `blockDist`, `Cyclic` is now `cyclicDist`, etc.)  
-  (see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html, et al.)
+  (e.g., see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist)
 * unified and extended the factory methods on `[block|cyclic|stencil]Dist`  
   (see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist.createDomain,  
    https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html#CyclicDist.cyclicDist.createDomain,  
@@ -270,7 +269,7 @@ Changes / Feature Improvements in Libraries
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO/FormattedIO.html#id1)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readBinary  
-   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileWriter.writeBinary))
+   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileWriter.writeBinary)
 * made `readLiteral()` and `matchLiteral()` respect leading whitespace  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readLiteral  
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.matchLiteral)
@@ -291,7 +290,7 @@ Name Changes in the 'Math' Library
 * renamed `INFINITY` to `inf` and `NAN` to `nan`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.inf  
    and https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.nan)
-* renamed ``is[finite|inf|nan]()` to `is[Finite|Inf|Nan]()`  
+* renamed `is[finite|inf|nan]()` to `is[Finite|Inf|Nan]()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isFinite et al.)
 * renamed `conjg()` to `conj()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.conj)
