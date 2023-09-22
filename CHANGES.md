@@ -24,7 +24,7 @@ New Language Features
   (see https://chapel-lang.org/docs/1.32/language/spec/task-parallelism-and-synchronization.html#yielding-task-execution)
 * added support for declaring that records/classes fulfill a given interface  
   (e.g., `record r: i { ... }` says that `r` implements the `i` interface;  
-   see TODO)
+   see https://chapel-lang.org/docs/1.32/technotes/interfaces.html)
 * added `range.tryCast()` to support throwing range casts  
   (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#ChapelRange.range.tryCast)
 * added support for an array creation interface that throws if out of memory  
@@ -66,7 +66,7 @@ Syntactic / Naming Changes
 * added a warning for type signatures like 'T()' if 'T' is not fully defaulted
 * added a warning for fields with generic class management to avoid confusion
 * replaced `[this.]complete();` with `init this;` when defining initializers
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#limitations-on-instance-usage-in-initializers)
 * `these` is now reserved as a keyword for use as the default iterator method  
   (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#the-these-method)
 * renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
@@ -85,9 +85,11 @@ Semantic Changes / Changes to the Chapel Language
 * added an error for addition/subtraction of multi-dim. domains and `[u]int`s  
   (e.g., `{1..2, 1..2} - 1` is now an error)
 * built-in hashing now relies on the `hashable` interface
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/language/spec/records.html#hashing-a-record
+   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
 * context managers now rely on the `contextManager` interface
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement
+   and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
 * `return` statements following a `throw` or `halt()` are now ignored  
   (see https://chapel-lang.org/docs/1.32/language/spec/error-handling.html#throwing-errors  
    and https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.halt)
@@ -219,7 +221,8 @@ Standard Domain Maps (Layouts and Distributions)
        https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html#CyclicDist.cyclicDist.createDomain,  
   and https://chapel-lang.org/docs/1.32/modules/dists/StencilDist.html#StencilDist.stencilDist.createDomain)
 * marked advanced initializer arguments in `blockDist`/`cyclicDist` unstable  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist
+   and https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html#CyclicDist.cyclicDist)
 * disallowed oversubscription in `cyclicDist` and `stencilDist`
   (e.g., `var c = new cyclicDist(1, [here, here]);` reports an error)
 
@@ -237,7 +240,8 @@ Changes / Feature Improvements in Libraries
 * added overloads of deserializing methods that take arguments by `ref`  
   (see TODO)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readBinary
+   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileWriter.writeBinary))
 * added `Math.ln()` to be consistent with the constant names in 'Math'  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ln)
 * limited `AutoMath.isClose()` to only accept `real`/`imag`/`complex` args  
@@ -446,7 +450,8 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `IllegalArgumentError`'s two-argument initializer  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.IllegalArgumentError.init)
 * deprecated `list.first()`/`.last()` in favor of using paren-less methods  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.first
+   and https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.last)
 * marked all `CHPL_*` params in `ChplConfig` as unstable  
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 * deprecated `Reflection.numFields()` in favor of `Reflection.getNumFields()`
@@ -490,9 +495,9 @@ GPU Computing
   (see TODO?)
 * generated GPU kernels are now named using their source filename/line number
 * added support for multi-arch GPU executables when targeting NVIDIA GPUs
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/technotes/gpu.html#vendor-portability)
 * deprecated `assertOnGpu()` in favor of a new `@assertOnGpu` loop attribute
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/technotes/gpu.html#diagnostics-and-utilities)
 
 Performance Optimizations / Improvements
 ----------------------------------------
