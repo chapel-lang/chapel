@@ -37,5 +37,5 @@ for arch in ['nvidia', 'amd']:
   
   p = plot(normalizedTbl, ylabel="ratio", **plotArgs, 
            save=False)
-  p.set_ylim(1.0, 1.3)
+  p.set_ylim(0.0, 1.3)
   p.save("logs/chop_%s_normalized.png" % arch)
