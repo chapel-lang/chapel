@@ -2889,6 +2889,7 @@ module ChapelDomain {
        do not fit in the new idxType or when the original stride(s)
        are not legal for the new `strides` parameter.
      */
+    pragma "no where doc"
     proc tryCast(type t: domain)
       where chpl__isRectangularDomType(t) && this.isRectangular()
         &&  this.chpl_domainTryCastIsSafe(t)

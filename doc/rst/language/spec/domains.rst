@@ -134,6 +134,10 @@ types include all of the associative domain types.
 These base domain types are discussed in turn in the following
 subsections.
 
+The keyword ``domain``, when not followed by parentheses, refers to
+a generic type that can be instantiated with any domain type.
+This type may also be written as ``domain(?)``.
+
 Rectangular Domains
 ~~~~~~~~~~~~~~~~~~~
 
