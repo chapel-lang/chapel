@@ -40,6 +40,7 @@ module ChapelRange {
      When slicing with a range with a negative stride, the old rule
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
+  @chpldoc.nodoc
   config param newSliceRule = false;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
@@ -49,6 +50,7 @@ module ChapelRange {
      The new rule defines such idxType to be the type produced by adding
      the two bounds. I.e.,``(low..high).idxType`` is ``(low+high).type``
      when ``low`` and ``high`` are integral params. */
+  @chpldoc.nodoc
   config param newRangeLiteralType = false;
 
   private param unalignedMark = -1;

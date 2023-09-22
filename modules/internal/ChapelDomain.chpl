@@ -42,6 +42,7 @@ module ChapelDomain {
 
   /* Compile with ``-snoNegativeStrideWarnings``
      to suppress the warning about arrays and slices with negative strides. */
+  @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
   pragma "no copy return"
