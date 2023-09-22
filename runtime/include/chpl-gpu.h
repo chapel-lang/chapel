@@ -149,7 +149,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
-int chpl_gpu_aux_sum_reduce(int* data, int n);
+int64_t chpl_gpu_aux_sum_reduce(int64_t* data, int n);
 
 #endif // HAS_GPU_LOCALE
 
