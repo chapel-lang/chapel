@@ -159,6 +159,8 @@ Deprecated / Unstable / Removed Language Features
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the default cast from arrays to `string`
+* deprecated `require` statements for Chapel source files at non-module scope
+  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-require-statement)
 * deprecated the `useNewArrayFind` config param
 * removed the previously deprecated casts from `string` and `bytes` to `regex`
 * removed support for the deprecated array `.find()` overload
