@@ -63,6 +63,7 @@ Syntactic / Naming Changes
   - declaring formal arguments
   - declaring the return type of a routine
   (e.g., `var t: T;` should be written `var t: T(?);` if `T` is such a type)
+  (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#marking-generic-types)
 * added a warning for type signatures like 'T()' if 'T' is not fully defaulted
 * added a warning for fields with generic class management to avoid confusion
 * replaced `[this.]complete();` with `init this;` when defining initializers
@@ -80,6 +81,11 @@ Semantic Changes / Changes to the Chapel Language
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
 * began changing the default receiver intent for records to `const`  
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
+* redefined the `const` intent to enable optimization opportunities  
+  - `const` allows implementation to choose `const ref` or `const in`
+  - `const` asserts that the value will not be modified by other means
+  - `const` for an array now asserts that the domain will not change
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-const-intent)
 * began changing the type of range literals with mixed-type param bounds  
   (e.g., `0..1:int(8)` is changing from `idxType=int(8)` to `int(64)`)
 * added an error for addition/subtraction of multi-dim. domains and `[u]int`s  
@@ -534,6 +540,14 @@ Language Specification Improvements
 * updated the default intent of `owned`/`shared` to reflect that it's `const`  
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#owned-default-intent
   and https://chapel-lang.org/docs/1.32/language/spec/classes.html#shared-default-intent)
+* described how uses of generic types can be marked with `(?)`  
+  (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#marking-generic-types)
+* added a section describing how fields can be declared with generic type  
+  (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#fields-with-generic-types)
+* added a section describing generic types with defaults  
+  (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#fully-defaulted-generic-types)
+* improved the description of how identifiers are interpreted in methods
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#field-accesses)
 * reformatted the classes section to hide implementation details
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html)
 * added a link between the `%` documentation and `AutoMath.mod()`  
