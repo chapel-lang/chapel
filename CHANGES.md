@@ -389,7 +389,10 @@ Deprecated / Unstable / Removed Library Features
   (see TODO)
 * marked all `CHPL_*` params in `ChplConfig` as unstable  
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
+* deprecated `Reflection.numFields()` in favor of `Reflection.getNumFields()`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Reflection.html#Reflection.getNumFields)
 * marked `Reflection.getRoutineName()` unstable within first-class procedures
+* marked several other 'Reflection' routines as unstable
 * deprecated the transitional `BigInteger.bigintInitThrows` config param
 * deprecated `BigInteger.get_str()` in favor of a cast to `string`
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
@@ -471,6 +474,8 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* updated the first-class procedures technote to reflect the new syntax  
+  (see https://chapel-lang.org/docs/1.32/technotes/firstClassProcedures.html)
 * replaced uses of `dmapped` with factory methods throughout the docs  
   (see TODO)
 * added a new section about I/O transactions to the 'IO' module  
@@ -689,6 +694,7 @@ Developer-oriented changes: Tool Improvements
   - individual constants within an `enum` can now have their own documentation
 * added support for Chapel AST syntax highlighting
 * added sphinx message filter for `:enumconstant:`
+* added support for 'Goto Declaration' to the Chapel language server
 
 Developer-oriented changes: Utilities
 -------------------------------------
