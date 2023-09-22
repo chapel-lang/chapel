@@ -122,8 +122,6 @@
 #                              'ncol': 3,
 #                              'bbox_to_anchor': (0.5, 1.3) }
 
-
-
 import os, re, codecs, shlex, copy, numbers, sys
 from functools import reduce
 
@@ -144,6 +142,13 @@ titlepadding = 20
 labelpadding = 20
 markersize = 10
 markeredgewidth = 3
+
+def verTup(v):
+  return tuple(map(int, (v.split("."))))
+
+if verTup(mpl.__version__) < verTup("3.5.3"):
+  print("chpl_plot requires matplotlib version 3.5.3 or above")
+  sys.exit(1)
 
 def style(color, marker, linestyle):
   return {'color':color, 'linewidth':3, 'marker':marker, 'linestyle':linestyle }
@@ -467,6 +472,7 @@ class Plot:
     for b in self._bars:
       self.ax.bar(**b)
       self.ax.set_xticks(b['x'], self._x_data, fontsize=12)
+
       # Put asterisks above any bars that are extending beyond the axis
       for i, v in enumerate(b['height']):
         y = v + self.ax.get_ylim()[0]
