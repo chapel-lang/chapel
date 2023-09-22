@@ -244,7 +244,7 @@ Changes / Feature Improvements in Libraries
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readLiteral
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.matchLiteral)
 * added overloads of deserializing methods that take arguments by `ref`  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/technotes/ioSerializers.html#the-user-facing-deserializer-api)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readBinary
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileWriter.writeBinary))
@@ -559,7 +559,7 @@ Other Documentation Improvements
 * updated the first-class procedures technote to reflect the new syntax  
   (see https://chapel-lang.org/docs/1.32/technotes/firstClassProcedures.html)
 * replaced uses of `dmapped` with factory methods throughout the docs  
-  (see TODO)
+  (e.g., see https://chapel-lang.org/docs/1.32/primers/distributions.html)
 * added a warning that the result of `.c_str()` may contain mid-buffer NULLs  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.string.c_str)
 * added a new section about I/O transactions to the 'IO' module  
