@@ -2,8 +2,8 @@ Release Changes List
 ====================
 
 * check sorting of categories
-o check placement of items into categories
-o check for ' vs `
+* check placement of items into categories
+* check for ' vs `
 o fulfill TODOs
 o check man page
 o check test/release/examples
@@ -80,7 +80,7 @@ Syntactic / Naming Changes
   - declaring the return type of a routine
   (e.g., `var t: T;` should be written `var t: T(?);` if `T` is such a type)
   (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#marking-generic-types)
-* added a warning for type signatures like 'T()' if 'T' is not fully defaulted
+* added a warning for type signatures like `T()` if `T` is not fully defaulted
 * added a warning for fields with generic class management to avoid confusion
 * renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
@@ -109,7 +109,7 @@ Semantic Changes / Changes to the Chapel Language
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement
    and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
 * removed some capabilities from records with generic `var`/`const` fields  
-  (e.g., 'record R { var x; }' or 'record S { var y: integral; }')
+  (e.g., `record R { var x; }` or `record S { var y: integral; }`)
   - variables of such types can no longer be default-initialized
   - type signatures w/ named arguments are no longer supported (`R(x=int)`)  
     (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#fields-without-types)
@@ -124,7 +124,7 @@ Semantic Changes / Changes to the Chapel Language
 * numeric `param`s can now be passed to `const ref` formals
   (e.g. given `proc f(const ref arg)`, `f(1)` is now supported)
 * l-value checking now applies to nested call expressions returning arrays
-  (e.g., 'modifyArray(returnsArray)' will now emit an l-value error)
+  (e.g., `modifyArray(returnsArray)` will now emit an l-value error)
 * `return` statements following a `throw` or `halt()` are now ignored  
   (see https://chapel-lang.org/docs/1.32/language/spec/error-handling.html#throwing-errors  
    and https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.halt)
@@ -217,7 +217,7 @@ Standard Library Modules
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.cIsoDayOfWeek)
 * added `date.utcToday` as a UTC version of local-time `date.today`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.utcToday)
-* added a `compiledForSingleLocale()` query to the `ChplConfig` module  
+* added a `compiledForSingleLocale()` query to the 'ChplConfig' module  
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.compiledForSingleLocale)
 
 Package Modules
@@ -305,7 +305,7 @@ Name Changes in the 'Math' Library
 
 Name Changes in the 'BigInteger' Library
 ----------------------------------------
-* generally unified argument names in these routines to 'x', 'y', ...
+* generally unified argument names in these routines to `x`, `y`, ...
 * renamed the enum `round` to `roundingMode`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.roundingMode)
 * renamed `[set|tst|com|clr]bit()` to `[set|get|toggle|clear]Bit()`  
@@ -461,7 +461,7 @@ Unstable Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.sort)
 * marked `Reflection.getRoutineName()` unstable within first-class procedures
 * marked several other 'Reflection' routines as unstable
-* marked all `CHPL_*` params in `ChplConfig` as unstable  
+* marked all `CHPL_*` params in 'ChplConfig' as unstable  
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 
 Deprecated / Removed Library Features
@@ -497,8 +497,8 @@ Deprecated / Removed Library Features
 * removed the deprecated `regex.compile()` type method
 * removed the deprecated `regex.sub()` and `regex.subn()` methods
 * removed the deprecated `[list|unrolledLinkedList].extend()` methods
-* removed the deprecated `Sys` module
-* removed the deprecated `OrderedSet` and `OrderedMap` package modules
+* removed the deprecated 'Sys' module
+* removed the deprecated 'OrderedSet' and 'OrderedMap' package modules
 
 GPU Computing
 -------------
@@ -520,7 +520,7 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
-* optimized the performance of aligned array swaps for `Cyclic` and `Stencil`
+* optimized aligned array swaps for `cyclicDist` and `stencilDist`
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -540,7 +540,7 @@ Tool Improvements
 * made `c2chapel` generate `c_ptr[Const]`s for multidimensional arrays
 * `printchplenv` now prints `CHPL_GPU` by default when `CHPL_LOCALE_MODEL=gpu`
 * made `printchplenv` error when using `CHPL_GPU=cpu` and `CHPL_TASKS=fifo`
-* added `:enum[constant]:` to the list of 'chpldoc'-supported inline markups  
+* added `:enum[constant]:` to the list of `chpldoc`-supported inline markups  
   (see https://chapel-lang.org/docs/1.32/tools/chpldoc/chpldoc.html#inline-markup-2)
 
 Language Specification Improvements
@@ -585,7 +585,7 @@ Documentation Improvements for the 'IO' Library
 * refactored documentation for `IO.ioMode` and `IO.ioendian`
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode
   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioendian)
-* refactored `where` clauses in `IO` to improve the generated documentation
+* refactored `where` clauses to improve the generated documentation
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html)
 
 Documentation Improvements for the 'Math' Library
@@ -618,7 +618,7 @@ Other Documentation Improvements
   (e.g., see https://chapel-lang.org/docs/1.32/primers/distributions.html)
 * added a warning that the result of `.c_str()` may contain mid-buffer NULLs  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.string.c_str)
-* refactored and expanded `BigInteger` documentation to be more comprehensive
+* refactored and expanded 'BigInteger' documentation to be more comprehensive
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html)
 * added a note that `chown()` requires elevated privileges to be successful
 * refactored documentation for `DynamicIters.Method` and `Subprocess.pipeStyle`
@@ -674,7 +674,7 @@ Runtime Library Changes
 Launchers
 ---------
 * added co-locale support to the `[slurm|pbs]-gasnetrun_ibv` launchers
-* updated the `pbs-gasnetrun_ibv` launcher to use 'place/select' qsub syntax
+* updated the `pbs-gasnetrun_ibv` launcher to use `place/select` qsub syntax
 
 Error Messages / Semantic Checks
 --------------------------------
@@ -761,9 +761,9 @@ Developer-oriented changes: Compiler improvements / changes
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * made numerous improvements to the 'dyno' resolver for types and calls:
-  - added basic support for 'forwarding' to members in a class or record
+  - added basic support for `forwarding` to members in a class or record
   - added basic support for generic tuple type expressions (e.g. (?, integral))
-  - added basic support for param-folding 'select' statements
+  - added basic support for param-folding `select` statements
   - added support for the `class` typeclass
   - improved handling of control flow when inferring an `iter`'s `yield` type
   - added support for the `c_ptr` type
