@@ -17,11 +17,16 @@ Configuration / Build / Packaging Changes
 
 New Language Features
 ---------------------
+* added explicit `out` return and yield intents
+  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-out-return-intent  
+   and https://chapel-lang.org/docs/1.32/language/spec/iterators.html#the-yield-statement)
 * added a user-facing task yield mechanism, `currentTask.yieldExecution()`
   (see https://chapel-lang.org/docs/1.32/language/spec/task-parallelism-and-synchronization.html#yielding-task-execution)
 * added support for declaring that records/classes fulfill a given interface  
   (e.g., `record r: i { ... }` says that `r` implements the `i` interface;  
    see TODO)
+* added `range.tryCast()` to support throwing range casts  
+  (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#ChapelRange.range.tryCast)
 * added support for an array creation interface that throws if out of memory  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.tryCreateArray)
 * added support for applying attributes to loops
@@ -30,15 +35,27 @@ Language Feature Improvements
 -----------------------------
 * added new routines to create multidimensional arrays from C pointers
   (see TODO)
+* casts between ranges now check the validity of the stride  
+  (see https://chapel-lang.org/docs/1.32/language/spec/conversions.html#explicit-range-conversions)
+* added a compiler warning when range slicing might halt execution
+  (e.g., `var r1 = 1.. by 2, r2 = 2.. by 2; writeln(r1[r2]);`)
+* added support for slicing arrays with unaligned ranges
+  (e.g., `var A: [1..3] int = 1..3; writeln(A[..2 by 2]);` prints 1)
+* enabled assigning and initilizing integral ranges from bool ranges  
+  (e.g., `var r: range(int(8)) = false..true;` is now supported)
 * improved handling of intents on array formals in extern functions
 * added promoted casts from array-of-`T` to `T` without a cast from `T` to `T`
 * first-class procedures are now printed similarly to Chapel's syntax
 * added support for a new `bulkAddNoPreserveInds()` method to sparse domains  
-  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html?highlight=bulkadd#ChapelDomain.bulkAddNoPreserveInds)
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.bulkAddNoPreserveInds)
 * improved support for casts in formal argument type expressions
 
 Syntactic / Naming Changes
 --------------------------
+* renamed `range.aligned` to `range.isAligned()`
+  (see https://chapel-lang.org/docs/main/language/spec/ranges.html#ChapelRange.range.isAligned)
+* renamed `domain.dist` to `domain.distribution`
+  (see https://chapel-lang.org/docs/main/language/spec/domains.html%20distribution#ChapelDomain.distribution)
 * added a warning when inheriting from a generic class if `(?)` is not used  
   (e.g., `class C: D` must now be written `class C: D(?)` for generic `D`)
 * added warnings for non-fully-defaulted generic types lacking `(?)` when:
@@ -63,10 +80,17 @@ Semantic Changes / Changes to the Chapel Language
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
 * began changing the default receiver intent for records to `const`  
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
+* began changing the type of range literals with mixed-type param bounds  
+  (e.g., `0..1:int(8)` is changing from `idxType=int(8)` to `int(64)`)
+* added an error for addition/subtraction of multi-dim. domains and `[u]int`s  
+  (e.g., `{1..2, 1..2} - 1` is now an error)
 * built-in hashing now relies on the `hashable` interface
   (see TODO)
 * context managers now rely on the `contextManager` interface
   (see TODO)
+* `return` statements following a `throw` or `halt()` are now ignored  
+  (see https://chapel-lang.org/docs/1.32/language/spec/error-handling.html#throwing-errors  
+   and https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.halt)
 * adjusted the deinit point for nested call expressions in `var`/`const` decls
   (see https://chapel-lang.org/docs/1.32/language/spec/variables.html#deinit-points)
 * a call that could refer to a method or a non-method is now an ambiguity
@@ -90,34 +114,54 @@ Semantic Changes / Changes to the Chapel Language
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
+* marked associative and sparse domains as unstable
+* marked the `dmap` type and `dmapped` keyword as unstable
 * marked `scan` unstable due to uncertainty about inclusive/exclusive choice
-* deprecated implicit conversions for formals with generic numeric types  
-  (e.g., given `proc f(r: real(?w)) {}`, `f(1)` will not compile in the future)
+* marked all `.safeCast()` methods unstable
+* marked binary operators between tuples and scalars as unstable
+* marked several binary operators over ranges and integral values as unstable
+  (e.g., `(1..3)*(1..5)` and `(1..3) + 1` are now unstable
+* marked first/last/empty queries on unbounded ranges of bool/enum unstable
+  (e.g., `(false..).last` is now unstable)
+* marked `==` and `!=` between unbounded ranges of bool/enum unstable
+  (e.g., `(false..true) == (false..)` is now `true` and unstable)
+* marked transformational methods on ranges and domains unstable  
+  (e.g., `.translate()`, `.interior()`, `exterior()`, `.expand()`)
+* marked `.orderToIndex()` on domains as unstable
+* marked `.offset()` and `.indexOrder()` on ranges as unstable
+* marked `.hasSingleLocalSubdomain()` and `.localSubdomains()` as unstable
 * marked `compareAndSwap()` on `atomic` variables as unstable
 * marked `sync.[readXX|writeFF|writeXF|reset|isFull]()` unstable
 * marked explicit calls to `this()` methods as unstable
 * marked serial `these()` iterators taking arguments as unstable
 * marked default initialization of low- and high-bounded ranges as unstable
   (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#default-values)
+* marked most built-in `config` constants and params as unstable
 * marked `extern` procedures with array arguments as unstable  
 * marked the `[string|bytes].createBorrowingBuffer` factory method unstable  
   (see https://chapel-lang.org/docs/1.32/language/spec/strings.html#String.string.createBorrowingBuffer  
   and https://chapel-lang.org/docs/1.32/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer)
+* deprecated implicit conversions for formals with generic numeric types  
+  (e.g., given `proc f(r: real(?w)) {}`, `f(1)` will not compile in the future)
 * deprecated `single` variables
 * deprecated returning `sync`, `single`, or `atomic` by value
 * deprecated relying on default initializers for `sync`, `single`, and `atomic`
 * deprecated the `owned.borrow` type method
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#OwnedObject.owned.borrow)
+* deprecated assignment between unbounded ranges of incompatible `idxtype`
+* deprecated `range.isAmbiguous()` in favor of `!range.isAligned()`
+* deprecated `range.isNaturallyAligned()` and `range.boundsCheck()`
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
   (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.intIdxType)
 * deprecated the default cast from arrays to `string`
 * deprecated the `useNewArrayFind` config param
+* removed the previously deprecated casts from `string` and `bytes` to `regex`
 * removed support for the deprecated array `.find()` overload
 * removed support for variable-width `bool` types and related queries
 * made importing tertiary methods by naming their type unstable  
   (e.g., `import IO.string;` is no longer stable)
 * removed the `preserveInds` argument to `bulkAdd` on sparse domains  
-  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html?highlight=bulkadd#ChapelDomain.bulkAdd)
+  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html#ChapelDomain.bulkAdd)
 
 Namespace Changes
 -----------------
@@ -166,6 +210,8 @@ Standard Domain Maps (Layouts and Distributions)
   and https://chapel-lang.org/docs/1.32/modules/dists/StencilDist.html#StencilDist.stencilDist.createDomain)
 * marked advanced initializer arguments in `blockDist`/`cyclicDist` unstable  
   (see TODO)
+* disallowed oversubscription in `cyclicDist` and `stencilDist`
+  (e.g., `var c = new cyclicDist(1, [here, here]);` reports an error)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -188,6 +234,10 @@ Changes / Feature Improvements in Libraries
   (see https://chapel-lang.org/docs/1.32/modules/standard/AutoMath.html#AutoMath.isClose)
 * extended `Math.gcd()` support to include overloads for all integral types  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.gcd)
+* indexing into a `map` with default-initializable values no longer throws  
+  (e.g., `var m = new map(int, int); m[5] = 6;` will not throw errors)
+* `map.values()` is now available for maps with non-nilable `owned` values  
+  (e.g., `var m = new map(int, owned MyClass); for v in m.values() do ...`)
 * made `chpl_library_init()` issue an error if called twice
 * made `chpl_library_finalize()` no longer exit, permitting client to continue
 
@@ -455,6 +505,8 @@ Memory Improvements
 Tool Improvements
 -----------------
 * made `c2chapel` generate `c_ptr[Const]`s for multidimensional arrays
+* `printchplenv` now prints `CHPL_GPU` by default when `CHPL_LOCALE_MODEL=gpu`
+* made `printchplenv` error when using `CHPL_GPU=cpu` and `CHPL_TASKS=fifo`
 * added `:enum[constant]:` to the list of 'chpldoc'-supported inline markup  
   (see https://chapel-lang.org/docs/1.32/tools/chpldoc/chpldoc.html#inline-markup-2)
 
@@ -596,6 +648,8 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug in which GPU atomic routines returned the wrong values  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/GPU.html?#GPU.gpuAtomicAdd)
 * fixed a bug when accessing `ref`s declared outside of a GPU-eligible loop
 * fixed a bug with `.locale` queries on AMD GPUs or when `--fast` was used
 * fixed an assertion when running GPU programs for AMD w/ `CHPL_DEVELOPER` set
@@ -698,6 +752,8 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* added a utility for batch replacement guided by errors reported by paratest
+  (see https://github.com/chapel-lang/chapel/tree/release/1.32/util/devel/deprecationScript)
 
 
 version 1.31.0
