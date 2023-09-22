@@ -52,6 +52,7 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
+* made `init`, `postinit`, `deinit`, `super`, and `range` reserved keywords
 * renamed `range.aligned` to `range.isAligned()`
   (see https://chapel-lang.org/docs/main/language/spec/ranges.html#ChapelRange.range.isAligned)
 * renamed `domain.dist` to `domain.distribution`
@@ -121,7 +122,6 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
-
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * marked associative and sparse domains as unstable
 * marked the `dmap` type and `dmapped` keyword as unstable
@@ -152,6 +152,7 @@ Deprecated / Unstable / Removed Language Features
   and https://chapel-lang.org/docs/1.32/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer)
 * marked `.localize()` on `string` and `bytes` as being unstable
 * marked `umask()` on `locale` as being unstable
+* deprecated support for `$` in identifiers (e.g., `foo$` is deprecated)
 * deprecated the `c_string` type in favor of `c_ptrConst(c_char)`
   (see https://chapel-lang.org/docs/1.32/language/evolution.html#c-string-deprecation)
 * deprecated implicit conversions for formals with generic numeric types  
@@ -494,14 +495,18 @@ GPU Computing
 -------------
 * significantly improved `array_on_device` performance, making it the default
   (see TODO)
+* added more math routines when using AMD GPUs
 * improved the performance of math routines in GPU kernels
 * improved performance when using arrays within kernels
+* added support for dumping AMD assembly files when using `--savec`
+  (see https://chapel-lang.org/docs/1.32/technotes/gpu.html#examining-generated-assembly)
 * started using per-task, per-device streams to enable better overlap
 * CUDA 12 is now supported when using `CHPL_LLVM=bundled`
   (see TODO?)
 * generated GPU kernels are now named using their source filename/line number
 * added support for multi-arch GPU executables when targeting NVIDIA GPUs
   (see https://chapel-lang.org/docs/1.32/technotes/gpu.html#vendor-portability)
+* added an experimental `--gpu-specialization` optimization
 * deprecated `assertOnGpu()` in favor of a new `@assertOnGpu` loop attribute
   (see https://chapel-lang.org/docs/1.32/technotes/gpu.html#diagnostics-and-utilities)
 
@@ -635,6 +640,7 @@ Portability / Platform-specific Improvements
   (see https://chapel-lang.org/docs/1.32/platforms/libfabric.html#hugepages-on-cray-xc-and-hpe-cray-ex-systems)
 * improved the landing zone sizing when using `CHPL_COMM=ofi`
 * fixed a linkage issue in which system libraries could override ours
+* suppressed invalid gcc 13 "possibly dangling reference" warning
 
 Compiler Improvements
 ---------------------
