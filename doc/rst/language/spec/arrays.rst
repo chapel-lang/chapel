@@ -11,15 +11,14 @@ of homogeneous type. Since Chapel domains support a rich variety of
 index sets, Chapel arrays are also richer than the traditional linear or
 rectilinear array types in conventional languages. Like domains, arrays
 may be distributed across multiple locales without explicitly
-partitioning them using Chapel’s Domain
-Maps (:ref:`Chapter-Domain_Maps`).
+partitioning them using Chapel’s :ref:`distributions <Chapter-Domain_Maps>`.
 
-Parallel Safety with respect to Arrays (and Domains)
-----------------------------------------------------
+Parallel Safety with respect to Arrays
+--------------------------------------
 
 Users must take care when applying operations to arrays and domains
-concurrently from distinct tasks. For more information see the parallel safety
-section for domains (:ref:`Domain_and_Array_Parallel_Safety`).
+concurrently from distinct tasks. For more information see
+:ref:`the Parallel Safety section for domains <Domain_and_Array_Parallel_Safety>`.
 
 .. _Array_Types:
 
@@ -314,7 +313,7 @@ Runtime Representation of Array Values
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The runtime representation of an array in memory is controlled by its
-domain’s domain map. Through this mechanism, users can reason about and
+domain’s distribution. Through this mechanism, users can reason about and
 control the runtime representation of an array’s elements. See
  :ref:`Chapter-Domain_Maps` for more details.
 
@@ -825,7 +824,7 @@ in :ref:`Formal_Arguments_of_Generic_Array_Types`.
 If a formal array argument specifies a domain as part of its type
 signature, the domain of the actual argument must represent the same
 index set. If the formal array’s domain was declared using an explicit
-domain map, the actual array’s domain must use an equivalent domain map.
+distribution, the actual array’s domain must use an equivalent distribution.
 
 .. _Array_Promotion_of_Scalar_Functions:
 

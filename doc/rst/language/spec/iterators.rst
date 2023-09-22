@@ -335,7 +335,7 @@ the locales on which these tasks execute. For ranges, default domains,
 and default arrays, these values can be controlled via configuration
 constants (:ref:`data_parallel_knobs`).
 
-Domains and arrays defined using distributed domain maps will typically
+Domains and arrays defined using multi-locale distributions will typically
 implement forall loops with multiple tasks on multiple locales. For
 ranges, default domains, and default arrays, all tasks are executed on
 the current locale.
