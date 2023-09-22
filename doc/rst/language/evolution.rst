@@ -63,11 +63,15 @@ In version 1.32, arrays and records now always have a default intent of
 ``const``. This means that if arrays and records are modified inside of a
 function, a ``coforall``, a ``begin``, or ``cobegin``,  they must use a ``ref``
 intent. This also means that record methods which modify their implicit
-``this`` argument must also use a ``ref`` intent. ``forall`` is a current
-exception and will not warn by default. Previously, the compiler would treat
+``this`` argument must also use a ``ref`` intent. Previously, the compiler would treat
 these types as either ``const ref`` intent or ``ref`` intent, depending on if
 they were modified. This change was motivated by improving the consistency
 across types and making potential problems more apparent.
+
+Since there is a lot of user code relying on modifying an outer array, the
+corresponding change for ``forall`` is still under discussion. As a result, it
+will not warn by default, but modifying an outer array from a ``forall`` might
+not be allowed in the future in some or all cases.
 
 Consider the following code segment, which contains a ``coforall`` statement
 which modifies local variables. Prior to version 1.32, this code compiled and
