@@ -580,6 +580,7 @@ Example Codes
 -------------
 * updated sync primer to reflect stable methods and variable naming conventions
   (see https://chapel-lang.org/docs/1.32/primers/syncs.html)
+* removed `fft.chpl` and `hpl.chpl` from the example codes due to immaturity
 
 Syntax Highlighting
 -------------------
@@ -641,6 +642,7 @@ Bug Fixes
 * fixed `fifo` guard pages when using `jemalloc` allocator on arm-based macs
 * fixed a bug when using array type expression actuals within loop bodies
 * removed extra borrow when casting from a managed class to an unmanaged class
+* fixed a bug in which unstable warnings were generated for non-user code
 
 Bug Fixes for Build Issues
 --------------------------
