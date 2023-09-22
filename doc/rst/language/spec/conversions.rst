@@ -191,8 +191,9 @@ conversion is allowed when:
 
 * the ``bounds`` of the source and the target are the same, and
 
-* either the ``strides`` of the source and the target are the same or:
+* one of the following holds:
 
+ - the ``strides`` of the source and the target are the same,
  - the ``strides`` of the target is ``any``,
  - the ``strides`` of the target is ``positive``
    and the ``strides`` of the source is ``one``, or

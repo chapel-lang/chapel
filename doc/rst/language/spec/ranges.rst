@@ -433,11 +433,9 @@ Ranges can be compared using equality and inequality.
 
 .. warning::
 
-   Equality comparisons for ranges over ``enum`` or ``bool`` types
-   when one of the ranges is bounded and the other is unbounded
-   is currently unstable.
-   We currently treat both ranges as being bounded.
-   This might change in the future.
+   Equality comparisons currently treat ranges over ``enum`` or ``bool`` types
+   as bounded on both ends regardless of their ``bounds`` parameters.
+   This behavior is unstable and might change in the future.
 
 .. function:: operator ==(r1: range(?), r2: range(?)): bool
 
@@ -862,7 +860,7 @@ It is an error if the count is greater than the ``size`` of the range.
 
    The count operator currently treats ranges over ``enum`` or ``bool`` types
    as bounded on both ends regardless of their ``bounds`` parameters.
-   This might change in the future.
+   This behavior is unstable and might change in the future.
 
 .. _Range_Arithmetic:
 
