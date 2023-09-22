@@ -450,9 +450,6 @@ Deprecated / Unstable / Removed 'Time' Library Features
 * deprecated `date.createFromTimestamp()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.createFromTimestamp)
 * deprecated `{date,time,dateTime}.isoFormat()` in favor of casts to strings  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.date.:,  
-   https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.time.:,  
-   and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.:)
 * deprecated `dateTime.combine()` in favor of using initializers  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.combine  
    and https://chapel-lang.org/docs/1.32/modules/standard/Time.html#Time.dateTime.init)
@@ -463,7 +460,7 @@ Unstable Library Features
 -------------------------
 * marked `parSafe` as being unstable for `list`, `set`, and `map`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.parSafe,  
-   https://chapel-lang.org/docs/1/32/modules/standard/Set.html#Set.set.parSafe,  
+   https://chapel-lang.org/docs/1.32/modules/standard/Set.html#Set.set.parSafe,  
    and https://chapel-lang.org/docs/1.32/modules/standard/Map.html#Map.map.parSafe)
 * marked several 'BigInteger' procedures as unstable  
   (i.e., `jacobi()`, `legendre()`, `kronecker()`, `gcd()`, `lcm()`, `fac()`,
@@ -487,12 +484,11 @@ Deprecated / Removed Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * deprecated the transitional `BigInteger.bigintInitThrows` config param
 * deprecated `BigInteger.get_str()` in favor of a cast to `string`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
 * deprecated `list.first()`/`.last()` in favor of using paren-less methods  
   (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.first  
    and https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.last)
-* deprecated `IllegalArgumentError`'s two-argument initializer  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.IllegalArgumentError.init)
+* deprecated `IllegalArgumentError`'s two-argument initializer
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.IllegalArgumentError)
 * deprecated `Reflection.numFields()` in favor of `Reflection.getNumFields()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Reflection.html#Reflection.getNumFields)
 * removed the deprecated `BigInteger.Round` enum
@@ -576,7 +572,6 @@ Language Specification Improvements
 * improved the description of how identifiers are interpreted in methods  
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#field-accesses)
 * reformatted the classes section to hide implementation details  
-  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html)
 * added a link between the `%` documentation and `mod()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/expressions.html#modulus-operators)
 * added links to the types discussed in `string` and `bytes` documentation 
@@ -592,7 +587,7 @@ Documentation Improvements for the 'IO' Library
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.advance  
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.seek)
 * added a new section about `file[Reader|Writer]` regions to the 'IO' module  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html##specifying-the-region-of-a-filereader-or-filewriter)
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#specifying-the-region-of-a-filereader-or-filewriter)
 * added new section about `file[Reader|Writer]` locking to the 'IO' module  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#locking-behavior-of-filereaders-and-filewriters)
 * removed references to file descriptors in `stdin`/`stdout`/`stderr` docs  
@@ -601,7 +596,6 @@ Documentation Improvements for the 'IO' Library
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode  
   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioendian)
 * refactored `where` clauses to improve the generated documentation  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html)
 
 Documentation Improvements for the 'Math' Library
 -------------------------------------------------
@@ -720,7 +714,6 @@ Bug Fixes for Build Issues
 Bug Fixes for GPU Computing
 ---------------------------
 * fixed a bug in which GPU atomic routines returned the wrong values  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/GPU.html?#GPU.gpuAtomicAdd)
 * fixed a bug with accessing `ref`s declared outside of a GPU-eligible loop
 * fixed a bug with `.locale` queries on AMD GPUs, or when `--fast` was used
 * fixed an assertion when running GPU programs for AMD w/ `CHPL_DEVELOPER` set
