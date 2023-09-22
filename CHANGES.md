@@ -113,6 +113,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+
 * marked `foreach` loops unstable due to lack of shadowing and `with`-clauses
 * marked associative and sparse domains as unstable
 * marked the `dmap` type and `dmapped` keyword as unstable
@@ -141,6 +142,10 @@ Deprecated / Unstable / Removed Language Features
 * marked the `[string|bytes].createBorrowingBuffer` factory method unstable  
   (see https://chapel-lang.org/docs/1.32/language/spec/strings.html#String.string.createBorrowingBuffer  
   and https://chapel-lang.org/docs/1.32/language/spec/bytes.html#Bytes.bytes.createBorrowingBuffer)
+* marked `.localize()` on `string` and `bytes` as being unstable
+* marked `umask()` on `locale` as being unstable
+* deprecated the `c_string` type in favor of `c_ptrConst(c_char)`
+  (see https://chapel-lang.org/docs/1.32/language/evolution.html#c-string-deprecation)
 * deprecated implicit conversions for formals with generic numeric types  
   (e.g., given `proc f(r: real(?w)) {}`, `f(1)` will not compile in the future)
 * deprecated `single` variables
@@ -167,6 +172,9 @@ Namespace Changes
 -----------------
 * moved several automatically-included math symbols from 'AutoMath' to 'Math'
   (e.g., `div[ceil|floor][pos]()`, `nearbyint()`, `rint()`)
+* moved `string.c_str()` and `bytes.c_str()` to `CTypes`
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.string.c_str
+   and https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.bytes.c_str)
 * upgraded `Json` from a package to a standard module, now named `JSON`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/JSON.html)
 * renamed `Yaml` module to `YAML`  
@@ -523,6 +531,7 @@ Language Specification Improvements
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html)
 * added a link between the `%` documentation and `AutoMath.mod()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/expressions.html#modulus-operators)
+* added links to the types discussed in `string` and `bytes` documentation 
 
 Other Documentation Improvements
 --------------------------------
@@ -530,6 +539,8 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.32/technotes/firstClassProcedures.html)
 * replaced uses of `dmapped` with factory methods throughout the docs  
   (see TODO)
+* added a warning that the result of `.c_str()` may contain mid-buffer NULLs  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.string.c_str)
 * added a new section about I/O transactions to the 'IO' module  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#i-o-transactions)
 * improved the clarity of the documentation of `mark()`/`commit()`/`revert()`  
@@ -567,6 +578,7 @@ Other Documentation Improvements
      and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.expm1)
 * refactored and expanded `BigInteger` documentation to be more comprehensive
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html)
+* added a note that `chown()` requires elevated privileges to be successful
 * refactored documentation for `DynamicIters.Method`, and `Subprocess.pipeStyle`
   (see https://chapel-lang.org/docs/1.32/modules/standard/DynamicIters.html#DynamicIters.Method
   and https://chapel-lang.org/docs/1.32/modules/standard/Subprocess.html#Subprocess.pipeStyle)
