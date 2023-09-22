@@ -72,8 +72,8 @@ domain’s relationship with subdomains, index
 types (:ref:`Index_Types`), and
 arrays (:ref:`Association_of_Arrays_to_Domains`).
 
-The runtime representation of a domain is controlled by its domain map.
-Domain maps are presented in :ref:`Chapter-Domain_Maps`.
+The runtime representation of a domain is controlled by its distribution,
+see :ref:`Distributions <Chapter-Domain_Maps>`.
 
 .. _Domain_and_Array_Parallel_Safety:
 
@@ -427,7 +427,7 @@ Simple Subdomain Types and Values
 A subdomain is a domain whose indices are guaranteed to be a subset of
 those described by another domain known as its *parent domain*. A
 subdomain has the same type as its parent domain, and by default it
-inherits the domain map of its parent domain. All domain types support
+inherits the distribution of its parent domain. All domain types support
 subdomains.
 
 Simple subdomains are subdomains which are not sparse. Sparse subdomains
@@ -446,7 +446,7 @@ subdomains, unless it is specifically distinguished as one or the other.
    Subdomains are provided in Chapel for a number of reasons: to
    facilitate the ability of the compiler or a reader to reason about
    the inter-relationship of distinct domain variables; to support the
-   author’s ability to omit redundant domain mapping specifications; to
+   author’s ability to omit redundant distribution specifications; to
    support the compiler’s ability to reason about the relative alignment
    of multiple domains; and to improve the compiler’s ability to prove
    away bounds checks for array accesses.
@@ -811,7 +811,7 @@ be defined with either a domain or a list of ranges.
 
 The result of slicing, or a *slice*, is a new domain value that
 represents the intersection of the index set of the domain being sliced
-and the index set being applied. The type and domain map of the slice
+and the index set being applied. The type and distribution of the slice
 match the domain being sliced.
 
 Slicing can also be performed on an array, resulting in aliasing a
@@ -881,7 +881,7 @@ The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator produces a new domain
 obtained by applying the ``#`` operator to each of the component ranges
-of the argument domain, with the same domain map as the argument.
+of the argument domain, with the same distribution as the argument.
 
 .. _Adding_and_Removing_Domain_Indices:
 
