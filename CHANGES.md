@@ -620,13 +620,14 @@ Generated Executable Flags
 --------------------------
 * added co-locale support to the `-nl`/`--numLocales` flag
   (e.g., `-nl 4x2` means run on 4 nodes with 2 locales per node)
+  (see https://chapel-lang.org/docs/1.32/usingchapel/multilocale.html#co-locales)
 * unstable `config` variables are now hidden in the `--help` output
 * unstable `config` variables now generate a warning when used on command-line
 
 Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for co-locales to `CHPL_COMM=gasnet` with the `ibv` substrate  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/usingchapel/multilocale.html#co-locales)
 * resolved sporadic memory consistency issues on ARM processors
 * added support for processors with heterogeneous processing units  
   (see https://chapel-lang.org/docs/1.32/usingchapel/executing.html#controlling-the-kind-of-processing-units)
