@@ -16,8 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/gpu/nvidia
+RUNTIME_ROOT = ../../../..
+RUNTIME_SUBDIR = src/gpu/nvidia/cub-wrappers
 
 ifndef CHPL_MAKE_HOME
 export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
@@ -28,12 +28,10 @@ endif
 #
 include $(RUNTIME_ROOT)/make/Makefile.runtime.head
 
-GPU_OBJDIR = $(RUNTIME_OBJDIR)
+CUB_OBJDIR = $(RUNTIME_OBJDIR)
 include Makefile.share
 
-TARGETS = $(GPU_OBJS)
-
-SUBDIRS = cub-wrappers
+TARGETS = $(CUB_OBJS)
 
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 

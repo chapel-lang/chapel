@@ -16,28 +16,14 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-RUNTIME_ROOT = ../../..
-RUNTIME_SUBDIR = src/gpu/nvidia
+CUB_SRCS = gpu-nvidia-cub-wrappers.cc
 
-ifndef CHPL_MAKE_HOME
-export CHPL_MAKE_HOME=$(shell pwd)/$(RUNTIME_ROOT)/..
-endif
+SRCS = gpu-nvidia-cub-wrappers.cc
 
-#
-# standard header
-#
-include $(RUNTIME_ROOT)/make/Makefile.runtime.head
+CUB_OBJS = $(CUB_SRCS:%.cc=$(CUB_OBJDIR)/%.o)
 
-GPU_OBJDIR = $(RUNTIME_OBJDIR)
-include Makefile.share
+RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version
 
-TARGETS = $(GPU_OBJS)
-
-SUBDIRS = cub-wrappers
-
-include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
-
-#
-# standard footer
-#
-include $(RUNTIME_ROOT)/make/Makefile.runtime.foot
+$(RUNTIME_OBJ_DIR)/gpu-nvidia-cub-wrappers.o: gpu-nvidia-cub-wrappers.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
