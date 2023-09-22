@@ -60,10 +60,13 @@ The default intent for arrays and records
 *****************************************
 
 In version 1.32, arrays and records now always have a default intent of
-``const``. Previously, these types would be passed by ``const ref`` intent,
-unless they were modified and then they were passed by ``ref`` intent. This
-change was motivated by improving the consistency across types and making
-potential problems more apparent.
+``const``. This means that if arrays and records are modified inside of a loop
+body, a function, or a task body they must use a ``ref`` intent. This also
+means that record methods which modify their implicit ``this`` argument must
+also use a ``ref`` intent. Previously, the compiler would treat these types as
+either ``const ref`` intent or ``ref`` intent, depending on if they were
+modified. This change was motivated by improving the consistency across types
+and making potential problems more apparent.
 
 Consider the following code segment, which contains a ``forall`` statement
 which modifies local variables. Prior to version 1.32, this code compiled and
@@ -101,7 +104,8 @@ which can be a source of subtle bugs. In 1.32, the loop is written as:
      myArray[i] = myArray[i-1] + 1;
    }
 
-This removes the inconsistency and makes the potential issues much more clear.
+This removes the inconsistency and calls greater attention to potential race
+conditions.
 
 This change also applies to procedures. Consider the following procedure:
 
