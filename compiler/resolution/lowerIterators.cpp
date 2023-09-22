@@ -3083,9 +3083,10 @@ void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<Cal
   for (auto ce: allCalls) {
     // if a call sets the symbol, warn
     if (callSetsSymbol(sym, ce)) {
+      // checking for --warn-unstable done in checkForallRefMaybeConst
       USR_WARN(fs,
-                "inferring a default intent to be 'ref' is deprecated - "
-                "please add an explicit 'ref' forall intent for '%s'",
+                "inferring a 'ref' intent on an array in a forall is unstable"
+                " - in the future this may require an explicit 'ref' forall intent for '%s'",
                 sym->name);
       break;
     }
@@ -3094,6 +3095,9 @@ void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<Cal
 
 
 static void checkForallRefMaybeConst(ForallStmt* fs, std::set<Symbol*> syms) {
+  // bail out here if we shouldn't be warning for this forall
+  if (!shouldWarnUnstableFor(fs)) return;
+
   // collect all SymExpr used in the iterand of the forall so we dont warn for them
   std::vector<SymExpr*> allIterandSymExprs;
   for_alist(expr, fs->iteratedExpressions()) {
