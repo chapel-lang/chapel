@@ -60,15 +60,20 @@ The default intent for arrays and records
 *****************************************
 
 In version 1.32, arrays and records now always have a default intent of
-``const``. This means that if arrays and records are modified inside of a loop
-body, a function, or a task body they must use a ``ref`` intent. This also
-means that record methods which modify their implicit ``this`` argument must
-also use a ``ref`` intent. Previously, the compiler would treat these types as
-either ``const ref`` intent or ``ref`` intent, depending on if they were
-modified. This change was motivated by improving the consistency across types
-and making potential problems more apparent.
+``const``. This means that if arrays and records are modified inside of a
+function, a ``coforall``, a ``begin``, or ``cobegin``,  they must use a ``ref``
+intent. This also means that record methods which modify their implicit
+``this`` argument must also use a ``ref`` intent. Previously, the compiler would treat
+these types as either ``const ref`` intent or ``ref`` intent, depending on if
+they were modified. This change was motivated by improving the consistency
+across types and making potential problems more apparent.
 
-Consider the following code segment, which contains a ``forall`` statement
+Since there is a lot of user code relying on modifying an outer array, the
+corresponding change for ``forall`` is still under discussion. As a result, it
+will not warn by default, but modifying an outer array from a ``forall`` might
+not be allowed in the future in some or all cases.
+
+Consider the following code segment, which contains a ``coforall`` statement
 which modifies local variables. Prior to version 1.32, this code compiled and
 worked without warning.
 
@@ -78,7 +83,7 @@ worked without warning.
    const myDomain = {1..10};
    var myArray: [myDomain] int;
 
-   forall i in 2..9 with (ref myInt) {
+   coforall i in 2..9 with (ref myInt) {
      myInt += i;
      myArray[i] = myArray[i-1] + 1;
    }
@@ -99,7 +104,7 @@ which can be a source of subtle bugs. In 1.32, the loop is written as:
    const myDomain = {1..10};
    var myArray: [myDomain] int;
 
-   forall i in 2..9 with (ref myInt, ref myArray) {
+   coforall i in 2..9 with (ref myInt, ref myArray) {
      myInt += i;
      myArray[i] = myArray[i-1] + 1;
    }

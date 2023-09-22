@@ -48,7 +48,6 @@ knucleotide4.chpl:75: In function 'calculate':
 knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
   knucleotide4.chpl:68: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 18) from function 'writeCount'
   knucleotide4.chpl:48: called as writeCount(data: [domain(1,int(64),one)] uint(8), param str = "GGTATTTTAATTTATAGT") from function 'main'
-knucleotide4.chpl:99: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' forall intent for 'toNum'
 A 30.279
 T 30.113
 G 19.835
