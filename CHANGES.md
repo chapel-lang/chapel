@@ -561,6 +561,10 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* added a new primer providing a deep-dive on Chapel's various loop forms
+  (see https://chapel-lang.org/docs/1.32/primers/loops.html)
+* made a major refresh to the distributions primer  
+  (see https://chapel-lang.org/docs/1.32/primers/distributions.html)
 * updated the first-class procedures technote to reflect the new syntax  
   (see https://chapel-lang.org/docs/1.32/technotes/firstClassProcedures.html)
 * replaced uses of `dmapped` with factory methods throughout the docs  
