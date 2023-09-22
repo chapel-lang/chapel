@@ -582,8 +582,6 @@ Other Documentation Improvements
 * refactored documentation for `DynamicIters.Method`, and `Subprocess.pipeStyle`
   (see https://chapel-lang.org/docs/1.32/modules/standard/DynamicIters.html#DynamicIters.Method
   and https://chapel-lang.org/docs/1.32/modules/standard/Subprocess.html#Subprocess.pipeStyle)
-
-
 * fixed warnings in 'Map' that incorrectly referred to the `set` type
 * updated docs to mention `arm64` as a synonym for `aarch64`  
   (see TODO)
@@ -651,6 +649,7 @@ Bug Fixes
   (e.g., `var d: domain(?) = {1..5}` now works)
 * fixed incorrect scoping of variables in `do`...`while` loops' conditions
 * fixed a bug in which FCPs printed incorrectly with JSON serializers
+* fiexd a bug in which unstable warnings were generated when using `_`
 * fixed `fifo` guard pages when using `jemalloc` allocator on arm-based macs
 * fixed a bug when using array type expression actuals within loop bodies
 * removed extra borrow when casting from a managed class to an unmanaged class
@@ -675,6 +674,7 @@ Bug Fixes for Libraries
 * fixed a bug where `%r`/`%n` ignored precision arguments for integer values
 * fixed bug that prevented deserialization of `bytes` in JSON and CHPL formats
 * fixed bug where the `JsonDeserializer` could fail to parse a list
+* fixed incorrect error text when calling `c_ptrTo`/`c_ptrToConst` on a domain
 * removed unintended warning when calling `Types.isCopyableType()` on a `sync`
 
 Bug Fixes for Tools
@@ -721,7 +721,7 @@ Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * added protypical support for LLVM 16
 * added an experimental driver mode, enabled using `--compiler-driver`  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.32/technotes/driver.html)
 * improved `@deprecated` to handle deprecations from paren-ful to paren-less
 * stopped generating LLVM lifetime and invariant hints
 * put and get primitives now assume a `ref` / `const ref` is passed to them
@@ -1043,7 +1043,8 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-lib-pic)
 * updated an assertion that `fileReader` can produce `EEOF` to `OS.EofError`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.file.reader)
-
+* simplified documentation of `c_ptrTo()` and related procedures' overloads  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptrTo)
 Example Codes
 -------------
 * added a new user's guide example program for promoted procedure calls
