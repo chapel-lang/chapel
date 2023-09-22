@@ -9,7 +9,7 @@ released September 28, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
-* this release is our new release candidate for Chapel 2.0 — send feedback!
+* Chapel 1.32.0 is a release candidate for Chapel 2.0 — please send feedback!
 * significantly improved overall GPU performance, features, and portability
 * generally improved support for ARM64 in terms of performance and portability
 * added support for co-locales on IB networks and added a new `-nl 8x2` format
@@ -72,15 +72,12 @@ Syntactic / Naming Changes
   (see https://chapel-lang.org/docs/main/language/spec/domains.html#ChapelDomain.distribution)
 * added a warning when inheriting from a generic class if `(?)` is not used  
   (e.g., `class C: D` must now be written `class C: D(?)` for generic `D`)
-* added warnings for non-fully-defaulted generic types lacking `(?)` when:
-  - declaring fields or variables
-  - declaring formal arguments
-  - declaring the return type of a routine  
+* added warnings for non-fully-defaulted generic type constraints w/out `(?)`  
   (e.g., `var t: T;` should be written `var t: T(?);` if `T` is such a type)  
   (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#marking-generic-types)
 * added a warning for type signatures like `T()` if `T` is not fully defaulted
 * added a warning for fields with generic class management to avoid confusion
-* renamed `[enter|leave]This()` to `[enter|exit]Context()` for context mgmt  
+* renamed context manager `[enter|leave]This()` to `[enter|exit]Context()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
 * renamed `sync` formals from `x: valtype` to `val: valType`
 * renamed `atomic` formals and formal types from `value: T` to `val: valType`
@@ -461,8 +458,6 @@ Deprecated / Removed Library Features
 ------------------------------------------------
 * deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
-* simplified documentation of `c_ptrTo()` and related procedures' overloads  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptrTo)
 * deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * deprecated the transitional `BigInteger.bigintInitThrows` config param
@@ -608,6 +603,8 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.32/technotes/firstClassProcedures.html)
 * replaced uses of `dmapped` with factory methods throughout the docs  
   (e.g., see https://chapel-lang.org/docs/1.32/primers/distributions.html)
+* simplified documentation of `c_ptrTo()` and related procedures' overloads  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptrTo)
 * added a warning that the result of `.c_str()` may contain mid-buffer NULLs  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.string.c_str)
 * refactored and expanded 'BigInteger' documentation to be more comprehensive  
