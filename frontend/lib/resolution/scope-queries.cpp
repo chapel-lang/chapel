@@ -521,7 +521,9 @@ struct LookupHelper {
                                 LookupConfig config,
                                 IdAndFlags::Flags filterFlags,
                                 const IdAndFlags::FlagSet& excludeFilter,
-                                VisibilitySymbols::ShadowScope shadowScope);
+                                VisibilitySymbols::ShadowScope shadowScope,
+                                std::unordered_set<ID>* foundInClauses,
+                                std::unordered_set<ID>* ignoreClauses);
 
   bool doLookupInAutoModules(const Scope* scope,
                              UniqueString name,
@@ -590,7 +592,9 @@ bool LookupHelper::doLookupInImportsAndUses(
                                    LookupConfig config,
                                    IdAndFlags::Flags filterFlags,
                                    const IdAndFlags::FlagSet& excludeFilter,
-                                   VisibilitySymbols::ShadowScope shadowScope) {
+                                   VisibilitySymbols::ShadowScope shadowScope,
+                                   std::unordered_set<ID>* foundInClauses,
+                                   std::unordered_set<ID>* ignoreClauses) {
   bool onlyInnermost = (config & LOOKUP_INNERMOST) != 0;
   bool skipPrivateVisibilities = (config & LOOKUP_SKIP_PRIVATE_VIS) != 0;
   bool onlyMethodsFields = (config & LOOKUP_ONLY_METHODS_FIELDS) != 0;
@@ -619,6 +623,13 @@ bool LookupHelper::doLookupInImportsAndUses(
       if (is.shadowScopeLevel() != shadowScope) {
         continue;
       }
+
+      // skip visibility clauses specified in ignoreClauses
+      if (ignoreClauses && ignoreClauses->count(is.visibilityClauseId())) {
+        continue;
+      }
+
+      size_t firstResultThisClause = result.size();
       UniqueString from = name;
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
@@ -716,6 +727,10 @@ bool LookupHelper::doLookupInImportsAndUses(
           result.push_back(std::move(*foundIds));
           found = true;
         }
+      }
+
+      if (foundInClauses && found && firstResultThisClause < result.size()) {
+        foundInClauses->insert(is.visibilityClauseId());
       }
     }
   }
@@ -1075,6 +1090,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                 shadowedResults != nullptr;
   bool checkMoreForWarning = false;
   size_t firstResultForWarning = 0;
+  std::unordered_set<ID> foundInShadowScopeOneClauses;
 
   // gather non-shadow scope information
   // (declarations in this scope as well as public use / import)
@@ -1095,15 +1111,18 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       bool gotLocalDecls = got;
       got |= doLookupInImportsAndUses(scope, r, name, config,
                                       curFilter, excludeFilter,
-                                      VisibilitySymbols::REGULAR_SCOPE);
+                                      VisibilitySymbols::REGULAR_SCOPE,
+                                      /* foundInClauses */ nullptr,
+                                      /* ignoreClauses */ nullptr);
       if (got && !gotLocalDecls && canCheckMoreForWarning) {
         // if we only found it in a 'public use' etc,
-        // check the shadow scopes in addition, to potentially warn.
+        // check the other scopes in addition, to potentially warn.
         checkMoreForWarning = true;
+        onlyInnermost = false;
         firstResultForWarning = result.size();
       }
     }
-    if (onlyInnermost && got && !checkMoreForWarning) return true;
+    if (onlyInnermost && got) return true;
   }
 
   // now check shadow scope 1 (only relevant for 'private use')
@@ -1111,7 +1130,9 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     bool got = false;
     got |= doLookupInImportsAndUses(scope, r, name, config,
                                     curFilter, excludeFilter,
-                                    VisibilitySymbols::SHADOW_SCOPE_ONE);
+                                    VisibilitySymbols::SHADOW_SCOPE_ONE,
+                                    &foundInShadowScopeOneClauses,
+                                    /* ignoreClauses */ nullptr);
 
     // treat the auto-used modules as if they were 'private use'd
     got |= doLookupInAutoModules(scope, name,
@@ -1121,9 +1142,17 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                  includeMethods);
     if (got && canCheckMoreForWarning && !checkMoreForWarning) {
       checkMoreForWarning = true;
+      onlyInnermost = false;
       firstResultForWarning = result.size();
     }
-    if (onlyInnermost && got && !checkMoreForWarning) return true;
+    if (onlyInnermost && got) return true;
+  }
+
+  std::unordered_set<ID>* ignoreClausesForShadowScope2 = nullptr;
+  if (checkMoreForWarning) {
+    // ignore 'use M' bringing in M and hiding the module name,
+    // for the purpose of the warning.
+    ignoreClausesForShadowScope2 = &foundInShadowScopeOneClauses;
   }
 
   // now check shadow scope 2 (only relevant for 'private use')
@@ -1131,42 +1160,15 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     bool got = false;
     got = doLookupInImportsAndUses(scope, r, name, config,
                                    curFilter, excludeFilter,
-                                   VisibilitySymbols::SHADOW_SCOPE_TWO);
+                                   VisibilitySymbols::SHADOW_SCOPE_TWO,
+                                   /* foundInClauses */ nullptr,
+                                   ignoreClausesForShadowScope2);
     if (got && canCheckMoreForWarning && !checkMoreForWarning) {
       checkMoreForWarning = true;
+      onlyInnermost = false;
       firstResultForWarning = result.size();
     }
-    if (onlyInnermost && got && !checkMoreForWarning) return true;
-  }
-
-  if (checkMoreForWarning) {
-    // we are going to return before considering other scopes,
-    // but we wish to warn if there is also a match in a toplevel module,
-    // so check that now.
-    if (checkToplevel) {
-      doLookupInToplevelModules(scope, name);
-    }
-
-    if (firstResultForWarning < result.size()) {
-      // move results after firstResultForWarning to shadowedResults
-      // and similarly move traceResults
-      for (size_t i = firstResultForWarning; i < result.size(); i++) {
-        shadowedResults->push_back(std::move(result[i]));
-        if (trace && traceShadowedResults) {
-          traceShadowedResults->push_back(std::move((*traceResult)[i]));
-        }
-      }
-
-      result.erase(result.begin() + firstResultForWarning, result.end());
-      if (trace) {
-        traceResult->erase(traceResult->begin() + firstResultForWarning,
-                           traceResult->end());
-      }
-    }
-
-    // either way, stop now that we have completed searching the
-    // additional scopes we wanted to check for the warning.
-    return true;
+    if (onlyInnermost && got) return true;
   }
 
   // If we are at a method scope, consider receiver scopes now
@@ -1277,6 +1279,35 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   if (checkExternBlocks && scope->containsExternBlock()) {
     foundExternBlock = true;
     doLookupInExternBlocks(scope, name);
+  }
+
+  if (checkMoreForWarning) {
+    if (firstResultForWarning < result.size()) {
+      std::unordered_set<ID> foundFirstIds;
+
+      for (size_t i = 0; i < firstResultForWarning; i++) {
+        foundFirstIds.insert(result[i].firstId());
+      }
+
+      // move results after firstResultForWarning to shadowedResults
+      // and similarly move traceResults
+      for (size_t i = firstResultForWarning; i < result.size(); i++) {
+        auto pair = foundFirstIds.insert(result[i].firstId());
+        if (pair.second) {
+          // if it's the first time finding it, add to shadowedResults
+          shadowedResults->push_back(std::move(result[i]));
+          if (trace && traceShadowedResults) {
+            traceShadowedResults->push_back(std::move((*traceResult)[i]));
+          }
+        }
+      }
+
+      result.erase(result.begin() + firstResultForWarning, result.end());
+      if (trace) {
+        traceResult->erase(traceResult->begin() + firstResultForWarning,
+                           traceResult->end());
+      }
+    }
   }
 
   if (trace) {
