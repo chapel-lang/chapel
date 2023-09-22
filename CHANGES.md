@@ -86,7 +86,7 @@ Syntactic / Naming Changes
 * renamed `range.aligned` to `range.isAligned()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/ranges.html#ChapelRange.range.isAligned)
 * renamed `domain.dist` to `domain.distribution`  
-  (see https://chapel-lang.org/docs/1.32/language/spec/domains.html%20distribution#ChapelDomain.distribution)
+  (see https://chapel-lang.org/docs/main/language/spec/domains.html#ChapelDomain.distribution)
 * added a warning when inheriting from a generic class if `(?)` is not used  
   (e.g., `class C: D` must now be written `class C: D(?)` for generic `D`)
 * added warnings for non-fully-defaulted generic types lacking `(?)` when:
@@ -107,8 +107,7 @@ Semantic Changes / Changes to the Chapel Language
 * began transitioning the default argument/task intent for arrays to `const`  
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
 * began transitioning the default receiver intent for records to `const`  
-  (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
-* redefined the `const` intent to enable optimization opportunities  
+* redefined the `const` intent to enable optimization opportunities
   - `const` allows implementation to choose `const ref` or `const in`
   - `const` asserts that the value will not be modified by other means
   - `const` for an array now asserts that the domain will not change  
@@ -118,10 +117,10 @@ Semantic Changes / Changes to the Chapel Language
 * added an error for addition/subtraction of multi-dim. domains and `[u]int`s  
   (e.g., `{1..2, 1..2} - 1` is now an error)
 * built-in hashing now relies on the `hashable` interface  
-  (see https://chapel-lang.org/docs/1.32/language/spec/records.html#hashing-a-record
+  (see https://chapel-lang.org/docs/1.32/language/spec/records.html#hashing-a-record  
    and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
 * context managers now rely on the `contextManager` interface  
-  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement
+  (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement  
    and https://chapel-lang.org/docs/1.32/technotes/interfaces.html))
 * removed some capabilities from records with generic `var`/`const` fields  
   (e.g., `record R { var x; }` or `record S { var y: integral; }`)
@@ -222,7 +221,7 @@ Standard Library Modules
 ------------------------
 * marked the 'Random', 'CommDiagnostics', and 'Communication' modules unstable
 * added `binarySerializer` and `binaryDeserializer` types to the 'IO' module  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binarySerializer
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binarySerializer  
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.binaryDeserializer)
 * added new `%<`, `%^`, and `%>` format specifiers for justification  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO/FormattedIO.html#id1)
@@ -258,7 +257,7 @@ Standard Domain Maps (Layouts and Distributions)
 * disallowed oversubscription in `cyclicDist` and `stencilDist`  
   (e.g., `var c = new cyclicDist(1, [here, here]);` now reports an error)
 * marked advanced initializer arguments in `blockDist`/`cyclicDist` unstable  
-  (see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist
+  (see https://chapel-lang.org/docs/1.32/modules/dists/BlockDist.html#BlockDist.blockDist  
    and https://chapel-lang.org/docs/1.32/modules/dists/CyclicDist.html#CyclicDist.cyclicDist)
 
 Changes / Feature Improvements in Libraries
@@ -270,10 +269,10 @@ Changes / Feature Improvements in Libraries
 * `%i` and `%u` format specifiers now emit warnings for unused precision args  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO/FormattedIO.html#id1)
 * generalized `[read|write]Binary()` to support multi-dimensional arrays  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readBinary
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readBinary  
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileWriter.writeBinary))
 * made `readLiteral()` and `matchLiteral()` respect leading whitespace  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readLiteral
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.readLiteral  
    and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.fileReader.matchLiteral)
 * added `Math.ln()` to be consistent with the constant names in 'Math'  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.ln)
@@ -336,10 +335,10 @@ Name Changes in the 'BigInteger' Library
 * renamed `ior()` to `or()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.or)
 * renamed `[root|sqrt]rem()` to `[root|sqrt]Rem()`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.rootRem
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.rootRem  
   and https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.sqrtRem)
 * renamed `[add|sub]mul()` to `[add|sub]Mul()`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.addMul
+  (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.addMul  
   and https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.subMul)
 * renamed `hamdist()` to the now unstable `hammingDistance()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.bigint.hammingDistance)
@@ -434,7 +433,7 @@ Deprecated / Unstable / Removed 'Math' Library Features
 * marked `[half|quarter|recipr|twiceRecipr[Sqrt]Pi` as unstable  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.halfPi et al.)
 * marked `sqrt2` and `reciprSqrt2` as unstable  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.sqrt2
+  (see https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.sqrt2  
    and https://chapel-lang.org/docs/1.32/modules/standard/Math.html#Math.reciprSqrt2)
 * removed the deprecated Bessel functions that were included by default
 
@@ -491,7 +490,7 @@ Deprecated / Removed Library Features
 * deprecated `BigInteger.get_str()` in favor of a cast to `string`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html#BigInteger.:)
 * deprecated `list.first()`/`.last()` in favor of using paren-less methods  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.first
+  (see https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.first  
    and https://chapel-lang.org/docs/1.32/modules/standard/List.html#List.list.last)
 * deprecated `IllegalArgumentError`'s two-argument initializer  
   (see https://chapel-lang.org/docs/1.32/modules/standard/Errors.html#Errors.IllegalArgumentError.init)
@@ -567,7 +566,7 @@ Language Specification Improvements
 * simplified the explanation of default intents  
   (see https://chapel-lang.org/docs/1.32/language/spec/procedures.html#the-default-intent)
 * updated the default intent of `owned`/`shared` to reflect that it's `const`  
-  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#owned-default-intent
+  (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#owned-default-intent  
   and https://chapel-lang.org/docs/1.32/language/spec/classes.html#shared-default-intent)
 * described how uses of generic types can be decorated with `(?)`  
   (see https://chapel-lang.org/docs/1.32/language/spec/generics.html#marking-generic-types)
@@ -600,7 +599,7 @@ Documentation Improvements for the 'IO' Library
 * removed references to file descriptors in `stdin`/`stdout`/`stderr` docs  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.stdin)
 * refactored documentation for `IO.ioMode` and `IO.ioendian`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode
+  (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode  
   and https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioendian)
 * refactored `where` clauses to improve the generated documentation  
   (see https://chapel-lang.org/docs/1.32/modules/standard/IO.html)
@@ -639,7 +638,7 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.32/modules/standard/BigInteger.html)
 * added a note that `chown()` requires elevated privileges to be successful
 * refactored documentation for `DynamicIters.Method` and `Subprocess.pipeStyle`  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/DynamicIters.html#DynamicIters.Method
+  (see https://chapel-lang.org/docs/1.32/modules/standard/DynamicIters.html#DynamicIters.Method  
   and https://chapel-lang.org/docs/1.32/modules/standard/Subprocess.html#Subprocess.pipeStyle)
 * fixed warnings in 'Map' that incorrectly referred to the `set` type
 * updated docs to mention `arm64` as a synonym for `aarch64`  
