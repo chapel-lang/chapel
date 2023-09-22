@@ -10,7 +10,7 @@ tbl_amd = None
 tbl_nvidia = None
 if 'amd' in tbls:
   tbl_amd = join(tbls['hip_baseline'], tbls['amd']).with_title(
-    'Stream on %s AMD GPU' % os.getenv('CHPL_GPU_ARCH'))
+    'Stream on AMD GPU')
 if 'nvidia' in tbls:
   tbl_nvidia = join(tbls['cuda_baseline'], tbls['nvidia']).with_title(
     'Stream on NVIDIA GPU')
@@ -19,6 +19,7 @@ def report(tbl, filename):
   if tbl is None:
     return None
   print()
+  print(tbl.csv("%0.1f"))
   print(tbl.md("%0.1f"))
   p = tbl.plot(
     xlabel="Number of Elements (M)",
