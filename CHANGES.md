@@ -8,13 +8,14 @@ Release Changes List
 * check man page
 * check test/release/examples
 * check for docs/1.32/ links
-o check forced linebreaks
+* check forced linebreaks
 o check links
-o check initial '*'
-o check initial 'A-Z'
-o check 'see:'
-o check for changes put too far down in file
-o add highlights
+* check initial '*'
+* check initial 'A-Z'
+* check 'see:'
+* check for double linefeeds
+* check for changes put too far down in file
+* add highlights
 o spellcheck
 
 
@@ -25,6 +26,20 @@ released September 28, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* this release is our new release candidate for Chapel 2.0 — send feedback!
+* significantly improved overall GPU performance, features, and portability
+* generally improved support for ARM64 in terms of performance and portability
+* added support for co-locales on IB networks and added a new `-nl 8x2` format
+* significantly improved the IO serialization framework and its instantiations
+* improved the features and docs for 'IO, 'Math', 'Time', and 'BigInteger'
+* improved the safety of special methods through reserved words and interfaces
+* began unifying default intents for all non-synchronizing types to `const`
+* added warnings to make uses of incomplete generic types clearer in the code
+* converted all standard distributions to records, avoiding the need for `dmap`
+* scrutinized range, domain, and array features as stable vs. unstable
+* added initial support for array allocations that throw when out of memory
+* made the handling of C pointer types more robust and uniform within Chapel
+* added a new primer providing a deep-dive into Chapel's various loop forms
 
 New Language Features
 ---------------------
@@ -468,6 +483,8 @@ Deprecated / Removed Library Features
 ------------------------------------------------
 * deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
+* simplified documentation of `c_ptrTo()` and related procedures' overloads  
+  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptrTo)
 * deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.cPtrToLogicalValue)
 * deprecated the transitional `BigInteger.bigintInitThrows` config param
@@ -740,7 +757,6 @@ Developer-oriented changes: Process
 Developer-oriented changes: Module changes
 ------------------------------------------
 * improved the `BigInteger` module organization to reduce maintenance burden
-
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -1072,8 +1088,7 @@ Other Documentation Improvements
   (see https://chapel-lang.org/docs/1.31/usingchapel/chplenv.html#chpl-lib-pic)
 * updated an assertion that `fileReader` can produce `EEOF` to `OS.EofError`  
   (see https://chapel-lang.org/docs/1.31/modules/standard/IO.html#IO.file.reader)
-* simplified documentation of `c_ptrTo()` and related procedures' overloads  
-  (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptrTo)
+
 Example Codes
 -------------
 * added a new user's guide example program for promoted procedure calls
