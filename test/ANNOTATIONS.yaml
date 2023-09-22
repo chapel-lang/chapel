@@ -2394,6 +2394,8 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
   08/29/23:
     - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
+  09/07/23:
+    - Closes 2757 Add overload of makeDistArray that takes an array (Bears-R-Us/arkouda#2758)
 
 
 arkouda-string:
