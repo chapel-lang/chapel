@@ -1416,7 +1416,17 @@ struct RstResultBuilder {
   bool showComment(const AstNode* node, bool indent=true) {
     std::string errMsg;
     auto lastComment = previousComment(context_, node->id());
+
+    bool isNested = false;
+    if (node->isRecord() || node->isClass()) {
+      auto parent = parentAst(context_, node);
+      isNested = parent->isRecord() || parent->isClass();
+    }
+
+    if (isNested) indentDepth_ += 1;
     bool commentShown = showComment(lastComment, errMsg, indent);
+    if (isNested) indentDepth_ -= 1;
+
     if (!errMsg.empty()) {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
