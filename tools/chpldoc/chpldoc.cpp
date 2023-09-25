@@ -278,7 +278,7 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   // attributes.
   for (auto attr : attrs->children()) {
     if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
-      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
+      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc") || attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.noheader")) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -318,6 +318,18 @@ static bool symbolNameBeginsWithChpl(const Decl* node) {
     }
   }
   return false;
+}
+
+static bool hasAttribute(const AstNode* n, UniqueString attrName) {
+  auto attrs = parsing::astToAttributeGroup(gContext, n);
+  if (attrs) {
+    auto attr = attrs->getAttributeNamed(attrName);
+    return attr != nullptr;
+  }
+  return false;
+}
+static bool hasAttribute(const AstNode* n, const char* attrName) {
+  return hasAttribute(n, UniqueString::get(gContext, attrName));
 }
 
 static bool isNoDoc(const Decl* e) {
@@ -1632,7 +1644,7 @@ struct RstResultBuilder {
       // effect of making references to the :mod: tag for the module
       // illegal, which is appropriate since the modules are not
       // user-facing.
-      if (idIsInInternalModule(context_, m->id())) {
+      if (idIsInInternalModule(context_, m->id()) || hasAttribute(m, "chpldoc.noheader")) {
         os_ << "   :noindex:" << std::endl;
       } else {
         lastComment = previousComment(context_, m->id());
@@ -1653,8 +1665,9 @@ struct RstResultBuilder {
           }
         }
       }
-        os_ << '\n';
 
+      if (!hasAttribute(m, "chpldoc.noheader")) {
+        os_ << '\n';
         // module title
         os_ << m->name().c_str() << "\n";
         os_ << std::string(m->name().length(), '=') << "\n";
@@ -1672,6 +1685,8 @@ struct RstResultBuilder {
         } else {
           os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
         }
+
+      }
 
       } else {
         os_ << m->name().c_str();
