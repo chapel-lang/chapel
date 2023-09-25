@@ -22,12 +22,6 @@
 
 This module provides frequently used mathematical constants and functions.
 
-.. note::
-
-   Automatically-included Math symbols can be found :doc:`here <AutoMath>`.
-   These symbols can also be accessed using ``Math.`` as their qualified access
-   prefix.
-
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
 as described in Section 7.12.  Please consult that standard for an
@@ -47,20 +41,25 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
-THE FOLLOWING SYMBOLS ARE AUTOMATICALLY AVAILABLE TO ALL PROGRAMS
-=================================================================
+Automatically Available Symbols
+-------------------------------
+
+.. note::
+
+   These symbols can also be accessed using ``Math.`` as their qualified access
+   prefix.
 
 .. _automath-roots:
 
 Roots
------
+^^^^^
 :proc:`~AutoMath.cbrt`
 :proc:`~AutoMath.sqrt`
 
 .. _automath-rounding:
 
 Rounding
---------
+^^^^^^^^
 :proc:`~AutoMath.ceil`
 :proc:`~AutoMath.floor`
 :proc:`~AutoMath.round`
@@ -69,7 +68,7 @@ Rounding
 .. _automath-complex:
 
 Computations Involving Complex Numbers
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~AutoMath.conj`
 :proc:`~AutoMath.phase`
 :proc:`~AutoMath.riemProj`
@@ -77,7 +76,7 @@ Computations Involving Complex Numbers
 .. _automath-inf-nan:
 
 Infinity and NaN
-----------------
+^^^^^^^^^^^^^^^^
 :proc:`~AutoMath.inf`
 :proc:`~AutoMath.nan`
 :proc:`~AutoMath.isFinite`
@@ -87,7 +86,7 @@ Infinity and NaN
 .. _automath-comparison:
 
 Comparison Functions
---------------------
+^^^^^^^^^^^^^^^^^^^^
 :proc:`~AutoMath.max`
 :proc:`~AutoMath.min`
 :proc:`~AutoMath.isClose`
@@ -95,29 +94,34 @@ Comparison Functions
 .. _automath-sign:
 
 Sign Functions
---------------
+^^^^^^^^^^^^^^
 :proc:`~AutoMath.sgn`
 :proc:`~AutoMath.signbit`
 
 .. _automath-other:
 
 Remaining Functions
--------------------
+^^^^^^^^^^^^^^^^^^^
 :proc:`~AutoMath.abs`
 :proc:`~AutoMath.mod`
 
+.. _automath-constant-and-function-definitions:
+
 Constant and Function Definitions
----------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+.. include:: AutoMath.rst
 
-AND THE FOLLOWING CATEGORIES ARE NOT AUTOMATICALLY AVAILABLE
-============================================================
+.. module:: Math
+  :noindex:
 
+Non-Automatically Available Symbols
+-----------------------------------
 
 .. _math-constants:
 
 Constants
----------
+^^^^^^^^^
 :param:`~Math.e`
 :param:`~Math.log2E`
 :param:`~Math.log10E`
@@ -135,7 +139,7 @@ Constants
 .. _math-trigonometry:
 
 Trigonometric Functions
------------------------
+^^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.acos`
 :proc:`~Math.acosh`
 :proc:`~Math.asin`
@@ -153,7 +157,7 @@ Trigonometric Functions
 .. _math-log:
 
 Log Functions
--------------
+^^^^^^^^^^^^^
 :proc:`~Math.ln`
 :proc:`~Math.log`
 :proc:`~Math.log10`
@@ -164,7 +168,7 @@ Log Functions
 .. _math-exponential:
 
 Exponential Functions
----------------------
+^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.exp`
 :proc:`~Math.exp2`
 :proc:`~Math.expm1`
@@ -173,7 +177,7 @@ Exponential Functions
 .. _math-rounding:
 
 Rounding
---------
+^^^^^^^^
 :proc:`~Math.divCeil`
 :proc:`~Math.divCeilPos`
 :proc:`~Math.divFloor`
@@ -184,27 +188,27 @@ Rounding
 .. _math-gamma:
 
 Gamma Functions
----------------
+^^^^^^^^^^^^^^^
 :proc:`~Math.gamma`
 :proc:`~Math.lnGamma`
 
 .. _math-error:
 
 Error Functions
----------------
+^^^^^^^^^^^^^^^
 :proc:`~Math.erf`
 :proc:`~Math.erfc`
 
 .. _math-algorithms:
 
 Algorithms
-----------
+^^^^^^^^^^
 :proc:`~Math.gcd`
 
 .. _math-bessel:
 
 Bessel Functions
-----------------
+^^^^^^^^^^^^^^^^
 :proc:`~Math.j0`
 :proc:`~Math.j1`
 :proc:`~Math.jn`
@@ -212,22 +216,10 @@ Bessel Functions
 :proc:`~Math.y1`
 :proc:`~Math.yn`
 
+.. _math-constant-and-function-definitions:
 
 Constant and Function Definitions
----------------------------------
-
-HEY HERE COME THE DEFINITIONS OF THE AUTO-AVAILABLE SYMBOLS
-===========================================================
-
-.. include:: AutoMath.rst
-
-.. module:: Math
-  :noindex:
-
-
-AND NOW BACK TO OUR REGULAR PROGRAM
-===================================
-
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 */
 module Math {
