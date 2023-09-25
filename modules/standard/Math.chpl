@@ -221,7 +221,8 @@ HEY HERE COME THE DEFINITIONS OF THE AUTO-AVAILABLE SYMBOLS
 
 .. include:: AutoMath.rst
 
-
+.. module:: Math
+  :noindex:
 
 
 AND NOW BACK TO OUR REGULAR PROGRAM
