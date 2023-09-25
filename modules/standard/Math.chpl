@@ -105,16 +105,6 @@ Remaining Functions
 :proc:`~AutoMath.abs`
 :proc:`~AutoMath.mod`
 
-.. _automath-constant-and-function-definitions:
-
-Constant and Function Definitions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-
-.. include:: AutoMath.rst
-
-.. module:: Math
-  :noindex:
-
 Non-Automatically Available Symbols
 -----------------------------------
 
@@ -216,10 +206,25 @@ Bessel Functions
 :proc:`~Math.y1`
 :proc:`~Math.yn`
 
-.. _math-constant-and-function-definitions:
+.. _constant-and-function-definitions:
 
 Constant and Function Definitions
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+---------------------------------
+
+.. _automath-constant-and-function-definitions:
+
+Constant and Function Definitions for AutoMath
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. include:: AutoMath.rst
+
+.. module:: Math
+  :noindex:
+
+.. _math-constant-and-function-definitions:
+
+Constant and Function Definitions for Math
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 */
 module Math {
