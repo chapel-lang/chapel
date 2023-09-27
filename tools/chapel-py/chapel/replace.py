@@ -26,7 +26,22 @@ import os
 import sys
 
 class ReplacementContext:
+    """
+    This class is given as an argument to 'finder' functions so that
+    they are able to retrieve information about the nodes and the current
+    file. While Dyno parses the file and reports locations using line and
+    column numbers, it does not mappings from lines and columns to
+    offsets in the file (which is what we need to read text). This class
+    contains that information.
+    """
+
+
     def __init__(self, path):
+        """
+        Given a file path, creates a ReplacementContext that contains the
+        mapping information for that file.
+        """
+
         # Build the line number -> file position map
         with open(path, "r") as file:
             self.content = file.read()
@@ -40,11 +55,18 @@ class ReplacementContext:
                 self.lines[line] = i+1 # the next characrer is the start of the next line
 
     def loc_to_idx(self, loc):
+        """
+        Given a location (as retrieved from an AST node), convert this
+        location into an offset in the source file.
+        """
         (row, col) = loc
         return self.lines[row] + (col - 1)
 
-
     def node_idx_range(self, node):
+        """
+        Given a node, determine where it starts and ends in the given source
+        file.
+        """
         loc = node.location()
 
         range_start = self.loc_to_idx(loc.start())
@@ -52,22 +74,40 @@ class ReplacementContext:
         return (range_start, range_end)
 
     def node_exact_string(self, node):
+        """
+        Return the substring that corresponds to the given node in the source
+        file.
+        """
         (range_start, range_end) = self.node_idx_range(node)
         return self.content[range_start:range_end]
 
     def node_indent(self, node):
+        """
+        Determine the number of characters between the given node and the
+        beginning of the line.
+        """
         (range_start, _) = self.node_idx_range(node)
         return range_start - self.lines[self.lines_back[range_start]]
 
 def rename_formals(rc, fn, renames):
+    """
+    Helper iterator to be used in finder functions. Given a function
+    and a map of ('original formal name' -> 'new formal name'), yields
+    updates that perform the formal renaming.
+    """
+
     for child in fn.formals():
         name = child.name()
         if name not in renames: continue
 
-        child_text = rc.node_exact_string(child)
-        yield (child, child_text.replace(name, renames[name]))
+        yield (child, lambda child_text: child_text.replace(name, renames[name]))
 
 def rename_named_actuals(rc, call, renames):
+    """
+    Helper iterator to be used in finder functions. Given a function call expression,
+    and a map of ('original name' -> 'new name'), yields
+    updates that rename named actuals like the `x` in `f(x=...)`.
+    """
     for actual in call.actuals():
         if isinstance(actual, tuple):
             (name, actual) = actual
@@ -79,7 +119,7 @@ def rename_named_actuals(rc, call, renames):
             # yield (actual, actual_text.replace(name, renames[name]))
             yield from []
 
-def do_replace(finder, ctx, filename, suffix, inplace):
+def _do_replace(finder, ctx, filename, suffix, inplace):
     asts = ctx.parse(filename)
     rc = ReplacementContext(filename)
     new_content = rc.content
@@ -155,6 +195,18 @@ def do_replace(finder, ctx, filename, suffix, inplace):
         newfile.write(new_content)
 
 def run(finder, name='replace', description='A tool to search-and-replace Chapel expressions with others'):
+    """
+    Start a command-line replacer program with the given 'finder' function.
+    This program will automatically support acceppting a list of files on
+    the command line, and two command-line options.
+
+    The first option is '--suffix', used for out-of-place substitutions: the
+    new file will be called '.chpl.thesuffix'. The default suffix value is 'new'.
+
+    The second option is '--in-place', used to perform in-place (modifying)
+    substitutions on files.
+    """
+
     parser = argparse.ArgumentParser(prog=name, description=description)
     parser.add_argument('filenames', nargs='*')
     parser.add_argument('--suffix', dest='suffix', action='store', default='.new')
@@ -181,9 +233,12 @@ def run(finder, name='replace', description='A tool to search-and-replace Chapel
         to_replace = buckets[bucket]
 
         for filename in to_replace:
-            do_replace(finder, ctx, filename, args.suffix, args.inplace)
+            _do_replace(finder, ctx, filename, args.suffix, args.inplace)
 
 def fuse(*args):
+    """
+    Combines multiple 'finder' iterators into one.
+    """
     def fused(rc, root):
         for arg in args:
             yield from arg(rc, root)

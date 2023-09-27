@@ -406,11 +406,8 @@ static PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSE
 
 
 static PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto attributeGroup = self->astNode->attributeGroup();
-  if (attributeGroup != nullptr) {
-    return wrapAstNode((ContextObject*) self->contextObject, attributeGroup);
-  }
-  Py_RETURN_NONE;
+  return wrapAstNode((ContextObject*) self->contextObject,
+                     self->astNode->attributeGroup());
 }
 
 static PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)) {
@@ -487,7 +484,7 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
     } \
   }
 
-PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return chpl::uast::qualifierToString(node->storageKind()))
+PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return chpl::uast::qualifierToString(node->storageKind()));
 PLAIN_GETTER(NamedDecl, name, "s", return node->name());
 PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
 PLAIN_GETTER(Variable, kind, "s", return chpl::uast::qualifierToString((chpl::uast::Qualifier) node->kind()));

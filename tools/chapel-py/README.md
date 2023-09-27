@@ -346,7 +346,7 @@ def replace_all_42(rc, root):
 run(replace_all_42)
 ```
 
-A more practical example that of renaming methods. Note that this is not
+A more practical example is renaming methods. Note that this is not
 amenable to naive substitution: we don't want to accidentally rename non-methods
 that happen to have the same name, or even locally declared functions inside
 other functions in a record or class. Consider renaming the `enterThis`

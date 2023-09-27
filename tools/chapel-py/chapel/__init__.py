@@ -189,7 +189,7 @@ def match_pattern(ast, pattern):
             idx += 1
             children = list(ast)
             for child in children:
-                # Too many children, pattern didn't expct
+                # Too many children, pattern didn't expect
                 if idx == len(pat): return False
 
                 child_pat = pat[idx]
