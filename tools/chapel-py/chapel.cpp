@@ -515,49 +515,30 @@ PLAIN_GETTER(SimpleBlockLike, block_style, "s", return blockStyleToString(node->
 PLAIN_GETTER(Loop, block_style, "s", return blockStyleToString(node->blockStyle()));
 PLAIN_GETTER(EnumElement, init_expression, "O", return wrapAstNode(contextObject, node->initExpression()));
 
+#define ACTUAL_ITERATOR(NAME)\
+  static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
+    auto node = ((NAME##Object*) self)->parent.astNode->to##NAME(); \
+    \
+    auto argList = Py_BuildValue("(O)", (PyObject*) self); \
+    auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
+    Py_XDECREF(argList); \
+    \
+    auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy; \
+    astCalliterObject->current = 0; \
+    astCalliterObject->num = node->numActuals(); \
+    astCalliterObject->container = node; \
+    astCalliterObject->childGetter = [](const void* n, int child) { \
+      return ((chpl::uast::NAME*) n)->actual(child); \
+    }; \
+    astCalliterObject->nameGetter = [](const void* n, int child) { \
+      return ((chpl::uast::NAME*) n)->actualName(child); \
+    }; \
+    \
+    return astCallIterObjectPy; \
+  }
 
-static PyObject* AttributeObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto attributeNode = ((AttributeObject*) self)->parent.astNode->toAttribute();
-
-  auto argList = Py_BuildValue("(O)", (PyObject*) self);
-  auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList);
-  Py_XDECREF(argList);
-
-  auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy;
-  astCalliterObject->current = 0;
-  astCalliterObject->num = attributeNode->numActuals();
-  astCalliterObject->container = attributeNode;
-  astCalliterObject->childGetter = [](const void* node, int child) {
-    return ((chpl::uast::Attribute*) node)->actual(child);
-  };
-  astCalliterObject->nameGetter = [](const void* node, int child) {
-    return ((chpl::uast::Attribute*) node)->actualName(child);
-  };
-
-  return astCallIterObjectPy;
-}
-
-static PyObject* FnCallObject_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto fnCallNode = ((FnCallObject*) self)->parent.astNode->toFnCall();
-
-  auto argList = Py_BuildValue("(O)", (PyObject*) self);
-  auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList);
-  Py_XDECREF(argList);
-
-  auto astCalliterObject = (AstCallIterObject*) astCallIterObjectPy;
-  astCalliterObject->current = 0;
-  astCalliterObject->num = fnCallNode->numActuals();
-  astCalliterObject->container = fnCallNode;
-  astCalliterObject->childGetter = [](const void* node, int child) {
-    return ((chpl::uast::FnCall*) node)->actual(child);
-  };
-  astCalliterObject->nameGetter = [](const void* node, int child) {
-    return ((chpl::uast::FnCall*) node)->actualName(child);
-  };
-
-  return astCallIterObjectPy;
-}
-
+ACTUAL_ITERATOR(Attribute);
+ACTUAL_ITERATOR(FnCall);
 
 template <chpl::uast::asttags::AstTag tag>
 struct PerNodeInfo {
