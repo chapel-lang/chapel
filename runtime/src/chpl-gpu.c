@@ -451,13 +451,13 @@ void chpl_gpu_copy_device_to_device(c_sublocid_t dst_dev, void* dst,
 
   CHPL_GPU_DEBUG("Copying %zu bytes from device to device\n", n);
 
-  chpl_gpu_impl_use_device(dst_dev);
+  chpl_gpu_impl_use_device(src_dev);
 
   chpl_gpu_diags_verbose_device_to_device_copy(ln, fn, dst_dev, src_dev, n,
                                                commID);
   chpl_gpu_diags_incr(device_to_device);
 
-  void* stream = get_stream(dst_dev);
+  void* stream = get_stream(src_dev);
   chpl_gpu_impl_copy_device_to_device(dst, src, n, stream);
   if (dst_dev != src_dev) {
     // going to a device that maybe used by a different task, synchronize
