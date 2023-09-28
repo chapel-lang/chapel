@@ -277,7 +277,7 @@ syn keyword chplStructure	prototype override lifetime
 syn keyword chplBoolean		true false
 syn keyword chplConditional	if then else
 syn keyword chplConstant	nil none
-syn keyword chplRepeat		while for do coforall forall in serial
+syn keyword chplRepeat		while for do coforall forall foreach in serial
 syn keyword chplLabel	        when otherwise label
 syn keyword chplErrorHandling   throw throws try catch
 
