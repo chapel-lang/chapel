@@ -78,7 +78,7 @@ static std::string fileText(Context* context, const Location& loc) {
   return fileText.text();
 }
 
-bool ErrorWriter::noteLastFilePath(std::string newPath) {
+bool ErrorWriter::noteFilePath(std::string newPath) {
   bool toReturn = lastFilePath_ != newPath;
   lastFilePath_ = std::move(newPath);
   return toReturn;
@@ -151,7 +151,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   // 'lastFilePath_' field.
   std::string printedPath;
   writeFile(context, oss_, errordetail::locate(context, loc), &printedPath);
-  noteLastFilePath(std::move(printedPath));
+  noteFilePath(std::move(printedPath));
 
   if (outputFormat_ == DETAILED) {
     // Second part of the error decoration
@@ -233,7 +233,7 @@ void ErrorWriter::writeCode(const Location& location,
   // Print the file path if it's changed since the last code block. Printing
   // a code block will display the file path if needed, so lastFilePath_ needs
   // to be updated.
-  if (noteLastFilePath(locToPath(context, location))) {
+  if (noteFilePath(locToPath(context, location))) {
     printBlank(oss_, codeIndent - 1);
     oss_ << "--> " << lastFilePath_ << std::endl;
   }

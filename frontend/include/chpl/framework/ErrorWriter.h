@@ -395,7 +395,13 @@ class ErrorWriter : public ErrorWriterBase {
   bool useColor_;
   std::string lastFilePath_;
 
-  bool noteLastFilePath(std::string newPath);
+  /* Called when the error tries to print a particular file path to indicate
+     the location of an error. Returns true if this is needed, which happens
+     when the previously-printed file path was different. Otherwise,
+     the error message can skip printing file path information, since
+     it has not changed.
+   */
+  bool noteFilePath(std::string newPath);
 
   void setColor(TermColorName color);
 
