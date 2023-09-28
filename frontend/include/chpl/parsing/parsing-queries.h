@@ -179,6 +179,17 @@ const Location& locateId(Context* context, ID id);
  */
 const Location& locateAst(Context* context, const uast::AstNode* ast);
 
+/** Also define getters for additional locations such as e.g., dot fields.
+    A complete list can be seen in "chpl/uast/location-map-macro.h".
+    The form is e.g., `locateDotFieldWithId(Context* context, ID id)`.
+*/
+#define CHPL_LOCATION_MAP(ast__, location__) \
+  Location locate##location__##WithId(Context* context, ID id); \
+  Location locate##location__##WithAst(Context* context, \
+                                       const uast::ast__* ast);
+#include "chpl/uast/location-map-macro.h"
+#undef CHPL_LOCATION_MAP
+
 using ModuleVec = std::vector<const uast::Module*>;
 /**
  This query returns a vector of parsed modules given a file path.

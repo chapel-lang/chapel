@@ -80,6 +80,15 @@ void BuilderResult::swap(BuilderResult& other) {
   commentIdToLocation_.swap(other.commentIdToLocation_);
   idToParentId_.swap(other.idToParentId_);
   idToAst_.swap(other.idToAst_);
+
+  // Swap additional location maps.
+  #define CHPL_LOCATION_MAP(ast__, location__) { \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+    m1.swap(m2); \
+  }
+  #include "chpl/uast/location-map-macro.h"
+  #undef CHPL_LOCATION_MAP
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -105,6 +114,15 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
   changed |= defaultUpdate(keep.idToLocation_, addin.idToLocation_);
   changed |= defaultUpdate(keep.commentIdToLocation_, addin.commentIdToLocation_);
+
+  // Also update additional location maps.
+  #define CHPL_LOCATION_MAP(ast__, location__) { \
+    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
+    changed |= defaultUpdate(m1, m2); \
+  }
+  #include "chpl/uast/location-map-macro.h"
+  #undef CHPL_LOCATION_MAP
 
   return changed;
 }
@@ -139,6 +157,15 @@ void BuilderResult::mark(Context* context) const {
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
   }
+
+  // Also mark locations in the additional location maps. No need to mark
+  // IDs since they should already be marked as explained above.
+  #define CHPL_LOCATION_MAP(ast__, location__) { \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    for (const auto& p : m) p.second.mark(context); \
+  }
+  #include "chpl/uast/location-map-macro.h"
+  #undef CHPL_LOCATION_MAP
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -189,6 +216,18 @@ ID BuilderResult::idToParentId(ID id) const {
   }
   return ID();
 }
+
+// Add getters for additional locations that go from AST or ID to location.
+#define CHPL_LOCATION_MAP(ast__, location__) \
+  Location BuilderResult:: \
+  idTo##location__##Location(ID id, UniqueString path) const { \
+    if (!id) return Location(path); \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    auto it = m.find(id); \
+    return (it != m.end()) ? it->second : Location(path); \
+  }
+#include "chpl/uast/location-map-macro.h"
+#undef CHPL_LOCATION_MAP
 
 #define DYNO_BUILDER_RESULT_START_STR std::string("DYNO_BUILDER_RESULT_START")
 #define DYNO_BUILDER_RESULT_END_STR std::string("DYNO_BUILDER_RESULT_END")
@@ -337,6 +376,16 @@ bool BuilderResult::equals(const BuilderResult& other) const {
       return false;
     }
   }
+
+  // Check that all the additional location maps match.
+  #define CHPL_LOCATION_MAP(ast__, location__) { \
+      auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+      auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+      if (m1.size() != m2.size()) return false; \
+      if (m1 != m2) return false; \
+    }
+  #include "chpl/uast/location-map-macro.h"
+  #undef CHPL_LOCATION_MAP
 
   return true;
 }
