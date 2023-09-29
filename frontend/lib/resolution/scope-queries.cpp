@@ -1195,12 +1195,17 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (onlyInnermost && got) return true;
   }
 
-  // consider the parent scopes due to nesting
+  // consider the outer scopes due to nesting
   if (checkParents) {
     // create a config that doesn't search parent scopes or toplevel scopes
     // (such scopes are covered directly later in this function)
     LookupConfig newConfig = config;
     newConfig &= ~(LOOKUP_PARENTS|LOOKUP_GO_PAST_MODULES|LOOKUP_TOPLEVEL);
+    // if we are searching for a warning, ignore anything found through
+    // a shadow scope in an outer scope
+    if (checkMoreForWarning) {
+      newConfig |= LOOKUP_SKIP_SHADOW_SCOPES;
+    }
 
     // Search parent scopes, if any, until a module is encountered
     const Scope* cur = nullptr;
