@@ -1,3 +1,9 @@
+chainNoBlockLaterUse.chpl:25: In function 'innerCall':
+chainNoBlockLaterUse.chpl:28: warning: potentially surprising shadowing for 'foo'
+chainNoBlockLaterUse.chpl:27: note: it refers to a symbol found through the 'use' statement here
+chainNoBlockLaterUse.chpl:4: note: leading to 'foo' defined here
+chainNoBlockLaterUse.chpl:14: note: but, there is a shadowed symbol found through the 'use' statement here
+chainNoBlockLaterUse.chpl:9: note: leading to 'foo' defined here
 false
 95.3
 14

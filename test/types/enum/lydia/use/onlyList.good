@@ -1,2 +1,7 @@
+onlyList.chpl:11: In function 'main':
+onlyList.chpl:14: warning: potentially surprising shadowing for 'paul'
+onlyList.chpl:12: note: it refers to a symbol found through the 'use' statement here
+onlyList.chpl:4: note: leading to 'paul' defined here
+onlyList.chpl:6: note: but, there is a shadowed symbol 'paul' defined here
 paul
 clooney
