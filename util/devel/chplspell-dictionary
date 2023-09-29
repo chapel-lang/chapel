@@ -2741,11 +2741,6 @@ libhdrfile
 strconfig
 vfns
 
-FILEID: 98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5
-doctmpdirname
-myshell
-rfind
-
 FILEID: 9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5
 fcopy
 
@@ -3735,7 +3730,6 @@ vdebugstarted
 FILEID: 390fbcc4-4e3c-11e6-907f-843835579daa
 chplserversrc
 chpluserobj
-doctmpdirname
 incpath
 libmvec
 lmode
@@ -5451,9 +5445,6 @@ xprev
 FILEID: 622c50fc-7b39-11eb-91c9-15da80cfac4b
 maxlargc
 
-FILEID: bfdd8b4e-f55f-11eb-bb15-35b7469d4b43
-doctmpdirname
-
 FILEID: ca2e1636-f55f-11eb-bb15-35b7469d4b43
 blockdim
 blockidx
@@ -5481,9 +5472,6 @@ optos
 origt
 simport
 strname
-
-FILEID: 9ae97fd6-f560-11eb-bb15-35b7469d4b43
-doctmpdirname
 
 FILEID: a4a99de4-f560-11eb-bb15-35b7469d4b43
 istms
@@ -6040,7 +6028,6 @@ cmdline
 compflags
 cpath
 decltype
-doctmpdirname
 leafest
 modindex
 myshell

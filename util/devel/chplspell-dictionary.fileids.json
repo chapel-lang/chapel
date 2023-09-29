@@ -259,9 +259,6 @@
   "e818580e-f560-11eb-bb15-35b7469d4b43": [
     "compiler/passes/convert-uast.cpp"
   ],
-  "98c778e4-1d83-11e6-a3a6-10ddb1d4c3d5": [
-    "compiler/passes/docs.cpp"
-  ],
   "9c85c382-1d83-11e6-a3a6-10ddb1d4c3d5": [
     "compiler/passes/expandExternArrayCalls.cpp"
   ],
