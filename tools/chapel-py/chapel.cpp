@@ -906,6 +906,14 @@ METHOD_TABLE(START_Loop,
   {"body", LoopObject_body, METH_NOARGS, "Get the body of this loop AST node"},
 );
 
+METHOD_TABLE(While,
+  {"condition", WhileObject_condition, METH_NOARGS, "Get the condition of this loop AST node"},
+);
+
+METHOD_TABLE(DoWhile,
+  {"condition", DoWhileObject_condition, METH_NOARGS, "Get the condition of this loop AST node"},
+);
+
 METHOD_TABLE(START_IndexableLoop,
   {"index", IndexableLoopObject_index, METH_NOARGS, "Get the index of this loop AST node"},
   {"iterand", IndexableLoopObject_iterand, METH_NOARGS, "Get the iterand of this loop AST node"},
