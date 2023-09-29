@@ -21,13 +21,34 @@
 #include "Python.h"
 #include "chpl/framework/Context.h"
 #include "chpl/parsing/parsing-queries.h"
+#include <utility>
+
+struct IterAdapterBase {
+  virtual ~IterAdapterBase() = default;
+  virtual const chpl::uast::AstNode* next() = 0;
+};
+
+template <typename IterPair>
+struct IterAdapter : IterAdapterBase {
+ private:
+  using IterType = decltype(std::declval<IterPair>().begin());
+  IterType current;
+  IterType end;
+
+ public:
+  IterAdapter(IterPair pair) : current(pair.begin()), end(pair.end()) {}
+
+  const chpl::uast::AstNode* next() override {
+    if (current == end) return nullptr;
+    return *(current++);
+  }
+};
 
 static PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 
 typedef struct {
   PyObject_HEAD
-  chpl::uast::AstListIterator<chpl::uast::AstNode> current;
-  chpl::uast::AstListIterator<chpl::uast::AstNode> end;
+  IterAdapterBase* iterAdapter;
   PyObject* contextObject;
 } AstIterObject;
 extern PyTypeObject AstIterType;
@@ -121,19 +142,13 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
   return toReturn;
 }
 
-template <typename Node>
-static PyObject* wrapIterPair(ContextObject* context, const chpl::uast::AstListIteratorPair<Node>& pair) {
+template <typename IterPair>
+static PyObject* wrapIterPair(ContextObject* context, const IterPair& pair) {
   auto argList = Py_BuildValue("(O)", (PyObject*) context);
   auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
   auto astIterObject = (AstIterObject*) astIterObjectPy;
 
-  // Perform a very unsafe cast from the list iterator pair of an arbitrary
-  // AST node pointer to one for the general AST node.
-  auto pairMem = (const void*) &pair;
-  auto pairAstNode = (const chpl::uast::AstListIteratorPair<chpl::uast::AstNode>*) pairMem;
-
-  astIterObject->current = pairAstNode->begin();
-  astIterObject->end = pairAstNode->end();
+  astIterObject->iterAdapter = new IterAdapter<decltype(pair)>(pair);
 
   Py_XDECREF(argList);
   return astIterObjectPy;
@@ -164,14 +179,14 @@ static int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwa
   auto contextObject = (ContextObject*) astObjectPy;
 
   Py_INCREF(contextObject);
-  new (&self->current) chpl::uast::AstListIterator<chpl::uast::AstNode>();
-  new (&self->end) chpl::uast::AstListIterator<chpl::uast::AstNode>();
   self->contextObject = (PyObject*) contextObject;
+  self->iterAdapter = nullptr;
 
   return 0;
 }
 
 static void AstIterObject_dealloc(AstIterObject* self) {
+  delete self->iterAdapter;
   Py_XDECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
@@ -182,13 +197,13 @@ static PyObject* AstIterObject_iter(AstIterObject *self) {
 }
 
 static PyObject* AstIterObject_next(AstIterObject *self) {
-  if (self->current == self->end) {
-    PyErr_SetNone(PyExc_StopIteration);
-    return nullptr;
+  if (self->iterAdapter) {
+    if (auto nextNode = self->iterAdapter->next()) {
+      return wrapAstNode((ContextObject*) self->contextObject, nextNode);
+    }
   }
-  auto toReturn = wrapAstNode((ContextObject*) self->contextObject, *self->current);
-  self->current++;
-  return toReturn;
+  PyErr_SetNone(PyExc_StopIteration);
+  return nullptr;
 }
 
 PyTypeObject AstIterType = {
