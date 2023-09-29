@@ -5043,42 +5043,9 @@ inline proc fileWriter.unlock() {
   }
 }
 
-/*
-  A compile-time parameter to control the behavior of :proc:`fileReader.offset`
-  and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
-  :param:`fileWriter.locking` is true.
-
-  When 'false', the deprecated behavior is used (i.e., the method acquires a
-  lock internally before getting the offset)
-
-  When 'true', the new behavior is used (i.e., no lock is automatically
-  acquired)
-*/
-config param fileOffsetWithoutLocking = false;
-
 @chpldoc.nodoc
-private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
-  var ret:int(64);
-  on fileRW._home {
-    if doDeprecatedLocking then try! fileRW.lock();
-    ret = qio_channel_offset_unlocked(fileRW._channel_internal);
-    if doDeprecatedLocking then fileRW.unlock();
-  }
-  return ret;
-}
-
-/*
-   Return the current offset of a fileReader.
-
-   The fileReader will call :proc:`fileReader.lock` before getting the offset
-   and call :proc:`fileReader.unlock` after.
-
-   :returns: the current offset of the fileReader
- */
-@deprecated(notes="The variant of :proc:`fileReader.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
-proc fileReader.offset():int(64)
-  where this.locking == true && !fileOffsetWithoutLocking
-  do return offsetHelper(this, true);
+@deprecated("'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release")
+config param fileOffsetWithoutLocking = false;
 
 /*
    Return the current offset of a fileReader.
@@ -5091,26 +5058,11 @@ proc fileReader.offset():int(64)
 
    :returns: the current offset of the fileReader
  */
-proc fileReader.offset():int(64)
-  where this.locking == false ||
-        (this.locking == true && fileOffsetWithoutLocking)
-  do return offsetHelper(this, false);
-
-// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
-
-/*
-   Return the current offset of a fileWriter.
-
-   The fileWriter will call :proc:`fileWriter.lock` before getting the offset
-   and call :proc:`fileWriter.unlock` after.
-
-   :returns: the current offset of the fileWriter
- */
-@deprecated(notes="The variant of :proc:`fileWriter.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileWriter.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
-proc fileWriter.offset():int(64)
-  where this.locking == true && !fileOffsetWithoutLocking
-  do return offsetHelper(this, true);
+proc fileReader.offset(): int(64) {
+  var ret:int(64);
+  ret = qio_channel_offset_unlocked(this._channel_internal);
+  return ret;
+}
 
 /*
    Return the current offset of a fileWriter.
@@ -5123,13 +5075,11 @@ proc fileWriter.offset():int(64)
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64)
-  where this.locking == false ||
-        (this.locking == true && fileOffsetWithoutLocking)
-  do return offsetHelper(this, false);
-
-// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
+proc fileWriter.offset():int(64) {
+  var ret:int(64);
+  ret = qio_channel_offset_unlocked(this._channel_internal);
+  return ret;
+}
 
 /*
    Move a :record:`fileReader` offset forward.
@@ -5301,7 +5251,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
 
 @chpldoc.nodoc
 private inline proc markHelper(fileRW) throws {
-  const offset = fileRW.chpl_offset();
+  const offset = fileRW.offset();
   const err = qio_channel_mark(false, fileRW._channel_internal);
 
   if err then
@@ -7273,7 +7223,7 @@ proc chpl_stringify(const args ...?k):string {
       w.write((...args));
 
       try! w.lock();
-      var offset = w.chpl_offset();
+      var offset = w.offset();
       w.unlock();
 
       var buf = allocate(uint(8), offset:c_size_t+1);
@@ -7666,9 +7616,9 @@ proc fileReader.readLine(ref s: string,
         }
       }
     }
-    var endOffset = this.chpl_offset();
+    var endOffset = this.offset();
     this.revert();
-    var nBytes:int = endOffset - this.chpl_offset();
+    var nBytes:int = endOffset - this.offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -12412,7 +12362,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     }
     try w.writef(fmt, (...args));
     try! w.lock();
-    offset = w.chpl_offset();
+    offset = w.offset();
     w.unlock();
 
     // close error is thrown instead of ignored
