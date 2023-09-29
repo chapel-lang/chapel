@@ -20,16 +20,14 @@ make
 # -----------------------------------------------------------------------------
 # Run CUDA trials
 # -----------------------------------------------------------------------------
-
 LAUNCHCMD=""
 if [ -n "$CHPL_LAUNCHER_PARTITION" ]; then
   LAUNCHCMD="srun --partition=$CHPL_LAUNCHER_PARTITION"
 fi
 
-echo "" > "$runLog"
 for x in "${sizes[@]}"; do
   size=$((x * 1024 * 1024))
-  $LAUNCHCMD ./stream -n $size | tee -a "$runLog"
+  runAndLog $LAUNCHCMD ./stream -n $size
 done
 
 cd ..
@@ -37,7 +35,6 @@ cd ..
 # -----------------------------------------------------------------------------
 # Collect data; store in resulting .dat file
 # -----------------------------------------------------------------------------
-
 cuda_data=$(cat $runLog | sed -r -n 's/Triad: //p' | tr -s ' ' | cut -d ' ' -f 2)
 
 set +x

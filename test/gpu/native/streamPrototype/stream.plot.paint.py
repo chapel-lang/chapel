@@ -18,9 +18,12 @@ if 'nvidia' in tbls:
 def report(tbl, filename):
   if tbl is None:
     return None
+
   print()
   print(tbl.csv("%0.1f"))
+  print()
   print(tbl.md("%0.1f"))
+
   p = tbl.plot(
     xlabel="Number of Elements (M)",
     ylabel="Throughput\n(GiB/s)",
