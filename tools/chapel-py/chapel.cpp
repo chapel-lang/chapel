@@ -477,6 +477,38 @@ static const char* blockStyleToString(chpl::uast::BlockStyle blockStyle) {
   }
 }
 
+static const char* kindToString(chpl::uast::Qualifier kind) {
+  switch (kind) {
+    case chpl::uast::Qualifier::CONST_INTENT: return "const";
+    case chpl::uast::Qualifier::VAR: return "var";
+    case chpl::uast::Qualifier::CONST_VAR: return "const";
+    case chpl::uast::Qualifier::CONST_REF: return "const ref";
+    case chpl::uast::Qualifier::REF: return "ref";
+    case chpl::uast::Qualifier::IN: return "in";
+    case chpl::uast::Qualifier::CONST_IN: return "const in";
+    case chpl::uast::Qualifier::OUT: return "out";
+    case chpl::uast::Qualifier::INOUT: return "inout";
+    case chpl::uast::Qualifier::PARAM: return "param";
+    case chpl::uast::Qualifier::TYPE: return "type";
+    case chpl::uast::Qualifier::DEFAULT_INTENT:
+    case chpl::uast::Qualifier::INDEX:
+    default: return "";
+  }
+}
+
+static const char* opKindToString(chpl::uast::Range::OpKind kind) {
+  switch (kind) {
+    case chpl::uast::Range::DEFAULT: return "..";
+    case chpl::uast::Range::OPEN_HIGH: return "..<";
+    default: return "";
+  }
+}
+
+template<typename IntentType>
+static const char* intentToString(IntentType intent) {
+  return kindToString(chpl::uast::Qualifier(int(intent)));
+}
+
 template <typename T>
 const char* toCString(T& t) { throw std::invalid_argument("Invalid conversion into C string"); }
 
