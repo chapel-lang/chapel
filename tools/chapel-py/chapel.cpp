@@ -477,25 +477,6 @@ static const char* blockStyleToString(chpl::uast::BlockStyle blockStyle) {
   }
 }
 
-static const char* kindToString(chpl::uast::Qualifier kind) {
-  switch (kind) {
-    case chpl::uast::Qualifier::CONST_INTENT: return "const";
-    case chpl::uast::Qualifier::VAR: return "var";
-    case chpl::uast::Qualifier::CONST_VAR: return "const";
-    case chpl::uast::Qualifier::CONST_REF: return "const ref";
-    case chpl::uast::Qualifier::REF: return "ref";
-    case chpl::uast::Qualifier::IN: return "in";
-    case chpl::uast::Qualifier::CONST_IN: return "const in";
-    case chpl::uast::Qualifier::OUT: return "out";
-    case chpl::uast::Qualifier::INOUT: return "inout";
-    case chpl::uast::Qualifier::PARAM: return "param";
-    case chpl::uast::Qualifier::TYPE: return "type";
-    case chpl::uast::Qualifier::DEFAULT_INTENT:
-    case chpl::uast::Qualifier::INDEX:
-    default: return "";
-  }
-}
-
 static const char* opKindToString(chpl::uast::Range::OpKind kind) {
   switch (kind) {
     case chpl::uast::Range::DEFAULT: return "..";
@@ -506,7 +487,7 @@ static const char* opKindToString(chpl::uast::Range::OpKind kind) {
 
 template<typename IntentType>
 static const char* intentToString(IntentType intent) {
-  return kindToString(chpl::uast::Qualifier(int(intent)));
+  return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
 }
 
 template <typename T>
@@ -533,7 +514,7 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
 
 PLAIN_GETTER(Module, kind, "s", return chpl::uast::Module::moduleKindToString(node->kind()));
 
-PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return kindToString(node->storageKind()));
+PLAIN_GETTER(VarLikeDecl, storage_kind, "s", return chpl::uast::qualifierToString(node->storageKind()));
 PLAIN_GETTER(VarLikeDecl, type_expression, "O", return  wrapAstNode(contextObject, node->typeExpression()));
 PLAIN_GETTER(VarLikeDecl, init_expression, "O", return  wrapAstNode(contextObject, node->initExpression()));
 PLAIN_GETTER(TaskVar, intent, "s", return intentToString(node->intent()));
@@ -548,7 +529,7 @@ PLAIN_GETTER(NamedDecl, name, "s", return node->name());
 
 PLAIN_GETTER(Variable, is_config, "b", return node->isConfig());
 PLAIN_GETTER(Variable, is_field, "b", return node->isField());
-PLAIN_GETTER(Variable, kind, "s", return kindToString(node->storageKind()));
+PLAIN_GETTER(Variable, kind, "s", return chpl::uast::qualifierToString(node->storageKind()));
 
 PLAIN_GETTER(Attribute, name, "s", return node->name());
 PLAIN_GETTER(AttributeGroup, is_unstable, "b", return node->isUnstable());
