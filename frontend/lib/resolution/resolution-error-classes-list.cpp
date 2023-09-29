@@ -299,53 +299,6 @@ void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
   }
 }
 
-void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
-  auto formal = std::get<const uast::Formal*>(info);
-  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
-  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
-  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
-
-  // find the first visibility clause ID
-  ID firstVisibilityClauseId;
-  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
-
-  int start = 0;
-
-  int i = 0;
-  for (const auto& elt : trace.visibleThrough) {
-    if (elt.fromUseImport) {
-      firstVisibilityClauseId = elt.visibilityClauseId;
-      firstUseOrImport = elt.visibilityStmtKind;
-      start = i+1; // skip this one in describeSymbolTrace
-      break;
-    }
-    i++;
-  }
-
-  wr.heading(kind_, type_, firstVisibilityClauseId,
-             "module-level symbol is hiding function argument '",
-             formal->name(), "'");
-
-  wr.message("The formal argument:");
-  wr.code(formal, { formal });
-  wr.message("is shadowed by a symbol provided by the following '",
-             firstUseOrImport, "' statement:");
-  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
-
-  // print where it came from
-  bool encounteredAutoModule = false;
-  UniqueString from;
-  bool needsIntroText = true;
-  describeSymbolTrace(wr, formal->id(), formal->name(), trace, start, "",
-                      encounteredAutoModule, from, needsIntroText);
-
-  if (!encounteredAutoModule) {
-    ID firstId = match.firstId();
-    wr.note(locationOnly(firstId), "found '", from, "' defined here:");
-    wr.code<ID,ID>(firstId, { firstId });
-  }
-}
-
 void ErrorIfVarNonClassType::write(ErrorWriterBase& wr) const {
   auto cond = std::get<const uast::Conditional*>(info);
   auto qtVar = std::get<types::QualifiedType>(info);
@@ -784,14 +737,14 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
     }
     wr.code<ID,ID>(firstId, { firstId });
 
-    const char* intro2 = "but there is a shadowed symbol found ";
+    const char* intro2 = "but, there is a shadowed symbol found ";
     describeSymbolTrace(wr, id, name,
                         traceShadowed[0], /* start */ 0, intro2,
                         encounteredAutoModule, from, needsIntroText);
 
     ID otherId = shadowed[0].firstId();
     if (needsIntroText) {
-      wr.note(locationOnly(otherId), "but there is a shadowed symbol '", from, "' defined here:");
+      wr.note(locationOnly(otherId), "but, there is a shadowed symbol '", from, "' defined here:");
     } else {
       wr.note(locationOnly(otherId), "leading to '", from, "' defined here:");
     }

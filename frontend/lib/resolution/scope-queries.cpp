@@ -2417,100 +2417,6 @@ const owned<ResolvedVisibilityScope>& resolveVisibilityStmtsQuery(
   return QUERY_END(result);
 }
 
-static void
-doWarnHiddenFormal(Context* context,
-                   const Scope* functionScope,
-                   UniqueString formalName,
-                   const BorrowedIdsWithName& match,
-                   const ResultVisibilityTrace& traceResult) {
-  // find the Formal*
-  const Formal* formal = nullptr;
-  std::vector<BorrowedIdsWithName> ids;
-  IdAndFlags::Flags filterFlags = 0;
-  IdAndFlags::FlagSet excludeFlagSet;
-  functionScope->lookupInScope(formalName, ids, filterFlags, excludeFlagSet);
-  for (const auto& b : ids) {
-    for (const auto& id : b) {
-      auto formalAst = parsing::idToAst(context, id);
-      if (formalAst != nullptr) {
-        formal = formalAst->toFormal();
-        break;
-      }
-    }
-  }
-
-  if (formal) {
-    CHPL_REPORT(context, HiddenFormal, formal, match, traceResult);
-  }
-}
-
-static const bool& warnHiddenFormalsQuery(Context* context,
-                                          const ResolvedVisibilityScope* rs,
-                                          const Scope* functionScope) {
-  QUERY_BEGIN(warnHiddenFormalsQuery, context, rs, functionScope);
-
-  bool result = false;
-
-  // warn if a function formal name conflicts with something
-  // brought in by use/import.
-
-  std::set<UniqueString> formalNames = functionScope->gatherNames();
-
-  CheckedScopes checkedScopes;
-  std::vector<BorrowedIdsWithName> matches;
-
-  for (auto name : formalNames) {
-    LookupConfig config = LOOKUP_IMPORT_AND_USE;
-    bool foundExternBlock = false; // ignored
-    bool got = false;
-
-    auto helper = LookupHelper(context, rs, checkedScopes, matches,
-                               foundExternBlock,
-                               /* traceCurPath */ nullptr,
-                               /* traceResult */ nullptr,
-                               /* shadowedResults */ nullptr,
-                               /* traceShadowedResults */ nullptr);
-
-
-    got = helper.doLookupInScope(rs->scope(), {}, name, config);
-
-    // Check that there is a match that isn't a method/field
-    // to skip the warning for collisions with secondary methods.
-    bool onlyMethodsFields = true;
-    size_t errIdx = 0;
-    if (got) {
-      size_t i = 0;
-      for (const auto& b : matches) {
-        if (!b.containsOnlyMethodsOrFields()) {
-          errIdx = i;
-          onlyMethodsFields = false;
-          break;
-        }
-        i++;
-      }
-    }
-
-    if (got && !onlyMethodsFields) {
-      // repeat the lookup with tracing enabled
-      matches.clear();
-      checkedScopes.clear();
-      std::vector<VisibilityTraceElt> traceCurPath;
-      std::vector<ResultVisibilityTrace> traceResult;
-      helper.traceCurPath = &traceCurPath;
-      helper.traceResult = &traceResult;
-
-      helper.doLookupInScope(rs->scope(), {}, name, config);
-
-      CHPL_ASSERT(errIdx < traceResult.size());
-      doWarnHiddenFormal(context, functionScope, name,
-                         matches[errIdx], traceResult[errIdx]);
-      result = true;
-    }
-  }
-
-  return QUERY_END(result);
-}
-
 const ResolvedVisibilityScope*
 resolveVisibilityStmts(Context* context, const Scope* scope) {
   if (!scope->containsUseImport()) {
@@ -2528,21 +2434,6 @@ resolveVisibilityStmts(Context* context, const Scope* scope) {
   const owned<ResolvedVisibilityScope>& o =
     resolveVisibilityStmtsQuery(context, scope);
   const ResolvedVisibilityScope* r = o.get();
-
-  // If it's inside a function scope (which is rare for use/import),
-  // warn for hidden formals
-  const Scope* functionScope = nullptr;
-  for (const Scope* s = scope->parentScope();
-       s != nullptr;
-       s = s->parentScope()) {
-    if (asttags::isFunction(s->tag())) {
-      functionScope = s;
-      break;
-    }
-  }
-  if (functionScope != nullptr) {
-    warnHiddenFormalsQuery(context, r, functionScope);
-  }
 
   return r;
 }
