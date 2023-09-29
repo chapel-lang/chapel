@@ -42,9 +42,7 @@ log_info "Building tarball with version: ${version}"
 
 mkdir -p $HOME/test
 git clone git@github.com:Homebrew/homebrew-core.git 2> /dev/null || (cd $HOME/test/homebrew-core; git pull) 
-#cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
-# fix to make the home-brew working. After 1.32 release uncomment the above line
-cp ${CHPL_HOME}/util/packaging/homebrew/chapel-main.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
+cp $HOME/test/homebrew-core/Formula/c/chapel.rb  ${CHPL_HOME}/util/packaging/homebrew/chapel.rb
 cd ${CHPL_HOME}/util/packaging/homebrew
 # Get the tarball from the root tar/ directory and replace the url in chapel.rb with the tarball location
 location="${CHPL_HOME}/tar/chapel-${version}.tar.gz"
