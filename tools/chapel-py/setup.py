@@ -43,7 +43,7 @@ CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdo
 CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 
 LDFLAGS = []
-LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend"]
+LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend", "-Wl,-rpath", chpl_lib_path]
 
 setup(name = "chapel",
       version = "0.1",
