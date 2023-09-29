@@ -1266,7 +1266,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       if (cur->parentScope() == nullptr)
         rootScope = cur;
     }
-    // Ignore the root scope checking if we already found a match
+    // Ignore checking the root module if we already found a match
     // and we are looking for other matches for warning purposes.
     // Otherwise, we will get errors relating to finding e.g. Error
     // both in the standard library and in the built-in types.
@@ -1292,10 +1292,12 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (onlyInnermost && got) return true;
   }
 
-  // if LOOKUP_EXTERN_BLOCKS is set, and this scope has an extern block,
+  // If LOOKUP_EXTERN_BLOCKS is set, and this scope has an extern block,
   // and the name matches something in the extern block,
-  // return the extern block ID
-  if (checkExternBlocks && scope->containsExternBlock()) {
+  // return IDs of the matches within the extern block.
+  // Skip this checking for the warning.
+  if (checkExternBlocks && scope->containsExternBlock() &&
+      !checkMoreForWarning) {
     foundExternBlock = true;
     doLookupInExternBlocks(scope, name);
   }
