@@ -109,13 +109,7 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
       if (start==0 && needsIntroText) {
         msg = intro;
       }
-      if (from != name) {
-        msg += "'" + from.str() + "'";
-      } else {
-        msg += "it";
-      }
-      wr.note(errId, msg,
-              " was provided by the automatically-included modules.");
+      wr.note(errId, msg, "in the automatically-included modules.");
       encounteredAutoModule = true;
       needsIntroText = false;
       break;
@@ -775,7 +769,7 @@ void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
     const char* intro = "it refers to a symbol found ";
     bool encounteredAutoModule = false;
     UniqueString from;
-    bool needsIntroText = false;
+    bool needsIntroText = true;
 
     ID firstId = result[0].firstId();
 
