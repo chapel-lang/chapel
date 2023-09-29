@@ -1266,7 +1266,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
       if (cur->parentScope() == nullptr)
         rootScope = cur;
     }
-    if (rootScope != nullptr) {
+    // Ignore the root scope checking if we already found a match
+    // and we are looking for other matches for warning purposes.
+    // Otherwise, we will get errors relating to finding e.g. Error
+    // both in the standard library and in the built-in types.
+    if (rootScope != nullptr && !checkMoreForWarning) {
       if (trace) {
         VisibilityTraceElt elt;
         elt.rootScope = true;
