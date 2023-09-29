@@ -137,9 +137,11 @@ done
 # Run some checks looking for problems before we start experimentin'
 # -----------------------------------------------------------------------------
 
-if [[ -z "$CHPL_EXP_SKIP_PYTHON_DEP_CHECK" ]]; then
-  if ! "$CHPL_HOME/util/test/chplExperimentGatherUtils/checks/checkPythonDeps.py"; then
-    exit 1
+if [[ -n "$CHPL_EXP_PAINT_WITH" ]]; then
+  if [[ -z "$CHPL_EXP_SKIP_PYTHON_DEP_CHECK" ]]; then
+    if ! "$CHPL_HOME/util/test/chplExperimentGatherUtils/checks/checkPythonDeps.py"; then
+      exit 1
+    fi
   fi
 fi
 
