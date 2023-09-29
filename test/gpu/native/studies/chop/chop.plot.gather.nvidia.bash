@@ -17,7 +17,7 @@ cd ChOp/other_codes/cudaOnly
 nvcc -allow-unsupported-compiler -O3 singleGPUQueens.cu -o cudaOnly
 
 for x in "${sizes[@]}"; do
-  $EXEC_CMD ./cudaOnly $x 5 128 | tee -a "$runLog"
+  runAndLog $EXEC_CMD ./cudaOnly $x 5 128
 done
 
 # -----------------------------------------------------------------------------
