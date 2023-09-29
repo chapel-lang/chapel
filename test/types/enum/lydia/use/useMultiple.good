@@ -1,8 +1,2 @@
-useMultiple.chpl:8: In function 'main':
-useMultiple.chpl:11: warning: potentially surprising shadowing for 'e'
-useMultiple.chpl:9: note: it refers to a symbol found through the 'use' statement here
-useMultiple.chpl:6: note: leading to 'e' defined here
-useMultiple.chpl:11: note: but, there is a shadowed symbol found in the automatically-included modules
-$CHPL_HOME/modules/standard/AutoMath.chpl:125: note: leading to 'e' defined here
 a b c
 d e f
