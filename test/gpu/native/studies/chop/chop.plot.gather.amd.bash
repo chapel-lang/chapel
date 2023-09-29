@@ -19,7 +19,7 @@ make clean
 make
 
 for x in "${sizes[@]}"; do
-  $EXEC_CMD ./main $x 5 128 | tee -a "$runLog"
+  runAndLog $EXEC_CMD ./main $x 5 128
 done
 
 # -----------------------------------------------------------------------------

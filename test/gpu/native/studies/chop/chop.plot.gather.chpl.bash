@@ -12,16 +12,10 @@ cd ChOp/other_codes/chplGPU
 chpl -M modules --fast chplGPU.chpl -o chplGPU
 
 for x in "${sizes[@]}"; do
-  ./chplGPU --size=$x --initial_depth=5 | tee -a "$runLog"
+  runAndLog ./chplGPU --size=$x --initial_depth=5
 done
 
 # -----------------------------------------------------------------------------
 # Gather compile and execution data, store in results.dat
 # -----------------------------------------------------------------------------
-data=$(cat $runLog | sed -r -n 's/Elapsed time: //p' | tr -s ' ' | cut -d ' ' -f 2)
-
-set +x
-echo -e "\t$experimentName" > $datFile
-paste \
-  <(printf "%s\n" "${sizes[@]}") \
-  <(printf "%s\n" "${data[@]}") >> "$datFile"
+gatherFromPerfkeys --keyfile chplGPU.gpu-keys --rows ${sizes[@]} --columns "$experimentName"
