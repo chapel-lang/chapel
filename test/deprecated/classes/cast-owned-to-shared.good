@@ -1,2 +1,0 @@
-cast-owned-to-shared.chpl:6: warning: casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead
-cast-owned-to-shared.chpl:10: warning: casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead
