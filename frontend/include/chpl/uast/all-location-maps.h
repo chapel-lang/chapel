@@ -23,10 +23,10 @@
 // The second actual must have a unique name.
 // 
 
-CHPL_LOCATION_MAP(Dot, DotField)
-CHPL_LOCATION_MAP(NamedDecl, DeclName)
-// CHPL_LOCATION_MAP(AstNode, NamedActual)
-// CHPL_LOCATION_MAP(AstNode, AttributeNamedActual)
-// CHPL_LOCATION_MAP(Function, ReturnIntent)
-// CHPL_LOCATION_MAP(Function, ReceiverIntent)
-// CHPL_LOCATION_MAP(AstNode, FormalIntent)
+LOCATION_MAP(Dot, DotField)
+LOCATION_MAP(NamedDecl, DeclName)
+// LOCATION_MAP(AstNode, NamedActual)
+// LOCATION_MAP(AstNode, AttributeNamedActual)
+// LOCATION_MAP(Function, ReturnIntent)
+// LOCATION_MAP(Function, ReceiverIntent)
+// LOCATION_MAP(AstNode, FormalIntent)

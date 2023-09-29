@@ -129,16 +129,16 @@ void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
                                      Location loc) {
   if (!ast || loc.isEmpty()) return;
   CHPL_ASSERT(m.find(ast) == m.end());
-  m.emplace(ast, loc);
+  m.emplace(ast, std::move(loc));
 }
 
-#define CHPL_LOCATION_MAP(ast__, location__) \
+#define LOCATION_MAP(ast__, location__) \
   void Builder::note##location__##Location(ast__* ast, Location loc) { \
     auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
     noteAdditionalLocation(m, ast, std::move(loc)); \
   }
-#include "chpl/uast/location-map-macro.h"
-#undef CHPL_LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
@@ -157,19 +157,19 @@ BuilderResult Builder::result() {
   ret.commentIdToLocation_.swap(commentToLocation_);
 
   // Swap all the additional location maps.
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     ret.CHPL_ID_LOC_MAP(ast__, location__) \
       .swap(CHPL_ID_LOC_MAP(ast__, location__));
-  #include "chpl/uast/location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   // TODO: Any other state that can be reset?
   notedLocations_.clear();
 
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     CHPL_AST_LOC_MAP(ast__, location__).clear();
-  #include "chpl/uast/location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   return ret;
 }
@@ -445,19 +445,17 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     idToLocation_[ast->id()] = search->second;
 
     // Also map additional locations to ID.
-    #define CHPL_LOCATION_MAP(ast__, location__) \
+    #define LOCATION_MAP(ast__, location__) \
       if (auto x = ast->to##ast__()) { \
         auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
         auto it = m1.find(x); \
         if (it != m1.end()) { \
           auto& m2 = CHPL_ID_LOC_MAP(ast__, location__); \
-          auto& id = x->id(); \
-          CHPL_ASSERT(m2.find(id) == m2.end()); \
-          m2[id] = it->second; \
+          m2[x->id()] = it->second; \
         } \
       }
-    #include "chpl/uast/location-map-macro.h"
-    #undef CHPL_LOCATION_MAP
+    #include "chpl/uast/all-location-maps.h"
+    #undef LOCATION_MAP
 
     // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
     if (ieNode) {

@@ -46,10 +46,10 @@ static void test0() {
   auto path = TEST_NAME_FROM_FN_NAME(ctx);
   std::string contents =
     "x1.field;\n"   // 1:4
-    "x1. field;\n"  // 2:5
-    "x1.\n"         //
+    "x2. field;\n"  // 2:5
+    "x3.\n"         //
     "   field;\n"   // 4:4
-    "x1\n"          //
+    "x4\n"          //
     ".field;\n";    // 6:2
 
   setFileText(ctx, path, contents);
@@ -115,7 +115,7 @@ static void test1() {
     // union
     "union foo {}\n"            // 14:7
     // enum
-    "enum foo { bar }\n";            // 15:6
+    "enum foo { bar }\n";       // 15:6
     
   setFileText(ctx, path, contents);
   auto& br = parseAndReportErrors(ctx, path);

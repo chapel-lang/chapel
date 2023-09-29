@@ -65,10 +65,10 @@ class Builder final {
 
   // These map AST to additional locations while the builder is building.
   // The key type is just 'AstNode' so that we can use generic functions.
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     AstLocMap CHPL_AST_LOC_MAP(ast__, location__);
-  #include "location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   // The following maps are computed during 'assignIDs'.
   llvm::DenseMap<ID, Location> idToLocation_;
@@ -77,10 +77,10 @@ class Builder final {
   llvm::DenseMap<ID, ID> idToParent_;
 
   // Maps for additional locations are also computed during 'assignIDs'.
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     llvm::DenseMap<ID, Location> CHPL_ID_LOC_MAP(ast__, location__);
-  #include "location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   Builder(Context* context, UniqueString filepath,
           UniqueString startingSymbolPath)
@@ -125,11 +125,11 @@ class Builder final {
 
   /** Note additional locations that are associated with an AST node.
       Pairs an AST node (e.g., 'Dot') with a location.
-      For a list of all locations see "./location-map-macro.h". */
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+      For a list of all locations see "./all-location-maps.h". */
+  #define LOCATION_MAP(ast__, location__) \
     void note##location__##Location(ast__* ast, Location loc);
-  #include "location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   /**
     Assign IDs to all of the AST elements added as toplevel expressions

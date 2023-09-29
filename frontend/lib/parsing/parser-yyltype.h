@@ -23,11 +23,21 @@
 
 #include "chpl/framework/Location.h"
 
-// I really wanted to add constructors here, but that makes this type
-// non-trivial by C++ standards...
+/** This trivial struct is used as our standin for Bison's YYLTYPE. It is
+    defined exactly the same as YYLTYPE as given by the GNU documentation.
+
+    It is pulled out into its own file with a header guard so that it can
+    be defined before any of the other contents in `chpl.ypp`. This enables
+    it to be used anywhere in the grammar file. Previously, we had used
+    the default YYLTYPE, but due to the order Bison defines its types that
+    meant it wasn't usable in the (e.g., `TypeDeclParts`) helper types we
+    use when parsing.
+*/
 struct TextLocation {
 
-  // Even default values constitute a non-trivial default constructor.
+  // I really wanted to add constructors here, but that makes this type
+  // non-trivial by C++ standards. Even default values constitute a
+  // non-trivial default constructor.
   int first_line;
   int first_column;
   int last_line;
@@ -43,7 +53,7 @@ struct TextLocation {
   }
 };
 
-// Forward 'TextLocation' forward as the official location type.
+// Define 'TextLocation' as the Bison location type.
 #define YYCHPL_LTYPE TextLocation
 
 // Conditional because this will usually be done for us by Bison.

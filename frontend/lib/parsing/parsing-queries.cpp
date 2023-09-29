@@ -389,16 +389,20 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
 }
 
 static const BuilderResult*
-builderResultPtr(Context* context, ID id, UniqueString& pathOut) {
-  const BuilderResult* ret = nullptr;
+builderResultOrNull(Context* context, ID id, UniqueString& pathOut) {
   UniqueString parentSymbolPath;
+
+  // Ask the context for the filename from the ID
   bool found = context->filePathForId(id, pathOut, parentSymbolPath);
+
   if (found) {
+    // Get the result of parsing
     const BuilderResult& br = parseFileToBuilderResult(context, pathOut,
                                                        parentSymbolPath);
-    ret = &br;
+    return &br;
   }
-  return ret;
+
+  return nullptr;
 }
 
 const Location& locateId(Context* context, ID id) {
@@ -406,7 +410,7 @@ const Location& locateId(Context* context, ID id) {
   Location result;
 
   UniqueString path;
-  if (auto br = builderResultPtr(context, id, path)) {
+  if (auto br = builderResultOrNull(context, id, path)) {
     result = br->idToLocation(id, path);
   }
 
@@ -415,29 +419,30 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
+  CHPL_ASSERT(ast);
   CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
-  CHPL_ASSERT(ast); // TODO: Will crash instead of return nullptr...
+  // TODO: This will crash if 'ast' is null, can we fix that?
   return locateId(context, ast->id());
 }
 
 // Generate queries to fetch additional locations.
-#define CHPL_LOCATION_MAP(ast__, location__) \
+#define LOCATION_MAP(ast__, location__) \
   static const Location& \
   locate##location__##WithIdQuery(Context* context, ID id) { \
     QUERY_BEGIN(locate##location__##WithIdQuery, context, id); \
     Location ret; \
     UniqueString path; \
     if (!id) return QUERY_END(ret); \
-    if (auto br = builderResultPtr(context, id, path)) { \
+    if (auto br = builderResultOrNull(context, id, path)) { \
       ret = br->idTo##location__##Location(id, path); \
     } \
     return QUERY_END(ret); \
   }
-#include "chpl/uast/location-map-macro.h"
-#undef CHPL_LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 // Generate user facing functions which are wrappers around the query.
-#define CHPL_LOCATION_MAP(ast__, location__) \
+#define LOCATION_MAP(ast__, location__) \
   Location locate##location__##WithId(Context* context, ID id) { \
     return locate##location__##WithIdQuery(context, id); \
   } \
@@ -445,8 +450,8 @@ const Location& locateAst(Context* context, const AstNode* ast) {
     if (!ast) return Location(); \
     return locate##location__##WithIdQuery(context, ast->id()); \
   }
-#include "chpl/uast/location-map-macro.h"
-#undef CHPL_LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 const ModuleVec& parse(Context* context, UniqueString path,
                        UniqueString parentSymbolPath) {

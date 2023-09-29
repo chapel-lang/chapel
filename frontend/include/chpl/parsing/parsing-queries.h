@@ -180,15 +180,20 @@ const Location& locateId(Context* context, ID id);
 const Location& locateAst(Context* context, const uast::AstNode* ast);
 
 /** Also define getters for additional locations such as e.g., dot fields.
-    A complete list can be seen in "chpl/uast/location-map-macro.h".
-    The form is e.g., `locateDotFieldWithId(Context* context, ID id)`.
+    A complete list can be seen in "chpl/uast/all-location-maps.h".
+    The form is e.g., `locateDotFieldWithId(Context* context, ID id)` or
+    `locateDotFieldWithAst(Context* context, const Dot* dot)`.
+
+    Additional location maps for things like dot fields are required because
+    the parser does not keep track of the location of every piece of text
+    when parsing a file into AST.
 */
-#define CHPL_LOCATION_MAP(ast__, location__) \
+#define LOCATION_MAP(ast__, location__) \
   Location locate##location__##WithId(Context* context, ID id); \
   Location locate##location__##WithAst(Context* context, \
                                        const uast::ast__* ast);
-#include "chpl/uast/location-map-macro.h"
-#undef CHPL_LOCATION_MAP
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 using ModuleVec = std::vector<const uast::Module*>;
 /**

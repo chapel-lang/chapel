@@ -34,17 +34,19 @@
 
 #include "llvm/ADT/DenseMap.h"
 
+// These macros make it easy for the Builder and BuilderResult types to
+// manipulate their internal location maps without having to reconstruct
+// their names each time with concatenation.
+
+// Helper macro for concatenation.
 #define CHPL_ID_LOC_MAP_INNER(ast__, location__) \
   id##ast__##To##location__##Location_
 
-// These helpers make it easy for the Builder and BuilderResult types to
-// manipulate their internal location maps without having to reconstruct
-// their names each time with concatenation.
-//
 // Use to get the name of an additional <ID, Location> map.
 #define CHPL_ID_LOC_MAP(ast__, location__) \
   CHPL_ID_LOC_MAP_INNER(ast__, location__)
 
+// Helper macro for concatenation.
 #define CHPL_AST_LOC_MAP_INNER(ast__, location__) \
   noted##ast__##To##location__##Location_
 
@@ -112,10 +114,10 @@ class BuilderResult final {
   // Expand maps for locations of things that are not captured by AST.
   // The key is the ID of the relevant AST, and value is the location
   // of interest.
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     llvm::DenseMap<ID, Location> CHPL_ID_LOC_MAP(ast__, location__);
-  #include "location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   // Goes from Comment ID to Location, applies to all AST nodes except Comment
   std::vector<Location> commentIdToLocation_;
@@ -176,10 +178,10 @@ class BuilderResult final {
 
   /** Find an additional location given ID input. Returns an empty location
       pointing to 'path' if none was found. */
-  #define CHPL_LOCATION_MAP(ast__, location__) \
+  #define LOCATION_MAP(ast__, location__) \
     Location idTo##location__##Location(ID id, UniqueString path) const;
-  #include "location-map-macro.h"
-  #undef CHPL_LOCATION_MAP
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   BuilderResult(BuilderResult&&) = default; // move-constructable
   BuilderResult(const BuilderResult&) = delete; // not copy-constructable
