@@ -3,7 +3,7 @@
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
-sizes=( 15 16 17 18)
+sizes=( 12 13 14 15 16 17 18)
 
 EXEC_CMD=""
 if [[ -n "$CHPL_LAUNCHER_PARTITION" ]]; then
@@ -19,7 +19,7 @@ make clean
 make
 
 for x in "${sizes[@]}"; do
-  runAndLog $EXEC_CMD ./main $x 5 128
+  runAndLog $EXEC_CMD ./main $x 6 1024
 done
 
 # -----------------------------------------------------------------------------
