@@ -3,16 +3,16 @@
 # sets 'datFile', 'logDir', 'experimentName', and 'runLog'
 source $CHPL_HOME/util/test/chplExperimentGatherUtils/prelude.bash $@
 
-sizes=( 15 16 17 18)
+sizes=( 12 13 14 15 16 17 18)
 
 # -----------------------------------------------------------------------------
 # Build and run tests
 # -----------------------------------------------------------------------------
 cd ChOp/other_codes/chplGPU
-chpl -M modules --fast chplGPU.chpl -o chplGPU
+chpl -M modules --gpu-block-size 1024 --fast chplGPU.chpl -o chplGPU
 
 for x in "${sizes[@]}"; do
-  runAndLog ./chplGPU --size=$x --initial_depth=5
+  runAndLog ./chplGPU --size=$x --num_gpus=1 --initial_depth=5
 done
 
 # -----------------------------------------------------------------------------
