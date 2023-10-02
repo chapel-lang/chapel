@@ -4347,9 +4347,22 @@ static void linkGpuDeviceLibraries() {
     linkBitCodeFile((libPath + "/oclc_finite_only_off.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_correctly_rounded_sqrt_on.bc").c_str());
     linkBitCodeFile((libPath + "/oclc_wavefrontsize64_on.bc").c_str());
+
     for (auto gpuArch : gpuArches) {
       linkBitCodeFile(determineOclcVersionLib(libPath, gpuArch).c_str());
     }
+
+    // here, we are hard coding _400.bc. In all systems where we see the need
+    // for this, there's also _500.bc. We need to investigate the difference
+    // between the two (version 4.0.0 vs 5.0.0 of something?) and understand
+    // what this library does (is oclc short for OpenCL something?). 400 seems
+    // to work for now and I haven't tried what happens with 500.
+    std::string oclcAbiVersionLibPath = libPath + "/oclc_abi_version_400.bc";
+    std::ifstream file(oclcAbiVersionLibPath);
+    if(file.good()) {
+      linkBitCodeFile(oclcAbiVersionLibPath.c_str());
+    }
+
   }
 
   // internalize all functions that are not in `externals`

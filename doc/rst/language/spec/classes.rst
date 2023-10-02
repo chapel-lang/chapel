@@ -570,11 +570,12 @@ Otherwise the class inherits from the predefined ``RootClass`` class
 parent class.
 
 It is possible for a class to inherit from a generic class. Suppose for
-example that a class ``C`` inherits from class ``ParentC``. In this
-situation, ``C`` will have type constructor arguments based upon generic
-fields in the ``ParentC`` as described
-in :ref:`Type_Constructors`. Furthermore, a fully specified ``C``
-will be a subclass of a corresponding fully specified ``ParentC``.
+example that ``ParentC`` is a generic class. A class ``C`` can inherits
+from it by writing ``class C : ParentC(?)``. In this situation, ``C``
+will have type constructor arguments based upon generic fields in the
+``ParentC`` as described in :ref:`Type_Constructors`. Furthermore, a
+fully specified ``C`` will be a subclass of a corresponding fully
+specified ``ParentC``.
 
 .. _The_Root_Class:
 
@@ -1705,7 +1706,11 @@ omitted when the field access is within a method. In this case the
 receiver is the method’s receiver. The receiver clause can also be
 omitted when the field access is within a class declaration. In this
 case the receiver is the instance being implicitly defined or
-referenced.
+referenced. When the receiver clause is omitted, the compiler will
+consider the possibility that the identifier refers to a field, but in
+that case, it could also refer to something declared outside of the
+class. In particular, a local variable or formal will shadow a field,
+but a field will shadow a module-scope variable declared outside of the method.
 
 The identifier in the field access expression indicates which field is
 accessed.
@@ -2070,7 +2075,7 @@ For example:
 
 The default intent for :type:`~OwnedObject.owned` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
-more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
+more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
 .. _Owned_Methods:
 
@@ -2150,7 +2155,7 @@ See :ref:`about-owned-coercions` for more details and examples.
 
 The default intent for :type:`~SharedObject.shared` is ``const``. See more on
 argument intents in the :ref:`Procedures Primer <primers-procedures>` and see
-more on the default intent in the :ref:`Default_Intent_for_owned_and_shared`.
+more on the default intent in the :ref:`Intents_for_owned_and_shared`.
 
 .. _Shared_Methods:
 

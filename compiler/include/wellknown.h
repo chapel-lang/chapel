@@ -40,6 +40,7 @@ void clearGenericWellKnownFunctions();
 
 // The well-known types
 extern AggregateType* dtArray;
+extern AggregateType* dtDomain;
 extern AggregateType* dtBaseArr;
 extern AggregateType* dtBaseDom;
 extern AggregateType* dtCFI_cdesc_t;

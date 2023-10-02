@@ -59,7 +59,7 @@ Next, try running it across several machines.
    export GASNET_SSH_CMD=ssh
    # Disable X11 forwarding
    export GASNET_SSH_OPTIONS=-x
-   # Specify which hosts to spawn on.
+   # Specify which hosts to spawn on; SSH_SERVERS can be used equivalently
    export GASNET_SSH_SERVERS="host1 host2 host3 ..."
 
 where host1, host2, host3, ... are the names of the

@@ -87,7 +87,9 @@ function test_run() {
   local nl=$2
 
   test_start "run $kind"
-  eval $CHPL_TEST_LAUNCHCMD ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $CHAMPS_CFG_PATH/$kind.in 2>&1 >$kind.exec.out.tmp
+  # We are setting `CHPL_LAUNCHER_TIMEOUT=pbs, but I needed this `--walltime`.
+  # Why?
+  eval $CHPL_TEST_LAUNCHCMD --walltime=2:00:00 ./bin/champs_${CHAMPS_VERSION}_$kind -nl $nl -f $kind.in 2>&1 >$kind.exec.out.tmp
 
   local status=$?
   cat $kind.exec.out.tmp

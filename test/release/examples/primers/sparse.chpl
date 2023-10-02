@@ -4,6 +4,12 @@
    This primer shows off some of Chapel's support for sparse domains
    and arrays.
 
+  .. warning::
+
+    Sparse domains and arrays are currently unstable.
+    Their functionality is likely to change in the future.
+
+
 */
 
 

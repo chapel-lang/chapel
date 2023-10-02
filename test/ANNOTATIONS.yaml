@@ -967,6 +967,11 @@ ft:
 ft-a:
   09/05/14:
     - switched uses of locale.numCores to locale.maxTaskPar
+
+heat_2d_dist.ml-time:
+  08/31/23:
+    - Optimize swap operation for Cyclic and Stencil distributions (#23019)
+
 hpl:
   12/11/15:
     - Fixed string leak in DimensionalDist2D (#3013)
@@ -1630,6 +1635,8 @@ parOpEquals:
     - (no-local) Move the check for src==dst from comm_get to array op= (#1410)
   05/24/19:
     - Increased usage of initializers for domains and distributions (#13018)
+  09/12/23:
+    - Deprecate modifying an array in a promoted expression (#23208)
 
 pidigits: &pidigits-base
   05/16/16:
@@ -2387,6 +2394,8 @@ arkouda: &arkouda-base
     - Upgrade Arkouda release testing from 1.30 to 1.31 (#22669)
   08/29/23:
     - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
+  09/07/23:
+    - Closes 2757 Add overload of makeDistArray that takes an array (Bears-R-Us/arkouda#2758)
 
 
 arkouda-string:

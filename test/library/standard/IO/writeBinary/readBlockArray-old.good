@@ -1,0 +1,1 @@
+readBlockArray-old.chpl:15: warning: The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant

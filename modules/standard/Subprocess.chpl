@@ -127,6 +127,49 @@ other task is consuming it.
   locale. In this circumstance, the program will halt with an error message.
   These scenarios do work when using GASNet instead of the ugni layer.
 
+The Deprecated 'kind' Field
+---------------------------
+
+Prior to the 1.32 release, configuring a :type:`subprocess` record to use
+binary IO required using the ``kind`` field (of type ``iokind``) to enable
+binary IO and set the desired endianness. The 1.32 release introduced
+:ref:`serializers<ioSerializers>`, and deprecated use of the ``iokind`` type in
+favor of using Serializers and Deserializers to configure a given
+:type:`~IO.fileWriter` or :type:`~IO.fileReader` for a desired format.
+
+Users may now create aliases of ``stdin`` and ``stdout`` with different
+serialization formatting by using the :proc:`~IO.fileWriter.withSerializer` and
+:proc:`~IO.fileReader.withDeserializer` methods. For example, consider the
+following program that writes the numbers ``1`` through ``10`` in binary to the
+``hexdump`` utility:
+
+.. code-block:: chapel
+
+  use IO, Subprocess;
+
+  var sub = spawn(["hexdump", "-C"], stdin=pipeStyle.pipe, stdout=pipeStyle.pipe);
+
+  // Use 'withSerializer' to create a binary-serializing alias of 'sub.stdin'
+  var bin = sub.stdin.withSerializer(binarySerializer);
+
+  for i in 1..10 do bin.write(i:uint(8));
+
+  sub.communicate();
+
+  var line : string;
+  while sub.stdout.readLine(line) do
+    write(line);
+
+This program prints:
+
+.. code-block:: text
+
+  00000000  01 02 03 04 05 06 07 08  09 0a                    |..........|
+  0000000a
+
+Please refer to :type:`~IO.binarySerializer` and :type:`~IO.binaryDeserializer`
+for more information on their supported format.
+
  */
 module Subprocess {
   public use IO;

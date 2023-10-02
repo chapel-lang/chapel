@@ -1931,11 +1931,11 @@ implements_type_ident:
 | TLOCALE
 | TNOTHING
 | TVOID
-| implements_type_error_ident
-  {
-    context->syntax(@$, "type '%s' cannot implement an interface.", $1.c_str());
-    $$ = $1;
-  }
+| /* error handling moved to post-parse checks; the implements_type_error_ident
+     production is left intact to keep a reference list of things that shouldn't
+     go on the left of 'implements'.
+   */
+  implements_type_error_ident
 ;
 
 // these are not allowed as types in 'T implements IFC'

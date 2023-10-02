@@ -38,12 +38,14 @@ module JSON {
     Implements the 'serializeValue' method which is called by a ``fileWriter``
     to produce a serialized representation of a value in JSON format.
 
-    This serializer is designed to generate valid JSON; however, no
-    guarantees are made about the exact formatting w.r.t. whitespace,
-    newlines or indentation.
+    .. warning::
 
-    See the :record:`~IO.defaultSerializer` for more information about
-    serializers in general.
+      This serializer is designed to generate valid JSON; however, no
+      guarantees are made about the exact formatting w.r.t. whitespace,
+      newlines or indentation.
+
+    See the :ref:`IO Serializers<ioSerializers>` technote for more information
+    about serializers in general.
   */
   record jsonSerializer {
     // TODO: rewrite in terms of writef, or something
@@ -63,6 +65,37 @@ module JSON {
     }
 
     /* Serialize a value into a :record:`~IO.fileWriter` in JSON format */
+    /*
+      Serialize ``val`` with ``writer``.
+
+      Numeric values are serialized as though they were written with the format
+      of ``%i`` for integers and ``%er`` for ``real`` numbers. Please refer to
+      :ref:`the section on Formatted IO<about-io-formatted-io>` for more
+      information.
+
+      Booleans are serialized as the literal strings ``true`` or ``false``.
+
+      ``string`` values are serialized by wrapping the string in quotes, and
+      escaping quotes inside the string. ``bytes`` values are also wrapped
+      in quotes.
+
+      Enums are serialized using the name of the corresponding value. For example
+      with an enum like ``enum colors {red, green blue}``, the value ``red``
+      would be serialized as a string: ``"red"``.
+
+      The ``nil`` value and nilable class variables storing ``nil`` will be
+      serialized as the text ``null``.
+
+      Classes and records will have their ``serialize`` method invoked, passing
+      in ``writer`` and this Serializer as arguments. Please see the
+      :ref:`serializers technote<ioSerializers>` for more.
+
+      Classes and records are expected to implement the ``writeSerializable``
+      or ``serializable`` interface.
+
+      :arg writer: The ``fileWriter`` used to write serialized output
+      :arg val: The value to be serialized
+    */
     proc ref serializeValue(writer: jsonWriter, const val:?t) throws {
       if t == string  || isEnumType(t) || t == bytes {
         // for quotes around things
@@ -80,13 +113,61 @@ module JSON {
       }
     }
 
+    /*
+      Start serializing a class by writing the character ``{``.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg name: The name of the class type
+      :arg size: The number of fields in the class
+
+      :returns: A new :type:`AggregateSerializer`
+    */
+    proc startClass(writer: jsonWriter, name: string, size: int) throws {
+      writer.writeLiteral("{");
+      return new AggregateSerializer(writer, _ending="}");
+    }
+
+    /*
+      Start serializing a record by writing the character ``{``.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg name: The name of the class type
+      :arg size: The number of fields in the class
+
+      :returns: A new :type:`AggregateSerializer`
+    */
+    proc startRecord(writer: jsonWriter, name: string, size: int) throws {
+      writer.writeLiteral("{");
+      return new AggregateSerializer(writer, _ending="}");
+    }
+
+    /*
+      Returned by ``startClass`` or ``startRecord`` to provide the API for
+      serializing classes or records.
+
+      Classes and records are serialized as JSON objects. For example, a
+      ``class`` or ``record`` with integer fields ``x`` and ``y`` with values
+      ``0`` and ``5`` would be serialized as ``{"x":0, "y":5}``.
+
+    */
     record AggregateSerializer {
+      @chpldoc.nodoc
       var writer;
+      @chpldoc.nodoc
       var _parent : bool = false;
+      @chpldoc.nodoc
       var _first : bool = true;
+      @chpldoc.nodoc
       const _ending : string;
+      @chpldoc.nodoc
       var _firstPtr : c_ptr(bool) = nil;
 
+      /*
+        Serialize ``field`` named ``name``.
+
+        Serializes fields in the form ``"<name>":<field>``. Adds a comma before
+        the name if this is not the first field.
+      */
       proc ref writeField(name: string, const field: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
@@ -96,12 +177,43 @@ module JSON {
         writer.write(field);
       }
 
+      /*
+        Start serializing a nested class inside the current class. In this format
+        inheritance is not represented and parent fields are printed before child
+        fields. For example, the following classes with values ``x=5`` and
+        ``y=2``:
+
+        .. code-block:: chapel
+
+          class Parent {
+            var x : int;
+          }
+
+          class Child: Parent {
+            var y : int;
+          }
+
+        would be serialized as:
+
+        .. code-block:: text
+
+          {"x":5, "y":2}
+
+        :arg writer: The ``fileWriter`` to be used when serializing. Must match
+          the writer used to create current AggregateSerializer
+        :arg name: The name of the class type
+        :arg size: The number of fields in the class
+
+        :returns: A new AggregateSerializer
+      */
       proc ref startClass(writer, name: string, size: int) throws {
         return new AggregateSerializer(writer, _parent=true,
                                        _firstPtr=c_addrOf(_first));
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current class by writing the character ``}``.
+      */
       proc endClass() throws {
         if !_parent then
           writer._writeLiteral(_ending);
@@ -109,28 +221,70 @@ module JSON {
           _firstPtr.deref() = _first;
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current record by writing the character
+        ``}``.
+      */
       proc endRecord() throws {
         writer._writeLiteral(_ending);
       }
     }
 
-    @chpldoc.nodoc
-    proc startClass(writer: jsonWriter, name: string, size: int) throws {
-      writer.writeLiteral("{");
-      return new AggregateSerializer(writer, _ending="}");
+    /*
+      Start serializing a tuple by writing the character ``[``.
+
+      In this format tuples are serialized as JSON lists. For example, the
+      tuple ``(1, 2, 3)`` would be serialized as ``[1, 2, 3]``.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the tuple
+
+      :returns: A new :type:`ListSerializer`
+    */
+    proc startTuple(writer: jsonWriter, size: int) throws {
+      writer.writeLiteral("[");
+      return new ListSerializer(writer);
     }
 
-    @chpldoc.nodoc
-    proc startRecord(writer: jsonWriter, name: string, size: int) throws {
-      writer.writeLiteral("{");
-      return new AggregateSerializer(writer, _ending="}");
+    /*
+      Start serializing a list by writing the character ``[``.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the list
+
+      :returns: A new :type:`ListSerializer`
+    */
+    proc startList(writer: jsonWriter, size: int) throws {
+      writer.writeLiteral("[");
+      return new ListSerializer(writer);
     }
 
+    /*
+      Returned by ``startList`` or ``startTuple`` to provide the API for
+      serializing JSON lists.
+
+      A list will be serialized as a comma-separated series of serialized
+      elements between two square brackets. For example, serializing a list
+      with elements ``1``, ``2``, and ``3`` will produce the text:
+
+      .. code-block:: text
+
+        [1, 2, 3]
+
+      Empty lists will be serialized as ``[]``.
+    */
     record ListSerializer {
+      @chpldoc.nodoc
       var writer;
+      @chpldoc.nodoc
       var _first : bool = true;
 
+      /*
+        Serialize ``element``.
+
+        Writes a leading comma before serializing the element if this is not the
+        first element in the list.
+      */
       proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
@@ -138,43 +292,71 @@ module JSON {
         writer.write(element);
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current list by writing the character ``]``.
+      */
       proc endList() throws {
         writer.writeLiteral("]");
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current tuple by writing the character ``]``.
+      */
       proc endTuple() throws {
         endList();
       }
     }
 
-    @chpldoc.nodoc
-    proc startTuple(writer: jsonWriter, size: int) throws {
-      writer.writeLiteral("[");
-      return new ListSerializer(writer);
+    /*
+      Start serializing an array.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of elements in the array
+
+      :returns: A new :type:`ArraySerializer`
+    */
+    proc startArray(writer: jsonWriter, size: int) throws {
+      return new ArraySerializer(writer);
     }
 
-    @chpldoc.nodoc
-    proc startList(writer: jsonWriter, size: int) throws {
-      writer.writeLiteral("[");
-      return new ListSerializer(writer);
-    }
+    /*
+      Returned by ``startArray`` to provide the API for serializing arrays.
 
+      In this format, a 1D array will be serialized as a JSON list. For
+      example, an array with three values would be serialized as:
+
+      .. code-block:: text
+
+        [1, 2, 3]
+
+      Multidimensional arrays will be serialized as JSON lists of lists:
+
+      .. code-block:: text
+
+        [
+         [0, 1, 2],
+         [3, 4, 5],
+         [6, 7, 8]
+        ]
+
+      The indenting of these multidimensional arrays is not considered stable.
+
+    */
     record ArraySerializer {
+      @chpldoc.nodoc
       var writer;
+      @chpldoc.nodoc
       var _arrayDim : int;
+      @chpldoc.nodoc
       var _arrayFirst : list(bool);
+      @chpldoc.nodoc
       var _arrayMax : int;
+      @chpldoc.nodoc
       var _first : bool = true;
 
-      // Write out multidimensional arrays like so:
-      // [
-      //  [0, 1, 2],
-      //  [3, 4, 5],
-      //  [6, 7, 8]
-      // ]
-      @chpldoc.nodoc
+      /*
+        Start serializing a new dimension of size ``size``.
+      */
       proc ref startDim(size: int) throws {
         _arrayDim += 1;
 
@@ -210,7 +392,9 @@ module JSON {
         writer._writeLiteral("[");
       }
 
-      @chpldoc.nodoc
+      /*
+        End the current dimension.
+      */
       proc ref endDim() throws {
         // For all but the 'last' dimension, we want the closing square bracket
         // to be on a newline to match the opening bracket. For example:
@@ -249,7 +433,11 @@ module JSON {
         _first = true;
       }
 
-      @chpldoc.nodoc
+      /*
+        Serialize ``element``.
+
+        Writes a leading comma if this is not the first element in the row.
+      */
       proc ref writeElement(const element: ?) throws {
         if !_first then writer._writeLiteral(", ");
         else _first = false;
@@ -257,21 +445,67 @@ module JSON {
         writer.write(element);
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current array.
+      */
       proc endArray() throws {
       }
     }
 
-    @chpldoc.nodoc
-    proc startArray(writer: jsonWriter, size: int) throws {
-      return new ArraySerializer(writer);
+    /*
+      Start serializing a map by writing the character ``{``.
+
+      :arg writer: The ``fileWriter`` to be used when serializing
+      :arg size: The number of entries in the map
+
+      :returns: A new :type:`MapSerializer`
+    */
+    proc startMap(writer: jsonWriter, size: int) throws {
+      writer._writeLiteral("{");
+      return new MapSerializer(writer);
     }
 
+    /*
+      Returned by ``startMap`` to provide the API for serializing maps.
+
+      Maps are serialized as JSON objects. For example, a map of strings to
+      strings would be serialized as:
+
+      .. code-block:: text
+
+        {
+          "east": "west",
+          "hello": "goodbye",
+          "north": "south",
+          "day": "night"
+        }
+
+      The indenting and whitespace of this example is not considered stable.
+
+    */
     record MapSerializer {
+      @chpldoc.nodoc
       var writer;
+      @chpldoc.nodoc
       var _first : bool = true;
 
-      @chpldoc.nodoc
+      /*
+        Serialize ``key``.
+
+        .. note::
+
+          JSON itself only supports strings as names in objects. This module
+          supports non-string key types by serializing them as an escaped JSON
+          string containing the serialized key. For a simple integer key, this
+          results in output like ``"123"``. For a record key with two integer
+          fields, the output could look like:
+
+          .. code-block:: text
+
+            "{\"x\":1, \"y\":2}"
+
+        Adds a leading comma if this is not the first pair in the map.
+      */
       proc ref writeKey(const key: ?) throws {
         if !_first {
           writer._writeLiteral(", ");
@@ -298,30 +532,21 @@ module JSON {
         }
       }
 
-      @chpldoc.nodoc
+      /*
+        Serialize ``val``, preceded by the character ``:``.
+      */
       proc writeValue(const val: ?) throws {
         writer._writeLiteral(": ");
         writer.write(val);
       }
 
-      @chpldoc.nodoc
+      /*
+        Ends serialization of the current map by writing the character ``}``.
+      */
       proc endMap() throws {
         writer.writeNewline();
         writer._writeLiteral("}");
       }
-    }
-
-    // Write maps like so:
-    // {
-    //   "east": "west",
-    //   "hello": "goodbye",
-    //   "north": "south",
-    //   "day": "night"
-    // }
-    @chpldoc.nodoc
-    proc startMap(writer: jsonWriter, size: int) throws {
-      writer._writeLiteral("{");
-      return new MapSerializer(writer);
     }
   }
 
@@ -365,6 +590,13 @@ module JSON {
   /*
     A JSON format deserializer to be used by :record:`~IO.fileReader`.
 
+    See :ref:`the serializers technote<ioSerializers>` for a general overview
+    of Deserializers and their usage.
+
+    Otherwise, please refer to :type:`jsonSerializer` for a description of the
+    JSON serialization format. Individual methods on this type may clarify
+    behavior specific to deserialization.
+
     Implements the ``deserializeType`` and ``deserializeValue`` methods which are
     called by a ``fileReader`` to deserialize a serialized representation of
     a type or value in JSON format.
@@ -373,15 +605,8 @@ module JSON {
     by default. I.e., the fields of a JSON object do not need to match the
     declaration order in a Chapel type definition to be deserialized into that
     type.
-
-    See the :record:`~IO.defaultDeserializer` for more information about
-    deserializers in general.
-*/
+  */
   record jsonDeserializer {
-
-    // Keep track of information gained from reading ahead
-
-    // State to track position in a multidimensional array
 
     @chpldoc.nodoc
     proc init() {
@@ -405,7 +630,24 @@ module JSON {
       dc._readOne(dc._kind, val, here);
     }
 
-    /* Deserialize a JSON formatted value of the given type from a :record:`~IO.fileReader` */
+    /*
+      Deserialize type ``readType`` with ``reader``.
+
+      Classes and records will be deserialized using an appropriate initializer,
+      passing in ``reader`` and this Deserializer as arguments. If an
+      initializer is unavailable, this method may invoke the class or record's
+      ``deserialize`` method. Please see the :ref:`serializers technote<ioSerializers>` for more.
+
+      Classes and records are expected to implement either the
+      ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+      Alternatively, types implementing the entire ``serializable`` interface
+      are also accepted.
+
+      :arg reader: The ``fileReader`` from which types are deserialized
+      :arg readType: The type to be deserialized
+
+      :returns: A value of type ``readType``.
+    */
     proc ref deserializeType(reader: jsonReader, type readType) : readType throws {
       if isNilableClassType(readType) && reader.matchLiteral("null") {
         return nil:readType;
@@ -437,7 +679,24 @@ module JSON {
       }
     }
 
-    /* Deserialize a JSON formatted value from a :record:`~IO.fileReader` */
+    /*
+      Deserialize from ``reader`` directly into ``val``.
+
+      Like :proc:`deserializeType`, but reads into an initialized value rather
+      than creating a new value. For classes and records, this method will
+      first attempt to invoke a ``deserialize`` method. If the ``deserialize``
+      method is unavailable, this method may fall back on invoking a suitable
+      initializer and assigning the resulting value into ``val``.. Please see
+      the :ref:`serializers technote<ioSerializers>` for more.
+
+      Classes and records are expected to implement either the
+      ``initDeserializable`` or ``readDeserializable`` interfaces (or both).
+      Alternatively, types implementing the entire ``serializable`` interface
+      are also accepted.
+
+      :arg reader: The ``fileReader`` from which values are deserialized
+      :arg val: The value into which this Deserializer will deserialize
+    */
     proc ref deserializeValue(reader: jsonReader, ref val: ?readType) : void throws {
       if canResolveMethod(val, "deserialize", reader, this) {
         val.deserialize(reader=reader, deserializer=this);
@@ -446,10 +705,52 @@ module JSON {
       }
     }
 
+    /*
+      Start deserializing a class by reading the character ``{``.
+
+      :arg reader: The ``fileReader`` to use when deserializing
+      :arg name: The name of the class type
+
+      :returns: A new :type:`AggregateDeserializer`
+    */
+    proc startClass(reader: jsonReader, name: string) throws {
+      //
+      // TODO: Should we only compute the mapping if the fields are being
+      // read out of order?
+      //
+      var (m, last) = outOfOrderHelper(reader);
+      reader.readLiteral("{");
+
+      return new AggregateDeserializer(reader, m, last);
+    }
+
+    /*
+      Start deserializing a record by reading the character ``{``.
+
+      :arg reader: The ``fileReader`` to use when deserializing
+      :arg name: The name of the record type
+
+      :returns: A new :type:`AggregateDeserializer`
+    */
+    proc startRecord(reader: jsonReader, name: string) throws {
+      return startClass(reader, name);
+    }
+
+    /*
+      Returned by ``startClass`` or ``startRecord`` to provide the API for
+      deserializing classes or records.
+
+      See ``jsonSerializer.AggregateSerializer`` for details of the JSON format
+      for classes and records.
+    */
     record AggregateDeserializer {
+      @chpldoc.nodoc
       var reader;
+      @chpldoc.nodoc
       var _fieldOffsets : map(string, int);
+      @chpldoc.nodoc
       var _lastPos = -1;
+      @chpldoc.nodoc
       var _parent : bool = false;
 
       @chpldoc.nodoc
@@ -466,7 +767,16 @@ module JSON {
         return true;
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize a field named ``name`` of type ``fieldType``.
+
+        .. note::
+
+          The position of the underlying ``fileReader`` is undefined after a
+          call to ``readField`` in order to support out-of-order reading.
+
+        :returns: A deserialized value of type ``fieldType``.
+      */
       proc readField(name: string, type fieldType) : fieldType throws {
         if _fieldOffsets.contains(name) {
           // Use 'advance' instead of 'seek' to support reading in a marked
@@ -494,7 +804,15 @@ module JSON {
         return ret;
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize a field named ``name`` in-place.
+
+        .. note::
+
+          The position of the underlying ``fileReader`` is undefined after a
+          call to ``readField`` in order to support out-of-order reading.
+
+      */
       proc readField(name: string, ref field) throws {
         if _fieldOffsets.contains(name) {
           // Use 'advance' instead of 'seek' to support reading in a marked
@@ -520,12 +838,23 @@ module JSON {
           reader.revert();
       }
 
+      /*
+        Start deserializing a nested class inside the current class.
+
+        See ``jsonSerializer.AggregateSerializer.startClass`` for details
+        on inheritance on the JSON format.
+
+        :returns: A new AggregateDeserializer
+      */
       proc ref startClass(reader, name: string) {
         // TODO: 'ref' intent probably required by use of 'map' field...
         return new AggregateDeserializer(reader, _fieldOffsets, _lastPos, _parent=true);
       }
 
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current class by reading the character
+        ``}``.
+      */
       proc endClass() throws {
         if !_parent {
           const dist =  _lastPos - reader.offset();
@@ -534,33 +863,56 @@ module JSON {
         }
       }
 
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current record by reading the character
+        ``}``.
+      */
       proc endRecord() throws {
         endClass();
       }
     }
 
-    @chpldoc.nodoc
-    proc startClass(reader: jsonReader, name: string) throws {
-      //
-      // TODO: Should we only compute the mapping if the fields are being
-      // read out of order?
-      //
-      var (m, last) = outOfOrderHelper(reader);
-      reader.readLiteral("{");
+    /*
+      Start deserializing a tuple by reading the character ``[``.
 
-      return new AggregateDeserializer(reader, m, last);
+      :arg reader: The ``fileReader`` to use when deserializing
+
+      :returns: A new :type:`ListDeserializer`
+    */
+    proc startTuple(reader: jsonReader) throws {
+      return startList(reader);
     }
 
-    proc startRecord(reader: jsonReader, name: string) throws {
-      return startClass(reader, name);
+    /*
+      Start deserializing a list by reading the character ``[``.
+
+      :arg reader: The ``fileReader`` to use when deserializing
+
+      :returns: A new :type:`ListDeserializer`
+    */
+    proc startList(reader: jsonReader) throws {
+      reader._readLiteral("[");
+      return new ListDeserializer(reader);
     }
 
+    /*
+      Returned by ``startTuple`` or ``startList`` to provide the API for
+      deserializing tuples or lists.
+
+      See ``jsonSerializer.ListSerializer`` for details of the JSON format for
+      tuples and lists.
+    */
     record ListDeserializer {
+      @chpldoc.nodoc
       var reader;
+      @chpldoc.nodoc
       var _first : bool = true;
 
-      @chpldoc.nodoc
+      /*
+        Deserialize and return an element.
+
+        :returns: A deserialized value of type ``eltType``.
+      */
       proc ref readElement(type eltType) : eltType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
@@ -573,7 +925,9 @@ module JSON {
           else return reader.read(eltType);
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize ``element`` in-place.
+      */
       proc ref readElement(ref element) throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
@@ -583,16 +937,25 @@ module JSON {
           else reader.read(element);
       }
 
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current list by reading the character
+        ``]``.
+      */
       proc endList() throws {
         reader._readLiteral("]");
       }
 
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current tuple by reading the character
+        ``]``.
+      */
       proc endTuple() throws {
         endList();
       }
 
+      /*
+        :returns: Returns ``true`` if there are more elements to read.
+      */
       proc hasMore() : bool throws {
         reader.mark();
         if reader.matchLiteral("]") {
@@ -605,24 +968,38 @@ module JSON {
       }
     }
 
-    proc startTuple(reader: jsonReader) throws {
-      return startList(reader);
+    /*
+      Start deserializing an array.
+
+      :arg reader: The ``fileReader`` to use when deserializing
+
+      :returns: A new :type:`ArrayDeserializer`
+    */
+    proc startArray(reader: jsonReader) throws {
+      return new ArrayDeserializer(reader);
     }
 
-    proc startList(reader: jsonReader) throws {
-      reader._readLiteral("[");
-      return new ListDeserializer(reader);
-    }
+    /*
+      Returned by ``startArray`` to provide the API for deserializing arrays.
 
+      See ``jsonSerializer.ArraySerializer`` for details of the JSON format for
+      arrays.
+    */
     record ArrayDeserializer {
+      @chpldoc.nodoc
       var reader;
+      @chpldoc.nodoc
       var _first : bool = true;
+      @chpldoc.nodoc
       var _arrayDim = 0;
+      @chpldoc.nodoc
       var _arrayMax = 0;
+      @chpldoc.nodoc
       var _arrayFirst : list(bool);
 
-      // See comments in writing case for explanation
-      @chpldoc.nodoc
+      /*
+        Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
+      */
       proc ref startDim() throws {
         _arrayDim += 1;
         if _arrayFirst.size < _arrayDim {
@@ -643,23 +1020,9 @@ module JSON {
         reader._readLiteral("[");
       }
 
-      @chpldoc.nodoc
-      proc ref readElement(type eltType) : eltType throws {
-        if !_first then reader._readLiteral(", ");
-        else _first = false;
-
-        return reader.read(eltType);
-      }
-
-      @chpldoc.nodoc
-      proc ref readElement(ref element) throws {
-        if !_first then reader._readLiteral(", ");
-        else _first = false;
-
-        reader.read(element);
-      }
-
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current dimension.
+      */
       proc ref endDim() throws {
         if _arrayDim < _arrayMax {
           reader.readNewline();
@@ -678,21 +1041,62 @@ module JSON {
         _first = true;
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize and return an element of the array.
+
+        :returns: A deserialized value of type ``eltType``.
+      */
+      proc ref readElement(type eltType) : eltType throws {
+        if !_first then reader._readLiteral(", ");
+        else _first = false;
+
+        return reader.read(eltType);
+      }
+
+      /*
+        Deserialize ``element`` in-place as an element of the array.
+      */
+      proc ref readElement(ref element) throws {
+        if !_first then reader._readLiteral(", ");
+        else _first = false;
+
+        reader.read(element);
+      }
+
+      /*
+        End deserialization of the current array.
+      */
       proc endArray() throws {
       }
     }
 
-    @chpldoc.nodoc
-    proc startArray(reader: jsonReader) throws {
-      return new ArrayDeserializer(reader);
+    /*
+      Start deserializing a map by reading the character ``{``.
+
+      :arg reader: The ``fileReader`` to use when deserializing
+
+      :returns: A new :type:`MapDeserializer`
+    */
+    proc startMap(reader: jsonReader) throws {
+      reader._readLiteral("{");
+      return new MapDeserializer(reader);
     }
 
+    /*
+      Returned by ``startMap`` to provide the API for deserializing arrays.
+
+      See ``jsonSerializer.MapSerializer`` for details of the JSON format for
+      maps.
+    */
     record MapDeserializer {
+      @chpldoc.nodoc
       var reader;
+      @chpldoc.nodoc
       var _first : bool = true;
 
-      @chpldoc.nodoc
+      /*
+        Deserialize and return a key of type ``keyType``.
+      */
       proc ref readKey(type keyType) : keyType throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
@@ -711,7 +1115,9 @@ module JSON {
         }
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize ``key`` in-place as a key of the map.
+      */
       proc ref readKey(ref key: ?t) throws {
         if !_first then reader._readLiteral(",");
         else _first = false;
@@ -730,36 +1136,43 @@ module JSON {
         }
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize and return a value of type ``valType``.
+      */
       proc readValue(type valType) : valType throws {
         reader._readLiteral(":");
         return reader.read(valType);
       }
 
-      @chpldoc.nodoc
+      /*
+        Deserialize ``value`` in-place as a value of the map.
+      */
       proc readValue(ref value) throws {
         reader._readLiteral(":");
         reader.read(value);
       }
 
-      @chpldoc.nodoc
+      /*
+        End deserialization of the current map by reading the character ``}``.
+      */
       proc endMap() throws {
         reader._readLiteral("}");
       }
 
+      /*
+        :returns: Returns ``true`` if there are more elements to read.
+
+        .. warning::
+
+          Behavior of 'hasMore' is undefined when called between ``readKey`` and
+          ``readValue``.
+      */
       proc hasMore() : bool throws {
         reader.mark();
         defer reader.revert();
         return !reader.matchLiteral("}");
       }
     }
-
-    @chpldoc.nodoc
-    proc startMap(reader: jsonReader) throws {
-      reader._readLiteral("{");
-      return new MapDeserializer(reader);
-    }
-
   }
 
   @deprecated(notes="'JsonDeserializer' is deprecated; please use 'jsonDeserializer' instead")

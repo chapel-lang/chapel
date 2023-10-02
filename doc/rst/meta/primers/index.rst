@@ -10,6 +10,7 @@ Language Basics
    :maxdepth: 1
 
    Variables <variables>
+   Loops <loops>
    Procedures <procedures>
    Classes <classes>
    Records <records>
@@ -59,12 +60,12 @@ Data Parallelism
    Domains <domains>
    Arrays <arrays>
    Slices <slices>
+   Distributions <distributions>
+   Forall Loops <forallLoops>
    Sparse Domains and Arrays <sparse>
    Associative Domains and Arrays <associative>
    Reductions <reductions>
-   Distributions <distributions>
    Replicated Distribution <replicated>
-   Forall Loops <forallLoops>
 
 Interoperability
 -------------------

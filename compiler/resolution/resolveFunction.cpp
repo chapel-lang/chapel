@@ -1049,6 +1049,8 @@ static void insertUnrefForArrayOrTupleReturn(FnSymbol* fn) {
       ! ret->type->symbol->hasFlag(FLAG_ARRAY) &&
       ! ret->type->symbol->hasFlag(FLAG_DOMAIN) ) return;
 
+  // As of this writing, at this point 'ref' is always defined in 'fn'.
+
   for_SymbolSymExprs(se, ret) {
     if (CallExpr* call = toCallExpr(se->parentExpr)) {
       if (call->isPrimitive(PRIM_MOVE) == true &&
@@ -3003,6 +3005,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               from = rhsSe->symbol();
             } else {
               // Store the RHS into a temporary
+              SET_LINENO(rhs);
               Symbol* tmp = NULL;
               tmp = newTemp("_cast_tmp_", rhs->typeInfo());
               call->insertBefore(new DefExpr(tmp));

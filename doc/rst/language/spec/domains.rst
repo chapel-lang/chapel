@@ -72,8 +72,8 @@ domain’s relationship with subdomains, index
 types (:ref:`Index_Types`), and
 arrays (:ref:`Association_of_Arrays_to_Domains`).
 
-The runtime representation of a domain is controlled by its domain map.
-Domain maps are presented in :ref:`Chapter-Domain_Maps`.
+The runtime representation of a domain is controlled by its distribution,
+see :ref:`Distributions <Chapter-Domain_Maps>`.
 
 .. _Domain_and_Array_Parallel_Safety:
 
@@ -134,6 +134,10 @@ types include all of the associative domain types.
 These base domain types are discussed in turn in the following
 subsections.
 
+The keyword ``domain``, when not followed by parentheses, refers to
+a generic type that can be instantiated with any domain type.
+This type may also be written as ``domain(?)``.
+
 Rectangular Domains
 ~~~~~~~~~~~~~~~~~~~
 
@@ -181,21 +185,21 @@ where ``named-expression-list`` allows specifying the values of ``rank``,
    *Example (typeFunctionDomain.chpl)*.
 
    The following declarations both create an uninitialized rectangular
-   domain with three dimensions, with ``int`` indices: 
+   domain with three dimensions, with ``int`` indices:
 
    .. code-block:: chapel
 
       var D1 : domain(rank=3, idxType=int, strides=strideKind.one);
       var D2 : domain(3);
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln(D1);
       writeln(D2);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -261,7 +265,7 @@ A domain expression may contain bounds which are evaluated at runtime.
 
    *Example*.
 
-   In the code 
+   In the code
 
    .. code-block:: chapel
 
@@ -298,7 +302,7 @@ for type:
           A[i,j] = 7 * i**2 + j;
       writeln(A);
 
-   produces 
+   produces
 
    .. code-block:: printoutput
 
@@ -313,6 +317,16 @@ type and can be used to describe sets or to create dictionary-style
 arrays (hash tables). The type of indices of an associative domain, or
 its ``idxType``, can be any primitive type except ``void`` or any class
 type.
+
+
+   .. warning::
+
+      Associative domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+      Chapel provides stable `map` and `set` data types
+      [see modules :mod:`Set` and :mod:`Map`]
+      that can be used instead in many cases.
+
 
 .. _Associative_Domain_Types:
 
@@ -372,7 +386,7 @@ the indices does not match a compiler error will be issued.
    .. note::
 
       *Future*
-      
+
       Due to implementation of ``==`` over arrays it is currently not possible
       to use arrays as indices within an associative domain.
 
@@ -386,14 +400,14 @@ the indices does not match a compiler error will be issued.
    associative domain are iterated is not the same as their
    specification order.
 
-   This code 
+   This code
 
    .. code-block:: chapel
 
       var D : domain(string) = {"bar", "foo"};
       writeln(D);
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -413,7 +427,7 @@ Simple Subdomain Types and Values
 A subdomain is a domain whose indices are guaranteed to be a subset of
 those described by another domain known as its *parent domain*. A
 subdomain has the same type as its parent domain, and by default it
-inherits the domain map of its parent domain. All domain types support
+inherits the distribution of its parent domain. All domain types support
 subdomains.
 
 Simple subdomains are subdomains which are not sparse. Sparse subdomains
@@ -432,7 +446,7 @@ subdomains, unless it is specifically distinguished as one or the other.
    Subdomains are provided in Chapel for a number of reasons: to
    facilitate the ability of the compiler or a reader to reason about
    the inter-relationship of distinct domain variables; to support the
-   author’s ability to omit redundant domain mapping specifications; to
+   author’s ability to omit redundant distribution specifications; to
    support the compiler’s ability to reason about the relative alignment
    of multiple domains; and to improve the compiler’s ability to prove
    away bounds checks for array accesses.
@@ -480,6 +494,12 @@ parent domain.
 
 Sparse Subdomain Types and Values
 ---------------------------------
+
+   .. warning::
+
+      Sparse domains and arrays are currently unstable.
+      Their functionality is likely to change in the future.
+
 
 .. code-block:: syntax
 
@@ -791,7 +811,7 @@ be defined with either a domain or a list of ranges.
 
 The result of slicing, or a *slice*, is a new domain value that
 represents the intersection of the index set of the domain being sliced
-and the index set being applied. The type and domain map of the slice
+and the index set being applied. The type and distribution of the slice
 match the domain being sliced.
 
 Slicing can also be performed on an array, resulting in aliasing a
@@ -861,7 +881,7 @@ The ``#`` operator can be applied to dense rectangular domains with a
 tuple argument whose size matches the rank of the domain (or optionally
 an integer in the case of a 1D domain). The operator produces a new domain
 obtained by applying the ``#`` operator to each of the component ranges
-of the argument domain, with the same domain map as the argument.
+of the argument domain, with the same distribution as the argument.
 
 .. _Adding_and_Removing_Domain_Indices:
 

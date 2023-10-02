@@ -348,8 +348,8 @@ Precedence and Associativity
 | ``**``             | right          | exponentiation                       |
 +--------------------+----------------+--------------------------------------+
 | | ``reduce``       | left           | | reduction                          |
-| | ``scan``         | scan           | | scan                               |
-| | ``dmapped``      |                | | domain map application             |
+| | ``scan``         |                | | scan                               |
+| | ``dmapped``      |                | | application of a distribution      |
 |                    |                |                                      |
 +--------------------+----------------+--------------------------------------+
 | | prefix ``!``     | right          | | logical negation                   |

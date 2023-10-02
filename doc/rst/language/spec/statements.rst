@@ -745,8 +745,17 @@ string.  Only ``require`` statements in code that the compiler considers
 executable will be processed.  Thus, a ``require`` statement
 guarded by a ``param`` conditional that the compiler folds out, or
 in a module that does not appear in the program's ``use``
-statements will not be added to the program's requirements.  For
-example, the following code either requires ``foo.h`` or whatever
+statements will not be added to the program's requirements.  
+
+   *Rationale*.
+
+   Currently, the Chapel compiler parses all ``.chpl`` files early
+   in compilation, prior to resolving param strings, calls, or control flow.
+   This imposes more restrictions on ``.chpl``-requiring statements
+   than on other requirements that matter only during the backend compilation.
+   We may consider relaxing these restrictions in the future.
+
+For example, the following code either requires ``foo.h`` or whatever
 requirement is specified by *defaultHeader* (``bar.h`` by default)
 depending on the value of *requireFoo*:
 

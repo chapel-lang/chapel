@@ -677,12 +677,14 @@ module ChapelRange {
 
 
   /* Returns the range's stride. */
+  pragma "no where doc"
   inline proc range.stride where !hasParamStride() do return _stride;
 
   @chpldoc.nodoc proc range.stride param where hasParamStride() do
     return (if strides == strideKind.one then 1 else -1) : strType;
 
   /* Returns the range's alignment. */
+  pragma "no where doc"
   inline proc range.alignment where !hasParamAlignment() do
     return chpl_intToIdx(if hasParamAlignmentField() then 0 else _alignment);
 
@@ -691,6 +693,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
+  pragma "no where doc"
   inline proc range.isAligned() where !hasParamAligned() do
     return _alignment != unalignedMark;
 
@@ -699,6 +702,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
+  pragma "no where doc"
   @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
   inline proc range.aligned where !hasParamAligned() do
     return isAligned();
@@ -1242,6 +1246,7 @@ module ChapelRange {
 
   /* Returns ``true`` if this range is naturally aligned, ``false``
      otherwise. */
+  pragma "no where doc"
   @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
   proc range.isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
@@ -1253,6 +1258,7 @@ module ChapelRange {
   do return chpl_isNaturallyAligned();
 
   // tells whether omitting the 'align' clause results in the same range
+  pragma "no where doc"
   proc range.chpl_isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
   do if bounds == boundKind.both {
@@ -1274,6 +1280,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
+  pragma "no where doc"
   @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
   proc range.isAmbiguous() param where hasPosNegUnitStride() do
     return ! isAligned();

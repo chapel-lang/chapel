@@ -45,3 +45,15 @@ new borrowed DefaultClass(b = new B(t = (33, 3.300000e+00)))
 ====================
 IN B.deserialize
 SUCCESS: unmanaged DefaultClass
+===== writing: =====
+[1, 2, 3, 4]
+--------------------
+[1, 2, 3, 4]
+====================
+SUCCESS: list(int(64),false)
+===== writing: =====
+{1: 1, 4: 16, 2: 4, 3: 9}
+--------------------
+[1 => 1, 4 => 16, 2 => 4, 3 => 9]
+====================
+SUCCESS: map(int(64),int(64),false)

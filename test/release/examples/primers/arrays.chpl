@@ -104,10 +104,11 @@ writeln("Initially, B is:\n", B, "\n");
 
 //
 // An array's elements can be iterated over using Chapel's standard
-// loop forms like ``for``, ``foreach``, or ``forall``.  These cause
-// the index variable to refer to an array element in each iteration.
-// For example, the following loop increments each of ``B``'s elements
-// by 1, in parallel:
+// loop forms like ``for``, ``foreach``, or ``forall`` (see the
+// :ref:`Loops Primer <primers-loops>` for details).  These cause the
+// index variable to refer to an array element in each iteration.  For
+// example, the following loop increments each of ``B``'s elements by
+// 1, in parallel:
 //
 
 forall b in B do
@@ -127,7 +128,11 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // from the ranges specified within the array type's square brackets.
 // Array ``A2`` above will have the implicit domain ``{0..4}`` to
 // represent the five values in its initializing expression.
-
+//
+// The explicit ``ref`` intent is required for ``B`` in the example below
+// because ``B`` is not modifed directly through the loop's index variable (in
+// this case ``i`` and ``j``).
+//
 // An array's domain can be queried using the ``.domain`` method,
 // which returns a ``const ref`` to the domain in question.  For
 // example, here's a loop that iterates over B's indices in parallel
@@ -157,7 +162,7 @@ proc negateAndPrintArr(ref X: [?D] real) {
 negateAndPrintArr(B);
 
 //
-// Arrays are passed to routines by constant reference (``const ref``) by
+// Arrays are passed to routines by constant (``const``) by
 // default, which does not allow them to be modified within the routine.
 // The above procedure ``negateAndPrintArr()`` must use a non-constant
 // reference intent (``ref``) explicitly, so that its modifications of ``X``
