@@ -404,6 +404,12 @@ bool idIsMethod(Context* context, ID id);
 UniqueString fieldIdToName(Context* context, ID id);
 
 /**
+ If the ID represents a Module declaration, return the module name;
+ otherwise, return the empty string.
+ */
+UniqueString moduleIdToName(Context* context, ID id);
+
+/**
  Returns true if the ID is a field in a record/class/union.
  */
 bool idIsField(Context* context, ID id);
