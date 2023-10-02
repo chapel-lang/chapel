@@ -150,7 +150,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   // Printing the header prints the file path, so we need to update the
   // 'lastFilePath_' field.
   std::string printedPath;
-  writeFile(context, oss_, errordetail::locate(context, loc), &printedPath);
+  writeFile(context_, oss_, errordetail::locate(context_, loc), &printedPath);
   noteFilePath(std::move(printedPath));
 
   if (outputFormat_ == DETAILED) {
@@ -174,7 +174,7 @@ void ErrorWriter::writeNote(IdOrLocation loc, const std::string& str) {
   if (outputFormat_ == BRIEF) {
     // Indent notes in brief mode to make things easier to organize
     oss_ << "  note in ";
-    writeFile(context, oss_, errordetail::locate(context, loc));
+    writeFile(context_, oss_, errordetail::locate(context_, loc));
     oss_ << ": ";
   } else {
     // In detailed mode, the body is indented.
@@ -197,9 +197,9 @@ static void printLineNo(std::ostream& os, size_t gutterLength, int line) {
 
 void ErrorWriter::writeCode(const Location& location,
                            const std::vector<Location>& toHighlight) {
-  if (outputFormat_ != DETAILED || context == nullptr) return;
+  if (outputFormat_ != DETAILED || context_ == nullptr) return;
 
-  auto str = fileText(context, location);
+  auto str = fileText(context_, location);
   if (str.empty()) return;
 
   ssize_t startIndex = posToFileIndex(str.c_str(), location.firstLine(), 1);
@@ -233,7 +233,7 @@ void ErrorWriter::writeCode(const Location& location,
   // Print the file path if it's changed since the last code block. Printing
   // a code block will display the file path if needed, so lastFilePath_ needs
   // to be updated.
-  if (noteFilePath(locToPath(context, location))) {
+  if (noteFilePath(locToPath(context_, location))) {
     printBlank(oss_, codeIndent - 1);
     oss_ << "--> " << lastFilePath_ << std::endl;
   }
