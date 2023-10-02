@@ -129,14 +129,16 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
       }
 
       std::string of;
-      if (!elt.moduleName.isEmpty()) {
-        of += "of '";
-        of += elt.moduleName.str();
-        of += "' ";
+      if (!elt.usedImportedThingName.isEmpty()) {
+        of += " of '";
+        of += elt.usedImportedThingName.str();
+        of += "'";
+      } else {
+        of = " statement";
       }
 
       wr.note(locationOnly(elt.visibilityClauseId), errbegin,
-              " the '", elt.visibilityStmtKind, "' ", of,
+              " the '", elt.visibilityStmtKind, "'", of,
               nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;

@@ -1060,24 +1060,6 @@ UniqueString fieldIdToName(Context* context, ID id) {
   return fieldIdToNameQuery(context, id);
 }
 
-static const UniqueString& moduleIdToNameQuery(Context* context, ID id) {
-  QUERY_BEGIN(moduleIdToNameQuery, context, id);
-
-  UniqueString result;
-  if (auto ast = astForIdQuery(context, id)) {
-    if (auto mod = ast->toModule()) {
-      result = mod->name();
-    }
-  }
-
-  return QUERY_END(result);
-}
-
-UniqueString moduleIdToName(Context* context, ID id) {
-  return moduleIdToNameQuery(context, id);
-}
-
-
 bool idIsField(Context* context, ID id) {
   UniqueString name = fieldIdToName(context, id);
   return !name.isEmpty();

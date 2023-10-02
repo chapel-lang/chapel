@@ -1183,8 +1183,8 @@ struct ResultVisibilityTrace {
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
     UniqueString renameFrom;
-    UniqueString moduleName;
-    const Scope* usedImportedModuleScope = nullptr;
+    UniqueString usedImportedThingName;
+    const Scope* usedImportedScope = nullptr;
     bool fromUseImport = false;
 
     // this indicates a method receiver scope
@@ -1205,8 +1205,8 @@ struct ResultVisibilityTrace {
              visibilityClauseId == other.visibilityClauseId &&
              visibilityStmtKind == other.visibilityStmtKind &&
              renameFrom == other.renameFrom &&
-             moduleName == other.moduleName &&
-             usedImportedModuleScope == other.usedImportedModuleScope &&
+             usedImportedThingName == other.usedImportedThingName &&
+             usedImportedScope == other.usedImportedScope &&
              fromUseImport == other.fromUseImport &&
              methodReceiverScope == other.methodReceiverScope &&
              parentScope == other.parentScope &&
@@ -1221,8 +1221,8 @@ struct ResultVisibilityTrace {
     void mark(Context* context) const {
       context->markPointer(resolvedVisibilityScope);
       renameFrom.mark(context);
-      moduleName.mark(context);
-      context->markPointer(usedImportedModuleScope);
+      usedImportedThingName.mark(context);
+      context->markPointer(usedImportedScope);
       visibilityClauseId.mark(context);
       context->markPointer(methodReceiverScope);
       context->markPointer(parentScope);
