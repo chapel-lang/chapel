@@ -1,2 +1,2 @@
--sReadBinaryArrayReturnInt=true
--sReadBinaryArrayReturnInt=true -suseBlock=true  # readWriteMultidimArray-block.good
+ 
+-suseBlock=true  # readWriteMultidimArray-block.good

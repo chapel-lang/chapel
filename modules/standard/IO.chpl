@@ -9498,86 +9498,9 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
 }
 
 
-/*
-  Controls the return type of the ``readBinary`` overloads that take an
-  array argument. Those are:
-
-  ``fileReader.readBinary(ref data: [], param endian = ioendian.native)``
-  ``fileReader.readBinary(ref data: [], endian: ioendian)``
-
-  * when ``false``: the deprecated methods are called. These return a ``bool``
-    indicating whether any values were read. These variants will also throw
-    if EOF is reached before filling the array.
-  * when ``true``: the new methods are called. These return an ``int`` with the
-    number of values that were read.
-
-  This ``param`` can be set to true by compiling your program with
-  ``-sReadBinaryArrayReturnInt=true``
-*/
-config param ReadBinaryArrayReturnInt = false;
-
-/*
-   Read an array of binary numbers from a fileReader
-
-   Binary values of the type ``data.eltType`` are consumed from the fileReader
-   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
-   is thrown if EOF is reached before the array is filled.
-
-   Note that this routine currently requires a 1D rectangular non-strided array.
-
-   :arg data: an array to read into – existing values are overwritten.
-   :arg endian: :type:`ioendian` compile-time argument that specifies the byte
-                order in which to read the numbers. Defaults to
-                ``ioendian.native``.
-   :returns: `false` if EOF is encountered before reading anything,
-              `true` otherwise
-
-   :throws SystemError: Thrown if an error occurred while reading from the
-                        ``fileReader``.
-   :throws UnexpectedEofError: Thrown if EOF is encountered before ``data.size``
-                               values are read.
-*/
-@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
-  where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
-    isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
-{
-  var e : errorCode = 0,
-      readSomething = false;
-
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-
-    for (i, b) in zip(data.domain, data) {
-      select (endian) {
-        when ioendian.native {
-          e = try _read_binary_internal(this._channel_internal, _iokind.native, b);
-        }
-        when ioendian.big {
-          e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
-        }
-        when ioendian.little {
-          e = try _read_binary_internal(this._channel_internal, _iokind.little, b);
-        }
-      }
-
-      if e == EEOF {
-        if i == data.domain.first {
-          break;
-        } else {
-          throw new owned UnexpectedEofError("Unable to read entire array of values in 'readBinary'");
-        }
-      } else if e != 0 {
-        throw createSystemOrChplError(e);
-      } else {
-        readSomething = true;
-      }
-    }
-  }
-
-  return readSomething;
-}
+@chpldoc.nodoc
+@deprecated("'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default when reading an array")
+config param ReadBinaryArrayReturnInt = true;
 
 /*
   Read an array of binary numbers from a ``fileReader``
@@ -9599,9 +9522,8 @@ proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): boo
                        due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
-  where ReadBinaryArrayReturnInt == true &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
-    isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+        isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var err : string,       // errors from invalid invocation of this function
       e : errorCode = 0,  // errors from perform the IO
@@ -9655,49 +9577,6 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    Read an array of binary numbers from a ``fileReader``
 
    Binary values of the type ``data.eltType`` are consumed from the fileReader
-   until ``data`` is full or EOF is reached. An :class:`~OS.UnexpectedEofError`
-   is thrown if EOF is reached before the array is filled.
-
-   Note that this routine currently requires a 1D rectangular non-strided array.
-
-   :arg data: an array to read into – existing values are overwritten.
-   :arg endian: :type:`ioendian` specifies the byte order in which
-                to read the number.
-   :returns: `false` if EOF is encountered before reading anything,
-              `true` otherwise
-
-   :throws SystemError: Thrown if an error occurred while reading the from
-                        ``fileReader``.
-   :throws UnexpectedEofError: Thrown if EOF is encountered before
-                               ``data.size`` values are read.
-*/
-@deprecated(notes="The variant of `readBinary(data: [])` that returns a `bool` is deprecated; please recompile with `-sReadBinaryArrayReturnInt=true` to use the new variant")
-proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
-  where ReadBinaryArrayReturnInt == false &&
-    data.rank == 1 && data.isRectangular() && data.strides == strideKind.one && (
-    isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
-{
-  var rv: bool = false;
-
-  select (endian) {
-    when ioendian.native {
-      rv = this.readBinary(data, ioendian.native);
-    }
-    when ioendian.big {
-      rv = this.readBinary(data, ioendian.big);
-    }
-    when ioendian.little {
-      rv = this.readBinary(data, ioendian.little);
-    }
-  }
-
-  return rv;
-}
-
-/*
-   Read an array of binary numbers from a ``fileReader``
-
-   Binary values of the type ``data.eltType`` are consumed from the fileReader
    until ``data`` is full or EOF is reached.
 
    Note that this routine currently requires a local rectangular non-strided array.
@@ -9713,9 +9592,8 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):bool throws
                         due to a :ref:`system error<io-general-sys-error>`.
 */
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
-  where ReadBinaryArrayReturnInt == true &&
-    isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
-    isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
+  where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
+        isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
 
@@ -9737,27 +9615,16 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 {
-  if ReadBinaryArrayReturnInt == true {
-    compilerError("readBinary() only supports local, rectangular, non-strided ",
+  compilerError("readBinary() only supports local, rectangular, non-strided ",
                   "arrays of simple types");
-  } else {
-    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
-                  "non-strided arrays of simple types");
-  }
 }
 
 @chpldoc.nodoc
 proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
 {
-  if ReadBinaryArrayReturnInt == true {
-    compilerError("readBinary() only supports local, rectangular, non-strided ",
+  compilerError("readBinary() only supports local, rectangular, non-strided ",
                   "arrays of simple types");
-  } else {
-    compilerError("readBinary() only supports 1-dimensional, rectangular, ",
-                  "non-strided arrays of simple types");
-  }
 }
-
 
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
