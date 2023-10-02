@@ -1,1 +1,0 @@
-readBlockArray-old.chpl:15: warning: The overload of `readBinary(data: [])` that returns a `bool` is deprecated; please compile without the 'ReadBinaryArrayReturnInt' flag to use the new overload
