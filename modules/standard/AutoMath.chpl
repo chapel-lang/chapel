@@ -1023,7 +1023,7 @@ module AutoMath {
      fewer conditionals will be evaluated at run time.
   */
   pragma "last resort"
-  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to `divCeil`` and its argument names have changed to 'x' and 'y'")
+  @deprecated(notes="In an upcoming release 'divceil' will no longer be included by default.  Please 'use' or 'import' the :mod:`Math` module to prepare for this move, noting that its name has changed to ``divCeil`` and its argument names have changed to 'x' and 'y'")
   proc divceil(param m: integral, param n: integral) param do
     return chpl_divceil(m, n);
 
