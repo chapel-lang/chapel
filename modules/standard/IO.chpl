@@ -7533,7 +7533,7 @@ proc chpl_stringify(const args ...?k):string {
       var r = f.reader(locking=false);
       defer try! r.close();
 
-      r._readBytes(buf, offset:c_ssize_t);
+      r.readBinary(buf, offset);
       // Add the terminating NULL byte to make C string conversion easy.
       buf[offset] = 0;
 
@@ -8578,34 +8578,6 @@ proc fileReader.readAll(ref a: [?d] ?t): int throws
   return (i - d.low);
 }
 
-/* read a given number of bytes from a fileReader
-
-   :arg str_out: The string to be read into
-   :arg len: Read up to len bytes from the fileReader, up until EOF
-             (or some kind of I/O error). If the default value of -1
-             is provided, read until EOF starting from the fileReader's
-             current offset.
-   :returns: `true` if we read something, `false` upon EOF
-
-   :throws UnexpectedEofError: Thrown if unexpected EOF encountered while
-                               reading.
-   :throws SystemError: Thrown if the bytes could not be read from the
-                        fileReader.
- */
-@deprecated(notes="'readstring' is deprecated; please use 'readString' instead")
-proc fileReader.readstring(ref str_out:string, len:int(64) = -1):bool throws {
-  var (err, _) = readBytesOrString(this, str_out, len);
-
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in fileReader.readstring(ref str_out:string, len:int(64))");
-  }
-  return false;
-}
-
 /*
   Read a given number of codepoints from a ``fileReader``, returning a new
   :type:`~String.string`.
@@ -8654,31 +8626,6 @@ proc fileReader.readString(ref s: string, maxSize: int): bool throws {
   if e != 0 && e != EEOF then throw createSystemError(e);
 
   return lenRead > 0;
-}
-
-/* read a given number of bytes from a fileReader
-
-   :arg bytes_out: The bytes to be read into
-   :arg len: Read up to len bytes from the fileReader, up until EOF
-             (or some kind of I/O error). If the default value of -1
-             is provided, read until EOF starting from the fileReader's
-             current offset.
-   :returns: `true` if we read something, `false` upon EOF
-
-  :throws SystemError: Thrown if data could not be read from the fileReader.
- */
-@deprecated(notes="'readbytes' is deprecated; please use 'readBytes' instead")
-proc fileReader.readbytes(ref bytes_out:bytes, len:int(64) = -1):bool throws {
-  var (err, _) = readBytesOrString(this, bytes_out, len);
-
-  if !err {
-    return true;
-  } else if err == EEOF {
-    return false;
-  } else {
-    try this._ch_ioerror(err, "in fileReader.readbytes(ref str_out:bytes, len:int(64))");
-  }
-  return false;
 }
 
 /*
@@ -10182,19 +10129,6 @@ proc fileWriter.isClosed() : bool {
     ret = qio_channel_isclosed(locking, _channel_internal);
   }
   return ret;
-}
-
-
-// TODO -- we should probably have separate c_ptr ddata and ref versions
-// in this function for it to become user-facing. Right now, errors
-// in the type of the argument will only be caught by a type mismatch
-// in the call to qio_channel_read_amt.
-@chpldoc.nodoc
-proc fileReader._readBytes(x, len:c_ssize_t) throws {
-  if here != this._home then
-    throw new owned IllegalArgumentError("bad remote fileReader._readBytes");
-  var err = qio_channel_read_amt(false, _channel_internal, x[0], len);
-  if err then try this._ch_ioerror(err, "in fileReader._readBytes");
 }
 
 @chpldoc.nodoc
@@ -12878,7 +12812,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     } catch { /* ignore deferred close error */ }
   }
 
-  try r._readBytes(buf, offset:c_ssize_t);
+  try r.readBinary(buf, offset);
 
   // close errors are thrown instead of ignored
   try r.close();

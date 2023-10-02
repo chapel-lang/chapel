@@ -1964,7 +1964,7 @@ module DefaultRectangular {
         if f._writing {
           f._writeBytes(_ddata_shift(arr.eltType, src, idx), size);
         } else {
-          f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
+          f.readBinary(c_ptrTo(_ddata_shift(arr.eltType, src, idx)[0]), size);`
         }
       } catch err {
         // Setting errors in channels has no effect, so just rethrow.
