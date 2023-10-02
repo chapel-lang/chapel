@@ -17,12 +17,12 @@
     16 |     writeln(a);
        |             ⎺
        |
-  It refers to a symbol found through the 'use' statement here:
+  It refers to a symbol found through the 'use' of 'M1' here:
        |
     15 |     use M1;
        |         ⎺⎺
        |
-  And then through the 'use' statement here:
+  And then through the 'use' of 'M0' here:
       |
     7 |   public use M0 only b as a;
       |              ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺

@@ -1,22 +1,22 @@
 DuplicateConfigVars.chpl:4: In function 'main':
 DuplicateConfigVars.chpl:6: warning: potentially surprising shadowing for 'arraySize'
-DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' statement here
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
 RandomNumber.chpl:18: note: leading to 'arraySize' defined here
 DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 DuplicateConfigVars.chpl:9: warning: potentially surprising shadowing for 'arraySize'
-DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' statement here
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
 RandomNumber.chpl:18: note: leading to 'arraySize' defined here
 DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 DuplicateConfigVars.chpl:12: warning: potentially surprising shadowing for 'arraySize'
-DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' statement here
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
 RandomNumber.chpl:18: note: leading to 'arraySize' defined here
 DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 DuplicateConfigVars.chpl:16: warning: potentially surprising shadowing for 'arraySize'
-DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' statement here
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
 RandomNumber.chpl:18: note: leading to 'arraySize' defined here
 DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 DuplicateConfigVars.chpl:19: warning: potentially surprising shadowing for 'arraySize'
-DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' statement here
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
 RandomNumber.chpl:18: note: leading to 'arraySize' defined here
 DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 Generated points:

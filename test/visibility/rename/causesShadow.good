@@ -1,6 +1,1 @@
-causesShadow.chpl:8: In function 'main':
-causesShadow.chpl:11: warning: potentially surprising shadowing for 'bar'
-causesShadow.chpl:9: note: it refers to a symbol found through the 'use' statement here
-causesShadow.chpl:2: note: leading to 'baz' defined here
-causesShadow.chpl:6: note: but, there is a shadowed symbol 'bar' defined here
 false
