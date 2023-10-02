@@ -9730,7 +9730,7 @@ proc fileReader.readBinary(ptr: c_ptr(?t), maxBytes: int): int throws {
   var e: errorCode = 0,
       numRead: c_ssize_t = 0;
   const t_size = c_sizeof(t),
-        numBytesToRead = (maxBytes / t_size) * t_size;
+        numBytesToRead = (maxBytes:uint / t_size) * t_size;
 
   e = qio_channel_read(false, this._channel_internal, ptr[0], numBytesToRead: c_ssize_t, numRead);
 
