@@ -320,18 +320,6 @@ static bool symbolNameBeginsWithChpl(const Decl* node) {
   return false;
 }
 
-static bool hasAttribute(const AstNode* n, UniqueString attrName) {
-  auto attrs = parsing::astToAttributeGroup(gContext, n);
-  if (attrs) {
-    auto attr = attrs->getAttributeNamed(attrName);
-    return attr != nullptr;
-  }
-  return false;
-}
-static bool hasAttribute(const AstNode* n, const char* attrName) {
-  return hasAttribute(n, UniqueString::get(gContext, attrName));
-}
-
 static bool isNoDoc(const Decl* e) {
   auto attrs = parsing::astToAttributeGroup(gContext, e);
   if (attrs) {
@@ -355,6 +343,16 @@ static bool isNoWhereDoc(const Function* f) {
   if (auto attrs = f->attributeGroup())
     if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
       return true;
+  return false;
+}
+
+static bool isNoHeader(const AstNode* n) {
+  auto attrs = parsing::astToAttributeGroup(gContext, n);
+  if (attrs) {
+    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
+                                                           "chpldoc.noheader"));
+    return attr != nullptr;
+  }
   return false;
 }
 
@@ -1639,12 +1637,15 @@ struct RstResultBuilder {
         return getResult(textOnly_);
       }
       os_ << ".. module:: " << m->name().c_str() << '\n';
+
+      bool hasAttrNoHeader = isNoHeader(m);
+
       // Don't index internal modules since that will make them show up
       // in the module index (chpl-modindex.html).  This has the side
       // effect of making references to the :mod: tag for the module
       // illegal, which is appropriate since the modules are not
       // user-facing.
-      if (idIsInInternalModule(context_, m->id()) || hasAttribute(m, "chpldoc.noheader")) {
+      if (idIsInInternalModule(context_, m->id()) || hasAttrNoHeader) {
         os_ << "   :noindex:" << std::endl;
       } else {
         lastComment = previousComment(context_, m->id());
@@ -1666,7 +1667,7 @@ struct RstResultBuilder {
         }
       }
 
-      if (!hasAttribute(m, "chpldoc.noheader")) {
+      if (!hasAttrNoHeader) {
         os_ << '\n';
         // module title
         os_ << m->name().c_str() << "\n";
