@@ -1638,7 +1638,7 @@ struct RstResultBuilder {
         visitChildren(m);
         return getResult(textOnly_);
       }
-        os_ << ".. module:: " << m->name().c_str() << '\n';
+      os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
       // in the module index (chpl-modindex.html).  This has the side
       // effect of making references to the :mod: tag for the module
@@ -1685,14 +1685,13 @@ struct RstResultBuilder {
         } else {
           os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
         }
-
       }
 
-      } else {
-        os_ << m->name().c_str();
-        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-        lastComment = previousComment(context_, m->id());
-      }
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
+    }
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
