@@ -49,61 +49,9 @@ Automatically Available Symbols
    These symbols can also be accessed using ``Math.`` as their qualified access
    prefix.
 
-.. _automath-roots:
-
-Roots
-^^^^^
-:proc:`~AutoMath.cbrt`
-:proc:`~AutoMath.sqrt`
-
-.. _automath-rounding:
-
-Rounding
-^^^^^^^^
-:proc:`~AutoMath.ceil`
-:proc:`~AutoMath.floor`
-:proc:`~AutoMath.round`
-:proc:`~AutoMath.trunc`
-
-.. _automath-complex:
-
-Computations Involving Complex Numbers
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.conj`
-:proc:`~AutoMath.phase`
-:proc:`~AutoMath.riemProj`
-
-.. _automath-inf-nan:
-
-Infinity and NaN
-^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.inf`
-:proc:`~AutoMath.nan`
-:proc:`~AutoMath.isFinite`
-:proc:`~AutoMath.isInf`
-:proc:`~AutoMath.isNan`
-
-.. _automath-comparison:
-
-Comparison Functions
-^^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.max`
-:proc:`~AutoMath.min`
-:proc:`~AutoMath.isClose`
-
-.. _automath-sign:
-
-Sign Functions
-^^^^^^^^^^^^^^
-:proc:`~AutoMath.sgn`
-:proc:`~AutoMath.signbit`
-
-.. _automath-other:
-
-Remaining Functions
-^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.abs`
-:proc:`~AutoMath.mod`
+.. include:: AutoMath.rst
+  :start-after: An explicit ``use`` statement is not necessary.
+  :end-before: .. warning::
 
 Non-Automatically Available Symbols
 -----------------------------------
@@ -206,17 +154,16 @@ Bessel Functions
 :proc:`~Math.y1`
 :proc:`~Math.yn`
 
-.. _constant-and-function-definitions:
-
-Constant and Function Definitions
----------------------------------
-
 .. _automath-constant-and-function-definitions:
 
 Constant and Function Definitions for AutoMath
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+----------------------------------------------
+
+.. module:: AutoMath
+  :noindex:
 
 .. include:: AutoMath.rst
+  :start-after: The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module
 
 .. module:: Math
   :noindex:
@@ -224,7 +171,7 @@ Constant and Function Definitions for AutoMath
 .. _math-constant-and-function-definitions:
 
 Constant and Function Definitions for Math
-^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+------------------------------------------
 
 */
 module Math {

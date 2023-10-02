@@ -19,10 +19,64 @@
  */
 
 /*
+.. _automath-roots:
+
+Roots
+^^^^^
+:proc:`~AutoMath.cbrt`
+:proc:`~AutoMath.sqrt`
+
+.. _automath-rounding:
+
+Rounding
+^^^^^^^^
+:proc:`~AutoMath.ceil`
+:proc:`~AutoMath.floor`
+:proc:`~AutoMath.round`
+:proc:`~AutoMath.trunc`
+
+.. _automath-complex:
+
+Computations Involving Complex Numbers
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+:proc:`~AutoMath.conj`
+:proc:`~AutoMath.phase`
+:proc:`~AutoMath.riemProj`
+
+.. _automath-inf-nan:
+
+Infinity and NaN
+^^^^^^^^^^^^^^^^
+:proc:`~AutoMath.inf`
+:proc:`~AutoMath.nan`
+:proc:`~AutoMath.isFinite`
+:proc:`~AutoMath.isInf`
+:proc:`~AutoMath.isNan`
+
+.. _automath-comparison:
+
+Comparison Functions
+^^^^^^^^^^^^^^^^^^^^
+:proc:`~AutoMath.max`
+:proc:`~AutoMath.min`
+:proc:`~AutoMath.isClose`
+
+.. _automath-sign:
+
+Sign Functions
+^^^^^^^^^^^^^^
+:proc:`~AutoMath.sgn`
+:proc:`~AutoMath.signbit`
+
+.. _automath-other:
+
+Remaining Functions
+^^^^^^^^^^^^^^^^^^^
+:proc:`~AutoMath.abs`
+:proc:`~AutoMath.mod`
 */
 pragma "module included by default"
 @unstable("The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module")
-@chpldoc.noheader
 module AutoMath {
   import HaltWrappers;
   private use CTypes;
