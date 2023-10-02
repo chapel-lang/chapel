@@ -126,7 +126,24 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
         nameSuffix += " providing '" + from.str() + "'";
       }
 
-      wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
+      std::string useImpStmt = "";
+      if (elt.visibilityStmtKind == resolution::VisibilityStmtKind::VIS_USE)
+        useImpStmt = "use";
+      else
+        useImpStmt = "import";
+
+      if (elt.usedImportedModuleScope != nullptr) {
+        ID usedImportedModId = elt.usedImportedModuleScope->id();
+        if (!usedImportedModId.isEmpty()) {
+          // compute the name
+          UniqueString modName = parsing::moduleIdToName(wr.context(),
+                                                         usedImportedModId);
+          useImpStmt += " ";
+          useImpStmt += modName.str();
+        }
+      }
+      wr.note(locationOnly(elt.visibilityClauseId), errbegin,
+              " the '", useImpStmt, "' statement", nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
       needsIntroText = false;

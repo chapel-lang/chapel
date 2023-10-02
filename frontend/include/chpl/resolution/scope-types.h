@@ -1183,6 +1183,7 @@ struct ResultVisibilityTrace {
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
     UniqueString renameFrom;
+    const Scope* usedImportedModuleScope = nullptr;
     bool fromUseImport = false;
 
     // this indicates a method receiver scope
@@ -1203,6 +1204,7 @@ struct ResultVisibilityTrace {
              visibilityClauseId == other.visibilityClauseId &&
              visibilityStmtKind == other.visibilityStmtKind &&
              renameFrom == other.renameFrom &&
+             usedImportedModuleScope == other.usedImportedModuleScope &&
              fromUseImport == other.fromUseImport &&
              methodReceiverScope == other.methodReceiverScope &&
              parentScope == other.parentScope &&
