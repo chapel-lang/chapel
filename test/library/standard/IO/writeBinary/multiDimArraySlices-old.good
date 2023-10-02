@@ -1,1 +1,0 @@
-multiDimArraySlices-old.chpl:21: error: readBinary() only supports 1-dimensional, rectangular, non-strided arrays of simple types

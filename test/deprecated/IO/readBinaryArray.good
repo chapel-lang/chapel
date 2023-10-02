@@ -1,4 +1,4 @@
-warning: 'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default for array arguments
+warning: 'ReadBinaryArrayReturnInt' is deprecated — 'readBinary' now returns an int by default when reading an array
 note: 'ReadBinaryArrayReturnInt' was set via a compiler flag
 0
 0 0 0 0 0 0 0 0
