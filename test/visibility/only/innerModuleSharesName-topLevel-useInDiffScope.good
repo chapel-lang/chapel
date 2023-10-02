@@ -1,6 +1,2 @@
 innerModuleSharesName-topLevel-useInDiffScope.chpl:9: warning: an implicit module named 'innerModuleSharesName-topLevel-useInDiffScope' is being introduced to contain file-scope code
-innerModuleSharesName-topLevel-useInDiffScope.chpl:11: warning: potentially surprising shadowing for 'M'
-innerModuleSharesName-topLevel-useInDiffScope.chpl:10: note: it refers to a symbol found through the 'use' statement here
-innerModuleSharesName-topLevel-useInDiffScope.chpl:2: note: leading to 'M' defined here
-innerModuleSharesName-topLevel-useInDiffScope.chpl:1: note: but, there is a shadowed symbol 'M' defined here
 whee

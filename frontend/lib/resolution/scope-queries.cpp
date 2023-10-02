@@ -636,7 +636,7 @@ bool LookupHelper::doLookupInImportsAndUses(
       bool named = is.lookupName(name, from);
       if (named && is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // mentioned in an except clause, so don't return it
-      } else if (named
+      } else if (named // e.g. ONLY_CONTENTS
           || is.kind() == VisibilitySymbols::ALL_CONTENTS
           || is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
         // find it in the contents
@@ -693,7 +693,7 @@ bool LookupHelper::doLookupInImportsAndUses(
         // operation like 'use M'
         if (is.kind() == VisibilitySymbols::ALL_CONTENTS ||
             is.kind() == VisibilitySymbols::CONTENTS_EXCEPT) {
-          if (foundHere && foundInAllContents) {
+          if (foundHere && foundInAllContents != nullptr) {
             *foundInAllContents = true;
           }
         }
@@ -1141,10 +1141,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
   // now check shadow scope 1 (only relevant for 'private use')
   if (checkUseImport && !skipShadowScopes) {
     bool got = false;
+    bool foundInAll = false;
     got |= doLookupInImportsAndUses(scope, r, name, config,
                                     curFilter, excludeFilter,
                                     VisibilitySymbols::SHADOW_SCOPE_ONE,
-                                    /* foundInAllContents */ nullptr,
+                                    &foundInAll,
                                     &foundInShadowScopeOneClauses,
                                     /* ignoreClauses */ nullptr);
 
@@ -1154,7 +1155,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                  skipPrivateVisibilities,
                                  onlyMethodsFields,
                                  includeMethods);
-    if (got && canCheckMoreForWarning && !checkMoreForWarning) {
+    if (got && canCheckMoreForWarning && !checkMoreForWarning && foundInAll) {
       checkMoreForWarning = true;
       onlyInnermost = false;
       firstResultForWarning = result.size();
