@@ -828,11 +828,6 @@ module List {
       return result;
     }
 
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(in x: this.eltType) : int {
-      return this.pushBack(x);
-    }
-
     @chpldoc.nodoc
     inline proc ref _appendGeneric(collection) {
       var startSize: int;
@@ -878,11 +873,6 @@ module List {
       return ret;
     }
 
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: list(eltType, ?p)) lifetime this < other {
-      return this.pushBack(other);
-    }
-
     /*
       Push a copy of each element contained in an array to the end of this
       list.
@@ -902,11 +892,6 @@ module List {
         _leave();
       }
       return ret;
-    }
-
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: [?d] eltType) lifetime this < other {
-      return this.pushBack(other);
     }
 
     /*
@@ -937,11 +922,6 @@ module List {
         _leave();
       }
       return ret;
-    }
-
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      return this.pushBack(other);
     }
 
     /*
@@ -1332,16 +1312,6 @@ module List {
       return result;
     }
 
-    @deprecated(notes=":proc:`list.pop` is deprecated; please use :proc:`list.popBack` instead.")
-    proc ref pop(): eltType {
-      return this.popBack();
-    }
-
-    @deprecated(notes="list.pop(idx) is deprecated; please use :proc:`list.getAndRemove` instead.")
-    proc ref pop(idx: int): eltType {
-      return this.getAndRemove(idx);
-    }
-
     /*
       Remove the element at the index `idx` from this list and return it. The
       elements at indices after `idx` are shifted one to the left in memory,
@@ -1623,11 +1593,6 @@ module List {
       ref slot = _getRef(i);
 
       return slot.borrow();
-    }
-
-    @deprecated(notes=":proc:`list.set` is deprecated; please use :proc:`list.replace` instead.")
-    proc ref set(i: int, in x: eltType): bool {
-      return this.replace(i, x);
     }
 
     /*
