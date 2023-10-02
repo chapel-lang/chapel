@@ -1221,6 +1221,8 @@ struct ResultVisibilityTrace {
     void mark(Context* context) const {
       context->markPointer(resolvedVisibilityScope);
       renameFrom.mark(context);
+      moduleName.mark(context);
+      context->markPointer(usedImportedModuleScope);
       visibilityClauseId.mark(context);
       context->markPointer(methodReceiverScope);
       context->markPointer(parentScope);
