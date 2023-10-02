@@ -18,21 +18,48 @@
  */
 
 //
-// If the macros below are not defined, just define them to be empty
+// This file defines nearly all the methods exposed to python from the frontend.
+//
+// To use these definitions, define the macro and then `#include` this file.
+// See `chapel.cpp` for examples. If the macros below are not defined, they are
+// defined to be empty. Only the ones that are used at the time of include need
+// to be defined.
 //
 
+//
+// Defines the beginning of an ast node
+//
 #ifndef METHOD_TABLE_BEGIN
 #define METHOD_TABLE_BEGIN(TAG)
 #endif
 
+//
+// Defines the end of an ast node
+//
 #ifndef METHOD_TABLE_END
 #define METHOD_TABLE_END(TAG)
 #endif
 
+//
+// Defines a simple getter that takes no arguments
+//
+// BODY is an inline definition of the getter. Available variables:
+// - contextObject: the current frontend context
+// - node: the ast node
+// TYPESTR is the return type. Possible values:
+// - "O" = python object
+// - "s" = string
+// - "b" = bool
+//
 #ifndef PLAIN_GETTER
 #define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPESTR, BODY)
 #endif
 
+//
+// Declares a simple getter that takes no arguments. The definition is defined
+// elsewhere in a function named `NODEObject_NAME`. See the `ACTUAL_ITERATOR`
+// macro for an example
+//
 #ifndef METHOD_PROTOTYPE
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR)
 #endif
@@ -44,7 +71,6 @@
 // See list in frontend/include/chpl/uast/uast-classes-list.h.
 //
 // Inside each method table, methods should be listed in alphabetical order
-// TODO: NOT DONE YET
 //
 
 METHOD_TABLE_BEGIN(AnonFormal)
