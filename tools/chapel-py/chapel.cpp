@@ -512,7 +512,6 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
     } \
   }
 #include "method-tables.h"
-#undef PLAIN_GETTER
 
 #define ACTUAL_ITERATOR(NAME)\
   static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
@@ -546,11 +545,11 @@ struct PerNodeInfo {
   };
 };
 
-#define METHOD_TABLE_BEGIN(TAG) \
+#define CLASS_BEGIN(TAG) \
   template <> \
   struct PerNodeInfo<chpl::uast::asttags::TAG> { \
     static constexpr PyMethodDef methods[] = {
-#define METHOD_TABLE_END(TAG) \
+#define CLASS_END(TAG) \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
   };
@@ -559,10 +558,6 @@ struct PerNodeInfo {
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #include "method-tables.h"
-#undef METHOD_TABLE_BEGIN
-#undef METHOD_TABLE_END
-#undef PLAIN_GETTER
-#undef METHOD_PROTOTYPE
 
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
