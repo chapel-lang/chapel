@@ -1962,7 +1962,7 @@ module DefaultRectangular {
       const size = len:c_ssize_t*elemSize:c_ssize_t;
       try {
         if f._writing {
-          f.writeBinary(_ddata_shift(arr.eltType, src, idx), size);
+          f.writeBinary(c_ptrTo(_ddata_shift(arr.eltType, src, idx)[0]), size);
         } else {
           f._readBytes(_ddata_shift(arr.eltType, src, idx), size);
         }
