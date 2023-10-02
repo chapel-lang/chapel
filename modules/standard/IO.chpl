@@ -9612,6 +9612,20 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
   return nr;
 }
 
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+}
+
+@chpldoc.nodoc
+proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
+{
+  compilerError("readBinary() only supports local, rectangular, non-strided ",
+                  "arrays of simple types");
+}
+
 /*
    Read up to ``maxBytes`` bytes from a ``fileReader`` into a
    :class:`~CTypes.c_ptr`
