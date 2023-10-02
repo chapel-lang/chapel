@@ -39,10 +39,6 @@ extern std::vector<const char*> incDirs;
 extern std::vector<const char*> libDirs;
 extern std::vector<const char*> libFiles;
 
-// directory for intermediates; tmpdir or saveCDir
-// TODO: remove this as redundant with the Dyno Context's tmpdir
-extern const char* intDirName;
-
 struct fileinfo {
   FILE* fptr;
   const char* filename;
@@ -58,7 +54,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 void ensureDirExists(const char* dirname, const char* explanation,
                      bool checkWriteable = true);
 const char* getCwd();
-void ensureTmpDirExists();
 void deleteDir(const char* dirname);
 const char* objectFileForCFile(const char* cfile);
 

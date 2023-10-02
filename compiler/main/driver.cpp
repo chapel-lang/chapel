@@ -816,7 +816,6 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
   // initialize resources that need to be carried over between invocations
-  ensureTmpDirExists();
   saveCompileCommand();
 
   // invoke phase one
@@ -851,16 +850,16 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
 // Run phase one of compiler-driver
 static int runDriverPhaseOne(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--driver-phase-one",
-                                             "--driver-tmp-dir", intDirName};
+  std::vector<std::string> additionalArgs = {
+      "--driver-phase-one", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase one");
 }
 
 // Run phase two of compiler-driver
 static int runDriverPhaseTwo(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--driver-phase-two",
-                                             "--driver-tmp-dir", intDirName};
+  std::vector<std::string> additionalArgs = {
+      "--driver-phase-two", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase two");
 }
@@ -2170,8 +2169,7 @@ static void bootstrapTmpDir() {
     if (!driverTmpDir[0]) {
       USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
     }
-    intDirName = driverTmpDir;
-    config.tmpDir = intDirName;
+    config.tmpDir = driverTmpDir;
     config.keepTmpDir = true;
   } else {
     // This is an initial invocation of the driver, or monolithic.
