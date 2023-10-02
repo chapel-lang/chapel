@@ -8952,10 +8952,10 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-            USR_FATAL(userCall(call),
-                    "illegal use of function that does not "
-                    "return a value: '%s'",
-                    rhsName);
+          USR_FATAL(userCall(call),
+                  "illegal use of function that does not "
+                  "return a value: '%s'",
+                  rhsName);
         }
       }
     }
