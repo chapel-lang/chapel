@@ -1183,6 +1183,7 @@ struct ResultVisibilityTrace {
     ID visibilityClauseId;
     VisibilityStmtKind visibilityStmtKind = VIS_USE;
     UniqueString renameFrom;
+    UniqueString moduleName;
     const Scope* usedImportedModuleScope = nullptr;
     bool fromUseImport = false;
 
@@ -1204,6 +1205,7 @@ struct ResultVisibilityTrace {
              visibilityClauseId == other.visibilityClauseId &&
              visibilityStmtKind == other.visibilityStmtKind &&
              renameFrom == other.renameFrom &&
+             moduleName == other.moduleName &&
              usedImportedModuleScope == other.usedImportedModuleScope &&
              fromUseImport == other.fromUseImport &&
              methodReceiverScope == other.methodReceiverScope &&

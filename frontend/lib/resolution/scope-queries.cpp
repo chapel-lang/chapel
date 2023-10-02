@@ -683,6 +683,7 @@ bool LookupHelper::doLookupInImportsAndUses(
           elt.visibilityStmtKind =
             getKindForVisibilityClauseId(context, elt.visibilityClauseId);
           elt.renameFrom = nameToLookUp;
+          elt.moduleName = parsing::moduleIdToName(context, is.scope()->id());
           elt.usedImportedModuleScope = is.scope();
           elt.fromUseImport = true;
           traceCurPath->push_back(std::move(elt));
@@ -731,6 +732,7 @@ bool LookupHelper::doLookupInImportsAndUses(
             elt.visibilityStmtKind =
               getKindForVisibilityClauseId(context, elt.visibilityClauseId);
             elt.renameFrom = from;
+            elt.moduleName = parsing::moduleIdToName(context, is.scope()->id());
             elt.usedImportedModuleScope = is.scope();
             elt.fromUseImport = true;
             t.visibleThrough.push_back(std::move(elt));

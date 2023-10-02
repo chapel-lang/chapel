@@ -116,34 +116,28 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
     } else if (elt.fromUseImport) {
       std::string errbegin;
       std::string nameSuffix;
+
       if (start==0 && needsIntroText) {
         errbegin = intro;
         errbegin += "through";
       } else {
-        errbegin = "and then through";
+        errbegin = "and then ";
+        errbegin += "through";
       }
       if (from != name) {
         nameSuffix += " providing '" + from.str() + "'";
       }
 
-      std::string useImpStmt = "";
-      if (elt.visibilityStmtKind == resolution::VisibilityStmtKind::VIS_USE)
-        useImpStmt = "use";
-      else
-        useImpStmt = "import";
-
-      if (elt.usedImportedModuleScope != nullptr) {
-        ID usedImportedModId = elt.usedImportedModuleScope->id();
-        if (!usedImportedModId.isEmpty()) {
-          // compute the name
-          UniqueString modName = parsing::moduleIdToName(wr.context(),
-                                                         usedImportedModId);
-          useImpStmt += " ";
-          useImpStmt += modName.str();
-        }
+      std::string of;
+      if (!elt.moduleName.isEmpty()) {
+        of += "of '";
+        of += elt.moduleName.str();
+        of += "' ";
       }
+
       wr.note(locationOnly(elt.visibilityClauseId), errbegin,
-              " the '", useImpStmt, "' statement", nameSuffix, " here:");
+              " the '", elt.visibilityStmtKind, "' ", of,
+              nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
       needsIntroText = false;

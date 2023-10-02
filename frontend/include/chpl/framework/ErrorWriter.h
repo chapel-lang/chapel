@@ -215,7 +215,7 @@ class ErrorWriterBase {
     BRIEF,
   };
  protected:
-  Context* context_;
+  Context* context_; // note: this can sometimes be null
   OutputFormat outputFormat_;
 
   ErrorWriterBase(Context* context, OutputFormat outputFormat)
@@ -380,13 +380,6 @@ class ErrorWriterBase {
   template <typename LocPlace>
   void codeForLocation(const LocPlace& place) {
     code<LocPlace>(justOneLine(place));
-  }
-
-  /**
-    Return the Context used by this ErrorWriter.
-   */
-  Context* context() {
-    return context_;
   }
 };
 
