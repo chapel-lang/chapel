@@ -7420,27 +7420,15 @@ proc fileWriter.styleElement(element:int):int {
   return ret;
 }
 
-/*
-  Write a sequence of bytes.
-
-  :throws UnexpectedEofError: Thrown if EOF encountered before all bytes could be written.
-  :throws SystemError: Thrown if the byte sequence could not be written for another reason.
-*/
-pragma "last resort"
-@deprecated(notes="'writeBytes' with a generic pointer argument is deprecated; please use the variant that takes a 'bytes' object")
-proc fileWriter.writeBytes(x, len:c_ssize_t) throws {
-  try this._writeBytes(x, len);
-}
-
-@chpldoc.nodoc
-proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    err = qio_channel_write_amt(false, _channel_internal, x, len);
-  }
-  if err then try this._ch_ioerror(err, "in fileWriter.writeBytes()");
-}
+// @chpldoc.nodoc
+// proc fileWriter._writeBytes(x, len:c_ssize_t) throws {
+//   var err:errorCode = 0;
+//   on this._home {
+//     try this.lock(); defer { this.unlock(); }
+//     err = qio_channel_write_amt(false, _channel_internal, x, len);
+//   }
+//   if err then try this._ch_ioerror(err, "in fileWriter.writeBytes()");
+// }
 
 /*
   Iterate over all of the lines ending in ``\n`` in a fileReader - the
