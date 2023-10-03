@@ -8,9 +8,15 @@ import re
 testname = sys.argv[1]
 testout = sys.argv[2]
 
+chpl_home = os.environ.get("CHPL_HOME", "")
+
+sphinx_build = f"{chpl_home}/third-party/chpl-venv/install/chpldeps/bin/sphinx-build"
+
 # manually building the text version, it is WAY easier to parse than HTML
 os.chdir("output_dir")
-p = sp.run(["make", "text", "SPHINXOPTS="], stdout=sp.PIPE, stderr=sp.STDOUT)
+p = sp.run(
+    f"{sphinx_build} -b text -d build/doctrees source build/text".split(" "),
+    stdout=sp.PIPE, stderr=sp.STDOUT)
 make_output = p.stdout.decode()
 if p.returncode != 0:
     with open("../" + testout, "w") as f:
@@ -19,7 +25,6 @@ if p.returncode != 0:
     exit(-1)
 os.chdir("..")
 
-chpl_home = os.environ.get("CHPL_HOME", "")
 text_output = f"output_dir/build/text/modules{chpl_home}/modules/standard/Math.txt"
 
 # Check that procs/params listed in in the index match what is listed in the definitions, and that nothing is missing
