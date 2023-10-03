@@ -243,18 +243,19 @@ bool exprContainsSymbol(Symbol* sym, Expr* expr) {
 static
 bool callSetsSymbol(Symbol* sym, CallExpr* call)
 {
-
-   std::function<bool(SymExpr*, CallExpr*)> checkForMove;
-      checkForMove = [&checkForMove](SymExpr* use, CallExpr* call) {
-        SymExpr* lhs = toSymExpr(call->get(1));
-        Symbol* lhsSymbol = lhs->symbol();
-        if (lhs != use) {
-          for_SymbolSymExprs(se, lhsSymbol) {
-            if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
-          }
-        }
-        return false;
-      };
+  // this is a helper used for symExprIsUsedAsRef
+  // its a recursive lambda, so needs to be defined with this split syntax
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove;
+  checkForMove = [&checkForMove](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+    if (lhs != use) {
+      for_SymbolSymExprs(se, lhsSymbol) {
+        if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
+      }
+    }
+    return false;
+  };
 
 
   if (isMoveOrAssign(call)) {
@@ -269,13 +270,16 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
 
       // in some cases, like `localAccess`, the lhs is incorrectly not marked as a ref
       // so we need to do some more checks
-      // if(symbolIsUsedAsRef(lhs->symbol())) return true;
       if (symExprIsUsedAsRef(lhs, false, checkForMove)) return true;
 
     }
   }
-  if (auto fn = call->theFnSymbol()) {
+  // some calls, like array slicing, will modify the result without an explicit ref
+  // so we need to check for that
+  if (auto fn call->theFnSymbol()) {
     if(fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+      // if the parent is a move, we need to check to see if that parents
+      // symbol is used like a ref. If it is, return true.
       if (auto parent = toCallExpr(call->parentExpr)) {
         if (isMoveOrAssign(parent)) {
           if (SymExpr* lhs = toSymExpr(parent->get(1))) {
