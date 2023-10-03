@@ -1653,31 +1653,31 @@ struct RstResultBuilder {
           }
         }
       }
-        os_ << '\n';
+      os_ << '\n';
 
-        // module title
-        os_ << m->name().c_str() << "\n";
-        os_ << std::string(m->name().length(), '=') << "\n";
+      // module title
+      os_ << m->name().c_str() << "\n";
+      os_ << std::string(m->name().length(), '=') << "\n";
 
-        // usage
-        if (includedByDefault) {
-          os_ << ".. note::" << std::endl << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ <<
-                "All Chapel programs automatically ``use`` this module by default.";
-          os_ << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ << "An explicit ``use`` statement is not necessary.";
-          os_ << std::endl;
-        } else {
-          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-        }
-
+      // usage
+      if (includedByDefault) {
+        os_ << ".. note::" << std::endl << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ <<
+              "All Chapel programs automatically ``use`` this module by default.";
+        os_ << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ << "An explicit ``use`` statement is not necessary.";
+        os_ << std::endl;
       } else {
-        os_ << m->name().c_str();
-        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-        lastComment = previousComment(context_, m->id());
+        os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
       }
+
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
+    }
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
