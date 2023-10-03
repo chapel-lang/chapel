@@ -76,17 +76,21 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
 {
   proc mod(ref a) do a += 1;
   var myArray1: [1..10] int;
-  forall i in 1..9 {
-    myArray1.localAccess(i) = 1; // should warn
+  forall i in 1..9
+    do myArray1.localAccess(i) = 1; // should warn
 
-    myArray1[i..i+1] = 2; // should warn
-    myArray1.localSlice(i..i+1) = 3; // should warn
+  forall i in 1..9
+    do myArray1[i..i+1] = 2; // should warn
+  forall i in 1..9
+    do myArray1.localSlice(i..i+1) = 3; // should warn
 
-    myArray1[{i..i+1}] = 4; // should warn
-    myArray1.localSlice({i..i+1}) = 4; // should warn
+  forall i in 1..9
+    do myArray1[{i..i+1}] = 4; // should warn
+  forall i in 1..9
+    do myArray1.localSlice({i..i+1}) = 4; // should warn
 
-    mod(myArray1[i..i+1]); // should warn
-  }
+  forall i in 1..9
+    do mod(myArray1[i..i+1]); // should warn
 
   record R {
     var A: [1..10] int;
