@@ -1232,4 +1232,14 @@ module Math {
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
   }
+
+  @chpldoc.nodoc()
+  inline proc fma(x: real(32), y: real(32), z: real(32)) {
+    return __primitive("fma", x, y, z);
+  }
+
+  @chpldoc.nodoc()
+  inline proc fma(x: real(64), y: real(64), z: real(64)) {
+    return __primitive("fma", x, y, z);
+  }
 }

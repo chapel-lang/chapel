@@ -2098,6 +2098,64 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
+// Do nothing right now since we'd need to patchwork together some sort of
+// FMA intrinsic that lives in the runtime.
+static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
+  return codegenAdd(codegenMul(av, bv), cv);
+}
+
+static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+#ifdef HAVE_LLVM
+
+  // TODO: Probably don't need this since the Chapel wrapper guarantees the
+  // same input types via its formals.
+  PromotedPair values1 =
+    convertValuesToLarger(av.val, bv.val,
+                          is_signed(av.chplType),
+                          is_signed(bv.chplType));
+  PromotedPair values2 =
+    convertValuesToLarger(values1.a, cv.val,
+                          values1.isSigned,
+                          is_signed(cv.chplType));
+  auto ty = values2.a->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The FMA primitive can only evaluate floating point types!");
+  }
+
+  // The 'id' is the base intrinsic, and then 'tys' is used to mangle
+  // the name, for example to create 'llvm.fma.64'. Since the types of
+  // all arguments should be the same, we only need one type in 'tys'.
+  auto id = llvm::Intrinsic::fma;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val, bv.val, cv.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  if (c.chplType && c.chplType->symbol->isRefOrWideRef()) c = codegenDeref(c);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  GenRet cv = codegenValue(c);
+  if (info->cfile) {
+    ret = emitFmaForC(av, bv, cv);
+  }
+  else {
+    ret = emitFmaForLlvm(av, bv, cv);
+  }
+  return ret;
+}
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -4582,6 +4640,9 @@ DEFINE_PRIM(DIV) {
 }
 DEFINE_PRIM(MOD) {
     ret = codegenMod(call->get(1), call->get(2));
+}
+DEFINE_PRIM(FMA) {
+    ret = codegenFma(call->get(1), call->get(2), call->get(3));
 }
 DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));
