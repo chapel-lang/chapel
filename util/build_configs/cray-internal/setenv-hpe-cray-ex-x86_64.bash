@@ -345,14 +345,14 @@ else
 
         local target_prgenv="PrgEnv-cray"
         local target_compiler="cce"
-        local target_version=$gen_version_cce
+        #local target_version=$gen_version_cce
 
         # unload any existing PrgEnv
         unload_module_re PrgEnv-
 
         # load target PrgEnv with compiler version
         load_module $target_prgenv
-        load_module_version $target_compiler $target_version
+        #load_module_version $target_compiler $target_version
     }
 
     function load_target_cpu() {
