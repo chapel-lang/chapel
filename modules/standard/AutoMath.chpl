@@ -19,6 +19,9 @@
  */
 
 /*
+
+Automatically included Math symbols
+
 .. _automath-roots:
 
 Roots

@@ -50,7 +50,8 @@ Automatically Available Symbols
    prefix.
 
 .. include:: AutoMath.rst
-  :start-after: An explicit ``use`` statement is not necessary.
+  :start-line: 7
+  :start-after: Automatically included Math symbols
   :end-before: .. warning::
 
 Non-Automatically Available Symbols
