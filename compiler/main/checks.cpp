@@ -276,7 +276,7 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
   }
   // some calls, like array slicing, will modify the result without an explicit ref
   // so we need to check for that
-  if (auto fn call->theFnSymbol()) {
+  if (auto fn = call->theFnSymbol()) {
     if(fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
       // if the parent is a move, we need to check to see if that parents
       // symbol is used like a ref. If it is, return true.
