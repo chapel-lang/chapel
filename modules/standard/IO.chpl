@@ -5208,43 +5208,6 @@ proc fileWriter.advance(amount:int(64)) throws {
 }
 
 /*
-   Reads until ``byte`` is found and then leaves the ``fileReader`` offset
-   just after it.
-
-   :throws UnexpectedEofError: Throws if the requested `byte` could not be
-                               found. The ``fileReader`` offset is left at EOF.
-   :throws SystemError: Thrown if data could not be read from the ``file``.
- */
-@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
-proc fileReader.advancePastByte(byte:uint(8)) throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
-  }
-  if err then try this._ch_ioerror(err, "in advanceToByte");
-}
-
-/*
-   Reads until ``byte`` is found and then leaves the ``fileWriter`` offset
-   just after it.
-
-   :throws UnexpectedEofError: Throws if the requested `byte` could not be
-                               found. The ``fileWriter`` offset is left at EOF.
-   :throws SystemError: Thrown if data could not be read from the ``file``.
- */
-@chpldoc.nodoc
-@deprecated(notes="`advancePastByte` is deprecated; please use `advanceThrough` instead")
-proc fileWriter.advancePastByte(byte:uint(8)) throws {
-  var err:errorCode = 0;
-  on this._home {
-    try this.lock(); defer { this.unlock(); }
-    err = qio_channel_advance_past_byte(false, _channel_internal, byte:c_int, true);
-  }
-  if err then try this._ch_ioerror(err, "in advancePastByte");
-}
-
-/*
    Read until a separator is found, leaving the ``fileReader`` offset just
    after it.
 
@@ -5253,8 +5216,8 @@ proc fileWriter.advancePastByte(byte:uint(8)) throws {
 
    .. note::
 
-    If a single-byte ``string`` or ``bytes`` is passed to the ``separator``
-    argument, a faster implementation is used.
+    The implementation is faster for single-byte ``string`` or ``bytes``
+    separators.
 
    :arg separator: The separator to match with. Must be a :type:`~String.string`
     or :type:`~Bytes.bytes`.
@@ -5303,8 +5266,8 @@ proc fileReader.advanceThrough(separator: ?t) throws where t==string || t==bytes
 
    .. note::
 
-      If a single-byte ``string`` or ``bytes`` is passed to the ``separator`` argument,
-      a faster implementation is used.
+    The implementation is faster for single-byte ``string`` or ``bytes``
+    separators.
 
    :arg separator: The separator to match with. Must be a :type:`~String.string` or
     :type:`~Bytes.bytes`.
