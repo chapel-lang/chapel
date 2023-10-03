@@ -2098,28 +2098,22 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
-// Do nothing right now since we'd need to patchwork together some sort of
-// FMA intrinsic that lives in the runtime.
+// TODO: We could call the C 'fma' function from 'math.h' here.
 static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
-  return codegenAdd(codegenMul(av, bv), cv);
+  INT_FATAL("Should not reach here, user facing functions should call the "
+            "appropriate C intrinsic in module code instead");
+  GenRet ret;
+  return ret;
 }
 
 static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
   GenInfo* info = gGenInfo;
   GenRet ret;
 #ifdef HAVE_LLVM
-
-  // TODO: Probably don't need this since the Chapel wrapper guarantees the
-  // same input types via its formals.
-  PromotedPair values1 =
-    convertValuesToLarger(av.val, bv.val,
-                          is_signed(av.chplType),
-                          is_signed(bv.chplType));
-  PromotedPair values2 =
-    convertValuesToLarger(values1.a, cv.val,
-                          values1.isSigned,
-                          is_signed(cv.chplType));
-  auto ty = values2.a->getType();
+  INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
   INT_ASSERT(ty);
 
   if (!ty->isFPOrFPVectorTy()) {

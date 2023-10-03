@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+
+# This script verifies that a call to the 'Math.fma()' procedure under LLVM
+# correctly optimizes down to a single machine instruction on x86 platforms
+# that have support for FMA (see .skipif for that check).
+# Script assumes x86 and FMA support.
+
+import os, subprocess, sys, os.path
+import shutil
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+compiler = sys.argv[3]
+
+CHPL_HOME = os.getenv('CHPL_HOME')
+CHPL_LLVM_CONFIG=None
+chplenv = subprocess.check_output([CHPL_HOME + "/util/printchplenv",
+                                   "--all", "--internal", "--simple"])
+
+# This is an implementation sym that should appear with '--no-inline'.
+sym = '_fmaSelectPrimitiveOrExternCall_chpl'
+
+# This is the x86 hardware instruction.
+ins = 'vfmadd213sd'
+
+# Get the 'CHPL_LLVM_CONFIG' value.
+for line in chplenv.splitlines():
+  line_str = str(line, encoding='utf-8', errors='surrogateescape')
+  if not line_str.count('=') == 1: continue
+  (k, v) = line_str.split('=', 2)
+  if k == 'CHPL_LLVM_CONFIG': CHPL_LLVM_CONFIG=v
+
+# Get the path to 'llvm-objdump'.
+llvm_bin_bytes = subprocess.check_output([CHPL_LLVM_CONFIG, '--bindir'])
+llvm_bin = str(llvm_bin_bytes, encoding='utf-8', errors='surrogateescape')
+llvm_bin = llvm_bin.strip()
+llvm_objdump = llvm_bin + '/llvm-objdump'
+
+# This is the command to disassemble the the compiled binary.
+dump_args = [llvm_objdump, '-d', '--disassemble-symbols={}'.format(sym),
+             '--x86-asm-syntax=intel',
+             testname]
+cmd = ' '.join(dump_args)
+out = subprocess.check_output(cmd, shell=True).decode()
+
+# Write the instruction on success, or the disassembler output on failure.
+with open(outfile, 'a') as fp:
+  if ins in out:
+    fp.write('Found {}'.format(ins))
+  else:
+    fp.write('Did not find {}'.format(ins))
+    fp.write('Dump of {}:'.format(sym))
+    fp.write(out)
