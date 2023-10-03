@@ -70,8 +70,12 @@ for l in lines:
         for m in re.finditer(r'param (\S*?) =', l):
             name = m.group(1)
             sets[state].add(name)
-        # check for deprecated
-        for m in re.finditer(r"'(\S*?)' .*? deprecated", l):
+        # parenless proc params
+        for m in re.finditer(r'proc (\S*?) param', l):
+            name = m.group(1)
+            sets[state].add(name)
+        # check for deprecated and remove
+        for m in re.finditer(r"'?(\S*?)'? .*? deprecated", l):
             name = m.group(1)
             if name in sets[state]: sets[state].remove(name)
 
