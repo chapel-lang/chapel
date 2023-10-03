@@ -278,7 +278,7 @@ static void checkKnownAttributes(const AttributeGroup* attrs) {
   // attributes.
   for (auto attr : attrs->children()) {
     if (attr->toAttribute()->name().startsWith(USTR("chpldoc."))) {
-      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc") || attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.noheader")) {
+      if (attr->toAttribute()->name() == UniqueString::get(gContext, "chpldoc.nodoc")) {
         // ignore, it's a known attribute
       } else {
         // process the Error about unknown Attribute
@@ -343,16 +343,6 @@ static bool isNoWhereDoc(const Function* f) {
   if (auto attrs = f->attributeGroup())
     if (attrs->hasPragma(pragmatags::PRAGMA_NO_WHERE_DOC))
       return true;
-  return false;
-}
-
-static bool isNoHeader(const AstNode* n) {
-  auto attrs = parsing::astToAttributeGroup(gContext, n);
-  if (attrs) {
-    auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
-                                                           "chpldoc.noheader"));
-    return attr != nullptr;
-  }
   return false;
 }
 
@@ -1636,16 +1626,13 @@ struct RstResultBuilder {
         visitChildren(m);
         return getResult(textOnly_);
       }
-      os_ << ".. module:: " << m->name().c_str() << '\n';
-
-      bool hasAttrNoHeader = isNoHeader(m);
-
+        os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
       // in the module index (chpl-modindex.html).  This has the side
       // effect of making references to the :mod: tag for the module
       // illegal, which is appropriate since the modules are not
       // user-facing.
-      if (idIsInInternalModule(context_, m->id()) || hasAttrNoHeader) {
+      if (idIsInInternalModule(context_, m->id())) {
         os_ << "   :noindex:" << std::endl;
       } else {
         lastComment = previousComment(context_, m->id());
@@ -1666,9 +1653,8 @@ struct RstResultBuilder {
           }
         }
       }
-
-      if (!hasAttrNoHeader) {
         os_ << '\n';
+
         // module title
         os_ << m->name().c_str() << "\n";
         os_ << std::string(m->name().length(), '=') << "\n";
@@ -1686,13 +1672,12 @@ struct RstResultBuilder {
         } else {
           os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
         }
-      }
 
-    } else {
-      os_ << m->name().c_str();
-      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-      lastComment = previousComment(context_, m->id());
-    }
+      } else {
+        os_ << m->name().c_str();
+        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+        lastComment = previousComment(context_, m->id());
+      }
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
