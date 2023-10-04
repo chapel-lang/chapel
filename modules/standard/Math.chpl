@@ -1247,11 +1247,10 @@ module Math {
   }
 
   @chpldoc.nodoc
-  private inline proc fmaSelectPrimitiveOrExternCall(x: ?t, y: t, z: t) {
+  private inline
+  proc fmaSelectPrimitiveOrExternCall(x: real(?w), y: real(w), z: real(w)) {
     import ChplConfig;
     param isLlvmCompile: bool = (ChplConfig.CHPL_TARGET_COMPILER == "llvm");
-
-    compilerAssert(t == real(32) || t == real(64));
 
     // The backend will emit a 'llvm.fma.*' instruction, which should be
     // optimized into a hardware instruction if the architecture is
@@ -1295,5 +1294,17 @@ module Math {
   @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
   inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
+    type t = real(64);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
+    type t = real(32);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
   }
 }
