@@ -6175,70 +6175,11 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
   return ret;
 }
 
-@deprecated("lines with a 'local_style' argument is deprecated")
-proc file.lines(param locking:bool = true, start:int(64) = 0,
-                end:int(64) = max(int(64)), hints=ioHintSet.empty,
-                in local_style:iostyle) throws {
-  return this.linesHelper(locking, start..end, hints,
-                          local_style: iostyleInternal);
-}
-
-/* Used to control the behavior of the region argument for :proc:`file.lines`.
+/* Used to control the behavior of the region argument for :proc:`file.lines`. // which has now been removed
  */
 @chpldoc.nodoc()
 @deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
 config param useNewLinesRegionBounds = true;
-
-/* Iterate over all of the lines in a file.
-
-   :returns: an object which yields strings read from the file
-
-   :throws SystemError: Thrown if an object could not be returned.
- */
-@deprecated(notes="`file.lines` is deprecated; please use `file.reader().lines` instead")
-proc file.lines(param locking:bool = true, region: range(?) = 0..,
-                hints = ioHintSet.empty) throws {
-  return this.linesHelper(locking, region, hints);
-}
-
-@chpldoc.nodoc
-proc file.linesHelper(param locking:bool = true, region: range(?) = 0..,
-                      hints = ioHintSet.empty,
-                      in local_style:iostyleInternal = this._style) throws {
-  local_style.string_format = QIO_STRING_FORMAT_TOEND;
-  local_style.string_end = 0x0a; // '\n'
-  param kind = _iokind.dynamic;
-
-  var ret:itemReaderInternal(string, kind, locking, defaultSerializeType(false));
-  var err:errorCode = 0;
-  on this._home {
-    var start : region.idxType;
-    var end : region.idxType;
-    try this.checkAssumingLocal();
-    if (region.hasLowBound() && region.hasHighBound()) {
-      start = region.low;
-      end = region.high + 1;
-
-    } else if (region.hasLowBound()) {
-      start = region.low;
-      end = max(region.idxType);
-
-    } else if (region.hasHighBound()) {
-      start = 0;
-      end = region.high + 1;
-
-    } else {
-      start = 0;
-      end = max(region.idxType);
-    }
-    var ch = new fileReader(kind, locking, defaultSerializeVal(false), this, err,
-                            hints, start, end, local_style);
-    ret = new itemReaderInternal(string, kind, locking, defaultSerializeType(false), ch);
-  }
-  if err then try ioerror(err, "in file.lines", this._tryGetPath());
-
-  return ret;
-}
 
 @deprecated("writer with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
