@@ -1016,18 +1016,11 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  extern proc mpf_out_str(stream: c_FILE,
-                          base: c_int,
-                          n_digits: c_size_t,
-                          const ref op: mpf_t);
-  extern proc mpf_out_str(stream: c_FILE,
+  extern proc mpf_out_str(stream: c_ptr(c_FILE),
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
-  extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: c_ptr(c_FILE),
-                          base: c_int);
   extern proc mpf_inp_str(ref rop: mpf_t,
                           stream: c_ptr(c_FILE),
                           base: c_int);
@@ -1118,7 +1111,7 @@ module GMP {
   //
   extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
 
-  extern proc gmp_fprintf(fp: c_FILE, fmt: c_ptrConst(c_char), arg...);
+  extern proc gmp_fprintf(fp: c_ptr(c_FILE), fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
 

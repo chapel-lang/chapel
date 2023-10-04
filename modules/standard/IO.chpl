@@ -1885,7 +1885,7 @@ private proc initHelper(ref f: file, fp: c_ptr(c_FILE), hints=ioHintSet.empty,
 
 @deprecated("initializing a file with a 'style' argument is deprecated")
 proc file.init(fp: c_ptr(c_FILE), hints=ioHintSet.empty, style:iostyle,
-               own=false) {
+               own=false) throws {
   this.init();
 
   initHelper(this, fp, hints, style: iostyleInternal, own);
