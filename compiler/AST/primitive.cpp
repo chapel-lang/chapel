@@ -743,6 +743,7 @@ initPrimitive() {
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
   prim_def(PRIM_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
   prim_def(PRIM_MOD, "%", returnInfoFirstDeref); // mod by zero?
+  prim_def(PRIM_FMA, "fma", returnInfoFirstDeref);
   prim_def(PRIM_LSH, "<<", returnInfoFirstDeref);
   prim_def(PRIM_RSH, ">>", returnInfoFirstDeref);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);

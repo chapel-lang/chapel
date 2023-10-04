@@ -1251,4 +1251,80 @@ module Math {
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
   }
+
+  @chpldoc.nodoc
+  private inline proc fmaImplExternCall(x: real(?w), y: real(w), z: real(w)) {
+    extern proc fmaf(x: real(32), y: real(32), z: real(32)): real(32);
+    extern proc fma(x: real(64), y: real(64), z: real(64)): real(64);
+    var ret: x.type;
+    select x.type {
+      when real(32) do ret = fmaf(x, y, z);
+      when real(64) do ret = fma(x, y, z);
+      otherwise do compilerError('Unhandled type in fma() impl!');
+    }
+    return ret;
+  }
+
+  @chpldoc.nodoc
+  private inline
+  proc fmaSelectPrimitiveOrExternCall(x: real(?w), y: real(w), z: real(w)) {
+    param targetCompiler = __primitive("get compiler variable",
+                                       "CHPL_TARGET_COMPILER");
+    param isLlvmCompile = targetCompiler == "llvm";
+
+    // The backend will emit a 'llvm.fma.*' instruction, which should be
+    // optimized into a hardware instruction if the architecture is
+    // specified and `--specialize` is thrown.
+    if isLlvmCompile {
+      return __primitive("fma", x, y, z);
+
+    // Call C 'fma()' here rather than have the backend do it. It's up to
+    // the C compiler if any optimization occurs here at all. We have
+    // to call 'fma()' for correctness, as (x*y+z) will introduce more error.
+    // TODO: Is there a path for the builtin Clang to reliably emit a
+    // hardware instruction, e.g., through a Clang intrinsic call?
+    } else {
+      return fmaImplExternCall(x, y, z);
+    }
+  }
+
+  /*  Performs a fused multiply-add operation that multiplies ``x`` and ``y``
+      and adds ``z`` to the result. The advantage of ``fma()`` over the
+      expression ``(x*y)+z`` is that it avoids the additional error
+      introduced by performing two separate floating point operations.
+      It can also be faster on machines that implement the operation as a
+      single instruction.
+
+      .. note::
+
+        When compiling with ``CHPL_TARGET_COMPILER=llvm``, this procedure
+        should reliably generate a single hardware instruction on ``x86``
+        if ``--specialize`` is thrown and ``CHPL_TARGET_CPU`` is set
+        (provided that the ``x86`` CPU supports hardware FMA).
+
+        When compiling with C, this procedure will call out to the ``fma()``
+        routines defined in the C header `math.h`. Any optimization performed
+        is decided by the C compiler.
+  */
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: real(64), y: real(64), z: real(64)): real(64) {
+    return fmaSelectPrimitiveOrExternCall(x, y, z);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
+    return fmaSelectPrimitiveOrExternCall(x, y, z);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
+    type t = real(64);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
+    type t = real(32);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
+  }
 }

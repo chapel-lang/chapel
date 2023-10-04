@@ -2098,6 +2098,58 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
+// TODO: We could call the C 'fma' function from 'math.h' here.
+static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
+  INT_FATAL("Should not reach here, user facing functions should call the "
+            "appropriate C intrinsic in module code instead");
+  GenRet ret;
+  return ret;
+}
+
+static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The FMA primitive can only evaluate floating point types!");
+  }
+
+  // The 'id' is the base intrinsic, and then 'tys' is used to mangle
+  // the name, for example to create 'llvm.fma.64'. Since the types of
+  // all arguments should be the same, we only need one type in 'tys'.
+  auto id = llvm::Intrinsic::fma;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val, bv.val, cv.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  if (c.chplType && c.chplType->symbol->isRefOrWideRef()) c = codegenDeref(c);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  GenRet cv = codegenValue(c);
+  if (info->cfile) {
+    ret = emitFmaForC(av, bv, cv);
+  }
+  else {
+    ret = emitFmaForLlvm(av, bv, cv);
+  }
+  return ret;
+}
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -4582,6 +4634,9 @@ DEFINE_PRIM(DIV) {
 }
 DEFINE_PRIM(MOD) {
     ret = codegenMod(call->get(1), call->get(2));
+}
+DEFINE_PRIM(FMA) {
+    ret = codegenFma(call->get(1), call->get(2), call->get(3));
 }
 DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));

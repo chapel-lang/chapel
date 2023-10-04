@@ -29,6 +29,7 @@
 #define P_prim_mod            chpl::uast::primtags::PRIM_MOD
 #define P_prim_add            chpl::uast::primtags::PRIM_ADD
 #define P_prim_subtract       chpl::uast::primtags::PRIM_SUBTRACT
+#define P_prim_fma            chpl::uast::primtags::PRIM_FMA
 #define P_prim_lsh            chpl::uast::primtags::PRIM_LSH
 #define P_prim_rsh            chpl::uast::primtags::PRIM_RSH
 #define P_prim_less           chpl::uast::primtags::PRIM_LESS
