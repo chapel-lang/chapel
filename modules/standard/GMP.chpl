@@ -1016,22 +1016,20 @@ module GMP {
   // 7.7 Input and Output Functions
   //
 
-  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_FILE
-  extern proc mpf_out_str(stream: c_ptr(chpl_cFile),
+  extern proc mpf_out_str(stream: c_FILE,
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
-  extern proc mpf_out_str(stream: chpl_cFilePtr,
+  extern proc mpf_out_str(stream: c_FILE,
                           base: c_int,
                           n_digits: c_size_t,
                           const ref op: mpf_t);
 
-  // after c_FILE behavior deprecation, replace c_ptr(chpl_cFile)/chpl_cFilePtr with c_ptr(c_FILE)
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: c_ptr(chpl_cFile),
+                          stream: c_ptr(c_FILE),
                           base: c_int);
   extern proc mpf_inp_str(ref rop: mpf_t,
-                          stream: chpl_cFilePtr,
+                          stream: c_ptr(c_FILE),
                           base: c_int);
 
   //
@@ -1121,10 +1119,6 @@ module GMP {
   extern proc gmp_printf(fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_fprintf(fp: c_FILE, fmt: c_ptrConst(c_char), arg...);
-
-  pragma "last resort"
-  @deprecated(notes="the '_file' type is deprecated; use the variant of 'gmp_fprintf' that takes a 'c_FILE'")
-  extern proc gmp_fprintf(fp: _file, fmt: c_ptrConst(c_char), arg...);
 
   extern proc gmp_asprintf(ref ret: c_ptr(c_uchar), fmt: c_ptrConst(c_char), arg...);
 
