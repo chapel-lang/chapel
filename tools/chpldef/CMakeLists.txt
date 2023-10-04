@@ -15,6 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# the lanuguage features used in the server require at least c++17
+set(CMAKE_CXX_STANDARD 17)
+set(CMAKE_CXX_STANDARD_REQUIRED True)
+
 # Put all the binary source files into an object blob.
 add_library(chpldef-objects
     command-line-flags.cpp
@@ -37,7 +41,6 @@ target_include_directories(chpldef-objects PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR}
                            ${CMAKE_CURRENT_SOURCE_DIR})
-set_property(TARGET chpldef-objects PROPERTY CXX_STANDARD 17)
 
 # Create the 'chpldef' executable.
 add_executable(chpldef chpldef.cpp)
@@ -47,7 +50,6 @@ target_include_directories(chpldef PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR}
                            ${CHPLDEF_INCLUDE_DIR})
-set_property(TARGET chpldef PROPERTY CXX_STANDARD 17)
 
 # Enable testing if the test folder exists.
 if (IS_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/test")
