@@ -1276,21 +1276,20 @@ module Math {
 
       .. note::
 
-        When compiling with LLVM, this procedure should reliably generate a
-        single hardware instruction on ``x86`` if ``--specialize`` is
-        thrown and ``CHPL_TARGET_CPU`` is set (provided that the ``x86`` CPU
-        supports hardware FMA).
+        When compiling with ``CHPL_TARGET_COMPILER=llvm``, this procedure
+        should reliably generate a single hardware instruction on ``x86``
+        if ``--specialize`` is thrown and ``CHPL_TARGET_CPU`` is set
+        (provided that the ``x86`` CPU supports hardware FMA).
 
         When compiling with C, this procedure will call out to the ``fma()``
         routines defined in the C header `math.h`. Any optimization performed
         is decided by the C compiler.
   */
-  inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
+  inline proc fma(x: real(64), y: real(64), z: real(64)): real(64) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
   }
 
-  @chpldoc.nodoc()
-  inline proc fma(x: real(64), y: real(64), z: real(64)): real(64) {
+  inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
   }
 }
