@@ -20,13 +20,7 @@
 
 /*
 
-This module provides less frequently used mathematical constants and functions.
-
-.. note::
-
-   Automatically-included Math symbols can be found :doc:`here <AutoMath>`.
-   These symbols can also be accessed using ``Math.`` as their qualified access
-   prefix.
+This module provides frequently used mathematical constants and functions.
 
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
@@ -47,107 +41,132 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+Automatically Available Symbols
+-------------------------------
+
+.. note::
+
+   These symbols can also be accessed using ``Math.`` as their qualified access
+   prefix.
+
+.. include:: AutoMath.rst
+  :start-line: 7
+  :start-after: Automatically included Math symbols
+  :end-before: .. warning::
+
+Non-Automatically Available Symbols
+-----------------------------------
+
 .. _math-constants:
 
 Constants
----------
-:param:`e`
-:param:`log2E`
-:param:`log10E`
-:param:`ln2`
-:param:`ln10`
-:param:`pi`
-:param:`halfPi`
-:param:`quarterPi`
-:param:`reciprPi`
-:param:`twiceReciprPi`
-:param:`twiceReciprSqrtPi`
-:param:`sqrt2`
-:param:`reciprSqrt2`
+^^^^^^^^^
+:param:`~Math.e`
+:param:`~Math.log2E`
+:param:`~Math.log10E`
+:param:`~Math.ln2`
+:param:`~Math.ln10`
+:param:`~Math.pi`
+:param:`~Math.halfPi`
+:param:`~Math.quarterPi`
+:param:`~Math.reciprPi`
+:param:`~Math.twiceReciprPi`
+:param:`~Math.twiceReciprSqrtPi`
+:param:`~Math.sqrt2`
+:param:`~Math.reciprSqrt2`
 
 .. _math-trigonometry:
 
 Trigonometric Functions
------------------------
-:proc:`acos`
-:proc:`acosh`
-:proc:`asin`
-:proc:`asinh`
-:proc:`atan`
-:proc:`atan2`
-:proc:`atanh`
-:proc:`cos`
-:proc:`cosh`
-:proc:`sin`
-:proc:`sinh`
-:proc:`tan`
-:proc:`tanh`
+^^^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.acos`
+:proc:`~Math.acosh`
+:proc:`~Math.asin`
+:proc:`~Math.asinh`
+:proc:`~Math.atan`
+:proc:`~Math.atan2`
+:proc:`~Math.atanh`
+:proc:`~Math.cos`
+:proc:`~Math.cosh`
+:proc:`~Math.sin`
+:proc:`~Math.sinh`
+:proc:`~Math.tan`
+:proc:`~Math.tanh`
 
 .. _math-log:
 
 Log Functions
--------------
-:proc:`ln`
-:proc:`log`
-:proc:`log10`
-:proc:`log1p`
-:proc:`logBasePow2`
-:proc:`log2`
+^^^^^^^^^^^^^
+:proc:`~Math.ln`
+:proc:`~Math.log`
+:proc:`~Math.log10`
+:proc:`~Math.log1p`
+:proc:`~Math.logBasePow2`
+:proc:`~Math.log2`
 
 .. _math-exponential:
 
 Exponential Functions
----------------------
-:proc:`exp`
-:proc:`exp2`
-:proc:`expm1`
-:proc:`ldExp`
+^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.exp`
+:proc:`~Math.exp2`
+:proc:`~Math.expm1`
+:proc:`~Math.ldExp`
 
 .. _math-rounding:
 
 Rounding
---------
-:proc:`divCeil`
-:proc:`divCeilPos`
-:proc:`divFloor`
-:proc:`divFloorPos`
-:proc:`nearbyint`
-:proc:`rint`
+^^^^^^^^
+:proc:`~Math.divCeil`
+:proc:`~Math.divCeilPos`
+:proc:`~Math.divFloor`
+:proc:`~Math.divFloorPos`
+:proc:`~Math.nearbyint`
+:proc:`~Math.rint`
 
 .. _math-gamma:
 
 Gamma Functions
----------------
-:proc:`gamma`
-:proc:`lnGamma`
+^^^^^^^^^^^^^^^
+:proc:`~Math.gamma`
+:proc:`~Math.lnGamma`
 
 .. _math-error:
 
 Error Functions
----------------
-:proc:`erf`
-:proc:`erfc`
+^^^^^^^^^^^^^^^
+:proc:`~Math.erf`
+:proc:`~Math.erfc`
 
 .. _math-algorithms:
 
 Algorithms
-----------
-:proc:`gcd`
+^^^^^^^^^^
+:proc:`~Math.gcd`
 
 .. _math-bessel:
 
 Bessel Functions
-----------------
-:proc:`j0`
-:proc:`j1`
-:proc:`jn`
-:proc:`y0`
-:proc:`y1`
-:proc:`yn`
+^^^^^^^^^^^^^^^^
+:proc:`~Math.j0`
+:proc:`~Math.j1`
+:proc:`~Math.jn`
+:proc:`~Math.y0`
+:proc:`~Math.y1`
+:proc:`~Math.yn`
 
+.. _automath-constant-and-function-definitions:
 
-Constant and Function Definitions
----------------------------------
+Automatically Included Constant and Function Definitions
+--------------------------------------------------------
+
+.. include:: AutoMath.rst
+  :start-after: The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module
+
+.. _math-constant-and-function-definitions:
+
+Constant and Function Definitions for Math
+------------------------------------------
 
 */
 module Math {
@@ -426,7 +445,7 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -435,7 +454,7 @@ module Math {
   proc divCeil(param x: integral, param y: integral) param do
     return chpl_divceil(x, y);
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -453,7 +472,7 @@ module Math {
     return chpl_divceilpos(x, y);
   }
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -462,7 +481,7 @@ module Math {
   proc divFloor(param x: integral, param y: integral) param do return
     chpl_divfloor(x, y);
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
