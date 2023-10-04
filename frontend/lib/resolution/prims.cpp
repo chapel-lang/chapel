@@ -360,6 +360,48 @@ getBuiltinTypeForDecorator(Context* context, ClassTypeDecorator d) {
   }
 }
 
+static QualifiedType convertClassToDecorator(Context* context,
+                                             const CallInfo& ci,
+                                             ClassTypeDecorator::ClassTypeDecoratorEnum cde) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto& actualType = ci.actual(0).type();
+  auto typePtr = actualType.type();
+  if (!typePtr) return QualifiedType();
+
+  const ManageableType* manageableType = nullptr;
+  auto decorator = ClassTypeDecorator(cde);
+
+  if (auto ct = typePtr->toClassType()) {
+    manageableType = ct->manageableType();
+    decorator = decorator.copyNilabilityFrom(ct->decorator());
+  } else if (auto mt = typePtr->toManageableType()) {
+    manageableType = mt;
+  }
+  // match production and ignore 'builtin' classes like _borrowedNilable etc.
+
+  if (manageableType) {
+    return QualifiedType(actualType.kind(),
+                         ClassType::get(context, manageableType, nullptr, decorator));
+  }
+  return actualType;
+}
+
+static QualifiedType primToUnmanagedClass(Context* context,
+                                          const CallInfo& ci) {
+  return convertClassToDecorator(context, ci, ClassTypeDecorator::UNMANAGED);
+}
+
+static QualifiedType primToUndecoratedClass(Context* context,
+                                          const CallInfo& ci) {
+  return convertClassToDecorator(context, ci, ClassTypeDecorator::GENERIC);
+}
+
+static QualifiedType primToBorrowedClass(Context* context,
+                                          const CallInfo& ci) {
+  return convertClassToDecorator(context, ci, ClassTypeDecorator::BORROWED);
+}
+
 static QualifiedType primToNilableClass(Context* context,
                                         const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -367,8 +409,6 @@ static QualifiedType primToNilableClass(Context* context,
   auto& actualType = ci.actual(0).type();
   auto typePtr = actualType.type();
   if (!typePtr) return QualifiedType();
-
-  debuggerBreakHere();
 
   const ManageableType* manageableType = nullptr;
   const Type* manager = nullptr;
@@ -549,10 +589,19 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_UNMANAGED_CLASS_CHECKED:
     case PRIM_TO_BORROWED_CLASS_CHECKED:
     case PRIM_TO_NILABLE_CLASS_CHECKED:
-    case PRIM_TO_UNMANAGED_CLASS:
-    case PRIM_TO_BORROWED_CLASS:
-    case PRIM_TO_UNDECORATED_CLASS:
       assert(false && "not implemented yet");
+      break;
+
+    case PRIM_TO_UNMANAGED_CLASS:
+      type = primToUnmanagedClass(context, ci);
+      break;
+
+    case PRIM_TO_BORROWED_CLASS:
+      type = primToBorrowedClass(context, ci);
+      break;
+
+    case PRIM_TO_UNDECORATED_CLASS:
+      type = primToUndecoratedClass(context, ci);
       break;
 
     case PRIM_TO_NILABLE_CLASS:
