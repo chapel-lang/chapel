@@ -48,10 +48,6 @@ module CTypes {
   /* The Chapel type corresponding to the C 'double' type */
   extern type c_double = real(64);
 
-  extern "_cfile" type chpl_cFilePtr; // can be removed when deprecation is complete
-  extern "_cfiletype" type chpl_cFile; // direct uses of this type in the IO module
-                                      // can be replaced with c_FILE when deprecation is complete
-
   @chpldoc.nodoc
   @deprecated("'cFileTypeHasPointer' is deprecated and no longer affects the behavior of the 'c_FILE' type. A 'FILE*' should be represented by 'c_ptr(c_FILE)'")
   config param cFileTypeHasPointer = false;
