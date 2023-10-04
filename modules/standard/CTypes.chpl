@@ -69,21 +69,6 @@ module CTypes {
   @deprecated(notes="c_void_ptr is deprecated, use 'c_ptr(void)' instead.")
   type c_void_ptr = c_ptr(void);
 
-
-  /* A Chapel version of a C NULL pointer. */
-  @deprecated(notes="c_nil is deprecated, use just 'nil' instead.")
-  inline proc c_nil {
-    return nil;
-  }
-
-  /*
-     :returns: true if the passed value is a NULL pointer (ie 0).
-   */
-  @deprecated(notes="is_c_nil is deprecated without replacement, as 'c_nil' is deprecated in favor of 'nil'; compare argument to 'nil' directly with ==, casting to c_ptr(void) first if needed.")
-  inline proc is_c_nil(x):bool {
-    return __primitive("cast", c_ptr(void), x) == c_nil;
-  }
-
   /*
 
     Represents a local C pointer for the purpose of C integration. This type
