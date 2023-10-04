@@ -1317,6 +1317,7 @@ module CTypes {
 
       if (clear) {
         // there is no aligned calloc; have to aligned_alloc + memset to 0
+        private use OS.POSIX;
         memset(ptr, 0, alloc_size);
       }
     }
@@ -1341,86 +1342,6 @@ module CTypes {
   proc isAnyCPtr(type t:c_ptrConst) param do return true;
   @chpldoc.nodoc
   proc isAnyCPtr(type t) param do return false;
-
-  // this can be removed after the following deprecations are complete
-  //  it's only here so that links in the deprecation messages work
-  //  and to avoid deprecation warnings when using these procs internally in this module
-  // private use OS;
-  private use OS.POSIX;
-
-  /*
-    Copies n potentially overlapping bytes from memory area src to memory
-    area dest.
-
-    This is a simple wrapper over the C ``memmove()`` function.
-
-    :arg dest: the destination memory area to copy to
-    :arg src: the source memory area to copy from
-    :arg n: the number of bytes from src to copy to dest
-   */
-  pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memmove` is deprecated; please use :proc:`POSIX.memmove` instead")
-  inline proc c_memmove(dest:c_ptr(void), const src:c_ptr(void), n: integral) {
-    pragma "fn synchronization free"
-    extern proc memmove(dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
-    memmove(dest, src, n.safeCast(c_size_t));
-  }
-
-  /*
-    Copies n non-overlapping bytes from memory area src to memory
-    area dest. Use :proc:`c_memmove` if memory areas do overlap.
-
-    This is a simple wrapper over the C memcpy() function.
-
-    :arg dest: the destination memory area to copy to
-    :arg src: the source memory area to copy from
-    :arg n: the number of bytes from src to copy to dest
-   */
-  pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memcpy` is deprecated; please use :proc:`POSIX.memcpy` instead")
-  inline proc c_memcpy(dest:c_ptr(void), const src:c_ptr(void), n: integral) {
-    pragma "fn synchronization free"
-    extern proc memcpy (dest: c_ptr(void), const src: c_ptr(void), n: c_size_t);
-    memcpy(dest, src, n.safeCast(c_size_t));
-  }
-
-  /*
-    Compares the first n bytes of memory areas s1 and s2
-
-    This is a simple wrapper over the C ``memcmp()`` function.
-
-    :returns: returns an integer less than, equal to, or greater than zero if
-              the first n bytes of s1 are found, respectively, to be less than,
-              to match, or be greater than the first n bytes of s2.
-   */
-  pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memcmp` is deprecated; please use :proc:`POSIX.memcmp` instead")
-  inline proc c_memcmp(const s1:c_ptr(void), const s2:c_ptr(void), n: integral) {
-    pragma "fn synchronization free"
-    extern proc memcmp(const s1: c_ptr(void), const s2: c_ptr(void), n: c_size_t) : c_int;
-    return memcmp(s1, s2, n.safeCast(c_size_t)).safeCast(int);
-  }
-
-  /*
-    Fill bytes of memory with a particular byte value.
-
-    This is a simple wrapper over the C ``memset()`` function.
-
-    :arg s: the destination memory area to fill
-    :arg c: the byte value to use
-    :arg n: the number of bytes of s to fill
-
-    :returns: s
-   */
-  pragma "fn synchronization free"
-  @deprecated(notes=":proc:`c_memset` is deprecated; please use :proc:`POSIX.memset` instead")
-  inline proc c_memset(s:c_ptr(void), c:integral, n: integral) {
-    pragma "fn synchronization free"
-    extern proc memset(s: c_ptr(void), c: c_int, n: c_size_t) : c_ptr(void);
-    memset(s, c.safeCast(c_int), n.safeCast(c_size_t));
-    return s;
-  }
-
 
   /*
     Get the number of bytes in a c_ptr(int(8)) or c_ptr(uint(8)), excluding the
