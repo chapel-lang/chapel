@@ -160,14 +160,8 @@ Bessel Functions
 Automatically Included Constant and Function Definitions
 --------------------------------------------------------
 
-.. module:: AutoMath
-  :noindex:
-
 .. include:: AutoMath.rst
   :start-after: The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module
-
-.. module:: Math
-  :noindex:
 
 .. _math-constant-and-function-definitions:
 
@@ -451,7 +445,7 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -460,7 +454,7 @@ module Math {
   proc divCeil(param x: integral, param y: integral) param do
     return chpl_divceil(x, y);
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -478,7 +472,7 @@ module Math {
     return chpl_divceilpos(x, y);
   }
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -487,7 +481,7 @@ module Math {
   proc divFloor(param x: integral, param y: integral) param do return
     chpl_divfloor(x, y);
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then

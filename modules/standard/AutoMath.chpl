@@ -26,57 +26,57 @@ Automatically included Math symbols
 
 Roots
 ^^^^^
-:proc:`~AutoMath.cbrt`
-:proc:`~AutoMath.sqrt`
+:proc:`~Math.cbrt`
+:proc:`~Math.sqrt`
 
 .. _automath-rounding:
 
 Rounding
 ^^^^^^^^
-:proc:`~AutoMath.ceil`
-:proc:`~AutoMath.floor`
-:proc:`~AutoMath.round`
-:proc:`~AutoMath.trunc`
+:proc:`~Math.ceil`
+:proc:`~Math.floor`
+:proc:`~Math.round`
+:proc:`~Math.trunc`
 
 .. _automath-complex:
 
 Computations Involving Complex Numbers
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.conj`
-:proc:`~AutoMath.phase`
-:proc:`~AutoMath.riemProj`
+:proc:`~Math.conj`
+:proc:`~Math.phase`
+:proc:`~Math.riemProj`
 
 .. _automath-inf-nan:
 
 Infinity and NaN
 ^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.inf`
-:proc:`~AutoMath.nan`
-:proc:`~AutoMath.isFinite`
-:proc:`~AutoMath.isInf`
-:proc:`~AutoMath.isNan`
+:proc:`~Math.inf`
+:proc:`~Math.nan`
+:proc:`~Math.isFinite`
+:proc:`~Math.isInf`
+:proc:`~Math.isNan`
 
 .. _automath-comparison:
 
 Comparison Functions
 ^^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.max`
-:proc:`~AutoMath.min`
-:proc:`~AutoMath.isClose`
+:proc:`~Math.max`
+:proc:`~Math.min`
+:proc:`~Math.isClose`
 
 .. _automath-sign:
 
 Sign Functions
 ^^^^^^^^^^^^^^
-:proc:`~AutoMath.sgn`
-:proc:`~AutoMath.signbit`
+:proc:`~Math.sgn`
+:proc:`~Math.signbit`
 
 .. _automath-other:
 
 Remaining Functions
 ^^^^^^^^^^^^^^^^^^^
-:proc:`~AutoMath.abs`
-:proc:`~AutoMath.mod`
+:proc:`~Math.abs`
+:proc:`~Math.mod`
 */
 pragma "module included by default"
 @unstable("The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module")
@@ -1963,7 +1963,7 @@ module AutoMath {
 
   /* Returns the maximum value of two arguments using the ``>`` operator
      for comparison.
-     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
+     If one of the arguments is :proc:`Math.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */
@@ -2034,7 +2034,7 @@ module AutoMath {
   /* Returns the minimum value of two arguments using the ``<`` operator
      for comparison.
 
-     If one of the arguments is :proc:`AutoMath.nan`, the result is also nan.
+     If one of the arguments is :proc:`Math.nan`, the result is also nan.
 
      :rtype: The type of `x`.
    */

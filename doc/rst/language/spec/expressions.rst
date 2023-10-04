@@ -868,7 +868,7 @@ related by the following identity:
    writeln(q * b + r == a);    // true
 
 .. note::
-   This does not have the same behavior as :proc:`~AutoMath.mod` when `b` is
+   This does not have the same behavior as :proc:`~Math.mod` when `b` is
    negative.
 
 There is an expectation that the predefined modulus operators will be
