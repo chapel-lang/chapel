@@ -52,7 +52,7 @@ for l in lines:
         state = "automath-symbol-index"
     elif l == "Non-Automatically Available Symbols":
         state = "math-symbol-index"
-    elif l == "Constant and Function Definitions for AutoMath":
+    elif l == "Automatically Included Constant and Function Definitions":
         state = "automath-symbol-defs"
     elif l == "Constant and Function Definitions for Math":
         state = "math-symbol-defs"
