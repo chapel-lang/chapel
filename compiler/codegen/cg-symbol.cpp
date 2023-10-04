@@ -86,7 +86,10 @@
 ********************************* | ********************************/
 
 // these are sets of astrs
-static std::set<const char*> llvmPrintIrNames;
+// Chapel function names requested to be disassembled, and whether they've been
+// matched to C symbol names.
+static std::unordered_map<const char*, bool> llvmPrintIrNames;
+// Corresponding C function names to disassemble
 static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
 
@@ -124,7 +127,7 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
 }
 
 void addNameToPrintLlvmIr(const char* name) {
-  llvmPrintIrNames.insert(astr(name));
+  llvmPrintIrNames.emplace(astr(name), false);
 }
 void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
@@ -138,7 +141,7 @@ bool shouldLlvmPrintIrName(const char* name) {
 }
 
 bool shouldLlvmPrintIrCName(const char* name) {
-  if (llvmPrintIrNames.empty())
+  if (llvmPrintIrCNames.empty())
     return false;
 
   return llvmPrintIrCNames.count(astr(name));
@@ -148,6 +151,9 @@ bool shouldLlvmPrintIrFn(FnSymbol* fn) {
   return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
 }
 
+// Collect the cnames to print into a vector with (lex) ordering.
+// Order of the list is non-deterministic otherwise, because it stores astrs
+// for performance.
 std::vector<std::string> gatherPrintLlvmIrCNames() {
   std::vector<std::string> ret;
   for (auto elt : llvmPrintIrCNames) {
@@ -211,7 +217,31 @@ void preparePrintLlvmIrForCodegen() {
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (shouldLlvmPrintIrFn(fn)) {
       addCNameToPrintLlvmIr(fn->cname);
+      // mark Chapel symbol as found
+      llvmPrintIrNames[astr(fn->name)] = true;
     }
+  }
+
+  // Ensure cnames were found for all Chapel function names
+  std::vector<std::string> namesNotFound;
+  for (const auto& nameInfo : llvmPrintIrNames) {
+    if (nameInfo.second == false) {
+      namesNotFound.emplace_back(nameInfo.first);
+    }
+  }
+  // Emit warning for any symbols not found
+  if (!namesNotFound.empty()) {
+    // Deterministically order
+    std::sort(namesNotFound.begin(), namesNotFound.end());
+    std::string nameList;
+    for (auto it = namesNotFound.begin(); it != namesNotFound.end(); ++it) {
+      if (it != namesNotFound.begin()) {
+        nameList += ", ";
+      }
+      nameList += *it;
+    }
+    USR_WARN("Could not find requested symbol%s for disassembly: %s",
+             (namesNotFound.size() == 1 ? "" : "s"), nameList.c_str());
   }
 
   // Extend cnames with the cnames of task functions
