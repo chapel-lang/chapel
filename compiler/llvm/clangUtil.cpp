@@ -5263,7 +5263,7 @@ static void llvmRunOptimizations(void) {
 
   // Run optimizations with the new PassManager
   runModuleOptPipeline(fLLVMWideOpt);
-  saveIrToBcFileIfNeeded(opt1Filename);
+  saveIrToBcFileIfNeeded(filenames->opt1Filename);
 
   if (fLLVMWideOpt) {
     // the GlobalToWide pass creates calls to inline functions, among
@@ -5271,7 +5271,7 @@ static void llvmRunOptimizations(void) {
     // battery of optimizations now.
     runModuleOptPipeline(/* don't add global to wide opts */ false);
 
-    saveIrToBcFileIfNeeded(opt2Filename);
+    saveIrToBcFileIfNeeded(filenames->opt2Filename);
   }
 
 #endif
