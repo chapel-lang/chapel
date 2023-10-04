@@ -285,6 +285,18 @@ static QualifiedType primIsTuple(Context* context,
                        BoolParam::get(context, isTupleType));
 }
 
+static QualifiedType primCast(Context* context,
+                              const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto& castTo = ci.actual(0).type();
+  auto& castFrom = ci.actual(1).type();
+
+  if (!castTo.isType()) return QualifiedType();
+
+  return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
+}
+
 static QualifiedType primToNilableClass(Context* context,
                                         const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -433,6 +445,9 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     /* cast-like things */
     case PRIM_CAST:
+      type = primCast(context, ci);
+      break;
+
     case PRIM_DYNAMIC_CAST:
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
