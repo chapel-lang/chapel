@@ -1259,8 +1259,8 @@ module Math {
     if isLlvmCompile {
       return __primitive("fma", x, y, z);
 
-    // Easier to call C 'fma()' here than have the backend do it. It's up
-    // to the C compiler if any optimization occurs here at all. We have
+    // Call C 'fma()' here rather than have the backend do it. It's up to
+    // the C compiler if any optimization occurs here at all. We have
     // to call 'fma()' for correctness, as (x*y+z) will introduce more error.
     // TODO: Is there a path for the builtin Clang to reliably emit a
     // hardware instruction, e.g., through a Clang intrinsic call?
@@ -1269,10 +1269,12 @@ module Math {
     }
   }
 
-  /** Performs a fused multiply-add operation that multiplies ``x`` and ``y``
+  /*  Performs a fused multiply-add operation that multiplies ``x`` and ``y``
       and adds ``z`` to the result. The advantage of ``fma()`` over the
       expression ``(x*y)+z`` is that it avoids the additional error
       introduced by performing two separate floating point operations.
+      It can also be faster on machines that implement the operation as a
+      single instruction.
 
       .. note::
 
@@ -1285,10 +1287,12 @@ module Math {
         routines defined in the C header `math.h`. Any optimization performed
         is decided by the C compiler.
   */
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
   inline proc fma(x: real(64), y: real(64), z: real(64)): real(64) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
   }
 
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
   inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
     return fmaSelectPrimitiveOrExternCall(x, y, z);
   }
