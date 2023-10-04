@@ -1038,10 +1038,7 @@ module HDF5 {
 
     extern proc H5Epop(err_stack : hid_t, count : c_size_t) : herr_t;
 
-    // after c_FILE behavior deprecation, replace with:
-    // extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(c_FILE)) : herr_t;
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(chpl_cFile)) : herr_t;
-    extern proc H5Eprint2(err_stack : hid_t, ref stream : chpl_cFilePtr) : herr_t;
+    extern proc H5Eprint2(err_stack : hid_t, ref stream : c_ptr(c_FILE)) : herr_t;
 
     extern proc H5Ewalk2(err_stack : hid_t, direction : H5E_direction_t, func : H5E_walk2_t, client_data : c_ptr(void)) : herr_t;
 
@@ -1063,10 +1060,7 @@ module HDF5 {
 
     extern proc H5Epush1(file : c_ptrConst(c_char), func : c_ptrConst(c_char), line : c_uint, maj : H5E_major_t, min : H5E_minor_t, str : c_ptrConst(c_char)) : herr_t;
 
-    // after c_FILE behavior deprecation, replace with:
-    // extern proc H5Eprint1(ref stream : c_ptr(c_FILE)) : herr_t;
-    extern proc H5Eprint1(ref stream : c_ptr(chpl_cFile)) : herr_t;
-    extern proc H5Eprint1(ref stream : chpl_cFilePtr) : herr_t;
+    extern proc H5Eprint1(ref stream : c_ptr(c_FILE)) : herr_t;
 
     extern proc H5Eset_auto1(func : H5E_auto1_t, client_data : c_ptr(void)) : herr_t;
 

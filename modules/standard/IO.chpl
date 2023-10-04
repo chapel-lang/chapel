@@ -1859,9 +1859,7 @@ operator file.=(ref ret:file, x:file) {
   ret._file_internal = x._file_internal;
 }
 
-// TODO: post c_FILE behavior deprecation:
-// add a ':c_ptr(c_FILE)' annotation to the 'fp' argument
-private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
+private proc initHelper(ref f: file, fp: c_ptr(c_FILE), hints=ioHintSet.empty,
                         style:iostyleInternal = defaultIOStyleInternal(),
                         own=false) throws {
 
@@ -1888,11 +1886,8 @@ private proc initHelper(ref f: file, fp, hints=ioHintSet.empty,
 }
 
 @deprecated("initializing a file with a 'style' argument is deprecated")
-proc file.init(fp: ?t, hints=ioHintSet.empty, style:iostyle,
-               own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
-  // TODO: when the c_FILE behavior-change deprecation is complete,
-  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
-  // and the where clause should be removed.
+proc file.init(fp: c_ptr(c_FILE), hints=ioHintSet.empty, style:iostyle,
+               own=false) {
   this.init();
 
   initHelper(this, fp, hints, style: iostyleInternal, own);
@@ -1927,10 +1922,7 @@ operations on the C file.
 
 :throws SystemError: Thrown if the C file could not be retrieved.
 */
-proc file.init(fp: ?t, hints=ioHintSet.empty, own=false) throws where t == chpl_cFilePtr || t == c_ptr(chpl_cFile) {
-  // TODO: when the c_FILE behavior-change deprecation is complete,
-  // a ':c_ptr(c_FILE)' type annotation should be added to the 'fp' argument.
-  // and the where clause should be removed.
+proc file.init(fp: c_ptr(c_FILE), hints=ioHintSet.empty, own=false) throws {
   this.init();
 
   initHelper(this, fp, hints, own=own);
