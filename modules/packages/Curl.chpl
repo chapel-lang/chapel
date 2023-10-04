@@ -831,7 +831,7 @@ module Curl {
         err =curl_easy_setopt_ptr(curl, CURLOPT_READFUNCTION,
             c_ptrTo(curl_read_buffered):c_ptr(void));
         if err then return EINVAL;
-        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, c_ptrToConst_helper(cc));
+        err = curl_easy_setopt_ptr(curl, CURLOPT_READDATA, c_ptrToConst(cc));
         if err then return EINVAL;
 
         // TODO -- is this necessary?
@@ -843,7 +843,7 @@ module Curl {
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEFUNCTION, c_ptrTo(curl_write_received):c_ptr(void));
         if err then return EINVAL;
         err = curl_easy_setopt_ptr(curl, CURLOPT_WRITEDATA,
-            c_ptrToConst_helper(cc));
+            c_ptrToConst(cc));
         if err then return EINVAL;
       }
       // If it's seekable, start at the right offset
