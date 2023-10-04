@@ -65,10 +65,20 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
 
   // generic builtin types. AnyBorrowedNilableType must be the first of these
-  // (or else adjust BuiltinType::isGeneric and this comment)
+  // (or else adjust BuiltinType::genericity and this comment)
+
+  // generic class-like types. AnyUnmanagedType must be last of these
+  // (or else adjust BuiltinType::isClassLike and this comment)
   BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
   BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
+  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
+  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
+  BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
+  BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
+  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
+  // end generic class-like types.
+
   BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyEnumType, "enum")
   BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")
@@ -76,8 +86,6 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyIntegralType, "integral")
   BUILTIN_TYPE_NODE(AnyIteratorClassType, "_iteratorClass")
   BUILTIN_TYPE_NODE(AnyIteratorRecordType, "_iteratorRecord")
-  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
-  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
   BUILTIN_TYPE_NODE(AnyNumericType, "numeric")
   BUILTIN_TYPE_NODE(AnyOwnedType, "owned")
   BUILTIN_TYPE_NODE(AnyPodType, "chpl_anyPOD")
@@ -87,9 +95,7 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(AnyUintType, "chpl_anyuint")
   BUILTIN_TYPE_NODE(AnyUninstantiatedType, "?")
   BUILTIN_TYPE_NODE(AnyUnionType, "union")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
+  // end generic builtin types.
 TYPE_END_SUBCLASSES(BuiltinType)
 
 TYPE_BEGIN_SUBCLASSES(DeclaredType)

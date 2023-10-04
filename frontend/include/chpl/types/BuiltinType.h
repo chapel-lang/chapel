@@ -69,6 +69,15 @@ class BuiltinType : public Type {
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
+
+  /**
+    Returns true for builtins like _anyManagementAnyNilable, which behave
+    like classes for e.g. adding `?`.
+   */
+  bool isClassLike() const {
+    return (int) tag() >= (int) typetags::AnyBorrowedNilableType &&
+           (int) tag() <= (int) typetags::AnyUnmanagedType;
+  }
 };
 
 // define the subclasses using macros and BuiltinTypeList.h

@@ -297,21 +297,110 @@ static QualifiedType primCast(Context* context,
   return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
 }
 
+static ClassTypeDecorator classTypeDecoratorForBuiltinType(const BuiltinType* t) {
+  CHPL_ASSERT(t->isClassLike());
+
+  ClassTypeDecorator::ClassTypeDecoratorEnum cde;
+
+  switch (t->tag()) {
+    case types::typetags::AnyBorrowedNilableType:
+      cde = types::ClassTypeDecorator::BORROWED_NILABLE;
+      break;
+    case types::typetags::AnyBorrowedNonNilableType:
+      cde = types::ClassTypeDecorator::BORROWED_NONNIL;
+      break;
+    case types::typetags::AnyBorrowedType:
+      cde = types::ClassTypeDecorator::BORROWED;
+      break;
+    case types::typetags::AnyManagementAnyNilableType:
+      cde = types::ClassTypeDecorator::GENERIC;
+      break;
+    case types::typetags::AnyManagementNilableType:
+      cde = types::ClassTypeDecorator::GENERIC_NILABLE;
+      break;
+    case types::typetags::AnyUnmanagedNilableType:
+      cde = types::ClassTypeDecorator::UNMANAGED_NILABLE;
+      break;
+    case types::typetags::AnyUnmanagedNonNilableType:
+      cde = types::ClassTypeDecorator::UNMANAGED_NONNIL;
+      break;
+    case types::typetags::AnyUnmanagedType:
+      cde = types::ClassTypeDecorator::UNMANAGED;
+      break;
+    default:
+      CHPL_ASSERT(false && "should be unreachable");
+      cde = types::ClassTypeDecorator::UNMANAGED;
+  }
+  return ClassTypeDecorator(cde);
+}
+
+static const BuiltinType*
+getBuiltinTypeForDecorator(Context* context, ClassTypeDecorator d) {
+  auto cde = d.val();
+  switch (cde) {
+    case types::ClassTypeDecorator::BORROWED_NILABLE:
+      return AnyBorrowedNilableType::get(context);
+    case types::ClassTypeDecorator::BORROWED_NONNIL:
+      return AnyBorrowedNonNilableType::get(context);
+    case types::ClassTypeDecorator::BORROWED:
+      return AnyBorrowedType::get(context);
+    case types::ClassTypeDecorator::GENERIC:
+      return AnyManagementAnyNilableType::get(context);
+    case types::ClassTypeDecorator::GENERIC_NILABLE:
+      return AnyManagementNilableType::get(context);
+    case types::ClassTypeDecorator::UNMANAGED_NILABLE:
+      return AnyUnmanagedNilableType::get(context);
+    case types::ClassTypeDecorator::UNMANAGED_NONNIL:
+      return AnyUnmanagedNonNilableType::get(context);
+    case types::ClassTypeDecorator::UNMANAGED:
+      return AnyUnmanagedType::get(context);
+
+    default:
+      return nullptr;
+  }
+}
+
 static QualifiedType primToNilableClass(Context* context,
                                         const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
-  auto& actualType = ci.actual(0).type();
-  if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
 
+  auto& actualType = ci.actual(0).type();
   auto typePtr = actualType.type();
-  if (typePtr) {
-    if (auto ct = typePtr->toClassType()) {
-      auto dec = ct->decorator().addNilable();
-      typePtr = ct->withDecorator(context, dec);
+  if (!typePtr) return QualifiedType();
+
+  debuggerBreakHere();
+
+  const ManageableType* manageableType = nullptr;
+  const Type* manager = nullptr;
+  auto decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+
+  if (auto ct = typePtr->toClassType()) {
+    decorator = ct->decorator();
+    manager = ct->manager();
+    manageableType = ct->manageableType();
+  } else if (auto mt = typePtr->toManageableType()) {
+    // Default 'borrowed' decorator is right.
+    manageableType = mt;
+  } else if (auto btc = typePtr->toBuiltinType()) {
+    if (btc->isClassLike()) {
+      decorator = classTypeDecoratorForBuiltinType(btc);
     }
   }
 
-  return QualifiedType(QualifiedType::TYPE, typePtr);
+  auto newDecorator = decorator.addNilable();
+  const Type* newType = nullptr;
+  if (manageableType) {
+    newType = ClassType::get(context, manageableType, manager, newDecorator);
+  } else {
+    // We are casting from a special 'builtin' like _borrowedNonNilable;
+    // pick the other 'builtin' corresponding to the updated decorator.
+    newType = getBuiltinTypeForDecorator(context, newDecorator);
+  }
+
+  if (newType) {
+    return QualifiedType(QualifiedType::CONST_IN, newType);
+  }
+  return actualType;
 }
 
 CallResolutionResult resolvePrimCall(Context* context,
