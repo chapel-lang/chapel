@@ -3355,6 +3355,10 @@ desync
 dndebug
 eigvalsh
 envs
+filereader
+filereaders
+filewriter
+filewriters
 geany
 gemm
 gemv
@@ -3374,8 +3378,10 @@ librt
 libtool
 lmod
 lstlisting
+maxyear
 memkind
 memleakslog
+minyear
 modindex
 nicename
 nodbg
@@ -3386,6 +3392,7 @@ parentlocid
 pascalcase
 pshm
 ptxas
+qcdext
 readbytes
 readthis
 readwritethis
@@ -3402,6 +3409,7 @@ structors
 subsymbols
 teardowns
 tmbundle
+typeclass
 vundle
 whereami
 whymason
@@ -6119,12 +6127,14 @@ filenamelookupposition
 
 FILEID: 70eb8f46-a729-11ec-866d-111c8d7a1817
 aopen
+asynchrony
 hipcc
 nsight
 nvcc
 nvptx
 ptxas
 senable
+shocsort
 triadchpl
 vidia
 worksharing
@@ -6657,6 +6667,9 @@ exittimeout
 FILEID: 77c41520-5503-11ee-81ec-fb959b7aa6d7
 centjustify
 
+FILEID: 308a2a9e-6257-11ee-a276-cf4fa088a92b
+bitcode
+
 NATURAL:
 aarch
 abcd
@@ -6922,6 +6935,7 @@ buhid
 buildingdocs
 builtins
 bulleted
+bundler
 bynodeset
 byref
 byrne
@@ -7450,6 +7464,7 @@ enqueued
 enqueuer
 enqueues
 entrypoints
+enumconstant
 enums
 enumsymbol
 enumtype
@@ -7729,6 +7744,7 @@ groupsize
 gsoc
 gssapi
 guckin
+guillaume
 gujarati
 gunzip
 gups
@@ -7763,6 +7779,7 @@ headerfields
 headername
 hebrew
 heiner
+helbecque
 hemmaplardh
 hemmy
 hemstad
@@ -7820,6 +7837,7 @@ hwriter
 hyderabad
 hyperthreading
 hyperthreads
+iain
 iakovlev
 ibarrier
 icfp
@@ -8365,9 +8383,11 @@ mohammed
 mohaned
 mojave
 moler
+moncrief
 monday
 mongolian
 monoid
+monolithically
 monomorphization
 monsperyear
 monte
@@ -8651,6 +8671,8 @@ optinfo
 optlen
 optname
 optval
+oregon
+oregonstate
 origfile
 oriya
 ornl
@@ -9293,6 +9315,7 @@ stefan
 stelle
 stemp
 steven
+stinson
 stitt
 stmt
 stmts
