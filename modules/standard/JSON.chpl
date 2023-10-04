@@ -104,7 +104,7 @@ module JSON {
         _oldWrite(writer, val);
       } else if isClassType(t) {
         if val == nil {
-          writer._writeLiteral("null");
+          writer.writeLiteral("null");
         } else {
           val!.serialize(writer=writer, serializer=this);
         }
@@ -169,11 +169,11 @@ module JSON {
         the name if this is not the first field.
       */
       proc ref writeField(name: string, const field: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(name);
-        writer._writeLiteral(":");
+        writer.writeLiteral(":");
         writer.write(field);
       }
 
@@ -216,7 +216,7 @@ module JSON {
       */
       proc endClass() throws {
         if !_parent then
-          writer._writeLiteral(_ending);
+          writer.writeLiteral(_ending);
         else if _firstPtr != nil then
           _firstPtr.deref() = _first;
       }
@@ -226,7 +226,7 @@ module JSON {
         ``}``.
       */
       proc endRecord() throws {
-        writer._writeLiteral(_ending);
+        writer.writeLiteral(_ending);
       }
     }
 
@@ -286,7 +286,7 @@ module JSON {
         first element in the list.
       */
       proc ref writeElement(const element: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(element);
@@ -377,7 +377,7 @@ module JSON {
         if _arrayFirst[_arrayDim-1] {
           _arrayFirst[_arrayDim-1] = false;
         } else {
-          writer._writeLiteral(",");
+          writer.writeLiteral(",");
         }
 
         _arrayMax = max(_arrayMax, _arrayDim);
@@ -389,7 +389,7 @@ module JSON {
         }
 
         // Actually start the JSON list format
-        writer._writeLiteral("[");
+        writer.writeLiteral("[");
       }
 
       /*
@@ -407,11 +407,11 @@ module JSON {
         */
         if _arrayDim < _arrayMax {
           writer.writeNewline();
-          writer._writeLiteral(" " * (_arrayDim-1));
+          writer.writeLiteral(" " * (_arrayDim-1));
         }
 
         // Actually close out the list
-        writer._writeLiteral("]");
+        writer.writeLiteral("]");
 
         // Reset the 'first' property so that a later 'pane' of this dimension
         // prints correctly. For example:
@@ -439,7 +439,7 @@ module JSON {
         Writes a leading comma if this is not the first element in the row.
       */
       proc ref writeElement(const element: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(element);
@@ -461,7 +461,7 @@ module JSON {
       :returns: A new :type:`MapSerializer`
     */
     proc startMap(writer: jsonWriter, size: int) throws {
-      writer._writeLiteral("{");
+      writer.writeLiteral("{");
       return new MapSerializer(writer);
     }
 
@@ -508,12 +508,12 @@ module JSON {
       */
       proc ref writeKey(const key: ?) throws {
         if !_first {
-          writer._writeLiteral(", ");
+          writer.writeLiteral(", ");
           writer.writeNewline();
-          writer._writeLiteral("  ");
+          writer.writeLiteral("  ");
         } else {
           writer.writeNewline();
-          writer._writeLiteral("  ");
+          writer.writeLiteral("  ");
           _first = false;
         }
 
@@ -536,7 +536,7 @@ module JSON {
         Serialize ``val``, preceded by the character ``:``.
       */
       proc writeValue(const val: ?) throws {
-        writer._writeLiteral(": ");
+        writer.writeLiteral(": ");
         writer.write(val);
       }
 
@@ -545,7 +545,7 @@ module JSON {
       */
       proc endMap() throws {
         writer.writeNewline();
-        writer._writeLiteral("}");
+        writer.writeLiteral("}");
       }
     }
   }
@@ -756,10 +756,10 @@ module JSON {
       @chpldoc.nodoc
       proc _readFieldName(reader: jsonReader, key: string) throws {
         try {
-          reader._readLiteral('"');
-          reader._readLiteral(key);
-          reader._readLiteral('"');
-          reader._readLiteral(":");
+          reader.readLiteral('"');
+          reader.readLiteral(key);
+          reader.readLiteral('"');
+          reader.readLiteral(":");
         } catch e: BadFormatError {
           return false;
         }
@@ -891,7 +891,7 @@ module JSON {
       :returns: A new :type:`ListDeserializer`
     */
     proc startList(reader: jsonReader) throws {
-      reader._readLiteral("[");
+      reader.readLiteral("[");
       return new ListDeserializer(reader);
     }
 
@@ -914,7 +914,7 @@ module JSON {
         :returns: A deserialized value of type ``eltType``.
       */
       proc ref readElement(type eltType) : eltType throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         // preemptively check if a list will end with the next byte
@@ -929,7 +929,7 @@ module JSON {
         Deserialize ``element`` in-place.
       */
       proc ref readElement(ref element) throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         if !this.hasMore()
@@ -942,7 +942,7 @@ module JSON {
         ``]``.
       */
       proc endList() throws {
-        reader._readLiteral("]");
+        reader.readLiteral("]");
       }
 
       /*
@@ -1009,7 +1009,7 @@ module JSON {
         if _arrayFirst[_arrayDim-1] {
           _arrayFirst[_arrayDim-1] = false;
         } else {
-          reader._readLiteral(",");
+          reader.readLiteral(",");
         }
 
         _arrayMax = max(_arrayMax, _arrayDim);
@@ -1017,7 +1017,7 @@ module JSON {
         // Don't need to read the newline and pretty-printed spaces, as JSON
         // arrays can come in other forms. Relies on 'readLiteral' ignoring
         // whitespace by default.
-        reader._readLiteral("[");
+        reader.readLiteral("[");
       }
 
       /*
@@ -1026,13 +1026,13 @@ module JSON {
       proc ref endDim() throws {
         if _arrayDim < _arrayMax {
           reader.readNewline();
-          reader._readLiteral(" " * (_arrayDim-1));
+          reader.readLiteral(" " * (_arrayDim-1));
         }
 
         // Don't need to read the newline and pretty-printed spaces, as JSON
         // arrays can come in other forms. Relies on 'readLiteral' ignoring
         // whitespace by default.
-        reader._readLiteral("]");
+        reader.readLiteral("]");
 
         if _arrayDim < _arrayFirst.size then
           _arrayFirst[_arrayDim] = true;
@@ -1047,7 +1047,7 @@ module JSON {
         :returns: A deserialized value of type ``eltType``.
       */
       proc ref readElement(type eltType) : eltType throws {
-        if !_first then reader._readLiteral(", ");
+        if !_first then reader.readLiteral(", ");
         else _first = false;
 
         return reader.read(eltType);
@@ -1057,7 +1057,7 @@ module JSON {
         Deserialize ``element`` in-place as an element of the array.
       */
       proc ref readElement(ref element) throws {
-        if !_first then reader._readLiteral(", ");
+        if !_first then reader.readLiteral(", ");
         else _first = false;
 
         reader.read(element);
@@ -1078,7 +1078,7 @@ module JSON {
       :returns: A new :type:`MapDeserializer`
     */
     proc startMap(reader: jsonReader) throws {
-      reader._readLiteral("{");
+      reader.readLiteral("{");
       return new MapDeserializer(reader);
     }
 
@@ -1098,7 +1098,7 @@ module JSON {
         Deserialize and return a key of type ``keyType``.
       */
       proc ref readKey(type keyType) : keyType throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         if keyType == string {
@@ -1119,7 +1119,7 @@ module JSON {
         Deserialize ``key`` in-place as a key of the map.
       */
       proc ref readKey(ref key: ?t) throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         if t == string || t == bytes {
@@ -1140,7 +1140,7 @@ module JSON {
         Deserialize and return a value of type ``valType``.
       */
       proc readValue(type valType) : valType throws {
-        reader._readLiteral(":");
+        reader.readLiteral(":");
         return reader.read(valType);
       }
 
@@ -1148,7 +1148,7 @@ module JSON {
         Deserialize ``value`` in-place as a value of the map.
       */
       proc readValue(ref value) throws {
-        reader._readLiteral(":");
+        reader.readLiteral(":");
         reader.read(value);
       }
 
@@ -1156,7 +1156,7 @@ module JSON {
         End deserialization of the current map by reading the character ``}``.
       */
       proc endMap() throws {
-        reader._readLiteral("}");
+        reader.readLiteral("}");
       }
 
       /*

@@ -1819,13 +1819,13 @@ module List {
         // Write the number of elements
         ch.write(_size);
       } else {
-        ch._writeLiteral("[");
+        ch.writeLiteral("[");
       }
 
       for i in 0..(_size - 2) {
         ch.write(_getRef(i));
         if !isBinary {
-          ch._writeLiteral(", ");
+          ch.writeLiteral(", ");
         }
       }
 
@@ -1833,7 +1833,7 @@ module List {
         ch.write(_getRef(_size-1));
 
       if !isBinary {
-        ch._writeLiteral("]");
+        ch.writeLiteral("]");
       }
 
       _leave();
@@ -1843,17 +1843,17 @@ module List {
     proc _writeJson(ch: fileWriter) throws {
       _enter();
 
-      ch._writeLiteral("[");
+      ch.writeLiteral("[");
 
       for i in 0..(_size - 2) {
         ch.writef("%jt", _getRef(i));
-        ch._writeLiteral(", ");
+        ch.writeLiteral(", ");
       }
 
       if _size > 0 then
         ch.writef("%jt", _getRef(_size-1));
 
-      ch._writeLiteral("]");
+      ch.writeLiteral("]");
 
       _leave();
     }
@@ -1903,7 +1903,7 @@ module List {
         var isFirst = true;
         var hasReadEnd = false;
 
-        ch._readLiteral("[");
+        ch.readLiteral("[");
 
         while !hasReadEnd {
           if isFirst {
@@ -1911,7 +1911,7 @@ module List {
 
             // Try reading an end bracket. If we don't, then continue on.
             try {
-              ch._readLiteral("]");
+              ch.readLiteral("]");
               hasReadEnd = true;
               break;
             } catch err: BadFormatError {
@@ -1921,7 +1921,7 @@ module List {
 
             // Try to read a comma. Break if we don't.
             try {
-              ch._readLiteral(",");
+              ch.readLiteral(",");
             } catch err: BadFormatError {
               break;
             }
@@ -1934,7 +1934,7 @@ module List {
         }
 
         if !hasReadEnd {
-          ch._readLiteral("]");
+          ch.readLiteral("]");
         }
       }
 
@@ -1949,13 +1949,13 @@ module List {
       _enter();
       _clearLocked();
 
-      ch._readLiteral("[");
+      ch.readLiteral("[");
 
       while !ch.matchLiteral("]") {
         if isFirst {
           isFirst = false;
         } else {
-          ch._readLiteral(",");
+          ch.readLiteral(",");
         }
 
         // read an element
