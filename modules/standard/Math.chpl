@@ -1249,8 +1249,9 @@ module Math {
   @chpldoc.nodoc
   private inline
   proc fmaSelectPrimitiveOrExternCall(x: real(?w), y: real(w), z: real(w)) {
-    import ChplConfig;
-    param isLlvmCompile: bool = (ChplConfig.CHPL_TARGET_COMPILER == "llvm");
+    param targetCompiler = __primitive("get compiler variable",
+                                       "CHPL_TARGET_COMPILER");
+    param isLlvmCompile = targetCompiler == "llvm";
 
     // The backend will emit a 'llvm.fma.*' instruction, which should be
     // optimized into a hardware instruction if the architecture is
