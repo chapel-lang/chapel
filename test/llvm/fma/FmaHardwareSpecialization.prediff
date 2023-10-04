@@ -18,7 +18,7 @@ chplenv = subprocess.check_output([CHPL_HOME + "/util/printchplenv",
                                    "--all", "--internal", "--simple"])
 
 # This is an implementation sym that should appear with '--no-inline'.
-sym = '_fmaSelectPrimitiveOrExternCall_chpl'
+sym = 'fmaSelectPrimitiveOrExternCall_chpl'
 
 # This is the x86 hardware instruction.
 ins = 'vfmadd213sd'
@@ -36,18 +36,33 @@ llvm_bin = str(llvm_bin_bytes, encoding='utf-8', errors='surrogateescape')
 llvm_bin = llvm_bin.strip()
 llvm_objdump = llvm_bin + '/llvm-objdump'
 
-# This is the command to disassemble the the compiled binary.
-dump_args = [llvm_objdump, '-d', '--disassemble-symbols={}'.format(sym),
-             '--x86-asm-syntax=intel',
-             testname]
-cmd = ' '.join(dump_args)
-out = subprocess.check_output(cmd, shell=True).decode()
+def attemptToDisassemble(s, b):
+  dump_args = [llvm_objdump, '-d', '--disassemble-symbols={}'.format(s),
+               '--x86-asm-syntax=intel',
+               '--demangle',
+               b]
+  cmd = ' '.join(dump_args)
+  p = subprocess.run(cmd, shell=True, stdout=subprocess.PIPE,
+                     stderr=subprocess.PIPE)
+  return (p.returncode, p.stdout.decode(), p.stderr.decode())
+
+# Try to disassemble twice, as on some platforms symbol names in the
+# generated binary will have a leading underscore.
+(code, out, err) = attemptToDisassemble(sym, testname)
+if code != 0 or 'failed to disassemble' in err:
+  (code, out, err) = attemptToDisassemble(('_' + sym), testname)
 
 # Write the instruction on success, or the disassembler output on failure.
 with open(outfile, 'a') as fp:
+  if code != 0:
+    fp.write('Disassembly failed with exit code: {}\n'.format(code))
+  if err:
+    fp.write('There was an error:\n')
+    fp.write(err)
+    fp.write('\n')
   if ins in out:
-    fp.write('Found {}'.format(ins))
-  else:
+    fp.write('Found {} {}\n'.format(out.count(ins), ins))
+  elif out:
     fp.write('Did not find {}'.format(ins))
-    fp.write('Dump of {}:'.format(sym))
     fp.write(out)
+    fp.write('\n')
