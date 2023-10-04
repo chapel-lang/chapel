@@ -76,56 +76,16 @@ then
   fi
 fi
 
-NORMALIZED=""
-mynormalizepath () {
-  # Normalize PREFIX e.g.
-  P="$1"
-  case "$P" in
-    *~*)
-      # Replace ~ with home directory
-      P="${P/#\~/$HOME}"
-      ;;
-    *)
-      ;;
-  esac
-
-  if [ ! -d $P ]
-  then
-    echo "Prefix directory does not exist, creating directory."
-    mkdir -p $P
-  fi
-
-  # Normalize $P more - normalize path
-  P=`(unset CDPATH && cd "$P" && pwd)`
-
-  # Make sure we can cd into $P
-  if [ $? -ne 0 ]
-  then
-    echo "Error: Could not cd into prefix directory '$P'"
-    echo "       ... perhaps it does not exist?"
-    exit -1
-  fi
-
-  NORMALIZED="$P"
-  return 0
-}
-
 # Save configured installation prefix/dir
 rm -f configured-chpl-home
 rm -f configured-prefix
 CONFIGURED=""
 if [ "$DEST_DIR_SET" -ne 0 ]
 then
-  # Normalize DEST_DIR
-  mynormalizepath "$DEST_DIR"
-  DEST_DIR="$NORMALIZED"
   # Save target installation directory for 'make install' / install.sh
   echo "$DEST_DIR" > configured-chpl-home
   CONFIGURED=configured-chpl-home
 else
-  # Normalize PREFIX
-  mynormalizepath "$PREFIX"
-  PREFIX="$NORMALIZED"
   # Save prefix for building the compiler
   echo "$PREFIX" > configured-prefix
   CONFIGURED=configured-prefix
