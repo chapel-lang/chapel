@@ -1376,7 +1376,7 @@ void loopInvariantCodeMotion(void) {
   //
   // Any manipulations on the AST that removes a symbol within a function may
   // invalidate the 'no alias set' primitives (that this transforms adds to the
-  // top of functions). GpuTransfroms is one such transform that does AST
+  // top of functions). GpuTransforms is one such transform that does AST
   // manipulations, so we run computeNoAliasSets after GPUTransforms.
   computeNoAliasSets();
 }

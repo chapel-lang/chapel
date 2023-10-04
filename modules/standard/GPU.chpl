@@ -65,7 +65,7 @@ module GPU
      size of this buffer.
    */
   proc gpuWrite(const args ...?k) {
-    // Right now this function will only work if passed argumets are of type
+    // Right now this function will only work if passed arguments are of type
     // c_ptrConst(c_char).
     // I would prefer to do some string processing within the
     // function so I could pass in arguments other than C types.

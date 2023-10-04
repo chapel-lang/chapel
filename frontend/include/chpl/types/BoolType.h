@@ -58,7 +58,7 @@ class BoolType final : public PrimitiveType {
   static const BoolType* get(Context* context);
 
   int bitwidth() const override {
-    return 8; // Chapel doesn't guarantee this bidwth, so this seems fragile...
+    return 8; // Chapel doesn't guarantee this bitwidth, so this seems fragile...
   }
 
   bool isDefaultWidth() const override {

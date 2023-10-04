@@ -227,7 +227,7 @@ void chpl_rt_init(int argc, char* argv[]) {
 
 
   //
-  // Intialization of the topo, comm, mem, and task layers is tricky because
+  // Initialization of the topo, comm, mem, and task layers is tricky because
   // they have inter-twined dependencies and there isn't a linear ordering
   // in which they can be completely initialized.
   // Here is a general summary of what these functions do, in order:

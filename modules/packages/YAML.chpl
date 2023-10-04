@@ -2052,7 +2052,7 @@ module YAML {
       var count = 0;
       // use to keep track of the current position in a class hierarchy
       //  when child classes are being (de)serialized, the parent classes
-      //  deserializing intializer is also called; however, only one new
+      //  deserializing initializer is also called; however, only one new
       //  mapping should be opened for each class. This counter is used
       //  to prevent multiple mappings from being opened.
       var classDepth = 0;

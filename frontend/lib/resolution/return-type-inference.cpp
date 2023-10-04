@@ -198,7 +198,7 @@ const CompositeType* helpGetTypeForDecl(Context* context,
   return ret;
 }
 
-// TOOD:
+// TODO:
 // This code will be duplicating a lot of stuff in VarScopeVisitor, but it's
 // different enough that I don't know how to proceed. I'm certain that there's
 // a general way to make all these traversals work.
@@ -210,7 +210,7 @@ struct ReturnInferenceSubFrame {
   // The frame associated with the given AST node.
   owned<ReturnInferenceFrame> frame = nullptr;
   // Whether this sub-frame should be skipped when combining sub-results.
-  // Occurrs in particular when a branch is known statically not to occur.
+  // Occurs in particular when a branch is known statically not to occur.
   bool skip = false;
 
   ReturnInferenceSubFrame(const AstNode* node) : astNode(node) {}
@@ -580,7 +580,7 @@ bool ReturnTypeInferrer::enter(const Return* ret, RV& rv) {
   }
 
   if (functionKind == Function::ITER) {
-    // Plain returns don't count towards type infernence for iterators.
+    // Plain returns don't count towards type inference for iterators.
     return false;
   }
 

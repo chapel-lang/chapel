@@ -436,7 +436,7 @@ Examining Generated Assembly
 While analyzing performance, users might also wish to look at the assembly
 ``chpl`` generates for GPU kernels. To do this pass ``chpl`` ``--savec
 <dirName>`` (replacing ``<dirname>`` with a directory name to contain the
-generate assemly). The Chapel compiler will emit a file ``chpl__gpu.s``, which
+generate assembly). The Chapel compiler will emit a file ``chpl__gpu.s``, which
 contains AMD GCN or NVIDIA PTX instructions as appropriate.
 
 In the generated assembly, kernels are named

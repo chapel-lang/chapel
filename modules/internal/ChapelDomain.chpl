@@ -380,7 +380,7 @@ module ChapelDomain {
 
   //
   // Disallow additions and subtractions to rectangular domains of these types
-  // with a specific message, to avoid surpises.
+  // with a specific message, to avoid surprises.
   // Note: add/sub of a rectangular domain and another type will either
   // produce a generic error message or compile as a promoted expression.
   //

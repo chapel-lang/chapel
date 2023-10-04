@@ -56,7 +56,7 @@ module StringCasts {
     return false;
   }
 
-  // homogenous tuples of primitive type
+  // homogeneous tuples of primitive type
   operator :(x: ?k*?t, type s:string) where isPrimitiveType(t) && isHomogeneousTupleType(x.type) {
     var ret = "(";
     for param i in 0..#k {

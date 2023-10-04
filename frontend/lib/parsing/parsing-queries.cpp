@@ -1627,7 +1627,7 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  // skip checks if we have a harcoded deprecation for this symbol
+  // skip checks if we have a hardcoded deprecation for this symbol
   if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
     auto attr = parsing::idToAttributeGroup(context, idTarget);
 

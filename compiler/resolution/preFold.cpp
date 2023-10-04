@@ -1025,7 +1025,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
         // implicit interface using user-provided witnesses: bad.
         val = 2;
       } else if (cs.istm->iConstraint->shouldBeGeneratedOnly) {
-        // impliit interface using compiler-provided witnesses; fine.
+        // implicit interface using compiler-provided witnesses; fine.
         val = 1;
       } else {
         // explicit interface.
