@@ -398,7 +398,7 @@ static QualifiedType primToNilableClass(Context* context,
   }
 
   if (newType) {
-    return QualifiedType(QualifiedType::CONST_IN, newType);
+    return QualifiedType(actualType.kind(), newType);
   }
   return actualType;
 }
