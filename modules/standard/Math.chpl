@@ -157,8 +157,8 @@ Bessel Functions
 
 .. _automath-constant-and-function-definitions:
 
-Constant and Function Definitions for AutoMath
-----------------------------------------------
+Automatically Included Constant and Function Definitions
+--------------------------------------------------------
 
 .. module:: AutoMath
   :noindex:
