@@ -1,9 +1,11 @@
 set(LLVM_LINK_COMPONENTS
   BinaryFormat
   MC
+  Object
   Option
   ProfileData
   Support
+  TargetParser
   WindowsDriver
   )
 
@@ -20,6 +22,7 @@ add_clang_library(clangDriver
   DriverOptions.cpp
   Job.cpp
   Multilib.cpp
+  OffloadBundler.cpp
   OptionUtils.cpp
   Phases.cpp
   SanitizerArgs.cpp
@@ -28,6 +31,7 @@ add_clang_library(clangDriver
   ToolChains/Arch/AArch64.cpp
   ToolChains/Arch/ARM.cpp
   ToolChains/Arch/CSKY.cpp
+  ToolChains/Arch/LoongArch.cpp
   ToolChains/Arch/M68k.cpp
   ToolChains/Arch/Mips.cpp
   ToolChains/Arch/PPC.cpp
@@ -89,6 +93,7 @@ add_clang_library(clangDriver
 
   DEPENDS
   ClangDriverOptions
+  RISCVTargetParserTableGen
 
   LINK_LIBS
   clangBasic

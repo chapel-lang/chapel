@@ -12,6 +12,7 @@
 #===------------------------------------------------------------------------===#
 
 System=`uname -s`
+Machine=`uname -m`
 if [ "$System" = "FreeBSD" ]; then
     MAKE=gmake
 else
@@ -45,6 +46,15 @@ BuildDir="`pwd`"
 ExtraConfigureFlags=""
 ExportBranch=""
 git_ref=""
+
+do_bolt="no"
+if [ "$System" = "Linux" ]; then
+    case $Machine in
+        x86_64 | arm64 | aarch64 )
+            do_bolt="yes"
+            ;;
+    esac
+fi
 
 function usage() {
     echo "usage: `basename $0` -release X.Y.Z -rc NUM [OPTIONS]"
@@ -163,6 +173,12 @@ while [ $# -gt 0 ]; do
         -no-openmp )
             do_openmp="no"
             ;;
+        -bolt )
+            do_bolt="yes"
+            ;;
+        -no-bolt )
+            do_bolt="no"
+            ;;
         -no-lld )
             do_lld="no"
             ;;
@@ -264,6 +280,9 @@ if [ $do_libs = "yes" ]; then
 fi
 if [ $do_openmp = "yes" ]; then
   projects="$projects openmp"
+fi
+if [ $do_bolt = "yes" ]; then
+  projects="$projects bolt"
 fi
 if [ $do_lld = "yes" ]; then
   projects="$projects lld"
@@ -385,8 +404,17 @@ function configure_llvmCore() {
             ;;
     esac
 
-    project_list=${projects// /;}
-    runtime_list=${runtimes// /;}
+    if [ "$Phase" -eq "3" ]; then
+      project_list=${projects// /;}
+      # Leading spaces will result in ";<runtime name>". This causes a CMake
+      # error because the empty string before the first ';' is treated as an
+      # unknown runtime name.
+      runtimes=$(echo $runtimes | sed -e 's/^\s*//')
+      runtime_list=${runtimes// /;}
+    else
+      project_list="clang"
+      runtime_list=""
+    fi
     echo "# Using C compiler: $c_compiler"
     echo "# Using C++ compiler: $cxx_compiler"
 
@@ -398,7 +426,7 @@ function configure_llvmCore() {
         -DCMAKE_BUILD_TYPE=$BuildType -DLLVM_ENABLE_ASSERTIONS=$Assertions \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DLLVM_ENABLE_PROJECTS="$project_list" \
-        -DLLVM_LIT_ARGS="-j $NumJobs" \
+        -DLLVM_LIT_ARGS="-j $NumJobs $LitVerbose" \
         -DLLVM_ENABLE_RUNTIMES="$runtime_list" \
         $ExtraConfigureFlags $BuildDir/llvm-project/llvm \
         2>&1 | tee $LogDir/llvm.configure-Phase$Phase-$Flavor.log
@@ -407,7 +435,7 @@ function configure_llvmCore() {
         -DCMAKE_BUILD_TYPE=$BuildType -DLLVM_ENABLE_ASSERTIONS=$Assertions \
         -DCMAKE_POSITION_INDEPENDENT_CODE=ON \
         -DLLVM_ENABLE_PROJECTS="$project_list" \
-        -DLLVM_LIT_ARGS="-j $NumJobs" \
+        -DLLVM_LIT_ARGS="-j $NumJobs $LitVerbose" \
         -DLLVM_ENABLE_RUNTIMES="$runtime_list" \
         $ExtraConfigureFlags $BuildDir/llvm-project/llvm \
         2>&1 | tee $LogDir/llvm.configure-Phase$Phase-$Flavor.log
@@ -425,6 +453,7 @@ function build_llvmCore() {
     if [ ${MAKE} = 'ninja' ]; then
       Verbose="-v"
     fi
+    LitVerbose="-v"
 
     redir="/dev/stdout"
     if [ $do_silent_log == "yes" ]; then
@@ -458,7 +487,7 @@ function test_llvmCore() {
     fi
 
     cd $ObjDir
-    if ! ( ${MAKE} -j $NumJobs $KeepGoing check-all \
+    if ! ( ${MAKE} -j $NumJobs $KeepGoing $Verbose check-all \
         2>&1 | tee $LogDir/llvm.check-Phase$Phase-$Flavor.log ) ; then
       deferred_error $Phase $Flavor "check-all failed"
     fi
@@ -469,7 +498,7 @@ function test_llvmCore() {
           cmake $TestSuiteSrcDir -G "$generator" -DTEST_SUITE_LIT=$Lit \
                 -DTEST_SUITE_HOST_CC=$build_compiler
 
-      if ! ( ${MAKE} -j $NumJobs $KeepGoing check \
+      if ! ( ${MAKE} -j $NumJobs $KeepGoing $Verbose check \
           2>&1 | tee $LogDir/llvm.check-Phase$Phase-$Flavor.log ) ; then
         deferred_error $Phase $Flavor "test suite failed"
       fi
@@ -505,7 +534,7 @@ function package_release() {
     if [ "$use_gzip" = "yes" ]; then
       tar cf - $Package | gzip -9c > $BuildDir/$Package.tar.gz
     else
-      tar cf - $Package | xz -9ce > $BuildDir/$Package.tar.xz
+      tar cf - $Package | xz -9ce -T $NumJobs > $BuildDir/$Package.tar.xz
     fi
     mv $Package llvmCore-$Release-$RC.install/usr/local
     cd $cwd
