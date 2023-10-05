@@ -155,10 +155,10 @@ Bessel Functions
 :proc:`~Math.y1`
 :proc:`~Math.yn`
 
-.. _math-other:
+.. _math-optimization:
 
-Remaining Functions
-^^^^^^^^^^^^^^^^^^^
+Optimization Functions
+^^^^^^^^^^^^^^^^^^^^^^
 :proc:`~Math.fma`
 
 .. _automath-constant-and-function-definitions:
