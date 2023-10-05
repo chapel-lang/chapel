@@ -251,6 +251,16 @@ void BuilderResult::serialize(std::ostream& os) const {
 //     <first column, int>
 //     <last line, int>
 //     <last column, int>
+// Additional location maps are serialized in the same format. There are Z
+// location maps, one for each mapping described in "all-location-maps.h".
+// For each additional location map of size MZ, the layout is as follows:
+// MZ: <number of id-to-location entries for map Z, uint64_t>
+//   0..MZ-1:
+//     <id as key, ID>
+//     <first line, int>
+//     <first column, int>
+//     <last line, int>
+//     <last column, int>
 // <comment-id-to-location, std::vector<Location>>
 // <end sentinel string, std::string>
 void BuilderResult::serialize(Serializer& ser) const {
@@ -279,6 +289,20 @@ void BuilderResult::serialize(Serializer& ser) const {
       ser.write(pair.second.lastColumn());
     }
   }
+
+  #define LOCATION_MAP(ast__, location__) { \
+      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+      ser.write((uint64_t)m.size()); \
+      for (const auto& pair : m) { \
+        ser.write(pair.first); \
+        ser.write(pair.second.firstLine()); \
+        ser.write(pair.second.firstColumn()); \
+        ser.write(pair.second.lastLine()); \
+        ser.write(pair.second.lastColumn()); \
+      } \
+    }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   ser.write(commentIdToLocation_);
   ser.write(DYNO_BUILDER_RESULT_END_STR);
@@ -327,6 +351,23 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
     idToLocation.insert({curid, Location(pathstr, fl, fc, ll, lc)});
   }
 
+  #define LOCATION_MAP(ast__, location__) { \
+    auto maplen = des.read<uint64_t>(); \
+    llvm::DenseMap<ID,Location> mx(maplen); \
+    for (uint64_t i = 0; i < maplen; i++) { \
+      auto curid = des.read<ID>(); \
+      int fl = des.read<int>(); \
+      int fc = des.read<int>(); \
+      int ll = des.read<int>(); \
+      int lc = des.read<int>(); \
+      mx.insert({curid, Location(pathstr, fl, fc, ll, lc)}); \
+    } \
+    auto& m = ret.CHPL_ID_LOC_MAP(ast__, location__); \
+    std::swap(mx, m); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
   auto commentLocation = des.read<std::vector<Location>>();
 
   CHPL_ASSERT(DYNO_BUILDER_RESULT_END_STR == des.read<std::string>());
@@ -338,7 +379,9 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
     assignIDsFromTree(idToAst, ptr);
   }
 
-  // swap everything into the result
+  // Swap everything into the result, except for the additional location
+  // maps, which are swapped above to avoid having to write another
+  // macro expansion.
   std::swap(ret.filePath_, path);
   std::swap(ret.topLevelExpressions_, alist);
   std::swap(ret.idToAst_, idToAst);

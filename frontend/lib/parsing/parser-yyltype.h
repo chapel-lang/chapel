@@ -22,6 +22,7 @@
 #define CHPL_FRONTEND_LIB_PARSING_PARSER_YYLTYPE_H
 
 #include "chpl/framework/Location.h"
+#include <type_traits>
 
 /** This trivial struct is used as our standin for Bison's YYLTYPE. It is
     defined exactly the same as YYLTYPE as given by the GNU documentation.
@@ -53,6 +54,10 @@ struct TextLocation {
   }
 };
 
+// Ensure this type is trivial so Bison can function properly.
+static_assert(std::is_trivial<TextLocation>::value,
+              "Location type must be trivially copyable");
+
 // Define 'TextLocation' as the Bison location type.
 #define YYCHPL_LTYPE TextLocation
 
@@ -60,5 +65,8 @@ struct TextLocation {
 #ifndef YYLTYPE
   #define YYLTYPE YYCHPL_LTYPE 
 #endif
+
+#define YYCHPL_LTYPE_IS_TRIVIAL 1
+#define YYLTYPE_IS_TRIVIAL      1
 
 #endif

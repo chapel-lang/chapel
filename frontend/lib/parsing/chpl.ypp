@@ -288,6 +288,7 @@
   // This is normally communicated by the '%union' directive, but we
   // stopped using that.
   #define YYCHPL_STYPE_IS_TRIVIAL 1
+  #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
 }
