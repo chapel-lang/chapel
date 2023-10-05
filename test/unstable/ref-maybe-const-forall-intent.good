@@ -11,4 +11,5 @@ ref-maybe-const-forall-intent.chpl:99: warning: inferring a 'ref' intent on an a
 ref-maybe-const-forall-intent.chpl:2: warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for 'myArray1'
 ref-maybe-const-forall-intent.chpl:31: warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for 'B'
 ref-maybe-const-forall-intent.chpl:50: warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for 'myArrayD'
+ref-maybe-const-forall-intent.chpl:117: warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for 'Counts'
 0,0,0,0,0,0,0,0,0,0,

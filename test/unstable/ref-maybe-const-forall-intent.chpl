@@ -109,3 +109,12 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
   var r = new R();
   r.foo();
 }
+
+{
+  proc f(ref x: int) do x = 3;
+  const Keys = 1..3;
+  var Counts: [Keys] int;
+  forall key in Keys { // should warn
+    f(Counts[key]);
+  }
+}
