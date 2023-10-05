@@ -341,7 +341,6 @@ static void test8(Parser* parser) {
   auto noDoc = attr->getAttributeNamed(UniqueString::get(parser->context(),
                                                          "chpldoc.nodoc"));
   assert(noDoc);
-  // assert(attr->hasPragma(PRAGMA_NO_DOC));
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);
@@ -374,7 +373,6 @@ static void test9(Parser* parser) {
   auto attr = fwd->attributeGroup();
   assert(attr);
   assert(attr->isDeprecated());
-  assert(!attr->hasPragma(PRAGMA_NO_DOC));
   const Variable* var = fwd->expr()->toVariable();
   assert(var);
   assert(var->visibility() == Decl::DEFAULT_VISIBILITY);

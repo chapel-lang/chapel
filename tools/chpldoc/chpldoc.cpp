@@ -325,7 +325,7 @@ static bool isNoDoc(const Decl* e) {
   if (attrs) {
     auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
                                                            "chpldoc.nodoc"));
-    if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
+    if (attr) {
       return true;
     }
   }
