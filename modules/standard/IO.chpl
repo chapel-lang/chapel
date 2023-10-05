@@ -2642,7 +2642,7 @@ record defaultSerializer {
   @chpldoc.nodoc
   proc ref _serializeClassOrPtr(writer:fileWriter, x: ?t) : void throws {
     if x == nil {
-      writer._writeLiteral("nil");
+      writer.writeLiteral("nil");
     } else if isClassType(t) {
       x!.serialize(writer=writer, serializer=this);
     } else {
@@ -2686,7 +2686,7 @@ record defaultSerializer {
        t == string || t == bytes {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
-      writer._writeLiteral("nil");
+      writer.writeLiteral("nil");
     } else if isClassType(t) || chpl_isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
@@ -2707,7 +2707,7 @@ record defaultSerializer {
     :returns: A new :type:`AggregateSerializer`
   */
   proc startClass(writer: fileWriter, name: string, size: int) throws {
-    writer._writeLiteral("{");
+    writer.writeLiteral("{");
     return new AggregateSerializer(writer, _ending="}");
   }
 
@@ -2721,7 +2721,7 @@ record defaultSerializer {
     :returns: A new AggregateSerializer
   */
   proc startRecord(writer: fileWriter, name: string, size: int) throws {
-    writer._writeLiteral("(");
+    writer.writeLiteral("(");
     return new AggregateSerializer(writer, _ending=")");
   }
 
@@ -2761,11 +2761,11 @@ record defaultSerializer {
       name if this is not the first field.
     */
     proc ref writeField(name: string, const field: ?) throws {
-      if !_first then writer._writeLiteral(", ");
+      if !_first then writer.writeLiteral(", ");
       else _first = false;
 
-      writer._writeLiteral(name);
-      writer._writeLiteral(" = ");
+      writer.writeLiteral(name);
+      writer.writeLiteral(" = ");
       writer.write(field);
     }
 
@@ -2813,7 +2813,7 @@ record defaultSerializer {
     */
     proc endClass() throws {
       if !_parent then
-        writer._writeLiteral(_ending);
+        writer.writeLiteral(_ending);
       else if _firstPtr != nil then
         _firstPtr.deref() = _first;
     }
@@ -2825,7 +2825,7 @@ record defaultSerializer {
                 invoking 'endRecord'.
     */
     proc endRecord() throws {
-      writer._writeLiteral(_ending);
+      writer.writeLiteral(_ending);
     }
   }
 
@@ -2838,7 +2838,7 @@ record defaultSerializer {
     :returns: A new TupleSerializer
   */
   proc startTuple(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("(");
+    writer.writeLiteral("(");
     return new TupleSerializer(writer, size);
   }
 
@@ -2872,7 +2872,7 @@ record defaultSerializer {
       first element in the tuple.
     */
     proc ref writeElement(const element: ?) throws {
-      if !_first then writer._writeLiteral(", ");
+      if !_first then writer.writeLiteral(", ");
       else _first = false;
 
       writer.write(element);
@@ -2886,9 +2886,9 @@ record defaultSerializer {
     */
     proc endTuple() throws {
       if size == 1 then
-        writer._writeLiteral(",)");
+        writer.writeLiteral(",)");
       else
-        writer._writeLiteral(")");
+        writer.writeLiteral(")");
     }
   }
 
@@ -2901,7 +2901,7 @@ record defaultSerializer {
     :returns: A new ListSerializer
   */
   proc startList(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("[");
+    writer.writeLiteral("[");
     return new ListSerializer(writer);
   }
 
@@ -2931,7 +2931,7 @@ record defaultSerializer {
       first element in the list.
     */
     proc ref writeElement(const element: ?) throws {
-      if !_first then writer._writeLiteral(", ");
+      if !_first then writer.writeLiteral(", ");
       else _first = false;
 
       writer.write(element);
@@ -2941,7 +2941,7 @@ record defaultSerializer {
       Ends serialization of the current list by writing the character ``]``.
     */
     proc endList() throws {
-      writer._writeLiteral("]");
+      writer.writeLiteral("]");
     }
   }
 
@@ -3034,7 +3034,7 @@ record defaultSerializer {
       Adds a space if this is not the first element in the row.
     */
     proc ref writeElement(const element: ?) throws {
-      if !_first then writer._writeLiteral(" ");
+      if !_first then writer.writeLiteral(" ");
       else _first = false;
 
       writer.write(element);
@@ -3055,7 +3055,7 @@ record defaultSerializer {
     :returns: A new MapSerializer
   */
   proc startMap(writer: fileWriter, size: int) throws {
-    writer._writeLiteral("{");
+    writer.writeLiteral("{");
     return new MapSerializer(writer);
   }
 
@@ -3085,7 +3085,7 @@ record defaultSerializer {
       Adds a leading comma if this is not the first pair in the map.
     */
     proc ref writeKey(const key: ?) throws {
-      if !_first then writer._writeLiteral(", ");
+      if !_first then writer.writeLiteral(", ");
       else _first = false;
 
       writer.write(key);
@@ -3095,7 +3095,7 @@ record defaultSerializer {
       Serialize ``val``, preceded by the character ``:``.
     */
     proc writeValue(const val: ?) throws {
-      writer._writeLiteral(": ");
+      writer.writeLiteral(": ");
       writer.write(val);
     }
 
@@ -3103,7 +3103,7 @@ record defaultSerializer {
       Ends serialization of the current map by writing the character ``}``
     */
     proc endMap() throws {
-      writer._writeLiteral("}");
+      writer.writeLiteral("}");
     }
   }
 }
@@ -3363,7 +3363,7 @@ record defaultDeserializer {
     :returns: A new :type:`ListDeserializer`
   */
   proc ref startList(reader: fileReader) throws {
-    reader._readLiteral("[");
+    reader.readLiteral("[");
     return new ListDeserializer(reader);
   }
 
@@ -3383,7 +3383,7 @@ record defaultDeserializer {
       :returns: A deserialized value of type ``eltType``.
     */
     proc ref readElement(type eltType) : eltType throws {
-      if !_first then reader._readLiteral(",");
+      if !_first then reader.readLiteral(",");
       else _first = false;
 
       return reader.read(eltType);
@@ -3393,7 +3393,7 @@ record defaultDeserializer {
       Deserialize ``element`` in-place as an element of the list.
     */
     proc ref readElement(ref element) throws {
-      if !_first then reader._readLiteral(",");
+      if !_first then reader.readLiteral(",");
       else _first = false;
 
       reader.read(element);
@@ -3403,7 +3403,7 @@ record defaultDeserializer {
       End deserialization of the current list by reading the character ``]``.
     */
     proc endList() throws {
-      reader._readLiteral("]");
+      reader.readLiteral("]");
     }
 
     /*
@@ -3473,7 +3473,7 @@ record defaultDeserializer {
       :returns: A deserialized value of type ``eltType``.
     */
     proc ref readElement(type eltType) : eltType throws {
-      if !_first then reader._readLiteral(" ");
+      if !_first then reader.readLiteral(" ");
       else _first = false;
 
       return reader.read(eltType);
@@ -3483,7 +3483,7 @@ record defaultDeserializer {
       Deserialize ``element`` in-place as an element of the array.
     */
     proc ref readElement(ref element) throws {
-      if !_first then reader._readLiteral(" ");
+      if !_first then reader.readLiteral(" ");
       else _first = false;
 
       reader.read(element);
@@ -3504,7 +3504,7 @@ record defaultDeserializer {
     :returns: A new :type:`MapDeserializer`
   */
   proc startMap(reader: fileReader) throws {
-    reader._readLiteral("{");
+    reader.readLiteral("{");
     return new MapDeserializer(reader);
   }
 
@@ -3524,7 +3524,7 @@ record defaultDeserializer {
       Deserialize and return a key of type ``keyType``.
     */
     proc ref readKey(type keyType) : keyType throws {
-      if !_first then reader._readLiteral(", ");
+      if !_first then reader.readLiteral(", ");
       else _first = false;
 
       return reader.read(keyType);
@@ -3534,7 +3534,7 @@ record defaultDeserializer {
       Deserialize ``key`` in-place as a key of the map.
     */
     proc ref readKey(ref key) throws {
-      if !_first then reader._readLiteral(", ");
+      if !_first then reader.readLiteral(", ");
       else _first = false;
 
       reader.read(key);
@@ -3544,7 +3544,7 @@ record defaultDeserializer {
       Deserialize and return a value of type ``valType``.
     */
     proc readValue(type valType) : valType throws {
-      reader._readLiteral(": ");
+      reader.readLiteral(": ");
 
       return reader.read(valType);
     }
@@ -3553,7 +3553,7 @@ record defaultDeserializer {
       Deserialize ``value`` in-place as a value of the map.
     */
     proc readValue(ref value) throws {
-      reader._readLiteral(": ");
+      reader.readLiteral(": ");
 
       reader.read(value);
     }
@@ -3562,7 +3562,7 @@ record defaultDeserializer {
       End deserialization of the current map by reading the character ``}``.
     */
     proc endMap() throws {
-      reader._readLiteral("}");
+      reader.readLiteral("}");
     }
 
     /*
@@ -6994,15 +6994,6 @@ inline proc fileReader._readLiteralCommon(x:?t, ignore:bool,
   }
 }
 
-// non-unstable version we can use internally
-@chpldoc.nodoc
-inline
-proc fileReader._readLiteral(literal:string,
-                             ignoreWhitespace=true) : void throws {
-  var iolit = new chpl_ioLiteral(literal, ignoreWhitespace);
-  this.readIt(iolit);
-}
-
 /*
   Advances the offset of a ``fileReader`` within the file by reading the exact
   text of the given string ``literal`` from the fileReader.
@@ -7205,13 +7196,6 @@ proc fileWriter._writeLiteralCommon(x:?t) : void throws {
                                           x.numBytes:c_ssize_t);
     try _checkLiteralError(x, err, "writing", isLiteral=true);
   }
-}
-
-@chpldoc.nodoc
-inline
-proc fileWriter._writeLiteral(literal:string) : void throws {
-  var iolit = new chpl_ioLiteral(literal);
-  this.writeIt(iolit);
 }
 
 /*
