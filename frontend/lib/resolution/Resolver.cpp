@@ -2405,8 +2405,9 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec =
-      lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
+  auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
+                                           ident->name(), config,
+                                           ident->id());
 
   bool notFound = vec.empty();
   bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);

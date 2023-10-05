@@ -1,2 +1,11 @@
+shadowsOuter.chpl:12: In function 'main':
+shadowsOuter.chpl:15: warning: potentially surprising shadowing for 'paul'
+shadowsOuter.chpl:13: note: it refers to a symbol found through the 'use' of 'beatles' here
+shadowsOuter.chpl:5: note: leading to 'paul' defined here
+shadowsOuter.chpl:7: note: but, there is a shadowed symbol 'paul' defined here
+shadowsOuter.chpl:16: warning: potentially surprising shadowing for 'george'
+shadowsOuter.chpl:13: note: it refers to a symbol found through the 'use' of 'beatles' here
+shadowsOuter.chpl:5: note: leading to 'george' defined here
+shadowsOuter.chpl:8: note: but, there is a shadowed symbol 'george' defined here
 paul
 george

@@ -5,7 +5,7 @@
     6 |   var a: real;
       |       ⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  Redefined through the 'use' statement here:
+  Redefined through the 'use' of 'Lib1' here:
       |
     5 |   public use Lib1;
       |              ⎺⎺⎺⎺

@@ -11,26 +11,30 @@
       |       ⎺⎺⎺⎺⎺⎺⎺⎺
       |
 
-─── warning in use-shadows-formal2.chpl:15 [HiddenFormal] ───
-  Module-level symbol is hiding function argument 'a'
-  The formal argument:
+─── warning in use-shadows-formal2.chpl:16 [PotentiallySurprisingShadowing] ───
+  Potentially surprising shadowing for 'a'
        |
-    14 |   proc foo(a: real) {
-       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+    16 |     writeln(a);
+       |             ⎺
        |
-  is shadowed by a symbol provided by the following 'use' statement:
+  It refers to a symbol found through the 'use' of 'M1' here:
        |
     15 |     use M1;
        |         ⎺⎺
        |
-  And then through the 'use' statement here:
+  And then through the 'use' of 'M0' here:
       |
     7 |   public use M0 only b as a;
       |              ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  Found 'b' defined here:
+  Leading to 'b' defined here:
       |
     2 |   var b: int;
       |       ⎺⎺⎺⎺⎺⎺⎺
       |
+  But, there is a shadowed symbol 'a' defined here:
+       |
+    14 |   proc foo(a: real) {
+       |            ⎺⎺⎺⎺⎺⎺⎺⎺
+       |
 

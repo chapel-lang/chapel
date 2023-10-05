@@ -909,8 +909,8 @@ const Module* getIncludedSubmodule(Context* context,
   return getIncludedSubmoduleQuery(context, includeModuleId);
 }
 
-static const AstNode* const& astForIDQuery(Context* context, ID id) {
-  QUERY_BEGIN(astForIDQuery, context, id);
+static const AstNode* const& astForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIdQuery, context, id);
 
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
@@ -927,7 +927,7 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
-  return astForIDQuery(context, id);
+  return astForIdQuery(context, id);
 }
 
 // TODO: could many of these get-property-of-ID queries
@@ -939,7 +939,7 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   if (!id.isFabricatedId()) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
     } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
@@ -963,7 +963,7 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isParenless();
@@ -1026,7 +1026,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isMethod();
@@ -1045,7 +1045,7 @@ static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
   UniqueString result;
-  if (auto ast = astForIDQuery(context, id)) {
+  if (auto ast = astForIdQuery(context, id)) {
     if (auto var = ast->toVariable()) {
       if (var->isField()) {
         result = var->name();
@@ -1663,7 +1663,7 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
   Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
   QUERY_BEGIN(getModuleKindQuery, context, moduleId);
-  const AstNode* ast = astForIDQuery(context, moduleId);
+  const AstNode* ast = astForIdQuery(context, moduleId);
   CHPL_ASSERT(ast && "could not find AST for module ID");
   if (auto mod = ast->toModule()) {
     ret = mod->kind();

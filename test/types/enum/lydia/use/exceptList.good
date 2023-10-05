@@ -1,2 +1,7 @@
+exceptList.chpl:11: In function 'main':
+exceptList.chpl:14: warning: potentially surprising shadowing for 'paul'
+exceptList.chpl:12: note: it refers to a symbol found through the 'use' of 'beatles' here
+exceptList.chpl:4: note: leading to 'paul' defined here
+exceptList.chpl:6: note: but, there is a shadowed symbol 'paul' defined here
 paul
 clooney

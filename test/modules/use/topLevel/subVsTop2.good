@@ -1,1 +1,7 @@
+subVsTop2.chpl:1: In module 'OuterModule':
+subVsTop2.chpl:15: warning: potentially surprising shadowing for 'N'
+subVsTop2.chpl:14: note: it refers to a symbol found through the 'use' of 'M' here
+subVsTop2.chpl:3: note: leading to 'N' defined here
+subVsTop2.chpl:13: note: but, there is a shadowed symbol found through the 'use' of 'N' here
+subVsTop2.chpl:8: note: leading to 'N' defined here
 100

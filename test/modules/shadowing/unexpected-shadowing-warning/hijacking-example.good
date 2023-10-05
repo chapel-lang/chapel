@@ -1,0 +1,7 @@
+hijacking-example.chpl:19: In function 'main':
+hijacking-example.chpl:21: warning: potentially surprising shadowing for 'N'
+hijacking-example.chpl:20: note: it refers to a symbol found through the 'use' of 'M' here
+hijacking-example.chpl:5: note: leading to 'N' defined here
+hijacking-example.chpl:12: note: but, there is a shadowed symbol 'N' defined here
+Hijacked!
+Computing bar()

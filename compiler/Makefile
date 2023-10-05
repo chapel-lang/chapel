@@ -167,10 +167,11 @@ frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making and running the frontend tests..."
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
-	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
-	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 	@echo "Making symbolic link to frontend tests in build/frontend-test"
 	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
+	JOBSFLAG=`echo "$$MAKEFLAGS" | sed -n 's/.*\(-j\|--jobs=\) *\([0-9][0-9]*\).*/-j\2/p'` ; \
+	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
+	@echo "frontend tests are available in build/frontend-test"
 
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
 

@@ -1,1 +1,7 @@
+prefer-explicit-use.chpl:13: In method 'foo':
+prefer-explicit-use.chpl:14: warning: potentially surprising shadowing for 'defaultLowBound'
+prefer-explicit-use.chpl:8: note: it refers to a symbol found through the 'use' of 'UseInsteadOfAuto' here
+prefer-explicit-use.chpl:6: note: leading to 'defaultLowBound' defined here
+prefer-explicit-use.chpl:14: note: but, there is a shadowed symbol found in the automatically-included modules
+$CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: note: leading to 'defaultLowBound' defined here
 string

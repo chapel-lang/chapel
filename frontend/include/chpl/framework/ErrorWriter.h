@@ -215,11 +215,11 @@ class ErrorWriterBase {
     BRIEF,
   };
  protected:
-  Context* context;
+  Context* context_; // note: this can sometimes be null
   OutputFormat outputFormat_;
 
   ErrorWriterBase(Context* context, OutputFormat outputFormat)
-    : context(context), outputFormat_(outputFormat) {}
+    : context_(context), outputFormat_(outputFormat) {}
 
   /**
     Makes tweaks to an error string depending on output format.
@@ -235,7 +235,7 @@ class ErrorWriterBase {
   void writeHeading(ErrorBase::Kind kind, ErrorType type, const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeHeading(ErrorBase::Kind kind, ErrorType type, errordetail::LocationOnly<T> t, const std::string& message) {
-    writeHeading(kind, type, errordetail::locate(context, t.t), message);
+    writeHeading(kind, type, errordetail::locate(context_, t.t), message);
   }
 
   /**
@@ -255,7 +255,7 @@ class ErrorWriterBase {
   void writeNote(const uast::AstNode* ast, const std::string& message);
   template <typename T>
   void writeNote(errordetail::LocationOnly<T> t, const std::string& message) {
-    writeNote(errordetail::locate(context, t.t), message);
+    writeNote(errordetail::locate(context_, t.t), message);
   }
 
   /**
@@ -271,7 +271,7 @@ class ErrorWriterBase {
     std::ostringstream oss;
     auto write = [&](auto t) {
       errordetail::Writer<decltype(t)> writer;
-      writer(context, oss, t);
+      writer(context_, oss, t);
     };
 
     auto dummy = { (write(ts), 0)..., };
@@ -355,9 +355,9 @@ class ErrorWriterBase {
             const std::vector<LocHighlight>& toHighlight = {}) {
     std::vector<Location> ids(toHighlight.size());
     std::transform(toHighlight.cbegin(), toHighlight.cend(), ids.begin(), [&](auto node) {
-      return errordetail::locate(context, node);
+      return errordetail::locate(context_, node);
     });
-    writeCode(errordetail::locate(context, place), ids);
+    writeCode(errordetail::locate(context_, place), ids);
   }
 
   /**

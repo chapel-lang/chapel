@@ -1,0 +1,6 @@
+public-use-vs-outer.chpl:7: In function 'main':
+public-use-vs-outer.chpl:9: warning: potentially surprising shadowing for 'x'
+public-use-vs-outer.chpl:8: note: it refers to a symbol found through the 'use' of 'M' here
+public-use-vs-outer.chpl:2: note: leading to 'x' defined here
+public-use-vs-outer.chpl:6: note: but, there is a shadowed symbol 'x' defined here
+42

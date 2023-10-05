@@ -58,7 +58,7 @@ class CompatibilityWriter : public ErrorWriterBase {
                     IdOrLocation idOrLoc, const std::string& message) override {
     // We may not have a context e.g. if we are just figuring out the error
     // message text. Trust that `computedLoc_` is not important for that.
-    if (context) this->computedLoc_ = errordetail::locate(context, idOrLoc);
+    if (context_) this->computedLoc_ = errordetail::locate(context_, idOrLoc);
     this->idOrLoc_ = std::move(idOrLoc);
     this->message_ = message;
   }
