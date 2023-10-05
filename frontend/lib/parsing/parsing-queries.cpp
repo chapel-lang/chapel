@@ -419,9 +419,7 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  CHPL_ASSERT(ast);
-  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
-  // TODO: This will crash if 'ast' is null, can we fix that?
+  CHPL_ASSERT(ast && !ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
 

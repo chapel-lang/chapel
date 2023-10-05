@@ -27,12 +27,12 @@
 /** This trivial struct is used as our standin for Bison's YYLTYPE. It is
     defined exactly the same as YYLTYPE as given by the GNU documentation.
 
-    It is pulled out into its own file with a header guard so that it can
-    be defined before any of the other contents in `chpl.ypp`. This enables
+    It is defined in its own file with a header guard so that it can
+    be included before any of the other contents in `chpl.ypp`. This enables
     it to be used anywhere in the grammar file. Previously, we had used
     the default YYLTYPE, but due to the order Bison defines its types that
     meant it wasn't usable in the (e.g., `TypeDeclParts`) helper types we
-    use when parsing.
+    use to shuttle things around while parsing.
 */
 struct TextLocation {
 
@@ -66,6 +66,7 @@ static_assert(std::is_trivial<TextLocation>::value,
   #define YYLTYPE YYCHPL_LTYPE 
 #endif
 
+// Declare this so that Bison can grow its stack.
 #define YYCHPL_LTYPE_IS_TRIVIAL 1
 #define YYLTYPE_IS_TRIVIAL      1
 

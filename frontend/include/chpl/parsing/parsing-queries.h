@@ -185,8 +185,7 @@ const Location& locateAst(Context* context, const uast::AstNode* ast);
     `locateDotFieldWithAst(Context* context, const Dot* dot)`.
 
     Additional location maps for things like dot fields are required because
-    the parser does not keep track of the location of every piece of text
-    when parsing a file into AST.
+    they are not themselves AST nodes.
 */
 #define LOCATION_MAP(ast__, location__) \
   Location locate##location__##WithId(Context* context, ID id); \
