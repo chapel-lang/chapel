@@ -284,9 +284,6 @@ check_symbol_exists(futimes sys/time.h HAVE_FUTIMES)
 if( HAVE_SIGNAL_H AND NOT LLVM_USE_SANITIZER MATCHES ".*Address.*" AND NOT APPLE )
   check_symbol_exists(sigaltstack signal.h HAVE_SIGALTSTACK)
 endif()
-set(CMAKE_REQUIRED_DEFINITIONS "-D_LARGEFILE64_SOURCE")
-check_symbol_exists(lseek64 "sys/types.h;unistd.h" HAVE_LSEEK64)
-set(CMAKE_REQUIRED_DEFINITIONS "")
 check_symbol_exists(mallctl malloc_np.h HAVE_MALLCTL)
 check_symbol_exists(mallinfo malloc.h HAVE_MALLINFO)
 check_symbol_exists(mallinfo2 malloc.h HAVE_MALLINFO2)
@@ -324,16 +321,6 @@ if( PURE_WINDOWS )
   check_function_exists(__main HAVE___MAIN)
   check_function_exists(__cmpdi2 HAVE___CMPDI2)
 endif()
-if( HAVE_DLFCN_H )
-  if( HAVE_LIBDL )
-    list(APPEND CMAKE_REQUIRED_LIBRARIES dl)
-  endif()
-  check_symbol_exists(dlopen dlfcn.h HAVE_DLOPEN)
-  check_symbol_exists(dladdr dlfcn.h HAVE_DLADDR)
-  if( HAVE_LIBDL )
-    list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES dl)
-  endif()
-endif()
 
 CHECK_STRUCT_HAS_MEMBER("struct stat" st_mtimespec.tv_nsec
     "sys/types.h;sys/stat.h" HAVE_STRUCT_STAT_ST_MTIMESPEC_TV_NSEC)
@@ -348,10 +335,16 @@ endif()
 
 check_symbol_exists(__GLIBC__ stdio.h LLVM_USING_GLIBC)
 if( LLVM_USING_GLIBC )
-  add_definitions( -D_GNU_SOURCE )
+  add_compile_definitions(_GNU_SOURCE)
   list(APPEND CMAKE_REQUIRED_DEFINITIONS "-D_GNU_SOURCE")
+# enable 64bit off_t on 32bit systems using glibc
+  if (CMAKE_SIZEOF_VOID_P EQUAL 4)
+    add_compile_definitions(_FILE_OFFSET_BITS=64)
+    list(APPEND CMAKE_REQUIRED_DEFINITIONS "-D_FILE_OFFSET_BITS=64")
+  endif()
 endif()
-# This check requires _GNU_SOURCE
+
+# This check requires _GNU_SOURCE.
 if (NOT PURE_WINDOWS)
   if (LLVM_PTHREAD_LIB)
     list(APPEND CMAKE_REQUIRED_LIBRARIES ${LLVM_PTHREAD_LIB})
@@ -360,6 +353,18 @@ if (NOT PURE_WINDOWS)
   check_symbol_exists(pthread_setname_np pthread.h HAVE_PTHREAD_SETNAME_NP)
   if (LLVM_PTHREAD_LIB)
     list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES ${LLVM_PTHREAD_LIB})
+  endif()
+endif()
+
+# This check requires _GNU_SOURCE.
+if( HAVE_DLFCN_H )
+  if( HAVE_LIBDL )
+    list(APPEND CMAKE_REQUIRED_LIBRARIES dl)
+  endif()
+  check_symbol_exists(dlopen dlfcn.h HAVE_DLOPEN)
+  check_symbol_exists(dladdr dlfcn.h HAVE_DLADDR)
+  if( HAVE_LIBDL )
+    list(REMOVE_ITEM CMAKE_REQUIRED_LIBRARIES dl)
   endif()
 endif()
 
@@ -397,15 +402,6 @@ else()
 endif()
 
 check_symbol_exists(proc_pid_rusage "libproc.h" HAVE_PROC_PID_RUSAGE)
-
-# Whether we can use std::is_trivially_copyable to verify llvm::is_trivially_copyable.
-CHECK_CXX_SOURCE_COMPILES("
-#include <type_traits>
-struct T { int val; };
-static_assert(std::is_trivially_copyable<T>::value, \"ok\");
-int main() { return 0;}
-" HAVE_STD_IS_TRIVIALLY_COPYABLE)
-
 
 # Define LLVM_HAS_ATOMICS if gcc or MSVC atomic builtins are supported.
 include(CheckAtomic)
@@ -498,6 +494,8 @@ elseif (LLVM_NATIVE_ARCH MATCHES "riscv64")
   set(LLVM_NATIVE_ARCH RISCV)
 elseif (LLVM_NATIVE_ARCH STREQUAL "m68k")
   set(LLVM_NATIVE_ARCH M68k)
+elseif (LLVM_NATIVE_ARCH MATCHES "loongarch")
+  set(LLVM_NATIVE_ARCH LoongArch)
 else ()
   message(FATAL_ERROR "Unknown architecture ${LLVM_NATIVE_ARCH}")
 endif ()
@@ -512,8 +510,7 @@ foreach (NATIVE_KEYWORD host Native)
   endif()
 endforeach()
 
-list(FIND LLVM_TARGETS_TO_BUILD ${LLVM_NATIVE_ARCH} NATIVE_ARCH_IDX)
-if (NATIVE_ARCH_IDX EQUAL -1)
+if (NOT ${LLVM_NATIVE_ARCH} IN_LIST LLVM_TARGETS_TO_BUILD)
   message(STATUS
     "Native target ${LLVM_NATIVE_ARCH} is not selected; lli will not JIT code")
 else ()
@@ -610,25 +607,6 @@ else()
   message(STATUS "Doxygen disabled.")
 endif()
 
-set(LLVM_BINDINGS "")
-find_program(GO_EXECUTABLE NAMES go DOC "go executable")
-if(WIN32 OR NOT LLVM_ENABLE_BINDINGS)
-  message(STATUS "Go bindings disabled.")
-else()
-  if(GO_EXECUTABLE STREQUAL "GO_EXECUTABLE-NOTFOUND")
-    message(STATUS "Go bindings disabled.")
-  else()
-    execute_process(COMMAND ${GO_EXECUTABLE} run ${PROJECT_SOURCE_DIR}/bindings/go/conftest.go
-                    RESULT_VARIABLE GO_CONFTEST)
-    if(GO_CONFTEST STREQUAL "0")
-      set(LLVM_BINDINGS "${LLVM_BINDINGS} go")
-      message(STATUS "Go bindings enabled.")
-    else()
-      message(STATUS "Go bindings disabled, need at least Go 1.2.")
-    endif()
-  endif()
-endif()
-
 find_program(GOLD_EXECUTABLE NAMES ${LLVM_DEFAULT_TARGET_TRIPLE}-ld.gold ld.gold ${LLVM_DEFAULT_TARGET_TRIPLE}-ld ld DOC "The gold linker")
 set(LLVM_BINUTILS_INCDIR "" CACHE PATH
     "PATH to binutils/include containing plugin-api.h for gold plugin.")
@@ -648,15 +626,17 @@ if(CMAKE_GENERATOR MATCHES "Ninja" AND
 endif()
 
 if(CMAKE_HOST_APPLE AND APPLE)
-  if(NOT CMAKE_XCRUN)
-    find_program(CMAKE_XCRUN NAMES xcrun)
-  endif()
-  if(CMAKE_XCRUN)
-    execute_process(COMMAND ${CMAKE_XCRUN} -find ld
-      OUTPUT_VARIABLE LD64_EXECUTABLE
-      OUTPUT_STRIP_TRAILING_WHITESPACE)
-  else()
-    find_program(LD64_EXECUTABLE NAMES ld DOC "The ld64 linker")
+  if(NOT LD64_EXECUTABLE)
+    if(NOT CMAKE_XCRUN)
+      find_program(CMAKE_XCRUN NAMES xcrun)
+    endif()
+    if(CMAKE_XCRUN)
+      execute_process(COMMAND ${CMAKE_XCRUN} -find ld
+        OUTPUT_VARIABLE LD64_EXECUTABLE
+        OUTPUT_STRIP_TRAILING_WHITESPACE)
+    else()
+      find_program(LD64_EXECUTABLE NAMES ld DOC "The ld64 linker")
+    endif()
   endif()
 
   if(LD64_EXECUTABLE)
@@ -666,6 +646,7 @@ if(CMAKE_HOST_APPLE AND APPLE)
 endif()
 
 # Keep the version requirements in sync with bindings/ocaml/README.txt.
+set(LLVM_BINDINGS "")
 include(FindOCaml)
 include(AddOCaml)
 if(WIN32 OR NOT LLVM_ENABLE_BINDINGS)

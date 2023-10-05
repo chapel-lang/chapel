@@ -31,7 +31,7 @@ def device_linker_args_EQ : Joined<["--"], "device-linker=">,
 def dry_run : Flag<["--"], "dry-run">,
   Flags<[WrapperOnlyOption]>,
   HelpText<"Print program arguments without running">;
-def verbose : Flag<["--"], "verbose">,
+def verbose : Flag<["--"], "wrapper-verbose">,
   Flags<[WrapperOnlyOption]>, HelpText<"Verbose output from tools">;
 def embed_bitcode : Flag<["--"], "embed-bitcode">,
   Flags<[WrapperOnlyOption]>, HelpText<"Embed linked bitcode in the module">;
@@ -58,6 +58,10 @@ def wrapper_time_trace_eq : Joined<["--"], "wrapper-time-trace=">,
 def wrapper_time_trace_granularity : Joined<["--"], "wrapper-time-trace-granularity=">,
   Flags<[WrapperOnlyOption]>, MetaVarName<"<number>">,
   HelpText<"Set the granularity of time-trace updates">;
+
+def wrapper_jobs : Joined<["--"], "wrapper-jobs=">,
+  Flags<[WrapperOnlyOption]>, MetaVarName<"<number>">,
+  HelpText<"Sets the number of parallel jobs to use for device linking">;
 
 // Flags passed to the device linker.
 def arch_EQ : Joined<["--"], "arch=">,

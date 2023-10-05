@@ -9,10 +9,9 @@
 # TODO: This should probably not be a option going forward but we
 # we should commit to a way to do it. But due to getting this out
 # in LLVM 15.x we opted for a option.
+set(LIBCLANG_SOVERSION_ARG)
 if(NOT CLANG_FORCE_MATCHING_LIBCLANG_SOVERSION)
-  set(LIBCLANG_SOVERSION 13)
-else()
-  set(LIBCLANG_SOVERSION ${CLANG_VERSION_MAJOR})
+  set(LIBCLANG_SOVERSION_ARG SOVERSION 13)
 endif()
 
 # TODO: harmonize usage of LIBCLANG_SOVERSION / LIBCLANG_LIBARY_VERSION
@@ -33,6 +32,7 @@ set(SOURCES
   CIndexer.cpp
   CXComment.cpp
   CXCursor.cpp
+  CXExtractAPI.cpp
   CXIndexDataConsumer.cpp
   CXCompilationDatabase.cpp
   CXLoadedDiagnostic.cpp
@@ -61,6 +61,7 @@ set(LIBS
   clangAST
   clangBasic
   clangDriver
+  clangExtractAPI
   clangFrontend
   clangIndex
   clangLex
@@ -148,6 +149,7 @@ add_clang_library(libclang ${ENABLE_SHARED} ${ENABLE_STATIC} INSTALL_WITH_TOOLCH
   ${LLVM_TARGETS_TO_BUILD}
   Core
   Support
+  TargetParser
   )
 
 if(ENABLE_STATIC)
@@ -195,7 +197,7 @@ if(ENABLE_SHARED)
 
     set_target_properties(libclang PROPERTIES
                           VERSION ${LLVM_VERSION_MAJOR}.${LLVM_VERSION_MINOR}.${LLVM_VERSION_PATCH}${LLVM_VERSION_SUFFIX}
-                          SOVERSION ${LIBCLANG_SOVERSION})
+                          ${LIBCLANG_SOVERSION_ARG})
   endif()
 endif()
 

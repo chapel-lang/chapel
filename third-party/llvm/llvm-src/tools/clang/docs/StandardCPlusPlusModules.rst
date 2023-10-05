@@ -223,7 +223,27 @@ The ``-fmodules-ts`` option is deprecated and is planned to be removed.
 How to produce a BMI
 ~~~~~~~~~~~~~~~~~~~~
 
-It is possible to generate a BMI for an importable module unit by specifying the ``--precompile`` option.
+We can generate a BMI for an importable module unit by either ``--precompile``
+or ``-fmodule-output`` flags.
+
+The ``--precompile`` option generates the BMI as the output of the compilation and the output path
+can be specified using the ``-o`` option. 
+
+The ``-fmodule-output`` option generates the BMI as a by-product of the compilation.
+If ``-fmodule-output=`` is specified, the BMI will be emitted the specified location. Then if
+``-fmodule-output`` and ``-c`` are specified, the BMI will be emitted in the directory of the
+output file with the name of the input file with the new extension ``.pcm``. Otherwise, the BMI
+will be emitted in the working directory with the name of the input file with the new extension
+``.pcm``.
+
+The style to generate BMIs by ``--precompile`` is called two-phase compilation since it takes
+2 steps to compile a source file to an object file. The style to generate BMIs by ``-fmodule-output``
+is called one-phase compilation respectively. The one-phase compilation model is simpler
+for build systems to implement and the two-phase compilation has the potential to compile faster due
+to higher parallelism. As an example, if there are two module units A and B, and B depends on A, the
+one-phase compilation model would need to compile them serially, whereas the two-phase compilation
+model may be able to compile them simultaneously if the compilation from A.pcm to A.o takes a long
+time.
 
 File name requirement
 ~~~~~~~~~~~~~~~~~~~~~
@@ -270,8 +290,50 @@ we can't compile them by the original command lines. But we are still able to do
   $ ./Hello.out
   Hello World!
 
+Module name requirement
+~~~~~~~~~~~~~~~~~~~~~~~
+
+[module.unit]p1 says:
+
+.. code-block:: text
+
+  All module-names either beginning with an identifier consisting of std followed by zero
+  or more digits or containing a reserved identifier ([lex.name]) are reserved and shall not
+  be specified in a module-declaration; no diagnostic is required. If any identifier in a reserved
+  module-name is a reserved identifier, the module name is reserved for use by C++ implementations;
+  otherwise it is reserved for future standardization.
+
+So all of the following name is not valid by default:
+
+.. code-block:: text
+
+    std
+    std1
+    std.foo
+    __test
+    // and so on ...
+
+If you still want to use the reserved module names for any reason, currently you can add a special line marker
+in the front of the module declaration like:
+
+.. code-block:: c++
+
+  # __LINE_NUMBER__ __FILE__ 1 3
+  export module std;
+
+Here the `__LINE_NUMBER__` is the actual line number of the corresponding line. The `__FILE__` means the filename
+of the translation unit. The `1` means the following is a new file. And `3` means this is a system header/file so
+the certain warnings should be suppressed. You could find more details at:
+https://gcc.gnu.org/onlinedocs/gcc-3.0.2/cpp_9.html.
+
 How to specify the dependent BMIs
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+There are 3 methods to specify the dependent BMIs:
+
+* (1) ``-fprebuilt-module-path=<path/to/direcotry>``.
+* (2) ``-fmodule-file=<path/to/BMI>``.
+* (3) ``-fmodule-file=<module-name>=<path/to/BMI>``.
 
 The option ``-fprebuilt-module-path`` tells the compiler the path where to search for dependent BMIs.
 It may be used multiple times just like ``-I`` for specifying paths for header files. The look up rule here is:
@@ -281,16 +343,21 @@ It may be used multiple times just like ``-I`` for specifying paths for header f
 * (2) When we import partition module unit M:P. The compiler would look up M-P.pcm in the
   directories specified by ``-fprebuilt-module-path``.
 
-Another way to specify the dependent BMIs is to use ``-fmodule-file``. The main difference
-is that ``-fprebuilt-module-path`` takes a directory, whereas ``-fmodule-file`` requires a
-specific file. In case both the ``-fprebuilt-module-path`` and ``-fmodule-file`` exist, the 
-``-fmodule-file`` option takes higher precedence. In another word, if the compiler finds the wanted
-BMI specified by ``-fmodule-file``, the compiler wouldn't look up again in the directories specified
-by ``-fprebuilt-module-path``.
+The option ``-fmodule-file=<path/to/BMI>`` tells the compiler to load the specified BMI directly.
+The option ``-fmodule-file=<module-name>=<path/to/BMI>`` tells the compiler to load the specified BMI
+for the module specified by ``<module-name>`` when necessary. The main difference is that
+``-fmodule-file=<path/to/BMI>`` will load the BMI eagerly, whereas
+``-fmodule-file=<module-name>=<path/to/BMI>`` will only load the BMI lazily, which is similar
+with ``-fprebuilt-module-path``.
 
-When we compile a ``module implementation unit``, we must pass the BMI of the corresponding
-``primary module interface unit`` by ``-fmodule-file``
-since the language specification says a module implementation unit implicitly imports
+In case all ``-fprebuilt-module-path=<path/to/direcotry>``, ``-fmodule-file=<path/to/BMI>`` and
+``-fmodule-file=<module-name>=<path/to/BMI>`` exist, the ``-fmodule-file=<path/to/BMI>`` option
+takes highest precedence and ``-fmodule-file=<module-name>=<path/to/BMI>`` will take the second
+highest precedence.
+
+When we compile a ``module implementation unit``, we must specify the BMI of the corresponding
+``primary module interface unit``.
+Since the language specification says a module implementation unit implicitly imports
 the primary module interface unit.
 
   [module.unit]p8
@@ -298,13 +365,15 @@ the primary module interface unit.
   A module-declaration that contains neither an export-keyword nor a module-partition implicitly
   imports the primary module interface unit of the module as if by a module-import-declaration.
 
-Again, the option ``-fmodule-file`` may occur multiple times.
+All of the 3 options ``-fprebuilt-module-path=<path/to/direcotry>``, ``-fmodule-file=<path/to/BMI>``
+and ``-fmodule-file=<module-name>=<path/to/BMI>`` may occur multiple times.
 For example, the command line to compile ``M.cppm`` in
 the above example could be rewritten into:
 
 .. code-block:: console
 
   $ clang++ -std=c++20 M.cppm --precompile -fmodule-file=M-interface_part.pcm -fmodule-file=M-impl_part.pcm -o M.pcm
+  $ clang++ -std=c++20 M.cppm --precompile -fmodule-file=M:interface_part=M-interface_part.pcm -fmodule-file=M:impl_part=M-impl_part.pcm -o M.pcm
 
 ``-fprebuilt-module-path`` is more convenient and ``-fmodule-file`` is faster since
 it saves time for file lookup.
@@ -481,19 +550,19 @@ Then it is problematic if we remove ``foo.h`` before import `foo` module.
 
 .. code-block:: console
 
-  clang++ -std=c++20 foo.cppm --precompile  -o foo.pcm
-	mv foo.h foo.orig.h
+  $ clang++ -std=c++20 foo.cppm --precompile  -o foo.pcm
+  $ mv foo.h foo.orig.h
   # The following one is rejected
-	clang++ -std=c++20 Use.cpp -fmodule-file=foo.pcm -c
+  $ clang++ -std=c++20 Use.cpp -fmodule-file=foo.pcm -c
 
 The above case will rejected. And we're still able to workaround it by ``-Xclang -fmodules-embed-all-files`` option:
 
 .. code-block:: console
 
-  clang++ -std=c++20 foo.cppm --precompile  -Xclang -fmodules-embed-all-files -o foo.pcm
-	mv foo.h foo.orig.h
-	clang++ -std=c++20 Use.cpp -fmodule-file=foo.pcm -c -o Use.o
-	clang++ Use.o foo.pcm
+  $ clang++ -std=c++20 foo.cppm --precompile  -Xclang -fmodules-embed-all-files -o foo.pcm
+  $ mv foo.h foo.orig.h
+  $ clang++ -std=c++20 Use.cpp -fmodule-file=foo.pcm -c -o Use.o
+  $ clang++ Use.o foo.pcm
 
 ABI Impacts
 -----------
@@ -874,3 +943,10 @@ purposes of optimization (but definitions of these functions are still not inclu
 this means the build speedup at higher optimization levels may be lower than expected given ``O0`` experience, 
 but does provide by more optimization opportunities.
 
+Interoperability with Clang Modules
+-----------------------------------
+
+We **wish** to support clang modules and standard c++ modules at the same time,
+but the mixed using form is not well used/tested yet.
+
+Please file new github issues as you find interoperability problems.
