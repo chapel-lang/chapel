@@ -55,12 +55,10 @@ proc taskSimulate(tid) {
     uLocal1[omegaLocal] = u[omegaLocal];
     uLocal2 = uLocal1;
 
-    // synchronize with other tasks
-    b.barrier();
-
     // iterate for 'nt' time steps
     for 1..nt {
       // copy results from previous iteration into neighbors' halo cells
+      b.barrier();
       if tid != 0        then halos[tid-1][RIGHT] = uLocal2[omegaLocal.low];
       if tid != nTasks-1 then halos[tid+1][LEFT] = uLocal2[omegaLocal.high];
 
