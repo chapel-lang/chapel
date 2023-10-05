@@ -155,6 +155,12 @@ Bessel Functions
 :proc:`~Math.y1`
 :proc:`~Math.yn`
 
+.. _math-optimization:
+
+Optimization Functions
+^^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.fma`
+
 .. _automath-constant-and-function-definitions:
 
 Automatically Included Constant and Function Definitions
