@@ -59,10 +59,7 @@ fi
 if [ ! -z "$PREFIX" ]
 then
   PREFIX="${STAGE}${PREFIX}"
-  if [ "$STAGE_SET" -ne 0 ]
-  then
-    mkdir -p "$PREFIX"
-  fi
+  mkdir -p "$PREFIX"
   if [ ! -d "$PREFIX" ]
   then
     echo "Exiting: Installation prefix path '$PREFIX' does not exist"
@@ -73,10 +70,8 @@ else
   then
     read -r DEST_DIR < "$CHPL_HOME/configured-chpl-home"
     DEST_DIR="${STAGE}${DEST_DIR}"
-    if [ "$STAGE_SET" -ne 0 ]
-    then
-      mkdir -p "$DEST_DIR"
-    fi
+    mkdir -p "$DEST_DIR"
+    
     if [ ! -d "$DEST_DIR" ]
     then
       echo "Exiting: Installation dest path '$DEST_DIR' does not exist"
