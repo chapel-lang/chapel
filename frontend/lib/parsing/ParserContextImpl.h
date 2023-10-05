@@ -145,7 +145,6 @@ owned<AstNode> ParserContext::consumeVarDeclLinkageName(void) {
 }
 
 owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
-                                               bool usedParens,
                                                ParserExprList* toolspace,
                                                MaybeNamedActualList* actuals) {
 
@@ -176,7 +175,7 @@ owned<Attribute> ParserContext::buildAttribute(YYLTYPE loc, AstNode* firstIdent,
   std::vector<UniqueString> actualNames;
   consumeNamedActuals(actuals, actualsForReal, actualNames);
   auto node = Attribute::build(builder, convertLocation(loc), fullName,
-                               usedParens, std::move(actualsForReal),
+                               std::move(actualsForReal),
                                std::move(actualNames));
   return node;
 }
@@ -243,7 +242,6 @@ PODUniqueString ParserContext::notePragma(YYLTYPE loc,
 }
 
 void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
-                                  bool usedParens,
                                   ParserExprList* toolspace,
                                   MaybeNamedActualList* actuals) {
   hasAttributeGroupParts = true;
@@ -276,7 +274,7 @@ void ParserContext::noteAttribute(YYLTYPE loc, AstNode* firstIdent,
   }
 
   // make sure we don't put duplicate attributes (based on names) on one symbol
-  auto attr = buildAttribute(loc, ident, usedParens, toolspace, actuals);
+  auto attr = buildAttribute(loc, ident, toolspace, actuals);
   for (auto& attribute : *attrs) {
     if (attribute->toAttribute()->name() == attr->toAttribute()->name()) {
       error(loc, "repeated attribute '%s'", attr->toAttribute()->name().c_str());

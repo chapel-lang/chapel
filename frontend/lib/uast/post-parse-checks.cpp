@@ -138,7 +138,6 @@ struct Visitor {
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeAppliedToCorrectNode(const Attribute* attr);
-  void checkAttributeUsedParens(const Attribute* node);
   void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
@@ -1318,12 +1317,6 @@ void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
   }
 }
 
-void Visitor::checkAttributeUsedParens(const Attribute* node) {
-  if (node->numActuals() > 0 && !node->usedParens()) {
-     CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
-  }
-}
-
 void Visitor::checkAttributeNameRecognizedOrToolSpaced(const Attribute* node) {
   // Store attributes we recognize in "all-global-strings.h"
   // then a USTR() on the attribute name will work or not work
@@ -1381,7 +1374,6 @@ void Visitor::checkAttributeUnstable(const Attribute* node) {
 void Visitor::visit(const Attribute* node) {
   checkAttributeAppliedToCorrectNode(node);
   checkAttributeNameRecognizedOrToolSpaced(node);
-  checkAttributeUsedParens(node);
   checkAttributeUnstable(node);
 }
 
