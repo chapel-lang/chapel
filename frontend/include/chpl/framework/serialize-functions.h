@@ -48,7 +48,6 @@ class Context;
 template<typename T> struct serialize;
 template<typename T> struct deserialize;
 
-
 /** write a variable-byte encoded unsigned integer */
 void writeUnsignedVarint(std::ostream& os, uint64_t num);
 /** write a variable-byte encoded signed integer */
