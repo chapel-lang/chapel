@@ -1167,11 +1167,11 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
     if (onlyInnermost && got) return true;
   }
 
-  std::unordered_set<ID>* ignoreClausesForShadowScope2 = nullptr;
+  std::unordered_set<ID>* ignoreClausesForShadowScopeTwo = nullptr;
   if (checkMoreForWarning) {
     // ignore 'use M' bringing in M and hiding the module name,
     // for the purpose of the warning.
-    ignoreClausesForShadowScope2 = &foundInShadowScopeOneClauses;
+    ignoreClausesForShadowScopeTwo = &foundInShadowScopeOneClauses;
   }
 
   // now check shadow scope 2 (only relevant for 'private use')
@@ -1182,7 +1182,7 @@ bool LookupHelper::doLookupInScope(const Scope* scope,
                                    VisibilitySymbols::SHADOW_SCOPE_TWO,
                                    /* foundInAllContents */ nullptr,
                                    /* foundInClauses */ nullptr,
-                                   ignoreClausesForShadowScope2);
+                                   ignoreClausesForShadowScopeTwo);
     if (got && canCheckMoreForWarning && !checkMoreForWarning) {
       checkMoreForWarning = true;
       onlyInnermost = false;
