@@ -996,6 +996,9 @@ def compute_host_link_settings():
         if llvm_version not in ('11', '12', '13', '14'):
             clang_static_libs.append('-lclangSupport')
             llvm_components.append('windowsdriver')
+        # Starting with clang 16, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15'):
+            llvm_components.append('frontendhlsl')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':
