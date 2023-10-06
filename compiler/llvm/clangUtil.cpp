@@ -2476,7 +2476,12 @@ static void runModuleOptPipeline(bool addWideOpts) {
 
   // Build the pipeline
   auto optLvl = translateOptLevel();
-  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  ModulePassManager MPM;
+  if (optLvl == LlvmOptimizationLevel::O0) {
+    MPM = PB.buildO0DefaultPipeline(optLvl);
+  } else {
+    MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  }
 
   // Add the Global to Wide optimization if necessary.
   // This is done in this way to be added even with -O0
