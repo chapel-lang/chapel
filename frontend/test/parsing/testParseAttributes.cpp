@@ -1054,6 +1054,37 @@ static void test18(Parser* parser) {
   assert(guard.realizeErrors() == 3);
 }
 
+// test that we reject attributes with arguments not inside parens
+static void test19(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    @unstable category="experimental", reason="Enum is unstable", issue="82566"
+    proc Foo(bar) {  }
+    @deprecated since="1.32", note="this thing is deprecated", suggestion="use Baz instead"
+    var x: int;
+    @stable since="1.28"
+    var y: int;
+  )"""";
+  auto parseResult = parseStringAndReportErrors(parser, "test19.chpl",
+                                                program.c_str());
+  assert(guard.numErrors() == 2);
+  assert(guard.error(0)->message() == "near 'category'");
+  std::cout<<guard.error(0)->message()<<std::endl;
+  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
+  assert(guard.error(1)->message() == "near 'since'");
+  std::cout<<guard.error(1)->message()<<std::endl;
+  assert(guard.error(1)->kind() == ErrorBase::Kind::SYNTAX);
+
+  // during realizeErrors() we generate a third error - unfortunately there
+  // doesn't appear any good way to get at this error since realizeErrors clears
+  // the errors before returning this number.
+  // assert(guard.error(2)->message() == "error reading file: No such file or directory.");
+  // assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
+  assert(guard.realizeErrors() == 3);
+}
+
+
 
 int main() {
   Context context;
@@ -1084,6 +1115,7 @@ int main() {
   test16(p);
   test17(p);
   test18(p);
+  test19(p);
 
   return 0;
 }
