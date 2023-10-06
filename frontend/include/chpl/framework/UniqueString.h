@@ -26,8 +26,8 @@
 #define CHPL_QUERIES_UNIQUE_STRING_H
 
 #include "chpl/framework/UniqueString-detail.h"
-#include "chpl/framework/stringify-functions.h"
 #include "chpl/framework/serialize-functions.h"
+#include "chpl/framework/stringify-functions.h"
 #include "chpl/util/hash.h"
 
 #include <cstring>
