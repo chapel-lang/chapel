@@ -542,8 +542,16 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (formalCt->manageableType()->isAnyClassType()) {
     // Formal is the generic `class`. This is an instantiation since
-    // that's always generic.
-    return instantiate();
+    // that's always generic, but it might also be a conversion if nilability
+    // is involved.
+
+    // all class conversions are subtype conversions
+    ConversionKind conversion = converts ? SUBTYPE : NONE;
+
+    return CanPassResult(/*passes*/ true,
+                         /* instantiates */ true,
+                         /*promotes*/ false,
+                         conversion);
   } else if (actualCt->manageableType()->isAnyClassType()) {
     CHPL_ASSERT(false && "probably shouldn't happen");
   } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {

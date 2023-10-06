@@ -1534,6 +1534,15 @@ const TypedFnSignature* instantiateSignature(Context* context,
           useType = getInstantiationType(context,
                                          actualType,
                                          formalType);
+
+          // Verify that the 'instantiation type' still accepts the actual.
+          // This might not be the case based on legal argument mapping rules.
+          auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
+          auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
+
+          if (!canPass(context, actualType, useTypeConcrete).passes()) {
+            return nullptr;
+          }
         }
       }
     }
