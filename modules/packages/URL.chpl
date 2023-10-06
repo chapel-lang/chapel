@@ -51,8 +51,8 @@ module URL {
                      start:int(64) = 0, end:int(64) = max(int(64)),
                      style:iostyle)
                     : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start..end,
-                               style: iostyleInternal);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlReaderHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
@@ -61,7 +61,8 @@ module URL {
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
                     : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start..end);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlReaderHelper(url, kind, locking, region);
   }
 
   pragma "last resort"
@@ -70,7 +71,8 @@ module URL {
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
                     : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start..end);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlReaderHelper(url, kind, locking, region);
   }
 
   /*
@@ -84,8 +86,8 @@ module URL {
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg region: zero-based byte offset indicating where in the file the
-               fileReader should start and stop reading. Defaults to
-               ``0..`` - meaning from the start of the file to no end point.
+               fileReader should read. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
   :returns: an open fileReader to the requested resource.
 
   :throws SystemError: Thrown if a fileReader could not be returned.
@@ -107,7 +109,7 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, ioMode.r, style);
     // TODO: change this back to f.reader when the kind argument is removed
-    return f.readerHelper(kind=kind, locking=locking, region=start..#end);
+    return f.readerHelper(kind=kind, locking=locking, region=region);
   }
 
   pragma "last resort"
@@ -117,8 +119,8 @@ module URL {
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  style:iostyle)
                 : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start..end,
-                               style: iostyleInternal);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlWriterHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
@@ -128,7 +130,8 @@ module URL {
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
                 : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start..end);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlWriterHelper(url, kind, locking, region);
   }
 
   pragma "last resort"
@@ -137,7 +140,8 @@ module URL {
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
                 : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start..end);
+    var region = if end == max(int(64)) then start.. else start..(end-1);
+    return openUrlWriterHelper(url, kind, locking, region);
   }
 
   /*
@@ -151,8 +155,8 @@ module URL {
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
   :arg region: zero-based byte offset indicating where in the file the
-               fileWriter should start and stop writing. Defaults to
-               ``0..`` - meaning from the start of the file to no end point.
+               fileWriter should write. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
   :returns: an open fileWriter to the requested resource.
 
   :throws SystemError: Thrown if a fileWriter could not be returned.
@@ -175,7 +179,7 @@ module URL {
     var f = openCurlFile(url, ioMode.cw, style);
     // TODO: change this back to f.writer when the kind argument has been
     // removed
-    return f.writerHelper(kind=kind, locking=locking, region=start..#end);
+    return f.writerHelper(kind=kind, locking=locking, region=region);
   }
 
 }
