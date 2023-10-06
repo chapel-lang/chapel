@@ -45,34 +45,23 @@ module URL {
   public use IO;
 
   pragma "last resort"
-  @deprecated("openUrlReader with a style argument is deprecated")
+  @deprecated("openUrlReader with a style and/or kind argument is deprecated")
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
                      style:iostyle)
                     : fileReader(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
+    var region = if end == max(int(64)) then start..end else start..(end-1);
     return openUrlReaderHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
-  @deprecated("openUrlReader with a 'kind' argument is deprecated")
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
+  @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlReader(url:string, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
-                    : fileReader(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
-    return openUrlReaderHelper(url, kind, locking, region);
-  }
-
-  pragma "last resort"
-  @deprecated(notes="openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)))
-                    : fileReader(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
-    return openUrlReaderHelper(url, kind, locking, region);
+                    : fileReader(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
   }
 
   /*
@@ -113,35 +102,23 @@ module URL {
   }
 
   pragma "last resort"
-  @deprecated("openUrlWriter with a style argument is deprecated")
+  @deprecated("openUrlWriter with a style and/or kind argument is deprecated")
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  style:iostyle)
                 : fileWriter(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
+    var region = if end == max(int(64)) then start..end else start..(end-1);
     return openUrlWriterHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated("openUrlWriter with a 'kind' argument is deprecated")
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
+  @deprecated("openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlWriter(url:string, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
-                : fileWriter(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
-    return openUrlWriterHelper(url, kind, locking, region);
-  }
-
-  pragma "last resort"
-  @deprecated(notes="openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)))
-                : fileWriter(kind, locking) throws {
-    var region = if end == max(int(64)) then start.. else start..(end-1);
-    return openUrlWriterHelper(url, kind, locking, region);
+                : fileWriter(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
   }
 
   /*
