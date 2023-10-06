@@ -81,7 +81,7 @@ static void testProgram(std::string management, std::vector<std::pair<ArgumentTy
   }
 
   // Declare the function
-  ps << "proc f(arg: " << management << ") { return true; }" << std::endl;
+  ps << "proc f(ref arg: " << management << ") { return true; }" << std::endl;
 
   // Declare all the variables
   for (auto& className : classNames) {
@@ -140,9 +140,9 @@ static void test1() {
 // If the class is nilable, everything should pass.
 static void test2() {
   testProgram("class?", {
-    { nonNil("owned"), shouldPass },
-    { nonNil("shared"), shouldPass },
-    { nonNil("unmanaged"), shouldPass },
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldPass },
     { nilable("shared"), shouldPass },
@@ -164,7 +164,7 @@ static void test3() {
 
 static void test4() {
   testProgram("owned class?", {
-    { nonNil("owned"), shouldPass },
+    { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
@@ -189,7 +189,7 @@ static void test5() {
 static void test6() {
   testProgram("shared class?", {
     { nonNil("owned"), shouldNotPass },
-    { nonNil("shared"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldNotPass },
@@ -214,11 +214,35 @@ static void test8() {
   testProgram("unmanaged class?", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
-    { nonNil("unmanaged"), shouldPass },
+    { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldNotPass },
     { nilable("shared"), shouldNotPass },
     { nilable("unmanaged"), shouldPass },
+  });
+}
+
+static void test9() {
+  testProgram("owned", {
+    { nonNil("owned"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldPass },
+    { nilable("shared"), shouldNotPass },
+    { nilable("unmanaged"), shouldNotPass },
+  });
+}
+
+static void test10() {
+  testProgram("shared", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldPass },
+    { nonNil("unmanaged"), shouldNotPass },
+
+    { nilable("owned"), shouldNotPass },
+    { nilable("shared"), shouldPass },
+    { nilable("unmanaged"), shouldNotPass },
   });
 }
 
@@ -231,4 +255,6 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
 }
