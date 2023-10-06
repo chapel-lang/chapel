@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_QUERIES_CONTEXT_H
-#define CHPL_QUERIES_CONTEXT_H
+#ifndef CHPL_FRAMEWORK_CONTEXT_H
+#define CHPL_FRAMEWORK_CONTEXT_H
 
 #include "chpl/framework/Context-detail.h"
 #include "chpl/framework/ID.h"
