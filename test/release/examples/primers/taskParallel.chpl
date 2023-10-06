@@ -122,12 +122,16 @@ construct gets its own set of shadow variables, one per outer variable.
  - Each shadow variable is deallocated at the end of its task.
 
 The default argument intent (:ref:`The_Default_Intent`) is used by default.
-For most types, this implies that the captured value of the outer variable is a
-``const``. Synchronization variables (``sync`` and ``atomic``) are passed by
+For most types this implies that the shadow variable is ``const``
+and cannot be modified from within the tasks.
+Synchronization variables (``sync`` and ``atomic``) are passed by
 reference (:ref:`primers-syncs`, :ref:`primers-atomics`).
-For ``begin`` statements, for example, this means that the captured
-value of an outer numeric variable can be accessed even after its
-scope exits, while an outer array variable cannot.
+
+``begin`` statements currently capture the values of outer variables
+of numeric types into their shadow variables at task creation time.
+This means that the shadow variables can be accessed even after
+the outer variables' scope exits. This is not the case
+for some other types such as arrays.
 */
 var outerIntVariable = 2;
 begin assert(outerIntVariable == 2);
