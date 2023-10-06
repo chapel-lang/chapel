@@ -64,21 +64,8 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_nullTaskID")
 
-  // generic builtin types. AnyBorrowedNilableType must be the first of these
+  // generic builtin types. AnyComplexType must be the first of these
   // (or else adjust BuiltinType::genericity and this comment)
-
-  // generic class-like types. AnyUnmanagedType must be last of these
-  // (or else adjust BuiltinType::isClassLike and this comment)
-  BUILTIN_TYPE_NODE(AnyBorrowedNilableType, "_borrowedNilable")
-  BUILTIN_TYPE_NODE(AnyBorrowedNonNilableType, "_borrowedNonNilable")
-  BUILTIN_TYPE_NODE(AnyBorrowedType, "borrowed")
-  BUILTIN_TYPE_NODE(AnyManagementAnyNilableType, "_anyManagementAnyNilable")
-  BUILTIN_TYPE_NODE(AnyManagementNilableType, "_anyManagementNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNilableType, "_unmanagedNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedNonNilableType, "_unmanagedNonNilable")
-  BUILTIN_TYPE_NODE(AnyUnmanagedType, "unmanaged")
-  // end generic class-like types.
-
   BUILTIN_TYPE_NODE(AnyComplexType, "chpl_anycomplex")
   BUILTIN_TYPE_NODE(AnyEnumType, "enum")
   BUILTIN_TYPE_NODE(AnyImagType, "chpl_anyimag")

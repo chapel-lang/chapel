@@ -706,21 +706,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyType())
     return true;
 
-  if (formalT->isAnyBorrowedNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE)
-        return true;
-
-  if (formalT->isAnyBorrowedNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NONNIL)
-        return true;
-
-  if (formalT->isAnyBorrowedType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isBorrowed())
-        return true;
-
   if (formalT->isAnyComplexType() && actualT->isComplexType())
     return true;
 
@@ -741,15 +726,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
 
   if (formalT->isAnyIteratorRecordType())
     CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
-
-  if (formalT->isAnyManagementAnyNilableType())
-    if (actualT->isClassType())
-      return true;
-
-  if (formalT->isAnyManagementNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isNilable())
-        return true;
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
@@ -788,21 +764,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
 
   if (formalT->isAnyUnionType() && actualT->isUnionType())
     return true;
-
-  if (formalT->isAnyUnmanagedNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NILABLE)
-        return true;
-
-  if (formalT->isAnyUnmanagedNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NONNIL)
-        return true;
-
-  if (formalT->isAnyUnmanagedType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isUnmanaged())
-        return true;
 
   return false;
 }
