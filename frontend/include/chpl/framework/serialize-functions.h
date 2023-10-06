@@ -63,6 +63,9 @@ int64_t readSignedVarint(std::istream& is);
     with the process */
 class Serializer {
 public:
+  // strings >= this length will go through the long string table.
+  static const int LONG_STRING_SIZE = 20;
+
   // Note: currently these char* entries are expected to support UniqueStrings,
   // which are allocated from a Context and are null-terminated.
   using stringCacheType = std::map<const char*, std::pair<int, size_t>>;
@@ -90,7 +93,7 @@ public:
     chpl::serialize<T>{}(*this, data);
   }
 
-  int cacheString(const char* str, size_t len) {
+  uint32_t cacheString(const char* str, size_t len) {
     auto idx = stringCache_.find(str);
     if (idx == stringCache_.end()) {
       auto ret = counter_;

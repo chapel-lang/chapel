@@ -200,24 +200,54 @@ std::ostream& operator<<(std::ostream& os, const chpl::UniqueString& uStr) {
   return os;
 }
 
-//
-// Represent UniqueString occurrences as integer IDs in a table that the
-// Serializer builds up while serializing various entities. This reduces
-// the file size of generated serialized AST and helps with performance.
-//
 void UniqueString::serialize(Serializer& ser) const {
-  auto id = ser.cacheString(c_str(), length());
-  ser.write(id);
+  auto len = length();
+  if (len < ser.LONG_STRING_SIZE) {
+    // store the string inline here
+    uint8_t byte = len;
+    ser.write(byte);
+    ser.os().write(c_str(), len);
+  } else {
+    // store the string through the long strings table
+    uint32_t uid = ser.cacheString(c_str(), len);
+    // won't work if the high bit is set
+    CHPL_ASSERT((uid >> 31) == 0);
+    // compute the uid in big-endian order with high bit set
+    // TODO: use htobe32 or htonl
+    uint8_t bytes[4];
+    for (int i = 0; i < 4; i++) {
+      bytes[i] = (uid >> 24) & 0xff;
+      uid = uid << 8;
+    }
+    bytes[0] |= 0x80; // set the high bit
+    ser.os().write((const char*) &bytes[0], 4);
+  }
 }
 
-//
-// Deserialize a UniqueString by reading the integer ID and fetching the
-// relevant pointer and length from the Deserializer.
-//
 UniqueString UniqueString::deserialize(Deserializer& des) {
-  int uid = des.read<int>();
-  const auto& strlen = des.getString(uid);
-  return get(des.context(), strlen.second, strlen.first);
+  uint8_t byte = des.read<uint8_t>();
+  if ((byte & 0x80) == 0) {
+    // string is inline here, byte is the length
+    uint64_t len = byte;
+    char buf[128];
+    des.is().read(buf, len);
+    return get(des.context(), buf, len);
+  } else {
+    // compute the index to look up in the strings table
+    uint8_t bytes[4];
+    bytes[0] = byte;
+    des.is().read((char*) &bytes[1], 3); // read the other 3 bytes
+    // compute the uid in big-endian order
+    // TODO: consider using be32toh or ntohl
+    uint32_t uid = 0;
+    for (int i = 0; i < 4; i++) {
+      uid |= bytes[i];
+      uid = uid << 8;
+    }
+    const auto& pair = des.getString(uid);
+    return get(des.context(), pair.second, pair.first);
+  }
 }
+
 
 } // end namespace chpl
