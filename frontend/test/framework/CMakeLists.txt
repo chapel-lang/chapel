@@ -22,6 +22,7 @@ comp_unit_test(testDependencies)
 comp_unit_test(testErrorTracking)
 comp_unit_test(testIds)
 comp_unit_test(testUniqueString)
+comp_unit_test(testVarint)
 
 # Copy the moby.txt to the binary dir for use by testUniqueString
 file(COPY ${CMAKE_CURRENT_SOURCE_DIR}/../../../test/types/string/psahabu/perf/moby.txt
