@@ -33,8 +33,6 @@ include Makefile.share
 
 TARGETS = $(GPU_OBJS)
 
-SUBDIRS = cub-wrappers
-
 include $(RUNTIME_ROOT)/make/Makefile.runtime.subdirrules
 
 #

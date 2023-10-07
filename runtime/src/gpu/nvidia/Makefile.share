@@ -15,8 +15,16 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-SRCS = gpu-nvidia.c
+GPU_SRCS = gpu-nvidia.c gpu-nvidia-aux.cc
 
-GPU_SRCS = gpu-nvidia.c
+SRCS = $(GPU_SRCS)
 
-GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)
+GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
+
+$(info $$GPU_OBJS is [${GPU_OBJS}])
+
+RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version
+
+$(RUNTIME_OBJ_DIR)/gpu-nvidia-aux.o: gpu-nvidia-aux.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
