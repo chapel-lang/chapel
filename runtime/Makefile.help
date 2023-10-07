@@ -78,8 +78,6 @@ include $(call FIND_MAKEFILE,LAUNCHER,launch)
 include $(call FIND_MAKEFILE,MEM,mem)
 include $(call FIND_MAKEFILE,TOPO,topo)
 
-include src/gpu/nvidia/cub-wrappers/Makefile.include
-
 include src/qio/Makefile.include
 
 

@@ -149,7 +149,25 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
-int64_t chpl_gpu_aux_sum_reduce(int64_t* data, int n);
+
+#define DECL_ONE_BASIC_REDUCE(chpl_kind, data_type) \
+data_type chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n);
+
+#define DECL_BASIC_REDUCE(chpl_kind) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, int8_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, int16_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, int32_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, int64_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, uint8_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, uint16_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, uint32_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, uint64_t) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, float) \
+  DECL_ONE_BASIC_REDUCE(chpl_kind, double)
+
+DECL_BASIC_REDUCE(sum);
+DECL_BASIC_REDUCE(min);
+DECL_BASIC_REDUCE(max);
 
 #endif // HAS_GPU_LOCALE
 
