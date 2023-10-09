@@ -170,15 +170,9 @@ void restoreLibraryAndIncludeInfo() {
 void restoreAdditionalSourceFiles() {
   INT_ASSERT(fDriverPhaseTwo &&
              "should only be restoring filenames in driver phase two");
-  fileinfo* additionalFilenamesList =
-      openTmpFile(additionalFilenamesListFilename, "r");
-  char filename[FILENAME_MAX + 1];
-  while (fgets(filename, sizeof(filename), additionalFilenamesList->fptr)) {
-    // strip trailing newline from filename
-    filename[strcspn(filename, "\n")] = '\0';
+  restoreDriverTmp(additionalFilenamesListFilename, [](const char* filename) {
     addSourceFile(filename, NULL);
-  }
-  closefile(additionalFilenamesList);
+  });
 }
 
 void ensureDirExists(const char* dirname, const char* explanation,
@@ -391,10 +385,6 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   numInputFiles += numNewFilenames;
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
-  fileinfo* additionalFilenamesList = NULL;
-  if (fDriverPhaseOne) {
-    additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
-  }
 
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
@@ -428,17 +418,13 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     } else {
       // add file
       inputFilenames[cursor++] = newFilename;
-      if (additionalFilenamesList) {
-        // also save to file for use in driver phase two later
-        fprintf(additionalFilenamesList->fptr, "%s\n", newFilename);
+      if (fDriverPhaseOne) {
+        // also save to file for later use in driver phase two
+        saveDriverTmp(additionalFilenamesListFilename, newFilename);
       }
     }
   }
   inputFilenames[cursor] = NULL;
-
-  if (additionalFilenamesList) {
-    closefile(additionalFilenamesList);
-  }
 }
 
 void assertSourceFilesFound() {
