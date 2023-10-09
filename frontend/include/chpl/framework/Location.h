@@ -52,6 +52,10 @@ public:
     return path_.isEmpty();
   }
 
+  inline explicit operator bool() const {
+    return !isEmpty();
+  }
+
   UniqueString path() const { return path_; }
   int firstLine() const { return firstLine_; }
   int firstColumn() const { return firstColumn_; }

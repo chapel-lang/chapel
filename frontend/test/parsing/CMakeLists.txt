@@ -17,6 +17,7 @@
 
 comp_unit_test(testParsingQueries)
 comp_unit_test(testParse)
+comp_unit_test(testParseAdditionalLocations)
 comp_unit_test(testParseAggregate)
 comp_unit_test(testParseArrayDomainRange)
 comp_unit_test(testParseAttributes)

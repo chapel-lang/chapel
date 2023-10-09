@@ -89,6 +89,9 @@
     int processNewline(yyscan_t scanner);
   }
 
+  // Include the already defined parser location type so that we can use it.
+  #include "parser-yyltype.h"
+
   #endif
 }
 
@@ -180,6 +183,7 @@
     Decl::Visibility visibility;
     Module::Kind kind;
     PODUniqueString name;
+    TextLocation locName;
   };
 
   // A struct to thread along some pieces of a type before it is built.
@@ -191,6 +195,7 @@
     AttributeGroup* attributeGroup;
     PODUniqueString name;
     asttags::AstTag tag;
+    TextLocation locName;
   };
 
   // This is produced by do_stmt. It records whether the do_stmt statements
@@ -209,17 +214,19 @@
   struct MaybeNamedActual {
     AstNode* expr;
     PODUniqueString name;
+    TextLocation locName;
   };
-  static inline
-  MaybeNamedActual makeMaybeNamedActual(AstNode* expr,
-                                        PODUniqueString name) {
-    MaybeNamedActual ret = {expr, name};
+
+  static inline MaybeNamedActual
+  makeMaybeNamedActual(AstNode* expr, PODUniqueString name,
+                       TextLocation locName=TextLocation::create()) {
+    MaybeNamedActual ret = {expr, name, locName};
     return ret;
   }
   static inline
   MaybeNamedActual makeMaybeNamedActual(AstNode* expr) {
     PODUniqueString emptyName = PODUniqueString::get();
-    MaybeNamedActual ret = {expr, emptyName};
+    MaybeNamedActual ret = {expr, emptyName, TextLocation::create()};
     return ret;
   }
 
@@ -273,28 +280,18 @@
   };
 
   // Put our types in a different namespace to avoid conflicting with the
-  // production compiler parser's YYSTYPE/YYLTYPE.
+  // production compiler parser's YYSTYPE.
   #define YYSTYPE YYCHPL_STYPE
-  #define YYLTYPE YYCHPL_LTYPE
 
   // Note that the 'YYSTYPE_IS_TRIVIAL' macro tells the generated parser
   // that YYSTYPE only contains simple scalars (it can be bitcopied).
   // This is normally communicated by the '%union' directive, but we
   // stopped using that.
   #define YYCHPL_STYPE_IS_TRIVIAL 1
+  #define YYSTYPE_IS_TRIVIAL 1
 
   #endif
 }
-
-// YYLTYPE is the type that represents a source code location.
-// It is possible to define YYLTYPE (and this grammar used to in
-// order to handle chpldoc comments). This parser uses instead the
-// strategy of saving doc-comments in ParserContext.
-// The default YYLTYPE includes:
-//   first_line
-//   first_column
-//   last_line
-//   last_column
 
 //
 // Definition of the additional parameter to yypush_parse
@@ -755,19 +752,7 @@ tryable_stmt:
 | stmt_level_expr TSEMI     { $$ = context->finishStmt(STMT(@$,$1)); }
 | throw_stmt                { $$ = context->finishStmt($1); }
 | TBEGIN opt_task_intent_ls stmt
-  {
-    std::vector<ParserComment>* comments;
-    ParserExprList* exprLst;
-    BlockStyle blockStyle;
-    YYLTYPE locBodyAnchor = context->makeLocationAtLast(@2);
-    context->prepareStmtPieces(comments, exprLst, blockStyle, @1,
-                               false, locBodyAnchor, $3);
-    auto stmts = context->consumeAndFlattenTopLevelBlocks(exprLst);
-    auto node = Begin::build(BUILDER, LOC(@$), toOwned($2), blockStyle,
-                             std::move(stmts));
-    CommentsAndStmt ret = { .comments=comments, .stmt=node.release() };
-    $$ = context->finishStmt(ret);
-  }
+  { $$ = context->buildBeginStmt(@$, @1, @2, @3, $2, $3); }
 | TCOBEGIN opt_task_intent_ls block_stmt
   {
     std::vector<ParserComment>* comments;
@@ -2147,7 +2132,7 @@ class_decl_stmt:
 class_start:
   class_tag ident_def
   {
-    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, $1);
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, @2, $2, $1);
   }
 ;
 
@@ -2185,6 +2170,7 @@ class_level_stmt_ls:
   }
 ;
 
+// TODO: Move to builder methods, allow empty enums?
 enum_decl_stmt:
   enum_header_lcbr enum_ls TRCBR
     {
@@ -2197,6 +2183,7 @@ enum_decl_stmt:
                               parts.visibility,
                               parts.name,
                               context->consumeList(list));
+      BUILDER->noteDeclNameLocation(decl.get(), LOC(parts.locName));
       CommentsAndStmt cs = {parts.comments, decl.release()};
       $$ = cs;
       context->exitScope(asttags::Enum, parts.name);
@@ -2218,7 +2205,7 @@ enum_decl_stmt:
 enum_header_lcbr:
   TENUM ident_def TLCBR
   {
-    $$ = context->enterScopeAndBuildTypeDeclParts(@1, $2, asttags::Enum);
+    $$ = context->enterScopeAndBuildTypeDeclParts(@1, @2, $2, asttags::Enum);
   }
 ;
 
@@ -3307,9 +3294,7 @@ opt_task_intent_ls:
 task_intent_clause:
   TWITH TLP task_intent_ls TRP
   {
-    auto exprs = context->consumeList($3);
-    auto node = WithClause::build(BUILDER, LOC(@$), std::move(exprs));
-    $$ = node.release();
+    $$ = context->buildWithClause(@$, @1, @2, @3, @4, $3);
   }
 ;
 
@@ -3615,25 +3600,17 @@ call_expr:
 
 dot_expr:
   expr TDOT ident_use
-    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3); }
 | expr TDOT TTYPE
-    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3); }
 | expr TDOT TDOMAIN
-    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3); }
 | expr TDOT TLOCALE
-    { $$ = Dot::build(BUILDER, LOC(@$), toOwned($1), $3).release(); }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3); }
 | expr TDOT TBYTES TLP TRP
-    {
-      $$ = FnCall::build(BUILDER, LOC(@$),
-                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
-                         false).release();
-    }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3, true); }
 | expr TDOT TBYTES TLSBR TRSBR
-    {
-      $$ = FnCall::build(BUILDER, LOC(@$),
-                         Dot::build(BUILDER, LOC(@$), toOwned($1), $3),
-                         true).release();
-    }
+    { $$ = context->buildDot(@$, @1, @2, @3, $1, $3, true); }
 ;
 
 /* ( <expr> ) -- A parenthesized expression.  The parens are stripped.

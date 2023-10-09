@@ -17,31 +17,16 @@
  * limitations under the License.
  */
 
-// This is included at the right time in the generated bison .h/.cpp
-// It is split out into this separate file for easier maintenance.
-// It contains any #includes necessary for the parser.
+/** (AST, LOCATION) **/
+// The first actual is the AST type the location is associated with.
+// The second actual is a string naming the location.
+// The second actual must have a unique name.
+// 
 
-#include "chpl/framework/Context.h"
-#include "chpl/framework/ErrorMessage.h"
-#include "chpl/framework/Location.h"
-#include "chpl/framework/UniqueString.h"
-#include "chpl/parsing/Parser.h"
-#include "chpl/uast/all-uast.h"
-
-#include "parser-yyltype.h"
-
-#include <cstdint>
-#include <cstdio>
-#include <cstdlib>
-#include <cstring>
-#include <set>
-#include <string>
-#include <unordered_map>
-#include <utility>
-#include <vector>
-
-using namespace chpl;
-using namespace uast;
-using chpl::detail::PODUniqueString;
-
-struct ParserComment;
+LOCATION_MAP(Dot, DotField)
+LOCATION_MAP(NamedDecl, DeclName)
+// LOCATION_MAP(AstNode, NamedActual)
+// LOCATION_MAP(AstNode, AttributeNamedActual)
+// LOCATION_MAP(Function, ReturnIntent)
+// LOCATION_MAP(Function, ReceiverIntent)
+// LOCATION_MAP(AstNode, FormalIntent)
