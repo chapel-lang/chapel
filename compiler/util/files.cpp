@@ -93,12 +93,6 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   } while (colon != NULL);
 }
 
-static void appendLineToTmpFile(const char* str, const char* filename) {
-  fileinfo* file = openTmpFile(filename, "a");
-  fprintf(file->fptr, "%s\n", str);
-  closefile(file);
-}
-
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
@@ -106,7 +100,7 @@ void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(libString, libDirsFilename);
+    saveDriverTmp(libDirsFilename, libString);
   }
 }
 
@@ -115,7 +109,7 @@ void addLibFile(const char* libFile) {
   libFiles.push_back(astr(libFile));
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(libFile, libFilesFilename);
+    saveDriverTmp(libFilesFilename, libFile);
   }
 }
 
@@ -123,21 +117,27 @@ void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(incDir, incDirsFilename);
+    saveDriverTmp(incDirsFilename, incDir);
   }
 }
 
-// Helper function to feed tmp file lines into a storage/processing function.
-// Used for deserializing library dir, library name, and include dir info for
-// driver.
-static void restoreLinesFromTmp(const char* tmpFileName,
-                               void (*restoreFunc)(const char*)) {
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  fprintf(file->fptr, "%s\n", stringToSave);
+  closefile(file);
+}
+
+void restoreDriverTmp(const char* tmpFilePath,
+                               void (*restoreSavedString)(const char*)) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
   // Create file iff it did not already exist, for simpler reading logic in the
   // rest of the function.
-  fileinfo* tmpFileDummy = openTmpFile(tmpFileName, "a");
+  fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
   closefile(tmpFileDummy);
 
-  fileinfo* tmpFile = openTmpFile(tmpFileName, "r");
+  fileinfo* tmpFile = openTmpFile(tmpFilePath, "r");
 
   char strBuf[4096];
   while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
@@ -148,7 +148,7 @@ static void restoreLinesFromTmp(const char* tmpFileName,
     strBuf[--len] = '\0';
 
     // invoke restoring function
-    (*restoreFunc)(strBuf);
+    (*restoreSavedString)(strBuf);
   }
 
   closefile(tmpFile);
@@ -162,9 +162,9 @@ void restoreLibraryAndIncludeInfo() {
          "tried to restore library and include info from disk, but it was "
          "already present in memory");
 
-  restoreLinesFromTmp(libDirsFilename, &addLibPath);
-  restoreLinesFromTmp(libFilesFilename, &addLibFile);
-  restoreLinesFromTmp(incDirsFilename, &addIncInfo);
+  restoreDriverTmp(libDirsFilename, &addLibPath);
+  restoreDriverTmp(libFilesFilename, &addLibFile);
+  restoreDriverTmp(incDirsFilename, &addIncInfo);
 }
 
 void restoreAdditionalSourceFiles() {

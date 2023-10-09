@@ -92,6 +92,17 @@ void addLibPath(const char* filename);
 void addLibFile(const char* filename);
 void addIncInfo(const char* incDir);
 
+// Save provided string into the given tmp file.
+// Appends the given string as a new line in the file. Provided string is
+// assumed to not contain newlines.
+// For storing information that needs to be saved between driver phases.
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave);
+// Feed strings from the specified tmp file (one per line) into the given
+// restoring function.
+// For accessing information saved between driver phases with saveDriverTmp.
+void restoreDriverTmp(const char* tmpFilePath,
+                          void (*restoreSavedString)(const char*));
+
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.
 void restoreLibraryAndIncludeInfo();
