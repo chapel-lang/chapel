@@ -45,23 +45,23 @@ module URL {
   public use IO;
 
   pragma "last resort"
-  @deprecated("openUrlReader with a style argument is deprecated")
+  @deprecated("openUrlReader with a style and/or kind argument is deprecated")
   proc openUrlReader(url:string,
                      param kind=iokind.dynamic, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)),
                      style:iostyle)
                     : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start, end,
-                               style: iostyleInternal);
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlReaderHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
-  @deprecated("openUrlReader with a 'kind' argument is deprecated")
-  proc openUrlReader(url:string,
-                     param kind=iokind.dynamic, param locking=true,
+  @deprecated("openUrlReader with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlReader(url:string, param locking=true,
                      start:int(64) = 0, end:int(64) = max(int(64)))
-                    : fileReader(kind, locking) throws {
-    return openUrlReaderHelper(url, kind, locking, start, end);
+                    : fileReader(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
   }
 
   /*
@@ -74,25 +74,23 @@ module URL {
                 corresponding parameter of the :record:`~IO.fileReader` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
-  :arg start: zero-based byte offset indicating where in the file the
-              fileReader should start reading. Defaults to 0.
-  :arg end: zero-based byte offset indicating where in the file the
-            fileReader should no longer be allowed to read. Defaults
-            to a ``max(int)`` - meaning no end point.
+  :arg region: zero-based byte offset indicating where in the file the
+               fileReader should read. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
   :returns: an open fileReader to the requested resource.
 
   :throws SystemError: Thrown if a fileReader could not be returned.
    */
   proc openUrlReader(url:string, param locking=true,
-                     start:int(64) = 0, end:int(64) = max(int(64)))
+                     region: range(?) = 0..)
                     : fileReader(locking) throws {
-    return openUrlReaderHelper(url, _iokind.dynamic, locking, start, end);
+    return openUrlReaderHelper(url, _iokind.dynamic, locking, region);
   }
 
   private
   proc openUrlReaderHelper(url:string,
                            param kind=_iokind.dynamic, param locking=true,
-                           start:int(64) = 0, end:int(64) = max(int(64)),
+                           region: range(?) = 0..,
                            style:iostyleInternal = defaultIOStyleInternal())
     : fileReader(kind, locking) throws {
 
@@ -100,29 +98,29 @@ module URL {
     use CurlQioIntegration;
     var f = openCurlFile(url, ioMode.r, style);
     // TODO: change this back to f.reader when the kind argument is removed
-    return f.readerHelper(kind=kind, locking=locking, region=start..#end);
+    return f.readerHelper(kind=kind, locking=locking, region=region);
   }
 
   pragma "last resort"
-  @deprecated("openUrlWriter with a style argument is deprecated")
+  @deprecated("openUrlWriter with a style and/or kind argument is deprecated")
   proc openUrlWriter(url:string,
                  param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
                  style:iostyle)
                 : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start, end,
-                               style: iostyleInternal);
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlWriterHelper(url, kind, locking, region, style: iostyleInternal);
   }
 
   pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated("openUrlWriter with a 'kind' argument is deprecated")
-  proc openUrlWriter(url:string,
-                 param kind=iokind.dynamic, param locking=true,
+  @deprecated("openUrlWriter with a start and/or end argument is deprecated. Please use the new region argument instead.")
+  proc openUrlWriter(url:string, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)))
-                : fileWriter(kind, locking) throws {
-    return openUrlWriterHelper(url, kind, locking, start, end);
+                : fileWriter(locking) throws {
+    var region = if end == max(int(64)) then start..end else start..(end-1);
+    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
   }
+
   /*
 
   Open a fileWriter to a particular URL.
@@ -133,26 +131,23 @@ module URL {
                 corresponding parameter of the :record:`~IO.fileWriter` type.
                 Defaults to true, but when safe, setting it to false
                 can improve performance.
-  :arg start: zero-based byte offset indicating where in the file the
-              fileWriter should start writing. Defaults to 0.
-  :arg end: zero-based byte offset indicating where in the file the
-            fileWriter should no longer be allowed to write. Defaults
-            to a ``max(int)`` - meaning no end point.
+  :arg region: zero-based byte offset indicating where in the file the
+               fileWriter should write. Defaults to ``0..`` - meaning from the
+               start of the file to no end point.
   :returns: an open fileWriter to the requested resource.
 
   :throws SystemError: Thrown if a fileWriter could not be returned.
   */
   proc openUrlWriter(url:string, param locking=true,
-                 start:int(64) = 0, end:int(64) = max(int(64)))
+                 region: range(?) = 0..)
                 : fileWriter(locking) throws {
-    return openUrlWriterHelper(url, _iokind.dynamic, locking, start, end);
+    return openUrlWriterHelper(url, _iokind.dynamic, locking, region);
   }
 
   private proc openUrlWriterHelper(url:string,
                                    param kind=_iokind.dynamic,
                                    param locking=true,
-                                   start:int(64) = 0,
-                                   end:int(64) = max(int(64)),
+                                   region: range(?) = 0..,
                                    style:iostyleInternal = defaultIOStyleInternal())
     : fileWriter(kind, locking) throws {
 
@@ -161,7 +156,7 @@ module URL {
     var f = openCurlFile(url, ioMode.cw, style);
     // TODO: change this back to f.writer when the kind argument has been
     // removed
-    return f.writerHelper(kind=kind, locking=locking, region=start..#end);
+    return f.writerHelper(kind=kind, locking=locking, region=region);
   }
 
 }
