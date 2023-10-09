@@ -610,13 +610,6 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void saveCompileCommand() {
-  // save compile command to file for later use in codegen
-  fileinfo* file = openTmpFile(compileCommandFilename, "w");
-  fprintf(file->fptr, "%s", compileCommand);
-  closefile(file);
-}
-
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -815,8 +808,8 @@ static int runDriverPhaseTwo(int argc, char* argv[]);
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
-  // initialize resources that need to be carried over between invocations
-  saveCompileCommand();
+  // Save initial compilation command before re-invocations.
+  saveDriverTmp(compileCommandFilename, compileCommand);
 
   // invoke phase one
   if ((status = runDriverPhaseOne(argc, argv)) != 0) {
