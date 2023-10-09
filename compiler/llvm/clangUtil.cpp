@@ -5310,7 +5310,9 @@ static void handlePrintAsm(std::string dotOFile) {
       disSymArg += "_";
     }
 
+    // If in driver mode, restore list of C symbols to print from disk.
     if (fDriverPhaseTwo) restorePrintIrCNames();
+
     // TODO: skip calling this (and remove the function) as the set should
     // already have deterministic ordering and be fine to iterate through
     std::vector<std::string> names = gatherPrintLlvmIrCNames();
