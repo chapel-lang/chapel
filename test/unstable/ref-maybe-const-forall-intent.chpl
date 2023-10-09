@@ -71,3 +71,50 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
     A[i] = i;
   }
 }
+
+
+{
+  proc mod(ref a) do a += 1;
+  var myArray1: [1..10] int;
+  forall i in 1..9
+    do myArray1.localAccess(i) = 1; // should warn
+
+  forall i in 1..9
+    do myArray1[i..i+1] = 2; // should warn
+  forall i in 1..9
+    do myArray1.localSlice(i..i+1) = 3; // should warn
+
+  forall i in 1..9
+    do myArray1[{i..i+1}] = 4; // should warn
+  forall i in 1..9
+    do myArray1.localSlice({i..i+1}) = 4; // should warn
+
+  forall i in 1..9
+    do mod(myArray1[i..i+1]); // should warn
+
+  record R {
+    var A: [1..10] int;
+    var x: int;
+    proc ref foo() {
+      forall i in 1..10 {
+        A[i] = i; // should warn
+        // x = 10; // error
+      }
+      forall i in 1..10 with (ref this) {
+        A[i] = i;
+        x = 10;
+      }
+    }
+  }
+  var r = new R();
+  r.foo();
+}
+
+{
+  proc f(ref x: int) do x = 3;
+  const Keys = 1..3;
+  var Counts: [Keys] int;
+  forall key in Keys { // should warn
+    f(Counts[key]);
+  }
+}
