@@ -435,10 +435,8 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       numInputFiles--;
     } else {
       // add file
+      if (firstAddedIdx < 0) firstAddedIdx = cursor;
       inputFilenames[cursor++] = newFilename;
-      if (firstAddedIdx < 0) {
-        firstAddedIdx = cursor;
-      }
     }
   }
   inputFilenames[cursor] = NULL;
