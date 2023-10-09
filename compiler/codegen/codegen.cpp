@@ -2325,33 +2325,35 @@ static const char* getClangBuiltinWrappedName(const char* name)
 #endif
 
 // Gets the name of the main module as an astr.
-// If we are not in a backend-only run, the result will be stored in the tmpdir.
-// If we are in a backend-only run, we cannot calculate the main module and will
-// expect a file in the tmpdir to have that information available to retrieve.
+// Includes support for driver mode, since in driver phase two we cannot access
+// the main module. So, when this is run in phase one it saves the result to a
+// tmp file on disk, and when run in phase two it retrieves the name from there.
 static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
   const char* filename;
-  fileinfo* mainModTmpFile;
   if (fDriverPhaseTwo) {
-    // we are in the backend, retrieve saved result from tmpdir
-    mainModTmpFile = openTmpFile(mainModTmpFilename, "r");
-    char nameReadIn[FILENAME_MAX];
-    INT_ASSERT(fgets(nameReadIn, sizeof(nameReadIn), mainModTmpFile->fptr));
-    filename = astr(nameReadIn);
+    // Retrieve saved main module filename
+    restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
+      filename = astr(mainModName);
+    });
   } else {
+    // Determine main module filename
     ModuleSymbol* mainMod = ModuleSymbol::mainModule();
     const char* mainModFilename = mainMod->astloc.filename();
     const char* strippedFilename = stripdirectories(mainModFilename);
     // stripdirectories returns an astr, so pointer is fine
     filename = strippedFilename;
 
-    // save result in tmp file for future usage
-    mainModTmpFile = openTmpFile(mainModTmpFilename, "w");
-    fprintf(mainModTmpFile->fptr, "%s", filename);
+    // Save result in tmp file for future usage if in driver mode
+    if (!fDriverDoMonolithic) {
+      assert(fDriverPhaseOne &&
+             "should not be reachable outside of driver "
+             "phase one");
+      saveDriverTmp(mainModTmpFilename, filename);
+    }
   }
 
-  closefile(mainModTmpFile);
   return filename;
 }
 

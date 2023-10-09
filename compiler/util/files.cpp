@@ -129,7 +129,7 @@ void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
 }
 
 void restoreDriverTmp(const char* tmpFilePath,
-                               void (*restoreSavedString)(const char*)) {
+                      std::function<void(const char*)> restoreSavedString) {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   // Create file iff it did not already exist, for simpler reading logic in the
@@ -144,11 +144,11 @@ void restoreDriverTmp(const char* tmpFilePath,
     // remove trailing newline from fgets
     // using strlen here is fine because fgets guarantees null termination
     size_t len = strlen(strBuf);
-    assert(strBuf[len-1] == '\n' && "stored line exceeds maximum length");
+    assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
     strBuf[--len] = '\0';
 
     // invoke restoring function
-    (*restoreSavedString)(strBuf);
+    restoreSavedString(strBuf);
   }
 
   closefile(tmpFile);

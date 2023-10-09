@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
@@ -101,7 +102,7 @@ void saveDriverTmp(const char* tmpFilePath, const char* stringToSave);
 // restoring function.
 // For accessing information saved between driver phases with saveDriverTmp.
 void restoreDriverTmp(const char* tmpFilePath,
-                          void (*restoreSavedString)(const char*));
+                      std::function<void(const char*)> restoreSavedString);
 
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.
