@@ -151,7 +151,8 @@ void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
 
 #define DECL_ONE_REDUCE_RET_VAL(chpl_kind, data_type) \
-data_type chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n);
+void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                               data_type* val);
 
 #define DECL_REDUCE_RET_VAL(chpl_kind) \
   DECL_ONE_REDUCE_RET_VAL(chpl_kind, int8_t) \
