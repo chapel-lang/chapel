@@ -150,24 +150,43 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
 
 
-#define DECL_ONE_BASIC_REDUCE(chpl_kind, data_type) \
+#define DECL_ONE_REDUCE_RET_VAL(chpl_kind, data_type) \
 data_type chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n);
 
-#define DECL_BASIC_REDUCE(chpl_kind) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, int8_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, int16_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, int32_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, int64_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, uint8_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, uint16_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, uint32_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, uint64_t) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, float) \
-  DECL_ONE_BASIC_REDUCE(chpl_kind, double)
+#define DECL_REDUCE_RET_VAL(chpl_kind) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, int8_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, int16_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, int32_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, int64_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, uint8_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, uint16_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, uint32_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, uint64_t) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, float) \
+  DECL_ONE_REDUCE_RET_VAL(chpl_kind, double)
 
-DECL_BASIC_REDUCE(sum);
-DECL_BASIC_REDUCE(min);
-DECL_BASIC_REDUCE(max);
+DECL_REDUCE_RET_VAL(sum);
+DECL_REDUCE_RET_VAL(min);
+DECL_REDUCE_RET_VAL(max);
+
+#define DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, data_type) \
+void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                               data_type* val, int* idx);
+
+#define DECL_REDUCE_RET_VAL_IDX(chpl_kind) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, int8_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, int16_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, int32_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, int64_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, uint8_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, uint16_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, uint32_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, uint64_t) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, float) \
+  DECL_ONE_REDUCE_RET_VAL_IDX(chpl_kind, double)
+
+DECL_REDUCE_RET_VAL_IDX(minloc);
+DECL_REDUCE_RET_VAL_IDX(maxloc);
 
 #endif // HAS_GPU_LOCALE
 

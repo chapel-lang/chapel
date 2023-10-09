@@ -1,5 +1,5 @@
 
-inline proc chpl_reduceHelp(param op: string, ref A: [] ?t): t {
+inline proc chpl_reduceHelp(param op: string, ref A: [] ?t) {
   proc chplTypeToCTypeName(type t) param {
     select t {
       when int(8)   do return "int8_t";
@@ -21,13 +21,25 @@ inline proc chpl_reduceHelp(param op: string, ref A: [] ?t): t {
   }
 
   use CTypes;
-  extern externFuncName(op, t) proc reduce_fn(data, size): t;
-  return reduce_fn(c_ptrTo(A), A.size);
+
+  if op == "sum" || op == "min" || op == "max" {
+    extern externFuncName(op, t) proc reduce_fn(data, size): t;
+    return reduce_fn(c_ptrTo(A), A.size);
+  }
+  else {
+    var idx: int(32);
+    var val: t;
+    extern externFuncName(op, t) proc reduce_fn(data, size, ref val, ref idx);
+    reduce_fn(c_ptrTo(A), A.size, val, idx);
+    return (idx, val);
+  }
 }
 
 inline proc gpuSumReduce(ref A: [] ?t): t { return chpl_reduceHelp("sum", A); }
 inline proc gpuMinReduce(ref A: [] ?t): t { return chpl_reduceHelp("min", A); }
 inline proc gpuMaxReduce(ref A: [] ?t): t { return chpl_reduceHelp("max", A); }
+inline proc gpuMinLocReduce(ref A: [] ?t) { return chpl_reduceHelp("minloc", A); }
+inline proc gpuMaxLocReduce(ref A: [] ?t) { return chpl_reduceHelp("maxloc", A); }
 
 config const n = 100;
 
@@ -44,6 +56,8 @@ proc testType(type t) {
         when "sum" do res=gpuSumReduce(Arr);
         when "min" do res=gpuMinReduce(Arr);
         when "max" do res=gpuMaxReduce(Arr);
+        when "minloc" do res=gpuMinLocReduce(Arr);
+        when "maxloc" do res=gpuMaxLocReduce(Arr);
       }
 
       writeln(op, ": ", res);
@@ -54,6 +68,8 @@ proc testType(type t) {
   test("sum", t);
   test("min", t);
   test("max", t);
+  test("minloc", t);
+  test("maxloc", t);
   writeln();
 }
 
