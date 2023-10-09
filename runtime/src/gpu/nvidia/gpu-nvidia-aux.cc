@@ -4,6 +4,18 @@
 #include "chpl-gpu.h"
 #include "../common/cuda-utils.h"
 
+#define DEF_REDUCE(MACRO, cub_kind, chpl_kind) \
+  MACRO(cub_kind, chpl_kind, int8_t)  \
+  MACRO(cub_kind, chpl_kind, int16_t)  \
+  MACRO(cub_kind, chpl_kind, int32_t)  \
+  MACRO(cub_kind, chpl_kind, int64_t)  \
+  MACRO(cub_kind, chpl_kind, uint8_t)  \
+  MACRO(cub_kind, chpl_kind, uint16_t)  \
+  MACRO(cub_kind, chpl_kind, uint32_t)  \
+  MACRO(cub_kind, chpl_kind, uint64_t)  \
+  MACRO(cub_kind, chpl_kind, float)   \
+  MACRO(cub_kind, chpl_kind, double);
+
 #define DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                data_type* val) {\
@@ -17,21 +29,9 @@ void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   CUDA_CALL(cuMemcpyDtoH(val, result, sizeof(data_type))); \
 }
 
-#define DEF_REDUCE_RET_VAL(cub_kind, chpl_kind) \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, int8_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, int16_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, int32_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, int64_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, uint8_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, uint16_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, uint32_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, uint64_t)  \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, float)   \
-  DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, double);
-
-DEF_REDUCE_RET_VAL(Sum, sum)
-DEF_REDUCE_RET_VAL(Min, min)
-DEF_REDUCE_RET_VAL(Max, max)
+DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
+DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
@@ -50,17 +50,6 @@ void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *idx = result_host.key; \
 }
 
-#define DEF_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind) \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, int8_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, int16_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, int32_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, int64_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, uint8_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, uint16_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, uint32_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, uint64_t)  \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, float)   \
-  DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, double);
+DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
-DEF_REDUCE_RET_VAL_IDX(ArgMin, minloc)
-DEF_REDUCE_RET_VAL_IDX(ArgMax, maxloc)
