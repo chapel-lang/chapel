@@ -32,6 +32,7 @@ SHORT_NAME=llvm-16
 START_DATE=10/05/23
 # this is just for testing LLVM 16
 export CHPL_LLVM=bundled
+unset CHPL_LLVM_CONFIG
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
