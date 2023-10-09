@@ -41,12 +41,8 @@ timer.start();
 computeHistogram(X, histogram);
 timer.stop();
 
-// FIXME: is there an easier way to copy out of an array of atomics?
-var histogramCopy: [histogram.domain] int; 
-writeln("histogram.domain =", histogram.domain);
-forall i in histogram.domain do
-  histogramCopy[i] = histogram[i].read();
-outputHistogram(histogramCopy);
+// copy from array of atomics into a regular integer array
+var histogramCopy = histogram.read();
 
 // verify number of items in histogram is equal to number of random
 // numbers and output timing results
