@@ -98,8 +98,10 @@ void addIncInfo(const char* incDir);
 // assumed to not contain newlines.
 // For storing information that needs to be saved between driver phases.
 void saveDriverTmp(const char* tmpFilePath, const char* stringToSave);
+void saveDriverTmpMultiple(const char* tmpFilePath,
+                           std::vector<const char*> stringsToSave);
 // Feed strings from the specified tmp file (one per line) into the given
-// restoring function.
+// restoring function, which should copy any it needs to keep.
 // For accessing information saved between driver phases with saveDriverTmp.
 void restoreDriverTmp(const char* tmpFilePath,
                       std::function<void(const char*)> restoreSavedString);

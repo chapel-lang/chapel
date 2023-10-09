@@ -123,8 +123,20 @@ void addIncInfo(const char* incDir) {
 
 void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
   fileinfo* file = openTmpFile(tmpFilePath, "a");
   fprintf(file->fptr, "%s\n", stringToSave);
+  closefile(file);
+}
+
+void saveDriverTmpMultiple(const char* tmpFilePath,
+                           std::vector<const char*> stringsToSave) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  for (const auto stringToSave : stringsToSave) {
+    fprintf(file->fptr, "%s\n", stringToSave);
+  }
   closefile(file);
 }
 
@@ -141,9 +153,10 @@ void restoreDriverTmp(const char* tmpFilePath,
 
   char strBuf[4096];
   while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
-    // remove trailing newline from fgets
-    // using strlen here is fine because fgets guarantees null termination
+    // Note: Using strlen here (instead of strnlen) is safe because fgets
+    // guarantees null termination.
     size_t len = strlen(strBuf);
+    // remove trailing newline, which fgets preserves unless buffer is exceeded
     assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
     strBuf[--len] = '\0';
 
@@ -170,9 +183,13 @@ void restoreLibraryAndIncludeInfo() {
 void restoreAdditionalSourceFiles() {
   INT_ASSERT(fDriverPhaseTwo &&
              "should only be restoring filenames in driver phase two");
-  restoreDriverTmp(additionalFilenamesListFilename, [](const char* filename) {
-    addSourceFile(filename, NULL);
-  });
+
+  std::vector<const char*> additionalFilenames;
+  restoreDriverTmp(additionalFilenamesListFilename,
+                   [&additionalFilenames](const char* filename) {
+                     additionalFilenames.push_back(astr(filename));
+                   });
+  addSourceFiles(additionalFilenames.size(), &additionalFilenames[0]);
 }
 
 void ensureDirExists(const char* dirname, const char* explanation,
@@ -386,6 +403,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
 
+  int firstAddedIdx = -1;
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
@@ -418,13 +436,21 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
     } else {
       // add file
       inputFilenames[cursor++] = newFilename;
-      if (fDriverPhaseOne) {
-        // also save to file for later use in driver phase two
-        saveDriverTmp(additionalFilenamesListFilename, newFilename);
+      if (firstAddedIdx < 0) {
+        firstAddedIdx = cursor;
       }
     }
   }
   inputFilenames[cursor] = NULL;
+
+  // If in driver mode, and filenames were added, also save added filenames for
+  // driver phase two.
+  if (fDriverPhaseOne && firstAddedIdx >= 0) {
+    saveDriverTmpMultiple(
+        additionalFilenamesListFilename,
+        std::vector<const char*>(inputFilenames + firstAddedIdx,
+                                 inputFilenames + cursor));
+  }
 }
 
 void assertSourceFilesFound() {
