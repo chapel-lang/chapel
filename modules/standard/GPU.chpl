@@ -389,4 +389,55 @@ module GPU
   /* When run on a GPU, atomically compare the value in 'x' and 'cmp', if they
      are equal store 'val' in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : T { return gpuAtomicTernOp("CAS", x, cmp, val); }
+
+  // ============================
+  // Reductions
+  // ============================
+
+  private inline proc doGpuReduce(param op: string, ref A: [] ?t) {
+    proc chplTypeToCTypeName(type t) param {
+      select t {
+        when int(8)   do return "int8_t";
+        when int(16)  do return "int16_t";
+        when int(32)  do return "int32_t";
+        when int(64)  do return "int64_t";
+        when uint(8)  do return "uint8_t";
+        when uint(16) do return "uint16_t";
+        when uint(32) do return "uint32_t";
+        when uint(64) do return "uint64_t";
+        when real(32) do return "float";
+        when real(64) do return "double";
+      }
+      return "unknown";
+    }
+
+    proc getExternFuncName(param op: string, type t) param: string {
+      return "chpl_gpu_"+op+"_reduce_"+chplTypeToCTypeName(t);
+    }
+
+    use CTypes;
+
+    param externFunc = getExternFuncName(op, t);
+
+    if op == "sum" || op == "min" || op == "max" {
+      var val: t;
+      extern externFunc proc reduce_fn(data, size, ref val);
+      reduce_fn(c_ptrTo(A), A.size, val);
+      return val;
+    }
+    else {
+      var idx: int(32);
+      var val: t;
+      extern externFunc proc reduce_fn(data, size, ref val, ref idx);
+      reduce_fn(c_ptrTo(A), A.size, val, idx);
+      return (idx, val);
+    }
+  }
+
+  inline proc gpuSumReduce(ref A: [] ?t) do return doGpuReduce("sum", A);
+  inline proc gpuMinReduce(ref A: [] ?t) do return doGpuReduce("min", A);
+  inline proc gpuMaxReduce(ref A: [] ?t) do return doGpuReduce("max", A);
+  inline proc gpuMinLocReduce(ref A: [] ?t) do return doGpuReduce("minloc", A);
+  inline proc gpuMaxLocReduce(ref A: [] ?t) do return doGpuReduce("maxloc", A);
+
 }
