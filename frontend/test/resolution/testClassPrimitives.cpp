@@ -75,6 +75,13 @@ static void test1() {
     { "new unmanaged C()", "unmanaged C?", testType },
     { "new unmanaged C?()", "unmanaged C?", testType },
 
+    { "owned C", "owned C?", testExact },
+    { "owned C?", "owned C?", testExact },
+    { "shared C", "shared C?", testExact },
+    { "shared C?", "shared C?", testExact },
+    { "unmanaged C", "unmanaged C?", testExact },
+    { "unmanaged C?", "unmanaged C?", testExact },
+
     { "owned class", "owned class?", testExact },
     { "owned class", "owned class?", testExact },
     { "shared class", "shared class?", testExact },
@@ -92,6 +99,20 @@ static void test2() {
     { "new owned C?()", "borrowed C?", testType },
     { "new unmanaged C()", "borrowed C", testType },
     { "new unmanaged C?()", "borrowed C?", testType },
+
+    { "shared C", "borrowed C", testExact },
+    { "shared C?", "borrowed C?", testExact },
+    { "owned C", "borrowed C" , testExact },
+    { "owned C?", "borrowed C?", testExact },
+    { "unmanaged C", "borrowed C", testExact },
+    { "unmanaged C?", "borrowed C?", testExact },
+
+    { "shared class", "borrowed class", testExact },
+    { "shared class?", "borrowed class?", testExact },
+    { "owned class", "borrowed class" , testExact },
+    { "owned class?", "borrowed class?", testExact },
+    { "unmanaged class", "borrowed class", testExact },
+    { "unmanaged class?", "borrowed class?", testExact },
   });
 }
 
@@ -103,6 +124,20 @@ static void test3() {
     { "new owned C?()", "unmanaged C?", testType },
     { "new unmanaged C()", "unmanaged C", testType },
     { "new unmanaged C?()", "unmanaged C?", testType },
+
+    { "shared C", "unmanaged C", testExact },
+    { "shared C?", "unmanaged C?", testExact },
+    { "owned C", "unmanaged C" , testExact },
+    { "owned C?", "unmanaged C?", testExact },
+    { "unmanaged C", "unmanaged C", testExact },
+    { "unmanaged C?", "unmanaged C?", testExact },
+
+    { "shared class", "unmanaged class", testExact },
+    { "shared class?", "unmanaged class?", testExact },
+    { "owned class", "unmanaged class" , testExact },
+    { "owned class?", "unmanaged class?", testExact },
+    { "unmanaged class", "unmanaged class", testExact },
+    { "unmanaged class?", "unmanaged class?", testExact },
   });
 }
 
