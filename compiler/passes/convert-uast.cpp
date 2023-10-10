@@ -3966,10 +3966,8 @@ struct Converter {
     bool inheritMarkedGeneric = false;
 
     std::vector<Expr*> inherits;
-    if (auto cls = node->toClass()) {
-      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
-    } else if (auto rec = node->toRecord()) {
-      convertInheritsExprs(rec->inheritExprs(), inherits, inheritMarkedGeneric);
+    if (auto ad = node->toAggregateDecl()) {
+      convertInheritsExprs(ad->inheritExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {

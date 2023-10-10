@@ -56,6 +56,8 @@ class Union final : public AggregateDecl {
                     linkage,
                     linkageNameChildNum,
                     name,
+                    /* inheritExprChildNum */ NO_CHILD,
+                    /* numInheritExprs */ 0,
                     elementsChildNum,
                     numElements) {
 
