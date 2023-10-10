@@ -2191,6 +2191,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // Compute a new configuration for the Context
   chpl::Context::Configuration config;
+  // Save old tmp dir unless explicitly overridden
+  config.tmpDir = gContext->tmpDir();
   config.chplHome = CHPL_HOME;
   for (const auto& pair : envMapChplEnvInput) {
     config.chplEnvOverrides.insert(pair);
