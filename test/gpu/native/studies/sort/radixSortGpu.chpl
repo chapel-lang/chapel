@@ -24,13 +24,16 @@ module RadixSort {
   // TODO Choose better defaults for the above two things
   config const parallelScan = false; // Need to improve this more
 
-  proc serialScan(ref arr: [] uint, in startIdx = arr.domain.low, in endIdx = arr.domain.high){
+
+  // This function requires that startIdx and endIdx are within the bounds of the array
+  // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
+  proc serialScan(ref arr: [] uint, startIdx = arr.domain.low, endIdx = arr.domain.high){
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
     // Serial implementation
-    startIdx = max(startIdx, arr.domain.low);
-    endIdx = min(endIdx, arr.domain.high);
+    if boundsChecking then
+      assert(startIdx >= arr.domain.low && endIdx <= arr.domain.high);
     // Calculate the prefix sum
     var sum : uint = 0;
     for i in startIdx..endIdx {
