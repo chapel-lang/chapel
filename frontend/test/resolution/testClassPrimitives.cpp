@@ -109,6 +109,11 @@ static void test1() {
     { "shared class", "shared class?", testExact },
     { "unmanaged class", "unmanaged class?", testExact },
     { "unmanaged class", "unmanaged class?", testExact },
+
+    { "42", "int(64)", testType },
+    { "int(64)", "int(64)", testExact },
+    { "\"hello\"", "string", testType },
+    { "string", "string", testExact },
   });
 }
 
@@ -134,6 +139,11 @@ static void test2() {
     { "owned class?", "borrowed class?", testExact },
     { "unmanaged class", "borrowed class", testExact },
     { "unmanaged class?", "borrowed class?", testExact },
+
+    { "42", "int(64)", testType },
+    { "int(64)", "int(64)", testExact },
+    { "\"hello\"", "string", testType },
+    { "string", "string", testExact },
   });
 }
 
@@ -159,6 +169,101 @@ static void test3() {
     { "owned class?", "unmanaged class?", testExact },
     { "unmanaged class", "unmanaged class", testExact },
     { "unmanaged class?", "unmanaged class?", testExact },
+
+    { "42", "int(64)", testType },
+    { "int(64)", "int(64)", testExact },
+    { "\"hello\"", "string", testType },
+    { "string", "string", testExact },
+  });
+}
+
+static void test4() {
+  testPrimitive("to nilable class from type", {
+    { "new owned C()", nullptr, testType },
+    { "new owned C?()", nullptr, testType },
+    { "new shared C()", nullptr, testType },
+    { "new shared C?()", nullptr, testType },
+    { "new unmanaged C()", nullptr, testType },
+    { "new unmanaged C?()", nullptr, testType },
+
+    { "owned C", "owned C?", testExact },
+    { "owned C?", "owned C?", testExact },
+    { "shared C", "shared C?", testExact },
+    { "shared C?", "shared C?", testExact },
+    { "unmanaged C", "unmanaged C?", testExact },
+    { "unmanaged C?", "unmanaged C?", testExact },
+
+    { "owned class", "owned class?", testExact },
+    { "owned class", "owned class?", testExact },
+    { "shared class", "shared class?", testExact },
+    { "shared class", "shared class?", testExact },
+    { "unmanaged class", "unmanaged class?", testExact },
+    { "unmanaged class", "unmanaged class?", testExact },
+
+    { "42", nullptr, testType },
+    { "int(64)", nullptr, testExact },
+    { "\"hello\"", nullptr, testType },
+    { "string", nullptr, testExact },
+  });
+}
+
+static void test5() {
+  testPrimitive("to borrowed class from unknown", {
+    { "new shared C()", nullptr, testType },
+    { "new shared C?()", nullptr, testType },
+    { "new owned C()", nullptr , testType },
+    { "new owned C?()", nullptr, testType },
+    { "new unmanaged C()", nullptr, testType },
+    { "new unmanaged C?()", nullptr, testType },
+
+    { "shared C", "borrowed C", testExact },
+    { "shared C?", "borrowed C?", testExact },
+    { "owned C", "borrowed C" , testExact },
+    { "owned C?", "borrowed C?", testExact },
+    { "unmanaged C", "borrowed C", testExact },
+    { "unmanaged C?", "borrowed C?", testExact },
+
+    { "shared class", "borrowed class", testExact },
+    { "shared class?", "borrowed class?", testExact },
+    { "owned class", "borrowed class" , testExact },
+    { "owned class?", "borrowed class?", testExact },
+    { "unmanaged class", "borrowed class", testExact },
+    { "unmanaged class?", "borrowed class?", testExact },
+
+    { "42", nullptr, testType },
+    { "int(64)", nullptr, testExact },
+    { "\"hello\"", nullptr, testType },
+    { "string", nullptr, testExact },
+  });
+}
+
+static void test6() {
+  testPrimitive("to unmanaged class from unknown", {
+    { "new shared C()", nullptr, testType },
+    { "new shared C?()", nullptr, testType },
+    { "new owned C()", nullptr , testType },
+    { "new owned C?()", nullptr, testType },
+    { "new unmanaged C()", nullptr, testType },
+    { "new unmanaged C?()", nullptr, testType },
+
+    { "shared C", "unmanaged C", testExact },
+    { "shared C?", "unmanaged C?", testExact },
+    { "owned C", "unmanaged C" , testExact },
+    { "owned C?", "unmanaged C?", testExact },
+    { "unmanaged C", "unmanaged C", testExact },
+    { "unmanaged C?", "unmanaged C?", testExact },
+
+    { "shared class", "unmanaged class", testExact },
+    { "shared class?", "unmanaged class?", testExact },
+    { "owned class", "unmanaged class" , testExact },
+    { "owned class?", "unmanaged class?", testExact },
+    { "unmanaged class", "unmanaged class", testExact },
+    { "unmanaged class?", "unmanaged class?", testExact },
+
+    { "42", nullptr, testType },
+    { "int(64)", nullptr, testExact },
+    { "\"hello\"", nullptr, testType },
+    { "string", nullptr, testExact },
   });
 }
 
@@ -166,4 +271,7 @@ int main() {
   test1();
   test2();
   test3();
+  test4();
+  test5();
+  test6();
 }
