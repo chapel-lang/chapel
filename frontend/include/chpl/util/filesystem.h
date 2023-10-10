@@ -69,8 +69,8 @@ bool isPathWriteable(const llvm::Twine& path);
 
 /**
  * creates a directory in the temp location for the system
- * with the pattern "<TMP>/<dirPrefix>-<username>.deleteme-XXXXXX/"
- * (where <TMP> is typically /tmp)
+ * with the pattern "[TMP]/[dirPrefix]-[username].deleteme-XXXXXX/"
+ * (where [TMP] is typically /tmp)
  *
  * prefix a prefix to put at the start of the directory name
  * tmpDirPathOut ref to a string that be set to the path of  the created dir

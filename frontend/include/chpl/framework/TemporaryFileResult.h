@@ -58,7 +58,7 @@ class TemporaryFileResult final {
 
   /** Create a TemporaryFileResult that represents a file
       with a name like
-         <context->tmpDir()>/<prefix><stuff><suffix>
+         [context->tmpDir()]/[prefix][stuff][suffix]
       Clients should not be sensitive to what 'stuff' consists of,
       but in needs to be present in order to unique-ify such files.
    */ 

@@ -130,7 +130,7 @@ compiler-internals: FORCE
 	@echo "Updating compiler-internals"
 	rm -rf "$(COMPILER_INTERNALS)"
 	@if [ -d $(COMPILER_INTERNALS_DOXYGEN) ]; then \
-	  ln -s ../meta/compiler-internals-doxygen "$(COMPILER_INTERNALS)" ; \
+	  ln -s ../../../frontend/doc "$(COMPILER_INTERNALS)" ; \
 	else \
 	  ln -s ../meta/compiler-internals-no-doxygen "$(COMPILER_INTERNALS)" ; \
 	fi
