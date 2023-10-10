@@ -327,8 +327,12 @@ def test_directory(test, test_type):
                         are_tests = True
                         break
 
+            run_local_sub_test = os.access(os.path.join(dir, "sub_test"), os.X_OK)
+            if args.performance:
+                run_local_sub_test = False
+
             # check a lot of stuff before continuing
-            if are_tests or os.access(os.path.join(dir, "sub_test"), os.X_OK):
+            if are_tests or run_local_sub_test:
                 # cd to dir for clean and run, saving current location
                 with cd(dir):
                     # clean dir
