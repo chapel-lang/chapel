@@ -261,16 +261,21 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
   if (isMoveOrAssign(call)) {
     if (SymExpr* lhs = toSymExpr(call->get(1))) {
       Expr* rhs = call->get(2);
-      // if rhs contains the sym and lhs is a ref
-      if (lhs->isRef() &&
-          !lhs->symbol()->isConstant() &&
-          lhs->symbol()->qualType().getQual() != QUAL_CONST_REF &&
-          exprContainsSymbol(sym, rhs))
-        return true;
+      // only check if the symbol is on the rhs
+      if (exprContainsSymbol(sym, rhs)) {
+        // if lhs is a ref
+        if (lhs->isRef() &&
+            !lhs->symbol()->isConstant() &&
+            lhs->symbol()->qualType().getQual() != QUAL_CONST_REF)
+          return true;
 
-      // in some cases, like `localAccess`, the lhs is incorrectly not marked as a ref
-      // so we need to do some more checks
-      if (symExprIsUsedAsRef(lhs, false, checkForMove)) return true;
+        // in some cases, like `localAccess`, the lhs is incorrectly not marked
+        // as a ref so we need to do some more checks
+        for_SymbolSymExprs(se, lhs->symbol()) {
+          if (se != lhs && symExprIsUsedAsRef(se, false, checkForMove))
+            return true;
+        }
+      }
 
     }
   }
@@ -281,13 +286,7 @@ bool callSetsSymbol(Symbol* sym, CallExpr* call)
       // if the parent is a move, we need to check to see if that parents
       // symbol is used like a ref. If it is, return true.
       if (auto parent = toCallExpr(call->parentExpr)) {
-        if (isMoveOrAssign(parent)) {
-          if (SymExpr* lhs = toSymExpr(parent->get(1))) {
-            for_SymbolSymExprs(se, lhs->symbol()) {
-              if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
-            }
-          }
-        }
+        if (callSetsSymbol(sym, parent)) return true;
       }
     }
   }
