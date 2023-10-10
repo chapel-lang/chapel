@@ -111,12 +111,7 @@ class ErrorGuard {
     chpl::ErrorWriter ew(this->context(), std::cout,
                          chpl::ErrorWriter::DETAILED,
                          false);
-    // this pattern segfaults if we happen to generate a new error during the
-    // writing of the error messages, whereas the loop below does not
-    //for (auto& err: this->errors()) err->write(ew);
-    for (size_t i = 0; i < this->numErrors(); i++) {
-      this->error(i)->write(ew);
-    }
+    for (auto& err : this->errors()) err->write(ew);
   }
 
   /** The guard destructor will assert that no errors have occurred. */

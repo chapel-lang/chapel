@@ -1076,12 +1076,7 @@ static void test19(Parser* parser) {
   std::cout<<guard.error(1)->message()<<std::endl;
   assert(guard.error(1)->kind() == ErrorBase::Kind::SYNTAX);
 
-  // during realizeErrors() we generate a third error - unfortunately there
-  // doesn't appear any good way to get at this error since realizeErrors clears
-  // the errors before returning this number.
-  // assert(guard.error(2)->message() == "error reading file: No such file or directory.");
-  // assert(guard.error(2)->kind() == ErrorBase::Kind::ERROR);
-  assert(guard.realizeErrors() == 3);
+  assert(guard.realizeErrors() == 2);
 }
 
 
