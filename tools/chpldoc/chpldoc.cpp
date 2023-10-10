@@ -1214,14 +1214,14 @@ struct RstSignatureVisitor {
     if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
 
-    if (r->numInterfaceExprs() > 0) {
+    if (r->numInheritExprs() > 0) {
       os_ << " : ";
       bool printComma = false;
-      for (auto interfaceExpr : r->interfaceExprs()) {
+      for (auto inheritExpr : r->inheritExprs()) {
         if (printComma) os_ << ", ";
         printComma = true;
 
-        interfaceExpr->traverse(*this);
+        inheritExpr->traverse(*this);
       }
     }
     return false;
