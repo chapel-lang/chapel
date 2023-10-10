@@ -30,16 +30,6 @@
 namespace chpl {
 namespace resolution {
 
-/**
-  Helper macro to report an error to the context, and produce an
-  erroneous QualifiedType. Accepts the pointer to the context,
-  the name of the error to report, and additional error information arguments,
-  the exact types of which depend on the type of error (see error-classes-list.h)
- */
-#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
-  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
-   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
-
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;

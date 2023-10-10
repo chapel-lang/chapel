@@ -22,6 +22,7 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/framework/ErrorBase.h"
 
 namespace chpl {
 namespace resolution {
@@ -298,13 +299,20 @@ static QualifiedType primCast(Context* context,
 }
 
 static QualifiedType convertClassToDecorator(Context* context,
+                                             const PrimCall* call,
                                              const CallInfo& ci,
-                                             ClassTypeDecorator::ClassTypeDecoratorEnum cde) {
+                                             ClassTypeDecorator::ClassTypeDecoratorEnum cde,
+                                             bool checked) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto& actualType = ci.actual(0).type();
   auto typePtr = actualType.type();
   if (!typePtr) return QualifiedType();
+
+  // The cheked primitives only allow a 'type' as the actual.
+  if (!actualType.isType() && checked) {
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
 
   const ManageableType* manageableType = nullptr;
   auto decorator = ClassTypeDecorator(cde);
@@ -314,56 +322,89 @@ static QualifiedType convertClassToDecorator(Context* context,
     decorator = decorator.copyNilabilityFrom(ct->decorator());
   } else if (auto mt = typePtr->toManageableType()) {
     manageableType = mt;
+  } else if (typePtr->isAnySharedType() || typePtr->isAnyOwnedType()) {
+    // 'shared' and 'owned' are just thrown out if we convert to a decorator.
+    manageableType = AnyClassType::get(context);
   }
-  // match production and ignore 'builtin' classes like _borrowedNilable etc.
+
 
   if (manageableType) {
     return QualifiedType(actualType.kind(),
                          ClassType::get(context, manageableType, nullptr, decorator));
+  } else if (checked) {
+    // It wasn't a class-like type, which is also not allowed by the checked
+    // primitives.
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
   }
   return actualType;
 }
 
 static QualifiedType primToUnmanagedClass(Context* context,
-                                          const CallInfo& ci) {
-  return convertClassToDecorator(context, ci, ClassTypeDecorator::UNMANAGED);
+                                          const PrimCall* call,
+                                          const CallInfo& ci,
+                                          bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::UNMANAGED, checked);
 }
 
 static QualifiedType primToUndecoratedClass(Context* context,
-                                          const CallInfo& ci) {
-  return convertClassToDecorator(context, ci, ClassTypeDecorator::GENERIC);
+                                            const PrimCall* call,
+                                            const CallInfo& ci,
+                                            bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::GENERIC, checked);
 }
 
 static QualifiedType primToBorrowedClass(Context* context,
-                                          const CallInfo& ci) {
-  return convertClassToDecorator(context, ci, ClassTypeDecorator::BORROWED);
+                                         const PrimCall* call,
+                                         const CallInfo& ci,
+                                         bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::BORROWED, checked);
 }
 
 static QualifiedType primToNilableClass(Context* context,
-                                        const CallInfo& ci) {
+                                        const PrimCall* call,
+                                        const CallInfo& ci,
+                                        bool checked) {
   if (ci.numActuals() != 1) return QualifiedType();
 
   auto& actualType = ci.actual(0).type();
   auto typePtr = actualType.type();
   if (!typePtr) return QualifiedType();
 
+  // The cheked primitives only allow a 'type' as the actual.
+  if (!actualType.isType() && checked) {
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
+
   const ManageableType* manageableType = nullptr;
   const Type* manager = nullptr;
-  auto decorator = ClassTypeDecorator(ClassTypeDecorator::BORROWED);
+  optional<ClassTypeDecorator::ClassTypeDecoratorEnum> cde;
 
   if (auto ct = typePtr->toClassType()) {
-    decorator = ct->decorator();
+    cde = ct->decorator().val();
     manager = ct->manager();
     manageableType = ct->manageableType();
   } else if (auto mt = typePtr->toManageableType()) {
-    // Default 'borrowed' decorator is right.
+    cde = ClassTypeDecorator::BORROWED;
     manageableType = mt;
+  } else if (typePtr->isAnySharedType() || typePtr->isAnyOwnedType()) {
+    // convert 'shared' into 'shared class?', which has the desired semantics.
+    cde = ClassTypeDecorator::MANAGED;
+    manager = typePtr;
+    manageableType = AnyClassType::get(context);
   }
 
-  if (manageableType) {
+  if (cde) {
+    auto decorator = ClassTypeDecorator(*cde);
     auto newDecorator = decorator.addNilable();
     const Type* newType = ClassType::get(context, manageableType, manager, newDecorator);
     return QualifiedType(actualType.kind(), newType);
+  } else if (checked) {
+    // It wasn't a class-like type, which is also not allowed by the checked
+    // primitives.
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
   }
 
   return actualType;
@@ -512,26 +553,29 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_REAL_TO_INT:
     case PRIM_OBJECT_TO_INT:
     case PRIM_COERCE:
-    case PRIM_TO_UNMANAGED_CLASS_CHECKED:
-    case PRIM_TO_BORROWED_CLASS_CHECKED:
-    case PRIM_TO_NILABLE_CLASS_CHECKED:
       assert(false && "not implemented yet");
       break;
 
+    case PRIM_TO_UNMANAGED_CLASS_CHECKED:
     case PRIM_TO_UNMANAGED_CLASS:
-      type = primToUnmanagedClass(context, ci);
+      type = primToUnmanagedClass(context, call, ci,
+                                  /* checked */ prim == PRIM_TO_UNMANAGED_CLASS_CHECKED);
       break;
 
+    case PRIM_TO_BORROWED_CLASS_CHECKED:
     case PRIM_TO_BORROWED_CLASS:
-      type = primToBorrowedClass(context, ci);
+      type = primToBorrowedClass(context, call, ci,
+                                 /* checked */ prim == PRIM_TO_BORROWED_CLASS_CHECKED);
       break;
 
     case PRIM_TO_UNDECORATED_CLASS:
-      type = primToUndecoratedClass(context, ci);
+      type = primToUndecoratedClass(context, call, ci, /* checked */ false);
       break;
 
+    case PRIM_TO_NILABLE_CLASS_CHECKED:
     case PRIM_TO_NILABLE_CLASS:
-      type = primToNilableClass(context, ci);
+      type = primToNilableClass(context, call, ci,
+                                /* checked */ prim == PRIM_TO_NILABLE_CLASS_CHECKED);
       break;
 
     case PRIM_TO_NON_NILABLE_CLASS:
@@ -800,7 +844,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     // no default to get a warning when new primitives are added
   }
 
-  if (type.kind() == QualifiedType::UNKNOWN) {
+  if (type.kind() == QualifiedType::UNKNOWN && !type.isErroneousType()) {
     context->error(call, "bad call to primitive \"%s\"", primTagToName(prim));
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }
