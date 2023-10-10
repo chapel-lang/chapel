@@ -64,7 +64,7 @@ static ArgumentType nonNil(std::string management) {
 bool shouldPass = true;
 bool shouldNotPass = false;
 
-static void testProgram(std::string management, std::vector<std::pair<ArgumentType, bool>> args) {
+static void testProgram(std::string intent, std::string management, std::vector<std::pair<ArgumentType, bool>> args) {
   Context ctx;
   auto context = &ctx;
   ErrorGuard guard(context);
@@ -81,7 +81,7 @@ static void testProgram(std::string management, std::vector<std::pair<ArgumentTy
   }
 
   // Declare the function
-  ps << "proc f(ref arg: " << management << ") { return true; }" << std::endl;
+  ps << "proc f(" << intent << " arg: " << management << ") { return true; }" << std::endl;
 
   // Declare all the variables
   for (auto& className : classNames) {
@@ -126,7 +126,7 @@ static void testProgram(std::string management, std::vector<std::pair<ArgumentTy
 // For just a basic 'class', every management type should pass, as long
 // as it's not nil.
 static void test1() {
-  testProgram("class", {
+  testProgram("ref", "class", {
     { nonNil("owned"), shouldPass },
     { nonNil("shared"), shouldPass },
     { nonNil("unmanaged"), shouldPass },
@@ -139,7 +139,7 @@ static void test1() {
 
 // If the class is nilable, only nilable things should pass without conversion.
 static void test2() {
-  testProgram("class?", {
+  testProgram("ref", "class?", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -151,7 +151,7 @@ static void test2() {
 }
 
 static void test3() {
-  testProgram("owned class", {
+  testProgram("ref", "owned class", {
     { nonNil("owned"), shouldPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -163,7 +163,7 @@ static void test3() {
 }
 
 static void test4() {
-  testProgram("owned class?", {
+  testProgram("ref", "owned class?", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -175,7 +175,7 @@ static void test4() {
 }
 
 static void test5() {
-  testProgram("shared class", {
+  testProgram("ref", "shared class", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -187,7 +187,7 @@ static void test5() {
 }
 
 static void test6() {
-  testProgram("shared class?", {
+  testProgram("ref", "shared class?", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -199,7 +199,7 @@ static void test6() {
 }
 
 static void test7() {
-  testProgram("unmanaged class", {
+  testProgram("ref", "unmanaged class", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldPass },
@@ -211,7 +211,7 @@ static void test7() {
 }
 
 static void test8() {
-  testProgram("unmanaged class?", {
+  testProgram("ref", "unmanaged class?", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -223,7 +223,7 @@ static void test8() {
 }
 
 static void test9() {
-  testProgram("owned", {
+  testProgram("ref", "owned", {
     { nonNil("owned"), shouldPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
@@ -235,7 +235,7 @@ static void test9() {
 }
 
 static void test10() {
-  testProgram("shared", {
+  testProgram("ref", "shared", {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldPass },
     { nonNil("unmanaged"), shouldNotPass },
