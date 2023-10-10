@@ -717,12 +717,15 @@ std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
-static void resolveShadowVarTypeIntent(ForallStmt* fs,
+// Returns true if the resolved shadow var intent was an implicit ref-maybe-const
+//
+static bool resolveShadowVarTypeIntent(ForallStmt* fs,
                                        Symbol* sym,
                                        Type*& type,
                                        ForallIntentTag& intent,
                                        bool& prune)
 {
+  bool ret = false;
   switch (intent) {
     case TFI_DEFAULT:
     case TFI_CONST:
@@ -747,6 +750,7 @@ static void resolveShadowVarTypeIntent(ForallStmt* fs,
         if (it == refMaybeConstForallPairs.end())
           it = refMaybeConstForallPairs.insert(it, {fs, {}});
         it->second.insert(sym);
+        ret = true;
       }
 
       break;
@@ -802,6 +806,8 @@ static void resolveShadowVarTypeIntent(ForallStmt* fs,
   // Prune, as discussed in the above comment.
   if (intent == TFI_REF)
     prune = true;
+
+  return ret;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -1023,7 +1029,7 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
+  bool wasImplicitRef = resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
@@ -1031,6 +1037,15 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   svar->type = svarType;
   fs->shadowVariables().insertAtTail(new DefExpr(svar));
   handleOneShadowVar(fs, svar);
+
+  // because field implicit ref intents do NOT get pruned like the other
+  // implicit ref intents, this check ensures that later on
+  // refMaybeConstForallPairs checks the right symbols
+  if (wasImplicitRef) {
+    auto fsIt = refMaybeConstForallPairs.find(fs);
+    CHPL_ASSERT(fsIt != refMaybeConstForallPairs.end());
+    fsIt->second.insert(svar);
+  }
 
   return svar;
 }
