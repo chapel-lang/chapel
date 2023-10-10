@@ -327,9 +327,10 @@ def test_directory(test, test_type):
                         are_tests = True
                         break
 
-            run_local_sub_test = os.access(os.path.join(dir, "sub_test"), os.X_OK)
-            if args.performance:
-                run_local_sub_test = False
+            # don't run local 'sub_test's on --performance or --gen-graphs runs
+            run_local_sub_test = False
+            if test_type == "run":
+                run_local_sub_test = os.access(os.path.join(dir, "sub_test"), os.X_OK)
 
             # check a lot of stuff before continuing
             if are_tests or run_local_sub_test:
