@@ -324,10 +324,15 @@ void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<Cal
     // if a call sets the symbol, warn
     if (callSetsSymbol(sym, ce)) {
       // checking for --warn-unstable done in checkForallRefMaybeConst
+
+      const char* argName = sym->name;
+      if (fs->getFunction() && fs->getFunction()->isMethodOnRecord())
+        argName = "this";
+
       USR_WARN(fs,
                 "inferring a 'ref' intent on an array in a forall is unstable"
                 " - in the future this may require an explicit 'ref' forall intent for '%s'",
-                sym->name);
+                argName);
       break;
     }
   }
