@@ -456,6 +456,43 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
              "initial value has type '", initExprType, "'.");
 }
 
+void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
+  auto primCall = std::get<const uast::PrimCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+  auto prim = primCall->prim();
+
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED && !type.isType()) {
+    wr.heading(kind_, type_, primCall, "cannot apply '?' operator to a non-type argument.");
+    wr.code(primCall, { primCall->actual(0) });
+    wr.message("The argument is ", type, ", but only types are allowed.");
+    return;
+  } else if (!type.isType()) {
+    auto decoratorType = prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED ?
+      "unmanaged" : "borrowed";
+    wr.heading(kind_, type_, primCall, "cannot use the '", decoratorType,
+                "' decorator on values.");
+    wr.message("The argument is ", type);
+    return;
+  }
+
+  const char* primitiveConversion = nullptr;
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED) {
+    primitiveConversion = "to a nilable class";
+  } else if (prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED) {
+    primitiveConversion = "to an unmanaged class";
+  } else if (prim == uast::primtags::PRIM_TO_BORROWED_CLASS_CHECKED) {
+    primitiveConversion = "to a borrowed class";
+  }
+
+  if (primitiveConversion) {
+    wr.heading(kind_, type_, primCall, "unable to convert type '", type.type(),
+               "' ", primitiveConversion, ".");
+    wr.message("Only classes or class-like types are supported by this conversion.");
+  } else {
+    wr.heading(kind_, type_, primCall, "invalid use of class cast primitive.");
+  }
+}
+
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
   auto fnCall = std::get<const uast::FnCall*>(info);
   auto& type = std::get<types::QualifiedType>(info);
