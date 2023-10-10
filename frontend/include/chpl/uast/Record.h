@@ -44,15 +44,15 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-  int interfaceExprChildNum_;
-  int numInterfaceExprs_;
+  int inheritExprChildNum_;
+  int numInheritExprs_;
 
   Record(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
          UniqueString name,
-         int interfaceExprChildNum,
-         int numInterfaceExprs,
+         int inheritExprChildNum,
+         int numInheritExprs,
          int elementsChildNum,
          int numElements)
     : AggregateDecl(asttags::Record, std::move(children),
@@ -63,32 +63,32 @@ class Record final : public AggregateDecl {
                     name,
                     elementsChildNum,
                     numElements),
-      interfaceExprChildNum_(interfaceExprChildNum),
-      numInterfaceExprs_(numInterfaceExprs) {
-    if (interfaceExprChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
-      CHPL_ASSERT(interfaceExprChildNum_ + numInterfaceExprs_ ==
+      inheritExprChildNum_(inheritExprChildNum),
+      numInheritExprs_(numInheritExprs) {
+    if (inheritExprChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
+      CHPL_ASSERT(inheritExprChildNum_ + numInheritExprs_ ==
                   elementsChildNum);
     }
 
-    if (interfaceExprChildNum_ != NO_CHILD) {
-      for (int i = 0; i < numInterfaceExprs_; i++) {
-        CHPL_ASSERT(isAcceptableInheritExpr(child(interfaceExprChildNum_ + i)));
+    if (inheritExprChildNum_ != NO_CHILD) {
+      for (int i = 0; i < numInheritExprs_; i++) {
+        CHPL_ASSERT(isAcceptableInheritExpr(child(inheritExprChildNum_ + i)));
       }
     }
   }
 
   Record(Deserializer& des)
     : AggregateDecl(asttags::Record, des) {
-    interfaceExprChildNum_ = des.read<int>();
-    numInterfaceExprs_ = des.read<int>();
+    inheritExprChildNum_ = des.read<int>();
+    numInheritExprs_ = des.read<int>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;
     const Record* rhs = (const Record*) other;
     return lhs->aggregateDeclContentsMatchInner(rhs) &&
-           lhs->interfaceExprChildNum_ == rhs->interfaceExprChildNum_ &&
-           lhs->numInterfaceExprs_ == rhs->numInterfaceExprs_;
+           lhs->inheritExprChildNum_ == rhs->inheritExprChildNum_ &&
+           lhs->numInheritExprs_ == rhs->numInheritExprs_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
@@ -106,36 +106,36 @@ class Record final : public AggregateDecl {
                              Decl::Linkage linkage,
                              owned<AstNode> linkageName,
                              UniqueString name,
-                             AstList interfaceExprs,
+                             AstList inheritExprs,
                              AstList contents);
 
-  inline int numInterfaceExprs() const { return numInterfaceExprs_; }
+  inline int numInheritExprs() const { return numInheritExprs_; }
 
   /**
     Return the ith interface implemented as part of this record's declaration.
    */
-  const AstNode* interfaceExpr(int i) const {
-    if (interfaceExprChildNum_ < 0 || i >= numInterfaceExprs_)
+  const AstNode* inheritExpr(int i) const {
+    if (inheritExprChildNum_ < 0 || i >= numInheritExprs_)
       return nullptr;
 
-    auto ret = child(interfaceExprChildNum_ + i);
+    auto ret = child(inheritExprChildNum_ + i);
     return ret;
   }
 
-  AstListNoCommentsIteratorPair<AstNode> interfaceExprs() const {
-    if (interfaceExprChildNum_ < 0)
+  AstListNoCommentsIteratorPair<AstNode> inheritExprs() const {
+    if (inheritExprChildNum_ < 0)
       return AstListNoCommentsIteratorPair<AstNode>(
                 children_.end(), children_.end());
 
     return AstListNoCommentsIteratorPair<AstNode>(
-              children_.begin() + interfaceExprChildNum_,
-              children_.begin() + interfaceExprChildNum_ + numInterfaceExprs_);
+              children_.begin() + inheritExprChildNum_,
+              children_.begin() + inheritExprChildNum_ + numInheritExprs_);
   }
 
   void serialize(Serializer& ser) const override {
     AggregateDecl::serialize(ser);
-    ser.write(interfaceExprChildNum_);
-    ser.write(numInterfaceExprs_);
+    ser.write(inheritExprChildNum_);
+    ser.write(numInheritExprs_);
   }
 
   DECLARE_STATIC_DESERIALIZE(Record);

@@ -3969,7 +3969,7 @@ struct Converter {
     if (auto cls = node->toClass()) {
       convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
     } else if (auto rec = node->toRecord()) {
-      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
+      convertInheritsExprs(rec->inheritExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {

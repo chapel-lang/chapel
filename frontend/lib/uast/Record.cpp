@@ -25,7 +25,7 @@ namespace chpl {
 namespace uast {
 
 std::string Record::dumpChildLabelInner(int i) const {
-  if (i >= interfaceExprChildNum_ && i  < interfaceExprChildNum_ + numInterfaceExprs_) {
+  if (i >= inheritExprChildNum_ && i  < inheritExprChildNum_ + numInheritExprs_) {
     return "interface-expr";
   }
 
