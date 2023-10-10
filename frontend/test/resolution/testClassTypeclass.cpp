@@ -137,7 +137,7 @@ static void test1() {
   });
 }
 
-// If the class is nilable, everything should pass.
+// If the class is nilable, only nilable things should pass without conversion.
 static void test2() {
   testProgram("class?", {
     { nonNil("owned"), shouldNotPass },

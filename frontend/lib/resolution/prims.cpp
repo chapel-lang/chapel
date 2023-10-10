@@ -309,7 +309,7 @@ static QualifiedType convertClassToDecorator(Context* context,
   auto typePtr = actualType.type();
   if (!typePtr) return QualifiedType();
 
-  // The cheked primitives only allow a 'type' as the actual.
+  // The checked primitives only allow a 'type' as the actual.
   if (!actualType.isType() && checked) {
     return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
   }
@@ -373,7 +373,7 @@ static QualifiedType primToNilableClass(Context* context,
   auto typePtr = actualType.type();
   if (!typePtr) return QualifiedType();
 
-  // The cheked primitives only allow a 'type' as the actual.
+  // The checked primitives only allow a 'type' as the actual.
   if (!actualType.isType() && checked) {
     return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
   }
