@@ -1537,6 +1537,13 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
           // Verify that the 'instantiation type' still accepts the actual.
           // This might not be the case based on legal argument mapping rules.
+          //
+          // For instance, we can successfully instantiate 'ref x: Parent'
+          // with 'shared Child', leading to a 'ref x: shared Parent'
+          // useType. However, we cannot pass a 'shared Child' to a
+          // 'ref x: shared Parent' formal, because 'ref' requires the types
+          // to match exactly, and rules out subtype conversions.
+
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
