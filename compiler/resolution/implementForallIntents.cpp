@@ -717,15 +717,14 @@ std::map<ForallStmt*, std::set<Symbol*>> refMaybeConstForallPairs;
 // It is done on an already-existing, explicit shadow variable
 // or before an implicit shadow variable is to be created.
 //
-// Returns true if the resolved shadow var intent was an implicit ref-maybe-const
-//
-static bool resolveShadowVarTypeIntent(ForallStmt* fs,
+static void resolveShadowVarTypeIntent(ForallStmt* fs,
                                        Symbol* sym,
                                        Type*& type,
                                        ForallIntentTag& intent,
-                                       bool& prune)
+                                       bool& prune,
+                                       bool& implicitRefMaybeConst)
 {
-  bool ret = false;
+  implicitRefMaybeConst = false;
   switch (intent) {
     case TFI_DEFAULT:
     case TFI_CONST:
@@ -750,7 +749,7 @@ static bool resolveShadowVarTypeIntent(ForallStmt* fs,
         if (it == refMaybeConstForallPairs.end())
           it = refMaybeConstForallPairs.insert(it, {fs, {}});
         it->second.insert(sym);
-        ret = true;
+        implicitRefMaybeConst = true;
       }
 
       break;
@@ -806,8 +805,6 @@ static bool resolveShadowVarTypeIntent(ForallStmt* fs,
   // Prune, as discussed in the above comment.
   if (intent == TFI_REF)
     prune = true;
-
-  return ret;
 }
 
 /////////////////////////////////////////////////////////////////////////////
@@ -883,9 +880,10 @@ static void doImplicitShadowVars(ForallStmt* fs, BlockStmt* block,
     ForallIntentTag intent = TFI_DEFAULT;
     Type* type  = sym->type;
     bool  prune = false;
+    bool  implicitRMC = false;
     if (sym->type == dtUnknown)
       USR_FATAL(se, "'%s' appears to be used before it is defined", sym->name);
-    resolveShadowVarTypeIntent(fs, sym, type, intent, prune); // updates the args
+    resolveShadowVarTypeIntent(fs, sym, type, intent, prune, implicitRMC); // updates the args
 
     if (prune) {                      // do not convert to shadow var
       assertNotRecordReceiver(sym, se);
@@ -954,7 +952,8 @@ static void resolveAndPruneExplicitShadowVars(ForallStmt* fs,
   {
     Type* type  = ovarOrSvarType(svar);
     bool  prune = false;
-    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune); // updates the args
+    bool  implicitRMC = false;
+    resolveShadowVarTypeIntent(fs, svar, type, svar->intent, prune, implicitRMC); // updates the args
 
     // Ensure the svar is retained for a `this` with an explicit intent,
     // see convertFieldsOfRecordThis().
@@ -1029,7 +1028,8 @@ static ShadowVarSymbol* createSVforFieldAccess(ForallStmt* fs, Symbol* ovar,
   Type*           svarType   = field->type;
   ForallIntentTag svarIntent = isConst ? TFI_CONST : TFI_DEFAULT;
   bool            pruneDummy = false;
-  bool wasImplicitRef = resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy);
+  bool            wasImplicitRef = false;
+  resolveShadowVarTypeIntent(fs, field, svarType, svarIntent, pruneDummy, wasImplicitRef);
 
   ShadowVarSymbol* svar = new ShadowVarSymbol(svarIntent,
                                               astr(field->name, "_svar"),
