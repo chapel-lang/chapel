@@ -39,10 +39,12 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
 
   std::stringstream ps;
   std::vector<std::string> variables;
+  std::vector<bool> expectedValidities;
 
   ps << "class C {}" << std::endl;
 
   int counter = 0;
+  int expectedErrorCount = 0;
   for (auto triple : args) {
     const char* expr = std::get<0>(triple);
     const char* expectedType = std::get<1>(triple);
@@ -50,10 +52,19 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
 
     std::string variableName = std::string("x") + std::to_string(counter++);
     variables.push_back(variableName);
+    expectedValidities.push_back(expectedType != nullptr);
 
-    ps << "param " << variableName << " = " << "__primitive(\"" << primitive << "\", " << expr << ")";
-    if (callDotType) ps << ".type ";
-    ps << "== " << expectedType << ";" << std::endl;
+    if (expectedType != nullptr) {
+      ps << "param " << variableName << " = " << "__primitive(\"" << primitive << "\", " << expr << ")";
+      if (callDotType) ps << ".type ";
+      ps << "== " << expectedType << ";" << std::endl;
+    } else {
+      expectedErrorCount += 1;
+
+      ps << "type " << variableName << " = " << "__primitive(\"" << primitive << "\", " << expr << ")";
+      if (callDotType) ps << ".type";
+      ps << ";" << std::endl;
+    }
   }
 
   std::cout << "--- program ---" << std::endl;
@@ -61,9 +72,19 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
 
   auto varTypes = resolveTypesOfVariables(context, ps.str(), variables);
 
-  for (auto type : varTypes) {
-    assert(type.second.isParamTrue());
+  for (int i = 0; i < varTypes.size(); i++) {
+    if (expectedValidities[i]) {
+      assert(varTypes.at(variables[i]).isParamTrue());
+    } else {
+      assert(varTypes.at(variables[i]).isErroneousType());
+    }
   }
+
+  for (auto& error : guard.errors()) {
+    assert(error->type() == ErrorType::InvalidClassCast);
+  }
+
+  assert(guard.realizeErrors() == expectedErrorCount);
 }
 
 static void test1() {
