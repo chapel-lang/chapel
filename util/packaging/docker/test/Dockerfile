@@ -1,7 +1,7 @@
 # This is a container used to run homebrew-ci 
 
 # Get the homebrew ubuntu container
-FROM FROM ghcr.io/homebrew/ubuntu22.04:master
+FROM ghcr.io/homebrew/ubuntu22.04:master
 
 RUN mkdir -p /home/linuxbrew
 
