@@ -69,6 +69,7 @@ Strings can be stored in 2 ways, depending on if a long-strings
 table is in use.
 
 When not using a long-strings table, a string is stored as:
+
  * the string length, using variable-byte encoding
  * string data
 
@@ -76,11 +77,15 @@ These strings are not null-terminated.
 
 When using a long-strings table, a string is stored in two ways which
 depend on the first byte:
+
  * if the first byte does not have the high bit set
+
    * the first byte stores the length
      (only possible for strings < 128 bytes)
    * followed by that number of bytes of string data
+
  * if the first byte does have the high bit set
+
    * there are 3 more bytes that, combined with the bottom 7 bits of the
      first byte, form and index into the long strings table.
 
@@ -154,12 +159,13 @@ replacing them with an integer. Since there are a lot of short strings,
 and the long string table adds indirection, this only applies to long
 strings. The threshold length is not set by the file format.
 
-.. note::
+.. comment
 
    Here are two breadcrumbs that might aid decision making here:
 
    * this data structure space overhead is 8 bytes per long string + 4
      bytes per string use
+
      - supposing 1 use of a given string:
         16 byte strings -> all in line gives 17*1=17 bytes
                            with table gives 16+8+4*1=28 bytes
@@ -179,6 +185,7 @@ The long strings table section does not store strings in any particular
 order.
 
 The long strings table consists of the following:
+
  * 4 bytes magic number 0x51e17601
  * 4 bytes counting the number of long strings
  * relative offsets of each string, from the start of the section
@@ -197,9 +204,11 @@ individual entry.
 IDs are not stored here. They are recomputed when the uAST is read.
 
 The uAST section consists of:
+
  * 8 bytes of magic number 0x0003bb1e5ec110e0
  * 8 bytes: the number of uAST entries
  * the contained entries, where each entry consists of:
+
    * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
    * attribute group child num (variable-byte encoded)
    * variable-byte encoded length in bytes L of additional information
@@ -220,31 +229,47 @@ so that the whole group might need to be read in order to compute a
 location.
 
 It consists of:
+
  * 8 bytes of magic number 0x10ca11075ec110e0
+
  * 4 bytes, the number of file paths used here
+
  * 4 bytes storing the number of top-level location groups. There will be
    a top-level location group for the module under consideration and then
    for each uAST referred to by the symbol table. However, these
    are in uAST order rather than symbol table order.
+
  * for each file path
+
    * a string storing the file path
+
  * information for each top-level location, consisting of the following:
+
    * 8 bytes storing a starting relative offset within the uAST section
+
    * 4 bytes storing a starting line number
+
    * 4 bytes storing the number of locations stored within this entry
+
    * a number of location entries, each consisting of:
+
      * relative offset within the uAST section, stored as a variable-byte
        encoded difference from the previous entry's uAST offset, or a
        difference from the starting relative offset if this is the first
        entry.
+
      * variable-byte encoded index into file paths
+
      * the first line, stored as variable-byte encoded difference
        from the previous entry's last line, or a difference from the
        starting line number if this is the first entry
        - i.e. the first line is prevEntry.lastLine + decodedDifference
+
      * the last line, stored as a variable-byte encoded different from
        this entry's first line
+
      * variable-byte encoded first column
+
      * variable-byte encoded first last column
 
 Types Section
