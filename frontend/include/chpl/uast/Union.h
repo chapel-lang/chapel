@@ -48,6 +48,8 @@ class Union final : public AggregateDecl {
         Decl::Linkage linkage,
         int linkageNameChildNum,
         UniqueString name,
+        int inheritExprChildNum,
+        int numInheritExprs,
         int elementsChildNum,
         int numElements)
     : AggregateDecl(asttags::Union, std::move(children),
@@ -56,8 +58,8 @@ class Union final : public AggregateDecl {
                     linkage,
                     linkageNameChildNum,
                     name,
-                    /* inheritExprChildNum */ NO_CHILD,
-                    /* numInheritExprs */ 0,
+                    inheritExprChildNum,
+                    numInheritExprs,
                     elementsChildNum,
                     numElements) {
 
@@ -88,6 +90,7 @@ class Union final : public AggregateDecl {
                             Decl::Linkage linkage,
                             owned<AstNode> linkageName,
                             UniqueString name,
+                            AstList interfaceExprs,
                             AstList contents);
 
   void serialize(Serializer& ser) const override {

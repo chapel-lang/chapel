@@ -51,7 +51,7 @@ bool AggregateDecl::validAggregateChildren(AstListIteratorPair<AstNode> it) {
 
 std::string AggregateDecl::aggregateDeclDumpChildLabelInner(int i) const {
   if (i >= inheritExprChildNum_ && i  < inheritExprChildNum_ + numInheritExprs_) {
-    return "interface-expr";
+    return "inherit-expr";
   }
 
   return "";
