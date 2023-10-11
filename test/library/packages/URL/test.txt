@@ -1,1 +1,2 @@
-/Users/lydia/Documents/Repositories/chapel/test/library/packages/Curl/test.txt
+this
+is a test
