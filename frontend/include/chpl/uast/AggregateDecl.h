@@ -43,6 +43,8 @@ namespace uast {
  */
 class AggregateDecl : public TypeDecl {
  private:
+  int inheritExprChildNum_;
+  int numInheritExprs_;
   int elementsChildNum_;
   int numElements_;
 
@@ -53,6 +55,8 @@ class AggregateDecl : public TypeDecl {
     const AggregateDecl* lhs = this;
     const AggregateDecl* rhs = other;
     return lhs->typeDeclContentsMatchInner(rhs) &&
+           lhs->inheritExprChildNum_ == rhs->inheritExprChildNum_ &&
+           lhs->numInheritExprs_ == rhs->numInheritExprs_ &&
            lhs->elementsChildNum_ == rhs->elementsChildNum_ &&
            lhs->numElements_ == rhs->numElements_;
   }
@@ -61,25 +65,44 @@ class AggregateDecl : public TypeDecl {
     typeDeclMarkUniqueStringsInner(context);
   }
 
+  std::string aggregateDeclDumpChildLabelInner(int i) const;
+
  public:
   AggregateDecl(AstTag tag, AstList children, int attributeGroupChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
                 int linkageNameChildNum,
                 UniqueString name,
+                int inheritExprChildNum,
+                int numInheritExprs,
                 int elementsChildNum,
                 int numElements)
     : TypeDecl(tag, std::move(children), attributeGroupChildNum, vis, linkage,
                linkageNameChildNum,
                name),
+      inheritExprChildNum_(inheritExprChildNum),
+      numInheritExprs_(numInheritExprs),
       elementsChildNum_(elementsChildNum),
       numElements_(numElements) {
+
+    if (inheritExprChildNum_ != NO_CHILD && elementsChildNum != NO_CHILD) {
+      CHPL_ASSERT(inheritExprChildNum_ + numInheritExprs_ ==
+                  elementsChildNum);
+    }
+
+    if (inheritExprChildNum_ != NO_CHILD) {
+      for (int i = 0; i < numInheritExprs_; i++) {
+        CHPL_ASSERT(isAcceptableInheritExpr(child(inheritExprChildNum_ + i)));
+      }
+    }
 
     CHPL_ASSERT(validAggregateChildren(declOrComments()));
   }
 
   AggregateDecl(AstTag tag, Deserializer& des)
     : TypeDecl(tag, des) {
+    inheritExprChildNum_ = des.read<int>();
+    numInheritExprs_ = des.read<int>();
     elementsChildNum_ = des.read<int>();
     numElements_ = des.read<int>();
   }
@@ -127,8 +150,42 @@ class AggregateDecl : public TypeDecl {
               children_.begin() + elementsChildNum_ + numElements_);
   }
 
+  /**
+   Return the number of inherit exprs (parent classes or implemented interfaces)
+   in this aggregate type.
+   */
+  inline int numInheritExprs() const { return numInheritExprs_; }
+
+  /**
+    Return the ith interface implemented as part of this record's declaration.
+   */
+  const AstNode* inheritExpr(int i) const {
+    if (inheritExprChildNum_ < 0 || i >= numInheritExprs_)
+      return nullptr;
+
+    auto ret = child(inheritExprChildNum_ + i);
+    return ret;
+  }
+
+  /**
+    Return an iterator of all the inherit exprs (parent classes or implemented
+    interfaces).
+   */
+  AstListNoCommentsIteratorPair<AstNode> inheritExprs() const {
+    if (inheritExprChildNum_ < 0)
+      return AstListNoCommentsIteratorPair<AstNode>(
+                children_.end(), children_.end());
+
+    return AstListNoCommentsIteratorPair<AstNode>(
+              children_.begin() + inheritExprChildNum_,
+              children_.begin() + inheritExprChildNum_ + numInheritExprs_);
+  }
+
+
   void serialize(Serializer& ser) const override {
     TypeDecl::serialize(ser);
+    ser.write(inheritExprChildNum_);
+    ser.write(numInheritExprs_);
     ser.write(elementsChildNum_);
     ser.write(numElements_);
   }

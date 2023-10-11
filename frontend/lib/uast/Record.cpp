@@ -25,11 +25,7 @@ namespace chpl {
 namespace uast {
 
 std::string Record::dumpChildLabelInner(int i) const {
-  if (i >= interfaceExprChildNum_ && i  < interfaceExprChildNum_ + numInterfaceExprs_) {
-    return "interface-expr";
-  }
-
-  return "";
+  return aggregateDeclDumpChildLabelInner(i);
 }
 
 owned<Record> Record::build(Builder* builder, Location loc,

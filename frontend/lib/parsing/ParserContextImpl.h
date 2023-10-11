@@ -2614,23 +2614,17 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
   AstList inheritExprs;
   if (optInherit != nullptr) {
     if (optInherit->size() > 0) {
-      if (parts.tag == asttags::Union) {
-        // TODO union inheritance: unions should have support for inheriting
-        // from interfaces.
-        error(inheritLoc, "unions cannot inherit.");
-      } else {
-        for (size_t i = 0; i < optInherit->size(); i++) {
-          AstNode* ast = (*optInherit)[i];
-          bool inheritOk =
-            chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
+      for (size_t i = 0; i < optInherit->size(); i++) {
+        AstNode* ast = (*optInherit)[i];
+        bool inheritOk =
+          chpl::uast::AggregateDecl::isAcceptableInheritExpr(ast);
 
-          if (inheritOk) {
-            inheritExprs.push_back(toOwned(ast));
-            (*optInherit)[i] = nullptr;
-          } else {
-            syntax(inheritLoc,
-                   "invalid parent class or interface; please specify a single class or interface name");
-          }
+        if (inheritOk) {
+          inheritExprs.push_back(toOwned(ast));
+          (*optInherit)[i] = nullptr;
+        } else {
+          syntax(inheritLoc,
+                 "invalid parent class or interface; please specify a single class or interface name");
         }
       }
     }
@@ -2672,6 +2666,7 @@ ParserContext::buildAggregateTypeDecl(YYLTYPE location,
                         parts.linkage,
                         toOwned(parts.linkageName),
                         parts.name,
+                        std::move(inheritExprs),
                         std::move(contentsList)).release();
   } else {
     CHPL_ASSERT(false && "case not handled");

@@ -1129,11 +1129,11 @@ struct ChplSyntaxVisitor {
     ss_ << "record ";
     ss_ << node->name() << " ";
 
-    if (node->numInterfaceExprs() > 0) {
+    if (node->numInheritExprs() > 0) {
       ss_ << ": ";
       bool printComma = false;
 
-      for (auto interfaceExpr : node->interfaceExprs()) {
+      for (auto interfaceExpr : node->inheritExprs()) {
         if (printComma) ss_ << ", ";
         printAst(interfaceExpr);
       }
