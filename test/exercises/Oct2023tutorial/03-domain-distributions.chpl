@@ -8,7 +8,7 @@ const ProblemSpace = blockDist.createDomain({1..m});
 
 var A, B, C: [ProblemSpace] real;
 
-B = 2.0;          
+B = 2.0;
 C = 1.0;
 
 A = B + alpha * C;
