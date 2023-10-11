@@ -2799,6 +2799,18 @@ static bool resolveFnCallSpecial(Context* context,
     return true;
   }
 
+  if (ci.name() == USTR("==") && ci.numActuals() == 2) {
+    auto lhs = ci.actual(0).type();
+    auto rhs = ci.actual(1).type();
+    if (lhs.kind() == QualifiedType::TYPE &&
+        rhs.kind() == QualifiedType::TYPE) {
+      bool result = lhs.type() == rhs.type();
+      exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                                  BoolParam::get(context, result));
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       context->error(astForErr, "bad call to %s", ci.name().c_str());
