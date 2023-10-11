@@ -2453,7 +2453,7 @@ def main():
                                     printTestVariation(compoptsnum, compoptslist,
                                                     execoptsnum, execoptslist);
                                 sys.stdout.write(']\n')
-                        else:
+                        elif (not launcher_error):
                             sys.stdout.write('[Error execution failed for %s]\n'%(test_name))
 
                         if exectimeout or status != 0 or exec_status != 0:
