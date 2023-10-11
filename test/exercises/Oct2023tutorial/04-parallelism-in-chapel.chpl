@@ -7,7 +7,7 @@ coforall tid in 0..<numTasks { /* ... */ }
 
 cobegin { /*doTask0(); doTask1(); ... doTaskN();*/ }
 
-var x : atomic int = 0, y : sync int = 0;
+var x : atomic int = 0, y : sync int;
 sync {
   begin x.add(1);
   begin y.writeEF(1);
