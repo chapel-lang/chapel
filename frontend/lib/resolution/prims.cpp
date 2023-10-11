@@ -445,13 +445,15 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     // We allow the type to be the same OR require instantiation; thus,
     // it's sufficient to check if no conversion occurs (both instntiates()
     // and !instantiates() are allowed).
-    result = cpr.passes() && !cpr.converts();
+    result = cpr.passes() && !cpr.converts() && !cpr.promotes();
   } else if (prim == PRIM_IS_SUBTYPE) {
     result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
                               cpr.conversionKind() == CanPassResult::SUBTYPE);
   } else {
     CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
-    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::SUBTYPE);
+    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
+                              cpr.conversionKind() == CanPassResult::SUBTYPE) &&
+             newSubQT != newParentQT;
   }
 
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
