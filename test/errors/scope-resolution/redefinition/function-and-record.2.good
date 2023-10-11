@@ -3,7 +3,7 @@
   It was first defined here:
       |
     2 |   proc foo(x: int) { }
-      |        ⎺⎺⎺
+      |   ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
       |
   Redefined here:
       |

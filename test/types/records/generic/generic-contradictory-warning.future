@@ -1,0 +1,10 @@
+error message: for generic R, R() incorrectly warns about presence of ()
+
+There's also a minor awkward wording in the current warning:
+
+  ...for example with 'R(?)'...
+
+where the 'with' seems odd to me.  I've proposed just dropping the
+'with' in the .good file, but am open to other options as well.
+
+#23577

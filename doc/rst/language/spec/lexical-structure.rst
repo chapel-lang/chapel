@@ -221,6 +221,7 @@ The following identifiers are reserved as keywords:
    unmanaged
    use
    var
+   void
    when
    where
    while

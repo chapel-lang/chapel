@@ -53,7 +53,7 @@ class BuiltinType : public Type {
   }
 
   Genericity genericity() const override {
-    if ((int) tag() >= (int) typetags::AnyBorrowedNilableType)
+    if ((int) tag() >= (int) typetags::AnyComplexType)
       return GENERIC;
     else
       return CONCRETE;

@@ -1,2 +1,7 @@
 test_module_class_conflict2.chpl:11: In module 'M1':
+test_module_class_conflict2.chpl:13: warning: potentially surprising shadowing for 'MC'
+test_module_class_conflict2.chpl:12: note: it refers to a symbol found through the 'use' of 'M2' here
+test_module_class_conflict2.chpl:8: note: and then through the 'use' of 'MC' here
+test_module_class_conflict2.chpl:2: note: leading to 'MC' defined here
+test_module_class_conflict2.chpl:1: note: but, there is a shadowed symbol 'MC' defined here
 test_module_class_conflict2.chpl:13: error: cannot 'use' symbol 'MC', which is not a module or enum

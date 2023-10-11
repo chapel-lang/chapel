@@ -443,7 +443,7 @@ How should programmers choose among these intents?
  * The ``in`` and ``const in`` intents pass by value and are important
    for transferring a value in to a function, for example, when storing a
    value into a data structure. Using these intents for that use case can
-   help to avoid unnecesary copies.
+   help to avoid unnecessary copies.
 
  * The ``ref`` and ``const ref`` intents pass by reference. The ``ref``
    intent allows modifications of the referred-to value within the

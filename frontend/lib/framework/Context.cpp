@@ -62,11 +62,7 @@ using namespace chpl::querydetail;
 void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(chplHome, other.chplHome);
   std::swap(chplEnvOverrides, other.chplEnvOverrides);
-  // Don't discard a saved tmpDir from a previous Context unless we have a new
-  // one to use.
-  if (!other.tmpDir.empty()) {
-    std::swap(tmpDir, other.tmpDir);
-  }
+  std::swap(tmpDir, other.tmpDir);
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
 }

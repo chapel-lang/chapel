@@ -591,7 +591,7 @@ module BigInteger {
 
     .. warning::
        If the resulting exponent from the conversion is too big, the result is
-       system dependant. If supported, an infinity may be returned. A hardware
+       system dependent. If supported, an infinity may be returned. A hardware
        overflow trap may also occur.
 
     .. seealso::

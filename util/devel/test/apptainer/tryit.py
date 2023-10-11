@@ -135,10 +135,12 @@ def main():
             status[name] = statusline
 
             if args.cleanup:
-                printAndLog(log, "Removing {}/image.sif".format(d));
-                os.remove("image.sif")
-                printAndLog(log, "Removing {}/chapel".format(d));
-                shutil.rmtree("chapel")
+                if os.path.exists("image.sif"):
+                    printAndLog(log, "Removing {}/image.sif".format(d));
+                    os.remove("image.sif")
+                if os.path.exists("chapel"):
+                    printAndLog(log, "Removing {}/chapel".format(d));
+                    shutil.rmtree("chapel")
 
             printAndLog(log, "")
             os.chdir(startDir)

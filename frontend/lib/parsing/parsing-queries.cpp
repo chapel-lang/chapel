@@ -388,21 +388,30 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   }
 }
 
-const Location& locateId(Context* context, ID id) {
-  QUERY_BEGIN(locateId, context, id);
-
-  Location result;
-
-  // Ask the context for the filename from the ID
-  UniqueString path;
+static const BuilderResult*
+builderResultOrNull(Context* context, ID id, UniqueString& pathOut) {
   UniqueString parentSymbolPath;
 
-  bool found = context->filePathForId(id, path, parentSymbolPath);
+  // Ask the context for the filename from the ID
+  bool found = context->filePathForId(id, pathOut, parentSymbolPath);
+
   if (found) {
     // Get the result of parsing
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    result = p.idToLocation(id, path);
+    const BuilderResult& br = parseFileToBuilderResult(context, pathOut,
+                                                       parentSymbolPath);
+    return &br;
+  }
+
+  return nullptr;
+}
+
+const Location& locateId(Context* context, ID id) {
+  QUERY_BEGIN(locateId, context, id);
+  Location result;
+
+  UniqueString path;
+  if (auto br = builderResultOrNull(context, id, path)) {
+    result = br->idToLocation(id, path);
   }
 
   return QUERY_END(result);
@@ -410,9 +419,37 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(ast && !ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
+
+// Generate queries to fetch additional locations.
+#define LOCATION_MAP(ast__, location__) \
+  static const Location& \
+  locate##location__##WithIdQuery(Context* context, ID id) { \
+    QUERY_BEGIN(locate##location__##WithIdQuery, context, id); \
+    Location ret; \
+    UniqueString path; \
+    if (!id) return QUERY_END(ret); \
+    if (auto br = builderResultOrNull(context, id, path)) { \
+      ret = br->idTo##location__##Location(id, path); \
+    } \
+    return QUERY_END(ret); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
+// Generate user facing functions which are wrappers around the query.
+#define LOCATION_MAP(ast__, location__) \
+  Location locate##location__##WithId(Context* context, ID id) { \
+    return locate##location__##WithIdQuery(context, id); \
+  } \
+  Location locate##location__##WithAst(Context* context, const ast__* ast) { \
+    if (!ast) return Location(); \
+    return locate##location__##WithIdQuery(context, ast->id()); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 const ModuleVec& parse(Context* context, UniqueString path,
                        UniqueString parentSymbolPath) {
@@ -909,8 +946,8 @@ const Module* getIncludedSubmodule(Context* context,
   return getIncludedSubmoduleQuery(context, includeModuleId);
 }
 
-static const AstNode* const& astForIDQuery(Context* context, ID id) {
-  QUERY_BEGIN(astForIDQuery, context, id);
+static const AstNode* const& astForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIdQuery, context, id);
 
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
@@ -927,7 +964,7 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
-  return astForIDQuery(context, id);
+  return astForIdQuery(context, id);
 }
 
 // TODO: could many of these get-property-of-ID queries
@@ -939,7 +976,7 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   if (!id.isFabricatedId()) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
     } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
@@ -963,7 +1000,7 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isParenless();
@@ -1026,7 +1063,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isMethod();
@@ -1045,7 +1082,7 @@ static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
   UniqueString result;
-  if (auto ast = astForIDQuery(context, id)) {
+  if (auto ast = astForIdQuery(context, id)) {
     if (auto var = ast->toVariable()) {
       if (var->isField()) {
         result = var->name();
@@ -1627,7 +1664,7 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  // skip checks if we have a harcoded deprecation for this symbol
+  // skip checks if we have a hardcoded deprecation for this symbol
   if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
     auto attr = parsing::idToAttributeGroup(context, idTarget);
 
@@ -1663,7 +1700,7 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
   Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
   QUERY_BEGIN(getModuleKindQuery, context, moduleId);
-  const AstNode* ast = astForIDQuery(context, moduleId);
+  const AstNode* ast = astForIdQuery(context, moduleId);
   CHPL_ASSERT(ast && "could not find AST for module ID");
   if (auto mod = ast->toModule()) {
     ret = mod->kind();

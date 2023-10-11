@@ -812,7 +812,7 @@ with the same shape.
 Array Arguments to Functions
 ----------------------------
 
-By default, arrays are passed to function by ``const``, see :ref:`The_Default_Intent`.
+By default, arrays are passed to functions by ``const``, see :ref:`The_Default_Intent`.
 Using the ``ref`` intent allows modification of the array without creating a copy.
 The ``in``, ``inout``, and ``out`` intent can create copies of arrays.
 

@@ -19,7 +19,7 @@ default:
    Errors <standard/Errors>
    Types <standard/Types>
    A subset of the IO symbols <standard/ChapelIO>
-   A subset of the Math symbols <standard/AutoMath>
+   A subset of the Math symbols <standard/Math>
 
 
 Data Structures
@@ -78,7 +78,6 @@ Math/Numerical
    BitOps <standard/BitOps>
    GMP <standard/GMP>
    Math <standard/Math>
-   Automatically-included Math symbols <standard/AutoMath>
    Random <standard/Random>
 
 

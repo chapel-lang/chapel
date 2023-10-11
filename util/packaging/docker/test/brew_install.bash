@@ -1,4 +1,7 @@
 #!/usr/bin/env bash
+export HOMEBREW_SIMULATE_MACOS_ON_LINUX=1
+#Update homebrew
+brew update 
 
 #Script used in docker exec command to test homebrew formula
 brew test-bot --only-tap-syntax

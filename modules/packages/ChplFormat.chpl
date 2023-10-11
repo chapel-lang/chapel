@@ -61,7 +61,7 @@ module ChplFormat {
         _oldWrite(writer, val);
       } else if isClassType(t) {
         if val == nil {
-          writer._writeLiteral("nil");
+          writer.writeLiteral("nil");
         } else {
           val!.serialize(writer=writer, serializer=this);
         }
@@ -112,8 +112,8 @@ module ChplFormat {
     // - is the latter even possible?
     @chpldoc.nodoc
     proc startClass(writer: _writeType, name: string, size: int) throws {
-      writer._writeLiteral("new ");
-      writer._writeLiteral(name);
+      writer.writeLiteral("new ");
+      writer.writeLiteral(name);
       writer.writeLiteral("(");
 
       return new AggregateSerializer(writer);
@@ -121,8 +121,8 @@ module ChplFormat {
 
     @chpldoc.nodoc
     proc startRecord(writer: _writeType, name: string, size: int) throws {
-      writer._writeLiteral("new ");
-      writer._writeLiteral(name);
+      writer.writeLiteral("new ");
+      writer.writeLiteral(name);
       writer.writeLiteral("(");
 
       return new AggregateSerializer(writer);
@@ -159,7 +159,7 @@ module ChplFormat {
       var _first : bool = true;
 
       proc ref writeElement(const element: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(element);
@@ -167,12 +167,12 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc endList() throws {
-        writer._writeLiteral("]");
+        writer.writeLiteral("]");
       }
     }
     @chpldoc.nodoc
     proc startList(writer: fileWriter, size: int) throws {
-      writer._writeLiteral("[");
+      writer.writeLiteral("[");
       return new ListSerializer(writer);
     }
 
@@ -186,19 +186,19 @@ module ChplFormat {
       }
 
       proc ref writeElement(const element: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(element);
       }
       proc endArray() throws {
-        writer._writeLiteral("]");
+        writer.writeLiteral("]");
       }
     }
 
     @chpldoc.nodoc
     proc startArray(writer: _writeType, size: int) throws {
-      writer._writeLiteral("[");
+      writer.writeLiteral("[");
       return new ArraySerializer(writer);
     }
 
@@ -208,7 +208,7 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc ref writeKey(const key: ?) throws {
-        if !_first then writer._writeLiteral(", ");
+        if !_first then writer.writeLiteral(", ");
         else _first = false;
 
         writer.write(key);
@@ -216,19 +216,19 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc writeValue(const val: ?) throws {
-        writer._writeLiteral(" => ");
+        writer.writeLiteral(" => ");
         writer.write(val);
       }
 
       @chpldoc.nodoc
       proc endMap() throws {
-        writer._writeLiteral("]");
+        writer.writeLiteral("]");
       }
     }
 
     @chpldoc.nodoc
     proc startMap(writer: _writeType, size: int) throws {
-      writer._writeLiteral("[");
+      writer.writeLiteral("[");
       return new MapSerializer(writer);
     }
   }
@@ -372,21 +372,21 @@ module ChplFormat {
       var _first = true;
 
       proc ref readElement(type eltType) : eltType throws {
-        if !_first then reader._readLiteral(", ");
+        if !_first then reader.readLiteral(", ");
         else _first = false;
 
         return reader.read(eltType);
       }
 
       proc ref readElement(ref element) throws {
-        if !_first then reader._readLiteral(", ");
+        if !_first then reader.readLiteral(", ");
         else _first = false;
 
         reader.read(element);
       }
 
       proc endList() throws {
-        reader._readLiteral("]");
+        reader.readLiteral("]");
       }
 
       proc hasMore() : bool throws {
@@ -398,7 +398,7 @@ module ChplFormat {
 
     @chpldoc.nodoc
     proc startList(reader: _readerType) throws {
-      reader._readLiteral("[");
+      reader.readLiteral("[");
       return new ListDeserializer(reader);
     }
 
@@ -417,7 +417,7 @@ module ChplFormat {
 
     @chpldoc.nodoc
     proc startArray(reader: _readerType) throws {
-      reader._readLiteral("[");
+      reader.readLiteral("[");
       return new ArrayDeserializer(reader);
     }
 
@@ -427,7 +427,7 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc ref readKey(type keyType) : keyType throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         return reader.read(keyType);
@@ -435,7 +435,7 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc ref readKey(ref key) throws {
-        if !_first then reader._readLiteral(",");
+        if !_first then reader.readLiteral(",");
         else _first = false;
 
         reader.read(key);
@@ -443,19 +443,19 @@ module ChplFormat {
 
       @chpldoc.nodoc
       proc readValue(type valType) : valType throws {
-        reader._readLiteral("=>");
+        reader.readLiteral("=>");
         return reader.read(valType);
       }
 
       @chpldoc.nodoc
       proc readValue(ref value) throws {
-        reader._readLiteral("=>");
+        reader.readLiteral("=>");
         reader.read(value);
       }
 
       @chpldoc.nodoc
       proc endMap() throws {
-        reader._readLiteral("]");
+        reader.readLiteral("]");
       }
 
       proc hasMore() : bool throws {
@@ -467,7 +467,7 @@ module ChplFormat {
 
     @chpldoc.nodoc
     proc startMap(reader: _readerType) throws {
-      reader._readLiteral("[");
+      reader.readLiteral("[");
       return new MapDeserializer(reader);
     }
   }

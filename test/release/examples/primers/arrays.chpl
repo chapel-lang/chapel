@@ -130,7 +130,7 @@ writeln("After incrementing B's elements, B is:\n", B, "\n");
 // represent the five values in its initializing expression.
 //
 // The explicit ``ref`` intent is required for ``B`` in the example below
-// because ``B`` is not modifed directly through the loop's index variable (in
+// because ``B`` is not modified directly through the loop's index variable (in
 // this case ``i`` and ``j``).
 //
 // An array's domain can be queried using the ``.domain`` method,

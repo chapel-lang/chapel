@@ -635,9 +635,9 @@ module Time {
     const dash = "-";
 
     chpl_year = f.read(int);
-    f._readLiteral(dash);
+    f.readLiteral(dash);
     chpl_month = f.read(int);
-    f._readLiteral(dash);
+    f.readLiteral(dash);
     chpl_day = f.read(int);
   }
 
@@ -651,12 +651,12 @@ module Time {
             isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
 
     this._readCore(f);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
   }
 
   /* Reads this `date` with the same format used by :proc:`date.serialize` */
@@ -969,11 +969,11 @@ module Time {
     const colon = ":";
 
     chpl_hour = f.read(int);
-    f._readLiteral(colon);
+    f.readLiteral(colon);
     chpl_minute = f.read(int);
-    f._readLiteral(colon);
+    f.readLiteral(colon);
     chpl_second = f.read(int);
-    f._readLiteral(".");
+    f.readLiteral(".");
     chpl_microsecond = f.read(int);
   }
 
@@ -987,12 +987,12 @@ module Time {
             isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
 
     this._readCore(f);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
   }
 
   /* Reads this `time` with the same format used by :proc:`time.serialize` */
@@ -1714,14 +1714,14 @@ module Time {
             isSubtype(f.deserializerType, jsonDeserializer);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
 
     chpl_date._readCore(f);
-    f._readLiteral("T");
+    f.readLiteral("T");
     chpl_time._readCore(f);
 
     if isjson then
-      f._readLiteral('"');
+      f.readLiteral('"');
   }
 
   /* Reads this `dateTime` with the same format used by

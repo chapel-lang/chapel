@@ -67,6 +67,20 @@ namespace resolution {
                     LookupConfig config);
 
   /**
+    Same as lookupNameInScope but can produce warnings based on
+    the ID passed in.
+   */
+
+  std::vector<BorrowedIdsWithName>
+  lookupNameInScopeWithWarnings(Context* context,
+                                const Scope* scope,
+                                llvm::ArrayRef<const Scope*> receiverScopes,
+                                UniqueString name,
+                                LookupConfig config,
+                                ID idForWarnings);
+
+
+  /**
     Same as lookupNameInScope but traces how each symbol was found,
     for error messages.
    */

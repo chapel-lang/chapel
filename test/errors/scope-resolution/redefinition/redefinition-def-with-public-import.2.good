@@ -5,7 +5,7 @@
     6 |   var a: real;
       |       ⎺⎺⎺⎺⎺⎺⎺⎺
       |
-  Redefined through the 'import' statement here:
+  Redefined through the 'import' of 'Lib1' here:
       |
     5 |   public import Lib1.a;
       |                 ⎺⎺⎺⎺⎺⎺

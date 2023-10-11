@@ -56,16 +56,31 @@ class Builder final {
   UniqueString startingSymbolPath_;
   AstList topLevelExpressions_;
 
+  using AstLocMap = std::unordered_map<const AstNode*, Location>;
+
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
   // These are removed in the astToLocation_ map.
-  std::unordered_map<const AstNode*, Location> notedLocations_;
+  AstLocMap notedLocations_;
 
-  // the following maps are computed during assignIDs
+  // These map AST to additional locations while the builder is building.
+  // The key type is just 'AstNode' so that we can use generic functions.
+  #define LOCATION_MAP(ast__, location__) \
+    AstLocMap CHPL_AST_LOC_MAP(ast__, location__);
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
+
+  // The following maps are computed during 'assignIDs'.
   llvm::DenseMap<ID, Location> idToLocation_;
   std::vector<Location> commentToLocation_;
   llvm::DenseMap<ID, const AstNode*> idToAst_;
   llvm::DenseMap<ID, ID> idToParent_;
+
+  // Maps for additional locations are also computed during 'assignIDs'.
+  #define LOCATION_MAP(ast__, location__) \
+    llvm::DenseMap<ID, Location> CHPL_ID_LOC_MAP(ast__, location__);
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   Builder(Context* context, UniqueString filepath,
           UniqueString startingSymbolPath)
@@ -79,6 +94,8 @@ class Builder final {
   void doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
                    int& commentIndex, pathVecT& pathVec,
                    declaredHereT& duplicates);
+
+  void noteAdditionalLocation(AstLocMap& m, AstNode* ast, Location loc);
 
  public:
   /** Construct a Builder for parsing a top-level module */
@@ -105,6 +122,14 @@ class Builder final {
     Record the location of an AST element.
    */
   void noteLocation(AstNode* ast, Location loc);
+
+  /** Note additional locations that are associated with an AST node.
+      Pairs an AST node (e.g., 'Dot') with a location.
+      For a list of all locations see "./all-location-maps.h". */
+  #define LOCATION_MAP(ast__, location__) \
+    void note##location__##Location(ast__* ast, Location loc);
+  #include "all-location-maps.h"
+  #undef LOCATION_MAP
 
   /**
     Assign IDs to all of the AST elements added as toplevel expressions

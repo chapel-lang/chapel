@@ -35,7 +35,7 @@ module ChapelGpuSupport {
   config const gpuSyncWithHostAfterGpuOp = true;
 
   extern var chpl_gpu_use_stream_per_task : bool;
-  @unstable("The variable 'gpuUseDefaultStream' is unstable and its interface is subject to change in the future")
+  @unstable("The variable 'gpuUseStreamPerTask' is unstable and its interface is subject to change in the future")
   config var gpuUseStreamPerTask = CHPL_GPU_MEM_STRATEGY!="unified_memory";
 
   /* If true, upon startup, enables peer-to-peer access between all pairs of

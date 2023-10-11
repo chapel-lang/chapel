@@ -3966,10 +3966,8 @@ struct Converter {
     bool inheritMarkedGeneric = false;
 
     std::vector<Expr*> inherits;
-    if (auto cls = node->toClass()) {
-      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
-    } else if (auto rec = node->toRecord()) {
-      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
+    if (auto ad = node->toAggregateDecl()) {
+      convertInheritsExprs(ad->inheritExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {
@@ -4130,9 +4128,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
-    case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
-    case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
-    case typetags::AnyBorrowedType:              return dtBorrowed;
     case typetags::AnyComplexType:               return dtAnyComplex;
     case typetags::AnyEnumType:                  return dtAnyEnumerated;
     case typetags::AnyImagType:                  return dtAnyImag;
@@ -4140,8 +4135,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
-    case typetags::AnyManagementAnyNilableType:  return dtAnyManagementAnyNilable;
-    case typetags::AnyManagementNilableType:     return dtAnyManagementNilable;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;
@@ -4151,9 +4144,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyUintType:                  return dtIntegral; // a lie
     case typetags::AnyUninstantiatedType:        return dtUninstantiated;
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
-    case typetags::AnyUnmanagedNilableType:      return dtUnmanagedNilable;
-    case typetags::AnyUnmanagedNonNilableType:   return dtUnmanagedNonNilable;
-    case typetags::AnyUnmanagedType:             return dtUnmanaged;
 
     // declared types
     case typetags::ClassType:   return convertClassType(qt);
@@ -4206,6 +4196,30 @@ Type* Converter::convertCPtrType(const types::QualifiedType qt) {
 }
 
 Type* Converter::convertClassType(const types::QualifiedType qt) {
+  auto classType = qt.type()->toClassType();
+
+  if (auto mt = classType->manageableType()) {
+    if (mt->isAnyClassType()) {
+      // The production compiler represents these as special builtins
+      auto dec = classType->decorator();
+      if (dec.isUnmanaged()) {
+        if (dec.isNilable()) return dtUnmanagedNilable;
+        if (dec.isNonNilable()) return dtUnmanagedNonNilable;
+        return dtUnmanaged;
+      } else if (dec.isBorrowed()) {
+        if (dec.isNilable()) return dtBorrowedNilable;
+        if (dec.isNonNilable()) return dtBorrowedNonNilable;
+        return dtBorrowed;
+      } else if (dec.isUnknownManagement()) {
+        if (dec.isNilable()) return dtAnyManagementNilable;
+        if (dec.isNonNilable()) return dtAnyManagementNonNilable;
+        return dtAnyManagementAnyNilable;
+      } else {
+        // fall through
+      }
+    }
+  }
+
   INT_FATAL("not implemented yet");
   return nullptr;
 }

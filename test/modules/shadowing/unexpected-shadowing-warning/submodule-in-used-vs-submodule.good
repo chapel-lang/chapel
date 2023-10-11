@@ -1,0 +1,10 @@
+submodule-in-used-vs-submodule.chpl:12: In function 'main':
+submodule-in-used-vs-submodule.chpl:14: warning: potentially surprising shadowing for 'N'
+submodule-in-used-vs-submodule.chpl:13: note: it refers to a symbol found through the 'use' of 'M' here
+submodule-in-used-vs-submodule.chpl:3: note: leading to 'N' defined here
+submodule-in-used-vs-submodule.chpl:8: note: but, there is a shadowed symbol 'N' defined here
+submodule-in-used-vs-submodule.chpl:15: warning: potentially surprising shadowing for 'N'
+submodule-in-used-vs-submodule.chpl:13: note: it refers to a symbol found through the 'use' of 'M' here
+submodule-in-used-vs-submodule.chpl:3: note: leading to 'N' defined here
+submodule-in-used-vs-submodule.chpl:8: note: but, there is a shadowed symbol 'N' defined here
+100

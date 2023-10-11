@@ -25,11 +25,14 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of IO serializers branch
-GITHUB_USER=e-kayrakli
-GITHUB_BRANCH=inline-tuple-access
-SHORT_NAME=inline-tuple-access
-START_DATE=07/19/23
+# Test perf of LLVM 16
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=use-llvm16
+SHORT_NAME=llvm-16
+START_DATE=10/05/23
+# this is just for testing LLVM 16
+export CHPL_LLVM=bundled
+unset CHPL_LLVM_CONFIG
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

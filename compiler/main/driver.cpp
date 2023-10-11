@@ -610,13 +610,6 @@ static void setupChplLLVM(void) {
 #endif
 }
 
-static void saveCompileCommand() {
-  // save compile command to file for later use in codegen
-  fileinfo* file = openTmpFile(compileCommandFilename, "w");
-  fprintf(file->fptr, "%s", compileCommand);
-  closefile(file);
-}
-
 static void recordCodeGenStrings(int argc, char* argv[]) {
   compileCommand = astr("chpl ");
   // WARNING: This does not handle arbitrary sequences of escaped characters
@@ -815,9 +808,8 @@ static int runDriverPhaseTwo(int argc, char* argv[]);
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
-  // initialize resources that need to be carried over between invocations
-  ensureTmpDirExists();
-  saveCompileCommand();
+  // Save initial compilation command before re-invocations.
+  saveDriverTmp(compileCommandFilename, compileCommand);
 
   // invoke phase one
   if ((status = runDriverPhaseOne(argc, argv)) != 0) {
@@ -851,16 +843,16 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 
 // Run phase one of compiler-driver
 static int runDriverPhaseOne(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--driver-phase-one",
-                                             "--driver-tmp-dir", intDirName};
+  std::vector<std::string> additionalArgs = {
+      "--driver-phase-one", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase one");
 }
 
 // Run phase two of compiler-driver
 static int runDriverPhaseTwo(int argc, char* argv[]) {
-  std::vector<std::string> additionalArgs = {"--driver-phase-two",
-                                             "--driver-tmp-dir", intDirName};
+  std::vector<std::string> additionalArgs = {
+      "--driver-phase-two", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase two");
 }
@@ -2170,8 +2162,7 @@ static void bootstrapTmpDir() {
     if (!driverTmpDir[0]) {
       USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
     }
-    intDirName = driverTmpDir;
-    config.tmpDir = intDirName;
+    config.tmpDir = driverTmpDir;
     config.keepTmpDir = true;
   } else {
     // This is an initial invocation of the driver, or monolithic.
@@ -2200,6 +2191,8 @@ static void dynoConfigureContext(std::string chpl_module_path) {
 
   // Compute a new configuration for the Context
   chpl::Context::Configuration config;
+  // Save old tmp dir unless explicitly overridden
+  config.tmpDir = gContext->tmpDir();
   config.chplHome = CHPL_HOME;
   for (const auto& pair : envMapChplEnvInput) {
     config.chplEnvOverrides.insert(pair);

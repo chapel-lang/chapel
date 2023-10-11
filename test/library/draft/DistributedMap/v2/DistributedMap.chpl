@@ -424,14 +424,14 @@ module DistributedMap {
       }
 
       var first = true;
-      ch._readLiteral("{");
+      ch.readLiteral("{");
 
       while true {
         if first {
           first = false;
         } else {
           try {
-            ch._readLiteral(", ");
+            ch.readLiteral(", ");
           } catch {
             // If we can't find the `, ` then it's probably the end of the map
             break;
@@ -442,13 +442,13 @@ module DistributedMap {
         var val: valType;
 
         ch.read(key);
-        ch._readLiteral(": ");
+        ch.readLiteral(": ");
         ch.read(val);
 
         this.addOrReplaceUnlocked(key, val);
       }
 
-      ch._readLiteral("}");
+      ch.readLiteral("}");
 
       for i in locDom {
         locks[i].unlock();

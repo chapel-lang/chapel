@@ -5310,30 +5310,23 @@ static void handlePrintAsm(std::string dotOFile) {
       disSymArg += "_";
     }
 
+    // If in driver mode, restore list of C symbols to print from disk.
     if (fDriverPhaseTwo) restorePrintIrCNames();
-    // TODO: skip calling this (and remove the function) as the set should
-    // already have deterministic ordering and be fine to iterate through
-    std::vector<std::string> names = gatherPrintLlvmIrCNames();
+    const auto& names = gatherPrintLlvmIrCNames();
     printf("%lu symbol names to disassemble\n", names.size());
-    if (names.empty()) {
-      USR_WARN(
-          "requested assembly dump, but none of the symbols requested to be "
-          "disassembled could be found in the object file");
-    } else {
-      for (const auto& name : names) {
-        printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
-        fflush(stdout);
-        std::vector<std::string> cmd;
-        cmd.push_back(llvmObjDump);
-        std::string arg = disSymArg; // e.g. --disassemble=
-        arg += name;
-        cmd.push_back(arg);
-        cmd.push_back(dotOFile);
+    for (const auto& name : names) {
+      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
+      fflush(stdout);
+      std::vector<std::string> cmd;
+      cmd.push_back(llvmObjDump);
+      std::string arg = disSymArg; // e.g. --disassemble=
+      arg += name;
+      cmd.push_back(arg);
+      cmd.push_back(dotOFile);
 
-        mysystem(cmd, "disassemble a symbol",
-                 /* ignoreStatus */ true,
-                 /* quiet */ false);
-      }
+      mysystem(cmd, "disassemble a symbol",
+               /* ignoreStatus */ true,
+               /* quiet */ false);
     }
   }
 }

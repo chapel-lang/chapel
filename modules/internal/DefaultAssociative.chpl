@@ -145,15 +145,15 @@ module DefaultAssociative {
         }
       } else {
         var first = true;
-        f._writeLiteral("{");
+        f.writeLiteral("{");
         for idx in this {
           if first then
             first = false;
           else
-            f._writeLiteral(", ");
+            f.writeLiteral(", ");
           f.write(idx);
         }
-        f._writeLiteral("}");
+        f.writeLiteral("}");
       }
     }
     proc dsiSerialRead(f) throws {
@@ -168,7 +168,7 @@ module DefaultAssociative {
           dsiAdd(f.read(idxType));
         }
       } else {
-        f._readLiteral("{");
+        f.readLiteral("{");
 
         var first = true;
 
@@ -176,14 +176,14 @@ module DefaultAssociative {
 
           // Try reading an end curly. If we get it, then break.
           try {
-            f._readLiteral("}");
+            f.readLiteral("}");
             break;
           } catch err: BadFormatError {
             // We didn't read an end brace, so continue on.
           }
 
           // Try reading a comma.
-          if !first then f._readLiteral(",", true);
+          if !first then f.readLiteral(",", true);
           first = false;
 
           // Read an index.
@@ -738,7 +738,7 @@ module DefaultAssociative {
       printBraces &&= (isjson || ischpl);
 
       inline proc rwLiteral(lit:string) throws {
-        if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
+        if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
       }
 
       if printBraces then rwLiteral("[");
@@ -750,7 +750,7 @@ module DefaultAssociative {
 
         if f._writing && ischpl {
           f.write(key);
-          f._writeLiteral(" => ");
+          f.writeLiteral(" => ");
         }
 
         if f._writing then f.write(val);
@@ -766,7 +766,7 @@ module DefaultAssociative {
       var first = true;
       var readEnd = true;
 
-      f._readLiteral(openBracket);
+      f.readLiteral(openBracket);
 
       while true {
         if first {
@@ -774,7 +774,7 @@ module DefaultAssociative {
 
           // Break if we read an immediate closed bracket.
           try {
-            f._readLiteral(closedBracket);
+            f.readLiteral(closedBracket);
             readEnd = false;
             break;
           } catch err: BadFormatError {
@@ -784,7 +784,7 @@ module DefaultAssociative {
 
           // Try reading a comma. If we don't, then break.
           try {
-            f._readLiteral(",");
+            f.readLiteral(",");
           } catch err: BadFormatError {
             // Break out of the loop if we didn't read a comma.
             break;
@@ -793,13 +793,13 @@ module DefaultAssociative {
 
         // Read a key.
         var key: idxType = f.read(idxType);
-        f._readLiteral("=>");
+        f.readLiteral("=>");
 
         // Read the value.
         dsiAccess(key) = f.read(eltType);
       }
 
-      if readEnd then f._readLiteral(closedBracket);
+      if readEnd then f.readLiteral(closedBracket);
     }
 
     proc dsiSerialWrite(f) throws { this.dsiSerialReadWrite(f); }
@@ -969,7 +969,7 @@ module DefaultAssociative {
     }
 
     inline proc rwLiteral(lit:string) throws {
-      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
     }
 
     if isjson || ischpl then rwLiteral("[");
@@ -983,7 +983,7 @@ module DefaultAssociative {
 
       if f._writing && ischpl {
         f.write(key);
-        f._writeLiteral(" => ");
+        f.writeLiteral(" => ");
       }
 
       if f._writing then f.write(arr.dsiAccess(key));

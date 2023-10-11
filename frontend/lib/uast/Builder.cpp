@@ -125,6 +125,21 @@ void Builder::noteLocation(AstNode* ast, Location loc) {
   notedLocations_[ast] = loc;
 }
 
+void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
+                                     Location loc) {
+  if (!ast || loc.isEmpty()) return;
+  CHPL_ASSERT(m.find(ast) == m.end());
+  m.emplace(ast, std::move(loc));
+}
+
+#define LOCATION_MAP(ast__, location__) \
+  void Builder::note##location__##Location(ast__* ast, Location loc) { \
+    auto& m = CHPL_AST_LOC_MAP(ast__, location__); \
+    noteAdditionalLocation(m, ast, std::move(loc)); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
@@ -140,6 +155,21 @@ BuilderResult Builder::result() {
   ret.idToAst_.swap(idToAst_);
   ret.idToLocation_.swap(idToLocation_);
   ret.commentIdToLocation_.swap(commentToLocation_);
+
+  // Swap all the additional location maps.
+  #define LOCATION_MAP(ast__, location__) \
+    ret.CHPL_ID_LOC_MAP(ast__, location__) \
+      .swap(CHPL_ID_LOC_MAP(ast__, location__));
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
+  // TODO: Any other state that can be reset?
+  notedLocations_.clear();
+
+  #define LOCATION_MAP(ast__, location__) \
+    CHPL_AST_LOC_MAP(ast__, location__).clear();
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   return ret;
 }
@@ -413,6 +443,20 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   if (search != notedLocations_.end()) {
     CHPL_ASSERT(!search->second.isEmpty());
     idToLocation_[ast->id()] = search->second;
+
+    // Also map additional locations to ID.
+    #define LOCATION_MAP(ast__, location__) \
+      if (auto x = ast->to##ast__()) { \
+        auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
+        auto it = m1.find(x); \
+        if (it != m1.end()) { \
+          auto& m2 = CHPL_ID_LOC_MAP(ast__, location__); \
+          m2[x->id()] = it->second; \
+        } \
+      }
+    #include "chpl/uast/all-location-maps.h"
+    #undef LOCATION_MAP
+
     // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
     if (ieNode) {
       CHPL_ASSERT(ast->isVariable());

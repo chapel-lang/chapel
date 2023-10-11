@@ -1,3 +1,8 @@
 renameSameNameAsInOtherMod.chpl:11: In function 'main':
+renameSameNameAsInOtherMod.chpl:12: warning: potentially surprising shadowing for 'Bar'
+renameSameNameAsInOtherMod.chpl:9: note: it refers to a symbol found through the 'use' of 'Foo2' here
+renameSameNameAsInOtherMod.chpl:5: note: leading to 'Bar' defined here
+renameSameNameAsInOtherMod.chpl:8: note: but, there is a shadowed symbol found through the 'use' of 'Foo' here
+renameSameNameAsInOtherMod.chpl:1: note: leading to 'Foo' defined here
 renameSameNameAsInOtherMod.chpl:12: error: unresolved call 'int(64).x'
 renameSameNameAsInOtherMod.chpl:12: note: because no functions named x found in scope

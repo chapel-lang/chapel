@@ -615,17 +615,17 @@ module Map {
       _enter(); defer _leave();
       var first = true;
 
-      ch._readLiteral("{");
+      ch.readLiteral("{");
 
       while !ch.matchLiteral("}") {
         if first {
           first = false;
         } else {
-          ch._readLiteral(",");
+          ch.readLiteral(",");
         }
         var k : keyType;
         ch.readf("%jt", k);
-        ch._readLiteral(":");
+        ch.readLiteral(":");
         var v : valType;
         ch.readf("%jt", v);
         add(k, v);
@@ -695,25 +695,25 @@ module Map {
       _enter(); defer _leave();
       var first = true;
 
-      ch._writeLiteral("{");
+      ch.writeLiteral("{");
 
       for slot in table.allSlots() {
         if table.isSlotFull(slot) {
           if first {
             first = false;
           } else {
-            ch._writeLiteral(", ");
+            ch.writeLiteral(", ");
           }
           ref tabEntry = table.table[slot];
           ref key = tabEntry.key;
           ref val = tabEntry.val;
           ch.writef("%jt", key);
-          ch._writeLiteral(": ");
+          ch.writeLiteral(": ");
           ch.writef("%jt", val);
         }
       }
 
-      ch._writeLiteral("}");
+      ch.writeLiteral("}");
     }
 
     @chpldoc.nodoc
@@ -738,7 +738,7 @@ module Map {
       _enter(); defer _leave();
       var first = true;
       proc rwLiteral(lit:string) throws {
-        if ch._writing then ch._writeLiteral(lit); else ch._readLiteral(lit);
+        if ch._writing then ch.writeLiteral(lit); else ch.readLiteral(lit);
       }
       rwLiteral("{");
       for slot in table.allSlots() {

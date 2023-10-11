@@ -1214,14 +1214,14 @@ struct RstSignatureVisitor {
     if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
 
-    if (r->numInterfaceExprs() > 0) {
+    if (r->numInheritExprs() > 0) {
       os_ << " : ";
       bool printComma = false;
-      for (auto interfaceExpr : r->interfaceExprs()) {
+      for (auto inheritExpr : r->inheritExprs()) {
         if (printComma) os_ << ", ";
         printComma = true;
 
-        interfaceExpr->traverse(*this);
+        inheritExpr->traverse(*this);
       }
     }
     return false;
@@ -1416,7 +1416,17 @@ struct RstResultBuilder {
   bool showComment(const AstNode* node, bool indent=true) {
     std::string errMsg;
     auto lastComment = previousComment(context_, node->id());
+
+    bool isNested = false;
+    if (node->isRecord() || node->isClass()) {
+      auto parent = parentAst(context_, node);
+      isNested = parent->isRecord() || parent->isClass();
+    }
+
+    if (isNested) indentDepth_ += 1;
     bool commentShown = showComment(lastComment, errMsg, indent);
+    if (isNested) indentDepth_ -= 1;
+
     if (!errMsg.empty()) {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
@@ -1626,7 +1636,7 @@ struct RstResultBuilder {
         visitChildren(m);
         return getResult(textOnly_);
       }
-        os_ << ".. module:: " << m->name().c_str() << '\n';
+      os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
       // in the module index (chpl-modindex.html).  This has the side
       // effect of making references to the :mod: tag for the module
@@ -1653,31 +1663,31 @@ struct RstResultBuilder {
           }
         }
       }
-        os_ << '\n';
+      os_ << '\n';
 
-        // module title
-        os_ << m->name().c_str() << "\n";
-        os_ << std::string(m->name().length(), '=') << "\n";
+      // module title
+      os_ << m->name().c_str() << "\n";
+      os_ << std::string(m->name().length(), '=') << "\n";
 
-        // usage
-        if (includedByDefault) {
-          os_ << ".. note::" << std::endl << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ <<
-                "All Chapel programs automatically ``use`` this module by default.";
-          os_ << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ << "An explicit ``use`` statement is not necessary.";
-          os_ << std::endl;
-        } else {
-          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-        }
-
+      // usage
+      if (includedByDefault) {
+        os_ << ".. note::" << std::endl << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ <<
+              "All Chapel programs automatically ``use`` this module by default.";
+        os_ << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ << "An explicit ``use`` statement is not necessary.";
+        os_ << std::endl;
       } else {
-        os_ << m->name().c_str();
-        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-        lastComment = previousComment(context_, m->id());
+        os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
       }
+
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
+    }
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();

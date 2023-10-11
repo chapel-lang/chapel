@@ -2405,8 +2405,9 @@ Resolver::lookupIdentifier(const Identifier* ident,
 
   if (!resolvingCalledIdent) config |= LOOKUP_INNERMOST;
 
-  auto vec =
-      lookupNameInScope(context, scope, receiverScopes, ident->name(), config);
+  auto vec = lookupNameInScopeWithWarnings(context, scope, receiverScopes,
+                                           ident->name(), config,
+                                           ident->id());
 
   bool notFound = vec.empty();
   bool ambiguous = !notFound && (vec.size() > 1 || vec[0].numIds() > 1);
@@ -3208,19 +3209,27 @@ void Resolver::exit(const Call* call) {
                              /* raiseErrors */ true,
                              &actualAsts);
 
-  // With these exceptions (see below), don't try to resolve a call that
-  // accepts:
-  //  * an unknown param
-  //  * a type that is a generic type unless there are substitutions
-  //  * a value of generic type
-  //  * UnknownType, ErroneousType
+  // With some exceptions (see below), don't try to resolve a call that accepts:
+  enum SkipReason {
+    NONE = 0,
+
+    /* an unknown param (e.g. param int, without a value) */
+    UNKNOWN_PARAM,
+    /* a type that is a generic type unless there are substitutions */
+    GENERIC_TYPE,
+    /* a value of generic type */
+    GENERIC_VALUE,
+    /* UnknownType, ErroneousType */
+    UNKNOWN_ACT, ERRONEOUS_ACT,
+    /* other reason to skip */
+    OTHER_REASON,
+  } skip = NONE;
   // EXCEPT, to handle split-init with an 'out' formal,
   // the actual argument can have unknown / generic type if it
   // refers directly to a particular variable.
   // EXCEPT, type construction can work with unknown or generic types
   // EXCEPT, tuple type construction also works with unknown/generic types
 
-  bool skip = false;
   if (!ci.calledType().isType() &&
       !call->isTuple()) {
     int actualIdx = 0;
@@ -3234,22 +3243,22 @@ void Resolver::exit(const Call* call) {
       const Type* t = qt.type();
       if (t != nullptr && t->isErroneousType()) {
         // always skip if there is an ErroneousType
-        skip = true;
+        skip = ERRONEOUS_ACT;
       } else if (!toId.isEmpty()) {
         // don't skip because it could be initialized with 'out' intent
       } else {
         if (qt.isParam() && qt.param() == nullptr) {
-          skip = true;
+          skip = UNKNOWN_PARAM;
         } else if (qt.isUnknown()) {
-          skip = true;
+          skip = UNKNOWN_ACT;
         } else if (t != nullptr) {
           auto g = getTypeGenericity(context, t);
           bool isBuiltinGeneric = (g == Type::GENERIC &&
                                    (t->isAnyType() || t->isBuiltinType()));
           if (qt.isType() && isBuiltinGeneric && substitutions == nullptr) {
-            skip = true;
+            skip = GENERIC_TYPE;
           } else if (!qt.isType() && g != Type::CONCRETE) {
-            skip = true;
+            skip = GENERIC_VALUE;
           }
         }
       }
@@ -3261,7 +3270,13 @@ void Resolver::exit(const Call* call) {
   }
   // Don't try to resolve calls to '=' until later
   if (ci.isOpCall() && ci.name() == USTR("=")) {
-    skip = true;
+    skip = OTHER_REASON;
+  }
+
+  if (skip == GENERIC_TYPE && call->toPrimCall()) {
+    // Do not skip primitive calls that accept a generic type, since they
+    // may be valid.
+    skip = NONE;
   }
 
   if (!skip) {

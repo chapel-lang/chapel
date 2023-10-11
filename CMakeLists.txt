@@ -36,13 +36,13 @@ set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 # These values will be written to <build_dir>/frontend/include/chpl/config/config.h
 
 set(CHPL_MAJOR_VERSION 1)
-set(CHPL_MINOR_VERSION 32)
+set(CHPL_MINOR_VERSION 33)
 set(CHPL_PATCH_VERSION 0)
 set(CHPL_BUILD_VERSION 0)
 
 # Flip this to 'true' when we're ready to roll out a release; then back
 # after branching
-set(CHPL_OFFICIAL_RELEASE true)
+set(CHPL_OFFICIAL_RELEASE false)
 
 ### END config.h version value setting - configured_prefix set below ###
 
@@ -243,6 +243,8 @@ endif()
 # set(DEBUG OFF CACHE BOOL "DEBUG flag from make") # CMake Debug?
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
+# We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
+string(REPLACE "-std=c++14" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
 
@@ -322,6 +324,9 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   # message(DEBUG "Setting ${CHPLENV_LINE} as ${CHPL_ENV_NAME} ${CHPL_ENV_VALUE}")
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
 endforeach()
+# We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
+string(REPLACE "-std=c++14" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
+string(REPLACE "-std=c++14" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
 
 if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR))

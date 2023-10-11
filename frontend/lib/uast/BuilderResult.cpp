@@ -80,6 +80,15 @@ void BuilderResult::swap(BuilderResult& other) {
   commentIdToLocation_.swap(other.commentIdToLocation_);
   idToParentId_.swap(other.idToParentId_);
   idToAst_.swap(other.idToAst_);
+
+  // Swap additional location maps.
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+    m1.swap(m2); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -105,6 +114,15 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
   changed |= defaultUpdate(keep.idToLocation_, addin.idToLocation_);
   changed |= defaultUpdate(keep.commentIdToLocation_, addin.commentIdToLocation_);
+
+  // Also update additional location maps.
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
+    changed |= defaultUpdate(m1, m2); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   return changed;
 }
@@ -139,6 +157,15 @@ void BuilderResult::mark(Context* context) const {
   for (const Location& loc : commentIdToLocation_) {
     loc.mark(context);
   }
+
+  // Also mark locations in the additional location maps. No need to mark
+  // IDs since they should already be marked as explained above.
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    for (const auto& p : m) p.second.mark(context); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -190,6 +217,18 @@ ID BuilderResult::idToParentId(ID id) const {
   return ID();
 }
 
+// Add getters for additional locations that go from AST or ID to location.
+#define LOCATION_MAP(ast__, location__) \
+  Location BuilderResult:: \
+  idTo##location__##Location(ID id, UniqueString path) const { \
+    if (!id) return Location(path); \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    auto it = m.find(id); \
+    return (it != m.end()) ? it->second : Location(path); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
 #define DYNO_BUILDER_RESULT_START_STR std::string("DYNO_BUILDER_RESULT_START")
 #define DYNO_BUILDER_RESULT_END_STR std::string("DYNO_BUILDER_RESULT_END")
 
@@ -207,6 +246,16 @@ void BuilderResult::serialize(std::ostream& os) const {
 // M: <number of id-to-location entries, uint64_t>
 // <file path for locations, std::string>
 //   0..M-1:
+//     <id as key, ID>
+//     <first line, int>
+//     <first column, int>
+//     <last line, int>
+//     <last column, int>
+// Additional location maps are serialized in the same format. There are Z
+// location maps, one for each mapping described in "all-location-maps.h".
+// For each additional location map of size MZ, the layout is as follows:
+// MZ: <number of id-to-location entries for map Z, uint64_t>
+//   0..MZ-1:
 //     <id as key, ID>
 //     <first line, int>
 //     <first column, int>
@@ -240,6 +289,20 @@ void BuilderResult::serialize(Serializer& ser) const {
       ser.write(pair.second.lastColumn());
     }
   }
+
+  #define LOCATION_MAP(ast__, location__) { \
+      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+      ser.write((uint64_t)m.size()); \
+      for (const auto& pair : m) { \
+        ser.write(pair.first); \
+        ser.write(pair.second.firstLine()); \
+        ser.write(pair.second.firstColumn()); \
+        ser.write(pair.second.lastLine()); \
+        ser.write(pair.second.lastColumn()); \
+      } \
+    }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   ser.write(commentIdToLocation_);
   ser.write(DYNO_BUILDER_RESULT_END_STR);
@@ -288,6 +351,23 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
     idToLocation.insert({curid, Location(pathstr, fl, fc, ll, lc)});
   }
 
+  #define LOCATION_MAP(ast__, location__) { \
+    auto maplen = des.read<uint64_t>(); \
+    llvm::DenseMap<ID,Location> mx(maplen); \
+    for (uint64_t i = 0; i < maplen; i++) { \
+      auto curid = des.read<ID>(); \
+      int fl = des.read<int>(); \
+      int fc = des.read<int>(); \
+      int ll = des.read<int>(); \
+      int lc = des.read<int>(); \
+      mx.insert({curid, Location(pathstr, fl, fc, ll, lc)}); \
+    } \
+    auto& m = ret.CHPL_ID_LOC_MAP(ast__, location__); \
+    std::swap(mx, m); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
   auto commentLocation = des.read<std::vector<Location>>();
 
   CHPL_ASSERT(DYNO_BUILDER_RESULT_END_STR == des.read<std::string>());
@@ -299,7 +379,9 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
     assignIDsFromTree(idToAst, ptr);
   }
 
-  // swap everything into the result
+  // Swap everything into the result, except for the additional location
+  // maps, which are swapped above to avoid having to write another
+  // macro expansion.
   std::swap(ret.filePath_, path);
   std::swap(ret.topLevelExpressions_, alist);
   std::swap(ret.idToAst_, idToAst);
@@ -337,6 +419,15 @@ bool BuilderResult::equals(const BuilderResult& other) const {
       return false;
     }
   }
+
+  // Check that all the additional location maps match.
+  #define LOCATION_MAP(ast__, location__) { \
+      auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+      auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+      if (m1 != m2) return false; \
+    }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
 
   return true;
 }

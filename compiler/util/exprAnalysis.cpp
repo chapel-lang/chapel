@@ -258,6 +258,7 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_SUBTRACT:
     case PRIM_MULT:
     case PRIM_MOD:
+    case PRIM_FMA:
     case PRIM_LSH:
     case PRIM_RSH:
     case PRIM_EQUAL:

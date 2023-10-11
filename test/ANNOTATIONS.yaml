@@ -2396,6 +2396,10 @@ arkouda: &arkouda-base
     - Closes 2734 Fix remaining missed symbol table entry creation for distributed builds (Bears-R-Us/arkouda#2735)
   09/07/23:
     - Closes 2757 Add overload of makeDistArray that takes an array (Bears-R-Us/arkouda#2758)
+  09/28/23:
+    - Closes 2790 Convert non sym entry array creations to new throwing interface (Bears-R-Us/arkouda#2791)
+  09/29/23:
+    - Closes 2796 Reduce Parquet IO benchmark default size (Bears-R-Us/arkouda#2797)
 
 
 arkouda-string:

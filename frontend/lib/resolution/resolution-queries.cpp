@@ -1295,17 +1295,7 @@ QualifiedType getInstantiationType(Context* context,
     auto classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
     bool foundClassyBuiltinType = true;
 
-    if (formalT->isAnyBorrowedNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NILABLE;
-    } else if (formalT->isAnyBorrowedNonNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::BORROWED_NONNIL;
-    } else if (formalT->isAnyBorrowedType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::BORROWED;
-    } else if (formalT->isAnyManagementAnyNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::GENERIC;
-    } else if (formalT->isAnyManagementNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::GENERIC_NILABLE;
-    } else if (formalT->isAnyOwnedType() &&
+    if (formalT->isAnyOwnedType() &&
                actualCt->decorator().isManaged() &&
                actualCt->manager()->isAnyOwnedType()) {
       classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
@@ -1313,12 +1303,6 @@ QualifiedType getInstantiationType(Context* context,
                actualCt->decorator().isManaged() &&
                actualCt->manager()->isAnySharedType()) {
       classBuiltinTypeDec = ClassTypeDecorator::MANAGED;
-    } else if (formalT->isAnyUnmanagedNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NILABLE;
-    } else if (formalT->isAnyUnmanagedNonNilableType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED_NONNIL;
-    } else if (formalT->isAnyUnmanagedType()) {
-      classBuiltinTypeDec = ClassTypeDecorator::UNMANAGED;
     } else {
       foundClassyBuiltinType = false;
     }
@@ -1339,15 +1323,6 @@ QualifiedType getInstantiationType(Context* context,
       // now construct the ClassType
       auto ct = ClassType::get(context, bct, manager, dec);
       return QualifiedType(formalType.kind(), ct);
-    }
-  } else if (actualT->isNilType()) {
-    if (formalT->isAnyBorrowedNilableType() ||
-        formalT->isAnyBorrowedType() ||
-        formalT->isAnyManagementAnyNilableType() ||
-        formalT->isAnyManagementNilableType() ||
-        formalT->isAnyUnmanagedNilableType() ||
-        formalT->isAnyUnmanagedType()) {
-      return actualType; // instantiate with NilType for these cases
     }
   }
 
@@ -1559,6 +1534,22 @@ const TypedFnSignature* instantiateSignature(Context* context,
           useType = getInstantiationType(context,
                                          actualType,
                                          formalType);
+
+          // Verify that the 'instantiation type' still accepts the actual.
+          // This might not be the case based on legal argument mapping rules.
+          //
+          // For instance, we can successfully instantiate 'ref x: Parent'
+          // with 'shared Child', leading to a 'ref x: shared Parent'
+          // useType. However, we cannot pass a 'shared Child' to a
+          // 'ref x: shared Parent' formal, because 'ref' requires the types
+          // to match exactly, and rules out subtype conversions.
+
+          auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
+          auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
+
+          if (!canPass(context, actualType, useTypeConcrete).passes()) {
+            return nullptr;
+          }
         }
       }
     }
@@ -2477,9 +2468,9 @@ static const Type* getManagedClassType(Context* context,
     } else if (name == USTR("shared")) {
       return AnySharedType::get(context);
     } else if (name == USTR("unmanaged")) {
-      return AnyUnmanagedType::get(context);
+      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::UNMANAGED));
     } else if (name == USTR("borrowed")) {
-      return AnyBorrowedType::get(context);
+      return ClassType::get(context, AnyClassType::get(context), nullptr, ClassTypeDecorator(ClassTypeDecorator::BORROWED));
     } else {
       // case not handled in here
       return nullptr;

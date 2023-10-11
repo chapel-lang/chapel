@@ -28,6 +28,8 @@
 #include "chpl/parsing/Parser.h"
 #include "chpl/uast/all-uast.h"
 
+#include "parser-yyltype.h"
+
 #include <cstdint>
 #include <cstdio>
 #include <cstdlib>

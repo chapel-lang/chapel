@@ -1,1 +1,1 @@
--scPtrToLogicalValue=true
+-scPtrToLogicalValue=true -scFileTypeHasPointer=true

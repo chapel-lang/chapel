@@ -217,7 +217,7 @@ class ID final {
     return symbolPath_.isEmpty();
   }
 
-  explicit operator bool() const { return !isEmpty(); }
+  inline explicit operator bool() const { return !isEmpty(); }
 
   size_t hash() const {
     (void)numChildIds_; // this field is intentionally not hashed

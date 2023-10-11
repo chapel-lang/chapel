@@ -75,8 +75,6 @@ static const char* incDirsFilename = "incDirs.tmp";
 static const char* libDirsFilename = "libDirs.tmp";
 static const char* libFilesFilename = "libFiles.tmp";
 
-const char* intDirName = NULL;
-
 static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   char* dirString = strdup(pathVar);
 
@@ -95,12 +93,6 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
   } while (colon != NULL);
 }
 
-static void appendLineToTmpFile(const char* str, const char* filename) {
-  fileinfo* file = openTmpFile(filename, "a");
-  fprintf(file->fptr, "%s\n", str);
-  closefile(file);
-}
-
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
@@ -108,7 +100,7 @@ void addLibPath(const char* libString) {
   addPath(libString, &libDirs);
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(libString, libDirsFilename);
+    saveDriverTmp(libDirsFilename, libString);
   }
 }
 
@@ -117,7 +109,7 @@ void addLibFile(const char* libFile) {
   libFiles.push_back(astr(libFile));
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(libFile, libFilesFilename);
+    saveDriverTmp(libFilesFilename, libFile);
   }
 }
 
@@ -125,32 +117,51 @@ void addIncInfo(const char* incDir) {
   addPath(incDir, &incDirs);
 
   if (fDriverPhaseOne) {
-    appendLineToTmpFile(incDir, incDirsFilename);
+    saveDriverTmp(incDirsFilename, incDir);
   }
 }
 
-// Helper function to feed tmp file lines into a storage/processing function.
-// Used for deserializing library dir, library name, and include dir info for
-// driver.
-static void restoreLinesFromTmp(const char* tmpFileName,
-                               void (*restoreFunc)(const char*)) {
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  fprintf(file->fptr, "%s\n", stringToSave);
+  closefile(file);
+}
+
+void saveDriverTmpMultiple(const char* tmpFilePath,
+                           std::vector<const char*> stringsToSave) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  for (const auto stringToSave : stringsToSave) {
+    fprintf(file->fptr, "%s\n", stringToSave);
+  }
+  closefile(file);
+}
+
+void restoreDriverTmp(const char* tmpFilePath,
+                      std::function<void(const char*)> restoreSavedString) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
   // Create file iff it did not already exist, for simpler reading logic in the
   // rest of the function.
-  fileinfo* tmpFileDummy = openTmpFile(tmpFileName, "a");
+  fileinfo* tmpFileDummy = openTmpFile(tmpFilePath, "a");
   closefile(tmpFileDummy);
 
-  fileinfo* tmpFile = openTmpFile(tmpFileName, "r");
+  fileinfo* tmpFile = openTmpFile(tmpFilePath, "r");
 
   char strBuf[4096];
   while (fgets(strBuf, sizeof(strBuf), tmpFile->fptr)) {
-    // remove trailing newline from fgets
-    // using strlen here is fine because fgets guarantees null termination
+    // Note: Using strlen here (instead of strnlen) is safe because fgets
+    // guarantees null termination.
     size_t len = strlen(strBuf);
-    assert(strBuf[len-1] == '\n' && "stored line exceeds maximum length");
+    // remove trailing newline, which fgets preserves unless buffer is exceeded
+    assert(strBuf[len - 1] == '\n' && "stored line exceeds maximum length");
     strBuf[--len] = '\0';
 
     // invoke restoring function
-    (*restoreFunc)(strBuf);
+    restoreSavedString(strBuf);
   }
 
   closefile(tmpFile);
@@ -164,23 +175,21 @@ void restoreLibraryAndIncludeInfo() {
          "tried to restore library and include info from disk, but it was "
          "already present in memory");
 
-  restoreLinesFromTmp(libDirsFilename, &addLibPath);
-  restoreLinesFromTmp(libFilesFilename, &addLibFile);
-  restoreLinesFromTmp(incDirsFilename, &addIncInfo);
+  restoreDriverTmp(libDirsFilename, &addLibPath);
+  restoreDriverTmp(libFilesFilename, &addLibFile);
+  restoreDriverTmp(incDirsFilename, &addIncInfo);
 }
 
 void restoreAdditionalSourceFiles() {
   INT_ASSERT(fDriverPhaseTwo &&
              "should only be restoring filenames in driver phase two");
-  fileinfo* additionalFilenamesList =
-      openTmpFile(additionalFilenamesListFilename, "r");
-  char filename[FILENAME_MAX + 1];
-  while (fgets(filename, sizeof(filename), additionalFilenamesList->fptr)) {
-    // strip trailing newline from filename
-    filename[strcspn(filename, "\n")] = '\0';
-    addSourceFile(filename, NULL);
-  }
-  closefile(additionalFilenamesList);
+
+  std::vector<const char*> additionalFilenames;
+  restoreDriverTmp(additionalFilenamesListFilename,
+                   [&additionalFilenames](const char* filename) {
+                     additionalFilenames.push_back(astr(filename));
+                   });
+  addSourceFiles(additionalFilenames.size(), &additionalFilenames[0]);
 }
 
 void ensureDirExists(const char* dirname, const char* explanation,
@@ -198,29 +207,6 @@ void ensureDirExists(const char* dirname, const char* explanation,
   }
 }
 
-static const char* makeTempDir() {
- std::string tmpDirPath = gContext->tmpDir();
- ensureDirExists(tmpDirPath.c_str(), "ensuring tmp sub-directory exists");
-
- return astr(tmpDirPath.c_str());
-}
-
-void ensureTmpDirExists() {
-  // create int dir if not done already
-  if (!intDirName) {
-    intDirName = makeTempDir();
-  }
-  // ensure intermediates dir is the same as savec dir if the latter exists
-  if (saveCDir[0] && intDirName != saveCDir) {
-    intDirName = saveCDir;
-    ensureDirExists(saveCDir, "ensuring --savec directory exists");
-    if (0 != strcmp(makeTempDir(), saveCDir)) {
-      // expected gContext to have been constructed with saveCDir
-      INT_FATAL("misconfiguration with temp dir");
-    }
-  }
-}
-
 void deleteDir(const char* dirname) {
   auto err = chpl::deleteDir(std::string(dirname));
   if (err) {
@@ -233,9 +219,7 @@ void deleteDir(const char* dirname) {
 const char* genIntermediateFilename(const char* filename) {
   const char* slash = "/";
 
-  ensureTmpDirExists();
-
-  return astr(intDirName, slash, filename);
+  return astr(gContext->tmpDir().c_str(), slash, filename);
 }
 
 const char* getDirectory(const char* filename) {
@@ -418,11 +402,8 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   numInputFiles += numNewFilenames;
   inputFilenames = (const char**)realloc(inputFilenames,
                                          (numInputFiles+1)*sizeof(char*));
-  fileinfo* additionalFilenamesList = NULL;
-  if (fDriverPhaseOne) {
-    additionalFilenamesList = openTmpFile(additionalFilenamesListFilename, "a");
-  }
 
+  int firstAddedIdx = -1;
   for (int i = 0; i < numNewFilenames; i++) {
     if (!isRecognizedSource(filename[i])) {
       USR_FATAL("file '%s' does not have a recognized suffix", filename[i]);
@@ -454,17 +435,19 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
       numInputFiles--;
     } else {
       // add file
+      if (firstAddedIdx < 0) firstAddedIdx = cursor;
       inputFilenames[cursor++] = newFilename;
-      if (additionalFilenamesList) {
-        // also save to file for use in driver phase two later
-        fprintf(additionalFilenamesList->fptr, "%s\n", newFilename);
-      }
     }
   }
   inputFilenames[cursor] = NULL;
 
-  if (additionalFilenamesList) {
-    closefile(additionalFilenamesList);
+  // If in driver mode, and filenames were added, also save added filenames for
+  // driver phase two.
+  if (fDriverPhaseOne && firstAddedIdx >= 0) {
+    saveDriverTmpMultiple(
+        additionalFilenamesListFilename,
+        std::vector<const char*>(inputFilenames + firstAddedIdx,
+                                 inputFilenames + cursor));
   }
 }
 
@@ -581,9 +564,7 @@ std::string runCommand(const std::string& command) {
 }
 
 const char* getIntermediateDirName() {
-  ensureTmpDirExists();
-
-  return intDirName;
+  return gContext->tmpDir().c_str();
 }
 
 static void genCFiles(FILE* makefile) {
@@ -672,7 +653,7 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
                       const char** tmpservername,
                       bool skip_compile_link,
                       const std::vector<const char*>& splitFiles) {
-  const char* tmpDirName = intDirName;
+  const char* tmpDirName = gContext->tmpDir().c_str();
   const char* strippedExeFilename = stripdirectories(executableFilename);
   const char* exeExt = getLibraryExtension();
   const char* server = "";
@@ -837,8 +818,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* client = astr(intDirName, "/", gMultiLocaleLibClientFile);
-    const char* server = astr(intDirName, "/", gMultiLocaleLibServerFile);
+    const char* client = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibClientFile);
+    const char* server = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");

@@ -196,7 +196,7 @@ PRAGMA(DEPRECATED, npr,
        "deprecated",
        "applied to symbols that are deprecated")
 PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
-       "deprecated impliict conversions",
+       "deprecated implicit conversions",
        "implicit conversions when passing to this formal are deprecated")
 PRAGMA(DEPRECATED_PARENFUL, npr,
        "deprecated parenful",
@@ -377,7 +377,7 @@ PRAGMA(MANAGED_POINTER, ypr, "managed pointer", "e.g. Owned and Shared")
 PRAGMA(MANAGED_POINTER_NONNILABLE, npr, "managed pointer nonnilable", "e.g. non-nilable Owned and Shared")
 PRAGMA(MARKED_GENERIC, npr, "marked generic", "marked generic using the type query syntax")
 PRAGMA(RET_TYPE_MARKED_GENERIC, npr, "ret type marked generic", "ret type marked generic with (?)")
-PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "supreclass marked generic", "superclass is marked generic")
+PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "superclass marked generic", "superclass is marked generic")
 PRAGMA(MAYBE_ARRAY_TYPE, npr, "maybe array type", "function may be computing array type")
 PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early due to copy elision")
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
