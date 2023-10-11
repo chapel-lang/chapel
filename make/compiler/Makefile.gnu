@@ -405,14 +405,14 @@ RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 #
 # When compiling GASNet...
 #
-# -Wno-missing-prototypes must be used because
+# -Wno-missing-prototypes must be used becausex
 # gasneti_linkconfig_idiotcheck isn't prototyped before it's used (boo)
 # and is static, so we can't prototype it for them (awwww).
 #
 # -Wno-strict-prototypes has to be used because most GASNet prototypes
 # aren't strict.
 #
-CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes
+CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-cast-function-type-strict
 endif
 
 ifdef CHPL_COMM_DEBUG
