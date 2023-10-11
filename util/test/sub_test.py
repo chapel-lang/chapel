@@ -2172,9 +2172,12 @@ def main():
                     if skip_remaining_trials:
                         break
 
+                    exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
+                    launcher_error = '' # used to suppress output/timeout errors whose root cause is a launcher error
+
                     with create_exec_limiter():
-                        exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
-                        launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
+                        exectimeout = False
+                        launcher_error = ''
                         sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                         if redirectin:
                             sys.stdout.write(' < %s'%(redirectin))
