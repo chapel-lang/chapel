@@ -118,3 +118,11 @@ forall i in 1..10 with (ref myArrayD) do myArrayD(i) = i;
     f(Counts[key]);
   }
 }
+
+{
+  var A: [1..10] int;
+  var B: [1..10] int;
+  forall i in A.domain with (ref B) { // should not warn for A or B
+    B[i] = A[i] * 10 + A.localAccess[i];
+  }
+}
