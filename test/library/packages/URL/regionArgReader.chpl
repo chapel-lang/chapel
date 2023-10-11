@@ -1,6 +1,6 @@
 use URL;
 
-var url = "http://example.com";
+var url = "https://chapel-lang.org";
 
 var urlreaderCheck1 = openUrlReader(url, region=..8);
 var str:string;
