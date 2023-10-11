@@ -933,64 +933,70 @@ CanPassResult CanPassResult::canPass(Context* context,
         isTypeGeneric(context, actualQT))
       return fail(); // generic types can only be passed to type actuals
 
-    return canInstantiate(context, actualQT, formalQT);
-
-  } else {
-    // if the formal type is concrete, do additional checking
-    // (if it is generic, we will do this checking after instantiation)
-    switch (formalQT.kind()) {
-      case QualifiedType::UNKNOWN:
-      case QualifiedType::FUNCTION:
-      case QualifiedType::PARENLESS_FUNCTION:
-      case QualifiedType::MODULE:
-      case QualifiedType::TYPE_QUERY:
-      case QualifiedType::INDEX:
-      case QualifiedType::DEFAULT_INTENT:
-      case QualifiedType::CONST_INTENT:
-      case QualifiedType::OUT: // handled above
-        // no additional checking for these
-        break;
-
-      case QualifiedType::REF:
-        return fail(); // ref type requires same time which is ruled out above
-
-      case QualifiedType::CONST_REF:
-      case QualifiedType::REF_MAYBE_CONST:
-      case QualifiedType::TYPE:
-        {
-          auto got = canPassSubtype(context, actualT, formalT);
-          if (got.passes()) {
-            return got;
-          }
-          break;
-        }
-
-      case QualifiedType::PARAM:
-        {
-          auto got = canConvert(context, actualQT, formalQT);
-          if (got.passes()) {
-            // if the formal parameter value is unknown, we need
-            // to instantiate as well.
-            if (formalQT.param() == nullptr) {
-              got.instantiates_ = true;
-            }
-            return got;
-          }
-          break;
-        }
-
-      case QualifiedType::IN:
-      case QualifiedType::CONST_IN:
-      case QualifiedType::INOUT:
-      case QualifiedType::VAR:       // var/const var don't really make sense
-      case QualifiedType::CONST_VAR: // as formals but we allow it for testing
-        {
-          auto got = canConvert(context, actualQT, formalQT);
-          if (got.passes())
-            return got;
-          break;
-        }
+    auto got = canInstantiate(context, actualQT, formalQT);
+    if (!got.passes() && formalQT.kind() == QualifiedType::TYPE) {
+      // Instantiation may not be necessary for generic type formals: we
+      // could be passing a (subtype) generic type actual.
+      // Fall through to the checks below.
+    } else {
+      return got;
     }
+  }
+
+  // if the formal type doesn't need instantiation, do additional checking
+  // (if it is generic, we will do this checking after instantiation)
+  switch (formalQT.kind()) {
+    case QualifiedType::UNKNOWN:
+    case QualifiedType::FUNCTION:
+    case QualifiedType::PARENLESS_FUNCTION:
+    case QualifiedType::MODULE:
+    case QualifiedType::TYPE_QUERY:
+    case QualifiedType::INDEX:
+    case QualifiedType::DEFAULT_INTENT:
+    case QualifiedType::CONST_INTENT:
+    case QualifiedType::OUT: // handled above
+      // no additional checking for these
+      break;
+
+    case QualifiedType::REF:
+      return fail(); // ref type requires same time which is ruled out above
+
+    case QualifiedType::CONST_REF:
+    case QualifiedType::REF_MAYBE_CONST:
+    case QualifiedType::TYPE:
+      {
+        auto got = canPassSubtype(context, actualT, formalT);
+        if (got.passes()) {
+          return got;
+        }
+        break;
+      }
+
+    case QualifiedType::PARAM:
+      {
+        auto got = canConvert(context, actualQT, formalQT);
+        if (got.passes()) {
+          // if the formal parameter value is unknown, we need
+          // to instantiate as well.
+          if (formalQT.param() == nullptr) {
+            got.instantiates_ = true;
+          }
+          return got;
+        }
+        break;
+      }
+
+    case QualifiedType::IN:
+    case QualifiedType::CONST_IN:
+    case QualifiedType::INOUT:
+    case QualifiedType::VAR:       // var/const var don't really make sense
+    case QualifiedType::CONST_VAR: // as formals but we allow it for testing
+      {
+        auto got = canConvert(context, actualQT, formalQT);
+        if (got.passes())
+          return got;
+        break;
+      }
   }
 
   // can we promote?
