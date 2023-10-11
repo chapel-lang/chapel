@@ -3138,6 +3138,8 @@ void AggregateType::addClassToHierarchy(std::set<AggregateType*>& localSeen) {
 
     if (this->isRecord()) {
       USR_FATAL(expr, "inheritance is not currently supported for records");
+    } else if (this->isUnion()) {
+      USR_FATAL(expr, "inheritance is not currently supported for unions");
     }
 
     if (firstParent) {
