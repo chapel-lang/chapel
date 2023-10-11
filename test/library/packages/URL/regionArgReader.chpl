@@ -1,8 +1,11 @@
 use RunServer;
 use URL;
 
+config const host = "127.0.0.1";
+config const port = "8000";
+
 proc main() throws {
-  startServer();
+  startServer(host, port);
   defer stopServer();
 
   var url = "http://" + host + ":" + port + "/test.txt";

@@ -4,12 +4,9 @@ use URL;
 use Time;
 use FileSystem;
 
-config const host = "127.0.0.1";
-config const port = "8000";
-
 var server:subprocess(locking=true);
 
-proc startServer() {
+proc startServer(host, port) {
   // Run a curl command to check if the server is already up
   var check = spawn(["curl", "http://" + host + ":" + port + "/test.txt"],
                      stdin=pipeStyle.close, stdout=pipeStyle.pipe, stderr=pipeStyle.pipe);
