@@ -1051,7 +1051,7 @@ static void test36() {
   auto p = parseTypeAndFieldsOfX(context,
                         R""""(
                           class ClassA {
-                            var field: object;
+                            var field: RootClass;
                           }
                           var x: owned ClassA;
                         )"""");
@@ -1072,8 +1072,8 @@ static void test36() {
   assert(fct);
   assert(fct->decorator().isUnknownManagement());
   assert(fct->decorator().isNonNilable());
-  assert(fct->basicClassType()->name() == "object");
-  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+  assert(fct->basicClassType()->name() == "RootClass");
+  assert(fct->basicClassType() == BasicClassType::getRootClassType(context));
 }
 
 static void test37() {
@@ -1123,7 +1123,7 @@ static void test38() {
                             var parentField:int;
                           }
                           class Child : Parent {
-                            var childObject: object;
+                            var childObject: RootClass;
                           }
                           var x: owned Child;
                         )"""");
@@ -1144,13 +1144,13 @@ static void test38() {
   assert(fct);
   assert(fct->decorator().isUnknownManagement());
   assert(fct->decorator().isNonNilable());
-  assert(fct->basicClassType()->name() == "object");
-  assert(fct->basicClassType() == BasicClassType::getObjectType(context));
+  assert(fct->basicClassType()->name() == "RootClass");
+  assert(fct->basicClassType() == BasicClassType::getRootClassType(context));
 
   auto pct = bct->parentClassType()->toBasicClassType();
   assert(pct);
   assert(pct->parentClassType()->isObjectType());
-  assert(pct->parentClassType() == BasicClassType::getObjectType(context));
+  assert(pct->parentClassType() == BasicClassType::getRootClassType(context));
 
   auto& parentFields = fieldsForTypeDecl(context, pct, DefaultsPolicy::IGNORE_DEFAULTS);
   assert(parentFields.numFields() == 1);
