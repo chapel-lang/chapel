@@ -640,9 +640,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
-      if (ci.numActuals() == 1) {
-        type = QualifiedType(QualifiedType::CONST_IN, VoidType::get(context));
-      }
+      assert(false && "not implemented yet");
       break;
 
     case PRIM_CAST_TO_VOID_STAR:
