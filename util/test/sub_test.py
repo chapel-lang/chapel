@@ -2174,7 +2174,7 @@ def main():
 
                     with create_exec_limiter():
                         exectimeout = False  # 'exectimeout' is specific to one trial of one execopt setting
-                        launcher_error = ''  # used to suppress output/timeout errors whose root cause is a launcher error
+                        launcher_error = '' # used to suppress output/timeout errors whose root cause is a launcher error
                         sys.stdout.write('[Executing program %s %s'%(cmd, ' '.join(args)))
                         if redirectin:
                             sys.stdout.write(' < %s'%(redirectin))
@@ -2453,7 +2453,8 @@ def main():
                                     printTestVariation(compoptsnum, compoptslist,
                                                     execoptsnum, execoptslist);
                                 sys.stdout.write(']\n')
-                        else:
+                        # only notify for a failed execution if launching the test was successful
+                        elif (not launcher_error):
                             sys.stdout.write('[Error execution failed for %s]\n'%(test_name))
 
                         if exectimeout or status != 0 or exec_status != 0:
