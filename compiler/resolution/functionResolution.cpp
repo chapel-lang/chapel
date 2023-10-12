@@ -9083,6 +9083,36 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 //
 //
 
+static void checkAndAdjustLhsRefType(Expr* call, Symbol* lhs, Type* rhsType) {
+  Type* rhsValType = rhsType->getValType();
+  Type* lhsValType = lhs->type->getValType();
+
+  if (lhsValType->symbol->hasFlag(FLAG_GENERIC)) {
+    // check if 'rhsType' is an instantiation of lhs's type
+    Type* inst = getInstantiationType(rhsValType, NULL, lhsValType, NULL, call);
+    if (inst != rhsValType) {
+      USR_FATAL_CONT(call,
+        "initializing a reference using an expression whose type '%s"
+        "' is not an instantiation of the declared type '%s'",
+        toString(rhsValType), toString(lhsValType));
+    }
+    // even if there was an error, we can continue resolving
+    // using the declared type if possible
+    lhs->type = (inst ? inst : rhsType)->getRefType();
+  }
+  else {
+    if (lhsValType != rhsValType) {
+      USR_FATAL_CONT(call, "Initializing a reference with another type");
+      USR_PRINT(lhs, "Reference has type %s", toString(lhsValType));
+      USR_PRINT(call, "Initializing with type %s", toString(rhsValType));
+      // we could continue, however we would get a duplicate error
+      USR_STOP();
+    }
+  }
+
+  INT_ASSERT(lhs->isRef());
+}
+
 // Check the 'move' into an YVV from the result of an addrOf of 'argOfAddrOf'
 // when the iterator has the 'ref' return/yield intent.
 // Disallow args that are not references or are const references.
@@ -9266,15 +9296,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
       // Check that the types match
       SymExpr* lhsSe = toSymExpr(call->get(1));
       Symbol* lhs = lhsSe->symbol();
-      INT_ASSERT(lhs->isRef());
 
-      if (lhs->getValType() != rhsType->getValType()) {
-        USR_FATAL_CONT(call, "Initializing a reference with another type");
-        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
-        USR_PRINT(call, "Initializing with type %s",
-                        toString(rhsType->getValType()));
-        USR_STOP();
-      }
+      checkAndAdjustLhsRefType(call, lhs, rhsType);
 
       if (lhs->hasFlag(FLAG_YVV)) {
         Expr* arg = rhs->get(1);
@@ -10079,6 +10102,43 @@ static Expr* handleNonNormalizableExpr(Expr* expr) {
   return ret;
 }
 
+// Handles 'ref x: someType [= rhs];' by resolving 'someType'
+// and storing it in 'x'. Returns true if this was such a decl.
+static bool resolvedRefVarDecl(DefExpr* def) {
+  Symbol* sym = def->sym;
+  // cater only to user-level ref vars
+  if (sym->hasFlag(FLAG_TEMP)      ||
+      sym->hasFlag(FLAG_EXPR_TEMP) ||
+      !sym->hasFlag(FLAG_REF_VAR)  ||
+      isShadowVarSymbol(sym)        )
+    return false;
+
+  INT_ASSERT(sym->type == dtUnknown);
+  Expr* typeExpr = def->exprType;
+  if (typeExpr == nullptr)
+    return true; // Yes, it was a ref decl. Nothing to do for it.
+
+  resolveExpr(typeExpr); // 'typeExpr' has been normalized
+  sym->type = typeExpr->typeInfo();
+
+  if (sym->type->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
+    // TODO also issue this warning when it is a domain type
+    // except for dtDomain or default rectangular
+    USR_WARN(def, "there is no checking that the domain of the initialization"
+       " expression matches the domain of the declared type of the reference");
+  }
+
+
+  if (sym->type->symbol->hasFlag(FLAG_GENERIC)) {
+    // it will be instantiated in resolveMove() / checkAndAdjustLhsRefType()
+  } else {
+    // checkAndAdjustLhsRefType() expects a ref type
+    sym->type = sym->type->getRefType();
+  }
+  
+  return true;
+}
+
 static bool terminatesControlFlow(Expr* expr);
 
 // Is it guaranteed that 'block' terminates control flow?
@@ -10557,6 +10617,8 @@ Expr* resolveExpr(Expr* expr) {
       if (fn->isSignature()) {
         fold = resolveFunctionTypeConstructor(def);
       }
+    } else if (resolvedRefVarDecl(def)) {
+      // OK
     }
     retval = foldTryCond(postFold(fold));
   } else if (SymExpr* se = toSymExpr(expr)) {
