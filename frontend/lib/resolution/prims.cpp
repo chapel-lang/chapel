@@ -23,6 +23,7 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/resolution/can-pass.h"
 
 namespace chpl {
 namespace resolution {
@@ -410,6 +411,55 @@ static QualifiedType primToNilableClass(Context* context,
   return actualType;
 }
 
+static QualifiedType primFamilyIsSubtype(Context* context,
+                                         const PrimCall* call,
+                                         const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto prim = call->prim();
+  auto& parentQT = ci.actual(0).type();
+  auto& subQT = ci.actual(1).type();
+
+  bool parentIsType = parentQT.isType();
+  bool subIsType = subQT.isType();
+
+  // TODO: more specific error reporting
+  if (prim == PRIM_IS_INSTANTIATION_ALLOW_VALUES) {
+    // At least one type needed for PRIM_IS_INSTANTIATION_ALLOW_VALUES.
+    if (!parentIsType && !subIsType) return QualifiedType();
+  } else {
+    // Both need to be types for other primitives in this family.
+    if (!parentIsType || !subIsType) return QualifiedType();
+  }
+
+  // Note: omitted here is the special logic for distributions
+  // (if parent is a distribution class, retrieve the child distribution's
+  // _instance). It's unclear if we need this logic in Dyno.
+
+  auto newParentQT = QualifiedType(QualifiedType::TYPE, parentQT.type());
+  auto newSubQT = QualifiedType(QualifiedType::TYPE, subQT.type());
+
+  auto cpr = canPass(context, newSubQT, newParentQT);
+  bool result = false;
+  if (prim == PRIM_IS_INSTANTIATION_ALLOW_VALUES) {
+    // We allow the type to be the same OR require instantiation; thus,
+    // it's sufficient to check if no conversion occurs (both instantiates()
+    // and !instantiates() are allowed).
+    result = cpr.passes() && !cpr.converts() && !cpr.promotes();
+  } else if (prim == PRIM_IS_SUBTYPE) {
+    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
+                              cpr.conversionKind() == CanPassResult::SUBTYPE);
+  } else {
+    CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
+    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
+                              cpr.conversionKind() == CanPassResult::SUBTYPE) &&
+             newSubQT != newParentQT;
+  }
+
+  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                       BoolParam::get(context, result));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -447,7 +497,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_SUBTYPE:
     case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
     case PRIM_IS_PROPER_SUBTYPE:
-      CHPL_ASSERT(false && "not implemented yet");
+      type = primFamilyIsSubtype(context, call, ci);
       break;
 
     case PRIM_IS_BOUND:
