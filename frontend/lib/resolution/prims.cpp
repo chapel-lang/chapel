@@ -404,7 +404,7 @@ static QualifiedType setClassNilability(Context* context,
 
   if (cde) {
     auto decorator = ClassTypeDecorator(*cde);
-    auto newDecorator = nilability ? decorator.addNilable() : decorator.removeNilable();
+    auto newDecorator = nilability ? decorator.addNilable() : decorator.addNonNil();
     const Type* newType = ClassType::get(context, manageableType, manager, newDecorator);
     return QualifiedType(actualType.kind(), newType);
   } else if (checked) {

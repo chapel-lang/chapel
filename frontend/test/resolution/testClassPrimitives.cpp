@@ -267,6 +267,36 @@ static void test6() {
   });
 }
 
+static void test7() {
+  testPrimitive("to non nilable class", {
+    { "new owned C()", "owned C", testType },
+    { "new owned C?()", "owned C", testType },
+    { "new shared C()", "shared C", testType },
+    { "new shared C?()", "shared C", testType },
+    { "new unmanaged C()", "unmanaged C", testType },
+    { "new unmanaged C?()", "unmanaged C", testType },
+
+    { "owned C", "owned C", testExact },
+    { "owned C?", "owned C", testExact },
+    { "shared C", "shared C", testExact },
+    { "shared C?", "shared C", testExact },
+    { "unmanaged C", "unmanaged C", testExact },
+    { "unmanaged C?", "unmanaged C", testExact },
+
+    { "owned class", "owned class", testExact },
+    { "owned class", "owned class", testExact },
+    { "shared class", "shared class", testExact },
+    { "shared class", "shared class", testExact },
+    { "unmanaged class", "unmanaged class", testExact },
+    { "unmanaged class", "unmanaged class", testExact },
+
+    { "42", "int(64)", testType },
+    { "int(64)", "int(64)", testExact },
+    { "\"hello\"", "string", testType },
+    { "string", "string", testExact },
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -274,4 +304,5 @@ int main() {
   test4();
   test5();
   test6();
+  test7();
 }
