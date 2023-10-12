@@ -718,7 +718,6 @@ static void testControlFlowYield4() {
 std::string ops = R"""(
   operator ==(x:int, y:int) { return __primitive("==", x, y); }
   operator ==(param x:int, param y:int) param { return __primitive("==", x, y); }
-  operator ==(type A, type B) param : bool { return __primitive("==", A, B); }
 )""";
 
 static void testSelectVals() {
@@ -824,9 +823,11 @@ static void testSelectVals() {
 using stringMap = std::map<std::string, std::string>;
 
 static void testSelectCases(std::string base,
-                            stringMap vals) {
+                            stringMap vals,
+                            bool isType = true) {
   for (auto pair : vals) {
-    std::string program = base + "type x = foo(" + pair.first + ");";
+    std::string kind = isType ? "type" : "var";
+    std::string program = base + kind + " x = foo(" + pair.first + ");";
 
     Context ctx;
     Context* context = &ctx;
@@ -927,6 +928,27 @@ static void testSelectTypes() {
     ErrorGuard guard(context);
     auto qt = resolveTypeOfXInit(context, program);
     assert(qt.type()->isIntType());
+  }
+  {
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      select T {
+        when int do return 5;
+        when real do return 42.0;
+        when string do return "hello";
+      }
+
+      var x : T;
+      return x;
+    }
+    )""";
+
+    stringMap vals = {{"int", "int(64)"},
+                      {"real", "real(64)"},
+                      {"string", "string"},
+                      {"uint", "uint(64)"}};
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
   }
 }
 

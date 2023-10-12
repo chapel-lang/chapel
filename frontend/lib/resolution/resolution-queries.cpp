@@ -2780,7 +2780,6 @@ static bool resolveFnCallSpecial(Context* context,
                                  const AstNode* astForErr,
                                  const CallInfo& ci,
                                  QualifiedType& exprTypeOut) {
-  // TODO: type comparisons
   // TODO: cast
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
@@ -2788,6 +2787,24 @@ static bool resolveFnCallSpecial(Context* context,
   if (const Type* t = resolveFnCallSpecialType(context, astForErr, ci)) {
     exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
     return true;
+  }
+
+  if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
+      ci.numActuals() == 2) {
+    auto lhs = ci.actual(0).type();
+    auto rhs = ci.actual(1).type();
+
+    bool bothType = lhs.kind() == QualifiedType::TYPE &&
+                    rhs.kind() == QualifiedType::TYPE;
+    bool bothParam = lhs.kind() == QualifiedType::PARAM &&
+                     rhs.kind() == QualifiedType::PARAM;
+    if (bothType || bothParam) {
+      bool result = lhs == rhs;
+      result = ci.name() == USTR("==") ? result : !result;
+      exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                                  BoolParam::get(context, result));
+      return true;
+    }
   }
 
   if (ci.name() == USTR("isCoercible")) {

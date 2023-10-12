@@ -3152,19 +3152,6 @@ void Resolver::prepareCallInfoActuals(const Call* call,
                            /* actualAsts */ nullptr);
 }
 
-QualifiedType Resolver::typeForTypeOperator(const OpCall* op,
-    const QualifiedType& lt, const QualifiedType& rt) {
-  if (op->op() == USTR("==") || op->op() == USTR("!=")) {
-    bool opNotEqual = op->op() == USTR("!=");
-    bool compareResult = lt == rt;
-    return QualifiedType(QualifiedType::PARAM,
-                         BoolType::get(context),
-                         BoolParam::get(context, opNotEqual ^ compareResult));
-  }
-  CHPL_ASSERT(false && "not implemented!");
-  return QualifiedType();
-}
-
 void Resolver::exit(const Call* call) {
   if (scopeResolveOnly)
     return;
@@ -3176,22 +3163,6 @@ void Resolver::exit(const Call* call) {
   if (op && (op->op() == USTR("&&") || op->op() == USTR("||"))) {
     if (!scopeResolveOnly) {
       // these are handled in 'enter' to do param folding
-      return;
-    }
-  }
-
-  if (op && (op->op() == USTR("==") || op->op() == USTR("!=") ||
-        op->op() == USTR("<") || op->op() == USTR("<="))) {
-    if (op->numActuals() != 2) {
-      byPostorder.byAst(op).setType(typeErr(op, "invalid op call"));
-      return;
-    }
-    ResolvedExpression& leftR = byPostorder.byAst(op->child(0));
-    ResolvedExpression& rightR = byPostorder.byAst(op->child(1));
-    if ((leftR.type().isType() && rightR.type().isType()) ||
-        (leftR.type().isParam() && rightR.type().isParam())) {
-      auto resultType = typeForTypeOperator(op, leftR.type(), rightR.type());
-      byPostorder.byAst(op).setType(std::move(resultType));
       return;
     }
   }
