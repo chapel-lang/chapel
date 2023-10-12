@@ -404,11 +404,6 @@ struct Resolver {
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
 
-  // Handle ==, !=, and other operators as defined on types.
-  types::QualifiedType typeForTypeOperator(const uast::OpCall* op,
-                                           const types::QualifiedType& left,
-                                           const types::QualifiedType& right);
-
   // find the element, if any, that a name refers to.
   // Sets outAmbiguous to true if multiple elements of the same name are found,
   // and to false otherwise.
