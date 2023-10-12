@@ -640,11 +640,6 @@ static void removeTypedefParts() {
       def->init = NULL;
     }
 
-    if (def->exprType) {
-      def->exprType->remove(); // it may reference a generic type
-      def->exprType = NULL;
-    }
-
     // Also remove DefExprs for generic type variables
     if (!isPrimitiveType(def->sym->type) &&
         def->sym->hasFlag(FLAG_TYPE_VARIABLE) &&
