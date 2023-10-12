@@ -443,7 +443,9 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
 
   // If in driver mode, and filenames were added, also save added filenames for
   // driver phase two.
-  if (fDriverPhaseOne && firstAddedIdx >= 0) {
+  // Note: Need to check both driver mode and phase here. The two could conflict
+  // since files can be added before driver flags are validated.
+  if (!fDriverDoMonolithic && fDriverPhaseOne && firstAddedIdx >= 0) {
     saveDriverTmpMultiple(
         additionalFilenamesListFilename,
         std::vector<const char*>(inputFilenames + firstAddedIdx,
