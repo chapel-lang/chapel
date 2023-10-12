@@ -22,6 +22,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/resolution/intents.h"
 #include "chpl/types/Param.h"
+#include "chpl/types/VoidType.h"
 #include "chpl/resolution/can-pass.h"
 
 namespace chpl {
@@ -53,6 +54,10 @@ const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
                                eltType).get();
+}
+
+const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
+  return CPtrType::get(context, VoidType::get(context));
 }
 
 const ID& CPtrType::getId(Context* context) {

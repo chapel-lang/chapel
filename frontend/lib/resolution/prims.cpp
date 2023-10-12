@@ -296,6 +296,10 @@ static QualifiedType primCast(Context* context,
 
   if (!castTo.isType()) return QualifiedType();
 
+  // Note: the production compiler also handles wide classes here (if
+  // cast-from is a wide class, turn cast-to into a wide class). We don't
+  // currently track wide classs in Dyno so this logic is omitted here.
+
   return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
 }
 
@@ -364,9 +368,10 @@ static QualifiedType primToBorrowedClass(Context* context,
                                  ClassTypeDecorator::BORROWED, checked);
 }
 
-static QualifiedType primToNilableClass(Context* context,
+static QualifiedType setClassNilability(Context* context,
                                         const PrimCall* call,
                                         const CallInfo& ci,
+                                        bool nilability,
                                         bool checked) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -399,7 +404,7 @@ static QualifiedType primToNilableClass(Context* context,
 
   if (cde) {
     auto decorator = ClassTypeDecorator(*cde);
-    auto newDecorator = decorator.addNilable();
+    auto newDecorator = nilability ? decorator.addNilable() : decorator.addNonNil();
     const Type* newType = ClassType::get(context, manageableType, manager, newDecorator);
     return QualifiedType(actualType.kind(), newType);
   } else if (checked) {
@@ -458,6 +463,43 @@ static QualifiedType primFamilyIsSubtype(Context* context,
 
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                        BoolParam::get(context, result));
+}
+
+static QualifiedType primToNilableClass(Context* context,
+                                        const PrimCall* call,
+                                        const CallInfo& ci,
+                                        bool checked) {
+  return setClassNilability(context, call, ci, /* nilability */ true, checked);
+}
+
+static QualifiedType primToNonNilableClass(Context* context,
+                                           const PrimCall* call,
+                                           const CallInfo& ci,
+                                           bool checked) {
+  return setClassNilability(context, call, ci, /* nilability */ false, checked);
+}
+
+static QualifiedType primRealToInt(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto argType = ci.actual(0).type();
+  auto argTypePtr = argType.type();
+
+  if (!argTypePtr->isRealType()) return QualifiedType();
+
+  return QualifiedType(argType.kind(), IntType::get(context, 64));
+}
+
+static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto argType = ci.actual(0).type();
+  auto argTypePtr = argType.type();
+
+  if (!argTypePtr->isClassType() && !argTypePtr->isBasicClassType())
+    return QualifiedType();
+
+  return QualifiedType(argType.kind(), IntType::get(context, 64));
 }
 
 CallResolutionResult resolvePrimCall(Context* context,
@@ -591,17 +633,36 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     /* cast-like things */
     case PRIM_CAST:
+    case PRIM_DYNAMIC_CAST:
       type = primCast(context, ci);
       break;
 
-    case PRIM_DYNAMIC_CAST:
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
+      assert(false && "not implemented yet");
+      break;
+
     case PRIM_CAST_TO_VOID_STAR:
+      if (ci.numActuals() == 1) {
+        type = QualifiedType(ci.actual(0).type().kind(),
+                             CPtrType::getCVoidPtrType(context));
+      }
+      break;
+
     case PRIM_CAST_TO_TYPE:
+      // Note: the implementation isn't the same in production, but seems to
+      // match what we do in Dyno for primCast.
+      type = primCast(context, ci);
+      break;
+
     case PRIM_REAL_TO_INT:
+      type = primRealToInt(context, ci);
+      break;
+
     case PRIM_OBJECT_TO_INT:
+      type = primObjectToInt(context, ci);
+
     case PRIM_COERCE:
       assert(false && "not implemented yet");
       break;
@@ -629,6 +690,9 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_TO_NON_NILABLE_CLASS:
+      type = primToNonNilableClass(context, call, ci, /* checked */ false);
+      break;
+
     case PRIM_UINT32_AS_REAL32:
     case PRIM_UINT64_AS_REAL64:
     case PRIM_REAL32_AS_UINT32:
