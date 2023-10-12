@@ -118,7 +118,7 @@ proc main() {
   // as the update value.
   //
   forall (_, r) in zip(Updates, RAStream()) with (ref T) do
-    T(r & indexMask).xor(r, order=memoryOrder.relaxed);
+    T(r & indexMask).xor(r);
 
   const execTime = timeSinceEpoch().totalSeconds() - startTime;   // capture the elapsed time
 
@@ -152,7 +152,7 @@ proc verifyResults(ref T) {
   // Reverse the updates by recomputing them.
   //
    forall (_, r) in zip(Updates, RAStream()) with (ref T) do
-     T(r & indexMask).xor(r, order=memoryOrder.relaxed);
+     T(r & indexMask).xor(r);
 
   //
   // Print the table again after the updates have been reversed
