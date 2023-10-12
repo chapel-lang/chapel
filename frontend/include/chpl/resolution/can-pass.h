@@ -56,32 +56,39 @@ class CanPassResult {
     OTHER,
   };
 
+  enum FailReason {
+    /* The actual can be passed to the formal. */
+    PASSES,
+    /* Some other, generic reason. */
+    FAIL_OTHER,
+  };
+
  private:
-  bool passes_ = false;
+  bool failReason_ = false;
   bool instantiates_ = false;
   bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
-  CanPassResult(bool passes, bool instantiates, bool promotes,
+  CanPassResult(FailReason failReason, bool instantiates, bool promotes,
                 ConversionKind kind)
-    : passes_(passes), instantiates_(instantiates), promotes_(promotes),
+    : failReason_(failReason), instantiates_(instantiates), promotes_(promotes),
       conversionKind_(kind) { }
 
   // these builders make it easier to implement canPass
   static CanPassResult fail() {
-    return CanPassResult(false, false, false, NONE);
+    return CanPassResult(FAIL_OTHER, false, false, NONE);
   }
   static CanPassResult passAsIs() {
-    return CanPassResult(true, false, false, NONE);
+    return CanPassResult(PASSES, false, false, NONE);
   }
   static CanPassResult convert(ConversionKind e) {
-    return CanPassResult(true, false, false, e);
+    return CanPassResult(PASSES, false, false, e);
   }
   static CanPassResult instantiate() {
-    return CanPassResult(true, true, false, NONE);
+    return CanPassResult(PASSES, true, false, NONE);
   }
   static CanPassResult convertAndInstantiate(ConversionKind e) {
-    return CanPassResult(true, true, false, e);
+    return CanPassResult(PASSES, true, false, e);
   }
   static CanPassResult promote(CanPassResult r) {
     CanPassResult ret = r;
@@ -139,7 +146,7 @@ class CanPassResult {
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
-  bool passes() { return passes_; }
+  bool passes() { return failReason_ == PASSES; }
 
   /** Returns true if passing the argument will require instantiation */
   bool instantiates() { return instantiates_; }

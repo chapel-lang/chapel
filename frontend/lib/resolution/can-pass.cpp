@@ -500,7 +500,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
   // all class conversions are subtype conversions
   ConversionKind conversion = converts ? SUBTYPE : NONE;
 
-  return CanPassResult(/*passes*/ true,
+  return CanPassResult(PASSES,
                        instantiates,
                        /*promotes*/ false,
                        conversion);
@@ -532,7 +532,7 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   auto formalBct = formalCt->basicClassType();
 
   // code below assumes this
-  CHPL_ASSERT(decResult.passes_);
+  CHPL_ASSERT(decResult.passes());
   CHPL_ASSERT(decResult.conversionKind_ == NONE ||
          decResult.conversionKind_ == SUBTYPE);
   CHPL_ASSERT(!decResult.promotes_);
@@ -548,7 +548,7 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
     // all class conversions are subtype conversions
     ConversionKind conversion = converts ? SUBTYPE : NONE;
 
-    return CanPassResult(/*passes*/ true,
+    return CanPassResult(PASSES,
                          /* instantiates */ true,
                          /*promotes*/ false,
                          conversion);
@@ -562,7 +562,7 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
     // all class conversions are subtype conversions
     ConversionKind conversion = converts ? SUBTYPE : NONE;
 
-    return CanPassResult(/*passes*/ true,
+    return CanPassResult(PASSES,
                          instantiates,
                          /*promotes*/ false,
                          conversion);
@@ -596,8 +596,8 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult result = canPassClassTypes(context, actualCt, formalCt);
-      if (result.passes_ && (result.conversionKind_ == NONE ||
-                             result.conversionKind_ == SUBTYPE)) {
+      if (result.passes() && (result.conversionKind_ == NONE ||
+                              result.conversionKind_ == SUBTYPE)) {
         return result;
       }
     }
