@@ -4125,6 +4125,7 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
