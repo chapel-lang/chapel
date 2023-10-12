@@ -1,0 +1,40 @@
+consumer: buff[0].readFE() 0.0
+consumer: buff[0].readFE() 0.0
+consumer: buff[1].readFE() 1.0
+consumer: buff[1].readFE() 1.0
+consumer: buff[2].readFE() 2.0
+consumer: buff[2].readFE() 2.0
+consumer: buff[3].readFE() 3.0
+consumer: buff[3].readFE() 3.0
+consumer: buff[4].readFE() 4.0
+consumer: buff[4].readFE() 4.0
+consumer: buff[5].readFE() 5.0
+consumer: buff[5].readFE() 5.0
+consumer: buff[6].readFE() 6.0
+consumer: buff[6].readFE() 6.0
+consumer: buff[7].readFE() 7.0
+consumer: buff[7].readFE() 7.0
+consumer: buff[8].readFE() 8.0
+consumer: buff[8].readFE() 8.0
+consumer: buff[9].readFE() 9.0
+consumer: buff[9].readFE() 9.0
+producer: wrote 0 into buff[0]
+producer: wrote 0 into buff[0]
+producer: wrote 1 into buff[1]
+producer: wrote 1 into buff[1]
+producer: wrote 2 into buff[2]
+producer: wrote 2 into buff[2]
+producer: wrote 3 into buff[3]
+producer: wrote 3 into buff[3]
+producer: wrote 4 into buff[4]
+producer: wrote 4 into buff[4]
+producer: wrote 5 into buff[5]
+producer: wrote 5 into buff[5]
+producer: wrote 6 into buff[6]
+producer: wrote 6 into buff[6]
+producer: wrote 7 into buff[7]
+producer: wrote 7 into buff[7]
+producer: wrote 8 into buff[8]
+producer: wrote 8 into buff[8]
+producer: wrote 9 into buff[9]
+producer: wrote 9 into buff[9]
