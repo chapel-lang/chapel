@@ -33,7 +33,7 @@ def postorder(node):
     Recursively visit the given AST node, going in post-order (children-then-parent)
     """
     for child in node:
-        yield from preorder(child)
+        yield from postorder(child)
     yield node
 
 def parse_attribute(attr, attribute):
