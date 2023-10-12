@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import sys
+import re
+
+testname=sys.argv[1]
+testout=sys.argv[2]
+
+out = []
+with open(testout, "r") as outF:
+    for line in outF:
+        out.append(re.sub(r"\d+\.\d+, can't trust this result", "????", line))
+
+f = open(testout, "w")
+f.write("".join(out))

@@ -20,7 +20,7 @@ config const m = 10;
 // with 'ref' intent, we are requesting a race
 // NOTE: To see 'ref' intent sum and 'reduce' intent sum being different, try to 
 // force a race by setting higher numbers of n
-//      ./04-task-intents --n 10000
+//      ./04-task-intents-forall --n 10000
 {
   var sum: real;
   forall i in 1..n with (ref sum) do
