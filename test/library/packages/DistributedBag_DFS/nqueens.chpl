@@ -96,7 +96,7 @@ proc isSafe(const board: [] int, const queen_num: int, const row_pos: int): bool
 
 // Decompose a node into a set of children nodes.
 proc decompose(const parent: Node, ref tree_loc: int,
-  ref num_sol: int): list
+  ref num_sol: int): list(Node)
 {
   var children: list(Node);
 
@@ -146,7 +146,7 @@ proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int)
 proc main ()
 {
   // Global variables (synchronization, termination)
-  const PrivateSpace: domain(1) dmapped Private();
+  const PrivateSpace: domain(1) dmapped privateDist();
   var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
   allLocalesBarrier.reset(here.maxTaskPar);
 
@@ -160,7 +160,8 @@ proc main ()
   bag.add(root, 0);
 
   // Parallel search
-  coforall loc in Locales do on loc {
+  coforall loc in Locales with (ref eachExploredTree, ref eachExploredSol,
+    ref eachLocaleState) do on loc {
 
     // Local variables
     var eachTaskState: [0..#here.maxTaskPar] atomic bool = BUSY;
@@ -169,7 +170,8 @@ proc main ()
     var eachLocalExploredTree: [0..#here.maxTaskPar] int;
     var eachLocalExploredSol: [0..#here.maxTaskPar] int;
 
-    coforall taskId in 0 .. #here.maxTaskPar {
+    coforall taskId in 0 .. #here.maxTaskPar with (ref eachLocalExploredTree,
+      ref eachLocalExploredSol, ref eachTaskState, ref eachLocaleState) {
 
       // Task variables
       ref tree_loc = eachLocalExploredTree[taskId];
