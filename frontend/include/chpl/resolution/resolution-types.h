@@ -916,35 +916,42 @@ enum PassingFailureReason {
 
 class ApplicabilityResult {
  private:
+  const TypedFnSignature* initialForErr_;
   const TypedFnSignature* candidate_;
   CandidateFailureReason candidateReason_;
   PassingFailureReason formalReason_;
   int formalIdx_;
 
-  ApplicabilityResult(const TypedFnSignature* candidate,
+  ApplicabilityResult(const TypedFnSignature* initialForErr,
+                      const TypedFnSignature* candidate,
                       CandidateFailureReason candidateReason,
                       PassingFailureReason formalReason,
                       int formalIdx) :
-    candidate_(candidate), candidateReason_(candidateReason),
-    formalReason_(formalReason), formalIdx_(formalIdx) {
+    initialForErr_(initialForErr), candidate_(candidate),
+    candidateReason_(candidateReason), formalReason_(formalReason),
+    formalIdx_(formalIdx) {
     CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 && formalReason_ == FAIL_FORMAL_OTHER));
   }
 
  public:
   static ApplicabilityResult success(const TypedFnSignature* candidate) {
-    return ApplicabilityResult(candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
+    return ApplicabilityResult(nullptr, candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
   }
 
-  static ApplicabilityResult failure(PassingFailureReason reason, int formalIdx) {
-    return ApplicabilityResult(nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+  static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
+                                     PassingFailureReason reason,
+                                     int formalIdx) {
+    return ApplicabilityResult(initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
   }
 
-  static ApplicabilityResult failure(CandidateFailureReason reason) {
-    return ApplicabilityResult(nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
+                                     CandidateFailureReason reason) {
+    return ApplicabilityResult(initialForErr, nullptr, reason, FAIL_FORMAL_OTHER, -1);
   }
 
   bool operator ==(const ApplicabilityResult& other) const {
-    return candidate_ == other.candidate_ &&
+    return initialForErr_ == other.initialForErr_ &&
+           candidate_ == other.candidate_ &&
            candidateReason_ == other.candidateReason_ &&
            formalReason_ == other.formalReason_ &&
            formalIdx_ == other.formalIdx_;
@@ -955,6 +962,7 @@ class ApplicabilityResult {
   }
 
   void mark(Context* context) const {
+    context->markPointer(initialForErr_);
     context->markPointer(candidate_);
     (void) candidateReason_; // nothing to mark
     (void) formalReason_; // nothing to mark
@@ -964,6 +972,8 @@ class ApplicabilityResult {
   size_t hash() const {
     return chpl::hash(candidate_, candidateReason_, formalReason_, formalIdx_);
   }
+
+  inline const TypedFnSignature* initialForErr() const { return initialForErr_; }
 
   inline const TypedFnSignature* candidate() const { return candidate_; }
 

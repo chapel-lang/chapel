@@ -1461,7 +1461,7 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return ApplicabilityResult::failure(FAIL_FORMAL_ACTUAL_MISMATCH);
+    return ApplicabilityResult::failure(sig, FAIL_FORMAL_ACTUAL_MISMATCH);
   }
 
   // compute the substitutions
@@ -1520,7 +1520,7 @@ ApplicabilityResult instantiateSignature(Context* context,
       auto got = canPass(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return ApplicabilityResult::failure(got.reason(), entry.formalIdx());
+        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
       }
       if (got.instantiates()) {
         // add a substitution for a valid value
@@ -1549,7 +1549,7 @@ ApplicabilityResult instantiateSignature(Context* context,
 
           auto got = canPass(context, actualType, useTypeConcrete);
           if (!got.passes()) {
-            return ApplicabilityResult::failure(got.reason(), entry.formalIdx());
+            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
           }
         }
       }
@@ -1644,7 +1644,7 @@ ApplicabilityResult instantiateSignature(Context* context,
     auto passResult = canPass(context, checkType, qFormalType);
     if (!passResult.passes()) {
       // Type query constraints were not satisfied
-      return ApplicabilityResult::failure(passResult.reason(), entry.formalIdx());
+      return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
     }
 
     if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
@@ -1687,7 +1687,7 @@ ApplicabilityResult instantiateSignature(Context* context,
     for (auto formal : fn->formals()) {
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
-          return ApplicabilityResult::failure(FAIL_VARARG_MISMATCH);
+          return ApplicabilityResult::failure(sig, FAIL_VARARG_MISMATCH);
         }
       }
     }
@@ -2341,7 +2341,7 @@ doIsCandidateApplicableInstantiating(Context* context,
 
   // check that the where clause applies
   if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
-    return ApplicabilityResult::failure(FAIL_WHERE_CLAUSE);
+    return ApplicabilityResult::failure(typedSignature, FAIL_WHERE_CLAUSE);
 
   return instantiated;
 }
