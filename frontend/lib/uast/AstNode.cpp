@@ -546,7 +546,7 @@ void AstNode::stringify(std::ostream& ss,
 
 void AstNode::serialize(Serializer& ser) const {
   ser.write(tag_);
-  ser.write(attributeGroupChildNum_);
+  ser.writeVInt(attributeGroupChildNum_);
   ser.write(id_);
   ser.write(children_);
 }
@@ -555,7 +555,7 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   : tag_(tag) {
   // Note: Assumes that the tag was already serialized in order to invoke
   // the correct class' deserializer.
-  attributeGroupChildNum_ = (int)des.read<int32_t>();
+  attributeGroupChildNum_ = des.readVInt();
   id_ = des.read<ID>();
   children_ = des.read<AstList>();
 }

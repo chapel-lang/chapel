@@ -77,9 +77,20 @@ class AnonFormal final : public AstNode {
       typeExpressionChildNum_(typeExpressionChildNum) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(intent_);
+    ser.write(typeExpressionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(AnonFormal);
+
+ private:
   AnonFormal(Deserializer& des)
     : AstNode(asttags::AnonFormal, des) {
       intent_ = des.read<Formal::Intent>();
+      typeExpressionChildNum_ = des.read<int8_t>();
     }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -120,14 +131,6 @@ class AnonFormal final : public AstNode {
   static std::string intentToString(Intent intent) {
     return Formal::intentToString(intent);
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(intent_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(AnonFormal);
-
 };
 
 

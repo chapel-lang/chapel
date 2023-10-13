@@ -99,12 +99,20 @@ class AggregateDecl : public TypeDecl {
     CHPL_ASSERT(validAggregateChildren(declOrComments()));
   }
 
+  void serialize(Serializer& ser) const override {
+    TypeDecl::serialize(ser);
+    ser.writeVInt(inheritExprChildNum_);
+    ser.writeVInt(numInheritExprs_);
+    ser.writeVInt(elementsChildNum_);
+    ser.writeVInt(numElements_);
+  }
+
   AggregateDecl(AstTag tag, Deserializer& des)
     : TypeDecl(tag, des) {
-    inheritExprChildNum_ = des.read<int>();
-    numInheritExprs_ = des.read<int>();
-    elementsChildNum_ = des.read<int>();
-    numElements_ = des.read<int>();
+    inheritExprChildNum_ = des.readVInt();
+    numInheritExprs_ = des.readVInt();
+    elementsChildNum_ = des.readVInt();
+    numElements_ = des.readVInt();
   }
 
   ~AggregateDecl() = 0; // this is an abstract base class
@@ -179,15 +187,6 @@ class AggregateDecl : public TypeDecl {
     return AstListNoCommentsIteratorPair<AstNode>(
               children_.begin() + inheritExprChildNum_,
               children_.begin() + inheritExprChildNum_ + numInheritExprs_);
-  }
-
-
-  void serialize(Serializer& ser) const override {
-    TypeDecl::serialize(ser);
-    ser.write(inheritExprChildNum_);
-    ser.write(numInheritExprs_);
-    ser.write(elementsChildNum_);
-    ser.write(numElements_);
   }
 
   /** Returns the inherited Identifier, including considering
