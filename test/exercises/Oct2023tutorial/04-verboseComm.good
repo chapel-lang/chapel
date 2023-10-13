@@ -1,0 +1,12 @@
+0: 04-verboseComm.chpl:6: remote executeOn, node 1
+1: 04-verboseComm.chpl:8: remote get, node 0, 8 bytes, commid 5
+1: 04-verboseComm.chpl:8: remote put, node 0, 8 bytes, commid 6
+1: 04-verboseComm.chpl:8: remote get, node 0, 8 bytes, commid 5
+1: 04-verboseComm.chpl:8: remote put, node 0, 8 bytes, commid 6
+1: 04-verboseComm.chpl:8: remote get, node 0, 8 bytes, commid 5
+1: 04-verboseComm.chpl:8: remote put, node 0, 8 bytes, commid 6
+1: 04-verboseComm.chpl:8: remote get, node 0, 8 bytes, commid 5
+1: 04-verboseComm.chpl:8: remote put, node 0, 8 bytes, commid 6
+1: 04-verboseComm.chpl:8: remote get, node 0, 8 bytes, commid 5
+1: 04-verboseComm.chpl:8: remote put, node 0, 8 bytes, commid 6
+5
