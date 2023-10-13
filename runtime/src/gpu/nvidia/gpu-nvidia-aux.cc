@@ -28,10 +28,10 @@ void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   cub::DeviceReduce::cub_kind(temp, temp_bytes, data, (data_type*)result, n); \
   CUDA_CALL(cuMemcpyDtoH(val, result, sizeof(data_type))); \
 }
-
 DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
 DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
 DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
+#undef DEF_ONE_REDUCE_RET_VAL
 
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
@@ -49,7 +49,8 @@ void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *val = result_host.value; \
   *idx = result_host.key; \
 }
-
 DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 DEF_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
+#undef DEF_ONE_REDUCE_RET_VAL_IDX
 
+#undef DEF_REDUCE

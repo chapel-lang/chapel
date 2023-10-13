@@ -697,4 +697,40 @@ void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
 }
 
+void chpl_gpu_sum_reduce_int8_t(int8_t *data, int n, int* val) {
+  CHPL_GPU_DEBUG("chpl_gpu_sum_reduce_int8_t called\n");
+
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
+  chpl_gpu_impl_sum_reduce_int8_t(data, n, val, stream);
+
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
+
+  CHPL_GPU_DEBUG("chpl_gpu_sum_reduce_int8_t returned\n");
+}
+
+#define DEF_ONE_REDUCE_RET_VAL(kind, data_type)\
+void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
+                                          data_type* val) { \
+  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
+  \
+  int dev = chpl_task_getRequestedSubloc(); \
+  chpl_gpu_impl_use_device(dev); \
+  void* stream = get_stream(dev); \
+  \
+  chpl_gpu_impl_sum_reduce_int8_t(data, n, val, stream);
+
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
+
+  CHPL_GPU_DEBUG("chpl_gpu_sum_reduce_int8_t returned\n");
+}
+
 #endif
