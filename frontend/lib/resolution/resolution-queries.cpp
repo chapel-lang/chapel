@@ -2395,7 +2395,8 @@ filterCandidatesInstantiating(Context* context,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result) {
+                              std::vector<const TypedFnSignature*>& result,
+                              std::vector<ApplicabilityResult>* rejected) {
 
   // Performance: Would it help to make this a query?
   // (I left it not as a query since it runs some other queries
@@ -2416,6 +2417,8 @@ filterCandidatesInstantiating(Context* context,
                                              instantiationPoiScope);
       if (instantiated.success()) {
         result.push_back(instantiated.candidate());
+      } if (rejected) {
+        rejected->push_back(std::move(instantiated));
       }
     } else {
       // if it's already concrete, we already know it is a candidate.
@@ -2886,7 +2889,8 @@ resolveFnCallForTypeCtor(Context* context,
                                 ci,
                                 inScope,
                                 inPoiScope,
-                                candidates);
+                                candidates,
+                                /* rejected */ nullptr);
 
 
   ForwardingInfoVec forwardingInfo;
@@ -3124,7 +3128,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      nonPoiCandidates);
+                                      nonPoiCandidates,
+                                      /* rejected */ nullptr);
 
         // update forwardingTo
         helpComputeForwardingTo(fci, start,
@@ -3161,7 +3166,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      poiCandidates);
+                                      poiCandidates,
+                                      /* rejected */ nullptr);
 
         // update forwardingTo
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
@@ -3230,7 +3236,8 @@ gatherAndFilterCandidates(Context* context,
                           const Scope* inScope,
                           const PoiScope* inPoiScope,
                           size_t& firstPoiCandidate,
-                          ForwardingInfoVec& forwardingInfo) {
+                          ForwardingInfoVec& forwardingInfo,
+                          std::vector<ApplicabilityResult>* rejected) {
   CandidatesVec candidates;
   CheckedScopes visited;
   firstPoiCandidate = 0;
@@ -3258,7 +3265,8 @@ gatherAndFilterCandidates(Context* context,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates);
+                                  candidates,
+                                  rejected);
   }
 
   // next, look for candidates using POI
@@ -3285,7 +3293,8 @@ gatherAndFilterCandidates(Context* context,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates);
+                                  candidates,
+                                  rejected);
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -3390,7 +3399,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const CallInfo& ci,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
-                                       PoiInfo& poiInfo) {
+                                       PoiInfo& poiInfo,
+                                       std::vector<ApplicabilityResult>* rejected) {
 
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
@@ -3398,7 +3408,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
                                                        inScope, inPoiScope,
                                                        firstPoiCandidate,
-                                                       forwardingInfo);
+                                                       forwardingInfo,
+                                                       rejected);
 
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -3420,7 +3431,8 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const Scope* inScope,
-                                   const PoiScope* inPoiScope) {
+                                   const PoiScope* inPoiScope,
+                                   std::vector<ApplicabilityResult>* rejected) {
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
@@ -3439,7 +3451,7 @@ CallResolutionResult resolveFnCall(Context* context,
     // * note any most specific candidates from POI in poiInfo.
     mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
                                                           inScope, inPoiScope,
-                                                          poiInfo);
+                                                          poiInfo, rejected);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
@@ -3584,7 +3596,8 @@ CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
-                                 const PoiScope* inPoiScope) {
+                                 const PoiScope* inPoiScope,
+                                 std::vector<ApplicabilityResult>* rejected) {
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
@@ -3599,7 +3612,7 @@ CallResolutionResult resolveCall(Context* context,
     }
 
     // otherwise do regular call resolution
-    return resolveFnCall(context, call, ci, inScope, inPoiScope);
+    return resolveFnCall(context, call, ci, inScope, inPoiScope, rejected);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
   } else if (auto tuple = call->toTuple()) {
@@ -3639,14 +3652,15 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
-                                          const PoiScope* inPoiScope) {
+                                          const PoiScope* inPoiScope,
+                                          std::vector<ApplicabilityResult>* rejected) {
   // see if the call is handled directly by the compiler
   QualifiedType tmpRetType;
   if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
-  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
+  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope, rejected);
 }
 
 CallResolutionResult

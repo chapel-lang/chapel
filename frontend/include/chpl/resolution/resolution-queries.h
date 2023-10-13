@@ -316,7 +316,8 @@ filterCandidatesInstantiating(Context* context,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result);
+                              std::vector<const TypedFnSignature*>& result,
+                              std::vector<ApplicabilityResult>* rejected);
 
 /**
   Given a uast::Call, a CallInfo representing the call, a Scope representing the
@@ -331,7 +332,8 @@ CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
-                                 const PoiScope* inPoiScope);
+                                 const PoiScope* inPoiScope,
+                                 std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -358,7 +360,8 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const uast::AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
-                                          const PoiScope* inPoiScope);
+                                          const PoiScope* inPoiScope,
+                                          std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Similar to resolveGeneratedCall but handles the implicit scope
