@@ -3631,21 +3631,22 @@ CallResolutionResult resolveCallInMethod(Context* context,
                                          const CallInfo& ci,
                                          const Scope* inScope,
                                          const PoiScope* inPoiScope,
-                                         QualifiedType implicitReceiver) {
+                                         QualifiedType implicitReceiver,
+                                         std::vector<ApplicabilityResult>* rejected) {
 
   // If there is an implicit receiver and ci isn't written as a method,
   // construct a method call and use that instead. If that resolves,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    auto ret = resolveCall(context, call, methodCi, inScope, inPoiScope);
+    auto ret = resolveCall(context, call, methodCi, inScope, inPoiScope, rejected);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
     }
   }
 
   // otherwise, use normal resolution
-  return resolveCall(context, call, ci, inScope, inPoiScope);
+  return resolveCall(context, call, ci, inScope, inPoiScope, rejected);
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,

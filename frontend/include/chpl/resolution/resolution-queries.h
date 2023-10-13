@@ -348,7 +348,8 @@ CallResolutionResult resolveCallInMethod(Context* context,
                                          const CallInfo& ci,
                                          const Scope* inScope,
                                          const PoiScope* inPoiScope,
-                                         types::QualifiedType implicitReceiver);
+                                         types::QualifiedType implicitReceiver,
+                                         std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a CallInfo representing a call, a Scope representing the

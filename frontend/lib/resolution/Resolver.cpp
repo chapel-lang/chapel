@@ -1502,20 +1502,53 @@ void Resolver::issueErrorForFailedModuleDot(const Dot* dot,
 
 }
 
-void Resolver::handleResolvedCall(ResolvedExpression& r,
-                                  const uast::AstNode* astForErr,
-                                  const CallInfo& ci,
-                                  const CallResolutionResult& c) {
+bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
+                                              const uast::AstNode* astForErr,
+                                              const CallInfo& ci,
+                                              const CallResolutionResult& c) {
 
   if (!c.exprType().hasTypePtr()) {
-    issueErrorForFailedCallResolution(astForErr, ci, c);
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+    return true;
   } else {
     r.setMostSpecific(c.mostSpecific());
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
+  }
+  return false;
+}
+
+void Resolver::handleResolvedCall(ResolvedExpression& r,
+                                  const uast::AstNode* astForErr,
+                                  const CallInfo& ci,
+                                  const CallResolutionResult& c) {
+
+  if (handleResolvedCallWithoutError(r, astForErr, ci, c)) {
+    issueErrorForFailedCallResolution(astForErr, ci, c);
+  }
+}
+
+void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
+                                                 const uast::Call* call,
+                                                 const CallInfo& ci,
+                                                 const Scope* scope,
+                                                 const PoiScope* poiScope,
+                                                 const QualifiedType& receiverType,
+                                                 const CallResolutionResult& c) {
+
+  if (handleResolvedCallWithoutError(r, call, ci, c)) {
+    std::vector<ApplicabilityResult> rejected;
+    std::ignore = resolveCallInMethod(context, call, ci, scope, poiScope,
+                                      receiverType, &rejected);
+
+    if (rejected.size() == 0) {
+      issueErrorForFailedCallResolution(call, ci, c);
+      return;
+    }
+
+    issueErrorForFailedCallResolution(call, ci, c);
   }
 }
 
@@ -3268,13 +3301,14 @@ void Resolver::exit(const Call* call) {
   }
 
   if (!skip) {
+    auto receiverType = methodReceiverType();
     CallResolutionResult c
       = resolveCallInMethod(context, call, ci,
-                            scope, poiScope, methodReceiverType());
+                            scope, poiScope, receiverType);
 
     // save the most specific candidates in the resolution result for the id
     ResolvedExpression& r = byPostorder.byAst(call);
-    handleResolvedCall(r, call, ci, c);
+    handleResolvedCallPrintCandidates(r, call, ci, scope, poiScope, receiverType, c);
 
     // handle type inference for variables split-inited by 'out' formals
     adjustTypesForOutFormals(ci, actualAsts, c.mostSpecific());
