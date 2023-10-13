@@ -276,34 +276,27 @@ bool CanPassResult::canConvertNumeric(Context* context,
     if (auto actualUintT = actualT->toUintType())
       if (actualUintT->bitwidth() < formalUintT->bitwidth())
         return true;
+
+    if (auto actualIntT = actualT->toIntType()) {
+      if (actualIntT->bitwidth() <= formalUintT->bitwidth()) {
+        // int can coerce to uint
+        return true;
+      }
+    }
   }
 
   if (auto formalRealT = formalT->toRealType()) {
     // don't convert bools to reals (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width real
+    if (actualT->isNumericType())
+      return true;
 
     // convert real from smaller size
     if (auto actualRealT = actualT->toRealType())
       if (actualRealT->bitwidth() < formalRealT->bitwidth())
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width real
-      if (formalRealT->bitwidth() == 64)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalRealT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   if (auto formalImagT = formalT->toImagType()) {
@@ -315,6 +308,10 @@ bool CanPassResult::canConvertNumeric(Context* context,
 
   if (auto formalComplexT = formalT->toComplexType()) {
     // don't convert bools to complexes (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width complex
+    if (actualT->isNumericType())
+      return true;
 
     // convert smaller complex types
     if (auto actualComplexT = actualT->toComplexType())
@@ -329,23 +326,6 @@ bool CanPassResult::canConvertNumeric(Context* context,
       if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width complex
-      if (formalComplexT->bitwidth() == 128)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalComplexT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   return false;
@@ -385,18 +365,15 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
   if (auto formalIntT = formalT->toIntType()) {
     //
-    // For smaller integer types, if the argument is a param, does it
+    // If the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
     //
-    if (formalIntT->bitwidth() < 64)
-      if (paramFitsInInt(formalIntT->bitwidth(), actualP))
-        return true;
+    return paramFitsInInt(formalIntT->bitwidth(), actualP);
   }
 
   if (auto formalUintT = formalT->toUintType()) {
-    if (paramFitsInUint(formalUintT->bitwidth(), actualP))
-      return true;
+    return paramFitsInUint(formalUintT->bitwidth(), actualP);
   }
 
   // param strings can convert between string and c_string

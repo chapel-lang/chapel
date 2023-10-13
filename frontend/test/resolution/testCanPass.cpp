@@ -230,7 +230,7 @@ static void test4() {
   r = canPass(c, oneUint64, int8); assert(passesParamNarrowing(r));
 
   r = canPass(c, oneInt0,  uint8); assert(passesParamNarrowing(r));
-  r = canPass(c, oneInt8,  uint8); assert(passesParamNarrowing(r));
+  r = canPass(c, oneInt8,  uint8); assert(passesNumeric(r));
   r = canPass(c, oneInt16, uint8); assert(passesParamNarrowing(r));
   r = canPass(c, oneInt32, uint8); assert(passesParamNarrowing(r));
   r = canPass(c, oneInt64, uint8); assert(passesParamNarrowing(r));
@@ -248,7 +248,7 @@ static void test4() {
   r = canPass(c, negInt64, int8); assert(passesParamNarrowing(r));
 
   r = canPass(c, negInt0,  uint8); assert(doesNotPass(r));
-  r = canPass(c, negInt8,  uint8); assert(doesNotPass(r));
+  r = canPass(c, negInt8,  uint8); assert(passesNumeric(r));
   r = canPass(c, negInt16, uint8); assert(doesNotPass(r));
   r = canPass(c, negInt32, uint8); assert(doesNotPass(r));
   r = canPass(c, negInt64, uint8); assert(doesNotPass(r));
@@ -297,29 +297,29 @@ static void test5() {
   QualifiedType real32(QualifiedType::VAR, RealType::get(context, 32));
 
   CanPassResult r;
-  r = canPass(c, m5,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, m4,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, m3,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, m2,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, m1,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, p0,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, p1,  real32); assert(doesNotPass(r));
-  r = canPass(c, p2,  real32); assert(doesNotPass(r));
-  r = canPass(c, p3,  real32); assert(doesNotPass(r));
-  r = canPass(c, p4,  real32); assert(doesNotPass(r));
-  r = canPass(c, p5,  real32); assert(doesNotPass(r));
+  r = canPass(c, m5,  real32); assert(passesNumeric(r));
+  r = canPass(c, m4,  real32); assert(passesNumeric(r));
+  r = canPass(c, m3,  real32); assert(passesNumeric(r));
+  r = canPass(c, m2,  real32); assert(passesNumeric(r));
+  r = canPass(c, m1,  real32); assert(passesNumeric(r));
+  r = canPass(c, p0,  real32); assert(passesNumeric(r));
+  r = canPass(c, p1,  real32); assert(passesNumeric(r));
+  r = canPass(c, p2,  real32); assert(passesNumeric(r));
+  r = canPass(c, p3,  real32); assert(passesNumeric(r));
+  r = canPass(c, p4,  real32); assert(passesNumeric(r));
+  r = canPass(c, p5,  real32); assert(passesNumeric(r));
 
-  r = canPass(c, n_m5,  real32); assert(doesNotPass(r));
-  r = canPass(c, n_m4,  real32); assert(doesNotPass(r));
-  r = canPass(c, n_m3,  real32); assert(doesNotPass(r));
-  r = canPass(c, n_m2,  real32); assert(doesNotPass(r));
-  r = canPass(c, n_m1,  real32); assert(doesNotPass(r));
-  r = canPass(c, n_p0,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, n_p1,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, n_p2,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, n_p3,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, n_p4,  real32); assert(passesParamNarrowing(r));
-  r = canPass(c, n_p5,  real32); assert(passesParamNarrowing(r));
+  r = canPass(c, n_m5,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_m4,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_m3,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_m2,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_m1,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p0,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p1,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p2,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p3,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p4,  real32); assert(passesNumeric(r));
+  r = canPass(c, n_p5,  real32); assert(passesNumeric(r));
 }
 
 static void test6() {
