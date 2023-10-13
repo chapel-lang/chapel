@@ -23,14 +23,14 @@ config const nx = 256,      // number of grid points in x
              ny = 256,      // number of grid points in y
              nt = 50,       // number of time steps
              alpha = 0.25,  // diffusion constant
-             solutionStd = 0.221167; // known solution for the default parameters
+             solutionStd = 0.222751; // known solution for the default parameters
 
 // define a distributed 2D domain and subdomain to describe the grid and its interior
-const Indices = blockDist.createDomain(0..nx+1, 0..ny+1),
-      IndicesInner = Indices[1..nx, 1..ny];
+const Omega = blockDist.createDomain(0..<nx, 0..<ny),
+      OmegaHat = Omega.expand(-1);
 
 // define a distributed 2D array over the above domain
-var u: [Indices] real = 1.0;
+var u: [Omega] real = 1.0;
 
 // set up initial conditions
 u[nx/4..nx/2, ny/4..ny/2] = 2.0;
@@ -48,7 +48,7 @@ for 1..nt {
   u <=> un;
 
   // compute the FD kernel in parallel
-  forall (i, j) in IndicesInner with (ref u) do
+  forall (i, j) in OmegaHat with (ref u) do
     u[i, j] = un[i, j] + alpha *
       (un[i-1, j] + un[i, j-1] + un[i+1, j] + un[i, j+1] - 4 * un[i, j]);
 }
