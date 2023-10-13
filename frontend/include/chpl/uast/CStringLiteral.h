@@ -37,7 +37,13 @@ class CStringLiteral final : public StringLikeLiteral {
                  StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::CStringLiteral, value, quotes)
   { }
+ public:
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serialize(ser);
+  }
 
+  DECLARE_STATIC_DESERIALIZE(CStringLiteral);
+ private:
   CStringLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::CStringLiteral, des)
   { }
@@ -51,13 +57,6 @@ class CStringLiteral final : public StringLikeLiteral {
   static owned<CStringLiteral> build(Builder* builder, Location loc,
                                      const std::string& value,
                                      StringLikeLiteral::QuoteStyle quotes);
-
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(CStringLiteral);
-
 };
 
 

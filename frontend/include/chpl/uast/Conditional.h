@@ -43,6 +43,17 @@ namespace uast {
 
  */
 class Conditional final : public AstNode {
+  // Condition always exists, and its position is always the same.
+  static const int8_t conditionChildNum_ = 0;
+  // Ditto then
+  static const int8_t thenBodyChildNum_ = 1;
+  // Ditto else (if this > children_.size(), there is no else clause)
+  static const int8_t elseBodyChildNum_ = 2;
+
+  BlockStyle thenBlockStyle_;
+  BlockStyle elseBlockStyle_;
+  bool isExpressionLevel_;
+
  private:
   Conditional(AstList children,
               BlockStyle thenBlockStyle,
@@ -80,6 +91,16 @@ class Conditional final : public AstNode {
     CHPL_ASSERT(thenBodyChildNum_ < (int) children_.size());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(thenBlockStyle_);
+    ser.write(elseBlockStyle_);
+    ser.write(isExpressionLevel_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Conditional);
+ private:
   Conditional(Deserializer& des)
     : AstNode(asttags::Conditional, des) {
     thenBlockStyle_ = des.read<BlockStyle>();
@@ -108,17 +129,6 @@ class Conditional final : public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
-
-  // Condition always exists, and its position is always the same.
-  static const int8_t conditionChildNum_ = 0;
-  // Ditto then
-  static const int8_t thenBodyChildNum_ = 1;
-  // Ditto else (if this > children_.size(), there is no else clause)
-  static const int8_t elseBodyChildNum_ = 2;
-
-  BlockStyle thenBlockStyle_;
-  BlockStyle elseBlockStyle_;
-  bool isExpressionLevel_;
 
  public:
   ~Conditional() override = default;
@@ -260,16 +270,6 @@ class Conditional final : public AstNode {
   bool isExpressionLevel() const {
     return isExpressionLevel_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(thenBlockStyle_);
-    ser.write(elseBlockStyle_);
-    ser.write(isExpressionLevel_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Conditional);
-
 };
 
 
