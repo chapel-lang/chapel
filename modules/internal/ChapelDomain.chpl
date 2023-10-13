@@ -1192,6 +1192,8 @@ module ChapelDomain {
       _do_destroy();
     }
 
+    /////////// basic properties ///////////
+
     /* Return the domain map that implements this domain */
     pragma "return not owned"
     proc distribution {
@@ -1282,6 +1284,27 @@ module ChapelDomain {
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
+
+    /* Return the stride of the indices in this domain */
+    proc stride do return _value.dsiStride;
+    @chpldoc.nodoc proc stride param where rank==1 &&
+      (isRectangular() || isSparse()) && strides.isPosNegOne() do
+      return if strides.isOne() then 1 else -1;
+
+    /* Return the alignment of the indices in this domain */
+    proc alignment do return _value.dsiAlignment;
+
+    @chpldoc.nodoc proc alignment param where rank==1 &&
+      (isRectangular() || isSparse()) && strides.isPosNegOne() do return 0;
+
+    /*
+       Return an array of locales over which this domain has been distributed.
+    */
+    proc targetLocales() const ref {
+      return _value.dsiTargetLocales();
+    }
+
+    /////////// these() and this() ///////////
 
     /* Yield the domain indices */
     @chpldoc.nodoc
@@ -1420,6 +1443,32 @@ module ChapelDomain {
         compilerError("a domain slice requires either a single domain argument or exactly one argument per domain dimension");
     }
 
+    /////////// size and dimensions ///////////
+
+    /* Return true if the domain has no indices */
+    proc isEmpty(): bool {
+      return this.sizeAs(uint) == 0;
+    }
+
+    /* Return the number of indices in this domain as an ``int``. */
+    proc size: int {
+      return this.sizeAs(int);
+    }
+
+    /* Return the number of indices in this domain as the specified type */
+    proc sizeAs(type t: integral): t {
+      use HaltWrappers;
+      const size = _value.dsiNumIndices;
+      if boundsChecking && t != uint && size > max(t) {
+        var error = ".size query exceeds max(" + t:string + ")";
+        if this.isRectangular() {
+          error += " for: '" + this:string + "'";
+        }
+        HaltWrappers.boundsCheckHalt(error);
+      }
+      return size: t;
+    }
+
     /*
        Return a tuple of ranges describing the bounds of a rectangular domain.
        For a sparse domain, return the bounds of the parent domain.
@@ -1480,6 +1529,60 @@ module ChapelDomain {
     proc shape {
       compilerError(".shape not supported on this domain");
     }
+
+    /////////// low, high, first, last ///////////
+
+    /* Return the lowest index represented by a rectangular domain. */
+    proc low {
+      return _value.dsiAlignedLow;
+    }
+    @chpldoc.nodoc
+    proc low where this.isAssociative() {
+      compilerError("associative domains do not support '.low'");
+    }
+
+    /* Return the highest index represented by a rectangular domain. */
+    proc high {
+      return _value.dsiAlignedHigh;
+    }
+    @chpldoc.nodoc
+    proc high where this.isAssociative() {
+      compilerError("associative domains do not support '.high'");
+    }
+
+    /* Returns the domain's 'pure' low bound.  For example, given the
+       domain ``{1..10 by -2}``, ``.lowBound`` would return 1, whereas
+       ``.low`` would return 2 since it's the lowest index represented
+       by the domain.  This routine is only supported on rectangular
+       domains. */
+    proc lowBound {
+      return _value.dsiLow;
+    }
+
+    /* Return the domain's 'pure' high bound.  For example, given the
+       domain ``{1..10 by 2}``, ``.highBound`` would return 10,
+       whereas ``.high`` would return 9 since it's the highest index
+       represented by the domain.  This routine is only supported on
+       rectangular domains. */
+    proc highBound {
+      return _value.dsiHigh;
+    }
+
+    /* Return the low index in this domain factoring in alignment */
+    @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
+    proc alignedLow do return _value.dsiAlignedLow;
+
+    /* Return the high index in this domain factoring in alignment */
+    @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
+    proc alignedHigh do return _value.dsiAlignedHigh;
+
+    /* Return the first index in this domain */
+    proc first do return _value.dsiFirst;
+
+    /* Return the last index in this domain */
+    proc last do return _value.dsiLast;
+
+    /////////// other ///////////
 
     proc chpl_checkEltType(type eltType) /*private*/ {
       if eltType == void {
@@ -2054,6 +2157,7 @@ module ChapelDomain {
     }
 
     /* Remove all indices from this domain, leaving it empty */
+    @chpldoc.nodoc
     proc ref clear() where this.isRectangular() {
       // For rectangular domains, create an empty domain and assign it to this
       // one to make sure that we leverage all of the array's normal resizing
@@ -2065,7 +2169,7 @@ module ChapelDomain {
 
     // For other domain types, the implementation probably knows the most
     // efficient way to clear its index set, so make a dsiClear() call.
-    @chpldoc.nodoc
+    /* Remove all indices from this domain, leaving it empty */
     proc ref clear() {
       _value.dsiClear();
     }
@@ -2264,86 +2368,6 @@ module ChapelDomain {
 
       _value.dsiRequestCapacity(capacity);
     }
-
-    /*
-      Return the number of indices in this domain as an ``int``.
-    */
-    proc size: int {
-      return this.sizeAs(int);
-    }
-
-    /* Return the number of indices in this domain as the specified type */
-    proc sizeAs(type t: integral): t {
-      use HaltWrappers;
-      const size = _value.dsiNumIndices;
-      if boundsChecking && t != uint && size > max(t) {
-        var error = ".size query exceeds max(" + t:string + ")";
-        if this.isRectangular() {
-          error += " for: '" + this:string + "'";
-        }
-        HaltWrappers.boundsCheckHalt(error);
-      }
-      return size: t;
-    }
-
-    /* Returns the domain's 'pure' low bound.  For example, given the
-       domain ``{1..10 by -2}``, ``.lowBound`` would return 1, whereas
-       ``.low`` would return 2 since it's the lowest index represented
-       by the domain.  This routine is only supported on rectangular
-       domains. */
-    proc lowBound {
-      return _value.dsiLow;
-    }
-
-    /* Return the lowest index represented by a rectangular domain. */
-    proc low {
-      return _value.dsiAlignedLow;
-    }
-    @chpldoc.nodoc
-    proc low where this.isAssociative() {
-      compilerError("associative domains do not support '.low'");
-    }
-
-    /* Return the domain's 'pure' high bound.  For example, given the
-       domain ``{1..10 by 2}``, ``.highBound`` would return 10,
-       whereas ``.high`` would return 9 since it's the highest index
-       represented by the domain.  This routine is only supported on
-       rectangular domains. */
-    proc highBound {
-      return _value.dsiHigh;
-    }
-    /* Return the highest index represented by a rectangular domain. */
-    proc high {
-      return _value.dsiAlignedHigh;
-    }
-    @chpldoc.nodoc
-    proc high where this.isAssociative() {
-      compilerError("associative domains do not support '.high'");
-    }
-
-    /* Return the stride of the indices in this domain */
-    proc stride do return _value.dsiStride;
-    @chpldoc.nodoc proc stride param where rank==1 &&
-      (isRectangular() || isSparse()) && strides.isPosNegOne() do
-      return if strides.isOne() then 1 else -1;
-
-    /* Return the alignment of the indices in this domain */
-    proc alignment do return _value.dsiAlignment;
-
-    @chpldoc.nodoc proc alignment param where rank==1 &&
-      (isRectangular() || isSparse()) && strides.isPosNegOne() do return 0;
-
-    /* Return the first index in this domain */
-    proc first do return _value.dsiFirst;
-    /* Return the last index in this domain */
-    proc last do return _value.dsiLast;
-
-    /* Return the low index in this domain factoring in alignment */
-    @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
-    proc alignedLow do return _value.dsiAlignedLow;
-    /* Return the high index in this domain factoring in alignment */
-    @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
-    proc alignedHigh do return _value.dsiAlignedHigh;
 
     /* This error overload is here because without it, the domain's
        indices tend to be promoted across the `.indices` calls of
@@ -2688,9 +2712,12 @@ module ChapelDomain {
       return translate(offTup);
     }
 
-    /* Return true if the domain has no indices */
-    proc isEmpty(): bool {
-      return this.sizeAs(uint) == 0;
+    // returns a default rectangular domain
+    @chpldoc.nodoc proc boundingBox() where this.isRectangular() {
+      var dst: rank*range(this.idxType, boundKind.both, strideKind.one);
+      const src = this.dims();
+      for param dim in 0..rank-1 do dst[dim] = src[dim].boundingBox();
+      return {(...dst)};
     }
 
     //
@@ -2805,56 +2832,6 @@ module ChapelDomain {
       return this.distribution;
     }
 
-    // returns a default rectangular domain
-    @chpldoc.nodoc proc boundingBox() where this.isRectangular() {
-      var dst: rank*range(this.idxType, boundKind.both, strideKind.one);
-      const src = this.dims();
-      for param dim in 0..rank-1 do dst[dim] = src[dim].boundingBox();
-      return {(...dst)};
-    }
-
-    /* Cast a rectangular domain to another rectangular domain type.
-       If the old type is stridable and the new type is not stridable,
-       ensure that the stride was 1.
-     */
-    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
-    proc safeCast(type t:_domain)
-      where chpl__isRectangularDomType(t) && this.isRectangular() {
-      var tmpD: t;
-      if tmpD.rank != this.rank then
-        compilerError("safeCast to a domain with rank=", tmpD.rank,
-                            " from a domain with rank=", this.rank);
-      if tmpD.idxType != this.idxType then
-        // todo: relax this restriction
-        compilerError("safeCast to a domain with idxType=", tmpD.idxType,
-                            " from a domain with idxType=", this.idxType);
-      if tmpD.strides == this.strides then
-        return this;
-      else if chpl_assignStrideIsUnsafe(tmpD.strides, this.strides) then
-        compilerError("safeCast to a domain with strides=", tmpD.strides,
-                            " from a domain with strides=", this.strides);
-      else if ! chpl_assignStrideIsSafe(tmpD.strides, this.strides) {
-        const inds = this.getIndices();
-        var newInds: tmpD.getIndices().type;
-
-        for param dim in 0..inds.size-1 {
-          newInds(dim) = inds(dim).safeCast(newInds(dim).type);
-        }
-        tmpD.setIndices(newInds);
-        return tmpD;
-      } else { // cast is always safe
-        tmpD = this;
-        return tmpD;
-      }
-    }
-
-    /*
-       Return an array of locales over which this domain has been distributed.
-    */
-    proc targetLocales() const ref {
-      return _value.dsiTargetLocales();
-    }
-
     /* Return true if the local subdomain can be represented as a single
        domain. Otherwise return false. */
     @unstable("'hasSingleLocalSubdomain' on domains is unstable and may change in the future")
@@ -2900,6 +2877,41 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
+    }
+
+    /* Cast a rectangular domain to another rectangular domain type.
+       If the old type is stridable and the new type is not stridable,
+       ensure that the stride was 1.
+     */
+    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
+    proc safeCast(type t:_domain)
+      where chpl__isRectangularDomType(t) && this.isRectangular() {
+      var tmpD: t;
+      if tmpD.rank != this.rank then
+        compilerError("safeCast to a domain with rank=", tmpD.rank,
+                            " from a domain with rank=", this.rank);
+      if tmpD.idxType != this.idxType then
+        // todo: relax this restriction
+        compilerError("safeCast to a domain with idxType=", tmpD.idxType,
+                            " from a domain with idxType=", this.idxType);
+      if tmpD.strides == this.strides then
+        return this;
+      else if chpl_assignStrideIsUnsafe(tmpD.strides, this.strides) then
+        compilerError("safeCast to a domain with strides=", tmpD.strides,
+                            " from a domain with strides=", this.strides);
+      else if ! chpl_assignStrideIsSafe(tmpD.strides, this.strides) {
+        const inds = this.getIndices();
+        var newInds: tmpD.getIndices().type;
+
+        for param dim in 0..inds.size-1 {
+          newInds(dim) = inds(dim).safeCast(newInds(dim).type);
+        }
+        tmpD.setIndices(newInds);
+        return tmpD;
+      } else { // cast is always safe
+        tmpD = this;
+        return tmpD;
+      }
     }
 
     /* Cast a rectangular domain to a new rectangular domain type.
