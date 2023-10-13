@@ -103,7 +103,7 @@ class CanPassResult {
       conversionKind_(kind) { }
 
   // these builders make it easier to implement canPass
-  static CanPassResult fail(FailReason reason = FAIL_OTHER) {
+  static CanPassResult fail(FailReason reason) {
     return CanPassResult(reason, false, false, NONE);
   }
   static CanPassResult passAsIs() {
