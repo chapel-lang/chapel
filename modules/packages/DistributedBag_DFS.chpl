@@ -861,10 +861,12 @@ module DistributedBag_DFS
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
-        if (block.cap == distributedBagMaxSegmentCap) then
+        if (block.cap == distributedBagMaxSegmentCap) {
+          warning("maximum capacity reached: some elements may have been missed.");
           return false;
+        }
         lock_block.readFE();
-        block.cap = min(distributedBagMaxSegmentCap, 2*block.cap);
+        block.cap *= 2;
         block.dom = {0..#block.cap};
         lock_block.writeEF(true);
       }
@@ -886,35 +888,28 @@ module DistributedBag_DFS
     */
     inline proc ref addElements(elts): int
     {
-      const size = elts.size;
-      var realSize = size;
+      var size = elts.size;
 
       // allocate a larger block.
       if (block.tailId + size > block.cap) {
-        const neededCap = block.cap*2**ceil(log2(block.tailId + size / block.cap:real)):int;
+        const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
         if (neededCap >= distributedBagMaxSegmentCap) {
-          realSize = distributedBagMaxSegmentCap - block.tailId;
-          block.cap = distributedBagMaxSegmentCap;
+          warning("maximum capacity reached: some elements may have been missed.");
+          size = distributedBagMaxSegmentCap - block.tailId - 1;
         }
         lock_block.readFE();
-        block.cap = neededCap;
+        block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
         lock_block.writeEF(true);
       }
 
-      // TODO: find a better way to do the following.
-      var c = 0;
-      for elt in elts {
-        if (c >= realSize) then break;
-        block.pushTail(elt);
-        c += 1;
-      }
-      tail += realSize;
+      for elt in elts[0..#size] do block.pushTail(elt);
+      tail += size;
 
       // if there is a split request...
       if split_request.read() then split_release();
 
-      return realSize;
+      return size;
     }
 
     /*

@@ -1,7 +1,7 @@
 /*
   This test checks the ability of DistBag_DFS to implement a distributed
   backtracking algorithm to find the exact solution count of N-Queens
-  instances.
+  instances. It solves the instances of N-Queens from 1 to maxN.
 
   Precomputed number of solutions:
 
@@ -34,8 +34,8 @@ use List;
 
 /*** Command-line constants ***/
 
-config const N = 12; // number of queens
-if (N > 18) then halt("N must be <= 18");
+config const maxN = 13;
+if (maxN < 1 || maxN > 18) then halt("maxN must be > 0 and <= 18");
 
 
 /*** Internal constants ***/
@@ -44,33 +44,29 @@ const BUSY = false;
 const IDLE = true;
 
 
-/*** N-Queens specific ***/
+/*** N-Queens Node ***/
 
 record Node
 {
-  var board: [0..#N] int;   // chess board with queens positions
-  var depth: int;           // depth of the node in the tree
+  var dom: domain(1);   // domain of the chess board
+  var board: [dom] int; // chess board with queens positions
+  var depth: int;       // depth of the node in the tree
+
+  // Default-initializer
+  proc init() {}
 
   // Root-initializer
-  proc init() {
+  proc init(const N: int) {
+    this.dom = {0..#N};
     this.board = 0..#N;
   }
 
   // Copy-initializer
   proc init(other: Node) {
+    this.dom   = other.dom;
     this.board = other.board;
     this.depth = other.depth;
   }
-}
-
- // Return the pre-computed solution count of the N-Queens instance (see above).
-inline proc getSolutionCount(): int
-{
-  var solutionCount: [1..18] int
-    = [1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596,
-      2279184, 14722512, 95815104, 666090624];
-
-  return solutionCount(N);
 }
 
 
@@ -95,7 +91,7 @@ proc isSafe(const board: [] int, const queen_num: int, const row_pos: int): bool
 }
 
 // Decompose a node into a set of children nodes.
-proc decompose(const parent: Node, ref tree_loc: int,
+proc decompose(const parent: Node, const N: int, ref tree_loc: int,
   ref num_sol: int): list(Node)
 {
   var children: list(Node);
@@ -130,20 +126,7 @@ inline proc allIdle(const arr: [] atomic bool): bool
 
 /*** Distributed Search ***/
 
-// Print results
-proc print_results(const subNodeExplored: [] int, const subSolExplored: [] int)
-{
-  var treeSize = (+ reduce subNodeExplored);
-  var nbSol = (+ reduce subSolExplored);
-
-  writeln("Size of the explored tree: ", treeSize);
-  writeln("Number of explored solutions: ", nbSol);
-  if (nbSol == getSolutionCount()) then writeln("   SUCCESS");
-  else writeln("   FAIL");
-}
-
-// Search
-proc main ()
+proc nqueens_search(const N: int)
 {
   // Global variables (synchronization, termination)
   const PrivateSpace: domain(1) dmapped privateDist();
@@ -156,7 +139,7 @@ proc main ()
 
   // Initialization
   var bag = new DistBag_DFS(Node, targetLocales = Locales);
-  var root = new Node();
+  var root = new Node(N);
   bag.add(root, 0);
 
   // Parallel search
@@ -205,7 +188,7 @@ proc main ()
         }
 
         // Decompose an element
-        var children = decompose(parent, tree_loc, num_sol);
+        var children = decompose(parent, N, tree_loc, num_sol);
         bag.addBulk(children, taskId);
       }
     }
@@ -214,8 +197,40 @@ proc main ()
     eachExploredSol[here.id] += (+ reduce eachLocalExploredSol);
   }
 
-  // Print statistics and test result
-  print_results(eachExploredTree, eachExploredSol);
+  const treeSize = (+ reduce eachExploredTree);
+  const solCount = (+ reduce eachExploredSol);
 
-  return 0;
+  return (treeSize, solCount);
+}
+
+
+/*** Tests ***/
+
+// Checks results
+proc check_results(const N: int, const treeSize: int, const solCount: int)
+{
+  // Pre-computed solution count of the N-Queens instances (see above).
+  const solutionCount: [1..18] int
+    = [1, 0, 0, 2, 10, 4, 40, 92, 352, 724, 2680, 14200, 73712, 365596,
+      2279184, 14722512, 95815104, 666090624];
+
+  if (solCount == solutionCount[N]) then return true;
+  else return false;
+}
+
+proc main()
+{
+  var res = true;
+
+  for N in 1..maxN do {
+    var (treeSize, solCount) = nqueens_search(N);
+
+    if !check_results(N, treeSize, solCount) {
+      res = false;
+      writeln(N, "-queens failed");
+    }
+  }
+
+  if res then writeln("All tests passed");
+  else writeln("\nSome tests failed...");
 }
