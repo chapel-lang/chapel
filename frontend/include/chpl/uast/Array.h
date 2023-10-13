@@ -69,7 +69,9 @@ class Array final : public AstNode {
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
-    return true;
+    const Array* rhs = other->toArray();
+    return this->trailingComma_ == rhs->trailingComma_ &&
+           this->associative_ == rhs->associative_;
   }
 
   void markUniqueStringsInner(Context* context) const override {
