@@ -713,6 +713,9 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       if (candidate.formalReason() == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
       }
+    } else if (candidate.reason() == resolution::FAIL_VARARG_MISMATCH) {
+      wr.note(fn->id(), "the following candidate didn't match because the number of varargs was incorrect:");
+      wr.code(fn->id());
     }
   }
 }
