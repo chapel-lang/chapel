@@ -197,13 +197,11 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and
    * a point-of-instantiation scope representing the POI scope of the call
-
-  Returns nullptr if the instantiation failed.
  */
-const TypedFnSignature* instantiateSignature(Context* context,
-                                             const TypedFnSignature* sig,
-                                             const CallInfo& call,
-                                             const PoiScope* poiScope);
+ApplicabilityResult instantiateSignature(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope);
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature.

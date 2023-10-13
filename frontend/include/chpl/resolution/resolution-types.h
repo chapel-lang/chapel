@@ -866,6 +866,114 @@ class TypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+enum CandidateFailureReason {
+  /* Cannot pass an actual to one of the candidate's formals. */
+  FAIL_CANNOT_PASS,
+  /* Not a valid formal-actual mapping for this candidate. */
+  FAIL_FORMAL_ACTUAL_MISMATCH,
+  /* The wrong number of varargs were given to the function. */
+  FAIL_VARARG_MISMATCH,
+  /* The where clause returned 'false'. */
+  FAIL_WHERE_CLAUSE,
+  /* Some other, generic reason. */
+  FAIL_CANDIDATE_OTHER,
+};
+
+enum PassingFailureReason {
+  /* Incompatible nilability (e.g. nilable to non-nilable formal) */
+  FAIL_INCOMPATIBLE_NILABILITY,
+  /* Incompatible management (e.g. borrowed to owned formal) */
+  FAIL_INCOMPATIBLE_MGMT,
+  /* Incompatible manager (e.g. owned to shared formal) */
+  FAIL_INCOMPATIBLE_MGR,
+  /* The actual is not a subtype of the formal, but had to be. */
+  FAIL_EXPECTED_SUBTYPE,
+  /* Tuple size doesn't match */
+  FAIL_INCOMPATIBLE_TUPLE_SIZE,
+  /* Tuple star-ness doesn't match */
+  FAIL_INCOMPATIBLE_TUPLE_STAR,
+  /* A conversion was needed but is not possible. */
+  FAIL_CANNOT_CONVERT,
+  /* An instantiation was needed but is not possible. */
+  FAIL_CANNOT_INSTANTIATE,
+  /* A type was used as an argument to a value, or the other way around. */
+  FAIL_TYPE_VS_NONTYPE,
+  /* A param value was expected, but a non-param value was given. */
+  FAIL_NOT_PARAM,
+  /* One param value was expected, another was given. */
+  FAIL_MISMATCHED_PARAM,
+  /* An unestablished actual type was given to the function. */
+  FAIL_UNKNOWN_ACTUAL_TYPE,
+  /* An unestablished formal type in the function. */
+  FAIL_UNKNOWN_FORMAL_TYPE,
+  /* A generic type was given as an argument to a non-type formal. */
+  FAIL_GENERIC_TO_NONTYPE,
+  /* A type was expected to be the exact match of the formal, but wasn't. */
+  FAIL_NOT_EXACT_MATCH,
+  /* Some other, generic reason. */
+  FAIL_FORMAL_OTHER,
+};
+
+class ApplicabilityResult {
+ private:
+  const TypedFnSignature* candidate_;
+  CandidateFailureReason candidateReason_;
+  PassingFailureReason formalReason_;
+  int formalIdx_;
+
+  ApplicabilityResult(const TypedFnSignature* candidate,
+                      CandidateFailureReason candidateReason,
+                      PassingFailureReason formalReason,
+                      int formalIdx) :
+    candidate_(candidate), candidateReason_(candidateReason),
+    formalReason_(formalReason), formalIdx_(formalIdx) {
+    CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 && formalReason_ == FAIL_FORMAL_OTHER));
+  }
+
+ public:
+  static ApplicabilityResult success(const TypedFnSignature* candidate) {
+    return ApplicabilityResult(candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failure(PassingFailureReason reason, int formalIdx) {
+    return ApplicabilityResult(nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+  }
+
+  static ApplicabilityResult failure(CandidateFailureReason reason) {
+    return ApplicabilityResult(nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  }
+
+  bool operator ==(const ApplicabilityResult& other) const {
+    return candidate_ == other.candidate_ &&
+           candidateReason_ == other.candidateReason_ &&
+           formalReason_ == other.formalReason_ &&
+           formalIdx_ == other.formalIdx_;
+  }
+
+  bool operator !=(const ApplicabilityResult& other) const {
+    return !(*this==other);
+  }
+
+  void mark(Context* context) const {
+    context->markPointer(candidate_);
+    (void) candidateReason_; // nothing to mark
+    (void) formalReason_; // nothing to mark
+    (void) formalIdx_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(candidate_, candidateReason_, formalReason_, formalIdx_);
+  }
+
+  inline const TypedFnSignature* candidate() const { return candidate_; }
+
+  inline bool success() const { return candidate_ != nullptr; }
+
+  inline PassingFailureReason reason() const { return formalReason_; }
+
+  inline int formalIdx() const { return formalIdx_; }
+};
+
 /**
   Stores the most specific candidates when resolving a function call.
 */

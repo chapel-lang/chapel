@@ -56,54 +56,19 @@ class CanPassResult {
     OTHER,
   };
 
-  enum FailReason {
-    /* Incompatible nilability (e.g. nilable to non-nilable formal) */
-    FAIL_INCOMPATIBLE_NILABILITY,
-    /* Incompatible management (e.g. borrowed to owned formal) */
-    FAIL_INCOMPATIBLE_MGMT,
-    /* Incompatible manager (e.g. owned to shared formal) */
-    FAIL_INCOMPATIBLE_MGR,
-    /* The actual is not a subtype of the formal, but had to be. */
-    FAIL_EXPECTED_SUBTYPE,
-    /* Tuple size doesn't match */
-    FAIL_INCOMPATIBLE_TUPLE_SIZE,
-    /* Tuple star-ness doesn't match */
-    FAIL_INCOMPATIBLE_TUPLE_STAR,
-    /* A conversion was needed but is not possible. */
-    FAIL_CANNOT_CONVERT,
-    /* An instantiation was needed but is not possible. */
-    FAIL_CANNOT_INSTANTIATE,
-    /* A type was used as an argument to a value, or the other way around. */
-    FAIL_TYPE_VS_NONTYPE,
-    /* A param value was expected, but a non-param value was given. */
-    FAIL_NOT_PARAM,
-    /* One param value was expected, another was given. */
-    FAIL_MISMATCHED_PARAM,
-    /* An unestablished actual type was given to the function. */
-    FAIL_UNKNOWN_ACTUAL_TYPE,
-    /* An unestablished formal type in the function. */
-    FAIL_UNKNOWN_FORMAL_TYPE,
-    /* A generic type was given as an argument to a non-type formal. */
-    FAIL_GENERIC_TO_NONTYPE,
-    /* A type was expected to be the exact match of the formal, but wasn't. */
-    FAIL_NOT_EXACT_MATCH,
-    /* Some other, generic reason. */
-    FAIL_OTHER,
-  };
-
  private:
-  optional<FailReason> failReason_ = {};
+  optional<PassingFailureReason> failReason_ = {};
   bool instantiates_ = false;
   bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
-  CanPassResult(optional<FailReason> failReason, bool instantiates,
+  CanPassResult(optional<PassingFailureReason> failReason, bool instantiates,
                 bool promotes, ConversionKind kind)
     : failReason_(failReason), instantiates_(instantiates), promotes_(promotes),
       conversionKind_(kind) { }
 
   // these builders make it easier to implement canPass
-  static CanPassResult fail(FailReason reason) {
+  static CanPassResult fail(PassingFailureReason reason) {
     return CanPassResult(reason, false, false, NONE);
   }
   static CanPassResult passAsIs() {
@@ -175,6 +140,8 @@ class CanPassResult {
 
   /** Returns true if the argument is passable */
   bool passes() { return !failReason_; }
+
+  PassingFailureReason reason() { return *failReason_; }
 
   /** Returns true if passing the argument will require instantiation */
   bool instantiates() { return instantiates_; }

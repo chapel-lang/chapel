@@ -466,7 +466,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
 
   bool instantiates = false;
   bool converts = false;
-  optional<FailReason> fails = {};
+  optional<PassingFailureReason> fails = {};
 
   ClassTypeDecorator actualNily = actual.toBorrowed();
   ClassTypeDecorator formalNily = formal.toBorrowed();
@@ -645,7 +645,7 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
       if (!got.passes()){
         return got;
       } else if (got.promotes()) {
-        return fail(FAIL_OTHER);
+        return fail(FAIL_FORMAL_OTHER);
       } else {
         instantiates = instantiates || got.instantiates();
         converts = converts || got.converts();
@@ -884,7 +884,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   } else if (formalParam && !actualParam) {
     // this case doesn't make sense
     CHPL_ASSERT(false && "case not expected");
-    return fail(FAIL_OTHER);
+    return fail(FAIL_FORMAL_OTHER);
   }
 
   // Type-query Kinds should always pass
@@ -1005,7 +1005,7 @@ CanPassResult CanPassResult::canPass(Context* context,
   // can we promote?
   // TODO: implement promotion check
 
-  return fail(FAIL_OTHER);
+  return fail(FAIL_FORMAL_OTHER);
 }
 
 // When trying to combine two kinds, you can't just pick one.

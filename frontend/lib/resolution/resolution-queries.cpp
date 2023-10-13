@@ -1426,10 +1426,10 @@ static bool ensureBodyIsResolved(Context* context, const CallInfo& ci,
   return false;
 }
 
-const TypedFnSignature* instantiateSignature(Context* context,
-                                             const TypedFnSignature* sig,
-                                             const CallInfo& call,
-                                             const PoiScope* poiScope) {
+ApplicabilityResult instantiateSignature(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope) {
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -1461,7 +1461,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return nullptr;
+    return ApplicabilityResult::failure(FAIL_FORMAL_ACTUAL_MISMATCH);
   }
 
   // compute the substitutions
@@ -1520,7 +1520,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       auto got = canPass(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return nullptr;
+        return ApplicabilityResult::failure(got.reason(), entry.formalIdx());
       }
       if (got.instantiates()) {
         // add a substitution for a valid value
@@ -1547,8 +1547,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
-          if (!canPass(context, actualType, useTypeConcrete).passes()) {
-            return nullptr;
+          auto got = canPass(context, actualType, useTypeConcrete);
+          if (!got.passes()) {
+            return ApplicabilityResult::failure(got.reason(), entry.formalIdx());
           }
         }
       }
@@ -1643,7 +1644,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     auto passResult = canPass(context, checkType, qFormalType);
     if (!passResult.passes()) {
       // Type query constraints were not satisfied
-      return nullptr;
+      return ApplicabilityResult::failure(passResult.reason(), entry.formalIdx());
     }
 
     if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
@@ -1675,7 +1676,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // use the existing signature if there were no substitutions
   if (substitutions.size() == 0) {
-    return sig;
+    return ApplicabilityResult::success(sig);
   }
 
   std::vector<types::QualifiedType> formalTypes;
@@ -1686,7 +1687,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     for (auto formal : fn->formals()) {
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
-          return nullptr;
+          return ApplicabilityResult::failure(FAIL_VARARG_MISMATCH);
         }
       }
     }
@@ -1776,7 +1777,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
   }
 
-  return result;
+  return ApplicabilityResult::success(result);
 }
 
 static const owned<ResolvedFunction>&
@@ -2326,21 +2327,21 @@ doIsCandidateApplicableInitial(Context* context,
 
 // returns nullptr if the candidate is not applicable,
 // or the result of an instantiated typedSignature if it is.
-static const TypedFnSignature*
+static ApplicabilityResult
 doIsCandidateApplicableInstantiating(Context* context,
                                      const TypedFnSignature* typedSignature,
                                      const CallInfo& call,
                                      const PoiScope* poiScope) {
 
-  const TypedFnSignature* instantiated =
+  auto instantiated =
     instantiateSignature(context, typedSignature, call, poiScope);
 
-  if (instantiated == nullptr)
-    return nullptr;
+  if (!instantiated.success())
+    return instantiated;
 
   // check that the where clause applies
-  if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
-    return nullptr;
+  if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
+    return ApplicabilityResult::failure(FAIL_WHERE_CLAUSE);
 
   return instantiated;
 }
@@ -2408,13 +2409,13 @@ filterCandidatesInstantiating(Context* context,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      const TypedFnSignature* instantiated =
+      auto instantiated =
         doIsCandidateApplicableInstantiating(context,
                                              typedSignature,
                                              call,
                                              instantiationPoiScope);
-      if (instantiated != nullptr) {
-        result.push_back(instantiated);
+      if (instantiated.success()) {
+        result.push_back(instantiated.candidate());
       }
     } else {
       // if it's already concrete, we already know it is a candidate.
@@ -2945,10 +2946,11 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  CHPL_ASSERT(instantiated->untyped()->idIsFunction());
-  CHPL_ASSERT(instantiated->instantiatedFrom());
+  CHPL_ASSERT(instantiated.success());
+  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
+  CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
 
-  candidates.push_back(instantiated);
+  candidates.push_back(instantiated.candidate());
 }
 
 static std::vector<BorrowedIdsWithName>
