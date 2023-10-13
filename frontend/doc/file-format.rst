@@ -62,6 +62,12 @@ In contrast, to find the variable byte encoding of 0b1010111011:
   - next, store the groups in little-endian order, and set the high
     bit on each other than the last: 0b10111011 0b00000101
 
+Signed integers can be stored in a variable-length byte encoding as well,
+using the "ZigZag" encoding (following Google Protocol Buffers). In the
+ZigZag encoding, the number is transformed to an unsigned number before
+encoding. A positive number _i_ will be encoded as _2*i_. A negative
+number will be encoded as _2*|i|-1_.
+
 Building Block: Storing a String
 --------------------------------
 
