@@ -42,6 +42,14 @@ class Block final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Block);
+
+ private:
   Block(Deserializer& des)
     : SimpleBlockLike(asttags::Block, des) { }
 
@@ -60,13 +68,6 @@ class Block final : public SimpleBlockLike {
    Create and return a Block containing the passed stmts.
    */
   static owned<Block> build(Builder* builder, Location loc, AstList stmts);
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Block);
-
 };
 
 

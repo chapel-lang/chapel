@@ -47,6 +47,10 @@ namespace uast {
  */
 class SimpleBlockLike : public AstNode {
  protected:
+  BlockStyle blockStyle_;
+  int bodyChildNum_;
+  int numBodyStmts_;
+
   SimpleBlockLike(AstTag tag, AstList children, BlockStyle blockStyle,
                   int bodyChildNum,
                   int numBodyStmts)
@@ -57,13 +61,21 @@ class SimpleBlockLike : public AstNode {
 
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(blockStyle_);
+    ser.writeVInt(bodyChildNum_);
+    ser.writeVInt(numBodyStmts_);
+  }
+
+ protected:
   SimpleBlockLike(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();
-    bodyChildNum_ = (int)des.read<int32_t>();
-    numBodyStmts_ = (int)des.read<int32_t>();
+    bodyChildNum_ = des.readVInt();
+    numBodyStmts_ = des.readVInt();
   }
-
 
   bool simpleBlockLikeContentsMatchInner(const AstNode* other) const {
     const SimpleBlockLike* lhs = this;
@@ -83,10 +95,6 @@ class SimpleBlockLike : public AstNode {
 
   void simpleBlockLikeMarkUniqueStringsInner(Context* context) const {
   }
-
-  BlockStyle blockStyle_;
-  int bodyChildNum_;
-  int numBodyStmts_;
 
  public:
   virtual ~SimpleBlockLike() override = 0; // this is an abstract base class
@@ -122,14 +130,6 @@ class SimpleBlockLike : public AstNode {
   BlockStyle blockStyle() const {
     return blockStyle_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(blockStyle_);
-    ser.write<int32_t>(bodyChildNum_);
-    ser.write<int32_t>(numBodyStmts_);
-  }
-
 };
 
 

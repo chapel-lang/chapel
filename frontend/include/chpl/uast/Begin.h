@@ -47,6 +47,8 @@ namespace uast {
  */
 class Begin final : public SimpleBlockLike {
  private:
+  int8_t withClauseChildNum_;
+
   Begin(AstList children, int8_t withClauseChildNum, BlockStyle blockStyle,
         int bodyChildNum,
         int numBodyStmts)
@@ -56,10 +58,19 @@ class Begin final : public SimpleBlockLike {
       withClauseChildNum_(withClauseChildNum) {
   }
 
-    Begin(Deserializer& des)
-    : SimpleBlockLike(asttags::Begin, des) {
-      withClauseChildNum_ = des.read<int8_t>();
-    }
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.write(withClauseChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Begin);
+
+ private:
+  Begin(Deserializer& des)
+  : SimpleBlockLike(asttags::Begin, des) {
+    withClauseChildNum_ = des.read<int8_t>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Begin* lhs = this;
@@ -79,8 +90,6 @@ class Begin final : public SimpleBlockLike {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t withClauseChildNum_;
 
  public:
 
@@ -102,14 +111,6 @@ class Begin final : public SimpleBlockLike {
     CHPL_ASSERT(ret->isWithClause());
     return (const WithClause*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(withClauseChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Begin);
-
 };
 
 
