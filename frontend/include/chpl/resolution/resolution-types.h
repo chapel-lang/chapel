@@ -489,6 +489,10 @@ class CallInfo {
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
   }
+  void mark(Context* context) const {
+    name_.mark(context);
+    calledType_.mark(context);
+  }
   size_t hash() const {
     return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
                       hasQuestionArg_, isParenless_,
@@ -979,7 +983,9 @@ class ApplicabilityResult {
 
   inline bool success() const { return candidate_ != nullptr; }
 
-  inline PassingFailureReason reason() const { return formalReason_; }
+  inline CandidateFailureReason reason() const { return candidateReason_; }
+
+  inline PassingFailureReason formalReason() const { return formalReason_; }
 
   inline int formalIdx() const { return formalIdx_; }
 };

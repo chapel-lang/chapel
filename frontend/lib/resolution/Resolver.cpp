@@ -1548,7 +1548,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
       return;
     }
 
-    issueErrorForFailedCallResolution(call, ci, c);
+    CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
   }
 }
 

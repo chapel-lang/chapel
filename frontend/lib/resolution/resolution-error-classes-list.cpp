@@ -692,6 +692,31 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
+void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
+  auto call = std::get<const uast::Call*>(info);
+  auto& ci = std::get<resolution::CallInfo>(info);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info);
+
+  wr.heading(kind_, type_, call, "unable to resolve call to '", ci.name(), "': no matching candidates.");
+  wr.code(call);
+
+  for (auto& candidate : rejected) {
+    auto fn = candidate.initialForErr();
+    if (candidate.reason() == resolution::FAIL_CANNOT_PASS) {
+      resolution::FormalActualMap fa(fn, ci);
+      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto formalDecl = badPass.formal()->toNamedDecl();
+
+      wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
+      wr.code(fn->id(), { formalDecl });
+      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      if (candidate.formalReason() == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      }
+    }
+  }
+}
+
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<0>(info);
   auto iterand = std::get<1>(info);
