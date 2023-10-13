@@ -879,6 +879,8 @@ enum CandidateFailureReason {
   FAIL_VARARG_MISMATCH,
   /* The where clause returned 'false'. */
   FAIL_WHERE_CLAUSE,
+  /* A parenful call to a parenless function or vice versa. */
+  FAIL_PARENLESS_MISMATCH,
   /* Some other, generic reason. */
   FAIL_CANDIDATE_OTHER,
 };
@@ -938,6 +940,9 @@ class ApplicabilityResult {
   }
 
  public:
+  ApplicabilityResult()
+    : ApplicabilityResult(nullptr, nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1) {}
+
   static ApplicabilityResult success(const TypedFnSignature* candidate) {
     return ApplicabilityResult(nullptr, candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
   }
@@ -951,6 +956,16 @@ class ApplicabilityResult {
   static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
                                      CandidateFailureReason reason) {
     return ApplicabilityResult(initialForErr, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
+    bool update = false;
+    update |= defaultUpdateBasic(keep.initialForErr_, addin.initialForErr_);
+    update |= defaultUpdateBasic(keep.candidate_, addin.candidate_);
+    update |= defaultUpdateBasic(keep.candidateReason_, addin.candidateReason_);
+    update |= defaultUpdateBasic(keep.formalReason_, addin.formalReason_);
+    update |= defaultUpdateBasic(keep.formalIdx_, addin.formalIdx_);
+    return update;
   }
 
   bool operator ==(const ApplicabilityResult& other) const {

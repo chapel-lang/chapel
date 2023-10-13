@@ -2189,13 +2189,13 @@ isUntypedSignatureApplicable(Context* context,
 }
 
 // given a typed function signature, determine if it applies to a call
-static bool
+static ApplicabilityResult
 isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
   if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return false;
+    return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   // Next, check that the types are compatible
@@ -2228,7 +2228,7 @@ isInitialTypedSignatureApplicable(Context* context,
         got = canPass(context, actualType, formalType);
       }
       if (!got.passes()) {
-        return false;
+        return ApplicabilityResult::failure(nullptr, got.reason(), entry.formalIdx());
       }
     }
   }
@@ -2237,22 +2237,22 @@ isInitialTypedSignatureApplicable(Context* context,
     const TupleType* tup = varArgType.type()->toTupleType();
     if (tup != nullptr && tup->isVarArgTuple() &&
         tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
-      return false;
+      return ApplicabilityResult::failure(nullptr, FAIL_VARARG_MISMATCH);
     }
   }
 
   // check that the where clause applies
   auto whereResult = tfs->whereClauseResult();
   if (whereResult == TypedFnSignature::WHERE_FALSE) {
-    return false;
+    return ApplicabilityResult::failure(nullptr, FAIL_WHERE_CLAUSE);
   }
 
-  return true;
+  return ApplicabilityResult::success(tfs);
 }
 
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
-static const TypedFnSignature*
+static ApplicabilityResult
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& ci) {
@@ -2270,18 +2270,20 @@ doIsCandidateApplicableInitial(Context* context,
         parsing::idIsField(context, candidateId)) {
       // OK
     } else {
-      return nullptr;
+      return ApplicabilityResult::failure(nullptr, FAIL_PARENLESS_MISMATCH);
     }
   }
 
   if (isTypeDecl(tag)) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
-    return typeConstructorInitial(context, t);
+    return ApplicabilityResult::success(typeConstructorInitial(context, t));
   }
 
   // not a candidate
-  if (ci.isMethodCall() && isFormal(tag)) return nullptr;
+  if (ci.isMethodCall() && isFormal(tag)) {
+    return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
@@ -2290,10 +2292,10 @@ doIsCandidateApplicableInitial(Context* context,
       CHPL_ASSERT(ct);
       auto containingType = isNameOfField(context, ci.name(), ct);
       CHPL_ASSERT(containingType != nullptr);
-      return fieldAccessor(context, containingType, ci.name());
+      return ApplicabilityResult::success(fieldAccessor(context, containingType, ci.name()));
     } else {
       // not a candidate
-      return nullptr;
+      return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -2310,7 +2312,7 @@ doIsCandidateApplicableInitial(Context* context,
 
     auto got = canPass(context, recv, res.type());
     if (!got.passes()) {
-      return nullptr;
+      return ApplicabilityResult::failure(nullptr, got.reason(), /* formalIdx */ 0);
     }
   }
 
@@ -2318,11 +2320,7 @@ doIsCandidateApplicableInitial(Context* context,
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
 
-  if (!isInitialTypedSignatureApplicable(context, ret, faMap, ci)) {
-    return nullptr;
-  }
-
-  return ret;
+  return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
 
 // returns nullptr if the candidate is not applicable,
@@ -2346,14 +2344,14 @@ doIsCandidateApplicableInstantiating(Context* context,
   return instantiated;
 }
 
-static const TypedFnSignature* const&
+static ApplicabilityResult const&
 isCandidateApplicableInitialQuery(Context* context,
                                   ID candidateId,
                                   CallInfo call) {
 
   QUERY_BEGIN(isCandidateApplicableInitialQuery, context, candidateId, call);
 
-  const TypedFnSignature* result =
+  auto result =
     doIsCandidateApplicableInitial(context, candidateId, call);
 
   return QUERY_END(result);
@@ -2369,10 +2367,9 @@ filterCandidatesInitial(Context* context,
 
   for (const BorrowedIdsWithName& ids : lst) {
     for (const ID& id : ids) {
-      const TypedFnSignature* s =
-        isCandidateApplicableInitialQuery(context, id, call);
-      if (s != nullptr) {
-        result.push_back(s);
+      auto s = isCandidateApplicableInitialQuery(context, id, call);
+      if (s.success()) {
+        result.push_back(s.candidate());
       }
     }
   }
@@ -2934,7 +2931,7 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
-  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
+  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci).success()) {
     return;
   }
 
