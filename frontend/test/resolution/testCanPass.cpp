@@ -362,7 +362,7 @@ static void test7() {
 
   auto parentName = UniqueString::get(context, "Parent");
   auto childName = UniqueString::get(context, "Child");
-  auto basicObj = BasicClassType::getObjectType(context);
+  auto basicObj = BasicClassType::getRootClassType(context);
   auto basicParent = BasicClassType::get(context, emptyId, parentName,
                                          basicObj,
                                         /* instantiatedFrom */ nullptr,

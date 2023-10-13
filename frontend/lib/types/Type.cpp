@@ -103,7 +103,7 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
-  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+  gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 

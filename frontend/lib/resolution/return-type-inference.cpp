@@ -116,14 +116,14 @@ const CompositeType* helpGetTypeForDecl(Context* context,
         // OK, It's an interface.
       } else {
         context->error(inheritExpr, "invalid parent class expression");
-        parentClassType = BasicClassType::getObjectType(context);
+        parentClassType = BasicClassType::getRootClassType(context);
       }
     }
 
     // All the parent expressions could've been interfaces, and we just
     // inherit from object.
     if (!parentClassType) {
-      parentClassType = BasicClassType::getObjectType(context);
+      parentClassType = BasicClassType::getRootClassType(context);
     }
 
     const BasicClassType* insnFromBct = nullptr;

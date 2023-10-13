@@ -188,7 +188,7 @@ const ClassType* CompositeType::getErrorType(Context* context) {
   auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
   auto bct = BasicClassType::get(context, id,
                                 name,
-                                BasicClassType::getObjectType(context),
+                                BasicClassType::getRootClassType(context),
                                 /* instantiatedFrom */ nullptr,
                                 SubstitutionsMap());
   return ClassType::get(context, bct, /* manager */ nullptr, dec);
