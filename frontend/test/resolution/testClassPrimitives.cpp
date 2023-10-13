@@ -72,7 +72,7 @@ static void testPrimitive(std::string primitive, std::vector<std::tuple<const ch
 
   auto varTypes = resolveTypesOfVariables(context, ps.str(), variables);
 
-  for (int i = 0; i < varTypes.size(); i++) {
+  for (size_t i = 0; i < varTypes.size(); i++) {
     if (expectedValidities[i]) {
       assert(varTypes.at(variables[i]).isParamTrue());
     } else {
