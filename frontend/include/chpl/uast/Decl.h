@@ -47,7 +47,6 @@ class Decl : public AstNode {
   };
 
  private:
-
   Visibility visibility_;
   Linkage linkage_;
   int linkageNameChildNum_;
@@ -79,11 +78,20 @@ class Decl : public AstNode {
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+
+    ser.write(visibility_);
+    ser.write(linkage_);
+    ser.writeVInt(linkageNameChildNum_);
+  }
+ protected:
   Decl(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
       visibility_ = des.read<Decl::Visibility>();
       linkage_ = des.read<Decl::Linkage>();
-      linkageNameChildNum_ = (int)des.read<int32_t>();
+      linkageNameChildNum_ = des.readVInt();
   }
 
   bool declContentsMatchInner(const Decl* other) const {
@@ -92,8 +100,7 @@ class Decl : public AstNode {
            this->linkageNameChildNum_ == other->linkageNameChildNum_;
   }
 
-  void declMarkUniqueStringsInner(Context* context) const {
-  }
+  void declMarkUniqueStringsInner(Context* context) const { }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
@@ -140,15 +147,6 @@ class Decl : public AstNode {
     Convert Decl::Linkage to a string
     */
   static const char* linkageToString(Linkage x);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
-    ser.write(visibility_);
-    ser.write(linkage_);
-    ser.write((int32_t)linkageNameChildNum_);
-  }
-
 };
 
 

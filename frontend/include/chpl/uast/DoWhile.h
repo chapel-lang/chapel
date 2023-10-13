@@ -46,6 +46,8 @@ namespace uast {
  */
 class DoWhile final : public Loop {
  private:
+  int conditionChildNum_;
+
   DoWhile(AstList children, BlockStyle blockStyle,
           int loopBodyChildNum,
           int conditionChildNum,
@@ -57,11 +59,17 @@ class DoWhile final : public Loop {
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
-
+ public:
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.writeVInt(conditionChildNum_);
+  }
+  DECLARE_STATIC_DESERIALIZE(DoWhile);
+ private:
   DoWhile(Deserializer& des)
     : Loop(asttags::DoWhile, des) {
-      conditionChildNum_ = des.read<int>();
-    }
+      conditionChildNum_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const DoWhile* lhs = this;
@@ -81,8 +89,6 @@ class DoWhile final : public Loop {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int conditionChildNum_;
 
  public:
   ~DoWhile() override = default;
@@ -104,14 +110,6 @@ class DoWhile final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
-    ser.write(conditionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(DoWhile);
-
 };
 
 
