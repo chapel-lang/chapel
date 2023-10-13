@@ -43,6 +43,12 @@ class Call : public AstNode {
     : AstNode(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
   }
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(hasCalledExpression_);
+  }
+ protected:
   Call(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     hasCalledExpression_ = des.read<bool>();
@@ -93,11 +99,6 @@ class Call : public AstNode {
       const AstNode* ast = this->child(0);
       return ast;
     }
-  }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(hasCalledExpression_);
   }
 };
 

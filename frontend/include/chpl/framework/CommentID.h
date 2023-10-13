@@ -44,11 +44,11 @@ class CommentID {
   int index() const { return index_; }
 
   void serialize(Serializer& ser) const {
-    ser.write<int32_t>(index_);
+    ser.writeVInt(index_);
   }
 
   static CommentID deserialize(Deserializer& des) {
-    int val = (int)des.read<int32_t>();
+    int val = des.readVInt();
     return CommentID(val);
   }
 };

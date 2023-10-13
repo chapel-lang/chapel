@@ -61,6 +61,13 @@ class Coforall final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+  DECLARE_STATIC_DESERIALIZE(Coforall);
+
+ private:
   Coforall(Deserializer& des) : IndexableLoop(asttags::Coforall, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -84,13 +91,6 @@ class Coforall final : public IndexableLoop {
                                BlockStyle blockStyle,
                                owned<Block> body,
                                owned<AttributeGroup> attributeGroup = nullptr);
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Coforall);
-
 };
 
 

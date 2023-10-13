@@ -48,7 +48,15 @@ class Comment final : public AstNode {
   Comment(std::string s)
     : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(comment_);
+    ser.write(commentId_);
+  }
 
+  DECLARE_STATIC_DESERIALIZE(Comment);
+ private:
   Comment(Deserializer& des)
     : AstNode(asttags::Comment, des) {
     comment_ = des.read<std::string>();
@@ -85,14 +93,6 @@ class Comment final : public AstNode {
      its BuilderResult
   */
   CommentID commentId() const { return commentId_; }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(comment_);
-    ser.write(commentId_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Comment);
 
  protected:
   /**
