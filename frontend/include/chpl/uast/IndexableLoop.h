@@ -34,6 +34,11 @@ namespace uast {
  */
 class IndexableLoop : public Loop {
  protected:
+  int8_t indexChildNum_;
+  int8_t iterandChildNum_;
+  int8_t withClauseChildNum_;
+  bool isExpressionLevel_;
+
   IndexableLoop(AstTag tag, AstList children,
                 int8_t indexChildNum,
                 int8_t iterandChildNum,
@@ -52,6 +57,16 @@ class IndexableLoop : public Loop {
     CHPL_ASSERT(iterandChildNum >= 0);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(indexChildNum_);
+    ser.write(iterandChildNum_);
+    ser.write(withClauseChildNum_);
+    ser.write(isExpressionLevel_);
+  }
+
+ protected:
   IndexableLoop(AstTag tag, Deserializer& des)
     : Loop(tag, des) {
     indexChildNum_ = des.read<int8_t>();
@@ -88,11 +103,6 @@ class IndexableLoop : public Loop {
 
   virtual void dumpFieldsInner(const DumpSettings& s) const override;
   virtual std::string dumpChildLabelInner(int i) const override;
-
-  int8_t indexChildNum_;
-  int8_t iterandChildNum_;
-  int8_t withClauseChildNum_;
-  bool isExpressionLevel_;
 
  public:
   virtual ~IndexableLoop() override = 0; // this is an abstract base class
@@ -134,15 +144,6 @@ class IndexableLoop : public Loop {
   bool isExpressionLevel() const {
     return isExpressionLevel_;
   }
-
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
-    ser.write(indexChildNum_);
-    ser.write(iterandChildNum_);
-    ser.write(withClauseChildNum_);
-    ser.write(isExpressionLevel_);
-  }
-
 };
 
 

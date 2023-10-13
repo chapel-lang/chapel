@@ -37,6 +37,14 @@ class BoolLiteral final : public Literal {
     : Literal(asttags::BoolLiteral, value) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(BoolLiteral);
+
+ private:
   BoolLiteral(Deserializer& des)
     : Literal(asttags::BoolLiteral, des) {
     assert(value_->isBoolParam());
@@ -69,13 +77,6 @@ class BoolLiteral final : public Literal {
     auto p = (const types::BoolParam*) value_;
     return p->value() != 0;
   }
-
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(BoolLiteral);
-
 };
 
 
