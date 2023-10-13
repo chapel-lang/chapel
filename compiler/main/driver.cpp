@@ -2264,7 +2264,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
             fWarnUnknownAttributeToolname);
   flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
             fPermitUnhandledModuleErrors);
-
+  flags.set(chpl::CompilerFlags::WARN_INT_TO_UINT, fWarnIntUint);
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);
 
