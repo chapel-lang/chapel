@@ -1461,7 +1461,7 @@ ApplicabilityResult instantiateSignature(Context* context,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return ApplicabilityResult::failure(sig, FAIL_FORMAL_ACTUAL_MISMATCH);
+    return ApplicabilityResult::failure(sig->id(), FAIL_FORMAL_ACTUAL_MISMATCH);
   }
 
   // compute the substitutions
@@ -1687,7 +1687,7 @@ ApplicabilityResult instantiateSignature(Context* context,
     for (auto formal : fn->formals()) {
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
-          return ApplicabilityResult::failure(sig, FAIL_VARARG_MISMATCH);
+          return ApplicabilityResult::failure(sig->id(), FAIL_VARARG_MISMATCH);
         }
       }
     }
@@ -2195,7 +2195,7 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
   if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
+    return ApplicabilityResult::failure(tfs->id(), /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   // Next, check that the types are compatible
@@ -2228,7 +2228,7 @@ isInitialTypedSignatureApplicable(Context* context,
         got = canPass(context, actualType, formalType);
       }
       if (!got.passes()) {
-        return ApplicabilityResult::failure(nullptr, got.reason(), entry.formalIdx());
+        return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
       }
     }
   }
@@ -2237,14 +2237,14 @@ isInitialTypedSignatureApplicable(Context* context,
     const TupleType* tup = varArgType.type()->toTupleType();
     if (tup != nullptr && tup->isVarArgTuple() &&
         tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
-      return ApplicabilityResult::failure(nullptr, FAIL_VARARG_MISMATCH);
+      return ApplicabilityResult::failure(tfs->id(), FAIL_VARARG_MISMATCH);
     }
   }
 
   // check that the where clause applies
   auto whereResult = tfs->whereClauseResult();
   if (whereResult == TypedFnSignature::WHERE_FALSE) {
-    return ApplicabilityResult::failure(nullptr, FAIL_WHERE_CLAUSE);
+    return ApplicabilityResult::failure(tfs->id(), FAIL_WHERE_CLAUSE);
   }
 
   return ApplicabilityResult::success(tfs);
@@ -2270,7 +2270,7 @@ doIsCandidateApplicableInitial(Context* context,
         parsing::idIsField(context, candidateId)) {
       // OK
     } else {
-      return ApplicabilityResult::failure(nullptr, FAIL_PARENLESS_MISMATCH);
+      return ApplicabilityResult::failure(candidateId, FAIL_PARENLESS_MISMATCH);
     }
   }
 
@@ -2282,7 +2282,7 @@ doIsCandidateApplicableInitial(Context* context,
 
   // not a candidate
   if (ci.isMethodCall() && isFormal(tag)) {
-    return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   if (isVariable(tag)) {
@@ -2295,7 +2295,7 @@ doIsCandidateApplicableInitial(Context* context,
       return ApplicabilityResult::success(fieldAccessor(context, containingType, ci.name()));
     } else {
       // not a candidate
-      return ApplicabilityResult::failure(nullptr, /* TODO */ FAIL_CANDIDATE_OTHER);
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -2312,7 +2312,7 @@ doIsCandidateApplicableInitial(Context* context,
 
     auto got = canPass(context, recv, res.type());
     if (!got.passes()) {
-      return ApplicabilityResult::failure(nullptr, got.reason(), /* formalIdx */ 0);
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -2339,7 +2339,7 @@ doIsCandidateApplicableInstantiating(Context* context,
 
   // check that the where clause applies
   if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
-    return ApplicabilityResult::failure(typedSignature, FAIL_WHERE_CLAUSE);
+    return ApplicabilityResult::failure(typedSignature->id(), FAIL_WHERE_CLAUSE);
 
   return instantiated;
 }

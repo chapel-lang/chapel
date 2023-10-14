@@ -701,8 +701,8 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.code(call);
 
   for (auto& candidate : rejected) {
-    auto fn = candidate.initialForErr();
     if (candidate.reason() == resolution::FAIL_CANNOT_PASS) {
+      auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal()->toNamedDecl();
@@ -714,8 +714,8 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
         wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
       }
     } else if (candidate.reason() == resolution::FAIL_VARARG_MISMATCH) {
-      wr.note(fn->id(), "the following candidate didn't match because the number of varargs was incorrect:");
-      wr.code(fn->id());
+      wr.note(candidate.idForErr(), "the following candidate didn't match because the number of varargs was incorrect:");
+      wr.code(candidate.idForErr());
     }
   }
 }
