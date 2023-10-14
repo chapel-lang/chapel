@@ -268,7 +268,7 @@ module M {
   assert(rr.byAst(c_ret).type().isErroneousType());
   assert(guard.errors().size() == 1);
   auto& e = guard.errors()[0];
-  assert(e->message() == "Cannot resolve call to 'foo': no matching candidates");
+  assert(e->type() == chpl::NoMatchingCandidates);
 
   printf("Success: cannot pass %s to %s\n", actualType.c_str(), argType.c_str());
 
