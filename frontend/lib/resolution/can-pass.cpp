@@ -596,10 +596,13 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult result = canPassClassTypes(context, actualCt, formalCt);
-      if (result.passes() && (result.conversionKind_ == NONE ||
-                              result.conversionKind_ == SUBTYPE)) {
-        return result;
+      if (result.passes() && !(result.conversionKind_ == NONE ||
+                               result.conversionKind_ == SUBTYPE)) {
+        // It could've been "passable", but not as a subtype -- if that's the
+        // case, cause failure.
+        fail(FAIL_EXPECTED_SUBTYPE);
       }
+      return result;
     }
   }
 
@@ -968,11 +971,8 @@ CanPassResult CanPassResult::canPass(Context* context,
     case QualifiedType::REF_MAYBE_CONST:
     case QualifiedType::TYPE:
       {
-        auto got = canPassSubtype(context, actualT, formalT);
-        if (got.passes()) {
-          return got;
-        }
-        break;
+        // TODO: promotion
+        return canPassSubtype(context, actualT, formalT);
       }
 
     case QualifiedType::PARAM:
@@ -984,9 +984,9 @@ CanPassResult CanPassResult::canPass(Context* context,
           if (formalQT.param() == nullptr) {
             got.instantiates_ = true;
           }
-          return got;
         }
-        break;
+        // TODO: promotion
+        return got;
       }
 
     case QualifiedType::IN:
@@ -995,15 +995,15 @@ CanPassResult CanPassResult::canPass(Context* context,
     case QualifiedType::VAR:       // var/const var don't really make sense
     case QualifiedType::CONST_VAR: // as formals but we allow it for testing
       {
-        auto got = canConvert(context, actualQT, formalQT);
-        if (got.passes())
-          return got;
-        break;
+        // TODO: promotion
+        return canConvert(context, actualQT, formalQT);
       }
   }
 
   // can we promote?
   // TODO: implement promotion check
+  // When promotion is implemented, the failing cases marked "TODO: promotion"
+  // above will need to fall through to here.
 
   return fail(FAIL_FORMAL_OTHER);
 }

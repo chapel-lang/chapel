@@ -712,6 +712,16 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
       if (candidate.formalReason() == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      } else if (candidate.formalReason() == resolution::FAIL_INCOMPATIBLE_MGR) {
+        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
+        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
+
+        auto mgmtStr = [](const types::Type* type) {
+            if (type->isAnySharedType()) return USTR("shared");
+            if (type->isAnyOwnedType()) return USTR("owned");
+            return UniqueString();
+        };
+        wr.message("A class with '", mgmtStr(actualMgr), "' management cannot be passed to a formal with '", mgmtStr(formalMgr), "' management.");
       }
     } else if (candidate.reason() == resolution::FAIL_VARARG_MISMATCH) {
       wr.note(candidate.idForErr(), "the following candidate didn't match because the number of varargs was incorrect:");
