@@ -646,7 +646,8 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
     if (aElt != fElt) {
       auto got = canPass(context, aElt, fElt);
       if (!got.passes()){
-        return got;
+        // TODO: figure out how to propagate this information.
+        return fail(FAIL_FORMAL_OTHER);
       } else if (got.promotes()) {
         return fail(FAIL_FORMAL_OTHER);
       } else {

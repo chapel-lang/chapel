@@ -716,15 +716,26 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
         auto formalMgr = badPass.formalType().type()->toClassType()->manager();
         auto actualMgr = badPass.actualType().type()->toClassType()->manager();
 
-        auto mgmtStr = [](const types::Type* type) {
-            if (type->isAnySharedType()) return USTR("shared");
-            if (type->isAnyOwnedType()) return USTR("owned");
-            return UniqueString();
-        };
-        wr.message("A class with '", mgmtStr(actualMgr), "' management cannot be passed to a formal with '", mgmtStr(formalMgr), "' management.");
+        wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
+      } else if (candidate.formalReason() == resolution::FAIL_EXPECTED_SUBTYPE) {
+        if (auto fml = formalDecl->toFormal()) {
+          wr.message("Formals with kind '", fml->storageKind(),
+                     "' expect the actual to be a subtype, but '", badPass.actualType().type(),
+                     "' is not a subtype of '", badPass.formalType().type(), "'.");
+        }
+      } else if (candidate.formalReason() == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        wr.message("A tuple with ", actualTup->numElements(),
+                   " elements cannot be passed to a tuple formal with ",
+                   formalTup->numElements(), " elements.");
       }
     } else if (candidate.reason() == resolution::FAIL_VARARG_MISMATCH) {
       wr.note(candidate.idForErr(), "the following candidate didn't match because the number of varargs was incorrect:");
+      wr.code(candidate.idForErr());
+    } else if (candidate.reason() == resolution::FAIL_WHERE_CLAUSE) {
+      wr.note(candidate.idForErr(), "the following candidate didn't match because the 'where' clause evaluated to 'false'.");
       wr.code(candidate.idForErr());
     }
   }

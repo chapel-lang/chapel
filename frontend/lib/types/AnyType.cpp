@@ -36,6 +36,13 @@ const AnyType* AnyType::get(Context* context) {
   return getAnyType(context).get();
 }
 
+void AnyType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  if (stringKind == StringifyKind::CHPL_SYNTAX) {
+    ss << "?";
+  } else {
+    ss << "type AnyType";
+  }
+}
 
 } // end namespace types
 } // end namespace chpl

@@ -50,6 +50,8 @@ class AnyType final : public Type {
   ~AnyType() = default;
 
   static const AnyType* get(Context* context);
+
+  void stringify(std::ostream& ss, StringifyKind stringKind) const override;
 };
 
 
