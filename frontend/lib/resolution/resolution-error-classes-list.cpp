@@ -701,7 +701,10 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.code(call);
 
   for (auto& candidate : rejected) {
-    if (candidate.reason() == resolution::FAIL_CANNOT_PASS) {
+    if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
+        /* skip printing detailed info here because computing the formal-actual
+           map will go poorly with an unknown formal. */
+        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
       auto fn = candidate.initialForErr();
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
