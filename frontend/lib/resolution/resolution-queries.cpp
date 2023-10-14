@@ -2357,33 +2357,39 @@ isCandidateApplicableInitialQuery(Context* context,
   return QUERY_END(result);
 }
 
-const std::vector<const TypedFnSignature*>&
-filterCandidatesInitial(Context* context,
-                        std::vector<BorrowedIdsWithName> lst,
-                        CallInfo call) {
-  QUERY_BEGIN(filterCandidatesInitial, context, lst, call);
+static const std::pair<std::vector<const TypedFnSignature*>,
+                       std::vector<ApplicabilityResult>>&
+filterCandidatesInitialGatherRejected(Context* context,
+                                      std::vector<BorrowedIdsWithName> lst,
+                                      CallInfo call,
+                                      bool gatherRejected) {
+  QUERY_BEGIN(filterCandidatesInitialGatherRejected, context, lst, call, gatherRejected);
 
-  std::vector<const TypedFnSignature*> result;
+  std::vector<const TypedFnSignature*> matching;
+  std::vector<ApplicabilityResult> rejected;
 
   for (const BorrowedIdsWithName& ids : lst) {
     for (const ID& id : ids) {
       auto s = isCandidateApplicableInitialQuery(context, id, call);
       if (s.success()) {
-        result.push_back(s.candidate());
+        matching.push_back(s.candidate());
+      } else {
+        rejected.push_back(s);
       }
     }
   }
 
+  auto result = std::make_pair(std::move(matching), std::move(rejected));
   return QUERY_END(result);
 }
 
-// TODO: remove this workaround now that the build uses
-// -Wno-dangling-reference
-static const std::vector<const TypedFnSignature*>&
-filterCandidatesInitialWrapper(Context* context,
-                               std::vector<BorrowedIdsWithName>&& lst,
-                               const CallInfo& call) {
-  return filterCandidatesInitial(context, std::move(lst), call);
+const std::vector<const TypedFnSignature*>&
+filterCandidatesInitial(Context* context,
+                        std::vector<BorrowedIdsWithName> lst,
+                        CallInfo call) {
+  auto& result = filterCandidatesInitialGatherRejected(context, std::move(lst),
+                                                       call, /* gatherRejected */ false);
+  return result.first;
 }
 
 void
@@ -3117,7 +3123,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         const auto& initialCandidates =
-          filterCandidatesInitialWrapper(context, std::move(v), fci);
+          filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -3155,7 +3161,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         auto& initialCandidates =
-          filterCandidatesInitialWrapper(context, std::move(v), fci);
+          filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -3253,8 +3259,16 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates =
-      filterCandidatesInitialWrapper(context, std::move(v), ci);
+    const auto& initialCandidatesAndRejections =
+      filterCandidatesInitialGatherRejected(context, std::move(v), ci, rejected != nullptr);
+    const auto& initialCandidates = initialCandidatesAndRejections.first;
+    const auto& initialRejections = initialCandidatesAndRejections.second;
+
+    if (rejected != nullptr) {
+      rejected->insert(rejected->end(),
+                       initialRejections.begin(),
+                       initialRejections.end());
+    }
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -3281,8 +3295,16 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates =
-      filterCandidatesInitialWrapper(context, std::move(v), ci);
+    const auto& initialCandidatesAndRejections =
+      filterCandidatesInitialGatherRejected(context, std::move(v), ci, rejected != nullptr);
+    const auto& initialCandidates = initialCandidatesAndRejections.first;
+    const auto& initialRejections = initialCandidatesAndRejections.second;
+
+    if (rejected != nullptr) {
+      rejected->insert(rejected->end(),
+                       initialRejections.begin(),
+                       initialRejections.end());
+    }
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
