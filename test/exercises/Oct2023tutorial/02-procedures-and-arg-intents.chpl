@@ -19,25 +19,10 @@ writeCoord(y=2.0);      // (0.0, 2.0)
 writeCoord(y=2.0, 3.0); // (3.0, 2.0)
 
 // arguments can optionally be given intents
-/*{ FIXME: might want to remove this slide
+{
   proc foo(x: real, y: [] real) {
     // x = 1.2;  // illegal: scalars are passed ‘const in’ by default
-    y = 3.4;  // OK: arrays are passed ‘ref’ by default
-  }
-
-  var r: real,
-      A: [1..3] real;
-
-  foo(r, A);
-
-  writeln((r, A));  // writes (0.0, [3.4, 3.4, 3.4])
-
-}
-*/
-{
-  proc foo(in x: real, in y: [] real) {
-    x = 1.2;  // OK: local copy is modified
-    y = 3.4;  // OK: local copy is modified
+    // y = 3.4;  // illegal: 'ref' by default for arrays is deprecated
   }
 
   var r: real,
@@ -46,35 +31,7 @@ writeCoord(y=2.0, 3.0); // (3.0, 2.0)
   foo(r, A);
 
   writeln((r, A));  // writes (0.0, [0.0, 0.0, 0.0])
-}
 
-/* FIXME: getting a weird error in this next bracketed set
-{
-  proc foo(out x: real, out y: [] real) {
-    x = 1.2;  // OK: local copy is modified
-    y = 3.4;  // OK: local copy is modified
-  }
-
-  var r: real,
-      A: [1..3] real;
-
-  foo(r, A);
-
-  writeln((r, A));  // writes (1.2, [3.4, 3.4, 3.4])
-}
-*/
-{
-  proc foo(inout x: real, inout y: [] real) {
-    x = 1.2;  // OK: local copy is modified
-    y = 3.4;  // OK: local copy is modified
-  }
-
-  var r: real,
-      A: [1..3] real;
-
-  foo(r, A);
-
-  writeln((r, A));  // writes (1.2, [3.4, 3.4, 3.4])
 }
 {
   proc foo(ref x: real, ref y: [] real) {
@@ -140,3 +97,44 @@ writeCoord(y=2.0, 3.0); // (3.0, 2.0)
 
   writeln((r, A));   // writes (0.0, [0.0, 0.0, 0.0])
 }
+{
+  proc foo(in x: real, in y: [] real) {
+    x = 1.2;  // OK: local copy is modified
+    y = 3.4;  // OK: local copy is modified
+  }
+
+  var r: real,
+      A: [1..3] real;
+
+  foo(r, A);
+
+  writeln((r, A));  // writes (0.0, [0.0, 0.0, 0.0])
+}
+
+{
+  proc foo(out x: real, out y: [] real) {
+    x = 1.2;  // OK: local copy is modified
+    y = [3.4, 3.4, 3.4];  // OK: local copy is modified
+  }
+
+  var r: real,
+      A: [1..3] real;
+
+  foo(r, A);
+
+  writeln((r, A));  // writes (1.2, [3.4, 3.4, 3.4])
+}
+{
+  proc foo(inout x: real, inout y: [] real) {
+    x = 1.2;  // OK: local copy is modified
+    y = 3.4;  // OK: local copy is modified
+  }
+
+  var r: real,
+      A: [1..3] real;
+
+  foo(r, A);
+
+  writeln((r, A));  // writes (1.2, [3.4, 3.4, 3.4])
+}
+

@@ -1,5 +1,5 @@
 use BlockDist;
-//use CopyAggregator;
+use CopyAggregation;
 
 config const numUpdates = 10;
 var Src = [1, 2, 3, 4, 5];
@@ -21,7 +21,7 @@ var Dest: [0..<numUpdates] int;
 }
 
 {
-  const D = blockDist.create({0..numUpdates-1});
+  const D = blockDist.createDomain({0..numUpdates-1});
   var Inds: [D] int;
 
   forall i in D with (ref Dest) do
@@ -29,9 +29,9 @@ var Dest: [0..<numUpdates] int;
 }
 
 {
-  const D = blockDist.create({0..numUpdates-1});
+  const D = blockDist.createDomain({0..numUpdates-1});
   var Inds: [D] int;
 
-  forall (d, i) in zip(Dst, Inds) with (var agg = new SrcAggregator(int)) do
+  forall (d, i) in zip(Dest, Inds) with (var agg = new SrcAggregator(int)) do
     agg.copy(d, Src[i]);
 }
