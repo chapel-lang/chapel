@@ -21,8 +21,6 @@ SRCS = $(GPU_SRCS)
 
 GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 
-$(info $$GPU_OBJS is [${GPU_OBJS}])
-
 RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version
 
 $(RUNTIME_OBJ_DIR)/gpu-nvidia-aux.o: gpu-nvidia-aux.cc \

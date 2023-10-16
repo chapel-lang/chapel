@@ -76,6 +76,27 @@ void chpl_gpu_impl_stream_destroy(void* stream);
 bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
 
+#define DECL_ONE_REDUCE_IMPL_RET_VAL(chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val,\
+                                                    void* stream);
+
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL_RET_VAL, sum)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL_RET_VAL, min)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL_RET_VAL, max)
+
+#undef DECL_ONE_REDUCE_RET_VAL
+
+#define DECL_ONE_REDUCE_IMPL_RET_VAL_IDX(chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream);
+
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL_RET_VAL_IDX, minloc)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL_RET_VAL_IDX, maxloc)
+
+#undef DECL_ONE_REDUCE_RET_VAL_IDX
+
 #ifdef __cplusplus
 }
 #endif
