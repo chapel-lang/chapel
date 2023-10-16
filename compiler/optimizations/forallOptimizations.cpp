@@ -931,7 +931,18 @@ static void gatherForallInfo(ForallStmt *forall) {
 static bool loopHasValidInductionVariables(ForallStmt *forall) {
   // if we understand the induction variables, then we can still take a look at
   // the loop body for some calls that we can optimize dynamically
-  return forall->optInfo.multiDIndices.size() > 0;
+  // if multiDIndicesSize is a different length than the other sym lists,
+  // its likely we didn't understand one of the calls (possible use-before-def)
+
+  auto multiDIndicesSize = forall->optInfo.multiDIndices.size();
+  auto iterSymSize = forall->optInfo.iterSym.size();
+  auto dotDomIterSymSize = forall->optInfo.dotDomIterSym.size();
+  auto iterCallTmpSize = forall->optInfo.iterCallTmp.size();
+
+  return multiDIndicesSize > 0 &&
+         multiDIndicesSize == iterSymSize &&
+         multiDIndicesSize == dotDomIterSymSize &&
+         iterCallTmpSize == multiDIndicesSize;
 }
 
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
