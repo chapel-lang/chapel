@@ -96,7 +96,6 @@ RUNTIME_OBJS = \
 	$(THREADS_OBJS) \
 	$(TIMERS_OBJS) \
 	$(COMM_OBJS) \
-	$(CUB_OBJS) \
 	$(GPU_OBJS) \
 	$(MEM_COMMON_OBJS) \
 	$(QIO_OBJS) \
