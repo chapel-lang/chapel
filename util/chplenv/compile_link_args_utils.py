@@ -218,8 +218,8 @@ def compute_internal_compile_link_args(runtime_subdir):
 
 
     # remove duplicate system libraries
-    host_link = (host_link[0], dedup(host_link[1]))
-    tgt_link = (tgt_link[0], dedup(tgt_link[1]))
+    host_link = (dedup(host_link[0]), dedup(host_link[1]))
+    tgt_link = (dedup(tgt_link[0]), dedup(tgt_link[1]))
 
     return {'host_compile': host_compile,
             'host_link': host_link,
