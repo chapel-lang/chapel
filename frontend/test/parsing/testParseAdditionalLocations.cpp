@@ -116,19 +116,19 @@ static void test1() {
     "union foo {}\n"            // 14:7
     // enum
     "enum foo { bar }\n";       // 15:6
-    
+
   setFileText(ctx, path, contents);
   auto& br = parseAndReportErrors(ctx, path);
   assert(!guard.realizeErrors());
 
-  static const std::array<pos, 13> positions = {
+  static const std::array<pos, 13> positions = {{
     pos(1,6), pos(2,9), pos(3,6), pos(5,5), pos(6,8), pos(7,6), pos(8,9),
     pos(9,6), pos(11,5), pos(12,7), pos(13,8), pos(14,7), pos(15,6)
-  };
+  }};
 
   auto mod = br.singleModule();
   assert(mod && mod->numStmts() == 13);
-  assert(positions.size() == mod->numStmts());
+  assert(positions.size() == (size_t) mod->numStmts());
 
   for (int i = 0; i < mod->numStmts(); i++) {
     auto nd = mod->stmt(i)->toNamedDecl();

@@ -68,7 +68,7 @@ static void testPrimitive(std::string primitive,
 
   auto varTypes = resolveTypesOfVariables(context, ps.str(), variables);
 
-  for (int i = 0; i < varTypes.size(); i++) {
+  for (size_t i = 0; i < varTypes.size(); i++) {
     std::cout << "Checking " << variables[i] << std::endl;
 
     if (expectedResults[i] == shouldReturnTrue) {
