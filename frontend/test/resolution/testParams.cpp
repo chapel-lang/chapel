@@ -86,10 +86,75 @@ static void test3() {
   assert(qt.param() == ComplexParam::get(&ctx, {3.0, 2.0}));
 }
 
+static void test4() {
+  printf("test4\n");
+  Context ctx;
+  Context* context = &ctx;
+  std::string program = R""""(
+    enum myEnum {
+      blue,
+      red,
+      green
+    }
+
+    proc param myEnum.isBlue() param
+      do return this == myEnum.blue;
+    param x = myEnum.green.isBlue();
+    param y = myEnum.blue.isBlue();
+  )"""";
+
+  auto path = UniqueString::get(context, "test4.chpl");
+  setFileText(context, path, program);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 4);
+  auto enumDecl = m->stmt(0);
+  assert(enumDecl);
+  auto xStmt = m->stmt(2);
+  auto yStmt = m->stmt(3);
+  assert(xStmt);
+  assert(yStmt);
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const auto& resolvedXExpr = rr.byAst(xStmt);
+  const auto& resolvedYExpr = rr.byAst(yStmt);
+  assert(resolvedXExpr.type().kind() == QualifiedType::Kind::PARAM);
+  assert(resolvedYExpr.type().kind() == QualifiedType::Kind::PARAM);
+  assert(resolvedXExpr.type().param()->isBoolParam());
+  assert(resolvedYExpr.type().param()->isBoolParam());
+  assert(!resolvedXExpr.type().param()->toBoolParam()->value());
+  assert(resolvedYExpr.type().param()->toBoolParam()->value());
+}
+
+static void test5() {
+  printf("test5\n");
+  Context ctx;
+
+  QualifiedType qtString =
+  getTypeForFirstStmt(&ctx, "__primitive('string_length_bytes', 'myString');\n");
+  ctx.advanceToNextRevision(true);
+  QualifiedType qtBytes =
+  getTypeForFirstStmt(&ctx, "__primitive('string_length_bytes', b'myBytes');\n");
+  assert(qtString.hasTypePtr());
+  assert(qtBytes.hasTypePtr());
+  assert(qtString.hasParamPtr());
+  assert(qtBytes.hasParamPtr());
+
+  assert(qtString.type() == IntType::get(&ctx, 0));
+  assert(qtBytes.type() == IntType::get(&ctx, 0));
+
+  assert(qtString.param() == chpl::types::IntParam::get(&ctx, 8));
+  assert(qtBytes.param() == chpl::types::IntParam::get(&ctx, 7));
+}
+
 int main() {
   test1();
   test2();
   test3();
+  test4();
+  test5();
 
   return 0;
 }
