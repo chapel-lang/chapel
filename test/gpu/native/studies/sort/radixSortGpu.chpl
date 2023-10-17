@@ -160,7 +160,7 @@ module RadixSort {
 
   proc parallelCount(ref counts: [], ref inputArr: [] uint, const exp: int, const bitMask: int,
                     const numChunks: int,  const numChunksThisGpu : int = numChunks, const startChunk: int = 0,
-                    const gpuId: int = 0){
+                    const gpuId: int = 0, const resetCountsArray = false){
     // Instead of using a nested array of arrays, use a simple 1D array of
     // size numChunks*buckets which is a column major representation
     // of the 2D array where each chunk has it's own array of buckets.
@@ -169,8 +169,9 @@ module RadixSort {
     // 2D arrays.
     // writeln("Counting on gpu: ", gpuId);
     on here.gpus[gpuId]{
-    // on here {
-      var gpuCounts : counts.type; // All 0s
+      var gpuCounts : counts.type; // All 0s or ...
+      if !resetCountsArray then
+        gpuCounts = counts; // ...initialized to counts
       const gpuInputArr = inputArr;
       // writeln("Bounds for chunk: ", startChunk, " to ", startChunk+numChunksThisGpu-1);
       @assertOnGpu
@@ -185,19 +186,20 @@ module RadixSort {
         }
       }
       counts = gpuCounts;
-    }
+}
   }
 
   proc distributedCount(ref counts: [], ref inputArr: [] uint, const exp: int, const bitMask: int,
                         const numChunks: int, const numGpus : int ) {
     // Counts should be all 0s
-    counts = 0;
+    // counts = 0;
 
     const numChunksPerGpu = Math.divCeil(numChunks, numGpus);
     const numChunksPerGpuLast = numChunks - (numChunksPerGpu * (numGpus-1));
+    var firstRunReset = true;
 
     // Distribute the counts across the GPUs
-    coforall gpu in 0..<numGpus {
+    for gpu in 0..<numGpus {
       const numChunksThisGpu = if (gpu==numGpus-1) then numChunksPerGpuLast else numChunksPerGpu;
       const startChunk = gpu*numChunksPerGpu;
 
@@ -206,15 +208,22 @@ module RadixSort {
       // Since each chunk already gets a slot in the counts array
       // We will pass the entire counts array to each GPU
       // But each GPU will only work on a subset of the counts array and not care about the rest
-      var thisCounts : counts.type; // All 0s
-      parallelCount(thisCounts, inputArr, exp, bitMask, numChunks, numChunksThisGpu, startChunk, gpu);
+      parallelCount(counts, inputArr, exp, bitMask, numChunks, numChunksThisGpu, startChunk, gpu, firstRunReset);
       // writeln(" Count: ", thisCounts);
-      counts += thisCounts; // This works because counts array is all 0s and
-                            // we're only adding to it. The parallelCount function leaves the
-                            // rest of the array untouched (i.e. 0s) so for 2 GPUs the add might be:
-                            // thisCounts1 : 1 0 | 3 0 | 2 0 | 32 0
-                            // thisCounts2 : 0 3 | 0 2 | 0 12 | 0 2
-                            // counts      : 1 3 | 3 2 | 2 12 | 32 2
+      // This works because counts array is all 0s and
+      // we're only adding to it. The parallelCount function leaves the
+      // rest of the array untouched (i.e. 0s) so for 2 GPUs the add might be:
+      // counts1 : 1 0 | 3 0 | 2 0 | 32 0
+      // counts2 : 0 3 | 0 2 | 0 12 | 0 2
+      // counts      : 1 3 | 3 2 | 2 12 | 32 2
+      // I think this is not a race condition for the same reason
+      firstRunReset = false; // This is a hacky solution
+
+
+      // In an ideal world I would like to use a + reduce intent here such that each iteration gets it's own
+      // copy of the counts array and it is accumulated into the main counts array
+      // And the loop should be a coforall instead of a foreach
+      // But I could not get that to work/ don't know how that works
     }
   }
 
