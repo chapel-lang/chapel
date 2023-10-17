@@ -1433,7 +1433,7 @@ static void autoLocalAccess(ForallStmt *forall) {
   }
 
   if (!loopHasValidOptInfo(forall)) {
-    LOG_ALA(1, "Can't optimize this forall: invalid opt info", forall);
+    LOG_ALA(1, "Can't optimize this forall: invalid loop", forall);
     return;
   }
 
