@@ -42,6 +42,7 @@ module ChapelDomain {
 
   /* Compile with ``-snoNegativeStrideWarnings``
      to suppress the warning about arrays and slices with negative strides. */
+  @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
   pragma "no copy return"
@@ -857,6 +858,8 @@ module ChapelDomain {
 
   // This function exists to avoid communication from computing _value when
   // the result is param.
+  /* Returns true if the distribution of `d` is a layout,
+     that is, all indices of `d` are owned by the current locale. */
   proc domainDistIsLayout(d: domain) param {
     return d.distribution._value.dsiIsLayout();
   }
@@ -1021,12 +1024,14 @@ module ChapelDomain {
       return index(rank, _value.idxType);
     }
 
+    @chpldoc.nodoc
     proc init(_pid: int, _instance, _unowned: bool) {
       this._pid = _pid;
       this._instance = _instance;
       this._unowned = _unowned;
     }
 
+    @chpldoc.nodoc
     proc init(value) {
       if _to_unmanaged(value.type) != value.type then
         compilerError("Domain on borrow created");
@@ -1048,6 +1053,7 @@ module ChapelDomain {
       this._instance = value;
     }
 
+    @chpldoc.nodoc
     proc init(d,
               param rank : int,
               type idxType = int,
@@ -1056,6 +1062,7 @@ module ChapelDomain {
       this.init(d.newRectangularDom(rank, idxType, strides, definedConst));
     }
 
+    @chpldoc.nodoc
     proc init(d,
               param rank : int,
               type idxType = int,
@@ -1068,6 +1075,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @chpldoc.nodoc
     proc init(d,
               param rank : int,
               type idxType = int,
@@ -1078,6 +1086,7 @@ module ChapelDomain {
 
     // deprecated by Vass in 1.31 to implement #17131
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
+    @chpldoc.nodoc
     proc init(d,
               param rank : int,
               type idxType = int,
@@ -1088,6 +1097,7 @@ module ChapelDomain {
                 chpl_convertRangeTuple(ranges, stridable), definedConst);
     }
 
+    @chpldoc.nodoc
     proc init(d,
               type idxType,
               param parSafe: bool = true,
@@ -1095,6 +1105,7 @@ module ChapelDomain {
       this.init(d.newAssociativeDom(idxType, parSafe));
     }
 
+    @chpldoc.nodoc
     proc init(d,
               dom: domain,
               definedConst: bool = false) {
@@ -1104,11 +1115,13 @@ module ChapelDomain {
     // Note: init= does not handle the case where the type of 'this' does not
     // handle the type of 'other'. That case is currently managed by the
     // compiler and various helper functions involving runtime types.
+    @chpldoc.nodoc
     proc init=(const ref other : domain) where other.isRectangular() {
       this.init(other.distribution, other.rank, other.idxType, other.strides,
                 other.dims());
     }
 
+    @chpldoc.nodoc
     proc init=(const ref other : domain) {
       if other.isAssociative() {
         this.init(other.distribution, other.idxType, other.parSafe);
@@ -1192,6 +1205,7 @@ module ChapelDomain {
       }
     }
 
+    /* Return the domain map that implements this domain */
     @deprecated("domain.dist is deprecated, please use domain.distribution instead")
     proc dist do return this.distribution;
 
@@ -1234,8 +1248,9 @@ module ChapelDomain {
       return chpl__idxTypeToIntIdxType(_value.idxType);
     }
 
-    /* Return true if this is a stridable domain */
     // deprecated by Vass in 1.31 to implement #17131
+    /* Return true if this domain accepts some or any strides
+       other than 1 */
     @deprecated("domain.stridable is deprecated; use domain.strides instead")
     proc stridable param where this.isRectangular() {
       return _value.strides.toStridable();
@@ -1254,7 +1269,7 @@ module ChapelDomain {
       compilerError("associative domains do not support .stridable");
     }
 
-    /* Return the 'strides' value of the domain */
+    /* Return the 'strides' parameter of the domain */
     proc strides param where this.isRectangular() do return _value.strides;
 
     @chpldoc.nodoc
@@ -1269,6 +1284,7 @@ module ChapelDomain {
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
     /* Yield the domain indices */
+    @chpldoc.nodoc
     iter these() {
       for i in _value.these() {
         yield i;
@@ -1390,6 +1406,7 @@ module ChapelDomain {
     }
 
     // error case for all-int access
+    @chpldoc.nodoc
     proc this(i: integral ... rank) {
       compilerError("domain slice requires a range in at least one dimension");
     }
@@ -2037,6 +2054,7 @@ module ChapelDomain {
     }
 
     /* Remove all indices from this domain, leaving it empty */
+    @chpldoc.nodoc
     proc ref clear() where this.isRectangular() {
       // For rectangular domains, create an empty domain and assign it to this
       // one to make sure that we leverage all of the array's normal resizing
@@ -2048,7 +2066,7 @@ module ChapelDomain {
 
     // For other domain types, the implementation probably knows the most
     // efficient way to clear its index set, so make a dsiClear() call.
-    @chpldoc.nodoc
+    /* Remove all indices from this domain, leaving it empty */
     proc ref clear() {
       _value.dsiClear();
     }
@@ -2248,9 +2266,7 @@ module ChapelDomain {
       _value.dsiRequestCapacity(capacity);
     }
 
-    /*
-      Return the number of indices in this domain as an ``int``.
-    */
+    /* Return the number of indices in this domain as an ``int``. */
     proc size: int {
       return this.sizeAs(int);
     }
@@ -2436,6 +2452,7 @@ module ChapelDomain {
     }
 
     pragma "last resort"
+    @chpldoc.nodoc
     proc orderToIndex(order) {
       if this.isRectangular() && isNumericType(this.idxType) then
         compilerError("illegal value passed to orderToIndex():",

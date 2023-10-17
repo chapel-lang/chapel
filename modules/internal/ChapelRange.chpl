@@ -40,6 +40,7 @@ module ChapelRange {
      When slicing with a range with a negative stride, the old rule
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
+  @chpldoc.nodoc
   config param newSliceRule = false;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
@@ -49,6 +50,7 @@ module ChapelRange {
      The new rule defines such idxType to be the type produced by adding
      the two bounds. I.e.,``(low..high).idxType`` is ``(low+high).type``
      when ``low`` and ``high`` are integral params. */
+  @chpldoc.nodoc
   config param newRangeLiteralType = false;
 
   private param unalignedMark = -1;
@@ -141,6 +143,8 @@ module ChapelRange {
                      else chpl__rangeStrideType(idxType); // alignment or -1
   }
 
+  /* Returns the type of the range's stride. */
+  @unstable("range.strType is unstable and may be removed or renamed")
   proc range.strType type do return chpl__rangeStrideType(idxType);
 
   proc range.chpl__promotionType() type do return idxType;
@@ -2472,9 +2476,11 @@ private proc isBCPindex(type t) param do
 
   /////////// operators + and - ///////////
 
+  @chpldoc.nodoc
   operator +(r1: range(?), r2: range(?)) do
     compilerError("range addition is currently not supported");
 
+  @chpldoc.nodoc
   operator -(r1: range(?), r2: range(?)) do
     compilerError("range subtraction is currently not supported");
 
