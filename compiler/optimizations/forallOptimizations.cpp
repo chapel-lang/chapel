@@ -92,6 +92,7 @@ static std::vector<Symbol *> getLoopIndexSymbols(ForallStmt *forall,
                                                  Symbol *baseSym);
 static void gatherForallInfo(ForallStmt *forall);
 static bool loopHasValidInductionVariables(ForallStmt *forall);
+static bool loopHasValidOptInfo(ForallStmt *forall);
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall);
 static Symbol *getCallBaseSymIfSuitable(CallExpr *call, ForallStmt *forall,
                                         bool checkArgs, int *argIdx,
@@ -931,18 +932,17 @@ static void gatherForallInfo(ForallStmt *forall) {
 static bool loopHasValidInductionVariables(ForallStmt *forall) {
   // if we understand the induction variables, then we can still take a look at
   // the loop body for some calls that we can optimize dynamically
+  return forall->optInfo.multiDIndices.size() > 0;
+}
+
+static bool loopHasValidOptInfo(ForallStmt *forall) {
   // if multiDIndicesSize is a different length than the other sym lists,
   // its likely we didn't understand one of the calls (possible use-before-def)
-
+  // we only need to check one of the sym lists, since they are all appended to
+  // together
   auto multiDIndicesSize = forall->optInfo.multiDIndices.size();
   auto iterSymSize = forall->optInfo.iterSym.size();
-  auto dotDomIterSymSize = forall->optInfo.dotDomIterSym.size();
-  auto iterCallTmpSize = forall->optInfo.iterCallTmp.size();
-
-  return multiDIndicesSize > 0 &&
-         multiDIndicesSize == iterSymSize &&
-         multiDIndicesSize == dotDomIterSymSize &&
-         iterCallTmpSize == multiDIndicesSize;
+  return multiDIndicesSize == iterSymSize;
 }
 
 static Symbol *canDetermineLoopDomainStatically(ForallStmt *forall) {
@@ -1432,6 +1432,11 @@ static void autoLocalAccess(ForallStmt *forall) {
     return;
   }
 
+  if (!loopHasValidOptInfo(forall)) {
+    LOG_ALA(1, "Can't optimize this forall: invalid opt info", forall);
+    return;
+  }
+
   Symbol *loopDomain = canDetermineLoopDomainStatically(forall);
   bool staticLoopDomain = loopDomain != NULL;
   if (staticLoopDomain) {
@@ -1678,7 +1683,7 @@ static void autoAggregation(ForallStmt *forall) {
 
   LOG_AA(0, "Start analyzing forall for automatic aggregation", forall);
 
-  if (loopHasValidInductionVariables(forall)) {
+  if (loopHasValidInductionVariables(forall) && loopHasValidOptInfo(forall)) {
     std::vector<Expr *> lastStmts = getLastStmtsForForallUnorderedOps(forall);
 
     for_vector(Expr, lastStmt, lastStmts) {
