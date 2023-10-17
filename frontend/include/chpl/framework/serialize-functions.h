@@ -68,11 +68,12 @@ public:
 
   // Note: currently these char* entries are expected to support UniqueStrings,
   // which are allocated from a Context and are null-terminated.
-  using stringCacheType = std::map<const char*, std::pair<int, size_t>>;
+  // Maps from string to {index in the long strings table, length}
+  using stringCacheType = std::map<const char*, std::pair<uint32_t, size_t>>;
 
 private:
-  int counter_ = 0;
-
+  uint32_t longStringCounter_ = 1;
+  uint64_t uAstCounter_ = 0;
   std::ostream& os_;
   stringCacheType stringCache_;
 
@@ -84,7 +85,7 @@ public:
     return os_;
   }
 
-  stringCacheType stringCache() {
+  const stringCacheType& stringCache() {
     return stringCache_;
   }
 
@@ -96,14 +97,19 @@ public:
   uint32_t cacheString(const char* str, size_t len) {
     auto idx = stringCache_.find(str);
     if (idx == stringCache_.end()) {
-      auto ret = counter_;
+      auto ret = longStringCounter_;
       stringCache_.insert({str, {ret,len}});
-      counter_ += 1;
+      longStringCounter_ += 1;
       return ret;
     } else {
       return idx->second.first;
     }
   }
+  uint32_t nextStringIdx() { return longStringCounter_; }
+
+  void beginAst() { }
+  void endAst() { uAstCounter_++; }
+  uint64_t numAstsSerialized() { return uAstCounter_; }
 
   /* Write a variable-length byte-encoded 64-bit unsigned integer */
   void writeVU64(uint64_t num) {

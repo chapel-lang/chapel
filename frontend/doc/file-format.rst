@@ -103,6 +103,8 @@ The '.dyno' file format header consists of:
 
  * 8 bytes of magic number 0x4C5048434550487F
    ('<7F>HPECHPL' or the reverse of it, dependeng on endianness)
+ * 4 bytes of library file format major version number
+ * 4 bytes of library file format minor version number
  * 4 bytes of chpl major version number
  * 4 bytes of chpl minor version number
  * 4 bytes of chpl update version number
@@ -120,11 +122,9 @@ Each module section begins with a header that consists of:
 
  * 8 bytes of magic number 0x0030d01e5ec110e0
  * 8 bytes of reserved space for future flags
- * 4 bytes of library major version number
- * 4 bytes of library minor version number
  * 8 bytes of symbol table section relative offset
- * 8 bytes of long strings table section relative offset
  * 8 bytes of uAST section relative offset
+ * 8 bytes of long strings table section relative offset
  * 8 bytes of location section relative offset
  * 8 bytes of types section relative offset
  * 8 bytes of functions section relative offset
@@ -156,6 +156,28 @@ This section consists of:
    * 8 byte relative offset to the type/function entry, if appropriate
    * a byte storing flags / kind information
    * a string storing the symbol table ID
+
+uAST Section
+------------
+
+The uAST section consists of serialized uAST entries. The top-level
+entries are concatenated. Note that the symbol table can point to an
+individual entry.
+
+IDs are not stored here. They are recomputed when the uAST is read.
+
+The uAST section consists of:
+
+ * 8 bytes of magic number 0x0003bb1e5ec110e0
+ * 8 bytes: the number of uAST entries
+ * the contained entries, where each entry consists of:
+
+   * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
+   * attribute group child num (variable-byte encoded)
+   * variable-byte encoded length in bytes L of additional information
+   * the L bytes storing the additional information
+   * variable-byte encoded number of children
+   * the children, where each is stored as a uAST entry as described here
 
 Long Strings Table Section
 --------------------------
@@ -193,34 +215,14 @@ order.
 The long strings table consists of the following:
 
  * 4 bytes magic number 0x51e17601
- * 4 bytes counting the number of long strings
+ * 4 bytes N counting the number of long strings, including two unused ones:
+     * offset 0 is unused
+     * the last offset is also unused
+     * so, valid long string indices are in 1 <= i < N
  * relative offsets of each string, from the start of the section
    * each offset is 8 bytes
- * an additional 8 byte offset storing where the string would go
-   if another were to be added
  * string data
 
-uAST Section
-------------
-
-The uAST section consists of serialized uAST entries. The top-level
-entries are concatenated. Note that the symbol table can point to an
-individual entry.
-
-IDs are not stored here. They are recomputed when the uAST is read.
-
-The uAST section consists of:
-
- * 8 bytes of magic number 0x0003bb1e5ec110e0
- * 8 bytes: the number of uAST entries
- * the contained entries, where each entry consists of:
-
-   * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
-   * attribute group child num (variable-byte encoded)
-   * variable-byte encoded length in bytes L of additional information
-   * the L bytes storing the additional information
-   * variable-byte encoded number of children
-   * the children, where each is stored as a uAST entry as described here
 
 Location Section
 ----------------

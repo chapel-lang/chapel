@@ -23,6 +23,7 @@ target_sources(ChplFrontend-obj
                ErrorMessage.cpp
                ErrorWriter.cpp
                ID.cpp
+               LibraryFile.cpp
                Location.cpp
                TemporaryFileResult.cpp
                UniqueString.cpp

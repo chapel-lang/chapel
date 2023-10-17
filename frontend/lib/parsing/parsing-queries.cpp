@@ -19,13 +19,13 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/LibraryFile.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
-#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -34,8 +34,9 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
-#include "chpl/util/version-info.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/util/filtering.h"
+#include "chpl/util/version-info.h"
 
 #include "../util/filesystem_help.h"
 
@@ -103,11 +104,6 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
-// <7F>HPECHPL
-#define LIBRARY_MAGIC (uint64_t)0x4C5048434550487F
-#define LIBRARY_VERSION_MAJOR 0
-#define LIBRARY_VERSION_MINOR 1
-
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   if (path.startsWith("/") ||
       path.startsWith("./") == false) {
@@ -122,51 +118,17 @@ static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   return chpl::UniqueString::get(context, str);
 }
 
-//
-// The library file format (whitespace not significant):
-// <magic number, uint64_t>
-// <library version, major, int>
-// <library version, minor, int>
-// <chpl version, major, int>
-// <chpl version, minor, int>
-// <chpl version, update, int>
-//
-// <user/std module descriptor, std::string>
-//
-// N:<number of BuilderResult entries, uint64_t>
-//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
-//
-// M:<string cache size, uint64_t>
-//   0..M-1: <id i, int><string length, uint32_t><string, const char*>
-//
-// 0..N-1: <BuilderResult for file path i, BuilderResult>
-//
+// See file-format.rst for a description of the library file format.
 void LibraryFile::generate(Context* context,
                            std::vector<UniqueString> paths,
-                           std::string outFileName,
-                           bool isUser) {
-  std::ofstream myFile;
-  myFile.open(outFileName, std::ios::out | std::ios::trunc | std::ios::binary);
+                           std::string outFileName) {
+
+  auto libWriter = LibraryFileWriter(context, paths, outFileName);
+  libWriter.writeAllSections();
+
+  TODO TODO TODO
+
   chpl::Serializer ser(myFile);
-
-  ser.write(LIBRARY_MAGIC);
-  ser.write(LIBRARY_VERSION_MAJOR);
-  ser.write(LIBRARY_VERSION_MINOR);
-
-  // Write out the version of the 'chpl' compiler generating this file
-  ser.write(getMajorVersion());
-  ser.write(getMinorVersion());
-  ser.write(getUpdateVersion());
-
-  // TODO: Currently a boolean, but might be useful to represent internal
-  // or package modules separately someday.
-  if (isUser) {
-    ser.write(std::string("USER"));
-  } else {
-    // Currently assuming that this is the mode where we generate the entire
-    // standard library.
-    ser.write(std::string("STANDARD"));
-  }
 
   // Number of files we expect to serialize in this library
   ser.write((uint64_t)paths.size());
@@ -225,9 +187,9 @@ LibraryFile::LibraryFile(Context* context, UniqueString libPath)
   chpl::Deserializer des(context, myFile);
 
   // Some basic validation
-  CHPL_ASSERT(LIBRARY_MAGIC == des.read<uint64_t>());
-  CHPL_ASSERT(LIBRARY_VERSION_MAJOR == des.read<int>());
-  CHPL_ASSERT(LIBRARY_VERSION_MINOR == des.read<int>());
+  CHPL_ASSERT(detail::FILE_HEADER_MAGIC == des.read<uint64_t>());
+  CHPL_ASSERT(detail::FORMAT_VERSION_MAJOR == des.read<int>());
+  CHPL_ASSERT(detail::FORMAT_VERSION_MINOR == des.read<int>());
 
   // Currently no checking is done for 'chpl' version
   std::ignore = des.read<int>(); // major version

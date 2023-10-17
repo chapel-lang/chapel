@@ -545,11 +545,13 @@ void AstNode::stringify(std::ostream& ss,
 }
 
 void AstNode::serialize(Serializer& ser) const {
+  ser.beginAst();
   ser.write(tag_);
   ser.writeVInt(attributeGroupChildNum_);
   ser.write(id_); // TODO: don't serialize ID; recompute it
   serializeInner(ser);
   ser.write(children_);
+  ser.endAst();
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)
