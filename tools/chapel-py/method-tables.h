@@ -446,17 +446,9 @@ CLASS_END(Variable)
 CLASS_BEGIN(START_AggregateDecl)
   PLAIN_GETTER(AggregateDecl, decls_or_comments, "Get the declarations and comments of this AggregateDecl node",
                "O", return wrapIterPair(contextObject, node->declOrComments()))
-CLASS_END(START_AggregateDecl)
-
-CLASS_BEGIN(Class)
-  PLAIN_GETTER(Class, inherit_exprs, "Get the inherit expressions of this Class node",
+  PLAIN_GETTER(AggregateDecl, inherit_exprs, "Get the inherit expressions of this AggregateDecl node",
                "O", return wrapIterPair(contextObject, node->inheritExprs()))
-CLASS_END(Class)
-
-CLASS_BEGIN(Record)
-  PLAIN_GETTER(Record, interface_exprs, "Get the interface expressions of this Record node",
-               "O", return wrapIterPair(contextObject, node->interfaceExprs()))
-CLASS_END(Record)
+CLASS_END(START_AggregateDecl)
 
 //
 // Cleanup and undefine all macros
