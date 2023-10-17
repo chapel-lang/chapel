@@ -426,6 +426,9 @@ module GPU
       return val;
     }
     else {
+      if CHPL_GPU == "amd" {
+        compilerError(op + " reduction is not supported on AMD GPUs");
+      }
       var idx: int(32);
       var val: t;
       extern externFunc proc reduce_fn(data, size, ref val, ref idx);
