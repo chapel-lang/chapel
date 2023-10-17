@@ -113,6 +113,10 @@ static void test4() {
   assert(m->numStmts() == 4);
   auto enumDecl = m->stmt(0);
   assert(enumDecl);
+  auto blueEnum = enumDecl->child(0);
+  auto greenEnum = enumDecl->child(2);
+  assert(blueEnum);
+  assert(greenEnum);
   auto xStmt = m->stmt(2);
   auto yStmt = m->stmt(3);
   assert(xStmt);
@@ -126,6 +130,24 @@ static void test4() {
   assert(resolvedYExpr.type().param()->isBoolParam());
   assert(!resolvedXExpr.type().param()->toBoolParam()->value());
   assert(resolvedYExpr.type().param()->toBoolParam()->value());
+  auto isBlueXCall = xStmt->child(0);
+  assert(isBlueXCall);
+  auto isBlueProc = m->stmt(1);
+  assert(isBlueProc);
+  auto isBlueFn = isBlueProc->toFunction();
+  assert(isBlueFn);
+  const auto rrIsBlueCall = rr.byAst(isBlueXCall);
+  assert(rrIsBlueCall.type().kind() == QualifiedType::Kind::PARAM);
+  auto bestFn = rrIsBlueCall.mostSpecific().only();
+  assert(bestFn);
+  assert(bestFn->id() == isBlueFn->id());
+  assert(bestFn->formalType(0).isParam());
+  assert(bestFn->formalName(0) == UniqueString::get(context, "this"));
+  assert(bestFn->formalType(0).param()->isEnumParam());
+  assert(bestFn->formalType(0).param()->toEnumParam()->value() == greenEnum->id());
+  const ResolvedFunction* rfn = scopeResolveFunction(context, isBlueFn->id());
+  const auto tsi = typedSignatureInitial(context, rfn->signature()->untyped());
+  assert(tsi->formalType(0).isParam());
 }
 
 static void test5() {
