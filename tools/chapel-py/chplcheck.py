@@ -20,6 +20,7 @@
 
 import chapel
 import chapel.core
+import chapel.replace
 import re
 import sys
 import argparse
@@ -134,6 +135,20 @@ def check_reserved_prefix(node):
 def check_redundant_block(node):
     return node.block_style() != "unnecessary"
 
+def check_misleading_indentation(node):
+    prev = None
+    for child in node:
+        yield from check_misleading_indentation(child)
+
+        if prev is not None:
+            if rc.node_indent(child) == rc.node_indent(prev):
+                yield child
+
+        if isinstance(child, chapel.core.Loop) and child.block_style() == "implicit":
+            grandchildren = list(child)
+            if len(grandchildren) > 0:
+                prev = list(grandchildren[-1])[0]
+
 Rules = [
     ("CamelCaseVariables", chapel.core.VarLikeDecl, check_camel_case_var),
     ("CamelCaseRecords", chapel.core.Record, check_camel_case),
@@ -146,7 +161,7 @@ Rules = [
 ]
 
 def main():
-    global args
+    global args, rc
 
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filename')
@@ -155,12 +170,16 @@ def main():
 
     ctx = chapel.core.Context()
     ast = ctx.parse(args.filename)
+    rc = chapel.replace.ReplacementContext(args.filename)
 
     for rule in Rules:
         check_basic_rule(ast, rule)
 
     for group in consecutive_decls(ast):
         report_violation(group[1], "ConsecutiveDecls")
+
+    for node in check_misleading_indentation(ast):
+        report_violation(node, "MisleadingIndentation")
 
 if __name__ == "__main__":
     main()
