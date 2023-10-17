@@ -198,6 +198,10 @@ struct Resolver {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
+  // Set the composite type of this Resolver. It is an error to call this
+  // method when a composite type is already set.
+  void setCompositeType(const types::CompositeType* ct);
+
   /* Get the formal types from a Resolver that computed them
    */
   std::vector<types::QualifiedType> getFormalTypes(const uast::Function* fn);

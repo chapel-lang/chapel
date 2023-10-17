@@ -1645,6 +1645,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
       // Type query constraints were not satisfied
       return nullptr;
     }
+
+    if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
+      visitor.setCompositeType(qFormalType.type()->toCompositeType());
+    }
   }
 
   // instantiate the VarArg formal if necessary
