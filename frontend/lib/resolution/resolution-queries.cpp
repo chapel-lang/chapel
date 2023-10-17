@@ -2807,6 +2807,17 @@ static bool resolveFnCallSpecial(Context* context,
     }
   }
 
+  if (ci.isOpCall() && ci.name() == USTR("!") && ci.numActuals() == 1) {
+    auto qt = ci.actual(0).type();
+    if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
+        qt.hasTypePtr() && qt.type()->isBoolType()) {
+      exprTypeOut = qt.param()->fold(context,
+                                     chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
+                                     qt, QualifiedType());
+      return true;
+    }
+  }
+
   if (ci.name() == USTR("isCoercible")) {
     if (ci.numActuals() != 2) {
       context->error(astForErr, "bad call to %s", ci.name().c_str());
