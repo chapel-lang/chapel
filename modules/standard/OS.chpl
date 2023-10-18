@@ -1448,7 +1448,7 @@ module OS {
      input could be read.
 
      This error can also occur on some writing operations when a
-     :record:~IO.fileWriter's range has been specified, and the write exceeds
+     :record:`~IO.fileWriter`'s range has been specified, and the write exceeds
      the valid range.
   */
   class UnexpectedEofError : Error {
