@@ -1667,7 +1667,7 @@ module ChapelRange {
   operator ==(r1: range(?), r2: range(?)) param
     where r1.bounds != r2.bounds &&
           (!isFiniteIdxType(r1.idxType) ||
-          !isFiniteIdxType(r2.idxType)) do
+           !isFiniteIdxType(r2.idxType)) do
   return false;
 
   @chpldoc.nodoc
@@ -1727,6 +1727,20 @@ module ChapelRange {
 
   @chpldoc.nodoc
   operator !=(r1: range(?), r2: range(?)) do  return !(r1 == r2);
+
+  @chpldoc.nodoc
+  @unstable("!= between unbounded and bounded ranges is unstable and its behavior may change in the future")
+  operator !=(r1: range(?), r2: range(?)): bool
+    where r1.bounds != r2.bounds && isFiniteIdxType(r1.idxType) &&
+          isFiniteIdxType(r2.idxType)
+    do return !(r1 == r2);
+
+  @chpldoc.nodoc
+  operator !=(r1: range(?), r2: range(?)) param
+    where r1.bounds != r2.bounds &&
+          (!isFiniteIdxType(r1.idxType) ||
+           !isFiniteIdxType(r2.idxType)) do
+  return true;
 
   @chpldoc.nodoc
   operator <(r1: range(?), r2: range(?))
