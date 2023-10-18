@@ -394,7 +394,7 @@ module GPU
   // Reductions
   // ============================
 
-  private inline proc doGpuReduce(param op: string, ref A: [] ?t) {
+  private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
     if CHPL_GPU == "amd" then
       compilerError("gpu*Reduce functions are not supported on AMD GPUs");
 
@@ -425,22 +425,22 @@ module GPU
     if op == "sum" || op == "min" || op == "max" {
       var val: t;
       extern externFunc proc reduce_fn(data, size, ref val);
-      reduce_fn(c_ptrTo(A), A.size, val);
+      reduce_fn(c_ptrToConst(A), A.size, val);
       return val;
     }
     else {
       var idx: int(32);
       var val: t;
       extern externFunc proc reduce_fn(data, size, ref val, ref idx);
-      reduce_fn(c_ptrTo(A), A.size, val, idx);
+      reduce_fn(c_ptrToConst(A), A.size, val, idx);
       return (idx, val);
     }
   }
 
-  inline proc gpuSumReduce(ref A: [] ?t) do return doGpuReduce("sum", A);
-  inline proc gpuMinReduce(ref A: [] ?t) do return doGpuReduce("min", A);
-  inline proc gpuMaxReduce(ref A: [] ?t) do return doGpuReduce("max", A);
-  inline proc gpuMinLocReduce(ref A: [] ?t) do return doGpuReduce("minloc", A);
-  inline proc gpuMaxLocReduce(ref A: [] ?t) do return doGpuReduce("maxloc", A);
+  inline proc gpuSumReduce(const ref A: [] ?t) do return doGpuReduce("sum", A);
+  inline proc gpuMinReduce(const ref A: [] ?t) do return doGpuReduce("min", A);
+  inline proc gpuMaxReduce(const ref A: [] ?t) do return doGpuReduce("max", A);
+  inline proc gpuMinLocReduce(const ref A: [] ?t) do return doGpuReduce("minloc", A);
+  inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
 
 }
