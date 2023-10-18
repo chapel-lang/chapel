@@ -19,31 +19,45 @@
 
 #ifdef HAS_GPU_LOCALE
 
+/* TODO uncomment these when the implementations are in
 #include <hip/hip_common.h>
-#include <rocprim/rocprim.hpp>
+#include <hipcub/hipcub.hpp>
+#include <rocm_version.h>
+*/
 
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "gpu/chpl-gpu-reduce-util.h"
+#include "gpu/amd/util.h"
 
-#if ROCM_VERSION_MAJOR >= 5
+// Engin: I can't get neither hipCUB nor rocprim to work. (hipCUB is a light
+// wrapper around rocprim anyways). I filed
+// https://github.com/ROCmSoftwarePlatform/hipCUB/issues/304, but I don't know
+// if/when I'll hear back something. For now, I am merging the code that's
+// supposed to work but doesn't instead of removing them from my branch.
+#if 1
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val,\
                                                     void* stream) {\
-  hipDeviceptr_t result; \
-  ROCM_CALL(hipMalloc(&result, sizeof(data_type))); \
+  chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
+}
+#elif ROCM_VERSION_MAJOR >= 5
+#define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val,\
+                                                    void* stream) {\
+  data_type* result; \
+  ROCM_CALL(hipMalloc(&result, sizeof(data_type)));\
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  rocmprim::reduce(temp, temp_bytes, data, (data_type*)result, n,\
-                   rocmprim::impl_kind<data_type>,\
-                   (hipStream_t)stream); \
-  ROCM_CALL(hipMalloc(((CUdeviceptr*)&temp), temp_bytes)); \
-  rocmprim::reduce(temp, temp_bytes, data, (data_type*)result, n,\
-                   rocmprim::impl_kind<data_type>,\
-                   (hipStream_t)stream); \
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (data_type*)result, n,\
+                                  0, true));\
+  ROCM_CALL(hipMalloc(((hipDeviceptr_t*)&temp), temp_bytes)); \
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (data_type*)result, n,\
+                                  0, true));\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
-                              (CUstream)stream)); \
+                              (hipStream_t)stream)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
@@ -52,23 +66,35 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     void* stream) {\
   chpl_internal_error("Reduction is not supported with AMD GPUs using ROCm version <5\n");\
 }
-#endif
+#endif // 1
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, plus, sum)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, minimum, min)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, maximum, max)
+GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
+GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Min, min)
+GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
+#if 1
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
                                                     void* stream) {\
-  chpl_internal_error(chpl_kind # " reduction is not supported with AMD GPUs\n");\
+  chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
 }
+#else
+#define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream) {\
+  // TODO I don't know any other specific issues with these versions. Should be
+  // able to whip up the implementation quickly once we figure out what's going
+  // wrong here.
+  chpl_internal_error("Unimplemented");
+}
+#endif // 1
 
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, unknown, minloc)
-GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, unknown, maxloc)
+GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
+GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
 

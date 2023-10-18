@@ -1,4 +1,5 @@
 use GPU;
+use ChplConfig;
 
 config const n = 100;
 
@@ -26,8 +27,10 @@ proc testType(type t) {
   test("sum", t);
   test("min", t);
   test("max", t);
-  test("minloc", t);
-  test("maxloc", t);
+  if CHPL_GPU != "amd" {
+    test("minloc", t);
+    test("maxloc", t);
+  }
   writeln();
 }
 

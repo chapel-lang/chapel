@@ -395,6 +395,9 @@ module GPU
   // ============================
 
   private inline proc doGpuReduce(param op: string, ref A: [] ?t) {
+    if CHPL_GPU == "amd" then
+      compilerError("gpu*Reduce functions are not supported on AMD GPUs");
+
     proc chplTypeToCTypeName(type t) param {
       select t {
         when int(8)   do return "int8_t";
@@ -426,9 +429,6 @@ module GPU
       return val;
     }
     else {
-      if CHPL_GPU == "amd" {
-        compilerError(op + " reduction is not supported on AMD GPUs");
-      }
       var idx: int(32);
       var val: t;
       extern externFunc proc reduce_fn(data, size, ref val, ref idx);
