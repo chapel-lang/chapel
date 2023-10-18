@@ -1,0 +1,2 @@
+bug: internal error when trying to use a ref to save an index in an array
+#23671
