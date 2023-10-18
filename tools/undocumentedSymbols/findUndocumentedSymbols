@@ -1,0 +1,3 @@
+#!/usr/bin/env bash
+
+$CHPL_HOME/tools/undocumentedSymbols/findUndocumentedSymbols.py $@
