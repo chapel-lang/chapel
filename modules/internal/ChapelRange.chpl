@@ -1157,7 +1157,7 @@ module ChapelRange {
   proc range.hasHighBound() param do
     return bounds == boundKind.both || bounds == boundKind.high;
 
-  /* Return the range's high bound. If the range does not have a high
+  /* Returns the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
      :proc:`range.hasHighBound`.
   */
@@ -1211,7 +1211,7 @@ module ChapelRange {
   }
 
 
-  /* Return the range's aligned high bound.  Note that this is a
+  /* Returns the range's aligned high bound.  Note that this is a
      synonym for :proc:`range.high`.
   */
   @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
@@ -1794,7 +1794,7 @@ module ChapelRange {
                    this.alignedLowAsInt, this.alignedHighAsInt, none, none);
 }
 
-/* Cast a range to another range type. If the old type is stridable and the
+/* Casts a range to another range type. If the old type is stridable and the
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 @chpldoc.nodoc
@@ -1850,7 +1850,7 @@ proc range.safeCast(type t: range(?)) {
   return tmp;
 }
 
-/* Cast a range to a new range type. Throw an IllegalArgumentError when
+/* Casts a range to a new range type. Throws an IllegalArgumentError when
    the original bounds and/or stride do not fit in the new idxType
    or when the original stride is not legal for the new `strides` parameter.
  */
@@ -2015,8 +2015,8 @@ private proc checkEnumIdx(type toType, from) {
     compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
 }
 
-/* Return 'nil' if 'this.stride' fits into 'toType.strides',
-   an IllegalArgumentError otherwise. */
+/* Returns 'nil' if 'this.stride' fits into 'toType.strides',
+   otherwise returns an IllegalArgumentError. */
 proc range.chpl_checkStrides(type toType): owned IllegalArgumentError? {
   if chpl_assignStrideIsUnsafe(toType.strides, this.strides) then
     compilerError("cannot cast range from strideKind.", this.strides:string,
@@ -2387,7 +2387,7 @@ private proc isBCPindex(type t) param do
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Return a range with ``offset`` elements from the exterior portion of this
+  /* Returns a range with ``offset`` elements from the exterior portion of this
      range. If ``offset`` is positive, take elements from the high end, and if
      ``offset`` is negative, take elements from the low end.
 
