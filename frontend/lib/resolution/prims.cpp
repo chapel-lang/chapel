@@ -1719,6 +1719,9 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_INNERMOST_CONTEXT:
     case PRIM_OUTER_CONTEXT:
     case PRIM_HOIST_TO_CONTEXT:
+    case PRIM_STATIC_FUNCTION_VAR:
+    case PRIM_STATIC_FUNCTION_TYPEOF:
+    case PRIM_STATIC_FUNCTION_VAR_WRAPPER:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
     case PRIM_CONST_ARG_HASH:

@@ -11490,7 +11490,31 @@ static void checkSpeciallyNamedMethods() {
   }
 }
 
+static void postResolveLiftStaticVars() {
+  forv_Vec(CallExpr, call, gCallExprs) {
+    if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
+      auto wrapperSym = toSymExpr(call->get(1))->symbol();
+      auto initDummySym = toSymExpr(call->get(2))->symbol();
 
+      // Remove the "dummy code" used for type resolution.
+      auto dummyBlock = toBlockStmt(initDummySym->defPoint->parentExpr);
+      INT_ASSERT(dummyBlock);
+      dummyBlock->remove();
+
+      // Move the definition point of the wrapper into the module scope.
+      // But first, keep a handle on the block to be able to move it later.
+      auto wrapperBlock = toBlockStmt(wrapperSym->defPoint->parentExpr);
+      INT_ASSERT(wrapperBlock);
+      call->getModule()->block->insertAtHead(wrapperSym->defPoint->remove());
+
+      // Now move the initialization code into the module init function.
+      // The last statement is the 'return void', which we keep.
+      call->getModule()->initFn->body->body.last()->insertBefore(wrapperBlock->remove());
+      wrapperBlock->flattenAndRemove();
+      call->remove();
+    }
+  }
+}
 
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
@@ -11598,6 +11622,8 @@ void resolve() {
   }
 
   resolved = true;
+
+  postResolveLiftStaticVars();
 }
 
 /************************************* | **************************************

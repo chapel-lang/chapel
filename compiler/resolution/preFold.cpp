@@ -1965,6 +1965,12 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_STATIC_FUNCTION_TYPEOF:
+    // the typeof was nested inside this, so just replace with the call result.
+    retval = call->get(1)->remove();
+    call->replace(retval);
+    break;
+
   case PRIM_TYPEOF: {
     SymExpr* se = toSymExpr(call->get(1));
     Type* type = se->getValType();

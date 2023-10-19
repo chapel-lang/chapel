@@ -195,6 +195,15 @@ returnInfoFirstDeref(CallExpr* call) {
 }
 
 static QualifiedType
+returnInfoFirstDerefNoRtti(CallExpr* call) {
+  auto qt = returnInfoFirstDeref(call);
+  if (qt.type()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
+    USR_FATAL(call, "static variables do not support types with runtime type information (such as arrays)");
+  }
+  return qt;
+}
+
+static QualifiedType
 returnInfoScalarPromotionType(CallExpr* call) {
   QualifiedType tmp = call->get(1)->qualType();
   Type* type = tmp.type()->getValType();
@@ -716,9 +725,14 @@ initPrimitive() {
   // use for any primitives not in this list
   primitives[PRIM_UNKNOWN] = NULL;
 
+
   prim_def(PRIM_INNERMOST_CONTEXT, "innermost context", returnInfoFirstAsValue);
   prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
+
+  prim_def(PRIM_STATIC_FUNCTION_VAR, "static function var", returnInfoFirst);
+  prim_def(PRIM_STATIC_FUNCTION_TYPEOF, "static function typeof", returnInfoFirstDerefNoRtti);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper", returnInfoVoid);
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);

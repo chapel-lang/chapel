@@ -3216,7 +3216,6 @@ static void processGetVisibleSymbols() {
   }
 }
 
-
 void scopeResolve() {
   addToSymbolTable();
 

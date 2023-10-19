@@ -51,6 +51,7 @@ AggregateType* dtLocale = NULL;
 AggregateType* dtRange  = NULL;
 AggregateType* dtOwned  = NULL;
 AggregateType* dtShared = NULL;
+AggregateType* dtStatic = NULL;
 
 AggregateType::AggregateType(AggregateTag initTag) :
   Type(E_AggregateType, NULL) {

@@ -26,6 +26,25 @@ module SharedObject {
 
   private use WeakPointer;
 
+  class _staticWrapperContainer {
+    var value;
+  }
+
+  record _staticWrapper {
+    type valueType;
+    var container: owned _staticWrapperContainer(valueType)? = nil;
+
+    inline proc ref setValue(in v: valueType) {
+      this.container = new _staticWrapperContainer(v);
+    }
+
+    inline proc ref getValue() ref : valueType {
+      return this.container!.value;
+    }
+
+    inline proc needsInitialization() do return this.container == nil;
+  }
+
   // TODO unify with RefCountBase. Even though that one is for
   // intrusive ref-counting and this one isn't, there's no fundamental
   // reason it couldn't be one class.
