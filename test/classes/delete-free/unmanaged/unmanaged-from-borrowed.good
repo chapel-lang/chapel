@@ -1,0 +1,8 @@
+({x = 0}, borrowed C)
+({x = 0}, unmanaged C)
+({x = 10}, borrowed C)
+({x = 10}, unmanaged C)
+({x = 0}, borrowed C?)
+({x = 0}, unmanaged C?)
+({x = 10}, borrowed C?)
+({x = 10}, unmanaged C?)

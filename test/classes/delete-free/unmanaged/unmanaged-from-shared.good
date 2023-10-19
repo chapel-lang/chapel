@@ -1,0 +1,8 @@
+({x = 0}, shared C)
+({x = 0}, unmanaged C)
+({x = 10}, shared C)
+({x = 10}, unmanaged C)
+({x = 0}, shared C?)
+({x = 0}, unmanaged C?)
+({x = 10}, shared C?)
+({x = 10}, unmanaged C?)
