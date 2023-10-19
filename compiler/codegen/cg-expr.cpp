@@ -6268,6 +6268,22 @@ DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
 }
 
+DEFINE_PRIM(BREAKPOINT) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    info->cStatements.push_back("#if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)\n");
+    info->cStatements.push_back("__builtin_debugtrap();\n");
+    info->cStatements.push_back("#else\n");
+    info->cStatements.push_back("raise(SIGTRAP);\n");
+    info->cStatements.push_back("#endif\n");
+  }
+  else {
+    #ifdef HAVE_LLVM
+    ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
+    #endif
+  }
+}
+
 DEFINE_BASIC_PRIM(ASCII)
 DEFINE_BASIC_PRIM(SLEEP)
 DEFINE_BASIC_PRIM(REAL_TO_INT)
