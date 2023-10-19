@@ -539,4 +539,17 @@ module OwnedObject {
     }
     return _to_nonnil(x.chpl_p);
   }
+
+  /*
+    Returns an ``unmanaged`` reference to the passed ``borrowed`` object.
+  */
+  @unstable("borrowed.release is currently unstable while we finalize the interface")
+  inline proc type (borrowed).release(x: borrowed class): unmanaged class {
+    return _to_unmanaged(x);
+  }
+  @chpldoc.nodoc
+  @unstable("borrowed.release is currently unstable while we finalize the interface")
+  inline proc type (borrowed).release(x: borrowed class?): unmanaged class? {
+    return _to_unmanaged(x);
+  }
 }
