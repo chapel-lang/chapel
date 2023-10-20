@@ -28,7 +28,8 @@ module Debugger {
 
     .. warning::
        If code uses :proc:`breakpoint` and is compiled with `-g`,
-       the program will not be runnable outside of a debugger*/
+       the program will not be runnable outside of a debugger
+  */
   inline proc breakpoint {
     __primitive("breakpoint");
   }

@@ -48,6 +48,15 @@ Note that it is the user's responsibility to make sure things are set up
 so the terminal emulator run in the target environment can open its
 display window in the launch environment.
 
+The `Debugger.breakpoint` statement
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+The :mod:`Debugger` module provides a parenless function called
+:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug symbols, i.e. ``-g``, the attached debugger will automatically stop at calls to this function as a breakpoint. Code that contains :proc:`~Debugger.breakpoint` that is compiled without ``-g`` will work as normal with no side effects.
+
+.. note::
+   Executables will not run as expected if :proc:`~Debugger.breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
+
 ------------------------
 Best Known Configuration
 ------------------------
