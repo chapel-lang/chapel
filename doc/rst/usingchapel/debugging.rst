@@ -51,11 +51,16 @@ display window in the launch environment.
 The `Debugger.breakpoint` statement
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-The :mod:`Debugger` module provides a parenless function called
-:proc:`~Debugger.breakpoint`. When the code is compiled and run with debug symbols, i.e. ``-g``, the attached debugger will automatically stop at calls to this function as a breakpoint. Code that contains :proc:`~Debugger.breakpoint` that is compiled without ``-g`` will work as normal with no side effects.
+The :any:`Debugger` module provides a parenless function called `breakpoint`.
+When the code is compiled and run with debug symbols, i.e. ``-g``, the attached
+debugger will automatically stop at calls to this function as a breakpoint.
+Code that contains `breakpoint` that is compiled without ``-g`` will work as
+normal with no side effects. Saving the generated code to as temporary
+directory with ``--savec DIRECTORY`` will also allow the debugger to read and
+display Chapel source code. This works well with either the LLVM or C backends.
 
 .. note::
-   Executables will not run as expected if :proc:`~Debugger.breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
+   Executables will not run as expected if `breakpoint` is used in code compiled with ``-g`` and not run attached to a debugger.
 
 ------------------------
 Best Known Configuration
