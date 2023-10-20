@@ -171,9 +171,13 @@ void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
       fDriverPhaseTwo &&
       "should only be restoring library and include info in driver phase two");
-  assert(libDirs.empty() && libFiles.empty() && incDirs.empty() &&
-         "tried to restore library and include info from disk, but it was "
-         "already present in memory");
+
+  // Phase two has access to the command line but not any info added from
+  // 'require' statements, so these contents are incomplete. Just clear any
+  // partial info and re-load it all.
+  libDirs.clear();
+  libFiles.clear();
+  incDirs.clear();
 
   restoreDriverTmp(libDirsFilename, &addLibPath);
   restoreDriverTmp(libFilesFilename, &addLibFile);
