@@ -88,9 +88,9 @@ Benchmark examples
 ~~~~~~~~~~~~~~~~~~
 * `Jacobi <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/jacobi/jacobi.chpl>`_ -- Jacobi example (shown above)
 * `Stream <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/streamPrototype/stream.chpl>`_ -- GPU enabled version of Stream benchmark
-* `SHOC Triad (Direct) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triad.chpl>`_ -- a transliterated version of the SHOC Triad benchmark 
+* `SHOC Triad (Direct) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triad.chpl>`_ -- a transliterated version of the SHOC Triad benchmark
 * `SHOC Triad (Chapeltastic) <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/triadchpl.chpl>`_ -- a version of the SHOC benchmark simplified to use Chapel language features (such as promotion)
-* `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/shocsort.chpl>`_ -- SHOC radix sort benchmark
+* `SHOC Sort <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/studies/shoc/shoc-sort.chpl>`_ -- SHOC radix sort benchmark
 * `asyncTaskComm <https://github.com/chapel-lang/chapel/blob/main/test/gpu/native/asynchrony/asyncTaskComm.chpl>`_ -- a synthetic benchmark to test overlap performance using multiple Chaple tasks.
 
 Test examples
@@ -543,4 +543,3 @@ Further Information
   slide decks from our `release notes
   <https://chapel-lang.org/releaseNotes.html>`_; however, be aware that
   information presented in release notes for prior releases may be out-of-date.
-
