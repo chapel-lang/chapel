@@ -166,6 +166,8 @@ public:
   // It can return NULL if it's unable to make sense of the AST pattern.
   Expr*              getInitialization()                       const;
 
+  const char* parSafeField = nullptr;
+
   std::string deprecationMsg;
   const char* getDeprecationMsg() const;
   void maybeGenerateDeprecationWarning(Expr* context);

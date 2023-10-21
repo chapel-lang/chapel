@@ -489,6 +489,23 @@ struct Converter {
         sym->addFlag(flag);
       }
     }
+
+    if (auto parSafeAttr = attr->getAttributeNamed(USTR("parSafe"))) {
+      const char* parSafeField = nullptr;
+      for (int i = 0; i < parSafeAttr->numActuals(); i++) {
+        auto actualName = parSafeAttr->actualName(i);
+        if (actualName.isEmpty()) continue;
+
+        if (actualName == USTR("field")) {
+          if (auto str = parSafeAttr->actual(i)->toStringLiteral()) {
+            parSafeField = astr(str->value());
+            break;
+          }
+        }
+      }
+      sym->addFlag(FLAG_PARALLEL_SAFETY);
+      sym->parSafeField = parSafeField;
+    }
   }
 
   void attachSymbolVisibility(const uast::Decl* node, Symbol* sym) {

@@ -454,6 +454,11 @@ FnSymbol* build_accessor(AggregateType* ct, Symbol* field,
 
   fn->addFlag(FLAG_FIELD_ACCESSOR);
 
+  if (field->hasFlag(FLAG_PARALLEL_SAFETY)) {
+    fn->addFlag(FLAG_PARALLEL_SAFETY);
+    fn->parSafeField = field->parSafeField;
+  }
+
   if (field->hasFlag(FLAG_DEPRECATED)) {
     fn->addFlag(FLAG_DEPRECATED);
     fn->deprecationMsg = field->deprecationMsg;

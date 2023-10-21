@@ -494,6 +494,8 @@ PRAGMA(ORDER_INDEPENDENT_YIELDING_LOOPS, ypr, "order independent yielding loops"
 
 PRAGMA(OWNED, ypr, "owned", "owned class instance for lifetime checking")
 
+PRAGMA(PARALLEL_SAFETY, npr, "parallel safety", "set if this symbol should emit warnings in parallel-unsafe contexts")
+
 PRAGMA(PARAM, npr, "param", "parameter (compile-time constant)")
 
 PRAGMA(PARENT_FIELD, npr, "parent field", "field from parent type")

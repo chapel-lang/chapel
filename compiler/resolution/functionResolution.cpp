@@ -11358,6 +11358,36 @@ static void checkSpeciallyNamedMethods() {
 
 
 
+static void issueWarningsForNonParSafeTypes() {
+  forv_Vec(FnSymbol, fn, gFnSymbols) {
+    if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+      std::vector<SymExpr*> symExprs;
+      collectSymExprs(fn, symExprs);
+      std::unordered_map<Symbol*, std::pair<SymExpr*, Type*>> warnSyms;
+      for (auto se : symExprs) {
+        if (auto t = se->symbol()->typeInfo()) {
+          if (!t->symbol->hasFlag(FLAG_PARALLEL_SAFETY)) continue;
+
+          if (t->symbol->parSafeField) {
+            auto field = t->getField(t->symbol->parSafeField, false);
+            if (field && field->isParameter() && t->substitutions.get(field) == gTrue) {
+              // All good, parSafe is param true, so we're fine to skip warning.
+              continue;
+            }
+          }
+
+          warnSyms[se->symbol()] = { se, t };
+        }
+      }
+
+      for (auto seSym : warnSyms) {
+        USR_WARN(seSym.first, "variable '%s' uses a value of non-parallel-safe type '%s' in a parallel context",
+                 seSym.first->name, seSym.second.second->name());
+      }
+    }
+  }
+}
+
 void resolve() {
   parseExplainFlag(fExplainCall, &explainCallLine, &explainCallModule);
 
@@ -11432,6 +11462,8 @@ void resolve() {
     printUnusedFunctions();
 
   checkSpeciallyNamedMethods();
+
+  issueWarningsForNonParSafeTypes();
 
   saveGenericSubstitutions();
 

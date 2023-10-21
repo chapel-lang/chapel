@@ -2423,6 +2423,10 @@ BlockStmt* convertTypesToExtern(BlockStmt* blk, const char* cname) {
             ts->addFlag(FLAG_DEPRECATED);
             ts->deprecationMsg = theVs->deprecationMsg;
           }
+          if (theVs->hasFlag(FLAG_PARALLEL_SAFETY)) {
+            ts->addFlag(FLAG_PARALLEL_SAFETY);
+            ts->parSafeField = theVs->parSafeField;
+          }
         }
         DefExpr* newde = new DefExpr(ts);
 
