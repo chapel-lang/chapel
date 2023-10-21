@@ -11359,8 +11359,13 @@ static void checkSpeciallyNamedMethods() {
 
 
 static void issueWarningsForNonParSafeTypes() {
+  if (!fWarnParUnsafe) return;
+
   forv_Vec(FnSymbol, fn, gFnSymbols) {
     if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
+      if (auto mod = fn->getModule()) {
+        if (mod->modTag != MOD_USER) continue;
+      }
       std::vector<SymExpr*> symExprs;
       collectSymExprs(fn, symExprs);
       std::set<int> seen;

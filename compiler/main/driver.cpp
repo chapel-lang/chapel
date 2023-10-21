@@ -222,6 +222,7 @@ bool fWarnIntUint = false;
 bool fWarnUnstable = false;
 bool fWarnUnstableStandard = false;
 bool fWarnUnstableInternal = false;
+bool fWarnParUnsafe = false;
 
 // Enable all extra special warnings
 static bool fNoWarnSpecial = true;
@@ -1208,6 +1209,7 @@ static ArgumentDescription arg_desc[] = {
  {"", ' ', NULL, "Warning and Language Control Options", NULL, NULL, NULL, NULL},
  {"permit-unhandled-module-errors", ' ', NULL, "Permit unhandled errors in explicit modules; such errors halt at runtime", "N", &fPermitUnhandledModuleErrors, "CHPL_PERMIT_UNHANDLED_MODULE_ERRORS", NULL},
  {"warn-unstable", ' ', NULL, "Enable [disable] warnings for uses of language features that are in flux", "N", &fWarnUnstable, "CHPL_WARN_UNSTABLE", NULL},
+ {"warn-par-unsafe", ' ', NULL, "Enable [disable] warnings for uses of variables that aren't parallel safe inside parallel constructs", "N", &fWarnParUnsafe, NULL, NULL},
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_DISABLE_WARNINGS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
  {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
