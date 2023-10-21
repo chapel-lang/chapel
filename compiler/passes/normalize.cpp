@@ -344,7 +344,7 @@ static void preNormalizeHandleStaticVars() {
       // Create the container for the static variable. This is defined in
       // module code.
       auto wrapperTemp = newTemp("staticWrapper");
-      auto wrapperDef = new DefExpr(wrapperTemp, nullptr, new CallExpr(new SymExpr(dtStatic->symbol), new CallExpr(PRIM_STATIC_FUNCTION_TYPEOF, new CallExpr(PRIM_TYPEOF, initVarTemp))));
+      auto wrapperDef = new DefExpr(wrapperTemp, nullptr, new CallExpr(new SymExpr(dtStatic->symbol), new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE, new CallExpr(PRIM_TYPEOF, initVarTemp))));
       auto wrapperBlock = new BlockStmt(BLOCK_SCOPELESS);
       wrapperBlock->insertAtTail(wrapperDef);
       wrapperBlock->insertAtTail(new CallExpr(PRIM_STATIC_FUNCTION_VAR_WRAPPER, wrapperTemp, initVarTemp));

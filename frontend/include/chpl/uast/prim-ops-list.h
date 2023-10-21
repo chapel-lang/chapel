@@ -43,10 +43,6 @@ PRIMITIVE_R(INNERMOST_CONTEXT, "innermost context")
 PRIMITIVE_R(OUTER_CONTEXT, "outer context")
 PRIMITIVE_R(HOIST_TO_CONTEXT, "hoist to context")
 
-PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
-PRIMITIVE_R(STATIC_FUNCTION_TYPEOF, "static function typeof")
-PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
-
 PRIMITIVE_R(ACTUALS_LIST, "actuals list")
 PRIMITIVE_G(NOOP, "noop")
 PRIMITIVE_G(MOVE, "move")
@@ -137,6 +133,10 @@ PRIMITIVE_R(QUERY_PARAM_FIELD, "query param field")
 PRIMITIVE_R(QUERY_TYPE_FIELD, "query type field")
 
 PRIMITIVE_R(STATIC_DOMAIN_TYPE, "static domain type")
+
+PRIMITIVE_R(STATIC_FUNCTION_VAR, "static function var")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type")
+PRIMITIVE_R(STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper")
 
 PRIMITIVE_G(ADDR_OF, "addr of")
 PRIMITIVE_G(DEREF, "deref")

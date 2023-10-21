@@ -1965,7 +1965,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
-  case PRIM_STATIC_FUNCTION_TYPEOF:
+  case PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE:
     // the typeof was nested inside this, so just replace with the call result.
     retval = call->get(1)->remove();
     call->replace(retval);

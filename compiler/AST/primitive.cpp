@@ -725,14 +725,9 @@ initPrimitive() {
   // use for any primitives not in this list
   primitives[PRIM_UNKNOWN] = NULL;
 
-
   prim_def(PRIM_INNERMOST_CONTEXT, "innermost context", returnInfoFirstAsValue);
   prim_def(PRIM_OUTER_CONTEXT, "outer context", returnInfoFirst);
   prim_def(PRIM_HOIST_TO_CONTEXT, "hoist to context", returnInfoVoid);
-
-  prim_def(PRIM_STATIC_FUNCTION_VAR, "static function var", returnInfoFirst);
-  prim_def(PRIM_STATIC_FUNCTION_TYPEOF, "static function typeof", returnInfoFirstDerefNoRtti);
-  prim_def(PRIM_STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper", returnInfoVoid);
 
   prim_def(PRIM_ACTUALS_LIST, "actuals list", returnInfoVoid);
   prim_def(PRIM_NOOP, "noop", returnInfoVoid);
@@ -989,6 +984,11 @@ initPrimitive() {
   // For an array, returns the compile-time type only.
   // There might be uninitialized memory if the run-time type is used.
   prim_def(PRIM_STATIC_TYPEOF, "static typeof", returnInfoFirstDeref);
+
+  prim_def(PRIM_STATIC_FUNCTION_VAR, "static function var", returnInfoFirst);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE, "static function validate type", returnInfoFirstDerefNoRtti);
+  prim_def(PRIM_STATIC_FUNCTION_VAR_WRAPPER, "static function var wrapper", returnInfoVoid);
+
 
   // As with PRIM_STATIC_TYPEOF, returns a compile-time component of
   // a type only. Returns the scalar promotion type (i.e. the type of the
