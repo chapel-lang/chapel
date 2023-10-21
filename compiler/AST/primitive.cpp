@@ -198,7 +198,8 @@ static QualifiedType
 returnInfoFirstDerefNoRtti(CallExpr* call) {
   auto qt = returnInfoFirstDeref(call);
   if (qt.type()->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
-    USR_FATAL(call, "static variables do not support types with runtime type information (such as arrays)");
+    USR_FATAL(call, "static variables do not support types with"
+                    "runtime type information (such as arrays)");
   }
   return qt;
 }
