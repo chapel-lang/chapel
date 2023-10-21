@@ -141,7 +141,7 @@ def check_misleading_indentation(node):
         yield from check_misleading_indentation(child)
 
         if prev is not None:
-            if rc.node_indent(child) == rc.node_indent(prev):
+            if child.location().start()[1] == prev.location().start()[1]:
                 yield child
 
         if isinstance(child, chapel.core.Loop) and child.block_style() == "implicit":
@@ -161,7 +161,7 @@ Rules = [
 ]
 
 def main():
-    global args, rc
+    global args
 
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filename')
@@ -170,7 +170,6 @@ def main():
 
     ctx = chapel.core.Context()
     ast = ctx.parse(args.filename)
-    rc = chapel.replace.ReplacementContext(args.filename)
 
     for rule in Rules:
         check_basic_rule(ast, rule)
