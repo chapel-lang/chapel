@@ -142,6 +142,7 @@ module List {
 
     Unlike an array, the set of indices of a list is always `0..<size`.
   */
+  @parSafe(field="parSafe")
   record list : serializable {
 
     /* The type of the elements contained in this list. */

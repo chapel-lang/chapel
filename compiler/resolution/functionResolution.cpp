@@ -11363,9 +11363,10 @@ static void issueWarningsForNonParSafeTypes() {
     if (fn->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
       std::vector<SymExpr*> symExprs;
       collectSymExprs(fn, symExprs);
-      std::unordered_map<Symbol*, std::pair<SymExpr*, Type*>> warnSyms;
+      std::set<int> seen;
       for (auto se : symExprs) {
         if (auto t = se->symbol()->typeInfo()) {
+          t = t->getValType();
           if (!t->symbol->hasFlag(FLAG_PARALLEL_SAFETY)) continue;
 
           if (t->symbol->parSafeField) {
@@ -11376,13 +11377,14 @@ static void issueWarningsForNonParSafeTypes() {
             }
           }
 
-          warnSyms[se->symbol()] = { se, t };
+          auto result = seen.insert(se->symbol()->id);
+          auto sym = se->symbol();
+          if (result.second) {
+            USR_WARN(sym, "variable '%s' uses a value of non-parallel-safe type "
+                     "'%s' in a parallel context", sym->name,
+                     t->symbol->name);
+          }
         }
-      }
-
-      for (auto seSym : warnSyms) {
-        USR_WARN(seSym.first, "variable '%s' uses a value of non-parallel-safe type '%s' in a parallel context",
-                 seSym.first->name, seSym.second.second->name());
       }
     }
   }
