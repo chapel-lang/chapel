@@ -428,6 +428,22 @@ record blockDist : writeSerializable {
               dataParTasksPerLocale=getDataParTasksPerLocale());
   }
 
+  proc init(param rank,
+            type idxType = int,
+            type sparseLayoutType = unmanaged DefaultDist,
+            targetLocales: [] locale = Locales) {
+    var bbox: domain(rank, idxType);
+    this.init(bbox, targetLocales=targetLocales);
+  }
+
+  proc init(targetLocales: [] locale,
+            param rank = targetLocales.rank,
+            type idxType = int,
+            type sparseLayoutType = unmanaged DefaultDist) {
+    var bbox: domain(rank, idxType);
+    this.init(bbox, targetLocales=targetLocales);
+  }
+
     proc init(_pid : int, _instance, _unowned : bool) {
       this.rank = _instance.rank;
       this.idxType = _instance.idxType;
@@ -677,8 +693,10 @@ proc BlockImpl.init(boundingBox: domain,
   if rank != 2 && isCSType(sparseLayoutType) then
     compilerError("CS layout is only supported for 2 dimensional domains");
 
+/*
   if boundingBox.sizeAs(uint) == 0 then
     halt("blockDist() requires a non-empty boundingBox");
+    */
 
   this.boundingBox = boundsBox(boundingBox);
 
@@ -822,6 +840,12 @@ override proc BlockImpl.dsiNewRectangularDom(param rank: int, type idxType,
     compilerError("domain rank does not match distribution's");
 
   const whole = createWholeDomainForInds(rank, idxType, strides, inds);
+
+  // if we were not given a bounding box when this distribution was set
+  // up, use the indices as the bounding box
+  if boundingBox.sizeAs(uint) == 0 {
+    this.redistribute(whole);
+  }
 
   const dummyLBD = new unmanaged LocBlockDom(rank, idxType, strides);
   var locDomsTemp: [this.targetLocDom]
