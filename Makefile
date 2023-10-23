@@ -116,7 +116,12 @@ third-party-c2chapel-venv: FORCE
 	cd third-party && $(MAKE) c2chapel-venv; \
 	fi
 
+third-party-chapel-py-venv: frontend FORCE
+	cd third-party && $(MAKE) chapel-py-venv; \
+
 test-venv: third-party-test-venv
+
+chapel-py-venv: third-party-chapel-py-venv
 
 chpldoc: third-party-chpldoc-venv
 	@cd third-party && $(MAKE) llvm
