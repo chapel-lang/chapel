@@ -11,7 +11,13 @@ with open(outfile, 'w') as oFile:
   i = 0
   while i < len(myLines):
     line = myLines[i]
-    if line.find("## Inserting") == 0:
+    if line.find("internal error") == 0:
+      # No sorting of internal error message
+      for l in myLines:
+        oFile.write(l)
+      i = len(myLines)
+
+    elif line.find("## Inserting") == 0:
       oFile.write(line)
       i = i + 1
     elif line == "\n":
