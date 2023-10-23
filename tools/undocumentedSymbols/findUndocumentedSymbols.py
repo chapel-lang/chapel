@@ -19,7 +19,43 @@
 #
 
 """
+This script is used to parse and identify all undocumented symbols in Chapel
+source code. It can be passed any number of Chapel source files or directories,
+which it will recurse looking for Chapel source files by default.
 
+The script works on the following symbols - Modules - Functions
+  - In this sense, a function is anything declared with `proc`, `iter`, or
+    `operator`
+  - This includes functions defined inside of Modules, AggregateDecls, and
+    Interfaces
+  - This will not match nested Functions
+- AggregateDecls - AggregateDecls are Records, Classes, or Unions - This will
+  match nested definitions in Modules and AggregateDecls, e.g. a Record inside
+  a Record
+- Decls - Decls are top level variables defined in Modules or AggregateDecls
+- MultiDecls - Same as Decls, but multiple symbols share the same keyword, e.g.
+  `var a, b = 10;`
+- Enums - Will also match against EnumElements - This will match nested
+  definitions in Modules and AggregateDecls
+- Interfaces - This will match nested definitions in Modules and AggregateDecls
+
+The script pulls out all of these symbols from a parsed source file, and then
+determines if the symbol is documented. A symbol is considered documented if
+the previous sibling node in the AST is a docstring Comment.
+
+Symbols can be marked 'nodoc', meaning it is ok for the docstring to be
+missing. This script considers a symbol to be marked 'nodoc' based on the
+following criteria: - If it is explicitly marked with an attribute
+`@chpldoc.nodoc` - If its names is prefixed with `chpl_`
+  - This also checks the `pragma "chpldoc ignore chpl prefix"`
+- If the symbol is marked private
+- If the symbol has a parent that is marked 'nodoc'
+
+This script also provides two optional flags, `--ignore-[unstable|deprecated]`.
+These work based on explicit `@unstable` or `@deprecated` attributes, if the
+symbol was marked in a different way this script will still warn. If a symbols
+parent was marked unstable or deprecated then the symbol is also considered to
+be unstable or deprecated.
 """
 
 from collections import defaultdict
@@ -255,6 +291,7 @@ class FindUndocumentedSymbols:
                     continue
                 yield s
 
+
 def get_files(files: List[str], check_suffix=False) -> Generator:
     """
     Yield all chapel files, following directories recursively
@@ -269,7 +306,7 @@ def get_files(files: List[str], check_suffix=False) -> Generator:
                 yield file
 
         elif os.path.isdir(file):
-           for root, subdirs, files in os.walk(file):
+            for root, subdirs, files in os.walk(file):
                 # yield files in directory files, always check the suffix
                 yield from get_files([os.path.join(root, file) for file in files], True)
                 # recurse into sub dirs, always checl the suffix
