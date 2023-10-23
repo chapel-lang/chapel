@@ -308,7 +308,6 @@ bool SafeExprAnalysis::isSafePrimitive(CallExpr* ce) {
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_OBJECT_TO_INT:
     case PRIM_REAL_TO_INT:
-    case PRIM_BREAKPOINT:
       return true;
     default:
       INT_FATAL("Unhandled primitive: '%s'", prim->name);
