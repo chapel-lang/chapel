@@ -45,7 +45,7 @@ def ignores_rule(node, rulename):
     return False
 
 def report_violation(node, name):
-    if name in args.ignored_rules:
+    if name in SilencedRules:
         return
 
     location = node.location()
@@ -162,25 +162,29 @@ Rules = [
     ("ChplPrefixReserved", chapel.core.NamedDecl, check_reserved_prefix),
 ]
 
+SilencedRules = [ "CamelCaseVariables", "ConsecutiveDecls" ]
+
 def main():
-    global args
+    global ctx
 
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
-    parser.add_argument('filename')
+    parser.add_argument('filenames', nargs='*')
     parser.add_argument('--ignore-rule', action='append', dest='ignored_rules', default=[])
     args = parser.parse_args()
 
-    ctx = chapel.core.Context()
-    ast = ctx.parse(args.filename)
+    SilencedRules.extend(args.ignored_rules)
 
-    for rule in Rules:
-        check_basic_rule(ast, rule)
+    for (filename, ctx) in chapel.files_with_contexts(args.filenames):
+        ast = ctx.parse(filename)
 
-    for group in consecutive_decls(ast):
-        report_violation(group[1], "ConsecutiveDecls")
+        for rule in Rules:
+            check_basic_rule(ast, rule)
 
-    for node in check_misleading_indentation(ast):
-        report_violation(node, "MisleadingIndentation")
+        for group in consecutive_decls(ast):
+            report_violation(group[1], "ConsecutiveDecls")
+
+        for node in check_misleading_indentation(ast):
+            report_violation(node, "MisleadingIndentation")
 
 if __name__ == "__main__":
     main()

@@ -21,7 +21,6 @@
 import argparse
 import chapel
 import chapel.core
-from collections import defaultdict
 import os
 import sys
 
@@ -213,27 +212,8 @@ def run(finder, name='replace', description='A tool to search-and-replace Chapel
     parser.add_argument('--in-place', dest='inplace', action='store_true', default=False)
     args = parser.parse_args()
 
-    # Some files might have the same name, which Dyno really doesn't like.
-    # Strateify files into "buckets"; within each bucket, all filenames are
-    # unique. Between each bucket, re-create the Dyno context to avoid giving
-    # it complicting files.
-
-    basenames = defaultdict(lambda: 0)
-    buckets = defaultdict(lambda: [])
-    for filename in args.filenames:
-        filename = os.path.realpath(os.path.expandvars(filename))
-
-        basename = os.path.basename(filename)
-        bucket = basenames[basename]
-        basenames[basename] += 1
-        buckets[bucket].append(filename)
-
-    for bucket in buckets:
-        ctx = chapel.core.Context()
-        to_replace = buckets[bucket]
-
-        for filename in to_replace:
-            _do_replace(finder, ctx, filename, args.suffix, args.inplace)
+    for (filename, ctx) in chapel.files_with_contexts(args.filenames):
+        _do_replace(finder, ctx, filename, args.suffix, args.inplace)
 
 def fuse(*args):
     """
