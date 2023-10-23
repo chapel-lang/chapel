@@ -62,6 +62,14 @@ class MultiDecl final : public Decl {
     CHPL_ASSERT(isAcceptableMultiDecl());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(MultiDecl);
+
+ private:
   MultiDecl(Deserializer& des)
     : Decl(asttags::MultiDecl, des) { }
 
@@ -128,13 +136,6 @@ class MultiDecl final : public Decl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<Decl>(begin, end);
   }
-
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(MultiDecl);
-
 };
 
 

@@ -61,6 +61,15 @@ class Module final : public NamedDecl {
 
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+    ser.write(kind_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Module);
+
+ private:
   Module(Deserializer& des)
     : NamedDecl(asttags::Module, des) {
     kind_ = des.read<Kind>();
@@ -130,13 +139,6 @@ class Module final : public NamedDecl {
     Return a string describing a Module::Kind
    */
   static const char* moduleKindToString(Kind kind);
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-    ser.write(kind_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Module);
 };
 
 

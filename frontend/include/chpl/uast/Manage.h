@@ -67,12 +67,21 @@ class Manage final : public SimpleBlockLike {
     #endif
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.writeVInt(managerExprChildNum_);
+    ser.writeVInt(numManagerExprs_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Manage);
+
+ private:
   Manage(Deserializer& des)
     : SimpleBlockLike(asttags::Manage, des) {
-      managerExprChildNum_ = des.read<int>();
-      numManagerExprs_ = des.read<int>();
-    }
-
+    managerExprChildNum_ = des.readVInt();
+    numManagerExprs_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Manage* lhs = this;
@@ -126,15 +135,6 @@ class Manage final : public SimpleBlockLike {
     auto ret = child(managerExprChildNum_ + i);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(managerExprChildNum_);
-    ser.write(numManagerExprs_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Manage);
-
 };
 
 
