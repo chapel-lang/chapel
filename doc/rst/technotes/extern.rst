@@ -1011,7 +1011,7 @@ c_ptr. See the following example:
 
 .. code-block:: chapel
 
-  var cArray = c_calloc(c_int, 10);
+  var cArray = allocate(c_int, 10, clear=true);
   for i in 0..#10 {
    cArray[i] = i:c_int;
   }
@@ -1020,7 +1020,7 @@ c_ptr. See the following example:
   for i in 0..#10 {
    writeln(cArray[i]);
   }
-  c_free(cArray);
+  deallocate(cArray);
 
 Variables of type ``c_ptr``/``c_ptrConst`` can be compared against or set to
 ``nil``.

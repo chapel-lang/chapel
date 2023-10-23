@@ -1317,7 +1317,7 @@ export proc chpl_qio_setup_plugin_channel(file:c_ptr(void), ref plugin_ch:c_ptr(
   var f=(file:unmanaged QioPluginFile?)!;
   var pluginChannel:unmanaged QioPluginChannel? = nil;
   var ret = f.setupChannel(pluginChannel, start, end, qio_ch);
-  plugin_ch = c_ptrTo_helper(pluginChannel);
+  plugin_ch = c_ptrTo(pluginChannel);
   return ret;
 }
 
@@ -2323,7 +2323,7 @@ proc openplugin(pluginFile: QioPluginFile, mode:ioMode,
     flags |= QIO_FDFLAG_SEEKABLE;
 
   var err = qio_file_init_plugin(ret._file_internal,
-      c_ptrToConst_helper(pluginFile), flags, style);
+      c_ptrToConst(pluginFile), flags, style);
   if err {
     var path:string = "unknown";
     if pluginFile {
@@ -2687,7 +2687,7 @@ record defaultSerializer {
       writer._writeOne(writer._kind, val, writer.getLocaleOfIoRequest());
     } else if t == _nilType {
       writer.writeLiteral("nil");
-    } else if isClassType(t) || chpl_isAnyCPtr(t) || chpl_isDdata(t) {
+    } else if isClassType(t) || isAnyCPtr(t) || chpl_isDdata(t) {
       _serializeClassOrPtr(writer, val);
     } else if isUnionType(t) {
       val.writeThis(writer);
@@ -6847,7 +6847,7 @@ private proc _write_one_internal(_channel_internal:qio_channel_ptr_t,
 
   var err: errorCode = 0;
 
-  if isClassType(t) || chpl_isDdata(t) || chpl_isAnyCPtr(t) {
+  if isClassType(t) || chpl_isDdata(t) || isAnyCPtr(t) {
     if x == nil {
       // future - write class IDs, have serialization format, handle binary
       var st = writer.styleElement(QIO_STYLE_ELEMENT_AGGREGATE);
