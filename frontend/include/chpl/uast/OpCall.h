@@ -45,6 +45,16 @@ class OpCall final : public Call {
            /* hasCalledExpression */ false),
       op_(op) {
   }
+
+ public:
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+    ser.write(op_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(OpCall);
+
+ private:
   OpCall(Deserializer& des)
     : Call(asttags::OpCall, des) {
     op_ = des.read<UniqueString>();
@@ -87,13 +97,6 @@ class OpCall final : public Call {
   bool isBinaryOp() const { return children_.size() == 2; }
   /** Returns true if this is a unary operator */
   bool isUnaryOp() const { return children_.size() == 1; }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-    ser.write(op_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(OpCall);
 };
 
 // Returns true if the given string is an operator name
