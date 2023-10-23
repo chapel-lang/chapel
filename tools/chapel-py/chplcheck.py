@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #
 # Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
