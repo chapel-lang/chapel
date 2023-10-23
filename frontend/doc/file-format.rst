@@ -162,9 +162,9 @@ This section consists of:
 uAST Section
 ------------
 
-The uAST section consists of serialized uAST entries. The top-level
-entries are concatenated. Note that the symbol table can point to an
-individual entry.
+The uAST section consists of serialized uAST entries in the order they
+appear within the file. The top-level entries are concatenated. Note that
+the symbol table can point to an individual entry.
 
 IDs are not stored here. They are recomputed when the uAST is read.
 
@@ -264,24 +264,42 @@ It consists of:
 
    * a number of location entries, each consisting of:
 
-     * relative offset within the uAST section, stored as a variable-byte
-       encoded difference from the previous entry's uAST offset, or a
-       difference from the starting relative offset if this is the first
-       entry.
+     * relative offset within the uAST section, stored as a signed
+       variable-byte encoded difference from the previous entry's uAST
+       offset, or a difference from the starting relative offset if this
+       is the first entry.
 
-     * variable-byte encoded index into file paths
+     * variable-byte encoded unsigned index into file paths
 
-     * the first line, stored as variable-byte encoded difference
-       from the previous entry's last line, or a difference from the
-       starting line number if this is the first entry
-       - i.e. the first line is prevEntry.lastLine + decodedDifference
+     * the first line, stored as a signed variable-byte encoded
+       difference from the previous entry's last line, or a difference
+       from the starting line number if this is the first entry - i.e.
+       the first line is prevEntry.lastLine + decodedDifference.
 
-     * the last line, stored as a variable-byte encoded different from
-       this entry's first line
+     * the last line, stored as a signed variable-byte encoded difference
+       from this entry's first line
 
-     * variable-byte encoded first column
+     * unsigned variable-byte encoded first column
 
-     * variable-byte encoded first last column
+     * unsigned variable-byte encoded first last column
+
+     * variable-byte encoded M, number of additional locations associated
+       with this uAST item
+
+     * for each of the M additional locations:
+
+       * unsigned variable-byte encoded additional location tag
+
+       * first line, stored as a signed variable-byte encoded difference
+         from this entry's first line
+
+       * last line, stored as a signed variable-byte encoded difference
+         the additional location's first line
+
+       * unsigned variable-byte encoded first column
+
+       * unsigned variable-byte encoded first last column
+
 
 Types Section
 -------------
