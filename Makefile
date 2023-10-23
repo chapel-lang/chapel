@@ -117,7 +117,7 @@ third-party-c2chapel-venv: FORCE
 	fi
 
 third-party-chapel-py-venv: frontend FORCE
-	cd third-party && $(MAKE) chapel-py-venv; \
+	cd third-party && $(MAKE) chapel-py-venv;
 
 test-venv: third-party-test-venv
 
