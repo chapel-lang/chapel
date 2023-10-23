@@ -19,7 +19,12 @@
 
 #include "chpl/framework/LibraryFile.h"
 
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/util/filesystem.h"
+#include "chpl/util/version-info.h"
+
 namespace chpl {
+
 
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   if (path.startsWith("/") ||
@@ -40,7 +45,8 @@ void LibraryFileWriter::gatherTopLevelModules() {
   for (auto path : inputFiles) {
     path = cleanLocalPath(context, path);
     UniqueString empty;
-    ModuleVec modsInFile = parse(context, path, empty);
+    std::vector<const uast::Module*> modsInFile =
+      parsing::parse(context, path, empty);
     for (auto mod : modsInFile) {
       topLevelModules.push_back(mod);
     }
@@ -48,7 +54,7 @@ void LibraryFileWriter::gatherTopLevelModules() {
 }
 
 void LibraryFileWriter::openFile() {
-  fileStream.open(outFileName,
+  fileStream.open(outputFilePath,
                   std::ios::out | std::ios::trunc | std::ios::binary);
 }
 
@@ -58,17 +64,20 @@ void LibraryFileWriter::writeHeader() {
   memset(&header, 0, sizeof(header));
 
   header.magic = detail::FILE_HEADER_MAGIC;
-  header.fileFormatVersionMajor = detail::LIBRARY_VERSION_MAJOR;
-  header.fileFormatVersionMinor = detail::LIBRARY_VERSION_MINOR;
+  header.fileFormatVersionMajor = detail::FORMAT_VERSION_MAJOR;
+  header.fileFormatVersionMinor = detail::FORMAT_VERSION_MINOR;
   header.chplVersionMajor = getMajorVersion();
   header.chplVersionMinor = getMinorVersion();
   header.chplVersionUpdate = getUpdateVersion();
   header.nModules = topLevelModules.size();
-  fileStream.write(&header, sizeof(header));
+  // hash remains 0s at this point
+  fileStream.write((const char*) &header, sizeof(header));
 
   // write the placeholder module section table
-  for (auto mod : topLevelModules) {
-    fileStream.write((uint64_t) 0);
+  size_t n = topLevelModules.size();
+  for (size_t i = 0; i < n; i++) {
+    uint64_t zero = 0;
+    fileStream.write((const char*) &zero, sizeof(zero));
   }
 }
 
@@ -79,7 +88,7 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   detail::ModuleHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = detail::MODULE_SECTION_MAGIC;
-  fileStream.write(&header, sizeof(header));
+  fileStream.write((const char*) &header, sizeof(header));
 
   // create a serializer to write the uAST
   auto ser = Serializer(fileStream);
@@ -87,30 +96,30 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   // write the symbol table section
   header.symbolTable = writeSymbolTable(mod, moduleSectionStart);
   header.uAstSection = writeAst(mod, moduleSectionStart, ser);
-  header.longStringsTable = writeLongStrings(moduleSectionStart);
+  header.longStringsTable = writeLongStrings(moduleSectionStart, ser);
   header.locationSection = writeLocations(mod, moduleSectionStart);
 
   // update the module header with the saved locations by writing the
   // header again.
   auto savePos = fileStream.tellp();
-  
+
   fileStream.seekp(moduleSectionStart);
-  fileStream.write(&header, sizeof(header));
+  fileStream.write((const char*) &header, sizeof(header));
 
   // seek back where we were
-  fileStream.seekp(saveP);
+  fileStream.seekp(savePos);
 
-  return moduleSectionStart; 
+  return moduleSectionStart;
 }
 
 uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
                                              uint64_t moduleSectionStart) {
-  auto symTableStart = fileStream.tellp();
+  uint64_t symTableStart = fileStream.tellp();
   detail::SymbolTableHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = SYMBOL_TABLE_MAGIC;
-  fileStream.write(&header, sizeof(header));
-  
+  header.magic = detail::SYMBOL_TABLE_MAGIC;
+  fileStream.write((const char*) &header, sizeof(header));
+
   // TODO TODO TODO actually output something meaningful
 
   return symTableStart - moduleSectionStart;
@@ -119,24 +128,24 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
 uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
                                      uint64_t moduleSectionStart,
                                      Serializer& ser) {
-  auto astStart = fileStream.tellp();
+  uint64_t astStart = fileStream.tellp();
   detail::uAstSectionHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = detail::MODULE_SECTION_MAGIC;
-  fileStream.write(&header, sizeof(header));
+  fileStream.write((const char*) &header, sizeof(header));
 
   // serialize the data
-  mod.serialize(ser);
+  mod->serialize(ser);
   header.nEntries = ser.numAstsSerialized();
 
   // update the number serialized by rewriting the header
   auto savePos = fileStream.tellp();
-  
+
   fileStream.seekp(astStart);
-  fileStream.write(&header, sizeof(header));
+  fileStream.write((const char*) &header, sizeof(header));
 
   // seek back where we were
-  fileStream.seekp(saveP);
+  fileStream.seekp(savePos);
 
   return astStart - moduleSectionStart;
 }
@@ -144,31 +153,31 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
 uint64_t
 LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
                                     Serializer& ser) {
-  auto longStringsStart = fileStream.tellp();
+  uint64_t longStringsStart = fileStream.tellp();
 
   detail::LongStringsTableHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = detail::LONG_STRINGS_TABLE_MAGIC;
   header.nLongStrings = ser.nextStringIdx();
-  fileStream.write(&header, sizeof(header));
-  
+  fileStream.write((const char*) &header, sizeof(header));
+
   size_t n = header.nLongStrings;
 
   std::vector<uint64_t> offsets;
   offsets.resize(n);
   // write 0s for the offsets. We will rewrite it in a moment.
-  fileStream.write(&offsets[0], n*sizeof(uint64_t));
+  fileStream.write((const char*) &offsets[0], n*sizeof(uint64_t));
 
   // gather the strings by idx so we can output them
   std::vector<std::pair<const char*, size_t>> byId;
   byId.resize(n);
 
   for (const auto& kv : ser.stringCache()) {
-    const char* ptr = kv.first; 
+    const char* ptr = kv.first;
     const auto& pair = kv.second;
     uint32_t idx = pair.first;
     size_t len = pair.second;
-    if (0 < idx && idx < nLongStrings) {
+    if (0 < idx && idx < n) {
       byId[idx] = std::make_pair(ptr, len);
     }
   }
@@ -179,7 +188,8 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
     const char* ptr = pair.first;
     size_t len = pair.second;
     if (byId[i].first != nullptr) {
-      offsets[i] = fileStream.tellp() - moduleSectionStart;
+      uint64_t pos = fileStream.tellp();
+      offsets[i] = pos - moduleSectionStart;
       fileStream.write(ptr, len);
     }
   }
@@ -188,37 +198,68 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   fileStream.seekp(longStringsStart+sizeof(header));
 
   // write the actual offsets
-  fileStream.write(&offsets[0], n*sizeof(uint64_t));
+  fileStream.write((const char*) &offsets[0], n*sizeof(uint64_t));
+
+  return longStringsStart - moduleSectionStart;
 }
 
-uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod) {
+uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
+                                           uint64_t moduleSectionStart) {
+  uint64_t locationsSectionStart = fileStream.tellp();
+
+  // TODO: actually write the locations
+
+  return locationsSectionStart - moduleSectionStart;
 }
 
-void LibraryFileWriter::writeAllSections() {
+bool LibraryFileWriter::writeAllSections() {
   gatherTopLevelModules();
   openFile();
   writeHeader();
 
   std::vector<uint64_t> moduleSectionOffsets;
 
-  for (mod : topLevelModules) {
+  for (auto mod : topLevelModules) {
     // write the module section & update the header's table
     uint64_t offset = writeModuleSection(mod);
     moduleSectionOffsets.push_back(offset);
   }
 
-  auto savePos = fileStream.tellp();
-
   // update the module section table
   // seek just after the fixed portion of the file header
   fileStream.seekp(sizeof(detail::FileHeader));
   // write the offsets
-  fileStream.write(&offset[0], sizeof(uint64_t)*moduleSectionOffsets.size());
+  fileStream.write((const char*) &moduleSectionOffsets[0],
+                   sizeof(uint64_t)*moduleSectionOffsets.size());
 
-  // seek back where we were
-  fileStream.seekp(saveP);
+  // compute and store the file hash
+  CHPL_ASSERT(sizeof(HashFileResult) == detail::HASH_SIZE);
 
+  // flush the file data so the 'hashFile' call will read everything
+  // we just wrote
+  fileStream.flush();
+
+  llvm::ErrorOr<HashFileResult> hashOrErr = hashFile(outputFilePath);
+
+  if (hashOrErr) {
+    const HashFileResult& h = hashOrErr.get();
+    // use the minimum of detail::HASH_SIZE and sizeof(HashFileResult)
+    // (should get assert above in case these stop matching, but
+    //  that will be off in some builds)
+    size_t n = sizeof(HashFileResult);
+    if (detail::HASH_SIZE < n) n = detail::HASH_SIZE;
+    // seek to the hash position within the file
+    fileStream.seekp(offsetof(detail::FileHeader, hash));
+    // write the hash bytes
+    fileStream.write((const char*) &h, n);
+  }
+
+  // TODO: if further error information is desired, probably best
+  // to switch to using the C FILE* and fwrite.
+  bool ok = fileStream.good();
   fileStream.close();
+
+  return ok;
 }
 
 

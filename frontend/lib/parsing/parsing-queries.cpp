@@ -119,7 +119,7 @@ static UniqueString cleanLocalPath(Context* context, UniqueString path) {
 }
 
 // See file-format.rst for a description of the library file format.
-void LibraryFile::generate(Context* context,
+/*void LibraryFile::generate(Context* context,
                            std::vector<UniqueString> paths,
                            std::string outFileName) {
 
@@ -244,7 +244,8 @@ LibraryFile::LibraryFile(Context* context, UniqueString libPath)
     offsets_[ustr] = dataStart + off;
   }
 }
-
+*/
+/*
 const LibraryFile&
 loadLibraryFile(Context* context, UniqueString libPath) {
   QUERY_BEGIN(loadLibraryFile, context, libPath);
@@ -276,7 +277,7 @@ loadBuilderResultFromFile(Context* context, UniqueString path,
 
   return result;
 }
-
+*/
 const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
@@ -285,8 +286,10 @@ parseFileToBuilderResult(Context* context, UniqueString path,
   BuilderResult result(path);
   UniqueString libPath;
   if (context->pathHasLibrary(path, libPath)) {
-    auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
+    CHPL_ASSERT(false);
+    /*auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
     result.swap(tmpResult);
+    */
   } else {
     // Run the fileText query to get the file contents
     const FileContents& contents = fileText(context, path);

@@ -491,15 +491,16 @@ static void parseCommandLineFiles() {
             todo.push_back(path);
           }
         }
-        chpl::parsing::LibraryFile::generate(gContext, todo,
-                                             "chpl_standard.dyno", false);
+        auto libWriter = LibraryFileWriter(gContext, todo,
+                                           "chpl_standard.dyno");
+        libWriter.writeAllSections();
       } else {
         std::string justFile = path.substr(path.find_last_of("/") + 1);
         auto dot = justFile.find_last_of(".");
         std::string noExt = justFile.substr(0, dot);
         auto ustr = chpl::UniqueString::get(gContext, path);
-        chpl::parsing::LibraryFile::generate(gContext, {ustr},
-                                             noExt + ".dyno", true);
+        auto libWriter = LibraryFileWriter(gContext, {ustr}, noExt + ".dyno");
+        libWriter.writeAllSections();
       }
     }
 

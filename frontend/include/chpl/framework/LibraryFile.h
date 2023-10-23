@@ -27,21 +27,35 @@
 #ifndef CHPL_FRAMEWORK_LIBRARY_FILE_H
 #define CHPL_FRAMEWORK_LIBRARY_FILE_H
 
-namespace chpl {
-class Context;
+#include "chpl/framework/UniqueString.h"
 
+#include <fstream>
+#include <vector>
+
+namespace chpl {
+
+// forward declarations
+class Context;
+namespace uast {
+  class Module;
+}
 
 namespace detail {
+  // magic numbers
   // file magic number is <7F>HPECHPL
   static const uint64_t FILE_HEADER_MAGIC =      0x4C5048434550487F;
-  static const uint32_t FORMAT_VERSION_MAJOR =  0;
-  static const uint32_t FORMAT_VERSION_MINOR =  1;
   static const uint64_t MODULE_SECTION_MAGIC =   0x0030d01e5ec110e0;
   static const uint64_t SYMBOL_TABLE_MAGIC =     0x0003bb1e5ec110e0;
   static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x51e17601;
   static const uint64_t UAST_SECTION_MAGIC =     0x0003bb1e5ec110e0;
   static const uint64_t LOCATION_SECTION_MAGIC = 0x10ca11075ec110e0;
 
+  // file format version numbers
+  static const uint32_t FORMAT_VERSION_MAJOR =  0;
+  static const uint32_t FORMAT_VERSION_MINOR =  1;
+
+  // number of bytes in a file hash
+  static const int HASH_SIZE = 256;
 
   struct FileHeader {
     uint64_t magic;
@@ -51,6 +65,7 @@ namespace detail {
     uint32_t chplVersionMinor;
     uint32_t chplVersionUpdate;
     uint32_t nModules;
+    uint8_t hash[HASH_SIZE];
     // followed by nModules 8 bytes file offsets
   };
 
@@ -120,7 +135,7 @@ class LibraryFileWriter {
   std::vector<UniqueString> inputFiles;
   std::string outputFilePath;
   std::ofstream fileStream;
-  ModuleVec topLevelModules;
+  std::vector<const uast::Module*> topLevelModules;
 
   /** Gather the top-level modules */
   void gatherTopLevelModules();
@@ -169,12 +184,15 @@ class LibraryFileWriter {
 
   /**
     Write the header and sections to the library file.
+    Returns 'true' if everything is OK, or 'false' if there was an
+    error in the process.
     */
-  void writeAllSections();
+  bool writeAllSections();
 };
 
 /** For reading a .dyno LibraryFile.
-    Some data is read from the file on-demand. */
+    Some data is read from the file on-demand.
+    Uses `mmap` to keep the code simple and to support random-access well. */
 class LibraryFile {
 
 };

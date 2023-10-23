@@ -24,6 +24,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
+#include "chpl/framework/LibraryFile.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
@@ -78,7 +79,7 @@ bool hasFileText(Context* context, const std::string& path);
 /**
  This unstable, experimental type provides basic support for '.dyno' files.
  */
-class LibraryFile {
+/*class LibraryFile {
   private:
     UniqueString path_;
     std::map<UniqueString, std::streamoff> offsets_;
@@ -117,14 +118,15 @@ class LibraryFile {
   }
 
 };
+*/
 
 /**
   This query reads the file from the given path and produces a LibraryFile,
   which contains useful information about the library's contents.
  */
-const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
+//const LibraryFile& loadLibraryFile(Context* context, UniqueString libPath);
 
-void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
+//void registerFilePathsInLibrary(Context* context, UniqueString& libPath);
 
 /**
   This query reads a file (with the fileText query) and then parses it.

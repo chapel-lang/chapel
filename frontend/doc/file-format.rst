@@ -109,6 +109,8 @@ The '.dyno' file format header consists of:
  * 4 bytes of chpl minor version number
  * 4 bytes of chpl update version number
  * 4 bytes of N, the number of module sections contained herein
+ * 256 bits / 32 bytes of SHA-256 hash of the '.dyno' file contents
+   * the hash is computed assuming that the hash is 0
  * a module section table, consisting of N entries, each consists of:
    * 8 bytes of module section offset (pointing to a module section header)
 
@@ -250,6 +252,7 @@ It consists of:
  * for each file path
 
    * a string storing the file path
+   * 256 bits / 32 bytes of SHA-256 hash of the input file that was parsed
 
  * information for each top-level location, consisting of the following:
 
