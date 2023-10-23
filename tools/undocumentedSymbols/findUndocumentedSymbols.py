@@ -18,6 +18,10 @@
 # limitations under the License.
 #
 
+"""
+
+"""
+
 from collections import defaultdict
 from typing import Generator, List
 import sys
@@ -251,6 +255,29 @@ class FindUndocumentedSymbols:
                     continue
                 yield s
 
+def get_files(files: List[str], check_suffix=False) -> Generator:
+    """
+    Yield all chapel files, following directories recursively
+    """
+
+    for file in files:
+        if os.path.isfile(file):
+            # just yield any file given if not checking the suffix
+            if not check_suffix:
+                yield file
+            elif check_suffix and os.path.splitext(file)[1] == ".chpl":
+                yield file
+
+        elif os.path.isdir(file):
+           for root, subdirs, files in os.walk(file):
+                # yield files in directory files, always check the suffix
+                yield from get_files([os.path.join(root, file) for file in files], True)
+                # recurse into sub dirs, always checl the suffix
+                yield from get_files([os.path.join(root, d) for d in subdirs], True)
+        else:
+            print("Error: path was not file or directory", file=sys.stderr)
+            exit(1)
+
 
 def get_trees(filenames: List[str]) -> Generator:
     """
@@ -284,7 +311,7 @@ def main(raw_args: List[str]) -> int:
     a.add_argument("--ignore-unstable", action="store_true", default=False)
     args = a.parse_args(raw_args)
 
-    for filename, astList in get_trees(args.files):
+    for filename, astList in get_trees(get_files(args.files)):
         fus = FindUndocumentedSymbols(
             astList,
             ignore_deprecated=args.ignore_deprecated,
