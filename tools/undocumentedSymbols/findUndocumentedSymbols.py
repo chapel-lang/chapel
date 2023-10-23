@@ -80,9 +80,11 @@ helpers
 
 
 def get_module(n: dyno.AstNode) -> dyno.AstNode:
+    if n is None:
+        return None
     if isinstance(n, dyno.Module):
         return n
-    if n is not None and (parent := n.parent()):
+    if parent := n.parent():
         return get_module(parent)
     return None
 
@@ -167,11 +169,16 @@ def get_node_name(node: dyno.AstNode) -> str:
 
     name = get_simple_node_name(node)
 
-    if hasattr(node, "this_formal") and (this := node.this_formal()):
-        aggregate_name = get_simple_node_name(this.type_expression())
+    # handles secondary methods
+    if hasattr(node, "this_formal") and (this := node.this_formal()) and (typename := this.type_expression()):
+        aggregate_name = get_simple_node_name(typename)
+        name = f"{aggregate_name}.{name}"
+    # handles primary methods and fields
+    elif (p := node.parent()) and (isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)):
+        aggregate_name = get_simple_node_name(p)
         name = f"{aggregate_name}.{name}"
 
-    if mod := get_module(node):
+    if (mod := get_module(node.parent())) and mod.kind() != "implicit":
         module_name = mod.name()
         name = f"{module_name}.{name}"
 
