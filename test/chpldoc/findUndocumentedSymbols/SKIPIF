@@ -1,0 +1,6 @@
+#!/usr/bin/env python3
+
+import sys
+
+has_valid_version = sys.version_info[0] == 3 and sys.version_info[1] >= 8
+print(not has_valid_version)

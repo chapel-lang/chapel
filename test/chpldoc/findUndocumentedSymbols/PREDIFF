@@ -1,0 +1,40 @@
+#!/usr/bin/env bash
+
+TESTNAME=$1
+OUTFILE=$2
+SCRIPT_OUTFILE=$TESTNAME.script.tmp
+TMPFILE=$OUTFILE.prediff.tmp
+
+CHPL_PYTHON=`$CHPL_HOME/util/config/find-python.sh`
+
+echo "Build python env"
+ENV_FOR_TEST="test_env"
+$CHPL_PYTHON -m venv $ENV_FOR_TEST
+source $ENV_FOR_TEST/bin/activate
+MY_PYTHON=`which python3`
+$MY_PYTHON -m pip install -e $CHPL_HOME/tools/chapel-py
+
+
+SCRIPT=$CHPL_HOME/tools/undocumentedSymbols/findUndocumentedSymbols.py
+PREDIFF_OPTS_FILE=$TESTNAME.prediffopts
+PREDIFF_OPTS=
+if [ -f $PREDIFF_OPTS_FILE ]; then
+  # read the first line from script opts file
+  PREDIFF_OPTS=`head -n 1 $PREDIFF_OPTS_FILE`
+fi
+
+(set -x && $MY_PYTHON $SCRIPT $PREDIFF_OPTS $TESTNAME.chpl &> $SCRIPT_OUTFILE)
+
+cat $SCRIPT_OUTFILE >$TMPFILE
+
+if [ -s $OUTFILE ]; then
+  # if there is no output, no need to do this
+  echo "================================================================================" >>$TMPFILE
+  cat $OUTFILE >>$TMPFILE
+fi
+mv $TMPFILE $OUTFILE
+rm $SCRIPT_OUTFILE
+
+# remove python env
+deactive
+rm -rf $ENV_FOR_TEST
