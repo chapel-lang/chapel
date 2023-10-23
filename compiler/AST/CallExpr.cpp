@@ -248,9 +248,10 @@ void CallExpr::verify() {
   } else if (CallExpr* subCall = toCallExpr(baseExpr)) {
     // Confirm that this is a partial call, but only if the call is not
     // within a DefExpr (indicated by not having a stmt-expr)
-    if (!partOfNonNormalizableExpr(this))
-      if (normalized && subCall->getStmtExpr() != NULL)
-        INT_ASSERT(subCall->partialTag == true);
+    if (normalized && subCall->getStmtExpr() != NULL)
+      INT_ASSERT(subCall->partialTag == true
+                 // non-normalizable expressions are also exempt
+                 || partOfNonNormalizableExpr(this));
   }
 
   verifyNotOnList(baseExpr);

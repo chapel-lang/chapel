@@ -1,0 +1,9 @@
+type-decls-1.chpl:41: warning: there is no checking that the domain of the initialization expression matches the domain of the declared type of the reference 'r8'
+23
+32
+(x1 = 33, x2 = hi3)  RR(int(64),string)
+(x1 = 44, x2 = hi4)  RR(int(64),string)
+(x1 = 55, x2 = hi5)  RR(int(64),string)
+{1..6}  domain(1,int(64),one)
+{2..7}  domain(1,int(64),one)
+LOCALE0  [domain(1,int(64),one)] locale

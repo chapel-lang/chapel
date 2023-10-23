@@ -2802,6 +2802,7 @@ static bool resolveClassBorrowMethod(CallExpr* call);
 static bool resolveFunctionPointerCall(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
+static void resolveInitRef(CallExpr* call);
 static void resolveRefDeserialization(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
@@ -2831,6 +2832,10 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT_VAR_SPLIT_INIT:
       resolveGenericActuals(call);
       resolveInitVar(call);
+      break;
+
+    case PRIM_INIT_REF_DECL:
+      resolveInitRef(call);
       break;
 
     case PRIM_MOVE:
@@ -9083,6 +9088,36 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 //
 //
 
+static void checkAndAdjustLhsRefType(Expr* call, Symbol* lhs, Type* rhsType) {
+  Type* rhsValType = rhsType->getValType();
+  Type* lhsValType = lhs->type->getValType();
+
+  if (lhsValType->symbol->hasFlag(FLAG_GENERIC)) {
+    // check if 'rhsType' is an instantiation of lhs's type
+    Type* inst = getInstantiationType(rhsValType, NULL, lhsValType, NULL, call);
+    if (inst != rhsValType) {
+      USR_FATAL_CONT(call,
+        "initializing a reference using an expression whose type '%s"
+        "' is not an instantiation of the declared type '%s'",
+        toString(rhsValType), toString(lhsValType));
+    }
+    // even if there was an error, we can continue resolving
+    // using the declared type if possible
+    lhs->type = (inst ? inst : rhsType)->getRefType();
+  }
+  else {
+    if (lhsValType != rhsValType) {
+      USR_FATAL_CONT(call, "Initializing a reference with another type");
+      USR_PRINT(lhs, "Reference has type %s", toString(lhsValType));
+      USR_PRINT(call, "Initializing with type %s", toString(rhsValType));
+      // even if there was an error, we can continue resolving
+      // using the declared type
+    }
+  }
+
+  INT_ASSERT(lhs->isRef());
+}
+
 // Check the 'move' into an YVV from the result of an addrOf of 'argOfAddrOf'
 // when the iterator has the 'ref' return/yield intent.
 // Disallow args that are not references or are const references.
@@ -9184,6 +9219,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
     if (lhsSym->qual == QUAL_CONST_REF) checkMoveSymToCRefYVV(call, rhsSym);
   }
 
+  if (lhsSym->hasFlag(FLAG_REF_VAR)                       &&
+      ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)  &&
+      call->isPrimitive(PRIM_MOVE)                         )  {
+    checkAndAdjustLhsRefType(call, lhsSym, rhsSym->type);
+  }
+
   moveFinalize(call);
 }
 
@@ -9266,15 +9307,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
       // Check that the types match
       SymExpr* lhsSe = toSymExpr(call->get(1));
       Symbol* lhs = lhsSe->symbol();
-      INT_ASSERT(lhs->isRef());
 
-      if (lhs->getValType() != rhsType->getValType()) {
-        USR_FATAL_CONT(call, "Initializing a reference with another type");
-        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
-        USR_PRINT(call, "Initializing with type %s",
-                        toString(rhsType->getValType()));
-        USR_STOP();
-      }
+      checkAndAdjustLhsRefType(call, lhs, rhsType);
 
       if (lhs->hasFlag(FLAG_YVV)) {
         Expr* arg = rhs->get(1);
@@ -14114,6 +14148,53 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       }
     }
   }
+}
+
+// Handles:
+//  CallExpr(PRIM_INIT_REF_DECL, refSym, typeExpr[opt])
+// which result from:
+//  ref refSym: typeExpr;
+//  ref refSym: typeExpr = initExpr;
+// by:
+//  resolving typeExpr and storing it in refSym->type
+//
+static void resolveInitRef(CallExpr* call) {
+  INT_ASSERT(call->numActuals() <= 2);
+  // nothing to do if there was no declared type
+  if (call->numActuals() == 2) {
+    Symbol* refSym = toSymExpr(call->get(1))->symbol();
+    INT_ASSERT(!isShadowVarSymbol(refSym) &&
+               !refSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP) &&
+               refSym->hasFlag(FLAG_REF_VAR));
+    INT_ASSERT(refSym->type == dtUnknown); // fyi
+
+    if (refSym->id == breakOnResolveID) gdbShouldBreakHere();
+    resolveExpr(call->get(2)); // the normalized type expression
+    Expr* typeExpr = call->get(2)->remove();
+    if (SymExpr* typeSE = toSymExpr(typeExpr))
+      if (! typeSE->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        USR_FATAL_CONT(typeExpr, "the type declaration of the reference %s"
+                       " is not a type", refSym->name);
+    refSym->type = typeExpr->typeInfo();
+
+    if (refSym->type->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
+      // TODO also issue this warning when it is a domain type
+      // except for dtDomain or default rectangular
+      USR_WARN(call, "there is no checking"
+           " that the domain of the initialization expression"
+           " matches the domain of the declared type of the reference '%s'",
+           refSym->name);
+    }
+
+    if (refSym->type->symbol->hasFlag(FLAG_GENERIC)) {
+      // it will be instantiated in resolveMove() / checkAndAdjustLhsRefType()
+    } else {
+      // checkAndAdjustLhsRefType() expects a ref type
+      refSym->type = refSym->type->getRefType();
+    }
+  }
+
+  call->primitive = primitives[PRIM_NOOP];
 }
 
 

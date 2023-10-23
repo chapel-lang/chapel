@@ -114,6 +114,7 @@ static void        normalizeTypeAlias(DefExpr* defExpr);
 static void        normalizeConfigVariableDefinition(DefExpr* defExpr);
 static void        normalizeVariableDefinition(DefExpr* defExpr);
 
+static void        emitPrimInitRefDecl(DefExpr* def, VarSymbol* var);
 static void        emitRefVarInit(Expr* after, Symbol* var, Expr* init);
 static void        normRefVar(DefExpr* defExpr);
 
@@ -825,6 +826,7 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_INIT)  ||
           call->isPrimitive(PRIM_DEFAULT_INIT_VAR) ||
           call->isPrimitive(PRIM_NOINIT_INIT_VAR) ||
+          call->isPrimitive(PRIM_INIT_REF_DECL) ||
           call->isPrimitive(PRIM_INIT_VAR_SPLIT_DECL)) {
         if (call->get(1) == se) {
           retval = se->symbol();
@@ -3073,6 +3075,8 @@ void normalizeVariableDefinition(DefExpr* defExpr) {
 
         typeTemp = tt;
       }
+    } else {
+      emitPrimInitRefDecl(defExpr, var);
     }
 
     for_vector(CallExpr, call, initAssigns) {
@@ -3293,6 +3297,14 @@ static void emitRefVarInit(Expr* after, Symbol* var, Expr* init) {
                                   new CallExpr(PRIM_ADDR_OF, varLocation)));
 }
 
+static void emitPrimInitRefDecl(DefExpr* def, VarSymbol* var) {
+  if (isShadowVarSymbol(var)) return;
+
+  Expr* typeExpr = def->exprType;
+  if (typeExpr != nullptr) typeExpr->remove();
+  def->insertAfter(new CallExpr(PRIM_INIT_REF_DECL, var, typeExpr));
+}
+
 static void normRefVar(DefExpr* defExpr) {
   VarSymbol* var         = toVarSymbol(defExpr->sym);
   Expr*      init        = defExpr->init;
@@ -3301,6 +3313,7 @@ static void normRefVar(DefExpr* defExpr) {
     init->remove();
 
   emitRefVarInit(defExpr, var, init);
+  emitPrimInitRefDecl(defExpr, var);
 }
 
 
