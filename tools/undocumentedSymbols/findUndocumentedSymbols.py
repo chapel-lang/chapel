@@ -359,7 +359,7 @@ def main(raw_args: List[str]) -> int:
             (line, col) = loc.start()
             name = get_node_name(sym)
 
-            print(f"warning: '{name}' at {filename}:{line}:{col} is undocumented")
+            print(f"warning: '{name}' at {filename}:{line} is undocumented")
 
     return 0
 
