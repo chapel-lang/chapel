@@ -1,6 +1,0 @@
-internal error: UTI-MIS-1041 chpl version 1.33.0 pre-release (9eb16d245b)
-
-Internal errors indicate a bug in the Chapel compiler,
-and we're sorry for the hassle.  We would appreciate your reporting this bug --
-please see https://chapel-lang.org/bugs.html for instructions.
-
