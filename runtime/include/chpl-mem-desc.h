@@ -96,7 +96,7 @@ extern "C" {
   m(GETS_PUTS_STRIDES,    "put_strd/get_strd array of strides",       true ), \
   m(MLI_DATA,             "multilocale interop data",                 true ), \
   m(GPU_DATA,             "user data allocation on gpu",              true ), \
-  m(GPU_KERNEL_ARG,       "kernel data allocation on gpu",            true ), \
+  m(GPU_KERNEL_ARG,       "kernel data allocation on gpu",            false), \
   m(GPU_UTIL,             "gpu layer utility space",                  false), \
   m(GPU_KERNEL_PARAM,      "pointer to a kernel arg",                 true ), \
   m(GPU_KERNEL_PARAM_BUFF, "array of pointers to kernel args",        true ), \
