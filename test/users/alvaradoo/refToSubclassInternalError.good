@@ -1,21 +1,24 @@
 ## Inserting int(64) data ##
-Attempting to insert data 27 for vertex 0
-Attempting to insert data 21 for vertex 1
 Attempting to insert data 19 for vertex 2
+Attempting to insert data 21 for vertex 1
+Attempting to insert data 21 for vertex 9
+Attempting to insert data 27 for vertex 0
 Attempting to insert data 28 for vertex 5
 Attempting to insert data 45 for vertex 7
-Attempting to insert data 21 for vertex 9
+
 ## Inserting bool data ##
-Attempting to insert data true for vertex 0
 Attempting to insert data false for vertex 1
-Attempting to insert data true for vertex 2
 Attempting to insert data false for vertex 5
+Attempting to insert data true for vertex 0
+Attempting to insert data true for vertex 2
 Attempting to insert data true for vertex 7
 Attempting to insert data true for vertex 9
+
 ## Inserting int(64) data ##
-Attempting to insert data 1994 for vertex 0
-Attempting to insert data 1996 for vertex 1
 Attempting to insert data 1945 for vertex 2
 Attempting to insert data 1976 for vertex 5
-Attempting to insert data 2001 for vertex 7
+Attempting to insert data 1994 for vertex 0
+Attempting to insert data 1996 for vertex 1
 Attempting to insert data 1998 for vertex 9
+Attempting to insert data 2001 for vertex 7
+
