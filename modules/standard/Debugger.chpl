@@ -21,7 +21,7 @@
 /*
   The Debugger module provides a collection of useful debugging utilities
 */
-@unstable("The Debugger module is unstable due to its experimental behavior")
+@unstable(category="experimental", reason="The Debugger module is unstable due to its experimental behavior")
 module Debugger {
   /*
     Sets a breakpoint at this point in execution if compiled with `-g`.
