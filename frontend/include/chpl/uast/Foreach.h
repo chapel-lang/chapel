@@ -63,6 +63,14 @@ class Foreach final : public IndexableLoop {
 
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Foreach);
+
+ private:
   Foreach(Deserializer& des)
     : IndexableLoop(asttags::Foreach, des) {}
 
@@ -87,14 +95,6 @@ class Foreach final : public IndexableLoop {
                               BlockStyle blockStyle,
                               owned<Block> body,
                               owned<AttributeGroup> attributeGroup = nullptr);
-
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Foreach);
-
 };
 
 

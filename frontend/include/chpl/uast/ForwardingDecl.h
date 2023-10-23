@@ -56,8 +56,7 @@ namespace uast {
 
 class ForwardingDecl final : public Decl {
 
-
-private:
+ private:
   ForwardingDecl(AstList children, Decl::Visibility visibility,
                  int attributeGroupChildNum)
     : Decl(asttags::ForwardingDecl, std::move(children), attributeGroupChildNum,
@@ -69,6 +68,14 @@ private:
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ForwardingDecl);
+
+ private:
   ForwardingDecl(Deserializer& des)
     : Decl(asttags::ForwardingDecl, des) { }
 
@@ -110,13 +117,6 @@ private:
       return nullptr;
     }
   }
-
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ForwardingDecl);
-
 };
 
 

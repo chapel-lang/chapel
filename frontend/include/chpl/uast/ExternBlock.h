@@ -55,6 +55,15 @@ class ExternBlock final : public AstNode {
     CHPL_ASSERT(numChildren() == 0);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(code_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ExternBlock);
+
+ private:
   ExternBlock(Deserializer& des)
     : AstNode(asttags::ExternBlock, des) {
       code_ = des.read<std::string>();
@@ -80,14 +89,6 @@ class ExternBlock final : public AstNode {
   const std::string& code() const {
     return code_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(code_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ExternBlock);
-
 };
 
 

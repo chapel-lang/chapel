@@ -64,6 +64,15 @@ class For final : public IndexableLoop {
     CHPL_ASSERT(withClause() == nullptr);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+    ser.write(isParam_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(For);
+
+ private:
   For(Deserializer& des)
     : IndexableLoop(asttags::For, des) {
     isParam_ = des.read<bool>();
@@ -111,14 +120,6 @@ class For final : public IndexableLoop {
   bool isParam() const {
     return isParam_;
   }
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-    ser.write(isParam_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(For);
-
 };
 
 
