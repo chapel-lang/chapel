@@ -20,16 +20,15 @@
 #ifndef CHPL_PARSING_PARSING_QUERIES_H
 #define CHPL_PARSING_PARSING_QUERIES_H
 
-#include "chpl/parsing/FileContents.h"
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ID.h"
 #include "chpl/framework/Location.h"
-#include "chpl/framework/LibraryFile.h"
+#include "chpl/parsing/FileContents.h"
+#include "chpl/parsing/parser-stats.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/BuilderResult.h"
 #include "chpl/uast/Function.h"
 #include "chpl/uast/Module.h"
-#include "chpl/parsing/parser-stats.h"
 
 #include <vector>
 

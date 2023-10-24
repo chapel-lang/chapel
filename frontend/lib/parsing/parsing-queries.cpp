@@ -21,9 +21,9 @@
 
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
-#include "chpl/framework/LibraryFile.h"
 #include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
 #include "chpl/uast/AggregateDecl.h"

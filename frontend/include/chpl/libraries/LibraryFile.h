@@ -40,7 +40,7 @@ namespace uast {
   class Module;
 }
 
-namespace detail {
+namespace libraries {
   // magic numbers
   // file magic number is <7F>HPECHPL
   static const uint64_t FILE_HEADER_MAGIC =      0x4C5048434550487F;
@@ -126,7 +126,6 @@ namespace detail {
     uint32_t nLocations;
     // followed by location entries
   };
-};
 
 /** For writing a .dyno library file */
 class LibraryFileWriter {
@@ -198,6 +197,7 @@ class LibraryFile {
 };
 
 
+} // end namespace libraries
 } // end namespace chpl
 
 #endif

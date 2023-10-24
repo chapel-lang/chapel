@@ -68,6 +68,7 @@ target_compile_options(ChplFrontend-obj PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 add_subdirectory(immediates)
+add_subdirectory(libraries)
 add_subdirectory(parsing)
 add_subdirectory(framework)
 add_subdirectory(resolution)

@@ -17,14 +17,14 @@
  * limitations under the License.
  */
 
-#include "chpl/framework/LibraryFile.h"
+#include "chpl/libraries/LibraryFile.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/version-info.h"
 
 namespace chpl {
-
+namespace libraries {
 
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   if (path.startsWith("/") ||
@@ -60,12 +60,12 @@ void LibraryFileWriter::openFile() {
 
 void LibraryFileWriter::writeHeader() {
   // Construct a file header and write it
-  detail::FileHeader header;
+  FileHeader header;
   memset(&header, 0, sizeof(header));
 
-  header.magic = detail::FILE_HEADER_MAGIC;
-  header.fileFormatVersionMajor = detail::FORMAT_VERSION_MAJOR;
-  header.fileFormatVersionMinor = detail::FORMAT_VERSION_MINOR;
+  header.magic = FILE_HEADER_MAGIC;
+  header.fileFormatVersionMajor = FORMAT_VERSION_MAJOR;
+  header.fileFormatVersionMinor = FORMAT_VERSION_MINOR;
   header.chplVersionMajor = getMajorVersion();
   header.chplVersionMinor = getMinorVersion();
   header.chplVersionUpdate = getUpdateVersion();
@@ -85,9 +85,9 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   auto moduleSectionStart = fileStream.tellp();
 
   // Construct a module section header and write it
-  detail::ModuleHeader header;
+  ModuleHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = detail::MODULE_SECTION_MAGIC;
+  header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
   // create a serializer to write the uAST
@@ -115,9 +115,9 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
 uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
                                              uint64_t moduleSectionStart) {
   uint64_t symTableStart = fileStream.tellp();
-  detail::SymbolTableHeader header;
+  SymbolTableHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = detail::SYMBOL_TABLE_MAGIC;
+  header.magic = SYMBOL_TABLE_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
   // TODO TODO TODO actually output something meaningful
@@ -129,9 +129,9 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
                                      uint64_t moduleSectionStart,
                                      Serializer& ser) {
   uint64_t astStart = fileStream.tellp();
-  detail::uAstSectionHeader header;
+  uAstSectionHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = detail::MODULE_SECTION_MAGIC;
+  header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
   // serialize the data
@@ -155,9 +155,9 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
                                     Serializer& ser) {
   uint64_t longStringsStart = fileStream.tellp();
 
-  detail::LongStringsTableHeader header;
+  LongStringsTableHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = detail::LONG_STRINGS_TABLE_MAGIC;
+  header.magic = LONG_STRINGS_TABLE_MAGIC;
   header.nLongStrings = ser.nextStringIdx();
   fileStream.write((const char*) &header, sizeof(header));
 
@@ -227,13 +227,13 @@ bool LibraryFileWriter::writeAllSections() {
 
   // update the module section table
   // seek just after the fixed portion of the file header
-  fileStream.seekp(sizeof(detail::FileHeader));
+  fileStream.seekp(sizeof(FileHeader));
   // write the offsets
   fileStream.write((const char*) &moduleSectionOffsets[0],
                    sizeof(uint64_t)*moduleSectionOffsets.size());
 
   // compute and store the file hash
-  CHPL_ASSERT(sizeof(HashFileResult) == detail::HASH_SIZE);
+  CHPL_ASSERT(sizeof(HashFileResult) == HASH_SIZE);
 
   // flush the file data so the 'hashFile' call will read everything
   // we just wrote
@@ -243,13 +243,13 @@ bool LibraryFileWriter::writeAllSections() {
 
   if (hashOrErr) {
     const HashFileResult& h = hashOrErr.get();
-    // use the minimum of detail::HASH_SIZE and sizeof(HashFileResult)
+    // use the minimum of HASH_SIZE and sizeof(HashFileResult)
     // (should get assert above in case these stop matching, but
     //  that will be off in some builds)
     size_t n = sizeof(HashFileResult);
-    if (detail::HASH_SIZE < n) n = detail::HASH_SIZE;
+    if (HASH_SIZE < n) n = HASH_SIZE;
     // seek to the hash position within the file
-    fileStream.seekp(offsetof(detail::FileHeader, hash));
+    fileStream.seekp(offsetof(FileHeader, hash));
     // write the hash bytes
     fileStream.write((const char*) &h, n);
   }
@@ -263,4 +263,5 @@ bool LibraryFileWriter::writeAllSections() {
 }
 
 
+} // end namespace libraries
 } // end namespace chpl
