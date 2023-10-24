@@ -63,6 +63,9 @@ class Variable final : public VarLikeDecl {
   };
 
  private:
+  bool isConfig_;
+  bool isField_;
+
   Variable(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
            Decl::Linkage linkage,
            int linkageNameChildNum,
@@ -85,6 +88,16 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    VarLikeDecl::serialize(ser);
+    ser.write(isConfig_);
+    ser.write(isField_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Variable);
+
+ private:
   Variable(Deserializer& des)
     : VarLikeDecl(asttags::Variable, des) {
     isConfig_ = des.read<bool>();
@@ -103,9 +116,6 @@ class Variable final : public VarLikeDecl {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  bool isConfig_;
-  bool isField_;
 
   /**
    * Allows for setting a new initExpr when this Variable is a config
@@ -143,15 +153,6 @@ class Variable final : public VarLikeDecl {
     Returns true if this Variable represents a field.
   */
   bool isField() const { return this->isField_; }
-
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
-    ser.write(isConfig_);
-    ser.write(isField_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Variable);
-
 };
 
 

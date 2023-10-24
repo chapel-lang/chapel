@@ -38,6 +38,14 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
     : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(UintLiteral);
+
+ private:
   UintLiteral(Deserializer& des)
     : NumericLiteral(asttags::UintLiteral, des)
   { }
@@ -50,12 +58,6 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
 
   static owned<UintLiteral> build(Builder* builder, Location loc,
                                   uint64_t value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(UintLiteral);
 };
 
 
