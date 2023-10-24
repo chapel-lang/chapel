@@ -26,6 +26,8 @@
 #ifndef CHPL_LIBRARIES_LIBRARY_FILE_FORMAT_H
 #define CHPL_LIBRARIES_LIBRARY_FILE_FORMAT_H
 
+#include <cstdint>
+
 namespace chpl {
 namespace libraries {
 

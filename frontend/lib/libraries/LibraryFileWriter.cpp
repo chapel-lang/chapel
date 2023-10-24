@@ -121,7 +121,7 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   header.magic = SYMBOL_TABLE_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
-  // TODO TODO TODO actually output something meaningful
+  // TODO: actually output something meaningful
 
   return symTableStart - moduleSectionStart;
 }
