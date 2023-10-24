@@ -156,7 +156,7 @@ class Deserializer {
   Deserializer(Context* context, std::istream& is,
                Serializer::stringCacheType serCache)
     : context_(context), is_(is) {
-    cache_.resize(serCache.size());
+    cache_.resize(serCache.size()+1);
     for (const auto& pair : serCache) {
       cache_[pair.second.first] = {pair.second.second, pair.first};
     }

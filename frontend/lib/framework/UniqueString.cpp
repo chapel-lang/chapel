@@ -24,6 +24,7 @@
 #include "chpl/util/string-escapes.h"
 
 #include <cstring>
+#include <arpa/inet.h> // just for htonl / ntohl
 
 namespace chpl {
 namespace detail {
@@ -213,12 +214,9 @@ void UniqueString::serialize(Serializer& ser) const {
     // won't work if the high bit is set
     CHPL_ASSERT((uid >> 31) == 0);
     // compute the uid in big-endian order with high bit set
-    // TODO: use htobe32 or htonl
+    uint32_t num = htonl(uid);
     uint8_t bytes[4];
-    for (int i = 0; i < 4; i++) {
-      bytes[i] = (uid >> 24) & 0xff;
-      uid = uid << 8;
-    }
+    memcpy(&bytes[0], &num, sizeof(num));
     bytes[0] |= 0x80; // set the high bit
     ser.os().write((const char*) &bytes[0], 4);
   }
@@ -235,15 +233,13 @@ UniqueString UniqueString::deserialize(Deserializer& des) {
   } else {
     // compute the index to look up in the strings table
     uint8_t bytes[4];
-    bytes[0] = byte;
+    // unset the high bit
+    bytes[0] = byte & 0x7f;
     des.is().read((char*) &bytes[1], 3); // read the other 3 bytes
-    // compute the uid in big-endian order
-    // TODO: consider using be32toh or ntohl
-    uint32_t uid = 0;
-    for (int i = 0; i < 4; i++) {
-      uid |= bytes[i];
-      uid = uid << 8;
-    }
+    uint32_t num = 0;
+    memcpy(&num, &bytes[0], sizeof(num));
+    // convert from big-endian order to host byte order
+    uint32_t uid = ntohl(num);
     const auto& pair = des.getString(uid);
     return get(des.context(), pair.second, pair.first);
   }
