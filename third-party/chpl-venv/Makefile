@@ -93,7 +93,8 @@ chpldoc-venv: install-chpldeps
 c2chapel-venv: install-chpldeps
 
 chapel-py-venv: install-chpldeps
-	@# Install chapel-py's Python package into the virtual environment.
+	@# Install chapel-py's Python package into the Python Application
+	@# directory structure at $(CHPL_VENV_CHPLDEPS)
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
