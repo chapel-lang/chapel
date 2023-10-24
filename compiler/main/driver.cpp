@@ -133,9 +133,6 @@ static char libraryFilename[FILENAME_MAX] = "";
 static char incFilename[FILENAME_MAX] = "";
 static bool fBaseline = false;
 
-// Tmp dir path managed by compiler driver
-static char driverTmpDir[FILENAME_MAX] = "";
-
 // Flags that were in commonFlags.h/cpp for awhile
 
 // TODO: Should --library automatically generate all supported
@@ -148,6 +145,8 @@ bool fDriverDoMonolithic = true;
 bool fDriverPhaseOne = false;
 bool fDriverPhaseTwo = false;
 bool driverDebugPhaseSpecified = false;
+// Tmp dir path managed by compiler driver
+char driverTmpDir[FILENAME_MAX] = "";
 bool fLibraryCompile = false;
 bool fLibraryFortran = false;
 bool fLibraryMakefile = false;
@@ -766,15 +765,15 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
 }
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
- addLibFile(libraryFilename);
+ addLibFile(libraryFilename, /* fromCmdLine */ true);
 }
 
 static void handleLibPath(const ArgumentDescription* desc, const char* arg_unused) {
-  addLibPath(libraryFilename);
+  addLibPath(libraryFilename, /* fromCmdLine */ true);
 }
 
 static void handleIncDir(const ArgumentDescription* desc, const char* arg_unused) {
-  addIncInfo(incFilename);
+  addIncInfo(incFilename, /* fromCmdLine */ true);
 }
 
 static int invokeChplWithArgs(int argc, char* argv[],
@@ -2099,10 +2098,6 @@ static void postprocess_args() {
   setPrintCppLineno();
 
   setGPUFlags();
-
-  if (fDriverPhaseOne) {
-    saveLibraryAndIncludeInfo();
-  }
 
   // restore warnings to previous state
   ignore_warnings = ignore_warnings_previous;

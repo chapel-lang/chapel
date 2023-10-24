@@ -89,10 +89,16 @@ void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename, const char* modFilename);
 void assertSourceFilesFound();
 const char* nthFilename(int i);
-void addLibPath(const char* filename);
-void addLibFile(const char* filename);
-void addIncInfo(const char* incDir);
+// Functions to add C library or include dir information.
+// If running in driver phase one and the information is not from parsing the
+// command line, these will also save to a tmp dir for later use.
+void addLibPath(const char* filename, bool fromCmdLine = false);
+void addLibFile(const char* filename, bool fromCmdLine = false);
+void addIncInfo(const char* incDir, bool fromCmdLine = false);
 
+// Ensure the tmp dir is set up for use by the driver (i.e., isn't about to be
+// replaced).
+void checkDriverTmp();
 // Save provided string into the given tmp file.
 // Appends the given string as a new line in the file. Provided string is
 // assumed to not contain newlines.
@@ -106,8 +112,6 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 void restoreDriverTmp(const char* tmpFilePath,
                       std::function<void(const char*)> restoreSavedString);
 
-// Save lib dir, lib name, and inc dir info to disk, for compiler-driver use.
-void saveLibraryAndIncludeInfo();
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.
 void restoreLibraryAndIncludeInfo();

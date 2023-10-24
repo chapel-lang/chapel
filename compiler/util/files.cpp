@@ -96,33 +96,51 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
 //
 // Convert a libString of the form "foo:bar:baz" to entries in libDirs
 //
-void addLibPath(const char* libString) {
+void addLibPath(const char* libString, bool fromCmdLine) {
   addPath(libString, &libDirs);
 
-  if (fDriverPhaseOne) {
+  if (fDriverPhaseOne && !fromCmdLine) {
     saveDriverTmp(libDirsFilename, libString);
   }
 }
 
-void addLibFile(const char* libFile) {
+void addLibFile(const char* libFile, bool fromCmdLine) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 
-  if (fDriverPhaseOne) {
+  if (fDriverPhaseOne && !fromCmdLine) {
     saveDriverTmp(libFilesFilename, libFile);
   }
 }
 
-void addIncInfo(const char* incDir) {
+void addIncInfo(const char* incDir, bool fromCmdLine) {
   addPath(incDir, &incDirs);
 
-  if (fDriverPhaseOne) {
+  if (fDriverPhaseOne && !fromCmdLine) {
     saveDriverTmp(incDirsFilename, incDir);
   }
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+void checkDriverTmp() {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  bool valid = false;
+  if (driverTmpDir[0] == '\0') {
+    // We are in an initial invocation, all good.
+    valid = true;
+  }
+  if (gContext->tmpDir() == std::string(driverTmpDir)) {
+    // In subinvocation and context's tmp dir has been set to driver
+    // specification, all good.
+    valid = true;
+  }
+  assert(
+      valid &&
+      "attempted to save info to tmp dir before it is set up for driver use");
+}
+
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+  checkDriverTmp();
 
   fileinfo* file = openTmpFile(tmpFilePath, "a");
   fprintf(file->fptr, "%s\n", stringToSave);
@@ -131,7 +149,7 @@ void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
                            std::vector<const char*> stringsToSave) {
-  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+  checkDriverTmp();
 
   fileinfo* file = openTmpFile(tmpFilePath, "a");
   for (const auto stringToSave : stringsToSave) {
@@ -167,31 +185,20 @@ void restoreDriverTmp(const char* tmpFilePath,
   closefile(tmpFile);
 }
 
-void saveLibraryAndIncludeInfo() {
-  INT_ASSERT(
-      fDriverPhaseOne &&
-      "should only be saving library and include info in driver phase one");
-
-  saveDriverTmpMultiple(libDirsFilename, libDirs);
-  saveDriverTmpMultiple(libFilesFilename, libFiles);
-  saveDriverTmpMultiple(incDirsFilename, incDirs);
-}
-
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
       fDriverPhaseTwo &&
       "should only be restoring library and include info in driver phase two");
 
-  // Phase two has access to the command line but not any info added from
-  // 'require' statements, so these contents are incomplete. Just clear any
-  // partial info and re-load it all.
-  libDirs.clear();
-  libFiles.clear();
-  incDirs.clear();
-
-  restoreDriverTmp(libDirsFilename, &addLibPath);
-  restoreDriverTmp(libFilesFilename, &addLibFile);
-  restoreDriverTmp(incDirsFilename, &addIncInfo);
+  restoreDriverTmp(libDirsFilename, [](const char* filename) {
+    addLibPath(filename, /* fromCmdLine */ false);
+  });
+  restoreDriverTmp(libFilesFilename, [](const char* filename) {
+    addLibFile(filename, /* fromCmdLine */ false);
+  });
+  restoreDriverTmp(incDirsFilename, [](const char* filename) {
+    addIncInfo(filename, /* fromCmdLine */ false);
+  });
 }
 
 void restoreAdditionalSourceFiles() {
