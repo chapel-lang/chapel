@@ -19,5 +19,6 @@ target_sources(ChplFrontend-obj
                PRIVATE
 
                LibraryFile.cpp
+               LibraryFileWriter.cpp
 
               )
