@@ -2659,7 +2659,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
           builtinId = ct->id();
         }
       }
-      result.setToId(builtinId);
+      validateAndSetToId(result, ident, builtinId);
 
       result.setType(type);
       return;
