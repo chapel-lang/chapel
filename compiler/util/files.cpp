@@ -134,6 +134,9 @@ void checkDriverTmp() {
     // specification, all good.
     valid = true;
   }
+
+  // Reassure some compilers that this variable is not unused.
+  std::ignore = valid;
   assert(
       valid &&
       "attempted to save info to tmp dir before it is set up for driver use");
