@@ -138,7 +138,6 @@ struct Visitor {
                                   const VisibilityClause* clause);
   void checkAttributeNameRecognizedOrToolSpaced(const Attribute* node);
   void checkAttributeAppliedToCorrectNode(const Attribute* attr);
-  void checkAttributeUsedParens(const Attribute* node);
   void checkAttributeUnstable(const Attribute* node);
   void checkUserModuleHasPragma(const AttributeGroup* node);
   void checkParenfulDeprecation(const AttributeGroup* node);
@@ -1277,27 +1276,11 @@ void Visitor::visit(const BracketLoop* node) {
 }
 
 void Visitor::checkUserModuleHasPragma(const AttributeGroup* node) {
-  // determine if the module is user code
-  if (!isUserCode()) return;
+  // determine if the module is user code and warn_unstable was set
+  if (!isUserCode() || !shouldEmitUnstableWarning(node)) return;
 
-  bool pragmaNoDocFound = false;
-  int pragmaCount = 0;
-  for (auto pragma : node->pragmas()) {
-    pragmaCount++;
-    if (pragma == pragmatags::PRAGMA_NO_DOC) {
-      // issue a deprecation warning about pragma 'no doc' and continue
-      warn(node, "pragma 'no doc' is deprecated, use '@chpldoc.nodoc' instead");
-      pragmaNoDocFound = true;
-      continue;
-    }
-  }
-  // don't check if warn_unstable isn't set
-  if (!shouldEmitUnstableWarning(node)) return;
-
-  // don't warn if the only pragma is 'no doc', which is deprecated
-  bool noDocIsOnlyPragma = (pragmaNoDocFound && pragmaCount == 1);
   // issue a warning once for the symbol
-  if (node->pragmas().begin() != node->pragmas().end() && !noDocIsOnlyPragma) {
+  if (node->pragmas().begin() != node->pragmas().end()) {
     auto parentNode = parsing::parentAst(context_, node);
     UniqueString parentName;
     if (auto decl = parentNode->toNamedDecl()) {
@@ -1331,12 +1314,6 @@ void Visitor::checkParenfulDeprecation(const AttributeGroup* node) {
 
   if (!fn || !fn->isParenless()) {
     CHPL_REPORT(context_, InvalidParenfulDeprecation, node, groupParent);
-  }
-}
-
-void Visitor::checkAttributeUsedParens(const Attribute* node) {
-  if (node->numActuals() > 0 && !node->usedParens()) {
-     CHPL_REPORT(context_, ParenlessAttributeArgDeprecated, node);
   }
 }
 
@@ -1397,7 +1374,6 @@ void Visitor::checkAttributeUnstable(const Attribute* node) {
 void Visitor::visit(const Attribute* node) {
   checkAttributeAppliedToCorrectNode(node);
   checkAttributeNameRecognizedOrToolSpaced(node);
-  checkAttributeUsedParens(node);
   checkAttributeUnstable(node);
 }
 

@@ -74,6 +74,7 @@ static ssize_t posToFileIndex(const char* buf, int row, int col) {
 static std::string fileText(Context* context, const Location& loc) {
   auto path = loc.path();
   if (path.isEmpty()) return "";
+  if (!parsing::hasFileText(context, std::string(path.c_str()))) return "";
   auto fileText = parsing::fileText(context, path);
   return fileText.text();
 }
