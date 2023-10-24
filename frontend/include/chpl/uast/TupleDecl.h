@@ -93,13 +93,25 @@ class TupleDecl final : public Decl {
     CHPL_ASSERT(assertAcceptableTupleDecl());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Decl::serialize(ser);
+    ser.write(intentOrKind_);
+    ser.writeVInt(numElements_);
+    ser.writeVInt(typeExpressionChildNum_);
+    ser.writeVInt(initExpressionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TupleDecl);
+
+ private:
   TupleDecl(Deserializer& des)
     : Decl(asttags::TupleDecl, des) {
-      intentOrKind_ = des.read<IntentOrKind>();
-      numElements_ = des.read<int>();
-      typeExpressionChildNum_ = des.read<int>();
-      initExpressionChildNum_ = des.read<int>();
-    }
+    intentOrKind_ = des.read<IntentOrKind>();
+    numElements_ = des.readVInt();
+    typeExpressionChildNum_ = des.readVInt();
+    initExpressionChildNum_ = des.readVInt();
+  }
 
   bool assertAcceptableTupleDecl();
 
@@ -200,17 +212,6 @@ class TupleDecl final : public Decl {
     Returns a string describing the passed intentOrKind.
    */
   static const char* intentOrKindToString(IntentOrKind kind);
-
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-    ser.write(intentOrKind_);
-    ser.write(numElements_);
-    ser.write(typeExpressionChildNum_);
-    ser.write(initExpressionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(TupleDecl);
-
 };
 
 

@@ -43,6 +43,13 @@ class TypeDecl : public NamedDecl {
                 name) {
 
   }
+
+ public:
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+ protected:
   TypeDecl(AstTag tag, Deserializer& des)
     : NamedDecl(tag, des) { }
 
@@ -56,10 +63,6 @@ class TypeDecl : public NamedDecl {
 
  public:
   virtual ~TypeDecl() = 0; // this is an abstract base class
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
 };
 
 
