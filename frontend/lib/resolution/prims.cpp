@@ -720,7 +720,7 @@ CallResolutionResult resolvePrimCall(Context* context,
           toParamBytesActual(actualType, sParam)) {
         const size_t s = sParam.length();
         type = QualifiedType(QualifiedType::PARAM,
-                      IntType::get(context, 64),
+                      IntType::get(context, 0),
                       IntParam::get(context, s));
         break;
       } else if (type.kind() != QualifiedType::PARAM) {
