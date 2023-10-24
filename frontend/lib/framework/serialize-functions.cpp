@@ -45,6 +45,9 @@ uint64_t readUnsignedVarint(std::istream& is) {
   uint64_t num = 0;
   for (int i = 0; i < 10; i++) {
     auto byte = is.get();
+    // TODO: what should this function do on EOF?
+    // What if it reads a byte that should be followed by another
+    // byte there is no other byte (due to EOF)?
     if (byte == is.eof()) break;
     uint64_t part = byte & 0x7f;
     num |= part << (7*i);
