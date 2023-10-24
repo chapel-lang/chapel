@@ -46,6 +46,8 @@ namespace uast {
  */
 class While final : public Loop {
  private:
+  int8_t conditionChildNum_;
+
   While(AstList children, int8_t conditionChildNum,
         BlockStyle blockStyle,
         int loopBodyChildNum,
@@ -56,6 +58,15 @@ class While final : public Loop {
     CHPL_ASSERT(condition());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Loop::serialize(ser);
+    ser.write(conditionChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(While);
+
+ private:
   While(Deserializer& des)
     : Loop(asttags::While, des) {
     conditionChildNum_ = des.read<int8_t>();
@@ -80,8 +91,6 @@ class While final : public Loop {
 
   std::string dumpChildLabelInner(int i) const override;
 
-  int8_t conditionChildNum_;
-
  public:
   ~While() override = default;
 
@@ -102,14 +111,6 @@ class While final : public Loop {
     auto ret = child(conditionChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
-    ser.write(conditionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(While);
-
 };
 
 

@@ -48,6 +48,14 @@ class Yield final : public AstNode {
     CHPL_ASSERT(children_.size() == 1);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Yield);
+
+ private:
   Yield(Deserializer& des)
     : AstNode(asttags::Yield, des) {
   }
@@ -80,13 +88,6 @@ class Yield final : public AstNode {
     CHPL_ASSERT(ret);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Yield);
-
 };
 
 

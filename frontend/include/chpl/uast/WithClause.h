@@ -49,6 +49,14 @@ class WithClause final : public AstNode {
     : AstNode(asttags::WithClause, std::move(exprs)) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(WithClause);
+
+ private:
   WithClause(Deserializer& des)
     : AstNode(asttags::WithClause, des) { }
 
@@ -89,13 +97,6 @@ class WithClause final : public AstNode {
     const AstNode* ast = this->child(i);
     return ast;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(WithClause);
-
 };
 
 
