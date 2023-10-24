@@ -239,6 +239,7 @@ FnSymbol* FnSymbol::copyInnerCore(SymbolMap* map) {
    * method.
    */
   newFn->copyFlags(this);
+  newFn->parSafeField = this->parSafeField;
   newFn->deprecationMsg = this->deprecationMsg;
   newFn->unstableMsg = this->unstableMsg;
   newFn->parenfulDeprecationMsg = this->parenfulDeprecationMsg;

@@ -3458,6 +3458,7 @@ Type* AggregateType::getDecoratedClass(ClassTypeDecoratorEnum d) {
     TypeSymbol* tsDec = new TypeSymbol(astrName, dec);
     // The dec type isn't really an object, shouldn't have its own fields
     tsDec->copyFlags(at->symbol);
+    tsDec->parSafeField = at->symbol->parSafeField;
     tsDec->deprecationMsg = at->symbol->deprecationMsg;
     tsDec->unstableMsg = at->symbol->unstableMsg;
     tsDec->addFlag(FLAG_NO_OBJECT);

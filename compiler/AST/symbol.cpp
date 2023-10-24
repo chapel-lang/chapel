@@ -1283,6 +1283,7 @@ TypeSymbol::copyInner(SymbolMap* map) {
   TypeSymbol* new_type_symbol = new TypeSymbol(name, new_type);
   new_type->addSymbol(new_type_symbol);
   new_type_symbol->copyFlags(this);
+  new_type_symbol->parSafeField = parSafeField;
   new_type_symbol->cname = cname;
   new_type_symbol->instantiationPoint = instantiationPoint;
   if (AggregateType* at = toAggregateType(new_type)) {
