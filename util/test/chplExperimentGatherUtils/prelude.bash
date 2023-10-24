@@ -20,8 +20,8 @@ function runAndSubLog () {
   exec $@ | tee -a $runLog.$sublog
 }
 
-function gatherFromPerfkeys () {
-  $CHPL_HOME/util/test/chplExperimentGatherUtils/gatherFromPerfKeys.py --fromDir "$scriptInvokeDir" --runlog $runLog $@ > $datFile
+function extractFromPerfKeys () {
+  $CHPL_HOME/util/test/chplExperimentGatherUtils/gatherFromPerfKeys.py --fromDir "$scriptInvokeDir" --runlog $runLog $@
 }
 
 # -- Testing parameters --
