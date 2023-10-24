@@ -1272,7 +1272,7 @@ proc setSockOpt(socketFd: c_int, level: c_int, optname: c_int, ref value: c_int)
 }
 
 /*
-  Set the value of the given socket option (see `setsockopt(2) </https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
+  Set the value of the given socket option (see `setsockopt(2) <https://pubs.opengroup.org/onlinepubs/9699919799/functions/setsockopt.html#>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined above.
 
@@ -1375,7 +1375,7 @@ proc getSockOpt(socketFd:c_int, level: c_int, optname: c_int) throws {
 }
 
 /*
-  Returns the value of the given socket option (see `getsockopt </https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html>`_)
+  Returns the value of the given socket option (see `getsockopt <https://pubs.opengroup.org/onlinepubs/9699919799/functions/getsockopt.html>`_)
   on provided :type:`tcpConn`. The needed symbolic constants (SO_* etc.)
   are defined above.
 

@@ -283,7 +283,7 @@ are as follows:
     number of threads used to execute tasks
 
   ``CHPL_RT_USE_PU_KIND``
-    which kind of processing units to use on CPUs with heterogeneous
+    which kind of processing units to use on CPUs with hybrid
     processing units. Values are "performance", "efficiency", or "all".
 
 There is a bit more information on ``CHPL_RT_CALL_STACK_SIZE``,
@@ -349,12 +349,12 @@ Controlling the Kind of Processing Units
 ----------------------------------------
 
 Some CPUs, such as Intel's "Alder Lake" family of processors, have
-heterogeneous processing units, some of which are "performance" and others
+hybrid processing units, some of which are "performance" and others
 of which are "efficiency". The following environment variable can be used
 to select the kind of processing units used by a program.
 
   ``CHPL_RT_USE_PU_KIND``
-    Specifies which kind of processing units to use on CPUs with heterogeneous
+    Specifies which kind of processing units to use on CPUs with hybrid
     processing units. Values are "performance", "efficiency", or "all".
 
 By default the Chapel runtime will only use "performance" processing units.
@@ -362,7 +362,7 @@ Note that if set to "all" the runtime will run tasks on all available
 cores/processing units indiscriminately ; it will not take the difference in
 performance into account when assigning tasks to processing units.
 
-This environment variable has no effect if the processor has homogeneous
+This environment variable has no effect if the processor does not have hybrid
 processing units.
 
 -----------------------------------------

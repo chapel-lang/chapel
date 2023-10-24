@@ -1,2 +1,2 @@
 #!/usr/bin/env bash
-$3 -s cPtrToLogicalValue=true --library --library-dir lib-dir -o liblib lib.chpl
+$3 --library --library-dir lib-dir -o liblib lib.chpl

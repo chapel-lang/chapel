@@ -2742,6 +2742,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       INT_ASSERT(!toValType->symbol->hasFlag(FLAG_GENERIC));
       toType = toValType->symbol;
     }
+
+    // If there is a mismatch and we already have errors, leave it alone.
+    if (toValType != toType->type && fatalErrorsEncountered()) return;
     // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
 
