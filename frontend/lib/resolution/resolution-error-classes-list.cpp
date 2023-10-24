@@ -701,7 +701,8 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.code(call);
 
   for (auto& candidate : rejected) {
-    if (candidate.reason() == resolution::FAIL_CANNOT_PASS &&
+    auto reason = candidate.reason();
+    if (reason == resolution::FAIL_CANNOT_PASS &&
         /* skip printing detailed info here because computing the formal-actual
            map will go poorly with an unknown formal. */
         candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
@@ -709,24 +710,35 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       resolution::FormalActualMap fa(fn, ci);
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal()->toNamedDecl();
+      const uast::AstNode* actualExpr = nullptr;
+      if (0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
+        actualExpr = call->actual(badPass.actualIdx());
+      }
 
+      wr.message("");
       wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
       wr.code(fn->id(), { formalDecl });
+
       wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
-      if (candidate.formalReason() == resolution::FAIL_NOT_EXACT_MATCH) {
+      if (actualExpr) {
+        wr.code(actualExpr, { actualExpr });
+      }
+
+      auto formalReason = candidate.formalReason();
+      if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
-      } else if (candidate.formalReason() == resolution::FAIL_INCOMPATIBLE_MGR) {
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
         auto formalMgr = badPass.formalType().type()->toClassType()->manager();
         auto actualMgr = badPass.actualType().type()->toClassType()->manager();
 
         wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
-      } else if (candidate.formalReason() == resolution::FAIL_EXPECTED_SUBTYPE) {
+      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
         if (auto fml = formalDecl->toFormal()) {
-          wr.message("Formals with kind '", fml->storageKind(),
+          wr.message("Formals with kind '", badPass.formalType().kind(),
                      "' expect the actual to be a subtype, but '", badPass.actualType().type(),
                      "' is not a subtype of '", badPass.formalType().type(), "'.");
         }
-      } else if (candidate.formalReason() == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
         auto formalTup = badPass.formalType().type()->toTupleType();
         auto actualTup = badPass.actualType().type()->toTupleType();
 
@@ -734,11 +746,22 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
                    " elements cannot be passed to a tuple formal with ",
                    formalTup->numElements(), " elements.");
       }
-    } else if (candidate.reason() == resolution::FAIL_VARARG_MISMATCH) {
-      wr.note(candidate.idForErr(), "the following candidate didn't match because the number of varargs was incorrect:");
-      wr.code(candidate.idForErr());
-    } else if (candidate.reason() == resolution::FAIL_WHERE_CLAUSE) {
-      wr.note(candidate.idForErr(), "the following candidate didn't match because the 'where' clause evaluated to 'false'.");
+    } else {
+      const char* reasonStr = "the following candidate didn't match:";
+      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+        reasonStr = "the following candidate didn't match because the provided actuals could not be mapped to its formals:";
+      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+        reasonStr = "the following candidate didn't match because the number of varargs was incorrect:";
+      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
+        reasonStr = "the following candidate didn't match because the 'where' clause evaluated to 'false':";
+      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
+        if (ci.isParenless()) {
+          reasonStr = "the following candidate didn't match because it is parenful, but the call was parenless:";
+        } else {
+          reasonStr = "the following candidate didn't match because it is parenless, but the call was parenful:";
+        }
+      }
+      wr.note(candidate.idForErr(), reasonStr);
       wr.code(candidate.idForErr());
     }
   }
