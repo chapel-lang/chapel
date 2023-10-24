@@ -167,6 +167,16 @@ void restoreDriverTmp(const char* tmpFilePath,
   closefile(tmpFile);
 }
 
+void saveLibraryAndIncludeInfo() {
+  INT_ASSERT(
+      fDriverPhaseOne &&
+      "should only be saving library and include info in driver phase one");
+
+  saveDriverTmpMultiple(libDirsFilename, libDirs);
+  saveDriverTmpMultiple(libFilesFilename, libFiles);
+  saveDriverTmpMultiple(incDirsFilename, incDirs);
+}
+
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
       fDriverPhaseTwo &&

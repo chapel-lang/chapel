@@ -106,6 +106,8 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 void restoreDriverTmp(const char* tmpFilePath,
                       std::function<void(const char*)> restoreSavedString);
 
+// Save lib dir, lib name, and inc dir info to disk, for compiler-driver use.
+void saveLibraryAndIncludeInfo();
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.
 void restoreLibraryAndIncludeInfo();

@@ -2100,6 +2100,10 @@ static void postprocess_args() {
 
   setGPUFlags();
 
+  if (fDriverPhaseOne) {
+    saveLibraryAndIncludeInfo();
+  }
+
   // restore warnings to previous state
   ignore_warnings = ignore_warnings_previous;
 }
