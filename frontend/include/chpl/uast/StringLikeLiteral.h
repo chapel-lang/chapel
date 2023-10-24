@@ -47,6 +47,13 @@ class StringLikeLiteral : public Literal {
       quotes_(quotes)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
+    ser.write(quotes_);
+  }
+
+ protected:
   StringLikeLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
     quotes_ = des.read<QuoteStyle>();
@@ -87,11 +94,6 @@ class StringLikeLiteral : public Literal {
     passed quote style
    */
   static const char* quoteStyleToString(QuoteStyle q);
-
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
-    ser.write(quotes_);
-  }
 };
 
 
