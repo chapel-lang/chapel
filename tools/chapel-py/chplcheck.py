@@ -57,7 +57,7 @@ def check_basic_rule(root, rule):
     for (node, _) in chapel.each_matching(root, nodetype):
         if ignores_rule(node, name): continue
 
-        if not func(node): report_violation(node, name)
+        if not func(node): yield (node, name)
 
 
 # === "user-defined" linter rule functions, used to implement warnings. ===
@@ -164,27 +164,89 @@ Rules = [
 
 SilencedRules = [ "CamelCaseVariables", "ConsecutiveDecls" ]
 
+def run_checks(asts):
+    for ast in asts:
+        for rule in Rules:
+            yield from check_basic_rule(ast, rule)
+
+        for group in consecutive_decls(ast):
+            yield (group[1], "ConsecutiveDecls")
+
+        for node in check_misleading_indentation(ast):
+            yield (node, "MisleadingIndentation")
+
+def run_lsp():
+    from pygls.server import LanguageServer
+    from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
+    from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
+    from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
+
+    server = LanguageServer('chplcheck', 'v0.1')
+    contexts = {}
+
+    def get_updated_context(uri):
+        if uri in contexts:
+            context = contexts[uri]
+            context.advance_to_next_revision(False)
+        else:
+            context = chapel.core.Context()
+            contexts[uri] = context
+        return context
+
+    def parse_file(uri):
+        context = get_updated_context(uri)
+        return context.parse(uri[len("file://"):])
+
+    def build_diagnostics(uri):
+        asts = parse_file(uri)
+        diagnostics = []
+        for (node, rule) in run_checks(asts):
+            location = node.location()
+            start = location.start()
+            end = location.end()
+
+            diagnostic = Diagnostic(
+                range=Range(
+                    start=Position(start[0]-1, start[1]-1),
+                    end=Position(end[0]-1, end[1]-1)
+                ),
+                message="Lint: rule [{}] violated".format(rule),
+                severity=DiagnosticSeverity.Warning
+            )
+            diagnostics.append(diagnostic)
+        return diagnostics
+
+    @server.feature(TEXT_DOCUMENT_DID_OPEN)
+    async def did_open(ls, params: DidOpenTextDocumentParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        ls.publish_diagnostics(text_doc.uri, build_diagnostics(text_doc.uri))
+
+    @server.feature(TEXT_DOCUMENT_DID_SAVE)
+    async def did_save(ls, params: DidSaveTextDocumentParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        ls.publish_diagnostics(text_doc.uri, build_diagnostics(text_doc.uri))
+
+    server.start_io()
+
 def main():
     global ctx
 
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filenames', nargs='*')
     parser.add_argument('--ignore-rule', action='append', dest='ignored_rules', default=[])
+    parser.add_argument('--lsp', action='store_true', default=False)
     args = parser.parse_args()
 
     SilencedRules.extend(args.ignored_rules)
 
+    if args.lsp:
+        run_lsp()
+        return
+
     for (filename, ctx) in chapel.files_with_contexts(args.filenames):
-        ast = ctx.parse(filename)
-
-        for rule in Rules:
-            check_basic_rule(ast, rule)
-
-        for group in consecutive_decls(ast):
-            report_violation(group[1], "ConsecutiveDecls")
-
-        for node in check_misleading_indentation(ast):
-            report_violation(node, "MisleadingIndentation")
+        asts = ctx.parse(filename)
+        for (node, rule) in run_checks(asts):
+            report_violation(node, rule)
 
 if __name__ == "__main__":
     main()
