@@ -46,6 +46,8 @@ parser.add_argument('--runlog', required=True)
 parser.add_argument('--keyfile', required=True)
 parser.add_argument('--rows', nargs='*')
 parser.add_argument('--columns', nargs="*")
+parser.add_argument('--no-print-headers', dest='print_headers', action='store_false')
+parser.set_defaults(print_headers=True)
 
 args = parser.parse_args(sys.argv[1:])
 
@@ -55,11 +57,24 @@ if args.fromDir is not None:
 (keys, verify_keys) = read_key_file(args.keyfile)
 res = find_keys(keys, open(args.runlog))
 
-for col in args.columns:
-  print("\t" + col, end="")
-print()
-for (count, row) in enumerate(args.rows):
-  print(row, end="")
+if args.print_headers:
+  for col in args.columns:
+    print("\t" + col, end="")
+  print()
+
+  for (count, row) in enumerate(args.rows):
+    print(row, end="")
+    for key in keys:
+      print("\t", res[key][count], end="")
+    print()
+
+else:
+  first = True
   for key in keys:
-    print("\t", res[key][count], end="")
+    if not first:
+      print("\t", end="")
+    first = False
+
+    assert(len(res[key]) == 1)
+    print(res[key][0], end="")
   print()
