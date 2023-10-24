@@ -39,7 +39,7 @@ proc medianTime(times, i, j) {
 }
 
 proc doPrintTimes(times) {
-  writef("Bandwidth (GiB/s):\n");
+  writef("Throughput (GiB/s):\n");
 
   write(b"┏");      for i in 0..< gNumDevs * 9 + 5 do write(b"━");        write(b"┓\n");
   write(b"┃    │"); for i in 0..< gNumDevs         do writef("%<8i ", i); write(b"┃\n");
