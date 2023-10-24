@@ -1054,32 +1054,67 @@ static void test18(Parser* parser) {
   assert(guard.realizeErrors() == 3);
 }
 
-// test that we reject attributes with arguments not inside parens
+// test that we reject attributes with list of named arguments not inside parens
 static void test19(Parser* parser) {
   auto ctx = parser->context();
   ErrorGuard guard(ctx);
   std::string program = R""""(
     @unstable category="experimental", reason="Enum is unstable", issue="82566"
     proc Foo(bar) {  }
-    @deprecated since="1.32", note="this thing is deprecated", suggestion="use Baz instead"
-    var x: int;
-    @stable since="1.28"
-    var y: int;
   )"""";
   auto parseResult = parseStringAndReportErrors(parser, "test19.chpl",
                                                 program.c_str());
-  assert(guard.numErrors() == 2);
-  assert(guard.error(0)->message() == "near 'category'");
-  std::cout<<guard.error(0)->message()<<std::endl;
-  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
-  assert(guard.error(1)->message() == "near 'since'");
-  std::cout<<guard.error(1)->message()<<std::endl;
-  assert(guard.error(1)->kind() == ErrorBase::Kind::SYNTAX);
 
-  assert(guard.realizeErrors() == 2);
+  assert(guard.error(0)->message() == "near 'category'");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
+  assert(guard.realizeErrors()==1);
 }
 
+// test that we reject attributes with a single unnamed argument not inside parens
+static void test20(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    @stable "1.28"
+    proc Foo(bar) {  }
+  )"""";
+  auto parseResult = parseStringAndReportErrors(parser, "test20.chpl",
+                                                program.c_str());
+  assert(guard.error(0)->message() == "near '\"'");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
+  assert(guard.realizeErrors()==1);
+}
 
+// test that we reject attributes with a single named argument not inside parens
+static void test21(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    @deprecated suggestion="use Baz instead"
+    proc Foo(bar) {  }
+  )"""";
+  auto parseResult = parseStringAndReportErrors(parser, "test21.chpl",
+                                                program.c_str());
+  assert(guard.error(0)->message() == "near 'suggestion'");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
+  assert(guard.realizeErrors()==1);
+}
+
+// test that we reject attributes with a list of unnamed arguments not inside parens
+static void test22(Parser* parser) {
+  auto ctx = parser->context();
+  ErrorGuard guard(ctx);
+  std::string program = R""""(
+    @unstable "this thing is unstable", "experimental", "15634"
+    proc Foo(bar) {  }
+  )"""";
+  auto parseResult = parseStringAndReportErrors(parser, "test22.chpl",
+                                                program.c_str());
+
+  assert(guard.error(0)->message() == "near '\"'");
+  assert(guard.error(0)->kind() == ErrorBase::Kind::SYNTAX);
+  assert(guard.realizeErrors()==1);
+}
 
 int main() {
   Context context;
@@ -1111,6 +1146,9 @@ int main() {
   test17(p);
   test18(p);
   test19(p);
+  test20(p);
+  test21(p);
+  test22(p);
 
   return 0;
 }
