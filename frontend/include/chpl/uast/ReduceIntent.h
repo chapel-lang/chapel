@@ -63,6 +63,14 @@ class ReduceIntent final : public NamedDecl {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
+
+ private:
   ReduceIntent(Deserializer& des)
     : NamedDecl(asttags::ReduceIntent, des) { }
 
@@ -95,13 +103,6 @@ class ReduceIntent final : public NamedDecl {
   const AstNode* op() const {
     return this->child(opChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
-
 };
 
 

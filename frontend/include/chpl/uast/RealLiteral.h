@@ -37,6 +37,14 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
     : NumericLiteral(asttags::RealLiteral, value, text)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(RealLiteral);
+
+ private:
   RealLiteral(Deserializer& des)
     : NumericLiteral(asttags::RealLiteral, des)
   { }
@@ -49,12 +57,6 @@ class RealLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<RealLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(RealLiteral);
 };
 
 

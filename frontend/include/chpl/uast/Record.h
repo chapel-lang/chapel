@@ -44,7 +44,6 @@ namespace uast {
  */
 class Record final : public AggregateDecl {
  private:
-
   Record(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
          int linkageNameChildNum,
@@ -64,6 +63,14 @@ class Record final : public AggregateDecl {
                     elementsChildNum,
                     numElements) {}
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Record);
+
+ private:
   Record(Deserializer& des)
     : AggregateDecl(asttags::Record, des) {}
 
@@ -90,11 +97,6 @@ class Record final : public AggregateDecl {
                              UniqueString name,
                              AstList inheritExprs,
                              AstList contents);
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Record);
 };
 
 
