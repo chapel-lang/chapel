@@ -27,5 +27,6 @@ target_sources(ChplFrontend-obj
                TemporaryFileResult.cpp
                UniqueString.cpp
                compiler-configuration.cpp
+               serialize-functions.cpp
 
               )
