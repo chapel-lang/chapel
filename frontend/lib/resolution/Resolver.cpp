@@ -140,6 +140,17 @@ Resolver::createForInitialSignature(Context* context, const Function* fn,
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+
+  if (fn->isMethod()) {
+    fn->thisFormal()->traverse(ret);
+    auto receiverType = ret.byPostorder.byAst(fn->thisFormal()).type();
+    if (receiverType.hasTypePtr()) {
+      if (auto ct = receiverType.type()->toCompositeType()) {
+        ret.inCompositeType = ct;
+      }
+    }
+  }
+
   return ret;
 }
 
@@ -154,6 +165,7 @@ Resolver::createForInstantiatedSignature(Context* context,
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+
   return ret;
 }
 
@@ -366,6 +378,11 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
 
   return ret;
+}
+
+void Resolver::setCompositeType(const CompositeType* ct) {
+  CHPL_ASSERT(this->inCompositeType == nullptr);
+  this->inCompositeType = ct;
 }
 
 std::vector<types::QualifiedType>

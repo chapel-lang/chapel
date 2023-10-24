@@ -1645,6 +1645,10 @@ const TypedFnSignature* instantiateSignature(Context* context,
       // Type query constraints were not satisfied
       return nullptr;
     }
+
+    if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
+      visitor.setCompositeType(qFormalType.type()->toCompositeType());
+    }
   }
 
   // instantiate the VarArg formal if necessary
@@ -2803,6 +2807,17 @@ static bool resolveFnCallSpecial(Context* context,
       result = ci.name() == USTR("==") ? result : !result;
       exprTypeOut = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                                   BoolParam::get(context, result));
+      return true;
+    }
+  }
+
+  if (ci.isOpCall() && ci.name() == USTR("!") && ci.numActuals() == 1) {
+    auto qt = ci.actual(0).type();
+    if (qt.kind() == QualifiedType::PARAM && qt.hasParamPtr() &&
+        qt.hasTypePtr() && qt.type()->isBoolType()) {
+      exprTypeOut = qt.param()->fold(context,
+                                     chpl::uast::PrimitiveTag::PRIM_UNARY_LNOT,
+                                     qt, QualifiedType());
       return true;
     }
   }
