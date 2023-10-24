@@ -124,12 +124,8 @@ static void test4() {
   const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
   const auto& resolvedXExpr = rr.byAst(xStmt);
   const auto& resolvedYExpr = rr.byAst(yStmt);
-  assert(resolvedXExpr.type().kind() == QualifiedType::Kind::PARAM);
-  assert(resolvedYExpr.type().kind() == QualifiedType::Kind::PARAM);
-  assert(resolvedXExpr.type().param()->isBoolParam());
-  assert(resolvedYExpr.type().param()->isBoolParam());
-  assert(!resolvedXExpr.type().param()->toBoolParam()->value());
-  assert(resolvedYExpr.type().param()->toBoolParam()->value());
+  assert(resolvedXExpr.type().isParamFalse());
+  assert(resolvedYExpr.type().isParamTrue());
   auto isBlueXCall = xStmt->child(0);
   assert(isBlueXCall);
   auto isBlueProc = m->stmt(1);

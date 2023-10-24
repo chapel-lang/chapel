@@ -75,7 +75,8 @@ static bool toParamIntActual(const QualifiedType& type, int64_t& into) {
 static bool paramStringBytesHelper(const QualifiedType& type, UniqueString& into, bool isString) {
   if (type.kind() == QualifiedType::PARAM) {
     if (auto t = type.type()) {
-      if (t->isBytesType() || (t->isStringType() && isString)) {
+      if ((t->isBytesType() && !isString) ||
+          (t->isStringType() && isString)) {
         if (auto p = type.param()) {
           if (auto sp = p->toStringParam()) {
             into = sp->value();
