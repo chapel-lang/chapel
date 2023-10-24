@@ -1,8 +1,11 @@
 use GpuDiagnostics;
 
 config const n = 16;
-assert(n%here.gpus.size == 0);
-const perGpuSize = n/here.gpus.size;
+
+const numGpus = here.gpus.size;
+assert(n%numGpus == 0);
+
+const perGpuSize = n/numGpus;
 
 // Workaround for now. See https://github.com/chapel-lang/chapel/issues/23650
 inline proc sublocId {
@@ -26,4 +29,5 @@ startGpuDiagnostics();
 }
 
 stopGpuDiagnostics();
-assertGpuDiags(kernel_launch=1, host_to_device=1, device_to_host=1);
+assertGpuDiags(kernel_launch=numGpus, host_to_device=numGpus,
+               device_to_host=numGpus);
