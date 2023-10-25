@@ -44,25 +44,113 @@ def ignores_rule(node, rulename):
 
     return False
 
-def report_violation(node, name):
-    if name in SilencedRules:
-        return
+def should_check_rule(node, rulename):
+    if rulename in SilencedRules:
+        return False
 
+    if node is not None and ignores_rule(node, rulename):
+        return False
+
+    return True
+
+def print_violation(node, name):
     location = node.location()
     first_line, _ = location.start()
     print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
 
 def check_basic_rule(root, rule):
+    # If we should ignore the rule no matter the node, no reason to run
+    # a traversal and match the pattern.
+    if not should_check_rule(None, rule):
+        return
+
     (name, nodetype, func) = rule
     for (node, _) in chapel.each_matching(root, nodetype):
-        if ignores_rule(node, name): continue
+        if not should_check_rule(node, name):
+            continue
 
-        if not func(node): yield (node, name)
+        if not func(node):
+            yield (node, name)
 
+def check_advanced_rule(root, rule):
+    # If we should ignore the rule no matter the node, no reason to run
+    # a traversal and match the pattern.
+    if not should_check_rule(None, rule):
+        return
+
+    (name, func) = rule
+    for node in func(root):
+        yield (node, name)
+
+BasicRules = []
+def basic_rule(nodetype):
+    def wrapper(func):
+        BasicRules.append((func.__name__, nodetype, func))
+        return func
+    return wrapper
+
+AdvancedRules = []
+def advanced_rule(func):
+    AdvancedRules.append((func.__name__, func))
+    return func
 
 # === "user-defined" linter rule functions, used to implement warnings. ===
 
-def consecutive_decls(node):
+def name_for_linting(node):
+    name = node.name()
+    if name.startswith("chpl_"):
+        name = name.removeprefix("chpl_")
+    return name
+
+def check_camel_case(node):
+    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]+|\d+)*|[A-Z]+)\$?', name_for_linting(node))
+
+def check_pascal_case(node):
+    return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)\$?', name_for_linting(node))
+
+@basic_rule(chapel.core.VarLikeDecl)
+def CamelCaseVariables(node):
+    if node.name() == "_": return True
+    return check_camel_case(node)
+
+@basic_rule(chapel.core.Record)
+def CamelCaseRecords(node):
+    return check_camel_case(node)
+
+@basic_rule(chapel.core.Class)
+def PascalCaseClasses(node):
+    return check_pascal_case(node)
+
+@basic_rule(chapel.core.Module)
+def PascalCaseModules(node):
+    return check_pascal_case(node)
+
+@basic_rule(chapel.core.Loop)
+def DoKeywordAndBlock(node):
+    return node.block_style() != "unnecessary"
+
+@basic_rule(chapel.core.Coforall)
+def NestedCoforalls(node):
+    parent = node.parent()
+    while parent is not None:
+        if isinstance(parent, chapel.core.Coforall):
+            return False
+        parent = parent.parent()
+    return True
+
+@basic_rule([chapel.core.Conditional, chapel.core.BoolLiteral, chapel.rest])
+def BoolLitInCondStmt(node):
+    return False
+
+@basic_rule(chapel.core.NamedDecl)
+def ChplPrefixReserved(node):
+    if node.name().startswith("chpl_"):
+        path = node.location().path()
+        return ctx.is_bundled_path(path)
+    return True
+
+@advanced_rule
+def ConsecutiveDecls(root):
     def is_relevant_decl(node):
         if isinstance(node, chapel.core.MultiDecl):
             for child in node:
@@ -92,7 +180,7 @@ def consecutive_decls(node):
             # If we ran out of compatible decls, see if we can return them.
             if not compatible_kinds:
                 if len(consecutive) > 1:
-                    yield consecutive
+                    yield consecutive[1]
                 consecutive = []
 
             # If this could be a compatible decl, start a new list.
@@ -100,47 +188,15 @@ def consecutive_decls(node):
                 consecutive.append(child)
 
         if len(consecutive) > 1:
-            yield consecutive
+            yield consecutive[1]
 
-    yield from recurse(node)
+    yield from recurse(root)
 
-def check_nested_coforall(node):
-    parent = node.parent()
-    while parent is not None:
-        if isinstance(parent, chapel.core.Coforall):
-            return False
-        parent = parent.parent()
-    return True
-
-def name_for_linting(node):
-    name = node.name()
-    if name.startswith("chpl_"):
-        name = name.removeprefix("chpl_")
-    return name
-
-def check_camel_case(node):
-    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]+|\d+)*|[A-Z]+)\$?', name_for_linting(node))
-
-def check_camel_case_var(node):
-    if node.name() == "_": return True
-    return check_camel_case(node)
-
-def check_pascal_case(node):
-    return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)\$?', name_for_linting(node))
-
-def check_reserved_prefix(node):
-    if node.name().startswith("chpl_"):
-        path = node.location().path()
-        return ctx.is_bundled_path(path)
-    return True
-
-def check_redundant_block(node):
-    return node.block_style() != "unnecessary"
-
-def check_misleading_indentation(node):
+@advanced_rule
+def MisleadingIndentation(root):
     prev = None
-    for child in node:
-        yield from check_misleading_indentation(child)
+    for child in root:
+        yield from MisleadingIndentation(child)
 
         if prev is not None:
             if child.location().start()[1] == prev.location().start()[1]:
@@ -151,29 +207,15 @@ def check_misleading_indentation(node):
             if len(grandchildren) > 0:
                 prev = list(grandchildren[-1])[0]
 
-Rules = [
-    ("CamelCaseVariables", chapel.core.VarLikeDecl, check_camel_case_var),
-    ("CamelCaseRecords", chapel.core.Record, check_camel_case),
-    ("PascalCaseClasses", chapel.core.Class, check_pascal_case),
-    ("PascalCaseModules", chapel.core.Module, check_pascal_case),
-    ("DoKeywordAndBlock", chapel.core.Loop, check_redundant_block),
-    ("NestedCoforalls", chapel.core.Coforall, check_nested_coforall),
-    ("BoolLitInCondStmt", [chapel.core.Conditional, chapel.core.BoolLiteral, chapel.rest], lambda node: False),
-    ("ChplPrefixReserved", chapel.core.NamedDecl, check_reserved_prefix),
-]
-
 SilencedRules = [ "CamelCaseVariables", "ConsecutiveDecls" ]
 
 def run_checks(asts):
     for ast in asts:
-        for rule in Rules:
+        for rule in BasicRules:
             yield from check_basic_rule(ast, rule)
 
-        for group in consecutive_decls(ast):
-            yield (group[1], "ConsecutiveDecls")
-
-        for node in check_misleading_indentation(ast):
-            yield (node, "MisleadingIndentation")
+        for rule in AdvancedRules:
+            yield from check_advanced_rule(ast, rule)
 
 def run_lsp():
     from pygls.server import LanguageServer
@@ -246,7 +288,7 @@ def main():
     for (filename, ctx) in chapel.files_with_contexts(args.filenames):
         asts = ctx.parse(filename)
         for (node, rule) in run_checks(asts):
-            report_violation(node, rule)
+            print_violation(node, rule)
 
 if __name__ == "__main__":
     main()
