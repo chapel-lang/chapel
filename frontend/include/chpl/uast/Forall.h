@@ -63,6 +63,14 @@ class Forall final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    IndexableLoop::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Forall);
+
+ private:
   Forall(Deserializer& des)
     : IndexableLoop(asttags::Forall, des) {
   }
@@ -89,13 +97,6 @@ class Forall final : public IndexableLoop {
                              owned<Block> body,
                              bool isExpressionLevel,
                              owned<AttributeGroup> attributeGroup = nullptr);
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Forall);
-
 };
 
 

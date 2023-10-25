@@ -47,6 +47,10 @@ class Range final : public AstNode {
   };
 
  private:
+  OpKind opKind_;
+  int8_t lowerBoundChildNum_;
+  int8_t upperBoundChildNum_;
+
   Range(AstList children, OpKind opKind,
         int8_t lowerBoundChildNum,
         int8_t upperBoundChildNum)
@@ -59,6 +63,17 @@ class Range final : public AstNode {
     }
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(opKind_);
+    ser.write(lowerBoundChildNum_);
+    ser.write(upperBoundChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Range);
+
+ private:
   Range(Deserializer& des)
     : AstNode(asttags::Range, des) {
     opKind_ = des.read<OpKind>();
@@ -78,10 +93,6 @@ class Range final : public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
-
-  OpKind opKind_;
-  int8_t lowerBoundChildNum_;
-  int8_t upperBoundChildNum_;
 
  public:
   ~Range() override = default;
@@ -123,16 +134,6 @@ class Range final : public AstNode {
     Returns a string describing the passed OpKind
     */
   static const char* opKindToString(OpKind kind);
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(opKind_);
-    ser.write(lowerBoundChildNum_);
-    ser.write(upperBoundChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Range);
-
 };
 
 

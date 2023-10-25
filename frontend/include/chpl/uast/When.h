@@ -35,6 +35,11 @@ namespace uast {
  */
 class When final : public SimpleBlockLike {
  private:
+  // The position of this never changes.
+  static const int8_t caseExprChildNum_ = 0;
+
+  int numCaseExprs_;
+
   When(AstList children, int numCaseExprs, BlockStyle blockStyle,
        int bodyChildNum,
        int numBodyStmts)
@@ -44,9 +49,18 @@ class When final : public SimpleBlockLike {
       numCaseExprs_(numCaseExprs) {
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+    ser.writeVInt(numCaseExprs_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(When);
+
+ private:
   When(Deserializer& des)
     : SimpleBlockLike(asttags::When, des) {
-      numCaseExprs_ = des.read<int>();
+      numCaseExprs_ = des.readVInt();
     }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -60,11 +74,6 @@ class When final : public SimpleBlockLike {
   }
   
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  // The position of this never changes.
-  static const int8_t caseExprChildNum_ = 0;
-
-  int numCaseExprs_;
 
  public:
 
@@ -109,14 +118,6 @@ class When final : public SimpleBlockLike {
   bool isOtherwise() const {
     return numCaseExprs_ == 0;
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(numCaseExprs_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(When);
-
 };
 
 

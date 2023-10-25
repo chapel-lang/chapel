@@ -47,6 +47,14 @@ class Throw final : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Throw);
+
+ private:
   Throw(Deserializer& des)
     : AstNode(asttags::Throw, des) { }
 
@@ -75,13 +83,6 @@ class Throw final : public AstNode {
     const AstNode* ast = this->child(errorExprChildNum_);
     return ast;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Throw);
-
 };
 
 

@@ -41,6 +41,13 @@ class Literal : public AstNode {
     CHPL_ASSERT(value_ != nullptr);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    value_->serialize(ser);
+  }
+
+ protected:
   Literal(AstTag tag, Deserializer& des)
     : AstNode(tag, des), value_(types::Param::deserialize(des)) {
     assert(value_ != nullptr);
@@ -61,11 +68,6 @@ class Literal : public AstNode {
    */
   const types::Param* param() const {
     return value_;
-  }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    value_->serialize(ser);
   }
 };
 

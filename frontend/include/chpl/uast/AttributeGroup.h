@@ -78,17 +78,6 @@ class AttributeGroup final : public AstNode {
     CHPL_ASSERT(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
 
-  AttributeGroup(Deserializer& des)
-    : AstNode(asttags::AttributeGroup, des) {
-      pragmas_ = des.read<std::set<PragmaTag>>();
-      isDeprecated_ = des.read<bool>();
-      isUnstable_ = des.read<bool>();
-      isParenfulDeprecated_ = des.read<bool>();
-      deprecationMessage_ = des.read<UniqueString>();
-      unstableMessage_ = des.read<UniqueString>();
-      parenfulDeprecationMessage_ = des.read<UniqueString>();
-    }
-
   AttributeGroup(std::set<PragmaTag> pragmas,
                  bool isDeprecated,
                  bool isUnstable,
@@ -118,6 +107,34 @@ class AttributeGroup final : public AstNode {
     // This might already be a compile-time invariant? Not sure...
     CHPL_ASSERT(pragmas_.size() <= NUM_KNOWN_PRAGMAS);
   }
+
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+
+    ser.write(pragmas_);
+    ser.write(isDeprecated_);
+    ser.write(isUnstable_);
+    ser.write(isParenfulDeprecated_);
+    ser.write(deprecationMessage_);
+    ser.write(unstableMessage_);
+    ser.write(parenfulDeprecationMessage_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(AttributeGroup);
+
+ private:
+  AttributeGroup(Deserializer& des)
+    : AstNode(asttags::AttributeGroup, des) {
+      pragmas_ = des.read<std::set<PragmaTag>>();
+      isDeprecated_ = des.read<bool>();
+      isUnstable_ = des.read<bool>();
+      isParenfulDeprecated_ = des.read<bool>();
+      deprecationMessage_ = des.read<UniqueString>();
+      unstableMessage_ = des.read<UniqueString>();
+      parenfulDeprecationMessage_ = des.read<UniqueString>();
+    }
+
 
   bool contentsMatchInner(const AstNode* other) const override {
     const AttributeGroup* rhs = (const AttributeGroup*)other;
@@ -240,20 +257,6 @@ class AttributeGroup final : public AstNode {
   UniqueString parenfulDeprecationMessage() const {
     return parenfulDeprecationMessage_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
-    ser.write(pragmas_);
-    ser.write(isDeprecated_);
-    ser.write(isUnstable_);
-    ser.write(isParenfulDeprecated_);
-    ser.write(deprecationMessage_);
-    ser.write(unstableMessage_);
-    ser.write(parenfulDeprecationMessage_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(AttributeGroup);
 
   /**
     Returns the number of attributes in this group.

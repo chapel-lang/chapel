@@ -53,8 +53,15 @@ class EnumElement final : public NamedDecl {
     CHPL_ASSERT(children_.size() <= 2);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(EnumElement);
+ private:
   EnumElement(Deserializer& des)
-    : NamedDecl(asttags::EnumElement, des) {}
+    : NamedDecl(asttags::EnumElement, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const EnumElement* lhs = (const EnumElement*) this;
@@ -105,13 +112,6 @@ class EnumElement final : public NamedDecl {
       return nullptr;
     }
   }
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(EnumElement);
-
 };
 
 

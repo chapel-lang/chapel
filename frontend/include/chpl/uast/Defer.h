@@ -57,8 +57,13 @@ class Defer final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
-  Defer(Deserializer& des)
-  : SimpleBlockLike(asttags::Defer, des) {}
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+  }
+  DECLARE_STATIC_DESERIALIZE(Defer);
+ private:
+  Defer(Deserializer& des) : SimpleBlockLike(asttags::Defer, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);
@@ -77,13 +82,6 @@ class Defer final : public SimpleBlockLike {
   static owned<Defer> build(Builder* builder, Location loc,
                             BlockStyle blockStyle,
                             AstList stmts);
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Defer);
-
 };
 
 

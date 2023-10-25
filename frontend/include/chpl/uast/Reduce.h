@@ -73,6 +73,14 @@ class Reduce final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Reduce);
+
+ private:
   Reduce(Deserializer& des)
       : Call(asttags::Reduce, des) { }
 
@@ -113,13 +121,6 @@ class Reduce final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandExprChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Reduce);
-
 };
 
 

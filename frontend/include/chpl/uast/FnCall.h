@@ -62,6 +62,16 @@ class FnCall : public Call {
       actualNames_(std::move(actualNames)),
       callUsedSquareBrackets_(callUsedSquareBrackets) {
   }
+ public:
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+    ser.write(actualNames_);
+    ser.write(callUsedSquareBrackets_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(FnCall);
+
+ private:
   FnCall(Deserializer& des)
     : Call(asttags::FnCall, des) {
     actualNames_ = des.read<std::vector<UniqueString>>();
@@ -134,14 +144,6 @@ class FnCall : public Call {
   bool callUsedSquareBrackets() const {
     return callUsedSquareBrackets_;
   }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-    ser.write(actualNames_);
-    ser.write(callUsedSquareBrackets_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(FnCall);
 };
 
 

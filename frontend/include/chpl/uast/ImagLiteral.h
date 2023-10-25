@@ -36,6 +36,14 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
     : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(ImagLiteral);
+
+ private:
   ImagLiteral(Deserializer& des)
     : NumericLiteral(asttags::ImagLiteral, des)
   { }
@@ -48,12 +56,6 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<ImagLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ImagLiteral);
 };
 
 

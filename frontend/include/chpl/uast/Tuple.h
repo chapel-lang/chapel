@@ -48,6 +48,14 @@ class Tuple final : public Call {
     CHPL_ASSERT(numChildren() >= 1);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Call::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Tuple);
+
+ private:
   Tuple(Deserializer& des)
     : Call(asttags::Tuple, des) { }
 
@@ -68,13 +76,6 @@ class Tuple final : public Call {
   static owned<Tuple> build(Builder* builder,
                             Location loc,
                             AstList exprs);
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Tuple);
-
 };
 
 

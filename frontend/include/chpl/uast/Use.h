@@ -45,6 +45,8 @@ namespace uast {
 */
 class Use final : public AstNode {
  private:
+  Decl::Visibility visibility_;
+
   Use(AstList children, Decl::Visibility visibility)
     : AstNode(asttags::Use, std::move(children)),
       visibility_(visibility) {
@@ -65,6 +67,15 @@ class Use final : public AstNode {
     #endif
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(visibility_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Use);
+
+ private:
   Use(Deserializer& des) : AstNode(asttags::Use, des) {
     visibility_ = des.read<Decl::Visibility>();
   }
@@ -78,8 +89,6 @@ class Use final : public AstNode {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  Decl::Visibility visibility_;
 
  public:
 
@@ -120,14 +129,6 @@ class Use final : public AstNode {
     CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(visibility_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Use);
-
 };
 
 

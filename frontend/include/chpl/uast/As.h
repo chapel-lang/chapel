@@ -42,8 +42,16 @@ namespace uast {
  */
 class As final : public AstNode {
  private:
-  As(AstList children) : AstNode(asttags::As, std::move(children)) {}
-  As(Deserializer& des) : AstNode(asttags::As, des) {}
+  As(AstList children) : AstNode(asttags::As, std::move(children)) { }
+
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+  }
+  DECLARE_STATIC_DESERIALIZE(As);
+
+ private:
+  As(Deserializer& des) : AstNode(asttags::As, des) { }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const AstNode* other) const override {
@@ -84,13 +92,6 @@ class As final : public AstNode {
     auto ret = child(renameChildNum_);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(As);
-
 };
 
 

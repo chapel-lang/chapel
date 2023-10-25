@@ -67,6 +67,14 @@ class Union final : public AggregateDecl {
     CHPL_ASSERT(linkage != Decl::EXPORT);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Union);
+
+ private:
   Union(Deserializer& des)
     : AggregateDecl(asttags::Union, des) { }
 
@@ -92,13 +100,6 @@ class Union final : public AggregateDecl {
                             UniqueString name,
                             AstList interfaceExprs,
                             AstList contents);
-
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Union);
-
 };
 
 

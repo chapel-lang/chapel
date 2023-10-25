@@ -41,12 +41,23 @@ namespace uast {
 */
 class Init : public AstNode {
  private:
+  int8_t targetChildNum_;
+
   Init(AstList children, int8_t targetChildNum)
     : AstNode(asttags::Init, std::move(children)),
       targetChildNum_(targetChildNum) {
     CHPL_ASSERT(numChildren() == 1);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(targetChildNum_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Init);
+
+ private:
   Init(Deserializer& des)
    : AstNode(asttags::Init, des) {
     targetChildNum_ = des.read<int8_t>();
@@ -67,8 +78,6 @@ class Init : public AstNode {
 
   std::string dumpChildLabelInner(int i) const override;
 
-  int8_t targetChildNum_;
-
  public:
 
   /**
@@ -87,15 +96,8 @@ class Init : public AstNode {
     CHPL_ASSERT(ret->isIdentifier());
     return (const Identifier*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(targetChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Init);
-
 };
+
 
 } // end namespace uast
 } // end namespace chpl

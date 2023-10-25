@@ -54,6 +54,17 @@ namespace uast {
  */
 class Try final : public AstNode {
  private:
+  // body position is always the same
+  static const int8_t bodyChildNum_ = 0;
+  // try expressions always contain a body expression
+  // try statements always contain a body block
+  static const int8_t numBodyStmts_ = 1;
+
+  int numHandlers_;
+  bool containsBlock_;
+  bool isExpressionLevel_;
+  bool isTryBang_;
+
   Try(AstList children,
       int numHandlers,
       bool containsBlock,
@@ -74,9 +85,21 @@ class Try final : public AstNode {
     }
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.writeVInt(numHandlers_);
+    ser.write(containsBlock_);
+    ser.write(isExpressionLevel_);
+    ser.write(isTryBang_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Try);
+
+ private:
   Try(Deserializer& des)
     : AstNode(asttags::Try, des) {
-      numHandlers_ = des.read<int>();
+      numHandlers_ = des.readVInt();
       containsBlock_ = des.read<bool>();
       isExpressionLevel_ = des.read<bool>();
       isTryBang_ = des.read<bool>();
@@ -95,17 +118,6 @@ class Try final : public AstNode {
 
   void dumpFieldsInner(const DumpSettings& s) const override;
   std::string dumpChildLabelInner(int i) const override;
-
-  // body position is always the same
-  static const int8_t bodyChildNum_ = 0;
-  // try expressions always contain a body expression
-  // try statements always contain a body block
-  static const int8_t numBodyStmts_ = 1;
-
-  int numHandlers_;
-  bool containsBlock_;
-  bool isExpressionLevel_;
-  bool isTryBang_;
 
  public:
   ~Try() override = default;
@@ -217,17 +229,6 @@ class Try final : public AstNode {
   bool isTryBang() const {
     return isTryBang_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(numHandlers_);
-    ser.write(containsBlock_);
-    ser.write(isExpressionLevel_);
-    ser.write(isTryBang_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Try);
-
 };
 
 

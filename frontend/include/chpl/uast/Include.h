@@ -58,13 +58,23 @@ class Include final : public AstNode {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(visibility_);
+    ser.write(isPrototype_);
+    ser.write(name_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Include);
+
+ private:
   Include(Deserializer& des)
     : AstNode(asttags::Include, des) {
-      visibility_ = des.read<Decl::Visibility>();
-      isPrototype_ = des.read<bool>();
-      name_ = des.read<UniqueString>();
-    }
-
+    visibility_ = des.read<Decl::Visibility>();
+    isPrototype_ = des.read<bool>();
+    name_ = des.read<UniqueString>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Include* lhs = this;
@@ -110,16 +120,6 @@ class Include final : public AstNode {
   UniqueString name() const {
     return name_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(visibility_);
-    ser.write(isPrototype_);
-    ser.write(name_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Include);
-
 };
 
 

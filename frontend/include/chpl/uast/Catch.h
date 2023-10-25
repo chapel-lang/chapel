@@ -46,6 +46,10 @@ namespace uast {
  */
 class Catch final : public AstNode {
  private:
+  int8_t errorChildNum_;
+  int8_t bodyChildNum_;
+  bool hasParensAroundError_;
+
   Catch(AstList children, int8_t errorChildNum, int8_t bodyChildNum,
         bool hasParensAroundError)
     : AstNode(asttags::Catch, std::move(children)),
@@ -53,13 +57,22 @@ class Catch final : public AstNode {
       bodyChildNum_(bodyChildNum),
       hasParensAroundError_(hasParensAroundError) {
   }
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(errorChildNum_);
+    ser.write(bodyChildNum_);
+    ser.write(hasParensAroundError_);
+  }
 
+  DECLARE_STATIC_DESERIALIZE(Catch);
+ private:
   Catch(Deserializer& des)
     : AstNode(asttags::Catch, des) {
-        errorChildNum_ = des.read<int8_t>();
-        bodyChildNum_ = des.read<int8_t>();
-        hasParensAroundError_ = des.read<bool>();
-      }
+      errorChildNum_ = des.read<int8_t>();
+      bodyChildNum_ = des.read<int8_t>();
+      hasParensAroundError_ = des.read<bool>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Catch* rhs = other->toCatch();
@@ -72,10 +85,6 @@ class Catch final : public AstNode {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t errorChildNum_;
-  int8_t bodyChildNum_;
-  bool hasParensAroundError_;
 
  public:
   ~Catch() override = default;
@@ -135,16 +144,6 @@ class Catch final : public AstNode {
   bool hasParensAroundError() const {
     return hasParensAroundError_;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(errorChildNum_);
-    ser.write(bodyChildNum_);
-    ser.write(hasParensAroundError_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Catch);
-
 };
 
 

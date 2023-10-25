@@ -60,6 +60,14 @@ class Sync final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    SimpleBlockLike::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Sync);
+
+ private:
   Sync(Deserializer& des)
     : SimpleBlockLike(asttags::Sync, des) { }
 
@@ -80,13 +88,6 @@ class Sync final : public SimpleBlockLike {
   static owned<Sync> build(Builder* builder, Location loc,
                            BlockStyle blockStyle,
                            AstList stmts);
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Sync);
-
 };
 
 

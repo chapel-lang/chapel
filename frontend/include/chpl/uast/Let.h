@@ -51,10 +51,19 @@ class Let final : public AstNode {
     CHPL_ASSERT(1 <= numDecls && (numDecls == numChildren() - 1));
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.writeVInt(numDecls_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Let);
+
+ private:
   Let(Deserializer& des)
     : AstNode(asttags::Let, des) {
-      numDecls_ = des.read<int>();
-    }
+    numDecls_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Let* lhs = this;
@@ -111,14 +120,6 @@ class Let final : public AstNode {
     CHPL_ASSERT(ret);
     return ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(numDecls_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Let);
-
 };
 
 

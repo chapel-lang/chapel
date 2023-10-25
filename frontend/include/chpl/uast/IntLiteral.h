@@ -40,6 +40,14 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
     : NumericLiteral(asttags::IntLiteral, value, text)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NumericLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(IntLiteral);
+
+ private:
   IntLiteral(Deserializer& des)
     : NumericLiteral(asttags::IntLiteral, des)
   { }
@@ -52,12 +60,6 @@ class IntLiteral final : public NumericLiteral<int64_t, types::IntParam> {
 
   static owned<IntLiteral> build(Builder* builder, Location loc,
                                  int64_t value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(IntLiteral);
 };
 
 

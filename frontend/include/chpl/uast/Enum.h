@@ -63,6 +63,14 @@ class Enum final : public TypeDecl {
     #endif
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    TypeDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Enum);
+
+ private:
   Enum(Deserializer& des)
     : TypeDecl(asttags::Enum, des) {}
 
@@ -126,13 +134,6 @@ class Enum final : public TypeDecl {
     auto end = begin + numDeclOrComments();
     return AstListNoCommentsIteratorPair<EnumElement>(begin, end);
   }
-
-  void serialize(Serializer& ser) const override {
-    TypeDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Enum);
-
 };
 
 

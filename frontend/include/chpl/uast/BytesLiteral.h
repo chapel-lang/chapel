@@ -39,6 +39,14 @@ class BytesLiteral final : public StringLikeLiteral {
     : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    StringLikeLiteral::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(BytesLiteral);
+
+ private:
   BytesLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::BytesLiteral, des)
   { }
@@ -52,13 +60,6 @@ class BytesLiteral final : public StringLikeLiteral {
   static owned<BytesLiteral> build(Builder* builder, Location loc,
                                    const std::string& value,
                                    StringLikeLiteral::QuoteStyle quotes);
-
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(BytesLiteral);
-
 };
 
 

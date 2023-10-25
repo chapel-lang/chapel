@@ -119,7 +119,7 @@ class BuilderResult final {
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 
-  // Goes from Comment ID to Location, applies to all AST nodes except Comment
+  // Goes from Comment ID to Location (for comments, specifically)
   std::vector<Location> commentIdToLocation_;
 
  public:

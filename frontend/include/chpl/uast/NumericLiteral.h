@@ -41,6 +41,13 @@ class NumericLiteral : public Literal {
       text_(text)
   { }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    Literal::serialize(ser);
+    ser.write(text_);
+  }
+
+ protected:
   NumericLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
     text_ = des.read<UniqueString>();
@@ -70,12 +77,6 @@ class NumericLiteral : public Literal {
     const ParamT* p = (const ParamT*) value_;
     return p->value();
   }
-
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
-    ser.write(text_);
-  }
-
   /**
    Returns the number as it was written in the source code (as a string)
    */
@@ -83,8 +84,8 @@ class NumericLiteral : public Literal {
 };
 
 template <typename ValueT, typename ParamT>
-NumericLiteral<ValueT, ParamT>::~NumericLiteral() {
-}
+NumericLiteral<ValueT, ParamT>::~NumericLiteral() { }
+
 
 } // end namespace uast
 } // end namespace chpl

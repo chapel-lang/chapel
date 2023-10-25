@@ -61,8 +61,15 @@ class Class final : public AggregateDecl {
                     elementsChildNum,
                     numElements) {}
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AggregateDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Class);
+ private:
   Class(Deserializer& des)
-    : AggregateDecl(asttags::Class, des) {}
+    : AggregateDecl(asttags::Class, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Class* lhs = this;
@@ -85,12 +92,6 @@ class Class final : public AggregateDecl {
                             UniqueString name,
                             AstList inheritExprs,
                             AstList contents);
-
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Class);
 };
 
 

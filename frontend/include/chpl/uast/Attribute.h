@@ -29,7 +29,7 @@ namespace uast {
 
 class Attribute final: public AstNode {
 
-private:
+ private:
   // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
   UniqueString name_;
   int numActuals_; // number of child actuals
@@ -43,11 +43,22 @@ private:
       actualNames_(std::move(actualNames)) {
   }
 
-  Attribute(Deserializer& des)
-    : AstNode(asttags::Attribute, des) {
-      name_ = des.read<UniqueString>();
-      numActuals_ = des.read<int>();
-      actualNames_ = des.read<std::vector<UniqueString>>();
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+
+    ser.write(name_);
+    ser.writeVInt(numActuals_);
+    ser.write(actualNames_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Attribute);
+
+ private:
+  Attribute(Deserializer& des) : AstNode(asttags::Attribute, des) {
+    name_ = des.read<UniqueString>();
+    numActuals_ = des.readVInt();
+    actualNames_ = des.read<std::vector<UniqueString>>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -156,18 +167,6 @@ public:
   const std::string fullyQualifiedAttributeName() const {
     return name_.str();
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
-    ser.write(name_);
-    ser.write(numActuals_);
-    ser.write(actualNames_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Attribute);
-
-
 }; // end Attribute
 
 

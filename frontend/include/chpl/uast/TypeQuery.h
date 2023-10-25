@@ -56,6 +56,14 @@ class TypeQuery final : public NamedDecl {
     CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    NamedDecl::serialize(ser);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(TypeQuery);
+
+ private:
   TypeQuery(Deserializer& des)
     : NamedDecl(asttags::TypeQuery, des) { }
 
@@ -74,12 +82,6 @@ class TypeQuery final : public NamedDecl {
 
   static owned<TypeQuery> build(Builder* builder, Location loc,
                                 UniqueString name);
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(TypeQuery);
 };
 
 

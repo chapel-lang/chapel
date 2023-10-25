@@ -50,11 +50,19 @@ class Identifier final : public AstNode {
     CHPL_ASSERT(!name.isEmpty());
   }
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(name_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(Identifier);
+
+ private:
   Identifier(Deserializer& des)
     : AstNode(asttags::Identifier, des) {
     name_ = des.read<UniqueString>();
   }
-
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Identifier* lhs = this;
@@ -71,13 +79,6 @@ class Identifier final : public AstNode {
   ~Identifier() override = default;
   static owned<Identifier> build(Builder* builder, Location loc, UniqueString name);
   UniqueString name() const { return name_; }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(name_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Identifier);
 };
 
 /*

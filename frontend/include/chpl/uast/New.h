@@ -52,26 +52,26 @@ class New : public AstNode {
     UNMANAGED
   };
 
-  /**
-    Given a management style, return the Chapel keyword representing it.
-  */
-  static const char* managementToString(Management management);
-
-  /**
-    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
-    there was not a match.
-  */
-  static Management stringToManagement(UniqueString ustr);
-
  private:
+  Management management_;
+
   New(AstList children, New::Management management)
     : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
+ public:
+  void serialize(Serializer& ser) const override {
+    AstNode::serialize(ser);
+    ser.write(management_);
+  }
+
+  DECLARE_STATIC_DESERIALIZE(New);
+
+ private:
   New(Deserializer& des)
     : AstNode(asttags::New, des) {
-        management_ = des.read<Management>();
-      }
+    management_ = des.read<Management>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const New* lhs = this;
@@ -86,8 +86,6 @@ class New : public AstNode {
   }
 
   void dumpFieldsInner(const DumpSettings& s) const override;
-
-  Management management_;
 
  public:
 
@@ -114,13 +112,16 @@ class New : public AstNode {
     return management_;
   }
 
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(management_);
-  }
+  /**
+    Given a management style, return the Chapel keyword representing it.
+  */
+  static const char* managementToString(Management management);
 
-  DECLARE_STATIC_DESERIALIZE(New);
-
+  /**
+    Given a string, return a management style, or 'DEFAULT_MANAGEMENT' if
+    there was not a match.
+  */
+  static Management stringToManagement(UniqueString ustr);
 };
 
 
