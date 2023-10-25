@@ -932,7 +932,7 @@ module UnitTest {
           }
           else {
             if all(array1 >= array2) {
-              const errorMsg = "assert failed - \n'%?'\n>=\n'%?'".format(array1, array2);
+              const errorMsg = "assert failed -\n'%?'\n>=\n'%?'".format(array1, array2);
               throw new owned AssertionError(errorMsg);
             }
           }
