@@ -43,6 +43,8 @@ namespace uast {
   The record itself (myRecord) is represented by a Record AST node.
  */
 class Record final : public AggregateDecl {
+ friend class AstNode;
+
  private:
   Record(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
          Decl::Linkage linkage,
@@ -63,16 +65,11 @@ class Record final : public AggregateDecl {
                     elementsChildNum,
                     numElements) {}
 
- public:
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    aggregateDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Record);
-
- private:
-  Record(Deserializer& des)
-    : AggregateDecl(asttags::Record, des) {}
+  explicit Record(Deserializer& des) : AggregateDecl(asttags::Record, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Record* lhs = this;

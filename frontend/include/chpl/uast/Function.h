@@ -48,6 +48,8 @@ namespace uast {
   each of these is a Function.
  */
 class Function final : public NamedDecl {
+ friend class AstNode;
+
  public:
   enum Kind {
     PROC,
@@ -166,9 +168,8 @@ class Function final : public NamedDecl {
     #endif
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
     ser.write(inline_);
     ser.write(override_);
     ser.write(kind_);
@@ -187,10 +188,7 @@ class Function final : public NamedDecl {
     ser.writeVInt(bodyChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Function);
-
- private:
-  Function(Deserializer& des)
+  explicit Function(Deserializer& des)
     : NamedDecl(asttags::Function, des) {
     inline_        = des.read<bool>();
     override_      = des.read<bool>();

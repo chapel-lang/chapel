@@ -41,8 +41,9 @@ namespace uast {
   An array expression will never contain comments.
  */
 class Array final : public AstNode {
- private:
+ friend class AstNode;
 
+ private:
   bool trailingComma_,
        associative_;
   
@@ -52,17 +53,12 @@ class Array final : public AstNode {
     associative_ = associative;
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(trailingComma_);
     ser.write(associative_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Array);
-
- private:
-  Array(Deserializer& des)
+  explicit Array(Deserializer& des)
     : AstNode(asttags::Array, des) {
     trailingComma_ = des.read<bool>();
     associative_ = des.read<bool>();

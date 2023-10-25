@@ -46,6 +46,8 @@ namespace uast {
   The interface body contains one required function named '=='.
 */
 class Interface final : public NamedDecl {
+ friend class AstNode;
+
  private:
   int interfaceFormalsChildNum_;
   int numInterfaceFormals_;
@@ -76,9 +78,8 @@ class Interface final : public NamedDecl {
     // TODO: Some assertions here...
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
     ser.writeVInt(interfaceFormalsChildNum_);
     ser.writeVInt(numInterfaceFormals_);
     ser.writeVInt(bodyChildNum_);
@@ -86,10 +87,7 @@ class Interface final : public NamedDecl {
     ser.write(isFormalListExplicit_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Interface);
-
- private:
-  Interface(Deserializer& des)
+  explicit Interface(Deserializer& des)
     : NamedDecl(asttags::Interface, des) {
       interfaceFormalsChildNum_ = des.readVInt();
       numInterfaceFormals_ = des.readVInt();

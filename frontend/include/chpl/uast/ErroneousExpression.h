@@ -31,18 +31,16 @@ namespace uast {
   This class represents some missing AST due to an error.
  */
 class ErroneousExpression final : public AstNode {
+ friend class AstNode;
+
  private:
   ErroneousExpression()
     : AstNode(asttags::ErroneousExpression) {
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
 
-  DECLARE_STATIC_DESERIALIZE(ErroneousExpression);
+  void serializeInner(Serializer& ser) const override { }
 
-  ErroneousExpression(Deserializer& des)
+  explicit ErroneousExpression(Deserializer& des)
     : AstNode(asttags::ErroneousExpression, des) { }
 
  private:

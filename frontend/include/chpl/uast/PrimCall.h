@@ -43,6 +43,8 @@ namespace uast {
 
  */
 class PrimCall final : public Call {
+ friend class AstNode;
+
  private:
   // which primitive
   PrimitiveTag prim_;
@@ -53,16 +55,12 @@ class PrimCall final : public Call {
       prim_(prim) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
     ser.write(prim_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(PrimCall);
-
- private:
-  PrimCall(Deserializer& des)
+  explicit PrimCall(Deserializer& des)
     : Call(asttags::PrimCall, des) {
     prim_ = des.read<PrimitiveTag>();
   }

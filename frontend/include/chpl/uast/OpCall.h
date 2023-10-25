@@ -36,6 +36,8 @@ namespace uast {
 
  */
 class OpCall final : public Call {
+ friend class AstNode;
+
  private:
   // which operator
   UniqueString op_;
@@ -46,16 +48,12 @@ class OpCall final : public Call {
       op_(op) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
     ser.write(op_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(OpCall);
-
- private:
-  OpCall(Deserializer& des)
+  explicit OpCall(Deserializer& des)
     : Call(asttags::OpCall, des) {
     op_ = des.read<UniqueString>();
   }

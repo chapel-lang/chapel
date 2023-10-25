@@ -31,6 +31,8 @@ namespace uast {
   (e.g. classes, records, enums).
  */
 class TypeDecl : public NamedDecl {
+ friend class AstNode;
+
  protected:
   TypeDecl(asttags::AstTag tag, AstList children, int attributeGroupChildNum,
            Decl::Visibility vis,
@@ -44,14 +46,11 @@ class TypeDecl : public NamedDecl {
 
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void typeDeclSerializeInner(Serializer& ser) const {
+    namedDeclSerializeInner(ser);
   }
 
- protected:
-  TypeDecl(AstTag tag, Deserializer& des)
-    : NamedDecl(tag, des) { }
+  TypeDecl(AstTag tag, Deserializer& des) : NamedDecl(tag, des) { }
 
   bool typeDeclContentsMatchInner(const TypeDecl* other) const {
     return namedDeclContentsMatchInner(other);

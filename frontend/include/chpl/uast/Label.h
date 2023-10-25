@@ -43,6 +43,8 @@ namespace uast {
 
 */
 class Label final : public AstNode {
+ friend class AstNode;
+
  private:
   Label(AstList children, UniqueString name)
     : AstNode(asttags::Label, std::move(children)),
@@ -50,16 +52,11 @@ class Label final : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(name_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Label);
-
- private:
-  Label(Deserializer& des)
+  explicit Label(Deserializer& des)
     : AstNode(asttags::Label, des) {
     name_ = des.read<UniqueString>();
   }

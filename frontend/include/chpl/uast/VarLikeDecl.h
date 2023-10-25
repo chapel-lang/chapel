@@ -33,6 +33,8 @@ namespace uast {
   This includes things like fields, formals, or variables.
  */
 class VarLikeDecl : public NamedDecl {
+ friend class AstNode;
+
  protected:
   Qualifier storageKind_;
   int8_t typeExpressionChildNum_;
@@ -64,15 +66,13 @@ class VarLikeDecl : public NamedDecl {
     }
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void varLikeDeclSerializeInner(Serializer& ser) const {
+    namedDeclSerializeInner(ser);
     ser.write(storageKind_);
     ser.write(typeExpressionChildNum_);
     ser.write(initExpressionChildNum_);
   }
 
- protected:
   VarLikeDecl(AstTag tag, Deserializer& des)
     : NamedDecl(tag, des) {
     storageKind_ = des.read<Qualifier>();

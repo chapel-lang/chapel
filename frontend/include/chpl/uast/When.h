@@ -34,6 +34,8 @@ namespace uast {
   of the select statement.
  */
 class When final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   // The position of this never changes.
   static const int8_t caseExprChildNum_ = 0;
@@ -49,19 +51,15 @@ class When final : public SimpleBlockLike {
       numCaseExprs_(numCaseExprs) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
     ser.writeVInt(numCaseExprs_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(When);
-
- private:
-  When(Deserializer& des)
+  explicit When(Deserializer& des)
     : SimpleBlockLike(asttags::When, des) {
-      numCaseExprs_ = des.readVInt();
-    }
+    numCaseExprs_ = des.readVInt();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const When* rhs = other->toWhen();

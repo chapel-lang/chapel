@@ -32,6 +32,8 @@ namespace uast {
   This class represents a { } block.
  */
 class Block final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   Block(AstList stmts, int bodyChildNum, int numBodyStmts)
     : SimpleBlockLike(asttags::Block, std::move(stmts),
@@ -42,16 +44,11 @@ class Block final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Block);
-
- private:
-  Block(Deserializer& des)
-    : SimpleBlockLike(asttags::Block, des) { }
+  explicit Block(Deserializer& des) : SimpleBlockLike(asttags::Block, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);

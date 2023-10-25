@@ -33,6 +33,8 @@ namespace uast {
  */
 template <typename ValueT, typename ParamT>
 class NumericLiteral : public Literal {
+ friend class AstNode;
+
  protected:
   UniqueString text_;
 
@@ -41,13 +43,11 @@ class NumericLiteral : public Literal {
       text_(text)
   { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
+  void numericLiteralSerializeInner(Serializer& ser) const {
+    literalSerializeInner(ser);
     ser.write(text_);
   }
 
- protected:
   NumericLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
     text_ = des.read<UniqueString>();

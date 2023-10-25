@@ -44,6 +44,8 @@ namespace uast {
   \endrst
  */
 class VisibilityClause final : public AstNode {
+ friend class AstNode;
+
  public:
 
   /**
@@ -86,17 +88,12 @@ class VisibilityClause final : public AstNode {
     }
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(limitationKind_);
     ser.writeVInt(numLimitations_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(VisibilityClause);
-
- private:
-  VisibilityClause(Deserializer& des)
+  explicit VisibilityClause(Deserializer& des)
     : AstNode(asttags::VisibilityClause, des) {
     limitationKind_ = des.read<LimitationKind>();
     numLimitations_ = des.readVInt();

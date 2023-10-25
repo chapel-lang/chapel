@@ -42,6 +42,8 @@ namespace uast {
 
  */
 class BracketLoop final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   BracketLoop(AstList children, int8_t indexChildNum,
               int8_t iterandChildNum,
@@ -60,15 +62,11 @@ class BracketLoop final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(BracketLoop);
-
- private:
-  BracketLoop(Deserializer& des)
+  explicit BracketLoop(Deserializer& des)
     : IndexableLoop(asttags::BracketLoop, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {

@@ -42,6 +42,8 @@ namespace uast {
   The Formals are stored inside of a Function.
  */
 class Formal final : public VarLikeDecl {
+ friend class AstNode;
+
  public:
   enum Intent {
     // Use Qualifier here for consistent enum values.
@@ -73,15 +75,11 @@ class Formal final : public VarLikeDecl {
                   initExpressionChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Formal);
-
- private:
-  Formal(Deserializer& des)
+  explicit Formal(Deserializer& des)
     : VarLikeDecl(asttags::Formal, des) {
   }
 

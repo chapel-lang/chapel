@@ -33,20 +33,18 @@ namespace uast {
   Such integer literals have type `uint`.
  */
 class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
+ friend class AstNode;
+
  private:
   UintLiteral(const types::UintParam* value, UniqueString text)
     : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    numericLiteralSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(UintLiteral);
-
- private:
-  UintLiteral(Deserializer& des)
+  explicit UintLiteral(Deserializer& des)
     : NumericLiteral(asttags::UintLiteral, des)
   { }
 

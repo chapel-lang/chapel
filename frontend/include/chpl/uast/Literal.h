@@ -32,6 +32,8 @@ namespace uast {
   Literals are fixed values in the source code, like 1, 30.24, and "x".
  */
 class Literal : public AstNode {
+ friend class AstNode;
+
  protected:
   const types::Param* value_ = nullptr;
 
@@ -41,13 +43,10 @@ class Literal : public AstNode {
     CHPL_ASSERT(value_ != nullptr);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void literalSerializeInner(Serializer& ser) const {
     value_->serialize(ser);
   }
 
- protected:
   Literal(AstTag tag, Deserializer& des)
     : AstNode(tag, des), value_(types::Param::deserialize(des)) {
     assert(value_ != nullptr);

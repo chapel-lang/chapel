@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class While final : public Loop {
+ friend class AstNode;
+
  private:
   int8_t conditionChildNum_;
 
@@ -58,16 +60,12 @@ class While final : public Loop {
     CHPL_ASSERT(condition());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    loopSerializeInner(ser);
     ser.write(conditionChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(While);
-
- private:
-  While(Deserializer& des)
+  explicit While(Deserializer& des)
     : Loop(asttags::While, des) {
     conditionChildNum_ = des.read<int8_t>();
   }

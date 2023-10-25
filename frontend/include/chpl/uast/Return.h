@@ -42,6 +42,8 @@ namespace uast {
 
  */
 class Return final : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t valueChildNum_;
 
@@ -51,16 +53,11 @@ class Return final : public AstNode {
     CHPL_ASSERT(valueChildNum_ <= 0);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(valueChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Return);
-
- private:
-  Return(Deserializer& des)
+  explicit Return(Deserializer& des)
     : AstNode(asttags::Return, des) {
     valueChildNum_ = des.read<int8_t>();
   }

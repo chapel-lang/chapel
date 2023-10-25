@@ -49,7 +49,9 @@ namespace uast {
   each of a-f are Variables.
  */
 class Variable final : public VarLikeDecl {
+ friend class AstNode;
  friend class Builder;
+
  public:
   enum Kind {
     // Use Qualifier here for consistent enum values.
@@ -88,17 +90,13 @@ class Variable final : public VarLikeDecl {
         isField_(isField) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
     ser.write(isConfig_);
     ser.write(isField_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Variable);
-
- private:
-  Variable(Deserializer& des)
+  explicit Variable(Deserializer& des)
     : VarLikeDecl(asttags::Variable, des) {
     isConfig_ = des.read<bool>();
     isField_ = des.read<bool>();

@@ -33,21 +33,19 @@ namespace uast {
   and `b''' bytes contents here '''`.
  */
 class BytesLiteral final : public StringLikeLiteral {
+ friend class AstNode;
+
  private:
   BytesLiteral(const types::StringParam* value,
                StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::BytesLiteral, value, quotes)
   { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    stringLikeLiteralSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(BytesLiteral);
-
- private:
-  BytesLiteral(Deserializer& des)
+  explicit BytesLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::BytesLiteral, des)
   { }
 

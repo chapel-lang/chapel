@@ -44,6 +44,8 @@ namespace uast {
   and 'Bar as A'.
 */
 class Import final : public AstNode {
+ friend class AstNode;
+
  private:
   Decl::Visibility visibility_;
 
@@ -61,16 +63,11 @@ class Import final : public AstNode {
     #endif
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(visibility_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Import);
-
- private:
-  Import(Deserializer& des)
+  explicit Import(Deserializer& des)
     : AstNode(asttags::Import, des) {
     visibility_ = des.read<Decl::Visibility>();
   }
