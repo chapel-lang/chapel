@@ -59,7 +59,7 @@ class LibraryFile {
   size_t len = 0;
   const unsigned char* data = nullptr;
 
-  LibraryFile();
+  //LibraryFile();
 
   std::error_code openAndMap();
 
