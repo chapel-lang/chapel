@@ -35,12 +35,13 @@ def print_violation(node, name):
     print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
 
 def check_basic_rule(root, rule):
-    # If we should ignore the rule no matter the node, no reason to run
-    # a traversal and match the pattern.
-    if not should_check_rule(None, rule):
+    (name, nodetype, func) = rule
+
+    if not should_check_rule(None, name):
         return
 
-    (name, nodetype, func) = rule
+    # If we should ignore the rule no matter the node, no reason to run
+    # a traversal and match the pattern.
     for (node, _) in chapel.each_matching(root, nodetype):
         if not should_check_rule(node, name):
             continue
@@ -49,12 +50,13 @@ def check_basic_rule(root, rule):
             yield (node, name)
 
 def check_advanced_rule(root, rule):
+    (name, func) = rule
+
     # If we should ignore the rule no matter the node, no reason to run
     # a traversal and match the pattern.
-    if not should_check_rule(None, rule):
+    if not should_check_rule(None, name):
         return
 
-    (name, func) = rule
     for node in func(root):
         yield (node, name)
 
