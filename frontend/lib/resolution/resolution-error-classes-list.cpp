@@ -706,6 +706,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
 
   for (auto& candidate : rejected) {
     auto reason = candidate.reason();
+    wr.message("");
     if (reason == resolution::FAIL_CANNOT_PASS &&
         /* skip printing detailed info here because computing the formal-actual
            map will go poorly with an unknown formal. */
@@ -719,7 +720,6 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
         actualExpr = call->actual(badPass.actualIdx());
       }
 
-      wr.message("");
       wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
       wr.code(fn->id(), { formalDecl });
 

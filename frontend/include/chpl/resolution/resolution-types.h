@@ -961,6 +961,7 @@ class ApplicabilityResult {
 
   static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
     bool update = false;
+    update |= defaultUpdateBasic(keep.idForErr_, addin.idForErr_);
     update |= defaultUpdateBasic(keep.initialForErr_, addin.initialForErr_);
     update |= defaultUpdateBasic(keep.candidate_, addin.candidate_);
     update |= defaultUpdateBasic(keep.candidateReason_, addin.candidateReason_);
@@ -970,7 +971,8 @@ class ApplicabilityResult {
   }
 
   bool operator ==(const ApplicabilityResult& other) const {
-    return initialForErr_ == other.initialForErr_ &&
+    return idForErr_ == other.idForErr_ &&
+           initialForErr_ == other.initialForErr_ &&
            candidate_ == other.candidate_ &&
            candidateReason_ == other.candidateReason_ &&
            formalReason_ == other.formalReason_ &&
@@ -982,6 +984,7 @@ class ApplicabilityResult {
   }
 
   void mark(Context* context) const {
+    idForErr_.mark(context);
     context->markPointer(initialForErr_);
     context->markPointer(candidate_);
     (void) candidateReason_; // nothing to mark
@@ -990,7 +993,7 @@ class ApplicabilityResult {
   }
 
   size_t hash() const {
-    return chpl::hash(candidate_, candidateReason_, formalReason_, formalIdx_);
+    return chpl::hash(idForErr_, initialForErr_, candidate_, candidateReason_, formalReason_, formalIdx_);
   }
 
   inline const ID& idForErr() const { return idForErr_; }
