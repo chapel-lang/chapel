@@ -77,7 +77,7 @@ proc countUniqueWarnings(ref warningsMap: map(string, ?t), inputFileReader: IO.f
     inputFileReader.extractMatch(fileNameMatch, fileName);
     // Check if the string mentions that something is unstable
     // If so, add it to the map
-    if warning.find("unstable") == -1 then
+    if !containsUnstableWarning(warning) then
       continue;
     warning = anonmizeWarning(warning);
     if warningsMap.contains(warning) {
@@ -89,19 +89,28 @@ proc countUniqueWarnings(ref warningsMap: map(string, ?t), inputFileReader: IO.f
   }
 }
 
+proc containsUnstableWarning(warning: string) : bool {
+  // Check if the string mentions that something is unstable
+  return warning.find("unstable") != -1 || warning.find("enum-to-bool") != -1 ||
+         warning.find("enum-to-float") != -1;
+}
+
 
 proc anonmizeWarning(warning: string) : string {
   // Anonymize known warning messages that include variable names
   // when so that it doens't reveal variable names or other impl detauls
 
-  const forallRef ="warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit explicit 'ref' forall intent for";
+  const forallRef ="warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for";
   if warning.find(forallRef) != -1 then
     return forallRef + " <var-name>";
 
-  const typeNameUse1 = "warning: using a type's name";
-  const typeNameUse2 = "in a 'use' statement to access its tertiary methods is an unstable feature";
-  if warning.find(typeNameUse1) != -1 && warning.find(typeNameUse2) != -1 then
-    return typeNameUse1 + typeNameUse2;
+  const typeName = "warning: using a type's name ";
+  const typeNameUse = "in a 'use' statement to access its tertiary methods is an unstable feature";
+  const typeNameImport = "in an 'import' statement to access its tertiary methods is an unstable feature";
+  if warning.find(typeName) != -1 && warning.find(typeNameUse) != -1 then
+    return typeName + typeNameUse;
+  if warning.find(typeName) != -1 && warning.find(typeNameImport) != -1 then
+    return typeName + typeNameImport;
 
   const underscore = "warning: symbol names with leading underscores";
   const end = " are unstable";
@@ -124,7 +133,7 @@ inline proc prettyPrintArr(arr : [] (string, int, int), writer: IO.fileWriter(?)
     const grammar = if a[1] < 2 then " instance of \"" else " instances of \"";
     const files = if fileCount then
                   "\" across " + a[2] :string + if a[2] < 2 then
-                  " file " else " files"
+                  " file" else " files"
                   else "\"";
     writer.writeln(a[1], grammar, a[0], files);
   }

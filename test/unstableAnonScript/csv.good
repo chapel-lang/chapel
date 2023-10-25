@@ -1,0 +1,25 @@
+warning,count
+"warning: 'halfPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/2' instead of this 'param', please let us know!",1
+"warning: 'llvm.assertVectorized' is an unstable attribute",1
+"warning: 'llvm.metadata' is an unstable attribute",1
+"warning: 'quarterPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using 'pi/4' instead of this 'param', please let us know!",1
+"warning: 'reciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '1/pi' instead of this 'param', please let us know!",1
+"warning: 'reciprSqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!",1
+"warning: 'sqrt2' is unstable due to questions about its utility.  If you are using this symbol, please let us know!",1
+"warning: 'twiceReciprPi' is unstable due to questions about its utility.  If you are seeing negative performance impacts from using '2/pi' instead of this 'param', please let us know!",1
+"warning: 'twiceReciprSqrtPi' is unstable due to questions about its utility.  If you are using this symbol, please let us know!",1
+"warning: DefaultDist is unstable and may change in the future",1
+"warning: div2Exp is unstable and may change in the future",1
+"warning: foreach loops are currently unstable and are expected to change in ways that may break some of their current uses",1
+"warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable",6
+"warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound",12
+"warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound",13
+"warning: range.hasFirst() is unstable for a range over an enum or bool if it has a negative stride and no high bound",12
+"warning: range.hasFirst() is unstable for a range over an enum or bool if it has a positive stride and no low bound",16
+"warning: range.hasLast() is unstable for a range over an enum or bool if it has a negative stride and no low bound",12
+"warning: range.hasLast() is unstable for a range over an enum or bool if it has a positive stride and no high bound",14
+"warning: range.isEmpty() is unstable for unbounded ranged over an enum or bool",80
+"warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound",12
+"warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound",12
+"warning: rem2Exp is unstable and may change in the future",1
+"warning: scans are unstable due to questions about exclusive scans and the default behavior.  See issue #20204",4

@@ -1,0 +1,11 @@
+warning,count,uniqueFiles
+"warning: range.isEmpty() is unstable for unbounded ranged over an enum or bool",240,1
+"warning: range.hasFirst() is unstable for a range over an enum or bool if it has a positive stride and no low bound",48,1
+"warning: range.hasLast() is unstable for a range over an enum or bool if it has a positive stride and no high bound",42,1
+"warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound",39,1
+"warning: range.hasFirst() is unstable for a range over an enum or bool if it has a negative stride and no high bound",36,1
+"warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound",36,1
+"warning: range.hasLast() is unstable for a range over an enum or bool if it has a negative stride and no low bound",36,1
+"warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound",36,1
+"warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound",36,1
+"warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable",18,1
