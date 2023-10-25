@@ -62,6 +62,10 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
+static const char* nilabilityStr(const types::ClassTypeDecorator& dec) {
+  return dec.isNilable() ? "nilable" : "non-nilable";
+}
+
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
 //
@@ -725,8 +729,14 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       }
 
       auto formalReason = candidate.formalReason();
-      if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
-        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
+        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
+        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
+
+        wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
+                   "but the actual is ", nilabilityStr(actualDec), ".");
+      } if (formalReason == resolution::FAIL_INCOMPATIBLE_MGMT) {
+        // Don't do anything special.
       } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
         auto formalMgr = badPass.formalType().type()->toClassType()->manager();
         auto actualMgr = badPass.actualType().type()->toClassType()->manager();
@@ -745,6 +755,16 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
         wr.message("A tuple with ", actualTup->numElements(),
                    " elements cannot be passed to a tuple formal with ",
                    formalTup->numElements(), " elements.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
+        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
+
+        wr.message("The formal ", formalStr, " a star tuple, but the actual ", actualStr, ".");
+      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
       }
     } else {
       const char* reasonStr = "the following candidate didn't match:";

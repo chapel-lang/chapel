@@ -700,10 +700,11 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
     auto fT = formalQT.type()->toTupleType();
-    auto got = canConvertTuples(context, aT, fT);
-    if (got.passes()) {
-      return got;
-    }
+
+    // TODO: for now, return the result from the tuple conversion no matter
+    // what it is. This is better than falling through to the catch-all
+    // fail(...) below because it propagates the error.
+    return canConvertTuples(context, aT, fT);
   }
 
   // TODO: check for conversion to copy type
