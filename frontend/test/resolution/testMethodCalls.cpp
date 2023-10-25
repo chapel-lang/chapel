@@ -490,7 +490,7 @@ static void test8() {
     QualifiedType initType = resolveTypeOfXInit(context, program);
     assert(guard.numErrors() == 1);
     assert(initType.type()->isErroneousType());
-    assert(guard.error(0)->message() == "Cannot resolve call to 'onlyFalse': no matching candidates");
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
     guard.realizeErrors();
   }
 }
