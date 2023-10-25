@@ -715,7 +715,7 @@ void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
     wait_stream(stream); \
   } \
   \
-  CHPL_GPU_DEBUG("chpl_gpu_sum_reduce_int8_t returned\n"); \
+  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
 }
 
 GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL, sum)
@@ -740,7 +740,7 @@ void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
     wait_stream(stream); \
   } \
   \
-  CHPL_GPU_DEBUG("chpl_gpu_sum_reduce_int8_t returned\n"); \
+  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
 }
 
 GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, minloc);

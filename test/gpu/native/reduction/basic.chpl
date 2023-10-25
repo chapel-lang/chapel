@@ -27,10 +27,8 @@ proc testType(type t) {
   test("sum", t);
   test("min", t);
   test("max", t);
-  if CHPL_GPU != "amd" {
-    test("minloc", t);
-    test("maxloc", t);
-  }
+  test("minloc", t);
+  test("maxloc", t);
   writeln();
 }
 
