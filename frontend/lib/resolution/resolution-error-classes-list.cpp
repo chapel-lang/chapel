@@ -704,8 +704,8 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, call, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(call);
 
-  int printCount = 0;
-  static const int maxPrintCount = 2;
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
   for (auto& candidate : rejected) {
     if (printCount == maxPrintCount) break;
     printCount++;
@@ -746,11 +746,9 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
 
         wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
       } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
-        if (auto fml = formalDecl->toFormal()) {
-          wr.message("Formals with kind '", badPass.formalType().kind(),
-                     "' expect the actual to be a subtype, but '", badPass.actualType().type(),
-                     "' is not a subtype of '", badPass.formalType().type(), "'.");
-        }
+        wr.message("Formals with kind '", badPass.formalType().kind(),
+                   "' expect the actual to be a subtype, but '", badPass.actualType().type(),
+                   "' is not a subtype of '", badPass.formalType().type(), "'.");
       } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
         auto formalTup = badPass.formalType().type()->toTupleType();
         auto actualTup = badPass.actualType().type()->toTupleType();
