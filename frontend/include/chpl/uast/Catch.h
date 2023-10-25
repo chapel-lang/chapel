@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class Catch final : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t errorChildNum_;
   int8_t bodyChildNum_;
@@ -57,21 +59,18 @@ class Catch final : public AstNode {
       bodyChildNum_(bodyChildNum),
       hasParensAroundError_(hasParensAroundError) {
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
     ser.write(errorChildNum_);
     ser.write(bodyChildNum_);
     ser.write(hasParensAroundError_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Catch);
- private:
-  Catch(Deserializer& des)
+  explicit Catch(Deserializer& des)
     : AstNode(asttags::Catch, des) {
-      errorChildNum_ = des.read<int8_t>();
-      bodyChildNum_ = des.read<int8_t>();
-      hasParensAroundError_ = des.read<bool>();
+    errorChildNum_ = des.read<int8_t>();
+    bodyChildNum_ = des.read<int8_t>();
+    hasParensAroundError_ = des.read<bool>();
   }
 
   bool contentsMatchInner(const AstNode* other) const override {

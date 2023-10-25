@@ -40,6 +40,8 @@ namespace uast {
 
  */
 class EnumElement final : public NamedDecl {
+ friend class AstNode;
+
  private:
   EnumElement(AstList children, int attributeGroupChildNum,
               UniqueString name)
@@ -53,14 +55,11 @@ class EnumElement final : public NamedDecl {
     CHPL_ASSERT(children_.size() <= 2);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(EnumElement);
- private:
-  EnumElement(Deserializer& des)
+  explicit EnumElement(Deserializer& des)
     : NamedDecl(asttags::EnumElement, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {

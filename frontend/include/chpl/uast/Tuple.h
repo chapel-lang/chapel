@@ -40,6 +40,8 @@ namespace uast {
   \endrst
 */
 class Tuple final : public Call {
+ friend class AstNode;
+
  private:
   // TODO: Record trailing comma?
   Tuple(AstList children)
@@ -48,16 +50,11 @@ class Tuple final : public Call {
     CHPL_ASSERT(numChildren() >= 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Tuple);
-
- private:
-  Tuple(Deserializer& des)
-    : Call(asttags::Tuple, des) { }
+  explicit Tuple(Deserializer& des) : Call(asttags::Tuple, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return this->callContentsMatchInner(other->toCall());

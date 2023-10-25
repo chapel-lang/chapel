@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class Select final : public AstNode {
+ friend class AstNode;
+
  private:
   // The position of these never change.
   static const int8_t exprChildNum_ = 0;
@@ -57,16 +59,11 @@ class Select final : public AstNode {
       numWhenStmts_(numWhenStmts) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.writeVInt(numWhenStmts_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Select);
-
- private:
-  Select(Deserializer& des) : AstNode(asttags::Select, des) {
+  explicit Select(Deserializer& des) : AstNode(asttags::Select, des) {
     numWhenStmts_ = des.readVInt();
   }
 

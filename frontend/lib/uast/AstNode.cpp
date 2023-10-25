@@ -547,35 +547,48 @@ void AstNode::stringify(std::ostream& ss,
 void AstNode::serialize(Serializer& ser) const {
   ser.write(tag_);
   ser.writeVInt(attributeGroupChildNum_);
-  ser.write(id_);
+  ser.write(id_); // TODO: don't serialize ID; recompute it
+  serializeInner(ser);
   ser.write(children_);
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)
   : tag_(tag) {
-  // Note: Assumes that the tag was already serialized in order to invoke
+  // Note: Assumes that the tag was already deserialized in order to invoke
   // the correct class' deserializer.
   attributeGroupChildNum_ = des.readVInt();
   id_ = des.read<ID>();
+  // TODO: don't deserialize ID; recompute it
+}
+
+void AstNode::deserializeChildren(Deserializer& des) {
   children_ = des.read<AstList>();
 }
 
 owned<AstNode> AstNode::deserialize(Deserializer& des) {
   AstTag tag = des.read<AstTag>();
 
+  // deserialize using the constructor
+  // which will call AstNode::AstNode(AstTag tag, Deserializer& des) above
+  // to deserialize AstNode's fields (but not the children)
+  // and then deserialize the subclass fields.
+  // Finally, deserialize the children with deserializeChildren.
+
   switch (tag) {
     #define CASE_LEAF(NAME) \
       case asttags::NAME: \
       { \
-        return NAME::deserialize(des); \
-        break; \
+        auto ret = toOwned(new NAME(des)); \
+        ret->deserializeChildren(des); \
+        return ret; \
       }
 
     #define CASE_NODE(NAME) \
       case asttags::NAME: \
       { \
-        return NAME::deserialize(des); \
-        break; \
+        auto ret = toOwned(new NAME(des)); \
+        ret->deserializeChildren(des); \
+        return ret; \
       }
 
     #define CASE_OTHER(NAME) \

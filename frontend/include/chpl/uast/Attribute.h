@@ -28,6 +28,7 @@ namespace chpl {
 namespace uast {
 
 class Attribute final: public AstNode {
+ friend class AstNode;
 
  private:
   // the attribute name - deprecated or unstable or chpldoc.nodoc, for example
@@ -43,19 +44,13 @@ class Attribute final: public AstNode {
       actualNames_(std::move(actualNames)) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
+  void serializeInner(Serializer& ser) const override {
     ser.write(name_);
     ser.writeVInt(numActuals_);
     ser.write(actualNames_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Attribute);
-
- private:
-  Attribute(Deserializer& des) : AstNode(asttags::Attribute, des) {
+  explicit Attribute(Deserializer& des) : AstNode(asttags::Attribute, des) {
     name_ = des.read<UniqueString>();
     numActuals_ = des.readVInt();
     actualNames_ = des.read<std::vector<UniqueString>>();

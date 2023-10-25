@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class DoWhile final : public Loop {
+ friend class AstNode;
+
  private:
   int conditionChildNum_;
 
@@ -59,14 +61,13 @@ class DoWhile final : public Loop {
       conditionChildNum_(conditionChildNum) {
     CHPL_ASSERT(condition());
   }
- public:
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
+    loopSerializeInner(ser);
     ser.writeVInt(conditionChildNum_);
   }
-  DECLARE_STATIC_DESERIALIZE(DoWhile);
- private:
-  DoWhile(Deserializer& des)
+
+  explicit DoWhile(Deserializer& des)
     : Loop(asttags::DoWhile, des) {
       conditionChildNum_ = des.readVInt();
   }

@@ -46,6 +46,8 @@ namespace uast {
   This is because the conditional may have an else block.
  */
 class SimpleBlockLike : public AstNode {
+ friend class AstNode;
+
  protected:
   BlockStyle blockStyle_;
   int bodyChildNum_;
@@ -61,15 +63,12 @@ class SimpleBlockLike : public AstNode {
 
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void simpleBlockLikeSerializeInner(Serializer& ser) const {
     ser.write(blockStyle_);
     ser.writeVInt(bodyChildNum_);
     ser.writeVInt(numBodyStmts_);
   }
 
- protected:
   SimpleBlockLike(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();

@@ -42,6 +42,8 @@ namespace uast {
 
  */
 class AggregateDecl : public TypeDecl {
+ friend class AstNode;
+
  private:
   int inheritExprChildNum_;
   int numInheritExprs_;
@@ -67,7 +69,6 @@ class AggregateDecl : public TypeDecl {
 
   std::string aggregateDeclDumpChildLabelInner(int i) const;
 
- public:
   AggregateDecl(AstTag tag, AstList children, int attributeGroupChildNum,
                 Decl::Visibility vis,
                 Decl::Linkage linkage,
@@ -99,8 +100,8 @@ class AggregateDecl : public TypeDecl {
     CHPL_ASSERT(validAggregateChildren(declOrComments()));
   }
 
-  void serialize(Serializer& ser) const override {
-    TypeDecl::serialize(ser);
+  void aggregateDeclSerializeInner(Serializer& ser) const {
+    typeDeclSerializeInner(ser);
     ser.writeVInt(inheritExprChildNum_);
     ser.writeVInt(numInheritExprs_);
     ser.writeVInt(elementsChildNum_);
@@ -117,6 +118,7 @@ class AggregateDecl : public TypeDecl {
 
   ~AggregateDecl() = 0; // this is an abstract base class
 
+ public:
   /**
     Return a way to iterate over the contained Decls and Comments.
    */

@@ -17,5 +17,6 @@
 
 comp_unit_test(testBuildIDs)
 comp_unit_test(testConsistentEnums)
-comp_unit_test(testVisit)
+comp_unit_test(testSerialize)
 comp_unit_test(testStringify)
+comp_unit_test(testVisit)

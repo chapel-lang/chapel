@@ -43,6 +43,8 @@ namespace uast {
 
  */
 class On final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   static const int8_t destChildNum_ = 0;
 
@@ -53,15 +55,11 @@ class On final : public SimpleBlockLike {
                       numBodyStmts) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(On);
-
- private:
-  On(Deserializer& des)
+  explicit On(Deserializer& des)
     : SimpleBlockLike(asttags::On, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {

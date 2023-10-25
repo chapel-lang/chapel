@@ -31,22 +31,19 @@ namespace uast {
   This class represents a zip expression.
 */
 class Zip final : public Call {
+ friend class AstNode;
+
  private:
   Zip(AstList children)
     : Call(asttags::Zip, std::move(children),
            /*hasCalledExpression*/ false) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Zip);
-
- private:
-  Zip(Deserializer& des)
-    : Call(asttags::Zip, des) { }
+  explicit Zip(Deserializer& des) : Call(asttags::Zip, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return callContentsMatchInner(other->toCall());

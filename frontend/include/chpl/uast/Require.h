@@ -39,21 +39,16 @@ namespace uast {
   \endrst
 */
 class Require final : public AstNode {
+ friend class AstNode;
+
  private:
   Require(AstList children)
     : AstNode(asttags::Require, std::move(children)) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
+  void serializeInner(Serializer& ser) const override { }
 
-  DECLARE_STATIC_DESERIALIZE(Require);
-
- private:
-  Require(Deserializer& des)
-    : AstNode(asttags::Require, des) { }
+  explicit Require(Deserializer& des) : AstNode(asttags::Require, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return true;

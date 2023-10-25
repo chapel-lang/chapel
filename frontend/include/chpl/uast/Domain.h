@@ -41,6 +41,8 @@ namespace uast {
   A domain expression will never contain comments.
  */
 class Domain final : public AstNode {
+ friend class AstNode;
+
  private:
   bool usedCurlyBraces_;
 
@@ -49,14 +51,12 @@ class Domain final : public AstNode {
     : AstNode(asttags::Domain, std::move(children)),
       usedCurlyBraces_(usedCurlyBraces) {
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
     ser.write(usedCurlyBraces_);
   }
-  DECLARE_STATIC_DESERIALIZE(Domain);
- private:
-  Domain(Deserializer& des)
+
+  explicit Domain(Deserializer& des)
     : AstNode(asttags::Domain, des) {
     usedCurlyBraces_ = des.read<bool>();
   }

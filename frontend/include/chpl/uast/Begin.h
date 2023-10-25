@@ -46,6 +46,8 @@ namespace uast {
 
  */
 class Begin final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   int8_t withClauseChildNum_;
 
@@ -58,17 +60,12 @@ class Begin final : public SimpleBlockLike {
       withClauseChildNum_(withClauseChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(withClauseChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Begin);
-
- private:
-  Begin(Deserializer& des)
-  : SimpleBlockLike(asttags::Begin, des) {
+  explicit Begin(Deserializer& des)
+    : SimpleBlockLike(asttags::Begin, des) {
     withClauseChildNum_ = des.read<int8_t>();
   }
 

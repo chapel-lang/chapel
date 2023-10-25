@@ -44,21 +44,16 @@ namespace uast {
   task variable named 'x'.
 */
 class WithClause final : public AstNode {
+ friend class AstNode;
+
  private:
   WithClause(AstList exprs)
     : AstNode(asttags::WithClause, std::move(exprs)) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
+  void serializeInner(Serializer& ser) const override { }
 
-  DECLARE_STATIC_DESERIALIZE(WithClause);
-
- private:
-  WithClause(Deserializer& des)
-    : AstNode(asttags::WithClause, des) { }
+  explicit WithClause(Deserializer& des) : AstNode(asttags::WithClause, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return true;

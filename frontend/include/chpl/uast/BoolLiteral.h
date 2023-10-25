@@ -32,20 +32,18 @@ namespace uast {
   This class represents a boolean literal.
  */
 class BoolLiteral final : public Literal {
+ friend class AstNode;
+
  private:
   explicit BoolLiteral(const types::BoolParam* value)
     : Literal(asttags::BoolLiteral, value) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    literalSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(BoolLiteral);
-
- private:
-  BoolLiteral(Deserializer& des)
+  explicit BoolLiteral(Deserializer& des)
     : Literal(asttags::BoolLiteral, des) {
     assert(value_->isBoolParam());
   }

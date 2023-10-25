@@ -46,6 +46,8 @@ namespace uast {
 
  */
 class ExternBlock final : public AstNode {
+ friend class AstNode;
+
  private:
   std::string code_;
 
@@ -55,19 +57,14 @@ class ExternBlock final : public AstNode {
     CHPL_ASSERT(numChildren() == 0);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(code_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(ExternBlock);
-
- private:
-  ExternBlock(Deserializer& des)
+  explicit ExternBlock(Deserializer& des)
     : AstNode(asttags::ExternBlock, des) {
-      code_ = des.read<std::string>();
-    }
+    code_ = des.read<std::string>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ExternBlock* rhs = (const ExternBlock*)other;

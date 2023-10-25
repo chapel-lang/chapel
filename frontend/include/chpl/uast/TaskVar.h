@@ -46,6 +46,8 @@ namespace uast {
   ref intent.
  */
 class TaskVar final : public VarLikeDecl {
+ friend class AstNode;
+
  public:
   enum Intent {
     // Use Qualifier here for consistent enum values.
@@ -73,17 +75,11 @@ class TaskVar final : public VarLikeDecl {
                     initExpressionChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(TaskVar);
-
- private:
-  TaskVar(Deserializer& des)
-      : VarLikeDecl(asttags::TaskVar, des) {
-  }
+  explicit TaskVar(Deserializer& des) : VarLikeDecl(asttags::TaskVar, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TaskVar* lhs = this;

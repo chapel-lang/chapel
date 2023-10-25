@@ -40,6 +40,8 @@ namespace uast {
 
  */
 class Range final : public AstNode {
+ friend class AstNode;
+
  public:
   enum OpKind {
     DEFAULT,
@@ -63,18 +65,13 @@ class Range final : public AstNode {
     }
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(opKind_);
     ser.write(lowerBoundChildNum_);
     ser.write(upperBoundChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Range);
-
- private:
-  Range(Deserializer& des)
+  explicit Range(Deserializer& des)
     : AstNode(asttags::Range, des) {
     opKind_ = des.read<OpKind>();
     lowerBoundChildNum_ = des.read<int8_t>();

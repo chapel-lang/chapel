@@ -33,6 +33,8 @@ namespace uast {
   however these declarations might be contained in MultiDecl or TupleDecl.
  */
 class Decl : public AstNode {
+ friend class AstNode;
+
  public:
   enum Visibility {
     DEFAULT_VISIBILITY,
@@ -78,15 +80,12 @@ class Decl : public AstNode {
                  linkageNameChildNum_ < (ssize_t)children_.size());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-
+  void declSerializeInner(Serializer& ser) const {
     ser.write(visibility_);
     ser.write(linkage_);
     ser.writeVInt(linkageNameChildNum_);
   }
- protected:
+
   Decl(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
       visibility_ = des.read<Decl::Visibility>();

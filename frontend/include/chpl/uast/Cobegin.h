@@ -46,6 +46,8 @@ namespace uast {
 
  */
 class Cobegin final : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t withClauseChildNum_;
   int bodyChildNum_;
@@ -59,17 +61,13 @@ class Cobegin final : public AstNode {
       numTaskBodies_(numTaskBodies) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(withClauseChildNum_ );
     ser.writeVInt(bodyChildNum_);
     ser.writeVInt(numTaskBodies_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Cobegin);
- private:
-  Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
+  explicit Cobegin(Deserializer& des) : AstNode(asttags::Cobegin, des) {
     withClauseChildNum_ = des.read<int8_t>();
     bodyChildNum_ = des.readVInt();
     numTaskBodies_ = des.readVInt();

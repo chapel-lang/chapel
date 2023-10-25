@@ -40,6 +40,7 @@ namespace uast {
   \endrst
  */
 class Identifier final : public AstNode {
+ friend class AstNode;
 
  private:
   UniqueString name_;
@@ -50,16 +51,11 @@ class Identifier final : public AstNode {
     CHPL_ASSERT(!name.isEmpty());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(name_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Identifier);
-
- private:
-  Identifier(Deserializer& des)
+  explicit Identifier(Deserializer& des)
     : AstNode(asttags::Identifier, des) {
     name_ = des.read<UniqueString>();
   }

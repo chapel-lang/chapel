@@ -41,22 +41,17 @@ namespace uast {
   \endrst
 */
 class Throw final : public AstNode {
+ friend class AstNode;
+
  private:
   Throw(AstList children)
       : AstNode(asttags::Throw, std::move(children)) {
     CHPL_ASSERT(numChildren() == 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
+  void serializeInner(Serializer& ser) const override { }
 
-  DECLARE_STATIC_DESERIALIZE(Throw);
-
- private:
-  Throw(Deserializer& des)
-    : AstNode(asttags::Throw, des) { }
+  explicit Throw(Deserializer& des) : AstNode(asttags::Throw, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return true;

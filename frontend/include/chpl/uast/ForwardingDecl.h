@@ -55,6 +55,7 @@ namespace uast {
 */
 
 class ForwardingDecl final : public Decl {
+ friend class AstNode;
 
  private:
   ForwardingDecl(AstList children, Decl::Visibility visibility,
@@ -68,16 +69,13 @@ class ForwardingDecl final : public Decl {
     CHPL_ASSERT(children_.size() >= 0 && children_.size() <= 2);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    declSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(ForwardingDecl);
-
- private:
-  ForwardingDecl(Deserializer& des)
-    : Decl(asttags::ForwardingDecl, des) { }
+  explicit ForwardingDecl(Deserializer& des)
+    : Decl(asttags::ForwardingDecl, des) {
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ForwardingDecl* lhs = (const ForwardingDecl*) this;

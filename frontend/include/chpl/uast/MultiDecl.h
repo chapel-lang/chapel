@@ -51,6 +51,8 @@ namespace uast {
 
  */
 class MultiDecl final : public Decl {
+ friend class AstNode;
+
  private:
   MultiDecl(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
             Decl::Linkage linkage)
@@ -62,15 +64,11 @@ class MultiDecl final : public Decl {
     CHPL_ASSERT(isAcceptableMultiDecl());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    declSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(MultiDecl);
-
- private:
-  MultiDecl(Deserializer& des)
+  explicit MultiDecl(Deserializer& des)
     : Decl(asttags::MultiDecl, des) { }
 
   bool isAcceptableMultiDecl();

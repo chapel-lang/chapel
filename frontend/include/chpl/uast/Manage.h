@@ -44,6 +44,8 @@ namespace uast {
   that can be referred to as 'res'.
  */
 class Manage final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   int managerExprChildNum_;
   int numManagerExprs_;
@@ -67,17 +69,13 @@ class Manage final : public SimpleBlockLike {
     #endif
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
     ser.writeVInt(managerExprChildNum_);
     ser.writeVInt(numManagerExprs_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Manage);
-
- private:
-  Manage(Deserializer& des)
+  explicit Manage(Deserializer& des)
     : SimpleBlockLike(asttags::Manage, des) {
     managerExprChildNum_ = des.readVInt();
     numManagerExprs_ = des.readVInt();

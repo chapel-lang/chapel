@@ -31,6 +31,8 @@ namespace uast {
   This is an abstract parent class for string/bytes/c-string literals.
  */
 class StringLikeLiteral : public Literal {
+ friend class AstNode;
+
  public:
   enum QuoteStyle {
     SINGLE,
@@ -47,13 +49,11 @@ class StringLikeLiteral : public Literal {
       quotes_(quotes)
   { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Literal::serialize(ser);
+  void stringLikeLiteralSerializeInner(Serializer& ser) const {
+    literalSerializeInner(ser);
     ser.write(quotes_);
   }
 
- protected:
   StringLikeLiteral(AstTag tag, Deserializer& des)
     : Literal(tag, des) {
     quotes_ = des.read<QuoteStyle>();

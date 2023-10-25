@@ -43,6 +43,8 @@ namespace uast {
   The class itself (MyClass) is represented by a Class AST node.
  */
 class Class final : public AggregateDecl {
+ friend class AstNode;
+
  private:
   Class(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         UniqueString name,
@@ -61,14 +63,11 @@ class Class final : public AggregateDecl {
                     elementsChildNum,
                     numElements) {}
 
- public:
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    aggregateDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Class);
- private:
-  Class(Deserializer& des)
+  explicit Class(Deserializer& des)
     : AggregateDecl(asttags::Class, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {

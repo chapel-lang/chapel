@@ -53,6 +53,8 @@ namespace uast {
   block.
  */
 class Try final : public AstNode {
+ friend class AstNode;
+
  private:
   // body position is always the same
   static const int8_t bodyChildNum_ = 0;
@@ -85,19 +87,14 @@ class Try final : public AstNode {
     }
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.writeVInt(numHandlers_);
     ser.write(containsBlock_);
     ser.write(isExpressionLevel_);
     ser.write(isTryBang_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Try);
-
- private:
-  Try(Deserializer& des)
+  explicit Try(Deserializer& des)
     : AstNode(asttags::Try, des) {
       numHandlers_ = des.readVInt();
       containsBlock_ = des.read<bool>();
