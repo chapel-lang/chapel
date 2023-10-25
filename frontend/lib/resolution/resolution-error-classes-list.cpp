@@ -735,8 +735,6 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
 
         wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
                    "but the actual is ", nilabilityStr(actualDec), ".");
-      } if (formalReason == resolution::FAIL_INCOMPATIBLE_MGMT) {
-        // Don't do anything special.
       } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
         auto formalMgr = badPass.formalType().type()->toClassType()->manager();
         auto actualMgr = badPass.actualType().type()->toClassType()->manager();
