@@ -176,8 +176,8 @@ The uAST section consists of:
 
    * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
    * attribute group child num (variable-byte encoded)
-   * variable-byte encoded length in bytes L of additional information
    * the L bytes storing the additional information
+     (where L can be determined from the tag)
    * variable-byte encoded number of children
    * the children, where each is stored as a uAST entry as described here
 
