@@ -704,7 +704,12 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
   wr.heading(kind_, type_, call, "unable to resolve call to '", ci.name(), "': no matching candidates.");
   wr.code(call);
 
+  int printCount = 0;
+  static const int maxPrintCount = 2;
   for (auto& candidate : rejected) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
     auto reason = candidate.reason();
     wr.message("");
     if (reason == resolution::FAIL_CANNOT_PASS &&
@@ -787,6 +792,11 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       }
       wr.code(candidate.idForErr());
     }
+  }
+
+  if (printCount < rejected.size()) {
+    wr.message("");
+    wr.note(locationOnly(call), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
   }
 }
 

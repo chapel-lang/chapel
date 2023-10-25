@@ -292,6 +292,51 @@ static const char* errorOther = R"""(
       |
 )""";
 
+static const char* progManyCandidates = R"""(
+proc f(x: int(8)) {}
+proc f(x: int(16)) {}
+proc f(x: int(32)) {}
+proc f(x: int(64)) {}
+proc f(x: uint(8)) {}
+proc f(x: uint(16)) {}
+proc f(x: uint(32)) {}
+proc f(x: uint(64)) {}
+
+f("hello");
+)""";
+
+static const char* errorManyCandidates = R"""(
+─── error in file.chpl:10 [NoMatchingCandidates] ───
+  Unable to resolve call to 'f': no matching candidates.
+       |
+    10 | f("hello");
+       |
+  
+  The following candidate didn't match because an actual couldn't be passed to a formal:
+      |
+    1 | proc f(x: int(8)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The formal 'x' expects a value of type 'int(8)', but the actual was a param of type 'string'.
+       |
+    10 | f("hello");
+       |   ⎺⎺⎺⎺⎺⎺⎺
+       |
+  
+  The following candidate didn't match because an actual couldn't be passed to a formal:
+      |
+    2 | proc f(x: int(16)) {}
+      |        ⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺⎺
+      |
+  The formal 'x' expects a value of type 'int(16)', but the actual was a param of type 'string'.
+       |
+    10 | f("hello");
+       |   ⎺⎺⎺⎺⎺⎺⎺
+       |
+  
+  Omitting 6 more candidates that didn't match.
+)""";
+
 static void testResolverError(const char* program, const char* error) {
   Context ctx;
   Context* context = &ctx;
@@ -331,6 +376,7 @@ int main() {
   testResolverError(progWhereClauseFalse, errorWhereClauseFalse);
   testResolverError(progBasic, errorBasic);
   testResolverError(progOther, errorOther);
+  testResolverError(progManyCandidates, errorManyCandidates);
 
   return 0;
 }
