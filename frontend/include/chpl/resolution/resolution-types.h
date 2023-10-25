@@ -340,6 +340,10 @@ class CallInfoActual {
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
+  void mark(Context* context) const {
+    type_.mark(context);
+    byName_.mark(context);
+  }
   size_t hash() const {
     return chpl::hash(type_, byName_);
   }
@@ -492,6 +496,9 @@ class CallInfo {
   void mark(Context* context) const {
     name_.mark(context);
     calledType_.mark(context);
+    for (auto& actual : actuals_) {
+      actual.mark(context);
+    }
   }
   size_t hash() const {
     return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
