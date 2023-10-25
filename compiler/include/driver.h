@@ -164,6 +164,7 @@ extern bool fParseOnly;
 extern bool fDriverDoMonolithic;
 extern bool fDriverPhaseOne;
 extern bool fDriverPhaseTwo;
+extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
 extern bool fPrintAllCandidates;
 extern bool fPrintCallGraph;
