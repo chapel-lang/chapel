@@ -11493,6 +11493,8 @@ static void checkSpeciallyNamedMethods() {
 static void postResolveLiftStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR_WRAPPER)) {
+      if (!call->inTree()) continue;
+
       auto wrapperSym = toSymExpr(call->get(1))->symbol();
       auto initDummySym = toSymExpr(call->get(2))->symbol();
 
