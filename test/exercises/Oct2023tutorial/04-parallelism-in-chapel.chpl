@@ -12,7 +12,7 @@ sync {
   begin x.add(1);
   begin y.writeEF(1);
   begin x.sub(1);
-  begin y.writeFF(0);
+  begin { y.readFE(); y.writeEF(0); }
 }
 assert(x.read() == 0);
 assert(y.readFE() == 0);
