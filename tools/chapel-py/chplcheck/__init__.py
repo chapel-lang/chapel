@@ -46,14 +46,14 @@ def run_lsp(driver):
             contexts[uri] = context
         return context
 
-    def parse_file(uri):
-        context = get_updated_context(uri)
+    def parse_file(context, uri):
         return context.parse(uri[len("file://"):])
 
     def build_diagnostics(uri):
-        asts = parse_file(uri)
+        context = get_updated_context(uri)
+        asts = parse_file(context, uri)
         diagnostics = []
-        for (node, rule) in driver.run_checks(asts):
+        for (node, rule) in driver.run_checks(context, asts):
             location = node.location()
             start = location.start()
             end = location.end()
@@ -87,8 +87,6 @@ def print_violation(node, name):
     print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
 
 def main():
-    global ctx
-
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filenames', nargs='*')
     parser.add_argument('--ignore-rule', action='append', dest='ignored_rules', default=[])
@@ -104,9 +102,9 @@ def main():
         run_lsp(driver)
         return
 
-    for (filename, ctx) in chapel.files_with_contexts(args.filenames):
-        asts = ctx.parse(filename)
-        for (node, rule) in driver.run_checks(asts):
+    for (filename, context) in chapel.files_with_contexts(args.filenames):
+        asts = context.parse(filename)
+        for (node, rule) in driver.run_checks(context, asts):
             print_violation(node, rule)
 
 if __name__ == "__main__":

@@ -16,28 +16,28 @@ def check_pascal_case(node):
 
 def register_rules(driver):
     @driver.basic_rule(chapel.core.VarLikeDecl)
-    def CamelCaseVariables(node):
+    def CamelCaseVariables(context, node):
         if node.name() == "_": return True
         return check_camel_case(node)
 
     @driver.basic_rule(chapel.core.Record)
-    def CamelCaseRecords(node):
+    def CamelCaseRecords(context, node):
         return check_camel_case(node)
 
     @driver.basic_rule(chapel.core.Class)
-    def PascalCaseClasses(node):
+    def PascalCaseClasses(context, node):
         return check_pascal_case(node)
 
     @driver.basic_rule(chapel.core.Module)
-    def PascalCaseModules(node):
+    def PascalCaseModules(context, node):
         return check_pascal_case(node)
 
     @driver.basic_rule(chapel.core.Loop)
-    def DoKeywordAndBlock(node):
+    def DoKeywordAndBlock(context, node):
         return node.block_style() != "unnecessary"
 
     @driver.basic_rule(chapel.core.Coforall)
-    def NestedCoforalls(node):
+    def NestedCoforalls(context, node):
         parent = node.parent()
         while parent is not None:
             if isinstance(parent, chapel.core.Coforall):
@@ -46,18 +46,18 @@ def register_rules(driver):
         return True
 
     @driver.basic_rule([chapel.core.Conditional, chapel.core.BoolLiteral, chapel.rest])
-    def BoolLitInCondStmt(node):
+    def BoolLitInCondStmt(context, node):
         return False
 
     @driver.basic_rule(chapel.core.NamedDecl)
-    def ChplPrefixReserved(node):
+    def ChplPrefixReserved(context, node):
         if node.name().startswith("chpl_"):
             path = node.location().path()
-            return ctx.is_bundled_path(path)
+            return context.is_bundled_path(path)
         return True
 
     @driver.advanced_rule
-    def ConsecutiveDecls(root):
+    def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
             if isinstance(node, chapel.core.MultiDecl):
                 for child in node:
@@ -99,7 +99,7 @@ def register_rules(driver):
         yield from recurse(root)
 
     @driver.advanced_rule
-    def MisleadingIndentation(root):
+    def MisleadingIndentation(context, root):
         prev = None
         for child in root:
             yield from MisleadingIndentation(child)

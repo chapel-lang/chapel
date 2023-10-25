@@ -31,7 +31,7 @@ class LintDriver:
 
         return True
 
-    def check_basic_rule(self, root, rule):
+    def check_basic_rule(self, context, root, rule):
         (name, nodetype, func) = rule
 
         if not self.should_check_rule(None, name):
@@ -43,10 +43,10 @@ class LintDriver:
             if not self.should_check_rule(node, name):
                 continue
 
-            if not func(node):
+            if not func(context, node):
                 yield (node, name)
 
-    def check_advanced_rule(self, root, rule):
+    def check_advanced_rule(self, context, root, rule):
         (name, func) = rule
 
         # If we should ignore the rule no matter the node, no reason to run
@@ -54,7 +54,7 @@ class LintDriver:
         if not self.should_check_rule(None, name):
             return
 
-        for node in func(root):
+        for node in func(context, root):
             yield (node, name)
 
     def basic_rule(self, nodetype):
@@ -67,10 +67,10 @@ class LintDriver:
         self.AdvancedRules.append((func.__name__, func))
         return func
 
-    def run_checks(self, asts):
+    def run_checks(self, context, asts):
         for ast in asts:
             for rule in self.BasicRules:
-                yield from self.check_basic_rule(ast, rule)
+                yield from self.check_basic_rule(context, ast, rule)
 
             for rule in self.AdvancedRules:
-                yield from self.check_advanced_rule(ast, rule)
+                yield from self.check_advanced_rule(context, ast, rule)
