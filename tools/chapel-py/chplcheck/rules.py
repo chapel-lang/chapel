@@ -102,7 +102,7 @@ def register_rules(driver):
     def MisleadingIndentation(context, root):
         prev = None
         for child in root:
-            yield from MisleadingIndentation(child)
+            yield from MisleadingIndentation(context, child)
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:

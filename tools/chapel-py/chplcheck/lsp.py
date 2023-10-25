@@ -1,3 +1,4 @@
+import chapel.core
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
