@@ -442,8 +442,14 @@ module GPU
     }
 
     iter offsetsThatCanFitIn32Bits(size: int) {
+      // Engin: I've tried to get max(int(32)) to work as this bug is about CUB
+      // using `int` as the size in the interface. However, getting close to
+      // max(int(32)) also triggers the bug. So, I am choosing this as a
+      // round/safe value for the time being.
+      param chunkSize = 2_000_000_000;
+
       use Math only divCeil;
-      const numChunks = divCeil(size, max(int(32)));
+      const numChunks = divCeil(size, chunkSize);
       const standardChunkSize = divCeil(size, numChunks);
 
       if gpuDebugReduce then
@@ -453,9 +459,9 @@ module GPU
         const start = chunk*standardChunkSize;
         const curChunkSize = if start+standardChunkSize <= size
                                then standardChunkSize
-                               else size-standardChunkSize;
+                               else size-start;
         if gpuDebugReduce then
-          writef("Chunk %i: (start=%i, curChunkSize=%i)", chunk, start,
+          writef("Chunk %i: (start=%i, curChunkSize=%i) ", chunk, start,
                  curChunkSize);
 
         yield (start, curChunkSize);
@@ -479,6 +485,8 @@ module GPU
       for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
         var curVal: t;
         reduce_fn(basePtr+offset, size, curVal);
+        if gpuDebugReduce then
+          writef(" (curVal=%i)\n", curVal);
         subReduceVal(op, val, curVal);
       }
 
@@ -499,6 +507,8 @@ module GPU
         var curVal: t;
         reduce_fn(basePtr+offset, size, curVal, curIdx);
         subReduceValIdx(op, offset, ret, (curIdx, curVal));
+        if gpuDebugReduce then
+          writef(" (curIdx=%i curVal=%i)\n", curIdx, curVal);
       }
 
       return ret;
