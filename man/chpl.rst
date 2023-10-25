@@ -524,6 +524,13 @@ OPTIONS
 
 *Miscellaneous Options*
 
+**\--[no-]detailed-errors**
+
+    Enables [disables] the compiler's detailed error message mode. In this
+    mode, the compiler will print additional information about errors when
+    it is available. This could include printing and underlining relevant
+    segments of code, or providing suggestions for how to fix the error.
+
 **\--[no-]devel**
 
     Puts the compiler into [out of] developer mode, which takes off some of
