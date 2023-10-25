@@ -25,20 +25,10 @@ import chapel.core
 import chapel.replace
 import sys
 import argparse
-from driver import *
-from rules import *
+from driver import LintDriver
+from rules import register_rules
 
-SilencedRules.extend([ "CamelCaseVariables", "ConsecutiveDecls" ])
-
-def run_checks(asts):
-    for ast in asts:
-        for rule in BasicRules:
-            yield from check_basic_rule(ast, rule)
-
-        for rule in AdvancedRules:
-            yield from check_advanced_rule(ast, rule)
-
-def run_lsp():
+def run_lsp(driver):
     from pygls.server import LanguageServer
     from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
     from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
@@ -63,7 +53,7 @@ def run_lsp():
     def build_diagnostics(uri):
         asts = parse_file(uri)
         diagnostics = []
-        for (node, rule) in run_checks(asts):
+        for (node, rule) in driver.run_checks(asts):
             location = node.location()
             start = location.start()
             end = location.end()
@@ -91,6 +81,11 @@ def run_lsp():
 
     server.start_io()
 
+def print_violation(node, name):
+    location = node.location()
+    first_line, _ = location.start()
+    print("{}:{}: node violates rule {}".format(location.path(), first_line, name))
+
 def main():
     global ctx
 
@@ -100,15 +95,18 @@ def main():
     parser.add_argument('--lsp', action='store_true', default=False)
     args = parser.parse_args()
 
-    SilencedRules.extend(args.ignored_rules)
+    driver = LintDriver()
+    driver.SilencedRules.extend([ "CamelCaseVariables", "ConsecutiveDecls" ])
+    driver.SilencedRules.extend(args.ignored_rules)
+    register_rules(driver)
 
     if args.lsp:
-        run_lsp()
+        run_lsp(driver)
         return
 
     for (filename, ctx) in chapel.files_with_contexts(args.filenames):
         asts = ctx.parse(filename)
-        for (node, rule) in run_checks(asts):
+        for (node, rule) in driver.run_checks(asts):
             print_violation(node, rule)
 
 if __name__ == "__main__":
