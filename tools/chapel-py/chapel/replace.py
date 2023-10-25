@@ -95,11 +95,14 @@ def rename_formals(rc, fn, renames):
     updates that perform the formal renaming.
     """
 
+    def name_replacer(name):
+        return lambda child_text: child_text.replace(name, renames[name])
+
     for child in fn.formals():
         name = child.name()
         if name not in renames: continue
 
-        yield (child, lambda child_text: child_text.replace(name, renames[name]))
+        yield (child, name_replacer(name))
 
 def rename_named_actuals(rc, call, renames):
     """
@@ -128,6 +131,10 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
     # and apply the transformations.
 
     nodes_to_replace = {}
+
+    def compose(outer, inner):
+        return lambda text: outer(inner(text))
+
     for ast in asts:
         for (node, replace_with) in finder(rc, ast):
             uid = node.unique_id()
@@ -140,7 +147,7 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
             elif uid in nodes_to_replace:
                 # Old substitution is also a callable; need to create composition.
                 if callable(nodes_to_replace[uid]):
-                    nodes_to_replace[uid] = lambda text: replace_with(nodes_to_replace[uid](text))
+                    nodes_to_replace[uid] = compose(replace_with, nodes_to_replace[uid])
                 # Old substitution is a string; we can apply the callable to get
                 # another string.
                 else:
