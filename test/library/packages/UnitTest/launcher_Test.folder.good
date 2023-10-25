@@ -2,7 +2,7 @@
 ======================================================================
 FAIL test_fail.chpl: test1()
 ----------------------------------------------------------------------
-AssertionError: assert failed -
+AssertionError: in LauncherTest//test_fail.chpl:6 - assert failed -
 '0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
 0.0 0.0 0.0 0.0 0.0 0.0 0.0
@@ -18,12 +18,12 @@ AssertionError: assert failed -
 ======================================================================
 FAIL test_fail.chpl: test2()
 ----------------------------------------------------------------------
-AssertionError: assertTrue failed. Given expression is False
+AssertionError: in LauncherTest//test_fail.chpl:10 - assertTrue failed. Given expression is False
 
 ======================================================================
 SKIPPED test_fail.chpl: test3()
 ----------------------------------------------------------------------
-TestSkipped: Skipping Test 3
+TestSkipped: in LauncherTest//test_fail.chpl:14 - Skipping Test 3
 
 ----------------------------------------------------------------------
 Ran 5 tests in n seconds

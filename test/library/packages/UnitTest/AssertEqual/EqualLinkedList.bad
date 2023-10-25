@@ -1,2 +1,2 @@
-AssertionError: assert failed - '1 2 3' != '1 2 3'
+AssertionError: in EqualLinkedList.chpl:10 - assert failed - '1 2 3' != '1 2 3'
 ================================================================================
