@@ -760,26 +760,31 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
         const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
         const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
 
-        wr.message("The formal ", formalStr, " a star tuple, but the actual ", actualStr, ".");
+        wr.message("A formal that ", formalStr, " a star tuple cannot accept an actual actual that ", actualStr, ".");
       } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
         wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
       }
     } else {
-      const char* reasonStr = "the following candidate didn't match:";
+      const char* reasonStr = nullptr;
       if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
-        reasonStr = "the following candidate didn't match because the provided actuals could not be mapped to its formals:";
+        reasonStr = "the provided actuals could not be mapped to its formals:";
       } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
-        reasonStr = "the following candidate didn't match because the number of varargs was incorrect:";
+        reasonStr = "the number of varargs was incorrect:";
       } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
-        reasonStr = "the following candidate didn't match because the 'where' clause evaluated to 'false':";
+        reasonStr = "the 'where' clause evaluated to 'false':";
       } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
         if (ci.isParenless()) {
-          reasonStr = "the following candidate didn't match because it is parenful, but the call was parenless:";
+          reasonStr = "it is parenful, but the call was parenless:";
         } else {
-          reasonStr = "the following candidate didn't match because it is parenless, but the call was parenful:";
+          reasonStr = "it is parenless, but the call was parenful:";
         }
       }
-      wr.note(candidate.idForErr(), reasonStr);
+      if (!reasonStr) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+      } else {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because ", reasonStr);
+      }
       wr.code(candidate.idForErr());
     }
   }
