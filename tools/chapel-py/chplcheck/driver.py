@@ -22,6 +22,9 @@ class LintDriver:
         self.BasicRules = []
         self.AdvancedRules = []
 
+    def silence_rules(self, *rules):
+        self.SilencedRules.extend(rules)
+
     def should_check_rule(self, node, rulename):
         if rulename in self.SilencedRules:
             return False

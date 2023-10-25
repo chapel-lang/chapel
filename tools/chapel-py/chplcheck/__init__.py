@@ -94,8 +94,8 @@ def main():
     args = parser.parse_args()
 
     driver = LintDriver()
-    driver.SilencedRules.extend([ "CamelCaseVariables", "ConsecutiveDecls" ])
-    driver.SilencedRules.extend(args.ignored_rules)
+    driver.silence_rules("CamelCaseVariables", "ConsecutiveDecls")
+    driver.silence_rules(*args.ignored_rules)
     register_rules(driver)
 
     if args.lsp:
