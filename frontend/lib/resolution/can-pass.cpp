@@ -600,7 +600,7 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
                                result.conversionKind_ == SUBTYPE)) {
         // It could've been "passable", but not as a subtype -- if that's the
         // case, cause failure.
-        fail(FAIL_EXPECTED_SUBTYPE);
+        return fail(FAIL_EXPECTED_SUBTYPE);
       }
       return result;
     }

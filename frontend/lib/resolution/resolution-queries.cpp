@@ -2373,7 +2373,7 @@ filterCandidatesInitialGatherRejected(Context* context,
       auto s = isCandidateApplicableInitialQuery(context, id, call);
       if (s.success()) {
         matching.push_back(s.candidate());
-      } else {
+      } else if (gatherRejected) {
         rejected.push_back(s);
       }
     }
