@@ -48,6 +48,8 @@ namespace uast {
   This code will write 'bar' after 'foo' due to use of the defer block.
  */
 class Defer final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   Defer(AstList stmts, BlockStyle blockStyle, int bodyChildNum,
         int numBodyStmts)
@@ -57,13 +59,11 @@ class Defer final : public SimpleBlockLike {
     CHPL_ASSERT(bodyChildNum_ >= 0);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
   }
-  DECLARE_STATIC_DESERIALIZE(Defer);
- private:
-  Defer(Deserializer& des) : SimpleBlockLike(asttags::Defer, des) { }
+
+  explicit Defer(Deserializer& des) : SimpleBlockLike(asttags::Defer, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return simpleBlockLikeContentsMatchInner(other);

@@ -41,6 +41,8 @@ namespace uast {
   \endrst
 */
 class Break : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t targetChildNum_;
 
@@ -50,16 +52,11 @@ class Break : public AstNode {
     CHPL_ASSERT(numChildren() <= 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(targetChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Break);
-
- private:
-  Break(Deserializer& des)
+  explicit Break(Deserializer& des)
    : AstNode(asttags::Break, des) {
     targetChildNum_ = des.read<int8_t>();
   }

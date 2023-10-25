@@ -32,19 +32,19 @@ namespace uast {
   This class represents a C string literal, for example `c"hello"`.
  */
 class CStringLiteral final : public StringLikeLiteral {
+ friend class AstNode;
+
  private:
   CStringLiteral(const types::StringParam* value,
                  StringLikeLiteral::QuoteStyle quotes)
     : StringLikeLiteral(asttags::CStringLiteral, value, quotes)
   { }
- public:
-  void serialize(Serializer& ser) const override {
-    StringLikeLiteral::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
+    stringLikeLiteralSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(CStringLiteral);
- private:
-  CStringLiteral(Deserializer& des)
+  explicit CStringLiteral(Deserializer& des)
     : StringLikeLiteral(asttags::CStringLiteral, des)
   { }
 

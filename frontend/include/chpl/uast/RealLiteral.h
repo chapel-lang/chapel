@@ -32,20 +32,18 @@ namespace uast {
   That is, it is a "real" number. Examples include ``0.0``, and `3e24`.
  */
 class RealLiteral final : public NumericLiteral<double, types::RealParam> {
+ friend class AstNode;
+
  private:
   RealLiteral(const types::RealParam* value, UniqueString text)
     : NumericLiteral(asttags::RealLiteral, value, text)
   { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    numericLiteralSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(RealLiteral);
-
- private:
-  RealLiteral(Deserializer& des)
+  explicit RealLiteral(Deserializer& des)
     : NumericLiteral(asttags::RealLiteral, des)
   { }
 

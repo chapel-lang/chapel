@@ -79,6 +79,15 @@ class AstNode {
    */
   virtual void markUniqueStringsInner(Context* context) const = 0;
 
+  /**
+   This function needs to be defined by subclasses.
+   It should serialize any fields in the subclasses.
+   It need not concern itself with AstNode's fields, including the children.
+   Note that subclasses also need to provide a constructor
+   accepting AstTag, Deserializer.
+   */
+  virtual void serializeInner(Serializer& os) const = 0;
+
   struct DumpSettings {
     chpl::StringifyKind kind = StringifyKind::DEBUG_DETAIL;
     bool printId = true;
@@ -125,7 +134,13 @@ class AstNode {
     }
   }
 
+  /** To be called by subclasses to set the tag and
+      deserialize the AstNode fields other than the children */
   AstNode(AstTag tag, Deserializer& des);
+
+  /** Completes the deserialization process for an AstNode
+      by deserializing the children. */
+  void deserializeChildren(Deserializer& des);
 
   // Quick way to return an already exhausted iterator.
   template <typename T>
@@ -277,8 +292,7 @@ class AstNode {
   // compute the maximum width of all of the IDs
   int computeMaxIdStringWidth() const;
 
-  virtual void serialize(Serializer& os) const;
-
+  void serialize(Serializer& ser) const;
   static owned<AstNode> deserialize(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
@@ -533,7 +547,7 @@ class AstNode {
 
 template<> struct serialize<uast::AstList> {
   void operator()(Serializer& ser, const uast::AstList& list) {
-    ser.write((uint64_t)list.size());
+    ser.writeVU64(list.size());
     for (const auto& node : list) {
       node->serialize(ser);
     }
@@ -543,7 +557,7 @@ template<> struct serialize<uast::AstList> {
 template<> struct deserialize<uast::AstList> {
   uast::AstList operator()(Deserializer& des) {
     uast::AstList ret;
-    auto len = des.read<uint64_t>();
+    uint64_t len = des.readVU64();
     for (uint64_t i = 0; i < len; i++) {
       ret.push_back(uast::AstNode::deserialize(des));
     }
@@ -586,11 +600,6 @@ AST_LESS(AstNode)
 #undef AST_END_SUBCLASSES
 #undef AST_LESS
 /// \endcond
-
-#define DECLARE_STATIC_DESERIALIZE(NAME) \
-static owned<NAME> deserialize(Deserializer& des) { \
-  return owned<NAME>(new NAME(des)); \
-}
 
 } // end namespace std
 

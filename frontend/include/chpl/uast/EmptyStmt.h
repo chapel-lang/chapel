@@ -42,18 +42,17 @@ namespace uast {
  */
 
 class EmptyStmt final : public AstNode {
+ friend class AstNode;
+
  private:
   EmptyStmt()
     : AstNode(asttags::EmptyStmt) {
     CHPL_ASSERT(numChildren() == 0);
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-  DECLARE_STATIC_DESERIALIZE(EmptyStmt);
- private:
-  EmptyStmt(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override { }
+
+  explicit EmptyStmt(Deserializer& des)
     : AstNode(asttags::EmptyStmt, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {

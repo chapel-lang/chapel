@@ -44,6 +44,8 @@ namespace uast {
   'Bar as A'.
 */
 class Use final : public AstNode {
+ friend class AstNode;
+
  private:
   Decl::Visibility visibility_;
 
@@ -67,16 +69,11 @@ class Use final : public AstNode {
     #endif
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(visibility_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Use);
-
- private:
-  Use(Deserializer& des) : AstNode(asttags::Use, des) {
+  explicit Use(Deserializer& des) : AstNode(asttags::Use, des) {
     visibility_ = des.read<Decl::Visibility>();
   }
 

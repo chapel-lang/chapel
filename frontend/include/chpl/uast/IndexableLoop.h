@@ -33,6 +33,8 @@ namespace uast {
   This abstract class represents an indexable loop.
  */
 class IndexableLoop : public Loop {
+ friend class AstNode;
+
  protected:
   int8_t indexChildNum_;
   int8_t iterandChildNum_;
@@ -57,17 +59,15 @@ class IndexableLoop : public Loop {
     CHPL_ASSERT(iterandChildNum >= 0);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Loop::serialize(ser);
+  void indexableLoopSerializeInner(Serializer& ser) const {
+    loopSerializeInner(ser);
     ser.write(indexChildNum_);
     ser.write(iterandChildNum_);
     ser.write(withClauseChildNum_);
     ser.write(isExpressionLevel_);
   }
 
- protected:
-  IndexableLoop(AstTag tag, Deserializer& des)
+  explicit IndexableLoop(AstTag tag, Deserializer& des)
     : Loop(tag, des) {
     indexChildNum_ = des.read<int8_t>();
     iterandChildNum_ = des.read<int8_t>();

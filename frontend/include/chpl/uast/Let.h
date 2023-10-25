@@ -41,6 +41,8 @@ namespace uast {
 
  */
 class Let final : public AstNode {
+ friend class AstNode;
+
  private:
   int numDecls_;
 
@@ -51,16 +53,11 @@ class Let final : public AstNode {
     CHPL_ASSERT(1 <= numDecls && (numDecls == numChildren() - 1));
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.writeVInt(numDecls_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Let);
-
- private:
-  Let(Deserializer& des)
+  explicit Let(Deserializer& des)
     : AstNode(asttags::Let, des) {
     numDecls_ = des.readVInt();
   }

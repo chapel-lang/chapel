@@ -33,6 +33,8 @@ namespace uast {
   This abstract class represents some sort of loop.
  */
 class Loop: public AstNode {
+ friend class AstNode;
+
  protected:
   BlockStyle blockStyle_;
   int loopBodyChildNum_;
@@ -48,14 +50,11 @@ class Loop: public AstNode {
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void loopSerializeInner(Serializer& ser) const {
     ser.write(blockStyle_);
     ser.writeVInt(loopBodyChildNum_);
   }
 
- protected:
   Loop(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();

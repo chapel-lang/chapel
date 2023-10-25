@@ -31,6 +31,7 @@ namespace uast {
   This is an abstract base class for declarations that carry a name.
  */
 class NamedDecl : public Decl {
+ friend class AstNode;
 
  private:
   UniqueString name_;
@@ -53,13 +54,11 @@ class NamedDecl : public Decl {
       name_(name) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
+  void namedDeclSerializeInner(Serializer& ser) const {
+    declSerializeInner(ser);
     ser.write(name_);
   }
 
- protected:
   NamedDecl(AstTag tag, Deserializer& des)
     : Decl(tag, des) {
     name_ = des.read<UniqueString>();

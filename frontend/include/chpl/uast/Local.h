@@ -49,6 +49,8 @@ namespace uast {
 
  */
 class Local final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
   int8_t condChildNum_;
 
@@ -61,16 +63,12 @@ class Local final : public SimpleBlockLike {
       condChildNum_(condChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
     ser.write(condChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Local);
-
- private:
-  Local(Deserializer& des)
+  explicit Local(Deserializer& des)
     : SimpleBlockLike(asttags::Local, des) {
     condChildNum_ = des.read<int8_t>();
   }

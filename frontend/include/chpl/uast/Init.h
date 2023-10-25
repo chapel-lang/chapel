@@ -40,6 +40,8 @@ namespace uast {
   \endrst
 */
 class Init : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t targetChildNum_;
 
@@ -49,16 +51,11 @@ class Init : public AstNode {
     CHPL_ASSERT(numChildren() == 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(targetChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Init);
-
- private:
-  Init(Deserializer& des)
+  explicit Init(Deserializer& des)
    : AstNode(asttags::Init, des) {
     targetChildNum_ = des.read<int8_t>();
   }

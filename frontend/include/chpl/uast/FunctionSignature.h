@@ -44,6 +44,8 @@ namespace uast {
   that takes two ints and returns an int.
 */
 class FunctionSignature final : public AstNode {
+ friend class AstNode;
+
  public:
   using ReturnIntent = Function::ReturnIntent;
   using Kind = Function::Kind;
@@ -86,9 +88,7 @@ class FunctionSignature final : public AstNode {
                  returnTypeChildNum_ < (ssize_t)children_.size());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(kind_);
     ser.write(returnIntent_);
     ser.writeVInt(formalsChildNum_);
@@ -99,10 +99,7 @@ class FunctionSignature final : public AstNode {
     ser.write(isParenless_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(FunctionSignature);
-
- private:
-  FunctionSignature(Deserializer& des)
+  explicit FunctionSignature(Deserializer& des)
     : AstNode(asttags::FunctionSignature, des) {
       kind_ = des.read<Kind>();
       returnIntent_ = des.read<ReturnIntent>();

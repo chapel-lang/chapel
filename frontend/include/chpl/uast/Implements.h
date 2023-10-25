@@ -46,6 +46,8 @@ namespace uast {
   interface 'Foo(A, B)'.
 */
 class Implements final : public AstNode {
+ friend class AstNode;
+
  private:
   int8_t typeIdentChildNum_;
   bool isExpressionLevel_;
@@ -78,17 +80,12 @@ class Implements final : public AstNode {
            interfaceExpr()->isFnCall());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(typeIdentChildNum_);
     ser.write(isExpressionLevel_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Implements);
-
- private:
-  Implements(Deserializer& des)
+  explicit Implements(Deserializer& des)
     : AstNode(asttags::Implements, des) {
       typeIdentChildNum_ = des.read<int8_t>();
       isExpressionLevel_ = des.read<bool>();

@@ -49,6 +49,7 @@ namespace uast {
   rather than a TypeQuery.
  */
 class TypeQuery final : public NamedDecl {
+ friend class AstNode;
 
  private:
   TypeQuery(UniqueString name)
@@ -56,16 +57,11 @@ class TypeQuery final : public NamedDecl {
     CHPL_ASSERT(!name.isEmpty() && name.c_str()[0] != '?');
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(TypeQuery);
-
- private:
-  TypeQuery(Deserializer& des)
-    : NamedDecl(asttags::TypeQuery, des) { }
+  explicit TypeQuery(Deserializer& des) : NamedDecl(asttags::TypeQuery, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const TypeQuery* lhs = this;

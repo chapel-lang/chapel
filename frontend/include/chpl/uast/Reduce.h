@@ -63,6 +63,8 @@ namespace uast {
 
 */
 class Reduce final : public Call {
+ friend class AstNode;
+
  private:
   static const int opChildNum_ = 0;
   static const int iterandExprChildNum_ = 1;
@@ -73,16 +75,11 @@ class Reduce final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Reduce);
-
- private:
-  Reduce(Deserializer& des)
-      : Call(asttags::Reduce, des) { }
+  explicit Reduce(Deserializer& des) : Call(asttags::Reduce, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Reduce* rhs = other->toReduce();

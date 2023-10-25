@@ -43,6 +43,8 @@ namespace uast {
   The union itself (myUnion) is represented by a Union AST node.
  */
 class Union final : public AggregateDecl {
+ friend class AstNode;
+
  private:
   Union(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
         Decl::Linkage linkage,
@@ -67,17 +69,11 @@ class Union final : public AggregateDecl {
     CHPL_ASSERT(linkage != Decl::EXPORT);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AggregateDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    aggregateDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Union);
-
- private:
-  Union(Deserializer& des)
-    : AggregateDecl(asttags::Union, des) { }
-
+  explicit Union(Deserializer& des) : AggregateDecl(asttags::Union, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Union* lhs = this;

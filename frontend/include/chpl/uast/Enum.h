@@ -43,6 +43,8 @@ namespace uast {
   (for a, b, c in the example).
  */
 class Enum final : public TypeDecl {
+ friend class AstNode;
+
  private:
   Enum(AstList children, int attributeGroupChildNum, Decl::Visibility vis,
        UniqueString name)
@@ -63,16 +65,11 @@ class Enum final : public TypeDecl {
     #endif
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    TypeDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    typeDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Enum);
-
- private:
-  Enum(Deserializer& des)
-    : TypeDecl(asttags::Enum, des) {}
+  explicit Enum(Deserializer& des) : TypeDecl(asttags::Enum, des) { }
 
   int declOrCommentChildNum() const {
     return attributeGroup() ? 1 : 0;

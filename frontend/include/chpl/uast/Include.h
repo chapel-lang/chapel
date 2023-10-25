@@ -45,6 +45,8 @@ namespace uast {
   visible within the module Foo.
 */
 class Include final : public AstNode {
+ friend class AstNode;
+
  private:
   Decl::Visibility visibility_;
   bool isPrototype_;
@@ -58,18 +60,13 @@ class Include final : public AstNode {
     CHPL_ASSERT(!name_.isEmpty());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(visibility_);
     ser.write(isPrototype_);
     ser.write(name_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Include);
-
- private:
-  Include(Deserializer& des)
+  explicit Include(Deserializer& des)
     : AstNode(asttags::Include, des) {
     visibility_ = des.read<Decl::Visibility>();
     isPrototype_ = des.read<bool>();

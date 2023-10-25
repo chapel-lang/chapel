@@ -39,7 +39,8 @@ class Builder;
   are at a statement level will be represented with this type.
  */
 class Comment final : public AstNode {
-  friend Builder;
+ friend class AstNode;
+ friend class Builder;
 
  private:
   std::string comment_;
@@ -48,16 +49,13 @@ class Comment final : public AstNode {
   Comment(std::string s)
     : AstNode(asttags::Comment), comment_(std::move(s)) {
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
     ser.write(comment_);
-    ser.write(commentId_);
+    ser.write(commentId_); // TODO: don't serialize comment IDs
   }
 
-  DECLARE_STATIC_DESERIALIZE(Comment);
- private:
-  Comment(Deserializer& des)
+  explicit Comment(Deserializer& des)
     : AstNode(asttags::Comment, des) {
     comment_ = des.read<std::string>();
     commentId_ = des.read<CommentID>();

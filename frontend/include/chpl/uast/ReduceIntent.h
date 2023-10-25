@@ -50,6 +50,8 @@ namespace uast {
 
 */
 class ReduceIntent final : public NamedDecl {
+ friend class AstNode;
+
  private:
   static const int opChildNum_ = 0;
 
@@ -63,16 +65,13 @@ class ReduceIntent final : public NamedDecl {
     CHPL_ASSERT(numChildren() == 1);
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(ReduceIntent);
-
- private:
-  ReduceIntent(Deserializer& des)
-    : NamedDecl(asttags::ReduceIntent, des) { }
+  explicit ReduceIntent(Deserializer& des)
+    : NamedDecl(asttags::ReduceIntent, des) {
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const ReduceIntent* rhs = other->toReduceIntent();

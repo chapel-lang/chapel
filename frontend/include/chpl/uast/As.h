@@ -41,25 +41,21 @@ namespace uast {
   \endrst
  */
 class As final : public AstNode {
+ friend class AstNode;
+
  private:
   As(AstList children) : AstNode(asttags::As, std::move(children)) { }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-  }
-  DECLARE_STATIC_DESERIALIZE(As);
+  void serializeInner(Serializer& ser) const override { }
 
- private:
-  As(Deserializer& des) : AstNode(asttags::As, des) { }
+  explicit As(Deserializer& des) : AstNode(asttags::As, des) { }
 
   // No need to match 'symbolChildNum_' or 'renameChildNum_', they are const.
   bool contentsMatchInner(const AstNode* other) const override {
     return true;
   }
 
-  void markUniqueStringsInner(Context* context) const override {
-  }
+  void markUniqueStringsInner(Context* context) const override { }
 
   std::string dumpChildLabelInner(int i) const override;
 

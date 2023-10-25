@@ -44,6 +44,8 @@ namespace uast {
   the number of which is denoted by the TypeQuery `?k`.
 */
 class VarArgFormal final : public VarLikeDecl {
+ friend class AstNode;
+
  private:
   int countChildNum_;
 
@@ -64,16 +66,12 @@ class VarArgFormal final : public VarLikeDecl {
       countChildNum_(countChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    VarLikeDecl::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    varLikeDeclSerializeInner(ser);
     ser.writeVInt(countChildNum_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(VarArgFormal);
-
- private:
-  VarArgFormal(Deserializer& des)
+  explicit VarArgFormal(Deserializer& des)
     : VarLikeDecl(asttags::VarArgFormal, des) {
     countChildNum_ = des.readVInt();
   }

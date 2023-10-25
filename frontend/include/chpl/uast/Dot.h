@@ -46,23 +46,23 @@ namespace uast {
 
  */
 class Dot final : public AstNode {
+ friend class AstNode;
+
  private:
   // which field
- UniqueString fieldName_;
+  UniqueString fieldName_;
 
   Dot(AstList children, UniqueString fieldName)
     : AstNode(asttags::Dot, std::move(children)),
       fieldName_(fieldName) {
     CHPL_ASSERT(children_.size() == 1);
   }
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+
+  void serializeInner(Serializer& ser) const override {
     ser.write(fieldName_);
   }
-  DECLARE_STATIC_DESERIALIZE(Dot);
- private:
-  Dot(Deserializer& des)
+
+  explicit Dot(Deserializer& des)
     : AstNode(asttags::Dot, des) {
     fieldName_ = des.read<UniqueString>();
   }

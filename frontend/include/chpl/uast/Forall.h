@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class Forall final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   Forall(AstList children, int8_t indexChildNum,
          int8_t iterandChildNum,
@@ -63,17 +65,11 @@ class Forall final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Forall);
-
- private:
-  Forall(Deserializer& des)
-    : IndexableLoop(asttags::Forall, des) {
-  }
+  explicit Forall(Deserializer& des) : IndexableLoop(asttags::Forall, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());

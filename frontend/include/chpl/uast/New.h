@@ -39,8 +39,9 @@ namespace uast {
   is a New node (representing 'new bar').
 */
 class New : public AstNode {
- public:
+ friend class AstNode;
 
+ public:
   /**
     Possible management flavors for a new expression.
   */
@@ -59,16 +60,11 @@ class New : public AstNode {
     : AstNode(asttags::New, std::move(children)),
       management_(management) {}
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(management_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(New);
-
- private:
-  New(Deserializer& des)
+  explicit New(Deserializer& des)
     : AstNode(asttags::New, des) {
     management_ = des.read<Management>();
   }

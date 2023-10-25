@@ -43,6 +43,9 @@ namespace uast {
 
  */
 class Conditional final : public AstNode {
+ friend class AstNode;
+
+ private:
   // Condition always exists, and its position is always the same.
   static const int8_t conditionChildNum_ = 0;
   // Ditto then
@@ -54,7 +57,6 @@ class Conditional final : public AstNode {
   BlockStyle elseBlockStyle_;
   bool isExpressionLevel_;
 
- private:
   Conditional(AstList children,
               BlockStyle thenBlockStyle,
               BlockStyle elseBlockStyle,
@@ -91,17 +93,13 @@ class Conditional final : public AstNode {
     CHPL_ASSERT(thenBodyChildNum_ < (int) children_.size());
   }
 
- public:
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
+  void serializeInner(Serializer& ser) const override {
     ser.write(thenBlockStyle_);
     ser.write(elseBlockStyle_);
     ser.write(isExpressionLevel_);
   }
 
-  DECLARE_STATIC_DESERIALIZE(Conditional);
- private:
-  Conditional(Deserializer& des)
+  explicit Conditional(Deserializer& des)
     : AstNode(asttags::Conditional, des) {
     thenBlockStyle_ = des.read<BlockStyle>();
     elseBlockStyle_ = des.read<BlockStyle>();
