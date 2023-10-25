@@ -32,6 +32,17 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
 
+
+/*
+ ============= TODO ============
+ These tests are here because we currently don't use the Dyno resolver
+ in production, and thus can't use the usual .good-.chpl structure to
+ lock down error message output. It is definitely suboptimal to include
+ strings of error message output in this file, and once these errors can
+ be triggered using `chpl`, this file should be replaced in favor of the usual
+ .good-based tests.
+ */
+
 static const char* progExactMatch = R"""(
 class Parent {}
 class Child : Parent {}
