@@ -47,6 +47,9 @@ namespace chpl {
 class Context;
 template<typename T> struct serialize;
 template<typename T> struct deserialize;
+namespace libraries {
+  class LibraryFileStringsTable;
+}
 
 /** this class is what is passed to serialize methods & helps
     with the process */
@@ -147,7 +150,8 @@ class Deserializer {
   Context* context_ = nullptr;
   const unsigned char* cur_ = nullptr;
   const unsigned char* end_ = nullptr;
-  stringCacheType cache_;
+  owned<stringCacheType> localStringsTable_;
+  const libraries::LibraryFileStringsTable* libraryFileForStrings_ = nullptr;
 
   /** read a variable-byte encoded unsigned integer */
   uint64_t readUnsignedVarint();
@@ -157,10 +161,11 @@ class Deserializer {
  public:
   Deserializer(Context* context,
                const void* data, size_t len,
-               size_t pos = 0)
+               const libraries::LibraryFileStringsTable* table)
     : context_(context),
-      cur_(((const unsigned char*) data) + pos),
-      end_(((const unsigned char*) data) + len) {
+      cur_((const unsigned char*) data),
+      end_(((const unsigned char*) data) + len),
+      libraryFileForStrings_(table) {
   }
 
   //
@@ -172,9 +177,11 @@ class Deserializer {
     : context_(context),
       cur_((const unsigned char*) data),
       end_(((const unsigned char*) data) + len) {
-    cache_.resize(serCache.size()+1);
+    localStringsTable_.reset(new stringCacheType());
+    localStringsTable_->resize(serCache.size()+1);
+    stringCacheType& table = *localStringsTable_.get();
     for (const auto& pair : serCache) {
-      cache_[pair.second.first] = {pair.second.second, pair.first};
+      table[pair.second.first] = {pair.second.second, pair.first};
     }
   }
 
@@ -182,10 +189,8 @@ class Deserializer {
     return context_;
   }
 
-  std::pair<size_t, const char*>& getString(int id) {
-    // TODO: add LibraryFile long strings table lookup
-    return cache_[id];
-  }
+  /** Get a string from the long strings table by index */
+  std::pair<size_t, const char*> getString(int id);
 
   template <typename T>
   T operator()() {

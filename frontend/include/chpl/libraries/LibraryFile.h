@@ -22,6 +22,7 @@
 
 #include "chpl/framework/UniqueString.h"
 #include "chpl/libraries/LibraryFileFormat.h"
+#include "chpl/uast/BuilderResult.h"
 #include "chpl/util/memory.h"
 
 #include <sstream>
@@ -43,6 +44,27 @@ namespace uast {
   class Module;
 }
 namespace libraries {
+class LibraryFile;
+
+
+/** Helper object for reading long strings from a LibraryFile strings table */
+class LibraryFileStringsTable {
+ friend class LibraryFile;
+ private:
+  int nStrings = 0;
+  const unsigned char* moduleSectionData = nullptr;
+  size_t moduleSectionLen = 0;
+  const uint64_t* offsetsTable = nullptr;
+  LibraryFileStringsTable() { }
+
+ public:
+  /** 
+    Given a long string index, returns the string size and the string data. The
+    string won't necessarily be null-terminated. Returns a 0-length string if
+    the ID is out of bounds.
+   */
+  std::pair<size_t, const char*> getString(int id) const;
+};
 
 
 /** For reading a .dyno LibraryFile.
@@ -75,6 +97,19 @@ class LibraryFile {
   static const owned<LibraryFile>& loadLibraryFileQuery(Context* context,
                                                         UniqueString libPath);
 
+  LibraryFileStringsTable readStringsTable(Context* context,
+                                           uint64_t moduleOffset) const;
+
+  // returns an empty BuilderResult if anything went wrong /
+  // the module was not found
+  uast::BuilderResult readModuleAst(Context* context,
+                                    UniqueString modulePath) const;
+
+  static const uast::BuilderResult&
+  loadModuleAstQuery(Context* context,
+                     const LibraryFile* f,
+                     UniqueString modulePath);
+
  public:
   ~LibraryFile();
 
@@ -85,12 +120,13 @@ class LibraryFile {
   size_t hash();
   void mark(Context* context) const;
   static bool update(owned<LibraryFile>& keep, owned<LibraryFile>& addin);
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /**
     This query reads the file from the given path and produces a LibraryFile,
     which contains useful information about the library's contents.
    */
-  const LibraryFile* load(Context* context, UniqueString libPath);
+  static const LibraryFile* load(Context* context, UniqueString libPath);
 
   /**
     Load uAST from a this LibraryFile for a particular module path.
@@ -100,7 +136,8 @@ class LibraryFile {
     Returns nullptr if no such module is found in this LibraryFile
     or if an error occurred.
    */
-  const uast::Module* loadModuleAst(Context* context, UniqueString modulePath);
+  const uast::Module* loadModuleAst(Context* context,
+                                    UniqueString modulePath) const;
 };
 
 

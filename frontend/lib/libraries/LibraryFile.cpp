@@ -23,6 +23,7 @@
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/Support/FileSystem.h"
 
 #include <cstring>
@@ -30,6 +31,18 @@
 namespace chpl {
 namespace libraries {
 
+
+std::pair<size_t, const char*>
+LibraryFileStringsTable::getString(int id) const {
+  if (0 < id && id < nStrings) {
+    uint64_t offset = offsetsTable[id];
+    uint64_t nextOffset = offsetsTable[id+1];
+    return std::make_pair(nextOffset-offset,
+                          (const char*) (moduleSectionData + offset));
+  } else {
+    return std::make_pair(0, nullptr);
+  }
+}
 
 LibraryFile::~LibraryFile() {
   if (mappedFile) delete mappedFile;
@@ -104,7 +117,11 @@ bool LibraryFile::readHeaders(Context* context) {
     }
 
     // Read starting just after the module header
-    Deserializer des(context, data, len, offset + sizeof(ModuleHeader));
+    LibraryFileStringsTable table = readStringsTable(context, offset);
+
+    uint64_t pos = offset + sizeof(ModuleHeader);
+    uint64_t remaining = len - pos;
+    Deserializer des(context, data + pos, remaining, &table);
 
     std::string moduleIdStr = des.read<std::string>();
     UniqueString moduleId = UniqueString::get(context, moduleIdStr);
@@ -130,6 +147,114 @@ LibraryFile::loadLibraryFileQuery(Context* context, UniqueString libPath) {
 
   return QUERY_END(result);
 }
+
+LibraryFileStringsTable
+LibraryFile::readStringsTable(Context* context, uint64_t moduleOffset) const {
+
+  const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
+  // from the module header, find the longStringsTable offset
+  uint64_t longStringsOffset = moduleOffset + modHdr->longStringsTable;
+  if (modHdr->magic != MODULE_SECTION_MAGIC ||
+      longStringsOffset+sizeof(LongStringsTableHeader) > len) {
+    context->error(Location(), "Invalid module section header in %s",
+                   libPath.c_str());
+    return LibraryFileStringsTable();
+  }
+
+  const LongStringsTableHeader* tableHdr =
+    (const LongStringsTableHeader*) (data + longStringsOffset);
+
+  if (tableHdr->magic != LONG_STRINGS_TABLE_MAGIC ||
+      longStringsOffset + tableHdr->nLongStrings*sizeof(uint64_t) > len) {
+    context->error(Location(), "Invalid long strings section header in %s",
+                   libPath.c_str());
+    return LibraryFileStringsTable();
+  }
+
+  LibraryFileStringsTable ret;
+  ret.nStrings = tableHdr->nLongStrings;
+  ret.moduleSectionData = data + moduleOffset;
+  ret.moduleSectionLen = len - moduleOffset;
+  // string offsets start just after the header
+  ret.offsetsTable = (const uint64_t*) (tableHdr+1);
+  return ret;
+}
+
+uast::BuilderResult LibraryFile::readModuleAst(Context* context,
+                                               UniqueString modulePath) const {
+  auto it = modulePathToSection.find(modulePath);
+
+  if (it == modulePathToSection.end()) {
+    // fail if the module path requested is not in this file
+    return uast::BuilderResult();
+  }
+
+  uint64_t moduleOffset = it->second;
+  const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
+  // read the uast
+  uint64_t uAstOffset = moduleOffset + modHdr->uAstSection;
+  if (modHdr->magic != MODULE_SECTION_MAGIC ||
+      uAstOffset+sizeof(AstSectionHeader) > len) {
+    context->error(Location(), "Invalid module section header in %s",
+                   libPath.c_str());
+    return uast::BuilderResult();
+  }
+
+  const AstSectionHeader* astHdr =
+    (const AstSectionHeader*) (data + uAstOffset);
+
+  if (astHdr->magic != 0x0003bb1e5ec110e0 ||
+      astHdr->nEntries == 0 ||
+      astHdr->nBytesAstEntries == 0 ||
+      uAstOffset + astHdr->nBytesAstEntries > len) {
+    context->error(Location(), "Invalid AST section header in %s",
+                   libPath.c_str());
+    return uast::BuilderResult();
+  }
+
+  // create a LibraryFileStringsTable helper
+  LibraryFileStringsTable table = readStringsTable(context, moduleOffset);
+
+  UniqueString parentSymbolPath;
+  if (!modulePath.isEmpty()) {
+    parentSymbolPath = ID::parentSymbolPath(context, modulePath);
+  }
+
+  auto builder =
+    uast::Builder::createForLibraryFileModule(context,
+                                              libPath,
+                                              parentSymbolPath);
+
+  auto des = Deserializer(context,
+                          astHdr+1, // just after the AstSectionHeader
+                          astHdr->nBytesAstEntries,
+                          &table);
+
+  builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
+
+  uast::BuilderResult r = builder->result();
+
+  if (r.numTopLevelExpressions() != 1 ||
+      !r.topLevelExpression(0) ||
+      !r.topLevelExpression(0)->toModule()) {
+    context->error(Location(), "Invalid AST section in %s", libPath.c_str());
+    return uast::BuilderResult();
+  }
+
+  return r;
+}
+
+const uast::BuilderResult&
+LibraryFile::loadModuleAstQuery(Context* context,
+                                const LibraryFile* f,
+                                UniqueString modulePath) {
+  QUERY_BEGIN(loadModuleAstQuery, context, f, modulePath);
+
+  uast::BuilderResult result = f->readModuleAst(context, modulePath);
+
+  return QUERY_END(result);
+}
+
 
 bool LibraryFile::operator==(const LibraryFile& other) const {
   // Handle empty paths
@@ -173,65 +298,26 @@ bool LibraryFile::update(owned<LibraryFile>& keep, owned<LibraryFile>& addin) {
   return defaultUpdateOwned(keep, addin);
 }
 
+void LibraryFile::stringify(std::ostream& ss,
+                            chpl::StringifyKind stringKind) const {
+  ss << llvm::toHex(fileHash);
+}
+
 const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
   return LibraryFile::loadLibraryFileQuery(context, libPath).get();
 }
 
 const uast::Module* LibraryFile::loadModuleAst(Context* context,
-                                               UniqueString modulePath) {
+                                               UniqueString modulePath) const {
   auto it = modulePathToSection.find(modulePath);
   if (it != modulePathToSection.end()) {
-    uint64_t offset = it->second;
-    const ModuleHeader* modHdr = (const ModuleHeader*) (data + offset);
-    // read the uast
-    uint64_t uAstOffset = offset + modHdr->uAstSection;
-    if (modHdr->magic != MODULE_SECTION_MAGIC ||
-        uAstOffset+sizeof(AstSectionHeader) > len) {
-      context->error(Location(), "Invalid module section header in %s",
-                     libPath.c_str());
-      return nullptr;
-    }
-
-    const AstSectionHeader* astHdr =
-      (const AstSectionHeader*) (data + uAstOffset);
-
-    if (astHdr->magic != 0x0003bb1e5ec110e0 ||
-        astHdr->nEntries == 0 ||
-        astHdr->nBytesAstEntries == 0 ||
-        uAstOffset + astHdr->nBytesAstEntries > len) {
-      context->error(Location(), "Invalid AST section header in %s",
-                     libPath.c_str());
-      return nullptr;
-    }
-
-    UniqueString parentSymbolPath;
-    if (!modulePath.isEmpty()) {
-      parentSymbolPath = ID::parentSymbolPath(context, modulePath);
-    }
-
-    auto builder =
-      uast::Builder::createForLibraryFileModule(context,
-                                                libPath,
-                                                parentSymbolPath);
-
-    auto des = Deserializer(context,
-                            astHdr+1, // just after the AstSectionHeader
-                            astHdr->nBytesAstEntries);
-
-    builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
-
-    uast::BuilderResult r = builder->result();
-
-    if (r.numTopLevelExpressions() != 1 ||
-        !r.topLevelExpression(0) ||
-        !r.topLevelExpression(0)->toModule()) {
-      context->error(Location(), "Invalid AST section in %s", libPath.c_str());
-      return nullptr;
-    }
+    const uast::BuilderResult& r =
+      loadModuleAstQuery(context, this, modulePath);
 
     return r.topLevelExpression(0)->toModule();
   }
 
+  // otherwise, the module was not found.
   return nullptr;
 }
 

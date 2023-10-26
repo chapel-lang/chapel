@@ -52,6 +52,9 @@ class LibraryFileWriter {
   /** Write the file header */
   void writeHeader();
 
+  /** pad with zeros to 16-byte offset */
+  void padToAlign();
+
   /** Write the module section for the given module. Returns
      the file offset to this section. */
   uint64_t writeModuleSection(const uast::Module* mod);

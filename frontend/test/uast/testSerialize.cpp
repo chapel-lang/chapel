@@ -22,7 +22,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/Location.h"
 #include "chpl/framework/UniqueString.h"
-#include "chpl/uast/all-uast.h"
+#include "chpl/uast/Module.h"
 #include "chpl/util/filesystem.h"
 
 #include <fstream>

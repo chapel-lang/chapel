@@ -41,7 +41,9 @@ static void testMatchUnsigned(uint64_t i, std::string expect) {
   }
 
   // check also that we can read it
-  Deserializer des(/*context*/ nullptr, got.data(), got.size());
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   uint64_t val = des.readVU64();
   assert(val == i);
 }
@@ -70,7 +72,9 @@ static void testMatchSigned(int64_t i, std::string expect) {
   }
 
   // check also that we can read it
-  Deserializer des(/*context*/ nullptr, got.data(), got.size());
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   int64_t val = des.readVI64();
   assert(val == i);
 }
@@ -93,7 +97,9 @@ static void test3() {
     ser.writeVU64(i);
   }
   std::string got = os.str();
-  Deserializer des(/*context*/ nullptr, got.data(), got.size());
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   for (uint64_t i = 0; i < 1000000; i++) {
     uint64_t got = des.readVU64();
     assert(got == i);
@@ -108,7 +114,9 @@ static void test4() {
     ser.writeVI64(i);
   }
   std::string got = os.str();
-  Deserializer des(/*context*/ nullptr, got.data(), got.size());
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   for (int64_t i = -500000; i < 500000; i++) {
     int64_t got = des.readVI64();
     assert(got == i);

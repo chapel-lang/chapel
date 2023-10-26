@@ -19,6 +19,8 @@
 
 #include "chpl/framework/serialize-functions.h"
 
+#include "chpl/libraries/LibraryFile.h"
+
 namespace chpl {
 
 
@@ -59,6 +61,17 @@ uint64_t Deserializer::readUnsignedVarint() {
 int64_t Deserializer::readSignedVarint() {
   uint64_t uNum = readUnsignedVarint();
   return (uNum >> 1) ^ -((int64_t)(uNum & 1));
+}
+
+std::pair<size_t, const char*> Deserializer::getString(int id) {
+  if (localStringsTable_) {
+    stringCacheType& table = *localStringsTable_.get();
+    return table[id];
+  } else if (libraryFileForStrings_) {
+    return libraryFileForStrings_->getString(id);
+  }
+
+  return std::make_pair((size_t)0, (const char*)nullptr);
 }
 
 

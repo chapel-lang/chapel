@@ -190,7 +190,8 @@ Long Strings Table Section
 Long strings might occur many times, and so space can be saved by
 replacing them with an integer. Since there are a lot of short strings,
 and the long string table adds indirection, this only applies to long
-strings. The threshold length is not set by the file format.
+strings. The threshold length is not set by the file format, but it
+must be less than 128.
 
 .. comment
 

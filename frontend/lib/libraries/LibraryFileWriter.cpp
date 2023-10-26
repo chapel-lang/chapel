@@ -82,6 +82,14 @@ void LibraryFileWriter::writeHeader() {
   }
 }
 
+void LibraryFileWriter::padToAlign() {
+  for (int i = 0; i < 16; i++) {
+    auto pos = fileStream.tellp();
+    if (pos % 16 == 0) break;
+    fileStream.put(0);
+  }
+}
+
 uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   auto moduleSectionStart = fileStream.tellp();
 
@@ -94,10 +102,20 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   // create a serializer to write the uAST
   auto ser = Serializer(fileStream);
 
-  // write the symbol table section
+  // write the module symbol path
+  ser.write<std::string>(mod->id().symbolPath().str());
+
+  // write the various sections
+  padToAlign();
   header.symbolTable = writeSymbolTable(mod, moduleSectionStart);
+
+  padToAlign();
   header.uAstSection = writeAst(mod, moduleSectionStart, ser);
+
+  padToAlign();
   header.longStringsTable = writeLongStrings(moduleSectionStart, ser);
+
+  padToAlign();
   header.locationSection = writeLocations(mod, moduleSectionStart);
 
   // update the module header with the saved locations by writing the
@@ -132,13 +150,13 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
   uint64_t astStart = fileStream.tellp();
   AstSectionHeader header;
   memset(&header, 0, sizeof(header));
-  header.magic = MODULE_SECTION_MAGIC;
+  header.magic = UAST_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
   // serialize the data
   uint64_t serializedStart = fileStream.tellp();
   mod->serialize(ser);
-  header.nBytesAstEntries = serializedStart - fileStream.tellp();
+  header.nBytesAstEntries = (uint64_t)fileStream.tellp() - serializedStart;
   header.nEntries = ser.numAstsSerialized();
 
   // update the number serialized by rewriting the header
@@ -161,7 +179,10 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   LongStringsTableHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = LONG_STRINGS_TABLE_MAGIC;
-  header.nLongStrings = ser.nextStringIdx();
+  // nextStringIdx counts strings from 1, but we also want
+  // to have an extra string (so we can compute the length of the last string)
+  header.nLongStrings = ser.nextStringIdx()+1;
+
   fileStream.write((const char*) &header, sizeof(header));
 
   size_t n = header.nLongStrings;
@@ -190,18 +211,27 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
     const auto& pair = byId[i];
     const char* ptr = pair.first;
     size_t len = pair.second;
-    if (byId[i].first != nullptr) {
-      uint64_t pos = fileStream.tellp();
-      offsets[i] = pos - moduleSectionStart;
+
+    // write the offset where this string data starts
+    uint64_t pos = fileStream.tellp();
+    offsets[i] = pos - moduleSectionStart;
+    // if there is any string data, write it
+    if (ptr != nullptr && len > 0) {
       fileStream.write(ptr, len);
     }
   }
 
   // update the offsets in the file
+  auto savePos = fileStream.tellp();
+
+  // update the offsets in the file
   fileStream.seekp(longStringsStart+sizeof(header));
 
-  // write the actual offsets
+  // write the actual offsets to replace the dummy offsets written earlier
   fileStream.write((const char*) &offsets[0], n*sizeof(uint64_t));
+
+  // seek back where we were
+  fileStream.seekp(savePos);
 
   return longStringsStart - moduleSectionStart;
 }
@@ -224,6 +254,7 @@ bool LibraryFileWriter::writeAllSections() {
 
   for (auto mod : topLevelModules) {
     // write the module section & update the header's table
+    padToAlign();
     uint64_t offset = writeModuleSection(mod);
     moduleSectionOffsets.push_back(offset);
   }
