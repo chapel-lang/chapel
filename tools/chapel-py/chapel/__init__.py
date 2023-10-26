@@ -19,6 +19,8 @@
 #
 
 from . import core
+from collections import defaultdict
+import os
 
 def preorder(node):
     """
@@ -219,3 +221,30 @@ def each_matching(node, pattern):
         variables = match_pattern(child, pattern)
         if variables is not None:
             yield (child, variables)
+
+def files_with_contexts(files):
+    """
+    Some files might have the same name, which Dyno really doesn't like.
+    Stratify files into "buckets"; within each bucket, all filenames are
+    unique. Between each bucket, re-create the Dyno context to avoid giving
+    it complicting files.
+
+    Yields files from the argument, as well as the context created for them.
+    """
+
+    basenames = defaultdict(lambda: 0)
+    buckets = defaultdict(lambda: [])
+    for filename in files:
+        filename = os.path.realpath(os.path.expandvars(filename))
+
+        basename = os.path.basename(filename)
+        bucket = basenames[basename]
+        basenames[basename] += 1
+        buckets[bucket].append(filename)
+
+    for bucket in buckets:
+        ctx = core.Context()
+        to_yield = buckets[bucket]
+
+        for filename in to_yield:
+            yield (filename, ctx)

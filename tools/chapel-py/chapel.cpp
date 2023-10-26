@@ -369,9 +369,22 @@ static PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* ar
   return PyBool_FromLong(isInternalPath);
 }
 
+static PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+  bool prepareToGc;
+  if (!PyArg_ParseTuple(args, "b", &prepareToGc)) {
+    PyErr_BadArgument();
+    return nullptr;
+  }
+
+  context->advanceToNextRevision(prepareToGc);
+  Py_RETURN_NONE;
+}
+
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
+  { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 

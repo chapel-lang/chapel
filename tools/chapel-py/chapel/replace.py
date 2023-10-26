@@ -21,7 +21,6 @@
 import argparse
 import chapel
 import chapel.core
-from collections import defaultdict
 import os
 import sys
 
@@ -96,11 +95,14 @@ def rename_formals(rc, fn, renames):
     updates that perform the formal renaming.
     """
 
+    def name_replacer(name):
+        return lambda child_text: child_text.replace(name, renames[name])
+
     for child in fn.formals():
         name = child.name()
         if name not in renames: continue
 
-        yield (child, lambda child_text: child_text.replace(name, renames[name]))
+        yield (child, name_replacer(name))
 
 def rename_named_actuals(rc, call, renames):
     """
@@ -129,6 +131,10 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
     # and apply the transformations.
 
     nodes_to_replace = {}
+
+    def compose(outer, inner):
+        return lambda text: outer(inner(text))
+
     for ast in asts:
         for (node, replace_with) in finder(rc, ast):
             uid = node.unique_id()
@@ -141,7 +147,7 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
             elif uid in nodes_to_replace:
                 # Old substitution is also a callable; need to create composition.
                 if callable(nodes_to_replace[uid]):
-                    nodes_to_replace[uid] = lambda text: replace_with(nodes_to_replace[uid](text))
+                    nodes_to_replace[uid] = compose(replace_with, nodes_to_replace[uid])
                 # Old substitution is a string; we can apply the callable to get
                 # another string.
                 else:
@@ -213,27 +219,8 @@ def run(finder, name='replace', description='A tool to search-and-replace Chapel
     parser.add_argument('--in-place', dest='inplace', action='store_true', default=False)
     args = parser.parse_args()
 
-    # Some files might have the same name, which Dyno really doesn't like.
-    # Strateify files into "buckets"; within each bucket, all filenames are
-    # unique. Between each bucket, re-create the Dyno context to avoid giving
-    # it complicting files.
-
-    basenames = defaultdict(lambda: 0)
-    buckets = defaultdict(lambda: [])
-    for filename in args.filenames:
-        filename = os.path.realpath(os.path.expandvars(filename))
-
-        basename = os.path.basename(filename)
-        bucket = basenames[basename]
-        basenames[basename] += 1
-        buckets[bucket].append(filename)
-
-    for bucket in buckets:
-        ctx = chapel.core.Context()
-        to_replace = buckets[bucket]
-
-        for filename in to_replace:
-            _do_replace(finder, ctx, filename, args.suffix, args.inplace)
+    for (filename, ctx) in chapel.files_with_contexts(args.filenames):
+        _do_replace(finder, ctx, filename, args.suffix, args.inplace)
 
 def fuse(*args):
     """
