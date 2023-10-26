@@ -398,8 +398,29 @@ module GPU
   config param gpuDebugReduce = false;
 
   private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
-    if CHPL_GPU == "amd" then
+    if op != "sum" && op != "min" && op != "max" &&
+       op != "minloc" && op != "maxloc" {
+
+      compilerError("Unexpected reduction kind in doGpuReduce: ", op);
+    }
+
+
+    if CHPL_GPU == "amd" {
       compilerError("gpu*Reduce functions are not supported on AMD GPUs");
+    }
+    else if CHPL_GPU == "cpu" {
+      select op {
+        when "sum" do return + reduce A;
+        when "min" do return min reduce A;
+        when "max" do return max reduce A;
+        when "minloc" do return minloc reduce zip (A.domain, A);
+        when "maxloc" do return maxloc reduce zip (A.domain, A);
+      }
+    }
+    else {
+      compilerAssert(CHPL_GPU=="nvidia");
+    }
+
 
     proc chplTypeToCTypeName(type t) param {
       select t {
