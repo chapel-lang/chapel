@@ -214,6 +214,9 @@ class FindUndocumentedSymbols:
         self.ignore_deprecated = ignore_deprecated
         self.ignore_unstable = ignore_unstable
 
+    def _parent_is_module_or_aggregate(node: dyno.AstNode, match):
+        return isinstance(node.parent(), (dyno.Module, dyno.AggregateDecl))
+
     # (pattern, extra check fun)
     documentable_symbol_patterns = {
         "function": (
@@ -225,34 +228,24 @@ class FindUndocumentedSymbols:
         "module": (dyno.Module, lambda node, match: node.kind() != "implicit"),
         "aggregate_decl": (
             dyno.AggregateDecl,
-            lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl)
-            ),
+            _parent_is_module_or_aggregate,
         ),
         "decl": (
             dyno.Variable,
-            lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl)
-            ),
+            _parent_is_module_or_aggregate,
         ),
         "multi_decl": (
             dyno.MultiDecl,
-            lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl)
-            ),
+            _parent_is_module_or_aggregate,
         ),
         "enum": (
             dyno.Enum,
-            lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl)
-            ),
+            _parent_is_module_or_aggregate,
         ),
         "enum_element": (dyno.EnumElement, None),
         "interface": (
             dyno.Interface,
-            lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl)
-            ),
+            _parent_is_module_or_aggregate,
         ),
     }
 
