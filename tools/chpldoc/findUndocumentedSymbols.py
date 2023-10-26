@@ -345,12 +345,13 @@ def main(raw_args: List[str]) -> int:
     a.add_argument("--ignore-deprecated", action="store_true", default=False)
     a.add_argument("--ignore-unstable", action="store_true", default=False)
     args = a.parse_args(raw_args)
+    flags = vars(args)
+    files = flags.pop('files')
 
-    for filename, astList in get_trees(get_files(args.files)):
+    for filename, astList in get_trees(get_files(files)):
         fus = FindUndocumentedSymbols(
             astList,
-            ignore_deprecated=args.ignore_deprecated,
-            ignore_unstable=args.ignore_unstable,
+            **flags
         )
         for sym in fus():
             loc = sym.location()
