@@ -28,7 +28,6 @@
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "gpu/chpl-gpu-reduce-util.h"
-#include "gpu/amd/util.h"
 
 // Engin: I can't get neither hipCUB nor rocprim to work. (hipCUB is a light
 // wrapper around rocprim anyways). I filed
