@@ -244,7 +244,7 @@ endif()
 # set(PROFILE OFF CACHE BOOL "PROFILE flag from make")
 
 # We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
-string(REPLACE "-std=c++14" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
+string(REPLACE "-std=c++17" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
 
@@ -325,8 +325,8 @@ foreach (CHPLENV_LINE IN LISTS CHPLENV_OUTPUT)
   set(${CHPL_ENV_NAME} ${CHPL_ENV_VALUE} CACHE STRING "overwritten description" FORCE)
 endforeach()
 # We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
-string(REPLACE "-std=c++14" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
-string(REPLACE "-std=c++14" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
+string(REPLACE "-std=c++17" "" CHPL_HOST_BUNDLED_COMPILE_ARGS "${CHPL_HOST_BUNDLED_COMPILE_ARGS}")
+string(REPLACE "-std=c++17" "" CHPL_HOST_SYSTEM_COMPILE_ARGS "${CHPL_HOST_SYSTEM_COMPILE_ARGS}")
 
 if ((CHPL_HOME STREQUAL CMAKE_BINARY_DIR) OR
     (CMAKE_SOURCE_DIR STREQUAL CMAKE_BINARY_DIR))

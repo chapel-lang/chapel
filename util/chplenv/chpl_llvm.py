@@ -859,7 +859,8 @@ def filter_llvm_config_flags(flags):
             flag == '-pedantic' or
             flag == '-Wno-class-memaccess' or
             (darwin and gnu and flag.startswith('-stdlib=')) or
-            (cygwin and flag == '-std=c++14')):
+            (cygwin and flag == '-std=c++17') or
+            flag == '-std=c++14'):
             continue # filter out these flags
 
         if flag.startswith('-W'):
