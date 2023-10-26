@@ -29,7 +29,6 @@
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
-#include "gpu/amd/util.h"
 
 #include <assert.h>
 
@@ -38,7 +37,7 @@
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
 
-void chpl_gpu_rocm_check(int err, const char* file, int line) {
+static void chpl_gpu_rocm_check(int err, const char* file, int line) {
   if(err == hipErrorContextAlreadyInUse) { return; }
   if(err != hipSuccess) {
     const int msg_len = 256;
@@ -51,6 +50,10 @@ void chpl_gpu_rocm_check(int err, const char* file, int line) {
     chpl_internal_error(msg);
   }
 }
+
+#define ROCM_CALL(call) do {\
+  chpl_gpu_rocm_check((int)call, __FILE__, __LINE__);\
+} while(0);
 
 static inline
 void* chpl_gpu_load_module(const char* fatbin_data) {
