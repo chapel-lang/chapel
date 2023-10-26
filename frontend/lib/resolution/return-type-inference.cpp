@@ -914,7 +914,8 @@ static bool helpComputeReturnType(Context* context,
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    if (untyped->name() == USTR("init")) {
+    if (untyped->name() == USTR("init") ||
+        untyped->name() == USTR("deinit")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
       return true;
