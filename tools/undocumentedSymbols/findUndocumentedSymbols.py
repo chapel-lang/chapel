@@ -1,3 +1,5 @@
+#!/usr/bin/env python3
+
 #
 # Copyright 2020-2023 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
@@ -80,8 +82,7 @@ try:
     import chapel.core as dyno
     from chapel import each_matching
 except ModuleNotFoundError:
-    print("Could not find the frontend python bindings")
-    print("Install with 'python3 -m pip install -e $CHPL_HOME/tools/chapel-py'")
+    print("chapel python bindings not found")
     exit(1)
 
 
