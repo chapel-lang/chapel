@@ -548,7 +548,7 @@ void AstNode::serialize(Serializer& ser) const {
   ser.beginAst();
   ser.write(tag_);
   ser.writeVInt(attributeGroupChildNum_);
-  ser.write(id_); // TODO: don't serialize ID; recompute it
+  // id_ not serialized; it is recomputed after reading
   serializeInner(ser);
   ser.write(children_);
   ser.endAst();
@@ -559,15 +559,14 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   // Note: Assumes that the tag was already deserialized in order to invoke
   // the correct class' deserializer.
   attributeGroupChildNum_ = des.readVInt();
-  id_ = des.read<ID>();
-  // TODO: don't deserialize ID; recompute it
+  // id_ not deserialized; it is recomputed after reading
 }
 
 void AstNode::deserializeChildren(Deserializer& des) {
   children_ = des.read<AstList>();
 }
 
-owned<AstNode> AstNode::deserialize(Deserializer& des) {
+owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
   AstTag tag = des.read<AstTag>();
 
   // deserialize using the constructor

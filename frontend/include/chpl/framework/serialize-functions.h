@@ -48,17 +48,6 @@ class Context;
 template<typename T> struct serialize;
 template<typename T> struct deserialize;
 
-/** write a variable-byte encoded unsigned integer */
-void writeUnsignedVarint(std::ostream& os, uint64_t num);
-/** write a variable-byte encoded signed integer */
-void writeSignedVarint(std::ostream& os, int64_t num);
-
-/** read a variable-byte encoded unsigned integer */
-uint64_t readUnsignedVarint(std::istream& is);
-/** read a variable-byte encoded signed integer */
-int64_t readSignedVarint(std::istream& is);
-
-
 /** this class is what is passed to serialize methods & helps
     with the process */
 class Serializer {
@@ -77,13 +66,13 @@ private:
   std::ostream& os_;
   stringCacheType stringCache_;
 
+  /** write a variable-byte encoded unsigned integer */
+  void writeUnsignedVarint(uint64_t num);
+  /** write a variable-byte encoded signed integer */
+  void writeSignedVarint(int64_t num);
+
 public:
   explicit Serializer(std::ostream& os) : os_(os) { }
-
-  /** Returns the output stream */
-  std::ostream& os() const {
-    return os_;
-  }
 
   const stringCacheType& stringCache() {
     return stringCache_;
@@ -92,6 +81,22 @@ public:
   template <typename T>
   void write(const T& data) {
     chpl::serialize<T>{}(*this, data);
+  }
+
+  /** write one byte */
+  void writeByte(unsigned char b) {
+    os_.put(b);
+  }
+
+  /** write a numeric type */
+  template <typename T>
+  void writeNumeric(T val) {
+    os_.write(reinterpret_cast<const char*>(&val), sizeof(val));
+  }
+
+  /** write 'n' bytes from the pointer 'ptr' */
+  void writeData(const void* ptr, size_t n) {
+    os_.write(reinterpret_cast<const char*>(ptr), n);
   }
 
   uint32_t cacheString(const char* str, size_t len) {
@@ -113,19 +118,19 @@ public:
 
   /* Write a variable-length byte-encoded 64-bit unsigned integer */
   void writeVU64(uint64_t num) {
-    chpl::writeUnsignedVarint(os_, num);
+    writeUnsignedVarint(num);
   }
   /* Write a variable-length byte-encoded 64-bit signed integer */
   void writeVI64(int64_t num) {
-    chpl::writeSignedVarint(os_, num);
+    writeSignedVarint(num);
   }
   /* Write a variable-length byte-encoded 'unsigned int' */
   void writeVUint(unsigned int num) {
-    chpl::writeUnsignedVarint(os_, num);
+    writeUnsignedVarint(num);
   }
   /* Write a variable-length byte-encoded 'int' */
   void writeVInt(int num) {
-    chpl::writeSignedVarint(os_, num);
+    writeSignedVarint(num);
   }
 };
 
@@ -139,23 +144,37 @@ class Deserializer {
   // null-terminated.
   using stringCacheType = std::vector<std::pair<size_t, const char*>>;
  private:
-  Context* context_;
-  std::istream& is_;
+  Context* context_ = nullptr;
+  const unsigned char* data_ = nullptr;
+  size_t len_ = 0;
+  size_t pos_ = 0;
   stringCacheType cache_;
 
- public:
-  Deserializer(Context* context, std::istream& is)
-    : context_(context), is_(is) { }
+  /** read a variable-byte encoded unsigned integer */
+  uint64_t readUnsignedVarint();
+  /** read a variable-byte encoded signed integer */
+  int64_t readSignedVarint();
 
-  Deserializer(Context* context, std::istream& is, const stringCacheType& cache)
-    : context_(context), is_(is), cache_(cache) { }
+ public:
+  Deserializer(Context* context,
+               const void* data, size_t len,
+               size_t pos = 0)
+    : context_(context),
+      data_((const unsigned char*) data),
+      len_(len),
+      pos_(pos) {
+  }
 
   //
   // Convenience version to convert a Serializer's form of the string cache
   //
-  Deserializer(Context* context, std::istream& is,
+  Deserializer(Context* context,
+               const void* data, size_t len,
                Serializer::stringCacheType serCache)
-    : context_(context), is_(is) {
+    : context_(context),
+      data_((const unsigned char*) data),
+      len_(len),
+      pos_(0) {
     cache_.resize(serCache.size()+1);
     for (const auto& pair : serCache) {
       cache_[pair.second.first] = {pair.second.second, pair.first};
@@ -166,11 +185,8 @@ class Deserializer {
     return context_;
   }
 
-  std::istream& is() const {
-    return is_;
-  }
-
   std::pair<size_t, const char*>& getString(int id) {
+    // TODO: add LibraryFile long strings table lookup
     return cache_[id];
   }
 
@@ -184,23 +200,56 @@ class Deserializer {
     return chpl::deserialize<T>{}(*this);
   }
 
-  /* Read a variable-length byte-encoded unsigned integer
-     and return a 'uint64_t'*/
+  /** Gets a byte */
+  unsigned char readByte() {
+    if (pos_ < len_) {
+      return data_[pos_++];
+    } else {
+      return 0;
+    }
+  }
+
+  /** read a numeric type */
+  template <typename T>
+  T readNumeric() {
+    if (pos_ + sizeof(T) <= len_) {
+      T ret;
+      memcpy(&ret, &data_[pos_], sizeof(T));
+      pos_ += sizeof(T);
+      return ret;
+    } else {
+      return 0;
+    }
+  }
+
+  /** read 'n' bytes into the pointer 'ptr' */
+  void readData(void* ptr, size_t n) {
+    if (pos_ + n <= len_) {
+      memcpy(ptr, &data_[pos_], n);
+      pos_ += n;
+    } else {
+      memset(ptr, 0, n);
+    }
+  }
+
+  /** Read a variable-length byte-encoded unsigned integer
+      and return a 'uint64_t'*/
   uint64_t readVU64() {
-    return chpl::readUnsignedVarint(is_);
+    return readUnsignedVarint();
   }
-  /* Read a variable-length byte-encoded signed integer & return an 'int64_t' */
+  /** Read a variable-length byte-encoded signed integer & return an 'int64_t'
+   */
   int64_t readVI64() {
-    return chpl::readSignedVarint(is_);
+    return readSignedVarint();
   }
-  /* Read a variable-length byte-encoded unsigned integer
-     and return an 'unsigned int'*/
+  /** Read a variable-length byte-encoded unsigned integer
+      and return an 'unsigned int'*/
   unsigned int readVUint() {
-    return chpl::readUnsignedVarint(is_);
+    return readUnsignedVarint();
   }
-  /* Read a variable-length byte-encoded signed integer & return an 'int'*/
+  /** Read a variable-length byte-encoded signed integer & return an 'int'*/
   int readVInt() {
-    return chpl::readSignedVarint(is_);
+    return readSignedVarint();
   }
 };
 
@@ -241,7 +290,7 @@ template<> struct serialize<TYPE> { \
 }; \
 template<> struct deserialize<TYPE> { \
   TYPE operator()(Deserializer& des) { \
-    auto ret = des.read<CONV>(); \
+    auto ret = des.readNumeric<CONV>(); \
     return static_cast<TYPE>(ret); \
   } \
 };
@@ -253,14 +302,12 @@ template<> struct deserialize<TYPE> { \
 template<> struct serialize<TYPE> { \
   void operator()(Serializer& ser, \
                   TYPE val) const { \
-    ser.os().write(reinterpret_cast<const char*>(&val), sizeof(val)); \
+    ser.writeNumeric<TYPE>(val); \
   } \
 }; \
 template<> struct deserialize<TYPE> { \
   TYPE operator()(Deserializer& des) { \
-    TYPE ret; \
-    des.is().read(reinterpret_cast<char*>(&ret), sizeof(ret)); \
-    return ret; \
+    return des.readNumeric<TYPE>(); \
   } \
 };
 
@@ -278,15 +325,13 @@ SERIALIZE_PRIM(double);
 
 template<> struct serialize<bool> {
   void operator()(Serializer& ser, bool val) const {
-    uint8_t copy = val;
-    ser.os().write(reinterpret_cast<const char*>(&copy), sizeof(copy));
+    ser.writeNumeric<uint8_t>(val);
   }
 };
 
 template<> struct deserialize<bool> {
   bool operator()(Deserializer& des) {
-    uint8_t val;
-    des.is().read(reinterpret_cast<char*>(&val), sizeof(val));
+    uint8_t val = des.readNumeric<uint8_t>();
     return (bool)val;
   }
 };
@@ -299,7 +344,7 @@ template<> struct serialize<std::string> {
     uint64_t len = val.size();
     ser.writeVU64(len);
     if (len > 0) {
-      ser.os().write(val.c_str(), len);
+      ser.writeData(val.c_str(), len);
     }
   }
 };
@@ -309,7 +354,7 @@ template<> struct deserialize<std::string> {
     uint64_t len = des.readVU64();
     if (len > 0) {
       std::string ret(len, 0);
-      des.is().read(&ret[0], len);
+      des.readData(&ret[0], len);
       return ret;
     } else {
       return std::string();

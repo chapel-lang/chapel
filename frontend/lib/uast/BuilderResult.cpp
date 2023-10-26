@@ -318,6 +318,7 @@ static void assignIDsFromTree(llvm::DenseMap<ID, const AstNode*>& idToAst,
   }
 }
 
+/*
 BuilderResult BuilderResult::deserialize(Deserializer& des) {
   BuilderResult ret;
   AstList alist;
@@ -393,6 +394,7 @@ BuilderResult BuilderResult::deserialize(Deserializer& des) {
 
   return ret;
 }
+*/
 
 bool BuilderResult::equals(const BuilderResult& other) const {
   if (idToParentId_ != other.idToParentId_) {

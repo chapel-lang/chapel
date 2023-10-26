@@ -61,6 +61,57 @@ std::error_code LibraryFile::openAndMap() {
 }
 
 
+bool LibraryFile::readHeaders(Context* context) {
+  std::error_code err = openAndMap();
+  if (err) {
+    context->error(Location(), "Could not open file %s: %s",
+                   libPath.c_str(), err.message().c_str());
+    return false;
+  }
+
+  if (fd < 0 || len <= 0 ||
+      data == nullptr || data == (unsigned char*) -1) {
+    // note: mmap can return -1 as a pointer upon failure
+    context->error(Location(), "Could not read file %s", libPath.c_str());
+  }
+
+  // inspect the file header
+  const FileHeader* header = (const FileHeader*) data;
+
+  if (header->magic != FILE_HEADER_MAGIC) {
+    context->error(Location(), "Invalid file header in %s", libPath.c_str());
+    return false;
+  }
+
+  // save the file hash
+  memcpy(&fileHash[0], &header->hash[0], HASH_SIZE);
+
+  uint32_t nModules = header->nModules;
+
+  // populate modulePathToSection
+  // module offsets are stored just after the file header
+  const uint64_t* moduleOffsets = (const uint64_t*) (data + sizeof(FileHeader));
+  for (uint32_t i = 0; i < nModules; i++) {
+    uint64_t offset = moduleOffsets[i];
+    const ModuleHeader* mod = (const ModuleHeader*) (data + offset);
+
+    if (mod->magic != MODULE_SECTION_MAGIC) {
+      context->error(Location(), "Invalid module section header in %s",
+                     libPath.c_str());
+      return false;
+    }
+
+    // Read starting just after the module header
+    Deserializer des(context, data, len, offset + sizeof(ModuleHeader));
+
+    std::string moduleIdStr = des.read<std::string>();
+    UniqueString moduleId = UniqueString::get(context, moduleIdStr);
+    modulePathToSection[moduleId] = offset;
+  }
+
+  return true;
+}
+
 const owned<LibraryFile>&
 LibraryFile::loadLibraryFileQuery(Context* context, UniqueString libPath) {
   QUERY_BEGIN(loadLibraryFileQuery, context, libPath);
@@ -68,19 +119,11 @@ LibraryFile::loadLibraryFileQuery(Context* context, UniqueString libPath) {
   owned<LibraryFile> result = toOwned(new LibraryFile());
   result->libPath = libPath;
 
-  std::error_code err = result->openAndMap();
-  if (err) {
-    context->error(Location(), "Could not open file %s: %s",
-                   libPath.c_str(), err.message().c_str());
-    result = nullptr;
-  } else {
-    CHPL_ASSERT(result->fd >= 0);
-    CHPL_ASSERT(result->len > 0);
-    CHPL_ASSERT(result->data != nullptr);
+  result->openAndMap();
+  bool ok = result->readHeaders(context);
 
-    // read the hash
-    const FileHeader* header = (const FileHeader*) result->data;
-    memcpy(&result->fileHash[0], &header->hash[0], HASH_SIZE);
+  if (!ok) {
+    result = nullptr;
   }
 
   return QUERY_END(result);
@@ -130,6 +173,17 @@ bool LibraryFile::update(owned<LibraryFile>& keep, owned<LibraryFile>& addin) {
 
 const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
   return LibraryFile::loadLibraryFileQuery(context, libPath).get();
+}
+
+const uast::Module* LibraryFile::loadModule(Context* context,
+                                            UniqueString modulePath) {
+  // Check each module name to see if it is a match
+
+  // check the module names
+
+  // TODO
+
+  return nullptr;
 }
 
 

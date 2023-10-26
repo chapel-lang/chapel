@@ -206,8 +206,8 @@ void UniqueString::serialize(Serializer& ser) const {
   if (len < ser.LONG_STRING_SIZE) {
     // store the string inline here
     uint8_t byte = len;
-    ser.write(byte);
-    ser.os().write(c_str(), len);
+    ser.writeByte(byte);
+    ser.writeData(c_str(), len);
   } else {
     // store the string through the long strings table
     uint32_t uid = ser.cacheString(c_str(), len);
@@ -218,24 +218,24 @@ void UniqueString::serialize(Serializer& ser) const {
     uint8_t bytes[4];
     memcpy(&bytes[0], &num, sizeof(num));
     bytes[0] |= 0x80; // set the high bit
-    ser.os().write((const char*) &bytes[0], 4);
+    ser.writeData(&bytes[0], 4);
   }
 }
 
 UniqueString UniqueString::deserialize(Deserializer& des) {
-  uint8_t byte = des.read<uint8_t>();
+  uint8_t byte = des.readByte();
   if ((byte & 0x80) == 0) {
     // string is inline here, byte is the length
     uint64_t len = byte;
     char buf[128];
-    des.is().read(buf, len);
+    des.readData(buf, len);
     return get(des.context(), buf, len);
   } else {
     // compute the index to look up in the strings table
     uint8_t bytes[4];
     // unset the high bit
     bytes[0] = byte & 0x7f;
-    des.is().read((char*) &bytes[1], 3); // read the other 3 bytes
+    des.readData(&bytes[1], 3); // read the other 3 bytes
     uint32_t num = 0;
     memcpy(&num, &bytes[0], sizeof(num));
     // convert from big-endian order to host byte order

@@ -24,6 +24,7 @@
 #include "chpl/libraries/LibraryFileFormat.h"
 #include "chpl/util/memory.h"
 
+#include <sstream>
 #include <system_error>
 
 // forward declare LLVM Support Library dependencies
@@ -59,9 +60,17 @@ class LibraryFile {
   size_t len = 0;
   const unsigned char* data = nullptr;
 
-  //LibraryFile();
+  // maps from module path to the offset of its module section header
+  std::map<UniqueString, uint64_t> modulePathToSection;
+
+  LibraryFile() { }
 
   std::error_code openAndMap();
+
+  // reads the library file and raises errors with Context if there
+  // are any errors
+  // returns 'true' if everything is OK, 'false' if there were errors.
+  bool readHeaders(Context* context);
 
   static const owned<LibraryFile>& loadLibraryFileQuery(Context* context,
                                                         UniqueString libPath);
@@ -82,6 +91,15 @@ class LibraryFile {
     which contains useful information about the library's contents.
    */
   const LibraryFile* load(Context* context, UniqueString libPath);
+
+  /**
+    Load uAST from a this LibraryFile for a particular module path.
+    For a toplevel module, the module path is just the module name.
+    For a submodule M of a parent module P, it would be P.M.
+
+    Returns nullptr if no such module is found in this LibraryFile.
+   */
+  const uast::Module* loadModule(Context* context, UniqueString modulePath);
 };
 
 

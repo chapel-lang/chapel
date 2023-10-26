@@ -131,8 +131,9 @@ Each module section begins with a header that consists of:
  * 8 bytes of types section relative offset
  * 8 bytes of functions section relative offset
  * 8 bytes of dependencies section relative offset
- * a string storing the symbol ID
+ * a string storing the module symbol ID
    (e.g. "TopLevelModule" or "MyModule.SubModule")
+   note that this string does not use the long strings table
 
 Symbol Table Section
 --------------------
