@@ -97,9 +97,10 @@ class LibraryFile {
     For a toplevel module, the module path is just the module name.
     For a submodule M of a parent module P, it would be P.M.
 
-    Returns nullptr if no such module is found in this LibraryFile.
+    Returns nullptr if no such module is found in this LibraryFile
+    or if an error occurred.
    */
-  const uast::Module* loadModule(Context* context, UniqueString modulePath);
+  const uast::Module* loadModuleAst(Context* context, UniqueString modulePath);
 };
 
 

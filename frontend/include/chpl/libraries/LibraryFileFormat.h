@@ -90,8 +90,9 @@ struct SymbolTableEntry {
   //  * a variable-byte length & string storing a symbol table ID
 };
 
-struct uAstSectionHeader {
+struct AstSectionHeader {
   uint64_t magic;
+  uint64_t nBytesAstEntries;
   uint64_t nEntries;
   // followed by nEntries uAstEntrys
 };

@@ -164,20 +164,22 @@ uAST Section
 ------------
 
 The uAST section consists of serialized uAST entries in the order they
-appear within the file. The top-level entries are concatenated. Note that
-the symbol table can point to an individual entry.
+appear within the file. The top-level entry will be the uAST for the
+corresponding module. Note that the symbol table can point to an
+individual entry within the serialized uAST.
 
 IDs are not stored here. They are recomputed when the uAST is read.
 
 The uAST section consists of:
 
  * 8 bytes of magic number 0x0003bb1e5ec110e0
- * 8 bytes: the number of uAST entries
+ * 8 bytes: the number of bytes of serialized uAST entries
+ * 8 bytes: the total number of uAST entries
  * the contained entries, where each entry consists of:
 
    * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
    * attribute group child num (variable-byte encoded)
-   * the L bytes storing the additional information
+   * L bytes storing the additional information for the uAST element
      (where L can be determined from the tag)
    * variable-byte encoded number of children
    * the children, where each is stored as a uAST entry as described here

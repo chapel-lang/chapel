@@ -20,6 +20,8 @@
 #include "chpl/libraries/LibraryFile.h"
 
 #include "chpl/framework/query-impl.h"
+#include "chpl/uast/AstNode.h"
+#include "chpl/uast/Builder.h"
 
 #include "llvm/Support/FileSystem.h"
 
@@ -175,13 +177,60 @@ const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
   return LibraryFile::loadLibraryFileQuery(context, libPath).get();
 }
 
-const uast::Module* LibraryFile::loadModule(Context* context,
-                                            UniqueString modulePath) {
-  // Check each module name to see if it is a match
+const uast::Module* LibraryFile::loadModuleAst(Context* context,
+                                               UniqueString modulePath) {
+  auto it = modulePathToSection.find(modulePath);
+  if (it != modulePathToSection.end()) {
+    uint64_t offset = it->second;
+    const ModuleHeader* modHdr = (const ModuleHeader*) (data + offset);
+    // read the uast
+    uint64_t uAstOffset = offset + modHdr->uAstSection;
+    if (modHdr->magic != MODULE_SECTION_MAGIC ||
+        uAstOffset+sizeof(AstSectionHeader) > len) {
+      context->error(Location(), "Invalid module section header in %s",
+                     libPath.c_str());
+      return nullptr;
+    }
 
-  // check the module names
+    const AstSectionHeader* astHdr =
+      (const AstSectionHeader*) (data + uAstOffset);
 
-  // TODO
+    if (astHdr->magic != 0x0003bb1e5ec110e0 ||
+        astHdr->nEntries == 0 ||
+        astHdr->nBytesAstEntries == 0 ||
+        uAstOffset + astHdr->nBytesAstEntries > len) {
+      context->error(Location(), "Invalid AST section header in %s",
+                     libPath.c_str());
+      return nullptr;
+    }
+
+    UniqueString parentSymbolPath;
+    if (!modulePath.isEmpty()) {
+      parentSymbolPath = ID::parentSymbolPath(context, modulePath);
+    }
+
+    auto builder =
+      uast::Builder::createForLibraryFileModule(context,
+                                                libPath,
+                                                parentSymbolPath);
+
+    auto des = Deserializer(context,
+                            astHdr+1, // just after the AstSectionHeader
+                            astHdr->nBytesAstEntries);
+
+    builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
+
+    uast::BuilderResult r = builder->result();
+
+    if (r.numTopLevelExpressions() != 1 ||
+        !r.topLevelExpression(0) ||
+        !r.topLevelExpression(0)->toModule()) {
+      context->error(Location(), "Invalid AST section in %s", libPath.c_str());
+      return nullptr;
+    }
+
+    return r.topLevelExpression(0)->toModule();
+  }
 
   return nullptr;
 }

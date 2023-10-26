@@ -130,13 +130,15 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
                                      uint64_t moduleSectionStart,
                                      Serializer& ser) {
   uint64_t astStart = fileStream.tellp();
-  uAstSectionHeader header;
+  AstSectionHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
   // serialize the data
+  uint64_t serializedStart = fileStream.tellp();
   mod->serialize(ser);
+  header.nBytesAstEntries = serializedStart - fileStream.tellp();
   header.nEntries = ser.numAstsSerialized();
 
   // update the number serialized by rewriting the header
