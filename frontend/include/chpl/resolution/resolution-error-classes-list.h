@@ -57,7 +57,7 @@ ERROR_CLASS(MultipleEnumElems, const uast::AstNode*, chpl::UniqueString, const u
 ERROR_CLASS(MultipleInheritance, const uast::Class*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(MultipleQuestionArgs, const uast::FnCall*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(NestedClassFieldRef, const uast::AggregateDecl*, const uast::AggregateDecl*, const uast::AstNode*, ID)
-ERROR_CLASS(NoMatchingCandidates, const uast::Call*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
+ERROR_CLASS(NoMatchingCandidates, const uast::AstNode*, resolution::CallInfo, std::vector<resolution::ApplicabilityResult>)
 ERROR_CLASS(NonIterable, const uast::AstNode*, const uast::AstNode*, types::QualifiedType)
 ERROR_CLASS(NotInModule, const uast::Dot*, ID, UniqueString, ID, bool)
 ERROR_CLASS(PhaseTwoInitMarker, const uast::AstNode*, std::vector<ID>)

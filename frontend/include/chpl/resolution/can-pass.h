@@ -141,7 +141,10 @@ class CanPassResult {
   /** Returns true if the argument is passable */
   bool passes() { return !failReason_; }
 
-  PassingFailureReason reason() { return *failReason_; }
+  PassingFailureReason reason() {
+    CHPL_ASSERT(failReason_.hasValue());
+    return *failReason_;
+  }
 
   /** Returns true if passing the argument will require instantiation */
   bool instantiates() { return instantiates_; }

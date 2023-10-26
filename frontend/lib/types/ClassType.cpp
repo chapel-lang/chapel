@@ -73,7 +73,7 @@ void ClassType::stringify(std::ostream& ss,
   // emit manager
   ss << manager;
   // emit a space
-  if (prefix.size() || manager.size()) {
+  if (!prefix.empty() || !manager.empty()) {
     ss << " ";
   }
 

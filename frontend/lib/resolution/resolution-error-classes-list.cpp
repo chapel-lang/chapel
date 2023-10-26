@@ -697,12 +697,13 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
 }
 
 void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
-  auto call = std::get<const uast::Call*>(info);
+  auto node = std::get<const uast::AstNode*>(info);
+  auto call = node->toCall();
   auto& ci = std::get<resolution::CallInfo>(info);
   auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info);
 
-  wr.heading(kind_, type_, call, "unable to resolve call to '", ci.name(), "': no matching candidates.");
-  wr.code(call);
+  wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
+  wr.code(node);
 
   unsigned int printCount = 0;
   static const unsigned int maxPrintCount = 2;
@@ -721,7 +722,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
       auto badPass = fa.byFormalIdx(candidate.formalIdx());
       auto formalDecl = badPass.formal()->toNamedDecl();
       const uast::AstNode* actualExpr = nullptr;
-      if (0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
+      if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
         actualExpr = call->actual(badPass.actualIdx());
       }
 
@@ -794,7 +795,7 @@ void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
 
   if (printCount < rejected.size()) {
     wr.message("");
-    wr.note(locationOnly(call), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
+    wr.note(locationOnly(node), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
   }
 }
 

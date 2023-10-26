@@ -877,6 +877,10 @@ class TypedFnSignature {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+/**
+  An enum that represents the reason why a function candidate was filtered out
+  during call resolution.
+ */
 enum CandidateFailureReason {
   /* Cannot pass an actual to one of the candidate's formals. */
   FAIL_CANNOT_PASS,
@@ -892,6 +896,10 @@ enum CandidateFailureReason {
   FAIL_CANDIDATE_OTHER,
 };
 
+/**
+  An enum that represents the reason why an actual couldn't be passed
+  to a formal.
+ */
 enum PassingFailureReason {
   /* Incompatible nilability (e.g. nilable to non-nilable formal) */
   FAIL_INCOMPATIBLE_NILABILITY,
@@ -927,13 +935,44 @@ enum PassingFailureReason {
   FAIL_FORMAL_OTHER,
 };
 
+/**
+  Represents either a function that was accepted during call resolution, or
+  the reason why that function was rejected.
+ */
 class ApplicabilityResult {
  private:
+  /**
+    Set unless the result was a success; empty otherwise. The ID to use to
+    refer to the function candidate that didn't match during call resolution.
+   */
   ID idForErr_;
+  /**
+    When available, the typed function signature of the candidate that
+    didn't match during call resolution. Set to nullptr if the candidate
+    was accepted / the ApplicationResult was a success.
+   */
   const TypedFnSignature* initialForErr_;
+  /**
+    If the ApplicabilityResult is a success, the function candidate that
+    was accepted by call resolution.
+   */
   const TypedFnSignature* candidate_;
+  /**
+    If the ApplicabilityResult is a failure, the reason why the candidate
+    was rejected. Set to FAIL_CANDIDATE_OTHER on success as a placeholder.
+   */
   CandidateFailureReason candidateReason_;
+  /**
+    If the ApplicabilityResult is a failure because we couldn't pass an actual
+    to a formal, the reason why passing didn't work. Set to FAIL_FORMAL_OTHER
+    on success as a placeholder.
+   */
   PassingFailureReason formalReason_;
+  /**
+    If the ApplicabilityResult is a failure because we couldn't pass an actual
+    to a formal, the index of the formal that we couldn't pass to. Set to -1
+    on success as a placeholder.
+   */
   int formalIdx_;
 
   ApplicabilityResult(ID idForErr,
@@ -945,7 +984,9 @@ class ApplicabilityResult {
     idForErr_(std::move(idForErr)), initialForErr_(initialForErr), candidate_(candidate),
     candidateReason_(candidateReason), formalReason_(formalReason),
     formalIdx_(formalIdx) {
-    CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 && formalReason_ == FAIL_FORMAL_OTHER));
+    CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 &&
+                                candidateReason_ == FAIL_CANDIDATE_OTHER &&
+                                formalReason_ == FAIL_FORMAL_OTHER));
   }
 
  public:

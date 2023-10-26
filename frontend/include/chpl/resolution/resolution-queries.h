@@ -317,7 +317,7 @@ filterCandidatesInstantiating(Context* context,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
                               std::vector<const TypedFnSignature*>& result,
-                              std::vector<ApplicabilityResult>* rejected);
+                              std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a uast::Call, a CallInfo representing the call, a Scope representing the

@@ -1432,9 +1432,8 @@ Resolver::issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                      ci.name().c_str());
     } else {
       // could not find a most specific candidate
-      context->error(astForErr,
-                     "Cannot resolve call to '%s': no matching candidates",
-                     ci.name().c_str());
+      std::vector<ApplicabilityResult> rejected;
+      CHPL_REPORT(context, NoMatchingCandidates, astForErr, ci, rejected);
     }
   } else {
     context->error(astForErr, "Cannot establish type for call expression");
@@ -1539,16 +1538,26 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
                                                  const CallResolutionResult& c) {
 
   if (handleResolvedCallWithoutError(r, call, ci, c)) {
-    std::vector<ApplicabilityResult> rejected;
-    std::ignore = resolveCallInMethod(context, call, ci, scope, poiScope,
-                                      receiverType, &rejected);
+    if (c.mostSpecific().isEmpty() &&
+        !c.mostSpecific().isAmbiguous()) {
+      // The call isn't ambiguous; it might be that we rejected all the candidates
+      // that we encountered. Re-run resolution, providing a 'rejected' vector
+      // time to preserve the list of rejected candidates.
 
-    if (rejected.size() == 0) {
-      issueErrorForFailedCallResolution(call, ci, c);
-      return;
+      std::vector<ApplicabilityResult> rejected;
+      std::ignore = resolveCallInMethod(context, call, ci, scope, poiScope,
+                                        receiverType, &rejected);
+
+      if (!rejected.empty()) {
+        // There were candidates but we threw them out. We can issue a nicer
+        // error explaining why each candidate was rejected.
+        CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
+        return;
+      }
     }
 
-    CHPL_REPORT(context, NoMatchingCandidates, call, ci, rejected);
+    // Fall through to the more general error handling.
+    issueErrorForFailedCallResolution(call, ci, c);
   }
 }
 
