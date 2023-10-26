@@ -77,13 +77,7 @@ import sys
 import os
 import argparse as ap
 import itertools
-
-try:
-    import chapel.core as dyno
-    from chapel import each_matching
-except ModuleNotFoundError:
-    print("chapel python bindings not found")
-    exit(1)
+import glob
 
 
 """
@@ -311,25 +305,16 @@ class FindUndocumentedSymbols:
                 yield s
 
 
-def get_files(files: List[str], check_suffix=False) -> Generator:
+def get_files(files: List[str]) -> Generator:
     """
     Yield all chapel files, following directories recursively
     """
 
     for file in files:
         if os.path.isfile(file):
-            # just yield any file given if not checking the suffix
-            if not check_suffix:
-                yield file
-            elif check_suffix and os.path.splitext(file)[1] == ".chpl":
-                yield file
-
+            yield file
         elif os.path.isdir(file):
-            for root, subdirs, files in os.walk(file):
-                # yield files in directory files, always check the suffix
-                yield from get_files([os.path.join(root, file) for file in files], True)
-                # recurse into sub dirs, always checl the suffix
-                yield from get_files([os.path.join(root, d) for d in subdirs], True)
+            yield from glob.glob(os.path.join(file, "**", "*.chpl"), recursive=True)
         else:
             print("Error: path was not file or directory", file=sys.stderr)
             exit(1)
