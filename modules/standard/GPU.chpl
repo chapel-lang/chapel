@@ -433,12 +433,10 @@ module GPU
                                 val: t) {
       select op {
         when "minloc" do
-          if accum[1] > val[1] then accum = val;
+          if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
         when "maxloc" do
-          if accum[1] < val[1] then accum = val;
+          if accum[1] < val[1] then accum = (val[0]+baseOffset, val[1]);
       }
-
-      accum[0] += baseOffset;
     }
 
     iter offsetsThatCanFitIn32Bits(size: int) {
@@ -508,7 +506,7 @@ module GPU
         reduce_fn(basePtr+offset, size, curVal, curIdx);
         subReduceValIdx(op, offset, ret, (curIdx, curVal));
         if gpuDebugReduce then
-          writef(" (curIdx=%i curVal=%i)\n", curIdx, curVal);
+          writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
       }
 
       return ret;

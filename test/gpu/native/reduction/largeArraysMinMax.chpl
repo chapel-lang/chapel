@@ -1,5 +1,6 @@
-
 use GPU;
+
+config param withLoc = false;
 
 config const kind = "min";
 const isMin = kind=="min";
@@ -10,18 +11,26 @@ config const setIdx = n-1;
 assert(n>setIdx);
 
 config const printResult = false;
-const expected = if isMin then 7:uint(8) else 13:uint(8);
 
-var result: uint(8);
+const expectedVal = if isMin then 7:uint(8) else 13:uint(8);
+const expected = if withLoc then (setIdx, expectedVal) else expectedVal;
+
+inline proc doReduce(Arr) {
+  if withLoc then
+    return if isMin then gpuMinLocReduce(Arr) else gpuMaxLocReduce(Arr);
+  else
+    return if isMin then gpuMinReduce(Arr) else gpuMaxReduce(Arr);
+}
+
+var result: if withLoc then (int, uint(8)) else uint(8);
 on here.gpus[0] {
   var Arr: [0..#n] uint(8) = 10;
+  Arr[setIdx] = expectedVal;
 
-  Arr[setIdx] = expected;
-
-  result = if isMin then gpuMinReduce(Arr) else gpuMaxReduce(Arr);
+  result = doReduce(Arr);
 }
 
 if printResult then writeln("Result: ", result);
 
 if result != expected then
-  writef("Invalid result. Expected %u, actual %u\n", expected, result);
+  writef("Invalid result. Expected %?, actual %?\n", expected, result);
