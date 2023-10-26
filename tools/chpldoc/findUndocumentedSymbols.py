@@ -192,7 +192,7 @@ def get_node_name(node: dyno.AstNode) -> str:
     return name
 
 
-def lookAhead(iterable, window=1):
+def look_ahead(iterable, window=1):
     items, nexts = itertools.tee(iterable, 2)
     nexts = itertools.islice(nexts, window, None)
     return itertools.zip_longest(items, nexts)
@@ -252,12 +252,12 @@ class FindUndocumentedSymbols:
     def _get_previous_sibling(self, node: dyno.AstNode):
         parent = node.parent()
         if not parent:
-            for sib1, sib2 in lookAhead(self.ast):
+            for sib1, sib2 in look_ahead(self.ast):
                 if sib2 and node.unique_id() == sib2.unique_id():
                     return sib1
             return None
 
-        for sib1, sib2 in lookAhead(parent):
+        for sib1, sib2 in look_ahead(parent):
             if sib2 and node.unique_id() == sib2.unique_id():
                 return sib1
         return None
