@@ -25,6 +25,11 @@ from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
 
 def location_to_range(location):
+    """
+    Convert a Chapel location into a lsprotocol.types Range, which is
+    used for e.g. reporting diagnostics.
+    """
+
     start = location.start()
     end = location.end()
     return Range(
@@ -33,10 +38,29 @@ def location_to_range(location):
     )
 
 def run_lsp(driver):
-    server = LanguageServer('chplcheck', 'v0.1')
-    contexts = {}
+    """
+    Start a language server on the standard input/output, and use it to
+    report linter warnings as LSP diagnostics.
+    """
 
+    server = LanguageServer('chplcheck', 'v0.1')
+
+    contexts = {}
     def get_updated_context(uri):
+        """
+        The LSP driver maintains one Chapel context per-file. This is to avoid
+        having to reset all files' text etc. when a single file is updated.
+        There may be a more principled approach we can take in the future.
+
+        This function returns an _update_ context, which is effectively a context
+        in which we can save / make use of updated file text. If there wasn't
+        a context for a URI, a brand new context will do. For existing contexts,
+        an older version of the file's text is probably stored, so advance
+        the context to next revision, invalidating that cache.
+
+        Thus, this method is effectively allocate-or-advance-context.
+        """
+
         if uri in contexts:
             context = contexts[uri]
             context.advance_to_next_revision(False)
@@ -46,9 +70,20 @@ def run_lsp(driver):
         return context
 
     def parse_file(context, uri):
+        """
+        Given a file URI, return the ASTs making up that file. Advances
+        the context if one already exists to make sure an updated result
+        is returned.
+        """
+
         return context.parse(uri[len("file://"):])
 
     def build_diagnostics(uri):
+        """
+        Parse a file at a particular URI, run the linter rules on the resulting
+        ASTs, and return them as LSP diagnostics.
+        """
+
         context = get_updated_context(uri)
         asts = parse_file(context, uri)
         diagnostics = []
@@ -60,6 +95,8 @@ def run_lsp(driver):
             )
             diagnostics.append(diagnostic)
         return diagnostics
+
+    # The following functions are handlers for LSP events received by the server.
 
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     async def did_open(ls, params: DidOpenTextDocumentParams):
