@@ -78,7 +78,7 @@ import argparse as ap
 import itertools
 import glob
 import chapel.core as dyno
-from chapel import each_matching
+from chapel import each_matching, files_with_contexts
 
 
 """
@@ -320,31 +320,6 @@ def get_files(files: List[str]) -> Generator:
             exit(1)
 
 
-def get_trees(filenames: List[str]) -> Generator:
-    """
-    Yield dyno asts and their filename.
-    Some files might have the same name, which Dyno really doesn't like.
-    Strateify files into "buckets"; within each bucket, all filenames are
-    unique. Between each bucket, re-create the Dyno context to avoid giving
-    it complicting files.
-    """
-    basenames = defaultdict(lambda: 0)
-    buckets = defaultdict(lambda: [])
-    for filename in filenames:
-        filename_expanded = os.path.realpath(os.path.expandvars(filename))
-
-        basename = os.path.basename(filename_expanded)
-        bucket = basenames[basename]
-        basenames[basename] += 1
-        buckets[bucket].append((filename, filename_expanded))
-
-    for filenames in buckets.values():
-        ctx = dyno.Context()
-        for filename, filename_expanded in filenames:
-            ast = ctx.parse(filename_expanded)
-            yield (filename, ast)
-
-
 def main(raw_args: List[str]) -> int:
     a = ap.ArgumentParser()
     a.add_argument("files", nargs="*")
@@ -352,19 +327,20 @@ def main(raw_args: List[str]) -> int:
     a.add_argument("--ignore-unstable", action="store_true", default=False)
     args = a.parse_args(raw_args)
     flags = vars(args)
-    files = flags.pop('files')
+    files = flags.pop("files")
 
-    for filename, astList in get_trees(get_files(files)):
-        fus = FindUndocumentedSymbols(
-            astList,
-            **flags
-        )
+    curdir = os.path.abspath(os.path.curdir)
+
+    for filename, ctx in files_with_contexts(get_files(files)):
+        astList = ctx.parse(filename)
+        fus = FindUndocumentedSymbols(astList, **flags)
         for sym in fus():
             loc = sym.location()
             (line, col) = loc.start()
+            path = os.path.relpath(loc.path(), curdir)
             name = get_node_name(sym)
 
-            print(f"warning: '{name}' at {filename}:{line} is undocumented")
+            print(f"warning: '{name}' at {path}:{line} is undocumented")
 
     return 0
 
