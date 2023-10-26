@@ -77,6 +77,8 @@ import os
 import argparse as ap
 import itertools
 import glob
+import chapel.core as dyno
+from chapel import each_matching
 
 
 """
