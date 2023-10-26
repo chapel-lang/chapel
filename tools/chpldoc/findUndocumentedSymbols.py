@@ -177,11 +177,17 @@ def get_node_name(node: dyno.AstNode) -> str:
     name = get_simple_node_name(node)
 
     # handles secondary methods
-    if hasattr(node, "this_formal") and (this := node.this_formal()) and (typename := this.type_expression()):
+    if (
+        hasattr(node, "this_formal")
+        and (this := node.this_formal())
+        and (typename := this.type_expression())
+    ):
         aggregate_name = get_simple_node_name(typename)
         name = f"{aggregate_name}.{name}"
     # handles primary methods and fields
-    elif (p := node.parent()) and (isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)):
+    elif (p := node.parent()) and (
+        isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)
+    ):
         aggregate_name = get_simple_node_name(p)
         name = f"{aggregate_name}.{name}"
 
