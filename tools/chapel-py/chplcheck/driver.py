@@ -65,7 +65,7 @@ class LintDriver:
 
     def enable_rules(self, *rules):
         """
-        Tell the driver to warning for the given rules even if they were
+        Tell the driver to warn for the given rules even if they were
         previously disabled.
         """
 
