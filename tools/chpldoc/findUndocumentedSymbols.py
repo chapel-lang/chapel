@@ -56,19 +56,18 @@ determines if the symbol is documented. A symbol is considered documented if
 the previous sibling node in the AST is a docstring Comment.
 
 Symbols can be marked 'nodoc', meaning it is ok for the docstring to be
-missing. This script considers a symbol to be marked 'nodoc' based on the
-following criteria:
+missing. This script considers a symbol to be marked 'nodoc' if any of the
+following is true:
 - If it is explicitly marked with an attribute `@chpldoc.nodoc`
-- If its names is prefixed with `chpl_`
+- If its name is prefixed with `chpl_`
   - This also checks the `pragma "chpldoc ignore chpl prefix"`
 - If the symbol is marked private
 - If the symbol has a parent that is marked 'nodoc'
 
 This script also provides two optional flags, `--ignore-[unstable|deprecated]`.
-These work based on explicit `@unstable` or `@deprecated` attributes, if the
-symbol was marked in a different way this script will still warn. If a symbol's
-parent was marked unstable or deprecated then the symbol is also considered to
-be unstable or deprecated.
+If a symbol or its parent was marked with with an `@unstable` or `@deprecated`
+attribute, the respective option will cause the script to ignore it. Other ways
+of marking symbols unstable or deprecated are not handled by these options.
 """
 
 from collections import defaultdict
