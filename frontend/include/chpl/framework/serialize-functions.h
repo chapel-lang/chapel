@@ -145,9 +145,8 @@ class Deserializer {
   using stringCacheType = std::vector<std::pair<size_t, const char*>>;
  private:
   Context* context_ = nullptr;
-  const unsigned char* data_ = nullptr;
-  size_t len_ = 0;
-  size_t pos_ = 0;
+  const unsigned char* cur_ = nullptr;
+  const unsigned char* end_ = nullptr;
   stringCacheType cache_;
 
   /** read a variable-byte encoded unsigned integer */
@@ -160,9 +159,8 @@ class Deserializer {
                const void* data, size_t len,
                size_t pos = 0)
     : context_(context),
-      data_((const unsigned char*) data),
-      len_(len),
-      pos_(pos) {
+      cur_(((const unsigned char*) data) + pos),
+      end_(((const unsigned char*) data) + len) {
   }
 
   //
@@ -172,9 +170,8 @@ class Deserializer {
                const void* data, size_t len,
                Serializer::stringCacheType serCache)
     : context_(context),
-      data_((const unsigned char*) data),
-      len_(len),
-      pos_(0) {
+      cur_((const unsigned char*) data),
+      end_(((const unsigned char*) data) + len) {
     cache_.resize(serCache.size()+1);
     for (const auto& pair : serCache) {
       cache_[pair.second.first] = {pair.second.second, pair.first};
@@ -202,8 +199,10 @@ class Deserializer {
 
   /** Gets a byte */
   unsigned char readByte() {
-    if (pos_ < len_) {
-      return data_[pos_++];
+    if (cur_ < end_) {
+      unsigned char ret = *cur_;
+      cur_++;
+      return ret;
     } else {
       return 0;
     }
@@ -212,10 +211,10 @@ class Deserializer {
   /** read a numeric type */
   template <typename T>
   T readNumeric() {
-    if (pos_ + sizeof(T) <= len_) {
+    if (cur_ + sizeof(T) <= end_) {
       T ret;
-      memcpy(&ret, &data_[pos_], sizeof(T));
-      pos_ += sizeof(T);
+      memcpy(&ret, cur_, sizeof(T));
+      cur_ += sizeof(T);
       return ret;
     } else {
       return 0;
@@ -224,9 +223,9 @@ class Deserializer {
 
   /** read 'n' bytes into the pointer 'ptr' */
   void readData(void* ptr, size_t n) {
-    if (pos_ + n <= len_) {
-      memcpy(ptr, &data_[pos_], n);
-      pos_ += n;
+    if (cur_ + n <= end_) {
+      memcpy(ptr, cur_, n);
+      cur_ += n;
     } else {
       memset(ptr, 0, n);
     }
