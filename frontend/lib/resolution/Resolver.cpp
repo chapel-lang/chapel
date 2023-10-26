@@ -1542,7 +1542,7 @@ void Resolver::handleResolvedCallPrintCandidates(ResolvedExpression& r,
         !c.mostSpecific().isAmbiguous()) {
       // The call isn't ambiguous; it might be that we rejected all the candidates
       // that we encountered. Re-run resolution, providing a 'rejected' vector
-      // time to preserve the list of rejected candidates.
+      // this time to preserve the list of rejected candidates.
 
       std::vector<ApplicabilityResult> rejected;
       std::ignore = resolveCallInMethod(context, call, ci, scope, poiScope,
