@@ -37,13 +37,15 @@ def print_violation(node, name):
 def main():
     parser = argparse.ArgumentParser( prog='chplcheck', description='A linter for the Chapel language')
     parser.add_argument('filenames', nargs='*')
-    parser.add_argument('--ignore-rule', action='append', dest='ignored_rules', default=[])
+    parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
+    parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
     parser.add_argument('--lsp', action='store_true', default=False)
     args = parser.parse_args()
 
     driver = LintDriver()
-    driver.silence_rules("CamelCaseVariables", "ConsecutiveDecls")
-    driver.silence_rules(*args.ignored_rules)
+    driver.disable_rules("CamelCaseVariables", "ConsecutiveDecls")
+    driver.disable_rules(*args.disabled_rules)
+    driver.enable_rules(*args.enabled_rules)
     register_rules(driver)
 
     if args.lsp:

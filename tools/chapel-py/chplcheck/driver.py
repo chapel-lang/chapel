@@ -56,12 +56,20 @@ class LintDriver:
         self.BasicRules = []
         self.AdvancedRules = []
 
-    def silence_rules(self, *rules):
+    def disable_rules(self, *rules):
         """
         Tell the driver to silence / skip warning for the given rules.
         """
 
         self.SilencedRules.extend(rules)
+
+    def enable_rules(self, *rules):
+        """
+        Tell the driver to warning for the given rules even if they were
+        previously disabled.
+        """
+
+        self.SilencedRules = list(set(self.SilencedRules) - set(rules))
 
     def _should_check_rule(self, node, rulename):
         if rulename in self.SilencedRules:
