@@ -96,6 +96,10 @@ class LintDriver:
             return
 
         for node in func(context, root):
+            # It's not clear how, if it all, advanced rules should be silenced
+            # by attributes (i.e., where do you put the @chplcheck.ignore
+            # attribute?). For now, do not silence them on a per-node basis.
+
             yield (node, name)
 
     def basic_rule(self, pat):
