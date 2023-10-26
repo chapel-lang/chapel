@@ -118,7 +118,7 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
 }
 
 void Builder::addToplevelExpression(owned<AstNode> e) {
-  this->topLevelExpressions_.push_back(std::move(e));
+  this->br.topLevelExpressions_.push_back(std::move(e));
 }
 
 void Builder::noteLocation(AstNode* ast, Location loc) {
@@ -150,19 +150,6 @@ BuilderResult Builder::result() {
   // that a postorder traversal of the AST has good data locality
   // (i.e. good cache behavior).
 
-  BuilderResult ret(filepath_);
-  ret.topLevelExpressions_.swap(topLevelExpressions_);
-  ret.idToAst_.swap(idToAst_);
-  ret.idToLocation_.swap(idToLocation_);
-  ret.commentIdToLocation_.swap(commentToLocation_);
-
-  // Swap all the additional location maps.
-  #define LOCATION_MAP(ast__, location__) \
-    ret.CHPL_ID_LOC_MAP(ast__, location__) \
-      .swap(CHPL_ID_LOC_MAP(ast__, location__));
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
-
   // TODO: Any other state that can be reset?
   notedLocations_.clear();
 
@@ -171,6 +158,9 @@ BuilderResult Builder::result() {
   #include "chpl/uast/all-location-maps.h"
   #undef LOCATION_MAP
 
+  // swap the stored BuilderResult with an empty one and return it
+  BuilderResult ret;
+  ret.swap(br);
   return ret;
 }
 
@@ -197,7 +187,7 @@ void Builder::createImplicitModuleIfNeeded() {
   const AstNode* firstNonModule = nullptr;
   const AstNode* firstUseImportOrRequire = nullptr;
 
-  for (auto const& ownedExpression: topLevelExpressions_) {
+  for (auto const& ownedExpression: br.topLevelExpressions_) {
     const AstNode* ast = ownedExpression.get();
     if (ast->isComment()) {
       // ignore comments for this analysis
@@ -223,12 +213,12 @@ void Builder::createImplicitModuleIfNeeded() {
     return;
   } else {
     // compute the basename of filename to get the inferred module name
-    std::string modname = Builder::filenameToModulename(filepath_.c_str());
+    std::string modname = Builder::filenameToModulename(br.filePath_.c_str());
     auto inferredModuleName = UniqueString::get(context_, modname);
     // create a new module containing all of the statements
     AstList stmts;
-    stmts.swap(topLevelExpressions_);
-    auto loc = Location(filepath_, 1, 1, 1, 1);
+    stmts.swap(br.topLevelExpressions_);
+    auto loc = Location(br.filePath_, 1, 1, 1, 1);
     auto ownedModule = Module::build(this, std::move(loc),
                                      /*attributeGroup*/ nullptr,
                                      Decl::DEFAULT_VISIBILITY,
@@ -236,7 +226,7 @@ void Builder::createImplicitModuleIfNeeded() {
                                      Module::IMPLICIT,
                                      std::move(stmts));
     const Module* implicitModule = ownedModule.get();
-    topLevelExpressions_.push_back(std::move(ownedModule));
+    br.topLevelExpressions_.push_back(std::move(ownedModule));
 
     // emit warnings as needed
     if (firstUseImportOrRequire && !containsOther && nModules == 1) {
@@ -260,7 +250,7 @@ void Builder::assignIDs() {
     pathVec = ID::expandSymbolPath(context_, startingSymbolPath_);
   }
 
-  for (auto const& ownedExpression: topLevelExpressions_) {
+  for (auto const& ownedExpression: br.topLevelExpressions_) {
     AstNode* ast = ownedExpression.get();
     if (ast->isModule() || ast->isComment()) {
       UniqueString emptyString;
@@ -318,7 +308,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     auto search = notedLocations_.find(ast);
     if (search != notedLocations_.end()) {
       CHPL_ASSERT(!search->second.isEmpty());
-      commentToLocation_.push_back(search->second);
+      br.commentIdToLocation_.push_back(search->second);
     } else {
       CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
     }
@@ -436,13 +426,13 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   }
 
   // update idToAst_ for the visited AST node
-  idToAst_[ast->id()] = ast;
+  br.idToAst_[ast->id()] = ast;
 
   // update locations_ for the visited ast
   auto search = notedLocations_.find(ast);
   if (search != notedLocations_.end()) {
     CHPL_ASSERT(!search->second.isEmpty());
-    idToLocation_[ast->id()] = search->second;
+    br.idToLocation_[ast->id()] = search->second;
 
     // Also map additional locations to ID.
     #define LOCATION_MAP(ast__, location__) \
@@ -450,7 +440,7 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
         auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
         auto it = m1.find(x); \
         if (it != m1.end()) { \
-          auto& m2 = CHPL_ID_LOC_MAP(ast__, location__); \
+          auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
           m2[x->id()] = it->second; \
         } \
       }

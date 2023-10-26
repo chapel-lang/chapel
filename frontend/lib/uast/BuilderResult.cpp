@@ -76,10 +76,8 @@ void BuilderResult::swap(BuilderResult& other) {
   filePath_.swap(other.filePath_);
   topLevelExpressions_.swap(other.topLevelExpressions_);
   idToAst_.swap(other.idToAst_);
-  idToLocation_.swap(other.idToLocation_);
-  commentIdToLocation_.swap(other.commentIdToLocation_);
   idToParentId_.swap(other.idToParentId_);
-  idToAst_.swap(other.idToAst_);
+  idToLocation_.swap(other.idToLocation_);
 
   // Swap additional location maps.
   #define LOCATION_MAP(ast__, location__) { \
@@ -89,6 +87,8 @@ void BuilderResult::swap(BuilderResult& other) {
   }
   #include "chpl/uast/all-location-maps.h"
   #undef LOCATION_MAP
+
+  commentIdToLocation_.swap(other.commentIdToLocation_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
