@@ -1,0 +1,12 @@
+=== n=100; 0.. ===
+SUCCESS
+SUCCESS
+SUCCESS
+=== n=100; 0..799 ===
+SUCCESS
+SUCCESS
+SUCCESS
+=== n=100; 0..399 ===
+end of file (while reading array of 'int(64)' with path "unknown" offset 400)
+end of file (while reading array of 'int(64)' with path "unknown" offset 400)
+end of file (while reading c_ptr(int) with path "unknown" offset 400)
