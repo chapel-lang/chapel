@@ -9,7 +9,8 @@ const sz = 10;
 if gpuDiags then startGpuDiagnostics();
 
 on here.gpus[0] {
-  var Arr: [0..<sz] int;
+  const s = sz;
+  var Arr: [0..<s] int;
   foreach i in 1..0 do {
     Arr[i] = i;
   }
@@ -18,6 +19,6 @@ on here.gpus[0] {
 
 if gpuDiags {
   stopGpuDiagnostics();
-  assertGpuDiags(kernel_launch=2, host_to_device=0, device_to_host=sz,
+  assertGpuDiags(kernel_launch=1, host_to_device=0, device_to_host=sz,
                  device_to_device=0);
 }
