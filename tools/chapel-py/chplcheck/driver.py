@@ -71,7 +71,7 @@ class LintDriver:
 
         self.SilencedRules = list(set(self.SilencedRules) - set(rules))
 
-    def _should_check_rule(self, node, rulename):
+    def _should_check_rule(self,rulename, node = None):
         if rulename in self.SilencedRules:
             return False
 
@@ -85,11 +85,11 @@ class LintDriver:
 
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self._should_check_rule(None, name):
+        if not self._should_check_rule(name):
             return
 
         for (node, _) in chapel.each_matching(root, nodetype):
-            if not self._should_check_rule(node, name):
+            if not self._should_check_rule(name, node):
                 continue
 
             if not func(context, node):
@@ -100,7 +100,7 @@ class LintDriver:
 
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self._should_check_rule(None, name):
+        if not self._should_check_rule(name):
             return
 
         for node in func(context, root):
