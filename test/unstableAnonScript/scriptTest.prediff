@@ -9,7 +9,7 @@ if [ "$test_type" == "help" ]; then
 elif [ "$test_type" == "defaultFlags" ]; then
   ./unstableAnonScript < $outfile > $outfile.tmp
 elif [ "$test_type" == "IOFlags1" ]; then
-  ./unstableAnonScript -i $outfile -o $outfile.tmp
+  ./unstableAnonScript -i $outfile -o $outfile.tmp # This should have the same behavior as defaultFlags
 elif [ "$test_type" == "IOFlags2" ]; then
   ./unstableAnonScript --outputFile $outfile.tmp --inputFiles $outfile $outfile
 elif [ "$test_type" == "csv" ]; then
@@ -18,14 +18,14 @@ elif [ "$test_type" == "numFiles" ]; then
   ./unstableAnonScript -i $outfile -o $outfile.tmp --numFiles
 elif [ "$test_type" == "sort" ]; then
   ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted
-elif [ "$test_type" == "top10" ]; then
-  ./unstableAnonScript -i $outfile -o $outfile.tmp --topX 10
+elif [ "$test_type" == "top5" ]; then
+  ./unstableAnonScript -i $outfile -o $outfile.tmp --topX 5
 elif [ "$test_type" == "sortNumFiles" ]; then
   ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --numFiles
-elif [ "$test_type" == "sortTop10" ]; then
-  ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --topX 10
+elif [ "$test_type" == "sortTop5" ]; then
+  ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --topX 5
 elif [ "$test_type" == "all1" ]; then
-  ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --numFiles --topX=10
+  ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --numFiles --topX=1
 elif [ "$test_type" == "all2" ]; then
   ./unstableAnonScript -i $outfile -o $outfile.tmp --sorted --sorted --numFiles -x 10 -d
 elif [ "$test_type" == "all3" ]; then

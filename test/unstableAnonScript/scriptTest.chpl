@@ -1,187 +1,101 @@
-// Test code copied from the following files:
-// test/unstable/rangeUnboundedEnumBoolFirstLast.chpl
-// test/unstable/llvmMetadata.chpl
-// test/unstable/blockDistArgs.chpl
-// test/unstable/BigInteger/unstableDiv2Exp.chpl
-// test/unstable/unstableScans.chpl
-// test/unstable/Math/unstableConstants.chpl
+// Creating many unstable keywords that are used so we get an unstable warning
 
-
-// Dummy config consts used by prediff to differentiate .good
 config const testType = "";
 
-// test/unstable/rangeUnboundedEnumBoolFirstLast.chpl
-enum color {red, green, blue};
-use color;
+@unstable("constx is unstable. Please use consty")
+const constx = 1;
+const consty = 2;
 
+writeln(constx);
+writeln(consty);
 
-// Cast a range such that the stride is not known at compile time
-proc toAny(r) do return r: range(r.idxType, r.bounds, strideKind.any);
+@unstable("paramx is unstable please use paramy")
+config param paramx: bool = false;
+config param paramy: bool = false;
+writeln(paramx);
+writeln(paramy);
 
+@unstable("procx is unstable.")
+proc procx() {
+  writeln("Hello from procx");
+}
+procx();
 
-inline proc testRange(r){
-  // Test first last of the range
-  // Also test the same range when the stride is not known at compile time
-  writeln(r);
-  writeln("Has First ", r.hasFirst());
-  writeln("Has Last ", r.hasLast());
-  writeln("Is empty: ", r.isEmpty());
-  if !r.isEmpty() {
-    writeln("First ", r.first);
-    writeln("Last ", r.last);
+@unstable("recordx is unstable.")
+record recordx {
+  @unstable("fieldx is unstable.")
+  var fieldx: int;
+
+  @unstable("methodx is unstable.")
+  proc methodx() {
+    writeln("Hello from methodx");
   }
-  var rAny = toAny(r);
-  writeln("Any Has First ", rAny.hasFirst());
-  writeln("Any Has Last ", rAny.hasLast());
-  writeln("Any Is empty: ", rAny.isEmpty());
-  if !r.isEmpty() {
-    writeln("Any First ", rAny.first);
-    writeln("Any Last ", rAny.last);
+}
+var y : recordx;
+y.methodx();
+writeln(y.fieldx);
+
+@unstable("modulex is unstable.")
+module modulex {
+  @unstable("procx is unstable.")
+  proc procx() {
+    writeln("Hello from procx");
   }
 }
 
-var rgb = red..blue;
-var rdd = red..;
-var ddb = ..blue;
-var dd: range(color, boundKind.neither);
-var negrgb = red..blue by -1;
-var negrdd = red.. by -1;
-var negddb = ..blue by -1;
-var negdd = dd by -1;
-var rdd2 = rdd by 2;
-var negrdd2 = rdd by -2;
-var ddb2 = ddb by 2;
-var negddb2 = ddb by -2;
-var bdd2ag = blue.. by 2 align green;
-var ddr2ag = ..red by 2 align green;
-var ddg2ab = ..green by 2 align blue;
-var ddg3ab = ..green by 3 align blue;
+modulex.procx();
 
-testRange(rgb);
-testRange(rdd);
-testRange(ddb);
-testRange(dd);
-testRange(negrgb);
-testRange(negrdd);
-testRange(negddb);
-testRange(negdd);
-testRange(rdd2);
-testRange(negrdd2);
-testRange(ddb2);
-testRange(negddb2);
-testRange(bdd2ag);
-testRange(ddr2ag);
-testRange(ddg2ab);
-testRange(ddg3ab);
+// Perform some random operations using the unstable keywords and methods
+// Use these unstable keywords and methods defined above in multiple ways
 
+var z : recordx;
+z.fieldx = consty;
+z.methodx();
+writeln(z.fieldx);
 
-{
-var ft = false..true;
-var fdd = false..;
-var ddt = ..true;
-var dd: range(bool, boundKind.neither);
-var negft = false..true by -1;
-var negfdd = false.. by -1;
-var negddt = ..true by -1;
-var negdd = dd by -1;
-var fdd2 = fdd by 2;
-var negfdd2 = fdd by -2;
-var ddt2 = ddt by 2;
-var negddt2 = ddt by -2;
-var tdd2af = true .. by 2 align false;
-var ddf2at = ..false by 2 align true;
-
-
-testRange(ft);
-testRange(fdd);
-testRange(ddt);
-testRange(dd);
-testRange(negft);
-testRange(negfdd);
-testRange(negddt);
-testRange(negdd);
-testRange(fdd2);
-testRange(negfdd2);
-testRange(ddt2);
-testRange(negddt2);
-testRange(tdd2af);
-testRange(ddf2at);
+if paramx {
+  procx();
+} else {
+  y.fieldx = constx;
+  z.methodx();
 }
 
+// Using unstable keywords and methods in multiple ways
+// 1. Using unstable constx and consty to perform arithmetic operations
+var a = constx + consty;
+var b = constx * consty;
+var c = constx / consty;
+var d = constx - consty;
 
-// test/unstable/llvmMetadata.chpl
-proc saxpy(a: ?elmType, X: [?d] a.type, Y: X.type) {
-  var R: X.type = 0;
+writeln(a);
+writeln(b);
+writeln(c);
+writeln(d);
 
-  // by setting "llvm.loop.isvectorized", the vectorizer will not run on this loop
-  // it thinks the loop is already vectorized
-  // this means assertVectorized will always assert true even if optimizations improve
-  // this makes the test less fragile
-
-  @llvm.assertVectorized()
-  @llvm.metadata(("llvm.loop.isvectorized", true))
-  foreach (r, x, y) in zip(R, X, Y) {
-    r = a*x + y;
-  }
-
-  return R;
+// 2. Using unstable paramx to control program flow
+if paramx {
+  writeln("paramx is true");
+} else {
+  writeln("paramx is false");
 }
 
+if paramy {
+  writeln("paramy is true");
+} else {
+  writeln("paramy is false");
+}
 
-// test/unstable/blockDistArgs.chpl
-var X, Y: [1..16] real = 1..16;
-var R = saxpy(2.0, X, Y);
-writeln(R);
+// 3. Using unstable procx to perform some action
+procx();
 
-use DSIUtil;
-use BlockDist;
-
-const Space = {1..100, 1..100};
-
-const validDist = new blockDist(Space, Locales);
-
-const badDist1 = new blockDist(Space, dataParTasksPerLocale=getDataParTasksPerLocale());
-const badDist2 = new blockDist(Space, dataParIgnoreRunningTasks=getDataParIgnoreRunningTasks());
-const badDist3 = new blockDist(Space, dataParMinGranularity=getDataParMinGranularity());
-const badDist4 = new blockDist(Space, rank=Space.rank);
-const badDist5 = new blockDist(Space, idxType=Space.idxType);
-const badDist6 = new blockDist(Space, sparseLayoutType=unmanaged DefaultDist);
+// 4. Using unstable recordx and its fieldx and methodx to perform some action
+var r : recordx;
+r.fieldx = constx;
+r.methodx();
+writeln(r.fieldx);
 
 
-// test/unstable/BigInteger/unstableDiv2Exp.chpl
-use BigInteger;
-
-var x: bigint = 6;
-var res: bigint;
-div2Exp(res, x, 2);
-writeln(res);
-rem2Exp(res, x, 2);
-writeln(res);
-
-// test/unstable/unstableScans.chpl
-var A: [1..10] int = 1..10;
-
-var B = + scan A;
-var C = + scan [a in A] a;
-var D = + scan A[1..10];
-var E = maxloc scan zip(A, A.domain);
-
-writeln(A);
-writeln(B);
-writeln(C);
-writeln(D);
-writeln(E);
-
-
-// test/unstable/Math/unstableConstants.chpl
-use Math;
-
-writeln(isClose(halfPi, pi/2));     // Should trigger for halfPi
-writeln(isClose(quarterPi, pi/4));  // Should trigger for quarterPi
-writeln(isClose(reciprPi, 1/pi));   // Should trigger for reciprPi
-// Should trigger for twiceReciprPi
-writeln(isClose(twiceReciprPi, 2/pi));
-// Should trigger for twiceReciprSqrtPi
-writeln(isClose(twiceReciprSqrtPi, 2/sqrt(pi)));
-writeln(isClose(sqrt2, sqrt(2)));   // Should trigger for sqrt2
-writeln(isClose(reciprSqrt2, 1/sqrt(2))); // Should trigger for reciprSqrt2
+// Write a line containing the word "unstable" to throw off the script
+writeln("This is an false unstable warning");
+writeln("This program is scriptTest.chpl");
+writeln("scriptTest.chpl:line:warning unstable"); // This should not be captured

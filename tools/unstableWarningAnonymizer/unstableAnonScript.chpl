@@ -38,7 +38,7 @@ OPTIONS:
   -c, --csv                     Write the output in csv format.
                                 Defaults to false, which writes in a pretty format
   -i, --inputFiles <INPUTFILE>  The files containing the warnings. Defaults to stdin
-  -n, --numFiles                Show the number of unique chapel files that had eachs warning.
+  -n, --numFiles                Show the number of unique chapel files that had each warning.
                                 Defaults to false
   -o, --outputFile <OUTPUTFILE> The file to write the output to. Defaults to stdout
   -d, --sorted                  Sort the output by descending frequency of each warning.
@@ -60,7 +60,6 @@ Example Usage:
 
 import IO;
 import Map.map as map;
-// import SortedMap.sortedMap as map;
 import Set.set;
 import Sort;
 import Regex.regex;
@@ -79,7 +78,7 @@ proc countUniqueWarnings(ref warningsMap: map(string, ?t), inputFileReader: IO.f
     // If so, add it to the map
     if !containsUnstableWarning(warning) then
       continue;
-    warning = anonmizeWarning(warning);
+    warning = anonymizeWarning(warning);
     if warningsMap.contains(warning) {
       warningsMap[warning][0] += 1;
     } else {
@@ -96,9 +95,9 @@ proc containsUnstableWarning(warning: string) : bool {
 }
 
 
-proc anonmizeWarning(warning: string) : string {
+proc anonymizeWarning(warning: string) : string {
   // Anonymize known warning messages that include variable names
-  // when so that it doens't reveal variable names or other impl detauls
+  // when so that it doesn't reveal variable names or other impl details
 
   const forallRef ="warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for";
   if warning.find(forallRef) != -1 then
@@ -107,10 +106,12 @@ proc anonmizeWarning(warning: string) : string {
   const typeName = "warning: using a type's name ";
   const typeNameUse = "in a 'use' statement to access its tertiary methods is an unstable feature";
   const typeNameImport = "in an 'import' statement to access its tertiary methods is an unstable feature";
-  if warning.find(typeName) != -1 && warning.find(typeNameUse) != -1 then
-    return typeName + typeNameUse;
-  if warning.find(typeName) != -1 && warning.find(typeNameImport) != -1 then
-    return typeName + typeNameImport;
+  if warning.find(typeName) != 1 {
+    if warning.find(typeNameUse) != -1 then
+      return typeName + typeNameUse;
+    else if warning.find(typeNameImport) != -1 then
+      return typeName + typeNameImport;
+  }
 
   const underscore = "warning: symbol names with leading underscores";
   const end = " are unstable";
@@ -131,10 +132,11 @@ proc anonmizeWarning(warning: string) : string {
 inline proc prettyPrintArr(arr : [] (string, int, int), writer: IO.fileWriter(?), fileCount: bool){
   for a in arr {
     const grammar = if a[1] < 2 then " instance of \"" else " instances of \"";
-    const files = if fileCount then
-                  "\" across " + a[2] :string + if a[2] < 2 then
-                  " file" else " files"
-                  else "\"";
+    const files;
+    if fileCount {
+      const plurality = if a[2] < 2 then " file" else " files";
+      files = "\" across " + a[2] :string + plurality;
+    } else files = "\"";
     writer.writeln(a[1], grammar, a[0], files);
   }
 }
@@ -143,9 +145,7 @@ inline proc prettyPrintArr(arr : [] (string, int, int), writer: IO.fileWriter(?)
 inline proc csvPrintArr(arr : [] (string, int, int), writer: IO.fileWriter(?), fileCount: bool){
   writer.writeln("warning", ",", "count", if fileCount then ",uniqueFiles" else "");
   for a in arr {
-    const files = if fileCount then
-                  "," + a[2]:string
-                  else "";
+    const files = if fileCount then "," + a[2]:string else "";
     writer.writeln("\"", a[0], "\"", ",", a[1], files);
   }
 }
@@ -153,19 +153,19 @@ inline proc csvPrintArr(arr : [] (string, int, int), writer: IO.fileWriter(?), f
 // Comparator to sort our array representation of the map
 // by the number of occurences of each warning
 record OccurenceComparator {}
-// a and b will be (string, int, int)
-proc OccurenceComparator.compare(a, b) { return b[1] - a[1] ; } // Reverse sort
+proc OccurenceComparator.compare(a:(string, int, int), b:(string, int, int)){
+  return b[1] - a[1];  // Reverse sort
+}
 
 record WarningComparator {}
-proc WarningComparator.key(a) { return a[0]; }
+proc WarningComparator.key(a:(string, int, int)) { return a[0]; }
 
 proc convertMapToArray(const m: map(string, ?t), sorted: bool, topX: int) where t == (int, set(string)){
   var arr : [0..<m.size] (string, int, int);
-  var i = 0;
-  for key in m.keys() {
-    arr[i] = (key, m[key][0], m[key][1].size); // We don't need to save the entire list
-                                        // of fileNames at this point, just the numer is enough
-    i += 1;
+  for (a, key) in zip(arr,m.keys()) {
+    // We don't need to save the entire list
+    // of fileNames at this point, just the size is enough
+    a = (key, m[key][0], m[key][1].size);
   }
   if sorted {
     var comp : OccurenceComparator;
@@ -174,7 +174,7 @@ proc convertMapToArray(const m: map(string, ?t), sorted: bool, topX: int) where 
     var comp : WarningComparator;
     Sort.sort(arr, comparator=comp);
   }
-  if topX > 0 then
+  if topX > 0 && arr.size > topX then
     return arr[0..<topX];
   return arr;
 }
@@ -189,7 +189,7 @@ proc main(args:[]string) throws {
                             help="Write the output in csv format. Defaults to false, which writes in a pretty format");
   var numFilesArg = parser.addFlag(name="numFiles", defaultValue=false,
                             opts = ["-n", "--numFiles"],
-                            help="Show the number of unique chapel files that had eachs warning. Defaults to false");
+                            help="Show the number of unique chapel files that had each warning. Defaults to false");
   var sortArg = parser.addFlag(name="sorted", defaultValue=false,
                             opts = ["-d", "--sorted"], // -s is reserved for configs, so we use -d
                             help="Sort the output by descending frequency of each warning. Defaults to false, which sorts by the warning message");

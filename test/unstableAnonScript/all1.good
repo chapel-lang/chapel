@@ -1,10 +1,1 @@
-80 instances of "warning: range.isEmpty() is unstable for unbounded ranged over an enum or bool" across 1 file
-16 instances of "warning: range.hasFirst() is unstable for a range over an enum or bool if it has a positive stride and no low bound" across 1 file
-14 instances of "warning: range.hasLast() is unstable for a range over an enum or bool if it has a positive stride and no high bound" across 1 file
-13 instances of "warning: range.first is unstable for a range over an enum or bool if it has a positive stride and no low bound" across 1 file
-12 instances of "warning: range.hasFirst() is unstable for a range over an enum or bool if it has a negative stride and no high bound" across 1 file
-12 instances of "warning: range.last is unstable for a range over an enum or bool if it has a positive stride and no high bound" across 1 file
-12 instances of "warning: range.hasLast() is unstable for a range over an enum or bool if it has a negative stride and no low bound" across 1 file
-12 instances of "warning: range.first is unstable for a range over an enum or bool if it has a negative stride and no high bound" across 1 file
-12 instances of "warning: range.last is unstable for a range over an enum or bool if it has a negative stride and no low bound" across 1 file
-6 instances of "warning: passing arguments other than 'boundingBox' and 'targetLocales' to 'blockDist' is currently unstable" across 1 file
+7 instances of "warning: constx is unstable. Please use consty" across 1 file
