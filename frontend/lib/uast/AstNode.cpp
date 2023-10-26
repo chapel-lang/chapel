@@ -550,7 +550,7 @@ void AstNode::serialize(Serializer& ser) const {
   ser.writeVInt(attributeGroupChildNum_);
   // id_ not serialized; it is recomputed after reading
   serializeInner(ser);
-  ser.write(children_);
+  serializeChildren(ser);
   ser.endAst();
 }
 
@@ -562,8 +562,32 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   // id_ not deserialized; it is recomputed after reading
 }
 
+void AstNode::serializeChildren(Serializer& ser) const {
+  // count the number of children ignoring comments
+  uint64_t count = 0;
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      count++;
+    }
+  }
+
+  // write the count
+  ser.writeVU64(count);
+
+  // store the children ignoring comments
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      child->serialize(ser);
+    }
+  }
+}
+
 void AstNode::deserializeChildren(Deserializer& des) {
-  children_ = des.read<AstList>();
+  uint64_t len = des.readVU64();
+  children_.resize(len);
+  for (uint64_t i = 0; i < len; i++) {
+    children_[i] = deserializeWithoutIds(des);
+  }
 }
 
 owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {

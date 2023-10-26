@@ -142,6 +142,9 @@ class AstNode {
       by deserializing the children. */
   void deserializeChildren(Deserializer& des);
 
+  /** Serializes the children, but skips comments */
+  void serializeChildren(Serializer& ser) const;
+
   // Quick way to return an already exhausted iterator.
   template <typename T>
   AstListIteratorPair<T> emptyIterator() const {
