@@ -99,7 +99,8 @@ chapel-py-venv: install-chpldeps
 	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
 	$(PIP) install --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
 	  --target $(CHPL_VENV_CHPLDEPS) \
-	  -e $(CHPL_MAKE_HOME)/tools/chapel-py
+	  -e $(CHPL_MAKE_HOME)/tools/chapel-py \
+	  -r $(CHPL_VENV_CHPLCHECK_REQUIREMENTS_FILE)
 
 install-requirements: install-chpldeps
 

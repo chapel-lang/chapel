@@ -27,6 +27,7 @@ import sys
 import argparse
 from driver import LintDriver
 from rules import register_rules
+from lsp import run_lsp
 
 def print_violation(node, name):
     location = node.location()
@@ -46,12 +47,7 @@ def main():
     register_rules(driver)
 
     if args.lsp:
-        try:
-            from lsp import run_lsp
-            run_lsp(driver)
-        except ModuleNotFoundError:
-            print("language server support relies on pygls. please install it using pip.")
-            exit(1)
+        run_lsp(driver)
         return
 
     for (filename, context) in chapel.files_with_contexts(args.filenames):
