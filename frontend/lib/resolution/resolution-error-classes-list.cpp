@@ -62,6 +62,10 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
+static const char* nilabilityStr(const types::ClassTypeDecorator& dec) {
+  return dec.isNilable() ? "nilable" : "non-nilable";
+}
+
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
 //
@@ -690,6 +694,109 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForLocation(outerDecl);
   wr.note(id, "field declared here:");
   wr.codeForDef(id);
+}
+
+void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto call = node->toCall();
+  auto& ci = std::get<resolution::CallInfo>(info);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info);
+
+  wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
+  wr.code(node);
+
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
+  for (auto& candidate : rejected) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
+    auto reason = candidate.reason();
+    wr.message("");
+    if (reason == resolution::FAIL_CANNOT_PASS &&
+        /* skip printing detailed info here because computing the formal-actual
+           map will go poorly with an unknown formal. */
+        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+      auto fn = candidate.initialForErr();
+      resolution::FormalActualMap fa(fn, ci);
+      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto formalDecl = badPass.formal()->toNamedDecl();
+      const uast::AstNode* actualExpr = nullptr;
+      if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
+        actualExpr = call->actual(badPass.actualIdx());
+      }
+
+      wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
+      wr.code(fn->id(), { formalDecl });
+
+      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      if (actualExpr) {
+        wr.code(actualExpr, { actualExpr });
+      }
+
+      auto formalReason = candidate.formalReason();
+      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
+        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
+        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
+
+        wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
+                   "but the actual is ", nilabilityStr(actualDec), ".");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
+        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
+        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
+
+        wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
+      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
+        wr.message("Formals with kind '", badPass.formalType().kind(),
+                   "' expect the actual to be a subtype, but '", badPass.actualType().type(),
+                   "' is not a subtype of '", badPass.formalType().type(), "'.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        wr.message("A tuple with ", actualTup->numElements(),
+                   " elements cannot be passed to a tuple formal with ",
+                   formalTup->numElements(), " elements.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
+        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
+
+        wr.message("A formal that ", formalStr, " a star tuple cannot accept an actual actual that ", actualStr, ".");
+      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      }
+    } else {
+      const char* reasonStr = nullptr;
+      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+        reasonStr = "the provided actuals could not be mapped to its formals:";
+      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+        reasonStr = "the number of varargs was incorrect:";
+      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
+        reasonStr = "the 'where' clause evaluated to 'false':";
+      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
+        if (ci.isParenless()) {
+          reasonStr = "it is parenful, but the call was parenless:";
+        } else {
+          reasonStr = "it is parenless, but the call was parenful:";
+        }
+      }
+      if (!reasonStr) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+      } else {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because ", reasonStr);
+      }
+      wr.code(candidate.idForErr());
+    }
+  }
+
+  if (printCount < rejected.size()) {
+    wr.message("");
+    wr.note(locationOnly(node), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
+  }
 }
 
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {

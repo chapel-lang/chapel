@@ -100,7 +100,7 @@ void CompositeType::stringify(std::ostream& ss,
     bool emittedField = false;
     ss << "(";
 
-    if (superType != nullptr) {
+    if (superType != nullptr && stringKind != StringifyKind::CHPL_SYNTAX) {
       ss << "super:";
       superType->stringify(ss, stringKind);
       emittedField = true;

@@ -435,16 +435,14 @@ static void forwardForwardHelper(std::string stmt, bool isVar = false) {
   unsigned int numExpected = isVar ? 3 : 2;
   assert(guard.numErrors() == numExpected);
 
-  auto first = "Cannot resolve call to 'bar': no matching candidates";
-  assert(guard.error(0)->message() == first);
+  assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
 
   if (isVar) {
     // TODO: Why the extra message in the var case?
-    assert(guard.error(1)->message() == first);
+    assert(guard.error(1)->type() == chpl::NoMatchingCandidates);
   }
 
-  auto second = "Cannot resolve call to 'foo': no matching candidates";
-  assert(guard.error(guard.numErrors()-1)->message() == second);
+  assert(guard.error(guard.numErrors()-1)->type() == chpl::NoMatchingCandidates);
 
   guard.realizeErrors();
 }

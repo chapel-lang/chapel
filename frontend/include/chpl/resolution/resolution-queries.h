@@ -197,13 +197,11 @@ const TypedFnSignature* typeConstructorInitial(Context* context,
    * the result of typedSignatureInitial,
    * a CallInfo describing the types at the call site, and
    * a point-of-instantiation scope representing the POI scope of the call
-
-  Returns nullptr if the instantiation failed.
  */
-const TypedFnSignature* instantiateSignature(Context* context,
-                                             const TypedFnSignature* sig,
-                                             const CallInfo& call,
-                                             const PoiScope* poiScope);
+ApplicabilityResult instantiateSignature(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope);
 
 /**
   Compute a ResolvedFunction given a TypedFnSignature.
@@ -318,7 +316,8 @@ filterCandidatesInstantiating(Context* context,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result);
+                              std::vector<const TypedFnSignature*>& result,
+                              std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a uast::Call, a CallInfo representing the call, a Scope representing the
@@ -333,7 +332,8 @@ CallResolutionResult resolveCall(Context* context,
                                  const uast::Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
-                                 const PoiScope* inPoiScope);
+                                 const PoiScope* inPoiScope,
+                                 std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Similar to resolveCall, but handles the implicit scope provided by a method.
@@ -348,7 +348,8 @@ CallResolutionResult resolveCallInMethod(Context* context,
                                          const CallInfo& ci,
                                          const Scope* inScope,
                                          const PoiScope* inPoiScope,
-                                         types::QualifiedType implicitReceiver);
+                                         types::QualifiedType implicitReceiver,
+                                         std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Given a CallInfo representing a call, a Scope representing the
@@ -360,7 +361,8 @@ CallResolutionResult resolveGeneratedCall(Context* context,
                                           const uast::AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
-                                          const PoiScope* inPoiScope);
+                                          const PoiScope* inPoiScope,
+                                          std::vector<ApplicabilityResult>* rejected = nullptr);
 
 /**
   Similar to resolveGeneratedCall but handles the implicit scope

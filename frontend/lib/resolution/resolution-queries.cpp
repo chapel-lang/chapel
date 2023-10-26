@@ -1426,10 +1426,10 @@ static bool ensureBodyIsResolved(Context* context, const CallInfo& ci,
   return false;
 }
 
-const TypedFnSignature* instantiateSignature(Context* context,
-                                             const TypedFnSignature* sig,
-                                             const CallInfo& call,
-                                             const PoiScope* poiScope) {
+ApplicabilityResult instantiateSignature(Context* context,
+                                         const TypedFnSignature* sig,
+                                         const CallInfo& call,
+                                         const PoiScope* poiScope) {
   // Performance: Should this query use a similar approach to
   // resolveFunctionByInfoQuery, where the PoiInfo and visibility
   // are consulted?
@@ -1461,7 +1461,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   auto faMap = FormalActualMap(sig, call);
   if (!faMap.isValid()) {
-    return nullptr;
+    return ApplicabilityResult::failure(sig->id(), FAIL_FORMAL_ACTUAL_MISMATCH);
   }
 
   // compute the substitutions
@@ -1520,7 +1520,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
       auto got = canPass(context, actualType, formalType);
       if (!got.passes()) {
         // Including past type information made this instantiation fail.
-        return nullptr;
+        return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
       }
       if (got.instantiates()) {
         // add a substitution for a valid value
@@ -1547,8 +1547,9 @@ const TypedFnSignature* instantiateSignature(Context* context,
           auto kind = resolveIntent(useType, /* isThis */ false, /* isInit */ false);
           auto useTypeConcrete = QualifiedType(kind, useType.type(), useType.param());
 
-          if (!canPass(context, actualType, useTypeConcrete).passes()) {
-            return nullptr;
+          auto got = canPass(context, actualType, useTypeConcrete);
+          if (!got.passes()) {
+            return ApplicabilityResult::failure(sig, got.reason(), entry.formalIdx());
           }
         }
       }
@@ -1643,7 +1644,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     auto passResult = canPass(context, checkType, qFormalType);
     if (!passResult.passes()) {
       // Type query constraints were not satisfied
-      return nullptr;
+      return ApplicabilityResult::failure(sig, passResult.reason(), entry.formalIdx());
     }
 
     if (fn != nullptr && fn->isMethod() && fn->thisFormal() == formal) {
@@ -1675,7 +1676,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
 
   // use the existing signature if there were no substitutions
   if (substitutions.size() == 0) {
-    return sig;
+    return ApplicabilityResult::success(sig);
   }
 
   std::vector<types::QualifiedType> formalTypes;
@@ -1686,7 +1687,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     for (auto formal : fn->formals()) {
       if (auto varArgFormal = formal->toVarArgFormal()) {
         if (!varArgCountMatch(varArgFormal, r)) {
-          return nullptr;
+          return ApplicabilityResult::failure(sig->id(), FAIL_VARARG_MISMATCH);
         }
       }
     }
@@ -1776,7 +1777,7 @@ const TypedFnSignature* instantiateSignature(Context* context,
     }
   }
 
-  return result;
+  return ApplicabilityResult::success(result);
 }
 
 static const owned<ResolvedFunction>&
@@ -2188,13 +2189,13 @@ isUntypedSignatureApplicable(Context* context,
 }
 
 // given a typed function signature, determine if it applies to a call
-static bool
+static ApplicabilityResult
 isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
   if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
-    return false;
+    return ApplicabilityResult::failure(tfs->id(), /* TODO */ FAIL_CANDIDATE_OTHER);
   }
 
   // Next, check that the types are compatible
@@ -2227,7 +2228,7 @@ isInitialTypedSignatureApplicable(Context* context,
         got = canPass(context, actualType, formalType);
       }
       if (!got.passes()) {
-        return false;
+        return ApplicabilityResult::failure(tfs, got.reason(), entry.formalIdx());
       }
     }
   }
@@ -2236,22 +2237,22 @@ isInitialTypedSignatureApplicable(Context* context,
     const TupleType* tup = varArgType.type()->toTupleType();
     if (tup != nullptr && tup->isVarArgTuple() &&
         tup->isKnownSize() && numVarArgActuals != tup->numElements()) {
-      return false;
+      return ApplicabilityResult::failure(tfs->id(), FAIL_VARARG_MISMATCH);
     }
   }
 
   // check that the where clause applies
   auto whereResult = tfs->whereClauseResult();
   if (whereResult == TypedFnSignature::WHERE_FALSE) {
-    return false;
+    return ApplicabilityResult::failure(tfs->id(), FAIL_WHERE_CLAUSE);
   }
 
-  return true;
+  return ApplicabilityResult::success(tfs);
 }
 
 // returns nullptr if the candidate is not applicable,
 // or the result of typedSignatureInitial if it is.
-static const TypedFnSignature*
+static ApplicabilityResult
 doIsCandidateApplicableInitial(Context* context,
                                const ID& candidateId,
                                const CallInfo& ci) {
@@ -2269,18 +2270,20 @@ doIsCandidateApplicableInitial(Context* context,
         parsing::idIsField(context, candidateId)) {
       // OK
     } else {
-      return nullptr;
+      return ApplicabilityResult::failure(candidateId, FAIL_PARENLESS_MISMATCH);
     }
   }
 
   if (isTypeDecl(tag)) {
     // calling a type - i.e. type construction
     const Type* t = initialTypeForTypeDecl(context, candidateId);
-    return typeConstructorInitial(context, t);
+    return ApplicabilityResult::success(typeConstructorInitial(context, t));
   }
 
   // not a candidate
-  if (ci.isMethodCall() && isFormal(tag)) return nullptr;
+  if (ci.isMethodCall() && isFormal(tag)) {
+    return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+  }
 
   if (isVariable(tag)) {
     if (ci.isParenless() && ci.isMethodCall() && ci.numActuals() == 1) {
@@ -2289,10 +2292,10 @@ doIsCandidateApplicableInitial(Context* context,
       CHPL_ASSERT(ct);
       auto containingType = isNameOfField(context, ci.name(), ct);
       CHPL_ASSERT(containingType != nullptr);
-      return fieldAccessor(context, containingType, ci.name());
+      return ApplicabilityResult::success(fieldAccessor(context, containingType, ci.name()));
     } else {
       // not a candidate
-      return nullptr;
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -2309,7 +2312,7 @@ doIsCandidateApplicableInitial(Context* context,
 
     auto got = canPass(context, recv, res.type());
     if (!got.passes()) {
-      return nullptr;
+      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
@@ -2317,44 +2320,66 @@ doIsCandidateApplicableInitial(Context* context,
   auto faMap = FormalActualMap(ufs, ci);
   auto ret = typedSignatureInitial(context, ufs);
 
-  if (!isInitialTypedSignatureApplicable(context, ret, faMap, ci)) {
-    return nullptr;
-  }
-
-  return ret;
+  return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
 
 // returns nullptr if the candidate is not applicable,
 // or the result of an instantiated typedSignature if it is.
-static const TypedFnSignature*
+static ApplicabilityResult
 doIsCandidateApplicableInstantiating(Context* context,
                                      const TypedFnSignature* typedSignature,
                                      const CallInfo& call,
                                      const PoiScope* poiScope) {
 
-  const TypedFnSignature* instantiated =
+  auto instantiated =
     instantiateSignature(context, typedSignature, call, poiScope);
 
-  if (instantiated == nullptr)
-    return nullptr;
+  if (!instantiated.success())
+    return instantiated;
 
   // check that the where clause applies
-  if (instantiated->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
-    return nullptr;
+  if (instantiated.candidate()->whereClauseResult() == TypedFnSignature::WHERE_FALSE)
+    return ApplicabilityResult::failure(typedSignature->id(), FAIL_WHERE_CLAUSE);
 
   return instantiated;
 }
 
-static const TypedFnSignature* const&
+static ApplicabilityResult const&
 isCandidateApplicableInitialQuery(Context* context,
                                   ID candidateId,
                                   CallInfo call) {
 
   QUERY_BEGIN(isCandidateApplicableInitialQuery, context, candidateId, call);
 
-  const TypedFnSignature* result =
+  auto result =
     doIsCandidateApplicableInitial(context, candidateId, call);
 
+  return QUERY_END(result);
+}
+
+static const std::pair<std::vector<const TypedFnSignature*>,
+                       std::vector<ApplicabilityResult>>&
+filterCandidatesInitialGatherRejected(Context* context,
+                                      std::vector<BorrowedIdsWithName> lst,
+                                      CallInfo call,
+                                      bool gatherRejected) {
+  QUERY_BEGIN(filterCandidatesInitialGatherRejected, context, lst, call, gatherRejected);
+
+  std::vector<const TypedFnSignature*> matching;
+  std::vector<ApplicabilityResult> rejected;
+
+  for (const BorrowedIdsWithName& ids : lst) {
+    for (const ID& id : ids) {
+      auto s = isCandidateApplicableInitialQuery(context, id, call);
+      if (s.success()) {
+        matching.push_back(s.candidate());
+      } else if (gatherRejected) {
+        rejected.push_back(s);
+      }
+    }
+  }
+
+  auto result = std::make_pair(std::move(matching), std::move(rejected));
   return QUERY_END(result);
 }
 
@@ -2362,30 +2387,9 @@ const std::vector<const TypedFnSignature*>&
 filterCandidatesInitial(Context* context,
                         std::vector<BorrowedIdsWithName> lst,
                         CallInfo call) {
-  QUERY_BEGIN(filterCandidatesInitial, context, lst, call);
-
-  std::vector<const TypedFnSignature*> result;
-
-  for (const BorrowedIdsWithName& ids : lst) {
-    for (const ID& id : ids) {
-      const TypedFnSignature* s =
-        isCandidateApplicableInitialQuery(context, id, call);
-      if (s != nullptr) {
-        result.push_back(s);
-      }
-    }
-  }
-
-  return QUERY_END(result);
-}
-
-// TODO: remove this workaround now that the build uses
-// -Wno-dangling-reference
-static const std::vector<const TypedFnSignature*>&
-filterCandidatesInitialWrapper(Context* context,
-                               std::vector<BorrowedIdsWithName>&& lst,
-                               const CallInfo& call) {
-  return filterCandidatesInitial(context, std::move(lst), call);
+  auto& result = filterCandidatesInitialGatherRejected(context, std::move(lst),
+                                                       call, /* gatherRejected */ false);
+  return result.first;
 }
 
 void
@@ -2394,7 +2398,8 @@ filterCandidatesInstantiating(Context* context,
                               const CallInfo& call,
                               const Scope* inScope,
                               const PoiScope* inPoiScope,
-                              std::vector<const TypedFnSignature*>& result) {
+                              std::vector<const TypedFnSignature*>& result,
+                              std::vector<ApplicabilityResult>* rejected) {
 
   // Performance: Would it help to make this a query?
   // (I left it not as a query since it runs some other queries
@@ -2408,13 +2413,15 @@ filterCandidatesInstantiating(Context* context,
           pointOfInstantiationScope(context, inScope, inPoiScope);
       }
 
-      const TypedFnSignature* instantiated =
+      auto instantiated =
         doIsCandidateApplicableInstantiating(context,
                                              typedSignature,
                                              call,
                                              instantiationPoiScope);
-      if (instantiated != nullptr) {
-        result.push_back(instantiated);
+      if (instantiated.success()) {
+        result.push_back(instantiated.candidate());
+      } if (rejected) {
+        rejected->push_back(std::move(instantiated));
       }
     } else {
       // if it's already concrete, we already know it is a candidate.
@@ -2885,7 +2892,8 @@ resolveFnCallForTypeCtor(Context* context,
                                 ci,
                                 inScope,
                                 inPoiScope,
-                                candidates);
+                                candidates,
+                                /* rejected */ nullptr);
 
 
   ForwardingInfoVec forwardingInfo;
@@ -2929,7 +2937,7 @@ considerCompilerGeneratedCandidates(Context* context,
 
   // check if the initial signature matches
   auto faMap = FormalActualMap(tfs->untyped(), ci);
-  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci)) {
+  if (!isInitialTypedSignatureApplicable(context, tfs, faMap, ci).success()) {
     return;
   }
 
@@ -2945,10 +2953,11 @@ considerCompilerGeneratedCandidates(Context* context,
                                                            tfs,
                                                            ci,
                                                            poi);
-  CHPL_ASSERT(instantiated->untyped()->idIsFunction());
-  CHPL_ASSERT(instantiated->instantiatedFrom());
+  CHPL_ASSERT(instantiated.success());
+  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
+  CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
 
-  candidates.push_back(instantiated);
+  candidates.push_back(instantiated.candidate());
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -3114,7 +3123,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         const auto& initialCandidates =
-          filterCandidatesInitialWrapper(context, std::move(v), fci);
+          filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -3122,7 +3131,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      nonPoiCandidates);
+                                      nonPoiCandidates,
+                                      /* rejected */ nullptr);
 
         // update forwardingTo
         helpComputeForwardingTo(fci, start,
@@ -3151,7 +3161,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // filter without instantiating yet
         auto& initialCandidates =
-          filterCandidatesInitialWrapper(context, std::move(v), fci);
+          filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
         filterCandidatesInstantiating(context,
@@ -3159,7 +3169,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      poiCandidates);
+                                      poiCandidates,
+                                      /* rejected */ nullptr);
 
         // update forwardingTo
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
@@ -3228,7 +3239,8 @@ gatherAndFilterCandidates(Context* context,
                           const Scope* inScope,
                           const PoiScope* inPoiScope,
                           size_t& firstPoiCandidate,
-                          ForwardingInfoVec& forwardingInfo) {
+                          ForwardingInfoVec& forwardingInfo,
+                          std::vector<ApplicabilityResult>* rejected) {
   CandidatesVec candidates;
   CheckedScopes visited;
   firstPoiCandidate = 0;
@@ -3247,8 +3259,16 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, inScope, ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates =
-      filterCandidatesInitialWrapper(context, std::move(v), ci);
+    const auto& initialCandidatesAndRejections =
+      filterCandidatesInitialGatherRejected(context, std::move(v), ci, rejected != nullptr);
+    const auto& initialCandidates = initialCandidatesAndRejections.first;
+    const auto& initialRejections = initialCandidatesAndRejections.second;
+
+    if (rejected != nullptr) {
+      rejected->insert(rejected->end(),
+                       initialRejections.begin(),
+                       initialRejections.end());
+    }
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -3256,7 +3276,8 @@ gatherAndFilterCandidates(Context* context,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates);
+                                  candidates,
+                                  rejected);
   }
 
   // next, look for candidates using POI
@@ -3274,8 +3295,16 @@ gatherAndFilterCandidates(Context* context,
     auto v = lookupCalledExpr(context, curPoi->inScope(), ci, visited);
 
     // filter without instantiating yet
-    const auto& initialCandidates =
-      filterCandidatesInitialWrapper(context, std::move(v), ci);
+    const auto& initialCandidatesAndRejections =
+      filterCandidatesInitialGatherRejected(context, std::move(v), ci, rejected != nullptr);
+    const auto& initialCandidates = initialCandidatesAndRejections.first;
+    const auto& initialRejections = initialCandidatesAndRejections.second;
+
+    if (rejected != nullptr) {
+      rejected->insert(rejected->end(),
+                       initialRejections.begin(),
+                       initialRejections.end());
+    }
 
     // find candidates, doing instantiation if necessary
     filterCandidatesInstantiating(context,
@@ -3283,7 +3312,8 @@ gatherAndFilterCandidates(Context* context,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates);
+                                  candidates,
+                                  rejected);
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -3388,7 +3418,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
                                        const CallInfo& ci,
                                        const Scope* inScope,
                                        const PoiScope* inPoiScope,
-                                       PoiInfo& poiInfo) {
+                                       PoiInfo& poiInfo,
+                                       std::vector<ApplicabilityResult>* rejected) {
 
   // search for candidates at each POI until we have found candidate(s)
   size_t firstPoiCandidate = 0;
@@ -3396,7 +3427,8 @@ resolveFnCallFilterAndFindMostSpecific(Context* context,
   CandidatesVec candidates = gatherAndFilterCandidates(context, call, ci,
                                                        inScope, inPoiScope,
                                                        firstPoiCandidate,
-                                                       forwardingInfo);
+                                                       forwardingInfo,
+                                                       rejected);
 
   // * find most specific candidates / disambiguate
   // * check signatures
@@ -3418,7 +3450,8 @@ CallResolutionResult resolveFnCall(Context* context,
                                    const Call* call,
                                    const CallInfo& ci,
                                    const Scope* inScope,
-                                   const PoiScope* inPoiScope) {
+                                   const PoiScope* inPoiScope,
+                                   std::vector<ApplicabilityResult>* rejected) {
   PoiInfo poiInfo;
   MostSpecificCandidates mostSpecific;
 
@@ -3437,7 +3470,7 @@ CallResolutionResult resolveFnCall(Context* context,
     // * note any most specific candidates from POI in poiInfo.
     mostSpecific = resolveFnCallFilterAndFindMostSpecific(context, call, ci,
                                                           inScope, inPoiScope,
-                                                          poiInfo);
+                                                          poiInfo, rejected);
   }
 
   // fully resolve each candidate function and gather poiScopesUsed.
@@ -3582,7 +3615,8 @@ CallResolutionResult resolveCall(Context* context,
                                  const Call* call,
                                  const CallInfo& ci,
                                  const Scope* inScope,
-                                 const PoiScope* inPoiScope) {
+                                 const PoiScope* inPoiScope,
+                                 std::vector<ApplicabilityResult>* rejected) {
   if (call->isFnCall() || call->isOpCall()) {
     // see if the call is handled directly by the compiler
     QualifiedType tmpRetType;
@@ -3597,7 +3631,7 @@ CallResolutionResult resolveCall(Context* context,
     }
 
     // otherwise do regular call resolution
-    return resolveFnCall(context, call, ci, inScope, inPoiScope);
+    return resolveFnCall(context, call, ci, inScope, inPoiScope, rejected);
   } else if (auto prim = call->toPrimCall()) {
     return resolvePrimCall(context, prim, ci, inScope, inPoiScope);
   } else if (auto tuple = call->toTuple()) {
@@ -3616,35 +3650,37 @@ CallResolutionResult resolveCallInMethod(Context* context,
                                          const CallInfo& ci,
                                          const Scope* inScope,
                                          const PoiScope* inPoiScope,
-                                         QualifiedType implicitReceiver) {
+                                         QualifiedType implicitReceiver,
+                                         std::vector<ApplicabilityResult>* rejected) {
 
   // If there is an implicit receiver and ci isn't written as a method,
   // construct a method call and use that instead. If that resolves,
   // it takes precedence over functions.
   if (shouldAttemptImplicitReceiver(ci, implicitReceiver)) {
     auto methodCi = CallInfo::createWithReceiver(ci, implicitReceiver);
-    auto ret = resolveCall(context, call, methodCi, inScope, inPoiScope);
+    auto ret = resolveCall(context, call, methodCi, inScope, inPoiScope, rejected);
     if (ret.mostSpecific().foundCandidates()) {
       return ret;
     }
   }
 
   // otherwise, use normal resolution
-  return resolveCall(context, call, ci, inScope, inPoiScope);
+  return resolveCall(context, call, ci, inScope, inPoiScope, rejected);
 }
 
 CallResolutionResult resolveGeneratedCall(Context* context,
                                           const AstNode* astForErr,
                                           const CallInfo& ci,
                                           const Scope* inScope,
-                                          const PoiScope* inPoiScope) {
+                                          const PoiScope* inPoiScope,
+                                          std::vector<ApplicabilityResult>* rejected) {
   // see if the call is handled directly by the compiler
   QualifiedType tmpRetType;
   if (resolveFnCallSpecial(context, astForErr, ci, tmpRetType)) {
     return CallResolutionResult(std::move(tmpRetType));
   }
   // otherwise do regular call resolution
-  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope);
+  return resolveFnCall(context, /* call */ nullptr, ci, inScope, inPoiScope, rejected);
 }
 
 CallResolutionResult

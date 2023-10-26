@@ -331,12 +331,31 @@ struct Resolver {
   //  * r.setMostSpecific
   //  * r.setPoiScope
   //  * r.setType
-  //  * issueErrorForFailedCallResolution if there was an error
   //  * poiInfo.accumulate
+  //
+  // Does not handle:
+  //
+  //  * issueErrorForFailedCallResolution if there was an error
+  //
+  // Instead, returns 'true' if an error needs to be issued.
+  bool handleResolvedCallWithoutError(ResolvedExpression& r,
+                                      const uast::AstNode* astForErr,
+                                      const CallInfo& ci,
+                                      const CallResolutionResult& c);
+  // Same as handleResolvedCallWithoutError, except actually issues the error.
   void handleResolvedCall(ResolvedExpression& r,
                           const uast::AstNode* astForErr,
                           const CallInfo& ci,
                           const CallResolutionResult& c);
+  // like handleResolvedCall, but prints the candidates that were rejected
+  // by the error in detail.
+  void handleResolvedCallPrintCandidates(ResolvedExpression& r,
+                                         const uast::Call* call,
+                                         const CallInfo& ci,
+                                         const Scope* scope,
+                                         const PoiScope* poiScope,
+                                         const types::QualifiedType& receiverType,
+                                         const CallResolutionResult& c);
   // like handleResolvedCall saves the call in associatedFns.
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,

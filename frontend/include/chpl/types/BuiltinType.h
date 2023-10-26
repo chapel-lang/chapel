@@ -69,6 +69,8 @@ class BuiltinType : public Type {
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
+
+  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const override;
 };
 
 // define the subclasses using macros and BuiltinTypeList.h
