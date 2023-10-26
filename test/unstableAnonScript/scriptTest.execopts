@@ -10,4 +10,4 @@
 --testType=sortTop5    # sortTop5.good
 --testType=all1         # all1.good
 --testType=all2         # all2.good
---testType=all3         # all3.good
+--testType=all3 --unstableConf         # all3.good

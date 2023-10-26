@@ -44,7 +44,8 @@ OPTIONS:
   -d, --sorted                  Sort the output by descending frequency of each warning.
                                 Defaults to false, which sorts by the warning message
   -x, --topX <TOPX>             Show the top X most frequent warnings. Implies --sorted.
-                                Defaults to showing all warnings
+                                Defaults to showing all warnings.
+                                In case of a tie for the last place, the warning that comes first in the sorted list is chosen
 
 
 
@@ -68,7 +69,7 @@ import ArgumentParser;
 proc countUniqueWarnings(ref warningsMap: map(string, ?t), inputFileReader: IO.fileReader(?)) where t == (int, set(string)){
   // A pattern of a typical warning line
   // Ex: filename.chpl:lineNumber: warning message blah
-  const warningRegex = new regex("(.*.chpl):\\d+: (.*)\n"); // Anything inside ( ) is a capture group
+  const warningRegex = new regex("(.*.chpl|<command-line arg>):\\d+: (.*)\n"); // Anything inside ( ) is a capture group
   var warning : string;
   var fileName: string;
   for (fullMatch, fileNameMatch, warningMatch) in inputFileReader.matches(warningRegex, captures=2) {
@@ -201,7 +202,8 @@ proc main(args:[]string) throws {
                             help="The file to write the output to. Defaults to stdout");
   var topXArg = parser.addOption(name="topX", numArgs=1,
                             opts = ["-x", "--topX"],
-                            help="Show the top X most frequent warnings. Implies --sorted. Defaults to showing all warnings");
+                            help="Show the top X most frequent warnings. Implies --sorted. Defaults to showing all warnings.\
+                            In case of a tie for the last place, the warning that comes first in the sorted list is chosen");
   parser.parseArgs(args);
 
   const inputFiles = inputFilesArg.values();

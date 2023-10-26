@@ -4,5 +4,5 @@ warning,count
 "warning: methodx is unstable.",4
 "warning: modulex is unstable.",1
 "warning: paramx is unstable please use paramy",3
-"warning: procx is unstable.",3
+"warning: procx is unstable.",2
 "warning: recordx is unstable.",3

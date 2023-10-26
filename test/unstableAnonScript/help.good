@@ -7,6 +7,7 @@ OPTIONS:
 	-n, --numFiles	Show the number of unique chapel files that had each warning. Defaults to false
 	-o, --outputFile <OUTPUTFILE>	The file to write the output to. Defaults to stdout
 	-d, --sorted	Sort the output by descending frequency of each warning. Defaults to false, which sorts by the warning message
-	-x, --topX <TOPX>	Show the top X most frequent warnings. Implies --sorted. Defaults to showing all warnings
+	-x, --topX <TOPX>	Show the top X most frequent warnings. Implies --sorted. Defaults to showing all warnings.
+                            In case of a tie for the last place, the warning that comes first in the sorted list is chosen
 
 
