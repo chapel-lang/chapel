@@ -15,8 +15,7 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-#GPU_SRCS = gpu-amd.c gpu-amd-reduce.cc
-GPU_SRCS = gpu-amd-reduce.cc gpu-amd.c 
+GPU_SRCS = gpu-amd-reduce.cc gpu-amd.c
 
 SRCS = $(GPU_SRCS)
 
