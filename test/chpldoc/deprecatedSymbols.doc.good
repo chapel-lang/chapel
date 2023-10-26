@@ -33,19 +33,19 @@ or
 
 .. data:: var a: string
 
-   There was documentation of this symbol 
-
    .. warning::
 
       a is deprecated
 
-.. data:: var b: string
+   There was documentation of this symbol 
 
-   This symbol also was documented 
+.. data:: var b: string
 
    .. warning::
 
       b is deprecated, use c instead
+
+   This symbol also was documented 
 
 .. data:: var c: string
 

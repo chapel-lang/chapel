@@ -53,11 +53,11 @@ or
 
 .. enum:: enum atomicSymbols { proton, electron, neutron }
 
-   There was documentation of this symbol 
-
    .. warning::
 
       atomicSymbols is deprecated
+
+   There was documentation of this symbol 
 
    .. enumconstant:: enum constant proton
 
@@ -67,11 +67,11 @@ or
 
 .. enum:: enum monsters { vampire, werewolf, ghost }
 
-   This symbol also was documented 
-
    .. warning::
 
       monsters is deprecated, use monsterMash instead
+
+   This symbol also was documented 
 
    .. enumconstant:: enum constant vampire
 
