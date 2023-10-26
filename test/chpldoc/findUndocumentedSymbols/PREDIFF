@@ -6,7 +6,7 @@ SCRIPT_OUTFILE=$TESTNAME.script.tmp
 TMPFILE=$OUTFILE.prediff.tmp
 
 
-SCRIPT=$CHPL_HOME/tools/undocumentedSymbols/findUndocumentedSymbols
+SCRIPT=$CHPL_HOME/tools/chpldoc/findUndocumentedSymbols
 PREDIFF_OPTS_FILE=$TESTNAME.prediffopts
 PREDIFF_OPTS=
 if [ -f $PREDIFF_OPTS_FILE ]; then

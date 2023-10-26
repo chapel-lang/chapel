@@ -26,4 +26,4 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \
-     $CHPL_HOME/tools/undocumentedSymbols/findUndocumentedSymbols.py "$@"
+     $CHPL_HOME/tools/chpldoc/findUndocumentedSymbols.py "$@"
