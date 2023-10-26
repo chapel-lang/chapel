@@ -22,7 +22,8 @@ warning: 'C.c' at missingDocsIgnoreDeprecated.chpl:13 is undocumented
 warning: 'U.a' at missingDocsIgnoreDeprecated.chpl:22 is undocumented
 warning: 'U.b' at missingDocsIgnoreDeprecated.chpl:23 is undocumented
 warning: 'M.a' at missingDocsIgnoreDeprecated.chpl:40 is undocumented
-warning: 'C.MultiDecl[a, b]' at missingDocsIgnoreDeprecated.chpl:11 is undocumented
+warning: 'C.a' at missingDocsIgnoreDeprecated.chpl:11 is undocumented
+warning: 'C.b' at missingDocsIgnoreDeprecated.chpl:11 is undocumented
 warning: 'E' at missingDocsIgnoreDeprecated.chpl:26 is undocumented
 warning: 'M.E' at missingDocsIgnoreDeprecated.chpl:41 is undocumented
 warning: 'A' at missingDocsIgnoreDeprecated.chpl:27 is undocumented

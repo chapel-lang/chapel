@@ -153,7 +153,7 @@ def is_docstring_comment(c: dyno.Comment) -> bool:
     return not c.text().startswith("//")
 
 
-def get_node_name(node: dyno.AstNode) -> str:
+def get_node_name(node: dyno.AstNode) -> List[str]:
     """
     get the name of a node, even when it may not have a `name()` method
 
@@ -164,38 +164,50 @@ def get_node_name(node: dyno.AstNode) -> str:
 
     """
 
-    def get_simple_node_name(node: dyno.AstNode) -> str:
-        name: str = None
+    def get_simple_node_names(node: dyno.AstNode) -> List[str]:
+        names: List[str] = []
         if hasattr(node, "name"):
-            name = node.name()
+            names.append(node.name())
         elif isinstance(node, dyno.MultiDecl):
-            name = "MultiDecl[" + ", ".join(c.name() for c in node) + "]"
+            names.extend(c.name() for c in node)
         else:
-            name = str(node)
-        return name
+            names.append(str(node))
+        return names
 
-    name = get_simple_node_name(node)
+    def get_single_name(node: dyno.AstNode) -> str:
+        names = get_simple_node_names(node)
+        if len(names) != 1:
+            print("Error: violated invariant")
+            exit(1)
+        return names[0]
 
-    # handles secondary methods
-    if (
-        hasattr(node, "this_formal")
-        and (this := node.this_formal())
-        and (typename := this.type_expression())
-    ):
-        aggregate_name = get_simple_node_name(typename)
-        name = f"{aggregate_name}.{name}"
-    # handles primary methods and fields
-    elif (p := node.parent()) and (
-        isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)
-    ):
-        aggregate_name = get_simple_node_name(p)
-        name = f"{aggregate_name}.{name}"
+    names_to_return = []
 
-    if (mod := get_module(node.parent())) and mod.kind() != "implicit":
-        module_name = mod.name()
-        name = f"{module_name}.{name}"
+    base_names = get_simple_node_names(node)
+    for base_name in base_names:
+        name = base_name
+        # handles secondary methods
+        if (
+            hasattr(node, "this_formal")
+            and (this := node.this_formal())
+            and (typename := this.type_expression())
+        ):
+            aggregate_name = get_single_name(typename)
+            name = f"{aggregate_name}.{name}"
+        # handles primary methods and fields
+        elif (p := node.parent()) and (
+            isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)
+        ):
+            aggregate_name = get_single_name(p)
+            name = f"{aggregate_name}.{name}"
 
-    return name
+        if (mod := get_module(node.parent())) and mod.kind() != "implicit":
+            module_name = mod.name()
+            name = f"{module_name}.{name}"
+
+        names_to_return.append(name)
+
+    return names_to_return
 
 
 def look_ahead(iterable, window=1):
@@ -338,9 +350,9 @@ def main(raw_args: List[str]) -> int:
             loc = sym.location()
             (line, col) = loc.start()
             path = os.path.relpath(loc.path(), curdir)
-            name = get_node_name(sym)
-
-            print(f"warning: '{name}' at {path}:{line} is undocumented")
+            names = get_node_name(sym)
+            for name in names:
+                print(f"warning: '{name}' at {path}:{line} is undocumented")
 
     return 0
 

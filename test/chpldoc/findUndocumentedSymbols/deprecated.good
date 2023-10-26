@@ -21,7 +21,8 @@ warning: 'C.c' at deprecated.chpl:18 is undocumented
 warning: 'U.a' at deprecated.chpl:29 is undocumented
 warning: 'U.b' at deprecated.chpl:30 is undocumented
 warning: 'M.a' at deprecated.chpl:52 is undocumented
-warning: 'C.MultiDecl[a, b]' at deprecated.chpl:16 is undocumented
+warning: 'C.a' at deprecated.chpl:16 is undocumented
+warning: 'C.b' at deprecated.chpl:16 is undocumented
 warning: 'E' at deprecated.chpl:34 is undocumented
 warning: 'M.E' at deprecated.chpl:53 is undocumented
 warning: 'A' at deprecated.chpl:35 is undocumented
