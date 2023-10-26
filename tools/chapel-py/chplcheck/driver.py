@@ -23,6 +23,11 @@ import chapel.core
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 def ignores_rule(node, rulename):
+    """
+    Given an AST node, check if it has an attribute telling it to silence
+    warnings for a given rule.
+    """
+
     ag = node.attribute_group()
 
     if ag is None: return False
@@ -37,15 +42,28 @@ def ignores_rule(node, rulename):
     return False
 
 class LintDriver:
+    """
+    Driver class containing the state and methods for linting. Among other
+    things, contains the rules for emitting warnings, as well as the
+    list of rules that should be silenced.
+
+    Provides the @driver.basic_rule and @driver.advanced_rule decorators
+    for registering new rules.
+    """
+
     def __init__(self):
         self.SilencedRules = []
         self.BasicRules = []
         self.AdvancedRules = []
 
     def silence_rules(self, *rules):
+        """
+        Tell the driver to silence / skip warning for the given rules.
+        """
+
         self.SilencedRules.extend(rules)
 
-    def should_check_rule(self, node, rulename):
+    def _should_check_rule(self, node, rulename):
         if rulename in self.SilencedRules:
             return False
 
@@ -54,46 +72,70 @@ class LintDriver:
 
         return True
 
-    def check_basic_rule(self, context, root, rule):
+    def _check_basic_rule(self, context, root, rule):
         (name, nodetype, func) = rule
-
-        if not self.should_check_rule(None, name):
-            return
 
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
+        if not self._should_check_rule(None, name):
+            return
+
         for (node, _) in chapel.each_matching(root, nodetype):
-            if not self.should_check_rule(node, name):
+            if not self._should_check_rule(node, name):
                 continue
 
             if not func(context, node):
                 yield (node, name)
 
-    def check_advanced_rule(self, context, root, rule):
+    def _check_advanced_rule(self, context, root, rule):
         (name, func) = rule
 
         # If we should ignore the rule no matter the node, no reason to run
         # a traversal and match the pattern.
-        if not self.should_check_rule(None, name):
+        if not self._should_check_rule(None, name):
             return
 
         for node in func(context, root):
             yield (node, name)
 
-    def basic_rule(self, nodetype):
+    def basic_rule(self, pat):
+        """
+        This method is a decorator factory for adding 'basic' rules to the
+        driver. A basic rule is a function returning a boolean that gets called
+        on any node that matches a pattern. If the function returns 'True', the
+        node is good, and no warning is emitted. However, if the function returns
+        'False', the node violates the rule.
+
+        The name of the decorated function is used as the name of the rule.
+        """
+
         def wrapper(func):
-            self.BasicRules.append((func.__name__, nodetype, func))
+            self.BasicRules.append((func.__name__, pat, func))
             return func
         return wrapper
 
     def advanced_rule(self, func):
+        """
+        This method is a decorator for adding 'advanced' rules to the driver.
+        An advanced rule is a function that gets called on a root AST node,
+        and is expected to traverse that AST to find places where warnings
+        need to be emitted.
+
+        The name of the decorated function is used as the name of the rule.
+        """
+
         self.AdvancedRules.append((func.__name__, func))
         return func
 
     def run_checks(self, context, asts):
+        """
+        Runs all the rules registered with this node, yielding warnings for
+        all non-silenced rules that are violated in the given ASTs.
+        """
+
         for ast in asts:
             for rule in self.BasicRules:
-                yield from self.check_basic_rule(context, ast, rule)
+                yield from self._check_basic_rule(context, ast, rule)
 
             for rule in self.AdvancedRules:
-                yield from self.check_advanced_rule(context, ast, rule)
+                yield from self._check_advanced_rule(context, ast, rule)
