@@ -413,6 +413,7 @@ _chpl ()
 --cpp-lines \
 --dead-code-elimination \
 --debug \
+--detailed-errors \
 --devel \
 --div-by-zero-checks \
 --dynamic \
@@ -471,6 +472,7 @@ _chpl ()
 --no-cpp-lines \
 --no-dead-code-elimination \
 --no-debug \
+--no-detailed-errors \
 --no-devel \
 --no-div-by-zero-checks \
 --no-dynamic-auto-local-access \
