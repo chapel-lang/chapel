@@ -22,7 +22,6 @@
 #define CHPL_TOOLS_CHPLDEF_LOGGER_H
 
 #include "misc.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/JSON.h"
 #include <chrono>
 #include <fstream>

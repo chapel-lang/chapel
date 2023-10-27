@@ -30,7 +30,6 @@
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/uast/AstNode.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/JSON.h"
 #include <chrono>
 #include <fstream>
