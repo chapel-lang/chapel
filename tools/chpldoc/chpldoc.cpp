@@ -1504,8 +1504,7 @@ struct RstResultBuilder {
           os_ << "\n";
           // TODO: Fix all this because why are we checking for specific node
           // types just to add a newline?
-          if (!textOnly_ && (node->isClass() || node->isRecord() ||
-                             node->isModule())) {
+          if (!textOnly_ && node->isModule()) {
             os_ << "\n";
           }
         }
