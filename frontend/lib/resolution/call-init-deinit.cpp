@@ -716,7 +716,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(type, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ type,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

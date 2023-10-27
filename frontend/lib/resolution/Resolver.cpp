@@ -1256,7 +1256,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         auto functionId = parsing::idToParentId(context, decl->id());
         auto aggregateId = parsing::idToParentId(context, functionId);
         auto parentType = typeForId(aggregateId, /* localGenericToUnknown */ true);
-        typeExprT = computeTypeDefaults(*this, parentType);
+        typeExprT = parentType;
       }
 
       // for 'this' formals of class type, adjust them to be borrowed, so

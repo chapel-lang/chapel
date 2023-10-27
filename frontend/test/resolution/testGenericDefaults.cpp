@@ -158,10 +158,114 @@ static void test4() {
   }
 }
 
+static void test5() {
+  std::string common = R"""(
+    operator =(ref lhs: int, rhs : int) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record R {
+      type T = int;
+      var field : T;
+
+      proc init(type T) {
+        this.T = T;
+        var val : T;
+        this.field = val;
+      }
+
+      proc foobar() {
+      }
+    }
+  )""";
+
+  {
+    // Test methods on generics with defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      proc blah(x: R(string)) {
+        x.foobar();
+      }
+
+      var r : R(string);
+      r.foobar();
+      blah(r);
+    )""";
+
+    auto m = parseModule(context, program);
+    resolveModule(context, m->id());
+  }
+  {
+    // Test passing to generic arguments with types that are generic-with-defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      //
+      // In this case, we have specified 'arg' to be generic, but the frontend
+      // still technically recognizes it as generic-with-defaults (at least at
+      // the time this test was created).
+      //
+      proc blah(arg: R(?)) {
+        return arg.field;
+      }
+
+      var a : R(string);
+      var x = blah(a);
+
+      var b : R(int);
+      var y = blah(b);
+    )""";
+
+    auto m = parseModule(context, program);
+    auto r = resolveModule(context, m->id());
+
+    auto x = findVariable(m, "x");
+    assert(r.byAst(x).type().type()->isStringType());
+
+    auto y = findVariable(m, "y");
+    assert(r.byAst(y).type().type()->isIntType());
+  }
+  {
+    // Test passing to generic arguments with types that are generic-with-defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      proc copy(arg) {
+        return arg;
+      }
+
+      var a : R(string);
+      var b = copy(a);
+    )""";
+
+    auto m = parseModule(context, program);
+    auto r = resolveModule(context, m->id());
+
+    auto a = findVariable(m, "a");
+    auto aType = r.byAst(a).type();
+    assert(aType.type()->isCompositeType());
+    auto subs = aType.type()->toCompositeType()->substitutions();
+    assert(subs.size() == 2);
+    for (auto pair : subs) {
+      assert(pair.second.type()->isStringType());
+    }
+
+    auto b = findVariable(m, "b");
+    auto bType = r.byAst(b).type();
+    assert(aType == bType);
+  }
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
+
   return 0;
 }

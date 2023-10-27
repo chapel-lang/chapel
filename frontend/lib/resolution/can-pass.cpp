@@ -217,10 +217,8 @@ static bool fitsInMantissaExponent(int mantissaWidth,
 static bool isConsideredGeneric(Type::Genericity g) {
   switch (g) {
     case Type::CONCRETE:
-    case Type::GENERIC_WITH_DEFAULTS:
-      // argument passing calculations think of generic with defaults
-      // as the same as concrete.
       return false;
+    case Type::GENERIC_WITH_DEFAULTS:
     case Type::GENERIC:
       return true;
     case Type::MAYBE_GENERIC:
