@@ -124,3 +124,33 @@ or
 
    This module is unstable
 
+.. default-domain:: chpl
+
+.. module:: UnstableMod3
+   :synopsis: Including modules with documentation 
+
+UnstableMod3
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod3;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod3;
+
+.. warning::
+
+   This module is unstable
+
+Including modules with documentation 
+
+.. data:: var x: int
+
+   Just a regular symbol to show how it interacts 
+
