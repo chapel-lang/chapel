@@ -308,16 +308,6 @@ void BuilderResult::serialize(Serializer& ser) const {
   ser.write(DYNO_BUILDER_RESULT_END_STR);
 }
 
-static void assignIDsFromTree(llvm::DenseMap<ID, const AstNode*>& idToAst,
-                              const AstNode* node) {
-  if (node->isComment()) return;
-
-  idToAst[node->id()] = node;
-  for (auto child : node->children()) {
-    assignIDsFromTree(idToAst, child);
-  }
-}
-
 bool BuilderResult::equals(const BuilderResult& other) const {
   if (idToParentId_ != other.idToParentId_) {
     return false;
