@@ -1016,10 +1016,10 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
   // The 'parseFile' query gets us a builder result that we can inspect to
   // see if there were any parse errors.
-  chpl::UniqueString emptySymbolPath;
+  auto parentSymbolPath = chpl::UniqueString(); // always empty here
   auto& builderResult =
     chpl::parsing::parseFileToBuilderResultAndCheck(gContext, path,
-                                                    emptySymbolPath);
+                                                    parentSymbolPath);
   gFilenameLookup.push_back(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
@@ -1030,8 +1030,10 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   int numModSyms = 0;
 
   if (fDynoVerifySerialization) {
+    // this will not work otherwise
+    CHPL_ASSERT(!gContext->configuration().includeComments);
+
     // test that we can serialize and then deserialize this uAST
-    /* TODO
     for (auto ast : builderResult.topLevelExpressions()) {
       std::stringstream ss;
 
@@ -1041,21 +1043,32 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
 
       // deserialize from the same
       std::string got = ss.str();
-      auto des =
-        chpl::Deserializer(gContext, got.c_str(), got.size(), ser.stringCache());
+      auto des = chpl::Deserializer(gContext,
+                                    got.c_str(), got.size(),
+                                    ser.stringCache());
+
+
+      // this path should not actually be used in this testing
+      auto libPath = chpl::UniqueString::get(gContext, "test-serialize.dyno");
+
       auto builder =
-        uast::Builder::createForLibraryFileModule(context,
-                                                  libPath,
-                                                  parentSymbolPath);
+        chpl::uast::Builder::createForLibraryFileModule(gContext,
+                                                        libPath,
+                                                        parentSymbolPath);
 
-      builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
-      uast::BuilderResult r = builder->result();
+      builder->addToplevelExpression(
+          chpl::uast::AstNode::deserializeWithoutIds(des));
+      chpl::uast::BuilderResult r = builder->result();
 
-      if (builderResult.equals(res) == false) {
-        // TODO: this will probably fail now due to no longer including comments
-        USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
+      if (r.numTopLevelExpressions() != 1 ||
+          !ast->completeMatch(r.topLevelExpression(0))) {
+        ast->dump();
+        r.topLevelExpression(0)->dump();
+
+        USR_FATAL("Failed to (de)serialize %s\n",
+                  builderResult.filePath().c_str());
       }
-    } */
+    }
   }
 
   //
