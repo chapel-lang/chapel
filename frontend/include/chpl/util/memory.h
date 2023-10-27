@@ -21,7 +21,11 @@
 #define CHPL_UTIL_MEMORY_H
 
 #include <memory>
+#if HAVE_LLVM_VER >= 160
 #include <optional>
+#else
+#include "llvm/ADT/Optional.h"
+#endif
 
 namespace chpl {
 
@@ -32,12 +36,21 @@ namespace chpl {
  underlying optional types.
  */
 template<typename T>
+#if HAVE_LLVM_VER >= 160
 using optional = std::optional<T>;
+#else
+using optional = llvm::Optional<T>;
+#endif
+
 
 /**
   This is the "empty" value for the above optional<T> type.
  */
+#if HAVE_LLVM_VER >= 160
 static const auto empty = std::nullopt;
+#else
+static const auto empty = llvm::None;
+#endif
 
 /**
  owned<T> is just a synonym for 'std::unique_ptr<T>'.
