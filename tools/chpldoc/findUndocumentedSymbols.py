@@ -349,7 +349,9 @@ def main(raw_args: List[str]) -> int:
     for filename, ctx in files_with_contexts(get_files(files)):
         astList = ctx.parse(filename)
         fus = FindUndocumentedSymbols(astList, **flags)
-        for sym in fus():
+        # sort by line number
+        syms = sorted(fus(), key=lambda s: s.location().start())
+        for sym in syms:
             loc = sym.location()
             (line, col) = loc.start()
             path = os.path.relpath(loc.path(), curdir)
