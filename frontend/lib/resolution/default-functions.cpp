@@ -295,7 +295,7 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   // build the untyped signature
   auto ufs = UntypedFnSignature::get(context,
                         /*id*/ compType->id(),
-                        /*name*/ USTR("init"),
+                        /*name*/ USTR("init="),
                         /*isMethod*/ true,
                         /*isTypeConstructor*/ false,
                         /*isCompilerGenerated*/ true,
@@ -513,6 +513,8 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
       CHPL_ASSERT(false && "Not implemented yet!");
     }
   }
+
+  CHPL_ASSERT(result->untyped()->name() == name);
 
   return QUERY_END(result);
 }
