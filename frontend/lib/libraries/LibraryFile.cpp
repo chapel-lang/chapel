@@ -313,7 +313,7 @@ const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
   return LibraryFile::loadLibraryFileQuery(context, libPath).get();
 }
 
-void LibraryFile::registerLibrary(Context* context) {
+void LibraryFile::registerLibrary(Context* context) const {
   for (auto pair : moduleIdsAndFilePaths) {
     UniqueString idSymbolPath = pair.first;
     UniqueString filePath = pair.second;
@@ -323,6 +323,21 @@ void LibraryFile::registerLibrary(Context* context) {
     // note: numChildIds is not needed in this ID
     context->registerLibraryForModule(id, filePath, libPath);
   }
+}
+
+std::vector<UniqueString> LibraryFile::containedFilePaths() const {
+  std::set<UniqueString> paths;
+  for (auto pair : moduleIdsAndFilePaths) {
+    UniqueString filePath = pair.second;
+    paths.insert(filePath);
+  }
+
+  std::vector<UniqueString> ret;
+  for (auto path: paths) {
+    ret.push_back(path);
+  }
+
+  return ret;
 }
 
 const uast::Module* LibraryFile::loadModuleAst(Context* context,

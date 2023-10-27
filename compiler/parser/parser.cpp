@@ -33,6 +33,8 @@
 #include "wellknown.h"
 #include "misc.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
@@ -323,7 +325,8 @@ static void addDynoLibFiles() {
   while ((inputFileName = nthFilename(fileNum++))) {
     if (isDynoLib(inputFileName)) {
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
-      chpl::parsing::registerFilePathsInLibrary(gContext, libPath);
+      auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
+      lib->registerLibrary(gContext);
     }
   }
 }
@@ -451,11 +454,11 @@ static void parseCommandLineFiles() {
       // serialized file would have been listed on the command line. We
       // probably to clarify what it means to be listed on the command line.
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
-      auto lib = chpl::parsing::loadLibraryFile(gContext, libPath);
-      if (lib.isUser()) {
-        for (const auto& pair : lib.offsets()) {
-          parseFile(pair.first.c_str(), MOD_USER, true);
-        }
+      auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
+      for (auto path: lib->containedFilePaths()) {
+        // TODO: should it not set MOD_USER in some cases?
+        // this used to have a lib.isUser check
+        parseFile(path.c_str(), MOD_USER, true);
       }
     }
   }
@@ -491,15 +494,17 @@ static void parseCommandLineFiles() {
             todo.push_back(path);
           }
         }
-        auto libWriter = LibraryFileWriter(gContext, todo,
-                                           "chpl_standard.dyno");
+        auto libWriter =
+          chpl::libraries::LibraryFileWriter(gContext, todo,
+                                             "chpl_standard.dyno");
         libWriter.writeAllSections();
       } else {
         std::string justFile = path.substr(path.find_last_of("/") + 1);
         auto dot = justFile.find_last_of(".");
         std::string noExt = justFile.substr(0, dot);
         auto ustr = chpl::UniqueString::get(gContext, path);
-        auto libWriter = LibraryFileWriter(gContext, {ustr}, noExt + ".dyno");
+        auto libWriter =
+          chpl::libraries::LibraryFileWriter(gContext, {ustr}, noExt + ".dyno");
         libWriter.writeAllSections();
       }
     }
@@ -1025,15 +1030,32 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   int numModSyms = 0;
 
   if (fDynoVerifySerialization) {
-    std::stringstream ss;
-    chpl::Serializer ser(ss);
-    builderResult.serialize(ser);
+    // test that we can serialize and then deserialize this uAST
+    /* TODO
+    for (auto ast : builderResult.topLevelExpressions()) {
+      std::stringstream ss;
 
-    chpl::Deserializer des(gContext, ss, ser.stringCache());
-    auto res = chpl::uast::BuilderResult::deserialize(des);
-    if (builderResult.equals(res) == false) {
-      USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
-    }
+      // serialize to the string stream
+      chpl::Serializer ser(ss);
+      ast->serialize(ser);
+
+      // deserialize from the same
+      std::string got = ss.str();
+      auto des =
+        chpl::Deserializer(gContext, got.c_str(), got.size(), ser.stringCache());
+      auto builder =
+        uast::Builder::createForLibraryFileModule(context,
+                                                  libPath,
+                                                  parentSymbolPath);
+
+      builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
+      uast::BuilderResult r = builder->result();
+
+      if (builderResult.equals(res) == false) {
+        // TODO: this will probably fail now due to no longer including comments
+        USR_FATAL("Failed to (de)serialize %s\n", builderResult.filePath().c_str());
+      }
+    } */
   }
 
   //

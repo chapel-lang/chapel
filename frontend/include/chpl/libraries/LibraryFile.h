@@ -135,7 +135,12 @@ class LibraryFile {
     attempts to load a module contained in the library will use the
     library version.
    */
-  void registerLibrary(Context* context);
+  void registerLibrary(Context* context) const;
+
+  /**
+    Returns a vector containing the paths stored in this module.
+    */
+  std::vector<UniqueString> containedFilePaths() const;
 
   /**
     Load uAST from a this LibraryFile for a particular module path.
