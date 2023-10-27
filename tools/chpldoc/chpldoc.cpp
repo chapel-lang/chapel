@@ -1513,11 +1513,7 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
-          // TODO: Fix all this because why are we checking for specific node
-          // types just to add a newline?
-          if (!textOnly_ && !node->isModule()) {
-            os_ << "\n";
-          }
+          os_ << "\n";
 
           int commentShift = 0;
           if (indentComment) {
@@ -1534,11 +1530,6 @@ struct RstResultBuilder {
             os_ << strip(attrs->deprecationMessage().c_str());
           }
           os_ << "\n";
-          // TODO: Fix all this because why are we checking for specific node
-          // types just to add a newline?
-          if (!textOnly_ && (node->isModule())) {
-            os_ << "\n";
-          }
         }
       }
     }
