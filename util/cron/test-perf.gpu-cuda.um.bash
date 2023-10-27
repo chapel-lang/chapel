@@ -15,8 +15,9 @@ export CHPL_COMM=none
 export CHPL_GPU_MEM_STRATEGY=unified_memory
 
 source $CWD/common-native-gpu-perf.bash
+export CHPL_TEST_PERF_CONFIG_NAME="1-node-p100"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-cuda.um"
-export CHPL_TEST_PERF_DESCRIPTION='gpu-cuda.um'
+export CHPL_TEST_PERF_DESCRIPTION='um'
 
-nightly_args="${nightly_args} -performance -perflabel gpu- -numtrials 5 -startdate 07/15/22"
+nightly_args="${nightly_args} -startdate 07/15/22"
 $CWD/nightly -cron ${nightly_args}

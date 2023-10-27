@@ -14,9 +14,10 @@ export CHPL_LAUNCHER_PARTITION=amdMI60
 module load rocm
 
 
-export CHPL_TEST_PERF_CONFIG_NAME='gpu-rocm'
-source $CWD/common-perf.bash
+source $CWD/common-native-gpu-perf.bash
+export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi60"
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-rocm"
+unset CHPL_TEST_PERF_CONFIGS      # not applicable for this config
 
-nightly_args="${nightly_args} -performance -perflabel gpu- -numtrials 5 -startdate 07/20/23"
+nightly_args="${nightly_args} -startdate 07/20/23"
 $CWD/nightly -cron ${nightly_args}
