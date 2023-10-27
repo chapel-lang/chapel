@@ -79,22 +79,11 @@
 #include <unordered_map>
 #include <memory>
 
-#if HAVE_LLVM_VER >= 160
-#include <optional>
-#else
-#include "llvm/ADT/Optional.h"
-#endif
+#include "chpl/util/memory.h"
 
 using namespace llvm;
 
 namespace {
-
-template <typename T>
-#if HAVE_LLVM_VER >= 160
-using optional = std::optional<T>;
-#else
-using optional = llvm::Optional<T>;
-#endif
 
 
 static const bool DEBUG = false;
@@ -566,7 +555,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this store is to a constant offset from the start ptr.
 #if HAVE_LLVM_VER >= 100
-      optional<int64_t> optOffset =
+      chpl::optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
       if (!optOffset)
         break;
@@ -585,7 +574,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this load is to a constant offset from the start ptr.
 #if HAVE_LLVM_VER >= 100
-      optional<int64_t> optOffset =
+      chpl::optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
       if (!optOffset)
         break;
@@ -734,7 +723,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         int64_t offset = 0;
 
 #if HAVE_LLVM_VER >= 100
-        optional<int64_t> optOffset =
+        chpl::optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
@@ -834,7 +823,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
 #if HAVE_LLVM_VER >= 100
-        optional<int64_t> optOffset =
+        chpl::optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
