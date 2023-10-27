@@ -65,8 +65,8 @@ In contrast, to find the variable byte encoding of 0b1010111011:
 Signed integers can be stored in a variable-length byte encoding as well,
 using the "ZigZag" encoding (following Google Protocol Buffers). In the
 ZigZag encoding, the number is transformed to an unsigned number before
-encoding. A positive number _i_ will be encoded as _2*i_. A negative
-number will be encoded as _2*|i|-1_.
+encoding. A positive number *i* will be encoded as *2\*i*. A negative
+number will be encoded as *2\*|i|-1*.
 
 Building Block: Storing a String
 --------------------------------

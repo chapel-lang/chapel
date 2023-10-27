@@ -28,6 +28,7 @@ new compiler frontend.
    types
    uast
    base
+   libraries
 
 .. comment
 
