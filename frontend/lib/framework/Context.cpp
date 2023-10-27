@@ -65,6 +65,7 @@ void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(tmpDir, other.tmpDir);
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
+  std::swap(includeComments, other.includeComments);
 }
 
 void Context::setupGlobalStrings() {

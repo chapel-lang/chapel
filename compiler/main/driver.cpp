@@ -2176,6 +2176,9 @@ static void bootstrapTmpDir() {
     }
   }
 
+  // comments do not need to be preserved for the compiler
+  config.includeComments = false;
+
   auto oldContext = gContext;
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
@@ -2200,6 +2203,9 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   // Keep tmp dir if previous config did; this is needed as the tmp dir has
   // already been created by the tmp dir bootstrap function.
   config.keepTmpDir = gContext->shouldSaveTmpDirFiles();
+
+  // comments do not need to be preserved for the compiler
+  config.includeComments = false;
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;

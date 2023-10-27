@@ -104,6 +104,14 @@ class Context {
     /** Tool name (for use when creating the tmpDir in /tmp if needed) */
     std::string toolName = "chpl";
 
+    /**
+      If 'true', some comments will be included in the uAST.
+
+      Note that, even when this is set, some comments are not included (for
+      example, comments between actual arguments in a function call
+     */
+    bool includeComments = true;
+
     void swap(Configuration& other);
   };
 
