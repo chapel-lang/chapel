@@ -1000,6 +1000,51 @@ static bool dynoRealizeErrors(void) {
   return hadErrors;
 }
 
+static void
+dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
+                        UniqueString parentSymbolPath) {
+
+  // this will not work otherwise
+  CHPL_ASSERT(!gContext->configuration().includeComments);
+
+  // test that we can serialize and then deserialize this uAST
+  for (auto ast : builderResult.topLevelExpressions()) {
+    std::stringstream ss;
+
+    // serialize to the string stream
+    chpl::Serializer ser(ss);
+    ast->serialize(ser);
+
+    // deserialize from the same
+    std::string got = ss.str();
+    auto des = chpl::Deserializer(gContext,
+                                  got.c_str(), got.size(),
+                                  ser.stringCache());
+
+    // this path should not actually be used in this testing
+    auto libPath = chpl::UniqueString::get(gContext, "test-serialize.dyno");
+
+    auto builder =
+      chpl::uast::Builder::createForLibraryFileModule(gContext,
+                                                      libPath,
+                                                      parentSymbolPath);
+
+    builder->addToplevelExpression(
+        chpl::uast::AstNode::deserializeWithoutIds(des));
+    chpl::uast::BuilderResult r = builder->result();
+
+    if (r.numTopLevelExpressions() != 1 ||
+        !ast->completeMatch(r.topLevelExpression(0))) {
+      ast->dump();
+      r.topLevelExpression(0)->dump();
+
+      USR_FATAL("Failed to (de)serialize %s\n",
+                builderResult.filePath().c_str());
+    }
+  }
+}
+
+
 static ModuleSymbol* dynoParseFile(const char* fileName,
                                    ModTag      modTag,
                                    bool        namedOnCommandLine) {
@@ -1030,45 +1075,7 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   int numModSyms = 0;
 
   if (fDynoVerifySerialization) {
-    // this will not work otherwise
-    CHPL_ASSERT(!gContext->configuration().includeComments);
-
-    // test that we can serialize and then deserialize this uAST
-    for (auto ast : builderResult.topLevelExpressions()) {
-      std::stringstream ss;
-
-      // serialize to the string stream
-      chpl::Serializer ser(ss);
-      ast->serialize(ser);
-
-      // deserialize from the same
-      std::string got = ss.str();
-      auto des = chpl::Deserializer(gContext,
-                                    got.c_str(), got.size(),
-                                    ser.stringCache());
-
-
-      // this path should not actually be used in this testing
-      auto libPath = chpl::UniqueString::get(gContext, "test-serialize.dyno");
-
-      auto builder =
-        chpl::uast::Builder::createForLibraryFileModule(gContext,
-                                                        libPath,
-                                                        parentSymbolPath);
-
-      builder->addToplevelExpression(
-          chpl::uast::AstNode::deserializeWithoutIds(des));
-      chpl::uast::BuilderResult r = builder->result();
-
-      if (r.numTopLevelExpressions() != 1 ||
-          !ast->completeMatch(r.topLevelExpression(0))) {
-        ast->dump();
-        r.topLevelExpression(0)->dump();
-
-        USR_FATAL("Failed to (de)serialize %s\n",
-                  builderResult.filePath().c_str());
-      }
-    }
+    dynoVerifySerialization(builderResult, parentSymbolPath);
   }
 
   //
