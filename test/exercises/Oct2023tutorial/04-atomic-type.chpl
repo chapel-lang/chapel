@@ -22,16 +22,16 @@ proc barrier(numTasks) {
 // the shortest, will not be past the barrier until all other tasks are done.
 const numTasks = 10;
 coforall i in 1..numTasks {
-  sleep(i);
+  sleep(i/100.0);
   barrier(numTasks);
 
 
   if i==1 {
     writeln("All tasks done sleeping");
     // reset the barrier
-    count.write(0); done.write(false);
+    count.write(0);
   }
-  
+
   // all tasks waiting for task 1 to finish resetting the barrier count
   count.waitFor(0);
 
@@ -55,4 +55,3 @@ writeln();
     bucketCount[i % m].add(1);
   writeln("bucketCount = ", bucketCount, ", 'ref' intent is also the default for atomic");
 }
-
