@@ -58,7 +58,7 @@ class LibraryFileStringsTable {
   LibraryFileStringsTable() { }
 
  public:
-  /** 
+  /**
     Given a long string index, returns the string size and the string data. The
     string won't necessarily be null-terminated. Returns a 0-length string if
     the ID is out of bounds.
@@ -72,6 +72,12 @@ class LibraryFileStringsTable {
     Uses `mmap` to keep the code simple and to support random-access well. */
 class LibraryFile {
  private:
+  struct ModuleInfo {
+    UniqueString moduleSymPath;
+    UniqueString sourceFilePath;
+    uint64_t moduleSectionOffset = 0;
+  };
+
   UniqueString libPath;
 
   int fd = -1;
@@ -82,10 +88,8 @@ class LibraryFile {
   size_t len = 0;
   const unsigned char* data = nullptr;
 
-  // maps from module path to the offset of its module section header
-  std::map<UniqueString, uint64_t> modulePathToSection;
   // stores module symbol IDs and the file paths they came from
-  std::vector<std::pair<UniqueString, UniqueString>> moduleIdsAndFilePaths;
+  std::vector<ModuleInfo> modules;
 
   LibraryFile() { }
 
@@ -102,15 +106,20 @@ class LibraryFile {
   LibraryFileStringsTable readStringsTable(Context* context,
                                            uint64_t moduleOffset) const;
 
-  // returns an empty BuilderResult if anything went wrong /
-  // the module was not found
-  uast::BuilderResult readModuleAst(Context* context,
-                                    UniqueString modulePath) const;
+  // deserializes the uAST for the module starting at the passed offset
+  // and stores that uAST in the passed builder.
+  //
+  // returns 'true' if everything is OK, 'false' if there were errors
+  bool readModuleAst(Context* context, uint64_t moduleOffset,
+                     uast::Builder& builder) const;
 
-  static const uast::BuilderResult&
-  loadModuleAstQuery(Context* context,
-                     const LibraryFile* f,
-                     UniqueString modulePath);
+  // deserializes the uAST for all of the modules from sourceFilePath
+  // that are stored in this library
+  //
+  // returns an empty BuilderResult if something went wrong.
+  static const uast::BuilderResult& loadAstQuery(Context* context,
+                                                 const LibraryFile* f,
+                                                 UniqueString sourceFilePath);
 
  public:
   ~LibraryFile();
@@ -143,6 +152,12 @@ class LibraryFile {
   std::vector<UniqueString> containedFilePaths() const;
 
   /**
+    Load uAST from this LibraryFile for a particular source path.
+   */
+  const uast::BuilderResult& loadSourceAst(Context* context,
+                                           UniqueString fromSourcePath) const;
+
+  /**
     Load uAST from a this LibraryFile for a particular module path.
     For a toplevel module, the module path is just the module name.
     For a submodule M of a parent module P, it would be P.M.
@@ -151,7 +166,7 @@ class LibraryFile {
     or if an error occurred.
    */
   const uast::Module* loadModuleAst(Context* context,
-                                    UniqueString modulePath) const;
+                                    UniqueString moduleSymPath) const;
 };
 
 

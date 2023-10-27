@@ -278,36 +278,42 @@ loadBuilderResultFromFile(Context* context, UniqueString path,
   return result;
 }
 */
-const BuilderResult&
-parseFileToBuilderResult(Context* context, UniqueString path,
-                         UniqueString parentSymbolPath) {
-  QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
+
+static const BuilderResult&
+parseFileToBuilderResultQuery(Context* context, UniqueString path,
+                              UniqueString parentSymbolPath) {
+  QUERY_BEGIN(parseFileToBuilderResultQuery, context, path, parentSymbolPath);
 
   BuilderResult result(path);
-  UniqueString libPath;
-  if (context->pathHasLibrary(path, libPath)) {
-    CHPL_ASSERT(false);
-    /*auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
-    result.swap(tmpResult);
-    */
-  } else {
-    // Run the fileText query to get the file contents
-    const FileContents& contents = fileText(context, path);
-    const std::string& text = contents.text();
-    const ErrorBase* error = contents.error();
 
-    if (error == nullptr) {
-      // if there was no error reading the file, proceed to parse
-      auto parser = helpMakeParser(context, parentSymbolPath);
-      const char* pathc = path.c_str();
-      const char* textc = text.c_str();
-      BuilderResult tmpResult = parser.parseString(pathc, textc);
-      result.swap(tmpResult);
-      BuilderResult::updateFilePaths(context, result);
-    }
+  // Run the fileText query to get the file contents
+  const FileContents& contents = fileText(context, path);
+  const std::string& text = contents.text();
+  const ErrorBase* error = contents.error();
+
+  if (error == nullptr) {
+    // if there was no error reading the file, proceed to parse
+    auto parser = helpMakeParser(context, parentSymbolPath);
+    const char* pathc = path.c_str();
+    const char* textc = text.c_str();
+    BuilderResult tmpResult = parser.parseString(pathc, textc);
+    result.swap(tmpResult);
+    BuilderResult::updateFilePaths(context, result);
   }
 
   return QUERY_END(result);
+}
+
+const BuilderResult&
+parseFileToBuilderResult(Context* context, UniqueString path,
+                         UniqueString parentSymbolPath) {
+  UniqueString libPath;
+  if (context->pathHasLibrary(path, libPath)) {
+    auto lib = libraries::LibraryFile::load(context, libPath);
+    return lib->loadSourceAst(context, path);
+  } else {
+    return parseFileToBuilderResultQuery(context, path, parentSymbolPath);
+  }
 }
 
 // TODO: can't make this a query because can't store the uast::BuilderResult&

@@ -130,8 +130,11 @@ bool LibraryFile::readHeaders(Context* context) {
     UniqueString moduleId = UniqueString::get(context, moduleIdStr);
     UniqueString fromFilePath = UniqueString::get(context, fromFilePathStr);
 
-    modulePathToSection[moduleId] = offset;
-    moduleIdsAndFilePaths.push_back(std::make_pair(moduleId, fromFilePath));
+    ModuleInfo info;
+    info.moduleSymPath = moduleId;
+    info.sourceFilePath = fromFilePath;
+    info.moduleSectionOffset = offset;
+    modules.push_back(info);
   }
 
   return true;
@@ -186,16 +189,9 @@ LibraryFile::readStringsTable(Context* context, uint64_t moduleOffset) const {
   return ret;
 }
 
-uast::BuilderResult LibraryFile::readModuleAst(Context* context,
-                                               UniqueString modulePath) const {
-  auto it = modulePathToSection.find(modulePath);
-
-  if (it == modulePathToSection.end()) {
-    // fail if the module path requested is not in this file
-    return uast::BuilderResult();
-  }
-
-  uint64_t moduleOffset = it->second;
+bool LibraryFile::readModuleAst(Context* context,
+                                uint64_t moduleOffset,
+                                uast::Builder& builder) const {
   const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
   // read the uast
   uint64_t uAstOffset = moduleOffset + modHdr->uAstSection;
@@ -203,7 +199,7 @@ uast::BuilderResult LibraryFile::readModuleAst(Context* context,
       uAstOffset+sizeof(AstSectionHeader) > len) {
     context->error(Location(), "Invalid module section header in %s",
                    libPath.c_str());
-    return uast::BuilderResult();
+    return false;
   }
 
   const AstSectionHeader* astHdr =
@@ -215,48 +211,62 @@ uast::BuilderResult LibraryFile::readModuleAst(Context* context,
       uAstOffset + astHdr->nBytesAstEntries > len) {
     context->error(Location(), "Invalid AST section header in %s",
                    libPath.c_str());
-    return uast::BuilderResult();
+    return false;
   }
 
   // create a LibraryFileStringsTable helper
   LibraryFileStringsTable table = readStringsTable(context, moduleOffset);
-
-  UniqueString parentSymbolPath;
-  if (!modulePath.isEmpty()) {
-    parentSymbolPath = ID::parentSymbolPath(context, modulePath);
-  }
-
-  auto builder =
-    uast::Builder::createForLibraryFileModule(context,
-                                              libPath,
-                                              parentSymbolPath);
 
   auto des = Deserializer(context,
                           astHdr+1, // just after the AstSectionHeader
                           astHdr->nBytesAstEntries,
                           &table);
 
-  builder->addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
+  builder.addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
 
-  uast::BuilderResult r = builder->result();
-
-  if (r.numTopLevelExpressions() != 1 ||
-      !r.topLevelExpression(0) ||
-      !r.topLevelExpression(0)->toModule()) {
-    context->error(Location(), "Invalid AST section in %s", libPath.c_str());
-    return uast::BuilderResult();
-  }
-
-  return r;
+  return true;
 }
 
 const uast::BuilderResult&
-LibraryFile::loadModuleAstQuery(Context* context,
-                                const LibraryFile* f,
-                                UniqueString modulePath) {
-  QUERY_BEGIN(loadModuleAstQuery, context, f, modulePath);
+LibraryFile::loadAstQuery(Context* context,
+                          const LibraryFile* f,
+                          UniqueString fromSourceFilePath) {
+  QUERY_BEGIN(loadAstQuery, context, f, fromSourceFilePath);
 
-  uast::BuilderResult result = f->readModuleAst(context, modulePath);
+  // The parentSymbolPath should be the same for all modules from
+  // a given source file. (Otherwise, we cannot return assign IDs
+  // within the same Builder or return them in the same BuilderResult).
+  UniqueString parentSymbolPath;
+  bool parentSymbolPathSet = false;
+  for (const auto& modInfo: f->modules) {
+    if (modInfo.sourceFilePath == fromSourceFilePath) {
+      auto locParentSymbolPath =
+        ID::parentSymbolPath(context, modInfo.moduleSymPath);
+      if (parentSymbolPathSet) {
+        CHPL_ASSERT(locParentSymbolPath == parentSymbolPath);
+      }
+      parentSymbolPath = locParentSymbolPath;
+    }
+  }
+
+  auto builder = uast::Builder::createForLibraryFileModule(context,
+                                                           f->libPath,
+                                                           parentSymbolPath);
+
+  bool ok = true;
+  for (const auto& modInfo: f->modules) {
+    if (modInfo.sourceFilePath == fromSourceFilePath) {
+      ok = f->readModuleAst(context, modInfo.moduleSectionOffset, *builder);
+      if (!ok) break;
+    }
+  }
+
+  uast::BuilderResult result;
+
+  if (ok) {
+    auto r = builder->result();
+    result.swap(r);
+  }
 
   return QUERY_END(result);
 }
@@ -314,22 +324,18 @@ const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
 }
 
 void LibraryFile::registerLibrary(Context* context) const {
-  for (auto pair : moduleIdsAndFilePaths) {
-    UniqueString idSymbolPath = pair.first;
-    UniqueString filePath = pair.second;
-
+  for (const auto& modInfo : modules) {
     int postOrderId = -1; // the symbol itself
-    ID id = ID(idSymbolPath, postOrderId, /* numChildIds */ 0);
+    ID id = ID(modInfo.moduleSymPath, postOrderId, /* numChildIds */ 0);
     // note: numChildIds is not needed in this ID
-    context->registerLibraryForModule(id, filePath, libPath);
+    context->registerLibraryForModule(id, modInfo.sourceFilePath, libPath);
   }
 }
 
 std::vector<UniqueString> LibraryFile::containedFilePaths() const {
   std::set<UniqueString> paths;
-  for (auto pair : moduleIdsAndFilePaths) {
-    UniqueString filePath = pair.second;
-    paths.insert(filePath);
+  for (const auto& modInfo : modules) {
+    paths.insert(modInfo.sourceFilePath);
   }
 
   std::vector<UniqueString> ret;
@@ -340,17 +346,37 @@ std::vector<UniqueString> LibraryFile::containedFilePaths() const {
   return ret;
 }
 
-const uast::Module* LibraryFile::loadModuleAst(Context* context,
-                                               UniqueString modulePath) const {
-  auto it = modulePathToSection.find(modulePath);
-  if (it != modulePathToSection.end()) {
-    const uast::BuilderResult& r =
-      loadModuleAstQuery(context, this, modulePath);
+const uast::BuilderResult&
+LibraryFile::loadSourceAst(Context* context,
+                           UniqueString fromSourcePath) const {
+  return loadAstQuery(context, this, fromSourcePath);
+}
 
-    return r.topLevelExpression(0)->toModule();
+const uast::Module*
+LibraryFile::loadModuleAst(Context* context,
+                           UniqueString moduleSymPath) const {
+  // figure out which source file has the requested module
+  UniqueString sourceFilePath;
+  for (const auto& modInfo : modules) {
+    if (modInfo.moduleSymPath == moduleSymPath) {
+      sourceFilePath = modInfo.sourceFilePath;
+    }
   }
 
-  // otherwise, the module was not found.
+  if (sourceFilePath.isEmpty()) {
+    return nullptr;
+  }
+
+  const uast::BuilderResult& r = loadSourceAst(context, sourceFilePath);
+
+  // now find the module with the appropriate symbol path
+  for (auto ast : r.topLevelExpressions()) {
+    if (ast->id().symbolPath() == moduleSymPath) {
+      return ast->toModule();
+    }
+  }
+
+  // return nullptr if not found
   return nullptr;
 }
 
