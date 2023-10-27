@@ -8,7 +8,7 @@ import shlex
 testname = sys.argv[1]
 outfile = sys.argv[2]
 tmpfile = f"{outfile}.prediff.tmp"
-extra_args_ext = "prediffopts"
+extra_args_ext = "finder-settings"
 extra_args_file = f"{testname}.{extra_args_ext}"
 
 chpl_home = os.getenv("CHPL_HOME", None)
