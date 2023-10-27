@@ -277,7 +277,7 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
   std::vector<QualifiedType> formalTypes;
 
   generateInitParts(context, inCompType, compType,
-                    ufsFormals, formalTypes, /*useGeneric*/ true);
+                    ufsFormals, formalTypes, /*useGeneric*/ false);
 
   // add a formal for the 'other' argument
   auto name = UniqueString::get(context, "other");
@@ -306,15 +306,11 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
                         /*whereClause*/ nullptr);
 
   // now build the other pieces of the typed signature
-  auto g = getTypeGenericity(context, formalTypes[1]);
-  bool needsInstantiation = (g == Type::GENERIC ||
-                             g == Type::GENERIC_WITH_DEFAULTS);
-
   auto ret = TypedFnSignature::get(context,
                                    ufs,
                                    std::move(formalTypes),
                                    TypedFnSignature::WHERE_NONE,
-                                   needsInstantiation,
+                                   /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
                                    /* formalsInstantiated */ Bitmap());
