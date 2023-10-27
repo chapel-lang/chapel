@@ -158,48 +158,8 @@ static void test4() {
   }
 }
 
-// Test methods on generics with defaults
 static void test5() {
-  Context ctx;
-  auto context = &ctx;
-  ErrorGuard guard(context);
-  std::string program = R"""(
-    operator =(ref lhs: int, rhs : int) {
-      __primitive("=", lhs, rhs);
-    }
-
-    record R {
-      type T = int;
-      var x : int;
-
-      proc init(type T) {
-        this.T = T;
-        this.x = 0;
-      }
-
-      proc foobar() {
-      }
-    }
-
-    proc blah(x: R(string)) {
-      x.foobar();
-    }
-
-    var r : R(string);
-    r.foobar();
-    blah(r);
-  )""";
-
-  auto m = parseModule(context, program);
-  resolveModule(context, m->id());
-}
-
-// Test passing to generic arguments with types that are generic-with-defaults
-static void test6() {
-  Context ctx;
-  auto context = &ctx;
-  ErrorGuard guard(context);
-  std::string program = R"""(
+  std::string common = R"""(
     operator =(ref lhs: int, rhs : int) {
       __primitive("=", lhs, rhs);
     }
@@ -213,32 +173,91 @@ static void test6() {
         var val : T;
         this.field = val;
       }
+
+      proc foobar() {
+      }
     }
-
-    //
-    // In this case, we have specified 'arg' to be generic, but the frontend
-    // still technically recognizes it as generic-with-defaults (at least at
-    // the time this test was created).
-    //
-    proc blah(arg: R(?)) {
-      return arg.field;
-    }
-
-    var a : R(string);
-    var x = blah(a);
-
-    var b : R(int);
-    var y = blah(b);
   )""";
 
-  auto m = parseModule(context, program);
-  auto r = resolveModule(context, m->id());
+  {
+    // Test methods on generics with defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      proc blah(x: R(string)) {
+        x.foobar();
+      }
 
-  auto x = findVariable(m, "x");
-  assert(r.byAst(x).type().type()->isStringType());
+      var r : R(string);
+      r.foobar();
+      blah(r);
+    )""";
 
-  auto y = findVariable(m, "y");
-  assert(r.byAst(y).type().type()->isIntType());
+    auto m = parseModule(context, program);
+    resolveModule(context, m->id());
+  }
+  {
+    // Test passing to generic arguments with types that are generic-with-defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      //
+      // In this case, we have specified 'arg' to be generic, but the frontend
+      // still technically recognizes it as generic-with-defaults (at least at
+      // the time this test was created).
+      //
+      proc blah(arg: R(?)) {
+        return arg.field;
+      }
+
+      var a : R(string);
+      var x = blah(a);
+
+      var b : R(int);
+      var y = blah(b);
+    )""";
+
+    auto m = parseModule(context, program);
+    auto r = resolveModule(context, m->id());
+
+    auto x = findVariable(m, "x");
+    assert(r.byAst(x).type().type()->isStringType());
+
+    auto y = findVariable(m, "y");
+    assert(r.byAst(y).type().type()->isIntType());
+  }
+  {
+    // Test passing to generic arguments with types that are generic-with-defaults
+    Context ctx;
+    auto context = &ctx;
+    ErrorGuard guard(context);
+    std::string program = common + R"""(
+      proc copy(arg) {
+        return arg;
+      }
+
+      var a : R(string);
+      var b = copy(a);
+    )""";
+
+    auto m = parseModule(context, program);
+    auto r = resolveModule(context, m->id());
+
+    auto a = findVariable(m, "a");
+    auto aType = r.byAst(a).type();
+    assert(aType.type()->isCompositeType());
+    auto subs = aType.type()->toCompositeType()->substitutions();
+    assert(subs.size() == 2);
+    for (auto pair : subs) {
+      assert(pair.second.type()->isStringType());
+    }
+
+    auto b = findVariable(m, "b");
+    auto bType = r.byAst(b).type();
+    assert(aType == bType);
+  }
 }
 
 int main() {
@@ -247,7 +266,6 @@ int main() {
   test3();
   test4();
   test5();
-  test6();
 
   return 0;
 }
