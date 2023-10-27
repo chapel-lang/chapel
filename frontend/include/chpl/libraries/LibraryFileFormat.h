@@ -63,6 +63,7 @@ struct FileHeader {
 struct ModuleHeader {
   uint64_t magic;
   uint64_t flags;
+  uint64_t len;
   // the following are offsets relative to the start of the module header
   uint64_t symbolTable;
   uint64_t uAstSection;

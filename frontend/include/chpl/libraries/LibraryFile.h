@@ -84,6 +84,8 @@ class LibraryFile {
 
   // maps from module path to the offset of its module section header
   std::map<UniqueString, uint64_t> modulePathToSection;
+  // stores module symbol IDs and the file paths they came from
+  std::vector<std::pair<UniqueString, UniqueString>> moduleIdsAndFilePaths;
 
   LibraryFile() { }
 
@@ -124,9 +126,16 @@ class LibraryFile {
 
   /**
     This query reads the file from the given path and produces a LibraryFile,
-    which contains useful information about the library's contents.
+    which represents the contents of the library.
    */
   static const LibraryFile* load(Context* context, UniqueString libPath);
+
+  /**
+    Register all of the paths supported by this library so that
+    attempts to load a module contained in the library will use the
+    library version.
+   */
+  void registerLibrary(Context* context);
 
   /**
     Load uAST from a this LibraryFile for a particular module path.

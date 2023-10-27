@@ -49,7 +49,7 @@ void LibraryFileWriter::gatherTopLevelModules() {
     std::vector<const uast::Module*> modsInFile =
       parsing::parse(context, path, empty);
     for (auto mod : modsInFile) {
-      topLevelModules.push_back(mod);
+      modulesAndPaths.push_back(std::make_pair(mod, path));
     }
   }
 }
@@ -70,12 +70,12 @@ void LibraryFileWriter::writeHeader() {
   header.chplVersionMajor = getMajorVersion();
   header.chplVersionMinor = getMinorVersion();
   header.chplVersionUpdate = getUpdateVersion();
-  header.nModules = topLevelModules.size();
+  header.nModules = modulesAndPaths.size();
   // hash remains 0s at this point
   fileStream.write((const char*) &header, sizeof(header));
 
   // write the placeholder module section table
-  size_t n = topLevelModules.size();
+  size_t n = modulesAndPaths.size();
   for (size_t i = 0; i < n; i++) {
     uint64_t zero = 0;
     fileStream.write((const char*) &zero, sizeof(zero));
@@ -90,7 +90,8 @@ void LibraryFileWriter::padToAlign() {
   }
 }
 
-uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
+uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
+                                               UniqueString fromFilePath) {
   auto moduleSectionStart = fileStream.tellp();
 
   // Construct a module section header and write it
@@ -104,6 +105,8 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
 
   // write the module symbol path
   ser.write<std::string>(mod->id().symbolPath().str());
+  // write the module's file path
+  ser.write<std::string>(fromFilePath.str());
 
   // write the various sections
   padToAlign();
@@ -121,6 +124,9 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod) {
   // update the module header with the saved locations by writing the
   // header again.
   auto savePos = fileStream.tellp();
+
+  // store the module section length in the header
+  header.len = savePos - moduleSectionStart;
 
   fileStream.seekp(moduleSectionStart);
   fileStream.write((const char*) &header, sizeof(header));
@@ -252,10 +258,12 @@ bool LibraryFileWriter::writeAllSections() {
 
   std::vector<uint64_t> moduleSectionOffsets;
 
-  for (auto mod : topLevelModules) {
+  for (auto pair : modulesAndPaths) {
+    const uast::Module* mod = pair.first;
+    UniqueString fromFilePath = pair.second;
     // write the module section & update the header's table
     padToAlign();
-    uint64_t offset = writeModuleSection(mod);
+    uint64_t offset = writeModuleSection(mod, fromFilePath);
     moduleSectionOffsets.push_back(offset);
   }
 

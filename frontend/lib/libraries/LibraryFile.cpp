@@ -19,6 +19,7 @@
 
 #include "chpl/libraries/LibraryFile.h"
 
+#include "chpl/framework/ID.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Builder.h"
@@ -103,14 +104,15 @@ bool LibraryFile::readHeaders(Context* context) {
 
   uint32_t nModules = header->nModules;
 
-  // populate modulePathToSection
+  // populate modulePathToSection and moduleIdsAndFilePaths
   // module offsets are stored just after the file header
   const uint64_t* moduleOffsets = (const uint64_t*) (data + sizeof(FileHeader));
   for (uint32_t i = 0; i < nModules; i++) {
     uint64_t offset = moduleOffsets[i];
     const ModuleHeader* mod = (const ModuleHeader*) (data + offset);
 
-    if (mod->magic != MODULE_SECTION_MAGIC) {
+    if (mod->magic != MODULE_SECTION_MAGIC ||
+        offset+mod->len > len) {
       context->error(Location(), "Invalid module section header in %s",
                      libPath.c_str());
       return false;
@@ -124,8 +126,12 @@ bool LibraryFile::readHeaders(Context* context) {
     Deserializer des(context, data + pos, remaining, &table);
 
     std::string moduleIdStr = des.read<std::string>();
+    std::string fromFilePathStr = des.read<std::string>();
     UniqueString moduleId = UniqueString::get(context, moduleIdStr);
+    UniqueString fromFilePath = UniqueString::get(context, fromFilePathStr);
+
     modulePathToSection[moduleId] = offset;
+    moduleIdsAndFilePaths.push_back(std::make_pair(moduleId, fromFilePath));
   }
 
   return true;
@@ -174,7 +180,7 @@ LibraryFile::readStringsTable(Context* context, uint64_t moduleOffset) const {
   LibraryFileStringsTable ret;
   ret.nStrings = tableHdr->nLongStrings;
   ret.moduleSectionData = data + moduleOffset;
-  ret.moduleSectionLen = len - moduleOffset;
+  ret.moduleSectionLen = modHdr->len;
   // string offsets start just after the header
   ret.offsetsTable = (const uint64_t*) (tableHdr+1);
   return ret;
@@ -305,6 +311,18 @@ void LibraryFile::stringify(std::ostream& ss,
 
 const LibraryFile* LibraryFile::load(Context* context, UniqueString libPath) {
   return LibraryFile::loadLibraryFileQuery(context, libPath).get();
+}
+
+void LibraryFile::registerLibrary(Context* context) {
+  for (auto pair : moduleIdsAndFilePaths) {
+    UniqueString idSymbolPath = pair.first;
+    UniqueString filePath = pair.second;
+
+    int postOrderId = -1; // the symbol itself
+    ID id = ID(idSymbolPath, postOrderId, /* numChildIds */ 0);
+    // note: numChildIds is not needed in this ID
+    context->registerLibraryForModule(id, filePath, libPath);
+  }
 }
 
 const uast::Module* LibraryFile::loadModuleAst(Context* context,

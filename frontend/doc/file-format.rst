@@ -124,6 +124,7 @@ Each module section begins with a header that consists of:
 
  * 8 bytes of magic number 0x4d4dd01e5ec14d4d
  * 8 bytes of reserved space for future flags
+ * 8 bytes module section length
  * 8 bytes of symbol table section relative offset
  * 8 bytes of uAST section relative offset
  * 8 bytes of long strings table section relative offset
@@ -133,7 +134,9 @@ Each module section begins with a header that consists of:
  * 8 bytes of dependencies section relative offset
  * a string storing the module symbol ID
    (e.g. "TopLevelModule" or "MyModule.SubModule")
-   note that this string does not use the long strings table
+   (note that this string does not use the long strings table)
+ * a string storing the file path that generated the module
+   (note that this string does not use the long strings table)
 
 Symbol Table Section
 --------------------

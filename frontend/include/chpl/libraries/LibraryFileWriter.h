@@ -41,7 +41,8 @@ class LibraryFileWriter {
   std::vector<UniqueString> inputFiles;
   std::string outputFilePath;
   std::ofstream fileStream;
-  std::vector<const uast::Module*> topLevelModules;
+  // top-level modules and paths where they came from
+  std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
 
   /** Gather the top-level modules */
   void gatherTopLevelModules();
@@ -57,7 +58,8 @@ class LibraryFileWriter {
 
   /** Write the module section for the given module. Returns
      the file offset to this section. */
-  uint64_t writeModuleSection(const uast::Module* mod);
+  uint64_t writeModuleSection(const uast::Module* mod,
+                              UniqueString fromFilePath);
 
   /** Write the symbol table for a given module. Returns the
       relative offset to the symbol table. */
