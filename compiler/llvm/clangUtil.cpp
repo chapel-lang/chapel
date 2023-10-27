@@ -1829,7 +1829,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
 
 // copied from clang's BackendUtil.cpp
-static Optional<llvm::CodeModel::Model>
+static chpl::optional<llvm::CodeModel::Model>
 getCodeModel(const CodeGenOptions &CodeGenOpts) {
   unsigned CodeModel = llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
                            .Case("tiny", llvm::CodeModel::Tiny)
@@ -2104,7 +2104,7 @@ static void setupModule()
   }
 
   // Choose the code model
-  llvm::Optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
+  chpl::optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;

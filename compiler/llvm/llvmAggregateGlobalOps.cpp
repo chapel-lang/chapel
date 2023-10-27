@@ -54,7 +54,6 @@
 #include "llvm/Pass.h"
 #include "llvm/Support/raw_ostream.h"
 #include "llvm/Support/Debug.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallSet.h"
 #include "llvm/ADT/Statistic.h"
 
@@ -78,6 +77,7 @@
 #include <list>
 #include <string>
 #include <unordered_map>
+#include <memory>
 
 using namespace llvm;
 
@@ -553,7 +553,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this store is to a constant offset from the start ptr.
 #if HAVE_LLVM_VER >= 100
-      Optional<int64_t> optOffset =
+      std::optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
       if (!optOffset)
         break;
@@ -572,7 +572,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
       // Check to see if this load is to a constant offset from the start ptr.
 #if HAVE_LLVM_VER >= 100
-      Optional<int64_t> optOffset =
+      std::optional<int64_t> optOffset =
         isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
       if (!optOffset)
         break;
@@ -721,7 +721,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         int64_t offset = 0;
 
 #if HAVE_LLVM_VER >= 100
-        Optional<int64_t> optOffset =
+        std::optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
@@ -821,7 +821,7 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
 #if HAVE_LLVM_VER >= 100
-        Optional<int64_t> optOffset =
+        std::optional<int64_t> optOffset =
           isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;

@@ -23,7 +23,6 @@
 #include "chpl/util/filesystem.h"
 #include "chpl/util/printf.h"
 
-#include "llvm/ADT/Optional.h"
 #include "llvm/Support/FileSystem.h"
 #include "llvm/Support/JSON.h"
 
