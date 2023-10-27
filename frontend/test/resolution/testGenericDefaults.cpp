@@ -158,10 +158,48 @@ static void test4() {
   }
 }
 
+// Test methods on generics with defaults
+static void test5() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  std::string program = R"""(
+    operator =(ref lhs: int, rhs : int) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record R {
+      type T = int;
+      var x : int;
+
+      proc init(type T) {
+        this.T = T;
+        this.x = 0;
+      }
+
+      proc foobar() {
+      }
+    }
+
+    proc blah(x: R(string)) {
+      x.foobar();
+    }
+
+    var r : R(string);
+    r.foobar();
+    blah(r);
+  )""";
+
+  auto m = parseModule(context, program);
+  resolveModule(context, m->id());
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
+  test5();
+
   return 0;
 }
