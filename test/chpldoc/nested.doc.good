@@ -26,7 +26,6 @@ or
    
      a code block!
 
-
    .. attribute:: var x: int
 
    .. method:: proc foo()
@@ -43,7 +42,6 @@ or
         This code-block should not overflow to 'innerMethod'!
       
       
-
 
       .. method:: proc innerMethod()
 

@@ -31,7 +31,6 @@ or
 
    This class holds many different colors 
 
-
    .. attribute:: var defOnly = Color.Yellow
 
       Field has only enum as a default value 
