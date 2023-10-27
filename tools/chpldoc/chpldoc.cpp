@@ -1481,11 +1481,7 @@ struct RstResultBuilder {
           // do nothing because unstable was mentioned in doc comment
         } else {
           // write the unstable warning and message
-          // TODO: Fix all this because why are we checking for specific node
-          // types just to add a newline?
-          if (!textOnly_ && !node->isModule()) {
-            os_ << "\n";
-          }
+          os_ << "\n";
 
           int commentShift = 0;
           if (indentComment) {
@@ -1502,11 +1498,6 @@ struct RstResultBuilder {
             os_ << strip(attrs->unstableMessage().c_str());
           }
           os_ << "\n";
-          // TODO: Fix all this because why are we checking for specific node
-          // types just to add a newline?
-          if (!textOnly_ && node->isModule()) {
-            os_ << "\n";
-          }
         }
       }
     }
@@ -1732,9 +1723,9 @@ struct RstResultBuilder {
       }
     }
     if (textOnly_) indentDepth_ --;
-    showComment(m, textOnly_);
     showDeprecationMessage(m, false);
     showUnstableWarning(m, false);
+    showComment(m, textOnly_);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
