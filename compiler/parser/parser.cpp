@@ -456,9 +456,9 @@ static void parseCommandLineFiles() {
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
       auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
       for (auto path: lib->containedFilePaths()) {
-        // TODO: should it not set MOD_USER in some cases?
-        // this used to have a lib.isUser check
-        parseFile(path.c_str(), MOD_USER, true);
+        if (!chpl::parsing::filePathIsInBundledModule(gContext, path)) {
+          parseFile(path.c_str(), MOD_USER, true);
+        }
       }
     }
   }
