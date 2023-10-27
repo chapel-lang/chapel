@@ -135,8 +135,7 @@ Requirements
 
     * If using version 10.x you must set ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
 
-    * If using version 12.x you must use the bundled LLVM
-      (``CHPL_LLVM=bundled``).
+    * If using version 12.x you must use LLVM 16.
 
   * If targeting AMD GPUs, we require ROCm version 4.x or <5.5. ROCm versions
     greater than 5.4 are not supported, yet.
