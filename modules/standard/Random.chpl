@@ -69,21 +69,29 @@ module Random {
   private use IO;
   private use Math;
 
+  @chpldoc.nodoc
+  record _RNG {
+    proc type PCG param do return 1;
+    proc type NPB param do return 2;
+  }
 
   /* Select between different supported RNG algorithms.
      See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
      these algorithms.
    */
-  enum RNG {
-    PCG = 1,
-    NPB = 2
-  }
+  @deprecated("'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface")
+  type RNG = _RNG;
+
+  @chpldoc.nodoc
+  param _defaultRNG = _RNG.PCG;
 
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
-  param defaultRNG = RNG.PCG;
+  @deprecated("'defaultRNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface")
+  param defaultRNG = _defaultRNG;
 
-  type RandomStream = if defaultRNG == RNG.PCG then PCGRandomStream
-                                               else NPBRandomStream;
+  @deprecated("'RandomStream' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface")
+  type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
+                                                 else NPBRandomStreamInternal;
 
   // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the
   // :arg <type> <name>: form or else switching the order to
@@ -100,9 +108,11 @@ module Random {
   // the .chpl line numbers.
   //
 
-  private
-  proc isSupportedNumericType(type t) param do
+  private proc isNumericOrBoolType(type t) param do
     return isNumericType(t) || isBoolType(t);
+
+  private proc is1DRectangularDomain(d) param do
+    return d.isRectangular() && d.rank == 1 && d.strides == strideKind.one;
 
   /*
 
@@ -127,57 +137,100 @@ module Random {
     :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
     :type algorithm: :type:`RNG`
   */
-  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
-      algorithm=defaultRNG)
-    where isSupportedNumericType(arr.eltType) {
-    var randNums = createRandomStream(seed=seed,
-                                      eltType=arr.eltType,
-                                      parSafe=false,
-                                      algorithm=algorithm);
+  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc fillRandom(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_defaultRNG)
+    where isNumericOrBoolType(arr.eltType) {
+    var randNums = _createRandomStream(seed=seed,
+                                       eltType=arr.eltType,
+                                       parSafe=false,
+                                       algorithm=algorithm);
     randNums.fillRandom(arr);
   }
 
-  @chpldoc.nodoc
-  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
-      algorithm=defaultRNG) {
-    compilerError("Random.fillRandom is only defined for numeric arrays");
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    parallel using a new :record:`randomStream`. The first `arr.size` values
+    from the stream will be assigned to the array's elements in row-major
+    order. The parallelization strategy is determined by the array.
+
+    :arg arr: An array of numeric values
+    :arg seed: The seed to use when creating the ``randomStream``
+
+  */
+  proc fillRandom(ref arr: [] ?t, seed: int)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(seed, t, false);
+    rs.fill(arr);
   }
 
   /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    parallel using a new :record:`randomStream`. The first `arr.size` values
+    from the stream will be assigned to the array's elements in row-major
+    order. The parallelization strategy is determined by the array.
 
-    Fills a rectangular array of numeric elements with pseudorandom values
-    in the range [`min`, `max`] (inclusive) in parallel using
-    a new :class:`PCGRandom.PCGRandomStream`  created
-    specifically for this call.  The first `arr.size` values from the stream
-    will be assigned to the array's elements in row-major order. The
-    parallelization strategy is determined by the array.
-
-    :arg arr: The array to be filled, where T is a primitive numeric type. Only
-      rectangular arrays are supported currently.
-    :type arr: `[] T`
-
-    :arg min: The (inclusive) lower bound for the random values used.
-
-    :arg max: The (inclusive) upper bound for the random values used.
-
-    :arg seed: The seed to use for the PRNG.  Defaults to
-     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-    :type seed: `int(64)`
+    :arg arr: An array of numeric values
 
   */
-  proc fillRandom(ref arr: [], min: arr.eltType, max: arr.eltType,
-      seed: int(64) = SeedGenerator.oddCurrentTime)
-    where isSupportedNumericType(arr.eltType) {
-    var randNums = createRandomStream(seed=seed,
-                                      eltType=arr.eltType,
-                                      parSafe=false,
-                                      algorithm=RNG.PCG);
-    randNums.fillRandom(arr, min, max);
+  proc fillRandom(ref arr: [] ?t)
+  where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(_SeedGenerator.oddCurrentTime, t, false);
+    rs.fill(arr);
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
-    compileError("Random.fillRandom is only defined for numeric arrays");
+  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc fillRandom(ref arr: [], seed: int(64), param algorithm=_defaultRNG) {
+    compilerError("Random.fillRandom is only defined for rectangular numeric arrays");
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: [], seed: int) {
+    compilerError("Random.fillRandom is only defined for rectangular numeric arrays");
+  }
+
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    the range [``min``, ``max``] (inclusive) in parallel using a new
+    :record:`randomStream`. The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    :arg arr: An array of numeric values
+    :arg min: The (inclusive) lower bound for the random values
+    :arg max: The (inclusive) upper bound for the random values
+    :arg seed: The seed to use when creating the ``randomStream``
+  */
+  proc fillRandom(ref arr: [] ?t, min: arr.eltType, max: arr.eltType, seed: int)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(seed, t, false);
+    rs.fill(arr, min, max);
+  }
+
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    the range [``min``, ``max``] (inclusive) in parallel using a new
+    :record:`randomStream`. The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    :arg arr: An array of numeric values
+    :arg min: The (inclusive) lower bound for the random values
+    :arg max: The (inclusive) upper bound for the random values
+  */
+  proc fillRandom(ref arr: [] ?t, min: arr.eltType, max: arr.eltType)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(t, false);
+    rs.fill(arr, min, max);
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: [], min, max, seed: int(64)) {
+    compileError("Random.fillRandom is only defined for rectangular numeric arrays");
   }
 
   /* Shuffle the elements of a rectangular array into a random order.
@@ -188,18 +241,39 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
+  @deprecated("The overload of 'shuffle' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc shuffle(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
 
-    if(algorithm==RNG.NPB) then
+    if(algorithm==_RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
 
-    var randNums = createRandomStream(seed=seed,
+    var randNums = _createRandomStream(seed=seed,
                                       eltType=arr.domain.idxType,
                                       parSafe=false,
                                       algorithm=algorithm);
     randNums.shuffle(arr);
   }
 
+  /*
+    Use a new :record:`randomStream` to shuffle an array in place.
+
+    :arg arr: A non-strided default rectangular 1D array
+    :arg seed: The seed to initialize a ``randomStream`` with
+  */
+  proc shuffle(ref arr: [?d], seed: int) where is1DRectangularDomain(d) {
+    var rs = new randomStream(seed, d.idxType, false);
+    rs.shuffle(arr);
+  }
+
+  /*
+    Use a new :record:`randomStream` to shuffle an array in place.
+
+    :arg arr: A non-strided default rectangular 1D array
+  */
+  proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
+    var rs = new randomStream(d.idxType, false);
+    rs.shuffle(arr);
+  }
 
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
@@ -211,8 +285,9 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc permutation(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
-    if(algorithm==RNG.NPB) then
+  @deprecated("The overload of 'permutation' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc permutation(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
+    if(algorithm==_RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array permutation");
 
     var randNums = createRandomStream(seed=seed,
@@ -222,14 +297,181 @@ module Random {
     randNums.permutation(arr);
   }
 
-  @chpldoc.nodoc
-  proc makeRandomStream(type eltType,
-                        seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        param algorithm = defaultRNG) {
-    compilerWarning("makeRandomStream is deprecated - " +
-                    "please use createRandomStream instead");
-    return createRandomStream(eltType, seed, parSafe, algorithm);
+  /*
+    Use a new :record:`randomStream` to produce a random permutation of an
+    array's domain. The values ``d.dim(0).low..d.dim(0).high`` will appear
+    exactly once in the array in a pseudo-random order.
+
+    :arg arr: The array to store the permutation in
+    :arg seed: The seed to use when initializing a ``randomStream``
+  */
+  proc permutation(ref arr: [?d] ?t, seed: int)
+    where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+  {
+    var rs = new randomStream(seed, d.eltType, false);
+    rs.permutation(arr);
+  }
+
+  /*
+    Use a new :record:`randomStream` to produce a random permutation of an
+    array's domain. The values ``d.dim(0).low..d.dim(0).high`` will appear
+    exactly once in the array in a pseudo-random order.
+
+    :arg arr: The array to store the permutation in
+  */
+  proc permutation(ref arr: [?d] ?t)
+    where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+  {
+    var rs = new randomStream(d.eltType, false);
+    rs.permutation(arr);
+  }
+
+  record randomStream: writeSerializable {
+    /*
+      Specifies the type of value generated by the random stream. Currently
+      numeric and bool types are supported.
+    */
+    type t;
+
+    /*
+      Indicates whether or not the random stream needs to be parallel-safe.
+      If multiple tasks interact with it in an uncoordinated fashion, this
+      must be set to `true`.  If it will only be called from a single task,
+      or if only one task will call into it at a time, setting to `false`
+      will reduce overhead related to ensuring mutual exclusion.
+    */
+    param parSafe: bool;
+
+    /* The seed value for the PCG random number generator */
+    const seed: int;
+
+    @chpldoc.nodoc
+    var pcg: shared PCGRandomStreamInternal(t, parSafe);
+
+    /*
+      Create a new ``randomStream`` using the specified seed and parallel
+      safety.
+    */
+    proc init(seed: int, type t, param parSafe: bool) where isNumericOrBoolType(t) {
+      this.t = t;
+      this.parSafe = parSafe;
+      this.seed = seed;
+      this.pcg = new shared PCGRandomStreamInternal(t, seed, parSafe);
+    }
+
+    /*
+      Create a new ``randomStream`` using the specified parallel safety and
+      a seed computed from the current time.
+    */
+    proc init(type t, param parSafe: bool) where isNumericOrBoolType(t) {
+      this.t = t;
+      this.parSafe = parSafe;
+      this.seed = _SeedGenerator.oddCurrentTime;
+      this.pcg = new shared PCGRandomStreamInternal(t, this.seed, parSafe);
+    }
+
+    @chpldoc.nodoc
+    proc init(seed: int, type t, param parSafe: bool) {
+      this.t = t;
+      this.parSafe = parSafe;
+      compilerError("'randomStream' only supports numeric or bool types");
+    }
+
+    @chpldoc.nodoc
+    proc init(type t, param parSafe: bool) {
+      this.t = t;
+      this.parSafe = parSafe;
+      compilerError("'randomStream' only supports numeric or bool types");
+    }
+
+    /*
+
+    */
+    proc fill(ref arr: [] t) where arr.isRectangular() do
+      this.pcg.fillRandom(arr);
+
+    /*
+
+    */
+    proc fill(ref arr: [] t, min: t, max: t) where arr.isRectangular() do
+      this.pcg.fillRandom(arr, min, max);
+
+    /*
+
+    */
+    proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d)
+      do this.pcg.shuffle(arr);
+
+    /*
+
+    */
+    proc permutation(ref arr: [?d] t)
+      where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+        this.pcg.permutation(arr);
+
+    /*
+
+    */
+    proc getNext(type sampleType=t): sampleType do
+      return this.pcg.getNext(sampleType);
+
+    /*
+
+    */
+    proc getNext(min: t, max: t): t do
+      return this.pcg.getNext(min, max);
+
+    /*
+
+    */
+    proc getNext(min: t, max: t, type sampleType=t): sampleType do
+      return this.pcg.getNext(min, max, sampleType);
+
+    /*
+
+    */
+    proc skipToNth(n: integral) throws do
+      this.pcg.skipToNth(n);
+
+    /*
+
+    */
+    proc getNth(n: integral): t throws do
+      return this.pcg.getNth(n);
+
+    iter sample(r: range, type sampleType=t): sampleType {
+      var it = this.pcg.iterate({r}, sampleType);
+      for s in it do yield s;
+    }
+
+    iter sample(r: range, type sampleType=t, min: sampleType, max: sampleType): sampleType {
+      var it = this.pcg.iterate({r}, sampleType, min, max);
+      for s in it do yield s;
+    }
+
+    @chpldoc.nodoc
+    iter sample(r: range, type sampleType, param tag)
+      where tag == iterKind.leader
+    {
+      var it = this.pcg.iterate({r}, sampleType, tag);
+      for s in it do yield s;
+    }
+
+    @chpldoc.nodoc
+    iter sample(r: range, type sampleType, param tag, min: sampleType, max: sampleType)
+      where tag == iterKind.leader
+    {
+      var it = this.pcg.iterate({r}, sampleType, min, max, tag);
+      for s in it do yield s;
+    }
+
+    proc serialize(writer, ref serializer) throws {
+      var ser = serializer.startRecord(writer, "randomStream", 3);
+      ser.writeField("t", t:string);
+      ser.writeField("seed", seed);
+      ser.writeField("parSafe", parSafe);
+      ser.endRecord();
+    }
   }
 
   /*
@@ -257,16 +499,24 @@ module Random {
 
     :returns: an owned RandomStream
   */
+  @deprecated("'createRandomStream' is deprecated; please use 'new randomStream' instead")
   proc createRandomStream(type eltType,
-                          seed: int(64) = SeedGenerator.oddCurrentTime,
+                          seed: int(64) = _SeedGenerator.oddCurrentTime,
                           param parSafe: bool = true,
-                          param algorithm = defaultRNG) {
-    if algorithm == RNG.PCG then
-      return new owned PCGRandomStream(seed=seed,
+                          param algorithm = _defaultRNG) do
+    return _createRandomStream(eltType, seed, parSafe, algorithm);
+
+  @chpldoc.nodoc
+  proc _createRandomStream(type eltType,
+                          seed: int(64) = _SeedGenerator.oddCurrentTime,
+                          param parSafe: bool = true,
+                          param algorithm = _defaultRNG) {
+    if algorithm == _RNG.PCG then
+      return new owned PCGRandomStreamInternal(seed=seed,
                                        parSafe=parSafe,
                                        eltType=eltType);
-    else if algorithm == RNG.NPB then
-      return new owned NPBRandomStream(seed=seed,
+    else if algorithm == _RNG.NPB then
+      return new owned NPBRandomStreamInternal(seed=seed,
                                        parSafe=parSafe,
                                        eltType=eltType);
     else
@@ -486,10 +736,6 @@ module Random {
 
     .. note::
 
-      This RandomStreamInterface is expected to change`.
-
-    .. note::
-
       At present, different implementations of this interface can vary in
       whether or not they can generate 0.0 and/or 1.0.  (e.g. They can be
       generated by :mod:`PCGRandom` but not by :mod:`NPBRandom`).
@@ -515,6 +761,7 @@ module Random {
      turn it into an interface.
 
   */
+  @deprecated("'RandomStreamInterface' is deprecated")
   class RandomStreamInterface : writeSerializable {
     /*
       Specifies the type of value generated by the RandomStream.
@@ -730,13 +977,13 @@ module Random {
     }
   }
 
-  // An apparent bug prevents this from working.
-  //type RandomStream = PCGRandomStream;
-
 
   /*
      Seed generation for pseudorandom number generation.
 
+     .. warning:
+
+       The ``RandomSupport`` sub-module and its contents are deprecated
 
      .. note::
 
@@ -751,42 +998,42 @@ module Random {
 
   */
   module RandomSupport {
+    import super._SeedGenerator;
 
     /*
       Provides methods to help generate seeds when the user doesn't want
       to create one.  It currently supports two type methods. Both start
       with the current time.
     */
-    record SeedGenerator {
-      /*
-        Generate a seed based on the current time in microseconds as
-        reported by :proc:`Time.timeSinceEpoch`. This seed is not
-        suitable for the NPB RNG since that requires an odd seed.
-      */
-      proc type currentTime: int(64) {
-        use Time;
-        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
-        return seed;
-
-      }
-      /*
-        Generate an odd seed based on the current time in microseconds as
-        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
-        for the NPB RNG.
-      */
-      proc type oddCurrentTime: int(64) {
-        use Time;
-        const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
-        const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-        return oddseed;
-      }
-    }
-
-
+    @deprecated("'SeedGenerator' is deprecated")
+    type SeedGenerator = _SeedGenerator;
   } // close module RandomSupport
 
+  @chpldoc.nodoc
+  record _SeedGenerator {
+    /*
+      Generate a seed based on the current time in microseconds as
+      reported by :proc:`Time.timeSinceEpoch`. This seed is not
+      suitable for the NPB RNG since that requires an odd seed.
+    */
+    proc type currentTime: int(64) {
+      use Time;
+      const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
+      return seed;
 
-
+    }
+    /*
+      Generate an odd seed based on the current time in microseconds as
+      reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
+      for the NPB RNG.
+    */
+    proc type oddCurrentTime: int(64) {
+      use Time;
+      const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+      const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+      return oddseed;
+    }
+  }
 
   /*
      Permuted Linear Congruential Random Number Generator.
@@ -810,7 +1057,6 @@ module Random {
   */
   module PCGRandom {
 
-    use super.RandomSupport;
     private use Random, IO;
     private use Math only ldExp;
     private use PCGRandomLib;
@@ -843,8 +1089,8 @@ module Random {
       match the C PCG reference implementation and have specifically verified
       equal output given the same seed. However, this implementation differs
       from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with :proc:`PCGRandomStream.getNext` using `min`
-      and `max` arguments). In addition, this implementation directly supports
+      within particular bounds (with ``PCGRandomStream.getNext`` using ``min``
+      and ``max`` arguments). In addition, this implementation directly supports
       the generation of random `real` values, unlike the C PCG implementation.
 
       Smaller numbers, such as `uint(8)` or `uint(16)`, are generated from
@@ -897,7 +1143,11 @@ module Random {
          the top 16 bits into the value provided to TestU01).
 
     */
-    class PCGRandomStream : writeSerializable {
+    @deprecated("'PCGRandomStream' is deprecated; please use :record:`~Random.randomStream` instead")
+    type PCGRandomStream = PCGRandomStreamInternal;
+
+    @chpldoc.nodoc
+    class PCGRandomStreamInternal : writeSerializable {
       /*
         Specifies the type of value generated by the PCGRandomStream.
         All numeric types are supported: `int`, `uint`, `real`, `imag`,
@@ -937,7 +1187,7 @@ module Random {
 
       */
       proc init(type eltType,
-                seed: int(64) = SeedGenerator.currentTime,
+                seed: int(64) = _SeedGenerator.currentTime,
                 param parSafe: bool = true) {
         this.eltType = eltType;
         this.seed = seed;
@@ -2617,15 +2867,18 @@ module Random {
   */
   module NPBRandom {
 
-    use super.RandomSupport;
     use ChapelLocks;
-    private use IO;
+    private use IO, Random;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level
       notes for :mod:`NPBRandom` for details on the PRNG used.
     */
-    class NPBRandomStream : writeSerializable {
+    @deprecated("'NPBRandomStream' is deprecated")
+    type NPBRandomStream = NPBRandomStreamInternal;
+
+    @chpldoc.nodoc
+    class NPBRandomStreamInternal : writeSerializable {
       /*
         Specifies the type of value generated by the NPBRandomStream.
         Currently, only `real(64)`, `imag(64)`, and `complex(128)` are
@@ -2672,7 +2925,7 @@ module Random {
 
       */
       proc init(type eltType = real(64),
-                seed: int(64) = SeedGenerator.oddCurrentTime,
+                seed: int(64) = _SeedGenerator.oddCurrentTime,
                 param parSafe: bool = true) {
         use HaltWrappers;
 
