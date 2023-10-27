@@ -194,12 +194,60 @@ static void test5() {
   resolveModule(context, m->id());
 }
 
+// Test passing to generic arguments with types that are generic-with-defaults
+static void test6() {
+  Context ctx;
+  auto context = &ctx;
+  ErrorGuard guard(context);
+  std::string program = R"""(
+    operator =(ref lhs: int, rhs : int) {
+      __primitive("=", lhs, rhs);
+    }
+
+    record R {
+      type T = int;
+      var field : T;
+
+      proc init(type T) {
+        this.T = T;
+        var val : T;
+        this.field = val;
+      }
+    }
+
+    //
+    // In this case, we have specified 'arg' to be generic, but the frontend
+    // still technically recognizes it as generic-with-defaults (at least at
+    // the time this test was created).
+    //
+    proc blah(arg: R(?)) {
+      return arg.field;
+    }
+
+    var a : R(string);
+    var x = blah(a);
+
+    var b : R(int);
+    var y = blah(b);
+  )""";
+
+  auto m = parseModule(context, program);
+  auto r = resolveModule(context, m->id());
+
+  auto x = findVariable(m, "x");
+  assert(r.byAst(x).type().type()->isStringType());
+
+  auto y = findVariable(m, "y");
+  assert(r.byAst(y).type().type()->isIntType());
+}
+
 int main() {
   test1();
   test2();
   test3();
   test4();
   test5();
+  test6();
 
   return 0;
 }
