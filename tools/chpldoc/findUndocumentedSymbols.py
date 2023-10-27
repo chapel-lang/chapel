@@ -96,27 +96,21 @@ def get_module(n: dyno.AstNode) -> dyno.AstNode:
     return None
 
 
-def node_or_parent_has_attribute(node: dyno.AstNode, marker: str) -> bool:
+def node_has_attribute(node: dyno.AstNode, marker: str) -> bool:
     """
-    a symbol is has an attribute if it has an attribute that matches the argument, or is parent does
+    a symbol has an attribute if it has an attribute that matches the argument
     """
-    if (attrs := node.attribute_group()) and any(a.name() == marker for a in attrs):
-        return True
-
-    if (parent := node.parent()) and node_or_parent_has_attribute(parent, marker):
-        return True
-
-    return False
+    return (attrs := node.attribute_group()) and any(a.name() == marker for a in attrs)
 
 
 def is_deprecated(node: dyno.AstNode) -> bool:
     """a node is deprecated if it or its parent has an attribute that is deprecated"""
-    return node_or_parent_has_attribute(node, "deprecated")
+    return node_has_attribute(node, "deprecated")
 
 
 def is_unstable(node: dyno.AstNode) -> bool:
     """a node is unstable if it or its parent has an attribute that is unstable"""
-    return node_or_parent_has_attribute(node, "unstable")
+    return node_has_attribute(node, "unstable")
 
 
 def is_nodoc(node: dyno.AstNode) -> bool:
@@ -127,9 +121,7 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     - symbol is private
     - symbol is a child of a node that is nodoc
     """
-    if (attrs := node.attribute_group()) and any(
-        a.name() == "chpldoc.nodoc" for a in attrs
-    ):
+    if node_has_attribute(node, "chpldoc.nodoc"):
         return True
 
     if (
@@ -275,13 +267,34 @@ class FindUndocumentedSymbols:
                 return sib1
         return None
 
-    def get_documentable_symbols(self, root: dyno.AstNode) -> Generator:
+    def get_documentable_symbols(self) -> Generator:
+        for a in self.ast:
+            return self._get_documentable_symbols(a)
+
+    def _get_documentable_symbols(self, root: dyno.AstNode) -> Generator:
+        def _preorder(node):
+            """
+            this preorder function respects `--ignore-[deprecated|unstable]`
+            and checks for nodoc
+            """
+            if self.ignore_deprecated and is_deprecated(node):
+                return
+            if self.ignore_unstable and is_unstable(node):
+                return
+            if is_nodoc(node):
+                return
+            yield node
+            for child in node:
+                yield from _preorder(child)
+
         for (
             pat,
             check_func,
         ) in FindUndocumentedSymbols.documentable_symbol_patterns.values():
             matches = [
-                m for m in each_matching(root, pat) if not check_func or check_func(*m)
+                m
+                for m in each_matching(root, pat, iterator=_preorder)
+                if not check_func or check_func(*m)
             ]
             for node, _ in matches:
                 yield node
@@ -302,13 +315,8 @@ class FindUndocumentedSymbols:
         return False
 
     def __call__(self):
-        syms = [s for s in self.get_documentable_symbols([a for a in self.ast])]
-        for s in syms:
-            if not is_nodoc(s) and not self.has_doc_comment(s):
-                if self.ignore_deprecated and is_deprecated(s):
-                    continue
-                if self.ignore_unstable and is_unstable(s):
-                    continue
+        for s in self.get_documentable_symbols():
+            if not self.has_doc_comment(s):
                 yield s
 
 
