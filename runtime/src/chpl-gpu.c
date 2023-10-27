@@ -286,17 +286,15 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_start(args, nargs);
 
   if (num_threads > 0){
-    CHPL_GPU_DEBUG("No kernel launched since num_threads is 0\n");    )
-
     chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
         blk_dim, 1, 1);
     chpl_gpu_diags_incr(kernel_launch);
 
     chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                    name,
-                                    num_threads, blk_dim,
-                                    stream,
-                                    nargs, args);
+                                     name,
+                                     num_threads, blk_dim,
+                                     stream,
+                                     nargs, args);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_sync_with_host) {
@@ -306,6 +304,8 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
 #else
     chpl_gpu_impl_synchronize();
 #endif
+  } else {
+  CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
   va_end(args);
 
