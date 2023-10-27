@@ -101,8 +101,8 @@ File Header
 
 The '.dyno' file format header consists of:
 
- * 8 bytes of magic number 0x4C5048434550487F
-   ('<7F>HPECHPL' or the reverse of it, dependeng on endianness)
+ * 8 bytes of magic number 0x4C50484342494c7F
+   ('<7F>LIBCHPL' or the reverse of it, dependeng on endianness)
  * 4 bytes of library file format major version number
  * 4 bytes of library file format minor version number
  * 4 bytes of chpl major version number
@@ -122,7 +122,7 @@ offsets store offsets relative to the module section header.
 
 Each module section begins with a header that consists of:
 
- * 8 bytes of magic number 0x0030d01e5ec110e0
+ * 8 bytes of magic number 0x4d4dd01e5ec14d4d
  * 8 bytes of reserved space for future flags
  * 8 bytes of symbol table section relative offset
  * 8 bytes of uAST section relative offset

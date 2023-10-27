@@ -33,9 +33,9 @@ namespace libraries {
 
 
 // magic numbers
-// file magic number is <7F>HPECHPL
-static const uint64_t FILE_HEADER_MAGIC =      0x4C5048434550487F;
-static const uint64_t MODULE_SECTION_MAGIC =   0x0030d01e5ec110e0;
+// file magic number is <7F>LIBCHPL
+static const uint64_t FILE_HEADER_MAGIC =      0x4C50484342494c7F;
+static const uint64_t MODULE_SECTION_MAGIC =   0x4d4dd01e5ec14d4d;
 static const uint64_t SYMBOL_TABLE_MAGIC =     0x0003bb1e5ec110e0;
 static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x51e17601;
 static const uint64_t UAST_SECTION_MAGIC =     0x0003bb1e5ec110e0;
