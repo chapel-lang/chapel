@@ -743,17 +743,20 @@ bitmapBaseType_t bitmapElemBit(size_t i) {
 
 static inline
 void bitmapClear(struct bitmap_t* b, size_t i) {
-  b->map[bitmapElemIdx(i)] &= ~bitmapElemBit(i);
+  if (b) {
+    b->map[bitmapElemIdx(i)] &= ~bitmapElemBit(i);
+  }
 }
 
 static inline
 void bitmapSet(struct bitmap_t* b, size_t i) {
+  assert(b);
   b->map[bitmapElemIdx(i)] |= bitmapElemBit(i);
 }
 
 static inline
 int bitmapTest(struct bitmap_t* b, size_t i) {
-  return (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0;
+  return (b && (b->map[bitmapElemIdx(i)] & bitmapElemBit(i)) != 0);
 }
 
 #define BITMAP_FOREACH_SET(b, i)                                        \
@@ -1489,7 +1492,7 @@ struct fi_info* findProvInList(struct fi_info* info,
     chpl_warning("sockets provider is deprecated", 0, 0);
   }
 
-  // some providers incorrectly report that they supports FI_ORDER_ATOMIC_RAW
+  // some providers incorrectly report that they support FI_ORDER_ATOMIC_RAW
   // and FI_ORDER_ATOMIC_WAR
   if (best && (isInProvider("cxi", best))) {
     best->tx_attr->msg_order &= ~(FI_ORDER_ATOMIC_RAW | FI_ORDER_ATOMIC_WAR);
@@ -6746,85 +6749,76 @@ static ssize_t wrap_fi_atomicmsg(struct amoBundle_t* ab, uint64_t flags,
 static
 chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
                                         struct perTxCtxInfo_t* tcip) {
-  if (ab->iovRes.addr == NULL
+
+  chpl_bool famo = (ab->iovRes.addr != NULL);
+  uint64_t flags = 0;
+  chpl_bool havePutsOut = bitmapTest(tcip->putVisBitmap, ab->node);
+  chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, ab->node);
+
+  //
+  // Inject this AMO if it is non-fetching, we have a bound tx context so we
+  // can delay forcing the memory visibility until later, and the size
+  // doesn't exceed the injection size limit.
+  //
+  if (!famo
       && tcip->bound
       && ab->size <= ofi_info->tx_attr->inject_size
-      && (tcip->putVisBitmap == NULL
-          || !bitmapTest(tcip->putVisBitmap, ab->node))
       && envInjectAMO) {
-    //
-    // Special case: injection is the quickest.  We can use that if
-    // this is a non-fetching operation, we have a bound tx context so
-    // we can delay forcing the memory visibility until later, the size
-    // doesn't exceed the injection size limit, and we don't need a
-    // fence because the last thing we did to the same target node was
-    // not a PUT.
-    //
-    (void) wrap_fi_inject_atomic(ab, tcip);
-  } else {
-    //
-    // If we need a result wait for it; otherwise, we can collect
-    // the completion later and message ordering will ensure MCM
-    // conformance.
-    //
-    atomic_bool txnDone;
-    if (ab->iovRes.addr != NULL) {
-      ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);;
-    }
-
-    if (tcip->bound
-        && tcip->putVisBitmap != NULL
-        && bitmapTest(tcip->putVisBitmap, ab->node)) {
-      //
-      // Special case: If our last operation to the same remote node was
-      // a PUT (which we only see with a bound tx context) then we need
-      // to do a fenced AMO to force the PUT to complete before this
-      // AMO.  We may still be able to inject the AMO, however.
-      //
-      uint64_t flags = FI_FENCE;
-      if (ab->size <= ofi_info->tx_attr->inject_size
-          && envInjectAMO) {
-        flags |= FI_INJECT;
-      }
-      (void) wrap_fi_atomicmsg(ab, flags, tcip);
-      bitmapClear(tcip->putVisBitmap, ab->node);
-    } else {
-      //
-      // General case.
-      //
-      uint64_t flags = 0;
-
-      //
-      // If it's a fetching AMO (read) and the provider doesn't support
-      // FI_ORDER_ATOMIC_RAW, then we must do a fenced AMO to force any
-      // outstanding non-fetching AMOs (writes) to complete before this AMO.
-      //
-      if ((ab->iovRes.addr != NULL) &&
-        (ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW) == 0) {
-        flags = FI_FENCE;
-      }
-      (void) wrap_fi_atomicmsg(ab, flags, tcip);
-    }
-
-    if (ab->iovRes.addr != NULL) {
-      waitForTxnComplete(tcip, ab->m.context);
-      txCtxCleanup(ab->m.context);
-    }
+    flags |= FI_INJECT;
   }
 
   //
-  // When using message ordering we have to do something after the
-  // operation to force it into visibility, and on the same tx context
-  // as the operation itself because libfabric message ordering is
-  // specific to endpoint pairs.  With a bound tx context we can do it
-  // later, when needed.  Otherwise we have to do it now.
+  // If we need a result wait for it; otherwise, we can collect the completion
+  // later and message ordering will ensure MCM conformance.
   //
+  atomic_bool txnDone;
+  if (famo) {
+    ab->m.context = txCtxInit(tcip, __LINE__, &txnDone);
+  }
+
   if (tcip->bound) {
-    bitmapSet(tcip->amoVisBitmap, ab->node);
-  } else {
-    mcmReleaseOneNode(ab->node, tcip, "AMO");
+    //
+    // Fence this AMO to force any outstanding operations to complete if A)
+    // there are outstanding PUTs to the same remote node; or B) this is a
+    // fetching AMO and there are outstanding non-fetching AMOs and the
+    // provider doesn't support FI_ORDER_ATOMIC_RAW.
+    //
+    // If either is true use a fence to force all outstanding operations to
+    // complete before performing this AMO.
+    //
+    if (havePutsOut ||
+       (famo && haveAmosOut &&
+          !(ofi_info->tx_attr->msg_order & FI_ORDER_ATOMIC_RAW))) {
+      flags |= FI_FENCE;
+    }
+    if (havePutsOut) {
+      bitmapClear(tcip->putVisBitmap, ab->node);
+    }
+    if (haveAmosOut) {
+      bitmapClear(tcip->amoVisBitmap, ab->node);
+    }
   }
-
+  (void) wrap_fi_atomicmsg(ab, flags, tcip);
+  if (famo) {
+    //
+    // Wait for the result of a fetching operation.
+    //
+    waitForTxnComplete(tcip, ab->m.context);
+    txCtxCleanup(ab->m.context);
+  } else {
+      //
+      // When using message ordering we need to do something after a
+      // non-fetching AMO to force it into visibility, and do it on the same
+      // tx context as the operation itself because libfabric message
+      // ordering is specific to endpoint pairs.  With a bound tx context we
+      // can do it later, when needed.  Otherwise we have to do it now.
+      //
+      if (tcip->bound) {
+        bitmapSet(tcip->amoVisBitmap, ab->node);
+      } else {
+        mcmReleaseOneNode(ab->node, tcip, "AMO");
+      }
+  }
   return NULL;
 }
 
