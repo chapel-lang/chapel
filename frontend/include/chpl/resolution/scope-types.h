@@ -863,7 +863,7 @@ class VisibilitySymbols {
       stores the declared name in `declared`
       Returns false if `name` is not found
   */
-  bool lookupName(const UniqueString &name, UniqueString &declared) const;
+  bool lookupName(UniqueString name, UniqueString &declared) const;
 
   /** Return a vector of pairs of (original name, new name here)
       for the names declared here. */
