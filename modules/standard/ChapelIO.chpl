@@ -22,11 +22,6 @@
 
 Basic types and utilities in support of I/O operation.
 
-.. warning::
-
-   The module name 'ChapelIO' is unstable.  If you want to use qualified naming
-   on the symbols within it, please ``use`` or ``import`` the :mod:`IO` module.
-
 Most of Chapel's I/O support is within the :mod:`IO` module.  This section
 describes automatically included basic types and routines that support the
 :mod:`IO` module.
