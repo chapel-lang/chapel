@@ -119,7 +119,6 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     - symbol has attribute `@chpldoc.nodoc`
     - symbol name is prefixed with `chpl_` and symbol does not have `pragma "chpldoc ignore chpl prefix"`
     - symbol is private
-    - symbol is a child of a node that is nodoc
     """
     if node_has_attribute(node, "chpldoc.nodoc"):
         return True
@@ -132,9 +131,6 @@ def is_nodoc(node: dyno.AstNode) -> bool:
         return True
 
     if hasattr(node, "visibility") and node.visibility() == "private":
-        return True
-
-    if (parent := node.parent()) and is_nodoc(parent):
         return True
 
     return False
@@ -269,7 +265,7 @@ class FindUndocumentedSymbols:
 
     def get_documentable_symbols(self) -> Generator:
         for a in self.ast:
-            return self._get_documentable_symbols(a)
+            yield from self._get_documentable_symbols(a)
 
     def _get_documentable_symbols(self, root: dyno.AstNode) -> Generator:
         def _preorder(node):
