@@ -1,27 +1,52 @@
-#!/usr/bin/env bash
+#!/usr/bin/env python3
 
-TESTNAME=$1
-OUTFILE=$2
-SCRIPT_OUTFILE=$TESTNAME.script.tmp
-TMPFILE=$OUTFILE.prediff.tmp
+import sys
+import os
+import subprocess as sp
+import shlex
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+tmpfile = f"{outfile}.prediff.tmp"
+extra_args_ext = "prediffopts"
+extra_args_file = f"{testname}.{extra_args_ext}"
+
+chpl_home = os.getenv("CHPL_HOME", None)
+
+script = os.path.join(chpl_home, "tools", "chpldoc", "findUndocumentedSymbols")
 
 
-SCRIPT=$CHPL_HOME/tools/chpldoc/findUndocumentedSymbols
-PREDIFF_OPTS_FILE=$TESTNAME.prediffopts
-PREDIFF_OPTS=
-if [ -f $PREDIFF_OPTS_FILE ]; then
-  # read the first line from script opts file
-  PREDIFF_OPTS=`head -n 1 $PREDIFF_OPTS_FILE`
-fi
+def get_prediff_opts():
+    if os.path.isfile(extra_args_file):
+        with open(extra_args_file, "r") as f:
+            lines = f.readlines()
+            if len(lines) == 1:
+                return shlex.split(lines[0].strip())
+            else:
+                print(f"Invalid '.{extra_args_ext}' file", sys.stderr)
+    return []
 
-(set -x && $SCRIPT $PREDIFF_OPTS $TESTNAME.chpl &> $SCRIPT_OUTFILE)
 
-cat $SCRIPT_OUTFILE >$TMPFILE
+def run_script(script, options, testfile, outfile):
+    args = [script] + options + [testfile]
+    with open(outfile, "w") as of:
+        cp = sp.run(args, stdout=of, stderr=of)
+        return cp.returncode == 0
 
-if [ -s $OUTFILE ]; then
-  # if there is no output, no need to do this
-  echo "================================================================================" >>$TMPFILE
-  cat $OUTFILE >>$TMPFILE
-fi
-mv $TMPFILE $OUTFILE
-rm $SCRIPT_OUTFILE
+
+def append_to_file(file1, file2):
+    lines = []
+    with open(file2, "r") as f:
+        lines = f.readlines()
+    # if there was contents in file2, copy them over with a separator
+    if len(lines) > 0:
+        with open(file1, "a") as f:
+            f.write("=" * 80)
+            f.write(os.linesep)
+            f.writelines(lines)
+
+
+opts = get_prediff_opts()
+run_script(script, opts, f"{testname}.chpl", tmpfile)
+append_to_file(tmpfile, outfile)  # outfile to tmpfile if there is contents in it
+os.rename(tmpfile, outfile)
