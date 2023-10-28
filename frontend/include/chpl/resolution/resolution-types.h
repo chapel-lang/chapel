@@ -2080,6 +2080,19 @@ template<> struct hash<chpl::resolution::TypedFnSignature::WhereClauseResult>
   }
 };
 
+template<> struct hash<chpl::resolution::CandidateFailureReason>
+{
+  size_t operator()(const chpl::resolution::CandidateFailureReason& key) const {
+    return (size_t) key;
+  }
+};
+
+template<> struct hash<chpl::resolution::PassingFailureReason>
+{
+  size_t operator()(const chpl::resolution::PassingFailureReason& key) const {
+    return (size_t) key;
+  }
+};
 
 
 } // end namespace std

@@ -142,7 +142,7 @@ class CanPassResult {
   bool passes() { return !failReason_; }
 
   PassingFailureReason reason() {
-    CHPL_ASSERT(failReason_.hasValue());
+    CHPL_ASSERT((bool) failReason_);
     return *failReason_;
   }
 
