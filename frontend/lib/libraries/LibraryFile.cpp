@@ -205,7 +205,7 @@ bool LibraryFile::readModuleAst(Context* context,
   const AstSectionHeader* astHdr =
     (const AstSectionHeader*) (data + uAstOffset);
 
-  if (astHdr->magic != 0x5453411e5ec110e0 ||
+  if (astHdr->magic != UAST_SECTION_MAGIC ||
       astHdr->nEntries == 0 ||
       astHdr->nBytesAstEntries == 0 ||
       uAstOffset + astHdr->nBytesAstEntries > len) {
