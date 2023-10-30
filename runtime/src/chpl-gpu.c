@@ -285,25 +285,28 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_list args;
   va_start(args, nargs);
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-      blk_dim, 1, 1);
-  chpl_gpu_diags_incr(kernel_launch);
+  if (num_threads > 0){
+    chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+        blk_dim, 1, 1);
+    chpl_gpu_diags_incr(kernel_launch);
 
-  chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                   name,
-                                   num_threads, blk_dim,
-                                   stream,
-                                   nargs, args);
+    chpl_gpu_impl_launch_kernel_flat(ln, fn,
+                                     name,
+                                     num_threads, blk_dim,
+                                     stream,
+                                     nargs, args);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    wait_stream(stream);
-  }
+    if (chpl_gpu_sync_with_host) {
+      CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+      wait_stream(stream);
+    }
 #else
-  chpl_gpu_impl_synchronize();
+    chpl_gpu_impl_synchronize();
 #endif
-
+  } else {
+  CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
+  }
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
