@@ -24,6 +24,7 @@ def get_prediff_opts():
                 return shlex.split(lines[0].strip())
             else:
                 print(f"Invalid '.{extra_args_ext}' file", sys.stderr)
+                exit(1)
     return []
 
 
@@ -34,13 +35,13 @@ def run_script(script, options, testfile, outfile):
         return cp.returncode == 0
 
 
-def append_to_file(file1, file2):
+def append_to_file(file_for_diff, output_file):
     lines = []
-    with open(file2, "r") as f:
+    with open(output_file, "r") as f:
         lines = f.readlines()
     # if there was contents in file2, copy them over with a separator
     if len(lines) > 0:
-        with open(file1, "a") as f:
+        with open(file_for_diff, "a") as f:
             f.write("=" * 80)
             f.write(os.linesep)
             f.writelines(lines)

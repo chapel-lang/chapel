@@ -172,11 +172,10 @@ def get_node_name(node: dyno.AstNode) -> List[str]:
     names_to_return = []
 
     base_names = get_simple_node_names(node)
-    for base_name in base_names:
-        name = base_name
+    for name in base_names:
         # handles secondary methods
         if (
-            hasattr(node, "this_formal")
+            isinstance(node, dyno.Function)
             and (this := node.this_formal())
             and (typename := this.type_expression())
         ):
@@ -212,11 +211,11 @@ main code
 class FindUndocumentedSymbols:
     def __init__(
         self,
-        ast: List[dyno.AstNode],
+        asts: List[dyno.AstNode],
         ignore_deprecated: bool = False,
         ignore_unstable: bool = False,
     ):
-        self.ast = ast
+        self.asts = asts
         self.ignore_deprecated = ignore_deprecated
         self.ignore_unstable = ignore_unstable
 
@@ -257,14 +256,14 @@ class FindUndocumentedSymbols:
 
     def _get_previous_sibling(self, node: dyno.AstNode):
         parent = node.parent()
-        lookin = parent if parent else self.ast
+        lookin = parent if parent else self.asts
         for sib1, sib2 in look_ahead(lookin):
             if sib2 and node.unique_id() == sib2.unique_id():
                 return sib1
         return None
 
     def get_documentable_symbols(self) -> Generator:
-        for a in self.ast:
+        for a in self.asts:
             yield from self._get_documentable_symbols(a)
 
     def _get_documentable_symbols(self, root: dyno.AstNode) -> Generator:

@@ -217,8 +217,7 @@ def match_pattern(ast, pattern):
     return variables if match_inner(ast, pattern) else None
 
 def each_matching(node, pattern, iterator=preorder):
-    iterator_ = iterator(node) if iterator else node
-    for child in iterator_:
+    for child in iterator(node):
         variables = match_pattern(child, pattern)
         if variables is not None:
             yield (child, variables)

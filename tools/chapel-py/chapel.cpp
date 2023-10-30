@@ -476,7 +476,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"attribute_group", (PyCFunction) AstNodeObject_attribute_group, METH_NOARGS, "Get the attribute group, if any, associated with this node"},
   {"location", (PyCFunction) AstNodeObject_location, METH_NOARGS, "Get the location of this AST node in its file"},
   {"parent", (PyCFunction) AstNodeObject_parent, METH_NOARGS, "Get the parent node of this AST node"},
-  {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "get the pragams of this AST node"},
+  {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "Get the pragmas of this AST node"},
   {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifer for this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
