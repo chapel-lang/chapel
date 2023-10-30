@@ -209,7 +209,7 @@ module GPU
   /*
     Set the block size for kernels launched on the GPU.
    */
-  inline proc setBlockSize(blockSize: int) {
+  inline proc setBlockSize(blockSize: integral) {
     __primitive("gpu set blockSize", blockSize);
   }
 
