@@ -104,6 +104,14 @@ class Context {
     /** Tool name (for use when creating the tmpDir in /tmp if needed) */
     std::string toolName = "chpl";
 
+    /**
+      If 'true', some comments will be included in the uAST.
+
+      Note that, even when this is set, some comments are not included (for
+      example, comments between actual arguments in a function call
+     */
+    bool includeComments = true;
+
     void swap(Configuration& other);
   };
 
@@ -710,12 +718,14 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(const UniqueString& filePath, UniqueString& pathOut);
+  bool pathHasLibrary(UniqueString filePath, UniqueString& pathOut);
 
   /**
-    Sets the library path for the given file path.
+    Register a module ID and file path to be supported by a library file.
    */
-  void setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath);
+  void registerLibraryForModule(ID moduleId,
+                                UniqueString filePath,
+                                UniqueString libPath);
 
   /**
     This function increments the current revision number stored

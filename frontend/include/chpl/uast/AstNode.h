@@ -142,6 +142,9 @@ class AstNode {
       by deserializing the children. */
   void deserializeChildren(Deserializer& des);
 
+  /** Serializes the children, but skips comments */
+  void serializeChildren(Serializer& ser) const;
+
   // Quick way to return an already exhausted iterator.
   template <typename T>
   AstListIteratorPair<T> emptyIterator() const {
@@ -292,8 +295,13 @@ class AstNode {
   // compute the maximum width of all of the IDs
   int computeMaxIdStringWidth() const;
 
+  /** Serialize this uAST node to the stream stored in 'ser' */
   void serialize(Serializer& ser) const;
-  static owned<AstNode> deserialize(Deserializer& des);
+
+  /** Deserialize this uAST node from the stream in 'des'. Note
+      that uAST nodes deserialized in this way will not have IDs assigned.
+      To assign IDs, it's necessary to use a Builder. */
+  static owned<AstNode> deserializeWithoutIds(Deserializer& des);
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -559,7 +567,7 @@ template<> struct deserialize<uast::AstList> {
     uast::AstList ret;
     uint64_t len = des.readVU64();
     for (uint64_t i = 0; i < len; i++) {
-      ret.push_back(uast::AstNode::deserialize(des));
+      ret.push_back(uast::AstNode::deserializeWithoutIds(des));
     }
     return ret;
   }

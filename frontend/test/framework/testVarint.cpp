@@ -31,7 +31,9 @@ using namespace chpl;
 
 static void testMatchUnsigned(uint64_t i, std::string expect) {
   std::ostringstream os;
-  writeUnsignedVarint(os, i);
+  Serializer ser(os);
+
+  ser.writeVU64(i);
   std::string got = os.str();
   assert(got.size() == expect.size());
   for (size_t i = 0; i < expect.size(); i++) {
@@ -39,8 +41,10 @@ static void testMatchUnsigned(uint64_t i, std::string expect) {
   }
 
   // check also that we can read it
-  auto is = std::istringstream(got);
-  uint64_t val = readUnsignedVarint(is);
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
+  uint64_t val = des.readVU64();
   assert(val == i);
 }
 
@@ -57,7 +61,10 @@ static void test1() {
 
 static void testMatchSigned(int64_t i, std::string expect) {
   std::ostringstream os;
-  writeSignedVarint(os, i);
+  Serializer ser(os);
+
+  ser.writeVI64(i);
+
   std::string got = os.str();
   assert(got.size() == expect.size());
   for (size_t i = 0; i < expect.size(); i++) {
@@ -65,8 +72,10 @@ static void testMatchSigned(int64_t i, std::string expect) {
   }
 
   // check also that we can read it
-  auto is = std::istringstream(got);
-  int64_t val = readSignedVarint(is);
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
+  int64_t val = des.readVI64();
   assert(val == i);
 }
 
@@ -83,12 +92,16 @@ static void test2() {
 // testing unsigned writes and reads with a bunch of values
 static void test3() {
   std::ostringstream os;
+  Serializer ser(os);
   for (uint64_t i = 0; i < 1000000; i++) {
-    writeUnsignedVarint(os, i);
+    ser.writeVU64(i);
   }
-  std::istringstream is(os.str());
+  std::string got = os.str();
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   for (uint64_t i = 0; i < 1000000; i++) {
-    uint64_t got = readUnsignedVarint(is);
+    uint64_t got = des.readVU64();
     assert(got == i);
   }
 }
@@ -96,12 +109,16 @@ static void test3() {
 // testing signed writes and reads with a bunch of values
 static void test4() {
   std::ostringstream os;
+  Serializer ser(os);
   for (int64_t i = -500000; i < 500000; i++) {
-    writeSignedVarint(os, i);
+    ser.writeVI64(i);
   }
-  std::istringstream is(os.str());
+  std::string got = os.str();
+  Deserializer des(/*context*/ nullptr,
+                   got.data(), got.size(),
+                   /*table for long strings*/ nullptr);
   for (int64_t i = -500000; i < 500000; i++) {
-    int64_t got = readSignedVarint(is);
+    int64_t got = des.readVI64();
     assert(got == i);
   }
 }

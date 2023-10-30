@@ -196,6 +196,8 @@ struct AstListIteratorPair {
   }
 };
 
+// Note: AstList serializer and deserializer are declared in AstNode.h
+
 
 } // end namespace uast
 } // end namespace chpl

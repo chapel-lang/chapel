@@ -65,6 +65,7 @@ void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(tmpDir, other.tmpDir);
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
+  std::swap(includeComments, other.includeComments);
 }
 
 void Context::setupGlobalStrings() {
@@ -676,7 +677,7 @@ const UniqueString& pathHasLibraryQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::pathHasLibrary(const UniqueString& filePath,
+bool Context::pathHasLibrary(UniqueString filePath,
                              UniqueString& pathOut) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
@@ -692,7 +693,9 @@ bool Context::pathHasLibrary(const UniqueString& filePath,
   return false;
 }
 
-void Context::setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath) {
+void Context::registerLibraryForModule(ID moduleId,
+                                       UniqueString filePath,
+                                       UniqueString libPath) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
   updateResultForQuery(pathHasLibraryQuery,
@@ -700,6 +703,9 @@ void Context::setLibraryForFilePath(const UniqueString& filePath, const UniqueSt
                        "pathHasLibraryQuery",
                        /* isInputQuery */ false,
                        /* forSetter */ true);
+
+  // also update the lookup by module ID
+  setFilePathForModuleId(moduleId, filePath);
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {

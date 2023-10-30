@@ -22,7 +22,8 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/Location.h"
 #include "chpl/framework/UniqueString.h"
-#include "chpl/uast/all-uast.h"
+#include "chpl/uast/Module.h"
+#include "chpl/util/filesystem.h"
 
 #include <fstream>
 #include <sstream>
@@ -41,13 +42,13 @@ static void testSerializeDeserialize(const char* test, const char* program) {
   ErrorGuard guard(context);
 
   std::string filename = std::string(test) + ".chpl";
+  auto libname = UniqueString::get(context, std::string(test) + ".dyno");
 
   owned<std::ofstream> outFile;
   owned<std::ifstream> inFile;
   owned<std::stringstream> ss;
 
   std::ostream* out = nullptr;
-  std::istream* in = nullptr;
 
   if (output[0] != '\0') {
     // if 'output' is set, work with that file.
@@ -84,31 +85,60 @@ static void testSerializeDeserialize(const char* test, const char* program) {
     stringCache = ser.stringCache();
   }
 
+  std::string serializedData;
+
   // Now deserialize!
   if (output[0] != '\0') {
     // if 'output' is set, work with that file.
-    inFile = toOwned(new std::ifstream(filename,
-                                        std::ios::in | std::ios::binary));
-    in = inFile.get();
+    std::string error;
+    bool ok = readfile(filename.c_str(), serializedData, error);
+    assert(ok);
   } else {
-    // get an istream for the string stream
-    in = ss.get();
+    // get the data we write to the string stream
+    serializedData = ss->str();
   }
 
   {
-    auto des = Deserializer(context, *in, stringCache);
+    // This code uses Builder::createForLibraryFileModule,
+    // rather than just creating a Deserializer, in order
+    // to assign IDs
+
+    UniqueString parentSymbolPath;
+
+    auto builder = Builder::createForLibraryFileModule(context,
+                                                       libname,
+                                                       parentSymbolPath);
+
+    auto des = Deserializer(context,
+                            serializedData.c_str(), serializedData.size(),
+                            stringCache);
 
     for (size_t i = 0; i < nToplevelModules; i++) {
       if (verbose) {
         printf("Deserializing %s %s\n", test, vec[i]->name().c_str());
       }
 
-      owned<AstNode> mod = AstNode::deserialize(des);
-      assert(mod->completeMatch(vec[i]));
+      builder->addToplevelExpression(AstNode::deserializeWithoutIds(des));
+    }
+
+    // assign IDs
+    BuilderResult r = builder->result();
+    int i = 0;
+    for (auto ast : r.topLevelExpressions()) {
+      const Module* mod = ast->toModule();
+      assert(mod);
 
       if (verbose) {
-        mod->dump();
+        printf("got a module:\n");
+        if (mod == nullptr) {
+          printf("nullptr\n");
+        } else {
+          mod->dump();
+        }
       }
+
+      assert(mod->completeMatch(vec[i]));
+      i++;
     }
   }
 }
@@ -116,9 +146,6 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 int main(int argc, char** argv) {
   // use the passed file if provided
   if (argc > 1) output = argv[1];
-
-  // TODO: these programs are relying on the short string behavior,
-  // but we need to test the long strings too.
 
   testSerializeDeserialize("test1", "var i: int;");
   testSerializeDeserialize("test2", "module X { var i: int; }");

@@ -117,6 +117,18 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
   return toOwned(b);
 }
 
+owned<Builder>
+Builder::createForLibraryFileModule(Context* context,
+                                    UniqueString filePath,
+                                    UniqueString parentSymbolPath) {
+  auto b = new Builder(context, filePath, parentSymbolPath);
+  // locations won't be noted when working with a library file
+  // (since they will be stored and retrieved separately, instead)
+  // so don't fail if a location was not noted.
+  b->useNotedLocations_ = false;
+  return toOwned(b);
+}
+
 void Builder::addToplevelExpression(owned<AstNode> e) {
   this->br.topLevelExpressions_.push_back(std::move(e));
 }
@@ -305,12 +317,14 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     comment->setCommentId(commentIndex);
     commentIndex += 1;
 
-    auto search = notedLocations_.find(ast);
-    if (search != notedLocations_.end()) {
-      CHPL_ASSERT(!search->second.isEmpty());
-      br.commentIdToLocation_.push_back(search->second);
-    } else {
-      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+    if (useNotedLocations_) {
+      auto search = notedLocations_.find(ast);
+      if (search != notedLocations_.end()) {
+        CHPL_ASSERT(!search->second.isEmpty());
+        br.commentIdToLocation_.push_back(search->second);
+      } else {
+        CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+      }
     }
     return;
   }
@@ -429,31 +443,33 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   br.idToAst_[ast->id()] = ast;
 
   // update locations_ for the visited ast
-  auto search = notedLocations_.find(ast);
-  if (search != notedLocations_.end()) {
-    CHPL_ASSERT(!search->second.isEmpty());
-    br.idToLocation_[ast->id()] = search->second;
+  if (useNotedLocations_) {
+    auto search = notedLocations_.find(ast);
+    if (search != notedLocations_.end()) {
+      CHPL_ASSERT(!search->second.isEmpty());
+      br.idToLocation_[ast->id()] = search->second;
 
-    // Also map additional locations to ID.
-    #define LOCATION_MAP(ast__, location__) \
-      if (auto x = ast->to##ast__()) { \
-        auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
-        auto it = m1.find(x); \
-        if (it != m1.end()) { \
-          auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
-          m2[x->id()] = it->second; \
-        } \
+      // Also map additional locations to ID.
+      #define LOCATION_MAP(ast__, location__) \
+        if (auto x = ast->to##ast__()) { \
+          auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
+          auto it = m1.find(x); \
+          if (it != m1.end()) { \
+            auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
+            m2[x->id()] = it->second; \
+          } \
+        }
+      #include "chpl/uast/all-location-maps.h"
+      #undef LOCATION_MAP
+
+      // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
+      if (ieNode) {
+        CHPL_ASSERT(ast->isVariable());
+        checkConfigPreviouslyUsed(ast->toVariable(), configName);
       }
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
-
-    // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
-    if (ieNode) {
-      CHPL_ASSERT(ast->isVariable());
-      checkConfigPreviouslyUsed(ast->toVariable(), configName);
+    } else {
+      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
     }
-  } else {
-    CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
   }
 }
 

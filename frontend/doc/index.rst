@@ -17,6 +17,7 @@ new compiler frontend.
    :maxdepth: 1
 
    queries-impl
+   file-format
 
 .. toctree::
    :caption: Symbols by Namespace
@@ -27,6 +28,7 @@ new compiler frontend.
    types
    uast
    base
+   libraries
 
 .. comment
 

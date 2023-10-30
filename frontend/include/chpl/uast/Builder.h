@@ -53,9 +53,10 @@ class Builder final {
   // maps from a uAST pointer to a location
   using AstLocMap = std::unordered_map<const AstNode*, Location>;
 
-  Context* context_;
+  Context* context_ = nullptr;
   UniqueString startingSymbolPath_;
   BuilderResult br;
+  bool useNotedLocations_ = true;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
@@ -98,6 +99,12 @@ class Builder final {
   static owned<Builder> createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath);
+
+  /** Construct a Builder for use when reading uAST from a library file. */
+  static owned<Builder>
+  createForLibraryFileModule(Context* context,
+                             UniqueString filePath,
+                             UniqueString parentSymbolPath);
 
   Context* context() const { return context_; }
 
