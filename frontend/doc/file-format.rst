@@ -93,7 +93,7 @@ depend on the first byte:
  * if the first byte does have the high bit set
 
    * there are 3 more bytes that, combined with the bottom 7 bits of the
-     first byte, form and index into the long strings table.
+     first byte, form an index into the long strings table.
 
 
 File Header
@@ -101,8 +101,8 @@ File Header
 
 The '.dyno' file format header consists of:
 
- * 8 bytes of magic number 0x4C50484342494c7F
-   ('<7F>LIBCHPL' or the reverse of it, dependeng on endianness)
+ * 8 bytes of magic number 0x4c50484342494c7f
+   ('<7F>LIBCHPL' or the reverse of it, depending on endianness)
  * 4 bytes of library file format major version number
  * 4 bytes of library file format minor version number
  * 4 bytes of chpl major version number
@@ -154,7 +154,7 @@ For a symbol, the symbol table ID consists of:
       would just be 'MyClass.myMethod'.
 
 This section consists of:
- * 8 bytes of magic number 0x0003bb1e5ec110e0
+ * 8 bytes of magic number 0x4d59531e5ec110e0
  * 4 bytes of N, the number of entries
  * entries sorted by symbol table ID.  For each entry, it stores:
    * 8 byte relative offset to the uAST section
@@ -175,7 +175,7 @@ IDs are not stored here. They are recomputed when the uAST is read.
 
 The uAST section consists of:
 
- * 8 bytes of magic number 0x0003bb1e5ec110e0
+ * 8 bytes of magic number 0x5453411e5ec110e0
  * 8 bytes: the number of bytes of serialized uAST entries
  * 8 bytes: the total number of uAST entries
  * the contained entries, where each entry consists of:
@@ -223,7 +223,7 @@ order.
 
 The long strings table consists of the following:
 
- * 4 bytes magic number 0x51e17601
+ * 4 bytes magic number 0x52545301
  * 4 bytes N counting the number of long strings, including two unused ones:
      * offset 0 is unused
      * the last offset is also unused
@@ -247,7 +247,7 @@ location.
 
 It consists of:
 
- * 8 bytes of magic number 0x10ca11075ec110e0
+ * 8 bytes of magic number 0x434F4C075ec110e0
 
  * 4 bytes, the number of file paths used here
 

@@ -34,12 +34,12 @@ namespace libraries {
 
 // magic numbers
 // file magic number is <7F>LIBCHPL
-static const uint64_t FILE_HEADER_MAGIC =      0x4C50484342494c7F;
+static const uint64_t FILE_HEADER_MAGIC =      0x4c50484342494c7f;
 static const uint64_t MODULE_SECTION_MAGIC =   0x4d4dd01e5ec14d4d;
-static const uint64_t SYMBOL_TABLE_MAGIC =     0x0003bb1e5ec110e0;
-static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x51e17601;
-static const uint64_t UAST_SECTION_MAGIC =     0x0003bb1e5ec110e0;
-static const uint64_t LOCATION_SECTION_MAGIC = 0x10ca11075ec110e0;
+static const uint64_t SYMBOL_TABLE_MAGIC =     0x4d59531e5ec110e0;
+static const uint64_t UAST_SECTION_MAGIC =     0x5453411e5ec110e0;
+static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x52545301;
+static const uint64_t LOCATION_SECTION_MAGIC = 0x434F4C075ec110e0;
 
 // current file format version numbers
 static const uint32_t FORMAT_VERSION_MAJOR =  0;
