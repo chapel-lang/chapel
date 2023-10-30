@@ -1,0 +1,5 @@
+catchUnstableError.chpl:5: In function 'throwsUnstableErr':
+catchUnstableError.chpl:6: warning: MyUnstableErr is unstable
+catchUnstableError.chpl:9: In function 'main':
+catchUnstableError.chpl:12: warning: MyUnstableErr is unstable
+owned MyUnstableErr
