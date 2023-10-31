@@ -1632,6 +1632,12 @@ def main():
             # Build the test program
             #
             args = []
+
+            # make sure to add this early so that actual compopts file can
+            # override
+            if os.getenv('CHPL_TEST_GPU'):
+                args += ['--no-checks']
+
             if test_is_chpldoc:
                 args += globalChpldocOpts + shlex.split(compopts)
             elif 'CHPL_TEST_NO_USE_O' not in os.environ or \
@@ -1677,9 +1683,6 @@ def main():
                     cmd = os.environ['CHPL_CHPLDOC_NEXT']
                 else:
                     cmd = compiler
-
-            if os.getenv('CHPL_TEST_GPU'):
-                args += ['--no-checks']
 
             if lastcompopts:
                 args += lastcompopts
