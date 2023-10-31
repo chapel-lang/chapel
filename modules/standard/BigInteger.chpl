@@ -2260,7 +2260,7 @@ module BigInteger {
   }
 
   /*
-   An :class:`InversionError` is thrown if a :proc:`bigint.invert()` is attempted with
+   An :class:`InversionError` is thrown if a :proc:`invert()` is attempted with
    invalid arguments that result in a non-existent inverse. Specifically,
    if the arguments cause a divide by zero, this error notifies the caller
    that the internal value of the :record:`bigint` was left in an undefined state.
@@ -2333,7 +2333,7 @@ module BigInteger {
   proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws
     do invert(result, a, b);
 
-  @deprecated("bigint.remove is deprecated, use :proc:`bigint.removeFactor` instead")
+  @deprecated("bigint.remove is deprecated, use :proc:`~BigInteger.removeFactor` instead")
   proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return BigInteger.removeFactor(this, a,f);
   }
