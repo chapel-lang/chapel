@@ -94,8 +94,6 @@ MODULES_TO_DOCUMENT = \
 	standard/Math.chpl \
 	standard/MemMove.chpl \
 	standard/MemDiagnostics.chpl \
-	standard/Memory/Diagnostics.chpl \
-	standard/Memory/Initialization.chpl \
 	standard/OS.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \

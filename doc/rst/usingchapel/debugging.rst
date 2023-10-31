@@ -183,7 +183,7 @@ contains memory leaks, so you should not be surprised if your program
 requires more memory than it seems it should.
 
 For full information on these configuration constants consult
-:chpl:mod:`Memory`.
+:chpl:mod:`MemDiagnostics`.
 
 A brief synopsis of these configuration constants is as follows:
 
