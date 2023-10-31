@@ -6271,11 +6271,7 @@ DEFINE_PRIM(OPTIMIZATION_INFO) {
 DEFINE_PRIM(BREAKPOINT) {
   GenInfo* info = gGenInfo;
   if (info->cfile) {
-    info->cStatements.push_back("#if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)\n");
-    info->cStatements.push_back("__builtin_debugtrap();\n");
-    info->cStatements.push_back("#else\n");
-    info->cStatements.push_back("raise(SIGTRAP);\n");
-    info->cStatements.push_back("#endif\n");
+    ret = codegenCallExpr("chpl_debugtrap");
   }
   else {
     #ifdef HAVE_LLVM
