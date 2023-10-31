@@ -89,7 +89,7 @@ module Random {
   @deprecated("'defaultRNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface")
   param defaultRNG = _defaultRNG;
 
-  @deprecated("'RandomStream' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface")
+  @deprecated("'RandomStream' is deprecated; please use 'randomStream' instead")
   type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
                                                  else NPBRandomStreamInternal;
 
@@ -160,7 +160,7 @@ module Random {
   proc fillRandom(ref arr: [] ?t, seed: int)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
-    var rs = new randomStream(seed, t, false);
+    var rs = new randomStream(t, seed, false);
     rs.fill(arr);
   }
 
@@ -176,7 +176,7 @@ module Random {
   proc fillRandom(ref arr: [] ?t)
   where isNumericOrBoolType(t) && arr.isRectangular()
   {
-    var rs = new randomStream(_SeedGenerator.oddCurrentTime, t, false);
+    var rs = new randomStream(t, _SeedGenerator.oddCurrentTime, false);
     rs.fill(arr);
   }
 
@@ -206,7 +206,7 @@ module Random {
   proc fillRandom(ref arr: [] ?t, min: arr.eltType, max: arr.eltType, seed: int)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
-    var rs = new randomStream(seed, t, false);
+    var rs = new randomStream(t, seed, false);
     rs.fill(arr, min, max);
   }
 
@@ -261,7 +261,7 @@ module Random {
     :arg seed: The seed to initialize a ``randomStream`` with
   */
   proc shuffle(ref arr: [?d], seed: int) where is1DRectangularDomain(d) {
-    var rs = new randomStream(seed, d.idxType, false);
+    var rs = new randomStream(d.idxType, seed, false);
     rs.shuffle(arr);
   }
 
@@ -308,7 +308,7 @@ module Random {
   proc permutation(ref arr: [?d] ?t, seed: int)
     where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
   {
-    var rs = new randomStream(seed, d.eltType, false);
+    var rs = new randomStream(d.eltType, seed, false);
     rs.permutation(arr);
   }
 
@@ -352,7 +352,7 @@ module Random {
       Create a new ``randomStream`` using the specified seed and parallel
       safety.
     */
-    proc init(seed: int, type t, param parSafe: bool) where isNumericOrBoolType(t) {
+    proc init(type t, seed: int, param parSafe: bool) where isNumericOrBoolType(t) {
       this.t = t;
       this.parSafe = parSafe;
       this.seed = seed;
@@ -371,7 +371,7 @@ module Random {
     }
 
     @chpldoc.nodoc
-    proc init(seed: int, type t, param parSafe: bool) {
+    proc init(type t, seed: int, param parSafe: bool) {
       this.t = t;
       this.parSafe = parSafe;
       compilerError("'randomStream' only supports numeric or bool types");
