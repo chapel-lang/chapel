@@ -1678,6 +1678,9 @@ def main():
                 else:
                     cmd = compiler
 
+            if os.getenv('CHPL_TEST_GPU'):
+                args += ['--no-checks']
+
             if lastcompopts:
                 args += lastcompopts
 
