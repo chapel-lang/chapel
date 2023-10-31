@@ -216,8 +216,8 @@ def match_pattern(ast, pattern):
 
     return variables if match_inner(ast, pattern) else None
 
-def each_matching(node, pattern):
-    for child in preorder(node):
+def each_matching(node, pattern, iterator=preorder):
+    for child in iterator(node):
         variables = match_pattern(child, pattern)
         if variables is not None:
             yield (child, variables)
@@ -227,7 +227,7 @@ def files_with_contexts(files):
     Some files might have the same name, which Dyno really doesn't like.
     Stratify files into "buckets"; within each bucket, all filenames are
     unique. Between each bucket, re-create the Dyno context to avoid giving
-    it complicting files.
+    it conflicting files.
 
     Yields files from the argument, as well as the context created for them.
     """

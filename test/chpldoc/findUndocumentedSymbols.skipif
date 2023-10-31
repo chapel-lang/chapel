@@ -1,0 +1,13 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess as sp
+import sys
+
+has_installed_bindings = False
+chpl_home = os.getenv("CHPL_HOME", None)
+if chpl_home:
+    ret = sp.call([f"{chpl_home}/tools/chpldoc/findUndocumentedSymbols"])
+    has_installed_bindings = ret == 0
+
+print(not has_installed_bindings)
