@@ -2,7 +2,7 @@
 outfile=$2
 execargs=$5
 # Search for --testType= in compargs and store the value next to it in test_type variable
-test_type=$(echo "$execargs" | grep -oP '(?<=--testType=)[^ ]+')
+test_type=$(echo "$execargs" | grep -oE '(--testType=)[^ ]+' | cut -d= -f2)
 
 if [ "$test_type" == "help" ]; then
   ./unstableAnonScript -nl 1 -h > $outfile.tmp
