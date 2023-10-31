@@ -1,0 +1,6 @@
+testGetNth2.chpl:6: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
+testGetNth2.chpl:6: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
+testGetNth2.chpl:8: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
+testGetNth2.chpl:9: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
+testGetNth2.chpl:10: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
+Done!
