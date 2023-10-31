@@ -6268,6 +6268,18 @@ DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
 }
 
+DEFINE_PRIM(BREAKPOINT) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    ret = codegenCallExpr("chpl_debugtrap");
+  }
+  else {
+    #ifdef HAVE_LLVM
+    ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
+    #endif
+  }
+}
+
 DEFINE_BASIC_PRIM(ASCII)
 DEFINE_BASIC_PRIM(SLEEP)
 DEFINE_BASIC_PRIM(REAL_TO_INT)

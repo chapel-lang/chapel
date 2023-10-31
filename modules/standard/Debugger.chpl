@@ -18,27 +18,19 @@
  * limitations under the License.
  */
 
-#ifndef _GDB_H_
-#define _GDB_H_
+/*
+  The Debugger module provides a collection of useful debugging utilities
+*/
+@unstable(category="experimental", reason="The Debugger module is unstable due to its experimental behavior")
+module Debugger {
+  /*
+    Sets a breakpoint at this point in execution if compiled with `-g`.
 
-#include <signal.h>
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void gdbShouldBreakHere(void);  // must be in separate file to avoid elimination
-
-inline static void chpl_debugtrap(void) {
-  #if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)
-  __builtin_debugtrap();
-  #else
-  raise(SIGTRAP);
-  #endif
+    .. warning::
+       If code uses :proc:`breakpoint` and is compiled with `-g`,
+       the program will not be runnable outside of a debugger
+  */
+  inline proc breakpoint {
+    __primitive("breakpoint");
+  }
 }
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif

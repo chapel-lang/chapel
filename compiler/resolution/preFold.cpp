@@ -2231,6 +2231,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     break;
   }
 
+  case PRIM_BREAKPOINT: {
+    if (!debugCCode) {
+      // if not in debug mode, remove the primitive
+      retval = new CallExpr(PRIM_NOOP);
+      call->replace(retval);
+    }
+  }
+
   default:
     break;
 

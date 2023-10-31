@@ -1268,6 +1268,8 @@ initPrimitive() {
   prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
+
+  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
