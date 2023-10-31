@@ -30,11 +30,16 @@ extern "C" {
 void gdbShouldBreakHere(void);  // must be in separate file to avoid elimination
 
 inline static void chpl_debugtrap(void) {
-  #if defined(__has_builtin) && __has_builtin(__builtin_debugtrap)
-  __builtin_debugtrap();
-  #else
-  raise(SIGTRAP);
+  #ifdef __has_builtin
+    #if __has_builtin (__builtin_debugtrap)
+      #define call_debugtrap() __builtin_debugtrap()
+    #endif
   #endif
+  #ifndef call_debugtrap
+    #define call_debugtrap() raise(SIGTRAP)
+  #endif
+  call_debugtrap();
+  #undef call_debugtrap
 }
 
 #ifdef __cplusplus
