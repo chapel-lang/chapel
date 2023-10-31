@@ -40,19 +40,19 @@ or
 
 .. data:: var c: string
 
-   There was documentation of this symbol 
-
    .. warning::
 
       c is unstable
 
-.. data:: var d: string
+   There was documentation of this symbol 
 
-   This symbol was also documented 
+.. data:: var d: string
 
    .. warning::
 
       d is unstable, don't use it
+
+   This symbol was also documented 
 
 .. data:: var e: real
 
@@ -64,19 +64,19 @@ or
 
 .. data:: var g: bool
 
-   This symbol is not considered stable 
-
    .. warning::
 
       g is unstable
 
-.. data:: var h: bool
+   This symbol is not considered stable 
 
-   This symbol is also not considered stable 
+.. data:: var h: bool
 
    .. warning::
 
       h is unstable, don't use it
+
+   This symbol is also not considered stable 
 
 .. default-domain:: chpl
 
@@ -123,4 +123,34 @@ or
 .. warning::
 
    This module is unstable
+
+.. default-domain:: chpl
+
+.. module:: UnstableMod3
+   :synopsis: Including modules with documentation 
+
+UnstableMod3
+============
+**Usage**
+
+.. code-block:: chapel
+
+   use unstableSymbols.doc.UnstableMod3;
+
+
+or
+
+.. code-block:: chapel
+
+   import unstableSymbols.doc.UnstableMod3;
+
+.. warning::
+
+   This module is unstable
+
+Including modules with documentation 
+
+.. data:: var x: int
+
+   Just a regular symbol to show how it interacts 
 

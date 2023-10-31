@@ -1457,18 +1457,17 @@ struct RstResultBuilder {
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
 
-    bool commentShown = showComment(node, indentComment);
-    // TODO: Fix all this because why are we checking for specific node types
-    //  just to add a newline?
-    if (commentShown && !textOnly_ && (node->isClass() ||
-                                       node->isRecord() ||
-                                       node->isModule())) {
-      os_ << "\n";
-    }
-
     showDeprecationMessage(node, indentComment);
     // TODO: how do deprecation and unstable messages interplay?
     showUnstableWarning(node, indentComment);
+
+    bool commentShown = showComment(node, indentComment);
+    // TODO: Fix all this because why are we checking for specific node types
+    //  just to add a newline?
+    if (commentShown && !textOnly_ && node->isModule()) {
+      os_ << "\n";
+    }
+
     return commentShown;
   }
 
@@ -1482,6 +1481,8 @@ struct RstResultBuilder {
           // do nothing because unstable was mentioned in doc comment
         } else {
           // write the unstable warning and message
+          os_ << "\n";
+
           int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
@@ -1496,7 +1497,7 @@ struct RstResultBuilder {
             // use the specific unstable message
             os_ << strip(attrs->unstableMessage().c_str());
           }
-          os_ << "\n\n";
+          os_ << "\n";
         }
       }
     }
@@ -1512,6 +1513,8 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
+          os_ << "\n";
+
           int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
@@ -1526,7 +1529,7 @@ struct RstResultBuilder {
             // use the specific deprecation message
             os_ << strip(attrs->deprecationMessage().c_str());
           }
-          os_ << "\n\n";
+          os_ << "\n";
         }
       }
     }
@@ -1711,9 +1714,9 @@ struct RstResultBuilder {
       }
     }
     if (textOnly_) indentDepth_ --;
-    showComment(m, textOnly_);
     showDeprecationMessage(m, false);
     showUnstableWarning(m, false);
+    showComment(m, textOnly_);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);

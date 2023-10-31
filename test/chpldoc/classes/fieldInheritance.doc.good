@@ -21,7 +21,6 @@ or
 
    This class has two fields 
 
-
    .. attribute:: var rod: string
 
    .. attribute:: var staff: bool
@@ -29,7 +28,6 @@ or
 .. class:: Younger : Elder
 
    This class should inherit its Elder's fields 
-
 
    .. attribute:: var key: int
 

@@ -22,7 +22,6 @@ or
    This class will declare a method inside itself, but will have a
    method declared outside it as well 
 
-
    .. method:: proc internalMeth()
 
 .. method:: proc Foo.externalMeth1()
@@ -34,7 +33,6 @@ or
 .. record:: Bar
 
    Declares one primary and one secondary method... 
-
 
    .. method:: proc internal()
 

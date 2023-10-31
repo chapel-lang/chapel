@@ -1,69 +1,69 @@
 .. default-domain:: chpl
 
-.. module:: deprecatedClasses.doc
+.. module:: unstableClasses.doc
 
-deprecatedClasses.doc
-=====================
+unstableClasses.doc
+===================
 **Usage**
 
 .. code-block:: chapel
 
-   use deprecatedClasses.doc;
+   use unstableClasses.doc;
 
 
 or
 
 .. code-block:: chapel
 
-   import deprecatedClasses.doc;
+   import unstableClasses.doc;
 
 .. class:: X
 
    .. warning::
 
-      X is deprecated
+      X is unstable
 
    .. attribute:: var a: int
 
       .. warning::
 
-         a is deprecated
+         a is unstable
 
    .. method:: proc foo()
 
       .. warning::
 
-         foo is deprecated
+         foo is unstable
 
    .. method:: proc type bar()
 
       .. warning::
 
-         bar is deprecated
+         bar is unstable
 
 .. class:: Y
 
    .. warning::
 
-      Y is deprecated, use Z instead
+      Y is unstable, use Z instead
 
    .. attribute:: var a: int
 
       .. warning::
 
-         field a is deprecated
+         field a is unstable
 
    .. method:: proc foo()
 
       .. warning::
 
-         method foo is deprecated
+         method foo is unstable
 
    .. method:: proc type bar()
 
       .. warning::
 
-         type method bar is deprecated
+         type method bar is unstable
 
 .. class:: Z
 
@@ -71,25 +71,25 @@ or
 
       .. warning::
 
-         a is deprecated
+         a is unstable
 
    .. method:: proc foo()
 
       .. warning::
 
-         method foo is deprecated
+         method foo is unstable
 
    .. method:: proc type bar()
 
       .. warning::
 
-         bar is deprecated
+         bar is unstable
 
 .. class:: A
 
    .. warning::
 
-      A is deprecated
+      A is unstable
 
    There was documentation of this symbol 
 
@@ -97,7 +97,7 @@ or
 
       .. warning::
 
-         a is deprecated
+         a is unstable
 
       There was documentation of this field 
 
@@ -105,7 +105,7 @@ or
 
       .. warning::
 
-         foo is deprecated
+         foo is unstable
 
       There was documentation of this method 
 
@@ -113,7 +113,7 @@ or
 
       .. warning::
 
-         bar is deprecated
+         bar is unstable
 
       There was documentation of this type method 
 
@@ -121,7 +121,7 @@ or
 
    .. warning::
 
-      B is deprecated, use C instead
+      B is unstable, use C instead
 
    This symbol also was documented 
 
@@ -129,7 +129,7 @@ or
 
       .. warning::
 
-         field a is deprecated
+         field a is unstable
 
       There was documentation of this field 
 
@@ -137,7 +137,7 @@ or
 
       .. warning::
 
-         method foo is deprecated
+         method foo is unstable
 
       There was documentation of this method 
 
@@ -145,7 +145,7 @@ or
 
       .. warning::
 
-         type method bar is deprecated
+         type method bar is unstable
 
       There was documentation of this type method 
 
@@ -155,7 +155,7 @@ or
 
       .. warning::
 
-         a is deprecated
+         a is unstable
 
       There was documentation of this field 
 
@@ -163,7 +163,7 @@ or
 
       .. warning::
 
-         method foo is deprecated
+         method foo is unstable
 
       There was documentation of this method 
 
@@ -171,55 +171,55 @@ or
 
       .. warning::
 
-         bar is deprecated
+         bar is unstable
 
       There was documentation of this type method 
 
 .. class:: D
 
-   This symbol is deprecated 
+   This symbol is unstable 
 
    .. attribute:: var a: int
 
-      This symbol is deprecated 
+      This symbol is unstable 
 
    .. method:: proc foo()
 
-      This symbol is deprecated 
+      This symbol is unstable 
 
    .. method:: proc type bar()
 
-      This symbol is deprecated 
+      This symbol is unstable 
 
 .. class:: E
 
-   This symbol is also deprecated, please use F instead 
+   This symbol is also unstable, please use F instead 
 
    .. attribute:: var a: int
 
-      This symbol is also deprecated, unfortunately 
+      This symbol is also unstable, unfortunately 
 
    .. method:: proc foo()
 
-      This symbol is also deprecated, unfortunately 
+      This symbol is also unstable, unfortunately 
 
    .. method:: proc type bar()
 
-      This symbol is also deprecated, unfortunately 
+      This symbol is also unstable, unfortunately 
 
 .. class:: F
 
    .. attribute:: var a: int
 
-      This symbol is also deprecated, unfortunately 
+      This symbol is also unstable, unfortunately 
 
    .. method:: proc foo()
 
-      This symbol is deprecated 
+      This symbol is unstable 
 
    .. method:: proc type bar()
 
-      This symbol is deprecated 
+      This symbol is unstable 
 
 .. class:: I
 

@@ -52,7 +52,7 @@ Automatically Available Symbols
 .. include:: AutoMath.rst
   :start-line: 7
   :start-after: Automatically included Math symbols
-  :end-before: .. warning::
+  :end-before: .. function::
 
 Non-Automatically Available Symbols
 -----------------------------------
@@ -167,7 +167,7 @@ Automatically Included Constant and Function Definitions
 --------------------------------------------------------
 
 .. include:: AutoMath.rst
-  :start-after: The module name 'AutoMath' is unstable.  If you want to use qualified naming on the symbols within it, please 'use' or 'import' the :mod:`Math` module
+  :start-after: :proc:`~Math.mod`
 
 .. _math-constant-and-function-definitions:
 
