@@ -117,7 +117,7 @@ proc checkNumAccessEnabled_rocm(valFromChpl) {
 
   assert(count == valFromChpl,
     "peer accesses enabled by Chapel does not match number of PCIE ",
-    "connections found uising rocm-smi");
+    "connections found using rocm-smi");
 }
 
 proc checkNumAccessEnabled(valFromChpl) {
