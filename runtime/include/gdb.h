@@ -21,6 +21,8 @@
 #ifndef _GDB_H_
 #define _GDB_H_
 
+#include <signal.h>
+
 #ifdef __cplusplus
 extern "C" {
 #endif
