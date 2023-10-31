@@ -1,5 +1,4 @@
 warning: GPU support is under active development. As such, the interface is unstable and expected to change in the forthcoming releases.
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 flags.chpl:1: warning: The GpuDiagnostics module is unstable and its interface is subject to change in the future.
 flags.chpl:3: warning: The GPU module is unstable and its interface is subject to change in the future.
 on GPU:
