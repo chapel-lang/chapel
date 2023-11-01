@@ -398,13 +398,21 @@ module Random {
     }
 
     /*
+      Fill the array with pseudorandom values sampled from this stream.
 
+      :arg arr: The rectangular array to be filled
     */
     proc fill(ref arr: []) where arr.isRectangular() do
       this.pcg.fillRandom(arr);
 
     /*
+      Fill the array with pseudorandom values within a particular range. Each
+      array element is set to a number in [``min``, ``max``] (inclusive)
+      sampled from this stream.
 
+      :arg arr: The rectangular array to be filled
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
     */
     proc fill(ref arr: [] ?eltType, min: eltType, max: eltType) where arr.isRectangular() do
       this.pcg.fillRandom(arr, min, max);
@@ -418,63 +426,195 @@ module Random {
       this.fill(arr, min, max);
 
     /*
+      Randomly rearrange a 1D array using values from this random stream.
 
+      :arg arr: The array to shuffle. Its domain's ``idxType`` should be equal to
+                  or smaller than :type:`t`
     */
     proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d)
       do this.pcg.shuffle(arr);
 
     /*
+      Produce a random permutation of an array's domain. The values
+      ``d.dim(0).low..d.dim(0).high`` will appear exactly once in the array in
+      a pseudo-random order.
 
+      :arg arr: The array to store the permutation in
     */
-    proc permutation(ref arr: [?d] t)
-      where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+    proc permutation(ref arr: [?d] ?eltType)
+      where isCoercible(d.idxType, eltType) && is1DRectangularDomain(d) do
         this.pcg.permutation(arr);
 
     /*
+      Return a random sample from a given 1D array, ``x``.
 
+      :arg x: The array to take a sample from.
+      :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x.domain``.
+
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              elements chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
-    proc choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws {
+    proc choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws
+      where is1DRectangularDomain(d)
+    {
       const idx = _choice(this, d, size, replace, prob);
       return x[idx];
     }
 
     /*
+      Returns a random sample from a given bounded range, ``x``.
 
+     :arg x: a bounded range with values that will be sampled from.
+     :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+     :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+     :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+     :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
     */
     proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws do
       return _choice(this, {x}, size, replace, prob);
 
     /*
+      Returns a random sample from a given 1D domain, ``x``.
 
-    */
-    proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws do
+      :arg x: a 1D domain with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
+     */
+    proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+      where is1DRectangularDomain(x)
+    do
       return _choice(this, x, size, replace, prob);
 
     /*
+      Get the next value in the random stream.
 
+      Generated reals are in [0,1] - both 0.0 and 1.0 are possible values.
+      Imaginary numbers are analogously in [0i, 1i]. Complex numbers will
+      consist of a generated real and imaginary part, so 0.0+0.0i and 1.0+1.0i
+      are possible.
+
+      Generated integers cover the full value range of the integer.
+
+      :arg resultType: the type of the result. Defaults to :type:`t`.
+        `resultType` must be the same or a smaller size number as :type:`t`.
     */
     proc getNext(type resultType=t): resultType do
       return this.pcg.getNext(resultType);
 
     /*
+      Get the next random value from the stream within a given range. Returns
+      a number in [``min``, ``max``] (inclusive).
+
+      This method will halt if checks are enabled and ``min > max``.
+
+      .. note::
+
+        For integers, this class uses a strategy for generating a value
+        in a particular range that has not been subject to rigorous
+        study and may have statistical problems.
+
+        For real numbers, this class generates a random value in [max, min]
+        by computing a random value in [0,1] and scaling and shifting that
+        value. Note that not all possible floating point values in
+        the interval [`min`, `max`] can be constructed in this way.
+
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
 
     */
     proc getNext(min: t, max: t): t do
       return this.pcg.getNext(t, min, max);
 
     /*
+      Get the next random value from the stream within a given range — as the
+      specified type. Returns a number in [``min``, ``max``] (inclusive).
 
+      :arg resultType: the type of the result. Defaults to :type:`t`.
+        `resultType` must be the same or a smaller size number as :type:`t`.
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
     */
     proc getNext(type resultType, min: resultType, max: resultType): resultType do
       return this.pcg.getNext(resultType, min, max);
 
     /*
+      Advance or rewind the random stream to the ``n``-th position in the
+      pseudorandom sequence (where ``n=0`` is the starting position)
 
+      :arg n: The position to skip to (must be greater than zero)
+
+      :throws IllegalArgumentError: Thrown if ``n`` is negative
     */
     proc skipToNth(n: integral) throws do
       this.pcg.skipToNth(n);
 
     /*
+      Advance or rewind the random stream to the ``n``-th position in the
+      pseudorandom sequence and return the value. This is equivalent to
+      :proc:`skipToNth` followed by :proc:`getNext`.
+
+      :arg n: The position to skip to and retrieve (must be greater than zero)
+
+      :throws IllegalArgumentError: Thrown if ``n`` is negative
 
     */
     proc getNth(n: integral): t throws do
