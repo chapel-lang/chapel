@@ -1616,6 +1616,21 @@ private extern proc qio_format_error_arg_mismatch(arg:int):errorCode;
 extern proc qio_format_error_bad_regex():errorCode;
 private extern proc qio_format_error_write_regex():errorCode;
 
+@chpldoc.nodoc
+// flag to controll whether the dynamic buffering optimization is active
+//  * when 'true', read and write ops above a certain size can bypass the IO
+//      rutime's buffering mechanism in some cases
+//      (see `_qio_buffered_write` and `_qio_buffered_read` in `qio.c` for more)
+//  * when 'false', buffering is always used
+config param IOSkipBufferingForLargeOps = true;
+private extern var qio_write_unbuffered_threshold: c_ssize_t;
+private extern var qio_read_unbuffered_threshold: c_ssize_t;
+
+if !IOSkipBufferingForLargeOps {
+  qio_write_unbuffered_threshold = max(c_ssize_t);
+  qio_read_unbuffered_threshold = max(c_ssize_t);
+}
+
 /*
    :returns: the default I/O style. See :record:`iostyle`
              and :ref:`about-io-styles`
