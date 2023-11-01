@@ -433,8 +433,28 @@ module Random {
     /*
 
     */
-    proc getNext(type sampleType=t): sampleType do
-      return this.pcg.getNext(sampleType);
+    proc choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws {
+      const idx = _choice(this, d, size, replace, prob);
+      return x[idx];
+    }
+
+    /*
+
+    */
+    proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws do
+      return _choice(this, {x}, size, replace, prob);
+
+    /*
+
+    */
+    proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws do
+      return _choice(this, x, size, replace, prob);
+
+    /*
+
+    */
+    proc getNext(type resultType=t): resultType do
+      return this.pcg.getNext(resultType);
 
     /*
 
@@ -445,8 +465,8 @@ module Random {
     /*
 
     */
-    proc getNext(type sampleType, min: sampleType, max: sampleType): sampleType do
-      return this.pcg.getNext(sampleType, min, max, sampleType);
+    proc getNext(type resultType, min: resultType, max: resultType): resultType do
+      return this.pcg.getNext(resultType, min, max);
 
     /*
 
@@ -460,7 +480,6 @@ module Random {
     proc getNth(n: integral): t throws do
       return this.pcg.getNth(n);
 
-    
 
     pragma "fn returns iterator"
     @deprecated("'iterate' is deprecated; please use 'sample' instead")
@@ -469,52 +488,115 @@ module Random {
 
     pragma "fn returns iterator"
     @deprecated("'iterate' is deprecated; please use 'sample' instead")
-    proc iterate(D: domain, type resultType=t, min: t, max: t) do
+    proc iterate(D: domain, type resultType=t, min: resultType, max: resultType) do
       return this.pcg.iterate(D, resultType, min, max);
 
     iter sample(D: domain, type sampleType=t) {
-      var it = this.pcg.iterate(D, sampleType);
-      for s in it do yield s;
-    }
+      this.pcg._lock();
+      const start = this.pcg.PCGRandomStreamPrivate_count;
+      this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
+      this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
+      this.pcg._unlock();
 
-    iter sampleInRange(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
-      var it = this.pcg.iterate(D, sampleType, min, max);
-      for s in it do yield s;
+      var cursor = randlc_skipto(sampleType, seed, start);
+      for i in D do
+        yield randlc(sampleType, cursor);
     }
 
     @chpldoc.nodoc
     iter sample(D: domain, type sampleType=t, param tag: iterKind)
       where tag == iterKind.leader
     {
-      var it = this.pcg.iterate(D, sampleType, tag);
-      for s in it do yield s;
+      for block in D.these(tag=iterKind.leader) do
+        yield block;
     }
 
     @chpldoc.nodoc
     iter sample(D: domain, type sampleType=t, param tag: iterKind, followThis)
       where tag == iterKind.follower
     {
-      var it = this.pcg.iterate(D, sampleType, tag, followThis);
-      for s in it do yield s;
+      use DSIUtil;
+      param multiplier = 1;
+      const start = this.pcg.PCGRandomStreamPrivate_count,
+            ZD = computeZeroBasedDomain(D),
+            innerRange = followThis(ZD.rank-1);
+      for outer in outer(followThis) {
+        var myStart = start;
+        if ZD.rank > 1
+          then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+          else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+
+        if innerRange.hasUnitStride() {
+          var cursor = randlc_skipto(sampleType, seed, myStart);
+          for i in innerRange do
+            yield randlc(sampleType, cursor);
+        } else {
+          myStart -= innerRange.lowBound.safeCast(int(64));
+          for i in innerRange {
+            var cursor = randlc_skipto(sampleType, seed, myStart + i.safeCast(int(64)) * multiplier);
+            yield randlc(sampleType, cursor);
+          }
+        }
+      }
+    }
+
+    iter sample(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
+      this.pcg._lock();
+      const start = this.pcg.PCGRandomStreamPrivate_count;
+      this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
+      this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
+      this.pcg._unlock();
+
+      var cursor = randlc_skipto(sampleType, seed, start),
+          count = start;
+      for i in D {
+        yield randlc_bounded(sampleType, cursor, seed, count, min, max);
+        count += 1;
+      }
     }
 
     @chpldoc.nodoc
-    iter sampleInRange(D: domain, type sampleType=t,
+    iter sample(D: domain, type sampleType=t,
                        min: sampleType, max: sampleType, param tag: iterKind)
       where tag == iterKind.leader
     {
-      var it = this.pcg.iterate(D, sampleType, min, max, tag);
-      for s in it do yield s;
+      for block in D.these(tag=iterKind.leader) do
+        yield block;
     }
 
     @chpldoc.nodoc
-    iter sampleInRange(D: domain, type sampleType=t,
+    iter sample(D: domain, type sampleType=t,
                        min: sampleType, max: sampleType,
                        param tag: iterKind, followThis)
       where tag == iterKind.follower
     {
-      var it = this.pcg.iterate(D, sampleType, min, max, tag, followThis);
-      for s in it do yield s;
+      use DSIUtil;
+      param multiplier = 1;
+      const start = this.pcg.PCGRandomStreamPrivate_count,
+            ZD = computeZeroBasedDomain(D),
+            innerRange = followThis(ZD.rank-1);
+      for outer in outer(followThis) {
+        var myStart = start;
+        if ZD.rank > 1
+          then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+          else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+
+        if innerRange.hasUnitStride() {
+          var cursor = randlc_skipto(sampleType, seed, myStart),
+              count = myStart;
+          for i in innerRange {
+            yield randlc(sampleType, cursor);
+            count += 1;
+          }
+        } else {
+          myStart -= innerRange.lowBound.safeCast(int(64));
+          for i in innerRange {
+            var count = myStart + i.safeCast(int(64)) * multiplier,
+                cursor = randlc_skipto(sampleType, seed, count);
+            yield randlc_bounded(sampleType, cursor, seed, count, min, max);
+          }
+        }
+      }
     }
 
     proc serialize(writer, ref serializer) throws {
@@ -635,7 +717,7 @@ module Random {
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+      var randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
@@ -654,7 +736,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+          var randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
@@ -663,7 +745,7 @@ module Random {
           var indices: set(int);
           var i: int = 0;
           while i < numElements {
-            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+            var randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
@@ -1874,7 +1956,7 @@ module Random {
 
 
     // Wrapper that takes a result type
-    private inline
+    inline
     proc randlc(type resultType, ref states) {
 
       checkSufficientBitsAndAdvanceOthers(resultType, states);
@@ -1912,7 +1994,7 @@ module Random {
     // and min <= x < max (for real/complex/imag)
     // seed should be the initial seed of the RNG
     // count should be the current count value
-    private inline
+    inline
     proc randlc_bounded(type resultType,
                         ref states, seed:int(64), count:int(64),
                         min, max) {
@@ -1954,7 +2036,7 @@ module Random {
     // return the same value as the nth call to randlc
     //
     // resultType is used to compute the size required.
-    private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
+    proc randlc_skipto(type resultType, seed: int(64), n: integral) {
       var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
       for param i in 0..states.size-1 {
@@ -1968,7 +2050,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    private iter outer(ranges, param dim: int = 0) {
+    iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         foreach i in ranges(dim) do
           yield (i,);
