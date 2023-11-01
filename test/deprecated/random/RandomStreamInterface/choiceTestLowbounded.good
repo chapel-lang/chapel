@@ -1,2 +1,3 @@
 choiceTestLowbounded.chpl:6: In function 'main':
+choiceTestLowbounded.chpl:10: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 choiceTestLowbounded.chpl:12: error: input range must be bounded

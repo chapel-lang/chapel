@@ -112,34 +112,14 @@ module Random {
     return isNumericType(t) || isBoolType(t);
 
   private proc is1DRectangularDomain(d) param do
-    return d.isRectangular() && d.rank == 1 && d.strides == strideKind.one;
+    return d.isRectangular() && d.rank == 1;
 
-  /*
 
-    Fills a rectangular array of numeric elements with pseudorandom values in parallel using
-    a new stream implementing :class:`RandomStreamInterface` created
-    specifically for this call.  The first `arr.size` values from the stream
-    will be assigned to the array's elements in row-major order. The
-    parallelization strategy is determined by the array.
-
-    .. note::
-      :mod:`NPBRandom` only supports `real(64)`, `imag(64)`, and `complex(128)`
-      numeric types. :mod:`PCGRandom` supports all primitive numeric types.
-
-    :arg arr: The array to be filled, where T is a primitive numeric type. Only
-      rectangular arrays are supported currently.
-    :type arr: `[] T`
-
-    :arg seed: The seed to use for the PRNG.  Defaults to
-     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-    :type seed: `int(64)`
-
-    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
-    :type algorithm: :type:`RNG`
-  */
+  pragma "last resort"
   @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
-  proc fillRandom(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_defaultRNG)
-    where isNumericOrBoolType(arr.eltType) {
+  proc fillRandom(ref arr: [], seed: int(64)=_SeedGenerator.oddCurrentTime, param algorithm=_defaultRNG)
+    where isNumericOrBoolType(arr.eltType)
+  {
     var randNums = _createRandomStream(seed=seed,
                                        eltType=arr.eltType,
                                        parSafe=false,
@@ -174,20 +154,26 @@ module Random {
 
   */
   proc fillRandom(ref arr: [] ?t)
-  where isNumericOrBoolType(t) && arr.isRectangular()
+    where isNumericOrBoolType(t) && arr.isRectangular()
   {
     var rs = new randomStream(t, _SeedGenerator.oddCurrentTime, false);
     rs.fill(arr);
   }
 
   @chpldoc.nodoc
-  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
-  proc fillRandom(ref arr: [], seed: int(64), param algorithm=_defaultRNG) {
-    compilerError("Random.fillRandom is only defined for rectangular numeric arrays");
+  proc fillRandom(ref arr: [], seed: int) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], seed: int) {
+  proc fillRandom(ref arr: []) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc fillRandom(ref arr: [], seed: int(64), param algorithm=_defaultRNG) {
     compilerError("Random.fillRandom is only defined for rectangular numeric arrays");
   }
 
@@ -229,8 +215,13 @@ module Random {
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max, seed: int(64)) {
-    compileError("Random.fillRandom is only defined for rectangular numeric arrays");
+  proc fillRandom(ref arr: [], min, max, seed: int) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: [], min, max) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
   /* Shuffle the elements of a rectangular array into a random order.
@@ -241,6 +232,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
+  pragma "last resort"
   @deprecated("The overload of 'shuffle' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
   proc shuffle(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
 
@@ -275,6 +267,16 @@ module Random {
     rs.shuffle(arr);
   }
 
+  @chpldoc.nodoc
+  proc shuffle(ref arr: [], seed: int) {
+    compilerError("'shuffle' only supports 1D rectangular arrays");
+  }
+
+  @chpldoc.nodoc
+  proc shuffle(ref arr: []) {
+    compilerError("'shuffle' only supports 1D rectangular arrays");
+  }
+
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
      exactly once, where low and high refer to the array's domain.
@@ -285,6 +287,7 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
+  pragma "last resort"
   @deprecated("The overload of 'permutation' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
   proc permutation(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
     if(algorithm==_RNG.NPB) then
@@ -308,7 +311,7 @@ module Random {
   proc permutation(ref arr: [?d] ?t, seed: int)
     where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
   {
-    var rs = new randomStream(d.eltType, seed, false);
+    var rs = new randomStream(d.idxType, seed, false);
     rs.permutation(arr);
   }
 
@@ -324,6 +327,16 @@ module Random {
   {
     var rs = new randomStream(d.eltType, false);
     rs.permutation(arr);
+  }
+
+  @chpldoc.nodoc
+  proc permutation(ref arr: [], seed: int) {
+    compilerError("'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType");
+  }
+
+  @chpldoc.nodoc
+  proc permutation(ref arr: []) {
+        compilerError("'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType");
   }
 
   record randomStream: writeSerializable {
@@ -352,8 +365,8 @@ module Random {
       Create a new ``randomStream`` using the specified seed and parallel
       safety.
     */
-    proc init(type t, seed: int, param parSafe: bool) where isNumericOrBoolType(t) {
-      this.t = t;
+    proc init(type eltType, seed: int, param parSafe: bool) where isNumericOrBoolType(eltType) {
+      this.t = eltType;
       this.parSafe = parSafe;
       this.seed = seed;
       this.pcg = new shared PCGRandomStreamInternal(t, seed, parSafe);
@@ -363,23 +376,23 @@ module Random {
       Create a new ``randomStream`` using the specified parallel safety and
       a seed computed from the current time.
     */
-    proc init(type t, param parSafe: bool) where isNumericOrBoolType(t) {
-      this.t = t;
+    proc init(type eltType, param parSafe: bool) where isNumericOrBoolType(eltType) {
+      this.t = eltType;
       this.parSafe = parSafe;
       this.seed = _SeedGenerator.oddCurrentTime;
       this.pcg = new shared PCGRandomStreamInternal(t, this.seed, parSafe);
     }
 
     @chpldoc.nodoc
-    proc init(type t, seed: int, param parSafe: bool) {
-      this.t = t;
+    proc init(type eltType, seed: int, param parSafe: bool) {
+      this.t = eltType;
       this.parSafe = parSafe;
       compilerError("'randomStream' only supports numeric or bool types");
     }
 
     @chpldoc.nodoc
-    proc init(type t, param parSafe: bool) {
-      this.t = t;
+    proc init(type eltType, param parSafe: bool) {
+      this.t = eltType;
       this.parSafe = parSafe;
       compilerError("'randomStream' only supports numeric or bool types");
     }
@@ -387,14 +400,22 @@ module Random {
     /*
 
     */
-    proc fill(ref arr: [] t) where arr.isRectangular() do
+    proc fill(ref arr: []) where arr.isRectangular() do
       this.pcg.fillRandom(arr);
 
     /*
 
     */
-    proc fill(ref arr: [] t, min: t, max: t) where arr.isRectangular() do
+    proc fill(ref arr: [] ?eltType, min: eltType, max: eltType) where arr.isRectangular() do
       this.pcg.fillRandom(arr, min, max);
+
+    @deprecated("'randomStream.fillRandom' is deprecated; please use 'fill' instead")
+    proc fillRandom(ref arr: []) do
+      this.fill(arr);
+
+    @deprecated("'randomStream.fillRandom' is deprecated; please use 'fill' instead")
+    proc fillRandom(ref arr: [], min, max) do
+      this.fill(arr, min, max);
 
     /*
 
@@ -419,13 +440,13 @@ module Random {
 
     */
     proc getNext(min: t, max: t): t do
-      return this.pcg.getNext(min, max);
+      return this.pcg.getNext(t, min, max);
 
     /*
 
     */
-    proc getNext(min: t, max: t, type sampleType=t): sampleType do
-      return this.pcg.getNext(min, max, sampleType);
+    proc getNext(type sampleType, min: sampleType, max: sampleType): sampleType do
+      return this.pcg.getNext(sampleType, min, max, sampleType);
 
     /*
 
@@ -439,29 +460,60 @@ module Random {
     proc getNth(n: integral): t throws do
       return this.pcg.getNth(n);
 
-    iter sample(r: range, type sampleType=t): sampleType {
-      var it = this.pcg.iterate({r}, sampleType);
+    
+
+    pragma "fn returns iterator"
+    @deprecated("'iterate' is deprecated; please use 'sample' instead")
+    proc iterate(D: domain, type resultType=t) do
+      return this.pcg.iterate(D, resultType);
+
+    pragma "fn returns iterator"
+    @deprecated("'iterate' is deprecated; please use 'sample' instead")
+    proc iterate(D: domain, type resultType=t, min: t, max: t) do
+      return this.pcg.iterate(D, resultType, min, max);
+
+    iter sample(D: domain, type sampleType=t) {
+      var it = this.pcg.iterate(D, sampleType);
       for s in it do yield s;
     }
 
-    iter sample(r: range, type sampleType=t, min: sampleType, max: sampleType): sampleType {
-      var it = this.pcg.iterate({r}, sampleType, min, max);
+    iter sampleInRange(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
+      var it = this.pcg.iterate(D, sampleType, min, max);
       for s in it do yield s;
     }
 
     @chpldoc.nodoc
-    iter sample(r: range, type sampleType, param tag)
+    iter sample(D: domain, type sampleType=t, param tag: iterKind)
       where tag == iterKind.leader
     {
-      var it = this.pcg.iterate({r}, sampleType, tag);
+      var it = this.pcg.iterate(D, sampleType, tag);
       for s in it do yield s;
     }
 
     @chpldoc.nodoc
-    iter sample(r: range, type sampleType, param tag, min: sampleType, max: sampleType)
+    iter sample(D: domain, type sampleType=t, param tag: iterKind, followThis)
+      where tag == iterKind.follower
+    {
+      var it = this.pcg.iterate(D, sampleType, tag, followThis);
+      for s in it do yield s;
+    }
+
+    @chpldoc.nodoc
+    iter sampleInRange(D: domain, type sampleType=t,
+                       min: sampleType, max: sampleType, param tag: iterKind)
       where tag == iterKind.leader
     {
-      var it = this.pcg.iterate({r}, sampleType, min, max, tag);
+      var it = this.pcg.iterate(D, sampleType, min, max, tag);
+      for s in it do yield s;
+    }
+
+    @chpldoc.nodoc
+    iter sampleInRange(D: domain, type sampleType=t,
+                       min: sampleType, max: sampleType,
+                       param tag: iterKind, followThis)
+      where tag == iterKind.follower
+    {
+      var it = this.pcg.iterate(D, sampleType, min, max, tag, followThis);
       for s in it do yield s;
     }
 
@@ -1620,6 +1672,29 @@ module Random {
         const start = PCGRandomStreamPrivate_count;
         return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
                                                 min, max, tag);
+      }
+
+      pragma "fn returns iterator"
+      @chpldoc.nodoc
+      proc iterate(D: domain, type resultType=eltType,
+                   param tag: iterKind, followThis)
+        where tag == iterKind.follower
+      {
+        const start = PCGRandomStreamPrivate_count;
+        return PCGRandomPrivate_iterate(resultType, D, seed, start,
+                                        tag, followThis);
+      }
+
+      pragma "fn returns iterator"
+      @chpldoc.nodoc
+      proc iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType, param tag: iterKind,
+                   followThis)
+        where tag == iterKind.follower
+      {
+        const start = PCGRandomStreamPrivate_count;
+        return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
+                                                min, max, tag, followThis);
       }
 
 

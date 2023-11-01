@@ -1,8 +1,8 @@
 use Random;
 
 {
-  var rng = createRandomStream(seed=17, parSafe=false,
-                             eltType=real(64), algorithm=RNG.PCG);
+  var rng = new randomStream(seed=17, parSafe=false,
+                             eltType=real(64));
 
   var v1 = rng.getNext();
   writeln(v1.type:string);
@@ -19,8 +19,8 @@ use Random;
   var v2: uint(64);
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=uint(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=uint(64));
 
     var v1  = rng.getNext();
 
@@ -28,8 +28,8 @@ use Random;
   }
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=uint(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=uint(64));
 
     var v1     = rng.getNext(uint(8));
     var got_v2 = rng.getNext();
@@ -43,8 +43,8 @@ use Random;
   var v2: real;
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=real(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=real(64));
 
     var v1 = rng.getNext();
 
@@ -52,8 +52,8 @@ use Random;
   }
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=real(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=real(64));
 
     var v1 = rng.getNext(uint(8));
     var got_v2 = rng.getNext();
@@ -68,8 +68,8 @@ use Random;
   var v2: complex;
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=complex(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=complex(64));
 
     var v1 = rng.getNext();
 
@@ -77,8 +77,8 @@ use Random;
   }
 
   {
-    var rng = createRandomStream(seed=17, parSafe=false,
-                               eltType=complex(64), algorithm=RNG.PCG);
+    var rng = new randomStream(seed=17, parSafe=false,
+                               eltType=complex(64));
 
     var v1     = rng.getNext(uint(8));
     var got_v2 = rng.getNext();
@@ -86,4 +86,3 @@ use Random;
     assert(v2 == got_v2);
   }
 }
-

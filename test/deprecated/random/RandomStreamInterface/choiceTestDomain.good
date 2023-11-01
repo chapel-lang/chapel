@@ -1,0 +1,178 @@
+choiceTestDomain.chpl:3: In function 'main':
+choiceTestDomain.chpl:4: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
+choiceTestDomain.chpl:6: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
+choiceTestDomain.chpl:4: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:18: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:29: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:21: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:29: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:22: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:31: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:32: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:33: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from function 'test'
+  choiceTestDomain.chpl:37: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:39: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from function 'test'
+  choiceTestDomain.chpl:41: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from function 'test'
+  choiceTestDomain.chpl:43: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(real(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from function 'test'
+  choiceTestDomain.chpl:45: called as test(stream: owned PCGRandomStreamInternal(real(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:5: called as runTests(stream: owned PCGRandomStreamInternal(real(64),true))
+choiceTestDomain.chpl:3: In function 'main':
+choiceTestDomain.chpl:6: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:18: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),positive), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:29: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:21: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:29: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:22: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: nothing, replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:31: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(1,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:32: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(2,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64)) from function 'test'
+  choiceTestDomain.chpl:33: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: domain(3,int(64),one), replace: bool, prob: [domain(1,int(64),one)] real(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32)) from function 'test'
+  choiceTestDomain.chpl:37: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] real(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64)) from function 'test'
+  choiceTestDomain.chpl:39: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(64), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32)) from function 'test'
+  choiceTestDomain.chpl:41: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] int(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32)) from function 'test'
+  choiceTestDomain.chpl:43: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(32), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choiceProbabilities(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from function '_choice'
+  $CHPL_HOME/modules/standard/Random.chpl:nnnn: called as _choice(stream: borrowed PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from method 'choice'
+  choiceTestUtils.chpl:34: called as (PCGRandomStreamInternal(int(64),true)).choice(x: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16)) from function 'test'
+  choiceTestDomain.chpl:45: called as test(stream: owned PCGRandomStreamInternal(int(64),true), X: domain(1,int(64),one), size: int(64), replace: bool, prob: [domain(1,int(64),one)] uint(16), trials: int(64)) from function 'runTests'
+  choiceTestDomain.chpl:7: called as runTests(stream: owned PCGRandomStreamInternal(int(64),true))
