@@ -110,13 +110,6 @@ dimensions of the matrices from the arrays that are passed in, even when one is
 passing in a sub-array such that the array elements are not contiguously stored
 in memory.
 
-.. warning::
-
-  The ``CHPL_LOCALE_MODEL=numa``\* configuration is currently not supported by
-  this module.
-
-  \*The NUMA Locale model is deprecated.
-
 .. MKL Documentation References
 
 .. _ASUM:   https://www.intel.com/content/www/us/en/develop/documentation/onemkl-developer-reference-fortran/top/blas-and-sparse-blas-routines/blas-routines/blas-level-1-routines-and-functions/asum.html
