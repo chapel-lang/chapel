@@ -1414,33 +1414,6 @@ module BigInteger {
   proc divexact(ref result: bigint, const ref numer: bigint, const ref denom: bigint)
     do BigInteger.divExact(result, numer, denom);
 
-  @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
-  proc ref bigint.divexact(const ref numer: bigint, const ref denom: bigint)
-    do BigInteger.divExact(this, numer, denom);
-
-  /*
-    Computes ``numer/denom`` and stores the result in ``this``, which is a
-    :record:`bigint` instance.
-
-    .. warning::
-       ``divexact`` is optimized to handle cases where ``numer/denom`` results
-       in an integer.  When ``numer/denom`` does not produce an integer, this
-       method may produce incorrect results.
-
-    :arg numer: numerator
-    :type numer: :record:`bigint`
-
-    :arg denom: denominator
-    :type denom: :record:`bigint` or ``integral``
-
-    .. seealso::
-       :proc:`GMP.mpz_divexact` and
-       `mpz_divexact <https://gmplib.org/manual/Integer-Division#index-mpz_005fdivexact>`_.
-  */
-  @deprecated(notes="bigint.divexact method is deprecated - please use the standalone function :proc:`~BigInteger.divExact`")
-  proc ref bigint.divexact(const ref numer: bigint, denom: integral)
-    do BigInteger.divExact(this, numer, denom);
-
   /*
     Return ``true`` if ``this`` is exactly divisible by ``div``.  ``this`` is
     divisible by ``div`` if there exists an integer ``q`` satisfying ``this =
@@ -1699,41 +1672,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
-  proc ref bigint.powMod(const ref base: bigint, const ref exp:  bigint,
-                     const ref mod:  bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  // Note: Documentation on `exp: uint` version
-  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
-  proc ref bigint.powMod(const ref base: bigint, exp: int, const ref mod: bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
-  /* Set ``this`` to the result of (``base`` raised to ``exp``) modulo ``mod``.
-
-     :arg base: The value to be raised to the power of ``exp`` before performing
-                a modulo operation on.
-     :type base: :record:`bigint`
-
-     :arg exp: The exponent to raise ``base`` to the power of prior to the
-               modulo operation.  Can be negative if the inverse (1/``base``)
-               modulo ``mod`` exists.
-     :type exp: :record:`bigint`, ``int``, or ``uint``
-
-     :arg mod: The divisor for the modulo operation.
-     :type mod: :record:`bigint`
-
-     .. warning::
-        The program behavior is undefined if ``exp`` is negative and the inverse
-        (1/``base``) modulo ``mod`` does not exist.
-   */
-  @deprecated(notes="bigint.powMod method is deprecated - please use the standalone function :proc:`~BigInteger.powMod`")
-  proc ref bigint.powMod(const ref base: bigint, exp: uint, const ref mod: bigint) {
-    BigInteger.powMod(this, base, exp, mod);
-  }
-
   // This helper is intended for use only when the exponent argument
   // is negative.  Negative exponents result in integers that are between -1
   // and 1 (but usually 0 unless the base is -1 or 1)
@@ -1843,37 +1781,6 @@ module BigInteger {
     }
   }
 
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc ref bigint.pow(const ref base: bigint, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc ref bigint.pow(const ref base: bigint, exp: uint) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  // Documented in uint, uint version
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc ref bigint.pow(base: int, exp: int) {
-    BigInteger.pow(this, base, exp);
-  }
-
-  /* Set ``this`` to the result of ``base`` raised to ``exp``.
-
-     :arg base: The value to be raised to the power of ``exp``.
-     :type base: :record:`bigint`, ``int`` or ``uint``
-
-     :arg exp: The exponent to raise ``base`` to the power of.
-     :type exp: ``int`` or ``uint``
-   */
-  @deprecated(notes="bigint.pow method is deprecated - please use the standalone function :proc:`~BigInteger.pow`")
-  proc ref bigint.pow(base: uint, exp: uint) {
-    BigInteger.pow(this, base, exp);
-  }
-
   /*
      Sets ``result`` to the truncated integer ``n`` th root of ``x``.
 
@@ -1911,11 +1818,6 @@ module BigInteger {
   @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
   proc root(ref result: bigint, const ref a: bigint, n: uint) : int
     do return root(result, a, n);
-
-  @deprecated(notes="bigint.root method is deprecated - please use the standalone function :proc:`~BigInteger.root`")
-  proc ref bigint.root(const ref a: bigint, n: uint) : int {
-    return BigInteger.root(this, a, n);
-  }
 
   /* Sets ``result`` to the truncated integer ``n`` th root of ``x``. Stores
      the remainder in ``remain``.
@@ -1958,10 +1860,6 @@ module BigInteger {
   proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint)
     do BigInteger.rootRem(root, rem, u, n);
 
-  @deprecated(notes="bigint.rootrem method is deprecated - please use the standalone function :proc:`rootRem` instead")
-  proc ref bigint.rootrem(ref rem: bigint, const ref u: bigint, n: uint)
-    do BigInteger.rootRem(this, rem, u, n);
-
   /*
      Sets ``result`` to the truncated integer square root of ``x``.
 
@@ -1993,11 +1891,6 @@ module BigInteger {
   @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
   proc sqrt(ref result: bigint, const ref a: bigint)
     do sqrt(result, a);
-
-  @deprecated(notes="bigint.sqrt method is deprecated - please use the standalone function :proc:`~BigInteger.sqrt`")
-  proc ref bigint.sqrt(const ref a: bigint) {
-    BigInteger.sqrt(this, a);
-  }
 
   /* Sets ``result`` to the truncated integer square root of ``x``. Stores
      the remainder in ``remain``.
@@ -2039,10 +1932,6 @@ module BigInteger {
   @deprecated("sqrtrem is deprecated - please use :proc:`sqrtRem` instead")
   proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint)
     do BigInteger.sqrtRem(root, rem, a);
-
-  @deprecated(notes="bigint.sqrtrem method is deprecated - please use the standalone function :proc:`sqrtRem` instead")
-  proc ref bigint.sqrtrem(ref rem: bigint, const ref a: bigint)
-    do BigInteger.sqrtRem(this, rem, a);
 
   @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
   proc bigint.perfect_power_p() : int {
@@ -2201,11 +2090,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.nextprime method is deprecated - please use the standalone function :proc:`~BigInteger.nextPrime`")
-  proc ref bigint.nextprime(const ref a: bigint) {
-    BigInteger.nextprime(this, a);
-  }
-
   /* Set ``result`` to the greatest common divisor of ``a`` and ``b``
 
      :arg result: Where the result is stored
@@ -2237,11 +2121,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
-  proc ref bigint.gcd(const ref a: bigint, const ref b: bigint) {
-    BigInteger.gcd(this, a, b);
-  }
-
   /* See :proc:`gcd` */
   @unstable("gcd is unstable and may change in the future")
   proc gcd(ref result: bigint, const ref a: bigint, b: int) {
@@ -2251,11 +2130,6 @@ module BigInteger {
     } else {
       BigInteger.gcd(result, a, new bigint(b));
     }
-  }
-
-  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
-  proc ref bigint.gcd(const ref a: bigint, b: int) {
-    BigInteger.gcd(this, a, b);
   }
 
   /* See :proc:`gcd` */
@@ -2274,11 +2148,6 @@ module BigInteger {
         mpz_gcd_ui(result.mpz, a_.mpz, b_);
       }
     }
-  }
-
-  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
-  proc ref bigint.gcd(const ref a: bigint, b: uint) {
-    BigInteger.gcd(this, a, b);
   }
 
   /* Set ``result`` to the greatest common divisor of ``a`` and ``b``, and
@@ -2331,34 +2200,6 @@ module BigInteger {
     }
   }
 
-  /* Set ``this`` to the greatest common divisor of ``a`` and ``b``, and
-     set ``s`` and ``t`` to coefficients such that ``a*s + b*t == this``.
-
-     .. note::
-        The result stored in ``this`` is always positive, even if one or
-        both of ``a`` and ``b`` are negative (or zero if both are zero).
-
-     This fulfills the same role as the GMP function `mpz_gcdext
-     <https://gmplib.org/manual/Number-Theoretic-Functions#index-mpz_005fgcdext>`_.
-
-     :arg a: One of the numbers to compute the greatest common divisor of
-     :type a: :record:`bigint`
-
-     :arg b: One of the numbers to compute the greatest common divisor of
-     :type b: :record:`bigint`
-
-     :arg s: The returned coefficient that can be multiplied by ``a``.
-     :type s: :record:`bigint`
-
-     :arg t: The returned coefficient that can be multiplied by ``b``.
-     :type t: :record:`bigint`
-   */
-  @deprecated(notes="bigint.gcd method is deprecated - please use the standalone function :proc:`~BigInteger.gcd`")
-  proc ref bigint.gcd(const ref a: bigint, const ref b: bigint,
-                  ref s: bigint, ref t: bigint): void {
-    BigInteger.gcd(this, a, b, s, t);
-  }
-
   /* Set ``result`` to the least common multiple of ``a`` and ``b``
 
      :arg result: Where the result is stored
@@ -2390,11 +2231,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
-  proc ref bigint.lcm(const ref a: bigint, const ref b: bigint) {
-    BigInteger.lcm(this, a, b);
-  }
-
   /* See :proc:`lcm` */
   @unstable("lcm is unstable and may change in the future")
   proc lcm(ref result: bigint, const ref a: bigint, b: int) {
@@ -2402,11 +2238,6 @@ module BigInteger {
       BigInteger.lcm(result, a, b:uint);
     else
       BigInteger.lcm(result, a, (0 - b):uint);
-  }
-
-  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
-  proc ref bigint.lcm(const ref a: bigint, b: int) {
-    BigInteger.lcm(this, a, b);
   }
 
   /* See :proc:`lcm` */
@@ -2428,13 +2259,8 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.lcm method is deprecated - please use the standalone function :proc:`~BigInteger.lcm`")
-  proc ref bigint.lcm(const ref a: bigint, b: uint) {
-    BigInteger.lcm(this, a, b);
-  }
-
   /*
-   An :class:`InversionError` is thrown if a :proc:`bigint.invert()` is attempted with
+   An :class:`InversionError` is thrown if a :proc:`invert()` is attempted with
    invalid arguments that result in a non-existent inverse. Specifically,
    if the arguments cause a divide by zero, this error notifies the caller
    that the internal value of the :record:`bigint` was left in an undefined state.
@@ -2507,27 +2333,7 @@ module BigInteger {
   proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws
     do invert(result, a, b);
 
-  /* Set the value of ``this`` to the inverse of ``a`` modulo ``b``
-
-     .. note::
-        If an inverse does not exist, an :class:`InversionError` will be thrown,
-        and the value of ``this`` will be left undefined
-
-     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
-
-     :arg a: The dividend of the modulo operation
-     :type a: :record:`bigint`
-
-     :arg b: The divisor of the modulo operation
-     :type b: :record:`bigint`
-
-  */
-  @deprecated(notes="bigint.invert method is deprecated - please use the standalone function :proc:`~BigInteger.invert`")
-  proc ref bigint.invert(const ref a: bigint, const ref b: bigint) throws {
-    BigInteger.invert(this, a, b);
-  }
-
-  @deprecated("bigint.remove is deprecated, use :proc:`bigint.removeFactor` instead")
+  @deprecated("bigint.remove is deprecated, use :proc:`~BigInteger.removeFactor` instead")
   proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
     return BigInteger.removeFactor(this, a,f);
   }
@@ -2582,24 +2388,6 @@ module BigInteger {
   }
 
   /*
-    Remove all occurrences of the factor ``fac`` from ``x`` and store the result
-    in ``this``.  Return the number of occurrences removed.
-
-    :arg x: The value to remove all occurrences of ``fac`` from
-    :type x: :record:`bigint`
-
-    :arg fac: The factor to remove from ``x``.
-    :type fac: :record:`bigint`
-
-    :return: The number of occurrences of ``fac`` found in ``x``.
-    :rtype: ``uint``
-   */
-  @deprecated(notes="bigint.removeFactor method is deprecated - please use the standalone function :proc:`~BigInteger.removeFactor`")
-  proc ref bigint.removeFactor(const ref x: bigint, const ref fac: bigint) : uint {
-    return BigInteger.removeFactor(this, x, fac);
-  }
-
-  /*
     Set ``result`` to the factorial of ``a``.
 
     :arg result: Where the result is stored
@@ -2624,11 +2412,6 @@ module BigInteger {
         mpz_fac_ui(result.mpz, a_);
       }
     }
-  }
-
-  @deprecated(notes="bigint.fac method is deprecated - please use the standalone function :proc:`~BigInteger.fac`")
-  proc ref bigint.fac(a: integral) {
-    BigInteger.fac(this, a);
   }
 
   /*
@@ -2662,11 +2445,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.bin method is deprecated - please use the standalone function :proc:`~BigInteger.bin`")
-  proc ref bigint.bin(const ref n: bigint, k: integral) {
-    BigInteger.bin(this, n, k);
-  }
-
   /* See :proc:`bin` */
   @unstable("bin is unstable and may change in the future")
   proc bin(ref result: bigint, n: uint, k: integral) {
@@ -2685,11 +2463,6 @@ module BigInteger {
     } else {
       BigInteger.bin(result, new bigint(n), k);
     }
-  }
-
-  @deprecated(notes="bigint.bin method is deprecated - please use the standalone function :proc:`~BigInteger.bin`")
-  proc ref bigint.bin(n: uint, k: integral) {
-    BigInteger.bin(this, n, k);
   }
 
   /*
@@ -2716,11 +2489,6 @@ module BigInteger {
         mpz_fib_ui(result.mpz, n_);
       }
     }
-  }
-
-  @deprecated(notes="bigint.fib method is deprecated - please use the standalone function :proc:`~BigInteger.fib`")
-  proc ref bigint.fib(n: integral) {
-    BigInteger.fib(this, n);
   }
 
   /*
@@ -2760,11 +2528,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.fib2 method is deprecated - please use the standalone function :proc:`~BigInteger.fib2`")
-  proc ref bigint.fib2(ref fnsub1: bigint, n: integral) {
-    BigInteger.fib2(this, fnsub1, n);
-  }
-
   @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
   proc lucnum(ref result: bigint, n: integral)
     do BigInteger.lucNum(result, n);
@@ -2793,9 +2556,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="bigint.lucnum method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum`")
-  proc ref bigint.lucnum(n: integral) do BigInteger.lucNum(this, n);
 
   @deprecated("lucnum2 is deprecated - please use :proc:`~BigInteger.lucNum2` instead")
   proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
@@ -2837,10 +2597,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="bigint.lucnum2 method is deprecated - please use the standalone function :proc:`~BigInteger.lucNum2`")
-  proc ref bigint.lucnum2(ref fnsub1: bigint, n: integral)
-    do BigInteger.lucNum2(this, fnsub1, n);
 
   @deprecated("popcount is deprecated - please use :proc:`bigint.popCount` instead")
   proc bigint.popcount() : uint do return this.popCount();
@@ -3256,27 +3012,15 @@ module BigInteger {
   proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.add(result, a, b);
 
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc ref bigint.add(const ref a: bigint, const ref b: bigint)
-    do BigInteger.add(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc add(ref result: bigint, const ref a: bigint, b: int)
     do BigInteger.add(result, a, b);
 
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc ref bigint.add(const ref a: bigint, b: int) do BigInteger.add(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc add(ref result: bigint, const ref a: bigint, b: uint)
     do BigInteger.add(result, a, b);
-
-  @deprecated(notes="bigint.add method is deprecated - please use the standalone function :proc:`~BigInteger.add`")
-  proc ref bigint.add(const ref a: bigint, b: uint) {
-    BigInteger.add(this, a, b);
-  }
 
   /*
      Sets ``result`` to the difference of ``x`` and ``y``.
@@ -3385,41 +3129,25 @@ module BigInteger {
   proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.sub(result, a, b);
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc ref bigint.sub(const ref a: bigint, const ref b: bigint)
-    do BigInteger.sub(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc sub(ref result: bigint, const ref a: bigint, b: int)
     do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc ref bigint.sub(const ref a: bigint, b: int) do BigInteger.sub(this, a, b);
 
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc sub(ref result:bigint, const ref a: bigint, b: uint)
     do BigInteger.sub(result, a, b);
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc ref bigint.sub(const ref a: bigint, b: uint) do BigInteger.sub(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc sub(ref result: bigint, a: int, const ref b: bigint)
     do BigInteger.sub(result, a, b);
 
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc ref bigint.sub(a: int, const ref b: bigint) do BigInteger.sub(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc sub(ref result: bigint, a: uint, const ref b: bigint)
     do BigInteger.sub(result, a, b);
-
-  @deprecated(notes="bigint.sub method is deprecated - please use the standalone function :proc:`~BigInteger.sub`")
-  proc ref bigint.sub(a: uint, const ref b: bigint) do BigInteger.sub(this, a, b);
 
   /*
      Sets ``result`` to the product of ``x`` and ``y``.
@@ -3495,37 +3223,15 @@ module BigInteger {
   proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.mul(result, a, b);
 
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc ref bigint.mul(const ref a: bigint, const ref b: bigint)
-    do BigInteger.mul(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc mul(ref result: bigint, const ref a: bigint, b: int)
     do BigInteger.mul(result, a, b);
 
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc ref bigint.mul(const ref a: bigint, b: int) do BigInteger.mul(this, a, b);
-
   pragma "last resort"
   @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
   proc mul(ref result: bigint, const ref a: bigint, b: uint)
     do BigInteger.mul(result, a, b);
-
-  @deprecated(notes="bigint.mul method is deprecated - please use the standalone function :proc:`~BigInteger.mul`")
-  proc ref bigint.mul(const ref a: bigint, b: uint) do BigInteger.mul(this, a, b);
-
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
-  proc ref bigint.addmul(const ref a: bigint, const ref b: bigint)
-    do addMul(this, a, b);
-
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
-  proc ref bigint.addmul(const ref a: bigint, b: int)
-    do addMul(this, a, b);
-
-  @deprecated(notes="bigint.addmul method is deprecated - please use the standalone function :proc:`addMul` instead")
-  proc ref bigint.addmul(const ref a: bigint, b: uint)
-    do addMul(this, a, b);
 
   @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
   proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint)
@@ -3596,18 +3302,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
-  proc ref bigint.submul(const ref a: bigint, const ref b: bigint)
-    do subMul(this, a, b);
-
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
-  proc ref bigint.submul(const ref a: bigint, b: int)
-    do subMul(this, a, b);
-
-  @deprecated(notes="bigint.submul method is deprecated - please use the standalone function :proc:`subMul` instead")
-  proc ref bigint.submul(const ref a: bigint, b: uint)
-    do subMul(this, a, b);
 
   @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
   proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint)
@@ -3717,11 +3411,6 @@ module BigInteger {
     }
   }
 
-  @deprecated(notes="bigint.mul_2exp method is deprecated - please use the standalone function :proc:`~BigInteger.mul2Exp`")
-  proc ref bigint.mul_2exp(const ref a: bigint, b: integral) {
-    BigInteger.mul_2exp(this, a, b);
-  }
-
   /*
      Sets ``result`` to the negation of ``x``.
 
@@ -3753,10 +3442,6 @@ module BigInteger {
   @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
   proc neg(ref result: bigint, const ref a: bigint) do BigInteger.neg(result, a);
 
-  @deprecated(notes="bigint.neg method is deprecated - please use the standalone function :proc:`~BigInteger.neg`")
-  proc ref bigint.neg(const ref a: bigint) do BigInteger.neg(this, a);
-
-
   /*
      Sets ``result`` to the absolute value of ``x``.
 
@@ -3787,9 +3472,6 @@ module BigInteger {
   pragma "last resort"
   @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
   proc abs(ref result: bigint, const ref a: bigint) do BigInteger.abs(result, a);
-
-  @deprecated(notes="bigint.abs method is deprecated - please use the standalone function :proc:`~BigInteger.abs`")
-  proc ref bigint.abs(const ref a: bigint) do BigInteger.abs(this, a);
 
   @deprecated("divQ is deprecated - please use :proc:`div` with :enum:`roundingMode` instead")
   proc divQ(ref result: bigint,
@@ -3824,35 +3506,6 @@ module BigInteger {
             denom: integral,
             param rounding = round.zero)
               do BigInteger.div(result, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.divQ(const ref numer: bigint,
-                   const ref denom: bigint,
-                   param rounding = round.zero) {
-    BigInteger.div(this, numer, denom, chpl_roundToRoundingMode(rounding));
-  }
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``this``.
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated(notes="bigint.divQ method is deprecated - please use the standalone function :proc:`~BigInteger.div` with :enum:`roundingMode` instead")
-  proc ref bigint.divQ(const ref numer: bigint,
-                             denom: integral,
-                   param     rounding = round.zero)
-    do BigInteger.div(this, numer, denom, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``result``.
@@ -3915,36 +3568,6 @@ module BigInteger {
                      denom: integral,
            param     rounding = roundingMode.zero)
     do BigInteger.div(result, numer, new bigint(denom), rounding);
-
-  /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
-     ``this``.  The absolute value of the remainder will always be less than the
-     absolute value of the denominator (i.e. ``abs(this) < abs(denom)``).
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.rem` with :enum:`roundingMode` instead")
-  proc ref bigint.divR(const ref numer: bigint,
-                             denom: integral,
-                   param     rounding = round.zero)
-    do BigInteger.rem(this, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  @deprecated(notes="bigint.divR method is deprecated - please use the standalone function :proc:`~BigInteger.rem` with :enum:`roundingMode` instead")
-  proc ref bigint.divR(const ref numer: bigint,
-                   const ref denom: bigint,
-                   param     rounding = round.zero)
-    do BigInteger.rem(this, numer, denom, chpl_roundToRoundingMode(rounding));
 
   /* Divide ``numer`` by ``denom``, forming a remainder and storing it in
      ``result``.  The absolute value of the remainder will always be less than the
@@ -4174,48 +3797,6 @@ module BigInteger {
              param     rounding = round.zero)
     do BigInteger.divRem(result, remain, numer, denom, chpl_roundToRoundingMode(rounding));
 
-  /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
-     ``this``, and a remainder and storing it in ``remain``.  The quotient and
-     remainder will always satisfy ``numer = this*denom + remain`` after the
-     operation has finished.  The absolute value of the remainder will always be
-     less than the absolute value of the denominator (i.e. ``abs(this) <
-     abs(denom)``).
-
-     .. warning::
-        If ``this`` is also passed as the ``remain`` argument, the program
-        behavior is undefined.
-
-     :arg remain: Stores the remainder of the division
-     :type remain: :record:`bigint`
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg denom: The denominator of the division operation to be performed
-     :type denom: :record:`bigint`, ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-
-     .. warning::
-        If the denominator is zero, the program behavior is undefined.
-  */
-  @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divRem` with :enum:`roundingMode` instead")
-  proc ref bigint.divQR(ref       remain: bigint,
-                    const ref numer: bigint,
-                              denom: integral,
-                    param     rounding = round.zero)
-    do BigInteger.divRem(this, remain, numer, denom, chpl_roundToRoundingMode(rounding));
-
-  @deprecated(notes="bigint.divQR method is deprecated - please use the standalone function :proc:`~BigInteger.divRem` with :enum:`roundingMode` instead")
-  proc ref bigint.divQR(ref       remain: bigint,
-                    const ref numer: bigint,
-                    const ref denom: bigint,
-                    param     rounding = round.zero)
-    do BigInteger.divRem(this, remain, numer, denom, chpl_roundToRoundingMode(rounding));
-
   /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
      ``result``.
 
@@ -4294,27 +3875,6 @@ module BigInteger {
     }
   }
 
-  /* Divide ``numer`` by ``2^exp``, forming a quotient and storing it in
-     ``this``.
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg exp: The exponent that 2 should be raised to before being used as the
-               denominator of the division operation to be performed
-     :type exp: ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-  */
-  @deprecated(notes="bigint.divQ2Exp method is deprecated - please use the standalone function :proc:`~BigInteger.div2Exp` with :enum:`roundingMode` instead")
-  proc ref bigint.divQ2Exp(const ref numer: bigint,
-                                 exp: integral,
-                       param     rounding = round.zero)
-    do BigInteger.div2Exp(this, numer, exp, chpl_roundToRoundingMode(rounding));
-
   /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
      ``result``.
 
@@ -4389,27 +3949,6 @@ module BigInteger {
       }
     }
   }
-
-  /* Divide ``numer`` by ``2^exp``, forming a remainder and storing it in
-     ``this``.
-
-     :arg numer: The numerator of the division operation to be performed
-     :type numer: :record:`bigint`
-
-     :arg exp: The exponent that 2 should be raised to before being used as the
-               denominator of the division operation to be performed
-     :type exp: ``integral``
-
-     :arg rounding: The rounding style to use, see :enum:`round` for a
-                    description of what the rounding styles entail.  Defaults to
-                    ``zero`` if unspecified
-     :type rounding: ``round``
-   */
-  @deprecated(notes="bigint.divR2Exp method is deprecated - please use the standalone function :proc:`~BigInteger.rem2Exp` with :enum:`roundingMode` instead")
-  proc ref bigint.divR2Exp(const ref numer: bigint,
-                                 exp: integral,
-                       param     rounding = round.zero)
-    do BigInteger.rem2Exp(this, numer, exp, chpl_roundToRoundingMode(rounding));
 
   /* Stores ``x`` shifted left by ``n`` bits in ``result``. Negative ``n`` will
      result in a right shift.
@@ -4535,19 +4074,6 @@ module BigInteger {
   /* Computes the mod operator on the two arguments, defined as
      ``mod(a, b) = a - b * floor(a / b)``.
 
-     The result is stored in ``this``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
-  proc ref bigint.mod(const ref a: bigint, const ref b: bigint) {
-    BigInteger.mod(this, a, b);
-  }
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
      If b is of an unsigned type, then
      fewer conditionals will be evaluated at run time.
 
@@ -4560,22 +4086,6 @@ module BigInteger {
   @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
   proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
     do return BigInteger.mod(result, a, b);
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     If b is of an unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is stored in ``this`` and returned as an ``int``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  @deprecated(notes="bigint.mod method is deprecated - please use the standalone function :proc:`~BigInteger.mod`")
-  proc ref bigint.mod(const ref a: bigint, b: integral) : int {
-    return BigInteger.mod(this, a, b);
-  }
 
   /*
      Compares ``this`` and ``x``.
@@ -4763,11 +4273,6 @@ module BigInteger {
   proc and(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.and(result, a, b);
 
-  @deprecated(notes="bigint.and method is deprecated - please use the standalone function :proc:`~BigInteger.and`")
-  proc ref bigint.and(const ref a: bigint, const ref b: bigint) {
-    BigInteger.and(this, a, b);
-  }
-
   /*
     Compute the bitwise inclusive or of ``x`` and ``y`` and store it in
     ``result``.
@@ -4803,10 +4308,6 @@ module BigInteger {
   @deprecated(notes="ior is deprecated - please use :proc:`or` instead")
   proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.or(result, a, b);
-
-  @deprecated(notes="bigint.ior method is deprecated - please use the standalone function :proc:`or` instead")
-  proc ref bigint.ior(const ref a: bigint, const ref b: bigint)
-    do BigInteger.or(this, a, b);
 
   /*
     Compute the bitwise exclusive or of ``x`` and ``y`` and store it in
@@ -4845,11 +4346,6 @@ module BigInteger {
   proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint)
     do BigInteger.xor(result, a, b);
 
-  @deprecated(notes="bigint.xor method is deprecated - please use the standalone function :proc:`~BigInteger.xor`")
-  proc ref bigint.xor(const ref a: bigint, const ref b: bigint) {
-    BigInteger.xor(this, a, b);
-  }
-
   /*
     Compute the bitwise one's complement of ``x`` and store it in ``result``.
 
@@ -4880,11 +4376,6 @@ module BigInteger {
   pragma "last resort"
   @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
   proc com(ref result: bigint, const ref a: bigint) do BigInteger.com(result, a);
-
-  @deprecated(notes="bigint.com method is deprecated - please use the standalone function :proc:`~BigInteger.com`")
-  proc ref bigint.com(const ref a: bigint) {
-    BigInteger.com(this, a);
-  }
 
   /*
     Assign ``x`` to ``this``
