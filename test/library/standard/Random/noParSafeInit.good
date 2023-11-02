@@ -1,0 +1,1 @@
+noParSafeInit.chpl:3: error: 'parSafe' field must be specified to initialize a 'randomStream'

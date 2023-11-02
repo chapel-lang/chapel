@@ -391,6 +391,13 @@ module Random {
       compilerError("'randomStream' only supports numeric or bool types");
     }
 
+    @chpldoc.nodoc
+    proc init(type eltType, seed: int) {
+      this.t = eltType;
+      this.parSafe = false;
+      compilerError("'parSafe' field must be specified to initialize a 'randomStream'");
+    }
+
     /*
       Fill the array with pseudorandom values sampled from this stream.
 
