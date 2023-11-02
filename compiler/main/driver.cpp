@@ -379,7 +379,7 @@ bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
 std::set<std::string> gpuArches;
 
-bool fForeachIntents = true;
+bool fForeachIntents = false;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
