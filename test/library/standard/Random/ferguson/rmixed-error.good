@@ -3,4 +3,4 @@ $CHPL_HOME/modules/standard/Random.chpl:: error: PCGRandomStream cannot produce 
   $CHPL_HOME/modules/standard/Random.chpl:: called as randlc(type resultType = complex(128), states: 2*pcg_setseq_64_xsh_rr_32_rng) from method 'PCGRandomStreamPrivate_getNext_noLock'
   $CHPL_HOME/modules/standard/Random.chpl:: called as (PCGRandomStreamInternal(real(64),false)).PCGRandomStreamPrivate_getNext_noLock(type resultType = complex(128)) from method 'getNext'
   $CHPL_HOME/modules/standard/Random.chpl:: called as (PCGRandomStreamInternal(real(64),false)).getNext(type resultType = complex(128)) from method 'getNext'
-  rmixed-error.chpl:: called as (randomStream(real(64),false)).getNext(type sampleType = complex(128))
+  rmixed-error.chpl:: called as (randomStream(real(64),false)).getNext(type resultType = complex(128))

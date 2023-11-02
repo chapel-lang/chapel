@@ -100,6 +100,13 @@ module Random {
     return d.isRectangular() && d.rank == 1;
 
 
+  private proc randomSeed(): int(64) {
+    use Time;
+    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+    return oddseed;
+  }
+
   pragma "last resort"
   @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
   proc fillRandom(ref arr: [], seed: int(64)=_SeedGenerator.oddCurrentTime, param algorithm=_defaultRNG)
@@ -141,7 +148,7 @@ module Random {
   proc fillRandom(ref arr: [] ?t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
-    var rs = new randomStream(t, _SeedGenerator.oddCurrentTime, false);
+    var rs = new randomStream(t, false);
     rs.fill(arr);
   }
 
@@ -366,7 +373,7 @@ module Random {
     proc init(type eltType, param parSafe: bool) where isNumericOrBoolType(eltType) {
       this.t = eltType;
       this.parSafe = parSafe;
-      this.seed = _SeedGenerator.oddCurrentTime;
+      this.seed = randomSeed();
       this.pcg = new shared PCGRandomStreamInternal(t, this.seed, parSafe);
     }
 
@@ -624,8 +631,21 @@ module Random {
     proc iterate(D: domain, type resultType=t, min: resultType, max: resultType) do
       return this.pcg.iterate(D, resultType, min, max);
 
+    pragma "fn returns iterator"
+    @unstable("'iterate' is unstable and subject to change")
+    proc iterate(D: domain, type resultType=t, param tag)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(D, resultType, tag);
+
+    pragma "fn returns iterator"
+    @unstable("'iterate' is unstable and subject to change")
+    proc iterate(D: domain, type resultType=t, min: resultType, max: resultType, param tag)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(D, resultType, min, max);
+
+
     // test iterator interface
-    @chpldoc.nodoc
+    /*
     iter sample(D: domain, type sampleType=t) {
       this.pcg._lock();
       const start = this.pcg.PCGRandomStreamPrivate_count;
@@ -675,7 +695,6 @@ module Random {
       }
     }
 
-    @chpldoc.nodoc
     iter sample(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
       this.pcg._lock();
       const start = this.pcg.PCGRandomStreamPrivate_count;
@@ -734,6 +753,7 @@ module Random {
         }
       }
     }
+    */
 
     proc serialize(writer, ref serializer) throws {
       var ser = serializer.startRecord(writer, "randomStream", 3);
@@ -1268,8 +1288,6 @@ module Random {
 
   */
   module RandomSupport {
-    import super._SeedGenerator;
-
     /*
       Provides methods to help generate seeds when the user doesn't want
       to create one.  It currently supports two type methods. Both start
@@ -1277,33 +1295,33 @@ module Random {
     */
     @deprecated("'SeedGenerator' is deprecated")
     type SeedGenerator = _SeedGenerator;
+
+    @chpldoc.nodoc
+    record _SeedGenerator {
+      /*
+        Generate a seed based on the current time in microseconds as
+        reported by :proc:`Time.timeSinceEpoch`. This seed is not
+        suitable for the NPB RNG since that requires an odd seed.
+      */
+      proc type currentTime: int(64) {
+        use Time;
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
+        return seed;
+
+      }
+      /*
+        Generate an odd seed based on the current time in microseconds as
+        reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
+        for the NPB RNG.
+      */
+      proc type oddCurrentTime: int(64) {
+        use Time;
+        const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+        const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+        return oddseed;
+      }
+    }
   } // close module RandomSupport
-
-  @chpldoc.nodoc
-  record _SeedGenerator {
-    /*
-      Generate a seed based on the current time in microseconds as
-      reported by :proc:`Time.timeSinceEpoch`. This seed is not
-      suitable for the NPB RNG since that requires an odd seed.
-    */
-    proc type currentTime: int(64) {
-      use Time;
-      const seed = (timeSinceEpoch().totalSeconds()*1_000_000):int(64);
-      return seed;
-
-    }
-    /*
-      Generate an odd seed based on the current time in microseconds as
-      reported by :proc:`Time.timeSinceEpoch`. This seed is suitable
-      for the NPB RNG.
-    */
-    proc type oddCurrentTime: int(64) {
-      use Time;
-      const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
-      const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-      return oddseed;
-    }
-  }
 
   /*
      Permuted Linear Congruential Random Number Generator.
@@ -1893,30 +1911,6 @@ module Random {
                                                 min, max, tag);
       }
 
-      pragma "fn returns iterator"
-      @chpldoc.nodoc
-      proc iterate(D: domain, type resultType=eltType,
-                   param tag: iterKind, followThis)
-        where tag == iterKind.follower
-      {
-        const start = PCGRandomStreamPrivate_count;
-        return PCGRandomPrivate_iterate(resultType, D, seed, start,
-                                        tag, followThis);
-      }
-
-      pragma "fn returns iterator"
-      @chpldoc.nodoc
-      proc iterate(D: domain, type resultType=eltType,
-                   min: resultType, max: resultType, param tag: iterKind,
-                   followThis)
-        where tag == iterKind.follower
-      {
-        const start = PCGRandomStreamPrivate_count;
-        return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
-                                                min, max, tag, followThis);
-      }
-
-
       @chpldoc.nodoc
       override proc writeThis(f) throws {
         f.write("PCGRandomStream(eltType=", eltType:string);
@@ -2131,7 +2125,7 @@ module Random {
     // and min <= x < max (for real/complex/imag)
     // seed should be the initial seed of the RNG
     // count should be the current count value
-    inline
+    private inline
     proc randlc_bounded(type resultType,
                         ref states, seed:int(64), count:int(64),
                         min, max) {
@@ -2173,7 +2167,7 @@ module Random {
     // return the same value as the nth call to randlc
     //
     // resultType is used to compute the size required.
-    proc randlc_skipto(type resultType, seed: int(64), n: integral) {
+    private proc randlc_skipto(type resultType, seed: int(64), n: integral) {
       var states: numGenerators(resultType) * pcg_setseq_64_xsh_rr_32_rng;
 
       for param i in 0..states.size-1 {
@@ -2187,7 +2181,7 @@ module Random {
     //
     // iterate over outer ranges in tuple of ranges
     //
-    iter outer(ranges, param dim: int = 0) {
+    private iter outer(ranges, param dim: int = 0) {
       if dim + 2 == ranges.size {
         foreach i in ranges(dim) do
           yield (i,);
@@ -3166,8 +3160,9 @@ module Random {
   */
   module NPBRandom {
 
+    use super.RandomSupport;
     use ChapelLocks;
-    private use IO, Random;
+    private use IO;
 
     /*
       Models a stream of pseudorandom numbers.  See the module-level
