@@ -5058,42 +5058,9 @@ inline proc fileWriter.unlock() {
   }
 }
 
-/*
-  A compile-time parameter to control the behavior of :proc:`fileReader.offset`
-  and :proc:`fileWriter.offset` when :param:`fileReader.locking` or
-  :param:`fileWriter.locking` is true.
-
-  When 'false', the deprecated behavior is used (i.e., the method acquires a
-  lock internally before getting the offset)
-
-  When 'true', the new behavior is used (i.e., no lock is automatically
-  acquired)
-*/
-config param fileOffsetWithoutLocking = false;
-
 @chpldoc.nodoc
-private inline proc offsetHelper(fileRW, param doDeprecatedLocking: bool) {
-  var ret:int(64);
-  on fileRW._home {
-    if doDeprecatedLocking then try! fileRW.lock();
-    ret = qio_channel_offset_unlocked(fileRW._channel_internal);
-    if doDeprecatedLocking then fileRW.unlock();
-  }
-  return ret;
-}
-
-/*
-   Return the current offset of a fileReader.
-
-   The fileReader will call :proc:`fileReader.lock` before getting the offset
-   and call :proc:`fileReader.unlock` after.
-
-   :returns: the current offset of the fileReader
- */
-@deprecated(notes="The variant of :proc:`fileReader.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileReader.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
-proc fileReader.offset():int(64)
-  where this.locking == true && !fileOffsetWithoutLocking
-  do return offsetHelper(this, true);
+@deprecated("'fileReader.offset' and 'fileWriter.offset' will not automatically acquire a lock, this config no longer impacts code and will be removed in a future release")
+config param fileOffsetWithoutLocking = false;
 
 /*
    Return the current offset of a fileReader.
@@ -5106,26 +5073,11 @@ proc fileReader.offset():int(64)
 
    :returns: the current offset of the fileReader
  */
-proc fileReader.offset():int(64)
-  where this.locking == false ||
-        (this.locking == true && fileOffsetWithoutLocking)
-  do return offsetHelper(this, false);
-
-// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-proc fileReader.chpl_offset():int(64) do return offsetHelper(this, false);
-
-/*
-   Return the current offset of a fileWriter.
-
-   The fileWriter will call :proc:`fileWriter.lock` before getting the offset
-   and call :proc:`fileWriter.unlock` after.
-
-   :returns: the current offset of the fileWriter
- */
-@deprecated(notes="The variant of :proc:`fileWriter.offset` that automatically acquires a lock before getting the offset is deprecated; please compile with `-sfileOffsetWithoutLocking=true` and wrap :proc:`fileWriter.offset` with the appropriate locking calls where necessary to opt in to the new behavior")
-proc fileWriter.offset():int(64)
-  where this.locking == true && !fileOffsetWithoutLocking
-  do return offsetHelper(this, true);
+proc fileReader.offset(): int(64) {
+  var ret:int(64);
+  ret = qio_channel_offset_unlocked(this._channel_internal);
+  return ret;
+}
 
 /*
    Return the current offset of a fileWriter.
@@ -5138,13 +5090,11 @@ proc fileWriter.offset():int(64)
 
    :returns: the current offset of the fileWriter
  */
-proc fileWriter.offset():int(64)
-  where this.locking == false ||
-        (this.locking == true && fileOffsetWithoutLocking)
-  do return offsetHelper(this, false);
-
-// remove and replace calls to this with 'offset' when 'fileOffsetWithoutLocking' is removed
-proc fileWriter.chpl_offset():int(64) do return offsetHelper(this, false);
+proc fileWriter.offset():int(64) {
+  var ret:int(64);
+  ret = qio_channel_offset_unlocked(this._channel_internal);
+  return ret;
+}
 
 /*
    Move a :record:`fileReader` offset forward.
@@ -5316,7 +5266,7 @@ proc fileReader.advanceTo(separator: ?t) throws where t==string || t==bytes {
 
 @chpldoc.nodoc
 private inline proc markHelper(fileRW) throws {
-  const offset = fileRW.chpl_offset();
+  const offset = fileRW.offset();
   const err = qio_channel_mark(false, fileRW._channel_internal);
 
   if err then
@@ -5578,114 +5528,6 @@ proc fileWriter.seek(region: range(?)) throws {
         throw createSystemError(err);
     }
   }
-}
-
-// These begin with an _ to indicated that
-// you should have a lock before you use these... there is probably
-// a better name for them...
-
-/*
-   For a ``fileReader`` locked with :proc:`fileReader.lock`, return the offset
-   of that fileReader.
- */
-@deprecated(notes="fileReader._offset is deprecated - please use :proc:`fileReader.offset` instead")
-proc fileReader._offset():int(64) {
-  return this.offset();
-}
-
-/*
-   For a fileWriter locked with :proc:`fileWriter.lock`, return the offset
-   of that fileWriter.
- */
-@deprecated(notes="fileWriter._offset is deprecated - please use :proc:`fileWriter.offset` instead")
-proc fileWriter._offset():int(64) {
-  return this.offset();
-}
-
-/*
-   This routine is identical to :proc:`fileReader.mark` except that it
-   can be called on fileReaders with ``locking==true`` and should be
-   called only once the fileReader has been locked with
-   :proc:`fileReader.lock`.  The fileReader should not be unlocked with
-   :proc:`fileReader.unlock` until after the mark has been committed with
-   :proc:`fileReader._commit` or reverted with :proc:`fileReader._revert`.
-
-   See :proc:`fileReader.mark` for details other than the locking
-   discipline.
-
-  :returns: The offset that was marked
-  :throws SystemError: if marking the fileReader failed
- */
-@deprecated(notes="fileReader._mark is deprecated - please use :proc:`fileReader.mark` instead")
-proc fileReader._mark() throws {
-  return this.mark();
-}
-
-/*
-   This routine is identical to :proc:`fileWriter.mark` except that it
-   can be called on fileWriters with ``locking==true`` and should be
-   called only once the fileWriter has been locked with
-   :proc:`fileWriter.lock`.  The fileWriter should not be unlocked with
-   :proc:`fileWriter.unlock` until after the mark has been committed with
-   :proc:`fileWriter._commit` or reverted with :proc:`fileWriter._revert`.
-
-   See :proc:`fileWriter.mark` for details other than the locking
-   discipline.
-
-  :returns: The offset that was marked
-  :throws SystemError: if marking the fileWriter failed
- */
-@deprecated(notes="fileWriter._mark is deprecated - please use :proc:`fileWriter.mark` instead")
-proc fileWriter._mark() throws {
-  return this.mark();
-}
-
-/*
-   Abort an *I/O transaction*. See :proc:`fileReader._mark`.  This
-   function will pop the last element from the *mark stack* and then
-   leave the previous fileReader offset unchanged.  This function should
-   only be called on a fileReader that has already been locked and
-   marked.
-*/
-@deprecated(notes="fileReader._revert is deprecated - please use :proc:`fileReader.revert` instead")
-inline proc fileReader._revert() {
-  this.revert();
-}
-
-/*
-   Abort an *I/O transaction*. See :proc:`fileWriter._mark`.  This
-   function will pop the last element from the *mark stack* and then
-   leave the previous fileWriter offset unchanged.  This function should
-   only be called on a fileWriter that has already been locked and
-   marked.
-*/
-@deprecated(notes="fileWriter._revert is deprecated - please use :proc:`fileWriter.revert` instead")
-inline proc fileWriter._revert() {
-  this.revert();
-}
-
-/*
-   Commit an *I/O transaction*. See :proc:`fileReader._mark`.  This
-   function will pop the last element from the *mark stack* and then
-   set the fileReader offset to the popped offset.  This function should
-   only be called on a fileReader that has already been locked and
-   marked.
-*/
-@deprecated(notes="fileReader._commit is deprecated - please use :proc:`fileReader.commit` instead")
-inline proc fileReader._commit() {
-  this.commit();
-}
-
-/*
-   Commit an *I/O transaction*. See :proc:`fileWriter._mark`.  This
-   function will pop the last element from the *mark stack* and then
-   set the fileWriter offset to the popped offset.  This function should
-   only be called on a fileWriter that has already been locked and
-   marked.
-*/
-@deprecated(notes="fileWriter._commit is deprecated - please use :proc:`fileWriter.commit` instead")
-inline proc fileWriter._commit() {
-  this.commit();
 }
 
 // TODO -- come up with better names for these
@@ -7396,7 +7238,7 @@ proc chpl_stringify(const args ...?k):string {
       w.write((...args));
 
       try! w.lock();
-      var offset = w.chpl_offset();
+      var offset = w.offset();
       w.unlock();
 
       var buf = allocate(uint(8), offset:c_size_t+1);
@@ -7789,9 +7631,9 @@ proc fileReader.readLine(ref s: string,
         }
       }
     }
-    var endOffset = this.chpl_offset();
+    var endOffset = this.offset();
     this.revert();
-    var nBytes:int = endOffset - this.chpl_offset();
+    var nBytes:int = endOffset - this.offset();
     // now, nCodepoints and nBytes include the newline
     if foundNewline && stripNewline {
       // but we don't want to read the newline if stripNewline=true.
@@ -12535,7 +12377,7 @@ private proc chpl_do_format(fmt:?t, args ...?k): t throws
     }
     try w.writef(fmt, (...args));
     try! w.lock();
-    offset = w.chpl_offset();
+    offset = w.offset();
     w.unlock();
 
     // close error is thrown instead of ignored

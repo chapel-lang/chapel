@@ -1535,9 +1535,9 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   }
 
   // move back to the starting offset and compute the total number of bytes read
-  const endOffset = ch.chpl_offset();
+  const endOffset = ch.offset();
   ch.revert(); // A
-  const numBytesRead: int = endOffset - ch.chpl_offset();
+  const numBytesRead: int = endOffset - ch.offset();
 
   _ddata_free(matches, nm);
 

@@ -183,7 +183,7 @@ class RecordReader {
         var (rec, once) = _get_internal(offst, len);
         if (once == true) {
           try! myReader.lock();
-          var o = myReader.chpl_offset();
+          var o = myReader.offset();
           myReader.unlock();
           if (o >= offst+len) { // rec.end >= start + len
             // So yield and break
