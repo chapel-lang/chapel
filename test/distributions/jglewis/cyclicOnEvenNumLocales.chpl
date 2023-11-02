@@ -14,7 +14,7 @@ module cholesky_test {
 
   proc main {
 
-    var Rand = new owned RandomStream ( real, seed = 314159) ;
+    var Rand = new randomStream ( real, seed = 314159, parSafe = false ) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
@@ -162,4 +162,3 @@ module cholesky_test {
       writeln ("factorization error exceeds bound by ratio:", max_ratio);
   }
 }
-

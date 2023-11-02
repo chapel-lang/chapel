@@ -47,7 +47,7 @@ proc main(){
   var space: [0..1, totalSpaceRange ] Cell;
   var timer: stopwatch;
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream( real, globalSeed, parSafe = false );
 
   forall i in computationSpaceRange with (ref space) do{
      space[0, i] = 0;
@@ -132,5 +132,3 @@ proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
 
   return passed;
 }
-
-

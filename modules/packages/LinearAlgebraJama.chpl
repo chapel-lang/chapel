@@ -2245,8 +2245,7 @@ class Matrix {
 
    proc random (m, n:int) {
       var A = new unmanaged Matrix(m,n);
-      var randlist = new owned RandomStream(real, seed);
-      randlist.fillRandom(A.A);
+      fillRandom(A.A, seed);
       return A;
    }
 

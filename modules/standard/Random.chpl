@@ -100,7 +100,7 @@ module Random {
     return d.isRectangular() && d.rank == 1;
 
 
-  private proc randomSeed(): int(64) {
+  private proc oddTimeSeed(): int(64) {
     use Time;
     const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
     const oddseed = if seed % 2 == 0 then seed + 1 else seed;
@@ -373,7 +373,7 @@ module Random {
     proc init(type eltType, param parSafe: bool) where isNumericOrBoolType(eltType) {
       this.t = eltType;
       this.parSafe = parSafe;
-      this.seed = randomSeed();
+      this.seed = oddTimeSeed();
       this.pcg = new shared PCGRandomStreamInternal(t, this.seed, parSafe);
     }
 

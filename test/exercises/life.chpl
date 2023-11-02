@@ -16,7 +16,7 @@ config const printGenerations: bool = true, // print grid at each iteration
 
 // seed the random stream with something reproducible?
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+             seed = if useRandomSeed then (timeSinceEpoch().seconds*2_000_000+1) else 314159;
 
 // global constants and variables
 const BigD = {0..n+1, 0..n+1}, // domain of grid with border cells
@@ -25,7 +25,7 @@ var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 
 // initialize grid
-var rs = createRandomStream(seed, eltType=real(64), algorithm=RNG.NPB);
+var rs = new randomStream(seed=seed, eltType=real(64), parSafe=false);
 
 for i in D do
   Grid(i) = if rs.getNext() <= p:real / 100 then true else false;

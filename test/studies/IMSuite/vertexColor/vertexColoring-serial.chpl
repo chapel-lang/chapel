@@ -213,7 +213,7 @@ module vertexColoring {
    proc six2three() {
        for k in 1..3 {
             var x = 6-k;
-            var randStream = new owned RandomStream(real, 3);
+            var randStream = new randomStream(real, 3, false);
             var ncolor : int = randStream.getNext(): int;
             ncolor = ncolor%3;
             shiftDown();

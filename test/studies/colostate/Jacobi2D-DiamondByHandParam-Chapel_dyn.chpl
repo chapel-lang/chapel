@@ -174,7 +174,7 @@ proc main(){
   var space: [0..1, totalSpaceRange.dim(0), totalSpaceRange.dim(1) ] Cell;
   var timer: stopwatch;
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream( real, globalSeed, parSafe = false );
 
   forall (x,y) in computationDomain with (ref space) do{
      space[0, x, y] = 0;
@@ -263,4 +263,3 @@ proc floord( x: int , y: int ): int {
   assert( y > 0 && ( if x % y >= 0 then x % y else (x%y) +y) >= 0 && (if x%y>=0 then x%y else (x%y) +y) <= y && x==(y*( if x%y>=0 then x/y else ((x/y) -1)) + ( if x%y>=0 then x%y else (x%y) +y)) );
   return (if x%y>=0 then x/y else (x/y) -1);
 }
-

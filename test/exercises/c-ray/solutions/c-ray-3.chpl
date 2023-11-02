@@ -486,9 +486,9 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = new randomStream(seed=(if seed then seed
+                                     else timeSinceEpoch().totalSeconds()*2_000_000+1),
+                               eltType=real);
     for u in rands.urand do
       u(X) = rng.getNext() - 0.5;
     for u in rands.urand do

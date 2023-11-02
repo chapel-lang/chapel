@@ -64,7 +64,7 @@ module Treap {
   }
 
   @chpldoc.nodoc
-  var _treapRandomStream = new RandomStream(int);
+  var _treapRandomStream = new randomStream(int, true);
 
   /*
     Helper procedure to get one random int

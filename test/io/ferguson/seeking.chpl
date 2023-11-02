@@ -3,7 +3,6 @@ use Random, IO, CTypes;
 config const path = "binary-output.bin";
 config const maxbyte = 255;
 config const maxint = 1024;
-config const seed = SeedGenerator.oddCurrentTime;
 
 config const bufsz = 0;
 extern var qbytes_iobuf_size:c_size_t;
@@ -160,7 +159,7 @@ proc test5() {
 proc test6() {
   // Write 0..maxint using a permutation and then read it normally
   var A:[0..maxint] int;
-  Random.permutation(A, seed=seed);
+  Random.permutation(A);
 
   // Write to the permutation
   {

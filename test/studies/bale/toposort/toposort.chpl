@@ -530,7 +530,7 @@ where D.rank == 2
   var rowMap : [D.dim(0)] D.idxType = D.dim(0);
   var columnMap : [D.dim(1)] D.idxType = D.dim(1);
   //use seed to create two new seeds, one for each shuffle
-  var randStreamSeeded = new owned RandomStream(int, seed);
+  var randStreamSeeded = new randomStream(int, seed, false);
   const seed1 = randStreamSeeded.getNext() | 1;
   const seed2 = randStreamSeeded.getNext() | 1;
   shuffle( rowMap, seed = seed1 );
@@ -606,7 +606,7 @@ proc createSparseUpperTriangluarIndexList(
     }
     // If *very* sparse, use insertion fill (not effecient even at relatively low densities)
     else {
-      var random : RandomStream(D.idxType) = new owned RandomStream(D.idxType, seed);
+      var random = new randomStream(D.idxType, seed, false);
 
       // number of non-zero columns in each row in the strict UT region
       var rowCount : [low..high-1] int;
@@ -641,7 +641,7 @@ proc createSparseUpperTriangluarIndexList(
         // create a new local random number generator
         // note: seed is still deterministic. Should get same behavior regardless
         // of tasking (including number of tasks and scheduling)
-        var localRandom : RandomStream(D.idxType) = new owned RandomStream(D.idxType, (seed ^ (row << 1) | 1) );
+        var localRandom = new randomStream(D.idxType, (seed ^ (row << 1) | 1), false );
         // our index into sDRandomDom
         var i = startOffset[row];
         // set of indices we already have
@@ -1133,7 +1133,7 @@ config const printMatrices : bool = false;
 config const printNonZeros : bool = false;
 config const printPermutations: bool = false;
 config const padPrintedMatrixElements = true;
-config const seed : int = SeedGenerator.oddCurrentTime;
+config const seed : int = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
 
 enum ToposortImplementation { Serial, Parallel, Distributed };
 config const implementation : ToposortImplementation = ToposortImplementation.Parallel;

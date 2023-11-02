@@ -90,4 +90,3 @@ if printOutput then
   writeln("assign whole array:\n", A);
 if printTiming then
   writeln("assign whole array: ", dt);
-

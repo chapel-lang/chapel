@@ -101,6 +101,6 @@ writeln(rand3 == randsSeeded[3]);
 //
 // The stream can also be used to iterate over a specified set of positions.
 //
-for i in randStreamSeeded.sample({5..10}, real) {
+for i in randStreamSeeded.iterate({5..10}, real) {
   writeln(i);
 }

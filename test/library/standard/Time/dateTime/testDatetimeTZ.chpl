@@ -132,7 +132,7 @@ proc test_extract() {
 
 proc test_tz_aware_arithmetic() {
   use Random;
-  var rng = createRandomStream(eltType=int);
+  var rng = new randomStream(eltType=int, parSafe=false);
 
   var now = dateTime.now();
   var tz55 = new shared FixedOffset(-330, "west 5:30");

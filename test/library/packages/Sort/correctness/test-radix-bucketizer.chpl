@@ -1,9 +1,10 @@
 use Sort;
 use RadixSortHelp;
 use Random;
+use Time;
 
 config const debug = false;
-config var seed = SeedGenerator.oddCurrentTime;
+config var seed = timeSinceEpoch().totalSeconds()*2_000_000+1;
 
 proc testBucketizer() {
   var A = [0x1234567800000000,

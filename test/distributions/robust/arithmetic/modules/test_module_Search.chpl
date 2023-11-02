@@ -5,7 +5,7 @@ use Random;
 use Sort;
 use Search;
 
-var rng = new owned RandomStream(real, 314159265);
+var rng = new randomStream(real, 314159265, false);
 
 var found: bool;
 var foundIdx: int;
@@ -13,7 +13,7 @@ var idx = n1/2+1;
 var elem: real;
 
 proc reset(ref A) {
-  rng.fillRandom(A);
+  rng.fill(A);
   sort(A);
   elem = A[idx];
 }
