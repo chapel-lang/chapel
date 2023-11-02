@@ -1,1 +1,21 @@
-randomModule.chpl:1: warning: The Random module is unstable and may change in the future
+randomModule.chpl:3: warning: the 'PCGRandom' module is unstable and may be removed in the future
+randomModule.chpl:4: warning: the 'PCGRandomLib' module is unstable and may be removed or moved in the future
+randomModule.chpl:12: warning: 'randomStream' is unstable and may no longer have a configurable element type in the future
+randomModule.chpl:8: warning: 'permutation' is unstable and subject to change
+randomModule.chpl:9: warning: 'permutation' is unstable and subject to change
+randomModule.chpl:14: warning: 'permutation' is unstable and subject to change
+randomModule.chpl:17: warning: 'choice' is unstable and subject to change
+randomModule.chpl:18: warning: 'choice' is unstable and subject to change
+randomModule.chpl:19: warning: 'choice' is unstable and subject to change
+randomModule.chpl:21: warning: 'skipToNth' is unstable and subject to change
+randomModule.chpl:22: warning: 'getNth' is unstable and subject to change
+randomModule.chpl:24: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:28: warning: 'iterate' is unstable and subject to change
+6 7 9 5 3 8 2 1 4 10
+6 7 9 5 3 8 2 1 4 10
+8
+10
+3
+1585646978905694836
+-7674677830141590061 -4126456493632780063 7172222289318149619 5129751891546113404 -5779692012070098676 8383857203529194203 7438556202932965172 7310402696401436757 -2946860172238833943 -8663148490194519567 
+2 1 7 9 10 3 7 10 2 8 

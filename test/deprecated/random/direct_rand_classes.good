@@ -1,0 +1,2 @@
+direct_rand_classes.chpl:3: warning: 'NPBRandomStream' is deprecated
+direct_rand_classes.chpl:4: warning: 'PCGRandomStream' is deprecated; please use randomStream instead

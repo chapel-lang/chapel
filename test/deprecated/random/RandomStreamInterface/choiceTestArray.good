@@ -1,6 +1,6 @@
 choiceTestArray.chpl:3: In function 'main':
-choiceTestArray.chpl:4: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
-choiceTestArray.chpl:6: warning: 'RNG' is deprecated; the PCG random algorithm is now used exclusively in the stable Random interface
+choiceTestArray.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the 'randomStream' type
+choiceTestArray.chpl:6: warning: 'RNG' is deprecated; please use the PCG algorithm via the 'randomStream' type
 choiceTestArray.chpl:4: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 $CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
 $CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)
