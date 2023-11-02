@@ -78,17 +78,17 @@ module Random {
      See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
      these algorithms.
    */
-  @deprecated("'RNG' is deprecated; please use the PCG algorithm via the 'randomStream' type")
+  @deprecated("'RNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`NPBRand` package module")
   type RNG = _RNG;
 
   @chpldoc.nodoc
   param _defaultRNG = _RNG.PCG;
 
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
-  @deprecated("'defaultRNG' is deprecated; please use the PCG algorithm via the 'randomStream' type")
+  @deprecated("'defaultRNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`NPBRand` package module")
   param defaultRNG = _defaultRNG;
 
-  @deprecated("the 'RandomStream' class is deprecated; please use the 'randomStream' record instead")
+  @deprecated("the RandomStream class is deprecated; please use the :record:`randomStream` record instead")
   type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
                                                  else NPBRandomStreamInternal;
 
@@ -652,115 +652,113 @@ module Random {
 
 
     // test iterator interface
-    /*
-    iter sample(D: domain, type sampleType=t) {
-      this.pcg._lock();
-      const start = this.pcg.PCGRandomStreamPrivate_count;
-      this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
-      this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
-      this.pcg._unlock();
+    // iter sample(D: domain, type sampleType=t) {
+    //   this.pcg._lock();
+    //   const start = this.pcg.PCGRandomStreamPrivate_count;
+    //   this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
+    //   this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
+    //   this.pcg._unlock();
 
-      var cursor = randlc_skipto(sampleType, seed, start);
-      for i in D do
-        yield randlc(sampleType, cursor);
-    }
+    //   var cursor = randlc_skipto(sampleType, seed, start);
+    //   for i in D do
+    //     yield randlc(sampleType, cursor);
+    // }
 
-    @chpldoc.nodoc
-    iter sample(D: domain, type sampleType=t, param tag: iterKind)
-      where tag == iterKind.leader
-    {
-      for block in D.these(tag=iterKind.leader) do
-        yield block;
-    }
+    // @chpldoc.nodoc
+    // iter sample(D: domain, type sampleType=t, param tag: iterKind)
+    //   where tag == iterKind.leader
+    // {
+    //   for block in D.these(tag=iterKind.leader) do
+    //     yield block;
+    // }
 
-    @chpldoc.nodoc
-    iter sample(D: domain, type sampleType=t, param tag: iterKind, followThis)
-      where tag == iterKind.follower
-    {
-      use DSIUtil;
-      param multiplier = 1;
-      const start = this.pcg.PCGRandomStreamPrivate_count,
-            ZD = computeZeroBasedDomain(D),
-            innerRange = followThis(ZD.rank-1);
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1
-          then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
-          else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+    // @chpldoc.nodoc
+    // iter sample(D: domain, type sampleType=t, param tag: iterKind, followThis)
+    //   where tag == iterKind.follower
+    // {
+    //   use DSIUtil;
+    //   param multiplier = 1;
+    //   const start = this.pcg.PCGRandomStreamPrivate_count,
+    //         ZD = computeZeroBasedDomain(D),
+    //         innerRange = followThis(ZD.rank-1);
+    //   for outer in outer(followThis) {
+    //     var myStart = start;
+    //     if ZD.rank > 1
+    //       then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+    //       else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
 
-        if innerRange.hasUnitStride() {
-          var cursor = randlc_skipto(sampleType, seed, myStart);
-          for i in innerRange do
-            yield randlc(sampleType, cursor);
-        } else {
-          myStart -= innerRange.lowBound.safeCast(int(64));
-          for i in innerRange {
-            var cursor = randlc_skipto(sampleType, seed, myStart + i.safeCast(int(64)) * multiplier);
-            yield randlc(sampleType, cursor);
-          }
-        }
-      }
-    }
+    //     if innerRange.hasUnitStride() {
+    //       var cursor = randlc_skipto(sampleType, seed, myStart);
+    //       for i in innerRange do
+    //         yield randlc(sampleType, cursor);
+    //     } else {
+    //       myStart -= innerRange.lowBound.safeCast(int(64));
+    //       for i in innerRange {
+    //         var cursor = randlc_skipto(sampleType, seed, myStart + i.safeCast(int(64)) * multiplier);
+    //         yield randlc(sampleType, cursor);
+    //       }
+    //     }
+    //   }
+    // }
 
-    iter sample(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
-      this.pcg._lock();
-      const start = this.pcg.PCGRandomStreamPrivate_count;
-      this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
-      this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
-      this.pcg._unlock();
+    // iter sample(D: domain, type sampleType=t, min: sampleType, max: sampleType) {
+    //   this.pcg._lock();
+    //   const start = this.pcg.PCGRandomStreamPrivate_count;
+    //   this.pcg.PCGRandomStreamPrivate_count += D.sizeAs(int);
+    //   this.pcg.PCGRandomStreamPrivate_skipToNth_noLock(this.pcg.PCGRandomStreamPrivate_count-1);
+    //   this.pcg._unlock();
 
-      var cursor = randlc_skipto(sampleType, seed, start),
-          count = start;
-      for i in D {
-        yield randlc_bounded(sampleType, cursor, seed, count, min, max);
-        count += 1;
-      }
-    }
+    //   var cursor = randlc_skipto(sampleType, seed, start),
+    //       count = start;
+    //   for i in D {
+    //     yield randlc_bounded(sampleType, cursor, seed, count, min, max);
+    //     count += 1;
+    //   }
+    // }
 
-    @chpldoc.nodoc
-    iter sample(D: domain, type sampleType=t,
-                       min: sampleType, max: sampleType, param tag: iterKind)
-      where tag == iterKind.leader
-    {
-      for block in D.these(tag=iterKind.leader) do
-        yield block;
-    }
+    // @chpldoc.nodoc
+    // iter sample(D: domain, type sampleType=t,
+    //                    min: sampleType, max: sampleType, param tag: iterKind)
+    //   where tag == iterKind.leader
+    // {
+    //   for block in D.these(tag=iterKind.leader) do
+    //     yield block;
+    // }
 
-    @chpldoc.nodoc
-    iter sample(D: domain, type sampleType=t,
-                       min: sampleType, max: sampleType,
-                       param tag: iterKind, followThis)
-      where tag == iterKind.follower
-    {
-      use DSIUtil;
-      param multiplier = 1;
-      const start = this.pcg.PCGRandomStreamPrivate_count,
-            ZD = computeZeroBasedDomain(D),
-            innerRange = followThis(ZD.rank-1);
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1
-          then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
-          else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
+    // @chpldoc.nodoc
+    // iter sample(D: domain, type sampleType=t,
+    //                    min: sampleType, max: sampleType,
+    //                    param tag: iterKind, followThis)
+    //   where tag == iterKind.follower
+    // {
+    //   use DSIUtil;
+    //   param multiplier = 1;
+    //   const start = this.pcg.PCGRandomStreamPrivate_count,
+    //         ZD = computeZeroBasedDomain(D),
+    //         innerRange = followThis(ZD.rank-1);
+    //   for outer in outer(followThis) {
+    //     var myStart = start;
+    //     if ZD.rank > 1
+    //       then myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
+    //       else myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
 
-        if innerRange.hasUnitStride() {
-          var cursor = randlc_skipto(sampleType, seed, myStart),
-              count = myStart;
-          for i in innerRange {
-            yield randlc(sampleType, cursor);
-            count += 1;
-          }
-        } else {
-          myStart -= innerRange.lowBound.safeCast(int(64));
-          for i in innerRange {
-            var count = myStart + i.safeCast(int(64)) * multiplier,
-                cursor = randlc_skipto(sampleType, seed, count);
-            yield randlc_bounded(sampleType, cursor, seed, count, min, max);
-          }
-        }
-      }
-    }
-    */
+    //     if innerRange.hasUnitStride() {
+    //       var cursor = randlc_skipto(sampleType, seed, myStart),
+    //           count = myStart;
+    //       for i in innerRange {
+    //         yield randlc(sampleType, cursor);
+    //         count += 1;
+    //       }
+    //     } else {
+    //       myStart -= innerRange.lowBound.safeCast(int(64));
+    //       for i in innerRange {
+    //         var count = myStart + i.safeCast(int(64)) * multiplier,
+    //             cursor = randlc_skipto(sampleType, seed, count);
+    //         yield randlc_bounded(sampleType, cursor, seed, count, min, max);
+    //       }
+    //     }
+    //   }
+    // }
 
     proc serialize(writer, ref serializer) throws {
       var ser = serializer.startRecord(writer, "randomStream", 3);

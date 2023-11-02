@@ -1,5 +1,5 @@
-randomAcrossTypes.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the 'randomStream' type
-randomAcrossTypes.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the 'randomStream' type
+randomAcrossTypes.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
+randomAcrossTypes.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
 randomAcrossTypes.chpl:13: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
 randomAcrossTypes.chpl:14: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
 randomAcrossTypes.chpl:15: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
