@@ -79,6 +79,7 @@ _chpl ()
 --fast \
 --fast-followers \
 --force-vectorize \
+--foreach-intents \
 --formal-domain-checks \
 --gasnet-segment \
 --gdb \
@@ -197,6 +198,7 @@ _chpl ()
 --no-explain-verbose \
 --no-fast-followers \
 --no-force-vectorize \
+--no-foreach-intents \
 --no-formal-domain-checks \
 --no-gen-ids \
 --no-gpu-specialization \
