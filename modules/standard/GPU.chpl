@@ -415,7 +415,7 @@ module GPU
         when "max" do return max reduce A;
         when "minloc" do return minloc reduce zip (A.domain, A);
         when "maxloc" do return maxloc reduce zip (A.domain, A);
-        otherwise do compilerError("Unknown reduction operation");
+        otherwise do compilerError("Unknown reduction operation: ", op);
       }
     }
     else {
@@ -450,7 +450,7 @@ module GPU
         when "sum" do accum += val;
         when "min" do accum = min(accum, val);
         when "max" do accum = max(accum, val);
-        otherwise do compilerError("Unknown reduction type");
+        otherwise do compilerError("Unknown reduction operation: ", op);
       }
     }
 
@@ -461,7 +461,7 @@ module GPU
           if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
         when "maxloc" do
           if accum[1] < val[1] then accum = (val[0]+baseOffset, val[1]);
-        otherwise do compilerError("Unknown reduction type");
+        otherwise do compilerError("Unknown reduction operation: ", op);
       }
     }
 
@@ -516,7 +516,7 @@ module GPU
 
       return val;
     }
-    else {
+    else if op == "minloc" || op == "maxloc" {
       var ret: (int, t);
       if op == "minloc" then
         ret[1] = max(t);
@@ -536,6 +536,9 @@ module GPU
       }
 
       return ret;
+    }
+    else {
+      compilerError("Unknown reduction operation: ", op);
     }
   }
 
