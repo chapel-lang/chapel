@@ -107,12 +107,19 @@ module Time {
       controlled with :var:`cIsoDayOfWeek`.
    */
   enum dayOfWeek {
+    /**/
     Monday = firstDayOfWeekNum,
+    /**/
     Tuesday,
+    /**/
     Wednesday,
+    /**/
     Thursday,
+    /**/
     Friday,
+    /**/
     Saturday,
+    /**/
     Sunday
   }
   @chpldoc.nodoc
