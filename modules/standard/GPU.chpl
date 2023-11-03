@@ -626,4 +626,184 @@ module GPU
   */
   inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
 
+
+
+  // ============================
+  // GPU Scans
+  // ============================
+
+  // The following functions are used to implement GPU scans. They are
+  // intended to be called from a GPU locale.
+  import BitOps;
+  import Math;
+
+
+  proc gpuScan(ref gpuArr: [] uint){
+    if gpuArr.size==0 then return;
+    // Use a simple algorithm for small arrays
+    if gpuArr.size < 1024 {
+      // The algorithms only works for arrays that are size of a power of two.
+      // In case it's not a power of two we pad it out with 0s
+      const size = roundToPowerof2(gpuArr.size);
+      var arr : [0..<size] uint;
+      arr[0..<gpuArr.size] = gpuArr;
+
+      // Hillis Steele Scan is better if we can scan in
+      // a single thread block
+      // TODO check the actual thread block size rather than the default
+      if gpuArr.size < 512 then
+        hillisSteeleScan(arr);
+      else
+        blellochScan(arr);
+
+      // Copy back
+      gpuArr=arr[0..<gpuArr.size];
+    } else {
+      // We use a parallel scan algorithm for large arrays
+      parallelArrScan(gpuArr);
+    }
+  }
+
+  proc parallelArrScan(ref gpuArr: [] uint){
+    // Divide up the array into chunks of a reasonable size
+    // For our default, we choose our default block size which is 512
+    const scanChunkSize = 512;
+    const numScanChunks = Math.divCeil(gpuArr.size, scanChunkSize);
+
+    if numScanChunks == 1 {
+      hillisSteeleScan(gpuArr);
+      return;
+    }
+
+    // Allocate an accumulator array
+    var gpuScanArr : [0..<numScanChunks] uint;
+
+    const ceil = gpuArr.domain.high;
+    // In parallel: For each chunk we do an in lane serial scan
+    @assertOnGpu
+    foreach chunk in 0..<numScanChunks {
+      const start = chunk*scanChunkSize;
+      var end = start+scanChunkSize-1;
+      if end > ceil then end = ceil;
+      gpuScanArr[chunk] = gpuArr[end]; // Save the last element before the scan overwrites it
+      serialScan(gpuArr, start, end); // Exclusive scan in serial
+      gpuScanArr[chunk] += gpuArr[end]; // Save inclusive scan in the scan Arr
+
+    }
+
+      // Scan the scanArr
+      blellochScan(gpuScanArr);
+
+      @assertOnGpu
+      foreach i in 0..<gpuArr.size {
+        // In propagate the right values from scanArr
+        // to complete the global scan
+        const offset : int = i / scanChunkSize;
+        gpuArr[i] += gpuScanArr[offset];
+      }
+  }
+
+  proc roundToPowerof2(const x: uint){
+    // Powers of two only have the highest bit set.
+    // Power of two minus one will have all bits set except the highest.
+    // & those two together should give us 0;
+    // Ex 1000 & 0111 = 0000
+    if (x & (x - 1)) == 0 then
+      return x;
+    // Not a power of two, so we pad it out
+    // To the next nearest power of two
+    const log_2_x = numBytes(uint)*8 - BitOps.clz(x); // Calculates the log quickly
+    // Next highest nerest power of two is
+    const rounded = 1 << log_2_x;
+    return rounded;
+  }
+
+  // This function requires that startIdx and endIdx are within the bounds of the array
+  // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
+  proc serialScan(ref arr: [] uint, startIdx = arr.domain.low, endIdx = arr.domain.high){
+    // Convert this count array into a prefix sum
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // This is an exclusive scan
+    // Serial implementation
+    if boundsChecking then
+      assert(startIdx >= arr.domain.low && endIdx <= arr.domain.high);
+    // Calculate the prefix sum
+    var sum : uint = 0;
+    for i in startIdx..endIdx {
+      var t : uint = arr[i];
+      arr[i] = sum;
+      sum += t;
+    }
+  }
+
+  proc hillisSteeleScan(ref arr: [] uint){
+    // Hillis Steele Scan
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // Uses a naive algorithm that does O(nlogn) work
+    // Hillis and Steele (1986)
+    const x = arr.size;
+    if(x== 0) then return;
+    if (x & (x - 1)) !=0 then {
+      halt("Hillis Steele Scan only works for arrays of size a power of two.");
+    }
+
+    var offset = 1;
+    while offset < arr.size {
+        var arrBuffer = arr;
+        @assertOnGpu
+        foreach i in offset..<arr.size {
+          arr[i] = arrBuffer[i] + arrBuffer[i-offset];
+        }
+        offset = offset << 1;
+    }
+
+    // Change inclusive scan to exclusive
+    var arrBuffer = arr;
+    foreach i in 1..<arr.size {
+      arr[i] = arrBuffer[i-1];
+    }
+    arr[0] = 0;
+  }
+
+  proc blellochScan(ref arr: [] uint){
+    // Blelloch Scan
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // Uses a more efficient algorithm that does O(n) work
+    // Blelloch (1990)
+
+    const x = arr.size;
+    if(x== 0) then return;
+    if (x & (x - 1)) !=0 then {
+      halt("Blelloch Scan only works for arrays of size a power of two.");
+    }
+
+    // Up-sweep
+    var offset = 1;
+    while offset < arr.size {
+      var arrBuffer = arr;
+      @assertOnGpu
+      foreach idx in 0..<arr.size/(2*offset) {
+        const doubleOff = offset << 1;
+        const i = idx*doubleOff;
+        arr[i+doubleOff-1] = arrBuffer[i+offset-1] + arrBuffer[i+doubleOff-1];
+      }
+      offset = offset << 1;
+    }
+
+    // Down-sweep
+    arr[arr.size-1] = 0;
+    offset = arr.size >> 1;
+    while offset > 0 {
+      var arrBuffer = arr;
+      @assertOnGpu
+      foreach idx in 0..<arr.size/(2*offset) {
+        const i = idx*2*offset;
+        const t = arrBuffer[i+offset-1];
+        arr[i+offset-1] = arrBuffer[i+2*offset-1];
+        arr[i+2*offset-1] = arr[i+2*offset-1] + t;
+      }
+      offset = offset >> 1;
+    }
+  }
+
 }
