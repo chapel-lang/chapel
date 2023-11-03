@@ -3389,7 +3389,9 @@ record defaultDeserializer {
     for lists.
   */
   record ListDeserializer {
+    @chpldoc.nodoc
     var reader;
+    @chpldoc.nodoc
     var _first : bool = true;
 
     /*
