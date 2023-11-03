@@ -20,14 +20,13 @@
 
 /* Provides a 'bigint' type and supporting math operations.
 
-The ``bigint`` record supports arithmetic operations on arbitrary
+The ``bigint`` type supports arithmetic operations on arbitrary
 precision integers in a manner that is broadly consistent with
 the conventional operations on primitive fixed length integers.
 
 The current implementation is based on the low-level types and
 functions defined in the GMP module i.e. it is implemented using the
-GNU Multiple Precision Integer Arithmetic library (GMP). More specifically
-the record :record:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
+GNU Multiple Precision Integer Arithmetic library (GMP). More specifically, :type:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
 
 The primary benefits of ``bigint`` over ``mpz_t`` are
 
@@ -170,6 +169,10 @@ module BigInteger {
     throw new BadFormatError("Error initializing big integer");
   }
 
+  /*
+    The `bigint` type supports arithmetic operations on arbitrary
+    precision integers across multiple locales.
+  */
   pragma "ignore noinit"
   record bigint : writeSerializable {
     // The underlying GMP C structure
@@ -704,6 +707,8 @@ module BigInteger {
     BigInteger.add(c, b, a);
     return c;
   }
+
+  /* See :proc:`~BigInteger.add` */
   operator bigint.+(a: uint, const ref b: bigint): bigint {
     var c = new bigint();
     BigInteger.add(c, b, a);
