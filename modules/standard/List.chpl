@@ -2136,18 +2136,45 @@ module List {
     return !(a == b);
   }
 
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in another list.
+
+    See `~List.init=`
+  */
   operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in an array.
+
+    See `~List.init=`
+  */
   operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by a range.
+
+    See `~List.init=`
+  */
   operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by an iterator expression.
+
+    See `~List.init=`
+  */
   operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
