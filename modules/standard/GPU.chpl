@@ -594,7 +594,7 @@ module GPU
 
   /*
     For an array on the GPU, return a tuple with the index and the value of the
-    minimum element (that is, perform a minloc-reduction).If there are multiple
+    minimum element (that is, perform a minloc-reduction). If there are multiple
     elements with the same minimum value, the index of the first one is
     returned. The array must be in GPU-accessible memory and the function must
     be called from outside a GPU-eligible loop.  Only arrays with int, uint, and
