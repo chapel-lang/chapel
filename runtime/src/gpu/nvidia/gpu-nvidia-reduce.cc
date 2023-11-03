@@ -42,6 +42,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                               (CUstream)stream); \
   CUDA_CALL(cuMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (CUstream)stream)); \
+  CUDA_CALL(cuMemFree(result)); \
 }
 
 GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Sum, sum)
@@ -69,6 +70,7 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                               (CUstream)stream)); \
   *val = result_host.value; \
   *idx = result_host.key; \
+  CUDA_CALL(cuMemFree(result)); \
 }
 
 GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
