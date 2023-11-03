@@ -64,6 +64,30 @@ module NPBRand {
   private use ChapelLocks;
   private use IO;
 
+  private proc isRealOrComplexType(type t) param do
+    return isNumericType(t) || isImagType(t) || isComplexType(t);
+
+  private proc oddTimeSeed(): int(64) {
+    use Time;
+    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+    return oddseed;
+  }
+
+  proc fillRandom(ref arr: [] ?t, seed: int)
+    where isRealOrComplexType(t) && arr.isRectangular()
+  {
+    var rs = new NPBRandomStream(t, seed, parSafe=false);
+    rs.fillRandom(arr);
+  }
+
+  proc fillRandom(ref arr: [] ?t)
+    where isRealOrComplexType(t) && arr.isRectangular()
+  {
+    var rs = new NPBRandomStream(t, parSafe=false);
+    rs.fillRandom(arr);
+  }
+
   /*
     Models a stream of pseudorandom numbers.  See the module-level
     notes for :mod:`NPBRandom` for details on the PRNG used.
@@ -115,7 +139,7 @@ module NPBRand {
 
     */
     proc init(type eltType = real(64),
-              seed: int(64) = _SeedGenerator.oddCurrentTime,
+              seed: int(64) = oddTimeSeed(),
               param parSafe: bool = true) {
       use HaltWrappers;
 

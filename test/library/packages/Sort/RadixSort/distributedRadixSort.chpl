@@ -9,8 +9,6 @@ config const timing = true;
 config const comms = true;
 
 proc simpletestcore(input:[]) {
-  var seed = SeedGenerator.oddCurrentTime;
-
   var localCopy = input;
   var rs = new randomStream(uint, false);
   rs.shuffle(localCopy);

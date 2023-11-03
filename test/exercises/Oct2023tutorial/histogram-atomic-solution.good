@@ -1,3 +1,6 @@
+histogram-atomic-solution.chpl:19: warning: 'SeedGenerator' is deprecated
+histogram-atomic-solution.chpl:33: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
+histogram-atomic-solution.chpl:33: warning: The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument
 Running Histogram Example
  Number of Random Numbers =        8
  Number of Buckets        =       10

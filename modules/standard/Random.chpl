@@ -94,7 +94,7 @@ module Random {
 
 
   private proc isNumericOrBoolType(type t) param do
-    return isNumericType(t) || isBoolType(t);
+    return isRealType(t) || isBoolType(t);
 
   private proc is1DRectangularDomain(d) param do
     return d.isRectangular() && d.rank == 1;
@@ -3173,7 +3173,7 @@ module Random {
       Models a stream of pseudorandom numbers.  See the module-level
       notes for :mod:`NPBRandom` for details on the PRNG used.
     */
-    @deprecated("'NPBRandomStream' is deprecated")
+    @deprecated("Random.NPBRandomStream is deprecated; please use :class:`NPBRand.NPBRandomStream` instead")
     type NPBRandomStream = NPBRandomStreamInternal(?, ?);
 
     @chpldoc.nodoc

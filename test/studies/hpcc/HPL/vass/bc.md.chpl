@@ -33,7 +33,7 @@ var tld: bool;  // whether our targetLocales are all distinct
 var tla: [0..#tl1, 0..#tl2] locale = setupTargetLocales();
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+             seed = if useRandomSeed then (timeSinceEpoch().totalSeconds()*2_000_000+1): int else 31415;
 
 //
 // Configuration constants indicating the problem size (n) and the

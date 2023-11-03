@@ -32,7 +32,7 @@ proc main {
 
 proc initialize(ref B) {
   import Random;
-  Random.fillRandom(B, seed);
+  Random.fillRandom(B, randSeed);
 }
 
 proc runTest(D, alpha: real) {

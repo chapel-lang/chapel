@@ -5,7 +5,7 @@
 //
 // Use the standard random numbers module.
 //
-use Random;
+use NPBRand;
 
 //
 // Declare command-line configuration constants for:

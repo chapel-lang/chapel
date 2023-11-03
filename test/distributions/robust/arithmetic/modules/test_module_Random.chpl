@@ -5,15 +5,15 @@ use Random;
 
 config const printRefArrays = true;
 
-var rng  = createRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
-var trng = createRandomStream(314159265, eltType=real(64), algorithm=RNG.NPB);
+var rng  = new randomStream(314159265, eltType=real(64), parSafe=false);
+var trng = new randomStream(314159265, eltType=real(64), parSafe=false);
 
 proc fillRefArrays() {
-  rng.fillRandom(R1D);
-  rng.fillRandom(R2D);
-  rng.fillRandom(R3D);
-  rng.fillRandom(R4D);
-  rng.fillRandom(R2D32);
+  rng.fill(R1D);
+  rng.fill(R2D);
+  rng.fill(R3D);
+  rng.fill(R4D);
+  rng.fill(R2D32);
 }
 
 proc checkRNG(R, T: [?D2]) {
@@ -40,24 +40,24 @@ proc resetTempArrays() {
 }
 
 
-writeln("fillRandom()");
+writeln("fill");
 resetTempArrays();
 fillRefArrays();
 if printRefArrays then
   outputRealArrays();
-trng.fillRandom(T1D);
+trng.fill(T1D);
 writeln("\tR1D: ", checkRNG(R1D, T1D), " errors");
-trng.fillRandom(T2D);
+trng.fill(T2D);
 writeln("\tR2D: ", checkRNG(R2D, T2D), " errors");
-trng.fillRandom(T3D);
+trng.fill(T3D);
 writeln("\tR3D: ", checkRNG(R3D, T3D), " errors");
-trng.fillRandom(T4D);
+trng.fill(T4D);
 writeln("\tR4D: ", checkRNG(R4D, T4D), " errors");
-trng.fillRandom(T2D32);
+trng.fill(T2D32);
 writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
-writeln("fillRandom() aliased arrays");
+writeln("fill aliased arrays");
 ref aT1D = T1D;
 ref aT2D = T2D;
 ref aT3D = T3D;
@@ -65,21 +65,21 @@ ref aT4D = T4D;
 ref aT2D32 = T2D32;
 resetTempArrays();
 fillRefArrays();
-trng.fillRandom(aT1D);
+trng.fill(aT1D);
 writeln("\tR1D: ", checkRNG(R1D, aT1D), " errors");
-trng.fillRandom(aT2D);
+trng.fill(aT2D);
 writeln("\tR2D: ", checkRNG(R2D, aT2D), " errors");
-trng.fillRandom(aT3D);
+trng.fill(aT3D);
 writeln("\tR3D: ", checkRNG(R3D, aT3D), " errors");
-trng.fillRandom(aT4D);
+trng.fill(aT4D);
 writeln("\tR4D: ", checkRNG(R4D, aT4D), " errors");
-trng.fillRandom(aT2D32);
+trng.fill(aT2D32);
 writeln("\tR2D32: ", checkRNG(R2D32, aT2D32), " errors");
 
 
-writeln("fillRandom() reindexed arrays");
+writeln("fill reindexed arrays");
 proc foo(rng, D: domain(?), ref A: [D]) {
-  rng.fillRandom(A);
+  rng.fill(A);
 }
 resetTempArrays();
 fillRefArrays();
@@ -100,7 +100,7 @@ foo(trng, TD2D32, T2D32.reindex(TD2D32));
 writeln("\tR2D32: ", checkRNG(R2D32, T2D32), " errors");
 
 
-writeln("fillRandom() rank changed arrays");
+writeln("fill rank changed arrays");
 ref rcT1D = T2D(Dom2D.dim(0), n2/2);
 ref rcT2D = T3D(Dom3D.dim(0), Dom3D.dim(1), n3/2);
 ref rcT3D = T4D(Dom4D.dim(0), Dom4D.dim(1), Dom4D.dim(2), n4/2);
@@ -111,14 +111,14 @@ var rcR1D: [rcDom1D] real;
 var rcR2D: [rcDom2D] real;
 var rcR3D: [rcDom3D] real;
 resetTempArrays();
-rng.fillRandom(rcR1D);
-trng.fillRandom(rcT1D);
+rng.fill(rcR1D);
+trng.fill(rcT1D);
 writeln("\trcR1D: ", checkRNG(rcR1D, rcT1D), " errors");
-rng.fillRandom(rcR2D);
-trng.fillRandom(rcT2D);
+rng.fill(rcR2D);
+trng.fill(rcT2D);
 writeln("\trcR2D: ", checkRNG(rcR2D, rcT2D), " errors");
-rng.fillRandom(rcR3D);
-trng.fillRandom(rcT3D);
+rng.fill(rcR3D);
+trng.fill(rcT3D);
 writeln("\trcR3D: ", checkRNG(rcR3D, rcT3D), " errors");
 
 if printRefArrays then

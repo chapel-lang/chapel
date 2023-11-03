@@ -17,7 +17,7 @@ config const parallel = true;
 config param reverse = false;
 config type eltType = int;
 
-config const seed = timeSinceEpoch().totalSeconds()*2_000_000+1;
+config const seed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
 
 var methods = ["default", "msbRadixSort", "quickSort", "mergeSort",
                "twoArraySample", "twoArrayRadix", "timSort"];

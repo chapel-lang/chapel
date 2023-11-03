@@ -29,6 +29,7 @@ proc main() {
   chpl__testParStop();
 }
 
+
 //
 // Initialize vectors B and C using a random stream of values
 //

@@ -1,4 +1,4 @@
-use Random;
+use NPBRand;
 
 config const n = 100000,
        tasks = here.maxTaskPar,

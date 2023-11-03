@@ -316,7 +316,7 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true) : bool {
     // construct a 100x100 matrix filled with random values
-    var rand = new owned RandomStream(real, seed);
+    var rand = new randomStream(real, seed, false);
     var A : [1..n, 1..n+1] real;
     for idx in A.domain do A[idx] = rand.getNext();
 
@@ -359,4 +359,3 @@ proc main() {
         numPassed += test_LUFactorize();
     writeln(numPassed, " PASSED, ", trials-numPassed, " FAILED");
 }
-

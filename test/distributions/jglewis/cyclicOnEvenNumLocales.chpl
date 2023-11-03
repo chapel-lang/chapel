@@ -39,7 +39,7 @@ module cholesky_test {
     // create a test problem, starting with a random general matrix B.
     // ---------------------------------------------------------------
 
-    Rand.fillRandom (B);
+    Rand.fill (B);
 
     // -------------------------------------------------------------
     // create a positive definite matrix A by setting A equal to the

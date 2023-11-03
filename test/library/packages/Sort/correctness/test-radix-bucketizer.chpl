@@ -4,7 +4,7 @@ use Random;
 use Time;
 
 config const debug = false;
-config var seed = timeSinceEpoch().totalSeconds()*2_000_000+1;
+config var seed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
 
 proc testBucketizer() {
   var A = [0x1234567800000000,
