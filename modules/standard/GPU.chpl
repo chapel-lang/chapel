@@ -435,6 +435,8 @@ module GPU
         when real(32) do return "float";
         when real(64) do return "double";
       }
+
+      compilerError("Arrays with ", t:string, " elements cannot be reduced");
       return "unknown";
     }
 
