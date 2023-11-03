@@ -3123,7 +3123,7 @@ module Random {
 
     .. warning:
 
-      The 'NPBRandom' module is deprecated
+      'Random.NPBRandom' is deprecated; please use 'NPBRand' instead
 
      The pseudorandom number generator (PRNG) implemented by
      this module uses the algorithm from the NAS Parallel Benchmarks
