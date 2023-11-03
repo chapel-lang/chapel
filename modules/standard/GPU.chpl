@@ -547,47 +547,80 @@ module GPU
     return ret;
   }
 
-  /* 
-     Perform sum-reduction on an array. The array must be allocated on
-     GPU-accessible memory. The function should not be called from inside a
-     GPU-eligible loop. Only arrays with ``int``, ``uint`` and ``real`` types
-     are supported. A simple example is as follows.
-   
+  /*
+    Add all elements of an array together on the GPU (that is, perform a
+    sum-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
      .. code-block:: chapel
 
        on here.gpus[0] {
-         var Arr: [1..n] int;  // will be allocated in GPU-accesible memory
-         ...
-         var sum = gpuSumReduce(Arr);
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuSumReduce(Arr)); // 15
        }
   */
   inline proc gpuSumReduce(const ref A: [] ?t) do return doGpuReduce("sum", A);
 
-  /* 
-     Perform min-reduction on an array. The array must be allocated on
-     GPU-accessible memory. The function must be called from the host. Only
-     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  /*
+    Return the minimum element of an array on the GPU (that is, perform a
+    min-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMinReduce(Arr)); // 1
+       }
   */
   inline proc gpuMinReduce(const ref A: [] ?t) do return doGpuReduce("min", A);
 
-  /* 
-     Perform max-reduction on an array. The array must be allocated on
-     GPU-accessible memory. The function must be called from the host. Only
-     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  /*
+    Return the maximum element of an array on the GPU (that is, perform a
+    max-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMaxReduce(Arr)); // 5
+       }
   */
   inline proc gpuMaxReduce(const ref A: [] ?t) do return doGpuReduce("max", A);
 
-  /* 
-     Perform minloc-reduction on an array. The array must be allocated on
-     GPU-accessible memory. The function must be called from the host. Only
-     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  /*
+    For an array on the GPU, return a tuple with the index and the value of the
+    minimum element (that is, perform a minloc-reduction). The array must be in
+    GPU-accessible memory and the function must be called from outside a
+    GPU-eligible loop.  Only arrays with int, uint, and real types are
+    supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMinLocReduce(Arr)); // (2, 1)
+       }
   */
   inline proc gpuMinLocReduce(const ref A: [] ?t) do return doGpuReduce("minloc", A);
 
-  /* 
-     Perform maxloc-reduction on an array. The array must be allocated on
-     GPU-accessible memory. The function must be called from the host. Only
-     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  /*
+    For an array on the GPU, return a tuple with the index and the value of the
+    maximum element (that is, perform a maxloc-reduction). The array must be in
+    GPU-accessible memory and the function must be called from outside a
+    GPU-eligible loop.  Only arrays with int, uint, and real types are
+    supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMaxLocReduce(Arr)); // (3, 5)
+       }
   */
   inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
 
