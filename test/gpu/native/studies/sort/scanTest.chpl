@@ -2,7 +2,7 @@ use GPU;
 import Random;
 import Time;
 
-config const arrSize = 128;
+config const arrSize = 1<<10;
 config const printTimes = false;
 
 
@@ -19,7 +19,7 @@ on here.gpus[0]{
   hillisScanArr = gpuArr;
 }
 var gpuTime = timer.elapsed();
-if printTimes then writeln("Hillis scan took : ", gpuTime);
+if printTimes then writeln("Hillis-Steele scan took : ", gpuTime);
 
 
 var blellochScanArr = cpuArr;
@@ -49,11 +49,20 @@ if printTimes then writeln("GPU scan took : ", timer.elapsed());
 
 timer.clear();
 timer.start();
+var a = + scan cpuArr;
+timer.stop();
+var cpuTime = timer.elapsed();
+if printTimes then writeln("+ scan took : ", timer.elapsed());
+
+
+timer.clear();
+timer.start();
 serialScan(cpuArr);
 timer.stop();
+cpuTime = if timer.elapsed() > cpuTime then cpuTime else timer.elapsed();
 if printTimes then {
   writeln("CPU scan took : ", timer.elapsed());
-  writeln("Ratio : ", gpuTime/timer.elapsed());
+  writeln("Ratio fastestGpu:fastestCpu : ", gpuTime/cpuTime);
 }
 
 // Check correctness

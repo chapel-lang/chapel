@@ -691,8 +691,8 @@ module GPU
 
     }
 
-      // Scan the scanArr
-      blellochScan(gpuScanArr);
+      // Scan the scanArr and we do it recursively
+      gpuScan(gpuScanArr);
 
       @assertOnGpu
       foreach i in 0..<gpuArr.size {
