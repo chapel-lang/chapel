@@ -415,6 +415,7 @@ module GPU
         when "max" do return max reduce A;
         when "minloc" do return minloc reduce zip (A.domain, A);
         when "maxloc" do return maxloc reduce zip (A.domain, A);
+        otherwise do compilerError("Unknown reduction operation");
       }
     }
     else {
@@ -434,9 +435,9 @@ module GPU
         when uint(64) do return "uint64_t";
         when real(32) do return "float";
         when real(64) do return "double";
+        otherwise do
+          compilerError("Arrays with ", t:string, " elements cannot be reduced");
       }
-
-      compilerError("Arrays with ", t:string, " elements cannot be reduced");
       return "unknown";
     }
 
@@ -449,6 +450,7 @@ module GPU
         when "sum" do accum += val;
         when "min" do accum = min(accum, val);
         when "max" do accum = max(accum, val);
+        otherwise do compilerError("Unknown reduction type");
       }
     }
 
@@ -459,6 +461,7 @@ module GPU
           if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
         when "maxloc" do
           if accum[1] < val[1] then accum = (val[0]+baseOffset, val[1]);
+        otherwise do compilerError("Unknown reduction type");
       }
     }
 
