@@ -65,7 +65,7 @@ module NPBRand {
   private use IO;
 
   private proc isRealOrComplexType(type t) param do
-    return isNumericType(t) || isImagType(t) || isComplexType(t);
+    return isRealType(t) || isImagType(t) || isComplexType(t);
 
   private proc oddTimeSeed(): int(64) {
     use Time;

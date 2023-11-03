@@ -94,7 +94,7 @@ module Random {
 
 
   private proc isNumericOrBoolType(type t) param do
-    return isRealType(t) || isBoolType(t);
+    return isNumericType(t) || isBoolType(t);
 
   private proc is1DRectangularDomain(d) param do
     return d.isRectangular() && d.rank == 1;
