@@ -539,10 +539,48 @@ module GPU
     }
   }
 
+  /* 
+     Perform sum-reduction on an array. The array must be allocated on
+     GPU-accessible memory. The function should not be called from inside a
+     GPU-eligible loop. Only arrays with ``int``, ``uint`` and ``real`` types
+     are supported. A simple example is as follows.
+   
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr: [1..n] int;  // will be allocated in GPU-accesible memory
+         ...
+         var sum = gpuSumReduce(Arr);
+       }
+  */
   inline proc gpuSumReduce(const ref A: [] ?t) do return doGpuReduce("sum", A);
+
+  /* 
+     Perform min-reduction on an array. The array must be allocated on
+     GPU-accessible memory. The function must be called from the host. Only
+     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  */
   inline proc gpuMinReduce(const ref A: [] ?t) do return doGpuReduce("min", A);
+
+  /* 
+     Perform max-reduction on an array. The array must be allocated on
+     GPU-accessible memory. The function must be called from the host. Only
+     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  */
   inline proc gpuMaxReduce(const ref A: [] ?t) do return doGpuReduce("max", A);
+
+  /* 
+     Perform minloc-reduction on an array. The array must be allocated on
+     GPU-accessible memory. The function must be called from the host. Only
+     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  */
   inline proc gpuMinLocReduce(const ref A: [] ?t) do return doGpuReduce("minloc", A);
+
+  /* 
+     Perform maxloc-reduction on an array. The array must be allocated on
+     GPU-accessible memory. The function must be called from the host. Only
+     arrays with ``int``, ``uint`` and ``real`` types are supported.
+  */
   inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
 
 }
