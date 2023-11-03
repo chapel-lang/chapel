@@ -2435,6 +2435,8 @@ proc openMemFileHelper(style:iostyleInternal = defaultIOStyleInternal()):file th
   return ret;
 }
 
+// temporary config documented elsewhere
+@chpldoc.nodoc
 config param useIOSerializers = true;
 
 private proc defaultSerializeType(param writing : bool,
@@ -11835,6 +11837,7 @@ proc fileWriter.writef(fmtStr: ?t, const args ...?k) throws
 }
 
 // documented in varargs version
+@chpldoc.nodoc
 proc fileWriter.writef(fmtStr:?t) throws
   where isStringType(t) || isBytesType(t)
 {
