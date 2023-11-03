@@ -699,32 +699,7 @@ void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
 }
 
-#define DEF_ONE_REDUCE_RET_VAL(kind, data_type)\
-void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
-                                          data_type* val) { \
-  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
-  \
-  int dev = chpl_task_getRequestedSubloc(); \
-  chpl_gpu_impl_use_device(dev); \
-  void* stream = get_stream(dev); \
-  \
-  chpl_gpu_impl_##kind##_reduce_##data_type(data, n, val, stream); \
-  \
-  if (chpl_gpu_sync_with_host) { \
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream); \
-    wait_stream(stream); \
-  } \
-  \
-  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
-}
-
-GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL, sum)
-GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL, min)
-GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL, max)
-
-#undef DEF_ONE_REDUCE_RET_VAL
-
-#define DEF_ONE_REDUCE_RET_VAL_IDX(kind, data_type)\
+#define DEF_ONE_REDUCE(kind, data_type)\
 void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
                                           data_type* val, int* idx) { \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
@@ -743,10 +718,12 @@ void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
   CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
 }
 
-GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, minloc);
-GPU_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, maxloc);
+GPU_REDUCE(DEF_ONE_REDUCE, sum)
+GPU_REDUCE(DEF_ONE_REDUCE, min)
+GPU_REDUCE(DEF_ONE_REDUCE, max)
+GPU_REDUCE(DEF_ONE_REDUCE, minloc)
+GPU_REDUCE(DEF_ONE_REDUCE, maxloc)
 
-#undef DEF_ONE_REDUCE_RET_VAL_IDX
-
+#undef DEF_ONE_REDUCE
 
 #endif

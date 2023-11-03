@@ -445,18 +445,31 @@ module GPU
       return "chpl_gpu_"+op+"_reduce_"+chplTypeToCTypeName(t);
     }
 
-    inline proc subReduceVal(param op, ref accum: ?t, val: t) {
-      select op {
-        when "sum" do accum += val;
-        when "min" do accum = min(accum, val);
-        when "max" do accum = max(accum, val);
-        otherwise do compilerError("Unknown reduction operation: ", op);
-      }
+    proc isValReduce(param op) param {
+      return op=="sum" || op=="min" || op=="max";
     }
 
-    inline proc subReduceValIdx(param op, const baseOffset, ref accum: ?t,
-                                val: t) {
+    proc isValIdxReduce(param op) param {
+      return op=="minloc" || op=="maxloc";
+    }
+
+    inline proc subReduceValIdx(param op, const baseOffset, ref accum, val) {
+      // do some type checking to be safe
+      compilerAssert(isTupleValue(val));
+      if isTupleValue(accum) {
+        compilerAssert(isValIdxReduce(op));
+        compilerAssert(val[1].type == accum[1].type);
+
+      }
+      else {
+        compilerAssert(isValReduce(op));
+        compilerAssert(val[1].type == accum.type);
+      }
+
       select op {
+        when "sum" do accum += val[1];
+        when "min" do accum = min(accum, val[1]);
+        when "max" do accum = max(accum, val[1]);
         when "minloc" do
           if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
         when "maxloc" do
@@ -494,52 +507,41 @@ module GPU
 
     use CTypes;
 
+    // find the extern function we'll use
     param externFunc = getExternFuncName(op, t);
+    extern externFunc proc reduce_fn(data, size, ref val, ref idx);
 
-    if op == "sum" || op == "min" || op == "max" {
-      var val: t;
-      if op == "min" then
-        val = max(t);
-      else if op == "max" then
-        val = min(t);
-
-      extern externFunc proc reduce_fn(data, size, ref val);
-
-      const basePtr = c_ptrToConst(A);
-      for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
-        var curVal: t;
-        reduce_fn(basePtr+offset, size, curVal);
-        if gpuDebugReduce then
-          writef(" (curVal=%i)\n", curVal);
-        subReduceVal(op, val, curVal);
-      }
-
-      return val;
+    // initialize the return value
+    var ret;
+    if isValReduce(op) {
+      var retTmp: t;
+      if op == "min" then retTmp = max(t);
+      else if op == "max" then retTmp = min(t);
+      ret = retTmp;
     }
-    else if op == "minloc" || op == "maxloc" {
-      var ret: (int, t);
-      if op == "minloc" then
-        ret[1] = max(t);
-      else if op == "maxloc" then
-        ret[1] = min(t);
-
-      extern externFunc proc reduce_fn(data, size, ref val, ref idx);
-
-      const basePtr = c_ptrToConst(A);
-      for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
-        var curIdx: int(32);
-        var curVal: t;
-        reduce_fn(basePtr+offset, size, curVal, curIdx);
-        subReduceValIdx(op, offset, ret, (curIdx, curVal));
-        if gpuDebugReduce then
-          writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
-      }
-
-      return ret;
+    else if isValIdxReduce(op) {
+      var retTmp: (int, t);
+      if op == "minloc" then retTmp[1] = max(t);
+      else if op == "maxloc" then retTmp[1] = min(t);
+      ret = retTmp;
     }
     else {
       compilerError("Unknown reduction operation: ", op);
+      ret = 0;
     }
+
+    // perform the reduction
+    const basePtr = c_ptrToConst(A);
+    for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
+      var curIdx: int(32) = -1; // should remain -1 for sum, min, max
+      var curVal: t;
+      reduce_fn(basePtr+offset, size, curVal, curIdx);
+      subReduceValIdx(op, offset, ret, (curIdx, curVal));
+      if gpuDebugReduce then
+        writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
+    }
+
+    return ret;
   }
 
   /* 

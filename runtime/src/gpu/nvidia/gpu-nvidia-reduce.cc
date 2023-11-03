@@ -27,9 +27,12 @@
 #include "../common/cuda-utils.h"
 #include "gpu/chpl-gpu-reduce-util.h"
 
+// this version doesn't do anything with `idx`. Having a unified interface makes
+// the implementation in the rest of the runtime and the modules more
+// straightforward.
 #define DEF_ONE_REDUCE_RET_VAL(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val,\
+                                                    data_type* val, int* idx,\
                                                     void* stream) {\
   CUdeviceptr result; \
   CUDA_CALL(cuMemAlloc(&result, sizeof(data_type))); \
