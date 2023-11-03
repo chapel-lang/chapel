@@ -541,6 +541,9 @@ module GPU
         writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
     }
 
+    if isValIdxReduce(op) then
+      ret[0] += A.domain.first;
+
     return ret;
   }
 
