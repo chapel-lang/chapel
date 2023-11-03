@@ -130,6 +130,15 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     ):
         return True
 
+    # MultiDecl apparently supports comments inside of it
+    # so it requires the extra `hasattr` check
+    if (
+        isinstance(node, dyno.MultiDecl)
+        and any(n.name().startswith("chpl_") for n in node if hasattr(n, "name"))
+        and "chpldoc ignore chpl prefix" not in node.pragmas()
+    ):
+        return True
+
     if hasattr(node, "visibility") and node.visibility() == "private":
         return True
 
