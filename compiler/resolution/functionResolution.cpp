@@ -3128,6 +3128,20 @@ static void adjustClassCastCall(CallExpr* call)
   }
 }
 
+static bool
+isDowncastToGenericClass(CallExpr* call, Type* targetType,
+                         Type* valueType) {
+  if (!isClassLikeOrManaged(targetType) ||
+      !isClassLikeOrManaged(valueType)) return false;
+  auto atTarget = toAggregateType(canonicalClassType(targetType));
+  auto atValue = toAggregateType(canonicalClassType(valueType));
+  INT_ASSERT(atTarget && atValue);
+  const bool isDowncast = isSubType(atTarget, atValue);
+  const bool isTargetTypeGeneric = atTarget->isGeneric();
+  bool ret = isDowncast && isTargetTypeGeneric;
+  return ret;
+}
+
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
@@ -3243,6 +3257,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       }
 
       return true;
+    }
+
+    // Check to make sure we're not doing 'C: shared D(?)'. We have to stop
+    // here to make sure we don't emit a nonsensical error from later in the
+    // pass (e.g., in the code for the owned manager).
+    if (isDowncastToGenericClass(call, targetType, valueType)) {
+      USR_FATAL(call, "illegal downcast to generic superclass type '%s'",
+                      toString(targetType));
     }
   }
 
