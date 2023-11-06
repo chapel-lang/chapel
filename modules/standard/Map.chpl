@@ -362,21 +362,10 @@ module Map {
                       '`parSafe=true`', 2);
     }
 
-    @chpldoc.nodoc
-    proc ref this(k: keyType) ref
-      where isDefaultInitializable(valType) {
-      _warnForParSafeIndexing();
 
-      _enter(); defer _leave();
-
-      var (_, slot) = table.findAvailableSlot(k);
-      if !table.isSlotFull(slot) {
-        var val: valType;
-        table.fillSlot(slot, k, val);
-      }
-      return table.table[slot].val;
-    }
-
+    // TODO (Jade 11/6/23): This doc comment should go on the `this` overload
+    // without `where` that is marked `throws`. However, there is a current
+    // limitation in chpldoc with return intents and `throws` (#23776)
     /*
       If the key exists in the map, get a reference to the value mapped
       to the given key. If the key does not exist in the map, the value
@@ -396,6 +385,21 @@ module Map {
 
       :returns: Reference to the value mapped to the given key.
     */
+    proc ref this(k: keyType) ref
+      where isDefaultInitializable(valType) {
+      _warnForParSafeIndexing();
+
+      _enter(); defer _leave();
+
+      var (_, slot) = table.findAvailableSlot(k);
+      if !table.isSlotFull(slot) {
+        var val: valType;
+        table.fillSlot(slot, k, val);
+      }
+      return table.table[slot].val;
+    }
+
+    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
