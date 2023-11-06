@@ -35,111 +35,14 @@ module GpuSort
   import Time;
 
   proc sort(ref gpuInputArr: [] uint) {
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize=4, noisy=true, distributed=false);
+    if gpuInputArr.size == 0 then return;
+    // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
+    // TODO better heuristic here?
+    var chunkSize = Math.divCeil(gpuInputArr.size, 2000);
+    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
   }
 
-  proc parallelCount(ref gpuCounts: [], ref gpuInputArr: [] uint, const exp: int,
-                    const bitMask: int, const chunkSize: int,
-                    const numChunks: int,  const numChunksThisGpu : int = numChunks,
-                    const startChunk: int = 0,
-                    const gpuId: int = 0, const resetCountsArray = true){
-
-    // Instead of using a nested array of arrays, use a simple 1D array of
-    // size numChunks*buckets which is a column major representation
-    // of the 2D array where each chunk has it's own array of buckets.
-    // This way calculating the offset is just a prefix sum
-    // And we can use strided iteration to work on them as if they were
-    // 2D arrays.
-    // writeln("Counting on gpu: ", gpuId);
-    if resetCountsArray then
-      gpuCounts = 0; // All 0s
-    // writeln("Bounds for chunk: ", startChunk, " to ", startChunk+numChunksThisGpu-1);
-    const arrSize = gpuInputArr.size;
-    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
-
-    @assertOnGpu
-    foreach chunk in startChunk..#numChunksThisGpu {
-      // Count for each chunk in parallel.
-      const startIdx : int = (chunk:int)*chunkSize;
-      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
-      for i in startIdx..<endIdx {
-        const arrIdx = i+low;
-        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int;
-        const tmp2 = chunk+(numChunks*tmp);
-        gpuCounts[tmp2] += 1;
-      }
-    }
-  }
-
-
-  // Multi GPU Experimental function
-  // This won't work for now since it wasn't updated with the modularization of radix sort
   @chpldoc.nodoc
-  proc distributedCount(ref counts: [], ref gpuInputArr: [] uint, const exp: int, const bitMask: int,
-                        const numChunks: int, const numGpus : int ) {
-    // Counts should be all 0s
-    // counts = 0;
-
-    const numChunksPerGpu = Math.divCeil(numChunks, numGpus);
-    const numChunksPerGpuLast = numChunks - (numChunksPerGpu * (numGpus-1));
-    var firstRunReset = true;
-
-    // Distribute the counts across the GPUs
-    for gpu in 0..<numGpus {
-      const numChunksThisGpu = if (gpu==numGpus-1) then numChunksPerGpuLast else numChunksPerGpu;
-      const startChunk = gpu*numChunksPerGpu;
-
-      // Distributing the counts across the GPUs
-      // Each GPU works on a subset of chunks from the array
-      // Since each chunk already gets a slot in the counts array
-      // We will pass the entire counts array to each GPU
-      // But each GPU will only work on a subset of the counts array and not care about the rest
-      parallelCount(counts, gpuInputArr, exp, bitMask, numChunks, numChunksThisGpu, startChunk, gpu, firstRunReset);
-      // writeln(" Count: ", thisCounts);
-      // This works because counts array is all 0s and
-      // we're only adding to it. The parallelCount function leaves the
-      // rest of the array untouched (i.e. 0s) so for 2 GPUs the add might be:
-      // counts1 : 1 0 | 3 0 | 2 0 | 32 0
-      // counts2 : 0 3 | 0 2 | 0 12 | 0 2
-      // counts      : 1 3 | 3 2 | 2 12 | 32 2
-      // I think this is not a race condition for the same reason
-      firstRunReset = false; // This is a hacky solution
-
-
-      // In an ideal world I would like to use a + reduce intent here such that each iteration gets it's own
-      // copy of the counts array and it is accumulated into the main counts array
-      // And the loop should be a coforall instead of a foreach
-      // But I could not get that to work/ don't know how that works
-    }
-  }
-
-  proc parallelScatter(ref gpuOffsets: [], ref gpuInputArr: [] uint,
-                       const exp: int, const bitMask: int,
-                       const chunkSize: int, const numChunks: int){
-
-    var gpuOutputArr : gpuInputArr.type;
-    const arrSize = gpuInputArr.size;
-    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
-
-    @assertOnGpu
-    foreach chunk in 0..<numChunks {
-      // Count for each chunk in parallel.
-      const startIdx : int = (chunk:int)*chunkSize;
-      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
-      for i in startIdx..<endIdx {
-        const arrIdx = i+low;
-        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look
-        const tmp2 = chunk+(numChunks*tmp); // Index into the offsets array
-        const tmp3 = gpuOffsets[tmp2]:int; // Index into the output array
-        // This may happen when gpuInputArr.size%chunkSize!=0
-        // if tmp3>=gpuInputArr.size then continue;
-        gpuOutputArr[low+tmp3] = gpuInputArr[arrIdx];
-        gpuOffsets[tmp2] += 1;
-      }
-    }
-    gpuInputArr = gpuOutputArr;
-  }
-
   proc parallelRadixSort(ref gpuInputArr: [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
                          const distributed : bool = false) { // The last argument is for multi GPU sort that is pending a patch before it can work
 
@@ -241,5 +144,104 @@ module GpuSort
     }
   }
 
+  private proc parallelCount(ref gpuCounts: [], ref gpuInputArr: [] uint, const exp: int,
+                    const bitMask: int, const chunkSize: int,
+                    const numChunks: int,  const numChunksThisGpu : int = numChunks,
+                    const startChunk: int = 0,
+                    const gpuId: int = 0, const resetCountsArray = true){
+
+    // Instead of using a nested array of arrays, use a simple 1D array of
+    // size numChunks*buckets which is a column major representation
+    // of the 2D array where each chunk has it's own array of buckets.
+    // This way calculating the offset is just a prefix sum
+    // And we can use strided iteration to work on them as if they were
+    // 2D arrays.
+    // writeln("Counting on gpu: ", gpuId);
+    if resetCountsArray then
+      gpuCounts = 0; // All 0s
+    // writeln("Bounds for chunk: ", startChunk, " to ", startChunk+numChunksThisGpu-1);
+    const arrSize = gpuInputArr.size;
+    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
+    @assertOnGpu
+    foreach chunk in startChunk..#numChunksThisGpu {
+      // Count for each chunk in parallel.
+      const startIdx : int = (chunk:int)*chunkSize;
+      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+      for i in startIdx..<endIdx {
+        const arrIdx = i+low;
+        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int;
+        const tmp2 = chunk+(numChunks*tmp);
+        gpuCounts[tmp2] += 1;
+      }
+    }
+  }
+
+  // Multi GPU Experimental function
+  // This won't work for now since it wasn't updated with the modularization of radix sort
+  private proc distributedCount(ref counts: [], ref gpuInputArr: [] uint, const exp: int, const bitMask: int,
+                        const numChunks: int, const numGpus : int ) {
+    // Counts should be all 0s
+    // counts = 0;
+
+    const numChunksPerGpu = Math.divCeil(numChunks, numGpus);
+    const numChunksPerGpuLast = numChunks - (numChunksPerGpu * (numGpus-1));
+    var firstRunReset = true;
+
+    // Distribute the counts across the GPUs
+    for gpu in 0..<numGpus {
+      const numChunksThisGpu = if (gpu==numGpus-1) then numChunksPerGpuLast else numChunksPerGpu;
+      const startChunk = gpu*numChunksPerGpu;
+
+      // Distributing the counts across the GPUs
+      // Each GPU works on a subset of chunks from the array
+      // Since each chunk already gets a slot in the counts array
+      // We will pass the entire counts array to each GPU
+      // But each GPU will only work on a subset of the counts array and not care about the rest
+      parallelCount(counts, gpuInputArr, exp, bitMask, numChunks, numChunksThisGpu, startChunk, gpu, firstRunReset);
+      // writeln(" Count: ", thisCounts);
+      // This works because counts array is all 0s and
+      // we're only adding to it. The parallelCount function leaves the
+      // rest of the array untouched (i.e. 0s) so for 2 GPUs the add might be:
+      // counts1 : 1 0 | 3 0 | 2 0 | 32 0
+      // counts2 : 0 3 | 0 2 | 0 12 | 0 2
+      // counts      : 1 3 | 3 2 | 2 12 | 32 2
+      // I think this is not a race condition for the same reason
+      firstRunReset = false; // This is a hacky solution
+
+
+      // In an ideal world I would like to use a + reduce intent here such that each iteration gets it's own
+      // copy of the counts array and it is accumulated into the main counts array
+      // And the loop should be a coforall instead of a foreach
+      // But I could not get that to work/ don't know how that works
+    }
+  }
+
+  private proc parallelScatter(ref gpuOffsets: [], ref gpuInputArr: [] uint,
+                       const exp: int, const bitMask: int,
+                       const chunkSize: int, const numChunks: int){
+
+    var gpuOutputArr : gpuInputArr.type;
+    const arrSize = gpuInputArr.size;
+    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
+    @assertOnGpu
+    foreach chunk in 0..<numChunks {
+      // Count for each chunk in parallel.
+      const startIdx : int = (chunk:int)*chunkSize;
+      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+      for i in startIdx..<endIdx {
+        const arrIdx = i+low;
+        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look
+        const tmp2 = chunk+(numChunks*tmp); // Index into the offsets array
+        const tmp3 = gpuOffsets[tmp2]:int; // Index into the output array
+        // This may happen when gpuInputArr.size%chunkSize!=0
+        // if tmp3>=gpuInputArr.size then continue;
+        gpuOutputArr[low+tmp3] = gpuInputArr[arrIdx];
+        gpuOffsets[tmp2] += 1;
+      }
+    }
+    gpuInputArr = gpuOutputArr;
+  }
 
 }

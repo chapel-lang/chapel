@@ -43,7 +43,24 @@ on here.gpus[0]{
   timer.stop();
   cpuArr = arr; // Copy back to cpu
 }
+const time1 = timer.elapsed();
+
+var cpuArr2 : cpuArr.type;
+on here.gpus[0] {
+  var arr = cpuArr; // Copy to gpu
+  timer.clear();
+  timer.start();
+  GpuSort.sort(arr);
+  timer.stop();
+  cpuArr2 = arr; // Copy back to cpu
+}
 
 if printArr then writeln(cpuArr);
-if printTimes then writeln("Time: ", timer.elapsed());
-if validate then checkSorted(cpuArr);
+if printTimes {
+  writeln("Time1 : ", time1);
+  writeln("Time2 : ", timer.elapsed());
+}
+if validate {
+  checkSorted(cpuArr);
+  checkSorted(cpuArr2);
+}
