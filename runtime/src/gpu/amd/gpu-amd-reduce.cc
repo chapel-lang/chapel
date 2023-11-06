@@ -37,14 +37,14 @@
 #if 1
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx\
+                                                    data_type* val, int* idx,\
                                                     void* stream) {\
   chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
 }
 #elif ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx\
+                                                    data_type* val, int* idx,\
                                                     void* stream) {\
   data_type* result; \
   ROCM_CALL(hipMalloc(&result, sizeof(data_type)));\
