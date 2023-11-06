@@ -18,17 +18,8 @@
  * limitations under the License.
  */
 
-/* Chapel's standard 'map' type for key-value storage.
-
-  This module contains the implementation of the map type which is a container
-  that stores key-value associations.
-
-  Maps are not parallel safe by default, but can be made parallel safe by
-  setting the param formal `parSafe` to true in any map constructor. When
-  constructed from another map, the new map will inherit the parallel safety
-  mode of its originating map. Note that the ``parSafe`` mode is currently
-  unstable and will eventually be replaced by a standalone parallel-safe map
-  type.
+/* This module contains the implementation of the ``map`` type which is a
+   container that stores key-value associations.
 */
 module Map {
   import ChapelLocks;
@@ -74,7 +65,16 @@ module Map {
   }
 
   // empty doc, the module docstring serves for this
-  /**/
+  /*
+    Chapel's standard ``map`` type for key-value storage.
+
+    Maps are not parallel safe by default, but can be made parallel safe by
+    setting the param formal ``parSafe`` to true in any ``map`` constructor. When
+    constructed from another ``map``, the new ``map`` will inherit the parallel safety
+    mode of its originating map. Note that the ``parSafe`` mode is currently
+    unstable and will eventually be replaced by a standalone parallel-safe map
+    type.
+  */
   record map : serializable {
     /* Type of map keys. */
     type keyType;
