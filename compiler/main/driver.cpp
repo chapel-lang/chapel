@@ -2313,8 +2313,6 @@ int main(int argc, char* argv[]) {
 
     process_args(&sArgState, argc, argv);
 
-    setupChplGlobals(argv[0]);
-
     // set up the module paths
     std::string chpl_module_path;
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
@@ -2322,6 +2320,8 @@ int main(int argc, char* argv[]) {
     }
 
     bootstrapTmpDir();
+
+    setupChplGlobals(argv[0]);
 
     addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 
