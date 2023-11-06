@@ -278,7 +278,11 @@ struct Converter {
     return false;
   }
   bool shouldResolve(ID symbolId) {
-    return shouldResolve(symbolId.symbolPath());
+    if (fDynoCompilerLibrary) {
+      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+    } else {
+      return shouldResolve(symbolId.symbolPath());
+    }
   }
   bool shouldResolve(const uast::AstNode* node) {
     return shouldResolve(node->id());
@@ -2959,7 +2963,6 @@ struct Converter {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
-    const resolution::TypedFnSignature* initialSig = nullptr;
     const resolution::PoiScope* poiScope = nullptr;
 
     if (shouldResolveFunction || shouldScopeResolveFunction) {
@@ -3168,8 +3171,8 @@ struct Converter {
     }
 
     // Update the function symbol with any resolution results.
-    if (shouldResolveFunction) {
-      auto retType = resolution::returnType(context, initialSig, poiScope);
+    if (shouldResolveFunction && resolvedFn != nullptr) {
+      auto retType = resolution::returnType(context, resolvedFn->signature(), poiScope);
       fn->retType = convertType(retType);
     }
 

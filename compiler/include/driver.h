@@ -301,7 +301,7 @@ extern std::vector<std::string> llvmRemarksFunctionsToShow;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoResolve;
+extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
