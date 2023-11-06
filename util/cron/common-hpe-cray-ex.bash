@@ -8,6 +8,9 @@ module unload $(module --terse list 2>&1 | grep PrgEnv-)
 module load PrgEnv-gnu/8.4.0
 module load cray-pmi
 
+# cray-libsci currently has a problem on pinoak
+module unload cray-libsci
+
 export CHPL_HOST_PLATFORM=hpe-cray-ex
 
 # Work around cxi provider bugs that limit memory registration
