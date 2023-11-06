@@ -2713,9 +2713,9 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
-static const Type* resolveFnCallSpecialType(Context* context,
-                                            const AstNode* astForErr,
-                                            const CallInfo& ci) {
+static const Type* resolveBuiltinTypeCtor(Context* context,
+                                          const AstNode* astForErr,
+                                          const CallInfo& ci) {
   // none of the special type function calls are methods; we can stop here.
   if (ci.isMethodCall()) return nullptr;
 
@@ -2795,11 +2795,6 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  if (const Type* t = resolveFnCallSpecialType(context, astForErr, ci)) {
-    exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
-    return true;
-  }
-
   if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
       ci.numActuals() == 2) {
     auto lhs = ci.actual(0).type();
@@ -2846,27 +2841,52 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-static CallResolutionResult
-resolveFnCallDomain(Context* context,
-                    const Call* call,
-                    const CallInfo& ci,
-                    const Scope* inScope,
-                    const PoiScope* inPoiScope) {
-  // TODO: a compiler-generated type constructor would be simpler, but we
-  // don't support default values on compiler-generated methods because the
-  // default values require existing AST.
+static bool isKeywordTypeCtor(Context* context,
+                              const Call* call,
+                              const CallInfo& ci,
+                              const Scope* inScope,
+                              const PoiScope* inPoiScope,
+                              CallResolutionResult& result) {
+  if (ci.isMethodCall()) {
+    return false;
+  }
 
-  // Note: 'dmapped' is treated like a binary operator at the moment, so
-  // we don't need to worry about distribution type for 'domain(...)' exprs.
+  // Types that can be computed without resolving other calls
+  if (const Type* t = resolveBuiltinTypeCtor(context, call, ci)) {
+    auto exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
+    result = CallResolutionResult(exprTypeOut);
+    return true;
+  }
 
-  // Transform domain type expressions like `domain(arg1, ...)` into:
-  //   _domain.static_type(arg1, ...)
-  auto genericDom = DomainType::getGenericDomainType(context);
-  auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
-  auto typeCtorName = UniqueString::get(context, "static_type");
-  auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+  // Types that require resolving some kind of helper function to build
+  // the type.
+  //
+  // TODO: sync, single
+  if (ci.name() == "domain") {
+    // TODO: a compiler-generated type constructor would be simpler, but we
+    // don't support default values on compiler-generated methods because the
+    // default values require existing AST.
 
-  return resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    // Note: 'dmapped' is treated like a binary operator at the moment, so
+    // we don't need to worry about distribution type for 'domain(...)' exprs.
+
+    // Transform domain type expressions like `domain(arg1, ...)` into:
+    //   _domain.static_type(arg1, ...)
+    auto genericDom = DomainType::getGenericDomainType(context);
+    auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+    auto typeCtorName = UniqueString::get(context, "static_type");
+    auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+
+    result = resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    return true;
+  } else if (ci.name() == "atomic") {
+    auto newName = UniqueString::get(context, "chpl__atomicType");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    return true;
+  }
+
+  return false;
 }
 
 static MostSpecificCandidates
@@ -3626,8 +3646,10 @@ CallResolutionResult resolveCall(Context* context,
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
-    if (ci.name() == "domain" && !ci.isMethodCall()) {
-      return resolveFnCallDomain(context, call, ci, inScope, inPoiScope);
+
+    CallResolutionResult keywordRes;
+    if (isKeywordTypeCtor(context, call, ci, inScope, inPoiScope, keywordRes)) {
+      return keywordRes;
     }
 
     // otherwise do regular call resolution
