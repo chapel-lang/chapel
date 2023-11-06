@@ -73,6 +73,8 @@ module Map {
     }
   }
 
+  // empty doc, the module docstring serves for this
+  /**/
   record map : serializable {
     /* Type of map keys. */
     type keyType;
@@ -392,6 +394,7 @@ module Map {
       return table.table[slot].val;
     }
 
+    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
