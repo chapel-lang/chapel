@@ -35,7 +35,7 @@ module GpuSort
   import Time;
 
   proc sort(ref gpuInputArr: [] uint) {
-    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize=10, noisy=false, distributed=false);
+    parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize=4, noisy=true, distributed=false);
   }
 
   proc parallelCount(ref gpuCounts: [], ref gpuInputArr: [] uint, const exp: int,
@@ -54,15 +54,17 @@ module GpuSort
     if resetCountsArray then
       gpuCounts = 0; // All 0s
     // writeln("Bounds for chunk: ", startChunk, " to ", startChunk+numChunksThisGpu-1);
-    const arrSize = gpuInputArr.size; // https://github.com/chapel-lang/chapel/issues/22433
+    const arrSize = gpuInputArr.size;
+    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
     @assertOnGpu
     foreach chunk in startChunk..#numChunksThisGpu {
       // Count for each chunk in parallel.
       const startIdx : int = (chunk:int)*chunkSize;
-      var endIdx : int = startIdx+chunkSize;
-      if endIdx>=arrSize then endIdx = arrSize;
+      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
       for i in startIdx..<endIdx {
-        const tmp = ((gpuInputArr[i]>>exp) & bitMask):int;
+        const arrIdx = i+low;
+        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int;
         const tmp2 = chunk+(numChunks*tmp);
         gpuCounts[tmp2] += 1;
       }
@@ -116,20 +118,22 @@ module GpuSort
                        const chunkSize: int, const numChunks: int){
 
     var gpuOutputArr : gpuInputArr.type;
-    const arrSize = gpuInputArr.size; // https://github.com/chapel-lang/chapel/issues/22433
+    const arrSize = gpuInputArr.size;
+    const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
     @assertOnGpu
     foreach chunk in 0..<numChunks {
       // Count for each chunk in parallel.
       const startIdx : int = (chunk:int)*chunkSize;
-      var endIdx : int = startIdx+chunkSize;
-      if endIdx>=arrSize then endIdx = arrSize;
+      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
       for i in startIdx..<endIdx {
-        const tmp = ((gpuInputArr[i]>>exp) & bitMask):int; // Where in the counts array to look
+        const arrIdx = i+low;
+        const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look
         const tmp2 = chunk+(numChunks*tmp); // Index into the offsets array
         const tmp3 = gpuOffsets[tmp2]:int; // Index into the output array
         // This may happen when gpuInputArr.size%chunkSize!=0
         // if tmp3>=gpuInputArr.size then continue;
-        gpuOutputArr[tmp3] = gpuInputArr[i];
+        gpuOutputArr[low+tmp3] = gpuInputArr[arrIdx];
         gpuOffsets[tmp2] += 1;
       }
     }
@@ -154,7 +158,7 @@ module GpuSort
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
         writeln("Bit mask: ", bitMask);
-        writeln("Input: ", gpuInputArr);
+        // writeln("Input: ", gpuInputArr);
         writeln("Chunk Size: ", chunkSize);
         writeln("Num Chunks: ", numChunks);
     }
@@ -165,23 +169,30 @@ module GpuSort
     // This was we can reuse it for each iteration of radix Sort
     var prefixSums: [0..<numChunks*buckets] uint;
 
+    var timer: Time.stopwatch;
     // Ceiling on number of iterations based on max element in array
+    timer.start();
+    var maxVal = 0 : uint;
     // Reduce can be used to do this faster
+    maxVal -=1; // Set to max uint by causing an underflow
+    // We do this because the preferred ways below either don't work
+    // or take too long
     // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
-    // var maxVal = max reduce gpuInputArr;
-    var maxVal = gpuInputArr[0];
-    for i in 1..<gpuInputArr.size {
-      if gpuInputArr[i] > maxVal {
-        maxVal = gpuInputArr[i];
-      }
-    }
+    // var maxVal = max reduce gpuInputArr; // Doesn't work actually
+    // var maxVal = gpuInputArr[0]; // Takes toooo long
+    // for i in 1..<gpuInputArr.size {
+    //   if gpuInputArr[i] > maxVal {
+    //     maxVal = gpuInputArr[i];
+    //   }
+    // }
+    timer.stop();
     if noisy then writeln("maxVal: ", maxVal);
+    if noisy then writeln("Finding Max time: ", timer.elapsed());
 
     // Number of iterations is the number of bits in the max element divided by number of bits we sort at a time
     var exp = 0;
     while (maxVal> 0){
-      if(noisy) then
-        writeln("       Exp: ", exp);
+      if(noisy) then writeln("       Exp: ", exp);
 
       // Each chunk maintains it's own count array (here it's called prefixSum)
       // First we do the counts in parallel
@@ -190,7 +201,7 @@ module GpuSort
       // in parallel
 
       // Count
-      var timer: Time.stopwatch;
+      timer.clear();
       timer.start();
       if !distributed then
         parallelCount(prefixSums, gpuInputArr, exp, bitMask, chunkSize, numChunks);

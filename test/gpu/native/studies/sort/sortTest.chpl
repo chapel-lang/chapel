@@ -2,38 +2,48 @@ import GpuSort;
 import Random;
 import Time;
 
-config const arrSize = 10;
+config const arrSize = 100_000;
 config const validate = true;
 config const printArr = false;
 config const printTimes = false;
+config const chunkSize = 6250;
+config const bitsAtATime = 8;
+config const noisy = false;
+config const low=10;
+
 
 proc checkSorted(arr: [] uint) {
-  for i in 0..<arr.size-1 {
-    if arr[i] > arr[i+1] {
+  for i in arr.domain {
+    if i< arr.domain.high && arr[i] > arr[i+1] {
       writeln("Not sorted");
       return;
     }
     if arr[i]==0 {
       writeln("Zero");  // sanity check. This should *not* happen
-                        //based on our random seed
+                        // based on our random seed
       return;
     }
   }
   writeln("Sorted");
 }
 
+
+var cpuArr: [low..#arrSize] uint;
+var seed = 17; // Make it deterministic
+Random.fillRandom(cpuArr, seed);
+
+writeln("Starting Sort");
+var timer: Time.stopwatch;
+if printArr then writeln(cpuArr);
+
 on here.gpus[0]{
-  var timer: Time.stopwatch;
-  var arr: [0..<arrSize] uint;
-  var seed = 17; // Make it deterministic
-  Random.fillRandom(arr, seed);
-  if printArr then writeln(arr);
-
+  var arr = cpuArr; // Copy to gpu
   timer.start();
-  GpuSort.sort(arr);
+  GpuSort.parallelRadixSort(arr, bitsAtATime, chunkSize, noisy);
   timer.stop();
-
-  if printArr then writeln(arr);
-  if printTimes then writeln("Time: ", timer.elapsed());
-  if validate then checkSorted(arr);
+  cpuArr = arr; // Copy back to cpu
 }
+
+if printArr then writeln(cpuArr);
+if printTimes then writeln("Time: ", timer.elapsed());
+if validate then checkSorted(cpuArr);
