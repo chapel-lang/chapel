@@ -2140,7 +2140,7 @@ module List {
     Initializes a list containing elements that are copy initialized from
     the elements contained in another list.
 
-    See :proc:`~List.init=`
+    See :proc:`~list.init=`
   */
   operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
@@ -2151,7 +2151,7 @@ module List {
     Initializes a list containing elements that are copy initialized from
     the elements contained in an array.
 
-    See :proc:`~List.init=`
+    See :proc:`~list.init=`
   */
   operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
@@ -2162,7 +2162,7 @@ module List {
     Initializes a list containing elements that are copy initialized from
     the elements yielded by a range.
 
-    See :proc:`~List.init=`
+    See :proc:`~list.init=`
   */
   operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
@@ -2173,7 +2173,7 @@ module List {
     Initializes a list containing elements that are copy initialized from
     the elements yielded by an iterator expression.
 
-    See :proc:`~List.init=`
+    See :proc:`~list.init=`
   */
   operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
