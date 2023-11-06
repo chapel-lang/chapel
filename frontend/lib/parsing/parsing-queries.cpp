@@ -1377,6 +1377,22 @@ static std::string hardcodedDeprecationForId(Context* context, ID idMention,
   return deprecationMsg;
 }
 
+static bool parentIgnoresDeprecated(Context* context, ID idTarget) {
+  auto parentId = parsing::idToParentId(context, idTarget);
+  if (auto attrib = parsing::idToAttributeGroup(context, parentId)) {
+    if (attrib->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE)) return true;
+  } else if (parentId.isEmpty()) {
+    return false;
+  }
+
+  auto ast = parsing::idToAst(context, parentId);
+  if (ast->isModule()) {
+    return false;
+  }
+
+  return parentIgnoresDeprecated(context, parentId);
+}
+
 static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   std::string msg;
@@ -1400,6 +1416,8 @@ deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
     bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
                         attributes->isDeprecated();
     if (!isDeprecated) return false;
+
+    if (parentIgnoresDeprecated(context, idTarget)) return false;
 
     auto storedMsg = attributes->deprecationMessage();
     msg = storedMsg.isEmpty()
