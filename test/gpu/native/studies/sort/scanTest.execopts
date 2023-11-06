@@ -1,3 +1,5 @@
+--low=32 --arrSize=512
+--low=32 --arrSize=1020
 --low=2049789 --arrSize=2048
 --low=2049789 --arrSize=2
 --low=20 --arrSize=4096

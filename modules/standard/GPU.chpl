@@ -641,6 +641,7 @@ module GPU
   proc gpuScan(ref gpuArr: [] uint){
     if gpuArr.size==0 then return;
     // Use a simple algorithm for small arrays
+    // TODO check the actual thread block size rather than the2*default
     if gpuArr.size <= 1024 {
       // The algorithms only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
@@ -651,7 +652,7 @@ module GPU
       // Hillis Steele Scan is better if we can scan in
       // a single thread block
       // TODO check the actual thread block size rather than the default
-      if gpuArr.size < 512 then
+      if gpuArr.size <= 512 then
         hillisSteeleScan(arr);
       else
         blellochScan(arr);
@@ -664,7 +665,7 @@ module GPU
     }
   }
 
-  proc parallelArrScan(ref gpuArr: [] uint){
+  private proc parallelArrScan(ref gpuArr: [] uint){
     // Divide up the array into chunks of a reasonable size
     // For our default, we choose our default block size which is 512
     const scanChunkSize = 512;
@@ -704,7 +705,7 @@ module GPU
       }
   }
 
-  proc roundToPowerof2(const x: uint){
+  private proc roundToPowerof2(const x: uint){
     // Powers of two only have the highest bit set.
     // Power of two minus one will have all bits set except the highest.
     // & those two together should give us 0;
@@ -721,7 +722,7 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  proc serialScan(ref arr: [] uint, startIdx = arr.domain.low, endIdx = arr.domain.high){
+  private proc serialScan(ref arr: [] uint, startIdx = arr.domain.low, endIdx = arr.domain.high){
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
@@ -737,7 +738,7 @@ module GPU
     }
   }
 
-  proc hillisSteeleScan(ref arr: [] uint){
+  private proc hillisSteeleScan(ref arr: [] uint){
     // Hillis Steele Scan
     // This is the same as the count array, but each element is the sum of all previous elements
     // Uses a naive algorithm that does O(nlogn) work
@@ -768,7 +769,7 @@ module GPU
     arr[arr.domain.low] = 0;
   }
 
-  proc blellochScan(ref arr: [] uint){
+  private proc blellochScan(ref arr: [] uint){
     // Blelloch Scan
     // This is the same as the count array, but each element is the sum of all previous elements
     // Uses a more efficient algorithm that does O(n) work
