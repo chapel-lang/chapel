@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include "chpl-tasks.h"
 #include "chpl-mem-desc.h"
+#include "gpu/chpl-gpu-reduce-util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -148,6 +149,19 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
+
+#define DECL_ONE_REDUCE(chpl_kind, data_type) \
+void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                               data_type* val, int* idx);
+
+GPU_REDUCE(DECL_ONE_REDUCE, sum);
+GPU_REDUCE(DECL_ONE_REDUCE, min);
+GPU_REDUCE(DECL_ONE_REDUCE, max);
+GPU_REDUCE(DECL_ONE_REDUCE, minloc);
+GPU_REDUCE(DECL_ONE_REDUCE, maxloc);
+
+#undef DECL_ONE_REDUCE
+
 
 #endif // HAS_GPU_LOCALE
 

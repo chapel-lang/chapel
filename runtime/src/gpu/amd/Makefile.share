@@ -15,8 +15,14 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-SRCS = gpu-amd.c
+GPU_SRCS = gpu-amd-reduce.cc gpu-amd.c
 
-GPU_SRCS = gpu-amd.c
+SRCS = $(GPU_SRCS)
 
-GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)
+GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
+
+RUNTIME_CXXFLAGS += -x hip
+
+$(RUNTIME_OBJ_DIR)/gpu-amd-reduce.o: gpu-amd-reduce.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c -std=c++14 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

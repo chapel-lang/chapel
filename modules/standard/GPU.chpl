@@ -389,4 +389,241 @@ module GPU
   /* When run on a GPU, atomically compare the value in 'x' and 'cmp', if they
      are equal store 'val' in 'x'. The operation returns the old value of x. */
   inline proc gpuAtomicCAS(  ref x : ?T, cmp : T, val : T) : T { return gpuAtomicTernOp("CAS", x, cmp, val); }
+
+  // ============================
+  // Reductions
+  // ============================
+
+  @chpldoc.nodoc
+  config param gpuDebugReduce = false;
+
+  private inline proc doGpuReduce(param op: string, const ref A: [] ?t) {
+    if op != "sum" && op != "min" && op != "max" &&
+       op != "minloc" && op != "maxloc" {
+
+      compilerError("Unexpected reduction kind in doGpuReduce: ", op);
+    }
+
+
+    if CHPL_GPU == "amd" {
+      compilerError("gpu*Reduce functions are not supported on AMD GPUs");
+    }
+    else if CHPL_GPU == "cpu" {
+      select op {
+        when "sum" do return + reduce A;
+        when "min" do return min reduce A;
+        when "max" do return max reduce A;
+        when "minloc" do return minloc reduce zip (A.domain, A);
+        when "maxloc" do return maxloc reduce zip (A.domain, A);
+        otherwise do compilerError("Unknown reduction operation: ", op);
+      }
+    }
+    else {
+      compilerAssert(CHPL_GPU=="nvidia");
+    }
+
+
+    proc chplTypeToCTypeName(type t) param {
+      select t {
+        when int(8)   do return "int8_t";
+        when int(16)  do return "int16_t";
+        when int(32)  do return "int32_t";
+        when int(64)  do return "int64_t";
+        when uint(8)  do return "uint8_t";
+        when uint(16) do return "uint16_t";
+        when uint(32) do return "uint32_t";
+        when uint(64) do return "uint64_t";
+        when real(32) do return "float";
+        when real(64) do return "double";
+        otherwise do
+          compilerError("Arrays with ", t:string, " elements cannot be reduced");
+      }
+      return "unknown";
+    }
+
+    proc getExternFuncName(param op: string, type t) param: string {
+      return "chpl_gpu_"+op+"_reduce_"+chplTypeToCTypeName(t);
+    }
+
+    proc isValReduce(param op) param {
+      return op=="sum" || op=="min" || op=="max";
+    }
+
+    proc isValIdxReduce(param op) param {
+      return op=="minloc" || op=="maxloc";
+    }
+
+    inline proc subReduceValIdx(param op, const baseOffset, ref accum, val) {
+      // do some type checking to be safe
+      compilerAssert(isTupleValue(val));
+      if isTupleValue(accum) {
+        compilerAssert(isValIdxReduce(op));
+        compilerAssert(val[1].type == accum[1].type);
+
+      }
+      else {
+        compilerAssert(isValReduce(op));
+        compilerAssert(val[1].type == accum.type);
+      }
+
+      select op {
+        when "sum" do accum += val[1];
+        when "min" do accum = min(accum, val[1]);
+        when "max" do accum = max(accum, val[1]);
+        when "minloc" do
+          if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
+        when "maxloc" do
+          if accum[1] < val[1] then accum = (val[0]+baseOffset, val[1]);
+        otherwise do compilerError("Unknown reduction operation: ", op);
+      }
+    }
+
+    iter offsetsThatCanFitIn32Bits(size: int) {
+      // Engin: I've tried to get max(int(32)) to work as this bug is about CUB
+      // using `int` as the size in the interface. However, getting close to
+      // max(int(32)) also triggers the bug. So, I am choosing this as a
+      // round/safe value for the time being.
+      param chunkSize = 2_000_000_000;
+
+      use Math only divCeil;
+      const numChunks = divCeil(size, chunkSize);
+      const standardChunkSize = divCeil(size, numChunks);
+
+      if gpuDebugReduce then
+        writeln("Will use ", numChunks, " chunks of size ", standardChunkSize);
+
+      foreach chunk in 0..<numChunks {
+        const start = chunk*standardChunkSize;
+        const curChunkSize = if start+standardChunkSize <= size
+                               then standardChunkSize
+                               else size-start;
+        if gpuDebugReduce then
+          writef("Chunk %i: (start=%i, curChunkSize=%i) ", chunk, start,
+                 curChunkSize);
+
+        yield (start, curChunkSize);
+      }
+    }
+
+    use CTypes;
+
+    // find the extern function we'll use
+    param externFunc = getExternFuncName(op, t);
+    extern externFunc proc reduce_fn(data, size, ref val, ref idx);
+
+    // initialize the return value
+    var ret;
+    if isValReduce(op) {
+      var retTmp: t;
+      if op == "min" then retTmp = max(t);
+      else if op == "max" then retTmp = min(t);
+      ret = retTmp;
+    }
+    else if isValIdxReduce(op) {
+      var retTmp: (int, t);
+      if op == "minloc" then retTmp[1] = max(t);
+      else if op == "maxloc" then retTmp[1] = min(t);
+      ret = retTmp;
+    }
+    else {
+      compilerError("Unknown reduction operation: ", op);
+      ret = 0;
+    }
+
+    // perform the reduction
+    const basePtr = c_ptrToConst(A);
+    for (offset,size) in offsetsThatCanFitIn32Bits(A.size) {
+      var curIdx: int(32) = -1; // should remain -1 for sum, min, max
+      var curVal: t;
+      reduce_fn(basePtr+offset, size, curVal, curIdx);
+      subReduceValIdx(op, offset, ret, (curIdx, curVal));
+      if gpuDebugReduce then
+        writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
+    }
+
+    if isValIdxReduce(op) then
+      ret[0] += A.domain.first;
+
+    return ret;
+  }
+
+  /*
+    Add all elements of an array together on the GPU (that is, perform a
+    sum-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuSumReduce(Arr)); // 15
+       }
+  */
+  inline proc gpuSumReduce(const ref A: [] ?t) do return doGpuReduce("sum", A);
+
+  /*
+    Return the minimum element of an array on the GPU (that is, perform a
+    min-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMinReduce(Arr)); // 1
+       }
+  */
+  inline proc gpuMinReduce(const ref A: [] ?t) do return doGpuReduce("min", A);
+
+  /*
+    Return the maximum element of an array on the GPU (that is, perform a
+    max-reduction). The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop. Only arrays with int, uint,
+    and real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMaxReduce(Arr)); // 5
+       }
+  */
+  inline proc gpuMaxReduce(const ref A: [] ?t) do return doGpuReduce("max", A);
+
+  /*
+    For an array on the GPU, return a tuple with the index and the value of the
+    minimum element (that is, perform a minloc-reduction). If there are multiple
+    elements with the same minimum value, the index of the first one is
+    returned. The array must be in GPU-accessible memory and the function must
+    be called from outside a GPU-eligible loop.  Only arrays with int, uint, and
+    real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMinLocReduce(Arr)); // (2, 1). Note that Arr[2]==1.
+       }
+  */
+  inline proc gpuMinLocReduce(const ref A: [] ?t) do return doGpuReduce("minloc", A);
+
+  /*
+    For an array on the GPU, return a tuple with the index and the value of the
+    maximum element (that is, perform a maxloc-reduction). If there are multiple
+    elements with the same maximum value, the index of the first one is
+    returned. The array must be in GPU-accessible memory and the function must
+    be called from outside a GPU-eligible loop.  Only arrays with int, uint, and
+    real types are supported. A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         writeln(gpuMaxLocReduce(Arr)); // (3, 5). Note that Arr[3]==5.
+       }
+  */
+  inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
+
 }
