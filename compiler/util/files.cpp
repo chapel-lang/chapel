@@ -196,7 +196,8 @@ void restoreDriverTmpMultiline(
 
   std::string restoredString;
   std::string errorOutString;
-  if (!chpl::readfile(tmpFilePath, restoredString, errorOutString)) {
+  if (!chpl::readfile(genIntermediateFilename(tmpFilePath), restoredString,
+                      errorOutString)) {
     INT_FATAL("Error restoring from tmp file: %s", errorOutString.c_str());
   }
 
