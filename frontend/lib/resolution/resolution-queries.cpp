@@ -1405,7 +1405,7 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
 }
 
 static bool isCallInfoForInitializer(const CallInfo& ci) {
-  if (ci.name() == USTR("init"))
+  if (ci.name() == USTR("init") || ci.name() == USTR("init="))
     if (ci.isMethodCall())
       return true;
   return false;
@@ -1413,7 +1413,8 @@ static bool isCallInfoForInitializer(const CallInfo& ci) {
 
 // TODO: Move these to the 'InitResolver' visitor.
 static bool isTfsForInitializer(const TypedFnSignature* tfs) {
-  if (tfs->untyped()->name() == USTR("init"))
+  if (tfs->untyped()->name() == USTR("init") ||
+      tfs->untyped()->name() == USTR("init="))
     if (tfs->untyped()->isMethod())
       return true;
   return false;
@@ -2301,7 +2302,7 @@ doIsCandidateApplicableInitial(Context* context,
 
   CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
 
-  if (ci.isMethodCall() && ci.name() == "init") {
+  if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
     // TODO: test when record has defaults for type/param fields
     auto recv = ci.calledType();
     auto fn = parsing::idToAst(context, candidateId)->toFunction();
