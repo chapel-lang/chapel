@@ -254,31 +254,6 @@ module SharedObject {
     this.chpl_pn = pn;
   }
 
-  // Initialize generic 'shared' var-decl from owned:
-  //   var s : shared = ownedThing;
-  @chpldoc.nodoc
-  @deprecated(notes="assigning owned class to shared class is deprecated.")
-  proc _shared.init=(pragma "nil from arg" in take: owned) {
-    var p = take.release();
-
-    this.chpl_t = if this.type.chpl_t != ?
-                  then this.type.chpl_t
-                  else _to_borrowed(p.type);
-
-    var rc:unmanaged ReferenceCount? = nil;
-
-    if p != nil then
-      rc = new unmanaged ReferenceCount();
-
-    this.chpl_p = p;
-    this.chpl_pn = rc;
-
-    init this;
-
-    if isNonNilableClass(this.type) && isNilableClass(take) then
-      compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
-  }
-
   /*
     Copy-initializer. Creates a new :type:`shared`
     that refers to the same class instance as `src`.
@@ -436,20 +411,6 @@ module SharedObject {
     lhs.chpl_pn = chpl_pn_tmp;
   }
 
-  /*
-     Set a :type:`shared` from a :type:`~OwnedObject.owned`.
-     Deletes the object managed by ``lhs`` if there are
-     no other :type:`shared` referring to it.
-     On return, ``lhs`` will refer to the object previously
-     managed by ``rhs``, and ``rhs`` will refer to `nil`.
-   */
-  @deprecated(notes="assignment from an owned class to a shared class is deprecated")
-  operator =(ref lhs:_shared, in rhs:owned)
-    where ! (isNonNilableClass(lhs) && isNilableClass(rhs))
-  {
-    lhs = shared.adopt(owned.release(rhs));
-  }
-
   @chpldoc.nodoc
   operator =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
   {
@@ -594,25 +555,6 @@ module SharedObject {
 
     var tmp:t;
     return tmp;
-  }
-
-  // cast from owned to shared
-  @deprecated("casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead")
-  inline operator :(pragma "nil from arg" pragma "leaves arg nil" in x:owned, type t:_shared) {
-    if t.chpl_t != ? && t.chpl_t != x.chpl_t then
-      compilerError("Cannot change class type in conversion from '",
-                    x.type:string, "' to '", t:string, "'");
-
-    var p = owned.release(x);
-    var rc: unmanaged ReferenceCount? = nil;
-    if p != nil then
-      rc = new unmanaged ReferenceCount();
-
-    var tmp: shared t.chpl_t?;
-    tmp.chpl_p = p;
-    tmp.chpl_pn = rc;
-
-    return try! tmp:shared t.chpl_t;
   }
 
   pragma "always propagate line file info"

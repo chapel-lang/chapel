@@ -1,2 +1,1 @@
-owned-to-shared-cast-nonnil-to-nilable.chpl:6: warning: casting from an 'owned' to 'shared' has been deprecated - please use the 'adopt'/'release' interface instead
-owned-to-shared-cast-nonnil-to-nilable.chpl:6: error: Cannot change class type in conversion from 'owned MyClass' to 'shared MyClass?'
+owned-to-shared-cast-nonnil-to-nilable.chpl:6: error: illegal cast from owned MyClass to shared MyClass?
