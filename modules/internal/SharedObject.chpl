@@ -254,6 +254,13 @@ module SharedObject {
     this.chpl_pn = pn;
   }
 
+@chpldoc.nodoc
+proc _shared.init=(pragma "nil from arg" in take: owned) {
+  compilerError("cannot initialize '", this.type:string, "' from a '", take.type:string, "'");
+  this.chpl_t = take.chpl_t;
+  this.chpl_p = nil;
+}
+
   /*
     Copy-initializer. Creates a new :type:`shared`
     that refers to the same class instance as `src`.
@@ -410,6 +417,10 @@ module SharedObject {
     lhs.chpl_p = chpl_p_tmp;
     lhs.chpl_pn = chpl_pn_tmp;
   }
+
+ @chpldoc.nodoc
+ operator =(ref lhs:_shared, in rhs:owned)
+  do compilerError("cannot assign '", rhs.type:string, "' to a '", lhs.type:string, "'");
 
   @chpldoc.nodoc
   operator =(pragma "leaves arg nil" ref lhs:shared, rhs:_nilType)
