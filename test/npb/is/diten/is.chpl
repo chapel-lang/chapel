@@ -1,4 +1,4 @@
-use Random;
+use NPBRand;
 use Time;
 use Math;
 
@@ -268,4 +268,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

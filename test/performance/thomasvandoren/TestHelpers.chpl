@@ -1,10 +1,10 @@
 /* Test helpers... */
 
-public use Random;
+public use NPBRand;
 public use Time;
 
 // random seed for arrays
-config const randSeed = SeedGenerator.oddCurrentTime;
+config const randSeed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
 
 // Control output.
 config const printC = true,
@@ -14,7 +14,7 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = createRandomStream(eltType=real, seed=randSeed, algorithm=RNG.NPB),
+var randStream = new NPBRandomStream(eltType=real, seed=randSeed),
   timer: stopwatch;
 
 const inner = 1..5 * scalingFactor,

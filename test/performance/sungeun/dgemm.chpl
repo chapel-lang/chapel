@@ -6,7 +6,7 @@ config const printOutput = true;
 config const printTiming = false;
 type indexType = int;
 
-use Random, Time;
+use NPBRand, Time;
 
 proc dgemm(p: indexType,       // number of rows in A
           q: indexType,       // number of cols in A, number of rows in B
@@ -34,7 +34,7 @@ proc dgemm_local(p: indexType,       // number of rows in A
   var B: [1..q,1..r] real = 1.0;
   var C: [1..p,1..r] real = 1.0;
   if initialize then
-    fillRandom(A, 31415, algorithm=RNG.NPB);
+    fillRandom(A, 31415);
 
   A = A * 2.0 - 1.0;
   // Calculate (i,j) using a dot product of a row of A and a column of B.

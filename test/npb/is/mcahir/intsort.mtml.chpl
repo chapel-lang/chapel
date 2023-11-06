@@ -40,7 +40,7 @@ config const printTime    = false;	 // turn off for test verification
 config const printNumLocales = true;     // print the number of locales
 
 // Standard modules
-use Time, Random, BlockDist, BlockCycDist;
+use Time, NPBRand, BlockDist, BlockCycDist;
 enum ISDistType { block, blockcyclic };
 config param distType = ISDistType.block;
 

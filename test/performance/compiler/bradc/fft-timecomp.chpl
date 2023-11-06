@@ -1,4 +1,4 @@
-use Math, BitOps, Random, Time;
+use Math, BitOps, NPBRand, Time;
 
 use HPCCProblemSize;
 
@@ -16,7 +16,7 @@ config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
 
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+             seed = if useRandomSeed then (timeSinceEpoch().totalSeconds()*2_000_000+1):int else 314159265;
 
 config const printParams = true,
              printArrays = false,
@@ -56,7 +56,7 @@ proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed, algorithm=RNG.NPB);
+  fillRandom(z, seed);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

@@ -34,6 +34,7 @@ proc main() {
 }
 
 
+
 //
 // Initialize vectors B and C using a random stream of values
 //

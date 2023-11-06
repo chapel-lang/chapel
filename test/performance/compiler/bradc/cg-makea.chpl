@@ -1,6 +1,6 @@
 module CGMakeA {
 
-  use Random, Sort;
+  use NPBRand, Sort;
 
   config const rcond = 0.1;
 
