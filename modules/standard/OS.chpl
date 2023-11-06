@@ -838,7 +838,7 @@ module OS {
     /*
       Indicates which of the specificed file descriptors is ready for reading
       or writing, or has an error condition pending. If no file descriptors are
-      ready, the procoedure blocks until the ``timeout``.
+      ready, the procedure blocks until the ``timeout``.
     */
     extern 'select' proc select_posix(nfds:c_int,
                                       readfds:c_ptr(fd_set),

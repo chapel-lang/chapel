@@ -26,7 +26,8 @@ the conventional operations on primitive fixed length integers.
 
 The current implementation is based on the low-level types and
 functions defined in the GMP module i.e. it is implemented using the
-GNU Multiple Precision Integer Arithmetic library (GMP). More specifically, :type:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
+GNU Multiple Precision Integer Arithmetic library (GMP). More specifically,
+:type:`bigint` wraps the GMP type :type:`~GMP.mpz_t`.
 
 The primary benefits of ``bigint`` over ``mpz_t`` are
 

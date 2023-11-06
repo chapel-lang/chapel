@@ -242,7 +242,7 @@ module CTypes {
     param size;
 
     /*
-      Default-initializes a :type:`c_array`, where each element gets the default value of ` eltType``.
+      Default-initializes a :type:`c_array`, where each element gets the default value of ``eltType``.
     */
     proc init(type eltType, param size) {
       this.eltType = eltType;
@@ -360,6 +360,7 @@ module CTypes {
       lhs[i] = rhs[i];
     }
   }
+
   /*
     Get a pointer to the first element in ``rhs``, essentially decaying the :type:`c_array` to a :type:`c_ptr`.
   */

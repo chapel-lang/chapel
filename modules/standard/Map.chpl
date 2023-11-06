@@ -18,8 +18,10 @@
  * limitations under the License.
  */
 
-/* This module contains the implementation of the ``map`` type which is a
-   container that stores key-value associations.
+/* Provides Chapel's standard ``map`` type for key-value storage.
+
+  This module contains the implementation of the ``map`` type which is a
+  container that stores key-value associations.
 */
 module Map {
   import ChapelLocks;
@@ -64,7 +66,6 @@ module Map {
     }
   }
 
-  // empty doc, the module docstring serves for this
   /*
     Chapel's standard ``map`` type for key-value storage.
 
