@@ -64,11 +64,11 @@ template <typename InputMap>
 llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(
     const InputMap& varMap, const char* chplHome,
     std::string* printchplenvOutput) {
-  std::string* usablePrintchplenvOutput;
+  std::string usablePrintchplenvOutput;
 
   if (printchplenvOutput && !printchplenvOutput->empty()) {
     // Just re-use passed-in command output
-    usablePrintchplenvOutput = printchplenvOutput;
+    usablePrintchplenvOutput = *printchplenvOutput;
   } else {
     // Construct and run printchplenv command
     std::string command;
@@ -88,19 +88,19 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(
       return commandOutput.getError();
     }
 
-    usablePrintchplenvOutput = &commandOutput.get();
+    usablePrintchplenvOutput = commandOutput.get();
 
     // Save copy of command output if out-parameter was supplied
     if (printchplenvOutput) {
       assert(printchplenvOutput->empty());
       // This is intentionally copied since parseChplEnv destroys the input
-      *printchplenvOutput = *usablePrintchplenvOutput;
+      *printchplenvOutput = usablePrintchplenvOutput;
     }
   }
 
   // parse command output into map
   ChplEnvMap result;
-  parseChplEnv(*usablePrintchplenvOutput, result);
+  parseChplEnv(usablePrintchplenvOutput, result);
   return result;
 }
 
