@@ -3690,7 +3690,12 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
          implicitReceiver.type() != nullptr &&
          // Assuming ci.name().isEmpty()==true implies a primitive call.
          // TODO: Add some kind of 'isPrimitive()' to CallInfo
-         !ci.name().isEmpty();
+         !ci.name().isEmpty() &&
+         ci.name() != "?" &&
+         ci.name() != "owned" &&
+         ci.name() != "shared" &&
+         ci.name() != "borrowed" &&
+         ci.name() != "unmanaged";
 }
 
 CallResolutionResult resolveCall(Context* context,
