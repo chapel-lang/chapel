@@ -2516,7 +2516,9 @@ static const Type* getManagedClassType(Context* context,
     t = ci.actual(0).type().type();
 
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
-    context->error(astForErr, "invalid class type construction");
+    if (t != nullptr && !t->isUnknownType()) {
+      context->error(astForErr, "invalid class type construction");
+    }
     return ErroneousType::get(context);
   }
 
