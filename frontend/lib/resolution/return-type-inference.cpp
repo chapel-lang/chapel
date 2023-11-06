@@ -889,7 +889,8 @@ static bool helpComputeReturnType(Context* context,
     }
 
     // if there are no returns with a value, use void return type
-    if (fnAstReturnsNonVoid(context, ast->id()) == false) {
+    if (fn->linkage() != Decl::EXTERN &&
+        fnAstReturnsNonVoid(context, ast->id()) == false) {
       result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
       return true;
     }
@@ -1096,9 +1097,11 @@ void computeReturnType(Resolver& resolver) {
     }
 
     // infer the return type
-    auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
-    v.process(fn->body(), resolver.byPostorder);
-    resolver.returnType = v.returnedType();
+    if (fn->linkage() != Decl::EXTERN) {
+      auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+      v.process(fn->body(), resolver.byPostorder);
+      resolver.returnType = v.returnedType();
+    }
   }
 }
 
