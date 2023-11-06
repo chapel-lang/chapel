@@ -47,6 +47,8 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <sstream>
+#include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <string>
@@ -192,16 +194,13 @@ void restoreDriverTmp(const char* tmpFilePath,
 void restoreDriverTmpMultiline(
     const char* tmpFilePath,
     std::function<void(const char*)> restoreSavedString) {
-  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+  std::ostringstream os;
 
-  std::string restoredString;
-  std::string errorOutString;
-  if (!chpl::readfile(genIntermediateFilename(tmpFilePath), restoredString,
-                      errorOutString)) {
-    INT_FATAL("Error restoring from tmp file: %s", errorOutString.c_str());
-  }
+  // Just call line-by-line restore for simplicity, adding newlines back in.
+  restoreDriverTmp(tmpFilePath,
+                   [&os](const char* line) { os << line << "\n"; });
 
-  // invoke restoring function
+  std::string restoredString = os.str();
   restoreSavedString(restoredString.c_str());
 }
 
