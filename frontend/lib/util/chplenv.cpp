@@ -61,14 +61,14 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
 
 // Get results of printchplenv script, passing currently known CHPL_vars as well
 template <typename InputMap>
-llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(
-    const InputMap& varMap, const char* chplHome,
-    std::string* printchplenvOutput) {
-  std::string usablePrintchplenvOutput;
+llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
+                                         const char* chplHome,
+                                         std::string* printchplenvOutput) {
+  ChplEnvMap result;
 
   if (printchplenvOutput && !printchplenvOutput->empty()) {
     // Just re-use passed-in command output
-    usablePrintchplenvOutput = *printchplenvOutput;
+    parseChplEnv(*printchplenvOutput, result);
   } else {
     // Construct and run printchplenv command
     std::string command;
@@ -81,26 +81,23 @@ llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(
     command += std::string(chplHome) +
                "/util/printchplenv --all --internal --no-tidy --simple";
 
-    // Run command and extract results
+    // Run command
     auto commandOutput = getCommandOutput(command);
     if (!commandOutput) {
       // forward error code
       return commandOutput.getError();
     }
 
-    usablePrintchplenvOutput = commandOutput.get();
-
     // Save copy of command output if out-parameter was supplied
     if (printchplenvOutput) {
       assert(printchplenvOutput->empty());
       // This is intentionally copied since parseChplEnv destroys the input
-      *printchplenvOutput = usablePrintchplenvOutput;
+      *printchplenvOutput = commandOutput.get();
     }
+
+    parseChplEnv(commandOutput.get(), result);
   }
 
-  // parse command output into map
-  ChplEnvMap result;
-  parseChplEnv(usablePrintchplenvOutput, result);
   return result;
 }
 
