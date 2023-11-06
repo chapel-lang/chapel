@@ -142,11 +142,12 @@ void checkDriverTmp() {
       "attempted to save info to tmp dir before it is set up for driver use");
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+                   bool appendNewline) {
   checkDriverTmp();
 
   fileinfo* file = openTmpFile(tmpFilePath, "a");
-  fprintf(file->fptr, "%s\n", stringToSave);
+  fprintf(file->fptr, "%s%s", stringToSave, (appendNewline ? "\n" : ""));
   closefile(file);
 }
 

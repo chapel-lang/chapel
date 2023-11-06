@@ -59,28 +59,53 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
   }
 }
 
+// Get results of printchplenv script, passing currently known CHPL_vars as well
 template <typename InputMap>
 llvm::ErrorOr<ChplEnvMap>
 getChplEnvImpl(const InputMap& varMap,
            const char* chplHome) {
-  // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command;
+  std::string printchplenvOutput;
+  static const char* outputTmpFilename = "printchplenvOutput.tmp";
 
-  // Pass known variables in varMap into printchplenv by prepending to command
-  for (auto& ii : varMap)
-    command += ii.first + "=" + ii.second + " ";
+  if (fDriverDoMonolithic || !driverInSubInvocation) {
+    // In monolithic mode, or initial invocation of driver; run printchplenv,
+    // and save results to tmp file if in driver mode.
 
-  command += "CHPLENV_SKIP_HOST=true ";
-  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
-  command += std::string(chplHome) + "/util/printchplenv --all --internal --no-tidy --simple";
+    // Construct printchplenv command to run
+    std::string command;
+    // Pass known variables in varMap into printchplenv by prepending to command
+    for (auto& ii : varMap) {
+      command += ii.first + "=" + ii.second + " ";
+    }
+    command += "CHPLENV_SKIP_HOST=true ";
+    command += "CHPLENV_SUPPRESS_WARNINGS=true ";
+    command += std::string(chplHome) +
+               "/util/printchplenv --all --internal --no-tidy --simple";
 
-  auto commandOutput = getCommandOutput(command);
-  if (!commandOutput) {
-    // forward error code
-    return commandOutput.getError();
+    // Run command and extract results
+    auto commandOutput = getCommandOutput(command);
+    if (!commandOutput) {
+      // forward error code
+      return commandOutput.getError();
+    } else {
+      printchplenvOutput = commandOutput.get();
+    }
+    if (!fDriverDoMonolithic) {
+      assert(driverInSubInvocation);
+      // Save to tmp for use in driver sub-invocations
+      saveDriverTmp(outputTmpFilename, printchplenvOutput.c_str());
+    }
+  } else {
+    // In a driver sub-invocation; restore printchplenv results from tmp file.
+    restoreDriverTmpMultiline(
+        outputTmpFilename, [&printchplenvOutput](const char* restoredOutput) {
+          printchplenvOutput = restoredOutput;
+        });
   }
+
+  // parse command output into map
   ChplEnvMap result;
-  parseChplEnv(commandOutput.get(), result);
+  parseChplEnv(printchplenvOutput, result);
   return result;
 }
 
