@@ -1122,9 +1122,12 @@ module OS {
 
   */
   class SystemError : Error {
+    /**/
     var err:     errorCode;
+    /**/
     var details: string;
 
+    /**/
     proc init(err: errorCode, details: string = "") {
       this.err     = err;
       this.details = details;
@@ -1250,6 +1253,7 @@ module OS {
      :const:`~POSIX.EWOULDBLOCK`, and :const:`~POSIX.EINPROGRESS`.
   */
   class BlockingIoError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EWOULDBLOCK:errorCode) {
       super.init(err, details);
     }
@@ -1260,6 +1264,7 @@ module OS {
      corresponding to :const:`~POSIX.ECHILD`.
   */
   class ChildProcessError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECHILD:errorCode) {
       super.init(err, details);
     }
@@ -1270,6 +1275,7 @@ module OS {
      serves as the base class for all system errors regarding connections.
   */
   class ConnectionError : SystemError {
+    @chpldoc.nodoc
     proc init(err: errorCode, details: string = "") {
       super.init(err, details);
     }
@@ -1280,6 +1286,7 @@ module OS {
      corresponding to :const:`~POSIX.EPIPE`
   */
   class BrokenPipeError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
       super.init(err, details);
     }
@@ -1290,6 +1297,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNABORTED`.
   */
   class ConnectionAbortedError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNABORTED:errorCode) {
       super.init(err, details);
     }
@@ -1300,6 +1308,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNREFUSED`.
   */
   class ConnectionRefusedError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNREFUSED:errorCode) {
       super.init(err, details);
     }
@@ -1310,6 +1319,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNRESET`.
   */
   class ConnectionResetError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNRESET:errorCode) {
       super.init(err, details);
     }
@@ -1320,6 +1330,7 @@ module OS {
      corresponding to :const:`~POSIX.EEXIST`.
   */
   class FileExistsError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EEXIST:errorCode) {
       super.init(err, details);
     }
@@ -1330,6 +1341,7 @@ module OS {
      corresponding to :const:`~POSIX.ENOENT`.
   */
   class FileNotFoundError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ENOENT:errorCode) {
       super.init(err, details);
     }
@@ -1340,6 +1352,7 @@ module OS {
      corresponding to :const:`~POSIX.EINTR`.
   */
   class InterruptedError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EINTR:errorCode) {
       super.init(err, details);
     }
@@ -1350,6 +1363,7 @@ module OS {
      corresponding to :const:`~POSIX.EISDIR`.
   */
   class IsADirectoryError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EISDIR:errorCode) {
       super.init(err, details);
     }
@@ -1360,6 +1374,7 @@ module OS {
      corresponding to :const:`~POSIX.ENOTDIR`.
   */
   class NotADirectoryError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ENOTDIR:errorCode) {
       super.init(err, details);
     }
@@ -1370,6 +1385,7 @@ module OS {
      corresponding to :const:`~POSIX.EACCES` and :const:`~POSIX.EPERM`.
   */
   class PermissionError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EPERM:errorCode) {
       super.init(err, details);
     }
@@ -1380,6 +1396,7 @@ module OS {
      corresponding to :const:`~POSIX.ESRCH`.
   */
   class ProcessLookupError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ESRCH:errorCode) {
       super.init(err, details);
     }
@@ -1390,6 +1407,7 @@ module OS {
      to :const:`~POSIX.ETIMEDOUT`.
   */
   class TimeoutError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ETIMEDOUT:errorCode) {
       super.init(err, details);
     }
@@ -1400,6 +1418,7 @@ module OS {
      EIO.
   */
   class IoError : SystemError {
+    @chpldoc.nodoc
     proc init(err: errorCode = EIO, details: string = "") {
       super.init(err, details);
     }
@@ -1410,13 +1429,16 @@ module OS {
      encountering end-of-file.
   */
   class EofError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1452,13 +1474,16 @@ module OS {
      the valid range.
   */
   class UnexpectedEofError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1489,13 +1514,16 @@ module OS {
      to incorrectly-formatted input.
   */
   class BadFormatError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1526,10 +1554,12 @@ module OS {
     indicating that an IO operation required more storage than was provided
   */
   class InsufficientCapacityError : IoError {
+    @chpldoc.nodoc
     proc init(details: string = "") {
       super.init(ERANGE: errorCode, details);
     }
 
+    @chpldoc.nodoc
     override proc message() {
       return
         if details.isEmpty() then

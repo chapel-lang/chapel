@@ -1019,8 +1019,10 @@ module Map {
    state of the `map`. An example of this is calling `map.getValue()`.
    */
   class KeyNotFoundError : Error {
+    @chpldoc.nodoc
     proc init() {}
 
+    @chpldoc.nodoc
     proc init(k) {
       super.init(try! "key '%?' not found".format(k));
     }
