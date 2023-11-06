@@ -61,17 +61,16 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
 
 // Get results of printchplenv script, passing currently known CHPL_vars as well
 template <typename InputMap>
-llvm::ErrorOr<ChplEnvMap>
-getChplEnvImpl(const InputMap& varMap,
-           const char* chplHome) {
-  std::string printchplenvOutput;
-  static const char* outputTmpFilename = "printchplenvOutput.tmp";
+llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(
+    const InputMap& varMap, const char* chplHome,
+    std::string* printchplenvOutput) {
+  std::string* usablePrintchplenvOutput;
 
-  if (fDriverDoMonolithic || !driverInSubInvocation) {
-    // In monolithic mode, or initial invocation of driver; run printchplenv,
-    // and save results to tmp file if in driver mode.
-
-    // Construct printchplenv command to run
+  if (printchplenvOutput && !printchplenvOutput->empty()) {
+    // Just re-use passed-in command output
+    usablePrintchplenvOutput = printchplenvOutput;
+  } else {
+    // Construct and run printchplenv command
     std::string command;
     // Pass known variables in varMap into printchplenv by prepending to command
     for (auto& ii : varMap) {
@@ -87,38 +86,34 @@ getChplEnvImpl(const InputMap& varMap,
     if (!commandOutput) {
       // forward error code
       return commandOutput.getError();
-    } else {
-      printchplenvOutput = commandOutput.get();
     }
-    if (!fDriverDoMonolithic) {
-      assert(driverInSubInvocation);
-      // Save to tmp for use in driver sub-invocations
-      saveDriverTmp(outputTmpFilename, printchplenvOutput.c_str());
+
+    usablePrintchplenvOutput = &commandOutput.get();
+
+    // Save copy of command output if out-parameter was supplied
+    if (printchplenvOutput) {
+      assert(printchplenvOutput->empty());
+      // This is intentionally copied since parseChplEnv destroys the input
+      *printchplenvOutput = *usablePrintchplenvOutput;
     }
-  } else {
-    // In a driver sub-invocation; restore printchplenv results from tmp file.
-    restoreDriverTmpMultiline(
-        outputTmpFilename, [&printchplenvOutput](const char* restoredOutput) {
-          printchplenvOutput = restoredOutput;
-        });
   }
 
   // parse command output into map
   ChplEnvMap result;
-  parseChplEnv(printchplenvOutput, result);
+  parseChplEnv(*usablePrintchplenvOutput, result);
   return result;
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome) {
-  return getChplEnvImpl(varMap, chplHome);
+           const char* chplHome, std::string* printchplenvOutput) {
+  return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome) {
-  return getChplEnvImpl(varMap, chplHome);
+           const char* chplHome, std::string* printchplenvOutput) {
+  return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 bool isMaybeChplHome(std::string path) {

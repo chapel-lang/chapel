@@ -189,6 +189,21 @@ void restoreDriverTmp(const char* tmpFilePath,
   closefile(tmpFile);
 }
 
+void restoreDriverTmpMultiline(
+    const char* tmpFilePath,
+    std::function<void(const char*)> restoreSavedString) {
+  assert(!fDriverDoMonolithic && "meant for use in driver mode only");
+
+  std::string restoredString;
+  std::string errorOutString;
+  if (!chpl::readfile(tmpFilePath, restoredString, errorOutString)) {
+    INT_FATAL("Error restoring from tmp file: %s", errorOutString.c_str());
+  }
+
+  // invoke restoring function
+  restoreSavedString(restoredString.c_str());
+}
+
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
       fDriverPhaseTwo &&

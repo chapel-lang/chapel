@@ -1626,8 +1626,32 @@ static void populateEnvMap() {
 
   envMapChplEnvInput = envMap;
 
-  // Call printchplenv and collect output into a map
-  auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
+  // Set up in-memory copy of printchplenv command output, to support driver
+  // mode save/restore from disk.
+  static const char* printchplenvOutputFilename = "printchplenvOutput.tmp";
+  std::string* printchplenvOutputPtr;
+  std::string printchplenvOutput;
+  if (!fDriverDoMonolithic) {
+    if (driverInSubInvocation) {
+      // This is a driver sub-invocation, so restore and use saved output.
+      restoreDriverTmpMultiline(
+          printchplenvOutputFilename,
+          [&printchplenvOutput](const char* restoredOutput) {
+            printchplenvOutput = restoredOutput;
+          });
+    }
+
+    // Set up this ptr as an input (for initial invocation) or output (for
+    // sub-invocation) parameter.
+    printchplenvOutputPtr = &printchplenvOutput;
+  } else {
+    // Monolithic mode, no need to capture output.
+    printchplenvOutputPtr = nullptr;
+  }
+
+  // Get printchplenv output and collect into a map
+  auto chplEnvResult =
+      chpl::getChplEnv(envMap, CHPL_HOME, printchplenvOutputPtr);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
       USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
@@ -1635,6 +1659,13 @@ static void populateEnvMap() {
     } else {
       USR_FATAL("failed to get environment settings");
     }
+  }
+
+  // If in initial driver invocation, save printchplenv command output to disk
+  // for use in sub-invocations.
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput.c_str(),
+                  /* appendNewline */ false);
   }
 
   // figure out if it's a Cray programing environment so we can infer
