@@ -641,7 +641,7 @@ module GPU
   proc gpuScan(ref gpuArr: [] uint){
     if gpuArr.size==0 then return;
     // Use a simple algorithm for small arrays
-    if gpuArr.size < 1024 {
+    if gpuArr.size <= 1024 {
       // The algorithms only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
       const size = roundToPowerof2(gpuArr.size);
@@ -677,12 +677,13 @@ module GPU
 
     // Allocate an accumulator array
     var gpuScanArr : [0..<numScanChunks] uint;
+    const low = gpuArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
 
     const ceil = gpuArr.domain.high;
     // In parallel: For each chunk we do an in lane serial scan
     @assertOnGpu
     foreach chunk in 0..<numScanChunks {
-      const start = chunk*scanChunkSize;
+      const start = low+chunk*scanChunkSize;
       var end = start+scanChunkSize-1;
       if end > ceil then end = ceil;
       gpuScanArr[chunk] = gpuArr[end]; // Save the last element before the scan overwrites it
@@ -695,10 +696,10 @@ module GPU
       gpuScan(gpuScanArr);
 
       @assertOnGpu
-      foreach i in 0..<gpuArr.size {
+      foreach i in gpuArr.domain {
         // In propagate the right values from scanArr
         // to complete the global scan
-        const offset : int = i / scanChunkSize;
+        const offset : int = (i-low) / scanChunkSize;
         gpuArr[i] += gpuScanArr[offset];
       }
   }
@@ -750,8 +751,10 @@ module GPU
     var offset = 1;
     while offset < arr.size {
         var arrBuffer = arr;
+        const low = arr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
         @assertOnGpu
-        foreach i in offset..<arr.size {
+        foreach idx in offset..<arr.size {
+          const i = idx + low;
           arr[i] = arrBuffer[i] + arrBuffer[i-offset];
         }
         offset = offset << 1;
@@ -759,10 +762,10 @@ module GPU
 
     // Change inclusive scan to exclusive
     var arrBuffer = arr;
-    foreach i in 1..<arr.size {
+    foreach i in arr.domain.low+1..arr.domain.high {
       arr[i] = arrBuffer[i-1];
     }
-    arr[0] = 0;
+    arr[arr.domain.low] = 0;
   }
 
   proc blellochScan(ref arr: [] uint){
@@ -777,27 +780,30 @@ module GPU
       halt("Blelloch Scan only works for arrays of size a power of two.");
     }
 
+
+    const low = arr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
     // Up-sweep
     var offset = 1;
     while offset < arr.size {
       var arrBuffer = arr;
+      const doubleOff = offset << 1;
       @assertOnGpu
       foreach idx in 0..<arr.size/(2*offset) {
-        const doubleOff = offset << 1;
-        const i = idx*doubleOff;
+        const i = idx*doubleOff + low;
         arr[i+doubleOff-1] = arrBuffer[i+offset-1] + arrBuffer[i+doubleOff-1];
       }
       offset = offset << 1;
     }
 
     // Down-sweep
-    arr[arr.size-1] = 0;
+    arr[arr.domain.high] = 0;
     offset = arr.size >> 1;
     while offset > 0 {
       var arrBuffer = arr;
       @assertOnGpu
       foreach idx in 0..<arr.size/(2*offset) {
-        const i = idx*2*offset;
+        const i = idx*2*offset+low;
         const t = arrBuffer[i+offset-1];
         arr[i+offset-1] = arrBuffer[i+2*offset-1];
         arr[i+2*offset-1] = arr[i+2*offset-1] + t;
