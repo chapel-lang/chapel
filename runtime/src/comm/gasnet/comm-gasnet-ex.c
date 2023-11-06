@@ -54,6 +54,10 @@
 #include <time.h>
 
 static gasnet_seginfo_t* seginfo_table = NULL;
+static gex_Client_t      myclient;
+static gex_EP_t          myep;
+static gex_TM_t          myteam;
+static gex_Segment_t     mysegment;
 
 // Gasnet AM handler arguments are only 32 bits, so here we have
 // functions to get the 2 arguments for a 64-bit pointer,
@@ -576,24 +580,24 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, ack0, ack1));
 }
 
-static gasnet_handlerentry_t ftable[] = {
-  {FORK,          AM_fork},
-  {FORK_SMALL,    AM_fork_small},
-  {FORK_LARGE,    AM_fork_large},
-  {FORK_NB,       AM_fork_nb},
-  {FORK_NB_SMALL, AM_fork_nb_small},
-  {FORK_NB_LARGE, AM_fork_nb_large},
-  {FORK_FAST,     AM_fork_fast},
-  {FORK_FAST_SMALL, AM_fork_fast_small},
-  {SIGNAL,        AM_signal},
-  {SIGNAL_LONG,   AM_signal_long},
-  {PRIV_BCAST,    AM_priv_bcast},
-  {PRIV_BCAST_LARGE, AM_priv_bcast_large},
-  {FREE,          AM_free},
-  {SHUTDOWN,      AM_shutdown},
-  {BCAST_SEGINFO, AM_bcast_seginfo},
-  {DO_REPLY_PUT,  AM_reply_put},
-  {DO_COPY_PAYLOAD, AM_copy_payload}
+static gex_AM_Entry_t ftable[] = {
+  {FORK,             AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
+  {FORK_SMALL,       AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
+  {FORK_LARGE,       AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
+  {FORK_NB,          AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
+  {FORK_NB_SMALL,    AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
+  {FORK_NB_LARGE,    AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
+  {FORK_FAST,        AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
+  {FORK_FAST_SMALL,  AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
+  {SIGNAL,           AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
+  {SIGNAL_LONG,      AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
+  {PRIV_BCAST,       AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
+  {PRIV_BCAST_LARGE, AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
+  {FREE,             AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
+  {SHUTDOWN,         AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
+  {BCAST_SEGINFO,    AM_bcast_seginfo,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_bcast_seginfo"    },
+  {DO_REPLY_PUT,     AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
+  {DO_COPY_PAYLOAD,  AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
 };
 
 //
@@ -686,6 +690,7 @@ int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
   return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
 }
 
+// TODO GEX could be scalable query to gasnet itself
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING
@@ -868,9 +873,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling();
 
-  assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "chapel", argc_p, argv_p, GEX_FLAG_USES_GASNET1));
 
-  gasnet_init(argc_p, argv_p);
   chpl_nodeID = gasnet_mynode();
   chpl_numNodes = gasnet_nodes();
 
@@ -881,14 +885,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 void chpl_comm_pre_mem_init(void) {
-  //  int status; // Some compilers complain about unused variable 'status'.
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, gasnet_getMaxLocalSegmentSize()));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, ftable, sizeof(ftable)/sizeof(gex_AM_Entry_t)));
 
-  GASNET_Safe(gasnet_attach(ftable,
-                            sizeof(ftable)/sizeof(gasnet_handlerentry_t),
-                            gasnet_getMaxLocalSegmentSize(),
-                            0));
-  // TODO (EJR: 03/03/16): we currently "leak" seginfo_table. We should
-  // probably free it on exit (but only for "clean" exits.)
   seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
