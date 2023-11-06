@@ -363,6 +363,7 @@ module List {
 
       :arg other: The iterator expression to initialize from.
     */
+    @chpldoc.nodoc
     proc init(other: _iteratorRecord) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -388,6 +389,7 @@ module List {
     */
     pragma "last resort"
     @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
+    @chpldoc.nodoc
     proc init(other: _iteratorRecord, param parSafe=false) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -495,6 +497,7 @@ module List {
 
       :arg other: The iterator expression to initialize from.
     */
+    @chpldoc.nodoc
     proc init=(other: _iteratorRecord) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -2136,18 +2139,46 @@ module List {
     return !(a == b);
   }
 
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in another list.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in an array.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by a range.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by an iterator expression.
+
+    See :proc:`~list.init=`
+  */
+  @chpldoc.nodoc
   operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;

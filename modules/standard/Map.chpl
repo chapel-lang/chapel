@@ -18,17 +18,10 @@
  * limitations under the License.
  */
 
-/* Chapel's standard 'map' type for key-value storage.
+/* Provides Chapel's standard ``map`` type for key-value storage.
 
-  This module contains the implementation of the map type which is a container
-  that stores key-value associations.
-
-  Maps are not parallel safe by default, but can be made parallel safe by
-  setting the param formal `parSafe` to true in any map constructor. When
-  constructed from another map, the new map will inherit the parallel safety
-  mode of its originating map. Note that the ``parSafe`` mode is currently
-  unstable and will eventually be replaced by a standalone parallel-safe map
-  type.
+  This module contains the implementation of the ``map`` type which is a
+  container that stores key-value associations.
 */
 module Map {
   import ChapelLocks;
@@ -73,6 +66,16 @@ module Map {
     }
   }
 
+  /*
+    Chapel's standard ``map`` type for key-value storage.
+
+    Maps are not parallel safe by default, but can be made parallel safe by
+    setting the param formal ``parSafe`` to true in any ``map`` constructor. When
+    constructed from another ``map``, the new ``map`` will inherit the parallel safety
+    mode of its originating map. Note that the ``parSafe`` mode is currently
+    unstable and will eventually be replaced by a standalone parallel-safe map
+    type.
+  */
   record map : serializable {
     /* Type of map keys. */
     type keyType;
@@ -359,6 +362,10 @@ module Map {
                       '`parSafe=true`', 2);
     }
 
+
+    // TODO (Jade 11/6/23): This doc comment should go on the `this` overload
+    // without `where` that is marked `throws`. However, there is a current
+    // limitation in chpldoc with return intents and `throws` (#23776)
     /*
       If the key exists in the map, get a reference to the value mapped
       to the given key. If the key does not exist in the map, the value
@@ -392,6 +399,7 @@ module Map {
       return table.table[slot].val;
     }
 
+    @chpldoc.nodoc
     proc ref this(k: keyType) ref throws {
       _warnForParSafeIndexing();
 
@@ -1016,8 +1024,10 @@ module Map {
    state of the `map`. An example of this is calling `map.getValue()`.
    */
   class KeyNotFoundError : Error {
+    @chpldoc.nodoc
     proc init() {}
 
+    @chpldoc.nodoc
     proc init(k) {
       super.init(try! "key '%?' not found".format(k));
     }
