@@ -662,7 +662,11 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     if (errPath || errGotPath) {
       // ignore the check if there were errors
     } else {
-      CHPL_ASSERT(realPath == realGotPath);
+      if (realPath != realGotPath) {
+        error(moduleID,
+              "Redefinition of module '%s' (the original was defined in '%s')",
+              moduleIdSymbolPath.c_str(), path.c_str());
+      }
     }
   #endif
 }
