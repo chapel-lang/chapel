@@ -318,7 +318,7 @@ CallInfo CallInfo::create(Context* context,
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
     } else {
-      CHPL_ASSERT(false && "Unexpected called expression");
+      CHPL_UNIMPL("CallInfo without a name");
     }
   }
 

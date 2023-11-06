@@ -63,5 +63,13 @@ void assertion(bool expr, const char* filename, const char* func,
   // assertions active and passed
 }
 
+void chpl_unimpl(const char* filename, const char* func, int lineno,
+                 const char* msg) {
+  std::string fname(filename);
+  auto front = fname.substr(fname.find("frontend"), std::string::npos);
+  printf("[%s:%d in %s] Unimplemented: %s\n", front.c_str(), lineno,
+         func, msg);
+};
+
 
 } // end namespace chpl

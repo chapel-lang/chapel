@@ -249,6 +249,9 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
         } else {
           kind = QualifiedType::FUNCTION;
         }
+      } else if (asttags::isInterface(tag)) {
+        //TODO: kind = QualifiedType::INTERFACE;
+        CHPL_UNIMPL("interfaces");
       } else {
         CHPL_ASSERT(false && "case not handled");
       }
