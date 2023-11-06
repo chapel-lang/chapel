@@ -935,29 +935,29 @@ module OS {
       /* Device. */
       var st_dev:dev_t;
       /* File serial number. */
-      var st_ino:ino_t;            
+      var st_ino:ino_t;
       /* File mode. */
-      var st_mode:mode_t;          
+      var st_mode:mode_t;
       /* Link count. */
-      var st_nlink:nlink_t;        
+      var st_nlink:nlink_t;
       /* User ID of the file's owner. */
-      var st_uid:uid_t;            
+      var st_uid:uid_t;
       /* Group ID of the file's group. */
-      var st_gid:gid_t;            
+      var st_gid:gid_t;
       /* Device number, if device. */
-      var st_rdev:dev_t;           
+      var st_rdev:dev_t;
       /* Size of file, in bytes. */
       var st_size:off_t;
       /* Last data access timestamp. */
-      var st_atim:struct_timespec; 
+      var st_atim:struct_timespec;
       /* Last data modification timestamp. */
-      var st_mtim:struct_timespec; 
+      var st_mtim:struct_timespec;
       /* Last file status change timestamp. */
       var st_ctim:struct_timespec;
       /* Optimal block size for I/O. */
       var st_blksize:blksize_t;
       /* Number 512-byte blocks allocated. */
-      var st_blocks:blkcnt_t;      
+      var st_blocks:blkcnt_t;
     }
 
     /* Changes the mode of a file. */
@@ -1015,19 +1015,19 @@ module OS {
       /* Seconds [0,60] (60 allows for leap seconds) */
       var tm_sec:c_int;
       /* Minutes [0,59] */
-      var tm_min:c_int;   
+      var tm_min:c_int;
       /* Hour [0,23] */
-      var tm_hour:c_int;  
+      var tm_hour:c_int;
       /* Day of month [1,31] */
-      var tm_mday:c_int;  
+      var tm_mday:c_int;
       /* Month of year [0,11] */
-      var tm_mon:c_int;   
+      var tm_mon:c_int;
       /* Years since 1900 */
-      var tm_year:c_int;  
+      var tm_year:c_int;
       /* Day of week [0,6] (Sunday =0) */
       var tm_wday:c_int;
       /* Day of year [0,365] */
-      var tm_yday:c_int;  
+      var tm_yday:c_int;
       /* Daylight Savings flag */
       var tm_isdst:c_int;
     };
