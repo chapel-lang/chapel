@@ -166,6 +166,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // TODO: update this to call a method on ArrayType to get the id or path
     } else if (r->id().symbolPath() == "ChapelArray._array") {
       ret = ArrayType::getGenericArrayType(context);
+    } else if (r->id().symbolPath() == "ChapelLocale._locale") {
+      ret = CompositeType::getLocaleType(context);
     } else {
       const RecordType* insnFromRec = nullptr;
       if (instantiatedFrom != nullptr) {
