@@ -379,50 +379,6 @@ module SharedObject {
     return new _shared(obj);
   }
 
-  // Issue a compiler error for illegal uses.
-  @chpldoc.nodoc
-  proc type _shared.create(source) {
-    compilerError("cannot create a 'shared' from ", source.type:string);
-  }
-
-  /*
-    Changes the memory management strategy of the argument from `owned`
-    to `shared`, taking over the ownership of the argument.
-    The result type preserves nilability of the argument type.
-    If the argument is non-nilable, it must be recognized by the compiler
-    as an expiring value.
-  */
-  @deprecated(notes="shared.create from an owned is deprecated - please use :proc:`shared.adopt` with an unmanaged object instead")
-  inline proc type _shared.create(pragma "nil from arg" in take: owned) {
-    return shared.adopt(owned.release(take));
-  }
-
-  /*
-    Creates a new `shared` class reference to the argument.
-    The result has the same type as the argument.
-  */
-  @deprecated(notes="shared.create from a shared is deprecated - please use assignment instead")
-  inline proc type _shared.create(pragma "nil from arg" in src: shared) {
-    return src;
-  }
-
-  /*
-    Starts managing the argument class instance `p`
-    using the `shared` memory management strategy.
-    The result type preserves nilability of the argument type.
-
-    It is an error to directly delete the class instance
-    after passing it to `shared.create()`.
-  */
-  pragma "unsafe"
-  @deprecated(notes="shared.create from an unmanaged is deprecated - please use :proc:`shared.adopt` instead")
-  inline proc type _shared.create(pragma "nil from arg" p : unmanaged) {
-    // 'result' may have a non-nilable type
-    var result: (p.type : shared);
-    result.retain(p);
-    return result;
-  }
-
   /*
     The deinitializer for :type:`shared` will destroy the class
     instance once there are no longer any copies of this
@@ -432,38 +388,6 @@ module SharedObject {
     if isClass(chpl_p) { // otherwise, let error happen on init call
       doClear();
     }
-  }
-
-  /*
-    Change the instance managed by this class to `newPtr`.
-    If this record was the last :type:`shared` managing a
-    non-nil instance, that instance will be deleted.
-  */
-  @deprecated(notes="shared.retain is deprecated - please use :proc:`shared.adopt` instead")
-  proc ref _shared.retain(pragma "nil from arg" newPtr:unmanaged) {
-    if !isCoercible(newPtr.type, chpl_t) then
-      compilerError("cannot retain '" + newPtr.type:string + "' " +
-                    "(expected '" + _to_unmanaged(chpl_t):string + "')");
-
-    doClear();
-    this.chpl_p = newPtr;
-    if newPtr != nil {
-      this.chpl_pn = new unmanaged ReferenceCount();
-    }
-  }
-
-  /*
-    Empty this :type:`shared` so that it stores `nil`.
-    Deletes the managed object if this :type:`shared` is the
-    last :type:`shared` managing that object.
-    Does not return a value.
-
-    Equivalent to ``shared.retain(nil)``.
-  */
-  pragma "leaves this nil"
-  @deprecated(notes="shared.clear is deprecated - please assign `nil` to the shared object instead")
-  proc ref _shared.clear() {
-    doClear();
   }
 
   /*
