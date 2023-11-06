@@ -22,7 +22,7 @@
 #define _FOR_LOOP_H_
 
 #include "LoopStmt.h"
-#include "ForallStmt.h" // TODO **AIS** CRUFT: Put ShadowVarLoopInterface in a better shared header
+#include "ForallStmt.h"
 
 // A ForLoop represents the for-statement language construct as described in
 // the specification (see "The For Loop" section in the chapter on "Statements").

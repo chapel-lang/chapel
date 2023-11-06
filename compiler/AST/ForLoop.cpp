@@ -303,9 +303,6 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
     while (Expr* src = intents->argList.head)
       loop->shadowVariables().insertAtTail(src->remove());
   }
-  /*if(isForeach) {
-    loop->byrefVars = intents;
-  }*/
 
   loop->insertAtTail(new DefExpr(continueLabel));
 
