@@ -1231,15 +1231,17 @@ module OS {
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create
      different subtypes based on the ``errorCode`` that is passed.
-
   */
   class SystemError : Error {
-    /**/
+    @chpldoc.nodoc
     var err:     errorCode;
-    /**/
+    @chpldoc.nodoc
     var details: string;
 
-    /**/
+    /*
+      Construct a :class:`SystemError` with a specific error code and optional
+      extra detais.
+    */
     proc init(err: errorCode, details: string = "") {
       this.err     = err;
       this.details = details;
