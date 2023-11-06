@@ -745,7 +745,7 @@ module OS {
     extern const O_APPEND:c_int;
     /*
       Sets the ``FD_CLOEXEC`` flag of new descriptor to close it after
-      execution of an ``exec` function.
+      execution of an ``exec`` function.
     */
     extern const O_CLOEXEC:c_int;
     /* Create file if it does not exist. */
@@ -1034,12 +1034,20 @@ module OS {
 
     /* Get the date and time as a string. */
     extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);
-    /* Get the date and time as a string, using the given buffer. */
+    /*
+      Get the date and time as a string, using the given buffer.
+
+      :returns: ``buf``
+    */
     extern proc asctime_r(timeptr:c_ptr(struct_tm), buf:c_ptr(c_char))
                   :c_ptr(c_char);
     /* Convert the time to a local time. */
     extern proc localtime(timer:c_ptr(time_t)):c_ptr(struct_tm);
-    /* Convert the time to a local time, storing the result in the given struct. */
+    /*
+      Convert the time to a local time, storing the result in the given struct.
+
+      :returns: ``result``
+    */
     extern proc localtime_r(timer:c_ptr(time_t), result:c_ptr(struct_tm))
                   :c_ptr(struct_tm);
     /* Get the time. */
@@ -1116,7 +1124,7 @@ module OS {
       :arg c: the byte value to use
       :arg n: the number of bytes of s to fill
 
-      :returns: s
+      :returns: ``s``
     */
     pragma "fn synchronization free"
     inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
