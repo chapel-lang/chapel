@@ -1401,7 +1401,8 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        if(fForeachIntents && parent->toForeach()) {
+        //if(fForeachIntents && parent->toForeach()) {
+        if(parent->toForeach()) {
           USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
         }
 

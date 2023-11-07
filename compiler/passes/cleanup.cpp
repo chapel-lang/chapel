@@ -182,12 +182,7 @@ static void backPropagate(BaseAST* ast) {
 }
 
 static void handleNonTypedAndNonInitedVar(DefExpr* def) {
-  if (Symbol *sym = toVarSymbol(def->sym)) {
-    if(toShadowVarSymbol(sym)) {
-      return;
-    }
-
-
+  if (isVarSymbol(def->sym) && !isShadowVarSymbol(def->sym)) {
     bool needsInit = false;
     // The test for FLAG_TEMP allows compiler-generated (temporary) variables
     // to be declared without an explicit type or initializer expression.

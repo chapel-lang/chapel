@@ -7661,7 +7661,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
     Expr* enclLoop = aVar->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
-              "The shadow variable '%s' is constant due to intents "
+              "The shadow variable '%s' is constant due to task intents "
               "in this loop",
               varname);
   }
@@ -10559,6 +10559,25 @@ static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static bool        isMentionOfFnTriggeringCapture(SymExpr* se);
 
+static LoopWithShadowVarsInterface*
+  isForeachWhoseShadowVarsShouldBeResolved(SymExpr *se)
+{
+  ForLoop* pfl = toForLoop(se->parentExpr);
+
+  // The pfl->shadowVariables().length > 0 part of the above condition is a
+  // bit of a hack to ensure we don't apply implicit intents on a loop where
+  // we haven't added an explicit intent (via a 'with' clause). Getting
+  // intents to work for 'foreach' loops is a bit of a work in progress and
+  // for the time being I would like to keep the behavior of loops that
+  // don't have a 'with' clause unchanged.
+  if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
+     (pfl->shadowVariables().length > 0))
+  {
+    return pfl;
+  }
+  return nullptr;
+}
+
 Expr* resolveExpr(Expr* expr) {
   FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
   Expr*     retval = NULL;
@@ -10596,22 +10615,14 @@ Expr* resolveExpr(Expr* expr) {
   } else if (SymExpr* se = toSymExpr(expr)) {
     makeRefType(se->symbol()->type);
 
-    ForallStmt* pfs = isForallIterExpr(se);
-    ForLoop* pfl = toForLoop(se->parentExpr);
-    if (pfs) {
+    if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
       retval = resolveExprPhase2(expr, fn, preFold(call));
-    } 
-    else if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
-        (pfl->shadowVariables().length > 0))
+    }
+    else if(LoopWithShadowVarsInterface *loop =
+      isForeachWhoseShadowVarsShouldBeResolved(se))
     {
-      // The pfl->shadowVariables().length > 0 part of the above condition is a
-      // bit of a hack to ensure we don't apply implicit intents on a loop where
-      // we haven't added an explicit intent (via a 'with' clause). Getting
-      // intents to work for 'foreach' loops is a bit of a work in progress and
-      // for the time being I would like to keep the behavior of loops that
-      // don't have a 'with' clause unchanged.
-      setupAndResolveShadowVars(pfl);
+      setupAndResolveShadowVars(loop);
       retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
       auto fn = toFnSymbol(se->symbol());

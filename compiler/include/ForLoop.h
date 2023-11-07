@@ -30,7 +30,7 @@
 // parser production into its internal representation.
 // ForLoop objects are also used to represent coforall-statements and zippered
 // iteration.
-class ForLoop final : public LoopStmt, public ShadowVarLoopInterface 
+class ForLoop final : public LoopStmt, public LoopWithShadowVarsInterface
 {
   //
   // Class interface
@@ -145,8 +145,8 @@ public:
   Expr* asExpr() override { return this; }
   bool isInductionVar(Symbol* sym) override;
 
-  virtual bool isForallStmt() override { return false; }
-  virtual ForallStmt *forallStmt() override { INT_ASSERT(false); return nullptr; }
+  bool isForallStmt() final override { return false; }
+  ForallStmt *forallStmt() final override { return nullptr; }
 
 private:
                          ForLoop();

@@ -170,7 +170,7 @@ void  resolveForallStmts2();
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop);
 void  setReduceSVars(ShadowVarSymbol*& PRP, ShadowVarSymbol*& PAS,
                      ShadowVarSymbol*& RP, ShadowVarSymbol* AS);
-void setupAndResolveShadowVars(ShadowVarLoopInterface *fs);
+void setupAndResolveShadowVars(LoopWithShadowVarsInterface *fs);
 bool preserveShadowVar(Symbol* var);
 void adjustNothingShadowVariables();
 Expr* lowerPrimReduce(CallExpr* call);

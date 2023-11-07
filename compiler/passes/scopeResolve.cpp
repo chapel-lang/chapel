@@ -1415,7 +1415,7 @@ static bool isField(Symbol* sym) {
   return isTypeSymbol(sym->defPoint->parentSymbol);
 }
 
-static void setupOuterVar(ShadowVarLoopInterface *fs, ShadowVarSymbol* svar) {
+static void setupOuterVar(LoopWithShadowVarsInterface *fs, ShadowVarSymbol* svar) {
   // We pull in the relevant pieces of resolveUnresolvedSymExpr().
   // This is hopefully clearer than generating an UnresolvedSymExpr
   // and calling resolveUnresolvedSymExpr() on it.
@@ -1447,7 +1447,7 @@ static void setupOuterVar(ShadowVarLoopInterface *fs, ShadowVarSymbol* svar) {
 }
 
 // Issue an error if 'tpv' is one of fs's induction variables.
-static void checkRefsToIdxVars(ShadowVarLoopInterface* fs, DefExpr* def,
+static void checkRefsToIdxVars(LoopWithShadowVarsInterface* fs, DefExpr* def,
                                ShadowVarSymbol* tpv)
 {
   std::vector<SymExpr*> symExprs;
@@ -1466,24 +1466,24 @@ static void checkRefsToIdxVars(ShadowVarLoopInterface* fs, DefExpr* def,
                      tpv->name, se->symbol()->name);
 }
 
+template<class T>
+static void setupShadowVarsOnLoop(T *loop) {
+  INT_ASSERT(isForallStmt(loop) || isForLoop(loop));
+  for_shadow_vars_and_defs(svar, def, temp, loop) {
+    if (hasOuterVariable(svar))
+      setupOuterVar(loop, svar);
+     if (svar->isTaskPrivate())
+      checkRefsToIdxVars(loop, def, svar);
+  }
+}
+
 static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
-    for_shadow_vars_and_defs(svar, def, temp, fs) {
-      if (hasOuterVariable(svar))
-        setupOuterVar(fs, svar);
-      if (svar->isTaskPrivate())
-        checkRefsToIdxVars(fs, def, svar);
-    }
+    setupShadowVarsOnLoop(fs);
 
   forv_Vec(BlockStmt, bs, gBlockStmts)
-    if(ForLoop *fl = toForLoop(bs)) {
-      for_shadow_vars_and_defs(svar, def, temp, fl) {
-        if (hasOuterVariable(svar))
-          setupOuterVar(fl, svar);
-        if (svar->isTaskPrivate())
-          checkRefsToIdxVars(fl, def, svar);
-      }
-    }
+    if(ForLoop *fl = toForLoop(bs))
+      setupShadowVarsOnLoop(fl);
 
   // Instead of the nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).

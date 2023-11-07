@@ -66,10 +66,15 @@ class ForallOptimizationInfo {
 };
 
 ///////////////////////////////////
-    // forall loop statement //
+// forall loop statement         //
 ///////////////////////////////////
 
-struct ShadowVarLoopInterface {
+// Both 'forall' and 'foreach' loops have shadow variables. We have code that we want to be able
+// to process either but the nearest common ancenstor to these two classes is 'Expr'.
+// In the long run it might be beneficial to rearrange our class heirarchy so these two share
+// a closer ancestor but for the time being I use the following interface for the shared
+// behavior between the two that's used when processing shadow variables.
+struct LoopWithShadowVarsInterface {
   virtual AList& shadowVariables() = 0;
   virtual bool needToHandleOuterVars() const = 0;
   virtual BlockStmt* loopBody() const = 0;
@@ -81,7 +86,7 @@ struct ShadowVarLoopInterface {
   virtual ForallStmt *forallStmt() = 0;
 };
 
-class ForallStmt final : public Stmt, public ShadowVarLoopInterface
+class ForallStmt final : public Stmt, public LoopWithShadowVarsInterface
 {
 public:
   Expr* asExpr() override { return this; }
@@ -154,8 +159,8 @@ public:
 
   bool isInductionVar(Symbol* sym) override;
 
-  virtual bool isForallStmt() override { return true; }
-  virtual ForallStmt *forallStmt() override { return this; }
+  bool isForallStmt() final override { return true; }
+  ForallStmt *forallStmt() final override { return this; }
 
 private:
   AList          fIterVars;    // DefExprs of the induction vars
