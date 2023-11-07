@@ -1584,10 +1584,14 @@ static void deleteClang(ClangInfo* clangInfo){
     delete clangInfo->cCodeGen;
     clangInfo->cCodeGen = NULL;
   }
-  delete clangInfo->Clang;
-  clangInfo->Clang = NULL;
-  delete clangInfo->cCodeGenAction;
-  clangInfo->cCodeGenAction = NULL;
+  if ( clangInfo->Clang ) {
+    delete clangInfo->Clang;
+    clangInfo->Clang = NULL;
+  }
+  if ( clangInfo->cCodeGenAction ) {
+    delete clangInfo->cCodeGenAction;
+    clangInfo->cCodeGenAction = NULL;
+  }
 }
 
 static void cleanupClang(ClangInfo* clangInfo)
@@ -3032,6 +3036,17 @@ void runClang(const char* just_parse_filename) {
   std::string rtmain = home + "/runtime/etc/rtmain.c";
 
   setupClang(gGenInfo, rtmain);
+
+
+  // If running in driver phase two, we only need the Clang setup work, so stop
+  // before code generation.
+  if (fDriverPhaseTwo) {
+    // Needed for phase two but is only otherwise run by the skipped
+    // ExecuteAction below.
+    clangInfo->Clang->createTarget();
+
+    return;
+  }
 
   if( fLlvmCodegen || fAllowExternC )
   {
@@ -4825,10 +4840,6 @@ void makeBinaryLLVM(void) {
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
     runClang(NULL);
-    // delete the new Builder module since we will be loading from bitcode
-    gGenInfo->clangInfo->cCodeGen->ReleaseModule();
-    delete gGenInfo->module;
-    gGenInfo->module = nullptr;
 
     // load in module from codegen'd bitcode
     loadModuleFromBitcode();
