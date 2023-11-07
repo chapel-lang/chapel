@@ -1,6 +1,6 @@
 array-tasks-const1.chpl:56: In function 'writeCaptureForall':
 array-tasks-const1.chpl:58: error: const actual is passed to 'ref' formal 'x' of writeit()
-array-tasks-const1.chpl:57: note: The shadow variable 'A' is constant due to intents in this loop
+array-tasks-const1.chpl:57: note: The shadow variable 'A' is constant due to task intents in this loop
   array-tasks-const1.chpl:84: called as writeCaptureForall(A: [domain(1,int(64),one)] int(64))
 array-tasks-const1.chpl:62: In function 'writeCaptureCoforall':
 array-tasks-const1.chpl:64: error: const actual is passed to 'ref' formal 'x' of writeit()
