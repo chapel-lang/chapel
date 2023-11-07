@@ -660,7 +660,7 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   std::error_code errGotPath;
   errPath = llvm::sys::fs::real_path(path.str(), realPath);
   errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
-  if (errPath || errGotPath) {
+  if (!ok || errPath || errGotPath) {
     // ignore the check if there were errors
   } else {
     if (realPath != realGotPath) {
