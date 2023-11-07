@@ -639,10 +639,10 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
            moduleIdSymbolPath.c_str(), path.c_str());
   }
+  UniqueString gotPath;
+  // check that querying the module ID works...
+  bool ok = filePathForId(moduleID, gotPath);
   #ifndef NDEBUG
-    // check that querying the module ID works...
-    UniqueString gotPath;
-    bool ok = filePathForId(moduleID, gotPath);
     CHPL_ASSERT(ok);
   #endif
 
