@@ -644,31 +644,31 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     UniqueString gotPath;
     bool ok = filePathForId(moduleID, gotPath);
     CHPL_ASSERT(ok);
+  #endif
 
-    // ... and gives the same path
+  // ... and gives the same path
 
-    // Note: if this check causes problems in the future, it could
-    // be removed, or we could wire up setFileText used in tests
-    // to work with the LLVM VirtualFilesystem
+  // Note: if this check causes problems in the future, it could
+  // be removed, or we could wire up setFileText used in tests
+  // to work with the LLVM VirtualFilesystem
 #if LLVM_VERSION_MAJOR <= 11
     llvm::SmallVector<char, 64> realPath, realGotPath;
 #else
     llvm::SmallVector<char> realPath, realGotPath;
 #endif
-    std::error_code errPath;
-    std::error_code errGotPath;
-    errPath = llvm::sys::fs::real_path(path.str(), realPath);
-    errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
-    if (errPath || errGotPath) {
-      // ignore the check if there were errors
-    } else {
-      if (realPath != realGotPath) {
-        error(moduleID,
-              "Redefinition of module '%s' (the original was defined in '%s')",
-              moduleIdSymbolPath.c_str(), path.c_str());
-      }
+  std::error_code errPath;
+  std::error_code errGotPath;
+  errPath = llvm::sys::fs::real_path(path.str(), realPath);
+  errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
+  if (errPath || errGotPath) {
+    // ignore the check if there were errors
+  } else {
+    if (realPath != realGotPath) {
+      error(moduleID,
+            "Redefinition of module '%s' (the original was defined in '%s')",
+            moduleIdSymbolPath.c_str(), path.c_str());
     }
-  #endif
+  }
 }
 
 static
