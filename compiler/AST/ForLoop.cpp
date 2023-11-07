@@ -327,7 +327,7 @@ BlockStmt* ForLoop::buildForLoop(Expr*      indices,
                                  bool       isForExpr,
                                  LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, 
+  return doBuildForLoop(indices, iteratorExpr,
                         /* intents */ nullptr,
                         body,
                         attrs,
@@ -362,7 +362,7 @@ BlockStmt* ForLoop::buildCoforallLoop(Expr*      indices,
                                       bool       zippered,
                                       LLVMMetadataList attrs)
 {
-  return doBuildForLoop(indices, iteratorExpr, 
+  return doBuildForLoop(indices, iteratorExpr,
                         /* intents */ nullptr,
                         body,
                         attrs,
