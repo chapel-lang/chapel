@@ -1,0 +1,2 @@
+#!/bin/bash
+$CHPL_HOME/tools/chapel-py/runChplcheck MethodFieldOrder.chpl > MethodFieldOrder.message

@@ -1,0 +1,4 @@
+#!/bin/bash
+while read expectedLine; do
+    echo grep "$expectedLine" MethodFieldOrder.message | echo $? >> MethodFieldOrder.comp.out.tmp
+done < MethodFieldOrder.expected
