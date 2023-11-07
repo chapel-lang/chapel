@@ -1,0 +1,6 @@
+# always use fast to prevent `assertVectorized` failing
+--fast -selmType=int(16)
+--fast -selmType=int(32)
+--fast -selmType=int(64)
+--fast -selmType=real(32)
+--fast -selmType=real(64)

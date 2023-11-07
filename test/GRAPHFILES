@@ -319,6 +319,8 @@ statements/lydia/ifVersusSelect.alternates.graph
 statements/lydia/moduleVersusFunctionBaseline.graph
 statements/lydia/moduleVersusFunctionDifAccess.graph
 statements/lydia/moduleVersusFunction.graph
+# suite: - vectorization
+optimizations/vectorization/gccLoops-test23.graph
 # suite: Samples (bogus)
 Samples/Performance/foo.graph
 Samples/Performance/cleanCopy/foobar.graph
