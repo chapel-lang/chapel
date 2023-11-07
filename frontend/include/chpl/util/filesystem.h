@@ -143,6 +143,11 @@ std::string fileHashToHex(const HashFileResult& hash);
 llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path);
 
 /**
+  Returns a hash of the passed string using the same hashing algorithm
+  as 'hashFile' */
+HashFileResult hashString(llvm::StringRef data);
+
+/**
   Sets the modification and access time of one file to the
   modification of another file.
  */

@@ -300,7 +300,28 @@ llvm::ErrorOr<HashFileResult> hashFile(const llvm::Twine& path) {
   memcpy(&result, s.data(), sizeof(HashFileResult));
   return result;
 #endif
+}
 
+HashFileResult hashString(llvm::StringRef data) {
+#if LLVM_VERSION_MAJOR >= 13
+  llvm::SHA256 hasher;
+#else
+  llvm::SHA1 hasher;
+#endif
+
+  hasher.update(data);
+
+  // In LLVM 15, SHA256::final returns a std::array.
+  // In LLVM 14 an earlier, it returns a StringRef.
+#if LLVM_VERSION_MAJOR >= 15
+  return hasher.final();
+#else
+  HashFileResult result;
+  llvm::StringRef s = hasher.final();
+  CHPL_ASSERT(s.size() == sizeof(HashFileResult));
+  memcpy(&result, s.data(), sizeof(HashFileResult));
+  return result;
+#endif
 }
 
 std::error_code copyModificationTime(const llvm::Twine& srcPath,
