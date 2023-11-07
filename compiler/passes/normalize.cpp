@@ -151,6 +151,12 @@ void normalize() {
   }
 
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
+
+    // Some functions can get removed by code in the loop - and if they
+    // contain nested functions, then those functions will get removed
+    // as well (as flattening does not happen until after resolution).
+    if (!fn->inTree()) continue;
+
     SET_LINENO(fn);
 
     if (fn->hasFlag(FLAG_EXPORT) &&
