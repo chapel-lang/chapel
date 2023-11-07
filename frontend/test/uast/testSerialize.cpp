@@ -91,7 +91,7 @@ static void testSerializeDeserialize(const char* test, const char* program) {
   if (output[0] != '\0') {
     // if 'output' is set, work with that file.
     std::string error;
-    bool ok = readfile(filename.c_str(), serializedData, error);
+    bool ok = readFile(filename.c_str(), serializedData, error);
     assert(ok);
   } else {
     // get the data we write to the string stream

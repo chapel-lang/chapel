@@ -37,7 +37,7 @@ namespace chpl {
   Reads the contents of a file into a string.
   If something failed, returns false and sets errorOut.
  */
-bool readfile(const char* path, std::string& strOut, std::string& errorOut);
+bool readFile(const char* path, std::string& strOut, std::string& errorOut);
 
 /**
   Writes a string to a file, replacing its contents.

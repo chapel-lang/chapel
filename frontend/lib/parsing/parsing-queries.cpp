@@ -63,7 +63,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readfile(path.c_str(), text, error)) {
+  if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }

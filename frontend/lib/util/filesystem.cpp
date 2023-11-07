@@ -113,7 +113,7 @@ bool closefile(FILE* fp, const char* path, std::string& errorOut) {
 
 // TODO: Should this produce an llvm::MemoryBuffer?
 // TODO: Should this return std::error_code?
-bool readfile(const char* path, std::string& strOut, std::string& errorOut) {
+bool readFile(const char* path, std::string& strOut, std::string& errorOut) {
   FILE* fp = openfile(path, "r", errorOut);
   if (!fp) {
     return false;
