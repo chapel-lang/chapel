@@ -22,7 +22,7 @@
 #define _FOR_LOOP_H_
 
 #include "LoopStmt.h"
-#include "ForallStmt.h"
+#include "LoopWithShadowVarsInterface.h"
 
 // A ForLoop represents the for-statement language construct as described in
 // the specification (see "The For Loop" section in the chapter on "Statements").

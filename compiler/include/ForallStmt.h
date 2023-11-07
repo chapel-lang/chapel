@@ -22,6 +22,7 @@
 #define _FORALL_STMT_H_
 
 #include "stmt.h"
+#include "LoopWithShadowVarsInterface.h"
 
 enum ForallAutoLocalAccessCloneType {
   NOT_CLONE,
@@ -68,23 +69,6 @@ class ForallOptimizationInfo {
 ///////////////////////////////////
 // forall loop statement         //
 ///////////////////////////////////
-
-// Both 'forall' and 'foreach' loops have shadow variables. We have code that we want to be able
-// to process either but the nearest common ancenstor to these two classes is 'Expr'.
-// In the long run it might be beneficial to rearrange our class heirarchy so these two share
-// a closer ancestor but for the time being I use the following interface for the shared
-// behavior between the two that's used when processing shadow variables.
-struct LoopWithShadowVarsInterface {
-  virtual AList& shadowVariables() = 0;
-  virtual bool needToHandleOuterVars() const = 0;
-  virtual BlockStmt* loopBody() const = 0;
-  virtual bool needsInitialAccumulate() const = 0;
-  virtual Expr* asExpr() = 0;
-  virtual bool isInductionVar(Symbol* sym) = 0;
-
-  virtual bool isForallStmt() = 0;
-  virtual ForallStmt *forallStmt() = 0;
-};
 
 class ForallStmt final : public Stmt, public LoopWithShadowVarsInterface
 {
