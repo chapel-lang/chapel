@@ -235,14 +235,14 @@ proc test23(ref A: [?D] elmType, B: [D] elmType, C: [D] elmType, ref E: [D] elmT
 proc test24(ref A: [?D] elmType) {
   @llvm.assertVectorized
   for i in D  {
-    A[i] = i;
+    A[i] = i:elmType;
   }
 }
 
 proc test25(ref A: [?D] elmType) {
   @llvm.assertVectorized
   foreach (a,i) in zip(A,D)  {
-    a = i;
+    a = i:elmType;
   }
 }
 
@@ -520,4 +520,13 @@ proc main() {
 
   inline proc test22_shim() do test22(A,B,retVal);
   bench(test22_shim, warmupIterations, measureIterations);
+
+  inline proc test23_shim() do test23(A,B,C,E);
+  bench(test23_shim, warmupIterations, measureIterations);
+
+  inline proc test24_shim() do test24(A);
+  bench(test24_shim, warmupIterations, measureIterations);
+
+  inline proc test25_shim() do test25(A);
+  bench(test25_shim, warmupIterations, measureIterations);
 }
