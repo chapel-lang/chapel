@@ -1,4 +1,4 @@
-perfkeys: Test-23-int(16):, Test-23-int(32):, Test-23-int(64):, Test-23-real(32), Test-23-real(64)
+perfkeys: Test-23-int(16):, Test-23-int(32):, Test-23-int(64):, Test-23-real(32):, Test-23-real(64):
 files: gccLoops-int16.dat, gccLoops-int32.dat, gccLoops-int64.dat, gccLoops-real32.dat, gccLoops-real64.dat
 graphkeys: int(16), int(32), int(64), real(32), real(64)
 ylabel: Time (seconds)
