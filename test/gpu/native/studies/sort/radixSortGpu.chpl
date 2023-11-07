@@ -307,18 +307,22 @@ module RadixSort {
       var gpuOffsets = offsets;
       const gpuInputArr = inputArr;
       var gpuOutputArr : inputArr.type;
+      const arrSize = gpuInputArr.size;
+      const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
       @assertOnGpu
       foreach chunk in 0..<numChunks {
         // Count for each chunk in parallel.
         const startIdx : int = (chunk:int)*chunkSize;
-        const endIdx : int = startIdx+chunkSize-1;
-        for i in startIdx..endIdx {
-          const tmp = ((gpuInputArr[i]>>exp) & bitMask):int;
-          const tmp2 = chunk+(numChunks*tmp);
-          const tmp3 = gpuOffsets[tmp2]:int;
-          // This may happen when inputArr.size%chunkSize!=0
+        const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+        for i in startIdx..<endIdx {
+          const arrIdx = i+low;
+          const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look
+          const tmp2 = chunk+(numChunks*tmp); // Index into the offsets array
+          const tmp3 = gpuOffsets[tmp2]:int; // Index into the output array
+          // This may happen when gpuInputArr.size%chunkSize!=0
           // if tmp3>=gpuInputArr.size then continue;
-          gpuOutputArr[tmp3] = gpuInputArr[i];
+          gpuOutputArr[low+tmp3] = gpuInputArr[arrIdx];
           gpuOffsets[tmp2] += 1;
         }
       }
@@ -333,7 +337,7 @@ module RadixSort {
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
         writeln("Bit mask: ", bitMask);
-        writeln("Input: ", inputArr);
+        // writeln("Input: ", inputArr);
         writeln("Chunk Size: ", chunkSize);
         writeln("Num Chunks: ", numChunks);
     }
@@ -379,7 +383,7 @@ module RadixSort {
       if scanTest then
         writeln(" Count: ",prefixSums);
 
-      writeln("Parallel Count Time: ", timer.elapsed());
+      // writeln("Parallel Count Time: ", timer.elapsed());
 
       // writeln("Here!");
       // Calculate global offsets for each chunk
@@ -390,7 +394,7 @@ module RadixSort {
       timer.start();
       if parallelScan then parallelArrScan(prefixSums); else arrScan(prefixSums);
       timer.stop();
-        writeln("Parallel Scan Time: ", timer.elapsed());
+      // writeln("Parallel Scan Time: ", timer.elapsed());
       if scanTest then
         writeln("Offset: ", prefixSums, "\n");
 
@@ -402,10 +406,10 @@ module RadixSort {
       timer.start();
       parallelScatter(prefixSums, inputArr, exp, bitMask, numChunks);
       timer.stop();
-        writeln("Parallel Scatter Time: ", timer.elapsed());
+      // writeln("Parallel Scatter Time: ", timer.elapsed());
 
-      if noisy then
-        writeln("       Output: ", inputArr);
+      // if noisy then
+      //   writeln("       Output: ", inputArr);
 
       // Increment the exp, decrement max by shifting, and copy arrays
       exp += bitsAtATime;
@@ -448,7 +452,7 @@ module RadixSort {
       timer.start();
       arrCountAndScan(prefixSum, inputArr, exp, bitMask);
       timer.stop();
-      writeln("Count and Scan Time: ", timer.elapsed());
+      // writeln("Count and Scan Time: ", timer.elapsed());
 
       if noisy then
         writeln("       Prefix sum: ", prefixSum);
@@ -464,7 +468,7 @@ module RadixSort {
         prefixSum[idx] += 1;
       }
       timer.stop();
-        writeln("Scatter Time: ", timer.elapsed());
+      // writeln("Scatter Time: ", timer.elapsed());
 
       if noisy {
         writeln("       Output: ", outputArr);
