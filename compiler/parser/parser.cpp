@@ -1012,7 +1012,7 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
     std::stringstream ss;
 
     // serialize to the string stream
-    chpl::Serializer ser(ss);
+    chpl::Serializer ser(ss, /*LibraryFileAstRegistration*/ nullptr);
     ast->serialize(ser);
 
     // deserialize from the same
