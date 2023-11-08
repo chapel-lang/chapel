@@ -605,7 +605,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -624,7 +624,7 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_RESOLVES:
     case PRIM_IMPLEMENTS_INTERFACE:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:
@@ -649,7 +649,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
-      assert(false && "not implemented yet");
+      CHPL_UNIMPL("iterator casting  primitives");
       break;
 
     case PRIM_CAST_TO_VOID_STAR:

@@ -510,7 +510,7 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
     } else if (auto arrayType = type->toArrayType()) {
       result = generateArrayMethod(context, arrayType, name);
     } else {
-      CHPL_ASSERT(false && "Not implemented yet!");
+      CHPL_ASSERT(false && "should not be reachable");
     }
   }
 

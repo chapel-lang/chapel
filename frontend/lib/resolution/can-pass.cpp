@@ -754,8 +754,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
           if (manager->isAnyOwnedType())
             return true;
 
-  if (formalT->isAnyPodType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: compute POD-ness
+  if (formalT->isAnyPodType()) {
+    CHPL_UNIMPL("POD types"); // TODO: compute POD-ness
+    return false;
+  }
 
   if (formalT->isAnyRealType() && actualT->isRealType())
     return true;

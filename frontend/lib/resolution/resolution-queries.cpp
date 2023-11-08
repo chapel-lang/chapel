@@ -1286,7 +1286,7 @@ QualifiedType getInstantiationType(Context* context,
       }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
-        CHPL_ASSERT(false && "not implemented yet");
+        CHPL_UNIMPL("instantiate generic class formal");
       }
 
       // now construct the ClassType
