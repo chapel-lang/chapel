@@ -136,7 +136,7 @@ def register_rules(driver):
             prev = None
             if isinstance(child, Loop) and child.block_style() == "implicit":
                 grandchildren = list(child)
-                # safe to access [-1], implicit loops must have at least 1 child
+                # safe to access [-1], loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
                     if isinstance(blockchild, Comment): continue
                     prev = blockchild
