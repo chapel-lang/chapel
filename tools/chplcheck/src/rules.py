@@ -126,17 +126,19 @@ def register_rules(driver):
     def MisleadingIndentation(context, root):
         prev = None
         for child in root:
+            if isinstance(child, Comment): continue
             yield from MisleadingIndentation(context, child)
-
-            # dont call `.location` on comments
-            if isinstance(child, Comment) or isinstance(prev, Comment):
-                continue
 
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
                     yield child
 
+            prev = None
             if isinstance(child, Loop) and child.block_style() == "implicit":
                 grandchildren = list(child)
-                if len(grandchildren) > 0:
-                    prev = list(grandchildren[-1])[0]
+                # safe to access [-1], implicit loops must have at least 1 child
+                for blockchild in reversed(list(grandchildren[-1])):
+                    if isinstance(blockchild, Comment):
+                        continue
+                    prev = blockchild
+                    break
