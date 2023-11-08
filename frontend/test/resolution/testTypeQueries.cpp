@@ -259,8 +259,10 @@ static void test10() {
 
     assert(re.type().type()->isVoidType());
 
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    auto fn = c.fn();
     assert(fn->untyped()->name() == "f");
 
     assert(fn->numFormals() == 1);
@@ -275,8 +277,10 @@ static void test10() {
 
     assert(re.type().type()->isVoidType());
 
-    const TypedFnSignature* fn = re.mostSpecific().only();
-    assert(fn != nullptr);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    auto fn = c.fn();
     assert(fn->untyped()->name() == "f");
 
     assert(fn->numFormals() == 1);

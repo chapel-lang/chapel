@@ -2153,11 +2153,11 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {
-  const TypedFnSignature* sig = r.mostSpecific().only();
-  const PoiScope* poiScope = r.poiScope();
+  auto msc = r.mostSpecific().only();
+  if (!msc) return nullptr;
 
-  if (sig == nullptr)
-    return nullptr;
+  const TypedFnSignature* sig = msc.fn();
+  const PoiScope* poiScope = r.poiScope();
 
   return resolveFunction(context, sig, poiScope);
 }
@@ -3508,12 +3508,12 @@ CallResolutionResult resolveFnCall(Context* context,
   // Make sure that we are resolving initializer bodies even when the
   // signature is concrete, because there are semantic checks.
   if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
-    auto candidate = mostSpecific.only();
-    CHPL_ASSERT(isTfsForInitializer(candidate));
+    auto candidateFn = mostSpecific.only().fn();
+    CHPL_ASSERT(isTfsForInitializer(candidateFn));
 
     // TODO: Can we move this into the 'InitVisitor'?
-    if (!candidate->untyped()->isCompilerGenerated()) {
-      std::ignore = resolveInitializer(context, candidate, inPoiScope);
+    if (!candidateFn->untyped()->isCompilerGenerated()) {
+      std::ignore = resolveInitializer(context, candidateFn, inPoiScope);
     }
   }
 

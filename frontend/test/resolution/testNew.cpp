@@ -255,7 +255,7 @@ static void testTertMethodCallCrossModule() {
   // Last part just confirms the call lines up.
   auto mscCall = reCall.mostSpecific().only();
   assert(mscCall);
-  assert(mscCall->id() == tert->id());
+  assert(mscCall.fn()->id() == tert->id());
 }
 
 static void determineManagerAndDecorator(Context* ctx,

@@ -868,17 +868,17 @@ void MostSpecificCandidates::stringify(std::ostream& ss,
   auto onlyFn = only();
   if (onlyFn) {
     ss << " calls ";
-    onlyFn->stringify(ss, stringKind);
+    onlyFn.stringify(ss, stringKind);
   } else {
-    if (auto c = bestRef()) {
+    if (auto& c = bestRef()) {
       ss << " calls ref ";
       c.stringify(ss, stringKind);
     }
-    if (auto c = bestConstRef()) {
+    if (auto& c = bestConstRef()) {
       ss << " calls const ref ";
       c.stringify(ss, stringKind);
     }
-    if (auto c = bestValue()) {
+    if (auto& c = bestValue()) {
       ss << " calls value ";
       c.stringify(ss, stringKind);
     }

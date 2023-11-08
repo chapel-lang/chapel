@@ -67,7 +67,7 @@ void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
   auto& rr = modResResult.byAst(fCallVar->toVariable()->initExpression());
 
   debuggerBreakHere();
-  auto fn = rr.mostSpecific().only();
+  auto fn = rr.mostSpecific().only().fn();
 
   const types::CPtrType* formalTypePtr = nullptr;
   if (fn != nullptr) {

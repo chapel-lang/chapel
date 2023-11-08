@@ -167,8 +167,8 @@ void testCall(const char* testName,
     printf("full resolved fn to id %s\n", toIdentId.str().c_str());
   }
   ID toFnId;
-  if (auto fn = re.mostSpecific().only()) {
-    toFnId = fn->id();
+  if (auto c = re.mostSpecific().only()) {
+    toFnId = c.fn()->id();
     printf("full resolved fn to %s\n", toFnId.str().c_str());
   }
   if (calledFnIdStr[0] != '\0') {

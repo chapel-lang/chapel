@@ -97,7 +97,7 @@ static void checkCalledIndex(Context* context,
   } else {
     int i = 1;
     for (auto fn : stuff.fns) {
-      if (s.only() && s.only()->id() == fn->id()) {
+      if (s.only() && s.only().fn()->id() == fn->id()) {
         foundOnlyIdx = i;
       } else {
         if (s.bestRef() && s.bestRef().fn()->id() == fn->id()) {

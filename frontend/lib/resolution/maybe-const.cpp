@@ -289,7 +289,8 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   CHPL_ASSERT(candidates.numBest() <= 1);
 
   // then, traverse nested call-expressions
-  if (const TypedFnSignature* fn = candidates.only()) {
+  if (auto msc = candidates.only()) {
+    auto fn = msc.fn();
     auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
     if (resolvedFn) {
       fn = resolvedFn;

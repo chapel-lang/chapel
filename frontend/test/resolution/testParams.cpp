@@ -134,8 +134,9 @@ static void test4() {
   assert(isBlueFn);
   const auto rrIsBlueCall = rr.byAst(isBlueXCall);
   assert(rrIsBlueCall.type().kind() == QualifiedType::Kind::PARAM);
-  auto bestFn = rrIsBlueCall.mostSpecific().only();
-  assert(bestFn);
+  auto bestCandidate = rrIsBlueCall.mostSpecific().only();
+  assert(bestCandidate);
+  auto bestFn = bestCandidate.fn();
   assert(bestFn->id() == isBlueFn->id());
   assert(bestFn->formalType(0).isParam());
   assert(bestFn->formalName(0) == UniqueString::get(context, "this"));

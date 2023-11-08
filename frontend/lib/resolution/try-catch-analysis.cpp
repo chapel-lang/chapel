@@ -208,7 +208,8 @@ struct TryCatchAnalyzer {
     // TODO: determine what to do in the cases skipped by this check
     if (rv.hasAst(ast)) {
       const ResolvedExpression& r = rv.byAst(ast);
-      if (auto bestResFn = r.mostSpecific().only()) {
+      if (auto bestResMsc = r.mostSpecific().only()) {
+        auto bestResFn = bestResMsc.fn();
         if (bestResFn->untyped()->throws()) {
           // are we in a throwing function or a try?
           if (!this->canThrow() && tryStack.size() == 0) {

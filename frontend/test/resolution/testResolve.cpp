@@ -258,9 +258,9 @@ static void test4() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 }
 
 // this test checks a simple instantiation situation
@@ -294,14 +294,14 @@ static void test5() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
 }
 
 // this test checks a particular incremental pattern
@@ -386,10 +386,10 @@ static void test7() {
   assert(re.type().type());
   assert(re.type().type()->isIntType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "parenless");
-  assert(fn->numFormals() == 0);
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "parenless");
+  assert(c.fn()->numFormals() == 0);
 }
 
 // check a simple recursive function
@@ -424,14 +424,14 @@ static void test8() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
 }
 
 // check a generic recursive function
@@ -466,14 +466,14 @@ static void test9() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
 }
 
 

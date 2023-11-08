@@ -1218,24 +1218,24 @@ class MostSpecificCandidates {
 
   /**
     If there is exactly one candidate, return that candidate.
-    Otherwise, return nullptr.
+    Otherwise, return an empty candiate.
    */
-  const TypedFnSignature* only() const {
-    const TypedFnSignature* ret = nullptr;
+  MostSpecificCandidate only() const {
+    const MostSpecificCandidate* ret = nullptr;
     int nPresent = 0;
     for (const MostSpecificCandidate& sig : *this) {
       if (sig.fn() != nullptr) {
-        ret = sig.fn();
+        ret = &sig;
         nPresent++;
       }
     }
     if (nPresent != 1) {
-      return nullptr;
+      return MostSpecificCandidate();
     }
 
     // if there is only one candidate, it should be in slot ONLY
-    CHPL_ASSERT(candidates[ONLY].fn() == ret);
-    return ret;
+    CHPL_ASSERT(candidates[ONLY] == *ret);
+    return *ret;
   }
 
   /**
