@@ -21,11 +21,48 @@
 
 #include "chpl/libraries/LibraryFileFormat.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/uast/Include.h"
+#include "chpl/uast/MultiDecl.h"
+#include "chpl/uast/NamedDecl.h"
+#include "chpl/uast/TupleDecl.h"
 #include "chpl/util/filesystem.h"
 #include "chpl/util/version-info.h"
 
 namespace chpl {
 namespace libraries {
+
+void LibraryFileAstRegistration::beginAst(const uast::AstNode* ast,
+                                          std::ostream& os) {
+  if (symbolTableSet.count(ast) != 0) {
+    uint64_t pos = os.tellp();
+    symbolTableUpdates[ast].uAstEntry = pos - moduleSectionStart;
+  }
+}
+
+void LibraryFileAstRegistration::endAst(const uast::AstNode* ast,
+                                        std::ostream& os) {
+  uAstCounter++;
+}
+
+void LibraryFileAstRegistration::beginLocation(const uast::AstNode* ast,
+                                               std::ostream& os) {
+  if (symbolTableSet.count(ast) != 0) {
+    uint64_t pos = os.tellp();
+    symbolTableUpdates[ast].locationEntry = pos - moduleSectionStart;
+  }
+}
+
+void LibraryFileAstRegistration::endLocation(const uast::AstNode* ast,
+                                             std::ostream& os) {
+}
+
+void LibraryFileAstRegistration::noteSymbolForTable(const uast::AstNode* ast) {
+  auto pair = symbolTableSet.insert(ast);
+  if (pair.second) {
+    // it was inserted
+    symbolTableVec.push_back(ast);
+  }
+}
 
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   if (path.startsWith("/") ||
@@ -100,26 +137,31 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
+  LibraryFileAstRegistration reg(moduleSectionStart);
+
   // create a serializer to write the uAST
-  auto ser = Serializer(fileStream);
+  auto ser = Serializer(fileStream, &reg);
 
   // write the module symbol path
   ser.write<std::string>(mod->id().symbolPath().str());
   // write the module's file path
   ser.write<std::string>(fromFilePath.str());
 
+  // compute the symbol table entries for this module & clear old ones
+  noteToplevelSymbolsForTable(mod, reg);
+
   // write the various sections
   padToAlign();
-  header.symbolTable = writeSymbolTable(mod, moduleSectionStart);
-
-  padToAlign();
-  header.uAstSection = writeAst(mod, moduleSectionStart, ser);
+  header.uAstSection = writeAst(mod, ser, reg);
 
   padToAlign();
   header.longStringsTable = writeLongStrings(moduleSectionStart, ser);
 
   padToAlign();
-  header.locationSection = writeLocations(mod, moduleSectionStart);
+  header.locationSection = writeLocations(mod, ser, reg);
+
+  padToAlign();
+  header.symbolTable = writeSymbolTable(mod, ser, reg);
 
   // update the module header with the saved locations by writing the
   // header again.
@@ -137,22 +179,129 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   return moduleSectionStart;
 }
 
+// Helper to gather top-level symbols, but also find primary methods.
+// See also GatherDecls in the scope resolver.
+struct GatherToplevelSymbols {
+  std::vector<const uast::AstNode*> result;
+
+  GatherToplevelSymbols() { }
+
+  // Add NamedDecls to the map
+  bool enter(const uast::NamedDecl* d) {
+    if (d->isRecord() && d->name() == USTR("_tuple")) {
+      // skip gathering _tuple from the standard library
+      // since dyno handles tuple types directly rather
+      // than through a record.
+      return false;
+    }
+
+    result.push_back(d);
+
+    // Traverse into records, classes, unions, interfaces
+    // to find primary methods/fields.
+    bool traverse = false;
+    if (d->isAggregateDecl() || d->isInterface()) {
+      traverse = true;
+    }
+
+    return traverse;
+  }
+
+  void exit(const uast::NamedDecl* d) { }
+
+  // Traverse into TupleDecl and MultiDecl looking for NamedDecls
+  bool enter(const uast::TupleDecl* d) {
+    return true;
+  }
+  void exit(const uast::TupleDecl* d) { }
+
+  bool enter(const uast::MultiDecl* d) {
+    return true;
+  }
+  void exit(const uast::MultiDecl* d) { }
+
+  // consider 'include module' something that defines a name
+  bool enter(const uast::Include* d) {
+    result.push_back(d);
+    return false;
+  }
+  void exit(const uast::Include* d) { }
+
+  // ignore other AST nodes
+  bool enter(const uast::AstNode* ast) {
+    return false;
+  }
+  void exit(const uast::AstNode* ast) { }
+};
+
+void
+LibraryFileWriter::noteToplevelSymbolsForTable(const uast::Module* mod,
+                                               LibraryFileAstRegistration& reg)
+{
+  GatherToplevelSymbols g;
+  mod->traverse(g);
+
+  for (auto ast : g.result) {
+    reg.noteSymbolForTable(ast);
+  }
+}
+
+static bool symbolIdLess(const uast::AstNode* a, const uast::AstNode* b) {
+  // Should be sorting by ID minus the top-level symbol name,
+  // but that will be the same for all, so we can sort using the
+  // ID's symbol path.
+  UniqueString aId = a->id().symbolPath();
+  UniqueString bId = b->id().symbolPath();
+  int cmp = aId.compare(bId);
+  return cmp < 0;
+}
+
 uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
-                                             uint64_t moduleSectionStart) {
+                                             Serializer& ser,
+                                             LibraryFileAstRegistration& reg) {
+
   uint64_t symTableStart = fileStream.tellp();
   SymbolTableHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = SYMBOL_TABLE_MAGIC;
+  header.nEntries = reg.symbolTableVec.size();
   fileStream.write((const char*) &header, sizeof(header));
 
-  // TODO: actually output something meaningful
+  // output each symbol table entry
+  // assumption: symbolTableUpdates has already been updated with the
+  // uast and location section offsets
 
-  return symTableStart - moduleSectionStart;
+  // Copy the vector of symbol table symbols and sort it by ID/name
+  auto syms = reg.symbolTableVec;
+  std::sort(syms.begin(), syms.end(), symbolIdLess);
+
+  for (auto sym : syms) {
+    SymbolTableEntry entry;
+    memset(&entry, 0, sizeof(entry));
+    const auto& u = reg.symbolTableUpdates[sym];
+    entry.uAstEntry = u.uAstEntry;
+    entry.locationEntry = u.locationEntry;
+    entry.typeOrFnEntry = u.typeOrFnEntry;
+
+    // write the 3 relative offsets
+    fileStream.write((const char*) &entry, sizeof(entry));
+
+    // write the tag / flags / kind information
+    auto tag = sym->tag();
+    CHPL_ASSERT((int) tag < 256);
+    ser.writeByte(tag);
+
+    // write the symbol table ID as a string
+    std::string symId = sym->id().symbolPath().str();
+    ser.write(symId);
+  }
+
+  return symTableStart - reg.moduleSectionStart;
 }
 
 uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
-                                     uint64_t moduleSectionStart,
-                                     Serializer& ser) {
+                                     Serializer& ser,
+                                     LibraryFileAstRegistration& reg) {
   uint64_t astStart = fileStream.tellp();
   AstSectionHeader header;
   memset(&header, 0, sizeof(header));
@@ -163,7 +312,7 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
   uint64_t serializedStart = fileStream.tellp();
   mod->serialize(ser);
   header.nBytesAstEntries = (uint64_t)fileStream.tellp() - serializedStart;
-  header.nEntries = ser.numAstsSerialized();
+  header.nEntries = reg.uAstCounter;
 
   // update the number serialized by rewriting the header
   auto savePos = fileStream.tellp();
@@ -174,7 +323,7 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
   // seek back where we were
   fileStream.seekp(savePos);
 
-  return astStart - moduleSectionStart;
+  return astStart - reg.moduleSectionStart;
 }
 
 uint64_t
@@ -243,12 +392,84 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
 }
 
 uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
-                                           uint64_t moduleSectionStart) {
+                                           Serializer& ser,
+                                           LibraryFileAstRegistration& reg) {
   uint64_t locationsSectionStart = fileStream.tellp();
 
-  // TODO: actually write the locations
+  LocationSectionHeader header;
+  memset(&header, 0, sizeof(header));
+  header.magic = LOCATION_SECTION_MAGIC;
 
-  return locationsSectionStart - moduleSectionStart;
+  header.nFilePaths = inputFiles.size();
+  header.nGroups = modulesAndPaths.size();
+  // TODO: create groups for more uAST elements within modules
+  // so that we can find locations based upon symbol table entries.
+  // The above just creates a location group for each module.
+
+  // compute the file hashes
+  std::vector<HashFileResult> hashes;
+  for (auto path : inputFiles) {
+    HashFileResult hash;
+    parsing::FileContents fileContents = parsing::fileText(context, path);
+    if (fileContents.error() == nullptr) {
+      hash = hashString(fileContents.text());
+    } else {
+      hash.fill(0);
+    }
+
+    hashes.push_back(hash);
+  }
+
+  // for each file path, write
+  //   * string storing file path
+  //   * a file hash
+
+  size_t n = inputFiles.size();
+  for (size_t i = 0; i < n; i++) {
+    std::string path = inputFiles[i].str();
+    HashFileResult hash = hashes[i];
+    ser.write(path);
+    ser.writeData(&hash, sizeof(hash));
+  }
+
+  // TODO: actually write the locations
+  /*
+  ser.write(idToParentId_);
+
+  {
+    // TODO: For config-vars set on the command line, the 'file path' is set to
+    // something different. This leads to issues when comparing against a
+    // deserialized BuilderResult.
+    ser.write((uint64_t)idToLocation_.size());
+    ser.write(filePath_);
+    for (const auto& pair : idToLocation_) {
+      ser.write(pair.first);
+      ser.write(pair.second.firstLine());
+      ser.write(pair.second.firstColumn());
+      ser.write(pair.second.lastLine());
+      ser.write(pair.second.lastColumn());
+    }
+  }
+
+  #define LOCATION_MAP(ast__, location__) { \
+      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+      ser.write((uint64_t)m.size()); \
+      for (const auto& pair : m) { \
+        ser.write(pair.first); \
+        ser.write(pair.second.firstLine()); \
+        ser.write(pair.second.firstColumn()); \
+        ser.write(pair.second.lastLine()); \
+        ser.write(pair.second.lastColumn()); \
+      } \
+    }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
+  ser.write(commentIdToLocation_);
+  ser.write(DYNO_BUILDER_RESULT_END_STR);
+  */
+
+  return locationsSectionStart - reg.moduleSectionStart;
 }
 
 bool LibraryFileWriter::writeAllSections() {

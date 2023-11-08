@@ -47,7 +47,12 @@ namespace chpl {
 class Context;
 template<typename T> struct serialize;
 template<typename T> struct deserialize;
+
+namespace uast {
+  class AstNode;
+}
 namespace libraries {
+  class LibraryFileAstRegistration;
   class LibraryFileStringsTable;
 }
 
@@ -65,8 +70,8 @@ public:
 
 private:
   uint32_t longStringCounter_ = 1;
-  uint64_t uAstCounter_ = 0;
   std::ostream& os_;
+  libraries::LibraryFileAstRegistration* reg_ = nullptr;
   stringCacheType stringCache_;
 
   /** write a variable-byte encoded unsigned integer */
@@ -75,7 +80,10 @@ private:
   void writeSignedVarint(int64_t num);
 
 public:
-  explicit Serializer(std::ostream& os) : os_(os) { }
+  Serializer(std::ostream& os,
+             libraries::LibraryFileAstRegistration* reg)
+    : os_(os), reg_(reg) {
+  }
 
   const stringCacheType& stringCache() {
     return stringCache_;
@@ -115,9 +123,8 @@ public:
   }
   uint32_t nextStringIdx() { return longStringCounter_; }
 
-  void beginAst() { }
-  void endAst() { uAstCounter_++; }
-  uint64_t numAstsSerialized() { return uAstCounter_; }
+  void beginAst(const uast::AstNode* ast);
+  void endAst(const uast::AstNode* ast);
 
   /* Write a variable-length byte-encoded 64-bit unsigned integer */
   void writeVU64(uint64_t num) {
@@ -151,7 +158,7 @@ class Deserializer {
   const unsigned char* cur_ = nullptr;
   const unsigned char* end_ = nullptr;
   owned<stringCacheType> localStringsTable_;
-  const libraries::LibraryFileStringsTable* libraryFileForStrings_ = nullptr;
+  const libraries::LibraryFileStringsTable* libraryFileStrings_ = nullptr;
 
   /** read a variable-byte encoded unsigned integer */
   uint64_t readUnsignedVarint();
@@ -165,7 +172,7 @@ class Deserializer {
     : context_(context),
       cur_((const unsigned char*) data),
       end_(((const unsigned char*) data) + len),
-      libraryFileForStrings_(table) {
+      libraryFileStrings_(table) {
   }
 
   //

@@ -71,7 +71,7 @@ static void testSerializeDeserialize(const char* test, const char* program) {
   Serializer::stringCacheType stringCache;
 
   {
-    auto ser = Serializer(*out);
+    auto ser = Serializer(*out, /*LibraryFileAstRegistration*/ nullptr);
     for (size_t i = 0; i < nToplevelModules; i++) {
       if (verbose) {
         printf("Serializing %s %s\n", test, vec[i]->name().c_str());

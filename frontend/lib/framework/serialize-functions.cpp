@@ -20,6 +20,7 @@
 #include "chpl/framework/serialize-functions.h"
 
 #include "chpl/libraries/LibraryFile.h"
+#include "chpl/libraries/LibraryFileWriter.h"
 
 namespace chpl {
 
@@ -42,6 +43,15 @@ void Serializer::writeSignedVarint(int64_t num) {
   uint64_t uNum = (num << 1) ^ (num >> 63);
   writeUnsignedVarint(uNum);
 }
+
+void Serializer::beginAst(const uast::AstNode* ast) {
+  if (reg_ != nullptr) reg_->beginAst(ast, os_);
+}
+
+void Serializer::endAst(const uast::AstNode* ast) {
+  if (reg_ != nullptr) reg_->endAst(ast, os_);
+}
+
 
 uint64_t Deserializer::readUnsignedVarint() {
   uint64_t num = 0;
@@ -67,8 +77,8 @@ std::pair<size_t, const char*> Deserializer::getString(int id) {
   if (localStringsTable_) {
     stringCacheType& table = *localStringsTable_.get();
     return table[id];
-  } else if (libraryFileForStrings_) {
-    return libraryFileForStrings_->getString(id);
+  } else if (libraryFileStrings_) {
+    return libraryFileStrings_->getString(id);
   }
 
   return std::make_pair((size_t)0, (const char*)nullptr);

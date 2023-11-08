@@ -141,8 +141,8 @@ Each module section begins with a header that consists of:
 Symbol Table Section
 --------------------
 
-The symbol table section has an entry for each public symbol contained in
-the file. These are sorted by symbol table ID.
+The symbol table section has an entry for each public, top-level symbol
+contained in the module. These are sorted by symbol table ID.
 
 For a symbol, the symbol table ID consists of:
 
