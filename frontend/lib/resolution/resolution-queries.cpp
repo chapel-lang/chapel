@@ -3390,9 +3390,9 @@ findMostSpecificAndCheck(Context* context,
                                ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate && candidate->instantiatedFrom()) {
-      checkSignature(context, candidate);
+  for (const Candidate& candidate : mostSpecific) {
+    if (candidate && candidate.fn()->instantiatedFrom()) {
+      checkSignature(context, candidate.fn());
     }
   }
 
@@ -3400,9 +3400,9 @@ findMostSpecificAndCheck(Context* context,
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
-      for (const TypedFnSignature* candidate : mostSpecific) {
-        if (candidate == candidates[i]) {
-          poiInfo.addIds(call->id(), candidate->id());
+      for (const Candidate& candidate : mostSpecific) {
+        if (candidate.fn() == candidates[i]) {
+          poiInfo.addIds(call->id(), candidate.fn()->id());
         }
       }
     }
@@ -3479,8 +3479,8 @@ CallResolutionResult resolveFnCall(Context* context,
   const PoiScope* instantiationPoiScope = nullptr;
   bool anyInstantiated = false;
 
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr && candidate->instantiatedFrom() != nullptr) {
+  for (const Candidate& candidate : mostSpecific) {
+    if (candidate && candidate.fn()->instantiatedFrom() != nullptr) {
       anyInstantiated = true;
       break;
     }
@@ -3491,11 +3491,11 @@ CallResolutionResult resolveFnCall(Context* context,
       pointOfInstantiationScope(context, inScope, inPoiScope);
     poiInfo.setPoiScope(instantiationPoiScope);
 
-    for (const TypedFnSignature* candidate : mostSpecific) {
-      if (candidate != nullptr) {
-        if (candidate->untyped()->idIsFunction()) {
+    for (const Candidate& candidate : mostSpecific) {
+      if (candidate) {
+        if (candidate.fn()->untyped()->idIsFunction()) {
           // note: following call returns early if candidate not instantiated
-          accumulatePoisUsedByResolvingBody(context, candidate,
+          accumulatePoisUsedByResolvingBody(context, candidate.fn(),
                                             instantiationPoiScope, poiInfo);
         }
       }
@@ -3520,11 +3520,11 @@ CallResolutionResult resolveFnCall(Context* context,
   // compute the return types
   QualifiedType retType;
   bool retTypeSet = false;
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr) {
-      QualifiedType t = returnType(context, candidate, instantiationPoiScope);
+  for (const Candidate& candidate : mostSpecific) {
+    if (candidate.fn() != nullptr) {
+      QualifiedType t = returnType(context, candidate.fn(), instantiationPoiScope);
       if (retTypeSet && retType.type() != t.type()) {
-        context->error(candidate,
+        context->error(candidate.fn(),
                        nullptr,
                        "return intent overload type does not match");
       }

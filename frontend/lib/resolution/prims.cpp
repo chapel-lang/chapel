@@ -242,8 +242,8 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   });
   const TypedFnSignature* bestCandidate = nullptr;
   for (auto candidate : callResult.result().mostSpecific()) {
-    if (candidate != nullptr) {
-      bestCandidate = candidate;
+    if (candidate) {
+      bestCandidate = candidate.fn();
       break;
     }
   }

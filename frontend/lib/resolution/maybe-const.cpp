@@ -254,10 +254,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    const TypedFnSignature* bestRef = candidates.bestRef();
-    const TypedFnSignature* bestConstRef = candidates.bestConstRef();
-    const TypedFnSignature* bestValue = candidates.bestValue();
-    const TypedFnSignature* best = nullptr;
+    Candidate bestRef = candidates.bestRef();
+    Candidate bestConstRef = candidates.bestConstRef();
+    Candidate bestValue = candidates.bestValue();
+    Candidate best = {};
     if (access == REF) {
       if (bestRef) best = bestRef;
       else if (bestConstRef) best = bestConstRef;
@@ -282,7 +282,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(context, best, resolver.poiScope));
+    re.setType(returnType(context, best.fn(), resolver.poiScope));
   }
 
   // there should be only one candidate at this point

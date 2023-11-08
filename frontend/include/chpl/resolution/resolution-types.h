@@ -1059,6 +1059,69 @@ class ApplicabilityResult {
   inline int formalIdx() const { return formalIdx_; }
 };
 
+class FormalActualMap;
+class MostSpecificCandidates;
+
+/**
+  Stores a function candidate. This information includes both the
+  TypedFnSignature* representing the candidate, as well as information
+  about this candidate's applicability. In particular, we store whether or
+  not this candidate requires a const ref coercion, which is allowed by
+  the spec, but is not allowed in practice due to the aliasing rules of C.
+  */
+class Candidate {
+ private:
+  friend class MostSpecificCandidates;
+
+  const TypedFnSignature* fn_;
+  int constRefCoercionFormal_;
+
+  Candidate(const TypedFnSignature* fn, int constRefCoercionFormal)
+    : fn_(fn), constRefCoercionFormal_(constRefCoercionFormal) {}
+
+ public:
+  Candidate() : fn_(nullptr), constRefCoercionFormal_(-1) {}
+
+  static Candidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const FormalActualMap& faMap);
+
+  static Candidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const CallInfo& info);
+
+  const TypedFnSignature* fn() const { return fn_; }
+
+  int constRefCoercionFormal() const { return constRefCoercionFormal_; }
+
+  bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
+
+  operator bool() const {
+    CHPL_ASSERT(fn_ || constRefCoercionFormal_ == -1);
+    return fn_ != nullptr;
+  }
+
+  bool operator==(const Candidate& other) const {
+    return fn_ == other.fn_ &&
+           constRefCoercionFormal_ == other.constRefCoercionFormal_;
+  }
+
+  bool operator!=(const Candidate& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    context->markPointer(fn_);
+    (void) constRefCoercionFormal_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(fn_, constRefCoercionFormal_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
+
 /**
   Stores the most specific candidates when resolving a function call.
 */
@@ -1076,7 +1139,7 @@ class MostSpecificCandidates {
   } Intent;
 
  private:
-  const TypedFnSignature* candidates[NUM_INTENTS] = {nullptr};
+  Candidate candidates[NUM_INTENTS] = {Candidate()};
   bool emptyDueToAmbiguity = false;
 
  public:
@@ -1091,10 +1154,10 @@ class MostSpecificCandidates {
     Otherwise, default-initializes a MostSpecificCandidates with no candidates
     that is not empty due to ambiguity.
    */
-  static MostSpecificCandidates getOnly(const TypedFnSignature* fn) {
+  static MostSpecificCandidates getOnly(Candidate c) {
     MostSpecificCandidates ret;
-    if (fn != nullptr)
-      ret.setBestOnly(fn);
+    if (c.fn() != nullptr)
+      ret.setBestOnly(std::move(c));
     return ret;
   }
 
@@ -1122,34 +1185,34 @@ class MostSpecificCandidates {
    */
   void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
-  const TypedFnSignature* const* begin() const {
+  Candidate const* begin() const {
     return &candidates[0];
   }
-  const TypedFnSignature* const* end() const {
+  Candidate const* end() const {
     return &candidates[NUM_INTENTS];
   }
 
-  void setBestRef(const TypedFnSignature* sig) {
-    candidates[REF] = sig;
+  void setBestRef(Candidate c) {
+    candidates[REF] = std::move(c);
   }
-  void setBestConstRef(const TypedFnSignature* sig) {
-    candidates[CONST_REF] = sig;
+  void setBestConstRef(Candidate c) {
+    candidates[CONST_REF] = std::move(c);
   }
-  void setBestValue(const TypedFnSignature* sig) {
-    candidates[VALUE] = sig;
-  }
-
-  void setBestOnly(const TypedFnSignature* sig) {
-    candidates[ONLY] = sig;
+  void setBestValue(Candidate c) {
+    candidates[VALUE] = std::move(c);
   }
 
-  const TypedFnSignature* bestRef() const {
+  void setBestOnly(Candidate c) {
+    candidates[ONLY] = std::move(c);
+  }
+
+  const Candidate& bestRef() const {
     return candidates[REF];
   }
-  const TypedFnSignature* bestConstRef() const {
+  const Candidate& bestConstRef() const {
     return candidates[CONST_REF];
   }
-  const TypedFnSignature* bestValue() const {
+  const Candidate& bestValue() const {
     return candidates[VALUE];
   }
 
@@ -1160,9 +1223,9 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
-        ret = sig;
+    for (const Candidate& sig : *this) {
+      if (sig.fn() != nullptr) {
+        ret = sig.fn();
         nPresent++;
       }
     }
@@ -1171,7 +1234,7 @@ class MostSpecificCandidates {
     }
 
     // if there is only one candidate, it should be in slot ONLY
-    CHPL_ASSERT(candidates[ONLY] == ret);
+    CHPL_ASSERT(candidates[ONLY].fn() == ret);
     return ret;
   }
 
@@ -1180,8 +1243,8 @@ class MostSpecificCandidates {
    */
   int numBest() const {
     int ret = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
+    for (const Candidate& sig : *this) {
+      if (sig.fn() != nullptr) {
         ret++;
       }
     }
@@ -1238,8 +1301,8 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : candidates) {
-      context->markPointer(sig);
+    for (const Candidate& sig : candidates) {
+      sig.mark(context);
     }
   }
 
@@ -1673,9 +1736,6 @@ class ResolvedFunction {
     return signature_->id();
   }
 };
-
-class FormalActualMap;
-
 
 /** FormalActual holds information on a function formal and its binding (if any) */
 class FormalActual {

@@ -1571,9 +1571,9 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
-    for (auto sig : c.mostSpecific()) {
-      if (sig != nullptr) {
-        r.addAssociatedAction(action, sig, id);
+    for (auto& sig : c.mostSpecific()) {
+      if (sig) {
+        r.addAssociatedAction(action, sig.fn(), id);
       }
     }
     // gather the poi scopes used when resolving the call

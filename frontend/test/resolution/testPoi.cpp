@@ -141,8 +141,8 @@ static void test1n() {
   assert(rfunc->signature()->instantiatedFrom() != nullptr);
 
   const ResolvedExpression& rhelp = rfunc->resolutionById().byAst(helperCall);
-  for (auto candidate : rhelp.mostSpecific()) {
-    assert(candidate == nullptr);
+  for (auto& candidate : rhelp.mostSpecific()) {
+    assert(candidate.fn() == nullptr);
   }
 }
 
