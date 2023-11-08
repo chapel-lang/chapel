@@ -23,8 +23,9 @@
 #include "chpl/framework/UniqueString.h"
 
 #include <fstream>
-#include <vector>
+#include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace chpl {
 // forward declarations
@@ -44,24 +45,24 @@ struct LibraryFileAstRegistration {
  friend class LibraryFileWriter;
 
  private:
-  struct SymbolTableUpdate {
-    // relative to the start of the module header:
-    uint64_t uAstEntry = 0;
-    uint64_t locationEntry = 0;
-    uint64_t typeOrFnEntry = 0;
-  };
-
   uint64_t moduleSectionStart = 0;
   uint64_t uAstCounter = 0;
 
   // stores the uAST nodes that are represented in the symbol table
+  // in uAST declaration / traversal order
   std::vector<const uast::AstNode*> symbolTableVec;
+  // a set storing the same elements as symbolTableVec
   std::unordered_set<const uast::AstNode*> symbolTableSet;
 
-  // stores the offsets that should be stored in the symbol table
-  // (generally speaking, these can be computed only once the other
-  // sections have been output)
-  std::map<const uast::AstNode*, SymbolTableUpdate> symbolTableUpdates;
+  // stores the relative offset (to the start of the module header)
+  // for serialized uAST for the given node, for every uAST node
+  // that is serialized
+  std::unordered_map<const uast::AstNode*, uint64_t> astOffsets;
+
+  // stores the relative offset (to the start of the module header)
+  // for serialized Location information for the given node.
+  // Only nodes in symbolTableSet are represented here.
+  std::unordered_map<const uast::AstNode*, uint64_t> locOffsets;
 
   LibraryFileAstRegistration(uint64_t moduleSectionStart)
     : moduleSectionStart(moduleSectionStart) {
@@ -86,6 +87,8 @@ struct LibraryFileAstRegistration {
 /** For writing a .dyno library file */
 class LibraryFileWriter {
  private:
+  using PathToIndex = std::unordered_map<UniqueString, int>;
+
   Context* context = nullptr;
   std::vector<UniqueString> inputFiles;
   std::string outputFilePath;
@@ -136,6 +139,23 @@ class LibraryFileWriter {
   uint64_t writeLocations(const uast::Module* mod,
                           Serializer& ser,
                           LibraryFileAstRegistration& reg);
+
+  /** Write a locations group starting with the location for 'ast'
+      and containing contained locations until reaching a node that
+      is in the symbol table (and so gets its own location group).
+      Returns the relative offset of the locations group. */
+  uint64_t writeLocationGroup(const uast::AstNode* ast,
+                              Serializer& ser,
+                              LibraryFileAstRegistration& reg,
+                              const PathToIndex& pathToIdx);
+
+  /** Write the location entry for a given ast node and its children,
+      stopping when reaching a child node in the symbol table */
+  void writeLocationEntries(const uast::AstNode* ast,
+                            Serializer& ser,
+                            LibraryFileAstRegistration& reg,
+                            uint64_t& lastAstOffset,
+                            int& lastLine);
 
  public:
   /**

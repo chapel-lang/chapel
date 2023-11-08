@@ -33,10 +33,8 @@ namespace libraries {
 
 void LibraryFileAstRegistration::beginAst(const uast::AstNode* ast,
                                           std::ostream& os) {
-  if (symbolTableSet.count(ast) != 0) {
-    uint64_t pos = os.tellp();
-    symbolTableUpdates[ast].uAstEntry = pos - moduleSectionStart;
-  }
+  uint64_t pos = os.tellp();
+  astOffsets[ast] = pos - moduleSectionStart;
 }
 
 void LibraryFileAstRegistration::endAst(const uast::AstNode* ast,
@@ -48,7 +46,7 @@ void LibraryFileAstRegistration::beginLocation(const uast::AstNode* ast,
                                                std::ostream& os) {
   if (symbolTableSet.count(ast) != 0) {
     uint64_t pos = os.tellp();
-    symbolTableUpdates[ast].locationEntry = pos - moduleSectionStart;
+    locOffsets[ast] = pos - moduleSectionStart;
   }
 }
 
@@ -159,9 +157,12 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
 
   padToAlign();
   header.locationSection = writeLocations(mod, ser, reg);
+  // note: implementation of writeLocations assumes it runs after writeAst
 
   padToAlign();
   header.symbolTable = writeSymbolTable(mod, ser, reg);
+  // note: implementation of writeSymbolTable assumes it runs
+  // after writeAst and writeLocations
 
   // update the module header with the saved locations by writing the
   // header again.
@@ -278,10 +279,9 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   for (auto sym : syms) {
     SymbolTableEntry entry;
     memset(&entry, 0, sizeof(entry));
-    const auto& u = reg.symbolTableUpdates[sym];
-    entry.uAstEntry = u.uAstEntry;
-    entry.locationEntry = u.locationEntry;
-    entry.typeOrFnEntry = u.typeOrFnEntry;
+    entry.uAstEntry = reg.astOffsets[sym];
+    entry.locationEntry = reg.locOffsets[sym];
+    entry.typeOrFnEntry = 0; // not implemented yet
 
     // write the 3 relative offsets
     fileStream.write((const char*) &entry, sizeof(entry));
@@ -399,12 +399,12 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   LocationSectionHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = LOCATION_SECTION_MAGIC;
-
   header.nFilePaths = inputFiles.size();
-  header.nGroups = modulesAndPaths.size();
-  // TODO: create groups for more uAST elements within modules
-  // so that we can find locations based upon symbol table entries.
-  // The above just creates a location group for each module.
+  header.nGroups = reg.symbolTableVec.size();
+  // the initial entry in symbolTableVec should store the module
+  CHPL_ASSERT(reg.symbolTableVec.size() > 0 && reg.symbolTableVec[0] == mod);
+
+  fileStream.write((const char*) &header, sizeof(header));
 
   // compute the file hashes
   std::vector<HashFileResult> hashes;
@@ -420,11 +420,18 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
     hashes.push_back(hash);
   }
 
+  // compute pathToIdx
+  PathToIndex pathToIdx;
+  size_t n = inputFiles.size();
+  for (size_t i = 0; i < n; i++) {
+    pathToIdx[inputFiles[i]] = i;
+  }
+
   // for each file path, write
   //   * string storing file path
   //   * a file hash
 
-  size_t n = inputFiles.size();
+  n = inputFiles.size();
   for (size_t i = 0; i < n; i++) {
     std::string path = inputFiles[i].str();
     HashFileResult hash = hashes[i];
@@ -432,44 +439,148 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
     ser.writeData(&hash, sizeof(hash));
   }
 
-  // TODO: actually write the locations
-  /*
-  ser.write(idToParentId_);
+  // create a vector of group offsets, initially just storing 0s
+  // store an additional offset for the offset just after the last
+  auto groupOffsets = std::vector<uint64_t>(header.nGroups+1, 0);
+  // write the 0s to reserve the space to update later
+  uint64_t groupOffsetsStart = fileStream.tellp();
+  ser.writeData(&groupOffsets[0], sizeof(uint64_t*)*groupOffsets.size());
 
+  // write the locations group for each top-level symbol,
+  // including the module itself
+  n = header.nGroups;
+  for (size_t i = 0; i < n; i++) {
+    groupOffsets[i] = writeLocationGroup(mod, ser, reg, pathToIdx);
+  }
+  // and update the last group offset with the current position
+  groupOffsets[n+1] = fileStream.tellp();
+
+  // update the group offsets table in the file now that we know it
+  auto savePos = fileStream.tellp();
+
+  fileStream.seekp(groupOffsetsStart);
+  fileStream.write((const char*) &groupOffsets[0],
+                   sizeof(uint64_t*)*groupOffsets.size());
+
+  // seek back where we were
+  fileStream.seekp(savePos);
+
+  return locationsSectionStart - reg.moduleSectionStart;
+}
+
+uint64_t LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
+                                               Serializer& ser,
+                                               LibraryFileAstRegistration& reg,
+                                               const PathToIndex& pathToIdx) {
+  uint64_t groupStart = fileStream.tellp();
+
+  uint64_t astOffset = reg.astOffsets[ast];
+
+  // update the location entry since we are creating it
+  reg.locOffsets[ast] = groupStart - reg.moduleSectionStart;
+
+  // compute the starting Location
+  Location startingLoc = parsing::locateAst(context, ast);
+  CHPL_ASSERT(pathToIdx.count(startingLoc.path()) > 0);
+
+  // compute the file path index
+  int filePathIdx = 0;
   {
-    // TODO: For config-vars set on the command line, the 'file path' is set to
-    // something different. This leads to issues when comparing against a
-    // deserialized BuilderResult.
-    ser.write((uint64_t)idToLocation_.size());
-    ser.write(filePath_);
-    for (const auto& pair : idToLocation_) {
-      ser.write(pair.first);
-      ser.write(pair.second.firstLine());
-      ser.write(pair.second.firstColumn());
-      ser.write(pair.second.lastLine());
-      ser.write(pair.second.lastColumn());
+    auto search = pathToIdx.find(startingLoc.path());
+    if (search != pathToIdx.end()) {
+      filePathIdx = search->second;
     }
   }
 
-  #define LOCATION_MAP(ast__, location__) { \
-      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-      ser.write((uint64_t)m.size()); \
-      for (const auto& pair : m) { \
-        ser.write(pair.first); \
-        ser.write(pair.second.firstLine()); \
-        ser.write(pair.second.firstColumn()); \
-        ser.write(pair.second.lastLine()); \
-        ser.write(pair.second.lastColumn()); \
-      } \
+  // write the group header
+  LocationGroupHeader header;
+  memset(&header, 0, sizeof(header));
+  header.uAstEntry = astOffset;
+  header.filePathIndex = filePathIdx;
+  header.startingLineNumber = startingLoc.firstLine();
+
+  fileStream.write((const char*) &header, sizeof(header));
+
+  uint64_t lastAstOffset = header.uAstEntry;
+  int lastLine = header.startingLineNumber;
+
+  writeLocationEntries(ast, ser, reg, lastAstOffset, lastLine);
+
+  return groupStart - reg.moduleSectionStart;
+}
+
+void LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
+                                             Serializer& ser,
+                                             LibraryFileAstRegistration& reg,
+                                             uint64_t& lastAstOffset,
+                                             int& lastLine) {
+  Location entryLoc = parsing::locateAst(context, ast);
+  uint64_t astOffset = reg.astOffsets[ast];
+  int64_t uastOffsetDifference = astOffset - lastAstOffset;
+
+  // relative offset within the uAST section, stored as a signed difference
+  ser.writeVI64(uastOffsetDifference);
+
+  // first line, stored as a signed difference
+  int firstLineDiff = entryLoc.firstLine() - lastLine;
+  ser.writeVInt(firstLineDiff);
+
+  // last line, stored as a signed difference from the first line
+  int lastLineDiff = entryLoc.lastLine() - entryLoc.firstLine();
+  ser.writeVInt(lastLineDiff);
+
+  // first column
+  ser.writeVUint(entryLoc.firstColumn());
+
+  // last column
+  ser.writeVUint(entryLoc.lastColumn());
+
+  // compute additional locations
+  std::vector<std::pair<int, Location>> additionalLocations;
+  int additionalLocationTag = 0;
+  #define LOCATION_MAP(ast__, location__) \
+    additionalLocationTag++; \
+    if (auto x = ast->to##ast__()) { \
+      additionalLocations.emplace_back( \
+          additionalLocationTag, \
+          parsing::locate##location__##WithAst(context, x)); \
     }
   #include "chpl/uast/all-location-maps.h"
   #undef LOCATION_MAP
 
-  ser.write(commentIdToLocation_);
-  ser.write(DYNO_BUILDER_RESULT_END_STR);
-  */
+  // write additional locations
+  ser.writeVUint(additionalLocations.size());
+  for (const auto& pair : additionalLocations) {
+    int tag = pair.first;
+    const Location& otherLoc = pair.second;
+    // store the location tag
+    // (just the 1-based index into LOCATION_MAP entries)
+    ser.writeVInt(tag);
+    // store first line
+    int otherFirstLineDiff = otherLoc.firstLine() - entryLoc.firstLine();
+    ser.writeVInt(otherFirstLineDiff);
+    // store the last line
+    int otherLastLineDiff = otherLoc.lastLine() - otherLoc.firstLine();
+    ser.writeVInt(otherLastLineDiff);
+    // store the first column
+    ser.writeVUint(otherLoc.firstColumn());
+    // store the last column
+    ser.writeVUint(otherLoc.lastColumn());
+  }
 
-  return locationsSectionStart - reg.moduleSectionStart;
+  // update lastAstOffset and lastLine
+  lastAstOffset = astOffset;
+  lastLine = entryLoc.lastLine();
+
+  // consider child nodes, but stop on ones that get their own location group
+  for (auto child: ast->children()) {
+    if (reg.symbolTableSet.count(child) > 0) {
+      // it's in the symbol table, so don't write locations for it now;
+      // it will be handled in a different locations group
+    } else {
+      writeLocationEntries(child, ser, reg, lastAstOffset, lastLine);
+    }
+  }
 }
 
 bool LibraryFileWriter::writeAllSections() {

@@ -110,14 +110,14 @@ struct LocationSectionHeader {
   uint32_t nFilePaths;
   uint32_t nGroups;
   // followed by file path strings
-  // then followed nGroups LocationGroups
+  // then followed nGroups 8-byte relative offsets to each location group
 };
 
 struct LocationGroupHeader {
   // relative to the start of the module header:
   uint64_t uAstEntry;
+  uint32_t filePathIndex;
   uint32_t startingLineNumber;
-  uint32_t nLocations;
   // followed by location entries
 };
 

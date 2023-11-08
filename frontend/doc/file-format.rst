@@ -245,14 +245,14 @@ read independently, but some basic compression is used within each group,
 so that the whole group might need to be read in order to compute a
 location.
 
-It consists of:
+The Location section consists of:
 
  * 8 bytes of magic number 0x434F4C075ec110e0
 
  * 4 bytes, the number of file paths used here
 
- * 4 bytes storing the number of top-level location groups. There will be
-   a top-level location group for the module under consideration and then
+ * 4 bytes storing the number of location groups. There will be
+   a location group for the module under consideration and then
    for each uAST referred to by the symbol table. However, these
    are in uAST order rather than symbol table order.
 
@@ -261,13 +261,21 @@ It consists of:
    * a string storing the file path
    * 256 bits / 32 bytes of SHA-256 hash of the input file that was parsed
 
- * information for each top-level location, consisting of the following:
+ * for each location group
+
+   * 8 bytes storing the relative offset of the location group
+
+ * followed by 8 bytes storing the relative offset just after
+   the last location group
+
+ * information for each location group, consisting of the following:
 
    * 8 bytes storing a starting relative offset within the uAST section
 
-   * 4 bytes storing a starting line number
+   * 4 bytes storing an index into the file paths stored in the location
+     section to indicate which file this location group came from
 
-   * 4 bytes storing the number of locations stored within this entry
+   * 4 bytes storing a starting line number
 
    * a number of location entries, each consisting of:
 
@@ -275,8 +283,6 @@ It consists of:
        variable-byte encoded difference from the previous entry's uAST
        offset, or a difference from the starting relative offset if this
        is the first entry.
-
-     * variable-byte encoded unsigned index into file paths
 
      * the first line, stored as a signed variable-byte encoded
        difference from the previous entry's last line, or a difference
@@ -298,10 +304,10 @@ It consists of:
        * unsigned variable-byte encoded additional location tag
 
        * first line, stored as a signed variable-byte encoded difference
-         from this entry's first line
+         from the containing entry's first line
 
        * last line, stored as a signed variable-byte encoded difference
-         the additional location's first line
+         from the additional location's first line
 
        * unsigned variable-byte encoded first column
 
