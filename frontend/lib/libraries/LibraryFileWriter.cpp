@@ -252,14 +252,53 @@ LibraryFileWriter::noteToplevelSymbolsForTable(const uast::Module* mod,
   }
 }
 
-static bool symbolIdLess(const uast::AstNode* a, const uast::AstNode* b) {
+static bool
+symbolIdLess(const std::pair<const uast::AstNode*, std::string>& a,
+             const std::pair<const uast::AstNode*, std::string>& b) {
   // Should be sorting by ID minus the top-level symbol name,
   // but that will be the same for all, so we can sort using the
   // ID's symbol path.
-  UniqueString aId = a->id().symbolPath();
-  UniqueString bId = b->id().symbolPath();
-  int cmp = aId.compare(bId);
-  return cmp < 0;
+  return a.second < b.second;
+}
+
+static std::vector<std::pair<const uast::AstNode*, std::string>>
+computeSymbolNames(const uast::Module* mod,
+                   const std::vector<const uast::AstNode*>& symbolTableVec) {
+
+  std::string modPrefix = mod->id().symbolPath().str();
+
+  std::vector<std::pair<const uast::AstNode*, std::string>> result;
+  for (auto sym: symbolTableVec) {
+    // compute the symbol table ID
+    UniqueString symPath = sym->id().symbolPath();
+    CHPL_ASSERT(symPath.startsWith(modPrefix));
+    std::string symId = sym->id().symbolPath().str();
+    // remove the modPrefix from it
+    symId.erase(0, modPrefix.size());
+    // remove a leading '.'
+    if (symId[0] == '.') {
+      symId.erase(0, 1);
+    }
+    // for Variables, they do not get the name in the regular ID,
+    // so adjust the symbol ID path to include the variable name
+    if (!uast::Builder::astTagIndicatesNewIdScope(sym->tag())) {
+      UniqueString name;
+      if (auto nd = sym->toNamedDecl()) {
+        name = nd->name();
+      } else if (auto inc = sym->toInclude()) {
+        name = inc->name();
+      } else {
+        CHPL_ASSERT(false);
+      }
+      symId.append(name.str());
+    }
+    // store the symbol and name in the result vector
+    result.emplace_back(sym, std::move(symId));
+  }
+
+  std::sort(result.begin(), result.end(), symbolIdLess);
+
+  return result;
 }
 
 uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
@@ -278,14 +317,12 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   // uast and location section offsets
 
   // Copy the vector of symbol table symbols and sort it by ID/name
-  auto syms = reg.symbolTableVec;
-  std::sort(syms.begin(), syms.end(), symbolIdLess);
+  auto symsAndNames = computeSymbolNames(mod, reg.symbolTableVec);
 
-  // compute the module ID that we can omit from symbol IDs
-  std::string modPrefix = mod->id().symbolPath().str();
-  modPrefix.append(".");
+  for (auto pair : symsAndNames) {
+    const uast::AstNode* sym = pair.first;
+    const std::string& symId = pair.second;
 
-  for (auto sym : syms) {
     // no need for a symbol table entry for a module since
     // the whole module section is for the module
     if (sym == mod) continue;
@@ -305,12 +342,6 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     ser.writeByte(tag);
 
     // write the symbol table ID as a string
-    UniqueString symPath = sym->id().symbolPath();
-    CHPL_ASSERT(symPath.startsWith(modPrefix));
-    std::string symId = sym->id().symbolPath().str();
-    // remove the modPrefix from it
-    symId.erase(0, modPrefix.size());
-    // and then write it
     ser.write(symId);
   }
 

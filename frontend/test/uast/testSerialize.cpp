@@ -107,7 +107,8 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
     auto builder = Builder::createForLibraryFileModule(context,
                                                        libname,
-                                                       parentSymbolPath);
+                                                       parentSymbolPath,
+                                                       /*LibraryFile*/nullptr);
 
     auto des = Deserializer(context,
                             serializedData.c_str(), serializedData.size(),

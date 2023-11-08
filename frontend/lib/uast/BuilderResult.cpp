@@ -20,12 +20,13 @@
 #include "chpl/uast/BuilderResult.h"
 
 #include "chpl/framework/Context.h"
-#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/ErrorBase.h"
+#include "chpl/framework/ErrorMessage.h"
 #include "chpl/framework/mark-functions.h"
+#include "chpl/libraries/LibraryFile.h"
 #include "chpl/uast/AstNode.h"
-#include "chpl/uast/Module.h"
 #include "chpl/uast/Comment.h"
+#include "chpl/uast/Module.h"
 #include "chpl/util/filesystem.h"
 
 #include <cstring>
@@ -42,8 +43,9 @@ BuilderResult::BuilderResult()
 }
 
 
-BuilderResult::BuilderResult(UniqueString filePath)
-  : filePath_(filePath)
+BuilderResult::BuilderResult(UniqueString filePath,
+                             const libraries::LibraryFile* lib)
+  : filePath_(filePath), libraryFile_(lib)
 {
 }
 
@@ -89,6 +91,8 @@ void BuilderResult::swap(BuilderResult& other) {
   #undef LOCATION_MAP
 
   commentIdToLocation_.swap(other.commentIdToLocation_);
+
+  std::swap(libraryFile_, other.libraryFile_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -113,7 +117,6 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.idToAst_, newIdToAst);
   changed |= defaultUpdate(keep.idToParentId_, newIdToParent);
   changed |= defaultUpdate(keep.idToLocation_, addin.idToLocation_);
-  changed |= defaultUpdate(keep.commentIdToLocation_, addin.commentIdToLocation_);
 
   // Also update additional location maps.
   #define LOCATION_MAP(ast__, location__) { \
@@ -123,6 +126,10 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   }
   #include "chpl/uast/all-location-maps.h"
   #undef LOCATION_MAP
+
+  changed |= defaultUpdate(keep.commentIdToLocation_,
+                           addin.commentIdToLocation_);
+  changed |= defaultUpdateBasic(keep.libraryFile_, addin.libraryFile_);
 
   return changed;
 }
@@ -154,10 +161,6 @@ void BuilderResult::mark(Context* context) const {
     context->markPointer(pair.second);
   }
 
-  for (const Location& loc : commentIdToLocation_) {
-    loc.mark(context);
-  }
-
   // Also mark locations in the additional location maps. No need to mark
   // IDs since they should already be marked as explained above.
   #define LOCATION_MAP(ast__, location__) { \
@@ -166,6 +169,12 @@ void BuilderResult::mark(Context* context) const {
   }
   #include "chpl/uast/all-location-maps.h"
   #undef LOCATION_MAP
+
+  for (const Location& loc : commentIdToLocation_) {
+    loc.mark(context);
+  }
+
+  context->markPointer(libraryFile_);
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -192,6 +201,10 @@ const AstNode* BuilderResult::idToAst(ID id) const {
 }
 
 Location BuilderResult::idToLocation(ID id, UniqueString path) const {
+  if (libraryFile_) {
+    CHPL_ASSERT(false && "not implemented yet");
+  }
+
   // Look in astToLocation
   auto search = idToLocation_.find(id);
   if (search != idToLocation_.end()) {
@@ -201,6 +214,11 @@ Location BuilderResult::idToLocation(ID id, UniqueString path) const {
 }
 
 Location BuilderResult::commentToLocation(const Comment *c) const {
+  if (libraryFile_) {
+    // library files don't store comments
+    CHPL_ASSERT(false && "should not be reachable");
+  }
+
   int idx = c->commentId().index();
   CHPL_ASSERT(idx >= 0 && "Cant lookup comment that has -1 id");
   if (idx < 0 || (size_t)idx >= commentIdToLocation_.size()) {
@@ -238,6 +256,15 @@ bool BuilderResult::equals(const BuilderResult& other) const {
   }
   if (commentIdToLocation_ != other.commentIdToLocation_) {
     return false;
+  }
+
+  if ((libraryFile_ != nullptr) != (other.libraryFile_ != nullptr)) {
+    return false;
+  }
+
+  if (libraryFile_ && other.libraryFile_) {
+    // check if the hashes are the same
+    return *libraryFile_ == *other.libraryFile_;
   }
 
   auto& alist = other.topLevelExpressions_;

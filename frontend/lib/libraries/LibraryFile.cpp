@@ -251,7 +251,8 @@ LibraryFile::loadAstQuery(Context* context,
 
   auto builder = uast::Builder::createForLibraryFileModule(context,
                                                            f->libPath,
-                                                           parentSymbolPath);
+                                                           parentSymbolPath,
+                                                           f);
 
   bool ok = true;
   for (const auto& modInfo: f->modules) {

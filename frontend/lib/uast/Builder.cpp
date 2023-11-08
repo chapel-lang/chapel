@@ -105,7 +105,8 @@ owned<Builder> Builder::createForTopLevelModule(Context* context,
                                                 const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
-  auto b = new Builder(context, uniqueFilename, startingSymbolPath);
+  auto b = new Builder(context, uniqueFilename, startingSymbolPath,
+                       /* LibraryFile */ nullptr);
   return toOwned(b);
 }
 
@@ -113,15 +114,17 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentSymbolPath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                       /* LibraryFile */ nullptr);
   return toOwned(b);
 }
 
 owned<Builder>
 Builder::createForLibraryFileModule(Context* context,
                                     UniqueString filePath,
-                                    UniqueString parentSymbolPath) {
-  auto b = new Builder(context, filePath, parentSymbolPath);
+                                    UniqueString parentSymbolPath,
+                                    const libraries::LibraryFile* lib) {
+  auto b = new Builder(context, filePath, parentSymbolPath, lib);
   // locations won't be noted when working with a library file
   // (since they will be stored and retrieved separately, instead)
   // so don't fail if a location was not noted.

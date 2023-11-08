@@ -1027,7 +1027,8 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
     auto builder =
       chpl::uast::Builder::createForLibraryFileModule(gContext,
                                                       libPath,
-                                                      parentSymbolPath);
+                                                      parentSymbolPath,
+                                                      /*LibraryFile*/ nullptr);
 
     builder->addToplevelExpression(
         chpl::uast::AstNode::deserializeWithoutIds(des));

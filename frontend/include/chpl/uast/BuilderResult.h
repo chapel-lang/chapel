@@ -80,6 +80,10 @@ namespace chpl {
 class Context;
 class Location;
 
+namespace libraries {
+  class LibraryFile;
+}
+
 namespace uast {
   class BuilderResult;
 }
@@ -122,11 +126,15 @@ class BuilderResult final {
   // Goes from Comment ID to Location (for comments, specifically)
   std::vector<Location> commentIdToLocation_;
 
+  const libraries::LibraryFile* libraryFile_ = nullptr;
+
  public:
   /** Construct an empty BuilderResult */
   BuilderResult();
-  /** Construct a BuilderResult that records a particular file path. */
-  BuilderResult(UniqueString filePath);
+  /** Construct a BuilderResult that records a particular file path,
+      and optionally refers to a LibraryFile. */
+  BuilderResult(UniqueString filePath,
+                const libraries::LibraryFile* lib = nullptr);
 
   /** Return the file path this result refers to */
   UniqueString filePath() const {

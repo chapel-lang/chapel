@@ -36,6 +36,10 @@ namespace chpl {
 class Context;
 class Location;
 
+namespace libraries {
+  class LibraryFile;
+}
+
 namespace uast {
 
 class AstNode;
@@ -72,10 +76,11 @@ class Builder final {
   #undef LOCATION_MAP
 
   Builder(Context* context, UniqueString filePath,
-          UniqueString startingSymbolPath)
+          UniqueString startingSymbolPath,
+          const libraries::LibraryFile* lib)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath)
+      br(filePath, lib)
   {
   }
 
@@ -104,7 +109,8 @@ class Builder final {
   static owned<Builder>
   createForLibraryFileModule(Context* context,
                              UniqueString filePath,
-                             UniqueString parentSymbolPath);
+                             UniqueString parentSymbolPath,
+                             const libraries::LibraryFile* lib);
 
   Context* context() const { return context_; }
 
