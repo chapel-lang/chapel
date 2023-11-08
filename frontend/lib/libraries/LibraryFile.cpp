@@ -34,16 +34,25 @@ namespace libraries {
 
 
 std::pair<size_t, const char*>
-LibraryFileStringsTable::getString(int id) const {
+LibraryFileDeserializationHelper::getString(int id) const {
   if (0 < id && id < nStrings) {
-    uint64_t offset = offsetsTable[id];
-    uint64_t nextOffset = offsetsTable[id+1];
+    uint64_t offset = stringOffsetsTable[id];
+    uint64_t nextOffset = stringOffsetsTable[id+1];
     return std::make_pair(nextOffset-offset,
                           (const char*) (moduleSectionData + offset));
   } else {
     return std::make_pair(0, nullptr);
   }
 }
+
+void LibraryFileDeserializationHelper::registerAst(const uast::AstNode* ast,
+                                                   uint64_t startOffset) {
+  auto search = offsetToSymIdx.find(startOffset);
+  if (search != offsetToSymIdx.end()) {
+    astToSymIdx[ast] = search->second;
+  }
+}
+
 
 LibraryFile::~LibraryFile() {
   if (mappedFile) delete mappedFile;
@@ -119,11 +128,11 @@ bool LibraryFile::readHeaders(Context* context) {
     }
 
     // Read starting just after the module header
-    LibraryFileStringsTable table = readStringsTable(context, offset);
+    LibraryFileDeserializationHelper helper;
 
     uint64_t pos = offset + sizeof(ModuleHeader);
     uint64_t remaining = len - pos;
-    Deserializer des(context, data + pos, remaining, &table);
+    Deserializer des(context, data + pos, remaining, &helper);
 
     std::string moduleIdStr = des.read<std::string>();
     std::string fromFilePathStr = des.read<std::string>();
@@ -134,7 +143,8 @@ bool LibraryFile::readHeaders(Context* context) {
     info.moduleSymPath = moduleId;
     info.sourceFilePath = fromFilePath;
     info.moduleSectionOffset = offset;
-    modules.push_back(info);
+    //info.symbols = xyz;
+    modules.push_back(std::move(info));
   }
 
   return true;
@@ -157,35 +167,83 @@ LibraryFile::loadLibraryFileQuery(Context* context, UniqueString libPath) {
   return QUERY_END(result);
 }
 
-LibraryFileStringsTable
-LibraryFile::readStringsTable(Context* context, uint64_t moduleOffset) const {
+LibraryFileDeserializationHelper
+LibraryFile::setupHelper(Context* context, uint64_t moduleOffset) const {
 
   const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
   // from the module header, find the longStringsTable offset
+  // and the symbol table offset
+  uint64_t symbolTableOffset = moduleOffset + modHdr->symbolTable;
   uint64_t longStringsOffset = moduleOffset + modHdr->longStringsTable;
   if (modHdr->magic != MODULE_SECTION_MAGIC ||
+      symbolTableOffset+sizeof(SymbolTableHeader) > len ||
       longStringsOffset+sizeof(LongStringsTableHeader) > len) {
     context->error(Location(), "Invalid module section header in %s",
                    libPath.c_str());
-    return LibraryFileStringsTable();
+    return LibraryFileDeserializationHelper();
   }
 
-  const LongStringsTableHeader* tableHdr =
+  const LongStringsTableHeader* strTableHeader =
     (const LongStringsTableHeader*) (data + longStringsOffset);
 
-  if (tableHdr->magic != LONG_STRINGS_TABLE_MAGIC ||
-      longStringsOffset + tableHdr->nLongStrings*sizeof(uint64_t) > len) {
+  if (strTableHeader->magic != LONG_STRINGS_TABLE_MAGIC ||
+      longStringsOffset + strTableHeader->nLongStrings*sizeof(uint64_t) > len) {
     context->error(Location(), "Invalid long strings section header in %s",
                    libPath.c_str());
-    return LibraryFileStringsTable();
+    return LibraryFileDeserializationHelper();
   }
 
-  LibraryFileStringsTable ret;
-  ret.nStrings = tableHdr->nLongStrings;
+  const SymbolTableHeader* symTableHeader =
+    (const SymbolTableHeader*) (data + symbolTableOffset);
+
+  if (symTableHeader->magic != SYMBOL_TABLE_MAGIC ||
+      symbolTableOffset +
+        symTableHeader->nEntries*sizeof(SymbolTableEntry) > len) {
+    context->error(Location(), "Invalid symbol table section header in %s",
+                   libPath.c_str());
+    return LibraryFileDeserializationHelper();
+  }
+
+  LibraryFileDeserializationHelper ret;
+  ret.nStrings = strTableHeader->nLongStrings;
   ret.moduleSectionData = data + moduleOffset;
   ret.moduleSectionLen = modHdr->len;
   // string offsets start just after the header
-  ret.offsetsTable = (const uint64_t*) (tableHdr+1);
+  ret.stringOffsetsTable = (const uint64_t*) (strTableHeader+1);
+
+  // also read the symbol table uast locations
+  size_t firstEntryOffset = symbolTableOffset + sizeof(SymbolTableHeader);
+  Deserializer des(context,
+                   data + firstEntryOffset, modHdr->len - firstEntryOffset,
+                   &ret);
+  uint32_t n = symTableHeader->nEntries;
+  for (uint32_t i = 0; i < n; i++) {
+    uint64_t pos = firstEntryOffset + des.position() - moduleOffset;
+    SymbolTableEntry entry;
+    des.readData(&entry, sizeof(entry));
+    // read the tag
+    des.readByte();
+    // read the string storing the symbol table ID
+    des.read<std::string>();
+    // record the information
+    LibraryFileDeserializationHelper::SymbolInfo info;
+    info.symbolEntryOffset = pos;
+    info.uastOffset = entry.uAstEntry;
+    info.locationsOffset = entry.locationEntry;
+    ret.symbols.push_back(info);
+    ret.offsetToSymIdx[info.uastOffset] = i;
+
+    // check that the SymbolTableEntry offsets are realistic
+    if (moduleOffset + entry.uAstEntry > len ||
+        moduleOffset + entry.locationEntry > len ||
+        moduleOffset + entry.typeOrFnEntry > len) {
+      context->error(Location(), "Invalid symbol table entry in %s",
+                     libPath.c_str());
+      return LibraryFileDeserializationHelper();
+    }
+  }
+
+
   return ret;
 }
 
@@ -214,8 +272,8 @@ bool LibraryFile::readModuleAst(Context* context,
     return false;
   }
 
-  // create a LibraryFileStringsTable helper
-  LibraryFileStringsTable table = readStringsTable(context, moduleOffset);
+  // create a LibraryFileDeserializationHelper helper
+  LibraryFileDeserializationHelper table = setupHelper(context, moduleOffset);
 
   auto des = Deserializer(context,
                           astHdr+1, // just after the AstSectionHeader
@@ -379,6 +437,13 @@ LibraryFile::loadModuleAst(Context* context,
 
   // return nullptr if not found
   return nullptr;
+}
+
+Location LibraryFile::lookupLocation(Context* context,
+                                     int moduleIndex,
+                                     int symbolTableEntryIndex,
+                                     const uast::AstNode* ast) const {
+  return Location();
 }
 
 

@@ -127,6 +127,8 @@ class BuilderResult final {
   std::vector<Location> commentIdToLocation_;
 
   const libraries::LibraryFile* libraryFile_ = nullptr;
+  // maps from ID to module number and symbol table entry number
+  llvm::DenseMap<ID, std::pair<int,int>> libraryFileSymbols_;
 
  public:
   /** Construct an empty BuilderResult */
@@ -202,10 +204,6 @@ class BuilderResult final {
 
   // these two should only be called by the parser
   static void updateFilePaths(Context* context, const BuilderResult& keep);
-
-  void serialize(std::ostream& os) const;
-  void serialize(Serializer& ser) const;
-  static BuilderResult deserialize(Deserializer& des);
   bool equals(const BuilderResult& other) const;
 };
 

@@ -31,30 +31,31 @@
 namespace chpl {
 namespace libraries {
 
-void LibraryFileAstRegistration::beginAst(const uast::AstNode* ast,
-                                          std::ostream& os) {
+void LibraryFileSerializationHelper::beginAst(const uast::AstNode* ast,
+                                              std::ostream& os) {
   uint64_t pos = os.tellp();
   astOffsets[ast] = pos - moduleSectionStart;
 }
 
-void LibraryFileAstRegistration::endAst(const uast::AstNode* ast,
-                                        std::ostream& os) {
+void LibraryFileSerializationHelper::endAst(const uast::AstNode* ast,
+                                            std::ostream& os) {
   uAstCounter++;
 }
 
-void LibraryFileAstRegistration::beginLocation(const uast::AstNode* ast,
-                                               std::ostream& os) {
+void LibraryFileSerializationHelper::beginLocation(const uast::AstNode* ast,
+                                                   std::ostream& os) {
   if (symbolTableSet.count(ast) != 0) {
     uint64_t pos = os.tellp();
     locOffsets[ast] = pos - moduleSectionStart;
   }
 }
 
-void LibraryFileAstRegistration::endLocation(const uast::AstNode* ast,
-                                             std::ostream& os) {
+void LibraryFileSerializationHelper::endLocation(const uast::AstNode* ast,
+                                                 std::ostream& os) {
 }
 
-void LibraryFileAstRegistration::noteSymbolForTable(const uast::AstNode* ast) {
+void
+LibraryFileSerializationHelper::noteSymbolForTable(const uast::AstNode* ast) {
   auto pair = symbolTableSet.insert(ast);
   if (pair.second) {
     // it was inserted
@@ -135,7 +136,7 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
-  LibraryFileAstRegistration reg(moduleSectionStart);
+  LibraryFileSerializationHelper reg(moduleSectionStart);
 
   // create a serializer to write the uAST
   auto ser = Serializer(fileStream, &reg);
@@ -235,10 +236,9 @@ struct GatherToplevelSymbols {
   void exit(const uast::AstNode* ast) { }
 };
 
-void
-LibraryFileWriter::noteToplevelSymbolsForTable(const uast::Module* mod,
-                                               LibraryFileAstRegistration& reg)
-{
+void LibraryFileWriter::noteToplevelSymbolsForTable(
+                                        const uast::Module* mod,
+                                        LibraryFileSerializationHelper& reg) {
   reg.noteSymbolForTable(mod);
 
   GatherToplevelSymbols g;
@@ -301,15 +301,21 @@ computeSymbolNames(const uast::Module* mod,
   return result;
 }
 
-uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
-                                             Serializer& ser,
-                                             LibraryFileAstRegistration& reg) {
+uint64_t
+LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
+                                    Serializer& ser,
+                                    LibraryFileSerializationHelper& reg) {
 
   uint64_t symTableStart = fileStream.tellp();
   SymbolTableHeader header;
   memset(&header, 0, sizeof(header));
   header.magic = SYMBOL_TABLE_MAGIC;
   header.nEntries = reg.symbolTableVec.size();
+  if (reg.symbolTableSet.count(mod) > 0) {
+    // don't count the module itself in the count of symbols
+    // since it won't be represented in the symbol table
+    header.nEntries--;
+  }
   fileStream.write((const char*) &header, sizeof(header));
 
   // output each symbol table entry
@@ -350,7 +356,7 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
 
 uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
                                      Serializer& ser,
-                                     LibraryFileAstRegistration& reg) {
+                                     LibraryFileSerializationHelper& reg) {
   uint64_t astStart = fileStream.tellp();
   AstSectionHeader header;
   memset(&header, 0, sizeof(header));
@@ -442,7 +448,7 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
 
 uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
                                            Serializer& ser,
-                                           LibraryFileAstRegistration& reg) {
+                                           LibraryFileSerializationHelper& reg) {
   uint64_t locationsSectionStart = fileStream.tellp();
 
   LocationSectionHeader header;
@@ -517,10 +523,11 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   return locationsSectionStart - reg.moduleSectionStart;
 }
 
-uint64_t LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
-                                               Serializer& ser,
-                                               LibraryFileAstRegistration& reg,
-                                               const PathToIndex& pathToIdx) {
+uint64_t
+LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
+                                      Serializer& ser,
+                                      LibraryFileSerializationHelper& reg,
+                                      const PathToIndex& pathToIdx) {
   uint64_t groupStart = fileStream.tellp();
 
   uint64_t astOffset = reg.astOffsets[ast];
@@ -558,11 +565,12 @@ uint64_t LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   return groupStart - reg.moduleSectionStart;
 }
 
-void LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
-                                             Serializer& ser,
-                                             LibraryFileAstRegistration& reg,
-                                             uint64_t& lastAstOffset,
-                                             int& lastLine) {
+void
+LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
+                                        Serializer& ser,
+                                        LibraryFileSerializationHelper& reg,
+                                        uint64_t& lastAstOffset,
+                                        int& lastLine) {
   Location entryLoc = parsing::locateAst(context, ast);
   uint64_t astOffset = reg.astOffsets[ast];
   int64_t uastOffsetDifference = astOffset - lastAstOffset;

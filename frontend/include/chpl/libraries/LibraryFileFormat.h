@@ -78,6 +78,7 @@ struct ModuleHeader {
 struct SymbolTableHeader {
   uint64_t magic;
   uint32_t nEntries;
+  uint32_t unused;
   // followed by nEntries SymbolTableEntrys
 };
 

@@ -93,6 +93,7 @@ void BuilderResult::swap(BuilderResult& other) {
   commentIdToLocation_.swap(other.commentIdToLocation_);
 
   std::swap(libraryFile_, other.libraryFile_);
+  libraryFileSymbols_.swap(other.libraryFileSymbols_);
 }
 
 bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
@@ -130,6 +131,7 @@ bool BuilderResult::update(BuilderResult& keep, BuilderResult& addin) {
   changed |= defaultUpdate(keep.commentIdToLocation_,
                            addin.commentIdToLocation_);
   changed |= defaultUpdateBasic(keep.libraryFile_, addin.libraryFile_);
+  changed |= defaultUpdate(keep.libraryFileSymbols_, addin.libraryFileSymbols_);
 
   return changed;
 }
@@ -175,6 +177,8 @@ void BuilderResult::mark(Context* context) const {
   }
 
   context->markPointer(libraryFile_);
+  // libraryFileSymbols_ only has IDs that should have been marked
+  // by the above
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
@@ -264,8 +268,15 @@ bool BuilderResult::equals(const BuilderResult& other) const {
 
   if (libraryFile_ && other.libraryFile_) {
     // check if the hashes are the same
-    return *libraryFile_ == *other.libraryFile_;
+    if (*libraryFile_ != *other.libraryFile_) {
+      return false;
+    }
   }
+
+  /* should be unnecessary to check libraryFileSymbols_
+     because if the library file changed,
+     the above check would return false. */
+  CHPL_ASSERT(libraryFileSymbols_ == other.libraryFileSymbols_);
 
   auto& alist = other.topLevelExpressions_;
   const int n = numTopLevelExpressions();

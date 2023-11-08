@@ -591,12 +591,15 @@ void AstNode::deserializeChildren(Deserializer& des) {
 }
 
 owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
+  uint64_t pos = des.position();
+
   AstTag tag = des.read<AstTag>();
 
-  // deserialize using the constructor
+  // Deserialize using the specific type constructor
   // which will call AstNode::AstNode(AstTag tag, Deserializer& des) above
   // to deserialize AstNode's fields (but not the children)
-  // and then deserialize the subclass fields.
+  // and then deserialize the subclass fields through its constructor.
+  // Then, register the deserialized Ast with the Deserializer
   // Finally, deserialize the children with deserializeChildren.
 
   switch (tag) {
@@ -604,6 +607,7 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }
@@ -612,6 +616,7 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }

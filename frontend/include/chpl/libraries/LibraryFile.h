@@ -27,6 +27,7 @@
 
 #include <sstream>
 #include <system_error>
+#include <unordered_map>
 
 // forward declare LLVM Support Library dependencies
 namespace llvm {
@@ -47,15 +48,38 @@ namespace libraries {
 class LibraryFile;
 
 
-/** Helper object for reading long strings from a LibraryFile strings table */
-class LibraryFileStringsTable {
+/** Helper object to interact with the Deserializer to:
+      * read long strings from a LibraryFile strings table
+      * register deserialized AstNodes for symbol table objects
+ */
+class LibraryFileDeserializationHelper {
  friend class LibraryFile;
  private:
+  struct SymbolInfo {
+    uint64_t symbolEntryOffset;
+    uint64_t uastOffset;
+    uint64_t locationsOffset;
+  };
+
   int nStrings = 0;
   const unsigned char* moduleSectionData = nullptr;
   size_t moduleSectionLen = 0;
-  const uint64_t* offsetsTable = nullptr;
-  LibraryFileStringsTable() { }
+  const uint64_t* stringOffsetsTable = nullptr;
+
+  // key: module-section-relative offset for the serialized uast for
+  //      a symbol table symbol
+  // value: symbol table index of that symbol
+  std::unordered_map<uint64_t, int> offsetToSymIdx;
+
+  // for AstNodes in the symbol table that were deserialized
+  // maps to the symbol table index of that symbol.
+  std::unordered_map<const uast::AstNode*, int> astToSymIdx;
+
+  // maps from symbol table index to SymbolInfo which contains some
+  // useful offsets
+  std::vector<SymbolInfo> symbols;
+
+  LibraryFileDeserializationHelper() { }
 
  public:
   /**
@@ -64,8 +88,12 @@ class LibraryFileStringsTable {
     the ID is out of bounds.
    */
   std::pair<size_t, const char*> getString(int id) const;
-};
 
+  /**
+    When deserializing an AstNode, track some of the uast nodes to
+    be able to map them back to symbol table id. */
+  void registerAst(const uast::AstNode* ast, uint64_t startOffset);
+};
 
 /** For reading a .dyno LibraryFile.
     Some data is read from the file on-demand.
@@ -76,6 +104,7 @@ class LibraryFile {
     UniqueString moduleSymPath;
     UniqueString sourceFilePath;
     uint64_t moduleSectionOffset = 0;
+    LibraryFileDeserializationHelper helper;
   };
 
   UniqueString libPath;
@@ -103,8 +132,10 @@ class LibraryFile {
   static const owned<LibraryFile>& loadLibraryFileQuery(Context* context,
                                                         UniqueString libPath);
 
-  LibraryFileStringsTable readStringsTable(Context* context,
-                                           uint64_t moduleOffset) const;
+  // reads the string table metadata & sets up 'helper' to be ready
+  // to read long strings
+  LibraryFileDeserializationHelper setupHelper(Context* context,
+                                               uint64_t moduleOffset) const;
 
   // deserializes the uAST for the module starting at the passed offset
   // and stores that uAST in the passed builder.
@@ -167,6 +198,16 @@ class LibraryFile {
    */
   const uast::Module* loadModuleAst(Context* context,
                                     UniqueString moduleSymPath) const;
+
+  /**
+    Lookup the location for an Ast node stored in this library file.
+    Assumes that 'ast' is stored within the Locations section
+    found from module 'moduleIndex' and symbol entry 'symbolTableEntryIndex'.
+   */
+  Location lookupLocation(Context* context,
+                          int moduleIndex,
+                          int symbolTableEntryIndex,
+                          const uast::AstNode* ast) const;
 };
 
 

@@ -45,13 +45,23 @@ void Serializer::writeSignedVarint(int64_t num) {
 }
 
 void Serializer::beginAst(const uast::AstNode* ast) {
-  if (reg_ != nullptr) reg_->beginAst(ast, os_);
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->beginAst(ast, os_);
+  }
 }
 
 void Serializer::endAst(const uast::AstNode* ast) {
-  if (reg_ != nullptr) reg_->endAst(ast, os_);
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->endAst(ast, os_);
+  }
 }
 
+
+void Deserializer::registerAst(const uast::AstNode* ast, uint64_t startOffset) {
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->registerAst(ast, startOffset);
+  }
+}
 
 uint64_t Deserializer::readUnsignedVarint() {
   uint64_t num = 0;
@@ -74,11 +84,11 @@ int64_t Deserializer::readSignedVarint() {
 }
 
 std::pair<size_t, const char*> Deserializer::getString(int id) {
-  if (localStringsTable_) {
+  if (libraryFileHelper_ != nullptr) {
+    return libraryFileHelper_->getString(id);
+  } else if (localStringsTable_) {
     stringCacheType& table = *localStringsTable_.get();
     return table[id];
-  } else if (libraryFileStrings_) {
-    return libraryFileStrings_->getString(id);
   }
 
   return std::make_pair((size_t)0, (const char*)nullptr);

@@ -156,6 +156,7 @@ For a symbol, the symbol table ID consists of:
 This section consists of:
  * 8 bytes of magic number 0x4d59531e5ec110e0
  * 4 bytes of N, the number of entries
+ * 4 bytes reserved for future use
  * entries sorted by symbol table ID.  For each entry, it stores:
    * 8 byte relative offset to the uAST section
    * 8 byte relative offset to the Locations section

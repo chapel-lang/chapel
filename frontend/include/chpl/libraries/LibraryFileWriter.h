@@ -41,7 +41,7 @@ class LibraryFileWriter;
 /**
   Helper object for registering serialized uAST positions during serialization
  */
-struct LibraryFileAstRegistration {
+struct LibraryFileSerializationHelper {
  friend class LibraryFileWriter;
 
  private:
@@ -64,7 +64,7 @@ struct LibraryFileAstRegistration {
   // Only nodes in symbolTableSet are represented here.
   std::unordered_map<const uast::AstNode*, uint64_t> locOffsets;
 
-  LibraryFileAstRegistration(uint64_t moduleSectionStart)
+  LibraryFileSerializationHelper(uint64_t moduleSectionStart)
     : moduleSectionStart(moduleSectionStart) {
   }
 
@@ -115,19 +115,19 @@ class LibraryFileWriter {
 
   /** Note the top-level symbols for the passed module for the symbol table */
   void noteToplevelSymbolsForTable(const uast::Module* mod,
-                                   LibraryFileAstRegistration& reg);
+                                   LibraryFileSerializationHelper& reg);
 
   /** Write the symbol table for a given module. Returns the
       relative offset to the symbol table. */
   uint64_t writeSymbolTable(const uast::Module* mod,
                             Serializer& ser,
-                            LibraryFileAstRegistration& reg);
+                            LibraryFileSerializationHelper& reg);
 
   /** Write the uAST section. This will populate 'longStringsOffsets'
       with 0 offsets. Returns the relative offset of the uAST section. */
   uint64_t writeAst(const uast::Module* mod,
                     Serializer& ser,
-                    LibraryFileAstRegistration& reg);
+                    LibraryFileSerializationHelper& reg);
 
   /** Write the long strings in 'longStringsOffsets' that were gathered
       in the process of writing the module & update their indices.
@@ -138,7 +138,7 @@ class LibraryFileWriter {
   */
   uint64_t writeLocations(const uast::Module* mod,
                           Serializer& ser,
-                          LibraryFileAstRegistration& reg);
+                          LibraryFileSerializationHelper& reg);
 
   /** Write a locations group starting with the location for 'ast'
       and containing contained locations until reaching a node that
@@ -146,14 +146,14 @@ class LibraryFileWriter {
       Returns the relative offset of the locations group. */
   uint64_t writeLocationGroup(const uast::AstNode* ast,
                               Serializer& ser,
-                              LibraryFileAstRegistration& reg,
+                              LibraryFileSerializationHelper& reg,
                               const PathToIndex& pathToIdx);
 
   /** Write the location entry for a given ast node and its children,
       stopping when reaching a child node in the symbol table */
   void writeLocationEntries(const uast::AstNode* ast,
                             Serializer& ser,
-                            LibraryFileAstRegistration& reg,
+                            LibraryFileSerializationHelper& reg,
                             uint64_t& lastAstOffset,
                             int& lastLine);
 

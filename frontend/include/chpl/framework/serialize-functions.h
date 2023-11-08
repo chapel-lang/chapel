@@ -52,8 +52,8 @@ namespace uast {
   class AstNode;
 }
 namespace libraries {
-  class LibraryFileAstRegistration;
-  class LibraryFileStringsTable;
+  class LibraryFileSerializationHelper;
+  class LibraryFileDeserializationHelper;
 }
 
 /** this class is what is passed to serialize methods & helps
@@ -71,7 +71,7 @@ public:
 private:
   uint32_t longStringCounter_ = 1;
   std::ostream& os_;
-  libraries::LibraryFileAstRegistration* reg_ = nullptr;
+  libraries::LibraryFileSerializationHelper* libraryFileHelper_ = nullptr;
   stringCacheType stringCache_;
 
   /** write a variable-byte encoded unsigned integer */
@@ -81,8 +81,8 @@ private:
 
 public:
   Serializer(std::ostream& os,
-             libraries::LibraryFileAstRegistration* reg)
-    : os_(os), reg_(reg) {
+             libraries::LibraryFileSerializationHelper* helper)
+    : os_(os), libraryFileHelper_(helper) {
   }
 
   const stringCacheType& stringCache() {
@@ -155,10 +155,11 @@ class Deserializer {
   using stringCacheType = std::vector<std::pair<size_t, const char*>>;
  private:
   Context* context_ = nullptr;
+  const unsigned char* start_ = nullptr;
   const unsigned char* cur_ = nullptr;
   const unsigned char* end_ = nullptr;
   owned<stringCacheType> localStringsTable_;
-  const libraries::LibraryFileStringsTable* libraryFileStrings_ = nullptr;
+  libraries::LibraryFileDeserializationHelper* libraryFileHelper_ = nullptr;
 
   /** read a variable-byte encoded unsigned integer */
   uint64_t readUnsignedVarint();
@@ -168,11 +169,12 @@ class Deserializer {
  public:
   Deserializer(Context* context,
                const void* data, size_t len,
-               const libraries::LibraryFileStringsTable* table)
+               libraries::LibraryFileDeserializationHelper* helper)
     : context_(context),
+      start_((const unsigned char*) data),
       cur_((const unsigned char*) data),
       end_(((const unsigned char*) data) + len),
-      libraryFileStrings_(table) {
+      libraryFileHelper_(helper) {
   }
 
   //
@@ -182,6 +184,7 @@ class Deserializer {
                const void* data, size_t len,
                Serializer::stringCacheType serCache)
     : context_(context),
+      start_((const unsigned char*) data),
       cur_((const unsigned char*) data),
       end_(((const unsigned char*) data) + len) {
     localStringsTable_.reset(new stringCacheType());
@@ -198,6 +201,13 @@ class Deserializer {
 
   /** Get a string from the long strings table by index */
   std::pair<size_t, const char*> getString(int id);
+
+  /** Return the current offset into the deserialization region */
+  uint64_t position() {
+    return cur_ - start_;
+  }
+
+  void registerAst(const uast::AstNode* ast, uint64_t startOffset);
 
   template <typename T>
   T operator()() {
