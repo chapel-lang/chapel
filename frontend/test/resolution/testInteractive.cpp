@@ -139,7 +139,7 @@ computeAndPrintStuff(Context* context,
     resolvedExpressionForAstInteractive(context, ast, inFn, scopeResolveOnly);
   int afterCount = context->numQueriesRunThisRevision();
   if (r != nullptr) {
-    for (const Candidate& candidate : r->mostSpecific()) {
+    for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
       if (candidate) {
         auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {

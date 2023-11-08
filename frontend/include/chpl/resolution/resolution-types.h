@@ -1069,24 +1069,24 @@ class MostSpecificCandidates;
   not this candidate requires a const ref coercion, which is allowed by
   the spec, but is not allowed in practice due to the aliasing rules of C.
   */
-class Candidate {
+class MostSpecificCandidate {
  private:
   friend class MostSpecificCandidates;
 
   const TypedFnSignature* fn_;
   int constRefCoercionFormal_;
 
-  Candidate(const TypedFnSignature* fn, int constRefCoercionFormal)
+  MostSpecificCandidate(const TypedFnSignature* fn, int constRefCoercionFormal)
     : fn_(fn), constRefCoercionFormal_(constRefCoercionFormal) {}
 
  public:
-  Candidate() : fn_(nullptr), constRefCoercionFormal_(-1) {}
+  MostSpecificCandidate() : fn_(nullptr), constRefCoercionFormal_(-1) {}
 
-  static Candidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
                                         const FormalActualMap& faMap);
 
-  static Candidate fromTypedFnSignature(Context* context,
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
                                         const CallInfo& info);
 
@@ -1101,12 +1101,12 @@ class Candidate {
     return fn_ != nullptr;
   }
 
-  bool operator==(const Candidate& other) const {
+  bool operator==(const MostSpecificCandidate& other) const {
     return fn_ == other.fn_ &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_;
   }
 
-  bool operator!=(const Candidate& other) const {
+  bool operator!=(const MostSpecificCandidate& other) const {
     return !(*this == other);
   }
 
@@ -1139,7 +1139,7 @@ class MostSpecificCandidates {
   } Intent;
 
  private:
-  Candidate candidates[NUM_INTENTS] = {Candidate()};
+  MostSpecificCandidate candidates[NUM_INTENTS] = {MostSpecificCandidate()};
   bool emptyDueToAmbiguity = false;
 
  public:
@@ -1154,7 +1154,7 @@ class MostSpecificCandidates {
     Otherwise, default-initializes a MostSpecificCandidates with no candidates
     that is not empty due to ambiguity.
    */
-  static MostSpecificCandidates getOnly(Candidate c) {
+  static MostSpecificCandidates getOnly(MostSpecificCandidate c) {
     MostSpecificCandidates ret;
     if (c.fn() != nullptr)
       ret.setBestOnly(std::move(c));
@@ -1185,34 +1185,34 @@ class MostSpecificCandidates {
    */
   void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
-  Candidate const* begin() const {
+  MostSpecificCandidate const* begin() const {
     return &candidates[0];
   }
-  Candidate const* end() const {
+  MostSpecificCandidate const* end() const {
     return &candidates[NUM_INTENTS];
   }
 
-  void setBestRef(Candidate c) {
+  void setBestRef(MostSpecificCandidate c) {
     candidates[REF] = std::move(c);
   }
-  void setBestConstRef(Candidate c) {
+  void setBestConstRef(MostSpecificCandidate c) {
     candidates[CONST_REF] = std::move(c);
   }
-  void setBestValue(Candidate c) {
+  void setBestValue(MostSpecificCandidate c) {
     candidates[VALUE] = std::move(c);
   }
 
-  void setBestOnly(Candidate c) {
+  void setBestOnly(MostSpecificCandidate c) {
     candidates[ONLY] = std::move(c);
   }
 
-  const Candidate& bestRef() const {
+  const MostSpecificCandidate& bestRef() const {
     return candidates[REF];
   }
-  const Candidate& bestConstRef() const {
+  const MostSpecificCandidate& bestConstRef() const {
     return candidates[CONST_REF];
   }
-  const Candidate& bestValue() const {
+  const MostSpecificCandidate& bestValue() const {
     return candidates[VALUE];
   }
 
@@ -1223,7 +1223,7 @@ class MostSpecificCandidates {
   const TypedFnSignature* only() const {
     const TypedFnSignature* ret = nullptr;
     int nPresent = 0;
-    for (const Candidate& sig : *this) {
+    for (const MostSpecificCandidate& sig : *this) {
       if (sig.fn() != nullptr) {
         ret = sig.fn();
         nPresent++;
@@ -1243,7 +1243,7 @@ class MostSpecificCandidates {
    */
   int numBest() const {
     int ret = 0;
-    for (const Candidate& sig : *this) {
+    for (const MostSpecificCandidate& sig : *this) {
       if (sig.fn() != nullptr) {
         ret++;
       }
@@ -1301,7 +1301,7 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const Candidate& sig : candidates) {
+    for (const MostSpecificCandidate& sig : candidates) {
       sig.mark(context);
     }
   }

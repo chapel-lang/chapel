@@ -3390,7 +3390,7 @@ findMostSpecificAndCheck(Context* context,
                                ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
-  for (const Candidate& candidate : mostSpecific) {
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate && candidate.fn()->instantiatedFrom()) {
       checkSignature(context, candidate.fn());
     }
@@ -3400,7 +3400,7 @@ findMostSpecificAndCheck(Context* context,
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
-      for (const Candidate& candidate : mostSpecific) {
+      for (const MostSpecificCandidate& candidate : mostSpecific) {
         if (candidate.fn() == candidates[i]) {
           poiInfo.addIds(call->id(), candidate.fn()->id());
         }
@@ -3479,7 +3479,7 @@ CallResolutionResult resolveFnCall(Context* context,
   const PoiScope* instantiationPoiScope = nullptr;
   bool anyInstantiated = false;
 
-  for (const Candidate& candidate : mostSpecific) {
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate && candidate.fn()->instantiatedFrom() != nullptr) {
       anyInstantiated = true;
       break;
@@ -3491,7 +3491,7 @@ CallResolutionResult resolveFnCall(Context* context,
       pointOfInstantiationScope(context, inScope, inPoiScope);
     poiInfo.setPoiScope(instantiationPoiScope);
 
-    for (const Candidate& candidate : mostSpecific) {
+    for (const MostSpecificCandidate& candidate : mostSpecific) {
       if (candidate) {
         if (candidate.fn()->untyped()->idIsFunction()) {
           // note: following call returns early if candidate not instantiated
@@ -3520,7 +3520,7 @@ CallResolutionResult resolveFnCall(Context* context,
   // compute the return types
   QualifiedType retType;
   bool retTypeSet = false;
-  for (const Candidate& candidate : mostSpecific) {
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
     if (candidate.fn() != nullptr) {
       QualifiedType t = returnType(context, candidate.fn(), instantiationPoiScope);
       if (retTypeSet && retType.type() != t.type()) {

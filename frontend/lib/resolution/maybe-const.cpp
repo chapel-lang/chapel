@@ -254,10 +254,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    Candidate bestRef = candidates.bestRef();
-    Candidate bestConstRef = candidates.bestConstRef();
-    Candidate bestValue = candidates.bestValue();
-    Candidate best = {};
+    MostSpecificCandidate bestRef = candidates.bestRef();
+    MostSpecificCandidate bestConstRef = candidates.bestConstRef();
+    MostSpecificCandidate bestValue = candidates.bestValue();
+    MostSpecificCandidate best = {};
     if (access == REF) {
       if (bestRef) best = bestRef;
       else if (bestConstRef) best = bestConstRef;

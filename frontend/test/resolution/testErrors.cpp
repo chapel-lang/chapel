@@ -64,7 +64,7 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r =
     resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
   if (r != nullptr) {
-    for (const Candidate& candidate : r->mostSpecific()) {
+    for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
       if (candidate) {
         auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {

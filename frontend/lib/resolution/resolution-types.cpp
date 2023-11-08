@@ -820,7 +820,7 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
-Candidate Candidate::fromTypedFnSignature(Context* context,
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
                                           const TypedFnSignature* fn,
                                           const FormalActualMap& faMap) {
   int coercionFormal = -1;
@@ -837,17 +837,17 @@ Candidate Candidate::fromTypedFnSignature(Context* context,
     }
   }
 
-  return Candidate(fn, coercionFormal);
+  return MostSpecificCandidate(fn, coercionFormal);
 }
 
-Candidate Candidate::fromTypedFnSignature(Context* context,
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
                                           const TypedFnSignature* fn,
                                           const CallInfo& ci) {
   auto faMap = FormalActualMap(fn, ci);
-  return Candidate::fromTypedFnSignature(context, fn, faMap);
+  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap);
 }
 
-void Candidate::stringify(std::ostream& ss,
+void MostSpecificCandidate::stringify(std::ostream& ss,
                           chpl::StringifyKind stringKind) const {
   if (fn_) fn_->stringify(ss, stringKind);
 }
@@ -856,7 +856,7 @@ void
 MostSpecificCandidates::inferOutFormals(Context* context,
                                         const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
-    Candidate& c = candidates[i];
+    MostSpecificCandidate& c = candidates[i];
     if (c) {
       c.fn_ = chpl::resolution::inferOutFormals(context, c.fn(), instantiationPoiScope);
     }
