@@ -128,6 +128,10 @@ def register_rules(driver):
         for child in root:
             yield from MisleadingIndentation(context, child)
 
+            # dont call `.location` on comments
+            if isinstance(child, Comment) or isinstance(prev, Comment):
+                continue
+
             if prev is not None:
                 if child.location().start()[1] == prev.location().start()[1]:
                     yield child
