@@ -1031,10 +1031,115 @@ static void discardWorseWhereClauses(const DisambiguationContext& dctx,
   // TODO: fill me in
 }
 
+static void computeConversionInfo(const DisambiguationContext& dctx,
+                                  const DisambiguationCandidate * candidate) {
+  // TODO: Fill me in
+  // this seems like it should be a query based on the production version
+  // checking if already computed n implicit conversions
+  // also the production version mutates the candidate, so that seems like a
+  // non-starter
+}
+
 static void discardWorseConversions(const DisambiguationContext& dctx,
                                     const CandidatesVec& candidates,
                                     std::vector<bool>& discarded) {
-  // TODO: fill me in
+  int minImpConv = INT_MAX;
+  int maxImpConv = INT_MIN;
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    const DisambiguationCandidate* candidate = candidates[i];
+    // TODO: make this
+    computeConversionInfo(dctx, candidate);
+    int impConv = candidate->nImplicitConversions;
+    if (impConv < minImpConv) {
+      minImpConv = impConv;
+    }
+    if (impConv > maxImpConv) {
+      maxImpConv = impConv;
+    }
+  }
+
+  if (minImpConv < maxImpConv) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      int impConv = candidate->nImplicitConversions;
+      if (impConv > minImpConv) {
+        EXPLAIN("X: Fn %d has more implicit conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int numWithNegParamToSigned = 0;
+  int numNoNegParamToSigned = 0;
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    const DisambiguationCandidate* candidate = candidates[i];
+    computeConversionInfo(dctx, candidate);
+    if (candidate->anyNegParamToUnsigned) {
+      numWithNegParamToSigned++;
+    } else {
+      numNoNegParamToSigned++;
+    }
+  }
+
+  if (numWithNegParamToSigned > 0 && numNoNegParamToSigned > 0) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      if (candidate->anyNegParamToUnsigned) {
+        EXPLAIN("X: Fn %d has negative param to signed and others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int minNarrowing = INT_MAX;
+  int maxNarrowing = INT_MIN;
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    const DisambiguationCandidate* candidate = candidates[i];
+    computeConversionInfo(dctx, candidate);
+    int narrowing = candidate->nParamNarrowingImplicitConversions;
+    if (narrowing < minNarrowing) {
+      minNarrowing = narrowing;
+    }
+    if (narrowing > maxNarrowing) {
+      maxNarrowing = narrowing;
+    }
+  }
+
+  if (minNarrowing < maxNarrowing) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      int narrowing = candidate->nParamNarrowingImplicitConversions;
+      if (narrowing > minNarrowing) {
+        EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
 }
 
 // If any candidate does not require promotion,
