@@ -488,8 +488,8 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   // parent symbol, or until we reach the highest outer scope
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
-         parentDeprecated != true && compilerGenerated != true &&
-         ignoreUsage != true) {
+         parentDeprecated != true && ignoreUsage != true &&
+         (developer || compilerGenerated != true)) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
     compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
@@ -498,7 +498,7 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
+  if ((developer || !compilerGenerated) && !parentDeprecated && !ignoreUsage) {
     USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
   }
 }
@@ -542,8 +542,8 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   while (contextParent != NULL && contextParent->defPoint != NULL &&
          contextParent->defPoint->parentSymbol != NULL &&
          !isInvisibleModule(contextParent) &&
-         parentUnstable != true && compilerGenerated != true &&
-         parentDeprecated != true) {
+         parentUnstable != true && parentDeprecated != true &&
+         (developer || compilerGenerated != true)) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
@@ -552,7 +552,7 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler, is not unstable, and is not deprecated.
-  if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
+  if ((developer || !compilerGenerated) && !parentUnstable && !parentDeprecated) {
     USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
   }
 }
