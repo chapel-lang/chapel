@@ -843,6 +843,9 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
 
   // Is there room in our fast path buffer?
   if( qio_space_in_ptr_diff(len, ch->cached_end, ch->cached_cur) ) {
+    // printf("\t-fast read: len=%zi, cached-cur=%p, rms=%lli\n", len, ch->cached_cur, ch->mark_stack[ch->mark_cur]);
+    // fflush(stdout);
+
     qio_memcpy( ptr, ch->cached_cur, len );
     ch->cached_cur = qio_ptr_add(ch->cached_cur, len);
     *amt_read = len;
@@ -850,6 +853,9 @@ qioerr qio_channel_read(const int threadsafe, qio_channel_t* restrict ch, void* 
   } else {
     err = _qio_slow_read(ch, ptr, len, amt_read);
     _qio_channel_set_error_unlocked(ch, err);
+
+    // printf("\t-slow read: len=%zi, cached-cur=%p, amt_read=%zi, rms=%lli\n", len, ch->cached_cur, *amt_read, ch->mark_stack[ch->mark_cur]);
+    // fflush(stdout);
   }
 
   if( threadsafe ) {
