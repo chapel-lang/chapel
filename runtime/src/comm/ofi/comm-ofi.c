@@ -181,7 +181,6 @@ static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
 static const char* envExpectedProvider; // env: provider we should select
 static ssize_t   envNbamCopyThreshold;  // env: NBAM copy threshold
 static int       envNbamMaxBuffers;     // env. max # NBAMs per thread
-static chpl_bool envNbamUseMalloc;      // env. use malloc/free for buffers
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -207,7 +206,6 @@ typedef struct nbamState_t {
   void      *allocatedBuffers;  // tracks buffers when using malloc and counters
   int       inuse;              // # of buffers in-use
   nbamCallback_t *callbacks;    // callback info for freeing buffers
-  chpl_bool useMalloc;          // use malloc to allocate buffers
 } nbamState_t;
 
 typedef struct perTxCtxInfo_t {
@@ -1063,7 +1061,6 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 
   envNbamCopyThreshold = chpl_env_rt_get_size("COMM_OFI_NBAM_THRESHOLD", 1024);
   envNbamMaxBuffers = chpl_env_rt_get_int("COMM_OFI_NBAM_MAX_BUFFERS", 128);
-  envNbamUseMalloc = chpl_env_rt_get_bool("COMM_OFI_NBAM_USE_MALLOC", true);
 
   //
   // The user can specify the provider by setting either the Chapel
@@ -4564,16 +4561,12 @@ static void
 nbamFreeBuffers(perTxCtxInfo_t *tcip) {
   nbamState_t *nbam = &tcip->nbam;
   if (nbam->inuse > 0) {
-    if (!nbam->useMalloc) {
-      memset(nbam->full, 0, nbam->numBuffers * sizeof(*nbam->full));
-    } else {
-      void *next;
-      for (void *ptr = tcip->nbam.allocatedBuffers; ptr != NULL; ptr = next) {
-        next = *((void **) ptr);
-        CHPL_FREE(ptr);
-      }
-      tcip->nbam.allocatedBuffers = NULL;
+    void *next;
+    for (void *ptr = tcip->nbam.allocatedBuffers; ptr != NULL; ptr = next) {
+      next = *((void **) ptr);
+      CHPL_FREE(ptr);
     }
+    tcip->nbam.allocatedBuffers = NULL;
     nbam->inuse = 0;
   }
 }
@@ -4605,12 +4598,7 @@ static void
 nbamFreeBuffer(struct txnTrkCallback_t *hdr) {
   nbamCallback_t *cb = (nbamCallback_t *) hdr;
 
-  if (!hdr->tcip->nbam.useMalloc) {
-    // mark the internal buffer as empty
-    *((chpl_bool *) cb->ptr) = false;
-  } else {
-    CHPL_FREE(cb->ptr);
-  }
+  CHPL_FREE(cb->ptr);
   hdr->tcip->nbam.inuse--;
 }
 
@@ -4682,49 +4670,27 @@ void amReqFn_msgOrdFence(c_nodeid_t node,
     while (nbam->inuse == nbam->numBuffers) {
       (*tcip->checkTxCmplsFn)(tcip, true);
     }
-    if (!tcip->nbam.useMalloc) {
-      // use our own internal buffers
-      while (nbam->full[nbam->index] == true) {
-        (*tcip->checkTxCmplsFn)(tcip, true);
-      }
-      void *buffer = nbam->buffers[nbam->index];
-      memcpy(buffer, req, reqSize);
-      req = (amRequest_t *) buffer;
-      if (tcip->txCntr == NULL) {
-        // set up CQ callback to free buffer
-        nbamCallback_t *cb = &(tcip->nbam.callbacks[nbam->index]);
-        cb->hdr.func = nbamFreeBuffer;
-        cb->ptr = &nbam->full[nbam->index];
-        ctx = txnTrkEncodeCallback(&cb->hdr);
-      }
-      nbam->full[nbam->index] = true;
-      nbam->index = (nbam->index + 1) % nbam->numBuffers;
-      nbam->inuse++;
-      waitComplete = false;
+    void *buffer;
+    if (tcip->txCntr == NULL) {
+      // set up CQ callback to free buffer
+      nbamCallback_t *cb;
+      CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(*cb));
+      cb = (nbamCallback_t *) buffer;
+      cb->hdr.func = nbamFreeBuffer;
+      cb->ptr = buffer;
+      ctx = txnTrkEncodeCallback(&cb->hdr);
+      buffer = (void *) ((char *) buffer +  sizeof(*cb));
     } else {
-      // malloc a buffer
-      void *buffer;
-      if (tcip->txCntr == NULL) {
-        // set up CQ callback to free buffer
-        nbamCallback_t *cb;
-        CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(*cb));
-        cb = (nbamCallback_t *) buffer;
-        cb->hdr.func = nbamFreeBuffer;
-        cb->ptr = buffer;
-        ctx = txnTrkEncodeCallback(&cb->hdr);
-        buffer = (void *) ((char *) buffer +  sizeof(*cb));
-      } else {
-        // add buffer to linked-list of buffers to be freed
-        CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(void *));
-        *((void **) buffer) = nbam->allocatedBuffers;
-        nbam->allocatedBuffers = buffer;
-        buffer = (void *) ((char *) buffer +  sizeof(void *));
-      }
-      memcpy(buffer, req, reqSize);
-      req = (amRequest_t *) buffer;
-      nbam->inuse++;
-      waitComplete = false;
+      // add buffer to linked-list of buffers to be freed
+      CHPL_CALLOC_SZ(buffer, 1, reqSize + sizeof(void *));
+      *((void **) buffer) = nbam->allocatedBuffers;
+      nbam->allocatedBuffers = buffer;
+      buffer = (void *) ((char *) buffer +  sizeof(void *));
     }
+    memcpy(buffer, req, reqSize);
+    req = (amRequest_t *) buffer;
+    nbam->inuse++;
+    waitComplete = false;
   }
   if (waitComplete) {
     // do it the old-fashioned way and wait for transmit-complete
@@ -5899,15 +5865,6 @@ struct perTxCtxInfo_t* tciAllocCommon(chpl_bool bindToAmHandler) {
     nbamState_t *nbam = &_ttcip->nbam;
     nbam->numBuffers = envNbamMaxBuffers;
     nbam->bufSize = envNbamCopyThreshold;
-    nbam->useMalloc = envNbamUseMalloc;
-    if (!nbam->useMalloc) {
-      CHPL_CALLOC(nbam->buffers, nbam->numBuffers);
-      for (int i = 0; i < nbam->numBuffers; i++) {
-        CHPL_CALLOC_SZ(nbam->buffers[i], 1, nbam->bufSize);
-      }
-      CHPL_CALLOC(nbam->full, nbam->numBuffers);
-      CHPL_CALLOC(nbam->callbacks, nbam->numBuffers);
-    }
     nbam->index = 0;
     nbam->allocatedBuffers = NULL;
     nbam->inuse = 0;
