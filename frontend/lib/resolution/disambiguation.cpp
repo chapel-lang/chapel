@@ -39,6 +39,11 @@ struct DisambiguationCandidate {
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
+  bool anyPromotes = false;
+  bool nImplicitConversionsComputed = false;
+  bool anyNegParamToUnsigned = false;
+  int nImplicitConversions = 0;
+  int nParamNarrowingImplicitConversions = 0;
   // What is the visibility distance? This is -1 if it has not been computed.
   int visibilityDistance = -1;
 
@@ -46,7 +51,10 @@ struct DisambiguationCandidate {
                           QualifiedType forwardingTo,
                           const CallInfo& call,
                           int idx)
-    : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx)
+    : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx),
+      anyPromotes(false), nImplicitConversionsComputed(false),
+      anyNegParamToUnsigned(false), nImplicitConversions(0),
+      nParamNarrowingImplicitConversions(0), visibilityDistance(-1)
   {
   }
 };
@@ -85,6 +93,13 @@ struct DisambiguationContext {
 };
 
 struct DisambiguationState {
+  bool fn1NonParamArgsPreferred = false;
+  bool fn2NonParamArgsPreferred = false;
+
+  bool fn1ParamArgsPreferred = false;
+  bool fn2ParamArgsPreferred = false;
+
+  // TODO: Remove all these
   bool  fn1MoreSpecific = false;
   bool  fn2MoreSpecific = false;
 
@@ -183,10 +198,26 @@ static void discardWorseVisibility(const DisambiguationContext& dctx,
                                    const CandidatesVec& candidates,
                                    std::vector<bool>& discarded);
 
+static void discardWorseArgs(const DisambiguationContext& dctx,
+                             const CandidatesVec& candidates,
+                             std::vector<bool>& discarded);
+
+static void discardWorsePromoting(const DisambiguationContext& dctx,
+                                  const CandidatesVec& candidates,
+                                  std::vector<bool>&  discarded);
+
+static void discardWorseWhereClauses(const DisambiguationContext& dctx,
+                                     const CandidatesVec& candidates,
+                                     std::vector<bool>& discarded);
+
+static void discardWorseConversions(const DisambiguationContext& dctx,
+                                    const CandidatesVec& candidates,
+                                    std::vector<bool>& discarded);
+
 static void disambiguateDiscarding(const DisambiguationContext&   dctx,
                                    const CandidatesVec& candidates,
-                                   bool                         ignoreWhere,
-                                   std::vector<bool>&           discarded);
+                                   bool ignoreWhere,
+                                   std::vector<bool>&   discarded);
 
 // count the number of candidates with each return intent
 static void countByReturnIntent(const DisambiguationContext& dctx,
@@ -895,11 +926,9 @@ static void disambiguateDiscarding(const DisambiguationContext&   dctx,
     discardWorseVisibility(dctx, candidates, discarded);
   }
 
-  // TODO: Implement commented code below:
-
   // If any candidate does not require promotion,
   // eliminate candidates that do require promotion.
-  // discardWorsePromoting(candidates, DC, discarded);
+  discardWorsePromoting(dctx, candidates, discarded);
 
   // Consider the relationship among the arguments
   // Note that this part is a partial order;
@@ -907,7 +936,7 @@ static void disambiguateDiscarding(const DisambiguationContext&   dctx,
   // two candidates. It should be transitive.
   // Discard any candidate that has a worse argument mapping than another
   // candidate.
-  // discardWorseArgs(candidates, DC, discarded);
+  discardWorseArgs(dctx, candidates, discarded);
 
   // Apply further filtering to the set of candidates
 
@@ -915,19 +944,19 @@ static void disambiguateDiscarding(const DisambiguationContext&   dctx,
   // than another candidate.
   // After that, discard any candidate that has more param narrowing
   // conversions than another candidate.
-  // discardWorseConversions(candidates, DC, discarded);
+  discardWorseConversions(dctx, candidates, discarded);
 
-  // if (!ignoreWhere) {
+  if (!ignoreWhere) {
     // If some candidates have 'where' clauses and others do not,
     // discard those without 'where' clauses
-  //   discardWorseWhereClauses(candidates, DC, discarded);
-  // }
-  // if (DC.useOldVisibility && !DC.isMethodCall) {
+    discardWorseWhereClauses(dctx, candidates, discarded);
+  }
+  if (dctx.useOldVisibility && !dctx.isMethodCall) {
     // If some candidates are less visible than other candidates,
     // discard those with less visibility.
     // This filter should not be applied to method calls.
-  //   discardWorseVisibility(candidates, DC, discarded);
-  // }
+    discardWorseVisibility(dctx, candidates, discarded);
+  }
 }
 
 static MoreVisibleResult
@@ -975,6 +1004,37 @@ computeIsMoreVisible(Context* context,
   }
 
   return MoreVisibleResult::FOUND_NEITHER;
+}
+
+// body should be updated similar to match disambiguateDiscarding
+// current body gets into discardWorseArgs (new)
+
+// Discard any candidate that has a worse argument mapping than another
+// candidate.
+static void discardWorseArgs(const DisambiguationContext& dctx,
+                               const CandidatesVec& candidates,
+                               std::vector<bool>& discarded) {
+  // TODO: fill me in
+}
+
+static void discardWorseWhereClauses(const DisambiguationContext& dctx,
+                                     const CandidatesVec& candidates,
+                                     std::vector<bool>& discarded) {
+  // TODO: fill me in
+}
+
+static void discardWorseConversions(const DisambiguationContext& dctx,
+                                    const CandidatesVec& candidates,
+                                    std::vector<bool>& discarded) {
+  // TODO: fill me in
+}
+
+// If any candidate does not require promotion,
+// eliminate candidates that do require promotion.
+static void discardWorsePromoting(const DisambiguationContext& dctx,
+                                   const CandidatesVec& candidates,
+                                   std::vector<bool>&  discarded) {
+  // TODO: fill me in
 }
 
 static const MoreVisibleResult&
