@@ -4713,7 +4713,7 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   INT_ASSERT(gpuArches.size() == 1);
 
   std::string targets;
-  std::string inputs;
+  std::string inputs = "-input=/dev/null ";
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4736,17 +4736,15 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
     mysystem(lldCmd.c_str(), "Device .o file to .out file");
 
     targets += std::string(",hipv4-amdgcn-amd-amdhsa--") + gpuArch;
-    inputs += std::string(",") + gpuOut;
+    inputs += "-input=" + gpuOut + " ";
 
   }
-  std::string bundlerCmd = std::string(gGpuSdkPath) +
-                          "/llvm/bin/clang-offload-bundler" +
+  std::string bundlerCmd = findSiblingClangToolPath("clang-offload-bundler") +
                            " -type=o -bundle-align=4096" +
                            " -targets=host-x86_64-unknown-linux" +
-                           targets +
-                           " -inputs=/dev/null" +
+                           targets + " " +
                            inputs +
-                           " -outputs=" + fatbinFilename;
+                           " -output=" + fatbinFilename;
 
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
