@@ -1042,7 +1042,36 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
 static void discardWorsePromoting(const DisambiguationContext& dctx,
                                    const CandidatesVec& candidates,
                                    std::vector<bool>&  discarded) {
-  // TODO: fill me in
+  int nPromoting = 0;
+  int nNotPromoting = 0;
+  for (size_t i = 0; i < candidates.size(); ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    const DisambiguationCandidate* candidate = candidates[i];
+    if (candidate->anyPromotes) {
+      nPromoting++;
+    } else {
+      nNotPromoting++;
+    }
+  }
+
+  if (nPromoting > 0 && nNotPromoting > 0) {
+    for (size_t i = 0; i < candidates.size(); ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      if (candidate->anyPromotes) {
+        EXPLAIN_DUMP(candidate1->fn);
+        EXPLAIN("\n\n");
+        EXPLAIN("X: Fn %d promotes but others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
 }
 
 static const MoreVisibleResult&
