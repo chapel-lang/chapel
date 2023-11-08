@@ -467,6 +467,8 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
+std::unordered_set<std::pair<Symbol*,Expr*>> dedupDeprecationWarnings;
+
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
 
@@ -499,8 +501,11 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
-  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
-    USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+    auto key = std::make_pair(this, context);
+    if (dedupDeprecationWarnings.find(key) == dedupDeprecationWarnings.end()) {
+      USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+      dedupDeprecationWarnings.insert(key);
+    }
   }
 }
 
@@ -528,6 +533,8 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
+std::unordered_set<std::pair<Symbol*,Expr*>> dedupUnstableWarnings;
+
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   if (!isUnstableShouldWarn(this, context)) return;
@@ -553,8 +560,11 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler, is not unstable, and is not deprecated.
-  if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
-    USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
+    auto key = std::make_pair(this, context);
+    if (dedupUnstableWarnings.find(key) == dedupUnstableWarnings.end()) {
+      USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
+      dedupUnstableWarnings.insert(key);
+    }
   }
 }
 
