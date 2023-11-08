@@ -9488,7 +9488,6 @@ static void resolveNew(CallExpr* newExpr) {
   // The following variables allow the latter half of this function
   // to construct the AST for initializing the owned/shared if necessary.
   // Manager is:
-  //  dtBorrowed for 'new borrowed'
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
@@ -9657,17 +9656,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             // Set the type to initialize
             typeExpr->setSymbol(initType->symbol);
         }
-      }
-
-      if (manager == dtBorrowed && fWarnUnstable) {
-        Type* ct = canonicalClassType(type);
-        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
-        USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                           "'new owned %s' or "
-                           "'new shared %s'",
-                           ct->symbol->name,
-                           ct->symbol->name,
-                           ct->symbol->name);
       }
     }
   }

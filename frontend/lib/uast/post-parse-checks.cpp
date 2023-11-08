@@ -114,6 +114,7 @@ struct Visitor {
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
+  void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
@@ -629,6 +630,16 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
 
   if (doEmitError) {
     error(node, "direct calls to deinit() are not allowed.");
+  }
+}
+
+void Visitor::checkNewBorrowed(const FnCall* node) {
+  if(auto calledExpr = node->calledExpression()) {
+    if(auto newCalledExpr = calledExpr->toNew()) {
+      if (newCalledExpr->management() == New::Management::BORROWED) {
+        error(node, "cannot create a 'borrowed' object using 'new'");
+      }
+    }
   }
 }
 
@@ -1386,6 +1397,7 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
+  checkNewBorrowed(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
 
