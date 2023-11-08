@@ -2827,15 +2827,11 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->mark_cur == 0 &&                     // not waiting for a commit/revert
     ch->chan_info == NULL                    // there is no IO plugin
   ) {
-    // printf("\tdirect read: %zi, rms=%lli\n", len, _right_mark_start(ch));
-    // fflush(stdout);
-
     // copy out what remains in the buffer before making a system call
     gotlen = qio_ptr_diff(ch->cached_end, ch->cached_cur);
-    // printf("\t\tremaining in buffer: %lli\n", gotlen);
-    // fflush(stdout);
 
     if ( ch->cached_start == NULL ) {
+      // only use the right-mark-start offset if the buffered offset does not exist
       start = qbuffer_iter_at(&ch->buf, qio_channel_offset_unlocked(ch));
     } else {
       start = qbuffer_iter_at(&ch->buf, ch->cached_start_pos + qio_ptr_diff(ch->cached_cur, ch->cached_start));
@@ -2867,17 +2863,14 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       num_read = 0;
       switch (method) {
         case QIO_METHOD_READWRITE:
-          // printf("\t\t\t readwrite\n");
           err = qio_int_to_err(sys_read(ch->file->fd, ptr, remaining,
                                &num_read));
           break;
         case QIO_METHOD_PREADPWRITE:
-          // printf("\t\t\t preadpwrite: %lli\n", _right_mark_start(ch));
           err = qio_int_to_err(sys_pread(ch->file->fd, ptr, remaining,
                                _right_mark_start(ch), &num_read));
           break;
         case QIO_METHOD_FREADFWRITE:
-          // printf("\t\t\t freadfwrite\n");
           if( ch->file->fp ) {
             num_read_u = fread(ptr, 1, remaining, ch->file->fp);
             err = 0;
@@ -2898,15 +2891,12 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       }
       // Return early on an error or on EOF.
       if( err ) {
-        // *amt_read = num_read;
         return err;
       }
       ptr = qio_ptr_add(ptr, num_read);
       _add_right_mark_start(ch, num_read);
       remaining -= num_read;
       *amt_read += num_read;
-      // printf("\t\tdid read: %zi remaining=%lli, ptr=%p\n", num_read, remaining, ptr);
-      // fflush(stdout);
     }
 
     // reposition the existing buffer space (and 'av_end') by the size of the direct read
@@ -2920,8 +2910,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     ch->cached_end = NULL;
     ch->cached_start = NULL;
   } else {
-    // printf("\tbuffered read: %zi, rms=%lli\n", len, _right_mark_start(ch));
-    // fflush(stdout);
     // otherwise, read from the buffer
     while ((remaining > 0) && !eof) {
       if ((ch->bufIoMax > 0) && (remaining > ch->bufIoMax)) {
