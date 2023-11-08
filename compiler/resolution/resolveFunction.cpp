@@ -597,6 +597,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     popInstantiationLimit(fn);
     clearCacheInfoIfEmpty(fn);
   }
+  if(fn && forCall) {
+    fn->maybeGenerateDeprecationWarning(forCall);
+    fn->maybeGenerateUnstableWarning(forCall);
+  }
 }
 
 static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
