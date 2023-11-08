@@ -239,8 +239,13 @@ void
 LibraryFileWriter::noteToplevelSymbolsForTable(const uast::Module* mod,
                                                LibraryFileAstRegistration& reg)
 {
+  reg.noteSymbolForTable(mod);
+
   GatherToplevelSymbols g;
-  mod->traverse(g);
+
+  for (auto child : mod->children()) {
+    child->traverse(g);
+  }
 
   for (auto ast : g.result) {
     reg.noteSymbolForTable(ast);
@@ -276,7 +281,15 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   auto syms = reg.symbolTableVec;
   std::sort(syms.begin(), syms.end(), symbolIdLess);
 
+  // compute the module ID that we can omit from symbol IDs
+  std::string modPrefix = mod->id().symbolPath().str();
+  modPrefix.append(".");
+
   for (auto sym : syms) {
+    // no need for a symbol table entry for a module since
+    // the whole module section is for the module
+    if (sym == mod) continue;
+
     SymbolTableEntry entry;
     memset(&entry, 0, sizeof(entry));
     entry.uAstEntry = reg.astOffsets[sym];
@@ -292,7 +305,12 @@ uint64_t LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     ser.writeByte(tag);
 
     // write the symbol table ID as a string
+    UniqueString symPath = sym->id().symbolPath();
+    CHPL_ASSERT(symPath.startsWith(modPrefix));
     std::string symId = sym->id().symbolPath().str();
+    // remove the modPrefix from it
+    symId.erase(0, modPrefix.size());
+    // and then write it
     ser.write(symId);
   }
 
@@ -453,7 +471,7 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
     groupOffsets[i] = writeLocationGroup(mod, ser, reg, pathToIdx);
   }
   // and update the last group offset with the current position
-  groupOffsets[n+1] = fileStream.tellp();
+  groupOffsets[n] = fileStream.tellp();
 
   // update the group offsets table in the file now that we know it
   auto savePos = fileStream.tellp();
