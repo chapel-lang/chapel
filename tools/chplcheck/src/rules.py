@@ -138,7 +138,6 @@ def register_rules(driver):
                 grandchildren = list(child)
                 # safe to access [-1], implicit loops must have at least 1 child
                 for blockchild in reversed(list(grandchildren[-1])):
-                    if isinstance(blockchild, Comment):
-                        continue
+                    if isinstance(blockchild, Comment): continue
                     prev = blockchild
                     break
