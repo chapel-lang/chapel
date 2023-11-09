@@ -58,12 +58,11 @@ module ChapelLocale {
     any: Placeholder to represent the notion of "anywhere"
     nilLocale: The _instance is set to nil. Used during setup. Also, as a
                sentinel value in locale tree operations
-    dummy: Used during initialization for `here` before it is properly setup
     default: Used to store the default locale instance. Initially set to nil,
              then "fixed" by LocalesArray to Locales[0]
    */
   @chpldoc.nodoc
-  enum localeKind { regular, any, nilLocale, dummy, default };
+  enum localeKind { regular, any, nilLocale, default };
 
   pragma "locale private"
   @chpldoc.nodoc
@@ -72,9 +71,12 @@ module ChapelLocale {
   @chpldoc.nodoc
   var defaultLocale = new locale(localeKind.default);
 
-  // dummyLocale is not locale private. We use it before locales initialized in
-  // the first place, so it should stay in the locale that started the
-  // execution.
+  // This sets up the basics of our locale 0 value at the start of the
+  // program run, so that objects created early in program
+  // initialization (like 'stdin'/'stdout' at the time of this
+  // writing) can use it as their locale value.  Later, its fields
+  // that can't be set up currently will be filled in when we're
+  // setting up all the other locales.
   @chpldoc.nodoc
   var locale0 = new locale(new unmanaged LocaleModel());
 
@@ -112,8 +114,6 @@ module ChapelLocale {
       if kind == localeKind.regular then
         compilerError("locale.init(kind) can not be used to create ",
                       "a regular locale instance");
-      else if kind == localeKind.dummy then
-        compilerError("Should no longer get here");
       else if kind == localeKind.default then
         this._instance = nil;
     }
@@ -455,64 +455,8 @@ module ChapelLocale {
     //------------------------------------------------------------------------}
   }
 
-  /* This class is used during initialization and is returned when
-     'here' is used before the locale hierarchy is initialized.  This is due to
-     the fact that "here" is used for memory and task control in setting up the
-     architecture itself.  DummyLocale provides system-default tasking and
-     memory management.
-   */
-  @chpldoc.nodoc
-  class DummyLocale : BaseLocale {
-    proc init() {
-      super.init(nilLocale);
-    }
-
-    override proc chpl_id() : int {
-      return -1;
-    }
-    override proc chpl_localeid() : chpl_localeID_t {
-      return chpl_buildLocaleID(-1:chpl_nodeID_t, c_sublocid_none);
-    }
-    override proc chpl_name() : string {
-      return "dummy-locale";
-    }
-    override proc _getChildCount() : int {
-      return 0;
-    }
-    override proc _getChild(idx:int) : locale {
-      return new locale(this);
-    }
-    override proc addChild(loc:locale)
-    {
-      halt("addChild on DummyLocale");
-    }
-  }
-
-
-  // Returns a reference to a singleton array (stored in AbstractLocaleModel)
-  // storing this locale.
-  //
-  // This singleton array is useful for some array/domain implementations
-  // (such as DefaultRectangular) to help the targetLocales call return
-  // by 'const ref' without requiring the array/domain implementation
-  // to store another array.
-  proc chpl_getSingletonLocaleArray(arg: locale) const ref
-  lifetime return c_sublocid_none // indicate return has global lifetime
-  {
-    var casted = arg._instance:borrowed AbstractLocaleModel?;
-    if casted == nil then
-      halt("cannot call chpl_getSingletonCurrentLocaleArray on nil or rootLocale");
-
-    // I think this is problematic...  We can't really return an array
-    // literal by 'const ref', can we?  (later: No, we can't)
-    return [casted!.chpl_singletonThisLocale, ];
-  }
-
   @chpldoc.nodoc
   class AbstractLocaleModel : BaseLocale {
-    // Used in chpl_getSingletonLocaleArray -- see the comment there
-    var chpl_singletonThisLocale: locale;
-
     // This will be used for interfaces that will be common to all
     // (non-RootLocale) locale models
     proc init(parent_loc : locale) {
@@ -613,7 +557,6 @@ module ChapelLocale {
                                           c_sublocid_any)) {
           chpl_rootLocaleInitPrivate(locIdx);
           chpl_defaultLocaleInitPrivate();
-          chpl_singletonCurrentLocaleInitPrivate(locIdx);
           warmupRuntime();
         }
       }
@@ -694,31 +637,6 @@ module ChapelLocale {
     defaultLocale._instance = rl[0]._instance;
   }
 
-  proc chpl_singletonCurrentLocaleInitPrivateSublocs(arg: locale) {
-    for i in 0..#arg._getChildCount() {
-      var subloc = arg._getChild(i);
-
-      var val = subloc._instance:unmanaged AbstractLocaleModel?;
-      if val == nil then
-        halt("error in locale initialization");
-
-      val!.chpl_singletonThisLocale._instance = val;
-
-      chpl_singletonCurrentLocaleInitPrivateSublocs(subloc);
-    }
-  }
-  proc chpl_singletonCurrentLocaleInitPrivate(locIdx) {
-    pragma "no copy" pragma "no auto destroy"
-    const ref rl = (rootLocale._instance:borrowed RootLocale?)!.getDefaultLocaleArray();
-    var loc = rl[locIdx];
-    var val = loc._instance:unmanaged AbstractLocaleModel?;
-    if val == nil then
-      halt("error in locale initialization");
-
-    val!.chpl_singletonThisLocale._instance = val;
-    chpl_singletonCurrentLocaleInitPrivateSublocs(loc);
-  }
-
   pragma "fn synchronization free"
   pragma "codegen for CPU and GPU"
   extern proc chpl_task_getRequestedSubloc(): chpl_sublocID_t;
@@ -747,11 +665,10 @@ module ChapelLocale {
       // For code prior to rootLocale initialization
       // in cases where we capture functions as FCF, module initialization order
       // changes in a way that IO is inited too early. In that scenario, we
-      // somehow don't get dummyLocale set up correctly in this scheme
+      // somehow don't get locale0 set up correctly in this scheme
       // remove this check, and test/exits/albrecht/exitWithNoCall fails
       if locale0._instance == nil {
         halt("locale0's instance was nil");
-//        dummyLocale._instance = new unmanaged DummyLocale();
       }
       return locale0;
     }
@@ -793,6 +710,5 @@ module ChapelLocale {
   @chpldoc.nodoc
   proc deinit() {
     delete origRootLocale._instance;
-//    delete dummyLocale._instance;
   }
 }

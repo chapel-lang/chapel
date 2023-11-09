@@ -82,8 +82,11 @@ module LocaleModelHelpSetup {
   proc helpSetupRootLocaleFlat(dst:borrowed RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
+    // fill in missing aspects of locale 0
+    locale0._instance!.parent = new locale(dst);
+
+    // set up all other locales from scratch
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
-      if locIdx == 0 then locale0._instance!.parent = new locale(dst);
       const node = if locIdx == 0 then locale0
                    else new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
@@ -123,9 +126,14 @@ module LocaleModelHelpSetup {
   proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
     var root_accum:chpl_root_locale_accum;
 
+    // fill in missing aspects of locale 0
+    locale0._instance!.parent = new locale(dst);
+
+    // set up all other locales from scratch
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
       chpl_task_setSubloc(c_sublocid_none);
-      const node = new locale(new unmanaged LocaleModel(new locale (dst)));
+      const node = if locIdx == 0 then locale0
+                   else new locale(new unmanaged LocaleModel(new locale(dst)));
       dst.myLocales[locIdx] = node;
       root_accum.accum(node);
     }
