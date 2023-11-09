@@ -26,5 +26,5 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \
-     $CHPL_HOME/tools/chapel-py/chplcheck/__init__.py "$@"
+     $CHPL_HOME/tools/chplcheck/src/chplcheck.py "$@"
 
