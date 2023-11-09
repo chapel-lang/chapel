@@ -296,7 +296,9 @@ computeSymbolNames(const uast::Module* mod,
       } else {
         CHPL_ASSERT(false);
       }
-      symId.append(".");
+      if (!symId.empty()) {
+        symId.append(".");
+      }
       symId.append(name.str());
     }
     // store the symbol and name in the result vector

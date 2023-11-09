@@ -214,7 +214,8 @@ LibraryFile::setupHelper(Context* context, uint64_t moduleOffset) const {
   // also read the symbol table uast locations
   size_t firstEntryOffset = symbolTableOffset + sizeof(SymbolTableHeader);
   Deserializer des(context,
-                   data + firstEntryOffset, modHdr->len - firstEntryOffset,
+                   data + firstEntryOffset,
+                   modHdr->len - (firstEntryOffset - moduleOffset),
                    &ret);
   uint32_t n = symTableHeader->nEntries;
   std::string lastSymId;
