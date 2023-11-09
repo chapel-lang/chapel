@@ -1031,13 +1031,133 @@ static void discardWorseWhereClauses(const DisambiguationContext& dctx,
   // TODO: fill me in
 }
 
+static bool isNegative(const Param* p) {
+  if (auto ip = p->toIntParam()) {
+    int64_t val = ip->value();
+    return val < 0;
+  }
+  return false;
+}
+
+static bool isNegativeParamToUnsigned(const Param* actualSym,
+                                      const Type* actualScalarType,
+                                      const Type* formalType) {
+  if (actualScalarType->isIntType() && formalType->isUintType()) {
+   return isNegative(actualSym);
+  }
+  return false;
+}
+
+static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
+  if(auto fct = formalVt->toComplexType()) {
+    if (auto ait = actualVt->toImagType()) {
+      return ait->bitwidth()*2 == fct->bitwidth();
+    } else if (auto art = actualVt->toRealType()) {
+      return art->bitwidth()*2 == fct->bitwidth();
+    }
+  }
+  return false;
+}
+
 static void computeConversionInfo(const DisambiguationContext& dctx,
-                                  const DisambiguationCandidate * candidate) {
-  // TODO: Fill me in
-  // this seems like it should be a query based on the production version
-  // checking if already computed n implicit conversions
-  // also the production version mutates the candidate, so that seems like a
-  // non-starter
+                                  DisambiguationCandidate* candidate) {
+  // no need to recompute it if it is already computed
+  if (candidate->nImplicitConversionsComputed) {
+    return;
+  }
+
+  bool anyNegParamToUnsigned = false;
+  int numParamNarrowing = 0;
+  int nImplicitConversions = 0;
+
+  bool forGenericInit = candidate->fn->untyped()->name()==USTR("init") ||
+                        candidate->fn->untyped()->name()==USTR("init=");
+  size_t n = (size_t)dctx.call->numActuals();
+  for (size_t k = 0; k < n; k++) {
+
+    const FormalActual* fa1 = candidate->formalActualMap.byActualIdx(k);
+
+    if (fa1 == nullptr) {
+      // this can happen with some operators, or can it in Dyno?
+      continue;
+    }
+    if (forGenericInit && k < 2) {
+      // Initializer work-around: Skip _mt/_this for generic initializers
+      continue; // doubt we still need this as it should be handled by accessor
+    }
+
+    // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
+      // continue; // type comes from call site so ignore it here
+      // think this is embedded in query
+    // }
+
+    Type* actualVt = (Type*)fa1->actualType().type();
+    Type* formalVt = (Type*)fa1->formalType().type();
+
+    auto canPass = CanPassResult::canPass(dctx.context,
+                           fa1->actualType(),
+                           fa1->formalType());
+
+    if (canPass.passes() &&
+        canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {
+      numParamNarrowing++;
+    }
+
+    if (canPass.passes() && canPass.promotes()) {
+      // TODO: what is equivalent in Dyno?
+      // actualVt = actualVt->scalarPromotionType->getValType();
+      continue;
+    }
+
+    if (isNegativeParamToUnsigned(fa1->actualType().param(), actualVt, formalVt)) {
+      anyNegParamToUnsigned = true;
+    }
+
+    if (actualVt == formalVt) {
+      // same type, nothing else to worry about here
+      continue;
+    }
+
+    if (canPass.passes() &&
+        canPass.conversionKind() == CanPassResult::ConversionKind::NONE) {
+      continue;
+    }
+
+    // if (actualVt == dtNil) {
+    //   // don't worry about converting 'nil' to something else
+    //   continue;
+    // }
+
+    // Not counting real/imag/complex avoids an ambiguity with
+    //  proc f(x: complex(64), y: complex(64))
+    //  proc f(x: complex(128), y: complex(128))
+    //  f(myInt64, myImag32)
+    if (isMatchingImagComplex(actualVt, formalVt)) {
+      // don't worry about imag vs complex
+      continue;
+    }
+
+    // TODO: skipping for now b/c I think this is implemented in canPass
+    //       otherwise need to implement something here still
+    // Not counting tuple value vs referential tuple changes
+    // if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
+    //     formalVt->symbol->hasFlag(FLAG_TUPLE)) {
+    //   Type* actualNormTup = normalizeTupleTypeToValueTuple(actualVt);
+    //   Type* formalNormTup = normalizeTupleTypeToValueTuple(formalVt);
+    //   if (actualNormTup == formalNormTup) {
+    //     // it is only a change in the tuple ref-ness
+    //     continue;
+    //   }
+    // }
+
+    nImplicitConversions++;
+  }
+
+  // save the computed details in the ResolutionCandidate
+  candidate->nImplicitConversionsComputed = true;
+  candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
+  candidate->nImplicitConversions = nImplicitConversions;
+  candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
 }
 
 static void discardWorseConversions(const DisambiguationContext& dctx,
@@ -1051,8 +1171,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    const DisambiguationCandidate* candidate = candidates[i];
-    // TODO: make this
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
     computeConversionInfo(dctx, candidate);
     int impConv = candidate->nImplicitConversions;
     if (impConv < minImpConv) {
@@ -1085,7 +1204,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    const DisambiguationCandidate* candidate = candidates[i];
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
     computeConversionInfo(dctx, candidate);
     if (candidate->anyNegParamToUnsigned) {
       numWithNegParamToSigned++;
@@ -1115,7 +1234,7 @@ static void discardWorseConversions(const DisambiguationContext& dctx,
       continue;
     }
 
-    const DisambiguationCandidate* candidate = candidates[i];
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
     computeConversionInfo(dctx, candidate);
     int narrowing = candidate->nParamNarrowingImplicitConversions;
     if (narrowing < minNarrowing) {
