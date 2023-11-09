@@ -2,15 +2,16 @@
 #
 # Configure environment for CHAMPS testing
 
-CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 
+CWD=$(cd $(dirname ${BASH_SOURCE[0]}) ; pwd)
 COMMON_DIR=/cy/users/chapelu
 
 export CHAMPS_COMMON_DIR=$COMMON_DIR/champs-nightly
 
-pushd $CHAMPS_COMMON_DIR
-git pull
-popd
+if [ ! -d "$CHAMPS_COMMON_DIR" ]; then
+  echo "Error: $CHAMPS_COMMON_DIR doesn't exist. If you are trying to build locally, set 'CHAMPS_QUICKSTART'"
+  return
+fi
 
 echo Enabling Cray PE
 source $CRAY_ENABLE_PE
