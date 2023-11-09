@@ -142,16 +142,25 @@ static PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* 
   return toReturn;
 }
 
-template <typename IterPair>
-static PyObject* wrapIterPair(ContextObject* context, const IterPair& pair) {
+static PyObject* wrapIterAdapter(ContextObject* context, IterAdapterBase* iterAdapter) {
   auto argList = Py_BuildValue("(O)", (PyObject*) context);
   auto astIterObjectPy = PyObject_CallObject((PyObject *) &AstIterType, argList);
   auto astIterObject = (AstIterObject*) astIterObjectPy;
 
-  astIterObject->iterAdapter = new IterAdapter<decltype(pair)>(pair);
+  astIterObject->iterAdapter = iterAdapter;
 
   Py_XDECREF(argList);
   return astIterObjectPy;
+}
+
+template <typename IterPair>
+static IterAdapterBase* mkIterPair(const IterPair& pair) {
+  return new IterAdapter<decltype(pair)>(pair);
+}
+
+template <typename IterPair>
+static PyObject* wrapIterPair(ContextObject* context, const IterPair& pair) {
+  return wrapIterAdapter(context, new IterAdapter<decltype(pair)>(pair));
 }
 
 static PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag) {
@@ -511,6 +520,34 @@ static const char* opKindToString(chpl::uast::Range::OpKind kind) {
   }
 }
 
+template <typename CppType>
+struct PythonTypeInfo {};
+
+#define DEFINE_TYPE(TYPE, PYSTR, WRAP) \
+  template <> \
+  struct PythonTypeInfo<TYPE> { \
+    static constexpr const char* PythonString = PYSTR; \
+  \
+    static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
+      return WRAP; \
+    } \
+  \
+  }
+
+DEFINE_TYPE(bool, "b", Py_BuildValue("b", TO_WRAP));
+DEFINE_TYPE(int, "i", Py_BuildValue("i", TO_WRAP));
+DEFINE_TYPE(const char*, "s", Py_BuildValue("s", TO_WRAP));
+DEFINE_TYPE(chpl::UniqueString, "s", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_TYPE(std::string, "s", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_TYPE(const chpl::uast::AstNode*, "O", wrapAstNode(CONTEXT, TO_WRAP));
+DEFINE_TYPE(IterAdapterBase*, "O", wrapIterAdapter(CONTEXT, TO_WRAP));
+
+template<typename T> struct PythonFnHelper{};
+template<typename R, typename ...Args>
+struct PythonFnHelper<R(Args...)> {
+  using ReturnTypeInfo = PythonTypeInfo<R>;
+};
+
 template<typename IntentType>
 static const char* intentToString(IntentType intent) {
   return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
@@ -525,17 +562,17 @@ const char* toCString<const char*>(const char*& t) { return t; }
 template <>
 const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_str(); }
 
-#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPESTR, BODY)\
+#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPE, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
+    using namespace chpl; \
+    using namespace uast; \
+    \
     auto cast = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
-    auto result = [](const chpl::uast::NODE* node, ContextObject* contextObject) { \
+    auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject;\
+    auto result = [](const NODE* node) { \
       BODY; \
-    }(cast, (ContextObject*) ((NODE##Object*) self)->parent.contextObject); \
-    if constexpr (std::string_view(TYPESTR) == std::string_view("s")) { \
-      return Py_BuildValue(TYPESTR, toCString(result)); \
-    } else { \
-      return Py_BuildValue(TYPESTR, result); \
-    } \
+    }(cast) ; \
+    return PythonFnHelper<TYPE>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
   }
 #include "method-tables.h"
 
@@ -579,7 +616,7 @@ struct PerNodeInfo {
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
   };
-#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPESTR, BODY) \
+#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPE, BODY) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
