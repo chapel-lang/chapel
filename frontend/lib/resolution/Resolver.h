@@ -404,6 +404,10 @@ struct Resolver {
                           const uast::AstNode* exr,
                           const ID& id);
 
+  void validateAndSetMostSpecific(ResolvedExpression& r,
+                                  const uast::AstNode* exr,
+                                  const MostSpecificCandidates& mostSpecific);
+
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect
   bool resolveSpecialNewCall(const uast::Call* call);

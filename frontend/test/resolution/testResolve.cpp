@@ -237,7 +237,7 @@ static void test4() {
                              class Parent { }
                              class C : Parent { type t; var x: t; }
 
-                             proc f(arg: Parent) { }
+                             proc f(in arg: Parent) { }
                              var x: owned C(int);
                              f(x);
                           }

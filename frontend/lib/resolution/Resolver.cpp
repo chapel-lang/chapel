@@ -1510,9 +1510,9 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     return true;
   } else {
-    r.setMostSpecific(c.mostSpecific());
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
+    validateAndSetMostSpecific(r, astForErr, c.mostSpecific());
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
@@ -2573,6 +2573,24 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
       searchId = parsing::idToParentId(context, searchId);
     }
   }
+}
+
+void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
+                                          const uast::AstNode* exr,
+                                          const MostSpecificCandidates& mostSpecific) {
+  if (auto only = mostSpecific.only()) {
+    // A single candidate was selected, either immediately or after return
+    // intent overloading. Now, if calling this candidate requires a subtype
+    // coercion for a 'const ref' formal, we need to emit an error: this
+    // is allowed by the spec, but can't be compiled in the C backend due
+    // to C's aliasing rules.
+
+    if (only.hasConstRefCoercion()) {
+      r.setType(typeErr(exr, "TODO"));
+    }
+  }
+
+  r.setMostSpecific(mostSpecific);
 }
 
 static bool isCalledExpression(Resolver* rv, const AstNode* ast) {

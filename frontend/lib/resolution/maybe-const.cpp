@@ -278,7 +278,7 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       else best = bestRef;
     }
 
-    re.setMostSpecific(MostSpecificCandidates::getOnly(best));
+    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(best));
 
     // recompute the return type
     // (all that actually needs to change is the return intent)

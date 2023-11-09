@@ -265,11 +265,13 @@ static void test11() {
 }
 
 // If the class is nilable, only nilable things should pass without conversion.
+// For the default intent (const ref), conversions are disallowed.
 static void test12() {
-  testProgram("", "class?", {
-    { nonNil("owned"), shouldPass },
-    { nonNil("shared"), shouldPass },
+  testProgram(defaultIntent, "class?", {
+    { nonNil("owned"), shouldNotPass },
+    { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldPass },
+    /* default intent is CONST_IN for unmanaged, not const ref, so coercion allowed. */
 
     { nilable("owned"), shouldPass },
     { nilable("shared"), shouldPass },
@@ -291,7 +293,7 @@ static void test13() {
 
 static void test14() {
   testProgram(defaultIntent, "owned class?", {
-    { nonNil("owned"), shouldPass },
+    { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
@@ -316,7 +318,7 @@ static void test15() {
 static void test16() {
   testProgram(defaultIntent, "shared class?", {
     { nonNil("owned"), shouldNotPass },
-    { nonNil("shared"), shouldPass },
+    { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldNotPass },
 
     { nilable("owned"), shouldNotPass },
@@ -342,6 +344,7 @@ static void test18() {
     { nonNil("owned"), shouldNotPass },
     { nonNil("shared"), shouldNotPass },
     { nonNil("unmanaged"), shouldPass },
+    /* default intent is CONST_IN for unmanaged, not const ref, so coercion allowed. */
 
     { nilable("owned"), shouldNotPass },
     { nilable("shared"), shouldNotPass },
