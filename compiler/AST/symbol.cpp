@@ -501,6 +501,7 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
+  if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
     auto key = std::make_pair(this, context);
     if (dedupDeprecationWarnings.find(key) == dedupDeprecationWarnings.end()) {
       USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
@@ -560,6 +561,7 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler, is not unstable, and is not deprecated.
+  if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
     auto key = std::make_pair(this, context);
     if (dedupUnstableWarnings.find(key) == dedupUnstableWarnings.end()) {
       USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
