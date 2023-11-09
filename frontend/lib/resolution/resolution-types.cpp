@@ -824,6 +824,7 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
                                           const TypedFnSignature* fn,
                                           const FormalActualMap& faMap) {
   int coercionFormal = -1;
+  int coercionActual = -1;
   for (auto fa : faMap.byFormals()) {
     auto& formalType = fa.formalType();
     auto& actualType = fa.actualType();
@@ -833,11 +834,12 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     auto got = canPass(context, actualType, formalType);
     if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
       coercionFormal = fa.formalIdx();
+      coercionActual = fa.actualIdx();
       break;
     }
   }
 
-  return MostSpecificCandidate(fn, coercionFormal);
+  return MostSpecificCandidate(fn, coercionFormal, coercionActual);
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,

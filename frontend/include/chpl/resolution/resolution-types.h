@@ -1075,12 +1075,20 @@ class MostSpecificCandidate {
 
   const TypedFnSignature* fn_;
   int constRefCoercionFormal_;
+  int constRefCoercionActual_;
 
-  MostSpecificCandidate(const TypedFnSignature* fn, int constRefCoercionFormal)
-    : fn_(fn), constRefCoercionFormal_(constRefCoercionFormal) {}
+  MostSpecificCandidate(const TypedFnSignature* fn,
+                        int constRefCoercionFormal,
+                        int constRefCoercionActual)
+    : fn_(fn),
+      constRefCoercionFormal_(constRefCoercionFormal),
+      constRefCoercionActual_(constRefCoercionActual) {}
 
  public:
-  MostSpecificCandidate() : fn_(nullptr), constRefCoercionFormal_(-1) {}
+  MostSpecificCandidate()
+    : fn_(nullptr),
+      constRefCoercionFormal_(-1),
+      constRefCoercionActual_(-1) {}
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
@@ -1094,16 +1102,19 @@ class MostSpecificCandidate {
 
   int constRefCoercionFormal() const { return constRefCoercionFormal_; }
 
+  int constRefCoercionActual() const { return constRefCoercionActual_; }
+
   bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
 
   operator bool() const {
-    CHPL_ASSERT(fn_ || constRefCoercionFormal_ == -1);
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1));
     return fn_ != nullptr;
   }
 
   bool operator==(const MostSpecificCandidate& other) const {
     return fn_ == other.fn_ &&
-           constRefCoercionFormal_ == other.constRefCoercionFormal_;
+           constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
+           constRefCoercionActual_ == other.constRefCoercionActual_;
   }
 
   bool operator!=(const MostSpecificCandidate& other) const {
@@ -1113,10 +1124,11 @@ class MostSpecificCandidate {
   void mark(Context* context) const {
     context->markPointer(fn_);
     (void) constRefCoercionFormal_; // nothing to mark
+    (void) constRefCoercionActual_; // nothing to mark
   }
 
   size_t hash() const {
-    return chpl::hash(fn_, constRefCoercionFormal_);
+    return chpl::hash(fn_, constRefCoercionFormal_, constRefCoercionActual_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;

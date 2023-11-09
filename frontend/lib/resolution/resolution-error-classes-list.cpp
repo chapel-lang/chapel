@@ -274,6 +274,29 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.code(use, { as });
 }
 
+void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info);
+
+  auto formalName = c.fn()->formalName(c.constRefCoercionFormal());
+
+  wr.heading(kind_, type_, ast, "function call requires coercion of actual ",
+             (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
+             formalName, "'.");
+  if (auto call = ast->toCall()) {
+    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+  } else {
+    wr.code(ast);
+  }
+  wr.message("Formals with the 'const ref' intent do not support coercions.");
+
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.constRefCoercionFormal());
+  if (fmlDecl) {
+    wr.message("The formal was declared 'const ref' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto msg = std::get<std::string>(info);
   auto mention = std::get<const uast::AstNode*>(info);

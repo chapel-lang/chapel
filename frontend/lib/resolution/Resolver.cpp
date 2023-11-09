@@ -2576,7 +2576,7 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
 }
 
 void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
-                                          const uast::AstNode* exr,
+                                          const uast::AstNode* expr,
                                           const MostSpecificCandidates& mostSpecific) {
   if (auto only = mostSpecific.only()) {
     // A single candidate was selected, either immediately or after return
@@ -2586,7 +2586,7 @@ void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
     // to C's aliasing rules.
 
     if (only.hasConstRefCoercion()) {
-      r.setType(typeErr(exr, "TODO"));
+      r.setType(CHPL_TYPE_ERROR(context, ConstRefCoercion, expr, only));
     }
   }
 
