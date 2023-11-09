@@ -69,8 +69,10 @@ if [ "${CHPL_LLVM}" != "none" ] ; then
 fi
 
 if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  git checkout -b quickstart-triage
+  echo "[New branch (quickstart-triage) created]"
+  git commit -am "Snapshot after applying patches (by sub_test)" >/dev/null
   echo "[Patch commit created]"
-  git commit -am "Snapshot after applying patches" >/dev/null
   git clean -df >/dev/null
   git status
 fi
