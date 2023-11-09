@@ -523,10 +523,11 @@ static const char* opKindToString(chpl::uast::Range::OpKind kind) {
 template <typename CppType>
 struct PythonReturnTypeInfo {};
 
-#define DEFINE_RETURN_TYPE(TYPE, PYSTR, WRAP) \
+#define DEFINE_RETURN_TYPE(TYPE, PYSTR, TYPESTR, WRAP) \
   template <> \
   struct PythonReturnTypeInfo<TYPE> { \
     static constexpr const char* PythonString = PYSTR; \
+    static constexpr const char* TypeString = TYPESTR; \
   \
     static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
       return WRAP; \
@@ -534,13 +535,13 @@ struct PythonReturnTypeInfo {};
   \
   }
 
-DEFINE_RETURN_TYPE(bool, "b", Py_BuildValue("b", TO_WRAP));
-DEFINE_RETURN_TYPE(int, "i", Py_BuildValue("i", TO_WRAP));
-DEFINE_RETURN_TYPE(const char*, "s", Py_BuildValue("s", TO_WRAP));
-DEFINE_RETURN_TYPE(chpl::UniqueString, "s", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_RETURN_TYPE(std::string, "s", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "O", wrapAstNode(CONTEXT, TO_WRAP));
-DEFINE_RETURN_TYPE(IterAdapterBase*, "O", wrapIterAdapter(CONTEXT, TO_WRAP));
+DEFINE_RETURN_TYPE(bool, "b", "bool", Py_BuildValue("b", TO_WRAP));
+DEFINE_RETURN_TYPE(int, "i", "int", Py_BuildValue("i", TO_WRAP));
+DEFINE_RETURN_TYPE(const char*, "s", "str", Py_BuildValue("s", TO_WRAP));
+DEFINE_RETURN_TYPE(chpl::UniqueString, "s", "str", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_RETURN_TYPE(std::string, "s", "str", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "O", "AstNode", wrapAstNode(CONTEXT, TO_WRAP));
+DEFINE_RETURN_TYPE(IterAdapterBase*, "O", "Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP));
 
 template<typename T> struct PythonFnHelper{};
 template<typename R, typename ...Args>
