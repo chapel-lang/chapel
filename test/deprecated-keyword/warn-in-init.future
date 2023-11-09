@@ -1,0 +1,2 @@
+bug: deprecated functions should still warn when used in a default init function
+#23787
