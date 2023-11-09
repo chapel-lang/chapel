@@ -79,11 +79,14 @@ public:
   void                 StartPhase(const char* passName, SubPhase subPhase);
 
   void                 Stop();
+  void                 Resume();
 
   void                 ReportPass  ()                                const;
   void                 ReportTotal ()                                const;
 
   void                 ReportRollup()                                const;
+
+  static void          ReportText(const char* text);
 
 private:
   void                 PassesCollect(std::vector<Pass>& passes) const;

@@ -45,7 +45,6 @@ public:
                                            unsigned long totalTime);
 
   static void              ReportTime(const char* name, double secs);
-  static void              ReportText(const char* text);
 
   char*                    mName;       // Only set for kPrimary
   int                      mPassId;
@@ -153,6 +152,11 @@ void PhaseTracker::Stop()
   mTimer.stop();
 }
 
+void PhaseTracker::Resume()
+{
+  mTimer.start();
+}
+
 void PhaseTracker::ReportPass() const
 {
   int index = mPhases.size() - 1;
@@ -211,7 +215,7 @@ void PhaseTracker::ReportRollup() const
   PassesCollect(passes);
   PassesReport(passes, totalTime);
 
-  Phase::ReportText("\n\n\n");
+  PhaseTracker::ReportText("\n\n\n");
 
   PassesSortByTime(passes);
   PassesReport(passes, totalTime);
@@ -352,22 +356,22 @@ void Phase::ReportPass(unsigned long now) const
 
     snprintf(text, sizeof(text), "  [%9d]", lastNodeIDUsed());
 
-    ReportText(text);
+    PhaseTracker::ReportText(text);
   }
 
-  ReportText("\n");
+  PhaseTracker::ReportText("\n");
 }
 
 void Phase::ReportTotal(unsigned long totalTime)
 {
   ReportTime("total time", totalTime / 1e6);
-  ReportText("\n\n\n\n");
+  PhaseTracker::ReportText("\n\n\n\n");
 }
 
 void Phase::ReportPassGroup(const char* label, unsigned long totalTime)
 {
   ReportTime(label, totalTime / 1e6);
-  ReportText("\n");
+  PhaseTracker::ReportText("\n");
 }
 
 void Phase::ReportTime(const char* name, double secs)
@@ -379,7 +383,7 @@ void Phase::ReportTime(const char* name, double secs)
     fprintf(printPassesFile, "%32s :%8.3f seconds", name, secs);
 }
 
-void Phase::ReportText(const char* text)
+void PhaseTracker::ReportText(const char* text)
 {
   if (printPasses     == true)
     fputs(text, stderr);

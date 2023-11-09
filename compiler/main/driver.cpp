@@ -806,7 +806,7 @@ static int runDriverPhaseTwo(int argc, char* argv[]);
 
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
-// After all phases are complete, or upon failure, the driver exits.
+// Exits if a phase fails.
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
@@ -836,11 +836,6 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
       clean_exit(status);
     }
   }
-
-  // Tmp dir will be deleted if necessary when the compiler-driver's Context is
-  // deleted.
-
-  clean_exit(status);
 }
 
 // Run phase one of compiler-driver
@@ -2402,9 +2397,10 @@ int main(int argc, char* argv[]) {
   }
 
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
-    // Trigger initial driver mode invocation, which will be responsible for
-    // cleaning up and exiting itself.
+    // Trigger initial driver mode invocation.
+    tracker.Stop();
     runAsCompilerDriver(argc, argv);
+    tracker.Resume();
   } else {
     // This branch runs for individual driver phases ("sub-invocations") or as
     // the whole compiler in monolithic mode.
@@ -2421,25 +2417,37 @@ int main(int argc, char* argv[]) {
     assertSourceFilesFound();
 
     runPasses(tracker);
-
-    tracker.StartPhase("driverCleanup");
-
-    free_args(&sArgState);
-
-    tracker.Stop();
-
-    if (printPasses == true || printPassesFile != NULL) {
-      tracker.ReportPass();
-      tracker.ReportTotal();
-      tracker.ReportRollup();
-    }
-
-    if (printPassesFile != NULL) {
-      fclose(printPassesFile);
-    }
-
-    clean_exit(0);
   }
+
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Begin reporting driver init process timing
+    PhaseTracker::ReportText(
+        "Timing for driver mode overhead\n--------------\n");
+    tracker.ReportPass();
+  }
+
+  tracker.StartPhase("driverCleanup");
+
+  free_args(&sArgState);
+
+  tracker.Stop();
+
+  if (printPasses == true || printPassesFile != NULL) {
+    gdbShouldBreakHere();
+    tracker.ReportPass();
+    tracker.ReportRollup();
+
+    // Only report totals for driver initial process, or in monolithic mode.
+    if (fDriverDoMonolithic || !driverInSubInvocation) {
+      tracker.ReportTotal();
+    }
+  }
+
+  if (printPassesFile != NULL) {
+    fclose(printPassesFile);
+  }
+
+  clean_exit(0);
 
   return 0;
 }
