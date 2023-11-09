@@ -56,5 +56,12 @@ module LocalesArray {
   // We don't use the same private "trick" as with Locales above with
   // LocaleSpace/ because it's small enough to not matter.
   const LocaleSpace = Locales.domain;
+
+  pragma "locale private"
+  var EachLocSingletonArr: [LocaleSpace] [0..0] locale;
+  coforall loc in Locales do
+    on loc do
+      forall locID in LocaleSpace do
+        EachLocSingletonArr[locID][0] = Locales[locID];
 }
 

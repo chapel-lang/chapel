@@ -393,7 +393,7 @@ module DefaultSparse {
     }
 
     proc dsiTargetLocales() const ref {
-      return chpl_getSingletonLocaleArray(this.locale);
+      return EachLocSingletonArr[this.locale.id][0];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
@@ -519,7 +519,7 @@ module DefaultSparse {
     }
 
     proc dsiTargetLocales() const ref {
-      return chpl_getSingletonLocaleArray(this.locale);
+      return EachLocSingletonArr[this.locale.id][0];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;

@@ -96,6 +96,7 @@ module DefaultRectangular {
     return ret;
   }
 
+
   @unstable("DefaultDist is unstable and may change in the future")
   class DefaultDist: BaseDist {
     override proc dsiNewRectangularDom(param rank: int, type idxType,
@@ -112,8 +113,9 @@ module DefaultRectangular {
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) do
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
-    proc dsiTargetLocales() const ref do
-      return Locales[this.locale.id..this.locale.id];
+    proc dsiTargetLocales() const ref {
+      return EachLocSingletonArr[this.locale.id][0];
+    }
 
     proc dsiIndexToLocale(ind) do return this.locale;
 
@@ -737,7 +739,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return Locales[this.locale.id..this.locale.id];
+      return EachLocSingletonArr[this.locale.id][0];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
@@ -1608,7 +1610,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return Locales[this.locale.id..this.locale.id];
+      return EachLocSingletonArr[this.locale.id][0];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
