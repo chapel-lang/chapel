@@ -2401,39 +2401,45 @@ int main(int argc, char* argv[]) {
     validateSettings();
   }
 
-  if (!fDriverDoMonolithic && !driverInSubInvocation)
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Trigger initial driver mode invocation, which will be responsible for
+    // cleaning up and exiting itself.
     runAsCompilerDriver(argc, argv);
+  } else {
+    // This branch runs for individual driver phases ("sub-invocations") or as
+    // the whole compiler in monolithic mode.
 
-  // In driver mode, debug only if we are in a driver phase that was requested
-  // to be debugged.
-  if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
-        (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
-    // re-run compiler in appropriate debugger if requested
-    if (fRungdb) runCompilerInGDB(argc, argv);
-    if (fRunlldb) runCompilerInLLDB(argc, argv);
+    // Run compiler in the debugger if requested.
+    // Skip if we are in a driver phase that was not requested to be debugged.
+    if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
+          (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
+      // re-run compiler in appropriate debugger if requested
+      if (fRungdb) runCompilerInGDB(argc, argv);
+      if (fRunlldb) runCompilerInLLDB(argc, argv);
+    }
+
+    assertSourceFilesFound();
+
+    runPasses(tracker);
+
+    tracker.StartPhase("driverCleanup");
+
+    free_args(&sArgState);
+
+    tracker.Stop();
+
+    if (printPasses == true || printPassesFile != NULL) {
+      tracker.ReportPass();
+      tracker.ReportTotal();
+      tracker.ReportRollup();
+    }
+
+    if (printPassesFile != NULL) {
+      fclose(printPassesFile);
+    }
+
+    clean_exit(0);
   }
-
-  assertSourceFilesFound();
-
-  runPasses(tracker);
-
-  tracker.StartPhase("driverCleanup");
-
-  free_args(&sArgState);
-
-  tracker.Stop();
-
-  if (printPasses == true || printPassesFile != NULL) {
-    tracker.ReportPass();
-    tracker.ReportTotal();
-    tracker.ReportRollup();
-  }
-
-  if (printPassesFile != NULL) {
-    fclose(printPassesFile);
-  }
-
-  clean_exit(0);
 
   return 0;
 }

@@ -47,7 +47,7 @@
 * Every phase has a descriptive name that will be used by the reports.        *
 *                                                                             *
 * The main loop for the compiler, in runpasses.cpp, has a notion of a "pass"  *
-* consists of three phases;                                                   *
+* which consists of three phases;                                             *
 *                                                                             *
 *    1) The primary computation                                               *
 *    2) An optional verify / check phase                                      *
