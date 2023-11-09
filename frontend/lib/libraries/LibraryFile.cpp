@@ -209,7 +209,7 @@ LibraryFile::setupHelper(Context* context, uint64_t moduleOffset) const {
   ret.moduleSectionData = data + moduleOffset;
   ret.moduleSectionLen = modHdr->len;
   // string offsets start just after the header
-  ret.stringOffsetsTable = (const uint64_t*) (strTableHeader+1);
+  ret.stringOffsetsTable = (const uint32_t*) (strTableHeader+1);
 
   // also read the symbol table uast locations
   size_t firstEntryOffset = symbolTableOffset + sizeof(SymbolTableHeader);
@@ -217,14 +217,30 @@ LibraryFile::setupHelper(Context* context, uint64_t moduleOffset) const {
                    data + firstEntryOffset, modHdr->len - firstEntryOffset,
                    &ret);
   uint32_t n = symTableHeader->nEntries;
+  std::string lastSymId;
   for (uint32_t i = 0; i < n; i++) {
     uint64_t pos = firstEntryOffset + des.position() - moduleOffset;
+
+    // read the entry offsets
     SymbolTableEntry entry;
     des.readData(&entry, sizeof(entry));
     // read the tag
     des.readByte();
-    // read the string storing the symbol table ID
-    des.read<std::string>();
+    // read the variable-byte encoded common prefix length
+    unsigned int nCommonPrefix = des.readVUint();
+    // shorten lastSymId to the first nCommonPrefix bytes
+    if (lastSymId.size() > nCommonPrefix) {
+      lastSymId.erase(nCommonPrefix, lastSymId.size()-nCommonPrefix);
+    }
+    // read the variable-byte encoded suffix length
+    unsigned int nSuffix = des.readVUint();
+    // expand lastSymId to have room to store the suffix
+    lastSymId.resize(nCommonPrefix+nSuffix);
+    // read the string data
+    des.readData(&lastSymId[nCommonPrefix], nSuffix);
+
+    printf("Read symbol id %s\n", lastSymId.c_str());
+
     // record the information
     LibraryFileDeserializationHelper::SymbolInfo info;
     info.symbolEntryOffset = pos;

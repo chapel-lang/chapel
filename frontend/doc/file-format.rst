@@ -158,11 +158,16 @@ This section consists of:
  * 4 bytes of N, the number of entries
  * 4 bytes reserved for future use
  * entries sorted by symbol table ID.  For each entry, it stores:
-   * 8 byte relative offset to the uAST section
-   * 8 byte relative offset to the Locations section
-   * 8 byte relative offset to the type/function entry, if appropriate
+   * 4 byte relative offset to the uAST section
+   * 4 byte relative offset to the Locations section
+   * 4 byte relative offset to the type/function entry, if appropriate
    * a byte storing flags / kind information
-   * a string storing the symbol table ID
+   * unsigned variable-byte encoded, prefix A to copy from the
+     previous symbol table ID
+   * unsigned variable-byte encoded, suffix size B stored here
+   * B bytes of suffix
+     * the symbol table ID string is formed by concatenating
+       first A bytes of the previous string with the B bytes of suffix
 
 uAST Section
 ------------
@@ -229,8 +234,8 @@ The long strings table consists of the following:
      * offset 0 is unused
      * the last offset is also unused
      * so, valid long string indices are in 1 <= i < N
- * relative offsets of each string, from the start of the section
-   * each offset is 8 bytes
+ * relative offsets of each string, from the start of the module section
+   * each offset is 4 bytes
  * string data
 
 
@@ -271,19 +276,12 @@ The Location section consists of:
 
  * information for each location group, consisting of the following:
 
-   * 8 bytes storing a starting relative offset within the uAST section
+   * unsigned variable-byte encoded index into the file paths stored in the
+     location section to indicate which file this location group came from
 
-   * 4 bytes storing an index into the file paths stored in the location
-     section to indicate which file this location group came from
-
-   * 4 bytes storing a starting line number
+   * signed variable-byte encoded starting line number
 
    * a number of location entries, each consisting of:
-
-     * relative offset within the uAST section, stored as a signed
-       variable-byte encoded difference from the previous entry's uAST
-       offset, or a difference from the starting relative offset if this
-       is the first entry.
 
      * the first line, stored as a signed variable-byte encoded
        difference from the previous entry's last line, or a difference

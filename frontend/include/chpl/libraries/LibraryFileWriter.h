@@ -55,14 +55,14 @@ struct LibraryFileSerializationHelper {
   std::unordered_set<const uast::AstNode*> symbolTableSet;
 
   // stores the relative offset (to the start of the module header)
-  // for serialized uAST for the given node, for every uAST node
-  // that is serialized
-  std::unordered_map<const uast::AstNode*, uint64_t> astOffsets;
+  // for serialized uAST for the given node
+  // Only nodes in symbolTableSet are represented here.
+  std::unordered_map<const uast::AstNode*, uint32_t> astOffsets;
 
   // stores the relative offset (to the start of the module header)
   // for serialized Location information for the given node.
   // Only nodes in symbolTableSet are represented here.
-  std::unordered_map<const uast::AstNode*, uint64_t> locOffsets;
+  std::unordered_map<const uast::AstNode*, uint32_t> locOffsets;
 
   LibraryFileSerializationHelper(uint64_t moduleSectionStart)
     : moduleSectionStart(moduleSectionStart) {
@@ -87,7 +87,7 @@ struct LibraryFileSerializationHelper {
 /** For writing a .dyno library file */
 class LibraryFileWriter {
  private:
-  using PathToIndex = std::unordered_map<UniqueString, int>;
+  using PathToIndex = std::unordered_map<UniqueString, unsigned int>;
 
   Context* context = nullptr;
   std::vector<UniqueString> inputFiles;
@@ -154,7 +154,6 @@ class LibraryFileWriter {
   void writeLocationEntries(const uast::AstNode* ast,
                             Serializer& ser,
                             LibraryFileSerializationHelper& reg,
-                            uint64_t& lastAstOffset,
                             int& lastLine);
 
  public:

@@ -56,20 +56,21 @@ class LibraryFileDeserializationHelper {
  friend class LibraryFile;
  private:
   struct SymbolInfo {
-    uint64_t symbolEntryOffset;
-    uint64_t uastOffset;
-    uint64_t locationsOffset;
+    // relative to the module section
+    uint32_t symbolEntryOffset;
+    uint32_t uastOffset;
+    uint32_t locationsOffset;
   };
 
   int nStrings = 0;
   const unsigned char* moduleSectionData = nullptr;
   size_t moduleSectionLen = 0;
-  const uint64_t* stringOffsetsTable = nullptr;
+  const uint32_t* stringOffsetsTable = nullptr;
 
   // key: module-section-relative offset for the serialized uast for
   //      a symbol table symbol
   // value: symbol table index of that symbol
-  std::unordered_map<uint64_t, int> offsetToSymIdx;
+  std::unordered_map<uint32_t, int> offsetToSymIdx;
 
   // for AstNodes in the symbol table that were deserialized
   // maps to the symbol table index of that symbol.

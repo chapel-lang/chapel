@@ -84,9 +84,9 @@ struct SymbolTableHeader {
 
 struct SymbolTableEntry {
   // relative to the start of the module header:
-  uint64_t uAstEntry;
-  uint64_t locationEntry;
-  uint64_t typeOrFnEntry;
+  uint32_t uAstEntry;
+  uint32_t locationEntry;
+  uint32_t typeOrFnEntry;
   // followed by
   //  * a byte storing uAst tag
   //  * a variable-byte length & string storing a symbol table ID
@@ -112,14 +112,6 @@ struct LocationSectionHeader {
   uint32_t nGroups;
   // followed by file path strings
   // then followed nGroups 8-byte relative offsets to each location group
-};
-
-struct LocationGroupHeader {
-  // relative to the start of the module header:
-  uint64_t uAstEntry;
-  uint32_t filePathIndex;
-  uint32_t startingLineNumber;
-  // followed by location entries
 };
 
 

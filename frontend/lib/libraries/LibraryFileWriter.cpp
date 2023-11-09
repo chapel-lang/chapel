@@ -33,8 +33,10 @@ namespace libraries {
 
 void LibraryFileSerializationHelper::beginAst(const uast::AstNode* ast,
                                               std::ostream& os) {
-  uint64_t pos = os.tellp();
-  astOffsets[ast] = pos - moduleSectionStart;
+  if (symbolTableSet.count(ast) != 0) {
+    uint64_t pos = os.tellp();
+    astOffsets[ast] = (uint32_t) (pos - moduleSectionStart);
+  }
 }
 
 void LibraryFileSerializationHelper::endAst(const uast::AstNode* ast,
@@ -46,7 +48,7 @@ void LibraryFileSerializationHelper::beginLocation(const uast::AstNode* ast,
                                                    std::ostream& os) {
   if (symbolTableSet.count(ast) != 0) {
     uint64_t pos = os.tellp();
-    locOffsets[ast] = pos - moduleSectionStart;
+    locOffsets[ast] = (uint32_t) (pos - moduleSectionStart);
   }
 }
 
@@ -172,6 +174,10 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   // store the module section length in the header
   header.len = savePos - moduleSectionStart;
 
+  // TODO: make this into a user-facing error if this situation
+  // can come up in practice.
+  CHPL_ASSERT(savePos - moduleSectionStart < INT32_MAX);
+
   fileStream.seekp(moduleSectionStart);
   fileStream.write((const char*) &header, sizeof(header));
 
@@ -290,6 +296,7 @@ computeSymbolNames(const uast::Module* mod,
       } else {
         CHPL_ASSERT(false);
       }
+      symId.append(".");
       symId.append(name.str());
     }
     // store the symbol and name in the result vector
@@ -316,7 +323,7 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     // since it won't be represented in the symbol table
     header.nEntries--;
   }
-  fileStream.write((const char*) &header, sizeof(header));
+  ser.writeData(&header, sizeof(header));
 
   // output each symbol table entry
   // assumption: symbolTableUpdates has already been updated with the
@@ -324,6 +331,8 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
 
   // Copy the vector of symbol table symbols and sort it by ID/name
   auto symsAndNames = computeSymbolNames(mod, reg.symbolTableVec);
+
+  std::string lastSymId;
 
   for (auto pair : symsAndNames) {
     const uast::AstNode* sym = pair.first;
@@ -340,15 +349,34 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     entry.typeOrFnEntry = 0; // not implemented yet
 
     // write the 3 relative offsets
-    fileStream.write((const char*) &entry, sizeof(entry));
+    ser.writeData(&entry, sizeof(entry));
 
     // write the tag / flags / kind information
     auto tag = sym->tag();
     CHPL_ASSERT((int) tag < 256);
     ser.writeByte(tag);
 
-    // write the symbol table ID as a string
-    ser.write(symId);
+    //  * write the number of bytes in common with the previous one
+    unsigned int nCommonPrefix = 0;
+    {
+      // compute the minimum lengths
+      size_t n = lastSymId.size();
+      if (symId.size() < n) n = symId.size();
+
+      for (nCommonPrefix = 0; nCommonPrefix < n; nCommonPrefix++) {
+        if (lastSymId[nCommonPrefix] != symId[nCommonPrefix]) {
+          break;
+        }
+      }
+    }
+    ser.writeVUint(nCommonPrefix);
+    //  * write the number of bytes of suffix
+    unsigned int nSuffix = symId.size() - nCommonPrefix;
+    ser.writeVUint(nSuffix);
+    //  * write the suffix data
+    ser.writeData(&symId[nCommonPrefix], nSuffix);
+
+    lastSymId = symId;
   }
 
   return symTableStart - reg.moduleSectionStart;
@@ -397,10 +425,10 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
 
   size_t n = header.nLongStrings;
 
-  std::vector<uint64_t> offsets;
+  std::vector<uint32_t> offsets;
   offsets.resize(n);
   // write 0s for the offsets. We will rewrite it in a moment.
-  fileStream.write((const char*) &offsets[0], n*sizeof(uint64_t));
+  fileStream.write((const char*) &offsets[0], n*sizeof(uint32_t));
 
   // gather the strings by idx so we can output them
   std::vector<std::pair<const char*, size_t>> byId;
@@ -438,7 +466,7 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   fileStream.seekp(longStringsStart+sizeof(header));
 
   // write the actual offsets to replace the dummy offsets written earlier
-  fileStream.write((const char*) &offsets[0], n*sizeof(uint64_t));
+  fileStream.write((const char*) &offsets[0], n*sizeof(uint32_t));
 
   // seek back where we were
   fileStream.seekp(savePos);
@@ -530,8 +558,6 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
                                       const PathToIndex& pathToIdx) {
   uint64_t groupStart = fileStream.tellp();
 
-  uint64_t astOffset = reg.astOffsets[ast];
-
   // update the location entry since we are creating it
   reg.locOffsets[ast] = groupStart - reg.moduleSectionStart;
 
@@ -540,7 +566,7 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   CHPL_ASSERT(pathToIdx.count(startingLoc.path()) > 0);
 
   // compute the file path index
-  int filePathIdx = 0;
+  unsigned int filePathIdx = 0;
   {
     auto search = pathToIdx.find(startingLoc.path());
     if (search != pathToIdx.end()) {
@@ -549,18 +575,8 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   }
 
   // write the group header
-  LocationGroupHeader header;
-  memset(&header, 0, sizeof(header));
-  header.uAstEntry = astOffset;
-  header.filePathIndex = filePathIdx;
-  header.startingLineNumber = startingLoc.firstLine();
-
-  fileStream.write((const char*) &header, sizeof(header));
-
-  uint64_t lastAstOffset = header.uAstEntry;
-  int lastLine = header.startingLineNumber;
-
-  writeLocationEntries(ast, ser, reg, lastAstOffset, lastLine);
+  ser.writeVUint(filePathIdx);
+  ser.writeVInt(startingLoc.firstLine());
 
   return groupStart - reg.moduleSectionStart;
 }
@@ -569,14 +585,9 @@ void
 LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
                                         Serializer& ser,
                                         LibraryFileSerializationHelper& reg,
-                                        uint64_t& lastAstOffset,
+                                        //uint64_t& lastAstOffset,
                                         int& lastLine) {
   Location entryLoc = parsing::locateAst(context, ast);
-  uint64_t astOffset = reg.astOffsets[ast];
-  int64_t uastOffsetDifference = astOffset - lastAstOffset;
-
-  // relative offset within the uAST section, stored as a signed difference
-  ser.writeVI64(uastOffsetDifference);
 
   // first line, stored as a signed difference
   int firstLineDiff = entryLoc.firstLine() - lastLine;
@@ -625,8 +636,7 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
     ser.writeVUint(otherLoc.lastColumn());
   }
 
-  // update lastAstOffset and lastLine
-  lastAstOffset = astOffset;
+  // update lastLine
   lastLine = entryLoc.lastLine();
 
   // consider child nodes, but stop on ones that get their own location group
@@ -635,7 +645,7 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
       // it's in the symbol table, so don't write locations for it now;
       // it will be handled in a different locations group
     } else {
-      writeLocationEntries(child, ser, reg, lastAstOffset, lastLine);
+      writeLocationEntries(child, ser, reg, lastLine);
     }
   }
 }
