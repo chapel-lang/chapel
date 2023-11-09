@@ -12,7 +12,7 @@ proc main() {
   var Vec2 : [Vector1] real;
   var Vec3 : [Vector1] real;
 
-  var rng = new randomStream(real, 314159264, false);
+  var rng = new randomStream(real, 314159264);
 
   rng.fill(Vec1);
 

@@ -2,7 +2,7 @@ use Random;
 
 config const getNth = true;
 
-var r = new randomStream(real, 314159265, false);
+var r = new randomStream(real, 314159265);
 
 try! {
   if getNth {

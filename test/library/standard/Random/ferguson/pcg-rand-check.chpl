@@ -13,8 +13,7 @@ var expect32_2 = [0xff85ecc9, 0x4de4d2f6, 0x72eb3394,
 
 writeln("Checking 32-bit RNG seq 1");
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(32));
+  var rs = new randomStream(seed = seed, eltType = uint(32));
   for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -41,8 +40,7 @@ writeln("Checking 32-bit RNG seq 1");
 }
 
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = int(32));
+  var rs = new randomStream(seed = seed, eltType = int(32));
   for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -69,8 +67,7 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 8 bit version
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(8));
+  var rs = new randomStream(seed = seed, eltType = uint(8));
   for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -99,8 +96,7 @@ writeln("Checking 32-bit RNG seq 1");
 
 // check 16 bit version
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(16));
+  var rs = new randomStream(seed = seed, eltType = uint(16));
 
   for e32 in expect32_1 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
@@ -132,8 +128,7 @@ writeln("Checking 2x 32-bit RNG seq 1 seq 2");
 
 // check 64 bit version
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(64));
+  var rs = new randomStream(seed = seed, eltType = uint(64));
   for (e32_1, e32_2) in zip(expect32_1, expect32_2) {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));
     var got = rs.getNext();
@@ -203,7 +198,7 @@ writeln("Checking real(64)");
 
   fillRandom(expect, seed=seed);
 
-  var rs = new randomStream(seed = seed, eltType = real(64), parSafe = false);
+  var rs = new randomStream(seed = seed, eltType = real(64));
 
   for i in 0..5 {
     //writef("%xu\n", rs.RandomStreamPrivate_rng_states(1));

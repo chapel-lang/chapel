@@ -57,8 +57,7 @@ var histo:[0..255] int;
 
 // Check we produce every random byte
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(8));
+  var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
     var got = rs.getNext();
@@ -78,8 +77,7 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(8));
+  var rs = new randomStream(seed = seed, eltType = uint(8));
 
   for i in 1..1000000 {
     var got = rs.getNext(5, 20);
@@ -98,8 +96,7 @@ histo = 0;
 
 // Check we produce every random byte with sub-range
 {
-  var rs = new randomStream(seed = seed, parSafe=false,
-                            eltType = uint(64));
+  var rs = new randomStream(seed = seed, eltType = uint(64));
 
   for i in 1..1000000 {
     var got = rs.getNext(5, 20):int;

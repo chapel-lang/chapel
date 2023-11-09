@@ -2,9 +2,9 @@ use Random;
 
 config var n = 100;
 
-var randStr1 = new randomStream(real, 314159265, false);
-var randStr2 = new randomStream(real, 314159265, false);
-var randStr3 = new randomStream(real, 314159265, false);
+var randStr1 = new randomStream(real, 314159265);
+var randStr2 = new randomStream(real, 314159265);
+var randStr3 = new randomStream(real, 314159265);
 
 for i in 0..n-1 {
   const r1 = randStr1.getNext();

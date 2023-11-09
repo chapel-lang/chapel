@@ -1,1 +1,1 @@
-(t = real(64), seed = 314159265, parSafe = false)
+(eltType = real(64), seed = 314159265)

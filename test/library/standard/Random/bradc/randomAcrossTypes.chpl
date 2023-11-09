@@ -14,9 +14,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs1 = new randomStream(seed=314159265, eltType=real, parSafe=false);
-var rs2 = new randomStream(seed=314159265, eltType=imag, parSafe=false);
-var rs3 = new randomStream(seed=314159265, eltType=complex, parSafe=false);
+var rs1 = new randomStream(seed=314159265, eltType=real);
+var rs2 = new randomStream(seed=314159265, eltType=imag);
+var rs3 = new randomStream(seed=314159265, eltType=complex);
 
 //
 // Check fill method
@@ -28,9 +28,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs4 = new randomStream(seed=314159265, eltType=real, parSafe=false);
-var rs5 = new randomStream(seed=314159265, eltType=imag, parSafe=false);
-var rs6 = new randomStream(seed=314159265, eltType=complex, parSafe=false);
+var rs4 = new randomStream(seed=314159265, eltType=real);
+var rs5 = new randomStream(seed=314159265, eltType=imag);
+var rs6 = new randomStream(seed=314159265, eltType=complex);
 
 //
 // Check consecutive implementations of fillRandom method()
@@ -76,9 +76,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs7 = new randomStream(seed=314159265, eltType=real, parSafe=false);
-var rs8 = new randomStream(seed=314159265, eltType=imag, parSafe=false);
-var rs9 = new randomStream(seed=314159265, eltType=complex, parSafe=false);
+var rs7 = new randomStream(seed=314159265, eltType=real);
+var rs8 = new randomStream(seed=314159265, eltType=imag);
+var rs9 = new randomStream(seed=314159265, eltType=complex);
 //
 // Check getNext() method
 //
