@@ -65,10 +65,14 @@ function apply_patch() {
 function test_compile() {
   local kind=$@
   local make_vars="MOD=$kind NPROCS=0"
+  local reset_chpl_stop_after_pass=false
 
   if [ ! -z "$CHAMPS_QUICKSTART" ]; then
     local version=quick-shared
-    export CHPL_STOP_AFTER_PASS=${CHPL_STOP_AFTER_PASS:-denormalize}
+    if [ -z "$CHPL_STOP_AFTER_PASS" ]; then
+      reset_chpl_stop_after_pass=true
+      export CHPL_STOP_AFTER_PASS=denormalize
+    fi
 
     # CHAMPS' Makefile runs `time` in an unportable way causing failures on
     # darwin. Measuring time and memory in this setting is probably useless
@@ -95,7 +99,7 @@ function test_compile() {
   test_end
 
   # don't leave this environment set
-  if [ ! -z "$CHAMPS_QUICKSTART" ]; then
+  if [ "$reset_chpl_stop_after_pass" = true ]; then
     unset CHPL_STOP_AFTER_PASS
   fi
 
