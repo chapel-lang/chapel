@@ -504,7 +504,7 @@ module ChapelLocale {
       halt("cannot call chpl_getSingletonCurrentLocaleArray on nil or rootLocale");
 
     // I think this is problematic...  We can't really return an array
-    // literal by 'const ref', can we?
+    // literal by 'const ref', can we?  (later: No, we can't)
     return [casted!.chpl_singletonThisLocale, ];
   }
 

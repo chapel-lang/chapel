@@ -29,6 +29,12 @@ module DefaultRectangular {
   @unstable("The variable 'dataParMinGranularity' is unstable and its interface is subject to change in the future")
   config const dataParMinGranularity: int = 1;
 
+/*
+  pragma "locale private"
+  @chpldoc.nodoc
+  const targetLocaleArrayOfMe = [here, ];
+  */
+  
   if dataParTasksPerLocale<0 then halt("dataParTasksPerLocale must be >= 0");
   if dataParMinGranularity<=0 then halt("dataParMinGranularity must be > 0");
 
@@ -112,8 +118,9 @@ module DefaultRectangular {
     override proc dsiNewSparseDom(param rank: int, type idxType, dom: domain) do
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
-    proc dsiTargetLocales() const ref do
-      return chpl_getSingletonLocaleArray(this.locale);
+    proc dsiTargetLocales() const ref {
+      return Locales[this.locale.id..this.locale.id];
+    }
 
     proc dsiIndexToLocale(ind) do return this.locale;
 
@@ -737,7 +744,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return chpl_getSingletonLocaleArray(this.locale);
+      return Locales[this.locale.id..this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
@@ -1608,7 +1615,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return chpl_getSingletonLocaleArray(this.locale);
+      return Locales[this.locale.id..this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
