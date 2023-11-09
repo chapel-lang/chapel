@@ -521,11 +521,11 @@ static const char* opKindToString(chpl::uast::Range::OpKind kind) {
 }
 
 template <typename CppType>
-struct PythonTypeInfo {};
+struct PythonReturnTypeInfo {};
 
-#define DEFINE_TYPE(TYPE, PYSTR, WRAP) \
+#define DEFINE_RETURN_TYPE(TYPE, PYSTR, WRAP) \
   template <> \
-  struct PythonTypeInfo<TYPE> { \
+  struct PythonReturnTypeInfo<TYPE> { \
     static constexpr const char* PythonString = PYSTR; \
   \
     static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
@@ -534,18 +534,18 @@ struct PythonTypeInfo {};
   \
   }
 
-DEFINE_TYPE(bool, "b", Py_BuildValue("b", TO_WRAP));
-DEFINE_TYPE(int, "i", Py_BuildValue("i", TO_WRAP));
-DEFINE_TYPE(const char*, "s", Py_BuildValue("s", TO_WRAP));
-DEFINE_TYPE(chpl::UniqueString, "s", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_TYPE(std::string, "s", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_TYPE(const chpl::uast::AstNode*, "O", wrapAstNode(CONTEXT, TO_WRAP));
-DEFINE_TYPE(IterAdapterBase*, "O", wrapIterAdapter(CONTEXT, TO_WRAP));
+DEFINE_RETURN_TYPE(bool, "b", Py_BuildValue("b", TO_WRAP));
+DEFINE_RETURN_TYPE(int, "i", Py_BuildValue("i", TO_WRAP));
+DEFINE_RETURN_TYPE(const char*, "s", Py_BuildValue("s", TO_WRAP));
+DEFINE_RETURN_TYPE(chpl::UniqueString, "s", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_RETURN_TYPE(std::string, "s", Py_BuildValue("s", TO_WRAP.c_str()));
+DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "O", wrapAstNode(CONTEXT, TO_WRAP));
+DEFINE_RETURN_TYPE(IterAdapterBase*, "O", wrapIterAdapter(CONTEXT, TO_WRAP));
 
 template<typename T> struct PythonFnHelper{};
 template<typename R, typename ...Args>
 struct PythonFnHelper<R(Args...)> {
-  using ReturnTypeInfo = PythonTypeInfo<R>;
+  using ReturnTypeInfo = PythonReturnTypeInfo<R>;
 };
 
 template<typename IntentType>
@@ -562,7 +562,7 @@ const char* toCString<const char*>(const char*& t) { return t; }
 template <>
 const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_str(); }
 
-#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPE, BODY)\
+#define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
     using namespace chpl; \
     using namespace uast; \
@@ -572,7 +572,7 @@ const char* toCString<chpl::UniqueString>(chpl::UniqueString& us) { return us.c_
     auto result = [](const NODE* node) { \
       BODY; \
     }(cast) ; \
-    return PythonFnHelper<TYPE>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
+    return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
   }
 #include "method-tables.h"
 
@@ -616,7 +616,7 @@ struct PerNodeInfo {
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
   };
-#define PLAIN_GETTER(NODE, NAME, DOCSTR, TYPE, BODY) \
+#define METHOD(NODE, NAME, DOCSTR, TYPE, BODY) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
