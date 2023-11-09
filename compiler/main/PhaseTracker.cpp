@@ -215,10 +215,16 @@ void PhaseTracker::ReportRollup() const
   PassesCollect(passes);
   PassesReport(passes, totalTime);
 
-  PhaseTracker::ReportText("\n\n\n");
+  // Repeat the information but sorted by time, for monolithic mode or driver
+  // phase one.
+  // Skipped for driver overhead time or driver phase two as they contain very
+  // little information and the sort isn't that informative.
+  if (fDriverDoMonolithic || fDriverPhaseOne) {
+    PhaseTracker::ReportText("\n\n\n");
 
-  PassesSortByTime(passes);
-  PassesReport(passes, totalTime);
+    PassesSortByTime(passes);
+    PassesReport(passes, totalTime);
+  }
 }
 
 void PhaseTracker::PassesCollect(std::vector<Pass>& passes) const
