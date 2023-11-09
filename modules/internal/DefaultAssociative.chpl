@@ -441,7 +441,7 @@ module DefaultAssociative {
     }
 
     proc dsiTargetLocales() const ref {
-      return EachLocSingletonArr[this.locale.id][0];
+      return EachLocSingletonArr[this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
@@ -881,7 +881,7 @@ module DefaultAssociative {
     }
 
     proc dsiTargetLocales() const ref {
-      return EachLocSingletonArr[this.locale.id][0];
+      return EachLocSingletonArr[this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;

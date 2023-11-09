@@ -114,7 +114,7 @@ module DefaultRectangular {
       return new unmanaged DefaultSparseDom(rank, idxType, _to_unmanaged(this), dom);
 
     proc dsiTargetLocales() const ref {
-      return EachLocSingletonArr[this.locale.id][0];
+      return EachLocSingletonArr[this.locale.id];
     }
 
     proc dsiIndexToLocale(ind) do return this.locale;
@@ -739,7 +739,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return EachLocSingletonArr[this.locale.id][0];
+      return EachLocSingletonArr[this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
@@ -1610,7 +1610,7 @@ module DefaultRectangular {
     }
 
     proc dsiTargetLocales() const ref {
-      return EachLocSingletonArr[this.locale.id][0];
+      return EachLocSingletonArr[this.locale.id];
     }
 
     proc dsiHasSingleLocalSubdomain() param do return true;
