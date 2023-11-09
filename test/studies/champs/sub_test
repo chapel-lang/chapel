@@ -10,6 +10,7 @@ source $CWD/functions.bash
 if [ ! -z "$CHAMPS_QUICKSTART" ]; then
   if [ -z "$CHPL_HOME" ]; then
     echo "[Error: \$CHPL_HOME is unset]"
+    exit 1
   fi
   export CHAMPS_COMMON_DIR=$CWD/champs-nightly
 
