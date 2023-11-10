@@ -142,10 +142,12 @@ struct GatherDecls {
   bool containsFunctionDecls = false;
   bool containsExternBlock = false;
   bool atFieldLevel = false;
+  uast::AstTag tagParent;
 
   GatherDecls(const AstNode* parentAst) {
-    if (parentAst && (parentAst->isAggregateDecl() || parentAst->isInterface())) {
-      atFieldLevel = true;
+    if (parentAst) {
+      atFieldLevel = parentAst->isAggregateDecl() || parentAst->isInterface();
+      tagParent = parentAst->tag();
     }
   }
 
@@ -192,6 +194,15 @@ struct GatherDecls {
 
   // Traverse into TupleDecl and MultiDecl looking for NamedDecls
   bool enter(const TupleDecl* d) {
+    // traverse inside to look for type queries &
+    // add them to declared
+    const bool isParentFunction = tagParent == uast::asttags::Function;
+    if (isParentFunction) {
+      if (auto typeExpr = d->typeExpression()) {
+        GatherQueryDecls gatherQueryDecls(declared);
+        typeExpr->traverse(gatherQueryDecls);
+      }
+    }
     return true;
   }
   void exit(const TupleDecl* d) { }
