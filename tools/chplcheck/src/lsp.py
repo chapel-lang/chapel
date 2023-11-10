@@ -85,13 +85,21 @@ def run_lsp(driver):
         """
 
         context = get_updated_context(uri)
-        asts = parse_file(context, uri)
+        with context as errors:
+            asts = parse_file(context, uri)
         diagnostics = []
         for (node, rule) in driver.run_checks(context, asts):
             diagnostic = Diagnostic(
                 range= location_to_range(node.location()),
                 message="Lint: rule [{}] violated".format(rule),
                 severity=DiagnosticSeverity.Warning
+            )
+            diagnostics.append(diagnostic)
+        for error in errors:
+            diagnostic = Diagnostic(
+                range= location_to_range(error.location()),
+                message="Error: [{}]: {}".format(error.type(), error.message()),
+                severity=DiagnosticSeverity.Error
             )
             diagnostics.append(diagnostic)
         return diagnostics
