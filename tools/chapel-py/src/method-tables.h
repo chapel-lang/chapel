@@ -381,6 +381,8 @@ CLASS_BEGIN(Function)
                IterAdapterBase*, return mkIterPair(node->formals()))
   PLAIN_GETTER(Function, body, "Get the body for this function",
                const AstNode*, return node->body())
+  METHOD(Function, formal, "Get the nth formal of this function",
+         const AstNode*(int), return node->formal(std::get<0>(args)))
   PLAIN_GETTER(Function, is_anonymous, "Check if this Function node is anonymous",
                bool, return node->isAnonymous())
   PLAIN_GETTER(Function, is_inline, "Check if this Function node is marked inline",
