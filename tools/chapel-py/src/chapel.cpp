@@ -328,6 +328,39 @@ PyTypeObject LocationType = {
   .tp_new = PyType_GenericNew,
 };
 
+template <typename CppType>
+struct PythonReturnTypeInfo {};
+
+#define DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
+  template <> \
+  struct PythonReturnTypeInfo<TYPE> { \
+    static constexpr const char* TypeString = TYPESTR; \
+  \
+    static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
+      return WRAP; \
+    } \
+  \
+    TYPE wrap(ContextObject* CONTEXT, PyObject* TO_UNWRAP) { \
+      return UNWRAP; \
+    } \
+  \
+  }
+
+DEFINE_RETURN_TYPE(bool, "bool", Py_BuildValue("b", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
+DEFINE_RETURN_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
+DEFINE_RETURN_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
+DEFINE_RETURN_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->context, PyUnicode_AsUTF8(TO_UNWRAP)));
+DEFINE_RETURN_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
+DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->astNode);
+DEFINE_RETURN_TYPE(IterAdapterBase*, "Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+
+template<typename T> struct PythonFnHelper{};
+template<typename R, typename ...Args>
+struct PythonFnHelper<R(Args...)> {
+  using ReturnTypeInfo = PythonReturnTypeInfo<R>;
+  using ArgTypeInfo = std::tuple<PythonReturnTypeInfo<Args>...>;
+};
+
 static int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   chpl::Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
@@ -390,10 +423,65 @@ static PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyO
   Py_RETURN_NONE;
 }
 
+template <typename Tuple, size_t ... Indices>
+static void printFunctionArgs(std::ostringstream& ss, std::index_sequence<Indices...>) {
+  int counter = 0;
+  auto printArg = [&](const char* arg) {
+    ss << ", arg" << counter++ << ": " << arg;
+  };
+
+  int dummy[] = { (printArg(std::tuple_element<Indices, Tuple>::type::TypeString), 0)...};
+  (void) dummy;
+}
+
+static const char* tagToUserFacingStringTable[chpl::uast::asttags::NUM_AST_TAGS] = {
+// define tag to string conversion
+#define AST_NODE(NAME) #NAME,
+#define AST_LEAF(NAME) #NAME,
+#define AST_BEGIN_SUBCLASSES(NAME) #NAME,
+#define AST_END_SUBCLASSES(NAME) #NAME,
+// Apply the above macros to uast-classes-list.h
+#include "chpl/uast/uast-classes-list.h"
+// clear the macros
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+#undef NAMESTR
+};
+
+static PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
+  std::ostringstream ss;
+
+  ss << "from typing import *" << std::endl << std::endl;
+
+  ss << "class AstNode:" << std::endl;
+  ss << "    pass" << std::endl << std::endl;
+
+  using namespace chpl;
+  using namespace uast;
+  #define CLASS_BEGIN(NODE) \
+    ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "(AstNode):" << std::endl;
+  #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
+    ss << "    def " << #NAME << "(self"; \
+    printFunctionArgs<PythonFnHelper<TYPEFN>::ArgTypeInfo>(ss, std::make_index_sequence<std::tuple_size<PythonFnHelper<TYPEFN>::ArgTypeInfo>::value>()); \
+    ss << ") -> " << PythonFnHelper<TYPEFN>::ReturnTypeInfo::TypeString << ":" << std::endl;\
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        " << DOCSTR << std::endl; \
+    ss << "        \"\"\"" << std::endl; \
+    ss << "        ..." << std::endl << std::endl;
+  #define CLASS_END(NODE) \
+    ss << std::endl;
+  #include "method-tables.h"
+
+  return Py_BuildValue("s", ss.str().c_str());
+}
+
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
+  { "get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
@@ -520,34 +608,6 @@ static const char* opKindToString(chpl::uast::Range::OpKind kind) {
   }
 }
 
-template <typename CppType>
-struct PythonReturnTypeInfo {};
-
-#define DEFINE_RETURN_TYPE(TYPE, PYSTR, TYPESTR, WRAP) \
-  template <> \
-  struct PythonReturnTypeInfo<TYPE> { \
-    static constexpr const char* PythonString = PYSTR; \
-    static constexpr const char* TypeString = TYPESTR; \
-  \
-    static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
-      return WRAP; \
-    } \
-  \
-  }
-
-DEFINE_RETURN_TYPE(bool, "b", "bool", Py_BuildValue("b", TO_WRAP));
-DEFINE_RETURN_TYPE(int, "i", "int", Py_BuildValue("i", TO_WRAP));
-DEFINE_RETURN_TYPE(const char*, "s", "str", Py_BuildValue("s", TO_WRAP));
-DEFINE_RETURN_TYPE(chpl::UniqueString, "s", "str", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_RETURN_TYPE(std::string, "s", "str", Py_BuildValue("s", TO_WRAP.c_str()));
-DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "O", "AstNode", wrapAstNode(CONTEXT, TO_WRAP));
-DEFINE_RETURN_TYPE(IterAdapterBase*, "O", "Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP));
-
-template<typename T> struct PythonFnHelper{};
-template<typename R, typename ...Args>
-struct PythonFnHelper<R(Args...)> {
-  using ReturnTypeInfo = PythonReturnTypeInfo<R>;
-};
 
 template<typename IntentType>
 static const char* intentToString(IntentType intent) {
