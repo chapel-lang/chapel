@@ -20,6 +20,8 @@
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
+#include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 
 using namespace chpl;
 using namespace uast;
@@ -73,6 +75,35 @@ static const char* intentToString(IntentType intent) {
   return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
 }
 
+static const resolution::ResolutionResultByPostorderID&
+scopeResolveResultsForNode(Context* context, const uast::AstNode* node) {
+  while (node) {
+    if (auto fn = node->toFunction()) {
+      return resolution::scopeResolveFunction(context, node->id())->resolutionById();
+    } else if (auto mod = node->toModule()) {
+      return resolution::scopeResolveModule(context, node->id());
+    }
+
+    node = parsing::parentAst(context, node);
+  }
+  throw std::invalid_argument("node is not in a function or module");
+}
+
+static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
+  if (id.isEmpty()) return nullptr;
+
+  return parsing::idToAst(context, id);
+}
+
+static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) {
+  auto& results = scopeResolveResultsForNode(context, node);
+  if (results.hasAst(node)) {
+    auto& r = results.byAst(node);
+    return idOrEmptyToAstNodeOrNull(context, r.toId());
+  }
+  return nullptr;
+}
+
 /* The METHOD macro is overridden here to actually create a Python-compatible
    function to insert into the method table. Each such function retrieves
    a node's context object, calls the method body, and wraps the result
@@ -85,8 +116,10 @@ static const char* intentToString(IntentType intent) {
     \
     auto node = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
     auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
+    auto context = &contextObject->context; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
-    auto result = [node, &args]() { \
+    auto result = [node, &context, &args]() { \
+      (void) context; \
       BODY; \
     }() ; \
     return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\

@@ -55,7 +55,7 @@
 
 #ifndef PLAIN_GETTER
 #define PLAIN_GETTER(NODE, NAME, DOCSTR, RETTYPE, BODY) \
-  METHOD(NODE, NAME, DOCSTR, RETTYPE(void), BODY)
+  METHOD(NODE, NAME, DOCSTR, RETTYPE(void), (void) args; BODY)
 #endif
 
 //
@@ -169,6 +169,8 @@ CLASS_END(FunctionSignature)
 CLASS_BEGIN(Identifier)
   PLAIN_GETTER(Identifier, name, "Get the name of this Identifier node",
                UniqueString, return node->name())
+  PLAIN_GETTER(Identifier, to_node, "Get the AST node that this Identifier node refers to",
+               const AstNode*, return nodeOrNullFromToId(context, node))
 CLASS_END(Identifier)
 
 CLASS_BEGIN(Init)
