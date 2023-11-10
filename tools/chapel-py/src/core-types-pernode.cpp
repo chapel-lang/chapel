@@ -21,6 +21,9 @@
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 
+using namespace chpl;
+using namespace uast;
+
 /* In this file are generated method and struct definitions for each AST node using
    the X-Macros pattern. Each 'include' of a header file, either uast-classes-list.h
    or method-tables.h, is used to generate a bunch of similar code for many
@@ -76,15 +79,16 @@ static const char* intentToString(IntentType intent) {
    in a Python-compatible type.
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
-  static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
+  static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
     using namespace chpl; \
     using namespace uast; \
     \
-    auto cast = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
-    auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject;\
-    auto result = [](const NODE* node) { \
+    auto node = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
+    auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
+    auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
+    auto result = [node, &args]() { \
       BODY; \
-    }(cast) ; \
+    }() ; \
     return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
   }
 
@@ -148,7 +152,7 @@ struct PerNodeInfo {
     }; \
   };
 #define METHOD(NODE, NAME, DOCSTR, TYPE, BODY) \
-  {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
+  {#NAME, NODE##Object_##NAME, PythonFnHelper<TYPE>::PyArgTag, DOCSTR},
 #define METHOD_PROTOTYPE(NODE, NAME, DOCSTR) \
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #include "method-tables.h"

@@ -35,7 +35,7 @@ struct PythonReturnTypeInfo {};
       return WRAP; \
     } \
   \
-    TYPE wrap(ContextObject* CONTEXT, PyObject* TO_UNWRAP) { \
+    static TYPE unwrap(ContextObject* CONTEXT, PyObject* TO_UNWRAP) { \
       return UNWRAP; \
     } \
   \
@@ -52,8 +52,29 @@ DEFINE_RETURN_TYPE(IterAdapterBase*, "Iterator[AstNode]", wrapIterAdapter(CONTEX
 template<typename T> struct PythonFnHelper{};
 template<typename R, typename ...Args>
 struct PythonFnHelper<R(Args...)> {
+ public:
   using ReturnTypeInfo = PythonReturnTypeInfo<R>;
   using ArgTypeInfo = std::tuple<PythonReturnTypeInfo<Args>...>;
+
+  static constexpr int PyArgTag = std::tuple_size<ArgTypeInfo>::value == 0 ? METH_NOARGS : METH_VARARGS;
+
+ private:
+  template <typename Tuple, size_t idx>
+  static void unwrapArgHelper(ContextObject* context, PyObject* argTup, Tuple& toModify) {
+    std::get<idx>(toModify) = std::tuple_element<idx, ArgTypeInfo>::type::unwrap(context, PyTuple_GetItem(argTup, idx));
+  }
+
+  template <typename Tuple, size_t ... Indices>
+  static Tuple unwrapArgsHelper(ContextObject* context, PyObject* argTup, std::index_sequence<Indices...>) {
+    Tuple toReturn;
+    (unwrapArgHelper<Tuple, Indices>(context, argTup, toReturn), ...);
+    return toReturn;
+  }
+
+ public:
+  static std::tuple<Args...> unwrapArgs(ContextObject* context, PyObject* argsTup) {
+    return unwrapArgsHelper<std::tuple<Args...>>(context, argsTup, std::make_index_sequence<sizeof...(Args)>());
+  }
 };
 
 #endif
