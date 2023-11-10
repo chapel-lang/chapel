@@ -31,7 +31,7 @@ using namespace uast;
    or method-tables.h, is used to generate a bunch of similar code for many
    classes. */
 
-/* First, generate a Node_init for each type of node in the Dyno AST, 
+/* First, generate a Node_init for each type of node in the Dyno AST,
    implemented in the DEFINE_INIT_FOR macro.
 
    We particularly want this to make sure we call the AstNode constructor,
