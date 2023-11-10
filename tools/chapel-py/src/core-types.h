@@ -96,6 +96,7 @@ PyObject* AstNodeObject_location(AstNodeObject *self);
 #undef AST_END_SUBCLASSES
 #undef DECLARE_PY_OBJECT_FOR
 
+
 /**
   Create a Python object of the class corresponding to the given AST node's
   type. For example, an Identifier node will be wrapped in a a chapel.Identifier.

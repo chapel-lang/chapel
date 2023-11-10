@@ -300,11 +300,23 @@ PyObject* AstNodeObject_location(AstNodeObject *self) {
   return locationObjectPy;
 }
 
+/* Below this point are method and struct definitions for each AST node using
+   the X-Macros pattern. Each 'include' of a header file, either uast-classes-list.h
+   or method-tables.h, is used to generate a bunch of similar code for many
+   classes. */
+
+/* First, generate a Node_init for each type of node in the Dyno AST. The
+   DEFINE_INIT_FOR macro captures an initializer for a single node.
+
+   We parrticularly want this to make sure we call the AstNode constructor,
+   which sets the context object etc.
+ */
 #define DEFINE_INIT_FOR(NAME, TAG)\
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
     return parentTypeFor(chpl::uast::asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
 
+/* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
 #define AST_NODE(NAME) DEFINE_INIT_FOR(NAME, NAME)
 #define AST_LEAF(NAME) DEFINE_INIT_FOR(NAME, NAME)
 #define AST_BEGIN_SUBCLASSES(NAME) DEFINE_INIT_FOR(NAME, START_##NAME)
@@ -337,6 +349,11 @@ static const char* intentToString(IntentType intent) {
   return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
 }
 
+/* The METHOD macro is overridden here to actually create a Python-compatible
+   function to insert into the method table. Each such function retrieves
+   a node's context object, calls the method body, and wraps the result
+   in a Python-compatible type.
+ */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *Py_UNUSED(ignored)) {\
     using namespace chpl; \
@@ -349,8 +366,14 @@ static const char* intentToString(IntentType intent) {
     }(cast) ; \
     return PythonFnHelper<TYPEFN>::ReturnTypeInfo::wrap(contextObject, std::move(result));\
   }
+
+/* Call METHOD on each method in the method-tables.h header to generate
+   the Node_method(...) functions. */
 #include "method-tables.h"
 
+/* Helper macro to set up actual iterators. Needs to be a macro because nodes
+   that have actuals don't all share a parent class (Attribute vs FnCall, e.g.).
+   */
 #define ACTUAL_ITERATOR(NAME)\
   static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
     auto node = ((NAME##Object*) self)->parent.astNode->to##NAME(); \
@@ -376,6 +399,19 @@ static const char* intentToString(IntentType intent) {
 ACTUAL_ITERATOR(Attribute);
 ACTUAL_ITERATOR(FnCall);
 
+
+/* The following code is used to help set up the (Python) method tables for
+   each Chapel AST node class. Each node class needs a table, but not all
+   classes have Python methods we want to expose. We thus want to default
+   to an empty method table (to save on typing / boilerplate), but at the same
+   time to make it easy to override a node's method table.
+
+   To this end, we use template specialization of the PerNodeInfo struct. The
+   default template provides an empty table; it can be specialized per-node to
+   change the table for that node.
+
+   Macros below take this a step further and compiler-generate the template
+   specializations. */
 template <chpl::uast::asttags::AstTag tag>
 struct PerNodeInfo {
   static constexpr PyMethodDef methods[] = {
@@ -397,6 +433,10 @@ struct PerNodeInfo {
   {#NAME, NODE##Object_##NAME, METH_NOARGS, DOCSTR},
 #include "method-tables.h"
 
+/* Having generated the method calls and the method tables, we can now
+   generate the Python type objects for each AST node. The DEFINE_PY_TYPE_FOR
+   macro defines what a type object for an AST node (abstract or not) should
+   look like. */
 
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
   PyTypeObject NAME##Type = { \
@@ -412,6 +452,7 @@ struct PerNodeInfo {
     .tp_new = PyType_GenericNew, \
   }; \
 
+/* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
 #define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
 #define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
 #define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
