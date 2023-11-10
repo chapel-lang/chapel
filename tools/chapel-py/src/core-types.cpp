@@ -26,6 +26,9 @@ using namespace chpl;
 using namespace uast;
 
 static PyMethodDef ContextObject_methods[] = {
+  { "__enter__", (PyCFunction) ContextObject_enter, METH_NOARGS, "TODO" },
+  { "__exit__", (PyCFunction) ContextObject_exit, METH_VARARGS, "TODO" },
+
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
@@ -65,6 +68,18 @@ void ContextObject_dealloc(ContextObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
+PyObject* ContextObject_enter(ContextObject* self, PyObject* args) {
+  auto list = ((PythonErrorHandler*) self->context.errorHandler())->pushList();
+  Py_INCREF(list);
+  return list;
+}
+
+PyObject* ContextObject_exit(ContextObject* self, PyObject* args) {
+  ((PythonErrorHandler*) self->context.errorHandler())->popList();
+
+  Py_RETURN_NONE;
+}
+
 PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   auto context = &self->context;
   const char* fileName;
@@ -74,7 +89,7 @@ PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   }
   auto fileNameUS = chpl::UniqueString::get(context, fileName);
   auto parentPathUS = chpl::UniqueString();
-  auto& builderResult = chpl::parsing::parseFileToBuilderResult(context, fileNameUS, parentPathUS);
+  auto& builderResult = chpl::parsing::parseFileToBuilderResultAndCheck(context, fileNameUS, parentPathUS);
 
   int listSize = builderResult.numTopLevelExpressions();
   PyObject* topExprs = PyList_New(listSize);

@@ -37,6 +37,8 @@ extern PyTypeObject ContextType;
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
 void ContextObject_dealloc(ContextObject* self);
+PyObject* ContextObject_enter(ContextObject* self, PyObject* args);
+PyObject* ContextObject_exit(ContextObject* self, PyObject* args);
 PyObject* ContextObject_parse(ContextObject *self, PyObject* args);
 PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args);
 PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args);

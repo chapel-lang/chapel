@@ -19,10 +19,12 @@
 
 #include "error-tracker.h"
 #include "core-types.h"
+#include "chpl/framework/ErrorBase.h"
 
 static PyMethodDef ErrorObject_methods[] = {
   { "location", (PyCFunction) ErrorObject_location, METH_NOARGS, "Get the location at which this error occurred" },
   { "message", (PyCFunction) ErrorObject_message, METH_NOARGS, "Retrieve the contents of this error message" },
+  { "type", (PyCFunction) ErrorObject_type, METH_NOARGS, "Retrieve the unique name of this type of error" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
@@ -41,6 +43,7 @@ PyTypeObject ErrorType = {
 
 int ErrorObject_init(ErrorObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->error) chpl::owned<chpl::ErrorBase>();
+  self->contextObject = nullptr;
   return 0;
 }
 
@@ -63,6 +66,10 @@ PyObject* ErrorObject_message(ErrorObject* self, PyObject* args) {
   return Py_BuildValue("s", self->error->message().c_str());
 }
 
+PyObject* ErrorObject_type(ErrorObject* self, PyObject* args) {
+  return Py_BuildValue("s", chpl::ErrorBase::getTypeName(self->error->type()));
+}
+
 PyObject* PythonErrorHandler::pushList() {
   PyObject* newList = PyList_New(0);
   errorLists.push_back(newList);
@@ -80,6 +87,7 @@ void PythonErrorHandler::report(chpl::Context* context, const chpl::ErrorBase* e
   if (errorLists.empty()) {
     // No error list tracking errors, so just print to the console.
     chpl::Context::defaultReportError(context, err);
+    return;
   }
 
   // There's an error list! Create an error object and store it into the list.
