@@ -145,3 +145,18 @@ def register_rules(driver):
                     if isinstance(blockchild, Comment): continue
                     prev = blockchild
                     break
+
+    @driver.advanced_rule
+    def UnusedFormal(context, root):
+        formals = dict()
+        uses = set()
+
+        for (formal, _) in chapel.each_matching(root, Formal):
+            formals[formal.unique_id()] = formal
+
+        for (use, _) in chapel.each_matching(root, Identifier):
+            if refersto := use.to_node():
+                uses.add(refersto.unique_id())
+
+        for unused in formals.keys() - uses:
+            yield formals[unused]
