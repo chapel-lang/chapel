@@ -43,7 +43,7 @@ def main():
     args = parser.parse_args()
 
     driver = LintDriver()
-    driver.disable_rules("CamelCaseVariables", "ConsecutiveDecls", "UseExplicitModules", "UnusedFormal")
+    driver.disable_rules("CamelCaseVariables", "ConsecutiveDecls", "UseExplicitModules")
     driver.disable_rules(*args.disabled_rules)
     driver.enable_rules(*args.enabled_rules)
     register_rules(driver)

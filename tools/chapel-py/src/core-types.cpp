@@ -50,7 +50,12 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   chpl::Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
   new (&self->context) chpl::Context(std::move(config));
-  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+
+  // Disable setting up standard search paths since for some reason this breaks
+  // re-running incrementally.
+  //
+  // chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+
   return 0;
 }
 
