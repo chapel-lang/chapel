@@ -96,7 +96,12 @@ static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
 }
 
 static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) {
-  auto& results = scopeResolveResultsForNode(context, node);
+  // Silence errors, particularly since we might be resolving without the
+  // standard modules.
+  auto resultAndErrors = context->runAndTrackErrors([node](Context* context) {
+    return scopeResolveResultsForNode(context, node);
+  });
+  auto& results = resultAndErrors.result();
   if (results.hasAst(node)) {
     auto& r = results.byAst(node);
     return idOrEmptyToAstNodeOrNull(context, r.toId());
