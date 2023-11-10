@@ -24,6 +24,7 @@
 #include "Python.h"
 #include "chpl/framework/Context.h"
 #include "chpl/uast/AstTag.h"
+#include "error-tracker.h"
 
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 
