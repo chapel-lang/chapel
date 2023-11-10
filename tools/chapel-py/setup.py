@@ -49,5 +49,5 @@ setup(name = "chapel",
       version = "0.1",
       package_dir = {'': 'src'},
       packages = ['chapel', 'chapel.replace'],
-      ext_modules = [Extension("chapel.core", ["src/chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
+      ext_modules = [Extension("chapel.core", ["src/chapel.cpp", "src/core-types.cpp", "src/iterator-support.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )
