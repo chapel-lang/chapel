@@ -160,3 +160,28 @@ def register_rules(driver):
 
         for unused in formals.keys() - uses:
             yield formals[unused]
+
+    @driver.advanced_rule
+    def UnusedLoopIndex(context, root):
+        indices = dict()
+        uses = set()
+
+        def variables(node):
+            if isinstance(node, Variable):
+                yield node
+            elif isinstance(node, TupleDecl):
+                for child in node:
+                    yield from variables(child)
+
+        for (_, match) in chapel.each_matching(root, [IndexableLoop, ("?decl", Decl), chapel.rest]):
+            node = match["decl"]
+
+            for index in variables(node):
+                indices[index.unique_id()] = index
+
+        for (use, _) in chapel.each_matching(root, Identifier):
+            if refersto := use.to_node():
+                uses.add(refersto.unique_id())
+
+        for unused in indices.keys() - uses:
+            yield indices[unused]
