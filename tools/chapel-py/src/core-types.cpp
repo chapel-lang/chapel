@@ -123,6 +123,8 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
   }
 
   context->advanceToNextRevision(prepareToGc);
+  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+
   Py_RETURN_NONE;
 }
 
