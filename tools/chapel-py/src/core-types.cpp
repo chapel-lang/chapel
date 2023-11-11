@@ -55,10 +55,7 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) chpl::Context(std::move(config));
   self->context.installErrorHandler(chpl::owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
-  // Disable setting up standard search paths since for some reason this breaks
-  // re-running incrementally.
-  //
-  // chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
 
   return 0;
 }
