@@ -1,3 +1,4 @@
+initWeakPtr.chpl:4: warning: The `weak` type is experimental; expect this API to change in the future
 initWeakPtr.chpl:17: warning: The `weak` type is experimental; expect this API to change in the future.
 initWeakPtr.chpl:27: warning: The `weak` type is experimental; expect this API to change in the future.
 initWeakPtr.chpl:43: warning: The `weak` type is experimental; expect this method to change in the future.
