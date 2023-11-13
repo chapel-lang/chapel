@@ -383,7 +383,7 @@ CLASS_BEGIN(Function)
                IterAdapterBase*, return mkIterPair(node->formals()))
   PLAIN_GETTER(Function, body, "Get the body for this function",
                const AstNode*, return node->body())
-  METHOD(Function, formal, "Get the nth formal of this function",
+  METHOD(Function, formal, "Get the n'th Formal of this Function node",
          const AstNode*(int), return node->formal(std::get<0>(args)))
   PLAIN_GETTER(Function, is_anonymous, "Check if this Function node is anonymous",
                bool, return node->isAnonymous())
@@ -401,6 +401,8 @@ CLASS_BEGIN(Function)
                const char*, return Function::kindToString(node->kind()))
   PLAIN_GETTER(Function, lifetime_clauses, "Get the lifetime clauses for this Function node",
                IterAdapterBase*, return mkIterPair(node->lifetimeClauses()))
+  PLAIN_GETTER(Function, num_formals, "Get the number of formals for this Function node",
+               int, return node->numFormals())
   PLAIN_GETTER(Function, return_intent, "Get the return intent of this Function node",
                const char*,  return intentToString(node->returnIntent()))
   PLAIN_GETTER(Function, return_type, "Get the return type for this Function node",
