@@ -75,18 +75,18 @@ static const char* intentToString(IntentType intent) {
   return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
 }
 
-static const resolution::ResolutionResultByPostorderID&
+static const resolution::ResolvedExpression*
 scopeResolveResultsForNode(Context* context, const uast::AstNode* node) {
   while (node) {
     if (auto fn = node->toFunction()) {
-      return resolution::scopeResolveFunction(context, node->id())->resolutionById();
+      return resolution::scopeResolveFunction(context, node->id())->resolutionById().byAstOrNull(node);
     } else if (auto mod = node->toModule()) {
-      return resolution::scopeResolveModule(context, node->id());
+      return resolution::scopeResolveModule(context, node->id()).byAstOrNull(node);
     }
 
     node = parsing::parentAst(context, node);
   }
-  throw std::invalid_argument("node is not in a function or module");
+  return nullptr;
 }
 
 static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
@@ -96,15 +96,9 @@ static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
 }
 
 static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) {
-  // Silence errors, particularly since we might be resolving without the
-  // standard modules.
-  auto resultAndErrors = context->runAndTrackErrors([node](Context* context) {
-    return scopeResolveResultsForNode(context, node);
-  });
-  auto& results = resultAndErrors.result();
-  if (results.hasAst(node)) {
-    auto& r = results.byAst(node);
-    return idOrEmptyToAstNodeOrNull(context, r.toId());
+  auto resolvedExpr = scopeResolveResultsForNode(context, node);
+  if (resolvedExpr != nullptr) {
+    return idOrEmptyToAstNodeOrNull(context, resolvedExpr->toId());
   }
   return nullptr;
 }

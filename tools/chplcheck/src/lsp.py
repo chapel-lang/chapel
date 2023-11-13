@@ -87,6 +87,10 @@ def run_lsp(driver):
         context = get_updated_context(uri)
         with context.track_errors() as errors:
             asts = parse_file(context, uri)
+
+        # Silence errors from scope resolution etc., especially since they
+        # may be emitted from other files (dependencies).
+        with context.track_errors() as _:
             diagnostics = []
             for (node, rule) in driver.run_checks(context, asts):
                 diagnostic = Diagnostic(
