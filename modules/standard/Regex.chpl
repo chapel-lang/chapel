@@ -519,10 +519,6 @@ record regex : serializable {
   @chpldoc.nodoc
   var _regex:qio_regex_t = qio_regex_null();
 
-  proc init(type exprType) {
-    this.exprType = exprType;
-  }
-
   /*
      Initializer for a compiled regular expression. ``new regex()`` throws a
      :class:`BadRegexError` if compilation failed.
@@ -628,6 +624,20 @@ record regex : serializable {
       var serialized = x._serialize();
       this._deserialize(serialized);
     }
+  }
+
+  /*
+    Default type initializer for a compiled regular expression. This does not
+    initialize any fields and the resulting :type:`regex` may produce erroneous
+    results when used.
+
+    .. note::
+       If you are looking to default intialize a :type:`regex`, you might be
+       looking for ``new regex("")``, which will create a regular expression
+       matching the empty string.
+  */
+  proc init(type exprType) {
+    this.exprType = exprType;
   }
 
   @chpldoc.nodoc
