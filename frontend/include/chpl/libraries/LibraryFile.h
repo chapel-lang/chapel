@@ -105,7 +105,6 @@ class LibraryFile {
     UniqueString moduleSymPath;
     UniqueString sourceFilePath;
     uint64_t moduleSectionOffset = 0;
-    LibraryFileDeserializationHelper helper;
   };
 
   UniqueString libPath;
@@ -142,7 +141,9 @@ class LibraryFile {
   // and stores that uAST in the passed builder.
   //
   // returns 'true' if everything is OK, 'false' if there were errors
-  bool readModuleAst(Context* context, uint64_t moduleOffset,
+  bool readModuleAst(Context* context,
+                     uint64_t moduleOffset,
+                     LibraryFileDeserializationHelper& helper,
                      uast::Builder& builder) const;
 
   // deserializes the uAST for all of the modules from sourceFilePath

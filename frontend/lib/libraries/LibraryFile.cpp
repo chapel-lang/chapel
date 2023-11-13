@@ -143,7 +143,7 @@ bool LibraryFile::readHeaders(Context* context) {
     info.moduleSymPath = moduleId;
     info.sourceFilePath = fromFilePath;
     info.moduleSectionOffset = offset;
-    //info.symbols = xyz;
+
     modules.push_back(std::move(info));
   }
 
@@ -260,12 +260,12 @@ LibraryFile::setupHelper(Context* context, uint64_t moduleOffset) const {
     }
   }
 
-
   return ret;
 }
 
 bool LibraryFile::readModuleAst(Context* context,
                                 uint64_t moduleOffset,
+                                LibraryFileDeserializationHelper& helper,
                                 uast::Builder& builder) const {
   const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
   // read the uast
@@ -289,13 +289,10 @@ bool LibraryFile::readModuleAst(Context* context,
     return false;
   }
 
-  // create a LibraryFileDeserializationHelper helper
-  LibraryFileDeserializationHelper table = setupHelper(context, moduleOffset);
-
   auto des = Deserializer(context,
                           astHdr+1, // just after the AstSectionHeader
                           astHdr->nBytesAstEntries,
-                          &table);
+                          &helper);
 
   builder.addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
 
@@ -332,7 +329,9 @@ LibraryFile::loadAstQuery(Context* context,
   bool ok = true;
   for (const auto& modInfo: f->modules) {
     if (modInfo.sourceFilePath == fromSourceFilePath) {
-      ok = f->readModuleAst(context, modInfo.moduleSectionOffset, *builder);
+      auto helper = f->setupHelper(context, modInfo.moduleSectionOffset);
+      ok = f->readModuleAst(context, modInfo.moduleSectionOffset,
+                            helper, *builder);
       if (!ok) break;
     }
   }
