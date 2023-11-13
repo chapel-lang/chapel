@@ -155,7 +155,7 @@ CLASS_BEGIN(FunctionSignature)
   PLAIN_GETTER(FunctionSignature, is_parenless, "Check if this FunctionSignature node is parenless",
                bool, return node->isParenless())
   PLAIN_GETTER(FunctionSignature, kind, "Get the kind of this FunctionSignature node",
-               const char*, return chpl::uast::Function::kindToString(node->kind()))
+               const char*, return Function::kindToString(node->kind()))
   PLAIN_GETTER(FunctionSignature, return_intent, "Get the return intent of this FunctionSignature node",
                const char*,  return intentToString(node->returnIntent()))
   PLAIN_GETTER(FunctionSignature, return_type, "Get the return type for this FunctionSignature node",
@@ -187,7 +187,7 @@ CLASS_END(Label)
 
 CLASS_BEGIN(New)
   PLAIN_GETTER(New, management, "Get the management style for this New node",
-               const char*, return chpl::uast::New::managementToString(node->management()))
+               const char*, return New::managementToString(node->management()))
   PLAIN_GETTER(New, type_expression, "Get the type expression for this New node",
                const AstNode*, return node->typeExpression())
 CLASS_END(New)
@@ -350,11 +350,11 @@ CLASS_END(Reduce)
 
 CLASS_BEGIN(START_Decl)
   PLAIN_GETTER(Decl, linkage, "Get the linkage of this Decl node",
-               const char*, return chpl::uast::Decl::linkageToString(node->linkage()))
+               const char*, return Decl::linkageToString(node->linkage()))
   PLAIN_GETTER(Decl, linkage_name, "Get the linkage name of this Decl node",
                const AstNode*, return node->linkageName())
   PLAIN_GETTER(Decl, visibility, "Get the visibility of this Decl node",
-               const char*, return chpl::uast::Decl::visibilityToString(node->visibility()))
+               const char*, return Decl::visibilityToString(node->visibility()))
 CLASS_END(START_Decl)
 
 CLASS_BEGIN(TupleDecl)
@@ -363,7 +363,7 @@ CLASS_BEGIN(TupleDecl)
   PLAIN_GETTER(TupleDecl, init_expression, "Get the init expression of this TupleDecl node",
                const AstNode*, return node->typeExpression())
   PLAIN_GETTER(TupleDecl, intent_or_kind, "Get the intent or kind of this TupleDecl node",
-               const char*, return chpl::uast::TupleDecl::intentOrKindToString(node->intentOrKind()))
+               const char*, return TupleDecl::intentOrKindToString(node->intentOrKind()))
   PLAIN_GETTER(TupleDecl, type_expression, "Get the type expression of this TupleDecl node",
                const AstNode*, return node->initExpression())
 CLASS_END(TupleDecl)
@@ -398,7 +398,7 @@ CLASS_BEGIN(Function)
   PLAIN_GETTER(Function, is_primary_method, "Check if this Function node is a primary method",
                bool, return node->isPrimaryMethod())
   PLAIN_GETTER(Function, kind, "Get the kind of this Function node",
-               const char*, return chpl::uast::Function::kindToString(node->kind()))
+               const char*, return Function::kindToString(node->kind()))
   PLAIN_GETTER(Function, lifetime_clauses, "Get the lifetime clauses for this Function node",
                IterAdapterBase*, return mkIterPair(node->lifetimeClauses()))
   PLAIN_GETTER(Function, return_intent, "Get the return intent of this Function node",
@@ -415,7 +415,7 @@ CLASS_END(Function)
 
 CLASS_BEGIN(Module)
   PLAIN_GETTER(Module, kind, "Get the kind of this Module node",
-               const char*, return chpl::uast::Module::moduleKindToString(node->kind()))
+               const char*, return Module::moduleKindToString(node->kind()))
 CLASS_END(Module)
 
 CLASS_BEGIN(ReduceIntent)
@@ -427,7 +427,7 @@ CLASS_BEGIN(START_VarLikeDecl)
   PLAIN_GETTER(VarLikeDecl, init_expression, "Get the init expression of this VarLikeDecl node",
                const AstNode*, return node->initExpression())
   PLAIN_GETTER(VarLikeDecl, storage_kind, "Get the storage kind of this VarLikeDecl node",
-               const char*, return chpl::uast::qualifierToString(node->storageKind()))
+               const char*, return qualifierToString(node->storageKind()))
   PLAIN_GETTER(VarLikeDecl, type_expression, "Get the type expression of this VarLikeDecl node",
                const AstNode*, return node->typeExpression())
 CLASS_END(START_VarLikeDecl)
@@ -448,7 +448,7 @@ CLASS_BEGIN(Variable)
   PLAIN_GETTER(Variable, is_field, "Check if this Variable node is a class field variable",
                bool, return node->isField())
   PLAIN_GETTER(Variable, kind, "Get the kind of this Variable node",
-               const char*, return chpl::uast::qualifierToString(node->storageKind()))
+               const char*, return qualifierToString(node->storageKind()))
 CLASS_END(Variable)
 
 CLASS_BEGIN(START_AggregateDecl)

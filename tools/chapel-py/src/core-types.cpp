@@ -49,12 +49,12 @@ PyTypeObject ContextType = {
 };
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
-  chpl::Context::Configuration config;
+  Context::Configuration config;
   config.chplHome = getenv("CHPL_HOME");
-  new (&self->context) chpl::Context(std::move(config));
-  self->context.installErrorHandler(chpl::owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
+  new (&self->context) Context(std::move(config));
+  self->context.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
-  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
 
   return 0;
 }
@@ -71,9 +71,9 @@ PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
     PyErr_BadArgument();
     return nullptr;
   }
-  auto fileNameUS = chpl::UniqueString::get(context, fileName);
-  auto parentPathUS = chpl::UniqueString();
-  auto& builderResult = chpl::parsing::parseFileToBuilderResultAndCheck(context, fileNameUS, parentPathUS);
+  auto fileNameUS = UniqueString::get(context, fileName);
+  auto parentPathUS = UniqueString();
+  auto& builderResult = parsing::parseFileToBuilderResultAndCheck(context, fileNameUS, parentPathUS);
 
   int listSize = builderResult.numTopLevelExpressions();
   PyObject* topExprs = PyList_New(listSize);
@@ -91,12 +91,12 @@ PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args) {
     PyErr_BadArgument();
     return nullptr;
   }
-  auto pathUS = chpl::UniqueString::get(context, fileName);
+  auto pathUS = UniqueString::get(context, fileName);
 
   bool isInternalPath =
-    chpl::parsing::filePathIsInInternalModule(context, pathUS) ||
-    chpl::parsing::filePathIsInStandardModule(context, pathUS) ||
-    chpl::parsing::filePathIsInBundledModule(context, pathUS);
+    parsing::filePathIsInInternalModule(context, pathUS) ||
+    parsing::filePathIsInStandardModule(context, pathUS) ||
+    parsing::filePathIsInBundledModule(context, pathUS);
 
   return PyBool_FromLong(isInternalPath);
 }
@@ -110,7 +110,7 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
   }
 
   context->advanceToNextRevision(prepareToGc);
-  chpl::parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
 
   Py_RETURN_NONE;
 }
@@ -126,7 +126,7 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
   (void) dummy;
 }
 
-static const char* tagToUserFacingStringTable[chpl::uast::asttags::NUM_AST_TAGS] = {
+static const char* tagToUserFacingStringTable[asttags::NUM_AST_TAGS] = {
 // define tag to string conversion
 #define AST_NODE(NAME) #NAME,
 #define AST_LEAF(NAME) #NAME,
@@ -150,8 +150,6 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "class AstNode:" << std::endl;
   ss << "    pass" << std::endl << std::endl;
 
-  using namespace chpl;
-  using namespace uast;
   #define CLASS_BEGIN(NODE) \
     ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "(AstNode):" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
@@ -198,7 +196,7 @@ PyTypeObject LocationType = {
 };
 
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs) {
-  new (&self->location) chpl::Location();
+  new (&self->location) Location();
   return 0;
 }
 
@@ -268,7 +266,7 @@ PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) 
 }
 
 PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
-  const char* nodeType = chpl::uast::asttags::tagToString(self->astNode->tag());
+  const char* nodeType = asttags::tagToString(self->astNode->tag());
   return Py_BuildValue("s", nodeType);
 }
 
@@ -288,7 +286,7 @@ PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored
   auto attrs = self->astNode->attributeGroup();
   if (attrs) {
     for (auto p: attrs->pragmas()) {
-      PyObject* s = Py_BuildValue("s", chpl::uast::pragmatags::pragmaTagToName(p));
+      PyObject* s = Py_BuildValue("s", pragmatags::pragmaTagToName(p));
       PySet_Add(elms, s);
     }
   }
@@ -299,7 +297,7 @@ PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
-  return wrapAstNode(contextObject, chpl::parsing::parentAst(context, self->astNode));
+  return wrapAstNode(contextObject, parsing::parentAst(context, self->astNode));
 }
 
 PyObject* AstNodeObject_iter(AstNodeObject *self) {
@@ -311,17 +309,17 @@ PyObject* AstNodeObject_location(AstNodeObject *self) {
   auto& location = ((LocationObject*) locationObjectPy)->location;
   auto context = &((ContextObject*) self->contextObject)->context;
 
-  location = chpl::parsing::locateAst(context, self->astNode);
+  location = parsing::locateAst(context, self->astNode);
   return locationObjectPy;
 }
 
 
-PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag) {
+PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
 #define AST_LEAF(NAME)
 #define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME) \
-  if (tag > chpl::uast::asttags::START_##NAME && tag < chpl::uast::asttags::END_##NAME) { \
+  if (tag > asttags::START_##NAME && tag < asttags::END_##NAME) { \
     return &NAME##Type; \
   }
 #include "chpl/uast/uast-classes-list.h"
@@ -333,7 +331,7 @@ PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag) {
   return &AstNodeType;
 }
 
-PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node) {
+PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
   PyObject* toReturn = nullptr;
   if (node == nullptr) {
     Py_RETURN_NONE;
@@ -341,7 +339,7 @@ PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node) {
   PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
   switch (node->tag()) {
 #define CAST_TO(NAME) \
-    case chpl::uast::asttags::NAME: \
+    case asttags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
       ((NAME##Object*) toReturn)->parent.astNode = node->to##NAME(); \
       break;

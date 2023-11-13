@@ -39,7 +39,7 @@ using namespace uast;
  */
 #define DEFINE_INIT_FOR(NAME, TAG)\
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return parentTypeFor(chpl::uast::asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
+    return parentTypeFor(asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
@@ -54,29 +54,29 @@ using namespace uast;
 #undef AST_END_SUBCLASSES
 #undef DEFINE_INIT_FOR
 
-static const char* blockStyleToString(chpl::uast::BlockStyle blockStyle) {
+static const char* blockStyleToString(BlockStyle blockStyle) {
   switch (blockStyle) {
-    case chpl::uast::BlockStyle::EXPLICIT: return "explicit";
-    case chpl::uast::BlockStyle::IMPLICIT: return "implicit";
-    case chpl::uast::BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
+    case BlockStyle::EXPLICIT: return "explicit";
+    case BlockStyle::IMPLICIT: return "implicit";
+    case BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK: return "unnecessary";
   }
 }
 
-static const char* opKindToString(chpl::uast::Range::OpKind kind) {
+static const char* opKindToString(Range::OpKind kind) {
   switch (kind) {
-    case chpl::uast::Range::DEFAULT: return "..";
-    case chpl::uast::Range::OPEN_HIGH: return "..<";
+    case Range::DEFAULT: return "..";
+    case Range::OPEN_HIGH: return "..<";
     default: return "";
   }
 }
 
 template<typename IntentType>
 static const char* intentToString(IntentType intent) {
-  return chpl::uast::qualifierToString(chpl::uast::Qualifier(int(intent)));
+  return qualifierToString(Qualifier(int(intent)));
 }
 
 static const resolution::ResolvedExpression*
-scopeResolveResultsForNode(Context* context, const uast::AstNode* node) {
+scopeResolveResultsForNode(Context* context, const AstNode* node) {
   while (node) {
     if (auto fn = node->toFunction()) {
       return resolution::scopeResolveFunction(context, node->id())->resolutionById().byAstOrNull(node);
@@ -110,9 +110,6 @@ static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) 
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    using namespace chpl; \
-    using namespace uast; \
-    \
     auto node = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
     auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
     auto context = &contextObject->context; \
@@ -144,10 +141,10 @@ static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) 
     astCalliterObject->num = node->numActuals(); \
     astCalliterObject->container = node; \
     astCalliterObject->childGetter = [](const void* n, int child) { \
-      return ((chpl::uast::NAME*) n)->actual(child); \
+      return ((NAME*) n)->actual(child); \
     }; \
     astCalliterObject->nameGetter = [](const void* n, int child) { \
-      return ((chpl::uast::NAME*) n)->actualName(child); \
+      return ((NAME*) n)->actualName(child); \
     }; \
     \
     return astCallIterObjectPy; \
@@ -168,7 +165,7 @@ ACTUAL_ITERATOR(FnCall);
 
    Macros below take this a step further and compiler-generate the template
    specializations. */
-template <chpl::uast::asttags::AstTag tag>
+template <asttags::AstTag tag>
 struct PerNodeInfo {
   static constexpr PyMethodDef methods[] = {
     {NULL, NULL, 0, NULL}  /* Sentinel */
@@ -177,7 +174,7 @@ struct PerNodeInfo {
 
 #define CLASS_BEGIN(TAG) \
   template <> \
-  struct PerNodeInfo<chpl::uast::asttags::TAG> { \
+  struct PerNodeInfo<asttags::TAG> { \
     static constexpr PyMethodDef methods[] = {
 #define CLASS_END(TAG) \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
@@ -209,9 +206,9 @@ struct PerNodeInfo {
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, chpl::uast::asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
+#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
