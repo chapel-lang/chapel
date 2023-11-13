@@ -288,7 +288,7 @@ void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
   } else {
     wr.code(ast);
   }
-  wr.message("Formals with the 'const ref' intent do not support coercions.");
+  wr.message("Formals with the 'const ref' intent do not currently support coercions.");
 
   auto fmlDecl = c.fn()->untyped()->formalDecl(c.constRefCoercionFormal());
   if (fmlDecl) {
