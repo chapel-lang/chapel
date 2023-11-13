@@ -639,8 +639,8 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
            moduleIdSymbolPath.c_str(), path.c_str());
   }
-  UniqueString gotPath;
   // check that querying the module ID works...
+  UniqueString gotPath;
   bool ok = filePathForId(moduleID, gotPath);
   #ifndef NDEBUG
     CHPL_ASSERT(ok);
@@ -662,15 +662,15 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
   if (!ok || errPath || errGotPath) {
     // ignore the check if there were errors
-  } else {
+  } else
     // Check for duplicate modules names, but skip over bundled modules
     // since we don't necessarily want to preclude the user from using
     // the same names that we happen to have chosen.
-    if (realPath != realGotPath && !parsing::idIsInBundledModule(this, moduleID)) {
+    if (realPath != realGotPath &&
+        !parsing::idIsInBundledModule(this, moduleID)) {
       error(moduleID,
             "Redefinition of module '%s' (the original was defined in '%s')",
             moduleIdSymbolPath.c_str(), path.c_str());
-    }
   }
 }
 
