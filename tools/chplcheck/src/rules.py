@@ -54,7 +54,11 @@ def register_rules(driver):
 
     @driver.basic_rule(Module)
     def PascalCaseModules(context, node):
-        return check_pascal_case(node)
+        return node.kind() == "implicit" or check_pascal_case(node)
+
+    @driver.basic_rule(Module)
+    def UseExplicitModules(context, node):
+        return node.kind() != "implicit"
 
     @driver.basic_rule(Loop)
     def DoKeywordAndBlock(context, node):
