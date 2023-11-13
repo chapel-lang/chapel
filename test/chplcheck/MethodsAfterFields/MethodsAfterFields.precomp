@@ -1,0 +1,2 @@
+#!/bin/bash
+$CHPL_HOME/tools/chplcheck/chplcheck MethodsAfterFields.chpl > MethodsAfterFields.message
