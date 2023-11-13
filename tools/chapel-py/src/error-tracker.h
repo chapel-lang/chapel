@@ -37,6 +37,17 @@ PyObject* ErrorObject_location(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_message(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
 
+typedef struct {
+  PyObject_HEAD
+  PyObject* contextObject;
+} ErrorManagerObject;
+extern PyTypeObject ErrorManagerType;
+
+int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* kwargs);
+void ErrorManagerObject_dealloc(ErrorManagerObject* self);
+PyObject* ErrorManagerObject_enter(ErrorManagerObject* self, PyObject* args);
+PyObject* ErrorManagerObject_exit(ErrorManagerObject* self, PyObject* args);
+
 class PythonErrorHandler : public chpl::Context::ErrorHandler {
  private:
   std::vector<PyObject*> errorLists;

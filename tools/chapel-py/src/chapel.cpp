@@ -45,6 +45,7 @@ PyMODINIT_FUNC PyInit_core() {
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
+  if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;
   if (PyType_Ready(&LocationType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
   if (PyType_Ready(&AstCallIterType) < 0) return nullptr;

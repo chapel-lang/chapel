@@ -21,18 +21,17 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "python-types.h"
+#include "error-tracker.h"
 
 using namespace chpl;
 using namespace uast;
 
 static PyMethodDef ContextObject_methods[] = {
-  { "__enter__", (PyCFunction) ContextObject_enter, METH_NOARGS, "TODO" },
-  { "__exit__", (PyCFunction) ContextObject_exit, METH_VARARGS, "TODO" },
-
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
   { "get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
+  { "track_errors", (PyCFunction) ContextObject_track_errors, METH_NOARGS, "Return a context manager that tracks errors emitted by this Context" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
@@ -63,18 +62,6 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
 void ContextObject_dealloc(ContextObject* self) {
   self->context.~Context();
   Py_TYPE(self)->tp_free((PyObject *) self);
-}
-
-PyObject* ContextObject_enter(ContextObject* self, PyObject* args) {
-  auto list = ((PythonErrorHandler*) self->context.errorHandler())->pushList();
-  Py_INCREF(list);
-  return list;
-}
-
-PyObject* ContextObject_exit(ContextObject* self, PyObject* args) {
-  ((PythonErrorHandler*) self->context.errorHandler())->popList();
-
-  Py_RETURN_NONE;
 }
 
 PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
@@ -180,6 +167,14 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #include "method-tables.h"
 
   return Py_BuildValue("s", ss.str().c_str());
+}
+
+PyObject* ContextObject_track_errors(ContextObject *self, PyObject* args) {
+  auto errorManagerObjectPy = PyObject_CallObject((PyObject *) &ErrorManagerType, nullptr);
+  auto errorManagerObject = (ErrorManagerObject*) errorManagerObjectPy;
+  Py_INCREF(self);
+  errorManagerObject->contextObject = (PyObject*) self;
+  return errorManagerObjectPy;
 }
 
 static PyMethodDef LocationObject_methods[] = {
