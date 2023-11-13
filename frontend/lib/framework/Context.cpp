@@ -663,7 +663,10 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
   if (!ok || errPath || errGotPath) {
     // ignore the check if there were errors
   } else {
-    if (realPath != realGotPath) {
+    // Check for duplicate modules names, but skip over bundled modules
+    // since we don't necessarily want to preclude the user from using
+    // the same names that we happen to have chosen.
+    if (realPath != realGotPath && !parsing::idIsInBundledModule(this, moduleID)) {
       error(moduleID,
             "Redefinition of module '%s' (the original was defined in '%s')",
             moduleIdSymbolPath.c_str(), path.c_str());
