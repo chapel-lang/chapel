@@ -83,6 +83,7 @@ def register_rules(driver):
             if isinstance(child, Function):
                 method_seen = True
         return True
+    
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
     def BoolLitInCondStmt(context, node):
         return False
