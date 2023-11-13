@@ -35,6 +35,7 @@ int ErrorObject_init(ErrorObject* self, PyObject* args, PyObject* kwargs);
 void ErrorObject_dealloc(ErrorObject* self);
 PyObject* ErrorObject_location(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_message(ErrorObject* self, PyObject* args);
+PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args);
 PyObject* ErrorObject_type(ErrorObject* self, PyObject* args);
 
 typedef struct {

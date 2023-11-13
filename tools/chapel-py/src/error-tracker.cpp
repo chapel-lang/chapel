@@ -24,6 +24,7 @@
 static PyMethodDef ErrorObject_methods[] = {
   { "location", (PyCFunction) ErrorObject_location, METH_NOARGS, "Get the location at which this error occurred" },
   { "message", (PyCFunction) ErrorObject_message, METH_NOARGS, "Retrieve the contents of this error message" },
+  { "kind", (PyCFunction) ErrorObject_kind, METH_NOARGS, "Retrieve the kind ('error', 'warning') of this type of error" },
   { "type", (PyCFunction) ErrorObject_type, METH_NOARGS, "Retrieve the unique name of this type of error" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
@@ -64,6 +65,10 @@ PyObject* ErrorObject_location(ErrorObject* self, PyObject* args) {
 
 PyObject* ErrorObject_message(ErrorObject* self, PyObject* args) {
   return Py_BuildValue("s", self->error->message().c_str());
+}
+
+PyObject* ErrorObject_kind(ErrorObject* self, PyObject* args) {
+  return Py_BuildValue("s", chpl::ErrorBase::getKindName(self->error->kind()));
 }
 
 PyObject* ErrorObject_type(ErrorObject* self, PyObject* args) {
