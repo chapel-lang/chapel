@@ -133,7 +133,7 @@ class LintDriver:
         return decorator_basic_rule
 
 
-    def advanced_rule(self, default=True):
+    def advanced_rule(self, _func=None, *, default=True):
         """
         This method is a decorator for adding 'advanced' rules to the driver.
         An advanced rule is a function that gets called on a root AST node,
@@ -151,7 +151,10 @@ class LintDriver:
             def wrapper_advanced_rule(*args, **kwargs):
                 return func(*args, **kwargs)
             return wrapper_advanced_rule
-        return decorator_advanced_rule
+        if _func is None:
+            return decorator_advanced_rule
+        else:
+            return decorator_advanced_rule(_func)
 
     def run_checks(self, context, asts):
         """

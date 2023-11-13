@@ -126,7 +126,7 @@ def register_rules(driver):
 
         yield from recurse(root)
 
-    @driver.advanced_rule()
+    @driver.advanced_rule
     def MisleadingIndentation(context, root):
         prev = None
         for child in root:
