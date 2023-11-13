@@ -39,6 +39,8 @@ struct DisambiguationCandidate {
   QualifiedType forwardingTo; // actual passed to receiver when forwarding
   FormalActualMap formalActualMap;
   int idx = 0;
+  // What is the visibility distance? This is -1 if it has not been computed.
+  int visibilityDistance = -1;
 
   DisambiguationCandidate(const TypedFnSignature* fn,
                           QualifiedType forwardingTo,
@@ -59,6 +61,8 @@ struct DisambiguationContext {
   const Scope* callInScope = nullptr;
   const PoiScope* callInPoiScope = nullptr;
   bool explain = false;
+  bool isMethodCall = false;
+  bool useOldVisibility = false;
   DisambiguationContext(Context* context,
                         const CallInfo* call,
                         const Scope* callInScope,
@@ -68,6 +72,19 @@ struct DisambiguationContext {
       callInScope(callInScope), callInPoiScope(callInPoiScope),
       explain(explain)
   {
+    isMethodCall = call->isMethodCall();
+
+    // this is a workaround -- a better solution would be preferred
+    if (parsing::idIsInInternalModule(context, callInScope->id())) {
+      useOldVisibility = true;
+    }
+
+    // this is a workaround -- a better solution would be preferred.
+    // this function seems to be created in a way that has problems with
+    // the visibility logic in disambiguation.
+    if (call->name() == UniqueString::get(context, "_getIterator")) {
+      useOldVisibility = true;
+    }
   }
 };
 
@@ -166,6 +183,15 @@ static MostSpecificCandidates
 computeMostSpecificCandidatesWithVecs(Context* context,
                                       const DisambiguationContext& dctx,
                                       const CandidatesVec& vec);
+
+static void discardWorseVisibility(const DisambiguationContext& dctx,
+                                   const CandidatesVec& candidates,
+                                   std::vector<bool>& discarded);
+
+static void disambiguateDiscarding(const DisambiguationContext&   dctx,
+                                   const CandidatesVec& candidates,
+                                   bool                         ignoreWhere,
+                                   std::vector<bool>&           discarded);
 
 // count the number of candidates with each return intent
 static void countByReturnIntent(const DisambiguationContext& dctx,
@@ -432,6 +458,10 @@ findMostSpecificCandidatesQuery(Context* context,
     }
   }
 
+  // If index i is set we have ruled out that function
+  std::vector<bool> discarded(candidates.size(), false);
+  disambiguateDiscarding(dctx, candidates, true /*ignoreWhere*/, discarded);
+
   MostSpecificCandidates result =
     computeMostSpecificCandidates(context, dctx, candidates);
 
@@ -443,7 +473,7 @@ findMostSpecificCandidatesQuery(Context* context,
   return QUERY_END(result);
 }
 
-
+// entry point for disambiguation
 MostSpecificCandidates
 findMostSpecificCandidates(Context* context,
                            const std::vector<const TypedFnSignature*>& lst,
@@ -715,6 +745,198 @@ checkVisibilityInVec(Context* context,
   }
 
   return MoreVisibleResult::FOUND_NEITHER;
+}
+
+//
+// helper routines for isMoreVisible (below);
+//
+static bool
+isDefinedInBlock(Context* context, const Scope* scope,
+                 const TypedFnSignature* fn) {
+  LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
+  //TODO: should this also/only use LOOKUP_INNERMOST?
+  auto decls = lookupNameInScope(context, scope,
+                                 /* receiver scopes */ {},
+                                 fn->untyped()->name(), onlyDecls);
+  for (const auto& borrowedIds : decls) {
+    for (const auto& id : borrowedIds) {
+      if (id == fn->id()) return true;
+    }
+  }
+  return false;
+}
+
+static bool
+isDefinedInUseImport(Context* context, const Scope* scope,
+                     const TypedFnSignature* fn,
+                     bool allowPrivateUseImp, bool forShadowScope) {
+  LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE | LOOKUP_METHODS;
+
+  if (!forShadowScope) {
+    importAndUse |= LOOKUP_SKIP_SHADOW_SCOPES;
+  }
+
+  if (!allowPrivateUseImp) {
+    importAndUse |= LOOKUP_SKIP_PRIVATE_USE_IMPORT;
+  }
+
+  auto decls = lookupNameInScope(context, scope,
+                                 /* receiver scopes */ {},
+                                 fn->untyped()->name(), importAndUse);
+  for (const auto& borrowedIds : decls) {
+    for (const auto& id : borrowedIds) {
+      if (id == fn->id()) return true;
+    }
+  }
+  return false;
+}
+
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Enclosing scope adds 2 distance
+// Shadow scope adds 1 distance
+//
+// Returns -1 if the function is not found here
+// or if the scope was already visited.
+static int
+computeVisibilityDistanceInternal(Context* context, const Scope* scope,
+                                  const TypedFnSignature* fn, int distance) {
+
+  // first, check things in the current block or
+  // from use/import that don't use a shadow scope
+  bool foundHere = isDefinedInBlock(context, scope, fn) ||
+                   isDefinedInUseImport(context, scope, fn,
+                                        /* allowPrivateUseImp */ true,
+                                        /* forShadowScope */ false);
+  if (foundHere) {
+    return distance;
+  }
+  // next, check anything from a use/import in the
+  // current block that uses a shadow scope
+  bool foundShadowHere = isDefinedInUseImport(context, scope, fn,
+                                              /* allowPrivateUseImp */ true,
+                                              /* forShadowScope */ true);
+  if (foundShadowHere) {
+    return distance+1;
+  }
+
+  // next, check parent scope, recursively
+  if (const Scope* parentScope = scope->parentScope()) {
+    return computeVisibilityDistanceInternal(context, parentScope, fn,
+                                             distance+2);
+  }
+
+  return -1;
+}
+
+// Returns a distance measure used to compare the visibility
+// of two functions.
+//
+// Returns -1 if the function is a method or if the function is not found
+static int computeVisibilityDistance(Context* context, const Scope* scope, const TypedFnSignature* fn) {
+  // is this a method?
+  if (fn->untyped()->isMethod()) {
+    return -1;
+  }
+  return computeVisibilityDistanceInternal(context, scope, fn, 0);
+}
+
+// Discard candidates with further visibility distance
+// than other candidates.
+// This check does not consider methods or operator methods.
+static void discardWorseVisibility(const DisambiguationContext& dctx,
+                                   const CandidatesVec& candidates,
+                                   std::vector<bool>& discarded) {
+  int minDistance = INT_MAX;
+  int maxDistance = INT_MIN;
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+
+    int distance = computeVisibilityDistance(dctx.context, dctx.callInScope, candidate->fn);
+    candidate->visibilityDistance = distance;
+
+    if (distance >= 0) {
+      if (distance < minDistance) {
+        minDistance = distance;
+      }
+      if (distance > maxDistance) {
+        maxDistance = distance;
+      }
+    }
+  }
+
+  if (minDistance < maxDistance) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      int distance = candidate->visibilityDistance;
+      if (distance > 0 && distance > minDistance) {
+        EXPLAIN("X: Fn %d has further visibility distance\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+}
+
+
+static void disambiguateDiscarding(const DisambiguationContext&   dctx,
+                                   const CandidatesVec& candidates,
+                                   bool                         ignoreWhere,
+                                   std::vector<bool>&           discarded) {
+  // TODO: Implement commented code
+  // if (mixesNonOpMethodsAndFunctions(candidates, DC, discarded)) {
+  //   return;
+  // }
+
+  if (!dctx.useOldVisibility && !dctx.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+    discardWorseVisibility(dctx, candidates, discarded);
+  }
+
+  // TODO: Implement commented code below:
+
+  // If any candidate does not require promotion,
+  // eliminate candidates that do require promotion.
+  // discardWorsePromoting(candidates, DC, discarded);
+
+  // Consider the relationship among the arguments
+  // Note that this part is a partial order;
+  // in other words, "incomparable" is an option when comparing
+  // two candidates. It should be transitive.
+  // Discard any candidate that has a worse argument mapping than another
+  // candidate.
+  // discardWorseArgs(candidates, DC, discarded);
+
+  // Apply further filtering to the set of candidates
+
+  // Discard any candidate that has more implicit conversions
+  // than another candidate.
+  // After that, discard any candidate that has more param narrowing
+  // conversions than another candidate.
+  // discardWorseConversions(candidates, DC, discarded);
+
+  // if (!ignoreWhere) {
+    // If some candidates have 'where' clauses and others do not,
+    // discard those without 'where' clauses
+  //   discardWorseWhereClauses(candidates, DC, discarded);
+  // }
+  // if (DC.useOldVisibility && !DC.isMethodCall) {
+    // If some candidates are less visible than other candidates,
+    // discard those with less visibility.
+    // This filter should not be applied to method calls.
+  //   discardWorseVisibility(candidates, DC, discarded);
+  // }
 }
 
 static MoreVisibleResult
