@@ -1310,13 +1310,19 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
+static bool hasIgnorePragma(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
 static bool
 shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
   return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast);
+         isAstDeprecated(context, ast) ||
+         hasIgnorePragma(context, ast);
 }
 
 // Skip if any parent is marked deprecated or unstable. We don't want to

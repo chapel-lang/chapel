@@ -125,7 +125,7 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
   actuals.push_back(CallInfoActual(lhsType, USTR("this")));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
   auto ci = CallInfo (/* name */ USTR("init="),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ lhsType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

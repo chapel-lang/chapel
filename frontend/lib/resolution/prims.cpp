@@ -862,6 +862,17 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = computeDomainType(context, ci);
       break;
 
+    case PRIM_GET_COMPILER_VAR: {
+        auto chplenv = context->getChplEnv();
+        auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
+        auto it = chplenv->find(varName);
+        auto ret = (it != chplenv->end()) ? it->second : "";
+
+        auto st = CompositeType::getStringType(context);
+        auto sp = StringParam::get(context, UniqueString::get(context, ret));
+        type = QualifiedType(QualifiedType::PARAM, st, sp);
+      }
+      break;
 
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
@@ -966,7 +977,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_GET_RUNTIME_TYPE_FIELD:
     case PRIM_LOOKUP_FILENAME:
-    case PRIM_GET_COMPILER_VAR:
     case PRIM_GET_VISIBLE_SYMBOLS:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_ZIP:

@@ -431,6 +431,9 @@ class CallInfo {
                                      types::QualifiedType receiverType,
                                      UniqueString rename=UniqueString());
 
+  /** Copy and rename a CallInfo. */
+  static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
+
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.

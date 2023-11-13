@@ -409,6 +409,11 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                   std::move(newActuals));
 }
 
+CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
+  return CallInfo(rename, ci.calledType(), ci.isMethodCall(),
+                  ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
+}
+
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
   CHPL_ASSERT(Builder::astTagIndicatesNewIdScope(ast->tag()));
 
