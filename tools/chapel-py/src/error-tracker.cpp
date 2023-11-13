@@ -76,8 +76,8 @@ PyObject* ErrorObject_type(ErrorObject* self, PyObject* args) {
 }
 
 static PyMethodDef ErrorManagerObject_methods[] = {
-  { "__enter__", (PyCFunction) ErrorManagerObject_enter, METH_NOARGS, "TODO" },
-  { "__exit__", (PyCFunction) ErrorManagerObject_exit, METH_VARARGS, "TODO" },
+  { "__enter__", (PyCFunction) ErrorManagerObject_enter, METH_NOARGS, "The context manager 'enter' method for this ErrorManager object" },
+  { "__exit__", (PyCFunction) ErrorManagerObject_exit, METH_VARARGS, "The context manager 'exit' method for this ErrorManager object" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
