@@ -72,7 +72,7 @@ def register_rules(driver):
                 return False
             parent = parent.parent()
         return True
-    
+
     @driver.basic_rule(Record)
     @driver.basic_rule(Class)
     def MethodsAfterFields(context, node):
@@ -83,7 +83,7 @@ def register_rules(driver):
             if isinstance(child, Function):
                 method_seen = True
         return True
-    
+
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
     def BoolLitInCondStmt(context, node):
         return False
