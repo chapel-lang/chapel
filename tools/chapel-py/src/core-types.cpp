@@ -30,7 +30,7 @@ static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
-  { "get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
+  { "_get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
   { "track_errors", (PyCFunction) ContextObject_track_errors, METH_NOARGS, "Return a context manager that tracks errors emitted by this Context" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
