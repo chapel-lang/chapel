@@ -20,6 +20,7 @@
 
 import chapel
 import chapel.core
+import functools
 
 IgnoreAttr = ("chplcheck.ignore", ["rule", "comment"])
 def ignores_rule(node, rulename):
@@ -110,7 +111,7 @@ class LintDriver:
 
             yield (node, name)
 
-    def basic_rule(self, pat):
+    def basic_rule(self, pat, default=True):
         """
         This method is a decorator factory for adding 'basic' rules to the
         driver. A basic rule is a function returning a boolean that gets called
@@ -120,13 +121,19 @@ class LintDriver:
 
         The name of the decorated function is used as the name of the rule.
         """
-
-        def wrapper(func):
+        def decorator_basic_rule(func):
             self.BasicRules.append((func.__name__, pat, func))
-            return func
-        return wrapper
+            if not default:
+                self.SilencedRules.append(func.__name__)
 
-    def advanced_rule(self, func):
+            @functools.wraps(func)
+            def wrapper_basic_rule(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper_basic_rule
+        return decorator_basic_rule
+
+
+    def advanced_rule(self, default=True):
         """
         This method is a decorator for adding 'advanced' rules to the driver.
         An advanced rule is a function that gets called on a root AST node,
@@ -135,9 +142,16 @@ class LintDriver:
 
         The name of the decorated function is used as the name of the rule.
         """
+        def decorator_advanced_rule(func):
+            self.AdvancedRules.append((func.__name__, func))
+            if not default:
+                self.SilencedRules.append(func.__name__)
 
-        self.AdvancedRules.append((func.__name__, func))
-        return func
+            @functools.wraps(func)
+            def wrapper_advanced_rule(*args, **kwargs):
+                return func(*args, **kwargs)
+            return wrapper_advanced_rule
+        return decorator_advanced_rule
 
     def run_checks(self, context, asts):
         """
