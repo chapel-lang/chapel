@@ -394,7 +394,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
   RE2* re = (RE2*) regex->regex;
-  qioerr err;
+  qioerr err = NULL;
   void* bufstart = NULL;
   void* bufend = NULL;
   RE2::Anchor ranchor = RE2::UNANCHORED;
