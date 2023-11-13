@@ -53,9 +53,11 @@ def main():
         return
 
     for (filename, context) in chapel.files_with_contexts(args.filenames):
-        asts = context.parse(filename)
-        for (node, rule) in driver.run_checks(context, asts):
-            print_violation(node, rule)
+        # Silence errors, warnings etc. -- we're just linting.
+        with context.track_errors() as errors:
+            asts = context.parse(filename)
+            for (node, rule) in driver.run_checks(context, asts):
+                print_violation(node, rule)
 
 if __name__ == "__main__":
     main()
