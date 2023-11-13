@@ -4,4 +4,4 @@ y: 'new regex("")'
 x: 'new regex("")'
 'hello'
 replaced: ''
-caught: Invalid argument: invalid regex (in fileReader.search with path "test.txt" offset 0)
+(matched = true, byteOffset = 0, numBytes = 0)

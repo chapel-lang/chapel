@@ -629,7 +629,8 @@ record regex : serializable {
   /*
     Default type initializer for a compiled regular expression. This does not
     initialize any fields and the resulting :type:`regex` may produce erroneous
-    results when used.
+    results when used. The behavior may differ based on values of
+    :param:`~ChplConfig.CHPL_COMM`.
 
     .. note::
        If you are looking to default intialize a :type:`regex`, you might be

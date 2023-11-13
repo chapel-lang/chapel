@@ -56,9 +56,9 @@ config type T = string;
       var x: regex(T);
       var r = openReader(testfile);
       var m = r.search(x);
-      writeln(m);
+      writeln(m); // succeds empty match when comm!=none
     } catch e: SystemError {
-      writeln("caught: ", e.message());
+      writeln("caught: ", e.message()); // thrown when comm=none
     }
   }
   // delete the file
