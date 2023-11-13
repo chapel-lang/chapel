@@ -135,7 +135,8 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
   const MostSpecificCandidates& fns = c.mostSpecific();
   // return intent overloading should not be possible with an init=
   CHPL_ASSERT(fns.numBest() <= 1);
-  if (const TypedFnSignature* fn = fns.only()) {
+  if (auto msc = fns.only()) {
+    auto fn = msc.fn();
     // check for 'in' intent on the 'other' formal
     if (fn->numFormals() >= 2) {
       auto intent = fn->formalType(1).kind();

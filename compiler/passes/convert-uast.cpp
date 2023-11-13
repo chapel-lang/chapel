@@ -4093,7 +4093,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       } else if (nBest > 1) {
         INT_FATAL("return intent overloading not yet handled");
       } else if (nBest == 1) {
-        const resolution::TypedFnSignature* sig = candidates.only();
+        const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
         if (fn == nullptr) {
           // we will fix it later

@@ -47,6 +47,10 @@ struct DisambiguationCandidate {
     : fn(fn), forwardingTo(forwardingTo), formalActualMap(fn, call), idx(idx)
   {
   }
+
+  MostSpecificCandidate toMostSpecificCandidate(Context* context) const {
+    return MostSpecificCandidate::fromTypedFnSignature(context, fn, formalActualMap);
+  }
 };
 
 struct DisambiguationContext {
@@ -111,7 +115,7 @@ enum MoreVisibleResult {
 
 #endif
 
-static const TypedFnSignature*
+static const DisambiguationCandidate*
 findMostSpecificIgnoringReturn(const DisambiguationContext& dctx,
                                const CandidatesVec& candidates,
                                bool ignoreWhere,
@@ -159,7 +163,8 @@ static bool moreSpecific(const DisambiguationContext& dctx,
                          QualifiedType actualType, QualifiedType formalType);
 
 static MostSpecificCandidates
-computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+computeMostSpecificCandidatesWithVecs(Context* context,
+                                      const DisambiguationContext& dctx,
                                       const CandidatesVec& vec);
 
 // count the number of candidates with each return intent
@@ -196,7 +201,8 @@ static void countByReturnIntent(const DisambiguationContext& dctx,
 // if there is <= 1 most specific candidate with each intent,
 // return it as a MostSpecificCandidates
 static MostSpecificCandidates
-gatherByReturnIntent(const DisambiguationContext& dctx,
+gatherByReturnIntent(Context* context,
+                     const DisambiguationContext& dctx,
                      const CandidatesVec& vec) {
   MostSpecificCandidates ret;
 
@@ -208,16 +214,16 @@ gatherByReturnIntent(const DisambiguationContext& dctx,
       case Function::DEFAULT_RETURN_INTENT:
       case Function::OUT:
       case Function::CONST:
-        CHPL_ASSERT(ret.bestValue() == nullptr);
-        ret.setBestValue(fn);
+        CHPL_ASSERT(!ret.bestValue());
+        ret.setBestValue(c->toMostSpecificCandidate(context));
         break;
       case Function::CONST_REF:
-        CHPL_ASSERT(ret.bestConstRef() == nullptr);
-        ret.setBestConstRef(fn);
+        CHPL_ASSERT(!ret.bestConstRef());
+        ret.setBestConstRef(c->toMostSpecificCandidate(context));
         break;
       case Function::REF:
-        CHPL_ASSERT(ret.bestRef() == nullptr);
-        ret.setBestRef(fn);
+        CHPL_ASSERT(!ret.bestRef());
+        ret.setBestRef(c->toMostSpecificCandidate(context));
         break;
       case Function::PARAM:
       case Function::TYPE:
@@ -260,7 +266,8 @@ static void gatherVecsByReturnIntent(const DisambiguationContext& dctx,
 }
 
 static MostSpecificCandidates
-computeMostSpecificCandidates(const DisambiguationContext& dctx,
+computeMostSpecificCandidates(Context* context,
+                              const DisambiguationContext& dctx,
                               const CandidatesVec& candidates) {
 
   CandidatesVec ambiguousBest;
@@ -272,7 +279,7 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
                                              ambiguousBest);
 
   if (best != nullptr) {
-    return MostSpecificCandidates::getOnly(best);
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
   }
 
   if (ambiguousBest.size() == 0) {
@@ -304,11 +311,11 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
     if (ambiguousBest.size() > 1)
       return MostSpecificCandidates::getAmbiguous();
 
-    return MostSpecificCandidates::getOnly(best);
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
   }
 
   if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
-    return gatherByReturnIntent(dctx, ambiguousBest);
+    return gatherByReturnIntent(context, dctx, ambiguousBest);
   }
 
   // Otherwise, nRef > 1 || nConstRef > 1 || nValue > 1.
@@ -316,11 +323,12 @@ computeMostSpecificCandidates(const DisambiguationContext& dctx,
   // handle the more complex case where there is > 1 candidate
   // with a particular return intent by disambiguating each group
   // individually.
-  return computeMostSpecificCandidatesWithVecs(dctx, ambiguousBest);
+  return computeMostSpecificCandidatesWithVecs(context, dctx, ambiguousBest);
 }
 
 static MostSpecificCandidates
-computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+computeMostSpecificCandidatesWithVecs(Context* context,
+                                      const DisambiguationContext& dctx,
                                       const CandidatesVec& vec) {
   CandidatesVec refCandidates;
   CandidatesVec constRefCandidates;
@@ -376,11 +384,11 @@ computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
   // so there is no ambiguity.
   MostSpecificCandidates ret;
   if (bestRef != nullptr)
-    ret.setBestRef(bestRef);
+    ret.setBestRef(bestRef->toMostSpecificCandidate(context));
   if (bestCRef != nullptr)
-    ret.setBestConstRef(bestCRef);
+    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(context));
   if (bestValue != nullptr)
-    ret.setBestValue(bestValue);
+    ret.setBestValue(bestValue->toMostSpecificCandidate(context));
 
   return ret;
 }
@@ -389,7 +397,8 @@ computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
 // with a particular return intent by disambiguating each group
 // individually.
 static MostSpecificCandidates
-computeMostSpecificCandidatesWithVecs(const DisambiguationContext& dctx,
+computeMostSpecificCandidatesWithVecs(Context* context,
+                                      const DisambiguationContext& dctx,
                                       const CandidatesVec& vec);
 
 
@@ -424,7 +433,7 @@ findMostSpecificCandidatesQuery(Context* context,
   }
 
   MostSpecificCandidates result =
-    computeMostSpecificCandidates(dctx, candidates);
+    computeMostSpecificCandidates(context, dctx, candidates);
 
   // Delete all of the FormalActualMaps
   for (auto elt : candidates) {
@@ -449,7 +458,7 @@ findMostSpecificCandidates(Context* context,
 
   if (lst.size() == 1) {
     // If there is just one candidate, return it
-    return MostSpecificCandidates::getOnly(lst[0]);
+    return MostSpecificCandidates::getOnly(MostSpecificCandidate::fromTypedFnSignature(context, lst[0], call));
   }
 
   // if we get here, > 1 candidates
@@ -470,7 +479,7 @@ findMostSpecificCandidates(Context* context,
 
   Does not consider return intent overloading.
   */
-static const TypedFnSignature*
+static const DisambiguationCandidate*
 findMostSpecificIgnoringReturn(const DisambiguationContext& dctx,
                                const CandidatesVec& candidates,
                                bool ignoreWhere,
@@ -484,7 +493,7 @@ findMostSpecificIgnoringReturn(const DisambiguationContext& dctx,
 
   if (n == 1) {
     // the only match is the best match
-    return candidates[0]->fn;
+    return candidates[0];
   }
 
   // If index i is set then we can skip testing function F_i because
@@ -546,7 +555,7 @@ findMostSpecificIgnoringReturn(const DisambiguationContext& dctx,
 
     if (singleMostSpecific) {
       EXPLAIN("Y: Fn %d is the best match.\n\n\n", i);
-      return candidates[i]->fn;
+      return candidates[i];
 
     } else {
       EXPLAIN("Y: Fn %d is NOT the best match.\n\n\n", i);

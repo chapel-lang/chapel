@@ -364,8 +364,9 @@ bool VarScopeVisitor::enter(const FnCall* callAst, RV& rv) {
     // This filter is intended as an optimization.
     const MostSpecificCandidates& candidates = rv.byAst(callAst).mostSpecific();
     bool anyInOutInout = false;
-    for (const TypedFnSignature* fn : candidates) {
-      if (fn != nullptr) {
+    for (const MostSpecificCandidate& candidate : candidates) {
+      if (candidate) {
+        auto fn = candidate.fn();
         int n = fn->numFormals();
         for (int i = 0; i < n; i++) {
           const QualifiedType& formalQt = fn->formalType(i);
@@ -568,8 +569,9 @@ computeActualFormalIntents(Context* context,
   }
 
   bool firstCandidate = true;
-  for (const TypedFnSignature* fn : candidates) {
-    if (fn != nullptr) {
+  for (const MostSpecificCandidate& candidate : candidates) {
+    if (candidate) {
+      auto fn = candidate.fn();
       auto formalActualMap = FormalActualMap(fn, ci);
       for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
         const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);

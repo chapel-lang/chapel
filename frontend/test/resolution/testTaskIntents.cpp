@@ -121,7 +121,7 @@ struct Collector {
     if (rv.hasAst(call)) {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
-        const TypedFnSignature* sig = result.mostSpecific().only();
+        const TypedFnSignature* sig = result.mostSpecific().only().fn();
         auto fn = resolveFunction(rv.context(), sig, result.poiScope());
 
         ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());

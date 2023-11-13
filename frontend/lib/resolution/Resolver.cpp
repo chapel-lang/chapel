@@ -998,7 +998,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* isParenless */ false,
                      std::move(actuals));
   auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
-  if (rr.mostSpecific().only() != nullptr) {
+  if (rr.mostSpecific().only()) {
     ret = rr.exprType();
     handleResolvedAssociatedCall(byPostorder.byAst(decl), decl, ci, rr,
                                  AssociatedAction::INFER_TYPE,
@@ -1510,9 +1510,9 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
     return true;
   } else {
-    r.setMostSpecific(c.mostSpecific());
     r.setPoiScope(c.poiInfo().poiScope());
     r.setType(c.exprType());
+    validateAndSetMostSpecific(r, astForErr, c.mostSpecific());
     // gather the poi scopes used when resolving the call
     poiInfo.accumulate(c.poiInfo());
   }
@@ -1571,9 +1571,9 @@ void Resolver::handleResolvedAssociatedCall(ResolvedExpression& r,
     issueErrorForFailedCallResolution(astForErr, ci, c);
   } else {
     // save candidates as associated functions
-    for (auto sig : c.mostSpecific()) {
-      if (sig != nullptr) {
-        r.addAssociatedAction(action, sig, id);
+    for (auto& sig : c.mostSpecific()) {
+      if (sig) {
+        r.addAssociatedAction(action, sig.fn(), id);
       }
     }
     // gather the poi scopes used when resolving the call
@@ -1910,7 +1910,8 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   CHPL_ASSERT(crr.mostSpecific().numBest() <= 1);
 
   // there should be one or zero applicable candidates
-  if (auto initTfs = crr.mostSpecific().only()) {
+  if (auto initMsc = crr.mostSpecific().only()) {
+    auto initTfs = initMsc.fn();
     handleResolvedAssociatedCall(re, call, ci, crr,
                                  AssociatedAction::NEW_INIT,
                                  call->id());
@@ -2572,6 +2573,24 @@ void Resolver::validateAndSetToId(ResolvedExpression& r,
       searchId = parsing::idToParentId(context, searchId);
     }
   }
+}
+
+void Resolver::validateAndSetMostSpecific(ResolvedExpression& r,
+                                          const uast::AstNode* expr,
+                                          const MostSpecificCandidates& mostSpecific) {
+  if (auto only = mostSpecific.only()) {
+    // A single candidate was selected, either immediately or after return
+    // intent overloading. Now, if calling this candidate requires a subtype
+    // coercion for a 'const ref' formal, we need to emit an error: this
+    // is allowed by the spec, but can't be compiled in the C backend due
+    // to C's aliasing rules.
+
+    if (only.hasConstRefCoercion()) {
+      r.setType(CHPL_TYPE_ERROR(context, ConstRefCoercion, expr, only));
+    }
+  }
+
+  r.setMostSpecific(mostSpecific);
 }
 
 static bool isCalledExpression(Resolver* rv, const AstNode* ast) {
@@ -3682,7 +3701,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
   auto& MSC = iterandRE.mostSpecific();
   bool isIter = MSC.isEmpty() == false &&
                 MSC.numBest() == 1 &&
-                MSC.only()->untyped()->kind() == uast::Function::Kind::ITER;
+                MSC.only().fn()->untyped()->kind() == uast::Function::Kind::ITER;
 
   bool wasResolved = iterandRE.type().isUnknown() == false &&
                      iterandRE.type().isErroneousType() == false;
@@ -3707,7 +3726,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
     auto c = resolveGeneratedCall(context, iterand, ci,
                                   inScope, resolver.poiScope);
 
-    if (c.mostSpecific().only() != nullptr) {
+    if (c.mostSpecific().only()) {
       idxType = c.exprType();
       resolver.handleResolvedAssociatedCall(iterandRE, astForErr, ci, c,
                                             AssociatedAction::ITERATE,
