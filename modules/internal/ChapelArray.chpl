@@ -468,6 +468,11 @@ module ChapelArray {
     }
   }
 
+  proc chpl__distributed(type dist, dom: domain(?), defaultConst: bool) {
+    // TODO: What should happen to definedConst here?
+    return dist.createDomain(dom);
+  }
+
   pragma "last resort"
   proc chpl__distributed(d, expr, definedConst: bool) {
     compilerError("'dmapped' can currently only be applied to domains.");
