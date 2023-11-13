@@ -99,7 +99,7 @@ static Location
 mentionSourceLocation(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
   assert(ast);
   if (auto ident = ast->toIdentifier()) {
-    auto loc = chpl::parsing::locateAst(chapel, ast);
+    auto loc = chpl::parsing::locateAst(chapel, ident);
     return Location(std::move(loc));
   } else if (auto dot = ast->toDot()) {
     auto loc = chpl::parsing::locateDotFieldWithAst(chapel, dot);
