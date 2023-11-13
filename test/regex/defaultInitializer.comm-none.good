@@ -5,4 +5,3 @@ x: 'new regex("")'
 'hello'
 replaced: ''
 caught: Invalid argument: invalid regex (in fileReader.search with path "test.txt" offset 0)
-
