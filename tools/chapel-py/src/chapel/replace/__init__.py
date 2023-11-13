@@ -29,7 +29,7 @@ class ReplacementContext:
     This class is given as an argument to 'finder' functions so that
     they are able to retrieve information about the nodes and the current
     file. While Dyno parses the file and reports locations using line and
-    column numbers, it does not mappings from lines and columns to
+    column numbers, it does not have mappings from lines and columns to
     offsets in the file (which is what we need to read text). This class
     contains that information.
     """
@@ -203,7 +203,7 @@ def _do_replace(finder, ctx, filename, suffix, inplace):
 def run(finder, name='replace', description='A tool to search-and-replace Chapel expressions with others'):
     """
     Start a command-line replacer program with the given 'finder' function.
-    This program will automatically support acceppting a list of files on
+    This program will automatically support accepting a list of files on
     the command line, and two command-line options.
 
     The first option is '--suffix', used for out-of-place substitutions: the

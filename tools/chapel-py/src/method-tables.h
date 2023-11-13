@@ -77,11 +77,11 @@ CLASS_BEGIN(AnonFormal)
   PLAIN_GETTER(AnonFormal, intent, "Get the intent for this AnonFormal node",
                "s", return intentToString(node->intent()))
   PLAIN_GETTER(AnonFormal, type_expression, "Get the type expression for this AnonFormal node",
-               "O", return  wrapAstNode(contextObject, node->typeExpression()))
+               "O", return wrapAstNode(contextObject, node->typeExpression()))
 CLASS_END(AnonFormal)
 
 CLASS_BEGIN(Array)
-  PLAIN_GETTER(Array, exprs, "Get the expressions from this Array mpde",
+  PLAIN_GETTER(Array, exprs, "Get the expressions from this Array node",
                "O", return wrapIterPair(contextObject, node->exprs()))
   PLAIN_GETTER(Array, has_trailing_comma, "Check if this Array node has a trailing comma",
                "b", return node->hasTrailingComma())
