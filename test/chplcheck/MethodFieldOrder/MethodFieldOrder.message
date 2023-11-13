@@ -1,4 +1,0 @@
-/Users/brandonneth/chapel/test/chplcheck/MethodFieldOrder.chpl:31: node violates rule MethodsAfterFields
-/Users/brandonneth/chapel/test/chplcheck/MethodFieldOrder.chpl:38: node violates rule MethodsAfterFields
-/Users/brandonneth/chapel/test/chplcheck/MethodFieldOrder.chpl:4: node violates rule MethodsAfterFields
-/Users/brandonneth/chapel/test/chplcheck/MethodFieldOrder.chpl:11: node violates rule MethodsAfterFields
