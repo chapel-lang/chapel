@@ -1512,7 +1512,7 @@ extern_export_decl_stmt:
   extern_export_decl_stmt_start class_start opt_inherit
   TLCBR class_level_stmt_ls TRCBR
   {
-    $$ = context->buildAggregateTypeDecl(@1, $2, @3, $3, @4, $5, @6);
+    $$ = context->buildAggregateTypeDecl(@$, $2, @3, $3, @4, $5, @6);
     context->exitScope($2.tag, $2.name);
   }
 | extern_export_decl_stmt_start STRINGLITERAL class_start opt_inherit
@@ -1520,7 +1520,7 @@ extern_export_decl_stmt:
   {
     // Set the linkage name since it will be nullptr otherwise.
     $3.linkageName = $2;
-    $$ = context->buildAggregateTypeDecl(@1, $3, @4, $4, @5, $6, @7);
+    $$ = context->buildAggregateTypeDecl(@$, $3, @4, $4, @5, $6, @7);
     context->exitScope($3.tag, $3.name);
   }
 | extern_export_decl_stmt_start opt_expr fn_decl_stmt
