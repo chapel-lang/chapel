@@ -1310,13 +1310,19 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
+static bool hasIgnorePragma(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
 static bool
 shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
   return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast);
+         isAstDeprecated(context, ast) ||
+         hasIgnorePragma(context, ast);
 }
 
 // Skip if any parent is marked deprecated or unstable. We don't want to
@@ -1377,22 +1383,6 @@ static std::string hardcodedDeprecationForId(Context* context, ID idMention,
   return deprecationMsg;
 }
 
-static bool parentIgnoresDeprecated(Context* context, ID idTarget) {
-  auto parentId = parsing::idToParentId(context, idTarget);
-  if (auto attrib = parsing::idToAttributeGroup(context, parentId)) {
-    if (attrib->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE)) return true;
-  } else if (parentId.isEmpty()) {
-    return false;
-  }
-
-  auto ast = parsing::idToAst(context, parentId);
-  if (ast->isModule()) {
-    return false;
-  }
-
-  return parentIgnoresDeprecated(context, parentId);
-}
-
 static bool
 deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
   std::string msg;
@@ -1416,8 +1406,6 @@ deprecationWarningForIdImpl(Context* context, ID idMention, ID idTarget) {
     bool isDeprecated = attributes->hasPragma(PRAGMA_DEPRECATED) ||
                         attributes->isDeprecated();
     if (!isDeprecated) return false;
-
-    if (parentIgnoresDeprecated(context, idTarget)) return false;
 
     auto storedMsg = attributes->deprecationMessage();
     msg = storedMsg.isEmpty()

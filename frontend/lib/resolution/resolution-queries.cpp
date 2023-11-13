@@ -2844,12 +2844,12 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-static bool isKeywordTypeCtor(Context* context,
-                              const Call* call,
-                              const CallInfo& ci,
-                              const Scope* inScope,
-                              const PoiScope* inPoiScope,
-                              CallResolutionResult& result) {
+static bool resolveFnCallSpecialType(Context* context,
+                                     const Call* call,
+                                     const CallInfo& ci,
+                                     const Scope* inScope,
+                                     const PoiScope* inPoiScope,
+                                     CallResolutionResult& result) {
   if (ci.isMethodCall()) {
     return false;
   }
@@ -3694,11 +3694,11 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
          // Assuming ci.name().isEmpty()==true implies a primitive call.
          // TODO: Add some kind of 'isPrimitive()' to CallInfo
          !ci.name().isEmpty() &&
-         ci.name() != "?" &&
-         ci.name() != "owned" &&
-         ci.name() != "shared" &&
-         ci.name() != "borrowed" &&
-         ci.name() != "unmanaged";
+         ci.name() != USTR("?") &&
+         ci.name() != USTR("owned") &&
+         ci.name() != USTR("shared") &&
+         ci.name() != USTR("borrowed") &&
+         ci.name() != USTR("unmanaged");
 }
 
 CallResolutionResult resolveCall(Context* context,
@@ -3718,7 +3718,8 @@ CallResolutionResult resolveCall(Context* context,
     }
 
     CallResolutionResult keywordRes;
-    if (isKeywordTypeCtor(context, call, ci, inScope, inPoiScope, keywordRes)) {
+    if (resolveFnCallSpecialType(context, call, ci,
+                                 inScope, inPoiScope, keywordRes)) {
       return keywordRes;
     }
 
