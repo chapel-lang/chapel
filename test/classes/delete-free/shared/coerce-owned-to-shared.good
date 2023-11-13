@@ -1,1 +1,3 @@
+coerce-owned-to-shared.chpl:6: In function 'test':
+coerce-owned-to-shared.chpl:9: warning: assigning owned class to shared class is deprecated.
 {x = 4} nil
