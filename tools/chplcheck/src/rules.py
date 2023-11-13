@@ -39,7 +39,7 @@ def check_pascal_case(node):
     return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
-    @driver.basic_rule(VarLikeDecl)
+    @driver.basic_rule(VarLikeDecl, default=False)
     def CamelCaseVariables(context, node):
         if node.name() == "_": return True
         return check_camel_case(node)
@@ -56,7 +56,7 @@ def register_rules(driver):
     def PascalCaseModules(context, node):
         return node.kind() == "implicit" or check_pascal_case(node)
 
-    @driver.basic_rule(Module)
+    @driver.basic_rule(Module, default=False)
     def UseExplicitModules(context, node):
         return node.kind() != "implicit"
 
@@ -84,7 +84,7 @@ def register_rules(driver):
             return context.is_bundled_path(path)
         return True
 
-    @driver.advanced_rule
+    @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
             if isinstance(node, MultiDecl):
