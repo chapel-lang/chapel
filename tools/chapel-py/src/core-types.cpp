@@ -151,7 +151,9 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "    pass" << std::endl << std::endl;
 
   #define CLASS_BEGIN(NODE) \
-    ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "(AstNode):" << std::endl;
+    ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
+    ss << parentTypeFor(asttags::NODE)->tp_name; \
+    ss << "):" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
     ss << "    def " << #NAME << "(self"; \
     printTypedPythonFunctionArgs<PythonFnHelper<TYPEFN>::ArgTypeInfo>(ss, std::make_index_sequence<std::tuple_size<PythonFnHelper<TYPEFN>::ArgTypeInfo>::value>()); \
