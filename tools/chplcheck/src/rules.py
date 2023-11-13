@@ -152,6 +152,16 @@ def register_rules(driver):
         uses = set()
 
         for (formal, _) in chapel.each_matching(root, Formal):
+            # For now, it's harder to tell if we're ignoring 'this' formals
+            # (what about method calls with implicit receiver?). So skip
+            # 'this' formals.
+            if formal.name() == "this":
+                continue
+
+            # extern functions have no bodies that can use their formals.
+            if formal.parent().linkage() == "extern":
+                continue
+
             formals[formal.unique_id()] = formal
 
         for (use, _) in chapel.each_matching(root, Identifier):
