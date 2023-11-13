@@ -151,6 +151,8 @@ class LintDriver:
             def wrapper_advanced_rule(*args, **kwargs):
                 return func(*args, **kwargs)
             return wrapper_advanced_rule
+
+        # this allows the usage of either `@advanced_rule` or `@advanced_rule()`
         if _func is None:
             return decorator_advanced_rule
         else:
