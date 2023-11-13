@@ -18,9 +18,9 @@ module w {
     else if opt == 4 then owned CC?
     else if opt == 5 then shared CC
     else if opt == 6 then shared CC?
-    else if opt == 7 then borrowed CC
-    else if opt == 8 then borrowed CC?
-    else if opt == 9 then unmanaged CC
+
+
+    else if opt == 7 then unmanaged CC
     else                  unmanaged CC?
     ;
 
