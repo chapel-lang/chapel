@@ -108,6 +108,13 @@ public:
            lastColumn() >= loc.lastColumn();
   }
 
+  /** Determine if this location is greater than the location 'rhs' without
+      considering paths. */
+  inline bool operator>(const Location& rhs) {
+    if (firstLine() > rhs.firstLine()) return true;
+    return firstLine() == rhs.firstLine() && firstColumn() > rhs.firstColumn();
+  }
+
   void stringify(std::ostream& os, StringifyKind stringifyKind) const;
 
   // TODO: We could probably save some space by using a variable byte

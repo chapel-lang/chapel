@@ -96,7 +96,7 @@ static std::string mentionSymbol(const chpl::uast::AstNode* ast) {
 }
 
 static Location
-sourceLocationFromAst(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
+mentionSourceLocation(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
   assert(ast);
   if (auto ident = ast->toIdentifier()) {
     auto loc = chpl::parsing::locateAst(chapel, ast);
@@ -112,7 +112,7 @@ sourceLocationFromAst(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
 }
 
 static Location
-targetLocationFromAst(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
+mentionTargetLocation(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
   assert(ast);
   auto loc = chpl::parsing::locateAst(chapel, ast);
   return Location(std::move(loc));
@@ -131,7 +131,7 @@ doCollectMentions(chpl::Context* chapel,
     m.symbol = mentionSymbol(ast);
     bool isBaseExpr = parentCallIfBaseExpression(chapel, ast) != nullptr;
     m.isCallBaseExpression = isBaseExpr;
-    m.source = sourceLocationFromAst(chapel, ast);
+    m.source = mentionSourceLocation(chapel, ast);
     mentions.push_back(std::move(m));
   }
 
@@ -182,7 +182,7 @@ doFixupMentionTargets(chpl::Context* chapel,
     }
 
     assert(nd);
-    m.target = targetLocationFromAst(chapel, nd);
+    m.target = mentionTargetLocation(chapel, nd);
   }
 }
 

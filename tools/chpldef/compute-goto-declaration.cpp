@@ -107,6 +107,7 @@ astAtLocation(Server* ctx, chpl::Location loc) {
   }
 
   // Do final filtering. E.g., for 'x.   foo', was the cursor on 'foo'?
+  // If we were not clicking on the field part then clear the result.
   ctx->withChapel([&](auto chapel) {
     if (auto dot = ret->toDot()) {
       auto locField = chpl::parsing::locateDotFieldWithAst(chapel, dot);
@@ -115,10 +116,6 @@ astAtLocation(Server* ctx, chpl::Location loc) {
   });
 
   return ret;
-}
-
-static bool isAstForAggregate(const chpl::uast::AstNode* ast) {
-  return ast->isClass() || ast->isRecord() || ast->isUnion();
 }
 
 static std::vector<chpl::ID>
@@ -138,23 +135,23 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
   // We need to look at the ID in order to determine the closest entity to
   // resolve, and then we need to fetch some sort of 'ResolutionResult'.
   ctx->withChapel([&](auto chapel) {
-    if (auto id = ast->id().parentSymbolId(chapel)) {
-      auto ast = chpl::parsing::idToAst(chapel, id);
-      CHPL_ASSERT(ast);
+    if (auto idParent = ast->id().parentSymbolId(chapel)) {
+      auto astParent = chpl::parsing::idToAst(chapel, idParent);
+      CHPL_ASSERT(astParent);
 
-      if (chpl::parsing::idIsFunction(chapel, id)) {
-        rf = resolveConcreteFunction(chapel, id);
+      if (chpl::parsing::idIsFunction(chapel, idParent)) {
+        rf = resolveConcreteFunction(chapel, idParent);
         // TODO: What do we do if the symbol is a generic function?
         if (rf == nullptr) CHPLDEF_TODO();
         canScopeResolveFunction = true;
         rr = &rf->resolutionById();
-        sym = ast;
+        sym = astParent;
 
-      } else if (ast->isModule()) {
-        rr = &resolveModule(chapel, id);
-        sym = ast;
+      } else if (astParent->isModule()) {
+        rr = &resolveModule(chapel, idParent);
+        sym = astParent;
 
-      } else if (isAstForAggregate(ast)) {
+      } else if (astParent && astParent->isAggregateDecl()) {
         CHPLDEF_TODO();
       }
     }
