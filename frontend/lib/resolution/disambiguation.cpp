@@ -1293,7 +1293,7 @@ static bool prefersConvToOtherNumeric(const DisambiguationContext& dctx,
 static QualifiedType computeActualScalarType(Context* context,
                                              QualifiedType actualType) {
   // TODO: fill this in
-  CHPL_ASSERT(false && "not implemented yet");
+  CHPL_UNIMPL("scalar type matching");
   return actualType;
 }
 

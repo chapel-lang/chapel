@@ -626,7 +626,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       }
     }
   } else {
-    CHPL_ASSERT(false && "TODO"); // e.g. value = copy init from ref
+    CHPL_UNIMPL("value = copy init from ref");
   }
 }
 

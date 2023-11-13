@@ -249,6 +249,9 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
         } else {
           kind = QualifiedType::FUNCTION;
         }
+      } else if (asttags::isInterface(tag)) {
+        //TODO: kind = QualifiedType::INTERFACE;
+        CHPL_UNIMPL("interfaces");
       } else {
         CHPL_ASSERT(false && "case not handled");
       }
@@ -1283,7 +1286,7 @@ QualifiedType getInstantiationType(Context* context,
       }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
-        CHPL_ASSERT(false && "not implemented yet");
+        CHPL_UNIMPL("instantiate generic class formal");
       }
 
       // now construct the ClassType

@@ -210,7 +210,7 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   if (auto basic = compType->toBasicClassType()) {
     if (auto parent = basic->parentClassType()) {
       if (!parent->isObjectType()) {
-        CHPL_ASSERT(false && "Not handled yet!");
+        CHPL_UNIMPL("initializers on inheriting classes");
       }
     }
   }
@@ -510,7 +510,7 @@ getCompilerGeneratedMethodQuery(Context* context, const Type* type,
     } else if (auto arrayType = type->toArrayType()) {
       result = generateArrayMethod(context, arrayType, name);
     } else {
-      CHPL_ASSERT(false && "Not implemented yet!");
+      CHPL_ASSERT(false && "should not be reachable");
     }
   }
 

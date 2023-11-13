@@ -734,11 +734,15 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyIntegralType() && actualT->isIntegralType())
     return true;
 
-  if (formalT->isAnyIteratorClassType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
+  if (formalT->isAnyIteratorClassType()) {
+    CHPL_UNIMPL("iterator classes"); // TODO: represent iterators
+    return false;
+  }
 
-  if (formalT->isAnyIteratorRecordType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
+  if (formalT->isAnyIteratorRecordType()) {
+    CHPL_UNIMPL("iterator records"); // TODO: represent iterators
+    return false;
+  }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
@@ -750,8 +754,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
           if (manager->isAnyOwnedType())
             return true;
 
-  if (formalT->isAnyPodType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: compute POD-ness
+  if (formalT->isAnyPodType()) {
+    CHPL_UNIMPL("POD types"); // TODO: compute POD-ness
+    return false;
+  }
 
   if (formalT->isAnyRealType() && actualT->isRealType())
     return true;

@@ -558,13 +558,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_COERCIBLE:
     case PRIM_TYPE_TO_STRING:
     case PRIM_HAS_LEADER:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("misc primitives");
       break;
     case PRIM_IS_TUPLE_TYPE:
       type = primIsTuple(context, ci);
       break;
     case PRIM_SIMPLE_TYPE_NAME:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("misc primitives");
       break;
 
     case PRIM_NUM_FIELDS:
@@ -605,7 +605,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -624,7 +624,7 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_RESOLVES:
     case PRIM_IMPLEMENTS_INTERFACE:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:
@@ -649,7 +649,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
-      assert(false && "not implemented yet");
+      CHPL_UNIMPL("iterator casting  primitives");
       break;
 
     case PRIM_CAST_TO_VOID_STAR:
@@ -673,7 +673,7 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primObjectToInt(context, ci);
 
     case PRIM_COERCE:
-      assert(false && "not implemented yet");
+      CHPL_UNIMPL("coerce primitive");
       break;
 
     case PRIM_TO_UNMANAGED_CLASS_CHECKED:
@@ -706,7 +706,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_UINT64_AS_REAL64:
     case PRIM_REAL32_AS_UINT32:
     case PRIM_REAL64_AS_UINT64:
-      assert(false && "not implemented yet");
+      CHPL_UNIMPL("uint <-> real primitives");
       break;
 
     /* string operations */
@@ -982,7 +982,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_UNKNOWN:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("misc primitives");
 
     // no default to get a warning when new primitives are added
   }
