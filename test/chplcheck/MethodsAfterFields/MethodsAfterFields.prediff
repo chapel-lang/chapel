@@ -1,4 +1,3 @@
 #!/bin/bash
-while read expectedLine; do
-    echo grep "$expectedLine" MethodsAfterFields.message | echo $? >> MethodsAfterFields.comp.out.tmp
-done < MethodsAfterFields.expected
+$CHPL_HOME/tools/chplcheck/chplcheck $1.chpl >> $1.comp.out.tmp
+sed -i .tmp "s#$(pwd)/##" $2 # strip the working directory from output
