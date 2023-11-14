@@ -2848,7 +2848,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
     // advance the ptr, start of available data, etc.
     ptr = qio_ptr_add(ptr, gotlen);
     _set_right_mark_start(ch, end.offset);
-    ch->cached_cur = qio_ptr_add(ch->cached_cur, gotlen);
     remaining -= gotlen;
     *amt_read = gotlen;
 
@@ -2926,7 +2925,6 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
 
       // figure out the end of the data to copy
       gotlen = ch->av_end - _right_mark_start(ch);
-      // printf("\t\tfull gotlen: %lli\n", gotlen);
       start = _right_mark_start_iter(ch);
       if( toRead < gotlen ) {
         gotlen = toRead;
