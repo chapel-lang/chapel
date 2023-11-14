@@ -55,6 +55,7 @@
 #include <string>
 #include <map>
 #include <regex>
+#include <numeric>
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -2433,15 +2434,13 @@ int main(int argc, char* argv[]) {
   tracker.Stop();
 
   if (printPasses == true || printPassesFile != NULL) {
-    gdbShouldBreakHere();
-    tracker.ReportPass();
-    tracker.ReportRollup();
-
     // Report out timing totals information, with adjustments for driver mode.
-    // TODO: fix emitting totals, including backend total that spans driver phases
     if (fDriverDoMonolithic) {
       // Report normally in monolithic mode.
-      tracker.ReportTotal();
+      tracker.ReportPass();
+      tracker.ReportRollup();
+      tracker.ReportPassGroupTotals();
+      tracker.ReportOverallTotal();
     } else {
       // Save timing totals in sub-invocations, to restore and output by driver.
 
@@ -2452,8 +2451,12 @@ int main(int argc, char* argv[]) {
         // This is a sub-invocation, capture timing totals information for later
         // reporting by driver init process.
 
+        // Report final sub-invocation specific timing information
+        tracker.ReportPass();
+        tracker.ReportRollup();
+
         // Get timing information
-        tracker.ReportTotal(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupTimes);
 
         // Save times to file
         std::vector<const char*> groupTimesStrs;
@@ -2470,9 +2473,26 @@ int main(int argc, char* argv[]) {
                          [&groupTimes](const char* timeStr) {
                            groupTimes.emplace_back(std::stoul(timeStr));
                          });
+        // We expect frontend, middle-end, and backend results from phase one,
+        // plus the other half of backend results from phase two.
+        static const size_t numPassGroups = 3;
+        INT_ASSERT(groupTimes.size() == (numPassGroups + 1));
+        // Combine the two halves of the backend total time into one value.
+        groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
+        groupTimes.pop_back();
+
+        // Report final driver overhead timing information.
+        // Done here to include the footprint of restoring sub-invocation info.
+        tracker.ReportPass();
+        tracker.ReportRollup();
 
         // Report restored times
-        tracker.ReportTotal(&groupTimes);
+        tracker.ReportPassGroupTotals(&groupTimes);
+        // Report total time including both pass group times and driver overhead
+        auto groupTimesSum =
+            std::accumulate(groupTimes.begin(), groupTimes.end(),
+                            decltype(groupTimes)::value_type(0));
+        tracker.ReportOverallTotal(groupTimesSum);
       }
     }
   }

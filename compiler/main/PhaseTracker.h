@@ -82,12 +82,18 @@ public:
   void                 Resume();
 
   void                 ReportPass  ()                                const;
-  // Report out total times, by pass group and total overall. If the parameter
+  // Report out total times by pass group. If the parameter
   // is an empty list, instead insert times into it and skip output. If it is
   // a list with values, take these as already-recorded times and report them
   // out. If it is nullptr, ignore it and report as normal.
-  void                 ReportTotal (std::vector<unsigned long>*
-                                             groupTimes = nullptr)   const;
+  void                 ReportPassGroupTotals (std::vector<unsigned long>*
+                                              groupTimes = nullptr)  const;
+  // Report out total overall time for the compiler. If overheadTime is
+  // negative, it is unused, otherwise add it to the total time and note in
+  // report that it includes overhead. If positive it must fit in an unsigned
+  // long.
+  void                 ReportOverallTotal (long long
+                                           overheadTime = -1)        const;
 
   void                 ReportRollup()                                const;
 

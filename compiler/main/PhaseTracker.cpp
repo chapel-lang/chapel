@@ -26,8 +26,6 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
-#include <numeric>
-#include <type_traits>
 
 // Used to collect the times as the program runs
 class Phase
@@ -175,11 +173,10 @@ static const char* passGroups[][2] = {
   {"total time (back end)", "driverCleanup"},
 };
 
-void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
-{
-  printf("entered reporttotal\n");
+void PhaseTracker::ReportPassGroupTotals(
+    std::vector<unsigned long>* groupTimes) const {
   // Capture total time up to this point
-  const unsigned long measuredTotalTime = mTimer.elapsedUsecs();
+  const unsigned long totalTime = mTimer.elapsedUsecs();
   static const size_t numMetapasses =
       sizeof(passGroups) / sizeof(passGroups[0]);
 
@@ -199,15 +196,7 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
       // No times provided, so calculate them.
 
       const char* groupLastPhase = passGroups[i][1];
-      gdbShouldBreakHere();
       auto currentPass = mPhases.begin();
-      /* while (currentPass != mPhases.end()) { */
-      /*   if ((*currentPass)->mName != nullptr) { */
-      /*     if (strcmp((*currentPass)->mName, groupLastPhase) == 0) break; */
-      /*   } */
-      /*   currentPass++; */
-      /* } */
-      /* gdbShouldBreakHere(); */
       currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
         if (pass->mName == nullptr) return false;
         return strcmp(pass->mName, groupLastPhase) == 0;
@@ -221,16 +210,14 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
         passTime = (*nextPass)->mStartTime - lastStart;
         lastStart = (*nextPass)->mStartTime;
       } else {
-        passTime = measuredTotalTime - lastStart;
-        lastStart = measuredTotalTime;
+        passTime = totalTime - lastStart;
+        lastStart = totalTime;
       }
     } else {
       // Just used saved time value
 
       passTime = (*groupTimes)[i];
     }
-
-    printf("got time value %zu for pass %zu\n", passTime, i);
 
     if (saveToList) {
       // Save time to output list
@@ -243,20 +230,19 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
       Phase::ReportPassGroup(groupName, passTime);
     }
   }
+}
 
-  // Report overall "total time" only if we aren't saving to list
-  if (!saveToList) {
-    unsigned long totalTimeToReport = measuredTotalTime;
-    if (useSaved) {
-      // Replace measured total time with sum of provided times, which should
-      // be the same besides the footprint of phase tracking.
+void PhaseTracker::ReportOverallTotal(long long overheadTime) const {
+  unsigned long totalTime = mTimer.elapsedUsecs();
+  std::string msg = "total time";
 
-      totalTimeToReport = std::accumulate(
-          groupTimes->begin(), groupTimes->end(),
-          std::remove_pointer<decltype(groupTimes)>::type::value_type(0));
-    }
-    Phase::ReportTotal(totalTimeToReport);
+  if (overheadTime >= 0) {
+    totalTime += (unsigned long) overheadTime;
+    msg += " (including overhead)";
   }
+
+  Phase::ReportTime(msg.c_str(), totalTime / 1e6);
+  PhaseTracker::ReportText("\n\n\n\n");
 }
 
 void PhaseTracker::ReportRollup() const
