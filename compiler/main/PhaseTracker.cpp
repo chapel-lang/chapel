@@ -177,6 +177,7 @@ static const char* passGroups[][2] = {
 
 void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
 {
+  printf("entered reporttotal\n");
   // Capture total time up to this point
   const unsigned long measuredTotalTime = mTimer.elapsedUsecs();
   static const size_t numMetapasses =
@@ -191,7 +192,6 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
                "expected one saved time value per pass group to report");
   }
 
-  auto currentPass = mPhases.begin();
   unsigned long lastStart = 0;
   unsigned long passTime;
   for (size_t i = 0; i < numMetapasses; i++) {
@@ -199,13 +199,22 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
       // No times provided, so calculate them.
 
       const char* groupLastPhase = passGroups[i][1];
+      gdbShouldBreakHere();
+      auto currentPass = mPhases.begin();
+      /* while (currentPass != mPhases.end()) { */
+      /*   if ((*currentPass)->mName != nullptr) { */
+      /*     if (strcmp((*currentPass)->mName, groupLastPhase) == 0) break; */
+      /*   } */
+      /*   currentPass++; */
+      /* } */
+      /* gdbShouldBreakHere(); */
       currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
         if (pass->mName == nullptr) return false;
         return strcmp(pass->mName, groupLastPhase) == 0;
       });
 
       // No such pass, we might've exited early.
-      if (currentPass == mPhases.end()) break;
+      if (currentPass == mPhases.end()) continue;
       auto nextPass = currentPass + 1;
 
       if (nextPass != mPhases.end()) {
@@ -220,6 +229,8 @@ void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
 
       passTime = (*groupTimes)[i];
     }
+
+    printf("got time value %zu for pass %zu\n", passTime, i);
 
     if (saveToList) {
       // Save time to output list
