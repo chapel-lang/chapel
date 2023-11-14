@@ -1409,6 +1409,8 @@ qioerr qio_channel_revert(const int threadsafe, qio_channel_t* ch)
 
 qioerr qio_channel_seek(qio_channel_t* ch, int64_t start, int64_t end);
 
+qioerr qio_channel_seek_unsafe(qio_channel_t* ch, int64_t nbytes);
+
 void qio_channel_commit_unlocked(qio_channel_t* ch);
 
 // Only returns threading errors.
