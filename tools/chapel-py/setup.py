@@ -23,6 +23,7 @@ from setuptools.command.build_ext import build_ext
 import subprocess
 import os
 import sys
+import glob
 
 chpl_home = os.getenv('CHPL_HOME')
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
@@ -49,5 +50,5 @@ setup(name = "chapel",
       version = "0.1",
       package_dir = {'': 'src'},
       packages = ['chapel', 'chapel.replace'],
-      ext_modules = [Extension("chapel.core", ["src/chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
+      ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )
