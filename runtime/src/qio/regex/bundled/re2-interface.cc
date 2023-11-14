@@ -420,10 +420,10 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   if( ncaptures > INT_MAX || ncaptures < 0 )
     QIO_GET_CONSTANT_ERROR(err, EINVAL, "invalid number of captures");
 
-  if (err) goto error;
-
   start_offset = offset = qio_channel_offset_unlocked(ch);
   end_offset = qio_channel_end_offset_unlocked(ch);
+
+  if (err) goto error;
 
   end = end_offset;
   if( maxlen != std::numeric_limits<int64_t>::max() ) {
