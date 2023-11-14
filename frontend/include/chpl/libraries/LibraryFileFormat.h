@@ -111,7 +111,7 @@ struct LocationSectionHeader {
   uint32_t nFilePaths;
   uint32_t nGroups;
   // followed by file path strings
-  // then followed nGroups 8-byte relative offsets to each location group
+  // then followed serialized location groups
 };
 
 

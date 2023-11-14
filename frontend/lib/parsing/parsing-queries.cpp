@@ -221,7 +221,7 @@ const Location& locateId(Context* context, ID id) {
 
   UniqueString path;
   if (auto br = builderResultOrNull(context, id, path)) {
-    result = br->idToLocation(id, path);
+    result = br->idToLocation(context, id, path);
   }
 
   return QUERY_END(result);
@@ -242,7 +242,7 @@ const Location& locateAst(Context* context, const AstNode* ast) {
     UniqueString path; \
     if (!id) return QUERY_END(ret); \
     if (auto br = builderResultOrNull(context, id, path)) { \
-      ret = br->idTo##location__##Location(id, path); \
+      ret = br->idTo##location__##Location(context, id, path); \
     } \
     return QUERY_END(ret); \
   }

@@ -41,12 +41,13 @@ namespace llvm {
 namespace chpl {
 // forward declarations
 class Context;
+class Deserializer;
 namespace uast {
   class Module;
 }
 namespace libraries {
 class LibraryFile;
-
+struct LocationsMap;
 
 /** Helper object to interact with the Deserializer to:
       * read long strings from a LibraryFile strings table
@@ -55,30 +56,25 @@ class LibraryFile;
 class LibraryFileDeserializationHelper {
  friend class LibraryFile;
  private:
-  struct SymbolInfo {
-    // relative to the module section
-    uint32_t symbolEntryOffset;
-    uint32_t uastOffset;
-    uint32_t locationsOffset;
-  };
+  // key: module-section-relative offset for the serialized uast for
+  //      a symbol table symbol
+  // value: symbol table index of that symbol
+  // This will is computed from reading the symbol table.
+  // A copy is stored here as a performance optimization.
+  std::unordered_map<uint32_t, int> offsetToSymIdx;
 
+  // To support deserializing UniqueStrings
+  // This will be computed from reading the long strings section header.
+  // A copy is stored here as a performance optimization.
   int nStrings = 0;
   const unsigned char* moduleSectionData = nullptr;
   size_t moduleSectionLen = 0;
   const uint32_t* stringOffsetsTable = nullptr;
 
-  // key: module-section-relative offset for the serialized uast for
-  //      a symbol table symbol
-  // value: symbol table index of that symbol
-  std::unordered_map<uint32_t, int> offsetToSymIdx;
-
   // for AstNodes in the symbol table that were deserialized
   // maps to the symbol table index of that symbol.
+  // This will be computed during the deserialization process.
   std::unordered_map<const uast::AstNode*, int> astToSymIdx;
-
-  // maps from symbol table index to SymbolInfo which contains some
-  // useful offsets
-  std::vector<SymbolInfo> symbols;
 
   LibraryFileDeserializationHelper() { }
 
@@ -100,6 +96,86 @@ class LibraryFileDeserializationHelper {
     Some data is read from the file on-demand.
     Uses `mmap` to keep the code simple and to support random-access well. */
 class LibraryFile {
+ public:
+  /**
+     Helper object to represent a loaded Symbol Table from a module section.
+   */
+  class ModuleSection {
+   friend class LibraryFile;
+   private:
+    struct SymbolInfo {
+      // relative to the module section
+      uint32_t symbolEntryOffset = 0;
+      uint32_t uastOffset = 0;
+      uint32_t locationsOffset = 0;
+      bool operator==(const SymbolInfo& other) const {
+        return symbolEntryOffset == other.symbolEntryOffset &&
+               uastOffset == other.uastOffset &&
+               locationsOffset == other.locationsOffset;
+      }
+      bool operator!=(const SymbolInfo& other) const {
+        return !(*this == other);
+      }
+    };
+
+    // maps from symbol table index to SymbolInfo which contains some
+    // useful offsets.
+    // This will be computed from reading the symbol table.
+    std::vector<SymbolInfo> symbols;
+
+    // key: module-section-relative offset for the serialized uast for
+    //      a symbol table symbol
+    // value: symbol table index of that symbol
+    // This will is computed from reading the symbol table.
+    std::unordered_map<uint32_t, int> offsetToSymIdx;
+
+    // To support deserializing UniqueStrings
+    int nStrings = 0;
+    const unsigned char* moduleSectionData = nullptr;
+    size_t moduleSectionLen = 0;
+    const uint32_t* stringOffsetsTable = nullptr;
+
+    ModuleSection() { }
+   public:
+    bool operator==(const ModuleSection& other) const {
+      return symbols == other.symbols &&
+             offsetToSymIdx == other.offsetToSymIdx &&
+             nStrings == other.nStrings &&
+             moduleSectionData == other.moduleSectionData &&
+             moduleSectionLen == other.moduleSectionLen &&
+             stringOffsetsTable == other.stringOffsetsTable;
+    }
+    bool operator!=(const ModuleSection& other) const {
+      return !(*this == other);
+    }
+    static bool update(owned<ModuleSection>& keep,
+                       owned<ModuleSection>& addin) {
+      return defaultUpdateOwned(keep, addin);
+    }
+    void mark(Context* context) const {
+      // nothing to mark
+    }
+  };
+
+  /** Helper type to be returned by loadLocations */
+  struct LocationMaps {
+    using MapType = std::unordered_map<const uast::AstNode*, Location>;
+
+    MapType astToLocation;
+    #define LOCATION_MAP(ast__, location__) \
+      MapType CHPL_ID_LOC_MAP(ast__, location__);
+    #include "chpl/uast/all-location-maps.h"
+    #undef LOCATION_MAP
+
+    void clear();
+    const MapType* getLocationMap(int tag) const;
+    MapType* getLocationMap(int tag);
+
+    void swap(LocationMaps& other);
+    static bool update(LocationMaps& keep, LocationMaps& addin);
+    void mark(Context* context) const;
+  };
+
  private:
   struct ModuleInfo {
     UniqueString moduleSymPath;
@@ -132,10 +208,27 @@ class LibraryFile {
   static const owned<LibraryFile>& loadLibraryFileQuery(Context* context,
                                                         UniqueString libPath);
 
+  // reads the module section metadata into 'mod' and raises errors with Context
+  // if there are any errors.
+  // returns 'true' if everything is OK, 'false' if there were errors.
+  bool readModuleSection(Context* context,
+                         uint64_t moduleOffset,
+                         ModuleSection& mod) const;
+
+  // reads the module metadata (including the symbol table)
+  // returns nullptr if something went wrong
+  static const owned<ModuleSection>&
+  loadModuleSectionQuery(Context* context,
+                         const LibraryFile* f,
+                         int moduleIndex);
+
+  // returns nullptr if something went wrong
+  const ModuleSection* loadModuleSection(Context* context,
+                                         int moduleIndex) const;
   // reads the string table metadata & sets up 'helper' to be ready
   // to read long strings
   LibraryFileDeserializationHelper setupHelper(Context* context,
-                                               uint64_t moduleOffset) const;
+                                               const ModuleSection* mod) const;
 
   // deserializes the uAST for the module starting at the passed offset
   // and stores that uAST in the passed builder.
@@ -153,6 +246,45 @@ class LibraryFile {
   static const uast::BuilderResult& loadAstQuery(Context* context,
                                                  const LibraryFile* f,
                                                  UniqueString sourceFilePath);
+
+  // read the file paths stored in the locations section
+  // returns 'true' if everything is OK, 'false' if there were errors.
+  bool readLocationPaths(Context* context,
+                         std::vector<UniqueString>& paths,
+                         const ModuleSection* m) const;
+
+  // populate 'map' with Locations by reading a serialized LocationGroup
+  // 'symbolTableSymbolAst' needs to be the corresponding uAST for the
+  // symbol represented by the location group.
+  // returns 'true' if everything is OK, 'false' if there were errors.
+
+  bool
+  readLocationGroup(Context* context,
+                    LocationMaps& maps,
+                    Deserializer& des,
+                    const uast::AstNode* symbolTableSymbolAst,
+                    const std::vector<UniqueString>& paths) const;
+
+  // populate 'map' with Locations by reading serialized Location entries.
+  // 'cur' needs to be the corresponding uAST for the node whose location
+  // is currently being determined.
+  // returns 'true' if everything is OK, 'false' if there were errors.
+  bool
+  readLocationEntries(Context* context,
+                      LocationMaps& maps,
+                      Deserializer& des,
+                      const uast::AstNode* cur,
+                      UniqueString path,
+                      int& lastEntryLastLine) const;
+
+  // Compute a locations map that stores locations for uAST nodes
+  // within the symbol table symbol passed.
+  static const LocationMaps&
+  loadLocationsQuery(Context* context,
+                     const LibraryFile* f,
+                     int moduleIndex,
+                     int symbolTableEntryIndex,
+                     const uast::AstNode* symbolTableEntryAst);
 
  public:
   ~LibraryFile();
@@ -206,10 +338,11 @@ class LibraryFile {
     Assumes that 'ast' is stored within the Locations section
     found from module 'moduleIndex' and symbol entry 'symbolTableEntryIndex'.
    */
-  Location lookupLocation(Context* context,
-                          int moduleIndex,
-                          int symbolTableEntryIndex,
-                          const uast::AstNode* ast) const;
+  const LocationMaps&
+  loadLocations(Context* context,
+                int moduleIndex,
+                int symbolTableEntryIndex,
+                const uast::AstNode* symbolTableEntryAst) const;
 };
 
 

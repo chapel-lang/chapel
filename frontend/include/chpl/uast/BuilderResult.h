@@ -102,6 +102,17 @@ namespace uast {
 class BuilderResult final {
   friend class Builder;
 
+ public:
+  // enum defining integer indices for location map names
+  // (for use with library files, primarily)
+  enum struct LocationMapTag {
+    BaseMap = 0,
+    #define LOCATION_MAP(ast__, location__) \
+      location__,
+    #include "chpl/uast/all-location-maps.h"
+    #undef LOCATION_MAP
+  };
+
  private:
   UniqueString filePath_;
   AstList topLevelExpressions_;
@@ -128,7 +139,22 @@ class BuilderResult final {
 
   const libraries::LibraryFile* libraryFile_ = nullptr;
   // maps from ID to module number and symbol table entry number
+  // but only for modules & symbols stored in the symbol table
   llvm::DenseMap<ID, std::pair<int,int>> libraryFileSymbols_;
+
+  // For use with library files.
+  // Returns the module index & symbol index for the symbol
+  // containing the passed ID.
+  // Returns 'true' if something was found.
+  bool findContainingSymbol(ID id,
+                            ID& foundSymbolId,
+                            int foundSymbolIdx,
+                            int foundModuleIdx) const;
+
+  Location computeLocationFromLibraryFile(Context* context,
+                                          ID id,
+                                          UniqueString path,
+                                          LocationMapTag tag) const;
 
  public:
   /** Construct an empty BuilderResult */
@@ -175,7 +201,8 @@ class BuilderResult final {
   const AstNode* idToAst(ID id) const;
   /** Find the Location for a particular ID.
       Returns a location just to path if none is found. */
-  Location idToLocation(ID id, UniqueString path) const;
+  Location idToLocation(Context* context, ID id, UniqueString path) const;
+
   /** Find the Location for a particular comment.
       The Comment must have been from this BuilderResult, but this is not
       checked.
@@ -189,7 +216,7 @@ class BuilderResult final {
   /** Find an additional location given ID input. Returns an empty location
       pointing to 'path' if none was found. */
   #define LOCATION_MAP(ast__, location__) \
-    Location idTo##location__##Location(ID id, UniqueString path) const;
+    Location idTo##location__##Location(Context* context, ID id, UniqueString path) const;
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 

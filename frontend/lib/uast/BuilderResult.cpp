@@ -204,9 +204,92 @@ const AstNode* BuilderResult::idToAst(ID id) const {
   return ast;
 }
 
-Location BuilderResult::idToLocation(ID id, UniqueString path) const {
+bool BuilderResult::findContainingSymbol(ID id,
+                                         ID& foundSymbolId,
+                                         int foundSymbolIdx,
+                                         int foundModuleIdx) const {
+  ID cur = id;
+  while (!cur.isEmpty()) {
+    // check to see if the ID corresponds to a symbol table symbol
+    {
+      auto search1 = libraryFileSymbols_.find(id);
+      if (search1 != libraryFileSymbols_.end()) {
+        // return the symbol ID symbol information that we found
+        foundSymbolId = cur;
+        foundSymbolIdx = search1->second.first;
+        foundModuleIdx = search1->second.second;
+        return true;
+      }
+    }
+
+    // If not, find the parent ID and return failure if no parent ID is here
+    {
+      auto search2 = idToParentId_.find(id);
+      if (search2 != idToParentId_.end()) {
+        cur = search2->second;
+      } else {
+        return false;
+      }
+    }
+  }
+
+  return false;
+}
+
+Location BuilderResult::computeLocationFromLibraryFile(Context* context,
+                                                       ID id,
+                                                       UniqueString path,
+                                                       LocationMapTag tag) const
+{
+  CHPL_ASSERT(libraryFile_ != nullptr);
+  if (libraryFile_ == nullptr) {
+    return Location(path);
+  }
+
+  ID inSymbolId;
+  int inSymbolIdx = -1;
+  int inModuleIdx = -1;
+  bool found = findContainingSymbol(id, inSymbolId, inSymbolIdx, inModuleIdx);
+
+  // return early if 'id' does not seem to be contained in here
+  if (!found || inSymbolIdx < 0 || inModuleIdx < 0 || inSymbolId.isEmpty()) {
+    return Location(path);
+  }
+
+  // look up the AstNode* for the containing symbol
+  const AstNode* symbolAst = idToAst(inSymbolId);
+  if (symbolAst == nullptr) {
+    return Location(path);
+  }
+
+  // look up the AstNode* for the requested id
+  const AstNode* requestedAst = idToAst(id);
+  if (requestedAst == nullptr) {
+    return Location(path);
+  }
+
+  // read the appropriate Locations from the library file and get
+  // the appropriate Location from it
+  const auto& maps = libraryFile_->loadLocations(context, inModuleIdx,
+                                                 inSymbolIdx, symbolAst);
+
+  const auto* map = maps.getLocationMap((int)tag);
+  if (map != nullptr) {
+    auto search = map->find(requestedAst);
+    if (search != map->end()) {
+      return search->second;
+    }
+  }
+
+  return Location(path);
+}
+
+Location BuilderResult::idToLocation(Context* context,
+                                     ID id,
+                                     UniqueString path) const {
   if (libraryFile_) {
-    CHPL_ASSERT(false && "not implemented yet");
+    return computeLocationFromLibraryFile(context, id, path,
+                                          LocationMapTag::BaseMap);
   }
 
   // Look in astToLocation
@@ -239,11 +322,16 @@ ID BuilderResult::idToParentId(ID id) const {
   return ID();
 }
 
+
 // Add getters for additional locations that go from AST or ID to location.
 #define LOCATION_MAP(ast__, location__) \
   Location BuilderResult:: \
-  idTo##location__##Location(ID id, UniqueString path) const { \
+  idTo##location__##Location(Context* context, ID id, UniqueString path) const { \
     if (!id) return Location(path); \
+    if (libraryFile_ != nullptr) { \
+      return computeLocationFromLibraryFile(context, id, path, \
+                                            LocationMapTag::location__); \
+    } \
     auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
     auto it = m.find(id); \
     return (it != m.end()) ? it->second : Location(path); \

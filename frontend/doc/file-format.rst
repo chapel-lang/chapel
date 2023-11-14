@@ -158,8 +158,8 @@ This section consists of:
  * 4 bytes of N, the number of entries
  * 4 bytes reserved for future use
  * entries sorted by symbol table ID.  For each entry, it stores:
-   * 4 byte relative offset to the uAST section
-   * 4 byte relative offset to the Locations section
+   * 4 byte relative offset to the serialized uAST in the uAST section
+   * 4 byte relative offset to the location group in the Locations section
    * 4 byte relative offset to the type/function entry, if appropriate
    * a byte storing flags / kind information
    * unsigned variable-byte encoded, prefix A to copy from the
@@ -266,13 +266,6 @@ The Location section consists of:
 
    * a string storing the file path
    * 256 bits / 32 bytes of SHA-256 hash of the input file that was parsed
-
- * for each location group
-
-   * 8 bytes storing the relative offset of the location group
-
- * followed by 8 bytes storing the relative offset just after
-   the last location group
 
  * information for each location group, consisting of the following:
 

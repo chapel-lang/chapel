@@ -378,6 +378,11 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     //  * write the suffix data
     ser.writeData(&symId[nCommonPrefix], nSuffix);
 
+    printf("Wrote symbol id %s (prefix %i suffix %i)\n",
+           symId.c_str(),
+           (int) nCommonPrefix,
+           (int) nSuffix);
+
     lastSymId = symId;
   }
 
@@ -524,31 +529,34 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
     ser.writeData(&hash, sizeof(hash));
   }
 
+  /*
   // create a vector of group offsets, initially just storing 0s
   // store an additional offset for the offset just after the last
-  auto groupOffsets = std::vector<uint64_t>(header.nGroups+1, 0);
+  auto groupOffsets = std::vector<uint32_t>(header.nGroups+1, 0);
   // write the 0s to reserve the space to update later
   uint64_t groupOffsetsStart = fileStream.tellp();
-  ser.writeData(&groupOffsets[0], sizeof(uint64_t*)*groupOffsets.size());
+  ser.writeData(&groupOffsets[0], sizeof(uint32_t*)*groupOffsets.size());
+  */
 
   // write the locations group for each top-level symbol,
   // including the module itself
   n = header.nGroups;
   for (size_t i = 0; i < n; i++) {
-    groupOffsets[i] = writeLocationGroup(mod, ser, reg, pathToIdx);
+    /*groupOffsets[i] = */
+    writeLocationGroup(mod, ser, reg, pathToIdx);
   }
   // and update the last group offset with the current position
-  groupOffsets[n] = fileStream.tellp();
+  //groupOffsets[n] = fileStream.tellp();
 
   // update the group offsets table in the file now that we know it
-  auto savePos = fileStream.tellp();
+  /*auto savePos = fileStream.tellp();
 
   fileStream.seekp(groupOffsetsStart);
   fileStream.write((const char*) &groupOffsets[0],
-                   sizeof(uint64_t*)*groupOffsets.size());
+                   sizeof(uint32_t*)*groupOffsets.size());
 
   // seek back where we were
-  fileStream.seekp(savePos);
+  fileStream.seekp(savePos);*/
 
   return locationsSectionStart - reg.moduleSectionStart;
 }
@@ -606,13 +614,12 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   ser.writeVUint(entryLoc.lastColumn());
 
   // compute additional locations
-  std::vector<std::pair<int, Location>> additionalLocations;
-  int additionalLocationTag = 0;
+  using LocationMapTag = uast::BuilderResult::LocationMapTag;
+  std::vector<std::pair<LocationMapTag, Location>> additionalLocations;
   #define LOCATION_MAP(ast__, location__) \
-    additionalLocationTag++; \
     if (auto x = ast->to##ast__()) { \
       additionalLocations.emplace_back( \
-          additionalLocationTag, \
+          uast::BuilderResult::LocationMapTag::location__, \
           parsing::locate##location__##WithAst(context, x)); \
     }
   #include "chpl/uast/all-location-maps.h"
@@ -621,11 +628,11 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   // write additional locations
   ser.writeVUint(additionalLocations.size());
   for (const auto& pair : additionalLocations) {
-    int tag = pair.first;
+    LocationMapTag tag = pair.first;
     const Location& otherLoc = pair.second;
     // store the location tag
     // (just the 1-based index into LOCATION_MAP entries)
-    ser.writeVInt(tag);
+    ser.writeVInt((int)tag);
     // store first line
     int otherFirstLineDiff = otherLoc.firstLine() - entryLoc.firstLine();
     ser.writeVInt(otherFirstLineDiff);
