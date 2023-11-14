@@ -468,7 +468,7 @@ module ChapelArray {
     }
   }
 
-  proc chpl__distributed(type dist, dom: domain(?), defaultConst: bool) {
+  proc chpl__distributed(type dist, dom: domain(?), definedConst: bool) {
     // TODO: What should happen to definedConst here?
     return dist.createDomain(dom);
   }
