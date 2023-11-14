@@ -992,6 +992,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_UNKNOWN:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
+    case PRIM_CONST_ARG_HASH:
+    case PRIM_CHECK_CONST_ARG_HASH:
       CHPL_UNIMPL("misc primitives");
 
     // no default to get a warning when new primitives are added

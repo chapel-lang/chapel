@@ -1273,6 +1273,9 @@ initPrimitive() {
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 
   prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+
+  prim_def(PRIM_CONST_ARG_HASH, "hash const arguments", returnInfoUInt64, true);
+  prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
