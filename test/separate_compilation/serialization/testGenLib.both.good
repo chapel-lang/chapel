@@ -68,6 +68,7 @@
 8 { fileTextQuery ("$CHPL_HOME/modules/standard/ChplConfig.chpl") 
 7 { fileTextQuery ("$CHPL_HOME/modules/standard/CommDiagnostics.chpl") 
 8 { fileTextQuery ("$CHPL_HOME/modules/standard/OS.chpl") 
+7 { fileTextQuery ("$CHPL_HOME/modules/standard/WeakPointer.chpl") 
 7 { fileTextQuery ("$CHPL_HOME/modules/standard/Reflection.chpl") 
 7 { fileTextQuery ("$CHPL_HOME/modules/dists/DSIUtil.chpl") 
 7 { fileTextQuery ("$CHPL_HOME/modules/standard/AutoMath.chpl") 
