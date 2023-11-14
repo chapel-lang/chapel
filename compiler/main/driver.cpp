@@ -1937,7 +1937,7 @@ static void checkCompilerDriverFlags() {
       USR_WARN(
           "Driver debug phase has no effect for monolithic compilation");
     }
-    if (!(fRungdb || fRunlldb)) {
+    if (!(fRungdb || fRunlldb) && !driverInSubInvocation) {
       USR_WARN(
           "Driver debug phase has no effect when not running with debugger");
     }
