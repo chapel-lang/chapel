@@ -117,15 +117,34 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
 
 template <typename Tuple, size_t ... Indices>
 static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequence<Indices...>) {
+  // std::index_sequence is an empty object that only serves to contain a list
+  // of size_ts in a parameter back. By writing template functions with
+  // template <size_t ... Indices>, and accepting a std::index_sequence argument,
+  // we are able to get a compile-time handle on a variadic list of indices --
+  // in this case, a variadic list of tuple indices. That's what this
+  // function does.
+  //
+  // From there, we can use variadic template expansion to print the TypeString
+  // corresponding to each element / index of the tuple. If we just wanted to
+  // print the TypeStrings without spaces or punctuation, we could have used
+  // (<<) with a fold expression[1]. However, we want to print a comma and
+  // more, so it's more convenient to use a wrapper function printArg to handle
+  // the formatting.
+  //
+  // [1]: https://en.cppreference.com/w/cpp/language/fold
+
   int counter = 0;
   auto printArg = [&](const char* arg) {
     ss << ", arg" << counter++ << ": " << arg;
   };
 
-  int dummy[] = { (printArg(std::tuple_element<Indices, Tuple>::type::TypeString), 0)...};
-  (void) dummy;
+  (printArg(std::tuple_element<Indices, Tuple>::type::TypeString), ...);
 }
 
+
+/** Same as the table in AstTag.cpp, except this one doesn't print
+    the START_ and END_ prefixes for tags. This way, we can get user-readable
+    names for abstract base classes. */
 static const char* tagToUserFacingStringTable[asttags::NUM_AST_TAGS] = {
 // define tag to string conversion
 #define AST_NODE(NAME) #NAME,
@@ -149,6 +168,14 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
 
   ss << "class AstNode:" << std::endl;
   ss << "    pass" << std::endl << std::endl;
+
+  // Here, use X-macros with the method-tables.h header file to generate
+  // printing code for each AST node class. This uses the helper function
+  // printTypedPythonFunctionArgs (explained in its body) for the arguments.
+  //
+  // We get a tuple of type information structs from the PythonFnHelper template
+  // and each method's TYPEFN (a C++ type in the form R(Args...)). The documentation
+  // for PythonFnHelper has some more information on this.
 
   #define CLASS_BEGIN(NODE) \
     ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
