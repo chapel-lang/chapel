@@ -253,12 +253,54 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
+static void warnForConstIntent(ArgSymbol* arg) {
+  // TODO: setlineno?
+  // TODO: wrap in compiler flag
+  FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+  // TODO: optimize when type would use CONST_IN instead of CONST_REF
+
+  // Hash the argument at the start of the function
+  CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
+
+  VarSymbol* startHash = new VarSymbol("chpl_startHash",
+                                       dtUInt[INT_SIZE_DEFAULT]);
+  DefExpr* startDef = new DefExpr(startHash);
+
+  CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
+                                      getStartHash);
+
+  fn->insertAtHead(outerStart);
+  fn->insertAtHead(startDef);
+
+  // TODO: defer block for the rest of this?
+
+  // Hash the argument at the end of the function
+  CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
+
+  VarSymbol* endHash = new VarSymbol("chpl_endHash", dtUInt[INT_SIZE_DEFAULT]);
+  DefExpr* endDef = new DefExpr(endHash);
+
+  CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
+                                    getEndHash);
+
+  fn->insertAtTail(endDef);
+  fn->insertAtTail(outerEnd);
+
+  // Ensure the two hashes match.  If not, will generate a runtime error
+  CallExpr* checkHash = new CallExpr(PRIM_CHECK_CONST_ARG_HASH,
+                                     new SymExpr(startHash),
+                                     new SymExpr(endHash),
+                                     new_CStringSymbol(arg->name));
+  fn->insertAtTail(checkHash);
+}
+
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
 
   if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_BLANK)
     return blankIntentForThisArg(arg->type);
+  // TODO: warn for const this args too?
   else if (arg->hasFlag(FLAG_ARG_THIS) && arg->intent == INTENT_CONST)
     return constIntentForThisArg(arg->type);
   else if (fn->hasFlag(FLAG_EXTERN) && arg->intent == INTENT_BLANK)
@@ -272,8 +314,12 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     // to correctly mark const / not const / maybe const.
     return INTENT_REF;
 
-  else
+  else {
+    if (arg->intent == INTENT_CONST) {
+      warnForConstIntent(arg);
+    }
     return concreteIntent(arg->intent, arg->type);
+  }
 
 }
 
