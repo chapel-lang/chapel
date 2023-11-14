@@ -2422,7 +2422,7 @@ int main(int argc, char* argv[]) {
 
   if (!fDriverDoMonolithic && !driverInSubInvocation) {
     // Begin reporting driver init process timing
-    PhaseTracker::ReportText(
+    Phase::ReportText(
         "\n\nTiming for driver mode overhead\n--------------\n");
     tracker.ReportPass();
   }

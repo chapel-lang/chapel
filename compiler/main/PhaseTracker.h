@@ -97,8 +97,6 @@ public:
 
   void                 ReportRollup()                                const;
 
-  static void          ReportText(const char* text);
-
 private:
   void                 PassesCollect(std::vector<Pass>& passes) const;
 
@@ -109,6 +107,66 @@ private:
   Timer                mTimer;
   int                  mPhaseId;
   std::vector<Phase*>  mPhases;
+};
+
+// Used to collect the times as the program runs
+class Phase
+{
+public:
+                           Phase(const char*            name,
+                                 int                    passId,
+                                 PhaseTracker::SubPhase subPhase,
+                                 unsigned long          startTime);
+                          ~Phase();
+
+  bool                     IsStartOfPass()                            const;
+
+  void                     ReportPass (unsigned long now)   const;
+  static void              ReportTotal(unsigned long totalTime);
+  static void              ReportPassGroup(const char* text,
+                                           unsigned long totalTime);
+
+  static void              ReportTime(const char* name, double secs);
+  static void              ReportText(const char* text);
+
+  char*                    mName;       // Only set for kPrimary
+  int                      mPassId;
+  PhaseTracker::SubPhase   mSubPhase;
+  unsigned long            mStartTime;  // Elapsed time from main() usecs
+
+private:
+  Phase();
+};
+
+// Group the phases in to passes and report on passes
+class Pass
+{
+public:
+                 Pass();
+                ~Pass();
+
+  static void    Header(FILE* fp);
+  static void    Footer(FILE*         fp,
+                        unsigned long mainTime,
+                        unsigned long checkTime,
+                        unsigned long cleanTime,
+                        unsigned long totalTime);
+
+  bool           CompareByTime(Pass const& ref)      const;
+
+  void           Reset();
+  unsigned long  TotalTime()                         const;
+
+  void           Print(FILE*         fp,
+                       unsigned long accumTime,
+                       unsigned long totalTime)      const;
+
+  char*          mName;
+  int            mPassId;
+  int            mIndex;
+  unsigned long  mPrimary;          // usecs()
+  unsigned long  mVerify;           // usecs()
+  unsigned long  mCleanAst;         // usecs()
 };
 
 #endif
