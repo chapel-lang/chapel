@@ -6,6 +6,9 @@ qbytes_iobuf_size = 1024:c_size_t;
 extern var qio_write_unbuffered_threshold:c_ssize_t;
 qio_write_unbuffered_threshold = 2048:c_ssize_t;
 
+extern var qio_read_unbuffered_threshold:c_ssize_t;
+qio_read_unbuffered_threshold = 2048:c_ssize_t;
+
 config const maxBufSize = 16384;
 
 var bufSize = 128,
