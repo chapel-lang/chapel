@@ -75,6 +75,12 @@ frontend: FORCE
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE) frontend
 
+frontend-shared: FORCE
+	@echo "Making the frontend compiler library (always shared)..."
+	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	@cd compiler && $(MAKE) frontend-shared
+
 compiler: FORCE
 	@echo "Making the compiler..."
 	@cd third-party && $(MAKE) llvm
@@ -116,7 +122,7 @@ third-party-c2chapel-venv: FORCE
 	cd third-party && $(MAKE) c2chapel-venv; \
 	fi
 
-third-party-chapel-py-venv: frontend FORCE
+third-party-chapel-py-venv: frontend-shared FORCE
 	cd third-party && $(MAKE) chapel-py-venv;
 
 test-venv: third-party-test-venv
