@@ -850,6 +850,83 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   return QUERY_END(result);
 }
 
+static bool helpComputeCompilerGeneratedReturnType(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   QualifiedType& result,
+                                                   const UntypedFnSignature* untyped) {
+  if (untyped->name() == USTR("init") ||
+      untyped->name() == USTR("init=") ||
+      untyped->name() == USTR("deinit") ||
+      untyped->name() == USTR("=")) {
+      result = QualifiedType(QualifiedType::CONST_VAR,
+                             VoidType::get(context));
+      return true;
+  } else if (untyped->name() == USTR("==")) {
+      result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
+      return true;
+  } else if (untyped->idIsField() && untyped->isMethod()) {
+      // method accessor - compute the type of the field
+      QualifiedType ft = computeTypeOfField(context,
+                                            sig->formalType(0).type(),
+                                            untyped->id());
+      if (ft.isType() || ft.isParam()) {
+        // return the type as-is (preserving param/type-ness)
+        result = ft;
+      } else if (ft.isConst()) {
+        // return a const ref
+        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
+      } else {
+        // return a ref
+        result = QualifiedType(QualifiedType::REF, ft.type());
+      }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
+      auto dt = sig->formalType(0).type()->toDomainType();
+
+      if (untyped->name() == "idxType") {
+        result = dt->idxType();
+      } else if (untyped->name() == "rank") {
+        // Can't use `RankType::rank` because `D.rank` is defined for associative
+        // domains, even though they don't have a matching substitution.
+        result = QualifiedType(QualifiedType::PARAM,
+                               IntType::get(context, 64),
+                               IntParam::get(context, dt->rankInt()));
+      } else if (untyped->name() == "stridable") {
+        result = dt->stridable();
+      } else if (untyped->name() == "parSafe") {
+        result = dt->parSafe();
+      } else if (untyped->name() == "isRectangular") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
+        auto type = BoolType::get(context);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else if (untyped->name() == "isAssociative") {
+        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
+        auto type = BoolType::get(context);
+        result = QualifiedType(QualifiedType::PARAM, type, val);
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
+        return true;
+      }
+      return true;
+    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
+      auto at = sig->formalType(0).type()->toArrayType();
+
+      if (untyped->name() == "domain") {
+        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
+      } else if (untyped->name() == "eltType") {
+        result = at->eltType();
+      } else {
+        CHPL_ASSERT(false && "unhandled compiler-generated array method");
+      }
+
+      return true;
+    } else {
+      CHPL_ASSERT(false && "unhandled compiler-generated record method");
+      return true;
+    }
+}
+
 // returns 'true' if it was a case handled here & sets 'result' in that case
 // returns 'false' if it needs to be computed with a ResolvedVisitor traversal
 static bool helpComputeReturnType(Context* context,
@@ -858,6 +935,10 @@ static bool helpComputeReturnType(Context* context,
                                   QualifiedType& result) {
   const UntypedFnSignature* untyped = sig->untyped();
 
+  // TODO: Optimize the order of this case and the isCompilerGenerated case
+  // such that we don't worry about instantiating the signature if we it's
+  // compiler generated and one of the ops we know the return type for, e.g.
+  // `==`, `init`, `init=`, `deinit`, and `=`.
   if (untyped->idIsFunction() && sig->needsInstantiation()) {
     // if it needs instantiation, we don't know the return type yet.
     result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
@@ -917,72 +998,8 @@ static bool helpComputeReturnType(Context* context,
   // if method call and the receiver points to a composite type definition,
   // then it's some sort of compiler-generated method
   } else if (untyped->isCompilerGenerated()) {
-    if (untyped->name() == USTR("init") ||
-        untyped->name() == USTR("init=") ||
-        untyped->name() == USTR("deinit")) {
-      result = QualifiedType(QualifiedType::CONST_VAR,
-                             VoidType::get(context));
-      return true;
-    } else if (untyped->idIsField() && untyped->isMethod()) {
-      // method accessor - compute the type of the field
-      QualifiedType ft = computeTypeOfField(context,
-                                            sig->formalType(0).type(),
-                                            untyped->id());
-      if (ft.isType() || ft.isParam()) {
-        // return the type as-is (preserving param/type-ness)
-        result = ft;
-      } else if (ft.isConst()) {
-        // return a const ref
-        result = QualifiedType(QualifiedType::CONST_REF, ft.type());
-      } else {
-        // return a ref
-        result = QualifiedType(QualifiedType::REF, ft.type());
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isDomainType()) {
-      auto dt = sig->formalType(0).type()->toDomainType();
-
-      if (untyped->name() == "idxType") {
-        result = dt->idxType();
-      } else if (untyped->name() == "rank") {
-        // Can't use `RankType::rank` because `D.rank` is defined for associative
-        // domains, even though they don't have a matching substitution.
-        result = QualifiedType(QualifiedType::PARAM,
-                               IntType::get(context, 64),
-                               IntParam::get(context, dt->rankInt()));
-      } else if (untyped->name() == "stridable") {
-        result = dt->stridable();
-      } else if (untyped->name() == "parSafe") {
-        result = dt->parSafe();
-      } else if (untyped->name() == "isRectangular") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Rectangular);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else if (untyped->name() == "isAssociative") {
-        auto val = BoolParam::get(context, dt->kind() == DomainType::Kind::Associative);
-        auto type = BoolType::get(context);
-        result = QualifiedType(QualifiedType::PARAM, type, val);
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated domain method");
-        return true;
-      }
-      return true;
-    } else if (untyped->isMethod() && sig->formalType(0).type()->isArrayType()) {
-      auto at = sig->formalType(0).type()->toArrayType();
-
-      if (untyped->name() == "domain") {
-        result = QualifiedType(QualifiedType::CONST_REF, at->domainType().type());
-      } else if (untyped->name() == "eltType") {
-        result = at->eltType();
-      } else {
-        CHPL_ASSERT(false && "unhandled compiler-generated array method");
-      }
-
-      return true;
-    } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated method");
-      return true;
-    }
+    return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
+                                                  result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");
     return true;

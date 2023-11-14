@@ -3003,8 +3003,8 @@ considerCompilerGeneratedCandidates(Context* context,
                                    const PoiScope* inPoiScope,
                                    CandidatesVec& candidates) {
 
-  // only consider compiler-generated methods, for now
-  if (!ci.isMethodCall()) return;
+  // only consider compiler-generated methods and opcalls, for now
+  if (!ci.isMethodCall() && !ci.isOpCall()) return;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
