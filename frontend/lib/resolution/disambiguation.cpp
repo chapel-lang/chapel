@@ -1028,7 +1028,40 @@ static void discardWorseArgs(const DisambiguationContext& dctx,
 static void discardWorseWhereClauses(const DisambiguationContext& dctx,
                                      const CandidatesVec& candidates,
                                      std::vector<bool>& discarded) {
-  // TODO: fill me in
+  int nWhere = 0;
+  int nNoWhere = 0;
+  for (size_t i = 0; i < candidates.size(); ++i) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    const DisambiguationCandidate* candidate = candidates[i];
+    auto whereClause = candidate->fn->whereClauseResult();
+    bool where = whereClause != TypedFnSignature::WHERE_NONE;
+
+    if (where) {
+      nWhere++;
+    } else {
+      nNoWhere++;
+    }
+  }
+
+  if (nWhere > 0 && nNoWhere > 0) {
+    for (size_t i = 0; i < candidates.size(); ++i) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      auto whereClause = candidate->fn->whereClauseResult();
+      bool where = whereClause != TypedFnSignature::WHERE_NONE;
+
+      if (!where) {
+        EXPLAIN("X: Fn %d does not have 'where' but others do\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
 }
 
 static bool isNegative(const Param* p) {
