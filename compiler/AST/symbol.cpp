@@ -545,7 +545,8 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
   // Traverse until we find an unstable parent symbol, a deprecated parent
   // symbol, a compiler generated parent symbol, or until we reach the highest
@@ -558,7 +559,8 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   }
 
   // Only generate the warning if the location with the reference is not
