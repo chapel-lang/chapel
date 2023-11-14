@@ -194,15 +194,6 @@ struct PerNodeInfo {
 #define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
-    .tp_name = #NAME, \
-    .tp_basicsize = sizeof(NAME##Object), \
-    .tp_itemsize = 0, \
-    .tp_flags = FLAGS, \
-    .tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"), \
-    .tp_methods = (PyMethodDef*) PerNodeInfo<TAG>::methods, \
-    .tp_base = parentTypeFor(TAG), \
-    .tp_init = (initproc) NAME##Object_init, \
-    .tp_new = PyType_GenericNew, \
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
@@ -215,3 +206,26 @@ struct PerNodeInfo {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
+
+#define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
+  TYPE.tp_name = #NAME; \
+  TYPE.tp_basicsize = sizeof(NAME##Object); \
+  TYPE.tp_itemsize = 0; \
+  TYPE.tp_flags = FLAGS; \
+  TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
+  TYPE.tp_methods = (PyMethodDef*) PerNodeInfo<TAG>::methods; \
+  TYPE.tp_base = parentTypeFor(TAG); \
+  TYPE.tp_init = (initproc) NAME##Object_init; \
+  TYPE.tp_new = PyType_GenericNew; \
+
+void setupPerNodeTypes() {
+#define AST_NODE(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_LEAF(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
+#define AST_BEGIN_SUBCLASSES(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
+#define AST_END_SUBCLASSES(NAME)
+#include "chpl/uast/uast-classes-list.h"
+#undef AST_NODE
+#undef AST_LEAF
+#undef AST_BEGIN_SUBCLASSES
+#undef AST_END_SUBCLASSES
+}

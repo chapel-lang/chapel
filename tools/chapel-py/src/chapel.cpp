@@ -43,6 +43,15 @@ extern "C" {
 PyMODINIT_FUNC PyInit_core() {
   PyObject* chapelModule = nullptr;
 
+  setupContextType();
+  setupErrorType();
+  setupErrorManagerType();
+  setupLocationType();
+  setupAstIterType();
+  setupAstCallIterType();
+  setupAstNodeType();
+  setupPerNodeTypes();
+
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
   if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;

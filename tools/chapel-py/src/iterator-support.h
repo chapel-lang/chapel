@@ -53,6 +53,8 @@ typedef struct {
 } AstIterObject;
 extern PyTypeObject AstIterType;
 
+void setupAstIterType();
+
 int AstIterObject_init(AstIterObject* self, PyObject* args, PyObject* kwargs);
 void AstIterObject_dealloc(AstIterObject* self);
 PyObject* AstIterObject_iter(AstIterObject *self);
@@ -68,6 +70,8 @@ typedef struct {
   PyObject* contextObject;
 } AstCallIterObject;
 extern PyTypeObject AstCallIterType;
+
+void setupAstCallIterType();
 
 int AstCallIterObject_init(AstCallIterObject* self, PyObject* args, PyObject* kwargs);
 void AstCallIterObject_dealloc(AstCallIterObject* self);

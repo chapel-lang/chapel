@@ -34,6 +34,7 @@ typedef struct {
   /* Type-specific fields go here. */
 } ContextObject;
 extern PyTypeObject ContextType;
+void setupContextType();
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
 void ContextObject_dealloc(ContextObject* self);
@@ -48,6 +49,7 @@ typedef struct {
   chpl::Location location;
 } LocationObject;
 extern PyTypeObject LocationType;
+void setupLocationType();
 
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs);
 void LocationObject_dealloc(LocationObject* self);
@@ -61,6 +63,7 @@ typedef struct {
   const chpl::uast::AstNode* astNode;
 } AstNodeObject;
 extern PyTypeObject AstNodeType;
+void setupAstNodeType();
 
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
 void AstNodeObject_dealloc(AstNodeObject* self);
@@ -97,6 +100,8 @@ PyObject* AstNodeObject_location(AstNodeObject *self);
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 #undef DECLARE_PY_OBJECT_FOR
+
+void setupPerNodeTypes();
 
 
 /**

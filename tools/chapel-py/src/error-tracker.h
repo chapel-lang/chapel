@@ -31,6 +31,8 @@ typedef struct {
 } ErrorObject;
 extern PyTypeObject ErrorType;
 
+void setupErrorType();
+
 int ErrorObject_init(ErrorObject* self, PyObject* args, PyObject* kwargs);
 void ErrorObject_dealloc(ErrorObject* self);
 PyObject* ErrorObject_location(ErrorObject* self, PyObject* args);
@@ -43,6 +45,8 @@ typedef struct {
   PyObject* contextObject;
 } ErrorManagerObject;
 extern PyTypeObject ErrorManagerType;
+
+void setupErrorManagerType();
 
 int ErrorManagerObject_init(ErrorManagerObject* self, PyObject* args, PyObject* kwargs);
 void ErrorManagerObject_dealloc(ErrorManagerObject* self);
