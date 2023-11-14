@@ -39,7 +39,7 @@ def check_pascal_case(node):
     return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
-    @driver.basic_rule(VarLikeDecl)
+    @driver.basic_rule(VarLikeDecl, default=False)
     def CamelCaseVariables(context, node):
         if node.name() == "_": return True
         return check_camel_case(node)
@@ -56,7 +56,7 @@ def register_rules(driver):
     def PascalCaseModules(context, node):
         return node.kind() == "implicit" or check_pascal_case(node)
 
-    @driver.basic_rule(Module)
+    @driver.basic_rule(Module, default=False)
     def UseExplicitModules(context, node):
         return node.kind() != "implicit"
 
@@ -73,17 +73,6 @@ def register_rules(driver):
             parent = parent.parent()
         return True
 
-    @driver.basic_rule(Record)
-    @driver.basic_rule(Class)
-    def MethodsAfterFields(context, node):
-        method_seen = False
-        for child in node:
-            if isinstance(child, VarLikeDecl) and method_seen:
-                return False
-            if isinstance(child, Function):
-                method_seen = True
-        return True
-
     @driver.basic_rule([Conditional, BoolLiteral, chapel.rest])
     def BoolLitInCondStmt(context, node):
         return False
@@ -95,7 +84,18 @@ def register_rules(driver):
             return context.is_bundled_path(path)
         return True
 
-    @driver.advanced_rule
+    @driver.basic_rule(Record)
+    @driver.basic_rule(Class)
+    def MethodsAfterFields(context, node):
+        method_seen = False
+        for child in node:
+            if isinstance(child, VarLikeDecl) and method_seen:
+                return False
+            if isinstance(child, Function):
+                method_seen = True
+        return True
+
+    @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
             if isinstance(node, MultiDecl):
@@ -156,3 +156,53 @@ def register_rules(driver):
                     if isinstance(blockchild, Comment): continue
                     prev = blockchild
                     break
+
+    @driver.advanced_rule
+    def UnusedFormal(context, root):
+        formals = dict()
+        uses = set()
+
+        for (formal, _) in chapel.each_matching(root, Formal):
+            # For now, it's harder to tell if we're ignoring 'this' formals
+            # (what about method calls with implicit receiver?). So skip
+            # 'this' formals.
+            if formal.name() == "this":
+                continue
+
+            # extern functions have no bodies that can use their formals.
+            if formal.parent().linkage() == "extern":
+                continue
+
+            formals[formal.unique_id()] = formal
+
+        for (use, _) in chapel.each_matching(root, Identifier):
+            if refersto := use.to_node():
+                uses.add(refersto.unique_id())
+
+        for unused in formals.keys() - uses:
+            yield formals[unused]
+
+    @driver.advanced_rule
+    def UnusedLoopIndex(context, root):
+        indices = dict()
+        uses = set()
+
+        def variables(node):
+            if isinstance(node, Variable):
+                yield node
+            elif isinstance(node, TupleDecl):
+                for child in node:
+                    yield from variables(child)
+
+        for (_, match) in chapel.each_matching(root, [IndexableLoop, ("?decl", Decl), chapel.rest]):
+            node = match["decl"]
+
+            for index in variables(node):
+                indices[index.unique_id()] = index
+
+        for (use, _) in chapel.each_matching(root, Identifier):
+            if refersto := use.to_node():
+                uses.add(refersto.unique_id())
+
+        for unused in indices.keys() - uses:
+            yield indices[unused]
