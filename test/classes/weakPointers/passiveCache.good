@@ -1,4 +1,5 @@
 passiveCache.chpl:4: warning: The Random module is unstable and may change in the future
+passiveCache.chpl:5: warning: The `weak` type is experimental; expect this API to change in the future
 passiveCache.chpl:61: In function 'main':
 passiveCache.chpl:72: warning: The Random module is unstable and may change in the future
 passiveCache.chpl:46: In method 'buildAndSave':
