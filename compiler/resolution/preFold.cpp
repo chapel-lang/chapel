@@ -801,29 +801,31 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->throwsError()) {
-        if (ModuleSymbol *mod = fn->getModule()) {
-          if (mod->modTag == MOD_USER) {
-            if (fn->numFormals() == 1) {
-              if (fn->instantiatedFrom == NULL && ! fn->isKnownToBeGeneric()) {
-                const char* name = astr(fn->name);
-                resolveSignature(fn);
-                TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
-                if (tagResult == TGR_TAGGING_ABORTED ||
-                    (tagResult == TGR_NEWLY_TAGGED && fn->isGeneric()))
-                  continue;
-                if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
-                                            testType,
-                                            call)) {
-                  // TODO: Replace me with a function pointer.
-                  auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
-                                              new SymExpr(fn));
-                  fn->defPoint->getStmtExpr()->insertAfter(capture);
-                  Expr* val = resolveExpr(capture);
-                  testCaptureVector.push_back(val);
-                  val->remove();
-                  testNameIndex[name] = ++totalTest;
-                }
+      // important to skip anything that has been pruned from the tree here
+      // or mod will be empty
+      if (fn->throwsError() && fn->inTree()) {
+        ModuleSymbol *mod = fn->getModule();
+        INT_ASSERT(mod);
+        if (mod->modTag == MOD_USER) {
+          if (fn->numFormals() == 1) {
+            if (fn->instantiatedFrom == NULL && ! fn->isKnownToBeGeneric()) {
+              const char* name = astr(fn->name);
+              resolveSignature(fn);
+              TagGenericResult tagResult = fn->tagIfGeneric(NULL, true);
+              if (tagResult == TGR_TAGGING_ABORTED ||
+                  (tagResult == TGR_NEWLY_TAGGED && fn->isGeneric()))
+                continue;
+              if (isSubtypeOrInstantiation(fn->getFormal(1)->type,
+                                          testType,
+                                          call)) {
+                // TODO: Replace me with a function pointer.
+                auto capture = new CallExpr(PRIM_CAPTURE_FN_TO_CLASS,
+                                            new SymExpr(fn));
+                fn->defPoint->getStmtExpr()->insertAfter(capture);
+                Expr* val = resolveExpr(capture);
+                testCaptureVector.push_back(val);
+                val->remove();
+                testNameIndex[name] = ++totalTest;
               }
             }
           }
