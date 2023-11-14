@@ -1048,11 +1048,11 @@ static bool isNegativeParamToUnsigned(const Param* actualSym,
   return false;
 }
 
-static bool isMatchingImagComplex(Type* actualVt, Type* formalVt) {
-  if(auto fct = formalVt->toComplexType()) {
-    if (auto ait = actualVt->toImagType()) {
+static bool isMatchingImagComplex(Type* actualType, Type* formalType) {
+  if (auto fct = formalType->toComplexType()) {
+    if (auto ait = actualType->toImagType()) {
       return ait->bitwidth()*2 == fct->bitwidth();
-    } else if (auto art = actualVt->toRealType()) {
+    } else if (auto art = actualType->toRealType()) {
       return art->bitwidth()*2 == fct->bitwidth();
     }
   }
@@ -1078,12 +1078,15 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     const FormalActual* fa1 = candidate->formalActualMap.byActualIdx(k);
 
     if (fa1 == nullptr) {
-      // this can happen with some operators, or can it in Dyno?
-      continue;
+      // TODO: is this possible with dyno?
+      // for now, assume it cannot happen and assert as such
+      CHPL_ASSERT(false && "Unexpected null FormalActual");
+      // this can happen with some operators in production
+      // continue;
     }
-    if (forGenericInit && k < 2) {
-      // Initializer work-around: Skip _mt/_this for generic initializers
-      continue; // doubt we still need this as it should be handled by accessor
+    if (forGenericInit && k < 1) {
+      // Initializer work-around: Skip 'this' for generic initializers
+      continue;
     }
 
     // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
@@ -1091,8 +1094,8 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       // think this is embedded in query
     // }
 
-    Type* actualVt = (Type*)fa1->actualType().type();
-    Type* formalVt = (Type*)fa1->formalType().type();
+    Type* actualType = (Type*)fa1->actualType().type();
+    Type* formalType = (Type*)fa1->formalType().type();
 
     auto canPass = CanPassResult::canPass(dctx.context,
                            fa1->actualType(),
@@ -1105,15 +1108,15 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
 
     if (canPass.passes() && canPass.promotes()) {
       // TODO: what is equivalent in Dyno?
-      // actualVt = actualVt->scalarPromotionType->getValType();
+      // actualType = actualType->scalarPromotionType->getValType();
       continue;
     }
 
-    if (isNegativeParamToUnsigned(fa1->actualType().param(), actualVt, formalVt)) {
+    if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
       anyNegParamToUnsigned = true;
     }
 
-    if (actualVt == formalVt) {
+    if (actualType == formalType) {
       // same type, nothing else to worry about here
       continue;
     }
@@ -1123,16 +1126,16 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       continue;
     }
 
-    // if (actualVt == dtNil) {
-    //   // don't worry about converting 'nil' to something else
-    //   continue;
-    // }
+    if (actualType->isNilType()) {
+      // don't worry about converting 'nil' to something else
+      continue;
+    }
 
     // Not counting real/imag/complex avoids an ambiguity with
     //  proc f(x: complex(64), y: complex(64))
     //  proc f(x: complex(128), y: complex(128))
     //  f(myInt64, myImag32)
-    if (isMatchingImagComplex(actualVt, formalVt)) {
+    if (isMatchingImagComplex(actualType, formalType)) {
       // don't worry about imag vs complex
       continue;
     }
@@ -1140,10 +1143,10 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
     // TODO: skipping for now b/c I think this is implemented in canPass
     //       otherwise need to implement something here still
     // Not counting tuple value vs referential tuple changes
-    // if (actualVt->symbol->hasFlag(FLAG_TUPLE) &&
-    //     formalVt->symbol->hasFlag(FLAG_TUPLE)) {
-    //   Type* actualNormTup = normalizeTupleTypeToValueTuple(actualVt);
-    //   Type* formalNormTup = normalizeTupleTypeToValueTuple(formalVt);
+    // if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
+    //     formalType->symbol->hasFlag(FLAG_TUPLE)) {
+    //   Type* actualNormTup = normalizeTupleTypeToValueTuple(actualType);
+    //   Type* formalNormTup = normalizeTupleTypeToValueTuple(formalType);
     //   if (actualNormTup == formalNormTup) {
     //     // it is only a change in the tuple ref-ness
     //     continue;
