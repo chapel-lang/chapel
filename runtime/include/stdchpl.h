@@ -44,6 +44,7 @@
 #include "chpl-bitops.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
+#include "chpl-const-arg-check.h"
 #include "chpldirent.h"
 #include "chplexit.h"
 #include "chpl-export-wrappers.h"
