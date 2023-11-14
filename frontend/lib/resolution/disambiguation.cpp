@@ -90,7 +90,7 @@ struct DisambiguationContext {
     // this is a workaround -- a better solution would be preferred.
     // this function seems to be created in a way that has problems with
     // the visibility logic in disambiguation.
-    if (call->name() == UniqueString::get(context, "_getIterator")) {
+    if (call->name() == "_getIterator") {
       useOldVisibility = true;
     }
   }
@@ -785,7 +785,6 @@ static bool
 isDefinedInBlock(Context* context, const Scope* scope,
                  const TypedFnSignature* fn) {
   LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
-  //TODO: should this also/only use LOOKUP_INNERMOST?
   auto decls = lookupNameInScope(context, scope,
                                  /* receiver scopes */ {},
                                  fn->untyped()->name(), onlyDecls);
