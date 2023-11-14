@@ -77,14 +77,15 @@ static const char* intentToString(IntentType intent) {
 
 static const resolution::ResolvedExpression*
 scopeResolveResultsForNode(Context* context, const AstNode* node) {
-  while (node) {
-    if (auto fn = node->toFunction()) {
-      return resolution::scopeResolveFunction(context, node->id())->resolutionById().byAstOrNull(node);
-    } else if (auto mod = node->toModule()) {
-      return resolution::scopeResolveModule(context, node->id()).byAstOrNull(node);
+  const AstNode* search = node;
+  while (search) {
+    if (auto fn = search->toFunction()) {
+      return resolution::scopeResolveFunction(context, search->id())->resolutionById().byAstOrNull(node);
+    } else if (auto mod = search->toModule()) {
+      return resolution::scopeResolveModule(context, search->id()).byAstOrNull(node);
     }
 
-    node = parsing::parentAst(context, node);
+    search = parsing::parentAst(context, search);
   }
   return nullptr;
 }
