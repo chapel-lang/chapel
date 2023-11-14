@@ -693,8 +693,8 @@ static int compareSpecificity(const DisambiguationContext& dctx,
   std::string reason;
   DisambiguationState ds;
 
-  // Initializer work-around: Skip _mt/_this for generic initializers
-  int start = (forGenericInit == false) ? 0 : 2;
+  // Initializer work-around: Skip 'this' for generic initializers
+  int start = (forGenericInit == false) ? 0 : 1;
 
   for (int k = start; k < n; k++) {
 
@@ -1375,8 +1375,7 @@ moreVisible(const DisambiguationContext& dctx,
   disambiguation state appropriately.
 
   This function implements the argument mapping comparison component of the
-  disambiguation procedure as detailed in section 13.14.3 of the Chapel
-  language specification (page 107).
+  disambiguation procedure as detailed in the language specification.
 
   actualIdx is the index within the call of the argument to be compared.
 
@@ -1415,10 +1414,6 @@ static int testArgMapping(const DisambiguationContext& dctx,
       f2Type.kind() == QualifiedType::OUT) {
     return -1;
   }
-
-  // We only want to deal with the value types here, avoiding odd overloads
-  // working (or not) due to _ref.
-  // TODO: not sure how to reproduce this code in Dyno
 
   // Additionally, ignore the difference between referential tuples
   // and value tuples.
@@ -1485,11 +1480,9 @@ static int testArgMapping(const DisambiguationContext& dctx,
     actualScalarT = computeActualScalarType(dctx.context, actualType);
   }
 
-  // TODO: for sync/single use the valType
-
   // consider promotion
   if (!formal1Promotes && formal2Promotes) {
-    reason = "no promotin vs promotes";
+    reason = "no promotion vs promotes";
     return 1;
   }
 
@@ -2098,7 +2091,8 @@ static int prefersNumericCoercion(const DisambiguationContext& dctx,
     reason = "same numeric kind";
     return 2;
   }
-// Otherwise, prefer the function with the same numeric width
+
+  // Otherwise, prefer the function with the same numeric width
   // as the actual. This rule helps this case:
   //
   //  proc f(arg: real(32))
