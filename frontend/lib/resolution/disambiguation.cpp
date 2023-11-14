@@ -1036,9 +1036,9 @@ static void discardWorseWhereClauses(const DisambiguationContext& dctx,
     }
 
     const DisambiguationCandidate* candidate = candidates[i];
-    bool where = candidate->fn->whereClauseResult() != TypedFnSignature::WHERE_NONE;
-                // TODO: is there a dyno equivalent of this flag?
-                //  !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+    auto whereClause = candidate->fn->whereClauseResult();
+    bool where = whereClause != TypedFnSignature::WHERE_NONE;
+
     if (where) {
       nWhere++;
     } else {
@@ -1053,9 +1053,9 @@ static void discardWorseWhereClauses(const DisambiguationContext& dctx,
       }
 
       const DisambiguationCandidate* candidate = candidates[i];
-      bool where = candidate->fn->whereClauseResult() != TypedFnSignature::WHERE_NONE;
-                  // TODO: is there a dyno equivalent of this flag?
-                  //  !candidate->fn->hasFlag(FLAG_COMPILER_ADDED_WHERE);
+      auto whereClause = candidate->fn->whereClauseResult();
+      bool where = whereClause != TypedFnSignature::WHERE_NONE;
+
       if (!where) {
         EXPLAIN("X: Fn %d does not have 'where' but others do\n", i);
         discarded[i] = true;
