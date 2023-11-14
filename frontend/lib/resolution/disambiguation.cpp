@@ -1031,10 +1031,237 @@ static void discardWorseWhereClauses(const DisambiguationContext& dctx,
   // TODO: fill me in
 }
 
+static bool isNegative(const Param* p) {
+  if (auto ip = p->toIntParam()) {
+    int64_t val = ip->value();
+    return val < 0;
+  }
+  return false;
+}
+
+static bool isNegativeParamToUnsigned(const Param* actualSym,
+                                      const Type* actualScalarType,
+                                      const Type* formalType) {
+  if (actualScalarType->isIntType() && formalType->isUintType()) {
+   return isNegative(actualSym);
+  }
+  return false;
+}
+
+static bool isMatchingImagComplex(Type* actualType, Type* formalType) {
+  if (auto fct = formalType->toComplexType()) {
+    if (auto ait = actualType->toImagType()) {
+      return ait->bitwidth()*2 == fct->bitwidth();
+    } else if (auto art = actualType->toRealType()) {
+      return art->bitwidth()*2 == fct->bitwidth();
+    }
+  }
+  return false;
+}
+
+static void computeConversionInfo(const DisambiguationContext& dctx,
+                                  DisambiguationCandidate* candidate) {
+  // no need to recompute it if it is already computed
+  if (candidate->nImplicitConversionsComputed) {
+    return;
+  }
+
+  bool anyNegParamToUnsigned = false;
+  int numParamNarrowing = 0;
+  int nImplicitConversions = 0;
+
+  bool forGenericInit = candidate->fn->untyped()->name()==USTR("init") ||
+                        candidate->fn->untyped()->name()==USTR("init=");
+  size_t n = (size_t)dctx.call->numActuals();
+  for (size_t k = 0; k < n; k++) {
+
+    const FormalActual* fa1 = candidate->formalActualMap.byActualIdx(k);
+
+    if (fa1 == nullptr) {
+      // TODO: is this possible with dyno?
+      // for now, assume it cannot happen and assert as such
+      CHPL_ASSERT(false && "Unexpected null FormalActual");
+      // this can happen with some operators in production
+      // continue;
+    }
+    if (forGenericInit && k < 1) {
+      // Initializer work-around: Skip 'this' for generic initializers
+      continue;
+    }
+
+    // if (fa1->formalType().kind() == uast::Qualifier::OUT) {
+      // continue; // type comes from call site so ignore it here
+      // think this is embedded in query
+    // }
+
+    Type* actualType = (Type*)fa1->actualType().type();
+    Type* formalType = (Type*)fa1->formalType().type();
+
+    auto canPass = CanPassResult::canPass(dctx.context,
+                           fa1->actualType(),
+                           fa1->formalType());
+
+    if (canPass.passes() &&
+        canPass.conversionKind() == CanPassResult::ConversionKind::PARAM_NARROWING) {
+      numParamNarrowing++;
+    }
+
+    if (canPass.passes() && canPass.promotes()) {
+      // TODO: what is equivalent in Dyno?
+      // actualType = actualType->scalarPromotionType->getValType();
+      continue;
+    }
+
+    if (isNegativeParamToUnsigned(fa1->actualType().param(), actualType, formalType)) {
+      anyNegParamToUnsigned = true;
+    }
+
+    if (actualType == formalType) {
+      // same type, nothing else to worry about here
+      continue;
+    }
+
+    if (canPass.passes() &&
+        canPass.conversionKind() == CanPassResult::ConversionKind::NONE) {
+      continue;
+    }
+
+    if (actualType->isNilType()) {
+      // don't worry about converting 'nil' to something else
+      continue;
+    }
+
+    // Not counting real/imag/complex avoids an ambiguity with
+    //  proc f(x: complex(64), y: complex(64))
+    //  proc f(x: complex(128), y: complex(128))
+    //  f(myInt64, myImag32)
+    if (isMatchingImagComplex(actualType, formalType)) {
+      // don't worry about imag vs complex
+      continue;
+    }
+
+    // TODO: skipping for now b/c I think this is implemented in canPass
+    //       otherwise need to implement something here still
+    // Not counting tuple value vs referential tuple changes
+    // if (actualType->symbol->hasFlag(FLAG_TUPLE) &&
+    //     formalType->symbol->hasFlag(FLAG_TUPLE)) {
+    //   Type* actualNormTup = normalizeTupleTypeToValueTuple(actualType);
+    //   Type* formalNormTup = normalizeTupleTypeToValueTuple(formalType);
+    //   if (actualNormTup == formalNormTup) {
+    //     // it is only a change in the tuple ref-ness
+    //     continue;
+    //   }
+    // }
+
+    nImplicitConversions++;
+  }
+
+  // save the computed details in the ResolutionCandidate
+  candidate->nImplicitConversionsComputed = true;
+  candidate->anyNegParamToUnsigned = anyNegParamToUnsigned;
+  candidate->nImplicitConversions = nImplicitConversions;
+  candidate->nParamNarrowingImplicitConversions = numParamNarrowing;
+}
+
 static void discardWorseConversions(const DisambiguationContext& dctx,
                                     const CandidatesVec& candidates,
                                     std::vector<bool>& discarded) {
-  // TODO: fill me in
+  int minImpConv = INT_MAX;
+  int maxImpConv = INT_MIN;
+
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    computeConversionInfo(dctx, candidate);
+    int impConv = candidate->nImplicitConversions;
+    if (impConv < minImpConv) {
+      minImpConv = impConv;
+    }
+    if (impConv > maxImpConv) {
+      maxImpConv = impConv;
+    }
+  }
+
+  if (minImpConv < maxImpConv) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      int impConv = candidate->nImplicitConversions;
+      if (impConv > minImpConv) {
+        EXPLAIN("X: Fn %d has more implicit conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int numWithNegParamToSigned = 0;
+  int numNoNegParamToSigned = 0;
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    computeConversionInfo(dctx, candidate);
+    if (candidate->anyNegParamToUnsigned) {
+      numWithNegParamToSigned++;
+    } else {
+      numNoNegParamToSigned++;
+    }
+  }
+
+  if (numWithNegParamToSigned > 0 && numNoNegParamToSigned > 0) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      if (candidate->anyNegParamToUnsigned) {
+        EXPLAIN("X: Fn %d has negative param to signed and others do not\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
+
+  int minNarrowing = INT_MAX;
+  int maxNarrowing = INT_MIN;
+  for (size_t i = 0; i < candidates.size(); i++) {
+    if (discarded[i]) {
+      continue;
+    }
+
+    DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
+    computeConversionInfo(dctx, candidate);
+    int narrowing = candidate->nParamNarrowingImplicitConversions;
+    if (narrowing < minNarrowing) {
+      minNarrowing = narrowing;
+    }
+    if (narrowing > maxNarrowing) {
+      maxNarrowing = narrowing;
+    }
+  }
+
+  if (minNarrowing < maxNarrowing) {
+    for (size_t i = 0; i < candidates.size(); i++) {
+      if (discarded[i]) {
+        continue;
+      }
+
+      const DisambiguationCandidate* candidate = candidates[i];
+      int narrowing = candidate->nParamNarrowingImplicitConversions;
+      if (narrowing > minNarrowing) {
+        EXPLAIN("X: Fn %d has more param narrowing conversions\n", i);
+        discarded[i] = true;
+      }
+    }
+  }
 }
 
 // If any candidate does not require promotion,
