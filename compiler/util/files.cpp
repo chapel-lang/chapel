@@ -47,6 +47,8 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <sstream>
+#include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <string>
@@ -142,11 +144,12 @@ void checkDriverTmp() {
       "attempted to save info to tmp dir before it is set up for driver use");
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+                   bool appendNewline) {
   checkDriverTmp();
 
   fileinfo* file = openTmpFile(tmpFilePath, "a");
-  fprintf(file->fptr, "%s\n", stringToSave);
+  fprintf(file->fptr, "%s%s", stringToSave, (appendNewline ? "\n" : ""));
   closefile(file);
 }
 
@@ -186,6 +189,19 @@ void restoreDriverTmp(const char* tmpFilePath,
   }
 
   closefile(tmpFile);
+}
+
+void restoreDriverTmpMultiline(
+    const char* tmpFilePath,
+    std::function<void(const char*)> restoreSavedString) {
+  std::ostringstream os;
+
+  // Just call line-by-line restore for simplicity, adding newlines back in.
+  restoreDriverTmp(tmpFilePath,
+                   [&os](const char* line) { os << line << "\n"; });
+
+  std::string restoredString = os.str();
+  restoreSavedString(restoredString.c_str());
 }
 
 void restoreLibraryAndIncludeInfo() {
