@@ -82,7 +82,12 @@ public:
   void                 Resume();
 
   void                 ReportPass  ()                                const;
-  void                 ReportTotal ()                                const;
+  // Report out total times, by pass group and total overall. If the parameter
+  // is an empty list, instead insert times into it and skip output. If it is
+  // a list with values, take these as already-recorded times and report them
+  // out. If it is nullptr, ignore it and report as normal.
+  void                 ReportTotal (std::vector<unsigned long>*
+                                             groupTimes = nullptr)   const;
 
   void                 ReportRollup()                                const;
 

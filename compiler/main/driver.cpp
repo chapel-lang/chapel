@@ -2437,9 +2437,43 @@ int main(int argc, char* argv[]) {
     tracker.ReportPass();
     tracker.ReportRollup();
 
-    // Only report totals for driver initial process, or in monolithic mode.
-    if (fDriverDoMonolithic || !driverInSubInvocation) {
+    // Report out timing totals information, with adjustments for driver mode.
+    // TODO: fix emitting totals, including backend total that spans driver phases
+    if (fDriverDoMonolithic) {
+      // Report normally in monolithic mode.
       tracker.ReportTotal();
+    } else {
+      // Save timing totals in sub-invocations, to restore and output by driver.
+
+      static const char* groupTimesFilename = "passGroupTimings.tmp";
+      std::vector<unsigned long> groupTimes;
+
+      if (driverInSubInvocation) {
+        // This is a sub-invocation, capture timing totals information for later
+        // reporting by driver init process.
+
+        // Get timing information
+        tracker.ReportTotal(&groupTimes);
+
+        // Save times to file
+        std::vector<const char*> groupTimesStrs;
+        for (const unsigned long groupTime : groupTimes) {
+          groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
+        }
+        saveDriverTmpMultiple(groupTimesFilename, groupTimesStrs);
+      } else {
+        // The driver initial process is ending, restore sub-invocation results
+        // and report out everything.
+
+        // Restore times from file
+        restoreDriverTmp(groupTimesFilename,
+                         [&groupTimes](const char* timeStr) {
+                           groupTimes.emplace_back(std::stoul(timeStr));
+                         });
+
+        // Report restored times
+        tracker.ReportTotal(&groupTimes);
+      }
     }
   }
 

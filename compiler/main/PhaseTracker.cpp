@@ -26,6 +26,8 @@
 #include <cstdlib>
 #include <cstring>
 #include <algorithm>
+#include <numeric>
+#include <type_traits>
 
 // Used to collect the times as the program runs
 class Phase
@@ -173,38 +175,77 @@ static const char* passGroups[][2] = {
   {"total time (back end)", "driverCleanup"},
 };
 
-void PhaseTracker::ReportTotal() const
+void PhaseTracker::ReportTotal(std::vector<unsigned long>* groupTimes) const
 {
-  unsigned long totalTime = mTimer.elapsedUsecs();
+  // Capture total time up to this point
+  const unsigned long measuredTotalTime = mTimer.elapsedUsecs();
+  static const size_t numMetapasses =
+      sizeof(passGroups) / sizeof(passGroups[0]);
+
+  // Were we provided previously-saved values to report out?
+  bool useSaved = groupTimes && !groupTimes->empty();
+  // Should we save values to the provided list?
+  bool saveToList = groupTimes && groupTimes->empty();
+  if (useSaved) {
+    INT_ASSERT((groupTimes->size() == numMetapasses) &&
+               "expected one saved time value per pass group to report");
+  }
 
   auto currentPass = mPhases.begin();
   unsigned long lastStart = 0;
   unsigned long passTime;
-  size_t numMetapasses = sizeof(passGroups) / sizeof(passGroups[0]);
   for (size_t i = 0; i < numMetapasses; i++) {
-    const char* groupName = passGroups[i][0];
-    const char* groupLastPhase = passGroups[i][1];
+    if (!useSaved) {
+      // No times provided, so calculate them.
 
-    currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
-      if (pass->mName == nullptr) return false;
-      return strcmp(pass->mName, groupLastPhase) == 0;
-    });
+      const char* groupLastPhase = passGroups[i][1];
+      currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
+        if (pass->mName == nullptr) return false;
+        return strcmp(pass->mName, groupLastPhase) == 0;
+      });
 
-    // No such pass, we might've exited early.
-    if (currentPass == mPhases.end()) break;
-    auto nextPass = currentPass + 1;
+      // No such pass, we might've exited early.
+      if (currentPass == mPhases.end()) break;
+      auto nextPass = currentPass + 1;
 
-    if (nextPass != mPhases.end()) {
-      passTime = (*nextPass)->mStartTime - lastStart;
-      lastStart = (*nextPass)->mStartTime;
+      if (nextPass != mPhases.end()) {
+        passTime = (*nextPass)->mStartTime - lastStart;
+        lastStart = (*nextPass)->mStartTime;
+      } else {
+        passTime = measuredTotalTime - lastStart;
+        lastStart = measuredTotalTime;
+      }
     } else {
-      passTime = totalTime - lastStart;
-      lastStart = totalTime;
+      // Just used saved time value
+
+      passTime = (*groupTimes)[i];
     }
-    Phase::ReportPassGroup(groupName, passTime);
+
+    if (saveToList) {
+      // Save time to output list
+      groupTimes->emplace_back(passTime);
+    } else {
+      // No out-paremeter to save into, report time normally
+      // (whether it was calculated or retrieved from list).
+
+      const char* groupName = passGroups[i][0];
+      Phase::ReportPassGroup(groupName, passTime);
+    }
   }
 
-  Phase::ReportTotal(totalTime);
+  // Report overall "total time" only if we aren't saving to list
+  if (!saveToList) {
+    unsigned long totalTimeToReport = measuredTotalTime;
+    if (useSaved) {
+      // Replace measured total time with sum of provided times, which should
+      // be the same besides the footprint of phase tracking.
+
+      totalTimeToReport = std::accumulate(
+          groupTimes->begin(), groupTimes->end(),
+          std::remove_pointer<decltype(groupTimes)>::type::value_type(0));
+    }
+    Phase::ReportTotal(totalTimeToReport);
+  }
 }
 
 void PhaseTracker::ReportRollup() const
