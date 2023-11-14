@@ -2890,6 +2890,7 @@ qioerr _qio_buffered_read(qio_channel_t* ch, void* ptr, ssize_t len, ssize_t* am
       }
       // Return early on an error or on EOF.
       if( err ) {
+        // do not update 'amt_read' because zero bytes were read on EOF
         return err;
       }
       ptr = qio_ptr_add(ptr, num_read);
