@@ -148,8 +148,8 @@ class BuilderResult final {
   // Returns 'true' if something was found.
   bool findContainingSymbol(ID id,
                             ID& foundSymbolId,
-                            int foundSymbolIdx,
-                            int foundModuleIdx) const;
+                            int& foundSymbolIdx,
+                            int& foundModuleIdx) const;
 
   Location computeLocationFromLibraryFile(Context* context,
                                           ID id,
@@ -219,6 +219,10 @@ class BuilderResult final {
     Location idTo##location__##Location(Context* context, ID id, UniqueString path) const;
   #include "all-location-maps.h"
   #undef LOCATION_MAP
+
+  /** Returns 'true' if this BuilderResult is using a LibraryFile and
+      the passed ID represents a symbol table symbol in the LibraryFile */
+  bool isSymbolTableSymbol(ID id) const;
 
   BuilderResult(BuilderResult&&) = default; // move-constructable
   BuilderResult(const BuilderResult&) = delete; // not copy-constructable

@@ -320,11 +320,6 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   memset(&header, 0, sizeof(header));
   header.magic = SYMBOL_TABLE_MAGIC;
   header.nEntries = reg.symbolTableVec.size();
-  if (reg.symbolTableSet.count(mod) > 0) {
-    // don't count the module itself in the count of symbols
-    // since it won't be represented in the symbol table
-    header.nEntries--;
-  }
   ser.writeData(&header, sizeof(header));
 
   // output each symbol table entry
@@ -339,10 +334,6 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   for (auto pair : symsAndNames) {
     const uast::AstNode* sym = pair.first;
     const std::string& symId = pair.second;
-
-    // no need for a symbol table entry for a module since
-    // the whole module section is for the module
-    if (sym == mod) continue;
 
     SymbolTableEntry entry;
     memset(&entry, 0, sizeof(entry));
@@ -543,7 +534,7 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   n = header.nGroups;
   for (size_t i = 0; i < n; i++) {
     /*groupOffsets[i] = */
-    writeLocationGroup(mod, ser, reg, pathToIdx);
+    writeLocationGroup(reg.symbolTableVec[i], ser, reg, pathToIdx);
   }
   // and update the last group offset with the current position
   //groupOffsets[n] = fileStream.tellp();

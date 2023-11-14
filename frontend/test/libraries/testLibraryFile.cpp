@@ -32,6 +32,53 @@ using namespace libraries;
 
 const char* output = "test.dyno";
 
+static void checkBuilderResultLocations(Context* context,
+                                        const BuilderResult& parsed,
+                                        const AstNode* parsedAst,
+                                        const BuilderResult& loaded,
+                                        const AstNode* loadedAst) {
+  // preliminary: check that the IDs match
+  ID parsedId = parsedAst->id();
+  ID loadedId = loadedAst->id();
+  assert(parsedId == loadedId);
+  ID id = parsedId;
+
+  // preliminary: check that the number of children match
+  assert(parsedAst->numChildren() == loadedAst->numChildren());
+  int numChildren = parsedAst->numChildren();
+
+  // preliminary: check that idToAst works as expected
+  printf("Checking location for ID %s\n", id.str().c_str());
+
+  assert(parsed.idToAst(id) == parsedAst);
+  assert(loaded.idToAst(id) == loadedAst);
+
+  // now check the main locations
+  auto path = UniqueString::get(context, "dummy.chpl"); // a dummy path
+  {
+    Location parsedLoc = parsed.idToLocation(context, id, path);
+    Location loadedLoc = loaded.idToLocation(context, id, path);
+    assert(parsedLoc == loadedLoc);
+  }
+
+  // check also the locations of the additional maps
+  #define LOCATION_MAP(ast__, location__) { \
+    Location parsedLoc = parsed.idTo##location__##Location(context, id, path); \
+    Location loadedLoc = loaded.idTo##location__##Location(context, id, path); \
+    assert(parsedLoc == loadedLoc); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
+  // recurse to check child nodes
+  for (int i = 0; i < numChildren; i++) {
+    checkBuilderResultLocations(context,
+                                parsed, parsedAst->child(i),
+                                loaded, loadedAst->child(i));
+  }
+}
+
+
 static void testStoreLoadAst(const char* test,
                              const char* modname,
                              const char* program) {
@@ -49,13 +96,15 @@ static void testStoreLoadAst(const char* test,
   auto modpath = UniqueString::get(context, modname);
 
   parsing::setFileText(context, path, program);
-  const parsing::ModuleVec& parsedMods = parsing::parseToplevel(context, path);
+  const BuilderResult& parsed =
+    parsing::parseFileToBuilderResult(context, path, UniqueString());
+
+  const Module* parsedMod = parsed.singleModule();
   assert(guard.realizeErrors() == 0);
-  size_t nToplevelModules = parsedMods.size();
-  assert(nToplevelModules == 1); // otherwise, need to update this test code
+  assert(parsedMod != nullptr);
 
   printf("Writing uAST:\n");
-  parsedMods[0]->dump();
+  parsedMod->dump();
 
   // Use a LibraryWriter to create a library file
   LibraryFileWriter writer(context, paths, libpath.str());
@@ -64,11 +113,17 @@ static void testStoreLoadAst(const char* test,
   // use a LibraryFile to read the serialized uAST
   const LibraryFile* lf = LibraryFile::load(context, libpath);
 
-  const Module* mod = lf->loadModuleAst(context, modpath);
-  assert(mod != nullptr && mod->isModule());
+  const Module* loadedMod = lf->loadModuleAst(context, modpath);
+  assert(loadedMod != nullptr && loadedMod->isModule());
   printf("Read uAST:\n");
-  mod->dump();
-  assert(mod->completeMatch(parsedMods[0]));
+  loadedMod->dump();
+  assert(loadedMod->completeMatch(parsedMod));
+
+  // check also getting the locations from the read ast
+  const BuilderResult& loaded = lf->loadSourceAst(context, path);
+  assert(loaded.singleModule() == loadedMod);
+
+  checkBuilderResultLocations(context, parsed, parsedMod, loaded, loadedMod);
 }
 
 static void testStrings() {

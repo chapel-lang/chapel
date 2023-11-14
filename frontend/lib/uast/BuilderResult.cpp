@@ -74,6 +74,10 @@ void computeIdMaps(
   }
 }
 
+bool BuilderResult::isSymbolTableSymbol(ID id) const {
+  return libraryFileSymbols_.count(id) > 0;
+}
+
 void BuilderResult::swap(BuilderResult& other) {
   filePath_.swap(other.filePath_);
   topLevelExpressions_.swap(other.topLevelExpressions_);
@@ -206,8 +210,8 @@ const AstNode* BuilderResult::idToAst(ID id) const {
 
 bool BuilderResult::findContainingSymbol(ID id,
                                          ID& foundSymbolId,
-                                         int foundSymbolIdx,
-                                         int foundModuleIdx) const {
+                                         int& foundSymbolIdx,
+                                         int& foundModuleIdx) const {
   ID cur = id;
   while (!cur.isEmpty()) {
     // check to see if the ID corresponds to a symbol table symbol

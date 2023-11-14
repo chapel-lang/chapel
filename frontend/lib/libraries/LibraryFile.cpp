@@ -54,6 +54,79 @@ void LibraryFileDeserializationHelper::registerAst(const uast::AstNode* ast,
 }
 
 
+void LibraryFile::LocationMaps::clear() {
+  astToLocation.clear();
+
+  #define LOCATION_MAP(ast__, location__) { \
+      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+      m.clear(); \
+    }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
+
+const LibraryFile::LocationMaps::MapType*
+LibraryFile::LocationMaps::getLocationMap(int tag) const {
+  switch (tag) {
+
+    #define LOCATION_MAP(ast__, location__) \
+      case (int) uast::BuilderResult::LocationMapTag::location__: \
+        return &CHPL_ID_LOC_MAP(ast__, location__); \
+
+    #include "chpl/uast/all-location-maps.h"
+    #undef LOCATION_MAP
+
+    default:
+      return nullptr;
+  }
+
+  return nullptr;
+}
+LibraryFile::LocationMaps::MapType*
+LibraryFile::LocationMaps::getLocationMap(int tag) {
+   return const_cast<MapType*>(
+       const_cast<const LocationMaps*>(this)->getLocationMap(tag));
+}
+
+void LibraryFile::LocationMaps::swap(LocationMaps& other) {
+  astToLocation.swap(other.astToLocation);
+
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
+    m1.swap(m2); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
+bool LibraryFile::LocationMaps::update(LocationMaps& keep,
+                                       LocationMaps& addin) {
+  bool changed = false;
+  changed |= defaultUpdate(keep.astToLocation, addin.astToLocation);
+
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
+    auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
+    changed |= defaultUpdate(m1, m2); \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+
+  return changed;
+}
+void LibraryFile::LocationMaps::mark(Context* context) const {
+  #define LOCATION_MAP(ast__, location__) { \
+    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
+    for (const auto& p : m) { \
+      context->markPointer(p.first); \
+      p.second.mark(context); \
+    } \
+  }
+  #include "chpl/uast/all-location-maps.h"
+  #undef LOCATION_MAP
+}
+
+
 LibraryFile::~LibraryFile() {
   if (mappedFile) delete mappedFile;
   if (fd >= 0) llvm::sys::fs::closeFile(fd);
@@ -130,9 +203,11 @@ bool LibraryFile::readHeaders(Context* context) {
     // Read starting just after the module header
     LibraryFileDeserializationHelper helper;
 
-    uint64_t pos = offset + sizeof(ModuleHeader);
-    uint64_t remaining = len - pos;
-    Deserializer des(context, data + pos, remaining, &helper);
+    Deserializer des(context,
+                     data + offset,
+                     data + offset + sizeof(ModuleHeader),
+                     data + len - offset,
+                     helper);
 
     std::string moduleIdStr = des.read<std::string>();
     std::string fromFilePathStr = des.read<std::string>();
@@ -174,9 +249,11 @@ bool LibraryFile::readModuleSection(Context* context,
   const ModuleHeader* modHdr = (const ModuleHeader*) (data + moduleOffset);
   // from the module header, find the longStringsTable offset
   // and the symbol table offset
+  uint64_t symbolTableRelOffset = modHdr->symbolTable;
   uint64_t symbolTableOffset = moduleOffset + modHdr->symbolTable;
   uint64_t longStringsOffset = moduleOffset + modHdr->longStringsTable;
   if (modHdr->magic != MODULE_SECTION_MAGIC ||
+      symbolTableRelOffset+sizeof(SymbolTableHeader) > modHdr->len ||
       symbolTableOffset+sizeof(SymbolTableHeader) > len ||
       longStringsOffset+sizeof(LongStringsTableHeader) > len) {
     context->error(Location(), "Invalid module section header in %s",
@@ -214,15 +291,16 @@ bool LibraryFile::readModuleSection(Context* context,
   LibraryFileDeserializationHelper helper = setupHelper(context, &mod);
 
   // also read the symbol table uast locations
-  size_t firstEntryOffset = symbolTableOffset + sizeof(SymbolTableHeader);
+  size_t firstEntryRelOffset = symbolTableRelOffset + sizeof(SymbolTableHeader);
   Deserializer des(context,
-                   data + firstEntryOffset,
-                   modHdr->len - (firstEntryOffset - moduleOffset),
-                   &helper);
+                   data + moduleOffset,
+                   data + moduleOffset + firstEntryRelOffset,
+                   data + moduleOffset + modHdr->len,
+                   helper);
   uint32_t n = symTableHeader->nEntries;
   std::string lastSymId;
   for (uint32_t i = 0; i < n; i++) {
-    uint64_t pos = firstEntryOffset + des.position() - moduleOffset;
+    uint64_t pos = des.position();
 
     // read the entry offsets
     SymbolTableEntry entry;
@@ -242,10 +320,11 @@ bool LibraryFile::readModuleSection(Context* context,
     // read the string data
     des.readData(&lastSymId[nCommonPrefix], nSuffix);
 
-    printf("Read symbol id %s (prefix %i suffix %i)\n",
+    printf("Read symbol id %s (prefix %i suffix %i) offset %i\n",
            lastSymId.c_str(),
            (int) nCommonPrefix,
-           (int) nSuffix);
+           (int) nSuffix,
+           entry.uAstEntry);
 
     // record the information
     ModuleSection::SymbolInfo info;
@@ -340,10 +419,12 @@ bool LibraryFile::readModuleAst(Context* context,
     return false;
   }
 
+  size_t pos = uAstOffset + sizeof(AstSectionHeader);
   auto des = Deserializer(context,
-                          astHdr+1, // just after the AstSectionHeader
-                          astHdr->nBytesAstEntries,
-                          &helper);
+                          data + moduleOffset,
+                          data + pos,
+                          data + pos + astHdr->nBytesAstEntries,
+                          helper);
 
   builder.addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
 
@@ -372,10 +453,13 @@ LibraryFile::loadAstQuery(Context* context,
     }
   }
 
+  uast::Builder::SymbolTableVec combined;
+
   auto builder = uast::Builder::createForLibraryFileModule(context,
                                                            f->libPath,
                                                            parentSymbolPath,
-                                                           f);
+                                                           f,
+                                                           &combined);
 
   bool ok = true;
   int moduleIdx = 0;
@@ -390,6 +474,14 @@ LibraryFile::loadAstQuery(Context* context,
       ok = f->readModuleAst(context, modInfo.moduleSectionOffset,
                             helper, *builder);
       if (!ok) break;
+      // save the symbol table from the helper into the combined map
+      for (const auto& pair: helper.astToSymIdx) {
+        uast::Builder::SymbolTableInfo info;
+        info.ast = pair.first;
+        info.moduleIndex = moduleIdx;
+        info.symbolIndex = pair.second;
+        combined.push_back(std::move(info));
+      }
     }
     moduleIdx++;
   }
@@ -539,9 +631,10 @@ bool LibraryFile::readLocationPaths(Context* context,
   // read the location group paths
   auto helper = setupHelper(context, m);
   Deserializer des(context,
-                        m->moduleSectionData + firstPathOffset,
-                        m->moduleSectionLen - firstPathOffset,
-                        &helper);
+                   m->moduleSectionData,
+                   m->moduleSectionData + firstPathOffset,
+                   m->moduleSectionData + m->moduleSectionLen,
+                   helper);
 
   uint32_t n = locHdr->nFilePaths;
   for (uint32_t i = 0; i < n; i++) {
@@ -562,7 +655,8 @@ bool LibraryFile::readLocationGroup(
                         LocationMaps& maps,
                         Deserializer& des,
                         const uast::AstNode* symbolTableSymbolAst,
-                        const std::vector<UniqueString>& paths) const {
+                        const std::vector<UniqueString>& paths,
+                        const uast::BuilderResult& br) const {
   unsigned int filePathIdx = des.readVUint();
   unsigned int startLine = des.readVInt();
 
@@ -574,84 +668,12 @@ bool LibraryFile::readLocationGroup(
   }
 
   int lastEntryLastLine = startLine;
-  readLocationEntries(context, maps, des, symbolTableSymbolAst, path,
+  readLocationEntries(context, maps, des, symbolTableSymbolAst, path, br,
                       lastEntryLastLine);
 
   return true;
 }
 
-void LibraryFile::LocationMaps::clear() {
-  astToLocation.clear();
-
-  #define LOCATION_MAP(ast__, location__) { \
-      auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-      m.clear(); \
-    }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
-}
-
-const LibraryFile::LocationMaps::MapType*
-LibraryFile::LocationMaps::getLocationMap(int tag) const {
-  switch (tag) {
-
-    #define LOCATION_MAP(ast__, location__) \
-      case (int) uast::BuilderResult::LocationMapTag::location__: \
-        return &CHPL_ID_LOC_MAP(ast__, location__); \
-
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
-
-    default:
-      return nullptr;
-  }
-
-  return nullptr;
-}
-LibraryFile::LocationMaps::MapType*
-LibraryFile::LocationMaps::getLocationMap(int tag) {
-   return const_cast<MapType*>(
-       const_cast<const LocationMaps*>(this)->getLocationMap(tag));
-}
-
-
-void LibraryFile::LocationMaps::swap(LocationMaps& other) {
-  astToLocation.swap(other.astToLocation);
-
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = CHPL_ID_LOC_MAP(ast__, location__); \
-    auto& m2 = other.CHPL_ID_LOC_MAP(ast__, location__); \
-    m1.swap(m2); \
-  }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
-}
-bool LibraryFile::LocationMaps::update(LocationMaps& keep,
-                                       LocationMaps& addin) {
-  bool changed = false;
-  changed |= defaultUpdate(keep.astToLocation, addin.astToLocation);
-
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m1 = keep.CHPL_ID_LOC_MAP(ast__, location__); \
-    auto& m2 = addin.CHPL_ID_LOC_MAP(ast__, location__); \
-    changed |= defaultUpdate(m1, m2); \
-  }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
-
-  return changed;
-}
-void LibraryFile::LocationMaps::mark(Context* context) const {
-  #define LOCATION_MAP(ast__, location__) { \
-    auto& m = CHPL_ID_LOC_MAP(ast__, location__); \
-    for (const auto& p : m) { \
-      context->markPointer(p.first); \
-      p.second.mark(context); \
-    } \
-  }
-  #include "chpl/uast/all-location-maps.h"
-  #undef LOCATION_MAP
-}
 
 bool LibraryFile::readLocationEntries(
                         Context* context,
@@ -659,6 +681,7 @@ bool LibraryFile::readLocationEntries(
                         Deserializer& des,
                         const uast::AstNode* cur,
                         UniqueString path,
+                        const uast::BuilderResult& br,
                         int& lastEntryLastLine) const {
 
   int firstLineDiff = des.readVInt();
@@ -695,12 +718,18 @@ bool LibraryFile::readLocationEntries(
   // update lastEntryLastLine
   lastEntryLastLine = lastLine;
 
-  // proceed to read the locations for the child uast nodes
+  // proceed to read the locations for the child uast nodes,
+  // but skip any child node that is represented in the symbol table
   for (auto child : cur->children()) {
-    bool ok = readLocationEntries(context, maps, des, child,
-                                  path, lastEntryLastLine);
-    if (!ok) {
-      return false;
+    if (br.isSymbolTableSymbol(child->id())) {
+      // it's in the symbol table, so will be read separately
+      // when reading a location group
+    } else {
+      bool ok = readLocationEntries(context, maps, des, child,
+                                    path, br, lastEntryLastLine);
+      if (!ok) {
+        return false;
+      }
     }
   }
 
@@ -718,8 +747,12 @@ LibraryFile::loadLocationsQuery(Context* context,
 
   LocationMaps result;
 
+
   bool ok = false;
   if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
+    UniqueString fromSourcePath = f->modules[moduleIndex].sourceFilePath;
+    const uast::BuilderResult& br = f->loadSourceAst(context, fromSourcePath);
+
     const ModuleSection* m = f->loadModuleSection(context, moduleIndex);
     std::vector<UniqueString> paths;
     if (m != nullptr) {
@@ -736,11 +769,12 @@ LibraryFile::loadLocationsQuery(Context* context,
          m->symbols[symbolTableEntryIndex].locationsOffset;
       if (locationGroupOffset < m->moduleSectionLen) {
         Deserializer des(context,
+                         m->moduleSectionData,
                          m->moduleSectionData + locationGroupOffset,
-                         m->moduleSectionLen - locationGroupOffset,
-                         &helper);
+                         m->moduleSectionData + m->moduleSectionLen,
+                         helper);
         ok = f->readLocationGroup(context, result, des,
-                                  symbolTableEntryAst, paths);
+                                  symbolTableEntryAst, paths, br);
       }
     }
   }

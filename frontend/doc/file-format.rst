@@ -142,10 +142,12 @@ Symbol Table Section
 --------------------
 
 The symbol table section has an entry for each public, top-level symbol
-contained in the module. These are sorted by symbol table ID.
+contained in the module, as well as the module itself. These are sorted
+by symbol table ID.
 
 For a symbol, the symbol table ID consists of:
 
+ * "" for the module itself
  * the name of the symbol, for anything top-level to a module
  * the regular ID minus the module name, for anything else
     - Normally, symbol IDs are stored as e.g.  'MyModule.MyClass.myMethod',

@@ -24,6 +24,7 @@
 #ifndef CHPL_FRAMEWORK_SERIALIZATION_H
 #define CHPL_FRAMEWORK_SERIALIZATION_H
 
+#include "chpl/util/assertions.h"
 #include "chpl/util/memory.h"
 
 #include <algorithm>
@@ -167,14 +168,23 @@ class Deserializer {
   int64_t readSignedVarint();
 
  public:
-  Deserializer(Context* context,
-               const void* data, size_t len,
-               libraries::LibraryFileDeserializationHelper* helper)
+  Deserializer(Context* context, const void* data, size_t len)
     : context_(context),
       start_((const unsigned char*) data),
       cur_((const unsigned char*) data),
       end_(((const unsigned char*) data) + len),
-      libraryFileHelper_(helper) {
+      libraryFileHelper_(nullptr) {
+  }
+
+  Deserializer(Context* context,
+               const void* start, const void* cur, const void* end,
+               libraries::LibraryFileDeserializationHelper& helper)
+    : context_(context),
+      start_((const unsigned char*) start),
+      cur_((const unsigned char*) cur),
+      end_((const unsigned char*) end),
+      libraryFileHelper_(&helper) {
+    CHPL_ASSERT(start_ <= cur_ && cur_ <= end_);
   }
 
   //

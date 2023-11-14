@@ -105,10 +105,12 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
     UniqueString parentSymbolPath;
 
-    auto builder = Builder::createForLibraryFileModule(context,
-                                                       libname,
-                                                       parentSymbolPath,
-                                                       /*LibraryFile*/nullptr);
+    auto builder =
+      Builder::createForLibraryFileModule(context,
+                                          libname,
+                                          parentSymbolPath,
+                                          /*LibraryFile*/nullptr,
+                                          /*SymbolTableVec*/nullptr);
 
     auto des = Deserializer(context,
                             serializedData.c_str(), serializedData.size(),

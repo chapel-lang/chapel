@@ -106,7 +106,8 @@ owned<Builder> Builder::createForTopLevelModule(Context* context,
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
   auto b = new Builder(context, uniqueFilename, startingSymbolPath,
-                       /* LibraryFile */ nullptr);
+                       /* LibraryFile */ nullptr,
+                       /* SymbolTableVec */ nullptr);
   return toOwned(b);
 }
 
@@ -115,16 +116,19 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
                                                 UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   auto b = new Builder(context, uniqueFilename, parentSymbolPath,
-                       /* LibraryFile */ nullptr);
+                       /* LibraryFile */ nullptr,
+                       /* SymbolTableVec */ nullptr);
   return toOwned(b);
 }
 
-owned<Builder>
-Builder::createForLibraryFileModule(Context* context,
-                                    UniqueString filePath,
-                                    UniqueString parentSymbolPath,
-                                    const libraries::LibraryFile* lib) {
-  auto b = new Builder(context, filePath, parentSymbolPath, lib);
+owned<Builder> Builder::createForLibraryFileModule(
+                                        Context* context,
+                                        UniqueString filePath,
+                                        UniqueString parentSymbolPath,
+                                        const libraries::LibraryFile* lib,
+                                        const SymbolTableVec* symbolTableVec) {
+  auto b = new Builder(context, filePath, parentSymbolPath,
+                       lib, symbolTableVec);
   // locations won't be noted when working with a library file
   // (since they will be stored and retrieved separately, instead)
   // so don't fail if a location was not noted.
@@ -158,6 +162,16 @@ void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
+
+  // if we have a symbolTableVec, use it to compute
+  // br.libraryFileSymbols_, now that IDs have been assigned.
+
+  if (symbolTableVec != nullptr) {
+    for (const auto& info : *symbolTableVec) {
+      br.libraryFileSymbols_[info.ast->id()] =
+        std::make_pair(info.moduleIndex, info.symbolIndex);
+    }
+  }
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them

@@ -49,6 +49,15 @@ class AstNode;
   from one file at a time.
  */
 class Builder final {
+ public:
+  struct SymbolTableInfo {
+    const AstNode* ast = nullptr;
+    int moduleIndex = 0;
+    int symbolIndex = 0;
+  };
+
+  using SymbolTableVec = std::vector<SymbolTableInfo>;
+
  private:
   // stores symbol path and repeat number (>0 for syms with same name)
   using pathVecT = std::vector<std::pair<UniqueString,int>>;
@@ -75,12 +84,16 @@ class Builder final {
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 
+  const SymbolTableVec* symbolTableVec = nullptr;
+
   Builder(Context* context, UniqueString filePath,
           UniqueString startingSymbolPath,
-          const libraries::LibraryFile* lib)
+          const libraries::LibraryFile* lib,
+          const SymbolTableVec* symbolTableVec)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib)
+      br(filePath, lib),
+      symbolTableVec(symbolTableVec)
   {
   }
 
@@ -106,11 +119,12 @@ class Builder final {
                                                 UniqueString parentSymbolPath);
 
   /** Construct a Builder for use when reading uAST from a library file. */
-  static owned<Builder>
-  createForLibraryFileModule(Context* context,
-                             UniqueString filePath,
-                             UniqueString parentSymbolPath,
-                             const libraries::LibraryFile* lib);
+  static owned<Builder> createForLibraryFileModule(
+                                          Context* context,
+                                          UniqueString filePath,
+                                          UniqueString parentSymbolPath,
+                                          const libraries::LibraryFile* lib,
+                                          const SymbolTableVec* symbolTableVec);
 
   Context* context() const { return context_; }
 

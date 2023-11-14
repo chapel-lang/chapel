@@ -126,7 +126,7 @@ class LibraryFile {
     // key: module-section-relative offset for the serialized uast for
     //      a symbol table symbol
     // value: symbol table index of that symbol
-    // This will is computed from reading the symbol table.
+    // This is computed by reading the symbol table.
     std::unordered_map<uint32_t, int> offsetToSymIdx;
 
     // To support deserializing UniqueStrings
@@ -263,7 +263,8 @@ class LibraryFile {
                     LocationMaps& maps,
                     Deserializer& des,
                     const uast::AstNode* symbolTableSymbolAst,
-                    const std::vector<UniqueString>& paths) const;
+                    const std::vector<UniqueString>& paths,
+                    const uast::BuilderResult& br) const;
 
   // populate 'map' with Locations by reading serialized Location entries.
   // 'cur' needs to be the corresponding uAST for the node whose location
@@ -275,6 +276,7 @@ class LibraryFile {
                       Deserializer& des,
                       const uast::AstNode* cur,
                       UniqueString path,
+                      const uast::BuilderResult& br,
                       int& lastEntryLastLine) const;
 
   // Compute a locations map that stores locations for uAST nodes
