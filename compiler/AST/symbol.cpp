@@ -474,7 +474,8 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
 
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
 
   // Ignore initialization of deprecated fields in initializers.
@@ -495,7 +496,8 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
          ignoreUsage != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
     ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
