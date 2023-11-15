@@ -168,7 +168,7 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 
   // Overwrite on first use, append after.
   const char* fileOpenMode = "w";
-  if (seen.emplace(pathAsAstr).second) {
+  if (!seen.emplace(pathAsAstr).second) {
     // Already seen
     fileOpenMode = "a";
   }
