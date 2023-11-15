@@ -53,6 +53,8 @@
 #include <cerrno>
 #include <string>
 #include <map>
+#include <unordered_set>
+#include <utility>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -158,8 +160,21 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 
   const char* pathAsAstr = astr(tmpFilePath);
 
+  // Driver tmp files that have been written into so far in this run.
+  // Used to make sure info remaining from previous runs (i.e., due to savec) is
+  // discarded on first write.
+  // Contents expected to be astrs so it's safe to use a set.
+  static std::unordered_set<const char*> seen;
+
+  // Overwrite on first use, append after.
+  const char* fileOpenMode = "w";
+  if (seen.emplace(pathAsAstr).second) {
+    // Already seen
+    fileOpenMode = "a";
+  }
+
   // Write into tmp file
-  fileinfo* file = openTmpFile(pathAsAstr, "a");
+  fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
   for (const auto stringToSave : stringsToSave) {
     fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
   }
