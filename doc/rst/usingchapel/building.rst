@@ -218,9 +218,9 @@ WARNINGS=0``).
 Note that these settings only affect how the ``chpl`` compiler and its
 runtime libraries are built, as well as the third-party packages that
 they rely upon.  In particular, building Chapel with ``DEBUG`` or
-``OPTIMIZE`` set will not cause invocations of the 'chpl' compiler to
-automatically generate an executable with debugging or optimizations
-on.
+``OPTIMIZE`` set will not cause invocations of the resulting ``chpl``
+compiler to automatically generate executables with debugging or
+optimizations enabled.
 
 
 ------------------------
