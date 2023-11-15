@@ -89,9 +89,8 @@ public:
   void                 ReportPassGroupTotals (std::vector<unsigned long>*
                                               groupTimes = nullptr)  const;
   // Report out total overall time for the compiler. If overheadTime is
-  // negative, it is unused, otherwise add it to the total time and note in
-  // report that it includes overhead. If positive it must fit in an unsigned
-  // long.
+  // negative, it is unused, otherwise add it to the total time.
+  // If positive it must fit in an unsigned long.
   void                 ReportOverallTotal (long long
                                            overheadTime = -1)        const;
 

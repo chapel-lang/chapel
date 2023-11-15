@@ -174,15 +174,14 @@ void PhaseTracker::ReportPassGroupTotals(
 }
 
 void PhaseTracker::ReportOverallTotal(long long overheadTime) const {
+  // Measure time so far
   unsigned long totalTime = mTimer.elapsedUsecs();
-  std::string msg = "total time";
-
+  // Add overhead if used
   if (overheadTime >= 0) {
-    totalTime += (unsigned long) overheadTime;
-    msg += " (including overhead)";
+    totalTime += overheadTime;
   }
 
-  Phase::ReportTime(msg.c_str(), totalTime / 1e6);
+  Phase::ReportTime("total time", totalTime / 1e6);
   Phase::ReportText("\n\n\n\n");
 }
 
