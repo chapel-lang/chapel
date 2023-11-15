@@ -381,11 +381,6 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     //  * write the suffix data
     ser.writeData(&symId[nCommonPrefix], nSuffix);
 
-    printf("Wrote symbol id %s (prefix %i suffix %i)\n",
-           symId.c_str(),
-           (int) nCommonPrefix,
-           (int) nSuffix);
-
     lastSymId = symId;
   }
 

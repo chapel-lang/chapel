@@ -401,12 +401,6 @@ bool LibraryFile::readModuleSection(Context* context,
     // read the string data
     des.readData(&lastSymId[nCommonPrefix], nSuffix);
 
-    printf("Read symbol id %s (prefix %i suffix %i) offset %i\n",
-           lastSymId.c_str(),
-           (int) nCommonPrefix,
-           (int) nSuffix,
-           entry.astEntry);
-
     // record the information
     ModuleSection::SymbolInfo info;
     info.symbolEntryOffset = pos;
