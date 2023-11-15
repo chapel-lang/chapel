@@ -85,13 +85,16 @@ int64_t Deserializer::readSignedVarint() {
 
 std::pair<size_t, const char*> Deserializer::getString(int id) {
   if (libraryFileHelper_ != nullptr) {
-    return libraryFileHelper_->getString(id);
+    auto ret = libraryFileHelper_->getString(id);
+    if (checkStringLength(ret.first)) {
+      return ret;
+    }
   } else if (localStringsTable_) {
     stringCacheType& table = *localStringsTable_.get();
     return table[id];
   }
 
-  return std::make_pair((size_t)0, (const char*)nullptr);
+  return std::make_pair((size_t) 0, (const char*) nullptr);
 }
 
 

@@ -63,6 +63,8 @@ class Serializer {
 public:
   // strings >= this length will go through the long string table.
   static const int LONG_STRING_SIZE = 20;
+  // serializing a string > this long will result in an error
+  static const int MAX_STRING_SIZE = 100000000;
 
   // Note: currently these char* entries are expected to support UniqueStrings,
   // which are allocated from a Context and are null-terminated.
@@ -74,6 +76,7 @@ private:
   std::ostream& os_;
   libraries::LibraryFileSerializationHelper* libraryFileHelper_ = nullptr;
   stringCacheType stringCache_;
+  bool ok_ = true;
 
   /** write a variable-byte encoded unsigned integer */
   void writeUnsignedVarint(uint64_t num);
@@ -111,21 +114,43 @@ public:
     os_.write(reinterpret_cast<const char*>(ptr), n);
   }
 
-  uint32_t cacheString(const char* str, size_t len) {
-    auto idx = stringCache_.find(str);
-    if (idx == stringCache_.end()) {
-      auto ret = longStringCounter_;
-      stringCache_.insert({str, {ret,len}});
-      longStringCounter_ += 1;
-      return ret;
+  /** Check that a string length is OK.
+      If it is, return 'true' and take no other action.
+      If it is not, record an error in this Serializer and return 'false'. */
+  bool checkStringLength(size_t len) {
+    if (len < MAX_STRING_SIZE) {
+      return true;
     } else {
-      return idx->second.first;
+      ok_ = false;
+      return false;
     }
   }
+
+
+  /** Save a string in the long string table */
+  uint32_t saveLongString(const char* str, size_t len) {
+    if (checkStringLength(len)) {
+      auto idx = stringCache_.find(str);
+      if (idx == stringCache_.end()) {
+        auto ret = longStringCounter_;
+        stringCache_.insert({str, {ret,len}});
+        longStringCounter_ += 1;
+        return ret;
+      } else {
+        return idx->second.first;
+      }
+    }
+
+    return 0; // value should not be used because we set !ok in this case
+  }
+
   uint32_t nextStringIdx() { return longStringCounter_; }
 
   void beginAst(const uast::AstNode* ast);
   void endAst(const uast::AstNode* ast);
+
+  /** Return 'false' if an error was encountered */
+  bool ok() const { return ok_ && os_.good(); }
 
   /* Write a variable-length byte-encoded 64-bit unsigned integer */
   void writeVU64(uint64_t num) {
@@ -154,6 +179,9 @@ class Deserializer {
   // UniqueStrings, which are allocated from a Context and are
   // null-terminated.
   using stringCacheType = std::vector<std::pair<size_t, const char*>>;
+  // deserializing a string > this long will result in an error
+  static const int MAX_STRING_SIZE = 100000000;
+
  private:
   Context* context_ = nullptr;
   const unsigned char* start_ = nullptr;
@@ -218,8 +246,35 @@ class Deserializer {
     return cur_ - start_;
   }
 
+  /** Check that a string length is OK (but not assuming it will be read).
+      If it is OK, return 'true' and take no other action.
+      If it is not, record an error in this Deserializer and return 'false'. */
+  bool checkStringLength(size_t len) {
+    if (len < MAX_STRING_SIZE) {
+      return true;
+    } else {
+      ok_ = false;
+      return false;
+    }
+  }
+
+  /** Check that a string length is OK & it would be valid to read
+      'len' bytes from here.
+      If it is OK, return 'true' and take no other action.
+      If it is not, record an error in this Deserializer and return 'false'. */
+  bool checkStringLengthAvailable(size_t len) {
+    if (len < MAX_STRING_SIZE && cur_ + len <= end_) {
+      return true;
+    } else {
+      ok_ = false;
+      return false;
+    }
+  }
+
+
+
   /** Return 'false' if an error was encountered */
-  bool ok() { return ok_; }
+  bool ok() const { return ok_; }
 
   void registerAst(const uast::AstNode* ast, uint64_t startOffset);
 
@@ -380,9 +435,11 @@ template<> struct deserialize<bool> {
 template<> struct serialize<std::string> {
   void operator()(Serializer& ser, const std::string& val) const {
     uint64_t len = val.size();
-    ser.writeVU64(len);
-    if (len > 0) {
-      ser.writeData(val.c_str(), len);
+    if (ser.checkStringLength(len)) {
+      ser.writeVU64(len);
+      if (len > 0) {
+        ser.writeData(val.c_str(), len);
+      }
     }
   }
 };
@@ -390,13 +447,14 @@ template<> struct serialize<std::string> {
 template<> struct deserialize<std::string> {
   std::string operator()(Deserializer& des) {
     uint64_t len = des.readVU64();
-    if (len > 0) {
-      std::string ret(len, 0);
-      des.readData(&ret[0], len);
-      return ret;
-    } else {
-      return std::string();
+    if (des.checkStringLengthAvailable(len)) {
+      if (len > 0) {
+        std::string ret(len, 0);
+        des.readData(&ret[0], len);
+        return ret;
+      }
     }
+    return std::string();
   }
 };
 

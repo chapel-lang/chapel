@@ -584,9 +584,13 @@ void AstNode::serializeChildren(Serializer& ser) const {
 
 void AstNode::deserializeChildren(Deserializer& des) {
   uint64_t len = des.readVU64();
-  children_.resize(len);
-  for (uint64_t i = 0; i < len; i++) {
-    children_[i] = deserializeWithoutIds(des);
+  // note: this check assumes 1 byte per child node, and it's
+  // true that each child node will be at least one byte.
+  if (des.checkStringLengthAvailable(len)) {
+    children_.resize(len);
+    for (uint64_t i = 0; i < len; i++) {
+      children_[i] = deserializeWithoutIds(des);
+    }
   }
 }
 
