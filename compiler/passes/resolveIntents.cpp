@@ -258,7 +258,6 @@ static void warnForConstIntent(ArgSymbol* arg) {
   SET_LINENO(arg);
   // TODO: wrap in compiler flag
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
-  // TODO: optimize when type would use CONST_IN instead of CONST_REF
 
   // Hash the argument at the start of the function
   CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
@@ -316,7 +315,11 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
 
   else {
     if (arg->intent == INTENT_CONST) {
-      warnForConstIntent(arg);
+      // No need to warn if the argument intent was going to be converted to
+      // `const in`
+      if (constIntentForType(arg->type) == INTENT_CONST_REF) {
+        warnForConstIntent(arg);
+      }
     }
     return concreteIntent(arg->intent, arg->type);
   }
