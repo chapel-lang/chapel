@@ -5713,6 +5713,9 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     // stridelevels
     GenRet stridelevels = codegenValueMaybeDeref(call->get(8));
 
+    auto lineno = call->get(9);
+    auto fnID = call->get(10);
+
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());
 
@@ -5728,8 +5731,8 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
     args.push_back(stridelevels);
     args.push_back(eltSize);
     args.push_back(genCommID(gGenInfo));
-    args.push_back(call->get(8));
-    args.push_back(call->get(9));
+    args.push_back(lineno);
+    args.push_back(fnID);
 
     codegenCallWithArgs(fn, args);
 }
