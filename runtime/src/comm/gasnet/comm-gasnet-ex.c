@@ -1068,11 +1068,8 @@ void chpl_comm_broadcast_private(int id, size_t size) {
 void chpl_comm_impl_barrier(const char *msg) {
   gex_Event_t bar = gex_Coll_BarrierNB(myteam, GEX_NO_FLAGS);
   while (gex_Event_Test(bar) != GASNET_OK) {
-    // Need to poll if polling is required and progress thread isn't running
-    // (polling thread is started late in init and stopped early in deinit)
-    if (pollingRequired && !pollingRunning) {
-      gasnet_AMPoll();
-    }
+    // gasnet_AMPoll is needed to progress the barrier subsystem
+    am_poll_try();
     chpl_task_yield();
   }
 }
