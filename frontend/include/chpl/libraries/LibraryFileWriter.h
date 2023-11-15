@@ -144,7 +144,7 @@ class LibraryFileWriter {
                         LibraryFileSerializationHelper& reg);
 
   /** Write a locations group starting with the location for 'ast'
-      and containing contained locations until reaching a node that
+      and contained locations until reaching another node that
       is in the symbol table (and so gets its own location group).
       Returns the relative offset of the locations group. */
   Region writeLocationGroup(const uast::AstNode* ast,

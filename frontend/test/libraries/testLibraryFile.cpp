@@ -33,6 +33,7 @@ using namespace libraries;
 const char* output = "test.dyno";
 
 static void checkBuilderResultLocations(Context* context,
+                                        const char* filename,
                                         const BuilderResult& parsed,
                                         const AstNode* parsedAst,
                                         const BuilderResult& loaded,
@@ -45,7 +46,6 @@ static void checkBuilderResultLocations(Context* context,
   // preliminary: check that the number of children match
   assert(parsedAst->numChildren() == loadedAst->numChildren());
 
-/*
   ID id = parsedId;
   int numChildren = parsedAst->numChildren();
 
@@ -56,7 +56,7 @@ static void checkBuilderResultLocations(Context* context,
   assert(loaded.idToAst(id) == loadedAst);
 
   // now check the main locations
-  auto path = UniqueString::get(context, "dummy.chpl"); // a dummy path
+  auto path = UniqueString::get(context, filename);
   {
     Location parsedLoc = parsed.idToLocation(context, id, path);
     Location loadedLoc = loaded.idToLocation(context, id, path);
@@ -74,11 +74,10 @@ static void checkBuilderResultLocations(Context* context,
 
   // recurse to check child nodes
   for (int i = 0; i < numChildren; i++) {
-    checkBuilderResultLocations(context,
+    checkBuilderResultLocations(context, filename,
                                 parsed, parsedAst->child(i),
                                 loaded, loadedAst->child(i));
   }
-*/
 }
 
 
@@ -126,7 +125,8 @@ static void testStoreLoadAst(const char* test,
   const BuilderResult& loaded = lf->loadSourceAst(context, path);
   assert(loaded.singleModule() == loadedMod);
 
-  checkBuilderResultLocations(context, parsed, parsedMod, loaded, loadedMod);
+  checkBuilderResultLocations(context, filename.c_str(),
+                              parsed, parsedMod, loaded, loadedMod);
 }
 
 static void testStrings() {

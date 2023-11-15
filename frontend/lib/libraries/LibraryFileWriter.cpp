@@ -555,7 +555,6 @@ Region LibraryFileWriter::writeLocations(const uast::Module* mod,
   // including the module itself
   n = header.nGroups;
   for (size_t i = 0; i < n; i++) {
-    /*groupOffsets[i] = */
     writeLocationGroup(reg.symbolTableVec[i], ser, reg, pathToIdx);
   }
   // and update the last group offset with the current position
@@ -600,12 +599,25 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   }
 
   // write the group header
+  int startingLine = startingLoc.firstLine();
   ser.writeVUint(filePathIdx);
-  ser.writeVInt(startingLoc.firstLine());
+  ser.writeVInt(startingLine);
+
+  // write the location entries
+  int lastLine = startingLine;
+  writeLocationEntries(ast, ser, reg, lastLine);
 
   uint64_t groupEnd = fileStream.tellp();
   return makeRegion(groupStart - reg.moduleSectionStart,
                     groupEnd - reg.moduleSectionStart);
+}
+
+static unsigned int negToZero(int arg) {
+  if (arg < 0) {
+    return 0;
+  }
+
+  return arg;
 }
 
 void
@@ -625,10 +637,10 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   ser.writeVInt(lastLineDiff);
 
   // first column
-  ser.writeVUint(entryLoc.firstColumn());
+  ser.writeVUint(negToZero(entryLoc.firstColumn()));
 
   // last column
-  ser.writeVUint(entryLoc.lastColumn());
+  ser.writeVUint(negToZero(entryLoc.lastColumn()));
 
   // compute additional locations
   using LocationMapTag = uast::BuilderResult::LocationMapTag;
@@ -657,9 +669,9 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
     int otherLastLineDiff = otherLoc.lastLine() - otherLoc.firstLine();
     ser.writeVInt(otherLastLineDiff);
     // store the first column
-    ser.writeVUint(otherLoc.firstColumn());
+    ser.writeVUint(negToZero(otherLoc.firstColumn()));
     // store the last column
-    ser.writeVUint(otherLoc.lastColumn());
+    ser.writeVUint(negToZero(otherLoc.lastColumn()));
   }
 
   // update lastLine

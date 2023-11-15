@@ -209,26 +209,26 @@ const AstNode* BuilderResult::idToAst(ID id) const {
 }
 
 bool BuilderResult::findContainingSymbol(ID id,
+                                         int& foundModuleIdx,
                                          ID& foundSymbolId,
-                                         int& foundSymbolIdx,
-                                         int& foundModuleIdx) const {
+                                         int& foundSymbolIdx) const {
   ID cur = id;
   while (!cur.isEmpty()) {
     // check to see if the ID corresponds to a symbol table symbol
     {
-      auto search1 = libraryFileSymbols_.find(id);
+      auto search1 = libraryFileSymbols_.find(cur);
       if (search1 != libraryFileSymbols_.end()) {
         // return the symbol ID symbol information that we found
         foundSymbolId = cur;
-        foundSymbolIdx = search1->second.first;
-        foundModuleIdx = search1->second.second;
+        foundModuleIdx = search1->second.first;
+        foundSymbolIdx = search1->second.second;
         return true;
       }
     }
 
     // If not, find the parent ID and return failure if no parent ID is here
     {
-      auto search2 = idToParentId_.find(id);
+      auto search2 = idToParentId_.find(cur);
       if (search2 != idToParentId_.end()) {
         cur = search2->second;
       } else {
@@ -250,10 +250,10 @@ Location BuilderResult::computeLocationFromLibraryFile(Context* context,
     return Location(path);
   }
 
+  int inModuleIdx = -1;
   ID inSymbolId;
   int inSymbolIdx = -1;
-  int inModuleIdx = -1;
-  bool found = findContainingSymbol(id, inSymbolId, inSymbolIdx, inModuleIdx);
+  bool found = findContainingSymbol(id, inModuleIdx, inSymbolId, inSymbolIdx);
 
   // return early if 'id' does not seem to be contained in here
   if (!found || inSymbolIdx < 0 || inModuleIdx < 0 || inSymbolId.isEmpty()) {

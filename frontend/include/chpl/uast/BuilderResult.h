@@ -147,9 +147,9 @@ class BuilderResult final {
   // containing the passed ID.
   // Returns 'true' if something was found.
   bool findContainingSymbol(ID id,
+                            int& foundModuleIdx,
                             ID& foundSymbolId,
-                            int& foundSymbolIdx,
-                            int& foundModuleIdx) const;
+                            int& foundSymbolIdx) const;
 
   Location computeLocationFromLibraryFile(Context* context,
                                           ID id,

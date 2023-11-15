@@ -300,6 +300,13 @@ class LibraryFile {
                       const uast::BuilderResult& br,
                       int& lastEntryLastLine) const;
 
+  // loads the locations, returns 'true' if it is OK
+  bool doLoadLocations(Context* context,
+                       int moduleIndex,
+                       int symbolTableEntryIndex,
+                       const uast::AstNode* symbolTableEntryAst,
+                       LocationMaps& result) const;
+
   // Compute a locations map that stores locations for uAST nodes
   // within the symbol table symbol passed.
   static const LocationMaps&

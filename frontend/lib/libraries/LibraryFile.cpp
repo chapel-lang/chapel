@@ -69,6 +69,9 @@ const LibraryFile::LocationMaps::MapType*
 LibraryFile::LocationMaps::getLocationMap(int tag) const {
   switch (tag) {
 
+    case (int) uast::BuilderResult::LocationMapTag::BaseMap:
+      return &astToLocation;
+
     #define LOCATION_MAP(ast__, location__) \
       case (int) uast::BuilderResult::LocationMapTag::location__: \
         return &CHPL_ID_LOC_MAP(ast__, location__); \
@@ -747,6 +750,13 @@ bool LibraryFile::readLocationGroup(
                              lastEntryLastLine);
 }
 
+static int zeroNegToNegOne(unsigned int arg) {
+  if (arg <= 0) {
+    return -1;
+  }
+
+  return arg;
+}
 
 bool LibraryFile::readLocationEntries(
                         Context* context,
@@ -758,14 +768,13 @@ bool LibraryFile::readLocationEntries(
                         int& lastEntryLastLine) const {
 
   int firstLineDiff = des.readVInt();
-  int firstLine = lastEntryLastLine + firstLineDiff;
+  int firstLine = zeroNegToNegOne(lastEntryLastLine + firstLineDiff);
 
   int lastLineDiff = des.readVInt();
-  int lastLine = firstLine + lastLineDiff;
+  int lastLine = zeroNegToNegOne(firstLine + lastLineDiff);
 
-  unsigned int firstCol = des.readVUint();
-  unsigned int lastCol = des.readVUint();
-
+  int firstCol = zeroNegToNegOne(des.readVUint());
+  int lastCol = zeroNegToNegOne(des.readVUint());
 
   maps.astToLocation[cur] = Location(path, firstLine, firstCol,
                                      lastLine, lastCol);
@@ -777,11 +786,11 @@ bool LibraryFile::readLocationEntries(
     std::unordered_map<const uast::AstNode*, Location>* aMap =
       maps.getLocationMap(tag);
     int otherFirstLineDiff = des.readVInt();
-    int otherFirstLine = firstLine + otherFirstLineDiff;
+    int otherFirstLine = zeroNegToNegOne(firstLine + otherFirstLineDiff);
     int otherLastLineDiff = des.readVInt();
-    int otherLastLine = otherFirstLine + otherLastLineDiff;
-    unsigned int otherFirstCol = des.readVUint();
-    unsigned int otherLastCol = des.readVUint();
+    int otherLastLine = zeroNegToNegOne(otherFirstLine + otherLastLineDiff);
+    int otherFirstCol = zeroNegToNegOne(des.readVUint());
+    int otherLastCol = zeroNegToNegOne(des.readVUint());
     if (aMap) {
       (*aMap)[cur] = Location(path, otherFirstLine, otherFirstCol,
                               otherLastLine, otherLastCol);
@@ -813,6 +822,63 @@ bool LibraryFile::readLocationEntries(
   return true;
 }
 
+bool LibraryFile::doLoadLocations(Context* context,
+                                  int moduleIndex,
+                                  int symbolTableEntryIndex,
+                                  const uast::AstNode* symbolTableEntryAst,
+                                  LocationMaps& result) const {
+  if (moduleIndex < 0 || (size_t) moduleIndex >= modules.size()) {
+    invalidFileError(context);
+    return false;
+  }
+
+  UniqueString fromSourcePath = modules[moduleIndex].sourceFilePath;
+  const uast::BuilderResult& br = loadSourceAst(context, fromSourcePath);
+  const ModuleSection* m = loadModuleSection(context, moduleIndex);
+  if (m == nullptr) {
+    return false;
+  }
+
+  if (symbolTableEntryIndex < 0 ||
+      (size_t) symbolTableEntryIndex >= m->symbols.size()) {
+    invalidFileError(context);
+    return false;
+  }
+
+  std::vector<UniqueString> paths;
+  bool ok = readLocationPaths(context, paths, m);
+  if (!ok) {
+    return false;
+  }
+
+  size_t locationGroupOffset = m->symbols[symbolTableEntryIndex].locationOffset;
+  if (locationGroupOffset >= m->locationSectionLen) {
+    invalidFileError(context);
+    return false;
+  }
+
+  auto helper = setupHelper(context, m);
+
+  Deserializer des(context,
+                   m->locationSectionData,
+                   m->locationSectionData + locationGroupOffset,
+                   m->locationSectionData + m->locationSectionLen,
+                   helper);
+  ok = readLocationGroup(context, result, des, symbolTableEntryAst, paths, br);
+  if (!ok) {
+    return false;
+  }
+
+  // also check for any error during deserialization
+  if (!des.ok()) {
+    invalidFileError(context);
+    return false;
+  }
+
+  return true;
+}
+
+
 const LibraryFile::LocationMaps&
 LibraryFile::loadLocationsQuery(Context* context,
                                 const LibraryFile* f,
@@ -824,42 +890,9 @@ LibraryFile::loadLocationsQuery(Context* context,
 
   LocationMaps result;
 
-
-  bool ok = false;
-  if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
-    UniqueString fromSourcePath = f->modules[moduleIndex].sourceFilePath;
-    const uast::BuilderResult& br = f->loadSourceAst(context, fromSourcePath);
-
-    const ModuleSection* m = f->loadModuleSection(context, moduleIndex);
-    std::vector<UniqueString> paths;
-    if (m != nullptr) {
-      ok = f->readLocationPaths(context, paths, m);
-    }
-
-    if (ok &&
-        0 <= symbolTableEntryIndex &&
-        (size_t) symbolTableEntryIndex < m->symbols.size()) {
-      auto helper = f->setupHelper(context, m);
-
-      ok = false;
-      size_t locationGroupOffset =
-         m->symbols[symbolTableEntryIndex].locationOffset;
-      if (locationGroupOffset < m->locationSectionLen) {
-        Deserializer des(context,
-                         m->locationSectionData,
-                         m->locationSectionData + locationGroupOffset,
-                         m->locationSectionData + m->locationSectionLen,
-                         helper);
-        ok = f->readLocationGroup(context, result, des,
-                                  symbolTableEntryAst, paths, br);
-        if (!des.ok()) {
-          f->invalidFileError(context);
-          ok = false;
-        }
-      }
-    }
-  }
-
+  bool ok = f->doLoadLocations(context, moduleIndex,
+                               symbolTableEntryIndex, symbolTableEntryAst,
+                               result);
   if (!ok) {
     // do not return a partial result on failure
     result.clear();
