@@ -118,35 +118,32 @@ void PhaseTracker::ReportPassGroupTotals(
     std::vector<unsigned long>* groupTimes) const {
   // Capture total time up to this point
   const unsigned long totalTime = mTimer.elapsedUsecs();
-  static const size_t numMetapasses =
-      sizeof(passGroups) / sizeof(passGroups[0]);
 
   // Were we provided previously-saved values to report out?
   bool useSaved = groupTimes && !groupTimes->empty();
   // Should we save values to the provided list?
   bool saveToList = groupTimes && groupTimes->empty();
-  if (useSaved) {
-    INT_ASSERT((groupTimes->size() == numMetapasses) &&
-               "expected one saved time value per pass group to report");
-  }
 
+  static const size_t numMetapasses =
+      sizeof(passGroups) / sizeof(passGroups[0]);
   unsigned long lastStart = 0;
   unsigned long passTime;
   for (size_t i = 0; i < numMetapasses; i++) {
-    if (!useSaved) {
-      // No times provided, so calculate them.
+    const char* groupLastPhase = passGroups[i][1];
+    auto currentPass = mPhases.begin();
+    currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
+      if (pass->mName == nullptr) return false;
+      return strcmp(pass->mName, groupLastPhase) == 0;
+    });
 
-      const char* groupLastPhase = passGroups[i][1];
-      auto currentPass = mPhases.begin();
-      currentPass = std::find_if(currentPass, mPhases.end(), [&](auto pass) {
-        if (pass->mName == nullptr) return false;
-        return strcmp(pass->mName, groupLastPhase) == 0;
-      });
+    // No such pass, we might've exited early, or begun late from driver mode.
+    if (currentPass == mPhases.end()) continue;
 
-      // No such pass, we might've exited early.
-      if (currentPass == mPhases.end()) continue;
+    // Get time for pass via saved result if present, or calculate otherwise.
+    if (useSaved) {
+      passTime = (*groupTimes)[i];
+    } else {
       auto nextPass = currentPass + 1;
-
       if (nextPass != mPhases.end()) {
         passTime = (*nextPass)->mStartTime - lastStart;
         lastStart = (*nextPass)->mStartTime;
@@ -154,14 +151,10 @@ void PhaseTracker::ReportPassGroupTotals(
         passTime = totalTime - lastStart;
         lastStart = totalTime;
       }
-    } else {
-      // Just used saved time value
-
-      passTime = (*groupTimes)[i];
     }
 
+    // Save or report out result
     if (saveToList) {
-      // Save time to output list
       groupTimes->emplace_back(passTime);
     } else {
       // No out-paremeter to save into, report time normally

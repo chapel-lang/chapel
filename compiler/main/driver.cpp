@@ -805,6 +805,27 @@ static int invokeChplWithArgs(int argc, char* argv[],
 static int runDriverPhaseOne(int argc, char* argv[]);
 static int runDriverPhaseTwo(int argc, char* argv[]);
 
+// Skip phase two if the compile command does not require it, or if we are
+// running in a debugger for phase one only. By default, warn if skipping
+// for the debugger reason.
+static bool shouldSkipDriverPhaseTwo(bool warnIfSkipping = true) {
+  // Check if skipping due to only debugging phase one.
+  bool debugPhaseOneOnly =
+      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
+  if (debugPhaseOneOnly && warnIfSkipping) {
+    USR_WARN(
+        "Skipping phase two due to running only phase one "
+        "in debugger; change this with --driver-debug-phase if desired");
+  }
+
+  // Check if skipping for the above reason or any other early stop.
+  bool shouldSkipPhaseTwo =
+      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
+      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+
+  return shouldSkipPhaseTwo;
+}
+
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
 // Exits if a phase fails.
@@ -819,19 +840,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
     clean_exit(status);
   }
 
-  // Skip phase two if the compile command does not require it, or if we are
-  // running in a debugger for phase one only.
-  bool debugPhaseOneOnly =
-      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
-  if (debugPhaseOneOnly) {
-    USR_WARN(
-        "Skipping phase two due to running only phase one "
-        "in debugger; change this with --driver-debug-phase if desired");
-  }
-  bool shouldSkipPhaseTwo =
-      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
-      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
-  if (!shouldSkipPhaseTwo) {
+  if (!shouldSkipDriverPhaseTwo()) {
     // invoke phase two
     if ((status = runDriverPhaseTwo(argc, argv)) != 0) {
       clean_exit(status);
@@ -2473,15 +2482,19 @@ int main(int argc, char* argv[]) {
                          [&groupTimes](const char* timeStr) {
                            groupTimes.emplace_back(std::stoul(timeStr));
                          });
-        // We expect frontend, middle-end, and backend results from phase one,
-        // plus the other half of backend results from phase two.
-        static const size_t numPassGroups = 3;
-        INT_ASSERT(
-            groupTimes.size() == (numPassGroups + 1) &&
-            "unexpected number of saved timing results from driver phases");
-        // Combine the two halves of the backend total time into one value.
-        groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
-        groupTimes.pop_back();
+
+        // Unless stopping early, expect frontend, middle-end, and backend
+        // results from phase one, plus the other half of backend results from
+        // phase two that need to be added in.
+        if (!shouldSkipDriverPhaseTwo(/* warnIfSkipping */ false)) {
+          const size_t numPassGroups = 3;
+          INT_ASSERT(
+              groupTimes.size() == (numPassGroups + 1) &&
+              "unexpected number of saved timing results from driver phases");
+          // Combine the two halves of the backend total time into one value.
+          groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
+          groupTimes.pop_back();
+        }
 
         // Report final driver overhead timing information.
         // Done here to include the footprint of restoring sub-invocation info.
