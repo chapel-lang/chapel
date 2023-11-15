@@ -1,0 +1,7 @@
+new regex("")
+find: '0'
+y: 'new regex("")'
+x: 'new regex("")'
+'hello'
+replaced: ''
+(matched = true, byteOffset = 0, numBytes = 0)
