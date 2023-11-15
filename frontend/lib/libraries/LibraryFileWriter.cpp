@@ -35,25 +35,13 @@ void LibraryFileSerializationHelper::beginAst(const uast::AstNode* ast,
                                               std::ostream& os) {
   if (symbolTableSet.count(ast) != 0) {
     uint64_t pos = os.tellp();
-    astOffsets[ast] = (uint32_t) (pos - moduleSectionStart);
+    astOffsets[ast] = (uint32_t) (pos - astSectionStartFileOffset);
   }
 }
 
 void LibraryFileSerializationHelper::endAst(const uast::AstNode* ast,
                                             std::ostream& os) {
-  uAstCounter++;
-}
-
-void LibraryFileSerializationHelper::beginLocation(const uast::AstNode* ast,
-                                                   std::ostream& os) {
-  if (symbolTableSet.count(ast) != 0) {
-    uint64_t pos = os.tellp();
-    locOffsets[ast] = (uint32_t) (pos - moduleSectionStart);
-  }
-}
-
-void LibraryFileSerializationHelper::endLocation(const uast::AstNode* ast,
-                                                 std::ostream& os) {
+  astCounter++;
 }
 
 void
@@ -138,8 +126,8 @@ void LibraryFileWriter::padToAlign() {
   }
 }
 
-uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
-                                               UniqueString fromFilePath) {
+Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
+                                             UniqueString fromFilePath) {
   auto moduleSectionStart = fileStream.tellp();
 
   // Construct a module section header and write it
@@ -148,7 +136,8 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   header.magic = MODULE_SECTION_MAGIC;
   fileStream.write((const char*) &header, sizeof(header));
 
-  LibraryFileSerializationHelper reg(moduleSectionStart);
+  LibraryFileSerializationHelper reg;
+  reg.moduleSectionStart = moduleSectionStart;
 
   // create a serializer to write the uAST
   auto ser = Serializer(fileStream, &reg);
@@ -163,12 +152,14 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
 
   // write the various sections
   padToAlign();
-  header.uAstSection = writeAst(mod, ser, reg);
+  reg.astSectionStartFileOffset = fileStream.tellp();
+  header.astSection = writeAst(mod, ser, reg);
 
   padToAlign();
   header.longStringsTable = writeLongStrings(moduleSectionStart, ser);
 
   padToAlign();
+  reg.locationSectionStartFileOffset = fileStream.tellp();
   header.locationSection = writeLocations(mod, ser, reg);
   // note: implementation of writeLocations assumes it runs after writeAst
 
@@ -182,7 +173,7 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   auto savePos = fileStream.tellp();
 
   // store the module section length in the header
-  header.len = savePos - moduleSectionStart;
+  //header.len = savePos - moduleSectionStart;
 
   // TODO: make this into a user-facing error if this situation
   // can come up in practice.
@@ -198,7 +189,9 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
     fail("Error serializing for library file");
   }
 
-  return moduleSectionStart;
+  auto moduleSectionEnd = fileStream.tellp();
+
+  return makeRegion(moduleSectionStart, moduleSectionEnd);
 }
 
 // Helper to gather top-level symbols, but also find primary methods.
@@ -324,7 +317,7 @@ computeSymbolNames(const uast::Module* mod,
   return result;
 }
 
-uint64_t
+Region
 LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
                                     Serializer& ser,
                                     LibraryFileSerializationHelper& reg) {
@@ -357,9 +350,8 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
 
     SymbolTableEntry entry;
     memset(&entry, 0, sizeof(entry));
-    entry.uAstEntry = reg.astOffsets[sym];
+    entry.astEntry = reg.astOffsets[sym];
     entry.locationEntry = reg.locOffsets[sym];
-    entry.typeOrFnEntry = 0; // not implemented yet
 
     // write the 3 relative offsets
     ser.writeData(&entry, sizeof(entry));
@@ -397,12 +389,15 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     lastSymId = symId;
   }
 
-  return symTableStart - reg.moduleSectionStart;
+  uint64_t symTableEnd = fileStream.tellp();
+
+  return makeRegion(symTableStart - reg.moduleSectionStart,
+                    symTableEnd - reg.moduleSectionStart);
 }
 
-uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
-                                     Serializer& ser,
-                                     LibraryFileSerializationHelper& reg) {
+Region LibraryFileWriter::writeAst(const uast::Module* mod,
+                                   Serializer& ser,
+                                   LibraryFileSerializationHelper& reg) {
   uint64_t astStart = fileStream.tellp();
   AstSectionHeader header;
   memset(&header, 0, sizeof(header));
@@ -410,10 +405,9 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
   fileStream.write((const char*) &header, sizeof(header));
 
   // serialize the data
-  uint64_t serializedStart = fileStream.tellp();
   mod->serialize(ser);
-  header.nBytesAstEntries = (uint64_t)fileStream.tellp() - serializedStart;
-  header.nEntries = reg.uAstCounter;
+  header.nEntries = reg.astCounter;
+  ser.checkStringLength(reg.astCounter, MAX_NUM_ASTS);
 
   // update the number serialized by rewriting the header
   auto savePos = fileStream.tellp();
@@ -424,12 +418,13 @@ uint64_t LibraryFileWriter::writeAst(const uast::Module* mod,
   // seek back where we were
   fileStream.seekp(savePos);
 
-  return astStart - reg.moduleSectionStart;
+  uint64_t astEnd = fileStream.tellp();
+  return makeRegion(astStart - reg.moduleSectionStart,
+                    astEnd - reg.moduleSectionStart);
 }
 
-uint64_t
-LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
-                                    Serializer& ser) {
+Region LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
+                                           Serializer& ser) {
   uint64_t longStringsStart = fileStream.tellp();
 
   LongStringsTableHeader header;
@@ -470,7 +465,7 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
 
     // write the offset where this string data starts
     uint64_t pos = fileStream.tellp();
-    offsets[i] = pos - moduleSectionStart;
+    offsets[i] = pos - longStringsStart;
     // if there is any string data, write it
     if (ptr != nullptr && len > 0) {
       fileStream.write(ptr, len);
@@ -489,12 +484,15 @@ LibraryFileWriter::writeLongStrings(uint64_t moduleSectionStart,
   // seek back where we were
   fileStream.seekp(savePos);
 
-  return longStringsStart - moduleSectionStart;
+  uint64_t longStringsEnd = fileStream.tellp();
+
+  return makeRegion(longStringsStart - moduleSectionStart,
+                    longStringsEnd - moduleSectionStart);
 }
 
-uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
-                                           Serializer& ser,
-                                           LibraryFileSerializationHelper& reg) {
+Region LibraryFileWriter::writeLocations(const uast::Module* mod,
+                                         Serializer& ser,
+                                         LibraryFileSerializationHelper& reg) {
   uint64_t locationsSectionStart = fileStream.tellp();
 
   LocationSectionHeader header;
@@ -506,6 +504,7 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   CHPL_ASSERT(reg.symbolTableVec.size() > 0 && reg.symbolTableVec[0] == mod);
 
   // create an error if there are too many symbols / location groups
+  ser.checkStringLength(inputFiles.size(), MAX_NUM_FILES);
   ser.checkStringLength(reg.symbolTableVec.size(), MAX_NUM_SYMBOLS);
 
   fileStream.write((const char*) &header, sizeof(header));
@@ -572,10 +571,12 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   // seek back where we were
   fileStream.seekp(savePos);*/
 
-  return locationsSectionStart - reg.moduleSectionStart;
+  uint64_t locationsSectionEnd = fileStream.tellp();
+  return makeRegion(locationsSectionStart - reg.moduleSectionStart,
+                    locationsSectionEnd - reg.moduleSectionStart);
 }
 
-uint64_t
+Region
 LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
                                       Serializer& ser,
                                       LibraryFileSerializationHelper& reg,
@@ -583,7 +584,7 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   uint64_t groupStart = fileStream.tellp();
 
   // update the location entry since we are creating it
-  reg.locOffsets[ast] = groupStart - reg.moduleSectionStart;
+  reg.locOffsets[ast] = groupStart - reg.locationSectionStartFileOffset;
 
   // compute the starting Location
   Location startingLoc = parsing::locateAst(context, ast);
@@ -602,7 +603,9 @@ LibraryFileWriter::writeLocationGroup(const uast::AstNode* ast,
   ser.writeVUint(filePathIdx);
   ser.writeVInt(startingLoc.firstLine());
 
-  return groupStart - reg.moduleSectionStart;
+  uint64_t groupEnd = fileStream.tellp();
+  return makeRegion(groupStart - reg.moduleSectionStart,
+                    groupEnd - reg.moduleSectionStart);
 }
 
 void
@@ -679,15 +682,18 @@ bool LibraryFileWriter::writeAllSections() {
   writeHeader();
 
   std::vector<uint64_t> moduleSectionOffsets;
+  Region moduleRegion;
 
   for (auto pair : modulesAndPaths) {
     const uast::Module* mod = pair.first;
     UniqueString fromFilePath = pair.second;
     // write the module section & update the header's table
     padToAlign();
-    uint64_t offset = writeModuleSection(mod, fromFilePath);
-    moduleSectionOffsets.push_back(offset);
+    moduleRegion = writeModuleSection(mod, fromFilePath);
+    moduleSectionOffsets.push_back(moduleRegion.start);
   }
+  // and the offset just after the last module
+  moduleSectionOffsets.push_back(moduleRegion.end);
 
   // update the module section table
   // seek just after the fixed portion of the file header

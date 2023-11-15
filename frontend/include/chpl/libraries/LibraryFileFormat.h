@@ -53,6 +53,8 @@ static const int HASH_SIZE = 256/8;
 // from using too much space if the file is invalid anyway.
 static const int MAX_NUM_MODULES = 100000000;
 static const int MAX_NUM_SYMBOLS = 100000000;
+static const int MAX_NUM_FILES = 100000000;
+static const int MAX_NUM_ASTS = 100000000;
 
 struct FileHeader {
   uint64_t magic;
@@ -63,21 +65,32 @@ struct FileHeader {
   uint32_t chplVersionUpdate;
   uint32_t nModules;
   uint8_t hash[HASH_SIZE];
-  // followed by nModules 8 bytes file offsets
+  // followed by nModules 8 bytes file offsets plus one more for
+  // just after the last module
 };
+
+struct Region {
+  uint64_t start; // start offset, maybe relative
+  uint64_t end; // end offset; so length = end-start
+};
+
+static inline Region makeRegion(uint64_t startOffset, uint64_t endOffset) {
+  Region ret;
+  ret.start = startOffset;
+  ret.end = endOffset;
+  return ret;
+}
 
 struct ModuleHeader {
   uint64_t magic;
   uint64_t flags;
-  uint64_t len;
   // the following are offsets relative to the start of the module header
-  uint64_t symbolTable;
-  uint64_t uAstSection;
-  uint64_t longStringsTable;
-  uint64_t locationSection;
-  uint64_t typesSection;
-  uint64_t functionsSection;
-  uint64_t dependenciesSection;
+  Region symbolTable;
+  Region astSection;
+  Region longStringsTable;
+  Region locationSection;
+  // TODO: add other sections
+
   // followed by a variable-byte length & string storing the module ID
 };
 
@@ -90,25 +103,24 @@ struct SymbolTableHeader {
 
 struct SymbolTableEntry {
   // relative to the start of the module header:
-  uint32_t uAstEntry;
+  uint32_t astEntry;
   uint32_t locationEntry;
-  uint32_t typeOrFnEntry;
+  // TODO: type entry / function entry.
   // followed by
-  //  * a byte storing uAst tag
+  //  * a byte storing ast tag
   //  * a variable-byte length & string storing a symbol table ID
 };
 
 struct AstSectionHeader {
   uint64_t magic;
-  uint64_t nBytesAstEntries;
   uint64_t nEntries;
-  // followed by nEntries uAstEntrys
+  // followed by nEntries astEntrys
 };
 
 struct LongStringsTableHeader {
   uint32_t magic;
   uint32_t nLongStrings;
-  // followed by module-section relative offset for each long string
+  // followed by strings-section relative offset for each long string
   // followed by an extra offset (just after the last long string)
 };
 

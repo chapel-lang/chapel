@@ -29,13 +29,12 @@ Overall Format
 --------------
 
 Overall, the file format consists of a header followed by a number of
-modules sections. In this way, the file can store information for
-different modules. The file format is designed so that libraries for
+contiguous modules sections. In this way, the file can store information
+for different modules. The file format is designed so that libraries for
 individual modules can be concatenated together (if the file header and
 file module table is adjusted appropriately). To support that, offsets
-within a module section are relative to the start of that module section.
-Each module section contains its own sections that contain details of the
-module.
+are generally relative within the section referred to. Each module
+section contains its own sections that contain details of the module.
 
 Each section in the file is padded to start at an 8 byte alignment.
 
@@ -113,25 +112,34 @@ The '.dyno' file format header consists of:
    * the hash is computed assuming that the hash is 0
  * a module section table, consisting of N entries, each consists of:
    * 8 bytes of module section offset (pointing to a module section header)
+ * 8 bytes storing the offset just after the last module
 
 Module Section Header
 ---------------------
 
 The module section header uses relative section offsets. These relative
-offsets store offsets relative to the module section header.
+offsets store offsets relative to the module section header. The 'end'
+offsets are the offset just after the section; so the length of a section
+is endOffset - startOffset.
 
 Each module section begins with a header that consists of:
 
  * 8 bytes of magic number 0x4d4dd01e5ec14d4d
  * 8 bytes of reserved space for future flags
- * 8 bytes module section length
- * 8 bytes of symbol table section relative offset
- * 8 bytes of uAST section relative offset
- * 8 bytes of long strings table section relative offset
- * 8 bytes of location section relative offset
- * 8 bytes of types section relative offset
- * 8 bytes of functions section relative offset
- * 8 bytes of dependencies section relative offset
+ * 8 bytes of symbol table section start offset
+ * 8 bytes of symbol table section end offset
+ * 8 bytes of uAST section start offset
+ * 8 bytes of uAST section end offset
+ * 8 bytes of long strings table start offset
+ * 8 bytes of long strings table end offset
+ * 8 bytes of location section start offset
+ * 8 bytes of location section end offset
+ * 8 bytes of types section start offset
+ * 8 bytes of types section end offset
+ * 8 bytes of functions section start offset
+ * 8 bytes of functions section end offset
+ * 8 bytes of dependencies section start offset
+ * 8 bytes of dependencies section end offset
  * a string storing the module symbol ID
    (e.g. "TopLevelModule" or "MyModule.SubModule")
    (note that this string does not use the long strings table)
@@ -160,9 +168,10 @@ This section consists of:
  * 4 bytes of N, the number of entries
  * 4 bytes reserved for future use
  * entries sorted by symbol table ID.  For each entry, it stores:
-   * 4 byte relative offset to the serialized uAST in the uAST section
-   * 4 byte relative offset to the location group in the Locations section
-   * 4 byte relative offset to the type/function entry, if appropriate
+   * 4 byte relative offset from the uAST section start,
+     pointing to the serialized uAST for this symbol
+   * 4 byte relative offset from the location section start,
+     pointing to the location group for this symbol
    * a byte storing flags / kind information
    * unsigned variable-byte encoded, prefix A to copy from the
      previous symbol table ID
@@ -184,7 +193,6 @@ IDs are not stored here. They are recomputed when the uAST is read.
 The uAST section consists of:
 
  * 8 bytes of magic number 0x5453411e5ec110e0
- * 8 bytes: the number of bytes of serialized uAST entries
  * 8 bytes: the total number of uAST entries
  * the contained entries, where each entry consists of:
 
@@ -236,7 +244,7 @@ The long strings table consists of the following:
      * offset 0 is unused
      * the last offset is also unused
      * so, valid long string indices are in 1 <= i < N
- * relative offsets of each string, from the start of the module section
+ * relative offsets of each string, from the start of the long strings section
    * each offset is 4 bytes
  * string data
 

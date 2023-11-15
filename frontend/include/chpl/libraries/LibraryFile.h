@@ -67,8 +67,10 @@ class LibraryFileDeserializationHelper {
   // This will be computed from reading the long strings section header.
   // A copy is stored here as a performance optimization.
   int nStrings = 0;
-  const unsigned char* moduleSectionData = nullptr;
-  size_t moduleSectionLen = 0;
+  //const unsigned char* moduleSectionData = nullptr;
+  //size_t moduleSectionLen = 0;
+  const unsigned char* stringSectionData = nullptr;
+  size_t stringSectionLen = 0;
   const uint32_t* stringOffsetsTable = nullptr;
 
   // for AstNodes in the symbol table that were deserialized
@@ -104,14 +106,14 @@ class LibraryFile {
    friend class LibraryFile;
    private:
     struct SymbolInfo {
-      // relative to the module section
+      // relative to the respective sections
       uint32_t symbolEntryOffset = 0;
-      uint32_t uastOffset = 0;
-      uint32_t locationsOffset = 0;
+      uint32_t astOffset = 0;
+      uint32_t locationOffset = 0;
       bool operator==(const SymbolInfo& other) const {
         return symbolEntryOffset == other.symbolEntryOffset &&
-               uastOffset == other.uastOffset &&
-               locationsOffset == other.locationsOffset;
+               astOffset == other.astOffset &&
+               locationOffset == other.locationOffset;
       }
       bool operator!=(const SymbolInfo& other) const {
         return !(*this == other);
@@ -123,16 +125,26 @@ class LibraryFile {
     // This will be computed from reading the symbol table.
     std::vector<SymbolInfo> symbols;
 
-    // key: module-section-relative offset for the serialized uast for
+    // key: uast-section-relative offset for the serialized uast for
     //      a symbol table symbol
     // value: symbol table index of that symbol
     // This is computed by reading the symbol table.
     std::unordered_map<uint32_t, int> offsetToSymIdx;
 
+    const unsigned char* symbolTableData = nullptr;
+    size_t symbolTableLen = 0;
+
+    const unsigned char* astSectionData = nullptr;
+    size_t astSectionLen = 0;
+
+    const unsigned char* stringSectionData = nullptr;
+    size_t stringSectionLen = 0;
+
+    const unsigned char* locationSectionData = nullptr;
+    size_t locationSectionLen = 0;
+
     // To support deserializing UniqueStrings
     int nStrings = 0;
-    const unsigned char* moduleSectionData = nullptr;
-    size_t moduleSectionLen = 0;
     const uint32_t* stringOffsetsTable = nullptr;
 
     ModuleSection() { }
@@ -140,9 +152,15 @@ class LibraryFile {
     bool operator==(const ModuleSection& other) const {
       return symbols == other.symbols &&
              offsetToSymIdx == other.offsetToSymIdx &&
+             symbolTableData == other.symbolTableData &&
+             symbolTableLen == other.symbolTableLen &&
+             astSectionData == other.astSectionData &&
+             astSectionLen == other.astSectionLen &&
+             stringSectionData == other.stringSectionData &&
+             stringSectionLen == other.stringSectionLen &&
+             locationSectionData == other.locationSectionData &&
+             locationSectionLen == other.locationSectionLen &&
              nStrings == other.nStrings &&
-             moduleSectionData == other.moduleSectionData &&
-             moduleSectionLen == other.moduleSectionLen &&
              stringOffsetsTable == other.stringOffsetsTable;
     }
     bool operator!=(const ModuleSection& other) const {
@@ -180,7 +198,7 @@ class LibraryFile {
   struct ModuleInfo {
     UniqueString moduleSymPath;
     UniqueString sourceFilePath;
-    uint64_t moduleSectionOffset = 0;
+    Region moduleRegion;
   };
 
   UniqueString libPath;
@@ -190,8 +208,8 @@ class LibraryFile {
 
   // these are computed from mapped_file
   unsigned char fileHash[HASH_SIZE];
-  size_t len = 0;
-  const unsigned char* data = nullptr;
+  size_t fileLen = 0;
+  const unsigned char* fileData = nullptr;
 
   // stores module symbol IDs and the file paths they came from
   std::vector<ModuleInfo> modules;
@@ -210,11 +228,12 @@ class LibraryFile {
   static const owned<LibraryFile>& loadLibraryFileQuery(Context* context,
                                                         UniqueString libPath);
 
-  // reads the module section metadata into 'mod' and raises errors with Context
+  // Reads the module section metadata into 'mod' and raises errors with Context
   // if there are any errors.
+  // Validates the header for each section contained in the module.
   // returns 'true' if everything is OK, 'false' if there were errors.
   bool readModuleSection(Context* context,
-                         uint64_t moduleOffset,
+                         Region moduleRegion,
                          ModuleSection& mod) const;
 
   // reads the module metadata (including the symbol table)
@@ -237,7 +256,7 @@ class LibraryFile {
   //
   // returns 'true' if everything is OK, 'false' if there were errors
   bool readModuleAst(Context* context,
-                     uint64_t moduleOffset,
+                     Region moduleOffset,
                      LibraryFileDeserializationHelper& helper,
                      uast::Builder& builder) const;
 
