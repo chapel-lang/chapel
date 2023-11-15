@@ -539,13 +539,12 @@ LibraryFile::loadAstQuery(Context* context,
     }
   }
 
-  uast::Builder::SymbolTableVec combined;
-
   auto builder = uast::Builder::createForLibraryFileModule(context,
                                                            f->libPath,
                                                            parentSymbolPath,
-                                                           f,
-                                                           &combined);
+                                                           f);
+
+  uast::Builder::SymbolTableVec combined;
 
   bool ok = true;
   int moduleIdx = 0;
@@ -570,6 +569,8 @@ LibraryFile::loadAstQuery(Context* context,
     }
     moduleIdx++;
   }
+
+  builder->noteSymbolTableSymbols(std::move(combined));
 
   uast::BuilderResult result;
 

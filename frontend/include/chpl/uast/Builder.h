@@ -70,6 +70,7 @@ class Builder final {
   UniqueString startingSymbolPath_;
   BuilderResult br;
   bool useNotedLocations_ = true;
+  bool expectSymbolTableVec_ = false;
 
   // note: notedLocations_ might have keys pointing to deleted uAST
   // nodes in the event one is created temporarily during parsing.
@@ -84,16 +85,14 @@ class Builder final {
   #include "all-location-maps.h"
   #undef LOCATION_MAP
 
-  const SymbolTableVec* symbolTableVec = nullptr;
+  SymbolTableVec symbolTableVec_;
 
   Builder(Context* context, UniqueString filePath,
           UniqueString startingSymbolPath,
-          const libraries::LibraryFile* lib,
-          const SymbolTableVec* symbolTableVec)
+          const libraries::LibraryFile* lib)
     : context_(context),
       startingSymbolPath_(startingSymbolPath),
-      br(filePath, lib),
-      symbolTableVec(symbolTableVec)
+      br(filePath, lib)
   {
   }
 
@@ -123,8 +122,7 @@ class Builder final {
                                           Context* context,
                                           UniqueString filePath,
                                           UniqueString parentSymbolPath,
-                                          const libraries::LibraryFile* lib,
-                                          const SymbolTableVec* symbolTableVec);
+                                          const libraries::LibraryFile* lib);
 
   Context* context() const { return context_; }
 
@@ -146,6 +144,10 @@ class Builder final {
     void note##location__##Location(ast__* ast, Location loc);
   #include "all-location-maps.h"
   #undef LOCATION_MAP
+
+  /** Note the symbol table symbols so that the resulting
+      BuilderResult will have a working 'isSymbolTableSymbol' function. */
+  void noteSymbolTableSymbols(SymbolTableVec vec);
 
   /**
     Assign IDs to all of the AST elements added as toplevel expressions

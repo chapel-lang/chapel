@@ -109,8 +109,7 @@ static void testSerializeDeserialize(const char* test, const char* program) {
       Builder::createForLibraryFileModule(context,
                                           libname,
                                           parentSymbolPath,
-                                          /*LibraryFile*/nullptr,
-                                          /*SymbolTableVec*/nullptr);
+                                          /*LibraryFile*/nullptr);
 
     auto des = Deserializer(context,
                             serializedData.c_str(), serializedData.size(),
@@ -123,6 +122,9 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
       builder->addToplevelExpression(AstNode::deserializeWithoutIds(des));
     }
+
+    // avoid an assertion
+    builder->noteSymbolTableSymbols(Builder::SymbolTableVec());
 
     // assign IDs
     BuilderResult r = builder->result();
