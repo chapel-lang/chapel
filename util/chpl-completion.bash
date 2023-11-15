@@ -151,6 +151,7 @@ _chpl ()
 --log \
 --log-deleted-ids-to \
 --log-dir \
+--log-fmt \
 --log-ids \
 --log-module \
 --log-pass \

@@ -44,6 +44,9 @@
 #include "CatchStmt.h"
 #include "DeferStmt.h"
 
+#include <unistd.h>
+#include "view.h"
+
 AstDump::AstDump() {
   mName      =     0;
   mPath      =     0;
@@ -81,8 +84,25 @@ void AstDump::view(const char* passName, int passNum) {
       AstDump logger;
 
       if (logger.open(module, passName, passNum) == true) {
-        module->accept(&logger);
-        logger.close();
+        if(fLogFormat == LogFormat::NPRINT) {
+          // This is an absolute hack. nprint_view prints directly to stdout, we should
+          // update it to take a file pointer use it and pass it along as needed. But rather
+          // than update all the code I instead redirect stdout to the file (and then restore it
+          // after the dump is done).  This makes debugging pain and folks can really get caught
+          // off-gaurd when stdout is no longer really stdout.
+          int oldStdout = dup(1);
+          dup2(fileno(logger.mFP), 1);
+
+          nprint_view(module);
+
+          dup2(oldStdout, 1);
+          ::close(oldStdout);
+
+        } else {
+          INT_ASSERT(fLogFormat == LogFormat::DEFAULT);
+          module->accept(&logger);
+          logger.close();
+        }
       }
     }
   }
