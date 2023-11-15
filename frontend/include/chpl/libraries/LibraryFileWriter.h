@@ -93,8 +93,14 @@ class LibraryFileWriter {
   std::vector<UniqueString> inputFiles;
   std::string outputFilePath;
   std::ofstream fileStream;
+  bool ok = true;
+
   // top-level modules and paths where they came from
   std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
+
+  /** Emit an error indicating failure to create the library and
+      set 'ok' to 'false' */
+  void fail(const char* msg);
 
   /** Gather the top-level modules */
   void gatherTopLevelModules();

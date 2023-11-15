@@ -117,8 +117,8 @@ public:
   /** Check that a string length is OK.
       If it is, return 'true' and take no other action.
       If it is not, record an error in this Serializer and return 'false'. */
-  bool checkStringLength(size_t len) {
-    if (len < MAX_STRING_SIZE) {
+  bool checkStringLength(size_t len, size_t max = MAX_STRING_SIZE) {
+    if (len < max) {
       return true;
     } else {
       ok_ = false;
@@ -249,8 +249,8 @@ class Deserializer {
   /** Check that a string length is OK (but not assuming it will be read).
       If it is OK, return 'true' and take no other action.
       If it is not, record an error in this Deserializer and return 'false'. */
-  bool checkStringLength(size_t len) {
-    if (len < MAX_STRING_SIZE) {
+  bool checkStringLength(size_t len, size_t max = MAX_STRING_SIZE) {
+    if (len < max) {
       return true;
     } else {
       ok_ = false;
@@ -262,16 +262,14 @@ class Deserializer {
       'len' bytes from here.
       If it is OK, return 'true' and take no other action.
       If it is not, record an error in this Deserializer and return 'false'. */
-  bool checkStringLengthAvailable(size_t len) {
-    if (len < MAX_STRING_SIZE && cur_ + len <= end_) {
+  bool checkStringLengthAvailable(size_t len, size_t max = MAX_STRING_SIZE) {
+    if (len < max && cur_ + len <= end_) {
       return true;
     } else {
       ok_ = false;
       return false;
     }
   }
-
-
 
   /** Return 'false' if an error was encountered */
   bool ok() const { return ok_; }

@@ -190,6 +190,11 @@ bool LibraryFile::readHeaders(Context* context) {
 
   uint32_t nModules = header->nModules;
 
+  if (nModules >= MAX_NUM_MODULES) {
+    invalidFileError(context);
+    return false;
+  }
+
   // populate modulePathToSection and moduleIdsAndFilePaths
   // module offsets are stored just after the file header
   const uint64_t* moduleOffsets = (const uint64_t*) (data + sizeof(FileHeader));
@@ -282,7 +287,8 @@ bool LibraryFile::readModuleSection(Context* context,
 
   if (symTableHeader->magic != SYMBOL_TABLE_MAGIC ||
       symbolTableOffset +
-        symTableHeader->nEntries*sizeof(SymbolTableEntry) > len) {
+        symTableHeader->nEntries*sizeof(SymbolTableEntry) > len ||
+      symTableHeader->nEntries >= MAX_NUM_SYMBOLS ) {
     invalidFileError(context);
     return false;
   }
@@ -320,6 +326,13 @@ bool LibraryFile::readModuleSection(Context* context,
     }
     // read the variable-byte encoded suffix length
     unsigned int nSuffix = des.readVUint();
+
+    if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
+        !des.checkStringLengthAvailable(nSuffix)) {
+      invalidFileError(context);
+      return false;
+    }
+
     // expand lastSymId to have room to store the suffix
     lastSymId.resize(nCommonPrefix+nSuffix);
     // read the string data
@@ -629,7 +642,8 @@ bool LibraryFile::readLocationPaths(Context* context,
     (const LocationSectionHeader*) (m->moduleSectionData + locationsOffset);
   if (locHdr->magic != LOCATION_SECTION_MAGIC ||
       locHdr->nFilePaths == 0 ||
-      locHdr->nGroups == 0) {
+      locHdr->nGroups == 0 ||
+      locHdr->nGroups >= MAX_NUM_SYMBOLS) {
     invalidFileError(context);
     return false;
   }

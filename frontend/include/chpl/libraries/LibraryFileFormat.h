@@ -48,6 +48,12 @@ static const uint32_t FORMAT_VERSION_MINOR =  1;
 // number of bytes in a file hash -- currently using SHA-256
 static const int HASH_SIZE = 256/8;
 
+// maximum number of of various elements; more than this many
+// will result in an error. Purpose is to keep the processing
+// from using too much space if the file is invalid anyway.
+static const int MAX_NUM_MODULES = 100000000;
+static const int MAX_NUM_SYMBOLS = 100000000;
+
 struct FileHeader {
   uint64_t magic;
   uint32_t fileFormatVersionMajor;

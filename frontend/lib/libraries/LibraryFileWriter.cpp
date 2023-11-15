@@ -79,6 +79,11 @@ static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   return chpl::UniqueString::get(context, str);
 }
 
+void LibraryFileWriter::fail(const char* msg) {
+  context->error(Location(), "%s %s", msg, outputFilePath.c_str());
+  ok = false;
+}
+
 void LibraryFileWriter::gatherTopLevelModules() {
   // Parse the paths and gather a vector of top-level modules.
   for (auto path : inputFiles) {
@@ -111,6 +116,11 @@ void LibraryFileWriter::writeHeader() {
   header.nModules = modulesAndPaths.size();
   // hash remains 0s at this point
   fileStream.write((const char*) &header, sizeof(header));
+
+  // emit an error if there are too many modules for the file format
+  if (modulesAndPaths.size() >= MAX_NUM_MODULES) {
+    fail("Too many modules to create library file");
+  }
 
   // write the placeholder module section table
   size_t n = modulesAndPaths.size();
@@ -183,6 +193,10 @@ uint64_t LibraryFileWriter::writeModuleSection(const uast::Module* mod,
 
   // seek back where we were
   fileStream.seekp(savePos);
+
+  if (!ser.ok()) {
+    fail("Error serializing for library file");
+  }
 
   return moduleSectionStart;
 }
@@ -322,6 +336,9 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   header.nEntries = reg.symbolTableVec.size();
   ser.writeData(&header, sizeof(header));
 
+  // create an error if there are too many symbols
+  ser.checkStringLength(reg.symbolTableVec.size(), MAX_NUM_SYMBOLS);
+
   // output each symbol table entry
   // assumption: symbolTableUpdates has already been updated with the
   // uast and location section offsets
@@ -334,6 +351,9 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   for (auto pair : symsAndNames) {
     const uast::AstNode* sym = pair.first;
     const std::string& symId = pair.second;
+
+    // create an error if the string length is too long
+    ser.checkStringLength(symId.size());
 
     SymbolTableEntry entry;
     memset(&entry, 0, sizeof(entry));
@@ -484,6 +504,9 @@ uint64_t LibraryFileWriter::writeLocations(const uast::Module* mod,
   header.nGroups = reg.symbolTableVec.size();
   // the initial entry in symbolTableVec should store the module
   CHPL_ASSERT(reg.symbolTableVec.size() > 0 && reg.symbolTableVec[0] == mod);
+
+  // create an error if there are too many symbols / location groups
+  ser.checkStringLength(reg.symbolTableVec.size(), MAX_NUM_SYMBOLS);
 
   fileStream.write((const char*) &header, sizeof(header));
 
@@ -697,8 +720,12 @@ bool LibraryFileWriter::writeAllSections() {
 
   // TODO: if further error information is desired, probably best
   // to switch to using the C FILE* and fwrite.
-  bool ok = fileStream.good();
+  bool streamOk = fileStream.good();
   fileStream.close();
+
+  if (!streamOk) {
+    fail("error writing to file");
+  }
 
   return ok;
 }
