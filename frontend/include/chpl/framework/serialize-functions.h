@@ -161,6 +161,7 @@ class Deserializer {
   const unsigned char* end_ = nullptr;
   owned<stringCacheType> localStringsTable_;
   libraries::LibraryFileDeserializationHelper* libraryFileHelper_ = nullptr;
+  bool ok_ = true;
 
   /** read a variable-byte encoded unsigned integer */
   uint64_t readUnsignedVarint();
@@ -217,6 +218,9 @@ class Deserializer {
     return cur_ - start_;
   }
 
+  /** Return 'false' if an error was encountered */
+  bool ok() { return ok_; }
+
   void registerAst(const uast::AstNode* ast, uint64_t startOffset);
 
   template <typename T>
@@ -236,6 +240,7 @@ class Deserializer {
       cur_++;
       return ret;
     } else {
+      ok_ = false;
       return 0;
     }
   }
@@ -249,6 +254,7 @@ class Deserializer {
       cur_ += sizeof(T);
       return ret;
     } else {
+      ok_ = false;
       return 0;
     }
   }
@@ -260,6 +266,7 @@ class Deserializer {
       cur_ += n;
     } else {
       memset(ptr, 0, n);
+      ok_ = false;
     }
   }
 

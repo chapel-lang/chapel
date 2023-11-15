@@ -198,6 +198,8 @@ class LibraryFile {
 
   LibraryFile() { }
 
+  void invalidFileError(Context* context) const;
+
   std::error_code openAndMap();
 
   // reads the library file and raises errors with Context if there

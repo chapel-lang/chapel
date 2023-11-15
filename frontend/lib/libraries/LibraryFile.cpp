@@ -132,6 +132,10 @@ LibraryFile::~LibraryFile() {
   if (fd >= 0) llvm::sys::fs::closeFile(fd);
 }
 
+void LibraryFile::invalidFileError(Context* context) const {
+  context->error(Location(), "Invalid library file %s", libPath.c_str());
+}
+
 std::error_code LibraryFile::openAndMap() {
   std::error_code err;
 
@@ -177,7 +181,7 @@ bool LibraryFile::readHeaders(Context* context) {
   const FileHeader* header = (const FileHeader*) data;
 
   if (header->magic != FILE_HEADER_MAGIC) {
-    context->error(Location(), "Invalid file header in %s", libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -195,8 +199,7 @@ bool LibraryFile::readHeaders(Context* context) {
 
     if (mod->magic != MODULE_SECTION_MAGIC ||
         offset+mod->len > len) {
-      context->error(Location(), "Invalid module section header in %s",
-                     libPath.c_str());
+      invalidFileError(context);
       return false;
     }
 
@@ -213,6 +216,11 @@ bool LibraryFile::readHeaders(Context* context) {
     std::string fromFilePathStr = des.read<std::string>();
     UniqueString moduleId = UniqueString::get(context, moduleIdStr);
     UniqueString fromFilePath = UniqueString::get(context, fromFilePathStr);
+
+    if (!des.ok()) {
+      invalidFileError(context);
+      return false;
+    }
 
     ModuleInfo info;
     info.moduleSymPath = moduleId;
@@ -256,8 +264,7 @@ bool LibraryFile::readModuleSection(Context* context,
       symbolTableRelOffset+sizeof(SymbolTableHeader) > modHdr->len ||
       symbolTableOffset+sizeof(SymbolTableHeader) > len ||
       longStringsOffset+sizeof(LongStringsTableHeader) > len) {
-    context->error(Location(), "Invalid module section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -266,8 +273,7 @@ bool LibraryFile::readModuleSection(Context* context,
 
   if (strTableHeader->magic != LONG_STRINGS_TABLE_MAGIC ||
       longStringsOffset + strTableHeader->nLongStrings*sizeof(uint64_t) > len) {
-    context->error(Location(), "Invalid long strings section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -277,8 +283,7 @@ bool LibraryFile::readModuleSection(Context* context,
   if (symTableHeader->magic != SYMBOL_TABLE_MAGIC ||
       symbolTableOffset +
         symTableHeader->nEntries*sizeof(SymbolTableEntry) > len) {
-    context->error(Location(), "Invalid symbol table section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -334,12 +339,13 @@ bool LibraryFile::readModuleSection(Context* context,
     mod.symbols.push_back(info);
     mod.offsetToSymIdx[info.uastOffset] = i;
 
+    // check that the deserializer did not encounter an error
     // check that the SymbolTableEntry offsets are realistic
-    if (moduleOffset + entry.uAstEntry > len ||
+    if (!des.ok() ||
+        moduleOffset + entry.uAstEntry > len ||
         moduleOffset + entry.locationEntry > len ||
         moduleOffset + entry.typeOrFnEntry > len) {
-      context->error(Location(), "Invalid symbol table entry in %s",
-                     libPath.c_str());
+      invalidFileError(context);
       return false;
     }
   }
@@ -402,8 +408,7 @@ bool LibraryFile::readModuleAst(Context* context,
   uint64_t uAstOffset = moduleOffset + modHdr->uAstSection;
   if (modHdr->magic != MODULE_SECTION_MAGIC ||
       uAstOffset+sizeof(AstSectionHeader) > len) {
-    context->error(Location(), "Invalid module section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -414,8 +419,7 @@ bool LibraryFile::readModuleAst(Context* context,
       astHdr->nEntries == 0 ||
       astHdr->nBytesAstEntries == 0 ||
       uAstOffset + astHdr->nBytesAstEntries > len) {
-    context->error(Location(), "Invalid AST section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -427,6 +431,11 @@ bool LibraryFile::readModuleAst(Context* context,
                           helper);
 
   builder.addToplevelExpression(uast::AstNode::deserializeWithoutIds(des));
+
+  if (!des.ok()) {
+    invalidFileError(context);
+    return false;
+  }
 
   return true;
 }
@@ -612,8 +621,7 @@ bool LibraryFile::readLocationPaths(Context* context,
   uint64_t locationsOffset = modHdr->locationSection;
   if (modHdr->magic != MODULE_SECTION_MAGIC ||
       locationsOffset+sizeof(LocationSectionHeader) > m->moduleSectionLen) {
-    context->error(Location(), "Invalid module section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -622,8 +630,7 @@ bool LibraryFile::readLocationPaths(Context* context,
   if (locHdr->magic != LOCATION_SECTION_MAGIC ||
       locHdr->nFilePaths == 0 ||
       locHdr->nGroups == 0) {
-    context->error(Location(), "Invalid location section header in %s",
-                   libPath.c_str());
+    invalidFileError(context);
     return false;
   }
 
@@ -647,6 +654,11 @@ bool LibraryFile::readLocationPaths(Context* context,
     paths.push_back(UniqueString::get(context, filePath));
   }
 
+  if (!des.ok()) {
+    invalidFileError(context);
+    return false;
+  }
+
   return true;
 }
 
@@ -664,14 +676,13 @@ bool LibraryFile::readLocationGroup(
   if (filePathIdx < paths.size()) {
     path = paths[filePathIdx];
   } else {
+    invalidFileError(context);
     return false;
   }
 
   int lastEntryLastLine = startLine;
-  readLocationEntries(context, maps, des, symbolTableSymbolAst, path, br,
-                      lastEntryLastLine);
-
-  return true;
+  return readLocationEntries(context, maps, des, symbolTableSymbolAst, path, br,
+                             lastEntryLastLine);
 }
 
 
@@ -730,6 +741,10 @@ bool LibraryFile::readLocationEntries(
       if (!ok) {
         return false;
       }
+      if (!des.ok()) {
+        // also exit early if the deserializer recorded an error
+        return false;
+      }
     }
   }
 
@@ -775,6 +790,10 @@ LibraryFile::loadLocationsQuery(Context* context,
                          helper);
         ok = f->readLocationGroup(context, result, des,
                                   symbolTableEntryAst, paths, br);
+        if (!des.ok()) {
+          f->invalidFileError(context);
+          ok = false;
+        }
       }
     }
   }
