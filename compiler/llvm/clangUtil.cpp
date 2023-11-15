@@ -3043,7 +3043,13 @@ void runClang(const char* just_parse_filename) {
   if (fDriverPhaseTwo) {
     // Needed for phase two but is only otherwise run by the skipped
     // ExecuteAction below.
+#if HAVE_LLVM_VER >= 130
     clangInfo->Clang->createTarget();
+#else
+    clangInfo->Clang->setTarget(TargetInfo::CreateTargetInfo(
+        clangInfo->Clang->getDiagnostics(),
+        clangInfo->Clang->getInvocation().TargetOpts));
+#endif
 
     return;
   }
