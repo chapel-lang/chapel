@@ -123,7 +123,9 @@ void addIncInfo(const char* incDir, bool fromCmdLine) {
   }
 }
 
-void checkDriverTmp() {
+// Ensure the tmp dir is set up for use by the driver (i.e., isn't about to be
+// replaced).
+static void checkDriverTmp() {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   bool valid = false;
@@ -146,20 +148,20 @@ void checkDriverTmp() {
 
 void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
                    bool appendNewline) {
-  checkDriverTmp();
-
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
-  fprintf(file->fptr, "%s%s", stringToSave, (appendNewline ? "\n" : ""));
-  closefile(file);
+  saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
 }
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave) {
+                           std::vector<const char*> stringsToSave,
+                           bool noNewlines) {
   checkDriverTmp();
 
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  const char* pathAsAstr = astr(tmpFilePath);
+
+  // Write into tmp file
+  fileinfo* file = openTmpFile(pathAsAstr, "a");
   for (const auto stringToSave : stringsToSave) {
-    fprintf(file->fptr, "%s\n", stringToSave);
+    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
   }
   closefile(file);
 }
