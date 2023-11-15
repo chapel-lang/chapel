@@ -2476,7 +2476,9 @@ int main(int argc, char* argv[]) {
         // We expect frontend, middle-end, and backend results from phase one,
         // plus the other half of backend results from phase two.
         static const size_t numPassGroups = 3;
-        INT_ASSERT(groupTimes.size() == (numPassGroups + 1));
+        INT_ASSERT(
+            groupTimes.size() == (numPassGroups + 1) &&
+            "unexpected number of saved timing results from driver phases");
         // Combine the two halves of the backend total time into one value.
         groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
         groupTimes.pop_back();
