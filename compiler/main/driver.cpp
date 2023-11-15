@@ -1974,6 +1974,12 @@ static void checkLLVMCodeGen() {
               "       'chpl' was built without LLVM support.  Either select a different\n"
               "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
+  if (fLlvmCodegen) {
+    if ((ccflags.find("-pg") != std::string::npos) ||
+        (ldflags.find("-pg") != std::string::npos)) {
+      USR_WARN("The LLVM target compiler does not currently support '-pg'");
+    }
+  }
 }
 
 static void checkTargetCpu() {
