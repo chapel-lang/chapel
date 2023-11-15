@@ -6281,10 +6281,12 @@ DEFINE_PRIM(BREAKPOINT) {
 }
 
 DEFINE_PRIM(CONST_ARG_HASH) {
-  INT_ASSERT(call->numActuals() == 2);
+  INT_ASSERT(call->numActuals() == 1);
   GenRet arg = call->get(1);
   GenRet ptr = maybeConvertToLocalPointer(call->get(1), arg);
 
+  // Could potential have the sizeof call inserted at the creation of the
+  // primitive
   ret = codegenCallExpr("const_arg_hash", ptr,
                         codegenSizeof(call->get(1)->typeInfo()));
 }

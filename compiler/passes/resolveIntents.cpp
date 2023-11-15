@@ -20,6 +20,7 @@
 
 #include "resolveIntents.h"
 
+#include "DeferStmt.h"
 #include "passes.h"
 #include "resolution.h"
 
@@ -254,7 +255,7 @@ IntentTag blankIntentForExternFnArg(Type* type) {
 }
 
 static void warnForConstIntent(ArgSymbol* arg) {
-  // TODO: setlineno?
+  SET_LINENO(arg);
   // TODO: wrap in compiler flag
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
   // TODO: optimize when type would use CONST_IN instead of CONST_REF
@@ -262,36 +263,35 @@ static void warnForConstIntent(ArgSymbol* arg) {
   // Hash the argument at the start of the function
   CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
-  VarSymbol* startHash = new VarSymbol("chpl_startHash",
-                                       dtUInt[INT_SIZE_DEFAULT]);
+  VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_DEFAULT]);
   DefExpr* startDef = new DefExpr(startHash);
 
   CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
                                       getStartHash);
 
   fn->insertAtHead(outerStart);
-  fn->insertAtHead(startDef);
-
-  // TODO: defer block for the rest of this?
+  outerStart->insertBefore(startDef);
 
   // Hash the argument at the end of the function
   CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
-  VarSymbol* endHash = new VarSymbol("chpl_endHash", dtUInt[INT_SIZE_DEFAULT]);
+  VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_DEFAULT]);
   DefExpr* endDef = new DefExpr(endHash);
 
   CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
                                     getEndHash);
 
-  fn->insertAtTail(endDef);
-  fn->insertAtTail(outerEnd);
+  // Create defer block to ensure we will always check the end hash
+  DeferStmt* finishCheck = new DeferStmt(outerEnd);
+  outerEnd->insertBefore(endDef);
 
   // Ensure the two hashes match.  If not, will generate a runtime error
   CallExpr* checkHash = new CallExpr(PRIM_CHECK_CONST_ARG_HASH,
                                      new SymExpr(startHash),
                                      new SymExpr(endHash),
                                      new_CStringSymbol(arg->name));
-  fn->insertAtTail(checkHash);
+  outerEnd->insertAfter(checkHash);
+  outerStart->insertAfter(finishCheck);
 }
 
 IntentTag concreteIntentForArg(ArgSymbol* arg) {
