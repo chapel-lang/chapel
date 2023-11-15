@@ -1,16 +1,40 @@
-var HostArr: [1..10, 1..10] int = 5;
 
-on here.gpus[0] {
-  var DevArr: [1..10, 1..2] int;
+proc test(Whole, Slice) {
+  param hostNum = 5;
+  param devNum = 1;
+  var HostArr: [Whole] int = hostNum;
 
-  DevArr = HostArr[1..10, 1..2]; // copy the first 2 elements of each row
-  writeln(DevArr);
+  var rngs : Slice.rank*range;
+  for param i in 0..<Slice.rank do
+    rngs(i) = 1..#Slice.dim(i).size;
 
-  @assertOnGpu
-  foreach d in DevArr do d = 1;
+  writeln("--------------------");
+  writeln("Whole = ", Whole);
+  writeln("Slice = ", Slice);
 
-  HostArr[1..10, 1..2] = DevArr;
+  on here.gpus[0] {
+    var DevArr: [{(...rngs)}] int;
 
+    DevArr = HostArr[Slice];
+    forall d in DevArr do assert(d == hostNum);
+
+    @assertOnGpu
+    foreach d in DevArr do d = devNum;
+
+    HostArr[Slice] = DevArr;
+  }
+
+  forall i in Whole {
+    if Slice.contains(i) then assert(HostArr[i] == devNum);
+    else assert(HostArr[i] == hostNum);
+  }
+
+  writeln("SUCCESS");
+  writeln("--------------------");
 }
 
-writeln(HostArr);
+// Test stride levels 1-4
+test({1..10, 1..10}, {1..10, 1..2});
+test({1..10, 1..10, 1..10}, {1..10 by 3, 1..10 by 2, 1..4});
+test({1..10, 1..10, 1..10, 1..10}, {1..10 by 2, 1..10 by 3, 1..10 by 2, 1..4});
+test({1..10, 1..10, 1..10, 1..10, 1..10}, {1..10 by 3, 1..10 by 2, 1..10 by 3, 1..10 by 2, 1..4});
