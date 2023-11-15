@@ -1630,6 +1630,10 @@ private proc _lu(in A: [?Adom] ?eltType) {
 
   `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
+
+  .. note::
+
+    Arrays with any offset are supported, and `LU` and `ipiv` inherit the indexing.
 */
 proc lu(A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1786,6 +1790,10 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
     will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true)
@@ -1810,6 +1818,10 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
 
 /* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
   const first = Udom.dim(0).first;
@@ -1831,6 +1843,10 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 }
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
