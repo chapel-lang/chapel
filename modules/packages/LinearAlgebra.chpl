@@ -1573,8 +1573,8 @@ proc trace(A: [?D] ?eltType) {
 
 /* LU helper function */
 private proc _lu(in A: [?Adom] ?eltType) {
-  const n = Adom.shape(0);
-  const dim = 0..<n;
+  const dim = Adom.dim(0);
+  const last = dim.last;
   const LUDom = {dim, dim};
 
   // TODO: Reduce memory usage
@@ -1586,7 +1586,7 @@ private proc _lu(in A: [?Adom] ?eltType) {
 
   for i in dim {
     var max = A[i,i], swaprow = i;
-    for row in (i+1)..<n {
+    for row in (i+1)..last {
       if (abs(A[row,i]) > abs(max)) {
         max = A[row,i];
         swaprow = row;
@@ -1599,14 +1599,14 @@ private proc _lu(in A: [?Adom] ?eltType) {
       numSwap += 1;
     }
 
-    forall k in i..<n with (ref U) {
+    forall k in i..last with (ref U) {
       const sum = + reduce (L[i,..] * U[..,k]);
       U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
-    forall k in (i+1)..<n with (ref L) {
+    forall k in (i+1)..last with (ref L) {
       const sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
@@ -1645,9 +1645,8 @@ proc lu(A: [?Adom] ?eltType) {
 /* Return a new array as the permuted form of `A` according to
     permutation array `ipiv`.*/
 private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
-  const n = Adom.shape(0);
-  const dim = 0..<n;
-  var B: [Adom] eltType;
+  const dim = Adom;
+  var B: [dim] eltType;
 
   if Adom.rank == 1 {
     if transpose {
@@ -1835,7 +1834,7 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 */
 proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
-  b = permute (ipiv, b, true);
+  b = permute(ipiv, b, true);
   var z = solve_tril(LU, b);
   var x = solve_triu(LU, z);
   return x;
