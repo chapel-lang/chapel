@@ -82,10 +82,13 @@ public:
   void                 Resume();
 
   void                 ReportPass  ()                                const;
-  // Report out total times by pass group. If the parameter
-  // is an empty list, instead insert times into it and skip output. If it is
-  // a list with values, take these as already-recorded times and report them
-  // out. If it is nullptr, ignore it and report as normal.
+  // Report out total times by pass group, with differing behavior based on the
+  // provided argument:
+  // - nullptr: Ignore it and report as normal.
+  // - empty list: Instead insert times into it and skip outputing.
+  // - non-empty list: Take the values as already-recorded times and report
+  // them out. They are assumed to represent pass group times in order, with
+  // missing values meaning that pass group did not occur (early exit).
   void                 ReportPassGroupTotals (std::vector<unsigned long>*
                                               groupTimes = nullptr)  const;
   // Report out total overall time for the compiler. If overheadTime is
