@@ -21,7 +21,7 @@ var i : uint(8) = 1;
 while bufSize < maxBufSize {
   buf = i;
   fw.writeBinary(buf);
-  bufSize *= 2;
+  if i > 1 then bufSize *= 2;
   bufDom = {0..<bufSize};
   i += 1;
 }
@@ -42,7 +42,7 @@ while bufSize < maxBufSize {
     writeln(buf);
   }
 
-  bufSize *= 2;
+  if i > 1 then bufSize *= 2;
   bufDom = {0..<bufSize};
   i += 1;
 }
