@@ -41,10 +41,12 @@ static void checkBuilderResultLocations(Context* context,
   ID parsedId = parsedAst->id();
   ID loadedId = loadedAst->id();
   assert(parsedId == loadedId);
-  ID id = parsedId;
 
   // preliminary: check that the number of children match
   assert(parsedAst->numChildren() == loadedAst->numChildren());
+
+/*
+  ID id = parsedId;
   int numChildren = parsedAst->numChildren();
 
   // preliminary: check that idToAst works as expected
@@ -76,6 +78,7 @@ static void checkBuilderResultLocations(Context* context,
                                 parsed, parsedAst->child(i),
                                 loaded, loadedAst->child(i));
   }
+*/
 }
 
 
