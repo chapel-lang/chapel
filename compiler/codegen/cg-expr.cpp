@@ -5621,8 +5621,10 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
 
 // Strided versions of get and put
 static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
-    // args are: localvar, dststr addr, locale, remote addr, srcstr addr
-    // count addr, strlevels, elem
+    // args are: local addr, dststr addr,
+    //           locale, sublocale, remote addr, srcstr addr,
+    //           count addr, strlevels,
+    //           line number, function id
     const char* fn;
     TypeSymbol* dt;
 

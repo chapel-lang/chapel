@@ -396,6 +396,9 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
                           size_t* count, int32_t stridelevels, size_t elemSize,
                           int32_t commID, int ln, int32_t fn) {
   // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
+  //
+  // Note: This function differs from the original in chpl-comm-strd-xfer.h by
+  // not supporting non-blocking communication calls.
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -408,7 +411,7 @@ void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
   size_t cnt[strlvls+1];
 
 
-  // TODO: Communications callback support
+  // TODO: Communication diagnostics
 
   //Only count[0] and strides are measured in number of bytes.
   cnt[0]=count[0] * elemSize;
@@ -528,6 +531,9 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
                           size_t* count, int32_t stridelevels, size_t elemSize,
                           int32_t commID, int ln, int32_t fn) {
   // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
+  //
+  // Note: This function differs from the original in chpl-comm-strd-xfer.h by
+  // not supporting non-blocking communication calls.
   const size_t strlvls=(size_t)stridelevels;
   size_t i,j,k,t,total,off,x,carry;
 
@@ -540,7 +546,7 @@ void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
   size_t cnt[strlvls+1];
 
 
-  // TODO: Communications callback support
+  // TODO: Communication diagnostics
 
   //Only count[0] and strides are measured in number of bytes.
   cnt[0]=count[0] * elemSize;
