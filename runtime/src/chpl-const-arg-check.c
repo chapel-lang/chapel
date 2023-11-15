@@ -41,8 +41,9 @@ void check_const_hash_matches(uint64_t start_val, uint64_t end_val,
                               const char* arg_name, int32_t lineno,
                               int32_t filenameIdx) {
   if (start_val != end_val) {
-    const char* error_msg = chpl_glom_strings(3, "The argument '", arg_name,
-                             "' was modified indirectly during this function");
-    chpl_error(error_msg, lineno, filenameIdx);
+    const char* warning_msg = chpl_glom_strings(4, "The argument '", arg_name,
+                      "' was modified indirectly during this function, this ",
+                      "behavior is unstable and may change in the future");
+    chpl_warning(warning_msg, lineno, filenameIdx);
   }
 }
