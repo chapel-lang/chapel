@@ -1813,15 +1813,16 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
     where ``U`` is an upper triangular matrix.
 */
 proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
-  const n = Udom.shape(0);
+  const first = Udom.dim(0).first;
+  const last = Udom.dim(0).last;
   var y = b;
 
-  for i in 0..<n by -1 {
+  for i in first..last by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
 
-    if (i > 0) {
-      forall j in 0..<i by -1 with (ref y) {
+    if (i > first) {
+      forall j in first..<i by -1 with (ref y) {
         y(j) -= U(j,i) * sol;
       }
     }
