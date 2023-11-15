@@ -166,9 +166,11 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
   // Contents expected to be astrs so it's safe to use a set.
   static std::unordered_set<const char*> seen;
 
-  // Overwrite on first use, append after.
-  const char* fileOpenMode = "w";
-  if (!seen.emplace(pathAsAstr).second) {
+  // Overwrite on first use in phase one or driver init, append after.
+  const char* fileOpenMode;
+  if (seen.emplace(pathAsAstr).second && !fDriverPhaseTwo) {
+    fileOpenMode = "w";
+  } else {
     // Already seen
     fileOpenMode = "a";
   }
