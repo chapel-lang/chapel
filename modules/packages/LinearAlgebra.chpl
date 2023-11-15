@@ -1791,15 +1791,16 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
 proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true)
 {
-  const n = Ldom.shape(0);
+  const first = Ldom.dim(0).first;
+  const last = Ldom.dim(0).last;
   var y = b;
 
-  for i in 0..<n {
+  for i in first..last {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
 
-    if (i < n - 1) {
-      forall j in (i+1)..<n with (ref y) {
+    if (i < last) {
+      forall j in (i+1)..last with (ref y) {
         y(j) -= L(j,i) * sol;
       }
     }
