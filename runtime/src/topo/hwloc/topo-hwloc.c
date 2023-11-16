@@ -569,6 +569,7 @@ static void partitionResources(void) {
           numCPUsPhysAcc = hwloc_bitmap_weight(physAccSet);
           CHK_ERR(numCPUsPhysAcc > 0);
 
+
           if (debug) {
             char buf[1024];
             hwloc_bitmap_list_snprintf(buf, sizeof(buf), logAccSet);
@@ -591,6 +592,9 @@ static void partitionResources(void) {
         logAccSets[0] = hwloc_bitmap_dup(logAccSet);
       }
     }
+  }
+  if (numLocalesOnNode == 1) {
+    logAccSets[0] = hwloc_bitmap_dup(logAccSet);
   }
 
   // CHPL_RT_OVERSUBSCRIBED overrides oversubscription determination
@@ -1279,6 +1283,9 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
           }
         }
       }
+    } else {
+      _DBG_P("Could not find NIC %04x:%02x:%02x.%x", inAddr->domain,
+             inAddr->bus, inAddr->device, inAddr->function);
     }
   } else {
     _DBG_P("Could not find NIC %04x:%02x:%02x.%x", inAddr->domain,
