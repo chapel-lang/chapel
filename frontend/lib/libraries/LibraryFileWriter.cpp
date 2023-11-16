@@ -172,9 +172,6 @@ Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   // header again.
   auto savePos = fileStream.tellp();
 
-  // store the module section length in the header
-  //header.len = savePos - moduleSectionStart;
-
   // TODO: make this into a user-facing error if this situation
   // can come up in practice.
   CHPL_ASSERT(savePos - moduleSectionStart < INT32_MAX);
@@ -537,33 +534,12 @@ Region LibraryFileWriter::writeLocations(const uast::Module* mod,
     ser.writeData(&hash, sizeof(hash));
   }
 
-  /*
-  // create a vector of group offsets, initially just storing 0s
-  // store an additional offset for the offset just after the last
-  auto groupOffsets = std::vector<uint32_t>(header.nGroups+1, 0);
-  // write the 0s to reserve the space to update later
-  uint64_t groupOffsetsStart = fileStream.tellp();
-  ser.writeData(&groupOffsets[0], sizeof(uint32_t*)*groupOffsets.size());
-  */
-
   // write the locations group for each top-level symbol,
   // including the module itself
   n = header.nGroups;
   for (size_t i = 0; i < n; i++) {
     writeLocationGroup(reg.symbolTableVec[i], ser, reg, pathToIdx);
   }
-  // and update the last group offset with the current position
-  //groupOffsets[n] = fileStream.tellp();
-
-  // update the group offsets table in the file now that we know it
-  /*auto savePos = fileStream.tellp();
-
-  fileStream.seekp(groupOffsetsStart);
-  fileStream.write((const char*) &groupOffsets[0],
-                   sizeof(uint32_t*)*groupOffsets.size());
-
-  // seek back where we were
-  fileStream.seekp(savePos);*/
 
   uint64_t locationsSectionEnd = fileStream.tellp();
   return makeRegion(locationsSectionStart - reg.moduleSectionStart,
@@ -619,7 +595,6 @@ void
 LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
                                         Serializer& ser,
                                         LibraryFileSerializationHelper& reg,
-                                        //uint64_t& lastAstOffset,
                                         int& lastLine) {
   Location entryLoc = parsing::locateAst(context, ast);
 

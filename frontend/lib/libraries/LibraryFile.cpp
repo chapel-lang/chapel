@@ -358,10 +358,6 @@ bool LibraryFile::readModuleSection(Context* context,
   // string offsets start just after the header
   mod.stringOffsetsTable = (const uint32_t*) (strTableHeader+1);
 
-  // module section data
-  //mod.moduleSectionData = fileData + r.start;
-  //mod.moduleSectionLen = r.end - r.start;
-
   LibraryFileDeserializationHelper helper = setupHelper(context, &mod);
 
   // also read the symbol table uast locations

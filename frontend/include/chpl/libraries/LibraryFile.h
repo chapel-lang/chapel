@@ -67,8 +67,6 @@ class LibraryFileDeserializationHelper {
   // This will be computed from reading the long strings section header.
   // A copy is stored here as a performance optimization.
   int nStrings = 0;
-  //const unsigned char* moduleSectionData = nullptr;
-  //size_t moduleSectionLen = 0;
   const unsigned char* stringSectionData = nullptr;
   size_t stringSectionLen = 0;
   const uint32_t* stringOffsetsTable = nullptr;
