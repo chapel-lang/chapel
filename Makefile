@@ -169,7 +169,7 @@ c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
-chplcheck: FORCE
+chplcheck: frontend-shared FORCE
 	@# chplcheck's build files take care of ensuring the virtual env is built.
 	@# Best not to depend on chapel-py-venv here, because at the time of
 	@# writing this target is always FORCEd (so we'd end up building it twice).
