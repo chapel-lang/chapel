@@ -11,8 +11,8 @@ record R: serializable {
 proc main() {
   const fileName = "data.json";
 
-  var l1 = createRandomJsonFile(n, fileName);
-  var l2 = readParallelRecords(fileName);
+  const l1 = createRandomJsonFile(n, fileName);
+  const l2 = readParallelLocal(fileName, R, nTasks, skipHeaderBytes=-1, jsonDeserializer);
 
   for (j1, j2) in zip(l1, l2) {
     assert(j1.x == j2.x);
@@ -45,12 +45,6 @@ proc createRandomJsonFile(numRecords: int, fileName: string): list(R) {
   }
 
   return l;
-}
-
-proc readParallelRecords(fileName: string): list(R) {
-  var f = open(fileName, ioMode.r);
-  const values = readParallelLocal(f, R, nTasks, skipHeaderBytes=-1, jsonDeserializer);
-  return values;
 }
 
 proc R.init() {

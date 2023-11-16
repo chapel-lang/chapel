@@ -1,13 +1,10 @@
 use ParallelIO, IO;
-use fastQSequence;
+use fastqSequence;
 
 config const nTasks = here.maxTaskPar;
 
-// open a fastq file
-var f = open("data.fastq", ioMode.r);
-
 // read in parallel
-var sequences = readParallelLocal(f, fastQSequence, nTasks);
+var sequences = readParallelLocal("data.fastq", fastQSequence, nTasks);
 
 // print a few sequences
 const n = sequences.size;

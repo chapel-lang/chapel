@@ -1,13 +1,10 @@
 use ParallelIO, IO;
-use fastQSequence;
+use fastqSequence;
 
 config const nTasksPerLoc = 1;
 
-// open a fastq file
-var f = open("data.fastq", ioMode.r);
-
 // read in parallel across 'Locales' (test expects "-nl4")
-var sequences = readParallel(f, fastQSequence, nTasksPerLoc);
+var sequences = readParallel("data.fastq", fastQSequence, nTasksPerLoc);
 
 // print a few sequences from each locale
 for param i in 0..<4 do on Locales[i] {

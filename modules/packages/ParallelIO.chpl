@@ -47,14 +47,14 @@ module ParallelIO {
           * have a throwing deserializing initializer
           * have a default (zero argument) initializer
 
-    :arg f: the file to read from
+    :arg filePath: a path to the file to read from
     :arg t: the type of value to read from the file
-    :arg targetLocales: the locales to read the file on
     :arg tasksPerLoc: the number of tasks to use per locale
         (if ``-1``, query ``here.maxTaskPar``)
     :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
         (if ``-1``, search for the first ``t`` value in the file and start there)
     :arg deserializerType: the type of deserializer to use
+    :arg targetLocales: the locales to read the file on
 
     :returns: a block distributed array of lists of ``t`` values with one
       list per locale
@@ -62,9 +62,9 @@ module ParallelIO {
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found
       in any of the blocks
   */
-  proc readParallel(f: file, type t, targetLocales: [?d] locale = Locales,
-                    tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
-                    type deserializerType = defaultDeserializer
+  proc readParallel(filePath: string, type t, tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
+                    type deserializerType = defaultDeserializer,
+                    targetLocales: [?d] locale = Locales
   ): [] list(t) throws
     where d.rank == 1
   {
@@ -80,18 +80,20 @@ module ParallelIO {
     }
 
     // find the starting offsets for each locale
-    const startOffsets = getStartOffsets(f, d.size, globalStartOffset..<f.size, t, findStart, deserializerType);
+    const f = open(filePath, ioMode.r),
+          startOffsets = getStartOffsets(f, d.size, globalStartOffset..<f.size, t, findStart, deserializerType);
 
     coforall loc in targetLocales with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
             indices = startOffsets[loc.id]..<startOffsets[loc.id+1],
-            tStartOffsets = getStartOffsets(f, nTasks, indices, t, false, deserializerType);
+            locFile = open(filePath, ioMode.r),
+            tStartOffsets = getStartOffsets(locFile, nTasks, indices, t, false, deserializerType);
 
       var tResults: [0..nTasks] list(t);
       coforall tid in 0..<nTasks with (ref tResults) {
         const tIndices = tStartOffsets[tid]..<tStartOffsets[tid+1];
         var des: deserializerType,
-            r = f.reader(locking=false, region=tIndices, deserializer=des),
+            r = locFile.reader(locking=false, region=tIndices, deserializer=des),
             s = new t();
 
         // read all the 't' values in the block into a list
@@ -127,7 +129,7 @@ module ParallelIO {
           * have a throwing deserializing initializer
           * have a default (zero argument) initializer
 
-    :arg f: the file to read from
+    :arg filePath: a path to the file to read from
     :arg t: the type of value to read from the file
     :arg nTasks: the number of tasks to use
     :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
@@ -139,7 +141,7 @@ module ParallelIO {
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
       any of the blocks
   */
-  proc readParallelLocal(f: file, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
+  proc readParallelLocal(filePath: string, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
                          type deserializerType = defaultDeserializer
   ): list(t) throws {
     var findStart = false,
@@ -151,8 +153,9 @@ module ParallelIO {
       globalStartOffset = skipHeaderBytes;
     }
 
-    const startOffsets = getStartOffsets(f, nTasks, globalStartOffset..<f.size, t, findStart, deserializerType);
     var results: [0..nTasks] list(t);
+    const f = open(filePath, ioMode.r),
+          startOffsets = getStartOffsets(f, nTasks, globalStartOffset..<f.size, t, findStart, deserializerType);
 
     coforall tid in 0..<nTasks with (ref results) {
       const indices = startOffsets[tid]..<startOffsets[tid+1];
