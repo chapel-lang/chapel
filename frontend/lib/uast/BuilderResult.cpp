@@ -181,8 +181,9 @@ void BuilderResult::mark(Context* context) const {
   }
 
   context->markPointer(libraryFile_);
-  // libraryFileSymbols_ only has IDs that should have been marked
-  // by the above
+
+  // libraryFileSymbols_ only has IDs that should have been marked above
+  (void) libraryFileSymbols_;
 
   // update the filePathForModuleName query
   BuilderResult::updateFilePaths(context, *this);
