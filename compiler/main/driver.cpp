@@ -54,6 +54,7 @@
 
 #include <string>
 #include <map>
+#include <regex>
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -1975,8 +1976,8 @@ static void checkLLVMCodeGen() {
               "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
   if (fLlvmCodegen) {
-    if ((ccflags.find("-pg") != std::string::npos) ||
-        (ldflags.find("-pg") != std::string::npos)) {
+    auto re = std::regex("(^|\\s)-pg($|\\s)");
+    if (std::regex_search(ccflags, re) || std::regex_search(ldflags, re)) {
       USR_WARN("The LLVM target compiler does not currently support '-pg'");
     }
   }
