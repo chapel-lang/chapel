@@ -626,4 +626,202 @@ module GPU
   */
   inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
 
+
+
+  // ============================
+  // GPU Scans
+  // ============================
+
+  // The following functions are used to implement GPU scans. They are
+  // intended to be called from a GPU locale.
+  import Math;
+
+  private param DefaultGpuBlockSize = 512;
+
+  /*
+    Calculates an exclusive prefix sum (scan) of an array on the GPU.
+    The array must be in GPU-accessible memory and the function
+    must be called from outside a GPU-eligible loop.
+    Arrays of numeric types are supported.
+    A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
+         gpuScan(Arr);
+         writeln(Arr); // [0, 3, 5, 6, 11]
+       }
+  */
+  proc gpuScan(ref gpuArr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+    if(!here.isGpu()) then halt("gpuScan must be run on a gpu locale");
+    if gpuArr.size==0 then return;
+    if(gpuArr.rank > 1) then compilerError("gpuScan only supports 1D arrays");
+
+    // Use a simple algorithm for small arrays
+    // TODO check the actual thread block size rather than 2*default
+    if gpuArr.size <= DefaultGpuBlockSize*2 {
+      // The algorithms only works for arrays that are size of a power of two.
+      // In case it's not a power of two we pad it out with 0s
+      const size = Math.roundToPowerof2(gpuArr.size);
+      if size == gpuArr.size {
+        // It's already a power of 2 so we don't do copies back and forth
+        singleBlockScan(gpuArr);
+        return;
+      }
+      var arr : [0..<size] t;
+      arr[0..<gpuArr.size] = gpuArr;
+
+      singleBlockScan(arr);
+
+      // Copy back
+      gpuArr=arr[0..<gpuArr.size];
+    } else {
+      // We use a parallel scan algorithm for large arrays
+      parallelArrScan(gpuArr);
+    }
+  }
+
+  private proc singleBlockScan(ref gpuArr: [] ?t) {
+    // Hillis Steele Scan is better if we can scan in
+    // a single thread block
+    // TODO check the actual thread block size rather than the default
+    if gpuArr.size <= DefaultGpuBlockSize then
+      hillisSteeleScan(gpuArr);
+    else
+      blellochScan(gpuArr);
+  }
+
+  private proc parallelArrScan(ref gpuArr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+    // Divide up the array into chunks of a reasonable size
+    // For our default, we choose our default block size which is 512
+    const scanChunkSize = DefaultGpuBlockSize;
+    const numScanChunks = Math.divCeil(gpuArr.size, scanChunkSize);
+
+    if numScanChunks == 1 {
+      hillisSteeleScan(gpuArr);
+      return;
+    }
+
+    // Allocate an accumulator array
+    var gpuScanArr : [0..<numScanChunks] t;
+    const low = gpuArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
+    const ceil = gpuArr.domain.high;
+    // In parallel: For each chunk we do an in lane serial scan
+    @assertOnGpu
+    foreach chunk in 0..<numScanChunks {
+      const start = low+chunk*scanChunkSize;
+      const end = min(ceil, start+scanChunkSize-1);
+      gpuScanArr[chunk] = gpuArr[end]; // Save the last element before the scan overwrites it
+      serialScan(gpuArr, start, end); // Exclusive scan in serial
+      gpuScanArr[chunk] += gpuArr[end]; // Save inclusive scan in the scan Arr
+
+    }
+
+      // Scan the scanArr and we do it recursively
+      gpuScan(gpuScanArr);
+
+      @assertOnGpu
+      foreach i in gpuArr.domain {
+        // In propagate the right values from scanArr
+        // to complete the global scan
+        const offset : int = (i-low) / scanChunkSize;
+        gpuArr[i] += gpuScanArr[offset];
+      }
+  }
+
+  // This function requires that startIdx and endIdx are within the bounds of the array
+  // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
+  private proc serialScan(ref arr: [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high){
+    // Convert this count array into a prefix sum
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // This is an exclusive scan
+    // Serial implementation
+    if boundsChecking then
+      assert(startIdx >= arr.domain.low && endIdx <= arr.domain.high);
+    // Calculate the prefix sum
+    var sum : t = 0;
+    for i in startIdx..endIdx {
+      var temp : t = arr[i];
+      arr[i] = sum;
+      sum += temp;
+    }
+  }
+
+  private proc hillisSteeleScan(ref arr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+    // Hillis Steele Scan
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // Uses a naive algorithm that does O(nlogn) work
+    // Hillis and Steele (1986)
+    const x = arr.size;
+    if(x== 0) then return;
+    if (x & (x - 1)) !=0 then {
+      halt("Hillis Steele Scan only works for arrays of size a power of two.");
+    }
+
+    var offset = 1;
+    while offset < arr.size {
+        var arrBuffer = arr;
+        const low = arr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+        @assertOnGpu
+        foreach idx in offset..<arr.size {
+          const i = idx + low;
+          arr[i] = arrBuffer[i] + arrBuffer[i-offset];
+        }
+        offset = offset << 1;
+    }
+
+    // Change inclusive scan to exclusive
+    var arrBuffer = arr;
+    foreach i in arr.domain.low+1..arr.domain.high {
+      arr[i] = arrBuffer[i-1];
+    }
+    arr[arr.domain.low] = 0;
+  }
+
+  private proc blellochScan(ref arr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+    // Blelloch Scan
+    // This is the same as the count array, but each element is the sum of all previous elements
+    // Uses a more efficient algorithm that does O(n) work
+    // Blelloch (1990)
+
+    const x = arr.size;
+    if(x== 0) then return;
+    if (x & (x - 1)) !=0 then {
+      halt("Blelloch Scan only works for arrays of size a power of two.");
+    }
+
+
+    const low = arr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
+    // Up-sweep
+    var offset = 1;
+    while offset < arr.size {
+      var arrBuffer = arr;
+      const doubleOff = offset << 1;
+      @assertOnGpu
+      foreach idx in 0..<arr.size/(2*offset) {
+        const i = idx*doubleOff + low;
+        arr[i+doubleOff-1] = arrBuffer[i+offset-1] + arrBuffer[i+doubleOff-1];
+      }
+      offset = offset << 1;
+    }
+
+    // Down-sweep
+    arr[arr.domain.high] = 0;
+    offset = arr.size >> 1;
+    while offset > 0 {
+      var arrBuffer = arr;
+      @assertOnGpu
+      foreach idx in 0..<arr.size/(2*offset) {
+        const i = idx*2*offset+low;
+        const t = arrBuffer[i+offset-1];
+        arr[i+offset-1] = arrBuffer[i+2*offset-1];
+        arr[i+2*offset-1] = arr[i+2*offset-1] + t;
+      }
+      offset = offset >> 1;
+    }
+  }
+
 }
