@@ -47,7 +47,6 @@ namespace uast {
 }
 namespace libraries {
 class LibraryFile;
-struct LocationsMap;
 
 /** Helper object to interact with the Deserializer to:
       * read long strings from a LibraryFile strings table
