@@ -178,9 +178,8 @@ Profiling the generated code
 
 Some Chapel programmers have had success profiling Chapel's generated
 code using ``gprof`` using the instructions given below.  Others have
-had successes with the Linux-based ``perf record``/``perf report``
-commands, HPCToolkit, or other performance analysis tools (not covered
-here).
+had successes with the Linux-based ``perf`` command, HPCToolkit, or
+other performance analysis tools (not covered here).
 
 To use ``gprof``:
 

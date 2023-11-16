@@ -2,3 +2,4 @@
 --ldflags=-pg
 --ccflags="-O3 -pg -O3"
 --ccflags=-pg --ldflags=-pg
+--ccflags=-Iprk-iz-pgs         # testPgWithLlvm-ok.good
