@@ -467,12 +467,15 @@ const char* Symbol::getSanitizedMsg(std::string msg) const {
   return astr(chpl::removeSphinxMarkup(msg));
 }
 
+std::unordered_set<std::pair<Symbol*,Expr*>> dedupDeprecationWarnings;
+
 void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
   if (!this->hasFlag(FLAG_DEPRECATED)) return;
 
   Symbol* contextParent = context->parentSymbol;
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   bool ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
 
   // Ignore initialization of deprecated fields in initializers.
@@ -493,14 +496,19 @@ void Symbol::maybeGenerateDeprecationWarning(Expr* context) {
          ignoreUsage != true) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
     ignoreUsage = contextParent->hasFlag(FLAG_IGNORE_DEPRECATED_USE);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler or also deprecated.
   if (!compilerGenerated && !parentDeprecated && !ignoreUsage) {
-    USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+    auto key = std::make_pair(this, context);
+    if (dedupDeprecationWarnings.find(key) == dedupDeprecationWarnings.end()) {
+      USR_WARN(context, "%s", getSanitizedMsg(getDeprecationMsg()));
+      dedupDeprecationWarnings.insert(key);
+    }
   }
 }
 
@@ -528,6 +536,8 @@ static bool isUnstableShouldWarn(Symbol* sym, Expr* initialContext) {
   return fWarnUnstable;
 }
 
+std::unordered_set<std::pair<Symbol*,Expr*>> dedupUnstableWarnings;
+
 //based on maybeGenerateDeprecationWarning
 void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   if (!isUnstableShouldWarn(this, context)) return;
@@ -535,7 +545,8 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
   Symbol* contextParent = context->parentSymbol;
   bool parentUnstable = isUnstableContext(contextParent);
   bool parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+  bool compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                          !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
 
   // Traverse until we find an unstable parent symbol, a deprecated parent
   // symbol, a compiler generated parent symbol, or until we reach the highest
@@ -548,13 +559,18 @@ void Symbol::maybeGenerateUnstableWarning(Expr* context) {
     contextParent = contextParent->defPoint->parentSymbol;
     parentUnstable = isUnstableContext(contextParent);
     parentDeprecated = contextParent->hasFlag(FLAG_DEPRECATED);
-    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED);
+    compilerGenerated = contextParent->hasFlag(FLAG_COMPILER_GENERATED) &&
+                       !contextParent->hasFlag(FLAG_DEFAULT_ACTUAL_FUNCTION);
   }
 
   // Only generate the warning if the location with the reference is not
   // created by the compiler, is not unstable, and is not deprecated.
   if (!compilerGenerated && !parentUnstable && !parentDeprecated) {
-    USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
+    auto key = std::make_pair(this, context);
+    if (dedupUnstableWarnings.find(key) == dedupUnstableWarnings.end()) {
+      USR_WARN(context, "%s", getSanitizedMsg(getUnstableMsg()));
+      dedupUnstableWarnings.insert(key);
+    }
   }
 }
 
