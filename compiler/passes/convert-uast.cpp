@@ -3155,8 +3155,6 @@ struct Converter {
 
     if (node->body()) {
       INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
-
-      // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
     }

@@ -3034,6 +3034,11 @@ void Resolver::exit(const MultiDecl* decl) {
 bool Resolver::enter(const TupleDecl* decl) {
   enterScope(decl);
 
+  // TODO: Can we just do this every time we 'enterScope'?
+  CHPL_ASSERT(scopeStack.size() > 0);
+  const Scope* scope = scopeStack.back();
+  emitMultipleDefinedSymbolErrors(context, scope);
+
   // Establish the type of the type expr / init expr within
   if (auto t = decl->typeExpression()) {
     t->traverse(*this);
