@@ -676,7 +676,7 @@ class Context {
    markPointer can be used to mark a pointer, where
    it is considered owned if the type is owned.
 
-   This overload just calls markPointer.
+   This overload just calls markUnownedPointer.
    */
   template<typename T>
   void markPointer(const T* ptr) {

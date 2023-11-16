@@ -21,8 +21,11 @@
 #define CHPL_LIBRARIES_LIBRARY_FILE_WRITER_H
 
 #include "chpl/framework/UniqueString.h"
+#include "chpl/libraries/LibraryFileFormat.h"
 
 #include <fstream>
+#include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 namespace chpl {
@@ -34,15 +37,66 @@ namespace uast {
 namespace libraries {
 
 
+class LibraryFileWriter;
+
+/**
+  Helper object for registering serialized uAST positions during serialization
+ */
+struct LibraryFileSerializationHelper {
+ friend class LibraryFileWriter;
+
+ private:
+  uint64_t moduleSectionStart = 0;
+  uint64_t astSectionStartFileOffset = 0;
+  uint64_t locationSectionStartFileOffset = 0;
+  uint64_t astCounter = 0;
+
+  // stores the uAST nodes that are represented in the symbol table
+  // in uAST declaration / traversal order
+  std::vector<const uast::AstNode*> symbolTableVec;
+  // a set storing the same elements as symbolTableVec
+  std::unordered_set<const uast::AstNode*> symbolTableSet;
+
+  // stores the relative offset (to the start of the module header)
+  // for serialized uAST for the given node
+  // Only nodes in symbolTableSet are represented here.
+  std::unordered_map<const uast::AstNode*, uint32_t> astOffsets;
+
+  // stores the relative offset (to the start of the module header)
+  // for serialized Location information for the given node.
+  // Only nodes in symbolTableSet are represented here.
+  std::unordered_map<const uast::AstNode*, uint32_t> locOffsets;
+
+  LibraryFileSerializationHelper() { }
+
+ public:
+  /** Record that a symbol should be present in the symbol table. */
+  void noteSymbolForTable(const uast::AstNode* ast);
+
+  /* Should be called when starting to serialize a uAST node */
+  void beginAst(const uast::AstNode* ast, std::ostream& os);
+  /* Should be called when finishing serialization of a uAST node */
+  void endAst(const uast::AstNode* ast, std::ostream& os);
+};
+
+
 /** For writing a .dyno library file */
 class LibraryFileWriter {
  private:
+  using PathToIndex = std::unordered_map<UniqueString, unsigned int>;
+
   Context* context = nullptr;
   std::vector<UniqueString> inputFiles;
   std::string outputFilePath;
   std::ofstream fileStream;
+  bool ok = true;
+
   // top-level modules and paths where they came from
   std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
+
+  /** Emit an error indicating failure to create the library and
+      set 'ok' to 'false' */
+  void fail(const char* msg);
 
   /** Gather the top-level modules */
   void gatherTopLevelModules();
@@ -58,28 +112,52 @@ class LibraryFileWriter {
 
   /** Write the module section for the given module. Returns
      the file offset to this section. */
-  uint64_t writeModuleSection(const uast::Module* mod,
-                              UniqueString fromFilePath);
+  Region writeModuleSection(const uast::Module* mod,
+                            UniqueString fromFilePath);
+
+  /** Note the top-level symbols for the passed module for the symbol table */
+  void noteToplevelSymbolsForTable(const uast::Module* mod,
+                                   LibraryFileSerializationHelper& reg);
 
   /** Write the symbol table for a given module. Returns the
-      relative offset to the symbol table. */
-  uint64_t writeSymbolTable(const uast::Module* mod,
-                            uint64_t moduleSectionStart);
+      module-relative offset to the symbol table. */
+  Region writeSymbolTable(const uast::Module* mod,
+                          Serializer& ser,
+                          LibraryFileSerializationHelper& reg);
 
   /** Write the uAST section. This will populate 'longStringsOffsets'
-      with 0 offsets. Returns the relative offset of the uAST section. */
-  uint64_t writeAst(const uast::Module* mod,
-                    uint64_t moduleSectionStart,
-                    Serializer& ser);
+      with 0 offsets. Returns the module-relative offset of the uAST section. */
+  Region writeAst(const uast::Module* mod,
+                  Serializer& ser,
+                  LibraryFileSerializationHelper& reg);
 
   /** Write the long strings in 'longStringsOffsets' that were gathered
       in the process of writing the module & update their indices.
-      Returns the relative offset to the long strings section. */
-  uint64_t writeLongStrings(uint64_t moduleSectionStart, Serializer& ser);
+      Returns the module-relative offset to the long strings section. */
+  Region writeLongStrings(uint64_t moduleSectionStart, Serializer& ser);
 
-  /** Write the locations. Returns the relative offset of the locations section.
+  /** Write the locations.
+      Returns the module-relative offset of the locations section.
   */
-  uint64_t writeLocations(const uast::Module* mod, uint64_t moduleSectionStart);
+  Region writeLocations(const uast::Module* mod,
+                        Serializer& ser,
+                        LibraryFileSerializationHelper& reg);
+
+  /** Write a locations group starting with the location for 'ast'
+      and contained locations until reaching another node that
+      is in the symbol table (and so gets its own location group).
+      Returns the relative offset of the locations group. */
+  Region writeLocationGroup(const uast::AstNode* ast,
+                            Serializer& ser,
+                            LibraryFileSerializationHelper& reg,
+                            const PathToIndex& pathToIdx);
+
+  /** Write the location entry for a given ast node and its children,
+      stopping when reaching a child node in the symbol table */
+  void writeLocationEntries(const uast::AstNode* ast,
+                            Serializer& ser,
+                            LibraryFileSerializationHelper& reg,
+                            int& lastLine);
 
  public:
   /**

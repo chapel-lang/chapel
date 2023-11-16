@@ -1012,7 +1012,7 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
     std::stringstream ss;
 
     // serialize to the string stream
-    chpl::Serializer ser(ss);
+    chpl::Serializer ser(ss, /*LibraryFileAstRegistration*/ nullptr);
     ast->serialize(ser);
 
     // deserialize from the same
@@ -1027,7 +1027,8 @@ dynoVerifySerialization(const chpl::uast::BuilderResult& builderResult,
     auto builder =
       chpl::uast::Builder::createForLibraryFileModule(gContext,
                                                       libPath,
-                                                      parentSymbolPath);
+                                                      parentSymbolPath,
+                                                      /*LibraryFile*/ nullptr);
 
     builder->addToplevelExpression(
         chpl::uast::AstNode::deserializeWithoutIds(des));

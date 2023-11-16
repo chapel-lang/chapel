@@ -2560,7 +2560,7 @@ static void embedGpuCode() {
   std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   std::string buffer;
   std::string err;
-  chpl::readfile(fatbinFilename.c_str(), buffer, err);
+  chpl::readFile(fatbinFilename.c_str(), buffer, err);
   if (!err.empty()) {
     USR_FATAL("Error while reading GPU binary: %s", err.c_str());
   }
