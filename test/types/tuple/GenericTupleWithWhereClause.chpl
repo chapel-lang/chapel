@@ -3,6 +3,6 @@ proc bar((x , y)) where isRealType(x.type) && isImagType(y.type) {
 }
 
 proc main() {
-  var n = bar((2.0, 8.0));
+  var n = bar((2.0, 8.0i));
   writeln(n);
 }
