@@ -318,8 +318,7 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
       // No need to warn if the argument intent was going to be converted to
       // `const in`
       if (constIntentForType(arg->type) == INTENT_CONST_REF) {
-        // Want this to be an unstable warning, and to be silenced by --fast or
-        // turning off the TBD explicit flag, and not trigger for internal or
+        // Want this to be an unstable warning, and not trigger for internal or
         // standard modules
         auto mod = fn->getModule();
         bool shouldWarnInternal = (mod->modTag == MOD_INTERNAL &&
