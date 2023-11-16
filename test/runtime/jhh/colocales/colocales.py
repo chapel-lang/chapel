@@ -21,6 +21,7 @@ if not 'CHPL_HOME' in os.environ:
 import sub_test
 import printchplenv
 
+
 verbose = False
 skipReason = None
 
@@ -59,6 +60,13 @@ def skipif():
 def stringify(lst):
     return " ".join([str(i) for i in lst])
 
+"""
+This class defines utility functions and the test cases (which start
+with 'test_'). The tests in this class are not run directly, but instead are
+run from subclasses that use different machine topologies. The outer class
+'TestCases' prevents the unittest framework from trying to run the test cases
+in TestCase.
+"""
 class TestCases(object):
     """
     This outer class prevents the unittest framework from running the
@@ -113,6 +121,10 @@ class TestCases(object):
         def getSocketThreads(self, socket):
             return self.getThreads(socket, self.sockets)
 
+        """
+        One locale, should have access to all cores and threads and use the
+        suggested NIC.
+        """
         def test_00_base(self):
             """
             One locale, should have access to all cores and threads and use
@@ -125,6 +137,10 @@ class TestCases(object):
             self.assertIn("Logical CPUs: %s\n" % cpus, output)
             self.assertIn("NIC: " + self.nics[0], output)
 
+        """
+        One locale, should have access to all cores and threads and use
+        another NIC when it is suggested.
+        """
         def test_01_use_another_NIC(self):
             """
             One locale, should have access to all cores and threads and use
@@ -180,6 +196,10 @@ sockets, cores, etc., from those files, but for now we just hard-code that
 information because there are only a few configurations.
 """
 
+"""
+HPE Cray EX. Two sockets, four NUMA domains per socket, 64 cores per socket,
+two threads per core, and one NIC per socket.
+"""
 class Ex2Tests(TestCases.TestCase):
     """
     HPE Cray EX. Two sockets, four NUMA domains per socket, 64 cores per
@@ -195,6 +215,11 @@ class Ex2Tests(TestCases.TestCase):
         self.nics= ['0000:21:00.0', '0000:a1:00.0']
         self.nicForSocket = ['0000:21:00.0', '0000:a1:00.0']
 
+"""
+AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
+cores per socket, one thread per core, and one NIC not in a socket.
+domains.
+"""
 class Hpc6aTests(TestCases.TestCase):
     """
     AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
@@ -211,6 +236,8 @@ class Hpc6aTests(TestCases.TestCase):
         self.nics= ['0000:00:06.0']
         self.nicForSocket = ['0000:00:06.0', '0000:00:06.0']
 
+# AWS m6in-dy-m6in32xlarge instance. Two sockets, one NUMA domain per socket,
+# 32 cores per socket, one thread per core, and two NICs not in sockets.
 
 class M6inTests(TestCases.TestCase):
     """
