@@ -14,13 +14,8 @@ proc main() {
     var c: C = new shared D(int);
     var d = c: shared D;
   }
-  // borrowed -> borrowed
-  if i == 2 {
-    var c: C = new borrowed D(int);
-    var d = c: borrowed D;
-  }
   // unmanaged -> unmanaged 
-  if i == 3 {
+  if i == 2 {
     var c: C = new unmanaged D(int);
     var d = c: unmanaged D;
   }

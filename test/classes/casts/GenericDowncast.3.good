@@ -1,3 +1,2 @@
 GenericDowncast.chpl:6: In function 'main':
-GenericDowncast.chpl:19: warning: creating a 'new borrowed' type is deprecated
-GenericDowncast.chpl:20: error: illegal downcast to generic superclass type 'borrowed D'
+GenericDowncast.chpl:20: error: illegal downcast to generic superclass type 'unmanaged D'
