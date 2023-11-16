@@ -34,7 +34,24 @@ module GpuSort
   import Math;
   import Time;
 
+  /*
+    Sort an array on the GPU.
+    The array must be in GPU-accessible memory and the function must
+    be called from outside a GPU-eligible loop.
+    Only arrays with uint eltType are supported.
+    A simple example is the following:
+
+     .. code-block:: chapel
+
+       on here.gpus[0] {
+         var Arr = [3, 2, 1, 5, 4] : uint; // will be GPU-accessible
+         GpuSort.sort(Arr);
+         writeln(Arr); // [1, 2, 3, 4, 5]
+       }
+  */
   proc sort(ref gpuInputArr: [] uint) {
+    if(!here.isGpu()) then halt("GpuSort.sort must be run on a gpu locale");
+
     if gpuInputArr.size == 0 then return;
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
     // TODO better heuristic here?
@@ -42,6 +59,7 @@ module GpuSort
     parallelRadixSort(gpuInputArr, bitsAtATime=8, chunkSize, noisy=false, distributed=false);
   }
 
+  // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
   proc parallelRadixSort(ref gpuInputArr: [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
                          const distributed : bool = false) { // The last argument is for multi GPU sort that is pending a patch before it can work
@@ -75,9 +93,8 @@ module GpuSort
     var timer: Time.stopwatch;
     // Ceiling on number of iterations based on max element in array
     timer.start();
-    var maxVal = 0 : uint;
+    var maxVal = max(uint);
     // Reduce can be used to do this faster
-    maxVal -=1; // Set to max uint by causing an underflow
     // We do this because the preferred ways below either don't work
     // or take too long
     // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
@@ -167,7 +184,7 @@ module GpuSort
     foreach chunk in startChunk..#numChunksThisGpu {
       // Count for each chunk in parallel.
       const startIdx : int = (chunk:int)*chunkSize;
-      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+      const endIdx : int = min(arrSize,startIdx+chunkSize);
       for i in startIdx..<endIdx {
         const arrIdx = i+low;
         const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int;
@@ -229,7 +246,7 @@ module GpuSort
     foreach chunk in 0..<numChunks {
       // Count for each chunk in parallel.
       const startIdx : int = (chunk:int)*chunkSize;
-      const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+      const endIdx : int = min(arrSize,startIdx+chunkSize);
       for i in startIdx..<endIdx {
         const arrIdx = i+low;
         const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look

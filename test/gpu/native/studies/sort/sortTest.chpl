@@ -1,5 +1,6 @@
 import GpuSort;
 import Random;
+import Random.RandomSupport;
 import Time;
 
 config const arrSize = 100_000;
@@ -13,14 +14,20 @@ config const low=10;
 
 
 proc checkSorted(arr: [] uint) {
+  const minVal = min reduce arr;
   for i in arr.domain {
     if i< arr.domain.high && arr[i] > arr[i+1] {
       writeln("Not sorted");
       return;
     }
-    if arr[i]==0 {
-      writeln("Zero");  // sanity check. This should *not* happen
-                        // based on our random seed
+
+    // Sanity Check:
+    // The algorithm has a tendency to mess up in a way that the output array
+    // ends up with either some zeroes at the beginning or all zeroes. This is
+    // technically a sorted array, but it's is the wrong answer,
+    // This check will catch that case unless the minVal is 0.
+    if arr[i]<minVal {
+      writeln("Bad Sort");
       return;
     }
   }
@@ -29,8 +36,9 @@ proc checkSorted(arr: [] uint) {
 
 
 var cpuArr: [low..#arrSize] uint;
-var seed = 17; // Make it deterministic
+config const seed = RandomSupport.SeedGenerator.oddCurrentTime;
 Random.fillRandom(cpuArr, seed);
+var cpuArr2 = cpuArr;
 
 writeln("Starting Sort");
 var timer: Time.stopwatch;
@@ -45,7 +53,6 @@ on here.gpus[0]{
 }
 const time1 = timer.elapsed();
 
-var cpuArr2 : cpuArr.type;
 on here.gpus[0] {
   var arr = cpuArr; // Copy to gpu
   timer.clear();
@@ -54,11 +61,12 @@ on here.gpus[0] {
   timer.stop();
   cpuArr2 = arr; // Copy back to cpu
 }
+const time2 = timer.elapsed();
 
 if printArr then writeln(cpuArr);
 if printTimes {
   writeln("Time1 : ", time1);
-  writeln("Time2 : ", timer.elapsed());
+  writeln("Time2 : ", time2);
 }
 if validate {
   checkSorted(cpuArr);

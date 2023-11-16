@@ -1,1 +1,2 @@
 --devel
+-smultiDimArray  # multiDimScanArray.good # This tests multi dimensional arrays (unsupported)
