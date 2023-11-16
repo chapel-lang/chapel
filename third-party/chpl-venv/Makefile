@@ -107,6 +107,8 @@ chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	  $(CHPL_MAKE_HOME)/tools/chapel-py \
 	  -r $(CHPL_VENV_CHPLCHECK_REQUIREMENTS_FILE)
 
+chplcheck-venv: chapel-py-venv
+
 install-requirements: install-chpldeps
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR_OK) $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)

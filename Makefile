@@ -169,6 +169,12 @@ c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
 
+chplcheck: FORCE
+	@# chplcheck's build files take care of ensuring the virtual env is built.
+	@# Best not to depend on chapel-py-venv here, because at the time of
+	@# writing this target is always FORCEd (so we'd end up building it twice).
+	cd tools/chplcheck && $(MAKE) all install
+
 compile-util-python: FORCE
 	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \
 	  echo "Compiling Python scripts in util/" ; \

@@ -93,6 +93,9 @@ c2chapel-venv: FORCE
 chapel-py-venv: FORCE
 	cd chpl-venv && $(MAKE) chapel-py-venv
 
+chplcheck-venv: FORCE
+	cd chpl-venv && $(MAKE) chplcheck-venv
+
 # See gasnet/Makefile for explanation of the post-install step
 gasnet: $(GASNET_INSTALL_DIR)
 $(GASNET_INSTALL_DIR): $(GASNET_DEPEND)
