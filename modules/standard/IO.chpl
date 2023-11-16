@@ -8934,10 +8934,12 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
     if !data._value.isDataContiguous(d._value) {
       err = "writeBinary() array data must be contiguous";
-    } else if data.locale != this._home {
+    } else if data.locale.id != this._home.id {
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
     } else if endian == ioendian.native {
-      e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
+      if data.size > 0 {
+        e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
+      } // else no-op, writing a 0-element array writes nothing
     } else {
       for b in data {
         select (endian) {
@@ -9198,10 +9200,12 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
     if !data._value.isDataContiguous(d._value) {
       err = "readBinary() array data must be contiguous";
-    } else if data.locale != this._home {
+    } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
     } else if endian == ioendian.native {
-      e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+      if data.size > 0 {
+        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+      } // else no-op, reading a 0-element array reads nothing
     } else {
       for (i, b) in zip(data.domain, data) {
         select (endian) {
