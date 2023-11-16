@@ -158,25 +158,37 @@ For a symbol, the symbol table ID consists of:
  * "" for the module itself
  * the name of the symbol, for anything top-level to a module
  * the regular ID minus the module name, for anything else
+
     - Normally, symbol IDs are stored as e.g.  'MyModule.MyClass.myMethod',
       but since this entire section of the file contains things within
       'MyModule', that part is omitted; so the symbol table ID for the example
       would just be 'MyClass.myMethod'.
 
 This section consists of:
+
  * 8 bytes of magic number 0x4d59531e5ec110e0
+
  * 4 bytes of N, the number of entries
+
  * 4 bytes reserved for future use
+
  * entries sorted by symbol table ID.  For each entry, it stores:
+
    * 4 byte relative offset from the uAST section start,
      pointing to the serialized uAST for this symbol
+
    * 4 byte relative offset from the location section start,
      pointing to the location group for this symbol
+
    * a byte storing flags / kind information
+
    * unsigned variable-byte encoded, prefix A to copy from the
      previous symbol table ID
+
    * unsigned variable-byte encoded, suffix size B stored here
+
    * B bytes of suffix
+
      * the symbol table ID string is formed by concatenating
        first A bytes of the previous string with the B bytes of suffix
 
@@ -193,7 +205,9 @@ IDs are not stored here. They are recomputed when the uAST is read.
 The uAST section consists of:
 
  * 8 bytes of magic number 0x5453411e5ec110e0
+
  * 8 bytes: the total number of uAST entries
+
  * the contained entries, where each entry consists of:
 
    * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
@@ -240,12 +254,17 @@ order.
 The long strings table consists of the following:
 
  * 4 bytes magic number 0x52545301
+
  * 4 bytes N counting the number of long strings, including two unused ones:
+
      * offset 0 is unused
      * the last offset is also unused
      * so, valid long string indices are in 1 <= i < N
+
  * relative offsets of each string, from the start of the long strings section
+
    * each offset is 4 bytes
+
  * string data
 
 
