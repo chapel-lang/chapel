@@ -6284,12 +6284,25 @@ DEFINE_PRIM(CONST_ARG_HASH) {
   INT_ASSERT(call->numActuals() == 1);
   INT_ASSERT(call->get(1)->isRefOrWideRef());
   GenRet arg = call->get(1);
-  GenRet ptr = codegenValue(arg);
 
-  // Could potentially have the sizeof call inserted at the creation of the
-  // primitive
-  ret = codegenCallExpr("const_arg_hash", ptr,
-                        codegenSizeof(call->get(1)->typeInfo()));
+  if (call->get(1)->isWideRef()) {
+    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+
+    GenRet remotePtr = codegenRaddr(arg);
+    remotePtr = codegenValue(remotePtr);
+
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", remotePtr,
+                          codegenSizeof(sym->typeInfo()->getValType()));
+  } else {
+    GenRet ptr = codegenValue(arg);
+
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", ptr,
+                          codegenSizeof(call->get(1)->typeInfo()));
+  }
 }
 
 DEFINE_PRIM(CHECK_CONST_ARG_HASH) {
