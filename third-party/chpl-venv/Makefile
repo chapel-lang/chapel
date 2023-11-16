@@ -92,7 +92,12 @@ chpldoc-venv: install-chpldeps
 
 c2chapel-venv: install-chpldeps
 
-chapel-py-venv: install-chpldeps
+# the Python bindings depend on libChplFrontendShared.so, which we probably
+# shouldn't explicitly list here. So, make this target FORCE to always
+# perform a rebuild. Parent makefiles can intelligently re-build the bindings
+# as needed. Since the target is always forced, no reason to keep
+# around a sentinel file like ok1/ok2.
+chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
 	@# Install chapel-py's Python package into the Python Application
 	@# directory structure at $(CHPL_VENV_CHPLDEPS)
 	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
