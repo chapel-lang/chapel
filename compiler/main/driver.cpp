@@ -2233,13 +2233,12 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
 static void bootstrapTmpDir() {
   chpl::Context::Configuration config;
 
-  if (driverInSubInvocation) {
+  if (!fDriverDoMonolithic && driverInSubInvocation) {
     // We are in a sub-invocation and can assume that a tmp dir has been
     // established for us by the driver already, and will be deleted for us
     // later if necessary.
-    if (!driverTmpDir[0]) {
-      USR_FATAL("Driver sub-invocation was not supplied a tmp dir path");
-    }
+    INT_ASSERT(driverTmpDir[0] &&
+               "driver sub-invocation was not supplied a tmp dir path");
     config.tmpDir = driverTmpDir;
     config.keepTmpDir = true;
   } else {
