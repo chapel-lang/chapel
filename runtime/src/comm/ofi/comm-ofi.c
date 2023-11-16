@@ -1464,6 +1464,11 @@ struct fi_info* findProvInList(struct fi_info* info,
         inAddr.device = pci->device_id;
         inAddr.function = pci->function_id;
         addr = chpl_topo_selectNicByType(&inAddr, &pciAddr);
+        if (addr == NULL) {
+          // warn that something went wrong, but use this NIC so we don't
+          // come to a halt.
+          chpl_warning("internal error finding NIC in topology", 0, 0);
+        }
         // Remember this NIC in case the NIC suggested by the topology layer
         // isn't in the list of infos, in which case we'll use this one.
         best = info;
