@@ -40,8 +40,7 @@ module ParallelIO {
     used per locale, each locale will further decompose its block into smaller
     blocks and read each of those in parallel.
 
-    ..Note::
-      ``t`` must:
+    .. note:: ``t`` must:
 
           * have a 'deserialize method'
           * have a throwing deserializing initializer
@@ -122,8 +121,7 @@ module ParallelIO {
     The procedure will split the file into ``nTasks`` blocks of roughly equal
     size and read each block in parallel.
 
-    ..Note::
-      ``t`` must:
+    .. note:: ``t`` must:
 
           * have a 'deserialize method'
           * have a throwing deserializing initializer
