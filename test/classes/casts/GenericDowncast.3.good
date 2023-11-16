@@ -1,2 +1,2 @@
 GenericDowncast.chpl:6: In function 'main':
-GenericDowncast.chpl:20: error: illegal downcast to generic superclass type 'unmanaged D'
+GenericDowncast.chpl:20: error: illegal downcast to generic subclass type 'unmanaged D'
