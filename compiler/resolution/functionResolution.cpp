@@ -3138,8 +3138,9 @@ static bool isGenericSubclass(Type* targetType, Type* valueType) {
 
   const bool isDowncast = isSubType(atTarget, atValue);
   const bool isTargetTypeGeneric = atTarget->isGeneric();
+  const bool targetTypeHasDefaults = atTarget->isGenericWithDefaults();
+  bool ret = isDowncast && isTargetTypeGeneric && !targetTypeHasDefaults;
 
-  bool ret = isDowncast && isTargetTypeGeneric;
   return ret;
 }
 
@@ -3264,7 +3265,7 @@ static bool resolveBuiltinCastCall(CallExpr* call)
     // here to make sure we don't emit a nonsensical error from later in the
     // pass (e.g., in the module code for the owned manager).
     if (isGenericSubclass(targetType, valueType)) {
-      USR_FATAL(call, "illegal downcast to generic superclass type '%s'",
+      USR_FATAL(call, "illegal downcast to generic subclass type '%s'",
                       toString(targetType));
     }
   }
