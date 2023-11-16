@@ -42,7 +42,7 @@ class LibraryFileWriter;
 /**
   Helper object for registering serialized uAST positions during serialization
  */
-struct LibraryFileSerializationHelper {
+class LibraryFileSerializationHelper {
  friend class LibraryFileWriter;
 
  private:
