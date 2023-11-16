@@ -8693,6 +8693,26 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
   try this.writeBinary(b, size);
 }
 
+private proc sysEndianness() {
+  var x: int(16) = 1;
+  // if the initial byte is 0, this is a little endian system
+  if (c_addrOf(x): c_ptr(void): c_ptr(uint(8))).deref() == 0 then
+    return ioendian.big;
+  else
+    return ioendian.little;
+}
+
+private proc endianToIoKind(param e: ioendian) param {
+  if e == ioendian.native then
+    return _iokind.native;
+  else if e == ioendian.big then
+    return _iokind.big;
+  else if e == ioendian.little then
+    return _iokind.little;
+  else
+    compilerError("Unexpected value in chpl_endianToIoKind(): ", e);
+}
+
 /*
   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
 
@@ -8936,25 +8956,14 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       err = "writeBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
-    } else if endian == ioendian.native {
+    } else if endian == ioendian.native || endian == sysEndianness() {
       if data.size > 0 {
         e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
       } // else no-op, writing a 0-element array writes nothing
     } else {
       for b in data {
-        select (endian) {
-          when ioendian.native {
-            compilerError("unreachable");
-          }
-          when ioendian.big {
-            e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
-          }
-          when ioendian.little {
-            e = try _write_binary_internal(this._channel_internal, _iokind.little, b);
-          }
-        }
-
-        if e != 0 then break;
+        e = try _write_binary_internal(this._channel_internal,
+                                       endianToIoKind(endian), b);
       }
     }
   }
@@ -9195,6 +9204,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       e : errorCode = 0,  // errors from perform the IO
       numRead : c_ssize_t = 0;
 
+//    extern proc printf(x...);
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -9202,23 +9212,16 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       err = "readBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
-    } else if endian == ioendian.native {
+    } else if endian == ioendian.native || endian == sysEndianness() {
+//      printf("On fast path\n");
       if data.size > 0 {
         e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
       } // else no-op, reading a 0-element array reads nothing
     } else {
+//      printf("On slow path\n");
       for (i, b) in zip(data.domain, data) {
-        select (endian) {
-          when ioendian.native {
-            compilerError("unreachable");
-          }
-          when ioendian.big {
-            e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
-          }
-          when ioendian.little {
-            e = try _read_binary_internal(this._channel_internal, _iokind.little, b);
-          }
-        }
+        e = try _read_binary_internal(this._channel_internal,
+                                      endianToIoKind(endian), b);
 
         if e == EEOF {
           break;
