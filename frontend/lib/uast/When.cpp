@@ -29,7 +29,7 @@ void When::dumpFieldsInner(const DumpSettings& s) const {
   if (isOtherwise()) {
     s.out << " otherwise";
   }
-  return SimpleBlockLike::dumpFieldsInner(s);
+  return AstNode::dumpFieldsInner(s);
 }
 
 owned<When> When::build(Builder* builder, Location loc,
@@ -38,22 +38,15 @@ owned<When> When::build(Builder* builder, Location loc,
                         AstList stmts) {
   AstList lst;
   const int numCaseExprs = caseExprs.size();
-  const int numBodyStmts = stmts.size();
-  int bodyChildNum = NO_CHILD;
 
   for (auto& ast : caseExprs) {
     lst.push_back(std::move(ast));
   }
 
-  bodyChildNum = lst.size();
+  auto bodyBlock = Block::build(builder,loc,std::move(stmts));
+  lst.push_back(std::move(bodyBlock));
 
-  for (auto& ast : stmts) {
-    lst.push_back(std::move(ast));
-  }
-
-  When* ret = new When(std::move(lst), numCaseExprs, blockStyle,
-                       bodyChildNum,
-                       numBodyStmts);
+  When* ret = new When(std::move(lst), numCaseExprs, blockStyle);
   builder->noteLocation(ret, loc);
   return toOwned(ret);
 }

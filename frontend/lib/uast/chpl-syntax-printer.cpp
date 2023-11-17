@@ -1335,7 +1335,7 @@ struct ChplSyntaxVisitor {
       interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
+    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
   }
 
   void visit(const While* node) {

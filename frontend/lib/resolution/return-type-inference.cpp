@@ -566,6 +566,12 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
     } else {
       sel->whenStmt(otherwise)->traverse(rv);
     }
+  } else {
+    //deal with the placeholder frame
+    if (foundParamTrue) {
+      auto& topFrame = returnFrames.back();
+      topFrame->subFrames.back().skip = true;
+    }
   }
 
   return false;
