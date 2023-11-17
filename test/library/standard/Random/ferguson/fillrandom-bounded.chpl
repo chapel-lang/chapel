@@ -12,7 +12,7 @@ proc testit(seed: int, n: int) {
   var afterA:uint;
   var afterB:uint;
 
-  var rng = new randomStream(seed=seed, parSafe=false, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=int);
   for i in 1..n {
     A[i] = rng.getNext(uint);
   }
@@ -135,7 +135,7 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
   var A: [1..n] uint;
   var B: [1..n] uint;
 
-  var rng = new randomStream(seed=seed, parSafe=false, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=int);
   for i in 1..n {
     A[i] = rng.getNext(uint, min, max);
     assert(min <= A[i] && A[i] <= max);

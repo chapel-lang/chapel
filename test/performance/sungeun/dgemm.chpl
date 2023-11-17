@@ -54,7 +54,7 @@ var A: [1..n,1..m] real;
 var B: [1..m,1..o] real = 1.0;
 var C: [1..n,1..o] real = 1.0;
 if initialize then
-  fillRandom(A, 31415, algorithm=RNG.NPB);
+  fillRandom(A, 31415);
 A = A * 2.0 - 1.0;
 
 writeln("n=", n, " m=", m, " o=",o);

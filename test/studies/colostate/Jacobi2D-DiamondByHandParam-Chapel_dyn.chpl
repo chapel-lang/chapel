@@ -174,7 +174,7 @@ proc main(){
   var space: [0..1, totalSpaceRange.dim(0), totalSpaceRange.dim(1) ] Cell;
   var timer: stopwatch;
   // initialize space with values
-  var generator = new randomStream(real, globalSeed, parSafe = false);
+  var generator = new randomStream(real, globalSeed);
 
   forall (x,y) in computationDomain with (ref space) do{
      space[0, x, y] = 0;
@@ -226,7 +226,7 @@ proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
   forall (x, y) in computationalDomain with (ref spaceEndState) do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new RandomStream( real, globalSeed );
 
   for (x, y) in computationalDomain do
      space[0, x, y] = generator.getNext();

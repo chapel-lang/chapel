@@ -4,15 +4,15 @@ module Tensor {
     import IO;
     import IO.FormattedIO;
     import ChapelArray;
-    import Random;
+    import NPBRand;
     import AutoMath;
 
     param debugPrint = false;
 
-    var rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
+    var rng = new NPBRandomStream(eltType=real(64),seed=5);
     
     proc seedRandom(seed) {
-        rng = new Random.NPBRandom.NPBRandomStream(eltType=real(64),seed=(2 * seed + 1));
+        rng = new NPBRandomStream(eltType=real(64),seed=(2 * seed + 1));
     }
 
     proc err(args...?n) {
@@ -537,8 +537,8 @@ module Tensor {
     // Initialize a tensor with random values from a normal distribution
     proc randn(shape: int ...?d): Tensor(d,real) {
         var u1, u2: [domainFromShape((...shape))] real;
-        Random.fillRandom(u1,seed=(rng.getNext() * 10):int);
-        Random.fillRandom(u2,seed=(rng.getNext() * 10):int);
+        rng.fillRandom(u1,seed=(rng.getNext() * 10):int);
+        rng.fillRandom(u2,seed=(rng.getNext() * 10):int);
         const u1p = -2.0 * Math.log(u1);
         const u2p = 2.0 * Math.pi * u2;
         var z0 = sqrt(u1p);
@@ -564,6 +564,7 @@ module Tensor {
 
     // Shuffle a tensor in place
     proc shuffle(ref x) {
+        use Random;
         Random.shuffle(x,seed=(rng.getNext() * 10):int);
     }
 
@@ -796,4 +797,3 @@ module Tensor {
         return dK;
     }
 }
-

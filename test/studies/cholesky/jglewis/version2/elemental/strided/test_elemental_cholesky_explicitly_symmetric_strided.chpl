@@ -25,7 +25,7 @@ module test_elemental_explicitly_strided_cholesky {
 
   proc main {
 
-    var Rand = new randomStream ( real, seed = 314159, parSafe = false ) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const unstrided_MatIdx = { index_base .. #n, index_base .. #n };
 

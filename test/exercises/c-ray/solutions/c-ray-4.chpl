@@ -465,8 +465,8 @@ proc initRands() {
     use Random;
 
     var rng = if seed
-      then new randomStream(real, seed, false)
-      else new randomStream(real, false);
+      then new randomStream(real, seed)
+      else new randomStream(real);
     for u in rands.urand do
       u(X) = rng.getNext() - 0.5;
     for u in rands.urand do

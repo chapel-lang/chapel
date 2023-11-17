@@ -1,4 +1,4 @@
-use Random;
+use NPBRand;
 
 use BlockDist;
 

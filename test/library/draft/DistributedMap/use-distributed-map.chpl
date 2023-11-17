@@ -56,7 +56,7 @@ verify(dm2, "check2");
 record randomStrings {
   const dom    = blockDist.createDomain({0..#numStrings});
   const seed   = defaultSeed;
-  const stream = new randomStream(stringsType, seed, parSafe=false);
+  const stream = new randomStream(stringsType, seed);
 
   proc init() {} // ensure the default values are used consistently
 

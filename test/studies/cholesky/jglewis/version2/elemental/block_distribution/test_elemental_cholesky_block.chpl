@@ -26,7 +26,7 @@ module cholesky_test_elemental_symmetric_ranges {
 
   proc main {
 
-    var Rand = new randomStream ( real, seed = 314159, false ) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 

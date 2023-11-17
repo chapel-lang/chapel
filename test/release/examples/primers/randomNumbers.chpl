@@ -47,13 +47,9 @@ writeln();
 // The second way to generate a sequence of random numbers is by creating a
 // :record:`~Random.randomStream` instance.  The first argument in its
 // initializer is the type of the elements that the instance should generate.
-// The second argument is a seed value of type ``int``.  The third argument
-// specifies whether the ``randomStream`` should be safe for use in a parallel
-// context (in this case we'll use ``parSafe=false`` since the random stream
-// is only accessed by a single thread at a time).
-//
-var randStream = new randomStream(real, parSafe=false);
-var randStreamSeeded = new randomStream(real, seed, parSafe=false);
+// The second argument is a seed value of type ``int``.
+var randStream = new randomStream(real);
+var randStreamSeeded = new randomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a

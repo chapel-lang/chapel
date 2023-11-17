@@ -73,9 +73,9 @@ module Scalable_Graph_Generator
 
     // Random Numbers return in the range [0.0, 1.0)
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                      new unmanaged RandomStream (real, seed = 0556707007)
+                      new randomStream (real, seed = 0556707007)
                    else
-                      new unmanaged RandomStream (real);
+                      new randomStream (real);
 
     const vertex_range = 1..n_vertices;
 
@@ -128,9 +128,9 @@ module Scalable_Graph_Generator
 
     for i in 1..scale do {
       var   skip : real;
-      Rand_Gen.fillRandom ( Unif_Random );
+      Rand_Gen.fill ( Unif_Random );
       skip = Rand_Gen.getNext ();
-      Rand_Gen.fillRandom ( Unif_Random2 );
+      Rand_Gen.fill ( Unif_Random2 );
 
       forall j in ArrD do
       {

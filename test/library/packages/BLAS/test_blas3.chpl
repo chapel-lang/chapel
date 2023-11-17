@@ -90,7 +90,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -115,7 +115,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -140,7 +140,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -166,7 +166,7 @@ proc test_gemm_helper(type t) {
         C : [{0.. #m, 0.. #ld}]t,
         D : [{0.. #m, 0.. #ld}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -202,7 +202,7 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     makeSymm(A);
     rng.fill(B);
@@ -236,7 +236,7 @@ proc test_symm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     makeSymm(A);
     rng.fill(B);
@@ -280,7 +280,7 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     makeHerm(A);
     rng.fill(B);
@@ -314,7 +314,7 @@ proc test_hemm_helper(type t) {
         C : [{0.. #m, 0.. #n}]t,
         D : [{0.. #m, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     makeHerm(A);
     rng.fill(B);
@@ -355,7 +355,7 @@ proc test_syrk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     var B = A;
     rng.fill(C);
@@ -421,7 +421,7 @@ proc test_herk_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     var B = A;
     rng.fill(C);
@@ -491,7 +491,7 @@ proc test_syr2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -563,7 +563,7 @@ proc test_her2k_helper(type t) {
         C : [{0.. #n, 0.. #n}]t,
         D : [{0.. #n, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(A);
     rng.fill(B);
     rng.fill(C);
@@ -639,7 +639,7 @@ proc test_trmm_helper(type t) {
         B : [{0.. #n, 0.. #n}]t,
         C : [{0.. #n, 0.. #n}]t;
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(B);
     var saveB = B;
     const alpha = rng.getNext();
@@ -706,7 +706,7 @@ proc test_trsm_helper(type t) {
 
     makeUnit(Id, 5.0);
 
-    var rng = new randomStream(eltType=t, parSafe=false);
+    var rng = new randomStream(eltType=t);
     rng.fill(B);
     var saveB = B;
     const alpha = rng.getNext();

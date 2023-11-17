@@ -106,8 +106,8 @@ proc initVectors(ref B, ref C) {
     then new randomStream(eltType=real)
     else new randomStream(eltType=real, 314159265);
 
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(B);
+  randlist.fill(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

@@ -184,7 +184,7 @@ proc initialize(A:[?D]) {
   var n = D.dim(0).size;
   ref Asquare = A(..,1..n);
   ref b = A(..,n+1);
-  var rstream = new randomStream(real, seed=1234567891, parSafe=false);
+  var rstream = new randomStream(real, seed=1234567891);
 
   rstream.fillRandom(Asquare);
   rstream.fillRandom(b);

@@ -5,8 +5,8 @@ use Random;
 
 config const printRefArrays = true;
 
-var rng  = new randomStream(314159265, eltType=real(64), parSafe=false);
-var trng = new randomStream(314159265, eltType=real(64), parSafe=false);
+var rng  = new randomStream(314159265, eltType=real(64));
+var trng = new randomStream(314159265, eltType=real(64));
 
 proc fillRefArrays() {
   rng.fill(R1D);

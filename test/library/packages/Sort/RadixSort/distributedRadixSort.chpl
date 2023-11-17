@@ -10,7 +10,7 @@ config const comms = true;
 
 proc simpletestcore(input:[]) {
   var localCopy = input;
-  var rs = new randomStream(uint, false);
+  var rs = new randomStream(uint);
   rs.shuffle(localCopy);
 
   const blockDom = blockDist.createDomain(input.domain);
@@ -66,7 +66,7 @@ simpletest([0x01:uint,
 proc randomtest(n:int) {
   const blockDom = blockDist.createDomain({0..#n});
   var A: [blockDom] uint;
-  var rs = new randomStream(uint, false);
+  var rs = new randomStream(uint);
   rs.fill(A);
   var localCopy:[0..#n] uint = A;
 

@@ -329,7 +329,7 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true) : bool {
     // construct a 100x100 matrix filled with random values
-    var rand = new randomStream(real, seed, false);
+    var rand = new randomStream(real, seed);
     var A : [1..n, 1..n+1] real;
     for idx in A.domain do A[idx] = rand.getNext();
 

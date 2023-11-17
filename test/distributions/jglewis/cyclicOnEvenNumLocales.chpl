@@ -14,7 +14,7 @@ module cholesky_test {
 
   proc main {
 
-    var Rand = new randomStream ( real, seed = 314159, parSafe = false ) ;
+    var Rand = new randomStream ( real, seed = 314159 ) ;
 
     const MatIdx = { index_base .. #n, index_base .. #n };
 
