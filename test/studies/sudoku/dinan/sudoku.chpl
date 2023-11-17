@@ -1,4 +1,4 @@
-use Random, IO;
+use NPBRand, IO;
 
 config const inputfile = "easy.dat";
 config const ANNEAL    = 200;

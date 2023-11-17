@@ -1,7 +1,6 @@
 use Random;
 
-use Random.PCGRandom;
-use Random.PCGRandomLib;
+use Random;
 
 var a: [1..10] int;
 
@@ -9,7 +8,7 @@ permutation(a);
 permutation(a, 123);
 writeln(a);
 
-var rs = new randomStream(int, 123, false);
+var rs = new randomStream(int, 123);
 
 rs.permutation(a);
 writeln(a);

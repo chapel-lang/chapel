@@ -102,7 +102,7 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-  { use Random;
+  { use NPBRand;
     writeln("generating RMAT graph");
 
     const vertex_range = 1..N_VERTICES,
