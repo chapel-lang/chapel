@@ -518,26 +518,13 @@ void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
 bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   enterScope(sel);
 
-  bool foundParamTrue = false;
-  int otherwise = -1;
 
+  int paramTrueIdx = -1;
   for (int i = 0; i < sel->numWhenStmts(); i++) {
-    if (foundParamTrue) {
-      // previous case was param-true, so we skip all subsequent frames
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[i].skip = true;
-      continue;
-    }
-
     auto when = sel->whenStmt(i);
-    if (when->isOtherwise()) {
-      CHPL_ASSERT(otherwise == -1);
-      otherwise = i;
-      continue;
-    }
 
     bool anyParamTrue = false;
-    bool allParamFalse = true;
+    bool allParamFalse = !when->isOtherwise(); //do not skip otherwise blocks
 
     for (auto caseExpr : when->caseExprs()) {
       auto res = rv.byAst(caseExpr);
@@ -546,32 +533,28 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
       allParamFalse = allParamFalse && res.type().isParamFalse();
     }
 
+    //if all cases are param false, the path will never be visited.
     if (allParamFalse) {
-      // statically never resolves, so skip this case
       auto& topFrame = returnFrames.back();
       topFrame->subFrames[i].skip = true;
-    } else {
-      when->traverse(rv);
+      continue;
     }
 
+    when->traverse(rv);
+
+    //if any case is param true, none of the following whens will be visited
     if (anyParamTrue) {
-      foundParamTrue = true;
+      paramTrueIdx = i;
+      break;
     }
   }
 
-  if (otherwise != -1) {
-    if (foundParamTrue) {
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[otherwise].skip = true;
-    } else {
-      sel->whenStmt(otherwise)->traverse(rv);
-    }
-  } else {
-    //deal with the placeholder frame
-    if (foundParamTrue) {
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames.back().skip = true;
-    }
+  // if we found a param true case, mark the frames for the remaining whens
+  if (paramTrueIdx == -1) return false;
+
+  auto& topFrame = returnFrames.back();
+  for (int i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
+    topFrame->subFrames[i].skip = true;
   }
 
   return false;
