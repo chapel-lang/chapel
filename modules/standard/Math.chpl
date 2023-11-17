@@ -983,21 +983,6 @@ module Math {
     return chpl_rint(x);
   }
 
-  @chpldoc.nodoc
-  proc roundToPowerof2(const x: uint) {
-    // Powers of two only have the highest bit set.
-    // Power of two minus one will have all bits set except the highest.
-    // & those two together should give us 0;
-    // Ex 1000 & 0111 = 0000
-    if (x & (x - 1)) == 0 then
-      return x; // x is already a power of 2
-    // Not a power of two, so we pad it out
-    // To the next nearest power of two
-    const log_2_x = numBytes(uint)*8 - BitOps.clz(x); // get quick log for uint
-    // Next highest nerest power of two is
-    return 1 << log_2_x;
-  }
-
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(64)): real(64) {
     return chpl_sin(x);
