@@ -24,7 +24,7 @@ var Grid:     [BigD] bool, // grid of life
     NextGrid: [D]    bool; // grid for next iteration
 
 // initialize grid
-var rs = if useRandomSeed then
+var rs = if useRandomSeed
   then new randomStream(eltType=real(64))
   else new randomStream(314159, eltType=real(64));
 

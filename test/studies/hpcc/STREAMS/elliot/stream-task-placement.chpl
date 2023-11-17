@@ -26,7 +26,7 @@ config const printParams = true,
 enum TaskDisplacement {None, Half, Rand};
 config const taskDisplacement = TaskDisplacement.None;
 const tasks = here.maxTaskPar,
-      randTasks = (new RandomStream(int)).getNext(1, tasks);
+      randTasks = (new randomStream(int)).getNext(1, tasks);
 
 
 proc main() {

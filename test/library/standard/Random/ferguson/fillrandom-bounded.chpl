@@ -14,24 +14,24 @@ proc testit(seed: int, n: int) {
 
   var rng = new randomStream(seed=seed, eltType=int);
   for i in 1..n {
-    A[i] = rng.getNext(uint);
+    A[i] = rng.getNext();
   }
-  afterA = rng.getNext(uint);
+  afterA = rng.getNext();
 
   if verbose then writeln("testit ", seed, " ", n, " A");
   rng.skipToNth(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint);
+    B[i] = rng.getNext();
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " B");
   rng.skipToNth(0);
   rng.fill(B);
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " C");
@@ -41,7 +41,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " D");
@@ -51,7 +51,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " E");
@@ -61,7 +61,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " F");
@@ -71,23 +71,23 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " G");
   rng.skipToNth(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint, 0, max(uint));
+    B[i] = rng.getNext(0, max(uint));
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " H");
   rng.skipToNth(0);
   rng.fill(B, 0, max(uint));
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " I");
@@ -97,7 +97,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " J");
@@ -107,7 +107,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " K");
@@ -117,7 +117,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 
   if verbose then writeln("testit ", seed, " ", n, " L");
@@ -127,7 +127,7 @@ proc testit(seed: int, n: int) {
     B[i] = x;
   }
   checkMatch(A, B);
-  afterB = rng.getNext(uint);
+  afterB = rng.getNext();
   assert(afterB == afterA);
 }
 
@@ -137,14 +137,14 @@ proc testitb(seed: int, n: int, min: uint, max: uint) {
 
   var rng = new randomStream(seed=seed, eltType=int);
   for i in 1..n {
-    A[i] = rng.getNext(uint, min, max);
+    A[i] = rng.getNext(min, max);
     assert(min <= A[i] && A[i] <= max);
   }
 
   if verbose then writeln("testitb ", seed, " ", n, " ", min, " ", max, " A");
   rng.skipToNth(0);
   for i in 1..n {
-    B[i] = rng.getNext(uint, min, max);
+    B[i] = rng.getNext(min, max);
   }
   checkMatch(A, B);
 

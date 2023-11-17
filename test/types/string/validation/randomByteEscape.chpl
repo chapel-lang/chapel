@@ -39,7 +39,7 @@ for i in 1..nIterations {
 
   // unescaped string must be equal to the initial `bytes`
   if randomEscapedString.encode(policy=encodePolicy.unescape) != randomBytes {
-    halt("Failed. Seed:", randomStream.seed, " Iteration:" , i);
+    halt("Failed. Seed:", rs.seed, " Iteration:" , i);
   }
 }
 writeln("Success");

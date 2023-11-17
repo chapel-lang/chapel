@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions, and Random numbers
 //
-use BlockDist, Time, Types, Random;
+use BlockDist, Time, Types, NPBRand;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -103,11 +103,11 @@ proc printConfiguration() {
 //
 proc initVectors(ref B, ref C) {
   var randlist = if useRandomSeed
-    then new randomStream(eltType=real)
-    else new randomStream(eltType=real, 314159265);
+    then new NPBRandomStream(eltType=real)
+    else new NPBRandomStream(eltType=real, 314159265);
 
-  randlist.fill(B);
-  randlist.fill(C);
+  randlist.fillRandom(B);
+  randlist.fillRandom(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");

@@ -98,7 +98,7 @@ class Particle3D {
     }
 
     // Set the random number generator
-    var rng = new RandomStream(eltType=real, seed=41);
+    var rng = new randomStream(eltType=real, seed=41);
     var jj : int;
     for ii in 0..(npart-2) {
       jj = (rng.getNext()*(npart-ii)):int + ii;

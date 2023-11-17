@@ -24,6 +24,6 @@ for x in rs.iterate(a.domain)
     do write(x, " ");
 writeln();
 
-for x in rs.iterate(a.domain, int, 1, 10)
+for x in rs.iterate(a.domain, 1, 10)
     do write(x, " ");
 writeln();

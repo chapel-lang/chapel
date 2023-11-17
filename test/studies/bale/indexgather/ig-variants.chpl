@@ -29,7 +29,7 @@ var rindex: [D2] int;
 
 if useRandomSeed
   then fillRandom(rindex);
-  else fillRandom(rindex, seed);
+  else fillRandom(rindex, 314159265);
 rindex = mod(rindex, tableSize);
 
 var tmp: [D2] int;

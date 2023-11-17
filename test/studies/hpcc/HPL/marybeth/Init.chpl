@@ -178,7 +178,7 @@ record HPLparams {
 
 proc initialize(A:[?D]) {
 //  Rather than initialize A = [Asquare | b] with one call to 
-//  fillRandom, Asquare is initialized first, followed by b.
+//  'fill', Asquare is initialized first, followed by b.
 //  This is to match the previous version of benchmark where
 //  A and b were stored separately. 
   var n = D.dim(0).size;
@@ -186,6 +186,6 @@ proc initialize(A:[?D]) {
   ref b = A(..,n+1);
   var rstream = new randomStream(real, seed=1234567891);
 
-  rstream.fillRandom(Asquare);
-  rstream.fillRandom(b);
+  rstream.fill(Asquare);
+  rstream.fill(b);
 }

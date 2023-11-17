@@ -396,7 +396,7 @@ proc test_updateBlockRow(rprt = true) : bool {
     var randomWidth  : int = (rand.getNext() * 100):int + randomHeight;
     var A : [randomOffset..randomOffset+randomHeight-1,
              randomOffset..randomOffset+randomWidth-1] real;
-    rand.fillRandom(A);
+    rand.fill(A);
 
     var OrigA = A;
     

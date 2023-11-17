@@ -226,7 +226,7 @@ proc verifyResult(ref space: [] Cell, computationalDomain: domain(2),
   forall (x, y) in computationalDomain with (ref spaceEndState) do
      spaceEndState[ x, y ] = space[ T & 1, x, y ];
 
-  var generator = new RandomStream( real, globalSeed );
+  var generator = new randomStream( real, globalSeed );
 
   for (x, y) in computationalDomain do
      space[0, x, y] = generator.getNext();
