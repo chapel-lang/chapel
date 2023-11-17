@@ -536,9 +536,10 @@ module Tensor {
 
     // Initialize a tensor with random values from a normal distribution
     proc randn(shape: int ...?d): Tensor(d,real) {
+        use Random;
         var u1, u2: [domainFromShape((...shape))] real;
-        rng.fillRandom(u1,seed=(rng.getNext() * 10):int);
-        rng.fillRandom(u2,seed=(rng.getNext() * 10):int);
+        fillRandom(u1,seed=(rng.getNext() * 10):int);
+        fillRandom(u2,seed=(rng.getNext() * 10):int);
         const u1p = -2.0 * Math.log(u1);
         const u2p = 2.0 * Math.pi * u2;
         var z0 = sqrt(u1p);

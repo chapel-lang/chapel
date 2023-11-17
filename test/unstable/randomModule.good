@@ -1,16 +1,15 @@
-randomModule.chpl:3: warning: the 'PCGRandom' module is unstable and may be removed in the future
-randomModule.chpl:4: warning: the 'PCGRandomLib' module is unstable and may be removed or moved in the future
-randomModule.chpl:12: warning: 'randomStream' is unstable and may no longer have a configurable element type in the future
+randomModule.chpl:7: warning: 'permutation' is unstable and subject to change
 randomModule.chpl:8: warning: 'permutation' is unstable and subject to change
-randomModule.chpl:9: warning: 'permutation' is unstable and subject to change
-randomModule.chpl:14: warning: 'permutation' is unstable and subject to change
+randomModule.chpl:13: warning: 'permutation' is unstable and subject to change
+randomModule.chpl:16: warning: 'choice' is unstable and subject to change
 randomModule.chpl:17: warning: 'choice' is unstable and subject to change
 randomModule.chpl:18: warning: 'choice' is unstable and subject to change
-randomModule.chpl:19: warning: 'choice' is unstable and subject to change
-randomModule.chpl:21: warning: 'skipToNth' is unstable and subject to change
-randomModule.chpl:22: warning: 'getNth' is unstable and subject to change
-randomModule.chpl:24: warning: 'iterate' is unstable and subject to change
-randomModule.chpl:28: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:20: warning: 'skipToNth' is unstable and subject to change
+randomModule.chpl:21: warning: 'getNth' is unstable and subject to change
+randomModule.chpl:23: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:23: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:27: warning: 'iterate' is unstable and subject to change
+randomModule.chpl:27: warning: 'iterate' is unstable and subject to change
 6 7 9 5 3 8 2 1 4 10
 6 7 9 5 3 8 2 1 4 10
 8
