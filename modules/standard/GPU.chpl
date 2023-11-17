@@ -635,6 +635,7 @@ module GPU
   // The following functions are used to implement GPU scans. They are
   // intended to be called from a GPU locale.
   import Math;
+  import BitOps;
 
   private param DefaultGpuBlockSize = 512;
 
@@ -663,7 +664,7 @@ module GPU
     if gpuArr.size <= DefaultGpuBlockSize*2 {
       // The algorithms only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
-      const size = Math.roundToPowerof2(gpuArr.size);
+      const size = roundToPowerof2(gpuArr.size);
       if size == gpuArr.size {
         // It's already a power of 2 so we don't do copies back and forth
         singleBlockScan(gpuArr);
@@ -729,6 +730,20 @@ module GPU
         const offset : int = (i-low) / scanChunkSize;
         gpuArr[i] += gpuScanArr[offset];
       }
+  }
+
+  private proc roundToPowerof2(const x: uint) {
+    // Powers of two only have the highest bit set.
+    // Power of two minus one will have all bits set except the highest.
+    // & those two together should give us 0;
+    // Ex 1000 & 0111 = 0000
+    if (x & (x - 1)) == 0 then
+      return x; // x is already a power of 2
+    // Not a power of two, so we pad it out
+    // To the next nearest power of two
+    const log_2_x = numBytes(uint)*8 - BitOps.clz(x); // get quick log for uint
+    // Next highest nerest power of two is
+    return 1 << log_2_x;
   }
 
   // This function requires that startIdx and endIdx are within the bounds of the array
