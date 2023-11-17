@@ -958,7 +958,7 @@ static void testSelectTypes() {
       var x : int;
       select T {
         when int {
-          x = x + 2;
+          var x: int;
           return x;
         }
       }
@@ -981,7 +981,7 @@ static void testSelectTypes() {
       var x : int;
       select T {
         when int {
-          x = x + 2;
+          var x: int;
           return x;
         }
         otherwise {}
