@@ -1,60 +1,78 @@
-use LinearAlgebra;
-
-const eps = 1e-7;
-
-proc checkResults(A, x, b) {
-  var v = dot(A, x);
-  for (vv, bb) in zip(v, b) {
-    if (abs(vv - bb) > eps) then return false;
-  }
-  return true;
-}
+use LinearAlgebra, Random, TestUtils;
 
 /*
-  Check correctness of `solve` (calling `lu`).
-
-  Expected results (manually computed): 5.0 -2.0 3.0
+  This test checks the correctness of the `solve` method (implicitly `lu`).
+  Different offsets and array initializations/sizes are considered for robustness.
 */
+
+const offsets = [0, 11, -7]; // tested offsets
+const eps = 1e-7; // error tolerance
 
 var res = true;
 
-// 0-based domain (default)
-var A: [0..#3, 0..#3] real;
-var b: [0..#3] real;
+/*
+  Series 1: explicit initialization of size 3 x 3.
 
-A[0, ..] = [ 2.0,  1.0, 3.0];
-A[1, ..] = [ 4.0, -1.0, 3.0];
-A[2, ..] = [-2.0,  5.0, 5.0];
+  Expected results (manually computed): 5.0 -2.0 3.0
+*/
+{
+  const n = 3;
 
-b = [17.0, 31.0, -5.0];
+  var A:  [0..#n, 0..#n] real;
+  var At: [0..#n, 0..#n] real;
+  var b:  [0..#n] real;
 
-const x = solve(A, b);
-b = [17.0, 31.0, -5.0]; // `solve` overrites b
-if !checkResults(A, x, b) {
-  res = false;
-  writeln("test 1 failed");
+  A[0, ..] = [ 2.0, 1.0, 3.0];
+  A[1, ..] = [ 4.0,-1.0, 3.0];
+  A[2, ..] = [-2.0, 5.0, 5.0];
+
+  b = [17.0, 31.0, -5.0];
+
+  for offset in offsets {
+    // reindex
+    var Ao  = A.reindex(offset..#n, offset..#n);
+    var bo  = b.reindex(offset..#n);
+
+    // solve
+    const x = solve(Ao, bo);
+    bo = b; // `solve` overrites bo
+
+    // check results
+    if !almostEquals(dot(Ao, x), bo) {
+      res = false;
+      writeln("test with offset ", offset, " in serie 1 failed");
+    }
+  }
 }
 
-// 11-based domain
-var A2 = A.reindex(11..#3, 11..#3);
-var b2 = b.reindex(11..#3);
+/*
+  Series 2: random initialization of size 20 x 20.
+*/
+{
+  const n = 20;
 
-const x2 = solve(A2, b2); // `solve` overrites b2
-b2 = [17.0, 31.0, -5.0];
-if !checkResults(A2, x2, b2) {
-  res = false;
-  writeln("test 2 failed");
-}
+  var A:  [0..#n, 0..#n] real;
+  var b:  [0..#n] real;
 
-// -7-based domain
-var A3 = A.reindex(-7..#3, -7..#3);
-var b3 = b.reindex(-7..#3);
+  fillRandom(A, min=-100.0, max=100.0);
+  fillRandom(b, min=-100.0, max=100.0);
 
-const x3 = solve(A3, b3); // `solve` overrites b3
-b3 = [17.0, 31.0, -5.0];
-if !checkResults(A3, x3, b3) {
-  res = false;
-  writeln("test 3 failed");
+  for offset in offsets {
+    // reindex
+    var Ao  = A.reindex(offset..#n, offset..#n);
+    var bo  = b.reindex(offset..#n);
+
+    // solve
+    const x = solve(Ao, bo);
+    bo = b; // `solve` overrites bo
+
+    // check result
+    if !almostEquals(dot(Ao, x), bo) {
+      res = false;
+      writeln("test with offset ", offset, " in serie 2 failed");
+    }
+  }
 }
 
 if res then writeln("All tests passed");
+else writeln("Some tests failed");
