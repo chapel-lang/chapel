@@ -1,2 +1,3 @@
 CHPL_TARGET_COMPILER!=llvm
-CHPL_TEST_VGRND_EXE == on  # something about -ldflags=-pg causes segfaults?
+# something about -ldflags=-pg causes segfaults when compiled with valgrind?
+CHPL_TEST_VGRND_EXE == on
