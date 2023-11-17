@@ -265,6 +265,32 @@ static void test3() {
         f(x);
       )"""",
     1);
+
+  // updated disambiguation based on width of argument
+  // checkCalledIndex(context,
+  //     R""""(
+  //       proc f(arg: int(8)) { }                   // 1
+  //       proc f(arg: uint(64)) { }                 // 2
+  //       var x: int(64);
+  //       f(x);
+  //     )"""",
+  //   2); // The answer should be 2 once disambiguation changes are made to
+  //          // match prod, but today it doesn't run because the helper
+  //          // checkCalledIndex requires just one fnCall to disambiguate
+  //          // and this test has four
+
+  // updated disambiguation based on visibility of proc
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg: int) { }                     // 1
+        {
+          proc f(arg) { }                        // 2
+
+          var x = 1;
+          f(x);
+        }
+      )"""",
+    2);
 }
 
 int main() {
