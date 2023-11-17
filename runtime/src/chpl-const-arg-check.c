@@ -41,9 +41,13 @@ void check_const_hash_matches(uint64_t start_val, uint64_t end_val,
                               const char* arg_name, int32_t lineno,
                               int32_t filenameIdx) {
   if (start_val != end_val) {
-    const char* warning_msg = chpl_glom_strings(4, "The argument '", arg_name,
+    const char* warning_msg = chpl_glom_strings(8, "The argument '", arg_name,
                       "' was modified indirectly during this function, this ",
-                      "behavior is unstable and may change in the future");
+                      "behavior is unstable and may change in the future.\n",
+                      "If this behavior is intentional, declaring the argument",
+                      " as 'const ref' will silence this warning.  If not, ",
+                      "declaring the argument as 'const in' will prevent ",
+                      "indirect modifications");
     chpl_warning(warning_msg, lineno, filenameIdx);
   }
 }
