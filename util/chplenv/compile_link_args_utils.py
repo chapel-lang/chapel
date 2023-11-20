@@ -69,14 +69,6 @@ def get_runtime_includes_and_defines():
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
-
-            # We need runtime to use the lld that ships with the rocm
-            # installation so that we can properly link hipCUB. I believe this
-            # requirement is coming from using "-x hip" with clang
-            lld_path = os.path.join(sdk_path, "llvm/bin")
-            system.append("-B " + lld_path)
-            bundled.append("-B " + lld_path)
-
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
