@@ -3608,6 +3608,18 @@ record defaultDeserializer {
 @deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
 type DefaultDeserializer = defaultDeserializer;
 
+@chpldoc.nodoc
+config param warnBinaryStructured : bool = true;
+
+private proc warnBinary(param kind: _iokind, type t) {
+  if warnBinaryStructured && kind != _iokind.dynamic {
+    if t == string || isClassType(t) {
+      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning.";
+      compilerWarning(msg);
+    }
+  }
+}
+
 /*
   A binary Serializer that implements a simple binary format.
 
@@ -3625,7 +3637,7 @@ record binarySerializer {
   const endian : endianness = endianness.native;
 
   @chpldoc.nodoc
-  const _structured = true;
+  const _structured = false;
 
   // TODO: rewrite to use correct IO methods (e.g. writeBinary)
   // For now, this is just a helper to mirror the old behavior for basic
@@ -3689,6 +3701,7 @@ record binarySerializer {
   */
   proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
+    warnBinary(writer._kind, t);
     if isNumericType(t) {
       select endian {
         when endianness.native do writer.writeBinary(val, endianness.native);
@@ -4007,10 +4020,10 @@ record binaryDeserializer {
   const endian : IO.endianness = IO.endianness.native;
 
   @chpldoc.nodoc
-  var _structured = true;
+  var _structured = false;
 
   @chpldoc.nodoc
-  proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = true) {
+  proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = false) {
     this.endian = endian;
     this._structured = _structured;
     init this;
@@ -4068,6 +4081,7 @@ record binaryDeserializer {
     :returns: A value of type ``readType``.
   */
   proc ref deserializeType(reader:fileReader(?), type readType) : readType throws {
+    warnBinary(reader._kind, readType);
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
@@ -4121,6 +4135,7 @@ record binaryDeserializer {
     :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
+    warnBinary(reader._kind, readType);
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
