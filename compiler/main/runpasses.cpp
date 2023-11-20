@@ -187,9 +187,11 @@ void runPasses(PhaseTracker& tracker) {
 
   if (printPasses == true || printPassesFile != 0) {
     if (fDriverCompilationPhase) {
-      Phase::ReportText("Timing for driver phase one\n--------------\n");
+      Phase::ReportText(
+          "Timing for driver compilation phase\n--------------\n");
     } else if (fDriverMakeBinaryPhase) {
-      Phase::ReportText("\n\nTiming for driver phase two\n--------------\n");
+      Phase::ReportText(
+          "\n\nTiming for driver makeBinary phase\n--------------\n");
     }
     tracker.ReportPass();
   }
@@ -197,7 +199,7 @@ void runPasses(PhaseTracker& tracker) {
   setupStopAfterPass();
 
   for (size_t i = 0; i < passListSize; i++) {
-    // skip until makeBinary if in phase-two invocation
+    // skip until makeBinary if in makeBinary phase invocation
     if (fDriverMakeBinaryPhase && strcmp(sPassList[i].name, "makeBinary") != 0) {
       continue;
     }
@@ -208,7 +210,7 @@ void runPasses(PhaseTracker& tracker) {
 
     currentPassNo++;
 
-    // quit before makeBinary in phase-one invocation
+    // quit before makeBinary in compilation phase invocation
     if (fDriverCompilationPhase && strcmp(sPassList[i].name, "codegen") == 0) {
       break;
     }

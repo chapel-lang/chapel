@@ -166,7 +166,8 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
   // Contents expected to be astrs so it's safe to use a set.
   static std::unordered_set<const char*> seen;
 
-  // Overwrite on first use in phase one or driver init, append after.
+  // Overwrite on first use in driver compilation phase or init process, append
+  // after.
   const char* fileOpenMode;
   if (seen.emplace(pathAsAstr).second && !fDriverMakeBinaryPhase) {
     fileOpenMode = "w";
@@ -224,9 +225,9 @@ void restoreDriverTmpMultiline(
 }
 
 void restoreLibraryAndIncludeInfo() {
-  INT_ASSERT(
-      fDriverMakeBinaryPhase &&
-      "should only be restoring library and include info in driver phase two");
+  INT_ASSERT(fDriverMakeBinaryPhase &&
+             "should only be restoring library and include info in driver "
+             "makeBinary phase");
 
   restoreDriverTmp(libDirsFilename, [](const char* filename) {
     addLibPath(filename, /* fromCmdLine */ false);
@@ -241,7 +242,7 @@ void restoreLibraryAndIncludeInfo() {
 
 void restoreAdditionalSourceFiles() {
   INT_ASSERT(fDriverMakeBinaryPhase &&
-             "should only be restoring filenames in driver phase two");
+             "should only be restoring filenames in driver makeBinary phase");
 
   std::vector<const char*> additionalFilenames;
   restoreDriverTmp(additionalFilenamesListFilename,
@@ -501,7 +502,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames[cursor] = NULL;
 
   // If in driver mode, and filenames were added, also save added filenames for
-  // driver phase two.
+  // makeBinary phase.
   // Note: Need to check both driver mode and phase here. The two could conflict
   // since files can be added before driver flags are validated.
   if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {

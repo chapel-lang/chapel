@@ -794,28 +794,28 @@ static int invokeChplWithArgs(int argc, char* argv[],
                   /* ignoreStatus */ true, /* quiet */ false);
 }
 
-static int runDriverPhaseOne(int argc, char* argv[]);
-static int runDriverPhaseTwo(int argc, char* argv[]);
+static int runDriverCompilationPhase(int argc, char* argv[]);
+static int runDriverMakeBinaryPhase(int argc, char* argv[]);
 
-// Skip phase two if the compile command does not require it, or if we are
-// running in a debugger for phase one only. By default, warn if skipping
-// for the debugger reason.
-static bool shouldSkipDriverPhaseTwo(bool warnIfSkipping = true) {
-  // Check if skipping due to only debugging phase one.
-  bool debugPhaseOneOnly =
+// Skip makeBinary phase if the compile command does not require it, or if we
+// are running in a debugger for compilation phase only. By default, warn if
+// skipping for the debugger reason.
+static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
+  // Check if skipping due to only debugging compilation phase.
+  bool debugCompilationPhaseOnly =
       (fRungdb || fRunlldb) && (driverDebugCompilation && !driverDebugMakeBinary);
-  if (debugPhaseOneOnly && warnIfSkipping) {
+  if (debugCompilationPhaseOnly && warnIfSkipping) {
     USR_WARN(
-        "Skipping phase two due to running only phase one "
+        "Skipping makeBinary phase due to running only compilation phase "
         "in debugger; change this with --driver-debug-phase if desired");
   }
 
   // Check if skipping for the above reason or any other early stop.
-  bool shouldSkipPhaseTwo =
-      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
+  bool shouldSkipMakeBinary =
+      debugCompilationPhaseOnly || fParseOnly || countTokens || printTokens ||
       (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
 
-  return shouldSkipPhaseTwo;
+  return shouldSkipMakeBinary;
 }
 
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
@@ -827,33 +827,33 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
   // Save initial compilation command before re-invocations.
   saveDriverTmp(compileCommandFilename, compileCommand);
 
-  // invoke phase one
-  if ((status = runDriverPhaseOne(argc, argv)) != 0) {
+  // invoke compilation phase
+  if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
     clean_exit(status);
   }
 
-  if (!shouldSkipDriverPhaseTwo()) {
-    // invoke phase two
-    if ((status = runDriverPhaseTwo(argc, argv)) != 0) {
+  if (!shouldSkipMakeBinary()) {
+    // invoke makeBinary phase
+    if ((status = runDriverMakeBinaryPhase(argc, argv)) != 0) {
       clean_exit(status);
     }
   }
 }
 
-// Run phase one of compiler-driver
-static int runDriverPhaseOne(int argc, char* argv[]) {
+// Run compilation phase of driver mode
+static int runDriverCompilationPhase(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
       "--driver-compilation-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking driver phase one");
+                            "invoking driver compilation phase");
 }
 
-// Run phase two of compiler-driver
-static int runDriverPhaseTwo(int argc, char* argv[]) {
+// Run makeBinary phase of driver mode
+static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
       "--driver-makebinary-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking driver phase two");
+                            "invoking driver makeBinary phase");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -2498,10 +2498,10 @@ int main(int argc, char* argv[]) {
                            groupTimes.emplace_back(std::stoul(timeStr));
                          });
 
-        // Unless stopping early, expect frontend, middle-end, and backend
-        // results from phase one, plus the other half of backend results from
-        // phase two that need to be added in.
-        if (!shouldSkipDriverPhaseTwo(/* warnIfSkipping */ false)) {
+        // Unless stopping early, expect frontend, middle-end, and (incomplete)
+        // backend results from compilation phase, plus the other half of
+        // backend results from makeBinary phase that need to be added in.
+        if (!shouldSkipMakeBinary(/* warnIfSkipping */ false)) {
           const size_t numPassGroups = 3;
           INT_ASSERT(
               groupTimes.size() == (numPassGroups + 1) &&

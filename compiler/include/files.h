@@ -90,8 +90,8 @@ void addSourceFile(const char* filename, const char* modFilename);
 void assertSourceFilesFound();
 const char* nthFilename(int i);
 // Functions to add C library or include dir information.
-// If running in driver phase one and the information is not from parsing the
-// command line, these will also save to a tmp dir for later use.
+// If running in driver compilation phase and the information is not from
+// parsing the command line, these will also save to a tmp dir for later use.
 void addLibPath(const char* filename, bool fromCmdLine = false);
 void addLibFile(const char* filename, bool fromCmdLine = false);
 void addIncInfo(const char* incDir, bool fromCmdLine = false);

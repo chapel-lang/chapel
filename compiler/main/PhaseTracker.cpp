@@ -204,9 +204,9 @@ void PhaseTracker::ReportRollup() const
   PassesReport(passes, totalTime);
 
   // Repeat the information but sorted by time, for monolithic mode or driver
-  // phase one.
-  // Skipped for driver overhead time or driver phase two as they contain very
-  // little information and the sort isn't that informative.
+  // compilation phase.
+  // Skipped for driver overhead time or makeBinary phase as they contain
+  // very little information and the sort isn't that informative.
   if (fDriverDoMonolithic || fDriverCompilationPhase) {
     Phase::ReportText("\n\n\n");
 

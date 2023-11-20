@@ -3038,10 +3038,10 @@ void runClang(const char* just_parse_filename) {
   setupClang(gGenInfo, rtmain);
 
 
-  // If running in driver phase two, we only need the Clang setup work, so stop
-  // before code generation.
+  // If running in makeBinary phase, we only need the Clang setup work,
+  // so stop before code generation.
   if (fDriverMakeBinaryPhase) {
-    // Needed for phase two but is only otherwise run by the skipped
+    // Needed for makeBinary but is only otherwise run by the skipped
     // ExecuteAction below.
 #if HAVE_LLVM_VER >= 130
     clangInfo->Clang->createTarget();
