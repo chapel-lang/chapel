@@ -164,8 +164,8 @@ extern bool fExplainVerbose;
 extern bool fParseOnly;
 // begin compiler driver control flags
 extern bool fDriverDoMonolithic;
-extern bool fDriverPhaseOne;
-extern bool fDriverPhaseTwo;
+extern bool fDriverCompilationPhase;
+extern bool fDriverMakeBinaryPhase;
 extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
 extern bool fPrintAllCandidates;

@@ -2336,7 +2336,7 @@ static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
   const char* filename;
-  if (fDriverPhaseTwo) {
+  if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
     restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
       filename = astr(mainModName);
@@ -2351,7 +2351,7 @@ static const char* getMainModuleFilename() {
 
     // Save result in tmp file for future usage if in driver mode
     if (!fDriverDoMonolithic) {
-      assert(fDriverPhaseOne &&
+      assert(fDriverCompilationPhase &&
              "should not be reachable outside of driver "
              "phase one");
       saveDriverTmp(mainModTmpFilename, filename);
@@ -2371,7 +2371,7 @@ void setupDefaultFilenames() {
     // phase two, but that's not a problem because the errors would have already
     // been hit (and are fatal) in phase one.
     ModuleSymbol* mainMod =
-        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
+        (fDriverMakeBinaryPhase ? nullptr : ModuleSymbol::mainModule());
     const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2389,7 +2389,7 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
                      "encountered error in phase two that should only be "
                      "reachable in phase one");
           INT_FATAL(mainMod,
@@ -2409,7 +2409,7 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
                      "encountered error in phase two that should only be "
                      "reachable in phase one");
           INT_FATAL(mainMod,
@@ -2432,7 +2432,7 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_ASSERT(!fDriverPhaseTwo &&
+      INT_ASSERT(!fDriverMakeBinaryPhase &&
                  "encountered error in phase two that should only be "
                  "reachable in phase one");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
@@ -3049,7 +3049,7 @@ void makeBinary(void) {
 
   // makeBinary shouldn't run in a phase-one invocation.
   // (Unless we're doing GPU codegen, which currently happens in phase one.)
-  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
+  INT_ASSERT(!fDriverCompilationPhase || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

@@ -271,7 +271,7 @@ void preparePrintLlvmIrForCodegen() {
   // If running in compiler-driver mode, save cnames to print IR for to disk.
   // This is so that handlePrintAsm can access them later from phase two, when
   // we don't have a way to determine name->cname correspondence.
-  if (fDriverPhaseOne) {
+  if (fDriverCompilationPhase) {
     saveDriverTmpMultiple(cnamesToPrintFilename,
                           std::vector<const char*>(llvmPrintIrCNames.begin(),
                                                    llvmPrintIrCNames.end()));

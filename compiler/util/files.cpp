@@ -103,7 +103,7 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
 void addLibPath(const char* libString, bool fromCmdLine) {
   addPath(libString, &libDirs);
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(libDirsFilename, libString);
   }
 }
@@ -112,7 +112,7 @@ void addLibFile(const char* libFile, bool fromCmdLine) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(libFilesFilename, libFile);
   }
 }
@@ -120,7 +120,7 @@ void addLibFile(const char* libFile, bool fromCmdLine) {
 void addIncInfo(const char* incDir, bool fromCmdLine) {
   addPath(incDir, &incDirs);
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(incDirsFilename, incDir);
   }
 }
@@ -168,7 +168,7 @@ void saveDriverTmpMultiple(const char* tmpFilePath,
 
   // Overwrite on first use in phase one or driver init, append after.
   const char* fileOpenMode;
-  if (seen.emplace(pathAsAstr).second && !fDriverPhaseTwo) {
+  if (seen.emplace(pathAsAstr).second && !fDriverMakeBinaryPhase) {
     fileOpenMode = "w";
   } else {
     // Already seen
@@ -225,7 +225,7 @@ void restoreDriverTmpMultiline(
 
 void restoreLibraryAndIncludeInfo() {
   INT_ASSERT(
-      fDriverPhaseTwo &&
+      fDriverMakeBinaryPhase &&
       "should only be restoring library and include info in driver phase two");
 
   restoreDriverTmp(libDirsFilename, [](const char* filename) {
@@ -240,7 +240,7 @@ void restoreLibraryAndIncludeInfo() {
 }
 
 void restoreAdditionalSourceFiles() {
-  INT_ASSERT(fDriverPhaseTwo &&
+  INT_ASSERT(fDriverMakeBinaryPhase &&
              "should only be restoring filenames in driver phase two");
 
   std::vector<const char*> additionalFilenames;
@@ -504,7 +504,7 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   // driver phase two.
   // Note: Need to check both driver mode and phase here. The two could conflict
   // since files can be added before driver flags are validated.
-  if (!fDriverDoMonolithic && fDriverPhaseOne && firstAddedIdx >= 0) {
+  if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {
     saveDriverTmpMultiple(
         additionalFilenamesListFilename,
         std::vector<const char*>(inputFilenames + firstAddedIdx,

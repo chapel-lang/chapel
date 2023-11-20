@@ -186,9 +186,9 @@ void runPasses(PhaseTracker& tracker) {
   setupLogfiles();
 
   if (printPasses == true || printPassesFile != 0) {
-    if (fDriverPhaseOne) {
+    if (fDriverCompilationPhase) {
       Phase::ReportText("Timing for driver phase one\n--------------\n");
-    } else if (fDriverPhaseTwo) {
+    } else if (fDriverMakeBinaryPhase) {
       Phase::ReportText("\n\nTiming for driver phase two\n--------------\n");
     }
     tracker.ReportPass();
@@ -198,7 +198,7 @@ void runPasses(PhaseTracker& tracker) {
 
   for (size_t i = 0; i < passListSize; i++) {
     // skip until makeBinary if in phase-two invocation
-    if (fDriverPhaseTwo && strcmp(sPassList[i].name, "makeBinary") != 0) {
+    if (fDriverMakeBinaryPhase && strcmp(sPassList[i].name, "makeBinary") != 0) {
       continue;
     }
 
@@ -209,7 +209,7 @@ void runPasses(PhaseTracker& tracker) {
     currentPassNo++;
 
     // quit before makeBinary in phase-one invocation
-    if (fDriverPhaseOne && strcmp(sPassList[i].name, "codegen") == 0) {
+    if (fDriverCompilationPhase && strcmp(sPassList[i].name, "codegen") == 0) {
       break;
     }
 
@@ -265,7 +265,7 @@ static void runPass(PhaseTracker& tracker, size_t passIndex) {
   // Skip if we're on the backend invocation of the compiler, in which case
   // there is no AST.
   //
-  if (!fDriverPhaseTwo) {
+  if (!fDriverMakeBinaryPhase) {
     tracker.StartPhase(info->name, PhaseTracker::kCleanAst);
     cleanAst();
   }

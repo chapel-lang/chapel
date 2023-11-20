@@ -144,8 +144,8 @@ static bool fBaseline = false;
 static bool fRungdb = false;
 static bool fRunlldb = false;
 bool fDriverDoMonolithic = true;
-bool fDriverPhaseOne = false;
-bool fDriverPhaseTwo = false;
+bool fDriverCompilationPhase = false;
+bool fDriverMakeBinaryPhase = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 char driverTmpDir[FILENAME_MAX] = "";
@@ -158,8 +158,8 @@ bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
 
 bool driverInSubInvocation = false;
-bool driverDebugPhaseOne = true;
-bool driverDebugPhaseTwo = false;
+bool driverDebugCompilation = true;
+bool driverDebugMakeBinary = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool developer = false;
@@ -803,7 +803,7 @@ static int runDriverPhaseTwo(int argc, char* argv[]);
 static bool shouldSkipDriverPhaseTwo(bool warnIfSkipping = true) {
   // Check if skipping due to only debugging phase one.
   bool debugPhaseOneOnly =
-      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
+      (fRungdb || fRunlldb) && (driverDebugCompilation && !driverDebugMakeBinary);
   if (debugPhaseOneOnly && warnIfSkipping) {
     USR_WARN(
         "Skipping phase two due to running only phase one "
@@ -843,7 +843,7 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
 // Run phase one of compiler-driver
 static int runDriverPhaseOne(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
-      "--driver-phase-one", "--driver-tmp-dir", gContext->tmpDir()};
+      "--driver-compilation-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase one");
 }
@@ -851,7 +851,7 @@ static int runDriverPhaseOne(int argc, char* argv[]) {
 // Run phase two of compiler-driver
 static int runDriverPhaseTwo(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
-      "--driver-phase-two", "--driver-tmp-dir", gContext->tmpDir()};
+      "--driver-makebinary-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
                             "invoking driver phase two");
 }
@@ -906,19 +906,20 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
                                 const char* arg) {
   driverDebugPhaseSpecified = true;
 
-  if (0 == strcmp(arg, "1")) {
-    driverDebugPhaseOne = true;
-    driverDebugPhaseTwo = false;
-  } else if (0 == strcmp(arg, "2")) {
-    driverDebugPhaseOne = false;
-    driverDebugPhaseTwo = true;
+  if (0 == strcmp(arg, "compilation")) {
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = false;
+  } else if (0 == strcmp(arg, "makeBinary") || 0 == strcmp(arg, "makebinary")) {
+    driverDebugCompilation = false;
+    driverDebugMakeBinary = true;
   } else if (0 == strcmp(arg, "all")) {
-    driverDebugPhaseOne = true;
-    driverDebugPhaseTwo = true;
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = true;
   } else {
     USR_FATAL(
-        "--driver-debug-phase requires either '1', '2', or 'all' as input, "
-        "but got: %s\n", arg);
+        "--driver-debug-phase requires either 'compilation', 'makeBinary', or "
+        "'all' as input, but got: %s\n",
+        arg);
   }
 }
 
@@ -1411,9 +1412,9 @@ static ArgumentDescription arg_desc[] = {
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
  {"compiler-driver", ' ', NULL, "Run chpl executable as a compiler driver", "f", &fDriverDoMonolithic, NULL, NULL},
- {"driver-phase-one", ' ', NULL, "Run driver phase one (internal use flag)", "F", &fDriverPhaseOne, NULL, setSubInvocation},
- {"driver-phase-two", ' ', NULL, "Run driver phase two (internal use flag)", "F", &fDriverPhaseTwo, NULL, setSubInvocation},
- {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
+ {"driver-compilation-phase", ' ', NULL, "Run driver compilation phase (internal use flag)", "F", &fDriverCompilationPhase, NULL, setSubInvocation},
+ {"driver-makebinary-phase", ' ', NULL, "Run driver makeBinary phase (internal use flag)", "F", &fDriverMakeBinaryPhase, NULL, setSubInvocation},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver phase to run when debugging: compilation, makeBinary, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
@@ -1960,7 +1961,7 @@ static void checkCompilerDriverFlags() {
     }
   }
 
-  if (fDriverPhaseOne && fDriverPhaseTwo) {
+  if (fDriverCompilationPhase && fDriverMakeBinaryPhase) {
       USR_FATAL(
           "Multiple internal compiler-driver phase flags set simultaneously");
   }
@@ -2431,8 +2432,8 @@ int main(int argc, char* argv[]) {
 
     // Run compiler in the debugger if requested.
     // Skip if we are in a driver phase that was not requested to be debugged.
-    if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
-          (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
+    if (!((fDriverCompilationPhase && !driverDebugCompilation) ||
+          (fDriverMakeBinaryPhase && !driverDebugMakeBinary))) {
       // re-run compiler in appropriate debugger if requested
       if (fRungdb) runCompilerInGDB(argc, argv);
       if (fRunlldb) runCompilerInLLDB(argc, argv);

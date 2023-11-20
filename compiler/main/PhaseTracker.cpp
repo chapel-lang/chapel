@@ -141,7 +141,7 @@ void PhaseTracker::ReportPassGroupTotals(
 
       // No such pass, we might've exited early, or begun late from driver mode.
       if (currentPass == mPhases.end()) {
-        if (fDriverPhaseTwo) {
+        if (fDriverMakeBinaryPhase) {
           // We began after the current pass group, check the next.
           continue;
         } else {
@@ -207,7 +207,7 @@ void PhaseTracker::ReportRollup() const
   // phase one.
   // Skipped for driver overhead time or driver phase two as they contain very
   // little information and the sort isn't that informative.
-  if (fDriverDoMonolithic || fDriverPhaseOne) {
+  if (fDriverDoMonolithic || fDriverCompilationPhase) {
     Phase::ReportText("\n\n\n");
 
     PassesSortByTime(passes);
