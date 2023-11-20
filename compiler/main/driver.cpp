@@ -806,8 +806,8 @@ static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
       (fRungdb || fRunlldb) && (driverDebugCompilation && !driverDebugMakeBinary);
   if (debugCompilationPhaseOnly && warnIfSkipping) {
     USR_WARN(
-        "Skipping makeBinary phase due to running only compilation phase "
-        "in debugger; change this with --driver-debug-phase if desired");
+        "Skipping makeBinary driver phase due to running only compilation "
+        "phase in debugger; change this with --driver-debug-phase if desired");
   }
 
   // Check if skipping for the above reason or any other early stop.
