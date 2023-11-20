@@ -553,7 +553,7 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   if (paramTrueIdx == -1) return false;
 
   auto& topFrame = returnFrames.back();
-  for (int i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
+  for (size_t i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
     topFrame->subFrames[i].skip = true;
   }
 
