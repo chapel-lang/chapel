@@ -674,14 +674,21 @@ module Version {
   }
 
 
+  /*
+    Error class thrown when two versions are compared that cannot be compared.
 
+    For example, two versions differing only in commit IDs cannot be compared.
+  */
   class VersionComparisonError : Error {
+    @chpldoc.nodoc
     var msg:string;
 
+    @chpldoc.nodoc
     proc init(msg:string) {
       this.msg = msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       return msg;
     }

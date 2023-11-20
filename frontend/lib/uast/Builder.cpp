@@ -105,7 +105,8 @@ owned<Builder> Builder::createForTopLevelModule(Context* context,
                                                 const char* filepath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
   UniqueString startingSymbolPath;
-  auto b = new Builder(context, uniqueFilename, startingSymbolPath);
+  auto b = new Builder(context, uniqueFilename, startingSymbolPath,
+                       /* LibraryFile */ nullptr);
   return toOwned(b);
 }
 
@@ -113,7 +114,24 @@ owned<Builder> Builder::createForIncludedModule(Context* context,
                                                 const char* filepath,
                                                 UniqueString parentSymbolPath) {
   auto uniqueFilename = UniqueString::get(context, filepath);
-  auto b = new Builder(context, uniqueFilename, parentSymbolPath);
+  auto b = new Builder(context, uniqueFilename, parentSymbolPath,
+                       /* LibraryFile */ nullptr);
+  return toOwned(b);
+}
+
+owned<Builder> Builder::createForLibraryFileModule(
+                                        Context* context,
+                                        UniqueString filePath,
+                                        UniqueString parentSymbolPath,
+                                        const libraries::LibraryFile* lib) {
+  auto b = new Builder(context, filePath, parentSymbolPath, lib);
+  // locations won't be noted when working with a library file
+  // (since they will be stored and retrieved separately, instead)
+  // so don't fail if a location was not noted.
+  b->useNotedLocations_ = false;
+  // this flag helps an assertion in Builder::result if
+  // noteSymbolTableSymbols was not called
+  b->expectSymbolTableVec_ = true;
   return toOwned(b);
 }
 
@@ -140,9 +158,24 @@ void Builder::noteAdditionalLocation(AstLocMap& m, AstNode* ast,
 #include "chpl/uast/all-location-maps.h"
 #undef LOCATION_MAP
 
+void Builder::noteSymbolTableSymbols(SymbolTableVec vec) {
+  symbolTableVec_ = std::move(vec);
+  expectSymbolTableVec_ = false;
+}
+
 BuilderResult Builder::result() {
   this->createImplicitModuleIfNeeded();
   this->assignIDs();
+
+  // if we have a symbolTableVec, use it to compute
+  // br.libraryFileSymbols_, now that IDs have been assigned.
+  CHPL_ASSERT(!expectSymbolTableVec_); // was noteSymbolTableSymbols called?
+  if (!symbolTableVec_.empty()) {
+    for (const auto& info : symbolTableVec_) {
+      br.libraryFileSymbols_[info.ast->id()] =
+        std::make_pair(info.moduleIndex, info.symbolIndex);
+    }
+  }
 
   // Performance: We could consider copying all of these AST
   // nodes to a newly allocated buffer big enough to hold them
@@ -305,12 +338,14 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
     comment->setCommentId(commentIndex);
     commentIndex += 1;
 
-    auto search = notedLocations_.find(ast);
-    if (search != notedLocations_.end()) {
-      CHPL_ASSERT(!search->second.isEmpty());
-      br.commentIdToLocation_.push_back(search->second);
-    } else {
-      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+    if (useNotedLocations_) {
+      auto search = notedLocations_.find(ast);
+      if (search != notedLocations_.end()) {
+        CHPL_ASSERT(!search->second.isEmpty());
+        br.commentIdToLocation_.push_back(search->second);
+      } else {
+        CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
+      }
     }
     return;
   }
@@ -429,31 +464,33 @@ void Builder::doAssignIDs(AstNode* ast, UniqueString symbolPath, int& i,
   br.idToAst_[ast->id()] = ast;
 
   // update locations_ for the visited ast
-  auto search = notedLocations_.find(ast);
-  if (search != notedLocations_.end()) {
-    CHPL_ASSERT(!search->second.isEmpty());
-    br.idToLocation_[ast->id()] = search->second;
+  if (useNotedLocations_) {
+    auto search = notedLocations_.find(ast);
+    if (search != notedLocations_.end()) {
+      CHPL_ASSERT(!search->second.isEmpty());
+      br.idToLocation_[ast->id()] = search->second;
 
-    // Also map additional locations to ID.
-    #define LOCATION_MAP(ast__, location__) \
-      if (auto x = ast->to##ast__()) { \
-        auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
-        auto it = m1.find(x); \
-        if (it != m1.end()) { \
-          auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
-          m2[x->id()] = it->second; \
-        } \
+      // Also map additional locations to ID.
+      #define LOCATION_MAP(ast__, location__) \
+        if (auto x = ast->to##ast__()) { \
+          auto& m1 = CHPL_AST_LOC_MAP(ast__, location__); \
+          auto it = m1.find(x); \
+          if (it != m1.end()) { \
+            auto& m2 = br.CHPL_ID_LOC_MAP(ast__, location__); \
+            m2[x->id()] = it->second; \
+          } \
+        }
+      #include "chpl/uast/all-location-maps.h"
+      #undef LOCATION_MAP
+
+      // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
+      if (ieNode) {
+        CHPL_ASSERT(ast->isVariable());
+        checkConfigPreviouslyUsed(ast->toVariable(), configName);
       }
-    #include "chpl/uast/all-location-maps.h"
-    #undef LOCATION_MAP
-
-    // if a config's initExpr was updated, mark it as used and make sure it wasn't used previously
-    if (ieNode) {
-      CHPL_ASSERT(ast->isVariable());
-      checkConfigPreviouslyUsed(ast->toVariable(), configName);
+    } else {
+      CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
     }
-  } else {
-    CHPL_ASSERT(false && "Location for all ast should be set by noteLocation");
   }
 }
 

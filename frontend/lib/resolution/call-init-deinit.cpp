@@ -543,7 +543,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   actuals.push_back(CallInfoActual(lhsType, USTR("this")));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
   auto ci = CallInfo (/* name */ USTR("init="),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ lhsType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
@@ -626,7 +626,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       }
     }
   } else {
-    CHPL_ASSERT(false && "TODO"); // e.g. value = copy init from ref
+    CHPL_UNIMPL("value = copy init from ref");
   }
 }
 
@@ -716,7 +716,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
   std::vector<CallInfoActual> actuals;
   actuals.push_back(CallInfoActual(type, USTR("this")));
   auto ci = CallInfo (/* name */ USTR("deinit"),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ type,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,

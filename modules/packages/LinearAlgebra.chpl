@@ -1151,10 +1151,21 @@ proc _matmatMultHelper(AMat: [?Adom] ?eltType,
 }
 
 @chpldoc.nodoc
-private inline proc hasNonStridedIndices(Adom : domain(2)) {
-  return if !Adom.strides.isNegative()
-          then Adom.dim(0).stride == 1 && Adom.dim(1).stride == 1
-          else false;
+private inline proc hasNonStridedIndices(Adom : domain(?)) param where Adom.strides == strideKind.one {
+  return true;
+}
+
+@chpldoc.nodoc
+private inline proc hasNonStridedIndices(Adom : domain(?)) param where Adom.strides.isNegative() {
+  return false;
+}
+
+@chpldoc.nodoc
+private proc hasNonStridedIndices(Adom : domain(?)) {
+  for param i in 0..<Adom.rank {
+    if Adom.dim(i).stride != 1 then return false;
+  }
+  return true;
 }
 
 /*

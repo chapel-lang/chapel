@@ -1,0 +1,5 @@
+#!/bin/bash
+outfile=$2
+echo "Hey, if you're modifying the output of this test, maybe it's time to remove this special case from the script?" > $outfile.tmp
+./unstableAnonScript -nl 1 < $outfile >> $outfile.tmp
+mv $outfile.tmp $outfile

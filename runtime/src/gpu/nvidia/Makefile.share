@@ -15,8 +15,24 @@
 # WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 # See the License for the specific language governing permissions and
 # limitations under the License.
-SRCS = gpu-nvidia.c
+GPU_SRCS = gpu-nvidia.c gpu-nvidia-reduce.cc
 
-GPU_SRCS = gpu-nvidia.c
+SRCS = $(GPU_SRCS)
 
-GPU_OBJS = $(GPU_SRCS:%.c=$(GPU_OBJDIR)/%.o)
+GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
+
+# 1. our bundled clang (15 as of today) doesn't support warp-reductions which
+# came in with 8.x. So, we are limiting our runtime binary to 7.5. This seems to
+# work fine even if the user code is compiled with >7.5.
+# 2. clang-14 wants offload-arch to be passed multiple times and doesn't accept
+# a comma-separated list.
+RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
+                    -Xclang -fcuda-allow-variadic-functions \
+                    --offload-arch=sm_60 \
+                    --offload-arch=sm_61 \
+                    --offload-arch=sm_70 \
+                    --offload-arch=sm_75
+
+$(RUNTIME_OBJ_DIR)/gpu-nvidia-reduce.o: gpu-nvidia-reduce.cc \
+                                         $(RUNTIME_OBJ_DIR_STAMP)
+	$(CXX) -c $(CXX11_STD) $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

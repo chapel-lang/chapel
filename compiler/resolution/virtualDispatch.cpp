@@ -146,8 +146,6 @@ static void virtualDispatchUpdateRoots(FnSymbol* pfn, FnSymbol* cfn);
 
 static bool isVirtualChild(FnSymbol* child, FnSymbol* parent);
 
-static bool isSubType(Type* sub, Type* super);
-
 static bool isOverrideableMethod(FnSymbol* fn);
 static bool isVirtualizableMethod(FnSymbol* fn);
 
@@ -614,7 +612,7 @@ static void overrideIterator(FnSymbol* pfn, FnSymbol* cfn) {
   }
 }
 
-static bool isSubType(Type* sub, Type* super) {
+bool isSubType(Type* sub, Type* super) {
   bool retval = false;
 
   if (sub == super) {

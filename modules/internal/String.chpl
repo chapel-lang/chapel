@@ -382,21 +382,6 @@ module String {
 
     :returns: A new :type:`string`
   */
-  @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
-  inline proc createStringWithBorrowedBuffer(x: string) : string {
-    return string.createBorrowingBuffer(x);
-  }
-
-  /*
-    Creates a new :type:`string` which borrows the internal buffer of another string. If
-    the buffer is freed before the string returned from this function, accessing
-    it is undefined behavior.
-
-    :arg x: Object to borrow the buffer from
-    :type x: `string`
-
-    :returns: A new :type:`string`
-  */
   @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   inline proc type string.createBorrowingBuffer(x: string) : string {
     // we don't validate here because `x` must have been validated already
@@ -404,31 +389,6 @@ module String {
     ret.cachedNumCodepoints = x.cachedNumCodepoints;
     initWithBorrowedBuffer(ret, x);
     return ret;
-  }
-
-  /*
-    Creates a new :type:`string` which borrows the internal buffer of a `c_string`. If
-    the buffer is freed before the :type:`string` returned from this function, accessing
-    it is undefined behavior.
-
-    :arg x: Object to borrow the buffer from
-    :type x: `c_string`
-
-    :arg length: Length of the string stored in `x` in bytes, excluding the
-                 terminating null byte.
-    :type length: `int`
-
-    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
-
-    :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
-  inline proc createStringWithBorrowedBuffer(x: c_string,
-                                             length=x.size) : string throws {
-    return string.createBorrowingBuffer(x:c_ptr(uint(8)),
-                                        length=length,
-                                        size=length+1);
   }
 
   /*
@@ -524,33 +484,6 @@ module String {
 
      :returns: A new :type:`string`
   */
-  @deprecated("createStringWithBorrowedBuffer is deprecated - please use :proc:`string.createBorrowingBuffer` instead")
-  inline proc createStringWithBorrowedBuffer(x: c_ptr(?t),
-                                             length: int,
-                                             size: int) : string throws {
-    return string.createBorrowingBuffer(x, length, size);
-  }
-
-  /*
-     Creates a new :type:`string` which borrows the memory allocated for a :class:`~CTypes.c_ptr`. If
-     the buffer is freed before the :type:`string` returned from this function,
-     accessing it is undefined behavior.
-
-     :arg x: The buffer to borrow from
-     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
-
-     :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
-     :type length: `int`
-
-     :arg size: Size of memory allocated for `x` in bytes
-     :type length: `int`
-
-     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
-
-     :returns: A new :type:`string`
-  */
   @unstable("'createBorrowingBuffer' is unstable and may change in the future")
   proc type string.createBorrowingBuffer(x: c_ptr(?t),
                                          length: int,
@@ -565,42 +498,12 @@ module String {
   }
 
   @chpldoc.nodoc
-  inline proc createStringWithOwnedBuffer(x: string) : string {
-    // should we allow stealing ownership?
-    compilerError("A Chapel string cannot be passed to createStringWithOwnedBuffer");
-  }
-
-  @chpldoc.nodoc
   @deprecated("the type 'c_string' is deprecated; please use the variant of 'string.createBorrowingBuffer' that takes a 'c_ptrConst(c_char)' instead")
   inline proc type string.createBorrowingBuffer(x: chpl_c_string,
                                                 length=x.size) : string throws {
     return string.createBorrowingBuffer(x:bufferType,
                                         length=length,
                                         size=length+1);
-  }
-
-  /*
-    Creates a new :type:`string` which takes ownership of the internal buffer of a
-    `c_string`. The buffer will be freed when the :type:`string` is deinitialized.
-
-    :arg x: Object to take ownership of the buffer from
-    :type x: `c_string`
-
-    :arg length: Length of the string stored in `x` in bytes, excluding the
-                 terminating null byte.
-    :type length: `int`
-
-    :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-     characters.
-
-    :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
-  inline proc createStringWithOwnedBuffer(x: c_string,
-                                          length=x.size) : string throws {
-    return string.createAdoptingBuffer(x: bufferType,
-                                          length=length,
-                                          size=length+1);
   }
 
   /*
@@ -635,7 +538,7 @@ module String {
                                        size=length+1);
   }
 
-    /*
+  /*
     Creates a new :type:`string` which takes ownership of the memory allocated for a
     :class:`~CTypes.c_ptrConst`. The buffer will be freed when the :type:`string`
     is deinitialized.
@@ -657,32 +560,6 @@ module String {
     return string.createAdoptingBuffer(x:bufferType,
                                        length=length,
                                        size=length+1);
-  }
-
-  /*
-     Creates a new :type:`string` which takes ownership of the memory allocated for a
-     :class:`~CTypes.c_ptr`. The buffer will be freed when the :type:`string` is deinitialized.
-
-     :arg x: Object to take ownership of the buffer from
-     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
-
-     :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
-     :type length: `int`
-
-     :arg size: Size of memory allocated for `x` in bytes
-     :type length: `int`
-
-     :throws: A :class:`~Errors.DecodeError`: if `x` contains non-UTF-8
-      characters.
-
-     :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithOwnedBuffer is deprecated - please use :proc:`string.createAdoptingBuffer` instead")
-  inline proc createStringWithOwnedBuffer(x: c_ptr(?t),
-                                          length: int,
-                                          size: int) : string throws {
-    return string.createAdoptingBuffer(x, length, size);
   }
 
   /*
@@ -717,52 +594,6 @@ module String {
   }
 
   /*
-    Creates a new :type:`string` by creating a copy of the buffer of another :type:`string`.
-
-    :arg x: Object to copy the buffer from
-    :type x: `string`
-
-    :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
-  inline proc createStringWithNewBuffer(x: string) : string {
-    // we don't validate here because `x` must have been validated already
-    var ret: string;
-    ret.cachedNumCodepoints = x.numCodepoints;
-    initWithNewBuffer(ret, x);
-    return ret;
-  }
-
-  /*
-    Creates a new :type:`string` by creating a copy of the buffer of a `c_string`.
-
-    :arg x: Object to copy the buffer from
-    :type x: `c_string`
-
-    :arg length: Length of the string stored in `x` in bytes, excluding the
-                 terminating null byte.
-    :type length: `int`
-
-    :arg policy: - `decodePolicy.strict` raises an error
-                 - `decodePolicy.replace` replaces the malformed character with
-                   UTF-8 replacement character
-                 - `decodePolicy.drop` drops the data silently
-                 - `decodePolicy.escape` escapes each illegal byte with private
-                   use codepoints
-
-    :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
-      passed to the `policy` argument and `x` contains non-UTF-8 characters.
-
-    :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
-  inline proc createStringWithNewBuffer(x: c_string, length=x.size,
-                                        policy=decodePolicy.strict) : string throws {
-    return string.createCopyingBuffer(x, length, policy);
-  }
-
-
-    /*
     Creates a new :type:`string` by creating a copy of the memory allocated for a :class:`~CTypes.c_ptrConst`.
 
     :arg x: The buffer to copy
@@ -791,39 +622,6 @@ module String {
                                       length=length,
                                       size=length+1,
                                       policy);
-  }
-
-  /*
-     Creates a new :type:`string` by creating a copy of a buffer.
-
-     :arg x: The buffer to copy
-     :type x: `c_ptr(uint(8))` or `c_ptr(int(8))`
-
-     :arg length: Length of the string stored in `x` in bytes, excluding the
-                  terminating null byte.
-     :type length: `int`
-
-     :arg size: Size of memory allocated for `x` in bytes. This argument is
-                ignored by this function.
-     :type size: `int`
-
-     :arg policy: `decodePolicy.strict` raises an error, `decodePolicy.replace`
-                   replaces the malformed character with UTF-8 replacement
-                   character, `decodePolicy.drop` drops the data silently,
-                   `decodePolicy.escape` escapes each illegal byte with private
-                   use codepoints
-
-     :throws: A :class:`~Errors.DecodeError`: if `decodePolicy.strict` is
-      passed to the `policy` argument and `x` contains non-UTF-8 characters.
-
-     :returns: A new :type:`string`
-  */
-  @deprecated("createStringWithNewBuffer is deprecated - please use :proc:`string.createCopyingBuffer` instead")
-  inline proc createStringWithNewBuffer(x: c_ptr(?t),
-                                        length: int,
-                                        size=length+1,
-                                        policy=decodePolicy.strict) : string throws {
-    return string.createCopyingBuffer(x, length, size, policy);
   }
 
   /*

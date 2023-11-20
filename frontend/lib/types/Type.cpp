@@ -171,6 +171,14 @@ bool Type::isBytesType() const {
   return false;
 }
 
+bool Type::isLocaleType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->name() == USTR("locale"))
+      return true;
+  }
+  return false;
+}
+
 bool Type::isNilablePtrType() const {
   if (isPtrType()) {
 

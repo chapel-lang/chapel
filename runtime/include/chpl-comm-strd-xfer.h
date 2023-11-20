@@ -46,6 +46,12 @@ extern "C" {
 #endif
 
 //
+// WARNING: elements of the '_common' functions in this file have been
+// duplicated in src/chpl-gpu.c to support strided transfers involving GPUs.
+// Updates to this file may need to be replicated in the GPU implementation.
+//
+
+//
 //
 // Common versions of the strided bulk transfer functions, for comm
 // layer implementations that do not have native strided transfers.

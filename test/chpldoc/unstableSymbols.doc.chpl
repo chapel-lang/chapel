@@ -25,10 +25,18 @@
 @chpldoc.nodoc
 @unstable("j is unstable, don't use it") var j: int;
 
+// Ensures that modules respond appropriately to unstable
 @unstable
 module UnstableMod1 {
 }
 
 @unstable("This module is unstable")
 module UnstableMod2 {
+}
+
+/* Including modules with documentation */
+@unstable("This module is unstable")
+module UnstableMod3 {
+  /* Just a regular symbol to show how it interacts */
+  var x: int;
 }

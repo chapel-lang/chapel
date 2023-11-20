@@ -1,0 +1,2 @@
+-sdoError=false
+-sdoError=true # returnGenericRecordByRefError.good

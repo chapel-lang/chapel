@@ -39,6 +39,7 @@ std::set<std::string> log_modules;
 bool             fLog                                   =    false;
 bool             fLogDir                                =    false;
 bool             fLogIds                                =    true;
+LogFormat        fLogFormat                             =    LogFormat::DEFAULT;
 
 int              fdump_html                             =       0;
 char             fdump_html_chpl_home[FILENAME_MAX + 1] =      "";
@@ -100,6 +101,16 @@ void logSelectPass(const char* arg) {
   // Otherwise, we don't know what pass this is.
   fprintf(stderr, "Unrecognized log pass name: \"%s\"\n", arg);
   clean_exit(1);
+}
+
+void logSelectFormat(const char* arg) {
+  if(!strcmp(arg, "default")) {
+    fLogFormat = LogFormat::DEFAULT;
+  } else if(!strcmp(arg, "nprint")) {
+    fLogFormat = LogFormat::NPRINT;
+  } else {
+    USR_FATAL("Unrecognized log format: %s (may be set to 'default' or 'nprint')\n", arg);
+  }
 }
 
 void setupLogfiles() {

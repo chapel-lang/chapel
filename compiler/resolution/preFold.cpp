@@ -801,8 +801,11 @@ static Expr* preFoldPrimOp(CallExpr* call) {
 
     Type* testType = call->get(1)->getValType();
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (fn->throwsError()) {
+      // important to skip anything that has been pruned from the tree here
+      // or mod will be empty
+      if (fn->throwsError() && fn->inTree()) {
         ModuleSymbol *mod = fn->getModule();
+        INT_ASSERT(mod);
         if (mod->modTag == MOD_USER) {
           if (fn->numFormals() == 1) {
             if (fn->instantiatedFrom == NULL && ! fn->isKnownToBeGeneric()) {
@@ -2229,6 +2232,14 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     retval = new CallExpr(PRIM_NOOP);
     call->replace(retval);
     break;
+  }
+
+  case PRIM_BREAKPOINT: {
+    if (!debugCCode) {
+      // if not in debug mode, remove the primitive
+      retval = new CallExpr(PRIM_NOOP);
+      call->replace(retval);
+    }
   }
 
   default:

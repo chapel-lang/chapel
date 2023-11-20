@@ -135,7 +135,7 @@ static void test4(Parser* parser) {
   auto parseResult = parseStringAndReportErrors(parser, "test4.chpl",
       "/* comment 1 */\n"
       "x = new borrowed C(a=b, c);\n");
-  assert(!guard.realizeErrors());
+  assert(guard.realizeErrors() == 1);
   auto mod = parseResult.singleModule();
   assert(mod);
   assert(mod->numStmts() == 2);

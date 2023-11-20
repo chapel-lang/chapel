@@ -97,16 +97,16 @@ static void checkCalledIndex(Context* context,
   } else {
     int i = 1;
     for (auto fn : stuff.fns) {
-      if (s.only() && s.only()->id() == fn->id()) {
+      if (s.only() && s.only().fn()->id() == fn->id()) {
         foundOnlyIdx = i;
       } else {
-        if (s.bestRef() && s.bestRef()->id() == fn->id()) {
+        if (s.bestRef() && s.bestRef().fn()->id() == fn->id()) {
           foundBestRef = i;
         }
-        if (s.bestConstRef() && s.bestConstRef()->id() == fn->id()) {
+        if (s.bestConstRef() && s.bestConstRef().fn()->id() == fn->id()) {
           foundBestConstRef = i;
         }
-        if (s.bestValue() && s.bestValue()->id() == fn->id()) {
+        if (s.bestValue() && s.bestValue().fn()->id() == fn->id()) {
           foundBestValue = i;
         }
       }

@@ -43,6 +43,8 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
 
+#include "gpu/chpl-gpu-reduce-util.h"
+
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
@@ -285,25 +287,28 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_list args;
   va_start(args, nargs);
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-      blk_dim, 1, 1);
-  chpl_gpu_diags_incr(kernel_launch);
+  if (num_threads > 0){
+    chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
+        blk_dim, 1, 1);
+    chpl_gpu_diags_incr(kernel_launch);
 
-  chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                   name,
-                                   num_threads, blk_dim,
-                                   stream,
-                                   nargs, args);
+    chpl_gpu_impl_launch_kernel_flat(ln, fn,
+                                     name,
+                                     num_threads, blk_dim,
+                                     stream,
+                                     nargs, args);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-  if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    wait_stream(stream);
-  }
+    if (chpl_gpu_sync_with_host) {
+      CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+      wait_stream(stream);
+    }
 #else
-  chpl_gpu_impl_synchronize();
+    chpl_gpu_impl_synchronize();
 #endif
-
+  } else {
+  CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
+  }
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
@@ -381,6 +386,275 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
     chpl_gpu_memcpy(dst_subloc, dst, dst_buff_subloc, dst_buff, size,
                     commID, ln, fn);
     chpl_free(dst_buff);
+  }
+}
+
+void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
+                          void* dstaddr_arg, size_t* dststrides,
+                          c_nodeid_t srclocale, c_sublocid_t src_subloc,
+                          void* srcaddr_arg, size_t* srcstrides,
+                          size_t* count, int32_t stridelevels, size_t elemSize,
+                          int32_t commID, int ln, int32_t fn) {
+  // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
+  //
+  // Note: This function differs from the original in chpl-comm-strd-xfer.h by
+  // not supporting non-blocking communication calls.
+  const size_t strlvls=(size_t)stridelevels;
+  size_t i,j,k,t,total,off,x,carry;
+
+  int8_t* dstaddr,*dstaddr1;
+  int8_t* srcaddr,*srcaddr1;
+
+  int *srcdisp, *dstdisp;
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
+
+
+  // TODO: Communication diagnostics
+
+  //Only count[0] and strides are measured in number of bytes.
+  cnt[0]=count[0] * elemSize;
+  if(strlvls>0){
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
+    for (i=1;i<strlvls;i++)
+      {
+        srcstr[i] = srcstrides[i] * elemSize;
+        dststr[i] = dststrides[i] * elemSize;
+        cnt[i]=count[i];
+      }
+    cnt[strlvls]=count[strlvls];
+  }
+
+  switch(strlvls) {
+  case 0:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+    chpl_gpu_comm_get(dst_subloc, dstaddr,
+                      srclocale, src_subloc, srcaddr, cnt[0],
+                      commID, ln, fn);
+    break;
+
+  case 1:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+    for(i=0; i<cnt[1]; i++) {
+      chpl_gpu_comm_get(dst_subloc, dstaddr,
+                        srclocale, src_subloc, srcaddr, cnt[0],
+                        commID, ln, fn);
+      srcaddr+=srcstr[0];
+      dstaddr+=dststr[0];
+    }
+    break;
+
+  case 2:
+    for(i=0; i<cnt[2]; i++) {
+      srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
+      dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
+      for(j=0; j<cnt[1]; j++) {
+        chpl_gpu_comm_get(dst_subloc, dstaddr,
+                          srclocale, src_subloc, srcaddr, cnt[0],
+                          commID, ln, fn);
+        srcaddr+=srcstr[0];
+        dstaddr+=dststr[0];
+      }
+    }
+    break;
+
+  case 3:
+    for(i=0; i<cnt[3]; i++) {
+      srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
+      dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
+      for(j=0; j<cnt[2]; j++) {
+        srcaddr = srcaddr1 + srcstr[1]*j;
+        dstaddr = dstaddr1 + dststr[1]*j;
+        for(k=0; k<cnt[1]; k++) {
+          chpl_gpu_comm_get(dst_subloc, dstaddr,
+                            srclocale, src_subloc, srcaddr, cnt[0],
+                            commID, ln, fn);
+          srcaddr+=srcstr[0];
+          dstaddr+=dststr[0];
+        }
+      }
+    }
+    break;
+
+  default:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+
+    //Number of chpl_gpu_comm_get operations to do
+    total=1;
+    for (i=0; i<strlvls; i++)
+      total=total*cnt[i+1];
+
+    //displacement from the dstaddr and srcaddr start points
+    srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+
+    for (j=0; j<total; j++) {
+      carry=1;
+      for (t=1;t<=strlvls;t++) {
+        if (cnt[t]*carry>=j+1) {  //IF 1
+          x=j/carry;
+          off =j-(carry*x);
+
+          if (carry!=1) {  //IF 2
+            srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
+            dstdisp[j]=dststr[t-1]*x+dstdisp[off];
+          } else {  //ELSE 2
+            srcdisp[j]=srcstr[t-1]*x;
+            dstdisp[j]=dststr[t-1]*x;
+          }
+          chpl_gpu_comm_get(dst_subloc, dstaddr+dstdisp[j],
+                            srclocale, src_subloc,
+                            srcaddr+srcdisp[j], cnt[0],
+                            commID, ln, fn);
+          break;
+
+        } else {  //ELSE 1
+          carry=carry*cnt[t];
+        }
+      }
+    }
+    chpl_mem_free(srcdisp,0,0);
+    chpl_mem_free(dstdisp,0,0);
+    break;
+  }
+}
+
+void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
+                          void* dstaddr_arg, size_t* dststrides,
+                          c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
+                          void* srcaddr_arg, size_t* srcstrides,
+                          size_t* count, int32_t stridelevels, size_t elemSize,
+                          int32_t commID, int ln, int32_t fn) {
+  // TODO: Re-use code from chpl-comm-strd-xfer.h instead of copying it here.
+  //
+  // Note: This function differs from the original in chpl-comm-strd-xfer.h by
+  // not supporting non-blocking communication calls.
+  const size_t strlvls=(size_t)stridelevels;
+  size_t i,j,k,t,total,off,x,carry;
+
+  int8_t* dstaddr,*dstaddr1;
+  int8_t* srcaddr,*srcaddr1;
+
+  int *srcdisp, *dstdisp;
+  size_t dststr[strlvls];
+  size_t srcstr[strlvls];
+  size_t cnt[strlvls+1];
+
+
+  // TODO: Communication diagnostics
+
+  //Only count[0] and strides are measured in number of bytes.
+  cnt[0]=count[0] * elemSize;
+  if(strlvls>0){
+    srcstr[0] = srcstrides[0] * elemSize;
+    dststr[0] = dststrides[0] * elemSize;
+    for (i=1;i<strlvls;i++)
+      {
+        srcstr[i] = srcstrides[i] * elemSize;
+        dststr[i] = dststrides[i] * elemSize;
+        cnt[i]=count[i];
+      }
+    cnt[strlvls]=count[strlvls];
+  }
+
+  switch(strlvls) {
+  case 0:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+    chpl_gpu_comm_put(dstlocale, dst_subloc, dstaddr,
+                      src_subloc, srcaddr, cnt[0],
+                      commID, ln, fn);
+    break;
+
+  case 1:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+    for(i=0; i<cnt[1]; i++) {
+      chpl_gpu_comm_put(dstlocale, dst_subloc, dstaddr,
+                        src_subloc, srcaddr, cnt[0],
+                        commID, ln, fn);
+      srcaddr+=srcstr[0];
+      dstaddr+=dststr[0];
+    }
+    break;
+
+  case 2:
+    for(i=0; i<cnt[2]; i++) {
+      srcaddr = (int8_t*)srcaddr_arg + srcstr[1]*i;
+      dstaddr = (int8_t*)dstaddr_arg + dststr[1]*i;
+      for(j=0; j<cnt[1]; j++) {
+        chpl_gpu_comm_put(dstlocale, dst_subloc, dstaddr,
+                          src_subloc, srcaddr, cnt[0],
+                          commID, ln, fn);
+        srcaddr+=srcstr[0];
+        dstaddr+=dststr[0];
+      }
+    }
+    break;
+
+  case 3:
+    for(i=0; i<cnt[3]; i++) {
+      srcaddr1 = (int8_t*)srcaddr_arg + srcstr[2]*i;
+      dstaddr1 = (int8_t*)dstaddr_arg + dststr[2]*i;
+      for(j=0; j<cnt[2]; j++) {
+        srcaddr = srcaddr1 + srcstr[1]*j;
+        dstaddr = dstaddr1 + dststr[1]*j;
+        for(k=0; k<cnt[1]; k++) {
+          chpl_gpu_comm_put(dstlocale, dst_subloc, dstaddr,
+                            src_subloc, srcaddr, cnt[0],
+                            commID, ln, fn);
+          srcaddr+=srcstr[0];
+          dstaddr+=dststr[0];
+        }
+      }
+    }
+    break;
+
+  default:
+    dstaddr=(int8_t*)dstaddr_arg;
+    srcaddr=(int8_t*)srcaddr_arg;
+
+    //Number of chpl_gpu_comm_put operations to do
+    total=1;
+    for (i=0; i<strlvls; i++)
+      total=total*cnt[i+1];
+
+    //displacement from the dstaddr and srcaddr start points
+    srcdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+    dstdisp=chpl_mem_allocMany(total,sizeof(int),CHPL_RT_MD_GETS_PUTS_STRIDES,0,0);
+
+    for (j=0; j<total; j++) {
+      carry=1;
+      for (t=1;t<=strlvls;t++) {
+        if (cnt[t]*carry>=j+1) {  //IF 1
+          x=j/carry;
+          off =j-(carry*x);
+
+          if (carry!=1) {  //IF 2
+            srcdisp[j]=srcstr[t-1]*x+srcdisp[off];
+            dstdisp[j]=dststr[t-1]*x+dstdisp[off];
+          } else {  //ELSE 2
+            srcdisp[j]=srcstr[t-1]*x;
+            dstdisp[j]=dststr[t-1]*x;
+          }
+          chpl_gpu_comm_put(dstlocale, dst_subloc, dstaddr+dstdisp[j],
+                            src_subloc, srcaddr+srcdisp[j], cnt[0],
+                            commID, ln, fn);
+          break;
+
+        } else {  //ELSE 1
+          carry=carry*cnt[t];
+        }
+      }
+    }
+    chpl_mem_free(srcdisp,0,0);
+    chpl_mem_free(dstdisp,0,0);
+    break;
   }
 }
 
@@ -696,5 +970,32 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2) {
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
 }
+
+#define DEF_ONE_REDUCE(kind, data_type)\
+void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
+                                          data_type* val, int* idx) { \
+  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " called\n"); \
+  \
+  int dev = chpl_task_getRequestedSubloc(); \
+  chpl_gpu_impl_use_device(dev); \
+  void* stream = get_stream(dev); \
+  \
+  chpl_gpu_impl_##kind##_reduce_##data_type(data, n, val, idx, stream); \
+  \
+  if (chpl_gpu_sync_with_host) { \
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream); \
+    wait_stream(stream); \
+  } \
+  \
+  CHPL_GPU_DEBUG("chpl_gpu_" #kind "_reduce_" #data_type " returned\n"); \
+}
+
+GPU_REDUCE(DEF_ONE_REDUCE, sum)
+GPU_REDUCE(DEF_ONE_REDUCE, min)
+GPU_REDUCE(DEF_ONE_REDUCE, max)
+GPU_REDUCE(DEF_ONE_REDUCE, minloc)
+GPU_REDUCE(DEF_ONE_REDUCE, maxloc)
+
+#undef DEF_ONE_REDUCE
 
 #endif

@@ -278,7 +278,11 @@ struct Converter {
     return false;
   }
   bool shouldResolve(ID symbolId) {
-    return shouldResolve(symbolId.symbolPath());
+    if (fDynoCompilerLibrary) {
+      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+    } else {
+      return shouldResolve(symbolId.symbolPath());
+    }
   }
   bool shouldResolve(const uast::AstNode* node) {
     return shouldResolve(node->id());
@@ -1401,6 +1405,11 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
+        //if(fForeachIntents && parent->toForeach()) {
+        if(parent->toForeach()) {
+          USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
+        }
+
         Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
         Expr* riExpr = convertScanReduceOp(rd->op());
         svs = ShadowVarSymbol::buildFromReduceIntent(ovar, riExpr);
@@ -1972,7 +1981,7 @@ struct Converter {
     // Does not appear possible right now, from reading the grammar.
     INT_ASSERT(!node->isExpressionLevel());
 
-    if (node->withClause()) {
+    if (!fForeachIntents && node->withClause()) {
       USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
                                                "support task intents");
     }
@@ -1980,6 +1989,7 @@ struct Converter {
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    CallExpr* intents = convertWithClause(node->withClause(), node);
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
@@ -1989,7 +1999,7 @@ struct Converter {
 
     auto loopAttributes = buildLoopAttributes(node);
     loopAttributes.insertGpuEligibilityAssertion(body);
-    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
+    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                          zippered,
                                          isForExpr, std::move(loopAttributes.llvmMetadata));
 
@@ -2959,7 +2969,6 @@ struct Converter {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
-    const resolution::TypedFnSignature* initialSig = nullptr;
     const resolution::PoiScope* poiScope = nullptr;
 
     if (shouldResolveFunction || shouldScopeResolveFunction) {
@@ -3146,8 +3155,6 @@ struct Converter {
 
     if (node->body()) {
       INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
-
-      // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
     }
@@ -3168,8 +3175,8 @@ struct Converter {
     }
 
     // Update the function symbol with any resolution results.
-    if (shouldResolveFunction) {
-      auto retType = resolution::returnType(context, initialSig, poiScope);
+    if (shouldResolveFunction && resolvedFn != nullptr) {
+      auto retType = resolution::returnType(context, resolvedFn->signature(), poiScope);
       fn->retType = convertType(retType);
     }
 
@@ -3423,9 +3430,6 @@ struct Converter {
     CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
-    // TODO (dlongnecke): For now, the tag is overridden by the caller.
-    // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
-    // could note if a module is standard/internal/user.
     const ModTag tag = this->topLevelModTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
@@ -4084,7 +4088,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       } else if (nBest > 1) {
         INT_FATAL("return intent overloading not yet handled");
       } else if (nBest == 1) {
-        const resolution::TypedFnSignature* sig = candidates.only();
+        const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
         if (fn == nullptr) {
           // we will fix it later

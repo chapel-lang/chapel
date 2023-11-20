@@ -545,11 +545,13 @@ void AstNode::stringify(std::ostream& ss,
 }
 
 void AstNode::serialize(Serializer& ser) const {
+  ser.beginAst(this);
   ser.write(tag_);
   ser.writeVInt(attributeGroupChildNum_);
-  ser.write(id_); // TODO: don't serialize ID; recompute it
+  // id_ not serialized; it is recomputed after reading
   serializeInner(ser);
-  ser.write(children_);
+  serializeChildren(ser);
+  ser.endAst(this);
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)
@@ -557,21 +559,51 @@ AstNode::AstNode(AstTag tag, Deserializer& des)
   // Note: Assumes that the tag was already deserialized in order to invoke
   // the correct class' deserializer.
   attributeGroupChildNum_ = des.readVInt();
-  id_ = des.read<ID>();
-  // TODO: don't deserialize ID; recompute it
+  // id_ not deserialized; it is recomputed after reading
+}
+
+void AstNode::serializeChildren(Serializer& ser) const {
+  // count the number of children ignoring comments
+  uint64_t count = 0;
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      count++;
+    }
+  }
+
+  // write the count
+  ser.writeVU64(count);
+
+  // store the children ignoring comments
+  for (const AstNode* child : children()) {
+    if (!child->isComment()) {
+      child->serialize(ser);
+    }
+  }
 }
 
 void AstNode::deserializeChildren(Deserializer& des) {
-  children_ = des.read<AstList>();
+  uint64_t len = des.readVU64();
+  // note: this check assumes 1 byte per child node, and it's
+  // true that each child node will be at least one byte.
+  if (des.checkStringLengthAvailable(len)) {
+    children_.resize(len);
+    for (uint64_t i = 0; i < len; i++) {
+      children_[i] = deserializeWithoutIds(des);
+    }
+  }
 }
 
-owned<AstNode> AstNode::deserialize(Deserializer& des) {
+owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
+  uint64_t pos = des.position();
+
   AstTag tag = des.read<AstTag>();
 
-  // deserialize using the constructor
+  // Deserialize using the specific type constructor
   // which will call AstNode::AstNode(AstTag tag, Deserializer& des) above
   // to deserialize AstNode's fields (but not the children)
-  // and then deserialize the subclass fields.
+  // and then deserialize the subclass fields through its constructor.
+  // Then, register the deserialized Ast with the Deserializer
   // Finally, deserialize the children with deserializeChildren.
 
   switch (tag) {
@@ -579,6 +611,7 @@ owned<AstNode> AstNode::deserialize(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }
@@ -587,6 +620,7 @@ owned<AstNode> AstNode::deserialize(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }

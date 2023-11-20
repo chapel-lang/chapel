@@ -48,4 +48,6 @@ void resolveDynamicDispatches();
 
 void insertDynamicDispatchCalls();
 
+bool isSubType(Type* sub, Type* super);
+
 #endif

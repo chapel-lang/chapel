@@ -249,6 +249,9 @@ const QualifiedType& typeForModuleLevelSymbol(Context* context, ID id) {
         } else {
           kind = QualifiedType::FUNCTION;
         }
+      } else if (asttags::isInterface(tag)) {
+        //TODO: kind = QualifiedType::INTERFACE;
+        CHPL_UNIMPL("interfaces");
       } else {
         CHPL_ASSERT(false && "case not handled");
       }
@@ -1283,7 +1286,7 @@ QualifiedType getInstantiationType(Context* context,
       }
       auto g = getTypeGenericity(context, bct);
       if (g != Type::CONCRETE) {
-        CHPL_ASSERT(false && "not implemented yet");
+        CHPL_UNIMPL("instantiate generic class formal");
       }
 
       // now construct the ClassType
@@ -1405,7 +1408,7 @@ static QualifiedType getProperFormalType(const ResolutionResultByPostorderID& r,
 }
 
 static bool isCallInfoForInitializer(const CallInfo& ci) {
-  if (ci.name() == USTR("init"))
+  if (ci.name() == USTR("init") || ci.name() == USTR("init="))
     if (ci.isMethodCall())
       return true;
   return false;
@@ -1413,7 +1416,8 @@ static bool isCallInfoForInitializer(const CallInfo& ci) {
 
 // TODO: Move these to the 'InitResolver' visitor.
 static bool isTfsForInitializer(const TypedFnSignature* tfs) {
-  if (tfs->untyped()->name() == USTR("init"))
+  if (tfs->untyped()->name() == USTR("init") ||
+      tfs->untyped()->name() == USTR("init="))
     if (tfs->untyped()->isMethod())
       return true;
   return false;
@@ -2153,11 +2157,11 @@ const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
 
 const ResolvedFunction* resolveOnlyCandidate(Context* context,
                                              const ResolvedExpression& r) {
-  const TypedFnSignature* sig = r.mostSpecific().only();
-  const PoiScope* poiScope = r.poiScope();
+  auto msc = r.mostSpecific().only();
+  if (!msc) return nullptr;
 
-  if (sig == nullptr)
-    return nullptr;
+  const TypedFnSignature* sig = msc.fn();
+  const PoiScope* poiScope = r.poiScope();
 
   return resolveFunction(context, sig, poiScope);
 }
@@ -2301,7 +2305,7 @@ doIsCandidateApplicableInitial(Context* context,
 
   CHPL_ASSERT(isFunction(tag) && "expected fn case only by this point");
 
-  if (ci.isMethodCall() && ci.name() == "init") {
+  if (ci.isMethodCall() && (ci.name() == "init" || ci.name() == "init=")) {
     // TODO: test when record has defaults for type/param fields
     auto recv = ci.calledType();
     auto fn = parsing::idToAst(context, candidateId)->toFunction();
@@ -2515,7 +2519,9 @@ static const Type* getManagedClassType(Context* context,
     t = ci.actual(0).type().type();
 
   if (t == nullptr || !(t->isManageableType() || t->isClassType())) {
-    context->error(astForErr, "invalid class type construction");
+    if (t != nullptr && !t->isUnknownType()) {
+      context->error(astForErr, "invalid class type construction");
+    }
     return ErroneousType::get(context);
   }
 
@@ -2713,9 +2719,9 @@ convertClassTypeToNilable(Context* context, const Type* t) {
 
 // Resolving compiler-supported type-returning patterns
 // 'call' and 'inPoiScope' are used for the location for error reporting.
-static const Type* resolveFnCallSpecialType(Context* context,
-                                            const AstNode* astForErr,
-                                            const CallInfo& ci) {
+static const Type* resolveBuiltinTypeCtor(Context* context,
+                                          const AstNode* astForErr,
+                                          const CallInfo& ci) {
   // none of the special type function calls are methods; we can stop here.
   if (ci.isMethodCall()) return nullptr;
 
@@ -2795,11 +2801,6 @@ static bool resolveFnCallSpecial(Context* context,
   // TODO: .borrow()
   // TODO: chpl__coerceCopy
 
-  if (const Type* t = resolveFnCallSpecialType(context, astForErr, ci)) {
-    exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
-    return true;
-  }
-
   if ((ci.name() == USTR("==") || ci.name() == USTR("!=")) &&
       ci.numActuals() == 2) {
     auto lhs = ci.actual(0).type();
@@ -2846,27 +2847,100 @@ static bool resolveFnCallSpecial(Context* context,
   return false;
 }
 
-static CallResolutionResult
-resolveFnCallDomain(Context* context,
-                    const Call* call,
-                    const CallInfo& ci,
-                    const Scope* inScope,
-                    const PoiScope* inPoiScope) {
-  // TODO: a compiler-generated type constructor would be simpler, but we
-  // don't support default values on compiler-generated methods because the
-  // default values require existing AST.
+static bool resolveFnCallSpecialType(Context* context,
+                                     const Call* call,
+                                     const CallInfo& ci,
+                                     const Scope* inScope,
+                                     const PoiScope* inPoiScope,
+                                     CallResolutionResult& result) {
+  if (ci.isMethodCall()) {
+    return false;
+  }
 
-  // Note: 'dmapped' is treated like a binary operator at the moment, so
-  // we don't need to worry about distribution type for 'domain(...)' exprs.
+  // Types that can be computed without resolving other calls
+  if (const Type* t = resolveBuiltinTypeCtor(context, call, ci)) {
+    auto exprTypeOut = QualifiedType(QualifiedType::TYPE, t);
+    result = CallResolutionResult(exprTypeOut);
+    return true;
+  }
 
-  // Transform domain type expressions like `domain(arg1, ...)` into:
-  //   _domain.static_type(arg1, ...)
-  auto genericDom = DomainType::getGenericDomainType(context);
-  auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
-  auto typeCtorName = UniqueString::get(context, "static_type");
-  auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+  // Types that require resolving some kind of helper function to build
+  // the type.
+  //
+  // TODO: sync, single
+  if (ci.name() == "domain") {
+    // TODO: a compiler-generated type constructor would be simpler, but we
+    // don't support default values on compiler-generated methods because the
+    // default values require existing AST.
 
-  return resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    // Note: 'dmapped' is treated like a binary operator at the moment, so
+    // we don't need to worry about distribution type for 'domain(...)' exprs.
+
+    // Transform domain type expressions like `domain(arg1, ...)` into:
+    //   _domain.static_type(arg1, ...)
+    auto genericDom = DomainType::getGenericDomainType(context);
+    auto recv = QualifiedType(QualifiedType::TYPE, genericDom);
+    auto typeCtorName = UniqueString::get(context, "static_type");
+    auto ctorCall = CallInfo::createWithReceiver(ci, recv, typeCtorName);
+
+    result = resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    return true;
+  } else if (ci.name() == "atomic") {
+    auto newName = UniqueString::get(context, "chpl__atomicType");
+    auto ctorCall = CallInfo::copyAndRename(ci, newName);
+    result = resolveCall(context, call, ctorCall, inScope, inPoiScope);
+    return true;
+  }
+
+  return false;
+}
+
+static void buildReaderWriterTypeCtor(Context* context,
+                                      const CallInfo& ci,
+                                      const TypedFnSignature* initial,
+                                      CandidatesVec& initialCandidates) {
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+  // Move 'kind' to the end and allow the first two args to just be
+  // 'locking' and  '(de)serializerType'
+  //
+  // TODO: The '_serializerWrapper' arg should _not_ be considered
+  // part of the type constructor...
+  std::vector<int> order = {1, 2, 3, 0};
+  for (auto i : order) {
+    auto un = initial->untyped();
+    auto d = UntypedFnSignature::FormalDetail(un->formalName(i),
+                                              un->formalHasDefault(i),
+                                              un->formalDecl(i),
+                                              un->formalIsVarArgs(i));
+    formals.push_back(d);
+  }
+
+  std::vector<types::QualifiedType> formalTypes;
+  for (auto i : order) {
+    formalTypes.push_back(initial->formalType(i));
+  }
+
+  auto untyped = UntypedFnSignature::get(context,
+                                         initial->id(), ci.name(),
+                                         /* isMethod */ false,
+                                         /* isTypeConstructor */ true,
+                                         /* isCompilerGenerated */ true,
+                                         /* throws */ false,
+                                         uast::asttags::Record,
+                                         Function::PROC,
+                                         std::move(formals),
+                                         /* whereClause */ nullptr);
+
+  auto result = TypedFnSignature::get(context,
+                                      untyped,
+                                      std::move(formalTypes),
+                                      TypedFnSignature::WHERE_NONE,
+                                      /* needsInstantiation */ true,
+                                      /* instantiatedFrom */ nullptr,
+                                      /* parentFn */ nullptr,
+                                      /* formalsInstantiated */ Bitmap());
+
+  initialCandidates.push_back(result);
 }
 
 static MostSpecificCandidates
@@ -2884,6 +2958,20 @@ resolveFnCallForTypeCtor(Context* context,
 
   auto initial = typeConstructorInitial(context, ci.calledType().type());
   initialCandidates.push_back(initial);
+
+  //
+  // Adds an alternative type constructor for fileReader/Writer to support
+  // the deprecated 'kind' field, as in PR #23007.
+  //
+  // TODO: Remove this code when the 'kind' field is finally removed.
+  //
+  if (auto rt = ci.calledType().type()->toRecordType()) {
+    if (parsing::idIsInBundledModule(context, rt->id())) {
+      if (ci.name() == "fileWriter" || ci.name() == "fileReader") {
+        buildReaderWriterTypeCtor(context, ci, initial, initialCandidates);
+      }
+    }
+  }
 
   // TODO: do something for partial instantiation
 
@@ -2915,8 +3003,8 @@ considerCompilerGeneratedCandidates(Context* context,
                                    const PoiScope* inPoiScope,
                                    CandidatesVec& candidates) {
 
-  // only consider compiler-generated methods, for now
-  if (!ci.isMethodCall()) return;
+  // only consider compiler-generated methods and opcalls, for now
+  if (!ci.isMethodCall() && !ci.isOpCall()) return;
 
   // fetch the receiver type info
   CHPL_ASSERT(ci.numActuals() >= 1);
@@ -3390,9 +3478,9 @@ findMostSpecificAndCheck(Context* context,
                                ci, inScope, inPoiScope);
 
   // perform fn signature checking for any instantiated candidates that are used
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate && candidate->instantiatedFrom()) {
-      checkSignature(context, candidate);
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
+    if (candidate && candidate.fn()->instantiatedFrom()) {
+      checkSignature(context, candidate.fn());
     }
   }
 
@@ -3400,9 +3488,9 @@ findMostSpecificAndCheck(Context* context,
   {
     size_t n = candidates.size();
     for (size_t i = firstPoiCandidate; i < n; i++) {
-      for (const TypedFnSignature* candidate : mostSpecific) {
-        if (candidate == candidates[i]) {
-          poiInfo.addIds(call->id(), candidate->id());
+      for (const MostSpecificCandidate& candidate : mostSpecific) {
+        if (candidate.fn() == candidates[i]) {
+          poiInfo.addIds(call->id(), candidate.fn()->id());
         }
       }
     }
@@ -3479,8 +3567,8 @@ CallResolutionResult resolveFnCall(Context* context,
   const PoiScope* instantiationPoiScope = nullptr;
   bool anyInstantiated = false;
 
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr && candidate->instantiatedFrom() != nullptr) {
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
+    if (candidate && candidate.fn()->instantiatedFrom() != nullptr) {
       anyInstantiated = true;
       break;
     }
@@ -3491,11 +3579,11 @@ CallResolutionResult resolveFnCall(Context* context,
       pointOfInstantiationScope(context, inScope, inPoiScope);
     poiInfo.setPoiScope(instantiationPoiScope);
 
-    for (const TypedFnSignature* candidate : mostSpecific) {
-      if (candidate != nullptr) {
-        if (candidate->untyped()->idIsFunction()) {
+    for (const MostSpecificCandidate& candidate : mostSpecific) {
+      if (candidate) {
+        if (candidate.fn()->untyped()->idIsFunction()) {
           // note: following call returns early if candidate not instantiated
-          accumulatePoisUsedByResolvingBody(context, candidate,
+          accumulatePoisUsedByResolvingBody(context, candidate.fn(),
                                             instantiationPoiScope, poiInfo);
         }
       }
@@ -3508,23 +3596,23 @@ CallResolutionResult resolveFnCall(Context* context,
   // Make sure that we are resolving initializer bodies even when the
   // signature is concrete, because there are semantic checks.
   if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
-    auto candidate = mostSpecific.only();
-    CHPL_ASSERT(isTfsForInitializer(candidate));
+    auto candidateFn = mostSpecific.only().fn();
+    CHPL_ASSERT(isTfsForInitializer(candidateFn));
 
     // TODO: Can we move this into the 'InitVisitor'?
-    if (!candidate->untyped()->isCompilerGenerated()) {
-      std::ignore = resolveInitializer(context, candidate, inPoiScope);
+    if (!candidateFn->untyped()->isCompilerGenerated()) {
+      std::ignore = resolveInitializer(context, candidateFn, inPoiScope);
     }
   }
 
   // compute the return types
   QualifiedType retType;
   bool retTypeSet = false;
-  for (const TypedFnSignature* candidate : mostSpecific) {
-    if (candidate != nullptr) {
-      QualifiedType t = returnType(context, candidate, instantiationPoiScope);
+  for (const MostSpecificCandidate& candidate : mostSpecific) {
+    if (candidate.fn() != nullptr) {
+      QualifiedType t = returnType(context, candidate.fn(), instantiationPoiScope);
       if (retTypeSet && retType.type() != t.type()) {
-        context->error(candidate,
+        context->error(candidate.fn(),
                        nullptr,
                        "return intent overload type does not match");
       }
@@ -3608,7 +3696,12 @@ static bool shouldAttemptImplicitReceiver(const CallInfo& ci,
          implicitReceiver.type() != nullptr &&
          // Assuming ci.name().isEmpty()==true implies a primitive call.
          // TODO: Add some kind of 'isPrimitive()' to CallInfo
-         !ci.name().isEmpty();
+         !ci.name().isEmpty() &&
+         ci.name() != USTR("?") &&
+         ci.name() != USTR("owned") &&
+         ci.name() != USTR("shared") &&
+         ci.name() != USTR("borrowed") &&
+         ci.name() != USTR("unmanaged");
 }
 
 CallResolutionResult resolveCall(Context* context,
@@ -3626,8 +3719,11 @@ CallResolutionResult resolveCall(Context* context,
     if (resolveFnCallSpecial(context, call, ci, tmpRetType)) {
       return CallResolutionResult(std::move(tmpRetType));
     }
-    if (ci.name() == "domain" && !ci.isMethodCall()) {
-      return resolveFnCallDomain(context, call, ci, inScope, inPoiScope);
+
+    CallResolutionResult keywordRes;
+    if (resolveFnCallSpecialType(context, call, ci,
+                                 inScope, inPoiScope, keywordRes)) {
+      return keywordRes;
     }
 
     // otherwise do regular call resolution

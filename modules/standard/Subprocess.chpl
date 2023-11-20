@@ -755,7 +755,7 @@ module Subprocess {
     return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
   }
 
-  proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
+  private proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
                   stderr:?v = pipeStyle.forward,
                   executable="/bin/sh", shellarg="-c",

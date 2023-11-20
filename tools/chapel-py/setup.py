@@ -23,13 +23,14 @@ from setuptools.command.build_ext import build_ext
 import subprocess
 import os
 import sys
+import glob
 
 chpl_home = os.getenv('CHPL_HOME')
 chpl_printchplenv = os.path.join(chpl_home, "util", "printchplenv")
-chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize"]).decode(sys.stdout.encoding).strip().splitlines()
+chpl_variables_lines = subprocess.check_output([chpl_printchplenv, "--internal", "--all", " --anonymize", "--simple"]).decode(sys.stdout.encoding).strip().splitlines()
 chpl_variables = dict()
 for line in chpl_variables_lines:
-    elms = line.split(":", maxsplit=1)
+    elms = line.split("=", maxsplit=1)
     if len(elms) == 2:
         chpl_variables[elms[0].strip()] = elms[1].strip()
 
@@ -39,13 +40,15 @@ chpl_lib_path = os.path.join(chpl_home, "lib", "compiler", chpl_variables.get("C
 
 CXXFLAGS = []
 CXXFLAGS += ["-Wno-c99-designator"]
-CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdout.encoding).strip().split(" ")
+CXXFLAGS += subprocess.check_output([llvm_config, "--cxxflags"]).decode(sys.stdout.encoding).strip().split()
 CXXFLAGS += ["-std=c++17", "-I{}/frontend/include".format(chpl_home)]
 
 LDFLAGS = []
-LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontend", "-Wl,-rpath", chpl_lib_path]
+LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", chpl_lib_path]
 
 setup(name = "chapel",
       version = "0.1",
-      ext_modules = [Extension("chapel.core", ["chapel.cpp"], extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
+      package_dir = {'': 'src'},
+      packages = ['chapel', 'chapel.replace'],
+      ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )

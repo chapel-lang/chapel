@@ -102,6 +102,7 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getKindName(Kind kind);
   static const char* getTypeName(ErrorType type);
 
   template <typename T>

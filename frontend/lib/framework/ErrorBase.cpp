@@ -26,6 +26,16 @@
 
 namespace chpl {
 
+const char* ErrorBase::getKindName(ErrorBase::Kind kind) {
+  switch (kind) {
+    case ErrorBase::Kind::NOTE: return "note";
+    case ErrorBase::Kind::WARNING: return "warning";
+    case ErrorBase::Kind::SYNTAX: return "syntax";
+    case ErrorBase::Kind::ERROR: return "error";
+  }
+  return "(unknown kind)";
+}
+
 const char* ErrorBase::getTypeName(ErrorType type) {
   switch (type) {
 #define DIAGNOSTIC_CLASS(NAME, KIND, EINFO...) case NAME: return #NAME;

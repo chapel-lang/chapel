@@ -65,6 +65,7 @@ void Context::Configuration::swap(Context::Configuration& other) {
   std::swap(tmpDir, other.tmpDir);
   std::swap(keepTmpDir, other.keepTmpDir);
   std::swap(toolName, other.toolName);
+  std::swap(includeComments, other.includeComments);
 }
 
 void Context::setupGlobalStrings() {
@@ -638,32 +639,39 @@ void Context::setFilePathForModuleId(ID moduleID, UniqueString path) {
     printf("%i SETTING FILE PATH FOR MODULE %s -> %s\n", queryTraceDepth,
            moduleIdSymbolPath.c_str(), path.c_str());
   }
+  // check that querying the module ID works...
+  UniqueString gotPath;
+  bool ok = filePathForId(moduleID, gotPath);
   #ifndef NDEBUG
-    // check that querying the module ID works...
-    UniqueString gotPath;
-    bool ok = filePathForId(moduleID, gotPath);
     CHPL_ASSERT(ok);
+  #endif
 
-    // ... and gives the same path
+  // ... and gives the same path
 
-    // Note: if this check causes problems in the future, it could
-    // be removed, or we could wire up setFileText used in tests
-    // to work with the LLVM VirtualFilesystem
+  // Note: if this check causes problems in the future, it could
+  // be removed, or we could wire up setFileText used in tests
+  // to work with the LLVM VirtualFilesystem
 #if LLVM_VERSION_MAJOR <= 11
     llvm::SmallVector<char, 64> realPath, realGotPath;
 #else
     llvm::SmallVector<char> realPath, realGotPath;
 #endif
-    std::error_code errPath;
-    std::error_code errGotPath;
-    errPath = llvm::sys::fs::real_path(path.str(), realPath);
-    errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
-    if (errPath || errGotPath) {
-      // ignore the check if there were errors
-    } else {
-      CHPL_ASSERT(realPath == realGotPath);
-    }
-  #endif
+  std::error_code errPath;
+  std::error_code errGotPath;
+  errPath = llvm::sys::fs::real_path(path.str(), realPath);
+  errGotPath = llvm::sys::fs::real_path(gotPath.str(), realGotPath);
+  if (!ok || errPath || errGotPath) {
+    // ignore the check if there were errors
+  } else
+    // Check for duplicate modules names, but skip over bundled modules
+    // since we don't necessarily want to preclude the user from using
+    // the same names that we happen to have chosen.
+    if (realPath != realGotPath &&
+        !parsing::idIsInBundledModule(this, moduleID)) {
+      error(moduleID,
+            "Redefinition of module '%s' (the original was defined in '%s')",
+            moduleIdSymbolPath.c_str(), path.c_str());
+  }
 }
 
 static
@@ -676,7 +684,7 @@ const UniqueString& pathHasLibraryQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::pathHasLibrary(const UniqueString& filePath,
+bool Context::pathHasLibrary(UniqueString filePath,
                              UniqueString& pathOut) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
@@ -692,7 +700,9 @@ bool Context::pathHasLibrary(const UniqueString& filePath,
   return false;
 }
 
-void Context::setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath) {
+void Context::registerLibraryForModule(ID moduleId,
+                                       UniqueString filePath,
+                                       UniqueString libPath) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
   updateResultForQuery(pathHasLibraryQuery,
@@ -700,6 +710,9 @@ void Context::setLibraryForFilePath(const UniqueString& filePath, const UniqueSt
                        "pathHasLibraryQuery",
                        /* isInputQuery */ false,
                        /* forSetter */ true);
+
+  // also update the lookup by module ID
+  setFilePathForModuleId(moduleId, filePath);
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {

@@ -55,7 +55,7 @@ static const Type* receiverTypeFromTfs(const TypedFnSignature* tfs) {
 
 static const CompositeType* typeToCompType(const Type* type) {
   if (auto cls = type->toClassType()) {
-    return cls->toManageableType();
+    return cls->manageableType()->toCompositeType();
   } else {
     auto ret = type->toCompositeType();
     return ret;

@@ -182,13 +182,14 @@ static void backPropagate(BaseAST* ast) {
 }
 
 static void handleNonTypedAndNonInitedVar(DefExpr* def) {
-  if (toVarSymbol(def->sym)) {
+  if (isVarSymbol(def->sym) && !isShadowVarSymbol(def->sym)) {
     bool needsInit = false;
     // The test for FLAG_TEMP allows compiler-generated (temporary) variables
     // to be declared without an explicit type or initializer expression.
     if ((!def->init || def->init->isNoInitExpr())
         && !def->exprType && !def->sym->hasFlag(FLAG_TEMP))
-      if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol))
+      if (isBlockStmt(def->parentExpr) && !isArgSymbol(def->parentSymbol) &&
+          !isShadowVarSymbol(def->sym))
         if (def->parentExpr != rootModule->block && def->parentExpr != stringLiteralModule->block)
           if (!def->sym->hasFlag(FLAG_INDEX_VAR))
             needsInit = true;

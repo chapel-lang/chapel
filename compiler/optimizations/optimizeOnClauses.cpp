@@ -321,6 +321,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_KERNEL_LAUNCH_FLAT:
    return LOCAL_NOT_FAST;
 
+  case PRIM_BREAKPOINT:
+    return FAST_AND_LOCAL;
+
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.
   }

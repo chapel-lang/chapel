@@ -91,16 +91,6 @@ void ErrorWriter::setColor(TermColorName color) {
   }
 }
 
-static const char* kindText(ErrorBase::Kind kind) {
-  switch (kind) {
-    case ErrorBase::Kind::NOTE: return "note";
-    case ErrorBase::Kind::WARNING: return "warning";
-    case ErrorBase::Kind::SYNTAX: return "syntax";
-    case ErrorBase::Kind::ERROR: return "error";
-  }
-  return "(unknown kind)";
-}
-
 static TermColorName kindColor(ErrorBase::Kind kind) {
   switch (kind) {
     case ErrorBase::Kind::NOTE: return CLEAR;
@@ -144,7 +134,7 @@ void ErrorWriter::writeHeading(ErrorBase::Kind kind, ErrorType type,
   }
 
   setColor(kindColor(kind));
-  oss_ << kindText(kind);
+  oss_ << ErrorBase::getKindName(kind);
   setColor(CLEAR);
   oss_ << " in ";
 

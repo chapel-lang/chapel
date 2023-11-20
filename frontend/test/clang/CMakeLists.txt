@@ -17,4 +17,3 @@
 
 comp_unit_test(testClangCC1Args)
 comp_unit_test(testPch)
-comp_unit_test(testShaFile)

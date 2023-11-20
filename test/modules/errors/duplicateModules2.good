@@ -1,0 +1,1 @@
+duplicateModules.chpl:1: error: Redefinition of module 'M' (the original was defined in 'duplicateModules2.chpl')

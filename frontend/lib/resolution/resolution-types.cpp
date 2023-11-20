@@ -18,6 +18,7 @@
  */
 
 #include "chpl/resolution/resolution-types.h"
+#include "chpl/resolution/can-pass.h"
 
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/framework/global-strings.h"
@@ -317,7 +318,7 @@ CallInfo CallInfo::create(Context* context,
     } else if (auto calledDot = called->toDot()) {
       name = calledDot->field();
     } else {
-      CHPL_ASSERT(false && "Unexpected called expression");
+      CHPL_UNIMPL("CallInfo without a name");
     }
   }
 
@@ -406,6 +407,11 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
                   std::move(newActuals));
+}
+
+CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
+  return CallInfo(rename, ci.calledType(), ci.isMethodCall(),
+                  ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
 }
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
@@ -819,13 +825,47 @@ bool PoiInfo::canReuse(const PoiInfo& check) const {
   return false; // TODO -- consider function names etc -- see PR #16261
 }
 
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
+                                          const TypedFnSignature* fn,
+                                          const FormalActualMap& faMap) {
+  int coercionFormal = -1;
+  int coercionActual = -1;
+  for (auto fa : faMap.byFormals()) {
+    auto& formalType = fa.formalType();
+    auto& actualType = fa.actualType();
+
+    if (!formalType.type() || !actualType.type()) continue;
+
+    auto got = canPass(context, actualType, formalType);
+    if (got.converts() && formalType.kind() == QualifiedType::CONST_REF) {
+      coercionFormal = fa.formalIdx();
+      coercionActual = fa.actualIdx();
+      break;
+    }
+  }
+
+  return MostSpecificCandidate(fn, coercionFormal, coercionActual);
+}
+
+MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
+                                          const TypedFnSignature* fn,
+                                          const CallInfo& ci) {
+  auto faMap = FormalActualMap(fn, ci);
+  return MostSpecificCandidate::fromTypedFnSignature(context, fn, faMap);
+}
+
+void MostSpecificCandidate::stringify(std::ostream& ss,
+                          chpl::StringifyKind stringKind) const {
+  if (fn_) fn_->stringify(ss, stringKind);
+}
+
 void
 MostSpecificCandidates::inferOutFormals(Context* context,
                                         const PoiScope* instantiationPoiScope) {
   for (int i = 0; i < NUM_INTENTS; i++) {
-    const TypedFnSignature*& c = candidates[i];
-    if (c != nullptr) {
-      c = chpl::resolution::inferOutFormals(context, c, instantiationPoiScope);
+    MostSpecificCandidate& c = candidates[i];
+    if (c) {
+      c.fn_ = chpl::resolution::inferOutFormals(context, c.fn(), instantiationPoiScope);
     }
   }
 }
@@ -835,19 +875,19 @@ void MostSpecificCandidates::stringify(std::ostream& ss,
   auto onlyFn = only();
   if (onlyFn) {
     ss << " calls ";
-    onlyFn->stringify(ss, stringKind);
+    onlyFn.stringify(ss, stringKind);
   } else {
-    if (auto sig = bestRef()) {
+    if (auto& c = bestRef()) {
       ss << " calls ref ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
-    if (auto sig = bestConstRef()) {
+    if (auto& c = bestConstRef()) {
       ss << " calls const ref ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
-    if (auto sig = bestValue()) {
+    if (auto& c = bestValue()) {
       ss << " calls value ";
-      sig->stringify(ss, stringKind);
+      c.stringify(ss, stringKind);
     }
   }
 }

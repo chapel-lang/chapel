@@ -1,0 +1,53 @@
+#!/usr/bin/env python3
+
+import sys
+import os
+import subprocess as sp
+import shlex
+
+testname = sys.argv[1]
+outfile = sys.argv[2]
+tmpfile = f"{outfile}.prediff.tmp"
+extra_args_ext = "finder-settings"
+extra_args_file = f"{testname}.{extra_args_ext}"
+
+chpl_home = os.getenv("CHPL_HOME", None)
+
+script = os.path.join(chpl_home, "tools", "chpldoc", "findUndocumentedSymbols")
+
+
+def get_prediff_opts():
+    if os.path.isfile(extra_args_file):
+        with open(extra_args_file, "r") as f:
+            lines = f.readlines()
+            if len(lines) == 1:
+                return shlex.split(lines[0].strip())
+            else:
+                print(f"Invalid '.{extra_args_ext}' file", sys.stderr)
+                exit(1)
+    return []
+
+
+def run_script(script, options, testfile, outfile):
+    args = [script] + options + [testfile]
+    with open(outfile, "w") as of:
+        cp = sp.run(args, stdout=of, stderr=of)
+        return cp.returncode == 0
+
+
+def append_to_file(file_for_diff, output_file):
+    lines = []
+    with open(output_file, "r") as f:
+        lines = f.readlines()
+    # if there was contents in file2, copy them over with a separator
+    if len(lines) > 0:
+        with open(file_for_diff, "a") as f:
+            f.write("=" * 80)
+            f.write(os.linesep)
+            f.writelines(lines)
+
+
+opts = get_prediff_opts()
+run_script(script, opts, f"{testname}.chpl", tmpfile)
+append_to_file(tmpfile, outfile)  # outfile to tmpfile if there is contents in it
+os.rename(tmpfile, outfile)

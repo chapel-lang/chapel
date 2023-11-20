@@ -19,15 +19,18 @@
 
 #include "chpl/framework/serialize-functions.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/libraries/LibraryFileWriter.h"
+
 namespace chpl {
 
 
-void writeUnsignedVarint(std::ostream& os, uint64_t num) {
+void Serializer::writeUnsignedVarint(uint64_t num) {
   for (int i = 0; i < 10; i++) {
     uint8_t byte = num & 0x7f;
     num >>= 7;
     if (num != 0) byte |= 0x80;
-    os.put(byte);
+    writeByte(byte);
     if (byte & 0x80) {
       // OK, continue
     } else {
@@ -36,19 +39,34 @@ void writeUnsignedVarint(std::ostream& os, uint64_t num) {
   }
 }
 
-void writeSignedVarint(std::ostream& os, int64_t num) {
+void Serializer::writeSignedVarint(int64_t num) {
   uint64_t uNum = (num << 1) ^ (num >> 63);
-  writeUnsignedVarint(os, uNum);
+  writeUnsignedVarint(uNum);
 }
 
-uint64_t readUnsignedVarint(std::istream& is) {
+void Serializer::beginAst(const uast::AstNode* ast) {
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->beginAst(ast, os_);
+  }
+}
+
+void Serializer::endAst(const uast::AstNode* ast) {
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->endAst(ast, os_);
+  }
+}
+
+
+void Deserializer::registerAst(const uast::AstNode* ast, uint64_t startOffset) {
+  if (libraryFileHelper_ != nullptr) {
+    libraryFileHelper_->registerAst(ast, startOffset);
+  }
+}
+
+uint64_t Deserializer::readUnsignedVarint() {
   uint64_t num = 0;
   for (int i = 0; i < 10; i++) {
-    auto byte = is.get();
-    // TODO: what should this function do on EOF?
-    // What if it reads a byte that should be followed by another
-    // byte there is no other byte (due to EOF)?
-    if (byte == is.eof()) break;
+    auto byte = readByte();
     uint64_t part = byte & 0x7f;
     num |= part << (7*i);
     if (byte & 0x80) {
@@ -60,9 +78,23 @@ uint64_t readUnsignedVarint(std::istream& is) {
   return num;
 }
 
-int64_t readSignedVarint(std::istream& is) {
-  uint64_t uNum = readUnsignedVarint(is);
+int64_t Deserializer::readSignedVarint() {
+  uint64_t uNum = readUnsignedVarint();
   return (uNum >> 1) ^ -((int64_t)(uNum & 1));
+}
+
+std::pair<size_t, const char*> Deserializer::getString(int id) {
+  if (libraryFileHelper_ != nullptr) {
+    auto ret = libraryFileHelper_->getString(id);
+    if (checkStringLength(ret.first)) {
+      return ret;
+    }
+  } else if (localStringsTable_) {
+    stringCacheType& table = *localStringsTable_.get();
+    return table[id];
+  }
+
+  return std::make_pair((size_t) 0, (const char*) nullptr);
 }
 
 

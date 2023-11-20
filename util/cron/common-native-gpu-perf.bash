@@ -2,8 +2,7 @@
 #
 # Common GPU performance testing configs
 
-export CHPL_TEST_PERF_CONFIG_NAME='gpu'
-source $CWD/common-perf.bash
+# set this before sourcing common-perf
+export CHPL_TEST_PERF_SUBDIR='gpu'
 
-
-export CHPL_TEST_PERF_CONFIGS="gpu-cuda:v,gpu-cuda.um"  # v: visible by def
+nightly_args="${nightly_args} -performance -perflabel gpu- -numtrials 5"

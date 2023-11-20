@@ -234,6 +234,9 @@ returnInfoVal(CallExpr* call) {
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+  if(t->symbol->hasFlag(FLAG_GENERIC))
+    // this will result in an error later on
+    return QualifiedType(t, QUAL_REF);
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
@@ -1268,6 +1271,8 @@ initPrimitive() {
   prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
+
+  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

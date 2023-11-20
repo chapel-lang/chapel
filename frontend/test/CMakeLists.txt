@@ -40,6 +40,7 @@ endfunction(comp_unit_test)
 
 add_subdirectory(clang)
 add_subdirectory(framework)
+add_subdirectory(libraries)
 add_subdirectory(parsing)
 add_subdirectory(resolution)
 add_subdirectory(uast)

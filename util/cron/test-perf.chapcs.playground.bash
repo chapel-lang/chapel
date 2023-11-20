@@ -25,14 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of LLVM 16
-GITHUB_USER=jabraham17
-GITHUB_BRANCH=use-llvm16
-SHORT_NAME=llvm-16
-START_DATE=10/05/23
-# this is just for testing LLVM 16
-export CHPL_LLVM=bundled
-unset CHPL_LLVM_CONFIG
+# Test compiler performance with driver adjustments (but in monolithic mode)
+GITHUB_USER=riftember
+GITHUB_BRANCH=driver-print-passes
+SHORT_NAME=monolithic-comp
+START_DATE=11/15/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

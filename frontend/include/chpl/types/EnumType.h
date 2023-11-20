@@ -66,7 +66,7 @@ class EnumType final : public Type {
   const ID& id() const { return id_; }
 
   /** Return the name of the uAST associated with this EnumType */
-  const UniqueString& name() const { return name_; }
+  UniqueString name() const { return name_; }
 };
 
 } // end namespace types

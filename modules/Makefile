@@ -77,6 +77,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
+	standard/Debugger.chpl \
 	standard/GpuDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
@@ -92,10 +93,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/MemMove.chpl \
-	standard/Memory.chpl \
 	standard/MemDiagnostics.chpl \
-	standard/Memory/Diagnostics.chpl \
-	standard/Memory/Initialization.chpl \
 	standard/OS.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
@@ -106,7 +104,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl
+	standard/Version.chpl \
+	standard/WeakPointer.chpl \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \

@@ -64,8 +64,9 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r =
     resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
   if (r != nullptr) {
-    for (const TypedFnSignature* sig : r->mostSpecific()) {
-      if (sig != nullptr) {
+    for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
+      if (candidate) {
+        auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {
           auto fn = resolveFunction(context, sig, r->poiScope());
           calledFns.insert(fn);

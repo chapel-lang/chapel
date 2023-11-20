@@ -571,6 +571,10 @@ ErroneousExpression* ParserContext::syntax(YYLTYPE loc, const char* fmt, ...) {
 }
 
 void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
+  if (!includeComments) {
+    return;
+  }
+
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
   }
@@ -584,6 +588,10 @@ void ParserContext::noteComment(YYLTYPE loc, const char* data, long size) {
 }
 
 void ParserContext::noteComment(ParserComment pc) {
+  if (!includeComments) {
+    return;
+  }
+
   if (this->comments == nullptr) {
     this->comments = new std::vector<ParserComment>();
   }

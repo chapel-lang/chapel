@@ -54,6 +54,7 @@
 
 #include <string>
 #include <map>
+#include <regex>
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -377,6 +378,8 @@ bool fGpuPtxasEnforceOpt;
 bool fGpuSpecialization = false;
 const char* gGpuSdkPath = NULL;
 std::set<std::string> gpuArches;
+
+bool fForeachIntents = false;
 
 chpl::Context* gContext = nullptr;
 std::vector<std::pair<std::string, std::string>> gDynoParams;
@@ -1113,6 +1116,10 @@ static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
 
+static void setLogFormat(const ArgumentDescription* desc, const char* arg) {
+  logSelectFormat(arg);
+}
+
 static void setLogModule(const ArgumentDescription* desc, const char* arg) {
   log_modules.insert(std::string(arg));
 }
@@ -1350,6 +1357,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module. Can be specified multiple times", "S", NULL, "CHPL_LOG_MODULE", setLogModule},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
+ {"log-fmt", ' ', "<format>", "May be set to 'default' or 'nprint' to specify format to use", "S", NULL, "CHPL_LOG_FORMAT", setLogFormat},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
@@ -1465,6 +1473,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+ {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
  {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
  {"io-serialize-writeThis", ' ', NULL, "Enable [disable] use of 'writeThis' as default for 'serialize' methods", "n", &fNoIOSerializeWriteThis, "CHPL_IO_SERIALIZE_WRITETHIS", NULL},
@@ -1623,8 +1632,32 @@ static void populateEnvMap() {
 
   envMapChplEnvInput = envMap;
 
-  // Call printchplenv and collect output into a map
-  auto chplEnvResult = chpl::getChplEnv(envMap, CHPL_HOME);
+  // Set up in-memory copy of printchplenv command output, to support driver
+  // mode save/restore from disk.
+  static const char* printchplenvOutputFilename = "printchplenvOutput.tmp";
+  std::string* printchplenvOutputPtr;
+  std::string printchplenvOutput;
+  if (!fDriverDoMonolithic) {
+    if (driverInSubInvocation) {
+      // This is a driver sub-invocation, so restore and use saved output.
+      restoreDriverTmpMultiline(
+          printchplenvOutputFilename,
+          [&printchplenvOutput](const char* restoredOutput) {
+            printchplenvOutput = restoredOutput;
+          });
+    }
+
+    // Set up this ptr as an input (for initial invocation) or output (for
+    // sub-invocation) parameter.
+    printchplenvOutputPtr = &printchplenvOutput;
+  } else {
+    // Monolithic mode, no need to capture output.
+    printchplenvOutputPtr = nullptr;
+  }
+
+  // Get printchplenv output and collect into a map
+  auto chplEnvResult =
+      chpl::getChplEnv(envMap, CHPL_HOME, printchplenvOutputPtr);
   if (!chplEnvResult) {
     if (auto err = chplEnvResult.getError()) {
       USR_FATAL("failed to get environment settings (error while running printchplenv: %s)",
@@ -1632,6 +1665,13 @@ static void populateEnvMap() {
     } else {
       USR_FATAL("failed to get environment settings");
     }
+  }
+
+  // If in initial driver invocation, save printchplenv command output to disk
+  // for use in sub-invocations.
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    saveDriverTmp(printchplenvOutputFilename, printchplenvOutput.c_str(),
+                  /* appendNewline */ false);
   }
 
   // figure out if it's a Cray programing environment so we can infer
@@ -1903,7 +1943,7 @@ static void checkCompilerDriverFlags() {
       USR_WARN(
           "Driver debug phase has no effect for monolithic compilation");
     }
-    if (!(fRungdb || fRunlldb)) {
+    if (!(fRungdb || fRunlldb) && !driverInSubInvocation) {
       USR_WARN(
           "Driver debug phase has no effect when not running with debugger");
     }
@@ -1940,6 +1980,12 @@ static void checkLLVMCodeGen() {
               "       'chpl' was built without LLVM support.  Either select a different\n"
               "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
+  if (fLlvmCodegen) {
+    auto re = std::regex("(^|\\s)-pg($|\\s)");
+    if (std::regex_search(ccflags, re) || std::regex_search(ldflags, re)) {
+      USR_WARN("The LLVM target compiler does not currently support '-pg'");
+    }
+  }
 }
 
 static void checkTargetCpu() {
@@ -2176,6 +2222,9 @@ static void bootstrapTmpDir() {
     }
   }
 
+  // comments do not need to be preserved for the compiler
+  config.includeComments = false;
+
   auto oldContext = gContext;
   gContext = new chpl::Context(*oldContext, std::move(config));
   delete oldContext;
@@ -2200,6 +2249,9 @@ static void dynoConfigureContext(std::string chpl_module_path) {
   // Keep tmp dir if previous config did; this is needed as the tmp dir has
   // already been created by the tmp dir bootstrap function.
   config.keepTmpDir = gContext->shouldSaveTmpDirFiles();
+
+  // comments do not need to be preserved for the compiler
+  config.includeComments = false;
 
   // Replace the current gContext with one using the new configuration.
   auto oldContext = gContext;
@@ -2263,7 +2315,7 @@ static void dynoConfigureContext(std::string chpl_module_path) {
             fWarnUnknownAttributeToolname);
   flags.set(chpl::CompilerFlags::PERMIT_UNHANDLED_MODULE_ERRORS,
             fPermitUnhandledModuleErrors);
-
+  flags.set(chpl::CompilerFlags::WARN_INT_TO_UINT, fWarnIntUint);
   // Set the compilation flags all at once using a query.
   chpl::setCompilerFlags(gContext, flags);
 
@@ -2304,8 +2356,6 @@ int main(int argc, char* argv[]) {
 
     process_args(&sArgState, argc, argv);
 
-    setupChplGlobals(argv[0]);
-
     // set up the module paths
     std::string chpl_module_path;
     if (const char* envvarpath  = getenv("CHPL_MODULE_PATH")) {
@@ -2313,6 +2363,8 @@ int main(int argc, char* argv[]) {
     }
 
     bootstrapTmpDir();
+
+    setupChplGlobals(argv[0]);
 
     addSourceFiles(sArgState.nfile_arguments, sArgState.file_argument);
 

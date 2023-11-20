@@ -86,6 +86,9 @@ struct ParserContext {
   // note when EOF is reached
   bool atEOF;
 
+  // an easier-to-use copy of Context::Configuration::includeComments
+  bool includeComments;
+
   ParserExprList* parenlessMarker;
 
   ParserContext(const char* filename, Builder* builder,
@@ -111,6 +114,8 @@ struct ParserContext {
     YYLTYPE emptyLoc = {0};
     this->declStartLocation       = emptyLoc;
     this->atEOF                   = false;
+    this->includeComments =
+      builder->context()->configuration().includeComments;
     this->parenlessMarker         = new ParserExprList();
     this->parseStats              = parseStats;
   }

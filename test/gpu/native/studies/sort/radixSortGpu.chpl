@@ -1,6 +1,7 @@
 module RadixSort {
   import BitOps;
   import Math;
+  import Time;
   use GPU;
 
   config const useGpuId = 0;
@@ -23,6 +24,7 @@ module RadixSort {
   config const scanChunkSize = 1024;
   // TODO Choose better defaults for the above two things
   config const parallelScan = false; // Need to improve this more
+  config const distributed = false; // Distributed count across GPUs
 
 
   // This function requires that startIdx and endIdx are within the bounds of the array
@@ -43,19 +45,19 @@ module RadixSort {
     }
   }
 
-  proc makePowerOf2(const sz){
+  proc roundToPowerof2(const x: uint){
     // Powers of two only have the highest bit set.
     // Power of two minus one will have all bits set except the highest.
     // & those two together should give us 0;
     // Ex 1000 & 0111 = 0000
-    if (sz & (sz - 1)) == 0 then
-      return sz;
+    if (x & (x - 1)) == 0 then
+      return x;
     // Not a power of two, so we pad it out
     // To the next nearest power of two
-    const log_2_size = numBytes(uint)*8 - BitOps.clz(sz); // Calculates the log quickly
+    const log_2_x = numBytes(uint)*8 - BitOps.clz(x); // Calculates the log quickly
     // Next highest nerest power of two is
-    const newSz = 1 << log_2_size;
-    return newSz;
+    const rounded = 1 << log_2_x;
+    return rounded;
   }
 
   proc hillisSteeleScan(ref hostArr: [] uint){
@@ -68,7 +70,7 @@ module RadixSort {
     on here.gpus[useGpuId]{
       // The algorithm only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
-      const size = makePowerOf2(hostArr.size);
+      const size = roundToPowerof2(hostArr.size);
       var arr : [0..<size] uint;
       arr[hostArr.domain] = hostArr;
 
@@ -114,7 +116,7 @@ module RadixSort {
     on here.gpus[useGpuId]{
       // The algorithm only works for arrays that are size of a power of two.
       // In case it's not a power of two we pad it out with 0s
-      const size = makePowerOf2(hostArr.size);
+      const size = roundToPowerof2(hostArr.size);
       var arr : [0..<size] uint;
       arr[hostArr.domain] = hostArr;
       var offset = 1;
@@ -156,6 +158,75 @@ module RadixSort {
       serialScan(arr);
   }
 
+  proc parallelCount(ref counts: [], ref inputArr: [] uint, const exp: int, const bitMask: int,
+                    const numChunks: int,  const numChunksThisGpu : int = numChunks, const startChunk: int = 0,
+                    const gpuId: int = 0, const resetCountsArray = false){
+    // Instead of using a nested array of arrays, use a simple 1D array of
+    // size numChunks*buckets which is a column major representation
+    // of the 2D array where each chunk has it's own array of buckets.
+    // This way calculating the offset is just a prefix sum
+    // And we can use strided iteration to work on them as if they were
+    // 2D arrays.
+    // writeln("Counting on gpu: ", gpuId);
+    on here.gpus[gpuId]{
+      var gpuCounts : counts.type; // All 0s or ...
+      if !resetCountsArray then
+        gpuCounts = counts; // ...initialized to counts
+      const gpuInputArr = inputArr;
+      // writeln("Bounds for chunk: ", startChunk, " to ", startChunk+numChunksThisGpu-1);
+      @assertOnGpu
+      foreach chunk in startChunk..#numChunksThisGpu {
+        // Count for each chunk in parallel.
+        const startIdx : int = (chunk:int)*chunkSize;
+        const endIdx : int = startIdx+chunkSize-1;
+        for i in startIdx..endIdx {
+          const tmp = ((gpuInputArr[i]>>exp) & bitMask):int;
+          const tmp2 = chunk+(numChunks*tmp);
+          gpuCounts[tmp2] += 1;
+        }
+      }
+      counts = gpuCounts;
+}
+  }
+
+  proc distributedCount(ref counts: [], ref inputArr: [] uint, const exp: int, const bitMask: int,
+                        const numChunks: int, const numGpus : int ) {
+    // Counts should be all 0s
+    // counts = 0;
+
+    const numChunksPerGpu = Math.divCeil(numChunks, numGpus);
+    const numChunksPerGpuLast = numChunks - (numChunksPerGpu * (numGpus-1));
+    var firstRunReset = true;
+
+    // Distribute the counts across the GPUs
+    for gpu in 0..<numGpus {
+      const numChunksThisGpu = if (gpu==numGpus-1) then numChunksPerGpuLast else numChunksPerGpu;
+      const startChunk = gpu*numChunksPerGpu;
+
+      // Distributing the counts across the GPUs
+      // Each GPU works on a subset of chunks from the array
+      // Since each chunk already gets a slot in the counts array
+      // We will pass the entire counts array to each GPU
+      // But each GPU will only work on a subset of the counts array and not care about the rest
+      parallelCount(counts, inputArr, exp, bitMask, numChunks, numChunksThisGpu, startChunk, gpu, firstRunReset);
+      // writeln(" Count: ", thisCounts);
+      // This works because counts array is all 0s and
+      // we're only adding to it. The parallelCount function leaves the
+      // rest of the array untouched (i.e. 0s) so for 2 GPUs the add might be:
+      // counts1 : 1 0 | 3 0 | 2 0 | 32 0
+      // counts2 : 0 3 | 0 2 | 0 12 | 0 2
+      // counts      : 1 3 | 3 2 | 2 12 | 32 2
+      // I think this is not a race condition for the same reason
+      firstRunReset = false; // This is a hacky solution
+
+
+      // In an ideal world I would like to use a + reduce intent here such that each iteration gets it's own
+      // copy of the counts array and it is accumulated into the main counts array
+      // And the loop should be a coforall instead of a foreach
+      // But I could not get that to work/ don't know how that works
+    }
+  }
+
   proc parallelArrScan(ref arr: [] uint){
     // Divide up the array into chunks of a reasonable size
     // Config this with a scanChunkSize
@@ -174,11 +245,13 @@ module RadixSort {
     on here.gpus[useGpuId]{
       var gpuScanArr = scanArr;
       var gpuArr = arr;
+      const ceil = gpuArr.domain.high;
       // In parallel: For each chunk we do an in lane serial scan
-      // @assertOnGpu
-      for chunk in 0..<numScanChunks {
+      @assertOnGpu
+      foreach chunk in 0..<numScanChunks {
         const start = chunk*scanChunkSize;
-        const end = min(gpuArr.domain.high, start+scanChunkSize-1);
+        var end = start+scanChunkSize-1;
+        if end > ceil then end = ceil;
         gpuScanArr[chunk] = gpuArr[end]; // Save the last element before the scan overwrites it
         serialScan(gpuArr, start, end); // Exclusive scan in serial
         gpuScanArr[chunk] += gpuArr[end]; // Save inclusive scan in the scan Arr
@@ -196,8 +269,8 @@ module RadixSort {
         arrScan(gpuScanArr); // funky words
       }
 
-      // @assertOnGpu
-      for i in 0..<gpuArr.size {
+      @assertOnGpu
+      foreach i in 0..<gpuArr.size {
         // In propagate the right values from scanArr
         // to complete the global scan
         const offset : int = i / scanChunkSize;
@@ -229,67 +302,27 @@ module RadixSort {
       writeln("Pf sum: ",count);
   }
 
-
-  proc parallelCount2D(ref counts: [?D], ref inputArr: [] uint, const exp: int, const bitMask: int, const buckets: int){
-    on here.gpus[useGpuId]{
-      var gpuCounts : counts.type; // All 0s
-      const gpuD = D;
-      const gpuInputArr = inputArr;
-      @assertOnGpu
-      foreach chunk in gpuD { // D is {0..<numChunks}
-        // Count for each chunk in parallel.
-        const startIdx : int = (chunk:int)*chunkSize;
-        const endIdx : int = startIdx+chunkSize-1;
-        for i in startIdx..endIdx {
-          gpuCounts[chunk][((gpuInputArr[i]>>exp) & bitMask):int] += 1;
-        }
-      }
-      counts = gpuCounts;
-    }
-  }
-
-  proc parallelCount1D(ref counts: [], ref inputArr: [] uint, const exp: int, const bitMask: int, const numChunks: int){
-    // Instead of using a nested array of arrays, use a simple 1D array of
-    // size numChunks*buckets which is a column major representation
-    // of the 2D array version.
-    // This way calculating the offset is just a prefix sum
-    // And we can use strided iteration to work on them as if they were
-    // 2D arrays.
-    on here.gpus[useGpuId]{
-      var gpuCounts : counts.type; // All 0s
-      const gpuInputArr = inputArr;
-      @assertOnGpu
-      foreach chunk in 0..<numChunks {
-        // Count for each chunk in parallel.
-        const startIdx : int = (chunk:int)*chunkSize;
-        const endIdx : int = startIdx+chunkSize-1;
-        for i in startIdx..endIdx {
-          const tmp = ((gpuInputArr[i]>>exp) & bitMask):int;
-          const tmp2 = chunk+(numChunks*tmp);
-          gpuCounts[tmp2] += 1;
-        }
-      }
-      counts = gpuCounts;
-    }
-  }
-
   proc parallelScatter(ref offsets: [], ref inputArr: [] uint, const exp: int, const bitMask: int, const numChunks: int){
     on here.gpus[useGpuId]{
       var gpuOffsets = offsets;
       const gpuInputArr = inputArr;
       var gpuOutputArr : inputArr.type;
+      const arrSize = gpuInputArr.size;
+      const low = gpuInputArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
+
       @assertOnGpu
       foreach chunk in 0..<numChunks {
         // Count for each chunk in parallel.
         const startIdx : int = (chunk:int)*chunkSize;
-        const endIdx : int = startIdx+chunkSize-1;
-        for i in startIdx..endIdx {
-          const tmp = ((gpuInputArr[i]>>exp) & bitMask):int;
-          const tmp2 = chunk+(numChunks*tmp);
-          const tmp3 = gpuOffsets[tmp2]:int;
-          // This may happen when inputArr.size%chunkSize!=0
+        const endIdx : int = if startIdx+chunkSize>arrSize then arrSize else startIdx+chunkSize;
+        for i in startIdx..<endIdx {
+          const arrIdx = i+low;
+          const tmp = ((gpuInputArr[arrIdx]>>exp) & bitMask):int; // Where in the counts array to look
+          const tmp2 = chunk+(numChunks*tmp); // Index into the offsets array
+          const tmp3 = gpuOffsets[tmp2]:int; // Index into the output array
+          // This may happen when gpuInputArr.size%chunkSize!=0
           // if tmp3>=gpuInputArr.size then continue;
-          gpuOutputArr[tmp3] = gpuInputArr[i];
+          gpuOutputArr[low+tmp3] = gpuInputArr[arrIdx];
           gpuOffsets[tmp2] += 1;
         }
       }
@@ -304,7 +337,7 @@ module RadixSort {
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
         writeln("Bit mask: ", bitMask);
-        writeln("Input: ", inputArr);
+        // writeln("Input: ", inputArr);
         writeln("Chunk Size: ", chunkSize);
         writeln("Num Chunks: ", numChunks);
     }
@@ -313,8 +346,7 @@ module RadixSort {
     // we create the prefixSum arrays, one for each chunk
     // And we only create it once
     // This was we can reuse it for each iteration of radix Sort
-    var prefixSums2D: [0..<numChunks][0..<buckets] uint; // Not used
-    var prefixSums1D: [0..<numChunks*buckets] uint; // This is the one we use
+    var prefixSums: [0..<numChunks*buckets] uint;
 
     // Ceiling on number of iterations based on max element in array
     // Reduce can be used to do this faster
@@ -339,33 +371,45 @@ module RadixSort {
       // in parallel
 
       // Count
-      // parallelCount2D(prefixSums2D, inputArr, exp, bitMask, buckets);
-      // for pf in prefixSums2D do write(pf, '    ');// Not used
-      // writeln();                             // We use the 1D method instead
-
-      parallelCount1D(prefixSums1D, inputArr, exp, bitMask, numChunks);
+      var timer: Time.stopwatch;
+      timer.start();
+      if !distributed then
+        parallelCount(prefixSums, inputArr, exp, bitMask, numChunks);
+      else {
+        const numChunksPerGpu = Math.divCeil(numChunks, 2);
+        distributedCount(prefixSums, inputArr, exp, bitMask, numChunks, here.gpus.size);
+      }
+      timer.stop();
       if scanTest then
-        writeln(" Count: ",prefixSums1D);
+        writeln(" Count: ",prefixSums);
+
+      // writeln("Parallel Count Time: ", timer.elapsed());
 
       // writeln("Here!");
       // Calculate global offsets for each chunk
-      // Since I did the 1D trick for parallel count above,
       // I can calculate the global offset by simply doing a prefix sum over the array
       // See https://gpuopen.com/download/publications/Introduction_to_GPU_Radix_Sort.pdf
       // Figure 1 and equation 1 for explanation
-      if parallelScan then parallelArrScan(prefixSums1D); else arrScan(prefixSums1D);
-
+      timer.clear();
+      timer.start();
+      if parallelScan then parallelArrScan(prefixSums); else arrScan(prefixSums);
+      timer.stop();
+      // writeln("Parallel Scan Time: ", timer.elapsed());
       if scanTest then
-        writeln("Offset: ", prefixSums1D, "\n");
+        writeln("Offset: ", prefixSums, "\n");
 
       // Scatter
       // Now we have the offsets for each individual chunk
       // We can use those to scatter back into the output Array
 
-      parallelScatter(prefixSums1D, inputArr, exp, bitMask, numChunks);
+      timer.clear();
+      timer.start();
+      parallelScatter(prefixSums, inputArr, exp, bitMask, numChunks);
+      timer.stop();
+      // writeln("Parallel Scatter Time: ", timer.elapsed());
 
-      if noisy then
-        writeln("       Output: ", inputArr);
+      // if noisy then
+      //   writeln("       Output: ", inputArr);
 
       // Increment the exp, decrement max by shifting, and copy arrays
       exp += bitsAtATime;
@@ -404,7 +448,11 @@ module RadixSort {
       if(noisy) then
         writeln("       Exp: ", exp);
 
+      var timer: Time.stopwatch;
+      timer.start();
       arrCountAndScan(prefixSum, inputArr, exp, bitMask);
+      timer.stop();
+      // writeln("Count and Scan Time: ", timer.elapsed());
 
       if noisy then
         writeln("       Prefix sum: ", prefixSum);
@@ -412,26 +460,15 @@ module RadixSort {
       // This is done by iterating through the array backwards
       // and placing each element in the correct position in the output array
 
-
-      // on here.gpus[useGpuId]{
-      //   var gpuPrefixSum = prefixSum;
-      //   var gpuInputArr = inputArr;
-      //   var gpuOutputArr : outputArr.type;
-      //   var gpuExp = exp;
-      //   @assertOnGpu
-      //   foreach i in gpuInputArr{
-      //     const idx = ((i>>gpuExp) & bitMask):int;
-      //     const arrIdx = gpuAtomicAdd(gpuPrefixSum[idx], 1);
-      //     gpuOutputArr[arrIdx:int] = i;
-      //   }
-      //   outputArr = gpuOutputArr;
-      // }
-
+      timer.clear();
+      timer.start();
       for i in inputArr.dim(0){
         const idx = ((inputArr[i]>>exp) & bitMask):int;
         outputArr[prefixSum[idx]:int] = inputArr[i];
         prefixSum[idx] += 1;
       }
+      timer.stop();
+      // writeln("Scatter Time: ", timer.elapsed());
 
       if noisy {
         writeln("       Output: ", outputArr);
