@@ -6,25 +6,18 @@ Compiler Driver Mode
 
 .. note::
 
-   The compiler driver mode is considered experimental, and is not yet
-   well-tested for correctness or performance.
-   If you use it and encounter a bug or limitation not yet documented as a
+   The compiler driver mode is relatively new. If you use it and encounter a bug
+   or limitation not yet documented as a
    `Github issue <https://github.com/chapel-lang/chapel/issues>`_, consider
    filing an issue as described in :ref:`readme-bugs`.
 
-The Chapel compiler ``chpl`` currently runs as a single executable responsible
+The Chapel compiler ``chpl`` previously ran as a single executable responsible
 for compilation, assembly, and linking, with some components done in
 subprocesses depending on which backend is used. By contrast, many compiler
 executables (including ``gcc`` and ``clang``) are actually `compiler drivers`.
 A compiler driver is a smaller program responsible for processing arguments and
-invoking separate processes for the different stages of compilation required.
-
-With release 1.32, the Chapel compiler provides an opt-in compiler driver mode
-that can be used via the ``--compiler-driver`` flag. This mode will become the
-default at some point in the future. The driver currently splits work into two
-phases: `compilation`, which is responsible for everything through code
-generation (C code or LLVM bitcode), and `makeBinary`, which is responsible for
-binary generation (including linking).
+invoking separate processes for the different stages of compilation required. As
+of release 1.33, ``chpl`` runs as a compiler driver by default.
 
 ---------------------
 Motivation for Driver
@@ -68,15 +61,17 @@ to be useful to compiler developers. Both are documented here.
   this flag during re-invocations for the different phases, and will provide the
   same value to all phases.
 
------------
-Future Work
------------
+-------------------
+Development History
+-------------------
 
-- Fix driver behavior for GPU compilation, which currently performs all work
-  in compilation and skips makeBinary.
-- Reduce work re-done between driver and phase invocations.
-- Enable our usual performance and correctness testing for driver mode, and
-  reach parity with monolithic mode.
-- Measure performance of compiler itself in driver mode, including change in
-  memory pressure.
-- Eventually, make compiler driver mode the default, with an opt-out flag.
+- With release 1.32, the Chapel compiler provides an opt-in compiler driver mode
+  that can be used via the ``--compiler-driver`` flag. This mode will become the
+  default at some point in the future. The driver currently splits work into two
+  phases: `compilation`, which is responsible for everything through code
+  generation (C code or LLVM bitcode), and `makeBinary`, which is responsible
+  for binary generation (including linking).
+- In release 1.33, the driver mode is on by default, and the
+  ``--compiler-driver`` flag is deprecated. The new ``--no-compiler-driver``
+  flag allows opting out of the driver mode and will cause the compiler to
+  run monolithically as before.
