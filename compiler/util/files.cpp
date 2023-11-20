@@ -53,6 +53,8 @@
 #include <cerrno>
 #include <string>
 #include <map>
+#include <unordered_set>
+#include <utility>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -123,7 +125,9 @@ void addIncInfo(const char* incDir, bool fromCmdLine) {
   }
 }
 
-void checkDriverTmp() {
+// Ensure the tmp dir is set up for use by the driver (i.e., isn't about to be
+// replaced).
+static void checkDriverTmp() {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   bool valid = false;
@@ -146,20 +150,35 @@ void checkDriverTmp() {
 
 void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
                    bool appendNewline) {
-  checkDriverTmp();
-
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
-  fprintf(file->fptr, "%s%s", stringToSave, (appendNewline ? "\n" : ""));
-  closefile(file);
+  saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
 }
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave) {
+                           std::vector<const char*> stringsToSave,
+                           bool noNewlines) {
   checkDriverTmp();
 
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  const char* pathAsAstr = astr(tmpFilePath);
+
+  // Driver tmp files that have been written into so far in this run.
+  // Used to make sure info remaining from previous runs (i.e., due to savec) is
+  // discarded on first write.
+  // Contents expected to be astrs so it's safe to use a set.
+  static std::unordered_set<const char*> seen;
+
+  // Overwrite on first use in phase one or driver init, append after.
+  const char* fileOpenMode;
+  if (seen.emplace(pathAsAstr).second && !fDriverPhaseTwo) {
+    fileOpenMode = "w";
+  } else {
+    // Already seen
+    fileOpenMode = "a";
+  }
+
+  // Write into tmp file
+  fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
   for (const auto stringToSave : stringsToSave) {
-    fprintf(file->fptr, "%s\n", stringToSave);
+    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
   }
   closefile(file);
 }
