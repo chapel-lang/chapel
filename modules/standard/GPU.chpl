@@ -634,8 +634,8 @@ module GPU
 
   // The following functions are used to implement GPU scans. They are
   // intended to be called from a GPU locale.
-  import Math;
-  import BitOps;
+  private import Math;
+  private import BitOps;
 
   private param DefaultGpuBlockSize = 512;
 
