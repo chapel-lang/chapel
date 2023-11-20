@@ -55,6 +55,7 @@
 #include <string>
 #include <map>
 #include <regex>
+#include <numeric>
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -804,9 +805,30 @@ static int invokeChplWithArgs(int argc, char* argv[],
 static int runDriverPhaseOne(int argc, char* argv[]);
 static int runDriverPhaseTwo(int argc, char* argv[]);
 
+// Skip phase two if the compile command does not require it, or if we are
+// running in a debugger for phase one only. By default, warn if skipping
+// for the debugger reason.
+static bool shouldSkipDriverPhaseTwo(bool warnIfSkipping = true) {
+  // Check if skipping due to only debugging phase one.
+  bool debugPhaseOneOnly =
+      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
+  if (debugPhaseOneOnly && warnIfSkipping) {
+    USR_WARN(
+        "Skipping phase two due to running only phase one "
+        "in debugger; change this with --driver-debug-phase if desired");
+  }
+
+  // Check if skipping for the above reason or any other early stop.
+  bool shouldSkipPhaseTwo =
+      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
+      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+
+  return shouldSkipPhaseTwo;
+}
+
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
-// After all phases are complete, or upon failure, the driver exits.
+// Exits if a phase fails.
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
@@ -818,29 +840,12 @@ static void runAsCompilerDriver(int argc, char* argv[]) {
     clean_exit(status);
   }
 
-  // Skip phase two if the compile command does not require it, or if we are
-  // running in a debugger for phase one only.
-  bool debugPhaseOneOnly =
-      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
-  if (debugPhaseOneOnly) {
-    USR_WARN(
-        "Skipping phase two due to running only phase one "
-        "in debugger; change this with --driver-debug-phase if desired");
-  }
-  bool shouldSkipPhaseTwo =
-      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
-      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
-  if (!shouldSkipPhaseTwo) {
+  if (!shouldSkipDriverPhaseTwo()) {
     // invoke phase two
     if ((status = runDriverPhaseTwo(argc, argv)) != 0) {
       clean_exit(status);
     }
   }
-
-  // Tmp dir will be deleted if necessary when the compiler-driver's Context is
-  // deleted.
-
-  clean_exit(status);
 }
 
 // Run phase one of compiler-driver
@@ -2401,21 +2406,35 @@ int main(int argc, char* argv[]) {
     validateSettings();
   }
 
-  if (!fDriverDoMonolithic && !driverInSubInvocation)
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Trigger initial driver mode invocation.
+    tracker.Stop();
     runAsCompilerDriver(argc, argv);
+    tracker.Resume();
+  } else {
+    // This branch runs for individual driver phases ("sub-invocations") or as
+    // the whole compiler in monolithic mode.
 
-  // In driver mode, debug only if we are in a driver phase that was requested
-  // to be debugged.
-  if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
-        (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
-    // re-run compiler in appropriate debugger if requested
-    if (fRungdb) runCompilerInGDB(argc, argv);
-    if (fRunlldb) runCompilerInLLDB(argc, argv);
+    // Run compiler in the debugger if requested.
+    // Skip if we are in a driver phase that was not requested to be debugged.
+    if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
+          (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
+      // re-run compiler in appropriate debugger if requested
+      if (fRungdb) runCompilerInGDB(argc, argv);
+      if (fRunlldb) runCompilerInLLDB(argc, argv);
+    }
+
+    assertSourceFilesFound();
+
+    runPasses(tracker);
   }
 
-  assertSourceFilesFound();
-
-  runPasses(tracker);
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Begin reporting driver init process timing
+    Phase::ReportText(
+        "\n\nTiming for driver mode overhead\n--------------\n");
+    tracker.ReportPass();
+  }
 
   tracker.StartPhase("driverCleanup");
 
@@ -2424,9 +2443,73 @@ int main(int argc, char* argv[]) {
   tracker.Stop();
 
   if (printPasses == true || printPassesFile != NULL) {
-    tracker.ReportPass();
-    tracker.ReportTotal();
-    tracker.ReportRollup();
+    // Report out timing totals information, with adjustments for driver mode.
+    if (fDriverDoMonolithic) {
+      // Report normally in monolithic mode.
+      tracker.ReportPass();
+      tracker.ReportRollup();
+      tracker.ReportPassGroupTotals();
+      tracker.ReportOverallTotal();
+    } else {
+      // Save timing totals in sub-invocations, to restore and output by driver.
+
+      static const char* groupTimesFilename = "passGroupTimings.tmp";
+      std::vector<unsigned long> groupTimes;
+
+      if (driverInSubInvocation) {
+        // This is a sub-invocation, capture timing totals information for later
+        // reporting by driver init process.
+
+        // Report final sub-invocation specific timing information
+        tracker.ReportPass();
+        tracker.ReportRollup();
+
+        // Get timing information
+        tracker.ReportPassGroupTotals(&groupTimes);
+
+        // Save times to file
+        std::vector<const char*> groupTimesStrs;
+        for (const unsigned long groupTime : groupTimes) {
+          groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
+        }
+        saveDriverTmpMultiple(groupTimesFilename, groupTimesStrs);
+      } else {
+        // The driver initial process is ending, restore sub-invocation results
+        // and report out everything.
+
+        // Restore times from file
+        restoreDriverTmp(groupTimesFilename,
+                         [&groupTimes](const char* timeStr) {
+                           groupTimes.emplace_back(std::stoul(timeStr));
+                         });
+
+        // Unless stopping early, expect frontend, middle-end, and backend
+        // results from phase one, plus the other half of backend results from
+        // phase two that need to be added in.
+        if (!shouldSkipDriverPhaseTwo(/* warnIfSkipping */ false)) {
+          const size_t numPassGroups = 3;
+          INT_ASSERT(
+              groupTimes.size() == (numPassGroups + 1) &&
+              "unexpected number of saved timing results from driver phases");
+          // Combine the two halves of the backend total time into one value.
+          groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
+          groupTimes.pop_back();
+        }
+
+        // Report final driver overhead timing information.
+        // Done here to include the footprint of restoring sub-invocation info.
+        tracker.ReportPass();
+        tracker.ReportRollup();
+
+        // Report restored times
+        tracker.ReportPassGroupTotals(&groupTimes);
+        // Report total time including both pass group times and driver overhead
+        auto groupTimesSum =
+            std::accumulate(groupTimes.begin(), groupTimes.end(),
+                            decltype(groupTimes)::value_type(0));
+        tracker.ReportOverallTotal(groupTimesSum);
+      }
+    }
   }
 
   if (printPassesFile != NULL) {
