@@ -3298,6 +3298,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }*/
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -3317,6 +3318,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a11);
   codegenCallWithArgs(fnName, args);
 }
+*/
 
 /*
 static
@@ -5619,8 +5621,10 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
 
 // Strided versions of get and put
 static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
-    // args are: localvar, dststr addr, locale, remote addr, srcstr addr
-    // count addr, strlevels, elem
+    // args are: local addr, dststr addr,
+    //           locale, sublocale, remote addr, srcstr addr,
+    //           count addr, strlevels,
+    //           line number, function id
     const char* fn;
     TypeSymbol* dt;
 
@@ -5630,94 +5634,109 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
       fn = "chpl_gen_comm_put_strd";
     }
 
-    GenRet localAddr = codegenValuePtr(call->get(1));
+    auto destData = call->get(1);
+    GenRet localAddr = codegenValuePtr(destData);
 
     // destination data array
-    if (call->get(1)->isWideRef()) {
-      Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    if (destData->isWideRef()) {
+      Symbol* sym = destData->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
       localAddr = codegenRaddr(localAddr);
     } else {
-      dt = call->get(1)->typeInfo()->getValType()->symbol;
+      dt = destData->typeInfo()->getValType()->symbol;
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (destData->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
     }
 
     // destination strides local array
-    GenRet dststr = codegenValuePtr(call->get(2));
+    auto destStride = call->get(2);
+    GenRet dststr = codegenValuePtr(destStride);
 
-    if (call->get(2)->isWideRef()) {
-      Symbol* sym = call->get(2)->typeInfo()->getField("addr", true);
+    if (destStride->isWideRef()) {
+      Symbol* sym = destStride->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       dststr = codegenRaddr(dststr);
-    } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (destStride->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       dststr = codegenDeref(dststr);
     }
 
     // locale id
     GenRet locale = codegenValueMaybeDeref(call->get(3));
 
-    // source data array
-    GenRet   remoteAddr = call->get(4);
+    // sublocale id
+    GenRet subloc = codegenValueMaybeDeref(call->get(4));
 
-    if (call->get(4)->isWideRef() == true) {
+    // source data array
+    auto srcExpr = call->get(5);
+    GenRet   remoteAddr = srcExpr;
+
+    if (srcExpr->isWideRef() == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (call->get(4)->isRef() == false) {
+    } else if (srcExpr->isRef() == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
-    GenRet srcstr = codegenValuePtr(call->get(5));
+    auto srcStrideExpr = call->get(6);
+    GenRet srcstr = codegenValuePtr(srcStrideExpr);
 
-    if (call->get(5)->isWideRef()) {
-      Symbol* sym = call->get(5)->typeInfo()->getField("addr", true);
+    if (srcStrideExpr->isWideRef()) {
+      Symbol* sym = srcStrideExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       srcstr = codegenRaddr(srcstr);
     } else {
-      if (call->get(5)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (srcStrideExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         srcstr = codegenDeref(srcstr);
       }
     }
 
     // count local array
-    GenRet count = codegenValuePtr(call->get(6));
+    auto countExpr = call->get(7);
+    GenRet count = codegenValuePtr(countExpr);
 
-    if (call->get(6)->isWideRef()) {
-      Symbol* sym = call->get(6)->typeInfo()->getField("addr", true);
+    if (countExpr->isWideRef()) {
+      Symbol* sym = countExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       count = codegenRaddr(count);
-    } else if (call->get(6)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (countExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       count = codegenDeref(count);
     }
 
     // stridelevels
-    GenRet stridelevels = codegenValueMaybeDeref(call->get(7));
+    GenRet stridelevels = codegenValueMaybeDeref(call->get(8));
+
+    auto lineno = call->get(9);
+    auto fnID = call->get(10);
 
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());
 
-    codegenCall(fn,
-                codegenCastToVoidStar(localAddr),
-                codegenCastToVoidStar(dststr),
-                locale,
-                remoteAddr,
-                codegenCastToVoidStar(srcstr),
-                codegenCastToVoidStar(count),
-                stridelevels,
-                eltSize,
-                genCommID(gGenInfo),
-                call->get(8),
-                call->get(9));
+    std::vector<GenRet> args;
+
+    args.push_back(codegenCastToVoidStar(localAddr));
+    args.push_back(codegenCastToVoidStar(dststr));
+    args.push_back(locale);
+    args.push_back(subloc);
+    args.push_back(remoteAddr);
+    args.push_back(codegenCastToVoidStar(srcstr));
+    args.push_back(codegenCastToVoidStar(count));
+    args.push_back(stridelevels);
+    args.push_back(eltSize);
+    args.push_back(genCommID(gGenInfo));
+    args.push_back(lineno);
+    args.push_back(fnID);
+
+    codegenCallWithArgs(fn, args);
 }
 DEFINE_PRIM(CHPL_COMM_PUT_STRD) {
   codegenPutGetStrd(call, ret);

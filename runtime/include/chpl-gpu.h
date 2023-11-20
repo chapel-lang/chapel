@@ -125,6 +125,21 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
                        c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
                        size_t size, int32_t commID, int ln, int32_t fn);
 
+void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
+                            void* dstaddr_arg, size_t* dststrides,
+                            c_nodeid_t srclocale, c_sublocid_t src_subloc,
+                            void* srcaddr_arg, size_t* srcstrides,
+                            size_t* count, int32_t strlevels, size_t elemSize,
+                            int32_t commID, int ln, int32_t fn);
+
+void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
+                          void* dstaddr_arg, size_t* dststrides,
+                          c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
+                          void* srcaddr_arg, size_t* srcstrides,
+                          size_t* count, int32_t stridelevels, size_t elemSize,
+                          int32_t commID, int ln, int32_t fn);
+
+
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   const void* src, size_t n, int32_t commID,
