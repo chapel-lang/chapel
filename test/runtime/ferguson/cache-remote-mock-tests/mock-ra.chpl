@@ -16,7 +16,7 @@ config const basePtr:uint = 0x7ffff5931010;
 config const printStats = false;
 
 proc main() {
-  var rng = new RandomStream(uint, seed, parSafe=false);
+  var rng = new randomStream(uint, seed);
 
   var t:stopwatch;
 
