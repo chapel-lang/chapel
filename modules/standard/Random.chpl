@@ -408,8 +408,8 @@ module Random {
     /*
       Randomly rearrange a 1D array using values from this random stream.
 
-      :arg arr: The array to shuffle. Its domain's ``idxType`` should be equal to
-                  or smaller than :type:`t`
+      :arg arr: The array to shuffle. Its domain's ``idxType`` should be
+                coercible to this stream's :type:`eltType`.
     */
     proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
       do this.pcg.shuffle(arr);
