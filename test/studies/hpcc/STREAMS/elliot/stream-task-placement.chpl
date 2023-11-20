@@ -1,6 +1,7 @@
 use Time;
 use Types;
-use NPBRand;
+use Random;
+import NPBRand.NPBRandomStream as NPBRS;
 
 use HPCCProblemSize;
 
@@ -67,7 +68,7 @@ proc printConfiguration() {
 
 
 proc initVectors(ref B, ref C) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+  var randlist = new NPBRS(eltType=real, seed=seed);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);

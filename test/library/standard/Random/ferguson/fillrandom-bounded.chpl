@@ -12,7 +12,7 @@ proc testit(seed: int, n: int) {
   var afterA:uint;
   var afterB:uint;
 
-  var rng = new randomStream(seed=seed, eltType=int);
+  var rng = new randomStream(seed=seed, eltType=uint);
   for i in 1..n {
     A[i] = rng.getNext();
   }
