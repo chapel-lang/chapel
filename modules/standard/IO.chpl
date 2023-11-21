@@ -3611,8 +3611,8 @@ type DefaultDeserializer = defaultDeserializer;
 @chpldoc.nodoc
 config param warnBinaryStructured : bool = true;
 
-private proc warnBinary(param kind: _iokind, type t) {
-  if warnBinaryStructured && kind != _iokind.dynamic {
+private proc warnBinary(type t) {
+  if warnBinaryStructured {
     if t == string || isClassType(t) {
       param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning.";
       compilerWarning(msg);
@@ -3670,19 +3670,13 @@ record binarySerializer {
     Booleans are serialized as single byte unsigned values of either ``0`` or
     ``1``.
 
-    ``string`` values are serialized beginning with a length represented by a
-    variable-length byte scheme (which is always the same no matter what
-    endianness). In this scheme, the high bit of each encoded length byte records
-    whether or not there are more length bytes (and the remaining bits encode the
-    length in a big-endian manner). Then, the raw binary data of the string is
-    written to the ``writer``.
+    ``string`` values are serialized as a raw sequence of bytes that does not
+    include a null terminator, nor any bytes representing length. This means
+    that ``string`` values cannot be read back in without manual intervention
+    by users to decide how their strings should be stored such that they can
+    be read back in.
 
     The ``nil`` value is serialized as a single unsigned byte of value ``0``.
-
-    Classes are serialized beginning with a single unsigned byte of either ``0``
-    or ``1`` indicating ``nil``. Nilable classes that are ``nil`` will always
-    serialize as ``0``, and non-nilable classes will always begin serializing
-    as ``1``.
 
     Classes and records will have their ``serialize`` method invoked, passing
     in ``writer`` and this Serializer as arguments. Please see the
@@ -3696,12 +3690,22 @@ record binarySerializer {
 
       Serializing and deserializing enums is not stable in this format.
 
+    .. warning::
+
+      In the 1.32 release this format included bytes representing the length of
+      a string. Also, classes were serialized beginning with a single byte to
+      indicate whether the class value was ``nil``. This behavior was changed
+      in the subsequent release to provide users with a more flexible
+      serializer that did not insert bytes that the user did not request. A
+      compile-time warning will be issued to indicate that this behavior has
+      changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+      silence the warning.
+
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
   */
   proc ref serializeValue(writer: fileWriter(serializerType=binarySerializer, locking=false, ?),
                       const val:?t) throws {
-    warnBinary(writer._kind, t);
     if isNumericType(t) {
       select endian {
         when endianness.native do writer.writeBinary(val, endianness.native);
@@ -4011,6 +4015,17 @@ type BinarySerializer = binarySerializer;
   Otherwise, please refer to :type:`binarySerializer` for a description of the
   binary format. Individual methods on this type may clarify relevant behavior
   specific to deserialization
+
+  .. warning::
+
+    In the 1.32 release this format included bytes representing the length of
+    a string. Also, classes were serialized beginning with a single byte to
+    indicate whether the class value was ``nil``. This behavior was changed
+    in the subsequent release to provide users with a more flexible
+    deserializer that did not read bytes that the user did not request. A
+    compile-time warning will be issued to indicate that this behavior has
+    changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+    silence the warning.
 */
 record binaryDeserializer {
   /*
@@ -4081,7 +4096,6 @@ record binaryDeserializer {
     :returns: A value of type ``readType``.
   */
   proc ref deserializeType(reader:fileReader(?), type readType) : readType throws {
-    warnBinary(reader._kind, readType);
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
@@ -4135,7 +4149,6 @@ record binaryDeserializer {
     :arg val: The value into which this Deserializer will deserialize.
   */
   proc ref deserializeValue(reader: fileReader(?), ref val: ?readType) : void throws {
-    warnBinary(reader._kind, readType);
     if isClassType(readType) {
       var isNil = _checkClassNil(reader, readType);
       if isNilableClassType(readType) && isNil then
@@ -6482,6 +6495,10 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
 
+  if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+    warnBinary(readType);
+  }
+
   return reader.deserializer.deserializeType(reader, readType);
 }
 
@@ -6499,6 +6516,10 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader._kind, x, reader.getLocaleOfIoRequest());
     return;
+  }
+
+  if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+    warnBinary(t);
   }
 
   reader.deserializer.deserializeValue(reader, x);
@@ -6543,6 +6564,10 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     writer._writeOne(writer._kind, x, writer.getLocaleOfIoRequest());
     return;
+  }
+
+  if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+    warnBinary(x.type);
   }
 
   try writer.serializer.serializeValue(writer, x);
