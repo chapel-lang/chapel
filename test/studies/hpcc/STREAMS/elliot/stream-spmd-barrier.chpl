@@ -1,6 +1,6 @@
 use Time;
 use Types;
-use NPBRand;
+use NPBRandom;
 
 use RangeChunk;
 

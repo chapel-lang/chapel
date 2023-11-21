@@ -1,4 +1,4 @@
-use Time, Types, NPBRand;
+use Time, Types, NPBRandom;
 use hpccMultilocale;
 
 use HPCCProblemSize;

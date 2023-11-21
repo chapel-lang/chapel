@@ -1,2 +1,2 @@
-direct_rand_classes.chpl:3: warning: Random.NPBRandomStream is deprecated; please use NPBRand.NPBRandomStream instead
+direct_rand_classes.chpl:1: warning: The 'NBPRandom' submodule has been moved to its own package module; please use or import it directly
 direct_rand_classes.chpl:4: warning: 'PCGRandomStream' is deprecated; please use randomStream instead

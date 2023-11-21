@@ -1,7 +1,7 @@
 // Test the standard module Norm
 
 use driver_real_arrays;
-use NPBRand;
+use NPBRandom;
 use LinearAlgebra;
 
 config const is2D2Norm = false;

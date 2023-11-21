@@ -1,7 +1,7 @@
 use Time;
 use Types;
 use Random;
-import NPBRand.NPBRandomStream as NPBRS;
+import NPBRandom.NPBRandomStream as NPBRS;
 
 use HPCCProblemSize;
 

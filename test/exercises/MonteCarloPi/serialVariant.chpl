@@ -1,4 +1,4 @@
-use NPBRand;
+use NPBRandom;
 
 //
 // Replace config const n with epsilon since we're now computing n

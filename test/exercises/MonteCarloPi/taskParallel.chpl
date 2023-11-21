@@ -1,4 +1,4 @@
-use NPBRand;
+use NPBRandom;
 
 config const n = 100000,
        tasks = here.maxTaskPar,

@@ -67,7 +67,7 @@ module Scalable_Graph_Generator
   {
       use BlockDist;
       // use Graph500_defs;
-      use NPBRand;
+      use NPBRandom;
       use Time;
 
       // Random Numbers return in the range [0.0, 1.0)

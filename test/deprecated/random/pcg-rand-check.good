@@ -1,12 +1,12 @@
-pcg-rand-check.chpl:17: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:45: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:73: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:103: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:136: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:204: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
+pcg-rand-check.chpl:17: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:45: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:73: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:103: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:136: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:204: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
 pcg-rand-check.chpl:206: warning: the RandomStream class is deprecated; please use the randomStream record instead
-pcg-rand-check.chpl:240: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-pcg-rand-check.chpl:247: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
+pcg-rand-check.chpl:240: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+pcg-rand-check.chpl:247: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
 pcg-rand-check.chpl:16: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 pcg-rand-check.chpl:44: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 pcg-rand-check.chpl:72: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead

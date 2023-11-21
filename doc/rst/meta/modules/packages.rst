@@ -19,7 +19,7 @@ Algorithms
    :maxdepth: 1
 
    Crypto <packages/Crypto>
-   NPBRand <packages/NPBRand>
+   NPBRandom <packages/NPBRandom>
    Search <packages/Search>
    Sort <packages/Sort>
 

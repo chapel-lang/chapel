@@ -112,7 +112,7 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-{ use NPBRand, IO;
+{ use NPBRandom, IO;
     use analyze_RMAT_graph_associative_array;
 
     if PRINT_TIMING_STATISTICS then sw.start ();

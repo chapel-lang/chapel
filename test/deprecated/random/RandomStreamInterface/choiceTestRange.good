@@ -1,6 +1,6 @@
 choiceTestRange.chpl:3: In function 'main':
-choiceTestRange.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
-choiceTestRange.chpl:6: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRand package module
+choiceTestRange.chpl:4: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
+choiceTestRange.chpl:6: warning: 'RNG' is deprecated; please use the PCG algorithm via the randomStream type or the NPB algorithm via the NPBRandom package module
 choiceTestRange.chpl:4: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 $CHPL_HOME/modules/standard/Random.chpl:nnnn: In function '_choiceProbabilities':
 $CHPL_HOME/modules/standard/Random.chpl:nnnn: warning: scan has been serialized (see issue #12482)

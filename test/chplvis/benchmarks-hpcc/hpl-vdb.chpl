@@ -5,7 +5,7 @@ use VisualDebug;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, NPBRand, Time;
+use LinearAlgebra, NPBRandom, Time;
 
 //
 // Use the user module for computing HPCC problem sizes

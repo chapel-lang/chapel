@@ -4,7 +4,7 @@ config const initialize = true;
 config const printOutput = true;
 config const printTiming = false;
 
-use NPBRand, Time;
+use NPBRandom, Time;
 
 var A: [1..n,1..m] real;
 var B: [1..n,1..m] real;

@@ -1,4 +1,4 @@
-use Time, Types, NPBRand;
+use Time, Types, NPBRandom;
 use BradsBlock1DPar;
 
 use HPCCProblemSize;

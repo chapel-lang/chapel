@@ -1,6 +1,6 @@
 /* Test helpers... */
 
-public use NPBRand;
+public use NPBRandom;
 public use Time;
 
 // random seed for arrays

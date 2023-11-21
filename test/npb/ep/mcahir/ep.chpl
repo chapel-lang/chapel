@@ -24,7 +24,7 @@
 */
 
 
-use NPBRand, Time, BlockDist, ReplicatedDist;
+use NPBRandom, Time, BlockDist, ReplicatedDist;
 
 enum classVals {S, W, A, B, C, D};
 

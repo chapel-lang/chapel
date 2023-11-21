@@ -4,15 +4,15 @@ module Tensor {
     import IO;
     import IO.FormattedIO;
     import ChapelArray;
-    import NPBRand;
+    import NPBRandom;
     import AutoMath;
 
     param debugPrint = false;
 
-    var rng = new NPBRand.NPBRandomStream(eltType=real(64),seed=5);
+    var rng = new NPBRandom.NPBRandomStream(eltType=real(64),seed=5);
     
     proc seedRandom(seed) {
-        rng = new NPBRand.NPBRandomStream(eltType=real(64),seed=(2 * seed + 1));
+        rng = new NPBRandom.NPBRandomStream(eltType=real(64),seed=(2 * seed + 1));
     }
 
     proc err(args...?n) {

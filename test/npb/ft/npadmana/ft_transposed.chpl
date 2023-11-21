@@ -134,7 +134,7 @@ proc initialize_twiddle() {
 // This initializes the U array. Since that is never used,
 // we store it in V.
 proc initialize_U() {
-  use NPBRand;
+  use NPBRandom;
   fillRandom(W, 314159265);
   doFFT_Transposed(FFTtype.DFT, W, V, FFTW_FORWARD);
 }

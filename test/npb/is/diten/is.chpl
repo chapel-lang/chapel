@@ -1,4 +1,4 @@
-use NPBRand;
+use NPBRandom;
 use Time;
 use Math;
 

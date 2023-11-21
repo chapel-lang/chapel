@@ -1,4 +1,4 @@
-use Math, BitOps, NPBRand, Time;
+use Math, BitOps, NPBRandom, Time;
 
 use HPCCProblemSize;
 
