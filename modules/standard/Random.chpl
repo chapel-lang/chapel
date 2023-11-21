@@ -21,42 +21,45 @@
 /*
    Support for pseudorandom number generation.
 
-   This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~RandomStreamInterface`. Use :proc:`createRandomStream` to
-   create such an stream. Each stream supports methods to get the next
-   random number in the stream (:proc:`~RandomStreamInterface.getNext`),
-   to fast-forward to a specific value in the stream
-   (:proc:`~RandomStreamInterface.skipToNth` and
-   :proc:`~RandomStreamInterface.getNth`), to iterate over random values
-   possibly in parallel (:proc:`~RandomStreamInterface.iterate`), or to
-   fill an array with random numbers in parallel
-   (:proc:`~RandomStreamInterface.fillRandom`).
+   This module defines a :record:`randomStream` type (based upon the PCG
+   algorithm) that can be used to generate pseudorandom numbers in parallel.
+   The ``randomStream`` type can be used to generate individual random numbers
+   via :proc:`randomStream.getNext` or to fill an array with random numbers via
+   :proc:`randomStream.fill`. There are also several other methods available
+   for manipulating arrays, parallel iteration, or adjusting the stream's
+   position.
 
-   The module also provides several standalone convenience functions that can be
-   used without manually creating a :class:`RandomStreamInterface` object.
+   This module contains a few top-level procedures that can be used for
+   manipulating arrays:
 
-     * :proc:`fillRandom` fills an array with random numbers in parallel
-     * :proc:`shuffle` randomly re-arranges the elements of an array
-     * :proc:`permutation` creates a random permutation and stores it in an
-       array.
+   * :proc:`fillRandom` fills an array with random numbers in parallel
+   * :proc:`shuffle` randomly re-arranges the elements of an array
+   * :proc:`permutation` creates a random permutation of an array's domain (*unstable*).
 
-   In these and other methods, generated integer values are uniformly
-   distributed from `min(T)` to `max(T)`, where `T` is the integral type and the
-   boundaries are included. Generated floating point values are uniformly
-   distributed in [0.0, 1.0] with the caveat that it currently depends on the
-   RNG whether the boundary values 0.0 and 1.0 can be produced.
+    .. note:: **Note about deprecations:**
 
-   Use :proc:`createRandomStream` or the constructor for a specific RNG
-   implementation to get a RandomStream. See the documentation for
-   each RNG implementation for more information:
+      Before Chapel 1.33, this module was unstable and defined an abstract
+      random stream interface (:class:`RandomStreamInterface`) and two
+      implementations of that interface (based on the PCG and NPB algorithms).
 
-     * :mod:`PCGRandom`
-     * :mod:`NPBRandom`
+      As of Chapel 1.33, this module is partially stable and defines a single
+      :record:`randomStream` type that is based on the PCG algorithm. The
+      NPB algorithm is still available via the :mod:`NPBRandom` package module.
+      The ``RandomStreamInterface`` is now deprecated.
 
-   .. note::
+      Various symbols used to switch between the two algorithms have also been
+      deprecated. These include:
 
-       The RandomStream API (:class:`RandomStreamInterface`) is expected to
-       change.
+      * :proc:`createRandomStream`
+      * :type:`RNG`
+      * :param:`defaultRNG`
+      * :type:`RandomStream`
+      * overloads of the top-level methods that accept an ``algorithm`` argument
+
+      In a future release, we intend to use Chapel's interface features to
+      define one or more interfaces for random streams. At that point, the
+      :record:`randomStream` type will be an implementation of the interface(s)
+      for generating a seedable stream of random numbers.
 
 */
 module Random {
@@ -126,7 +129,7 @@ module Random {
     order. The parallelization strategy is determined by the array.
 
     :arg arr: An array of numeric values
-    :arg seed: The seed to use when creating the ``randomStream``
+    :arg seed: The seed to use to the ``randomStream``
 
   */
   proc fillRandom(ref arr: [] ?t, seed: int)
@@ -182,7 +185,7 @@ module Random {
     :arg arr: An array of numeric values
     :arg min: The (inclusive) lower bound for the random values
     :arg max: The (inclusive) upper bound for the random values
-    :arg seed: The seed to use when creating the ``randomStream``
+    :arg seed: The seed to use to create the ``randomStream``
   */
   proc fillRandom(ref arr: [] ?t, min: t, max: t, seed: int)
     where isNumericOrBoolType(t) && arr.isRectangular()
@@ -308,7 +311,7 @@ module Random {
     exactly once in the array in a pseudo-random order.
 
     :arg arr: The array to store the permutation in
-    :arg seed: The seed to use when initializing a ``randomStream``
+    :arg seed: The seed to use when creating the ``randomStream``
   */
   @unstable("'permutation' is unstable and subject to change")
   proc permutation(ref arr: [?d] ?t, seed: int)
@@ -347,7 +350,124 @@ module Random {
   }
 
   /*
-    TODO: type documentation
+    A :record:`randomStream` represents a stream of pseudorandom numbers of a
+    particular type. Numeric and bool types are supported.
+
+
+    Conceptually it can be thought of as an indexed sequence of numbers ranging
+    from 0 to infinity. Each index in the sequence corresponds to a random
+    number of the specified type. This allows for the generation of random
+    numbers in parallel, where each task involved in the parallel iteration can
+    request random numbers within a particular range and traverse that range of
+    the sequence independently of other tasks (see :proc:`randomStream.iterate`
+    (*unstable*)).
+
+    Several high-level methods are provided to generate random numbers or
+    to manipulate arrays using random numbers:
+
+        * :proc:`randomStream.fill` to fill an array with random numbers
+        * :proc:`randomStream.shuffle` to randomly re-arrange the elements of an
+          array
+        * :proc:`randomStream.permutation` to create a random permutation of
+          an arrays domain, and store it in the array (*unstable*)
+        * :proc:`randomStream.choice` to randomly sample from an array or
+          range (*unstable*)
+
+    Note that these methods have top-level counterparts that will internally
+    create a ``randomStream`` and then call the corresponding method on it. These
+    can be convenient for one-off uses, but if you are generating many random
+    numbers, it is generally more efficient to create a ``randomStream`` and use
+    it repeatedly.
+
+    An individual random number can be requested using :proc:`randomStream.getNext`
+    which will advance the stream to the next position and return the value at
+    that position. The position of the stream can also be manipulated using:
+
+      * :proc:`randomStream.skipToNth` to skip to a particular position in the
+        stream
+      * :proc:`randomStream.getNth` to skip to a particular position in the
+        stream and return the value at that position (*unstable*)
+
+    A ``randomStream`` can be initialized with a seed value. When not provided
+    explicitly, a seed will be generated in an implementation specific manner
+    that depends upon the current time (*this behavior is currently unstable*).
+
+    When copied, the ``randomStream``'s seed, state, and position will also be
+    copied. This means that the copy will produce the same sequence of random
+    numbers as the original without affecting the original.
+
+    .. note:: **Implementation Details:**
+
+      This stream is implemented using the PCG random number generator algorithm.
+      See http://www.pcg-random.org/ and the paper, `PCG: A Family
+      of Simple Fast Space-Efficient Statistically Good Algorithms for Random
+      Number Generation` by M.E. O'Neill.
+
+      This record builds upon the :record:`~PCGRandomLib.pcg_setseq_64_xsh_rr_32_rng`
+      PCG RNG which has 64 bits of state and 32 bits of output.
+
+      While the PCG RNG used here is believed to have good statistical
+      properties, it is not suitable for generating key material for encryption
+      since the output of this RNG may be predictable.
+      Additionally, if statistical properties of the random numbers are very
+      important, another strategy may be required.
+
+      We have good confidence that the random numbers generated by this record
+      match the C PCG reference implementation and have specifically verified
+      equal output given the same seed. However, this implementation differs
+      from the C PCG reference implementation in how it produces random integers
+      within particular bounds (with :proc:`randomStream.getNext` using ``min``
+      and ``max`` arguments). In addition, this implementation directly supports
+      the generation of random ``real`` values, unlike the C PCG implementation.
+
+      Smaller numbers, such as ``uint(8)`` or ``uint(16)``, are generated from
+      the high-order bits of the 32-bit output.
+
+      To generate larger numbers, several 32-bit-output RNGs are composed
+      together. Each of these 32-bit RNGs has a different sequence constant and
+      so will be independent and uncorrelated. For example, to generate 128-bit
+      complex numbers, this RNG will use four 32-bit PCG RNGs with different
+      sequence constants. One impact of this approach is that this implementation
+      will only generate 2**64 different complex numbers with a given seed
+      (for example).
+
+      This record also supports generating integers within particular bounds.
+      When that is required, it uses a strategy different from the PCG
+      reference implementation to support efficient parallel iteration. In
+      particular, when more than 1 random value is required as part of
+      generating a value in a range, conceptually it uses more composed
+      RNGs (as with the 32x2 strategy). Each new value beyond the first that
+      is computed will be computed with a different RNG. This strategy is meant
+      to avoid statistical bias. While we have tested this strategy to our
+      satisfaction, it has not been subject to rigorous analysis and may
+      have undesirable statistical properties.
+
+      When generating a real, imaginary, or complex number, this implementation
+      uses the strategy of generating a 64-bit unsigned integer and then
+      multiplying it by 2.0**-64 in order to convert it to a floating point
+      number. While this does construct a uniform distribution on rounded
+      floating point values, it leaves out many possible real values (for
+      example, 2**-128). We believe that this strategy has reasonable
+      statistical properties. One side effect of this strategy is that the real
+      number 1.0 can be generated because of rounding. The real number 0.0 can
+      be generated because PCG can produce the value 0 as a random integer.
+
+      We have tested this implementation with TestU01 (available at
+      http://simul.iro.umontreal.ca/testu01/tu01.html ).  We measured our
+      implementation with TestU01 1.2.3 and the Crush suite, which consists of
+      144 statistical tests. The results were:
+
+       * no failures for generating uniform reals
+       * 1 failure for generating 32-bit values (which is also true for the
+         reference version of PCG with the same configuration)
+       * 0 failures for generating 64-bit values (which we provided to TestU01
+         as 2 different 32-bit values since it only accepts 32 bits at a time)
+       * 0 failures for generating bounded integers (which we provided to
+         TestU01 by requesting values in [0..,2**31+2**30+1) until we
+         had two values < 2**31, removing the top 0 bit, and then combining
+         the top 16 bits into the value provided to TestU01).
+
+
   */
   record randomStream: writeSerializable {
     /*
