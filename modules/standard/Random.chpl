@@ -66,7 +66,6 @@ module Random {
 
   public use RandomSupport;
   public use PCGRandom;
-  import Set.set;
   private use IO;
   private use Math;
 
@@ -865,6 +864,7 @@ module Random {
   /* _choice branch for uniform distribution */
   proc _choiceUniform(ref stream, X: domain, size: ?sizeType, replace: bool) throws
   {
+    // private import Set;
     const low = X.low,
           stride = abs(X.stride);
 
@@ -907,7 +907,7 @@ module Random {
         }
       } else {
         if numElements < log2(X.sizeAs(X.idxType)) {
-          var indices: set(int);
+          var indices: domain(int, parSafe=false);
           var i: int = 0;
           while i < numElements {
             var randVal;

@@ -61,8 +61,7 @@
   */
   module NPBRandom {
 
-    use Random.RandomSupport;
-    use ChapelLocks;
+    private use ChapelLocks;
     private use IO;
 
     private proc oddTimeSeed(): int(64) {
@@ -153,8 +152,8 @@
         :arg eltType: The element type to be generated.
         :type eltType: `type`
 
-        :arg seed: The seed to use for the PRNG.  Defaults to
-          `oddCurrentTime` from :type:`~RandomSupport.SeedGenerator`.
+        :arg seed: The seed to use for the PRNG. Defaults to an
+            implementation specific value based on the current time.
         :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.
@@ -162,7 +161,7 @@
 
       */
       proc init(type eltType = real(64),
-                seed: int(64) = _SeedGenerator.oddCurrentTime,
+                seed: int(64) = oddTimeSeed(),
                 param parSafe: bool = true) {
         use HaltWrappers;
 
