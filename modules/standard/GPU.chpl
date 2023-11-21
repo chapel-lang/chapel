@@ -404,6 +404,22 @@ module GPU
       compilerError("Unexpected reduction kind in doGpuReduce: ", op);
     }
 
+    param cTypeName = if      t==int(8)   then "int8_t"
+                      else if t==int(16)  then "int16_t"
+                      else if t==int(32)  then "int32_t"
+                      else if t==int(64)  then "int64_t"
+                      else if t==uint(8)  then "uint8_t"
+                      else if t==uint(16) then "uint16_t"
+                      else if t==uint(32) then "uint32_t"
+                      else if t==uint(64) then "uint64_t"
+                      else if t==real(32) then "float"
+                      else if t==real(64) then "double"
+                      else                     "unknown";
+
+    if cTypeName == "unknown" {
+      compilerError("Arrays with ", t:string,
+                    " elements cannot be reduced with gpu*Reduce functions");
+    }
 
     if CHPL_GPU == "amd" {
       compilerError("gpu*Reduce functions are not supported on AMD GPUs");
@@ -422,24 +438,6 @@ module GPU
       compilerAssert(CHPL_GPU=="nvidia");
     }
 
-
-    proc chplTypeToCTypeName(type t) param {
-      select t {
-        when int(8)   do return "int8_t";
-        when int(16)  do return "int16_t";
-        when int(32)  do return "int32_t";
-        when int(64)  do return "int64_t";
-        when uint(8)  do return "uint8_t";
-        when uint(16) do return "uint16_t";
-        when uint(32) do return "uint32_t";
-        when uint(64) do return "uint64_t";
-        when real(32) do return "float";
-        when real(64) do return "double";
-        otherwise do
-          compilerError("Arrays with ", t:string, " elements cannot be reduced");
-      }
-      return "unknown";
-    }
 
     proc getExternFuncName(param op: string, type t) param: string {
       return "chpl_gpu_"+op+"_reduce_"+chplTypeToCTypeName(t);
