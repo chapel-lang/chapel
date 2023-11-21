@@ -426,7 +426,7 @@ proc create_and_analyze_graph(ref Pairs)
 
   // re-seed the RNG if seed is 0.
   if seed == 0 {
-    seed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
+    seed = NPBRandom.oddTimeSeed();
   }
 
 

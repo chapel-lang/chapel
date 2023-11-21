@@ -4,7 +4,7 @@ public use NPBRandom;
 public use Time;
 
 // random seed for arrays
-config const randSeed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
+config const randSeed = oddTimeSeed();
 
 // Control output.
 config const printC = true,

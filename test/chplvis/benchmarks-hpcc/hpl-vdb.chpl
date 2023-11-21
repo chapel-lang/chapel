@@ -43,7 +43,7 @@ config const epsilon = 2.0e-15;
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
-             seed = if useRandomSeed then (timeSinceEpoch().totalSeconds()*2_000_000+1):int else 31415;
+             seed = if useRandomSeed then oddTimeSeed() else 31415;
 
 //
 // Configuration constants to control what's printed -- benchmark

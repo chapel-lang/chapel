@@ -5,7 +5,7 @@
 public use Random;
 private use Time;
 
-config const randSeed = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
+config const randSeed = NPBRandom.oddTimeSeed();
 
 var emptyArray: [1..0] int(8),
   realArray: [1..1000] real,

@@ -1133,7 +1133,7 @@ config const printMatrices : bool = false;
 config const printNonZeros : bool = false;
 config const printPermutations: bool = false;
 config const padPrintedMatrixElements = true;
-config const seed : int = (timeSinceEpoch().totalSeconds()*2_000_000+1):int;
+config const seed : int = NPBRandom.oddTimeSeed();
 
 enum ToposortImplementation { Serial, Parallel, Distributed };
 config const implementation : ToposortImplementation = ToposortImplementation.Parallel;
