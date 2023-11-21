@@ -440,7 +440,7 @@ module GPU
 
 
     proc getExternFuncName(param op: string, type t) param: string {
-      return "chpl_gpu_"+op+"_reduce_"+chplTypeToCTypeName(t);
+      return "chpl_gpu_"+op+"_reduce_"+cTypeName;
     }
 
     proc isValReduce(param op) param {
