@@ -520,7 +520,7 @@ marked with * are covered in our nightly testing configuration.
 
   * Hardware: RTX A2000, P100*, V100*, A100* and H100
 
-  * Software: CUDA 11.0*, 11.6, 11.8*, 12.0*
+  * Software: CUDA 11.3*, 11.6, 11.8*, 12.0*
 
 * AMD
 

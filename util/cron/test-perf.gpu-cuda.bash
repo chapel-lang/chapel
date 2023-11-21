@@ -6,7 +6,7 @@ CWD=$(cd $(dirname $0) ; pwd)
 source $CWD/common-slurm-gasnet-cray-cs.bash
 source $CWD/common-native-gpu.bash
 
-module load cudatoolkit
+module load cudatoolkit/11.3
 
 export CHPL_GPU=nvidia
 export CHPL_LAUNCHER_PARTITION=stormP100
