@@ -178,7 +178,6 @@ Constant and Function Definitions for Math
 module Math {
   private import HaltWrappers;
   private use CTypes;
-  private import BitOps;
   public use AutoMath;
 
   //////////////////////////////////////////////////////////////////////////
