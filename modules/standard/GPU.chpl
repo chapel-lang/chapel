@@ -413,8 +413,8 @@ module GPU
         when "sum" do return + reduce A;
         when "min" do return min reduce A;
         when "max" do return max reduce A;
-        when "minloc" do return minloc reduce zip (A.domain, A);
-        when "maxloc" do return maxloc reduce zip (A.domain, A);
+        when "minloc" do return minloc reduce zip (A, A.domain);
+        when "maxloc" do return maxloc reduce zip (A, A.domain);
         otherwise do compilerError("Unknown reduction operation: ", op);
       }
     }
@@ -458,22 +458,22 @@ module GPU
       compilerAssert(isTupleValue(val));
       if isTupleValue(accum) {
         compilerAssert(isValIdxReduce(op));
-        compilerAssert(val[1].type == accum[1].type);
+        compilerAssert(val[0].type == accum[0].type);
 
       }
       else {
         compilerAssert(isValReduce(op));
-        compilerAssert(val[1].type == accum.type);
+        compilerAssert(val[0].type == accum.type);
       }
 
       select op {
-        when "sum" do accum += val[1];
-        when "min" do accum = min(accum, val[1]);
-        when "max" do accum = max(accum, val[1]);
+        when "sum" do accum += val[0];
+        when "min" do accum = min(accum, val[0]);
+        when "max" do accum = max(accum, val[0]);
         when "minloc" do
-          if accum[1] > val[1] then accum = (val[0]+baseOffset, val[1]);
+          if accum[0] > val[0] then accum = (val[0], val[1]+baseOffset);
         when "maxloc" do
-          if accum[1] < val[1] then accum = (val[0]+baseOffset, val[1]);
+          if accum[0] < val[0] then accum = (val[0], val[1]+baseOffset);
         otherwise do compilerError("Unknown reduction operation: ", op);
       }
     }
@@ -520,9 +520,9 @@ module GPU
       ret = retTmp;
     }
     else if isValIdxReduce(op) {
-      var retTmp: (int, t);
-      if op == "minloc" then retTmp[1] = max(t);
-      else if op == "maxloc" then retTmp[1] = min(t);
+      var retTmp: (t, int);
+      if op == "minloc" then retTmp[0] = max(t);
+      else if op == "maxloc" then retTmp[0] = min(t);
       ret = retTmp;
     }
     else {
@@ -536,13 +536,13 @@ module GPU
       var curIdx: int(32) = -1; // should remain -1 for sum, min, max
       var curVal: t;
       reduce_fn(basePtr+offset, size, curVal, curIdx);
-      subReduceValIdx(op, offset, ret, (curIdx, curVal));
+      subReduceValIdx(op, offset, ret, (curVal, curIdx));
       if gpuDebugReduce then
-        writef(" (curIdx=%i curVal=%i ret=%?)\n", curIdx, curVal, ret);
+        writef(" (curVal=%i curIdx=%i ret=%?)\n", curVal, curIdx, ret);
     }
 
     if isValIdxReduce(op) then
-      ret[0] += A.domain.first;
+      ret[1] += A.domain.first;
 
     return ret;
   }
