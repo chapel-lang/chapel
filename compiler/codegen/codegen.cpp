@@ -1902,8 +1902,8 @@ static void codegen_header(std::set<const char*> & cnames,
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.push_back(fn2);
-    ftableMap[fn2] = ftableVec.size()-1;
+      ftableVec.push_back(fn2);
+      ftableMap[fn2] = ftableVec.size()-1;
     }
   }
 
@@ -2814,7 +2814,7 @@ static void codegenPartTwo() {
 
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
-  // currently in codegen_header.
+  // currently in codegenPartOne.
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
@@ -2893,6 +2893,7 @@ void codegen() {
   if (isFullGpuCodegen()) {
     // flush stdout before forking process so buffered output doesn't get copied over
     fflush(stdout);
+    fflush(stderr);
 
     pid_t pid = fork();
 
