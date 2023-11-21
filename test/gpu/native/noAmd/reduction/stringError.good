@@ -1,5 +1,4 @@
 warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
-$CHPL_HOME/modules/standard/GPU.chpl:prediffed: In function 'doGpuReduce':
-$CHPL_HOME/modules/standard/GPU.chpl:prediffed: error: Arrays with string elements cannot be reduced
-  $CHPL_HOME/modules/standard/GPU.chpl:prediffed: called as doGpuReduce(param op = "sum", A: [domain(1,int(64),one)] string) from function 'gpuSumReduce'
+$CHPL_HOME/modules/standard/GPU.chpl:prediffed: In function 'gpuSumReduce':
+$CHPL_HOME/modules/standard/GPU.chpl:prediffed: error: Arrays with string elements cannot be reduced with gpu*Reduce functions
   stringError.chpl:prediffed: called as gpuSumReduce(A: [domain(1,int(64),one)] string)

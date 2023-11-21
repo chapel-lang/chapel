@@ -59,13 +59,13 @@ Testing type real(32)
 sum: 4950.0
 min: 0.0
 max: 99.0
-minloc: (0, 0.0)
-maxloc: (99, 99.0)
+minloc: (0.0, 0)
+maxloc: (99.0, 99)
 
 Testing type real(64)
 sum: 4950.0
 min: 0.0
 max: 99.0
-minloc: (0, 0.0)
-maxloc: (99, 99.0)
+minloc: (0.0, 0)
+maxloc: (99.0, 99)
 

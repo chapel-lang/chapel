@@ -186,6 +186,11 @@ void runPasses(PhaseTracker& tracker) {
   setupLogfiles();
 
   if (printPasses == true || printPassesFile != 0) {
+    if (fDriverPhaseOne) {
+      Phase::ReportText("Timing for driver phase one\n--------------\n");
+    } else if (fDriverPhaseTwo) {
+      Phase::ReportText("\n\nTiming for driver phase two\n--------------\n");
+    }
     tracker.ReportPass();
   }
 
