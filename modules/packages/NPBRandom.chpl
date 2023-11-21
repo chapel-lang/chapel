@@ -59,12 +59,13 @@
        `imag(64)`, and `complex(128)` complex values.
 
   */
+  @unstable("The 'NPBRandom' module is unstable and subject to change")
   module NPBRandom {
 
     private use ChapelLocks;
     private use IO;
 
-    private proc oddTimeSeed(): int(64) {
+    proc oddTimeSeed(): int(64) {
       use Time;
       const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
       const oddseed = if seed % 2 == 0 then seed + 1 else seed;
@@ -152,8 +153,8 @@
         :arg eltType: The element type to be generated.
         :type eltType: `type`
 
-        :arg seed: The seed to use for the PRNG. Defaults to an
-            implementation specific value based on the current time.
+        :arg seed: The seed to use for the RNG. Defaults to a
+            value based on the current time.
         :type seed: `int(64)`
 
         :arg parSafe: The parallel safety setting.  Defaults to `true`.

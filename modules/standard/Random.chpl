@@ -353,7 +353,6 @@ module Random {
     A :record:`randomStream` represents a stream of pseudorandom numbers of a
     particular type. Numeric and bool types are supported.
 
-
     Conceptually it can be thought of as an indexed sequence of numbers ranging
     from 0 to infinity. Each index in the sequence corresponds to a random
     number of the specified type. This allows for the generation of random
@@ -361,6 +360,11 @@ module Random {
     request random numbers within a particular range and traverse that range of
     the sequence independently of other tasks (see :proc:`randomStream.iterate`
     (*unstable*)).
+
+    Although parallel iteration is supported via the ``iterate`` method, the
+    type itself is not thread-safe. In particular, it is not safe to call
+    methods such as ``getNext`` or ``fill`` on a ``randomStream`` from multiple
+    tasks concurrently.
 
     Several high-level methods are provided to generate random numbers or
     to manipulate arrays using random numbers:
@@ -686,11 +690,11 @@ module Random {
 
       .. note::
 
-        For integers, this class uses a strategy for generating a value
+        For integers, this type uses a strategy for generating a value
         in a particular range that has not been subject to rigorous
         study and may have statistical problems.
 
-        For real numbers, this class generates a random value in [max, min]
+        For real numbers, this type generates a random value in [max, min]
         by computing a random value in [0,1] and scaling and shifting that
         value. Note that not all possible floating point values in
         the interval [`min`, `max`] can be constructed in this way.
