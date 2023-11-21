@@ -42,6 +42,7 @@ extern bool chpl_gpu_use_stream_per_task;
 
 #ifdef HAS_GPU_LOCALE
 
+__attribute__ ((format (printf, 1, 2)))
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
   if (chpl_gpu_debug) {
     va_list args;
