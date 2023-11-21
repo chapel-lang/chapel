@@ -207,7 +207,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_START_TIMER(prep_time);
 
   void ***kernel_params = chpl_mem_alloc(
-      nargs * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+     (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  //         ^ +2 for the ln and fn arguments that we add to the end of the array
 
   assert(function);
   assert(kernel_params);
@@ -249,6 +250,14 @@ static void chpl_gpu_launch_kernel_help(int ln,
                    i, kernel_params[i]);
     }
   }
+
+  // add the ln and fn arguments to the end of the array
+  // These arguments only make sense when the kernel lives inside of standard
+  // module code and CHPL_DEVELOPER is not set since the generated kernel function
+  // will have two extra formals to account for the line and file num.
+  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
+  kernel_params[nargs] = (void**)(&ln);
+  kernel_params[nargs+1] = (void**)(&fn);
 
   CHPL_GPU_STOP_TIMER(prep_time);
   CHPL_GPU_START_TIMER(kernel_time);
