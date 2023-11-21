@@ -65,6 +65,49 @@
     use ChapelLocks;
     private use IO;
 
+    private proc oddTimeSeed(): int(64) {
+    use Time;
+    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+    return oddseed;
+  }
+
+    /*
+      Fill a rectangular array of numeric values with pseudorandom values in
+      parallel using a new :class:`NPBRandomStream`. The first `arr.size` values
+      from the stream will be assigned to the array's elements in row-major
+      order. The parallelization strategy is determined by the array.
+
+      :arg arr: An array of numeric values
+      :arg seed: The seed to use to create the ``NPBRandomStream``
+
+    */
+    proc fillRandom(ref arr: [] ?t, seed: int)
+      where isRealOrComplexType(t) && arr.isRectangular()
+    {
+      var rs = new NPBRandomStream(t, seed, parSafe=false);
+      rs.fillRandom(arr);
+    }
+
+
+    /*
+      Fill a rectangular array of numeric values with pseudorandom values in
+      parallel using a new :class:`NPBRandomStream`. The first `arr.size` values
+      from the stream will be assigned to the array's elements in row-major
+      order. The parallelization strategy is determined by the array.
+
+      .. note:: a seed will be generated in an implementation specific manner
+                that depends on the current time.
+
+      :arg arr: An array of numeric values
+    */
+    proc fillRandom(ref arr: [] ?t)
+      where isRealOrComplexType(t) && arr.isRectangular()
+    {
+      var rs = new NPBRandomStream(t, parSafe=false);
+      rs.fillRandom(arr);
+    }
+
     /*
       Models a stream of pseudorandom numbers.  See the module-level
       notes for :mod:`NPBRandom` for details on the PRNG used.

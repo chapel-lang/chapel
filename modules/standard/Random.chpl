@@ -130,7 +130,7 @@ module Random {
     order. The parallelization strategy is determined by the array.
 
     :arg arr: An array of numeric values
-    :arg seed: The seed to use to the ``randomStream``
+    :arg seed: The seed to use to create the ``randomStream``
 
   */
   proc fillRandom(ref arr: [] ?t, seed: int)
