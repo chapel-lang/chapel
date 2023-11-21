@@ -179,8 +179,6 @@ static Vec<const char*> sModNameList;
 static Vec<const char*> sModDoneSet;
 static Vec<VisibilityStmt*> sModReqdByInt;
 
-static std::set<std::string> gDynoGenLibPaths;
-
 void addInternalModulePath(const ArgumentDescription* desc, const char* newpath) {
   sIntModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
@@ -189,10 +187,6 @@ void addInternalModulePath(const ArgumentDescription* desc, const char* newpath)
 void addStandardModulePath(const ArgumentDescription* desc, const char* newpath) {
   sStdModPath.add(astr(newpath));
   gDynoPrependInternalModulePaths.push_back(newpath);
-}
-
-void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
-  gDynoGenLibPaths.insert(std::string(newpath));
 }
 
 void setupModulePaths() {
@@ -484,8 +478,8 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (gDynoGenLibPaths.size() > 0) {
-    for (std::string path : gDynoGenLibPaths) {
+  if (gDynoGenLibSourcePaths.size() > 0) {
+    for (UniqueString path : gDynoGenLibSourcePaths) {
       if (path == "<standard>") {
         std::vector<UniqueString> todo;
         for (auto& path : parsedPaths) {
@@ -499,12 +493,12 @@ static void parseCommandLineFiles() {
                                              "chpl_standard.dyno");
         libWriter.writeAllSections();
       } else {
-        std::string justFile = path.substr(path.find_last_of("/") + 1);
+        std::string pathS = path.str();
+        std::string justFile = pathS.substr(pathS.find_last_of("/") + 1);
         auto dot = justFile.find_last_of(".");
         std::string noExt = justFile.substr(0, dot);
-        auto ustr = chpl::UniqueString::get(gContext, path);
         auto libWriter =
-          chpl::libraries::LibraryFileWriter(gContext, {ustr}, noExt + ".dyno");
+          chpl::libraries::LibraryFileWriter(gContext, {path}, noExt + ".dyno");
         libWriter.writeAllSections();
       }
     }

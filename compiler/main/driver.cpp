@@ -389,21 +389,11 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
-// TODO: with the updates to filesystem that utilize GetExecutablePath,
-// do we still need this block comment?
-/* Note -- LLVM provides a way to get the path to the executable...
-// This function isn't referenced outside its translation unit, but it
-// can't use the "static" keyword because its address is used for
-// GetMainExecutable (since some platforms don't support taking the
-// address of main, and some platforms can't implement GetMainExecutable
-// without being given the address of a function in the main executable).
-llvm::sys::Path GetExecutablePath(const char *Argv0) {
-  // This just needs to be some symbol in the binary; C++ doesn't
-  // allow taking the address of ::main however.
-  void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-  return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
-}
-*/
+// support for separate compilation
+// what source code paths were requested to be compiled into the lib?
+std::vector<UniqueString> gDynoGenLibSourcePaths;
+// what top-level module names as astrs were requested to be stored in the lib?
+std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 static bool isMaybeChplHome(const char* path)
 {
@@ -1180,6 +1170,10 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   } else {
     ccwarnings = false;
   }
+}
+
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibSourcePaths.push_back(UniqueString::get(gContext, newpath));
 }
 
 /*

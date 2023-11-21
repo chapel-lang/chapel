@@ -27,7 +27,9 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
 
 class Timer;
 
@@ -324,6 +326,9 @@ extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 extern std::vector<std::string> gDynoPrependInternalModulePaths;
 extern std::vector<std::string> gDynoPrependStandardModulePaths;
+
+extern std::vector<UniqueString> gDynoGenLibSourcePaths;
+extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 extern bool fForeachIntents;
 
