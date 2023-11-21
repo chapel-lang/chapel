@@ -350,8 +350,8 @@ proc test_panelSolve(rprt = true) : bool {
     var rand = new randomStream(real);
 
     var piv : [1..8] int = [i in 1..8] i;
-    var A : [1..8, 1..9] real =
-        [(i,j) in {1..8, 1..9}] (rand.getNext() * 10000):int % 100 + 1;
+    var A : [1..8, 1..9] real;
+    for (i, j) in A.domain do A[i,j] = (rand.getNext() * 10000):int % 100 + 1;
     var AOrig = A;
 
     var AOrig2 = A;
