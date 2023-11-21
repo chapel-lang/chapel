@@ -78,7 +78,7 @@ writeln("\tR2D32: ", checkRNG(R2D32, aT2D32), " errors");
 
 
 writeln("fill reindexed arrays");
-proc foo(rng, D: domain(?), ref A: [D]) {
+proc foo(ref rng, D: domain(?), ref A: [D]) {
   rng.fill(A);
 }
 resetTempArrays();

@@ -66,11 +66,14 @@
     private use IO;
 
     private proc oddTimeSeed(): int(64) {
-    use Time;
-    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
-    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-    return oddseed;
-  }
+      use Time;
+      const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+      const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+      return oddseed;
+    }
+
+    private proc isRealOrComplexType(type t) param do
+      return isRealType(t) || isImagType(t) || isComplexType(t);
 
     /*
       Fill a rectangular array of numeric values with pseudorandom values in

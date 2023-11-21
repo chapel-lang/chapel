@@ -7,7 +7,8 @@ class A {
   proc init(N: int) {
     var R = new randomStream(real, 13);
     this.X = [x in 1..N] x;
-    var Y = [x in this.X] R.getNext();
+    var y: [this.X] real;
+    for i in this.X do y[i] = R.getNext();
   }
 }
 var ownA = new owned A(100);

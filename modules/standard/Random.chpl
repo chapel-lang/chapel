@@ -1497,7 +1497,7 @@ module Random {
 
       proc skipToNth(n: integral) throws {
         _lock(); defer _unlock();
-        return this.pcg.skipToNth(n);
+        this.pcg.skipToNth(n);
       }
 
       proc getNth(n: integral): eltType throws {
@@ -1568,7 +1568,7 @@ module Random {
         _lock();
         const start = this.pcg._iterateStart(D);
         _unlock();
-        return this.pcg._iterate(D, resultType, start, min, max);
+        return this.pcg._iterate(D, resultType, min, max, start);
       }
 
       // Forward the leader iterator as well.
@@ -1997,6 +1997,7 @@ module Random {
         return this._iterate(D, resultType, min, max, start);
       }
 
+      pragma "fn returns iterator"
       proc ref _iterate(D: domain, type resultType=eltType,
                    min: resultType, max: resultType, start: int) {
         return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
