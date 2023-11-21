@@ -72,9 +72,12 @@ void LibraryFileWriter::fail(const char* msg) {
   ok = false;
 }
 
-void LibraryFileWriter::gatherTopLevelModules() {
+std::vector<std::pair<const uast::Module*, UniqueString>>
+LibraryFileWriter::gatherTopLevelModules(Context* context,
+                                         std::vector<UniqueString> paths) {
+  std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
   // Parse the paths and gather a vector of top-level modules.
-  for (auto path : inputFiles) {
+  for (auto path : paths) {
     path = cleanLocalPath(context, path);
     UniqueString empty;
     std::vector<const uast::Module*> modsInFile =
@@ -83,6 +86,7 @@ void LibraryFileWriter::gatherTopLevelModules() {
       modulesAndPaths.push_back(std::make_pair(mod, path));
     }
   }
+  return modulesAndPaths;
 }
 
 void LibraryFileWriter::openFile() {
@@ -659,7 +663,7 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
 }
 
 bool LibraryFileWriter::writeAllSections() {
-  gatherTopLevelModules();
+  modulesAndPaths = gatherTopLevelModules(context, inputFiles);
   openFile();
   writeHeader();
 
@@ -716,6 +720,19 @@ bool LibraryFileWriter::writeAllSections() {
   }
 
   return ok;
+}
+
+std::vector<UniqueString>
+LibraryFileWriter::gatherTopLevelModuleNames(Context* context,
+                                             std::vector<UniqueString> paths) {
+  // TODO: Should this be a query / be supported by a query?
+  std::vector<UniqueString> ret;
+  auto v = gatherTopLevelModules(context, paths);
+  for (auto pair : v) {
+    const uast::Module* mod = pair.first;
+    ret.push_back(mod->name());
+  }
+  return ret;
 }
 
 

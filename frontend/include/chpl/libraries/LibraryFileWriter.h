@@ -98,8 +98,9 @@ class LibraryFileWriter {
       set 'ok' to 'false' */
   void fail(const char* msg);
 
-  /** Gather the top-level modules */
-  void gatherTopLevelModules();
+  /** Gather the top-level modules and the paths they came from */
+  static std::vector<std::pair<const uast::Module*, UniqueString>>
+  gatherTopLevelModules(Context* context, std::vector<UniqueString> paths);
 
   /** Open the file */
   void openFile();
@@ -177,6 +178,11 @@ class LibraryFileWriter {
     error in the process.
     */
   bool writeAllSections();
+
+  /** Gather the names of the top-level modules in the source
+      code files from 'paths' */
+  static std::vector<UniqueString>
+  gatherTopLevelModuleNames(Context* context, std::vector<UniqueString> paths);
 };
 
 
