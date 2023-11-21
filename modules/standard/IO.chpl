@@ -3611,11 +3611,11 @@ type DefaultDeserializer = defaultDeserializer;
 @chpldoc.nodoc
 config param warnBinaryStructured : bool = true;
 
-private proc warnBinary(type t) {
+private proc warnBinary(type t, param depth : int) {
   if warnBinaryStructured {
     if t == string || isClassType(t) {
       param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning.";
-      compilerWarning(msg);
+      compilerWarning(msg, depth);
     }
   }
 }
@@ -6495,10 +6495,6 @@ proc fileReader._deserializeOne(type readType, loc:locale) throws {
   reader._home = _home;
   reader._readWriteThisFromLocale = loc;
 
-  if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
-    warnBinary(readType);
-  }
-
   return reader.deserializer.deserializeType(reader, readType);
 }
 
@@ -6516,10 +6512,6 @@ proc fileReader._deserializeOne(ref x:?t, loc:locale) throws {
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     reader._readOne(reader._kind, x, reader.getLocaleOfIoRequest());
     return;
-  }
-
-  if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
-    warnBinary(t);
   }
 
   reader.deserializer.deserializeValue(reader, x);
@@ -6564,10 +6556,6 @@ proc fileWriter._serializeOne(const x:?t, loc:locale) throws {
   if t == chpl_ioLiteral || t == chpl_ioNewline || t == _internalIoBits || t == _internalIoChar {
     writer._writeOne(writer._kind, x, writer.getLocaleOfIoRequest());
     return;
-  }
-
-  if serializerType == binarySerializer && this._kind == _iokind.dynamic {
-    warnBinary(x.type);
   }
 
   try writer.serializer.serializeValue(writer, x);
@@ -7331,6 +7319,9 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if deserializerType != nothing {
+        if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+          warnBinary(args[i].type, 3);
+        }
         _deserializeOne(args[i], origLocale);
       } else {
         _readOne(_kind, args[i], origLocale);
@@ -9473,6 +9464,9 @@ proc fileReader.read(type t) throws {
     try this.lock(); defer { this.unlock(); }
 
     if deserializerType != nothing {
+      if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+        warnBinary(t, 2);
+      }
       __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
       pragma "no auto destroy"
@@ -9571,6 +9565,9 @@ inline proc fileWriter.write(const args ...?k) throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if serializerType != nothing {
+        if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+          warnBinary(args(i).type, 2);
+        }
         this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(_kind, args(i), origLocale);
