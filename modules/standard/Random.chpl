@@ -70,12 +70,7 @@ module Random {
   private use IO;
   private use Math;
 
-  @deprecated("The 'NBPRandom' submodule has been moved to its own package module; please use or import it directly");
-  module NPBRandom {
-    public use NPBRandom;
-  }
-
-  private import NPBRandom.NPBRandomStream;
+  public import NPBRandom;
 
   @chpldoc.nodoc
   record _RNG {
@@ -87,7 +82,7 @@ module Random {
      See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
      these algorithms.
    */
-  @deprecated("'RNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`~NPBRandom` package module")
+  @deprecated("'RNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`NPBRandom` package module")
   type RNG = _RNG;
 
   @chpldoc.nodoc
@@ -99,7 +94,7 @@ module Random {
 
   @deprecated("the RandomStream class is deprecated; please use the :record:`randomStream` record instead")
   type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
-                                                 else NPBRandomStream;
+                                                 else NPBRandom.NPBRandomStream;
 
 
   private proc isNumericOrBoolType(type t) param do
@@ -811,7 +806,7 @@ module Random {
                                        parSafe=parSafe,
                                        eltType=eltType);
     else if algorithm == _RNG.NPB then
-      return new owned NPBRandomStream(seed=seed,
+      return new owned NPBRandom.NPBRandomStream(seed=seed,
                                        parSafe=parSafe,
                                        eltType=eltType);
     else
