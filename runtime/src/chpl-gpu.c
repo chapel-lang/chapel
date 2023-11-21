@@ -284,16 +284,6 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  nargs,
                  num_threads);
 
-  if (num_threads <= 0) {
-    // this was called for a degenerate loop, no need to launch
-    CHPL_GPU_DEBUG("Kernel launcher returning (num_threads=%ld). (subloc %d)\n"
-                   "\tKernel: %s\n",
-                   num_threads,
-                   chpl_task_getRequestedSubloc(),
-                   name);
-    return;
-  }
-
   va_list args;
   va_start(args, nargs);
 
