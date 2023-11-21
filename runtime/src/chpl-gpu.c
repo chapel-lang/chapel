@@ -808,7 +808,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%ld file:%s line:%d\n", size,
+  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
   void *ptr = NULL;
