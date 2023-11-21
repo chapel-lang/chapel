@@ -50,7 +50,6 @@ class When final : public AstNode {
   }
 
   void serializeInner(Serializer& ser) const override {
-    serializeChildren(ser);
     ser.writeVInt(numCaseExprs_);
     ser.write(blockStyle_);
   }
