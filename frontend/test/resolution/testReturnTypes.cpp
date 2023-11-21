@@ -950,6 +950,52 @@ static void testSelectTypes() {
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
   }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements without otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+      }
+
+      var y : T;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      //{"string", "string"} //future test for init resolution DCE
+                      };
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements with otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+        otherwise {}
+      }
+      var y : real;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      //{"string", "real(64)"} //future test for init resolution DCE
+                      };
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
 }
 
 static void testSelectParams() {
