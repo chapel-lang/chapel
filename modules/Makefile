@@ -122,7 +122,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/CopyAggregation.chpl \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
-	packages/DistributedBag_DFS.chpl \
+	packages/DistributedBag.chpl \
 	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \

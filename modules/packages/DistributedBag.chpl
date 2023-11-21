@@ -80,13 +80,13 @@
   Usage
   _____
 
-  To use :record:`DistBag_DFS`, the initializer must be invoked explicitly to
+  To use :record:`DistBag`, the initializer must be invoked explicitly to
   properly initialize the data structure. Using the default state without
   initializing will result in a halt.
 
   .. code-block:: chapel
 
-    var bag = new DistBag_DFS(int, targetLocales=ourTargetLocales);
+    var bag = new DistBag(int, targetLocales=ourTargetLocales);
 
   While the bag is safe to use in a distributed manner, each node always operates
   on its privatized instance. This means that it is easy to add data in bulk,
@@ -103,7 +103,7 @@
   _______
 */
 
-module DistributedBag_DFS
+module DistributedBag
 {
   public use Collection;
   private use IO;
@@ -168,7 +168,7 @@ module DistributedBag_DFS
   /* config const distributedBagWorkStealingRatio: real = 0.25; */
 
   /*
-    Reference counter for DistributedBag_DFS.
+    Reference counter for DistributedBag.
   */
   @chpldoc.nodoc
   class DistributedBagRC
@@ -194,10 +194,10 @@ module DistributedBag_DFS
     of the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag_DFS : serializable
+  record DistBag : serializable
   {
     /*
-      The type of the elements contained in this DistBag_DFS.
+      The type of the elements contained in this DistBag.
     */
     type eltType;
 
@@ -227,27 +227,27 @@ module DistributedBag_DFS
     @chpldoc.nodoc
     inline proc _value
     {
-      if (_pid == -1) then halt("DistBag_DFS is uninitialized.");
+      if (_pid == -1) then halt("DistBag is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     @chpldoc.nodoc
     proc readThis(f) throws {
-      compilerError("Reading a DistBag_DFS is not supported");
+      compilerError("Reading a DistBag is not supported");
     }
 
     @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
-      compilerError("Reading a DistBag_DFS is not supported");
+      compilerError("Reading a DistBag is not supported");
     }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
       this.init(eltType);
-      compilerError("Deserializing a DistBag_DFS is not yet supported");
+      compilerError("Deserializing a DistBag is not yet supported");
     }
 
-    // Write the contents of this DistBag_DFS to a channel.
+    // Write the contents of this DistBag to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
@@ -265,7 +265,7 @@ module DistributedBag_DFS
     }
 
     forwarding _value;
-  } // end 'DistBag_DFS' record
+  } // end 'DistBag' record
 
   class DistributedBagImpl : CollectionImpl(?)
   {
@@ -288,7 +288,7 @@ module DistributedBag_DFS
     var bag: unmanaged Bag(eltType)?;
 
     /*
-      Initialize an empty DistBag_DFS.
+      Initialize an empty DistBag.
     */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
@@ -407,9 +407,9 @@ module DistributedBag_DFS
     // TODO: implement 'removeBulk'.
 
     /*
-      Obtain the number of elements held in this DistBag_DFS.
+      Obtain the number of elements held in this DistBag.
 
-      :return: The current number of elements contained in this DistBag_DFS.
+      :return: The current number of elements contained in this DistBag.
       :rtype: `int`
 
       .. warning::
@@ -432,12 +432,12 @@ module DistributedBag_DFS
 
     /*
       Perform a lookup to determine if the requested element exists in this
-      DistBag_DFS.
+      DistBag.
 
       :arg elt: An element to search for.
       :type elt: `eltType`
 
-      :return: `true` if this DistBag_DFS contains ``elt``.
+      :return: `true` if this DistBag contains ``elt``.
       :rtype: `bool`
 
       .. warning::
@@ -457,7 +457,7 @@ module DistributedBag_DFS
     }
 
     /*
-      Clear this DistBag_DFS.
+      Clear this DistBag.
 
       .. warning::
 
@@ -495,13 +495,13 @@ module DistributedBag_DFS
     // TODO: is 'balance' needed?
 
     /*
-      Iterate over the elements of this DistBag_DFS. To avoid holding onto locks,
+      Iterate over the elements of this DistBag. To avoid holding onto locks,
       we take a snapshot approach, increasing memory consumption but also
       increasing parallelism. This allows other concurrent, even mutating,
       operations while iterating, but opens the possibility to iterating over
       duplicates or missing elements from concurrent operations.
 
-      :yields: A reference to one of the elements contained in this DistBag_DFS.
+      :yields: A reference to one of the elements contained in this DistBag.
 
       .. note::
 
@@ -650,7 +650,7 @@ module DistributedBag_DFS
             id += 1;
           }
         }
-        otherwise halt("DistributedBag_DFS internal error: Unknown victim choice policy");
+        otherwise halt("DistributedBag internal error: Unknown victim choice policy");
       }
     }
 
@@ -783,12 +783,12 @@ module DistributedBag_DFS
             }
           }
 
-          otherwise do halt("DistributedBag_DFS Internal Error: Invalid phase #", phase);
+          otherwise do halt("DistributedBag Internal Error: Invalid phase #", phase);
         }
         currentTask.yieldExecution();
       }
 
-      halt("DistributedBag_DFS Internal Error: DEADCODE.");
+      halt("DistributedBag Internal Error: DEADCODE.");
     }
   } // end 'Bag' class
 
@@ -952,7 +952,7 @@ module DistributedBag_DFS
         lock.writeEF(true); // set unlocked (full)
         return false;
       }
-      halt("DistributedBag_DFS Internal Error: DEADCODE");
+      halt("DistributedBag Internal Error: DEADCODE");
     }
 
     /*

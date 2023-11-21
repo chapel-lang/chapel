@@ -1,13 +1,13 @@
 /*
-  This test checks the 'DistBag_DFS.addBulk()' method.
+  This test checks the 'DistBag.addBulk()' method.
 */
 
-use DistributedBag_DFS;
+use DistributedBag;
 
 config param nElems = 1000;
 config param defaultMaxSegmentCap = 1024*1024;
 
-var bag = new DistBag_DFS(int);
+var bag = new DistBag(int);
 
 // Check the number of elements inserted.
 var successfulInsertions = bag.addBulk(1..nElems, 0);
