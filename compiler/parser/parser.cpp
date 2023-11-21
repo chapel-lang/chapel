@@ -478,34 +478,35 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (gDynoGenLibSourcePaths.size() > 0) {
-    for (UniqueString path : gDynoGenLibSourcePaths) {
-      if (path == "<standard>") {
-        std::vector<UniqueString> todo;
-        for (auto& path : parsedPaths) {
-          const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
-          if (path.startsWith(modulePrefix)) {
-            todo.push_back(path);
-          }
+  if (!gDynoGenLibOutput.empty()) {
+    std::vector<UniqueString> genLibPaths;
+
+    if (gDynoGenLibOutput == "chpl_standard.dyno") {
+      // gather the paths to the standard libraries
+      for (auto& path : parsedPaths) {
+        const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
+        if (path.startsWith(modulePrefix)) {
+          genLibPaths.push_back(path);
         }
-        auto libWriter =
-          chpl::libraries::LibraryFileWriter(gContext, todo,
-                                             "chpl_standard.dyno");
-        libWriter.writeAllSections();
-      } else {
-        std::string pathS = path.str();
-        std::string justFile = pathS.substr(pathS.find_last_of("/") + 1);
-        auto dot = justFile.find_last_of(".");
-        std::string noExt = justFile.substr(0, dot);
-        auto libWriter =
-          chpl::libraries::LibraryFileWriter(gContext, {path}, noExt + ".dyno");
-        libWriter.writeAllSections();
+      }
+    } else {
+      // gather the files named on the command line
+      fileNum = 0;
+      while ((inputFileName = nthFilename(fileNum++))) {
+        genLibPaths.push_back(UniqueString::get(gContext, inputFileName));
       }
     }
+    // update the global variable
+    gDynoGenLibSourcePaths.swap(genLibPaths);
 
-    // As .dyno files become more capable, this exit will be moved further and
-    // further into resolution.
-    clean_exit(0);
+    // gather the top-level module names
+    using LFW = chpl::libraries::LibraryFileWriter;
+    auto vec = LFW::gatherTopLevelModuleNames(gContext,
+                                              gDynoGenLibSourcePaths);
+
+    for (UniqueString topLevelModuleName: vec) {
+      gDynoGenLibModuleNameAstrs.insert(astr(topLevelModuleName));
+    }
   }
 }
 

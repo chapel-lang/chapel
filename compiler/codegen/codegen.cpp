@@ -20,8 +20,11 @@
 
 #include "codegen.h"
 
+#include "LayeredValueTable.h"
 #include "astutil.h"
 #include "baseAST.h"
+#include "chpl/libraries/LibraryFileWriter.h"
+#include "chpl/util/filesystem.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -33,9 +36,8 @@
 #include "library.h"
 #include "llvmDebug.h"
 #include "llvmUtil.h"
-#include "LayeredValueTable.h"
-#include "mli.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -45,7 +47,6 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "chpl/util/filesystem.h"
 
 #include "global-ast-vecs.h"
 
@@ -2882,6 +2883,16 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
+
+
+  if (!gDynoGenLibOutput.empty()) {
+    using LibraryFileWriter = chpl::libraries::LibraryFileWriter;
+    auto libWriter = LibraryFileWriter(gContext,
+                                       gDynoGenLibSourcePaths,
+                                       gDynoGenLibOutput);
+
+    libWriter.writeAllSections();
+  }
 }
 
 void codegen() {
@@ -2945,6 +2956,10 @@ void codegen() {
 
 void makeBinary(void) {
   if (no_codegen)
+    return;
+
+  // don't run makeBinary when using --dyno-gen-lib
+  if (gDynoGenLibSourcePaths.size() > 0)
     return;
 
   // makeBinary shouldn't run in a phase-one invocation.

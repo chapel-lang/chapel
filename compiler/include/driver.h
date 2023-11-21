@@ -327,6 +327,7 @@ extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 extern std::vector<std::string> gDynoPrependInternalModulePaths;
 extern std::vector<std::string> gDynoPrependStandardModulePaths;
 
+extern std::string gDynoGenLibOutput;
 extern std::vector<UniqueString> gDynoGenLibSourcePaths;
 extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 

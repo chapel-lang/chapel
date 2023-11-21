@@ -390,6 +390,8 @@ static bool compilerSetChplLLVM = false;
 static std::vector<std::string> cmdLineModPaths;
 
 // support for separate compilation
+// what is the name of the output library file e.g. MyModule.dyno
+std::string gDynoGenLibOutput;
 // what source code paths were requested to be compiled into the lib?
 std::vector<UniqueString> gDynoGenLibSourcePaths;
 // what top-level module names as astrs were requested to be stored in the lib?
@@ -1173,7 +1175,17 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
 }
 
 void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
-  gDynoGenLibSourcePaths.push_back(UniqueString::get(gContext, newpath));
+  std::string path = std::string(newpath);
+  auto dot = path.find_last_of(".");
+  std::string noExt = path.substr(0, dot);
+  std::string usePath = noExt + ".dyno";
+  if (usePath != path) {
+    USR_FATAL("--dyno-gen-lib accepts the output file as an argument." \
+              "Please use the .dyno suffix for the output file");
+  }
+
+  // other variables will be set later
+  gDynoGenLibOutput = usePath;
 }
 
 /*
@@ -1470,7 +1482,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
- {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
