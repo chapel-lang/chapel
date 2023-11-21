@@ -13,7 +13,7 @@ assert(n>setIdx);
 config const printResult = false;
 
 const expectedVal = if isMin then 7:uint(8) else 13:uint(8);
-const expected = if withLoc then (setIdx, expectedVal) else expectedVal;
+const expected = if withLoc then (expectedVal, setIdx) else expectedVal;
 
 inline proc doReduce(Arr) {
   if withLoc then
@@ -22,7 +22,7 @@ inline proc doReduce(Arr) {
     return if isMin then gpuMinReduce(Arr) else gpuMaxReduce(Arr);
 }
 
-var result: if withLoc then (int, uint(8)) else uint(8);
+var result: if withLoc then (uint(8), int) else uint(8);
 on here.gpus[0] {
   var Arr: [0..#n] uint(8) = 10;
   Arr[setIdx] = expectedVal;
