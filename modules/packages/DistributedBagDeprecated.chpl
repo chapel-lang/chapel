@@ -66,6 +66,12 @@
 
 /* Implements a highly parallel segmented multiset.
 
+  .. warning::
+
+  The "DistributedBagDeprecated" module is deprecated and will be removed in a future
+  release. Please use the new "DistributedBag" module instead. If you have any concern
+  regarding this module, please let us know.
+
   Summary
   _______
 
@@ -121,7 +127,8 @@
   _______
 */
 
-module DistributedBag {
+@deprecated("The DistributedBagDeprecated module is deprecated")
+module DistributedBagDeprecated {
 
   public use Collection;
   use BlockDist;
@@ -610,7 +617,7 @@ module DistributedBag {
 
             while block != nil {
               if bufferOffset + block!.size > bufferSz {
-                halt("DistributedBag Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
+                halt("DistributedBagDeprecated Internal Error: Snapshot attempt with bufferSz(", bufferSz, ") with offset bufferOffset(", bufferOffset + block!.size, ")");
               }
               __primitive("chpl_comm_array_put", block!.elems[0], here.id, buffer[bufferOffset], block!.size);
               bufferOffset += block!.size;
@@ -666,11 +673,11 @@ module DistributedBag {
 
     inline proc push(elt : eltType) {
       if elems == nil {
-        halt("DistributedBag Internal Error: 'elems' is nil");
+        halt("DistributedBagDeprecated Internal Error: 'elems' is nil");
       }
 
       if isFull {
-        halt("DistributedBag Internal Error: SegmentBlock is Full");
+        halt("DistributedBagDeprecated Internal Error: SegmentBlock is Full");
       }
 
       elems[size] = elt;
@@ -679,11 +686,11 @@ module DistributedBag {
 
     inline proc pop() : eltType {
       if elems == nil {
-        halt("DistributedBag Internal Error: 'elems' is nil");
+        halt("DistributedBagDeprecated Internal Error: 'elems' is nil");
       }
 
       if isEmpty {
-        halt("DistributedBag Internal Error: SegmentBlock is Empty");
+        halt("DistributedBagDeprecated Internal Error: SegmentBlock is Empty");
       }
 
       size = size - 1;
@@ -694,7 +701,7 @@ module DistributedBag {
     proc init(type eltType, capacity) {
       this.eltType = eltType;
       if capacity == 0 {
-        halt("DistributedBag Internal Error: Capacity is 0...");
+        halt("DistributedBagDeprecated Internal Error: Capacity is 0...");
       }
 
       this.elems = allocate(eltType, capacity.safeCast(c_size_t));
@@ -794,7 +801,7 @@ module DistributedBag {
       var srcOffset = 0;
       while destOffset < n {
         if headBlock == nil || isEmpty {
-          halt(here, ": DistributedBag Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
+          halt(here, ": DistributedBagDeprecated Internal Error: Attempted transfer ", n, " elements to ", locId, " but failed... destOffset=", destOffset);
         }
 
         var len = headBlock!.size;
@@ -862,11 +869,11 @@ module DistributedBag {
 
       for 1 .. n : int{
         if isEmpty {
-          halt("DistributedBag Internal Error: Attempted to take ", n, " elements when insufficient");
+          halt("DistributedBagDeprecated Internal Error: Attempted to take ", n, " elements when insufficient");
         }
 
         if headBlock!.isEmpty {
-          halt("DistributedBag Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
+          halt("DistributedBagDeprecated Internal Error: Iterating over ", n, " elements with headBlock empty but nElems is ", nElems.read());
         }
 
         arr[arrIdx] = headBlock.pop();
@@ -893,7 +900,7 @@ module DistributedBag {
       }
 
       if headBlock!.isEmpty {
-        halt("DistributedBag Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
+        halt("DistributedBagDeprecated Internal Error: Iterating over 1 element with headBlock empty but nElems is ", nElems.read());
       }
 
       var elem = headBlock!.pop();
@@ -1047,7 +1054,7 @@ module DistributedBag {
         }
       }
 
-      halt("DistributedBag Internal Error: DEADCODE");
+      halt("DistributedBagDeprecated Internal Error: DEADCODE");
     }
 
     proc remove() : (bool, eltType) {
@@ -1268,7 +1275,7 @@ module DistributedBag {
             }
           }
 
-          otherwise do halt("DistributedBag Internal Error: Invalid phase #", phase);
+          otherwise do halt("DistributedBagDeprecated Internal Error: Invalid phase #", phase);
         }
 
         // Reset variables...
@@ -1277,7 +1284,7 @@ module DistributedBag {
         backoff = 0;
       }
 
-      halt("DistributedBag Internal Error: DEADCODE");
+      halt("DistributedBagDeprecated Internal Error: DEADCODE");
     }
   }
 }

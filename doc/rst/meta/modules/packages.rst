@@ -39,7 +39,7 @@ Data Structures
    :maxdepth: 1
 
    ConcurrentMap <packages/ConcurrentMap>
-   DistributedBag <packages/DistributedBag>
+   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedBag_DFS <packages/DistributedBag_DFS>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
