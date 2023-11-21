@@ -593,7 +593,7 @@ module GPU
   inline proc gpuMaxReduce(const ref A: [] ?t) do return doGpuReduce("max", A);
 
   /*
-    For an array on the GPU, return a tuple with the index and the value of the
+    For an array on the GPU, return a tuple with the value and the index of the
     minimum element (that is, perform a minloc-reduction). If there are multiple
     elements with the same minimum value, the index of the first one is
     returned. The array must be in GPU-accessible memory and the function must
@@ -604,13 +604,13 @@ module GPU
 
        on here.gpus[0] {
          var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
-         writeln(gpuMinLocReduce(Arr)); // (2, 1). Note that Arr[2]==1.
+         writeln(gpuMinLocReduce(Arr)); // (1, 2). Note that Arr[2]==1.
        }
   */
   inline proc gpuMinLocReduce(const ref A: [] ?t) do return doGpuReduce("minloc", A);
 
   /*
-    For an array on the GPU, return a tuple with the index and the value of the
+    For an array on the GPU, return a tuple with the value and the index of the
     maximum element (that is, perform a maxloc-reduction). If there are multiple
     elements with the same maximum value, the index of the first one is
     returned. The array must be in GPU-accessible memory and the function must
@@ -621,7 +621,7 @@ module GPU
 
        on here.gpus[0] {
          var Arr = [3, 2, 1, 5, 4]; // will be GPU-accessible
-         writeln(gpuMaxLocReduce(Arr)); // (3, 5). Note that Arr[3]==5.
+         writeln(gpuMaxLocReduce(Arr)); // (5, 3). Note that Arr[3]==5.
        }
   */
   inline proc gpuMaxLocReduce(const ref A: [] ?t) do return doGpuReduce("maxloc", A);
