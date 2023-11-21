@@ -68,9 +68,9 @@
 
   .. warning::
 
-  The "DistributedBagDeprecated" module is deprecated and will be removed in a future
-  release. Please use the new "DistributedBag" module instead. If you have any concern
-  regarding this module, please let us know.
+    The "DistributedBagDeprecated" module is deprecated and will be removed in a future
+    release. Please use the new "DistributedBag" module instead. If you have any concern
+    regarding this module, please let us know.
 
   Summary
   _______

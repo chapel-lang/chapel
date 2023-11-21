@@ -12,6 +12,7 @@ import CopyAggregation;
 import Crypto;
 import Curl;
 import DistributedBag;
+import DistributedBagDeprecated;
 import DistributedDeque;
 import DistributedIters;
 import EpochManager;
