@@ -608,32 +608,32 @@ module Random {
     }
 
     /*
-      Returns a random sample from a given bounded range, ``x``.
+      Return a random sample from a given bounded range, ``x``.
 
-     :arg x: a bounded range with values that will be sampled from.
-     :arg size: An optional integral value specifying the number of elements to
+      :arg x: a bounded range with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
                 choose, or a domain specifying the dimensions of the
                 sampled array to be filled, otherwise a single element will be
                 chosen.
-     :arg replace: an optional ``bool`` specifying whether or not to sample with
-                   replacement, i.e. elements will only be chosen up to one
-                   time when ``replace=false``.
-     :arg prob: an optional 1D array that contains probabilities of choosing
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
                 each element of ``x``, otherwise elements will be chosen over
                 a uniform distribution. ``prob`` must have integral or real
                 element type, with no negative values and at least one non-zero
                 value. The size must be equal to that of ``x``.
 
-     :return: An element chosen from ``x`` if ``size == 1``, or an array of
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
               element chosen from ``x`` if ``size > 1`` or ``size`` is a
               domain.
 
-     :throws IllegalArgumentError: if ``x.size == 0``,
-                                   if ``x.size != prob.size``,
-                                   if ``prob`` contains a negative value,
-                                   if ``prob`` has no non-zero values,
-                                   if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
     */
     @unstable("'choice' is unstable and subject to change")
     proc ref choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
@@ -641,7 +641,7 @@ module Random {
         do return _choice(this, {x}, size, replace, prob);
 
     /*
-      Returns a random sample from a given 1D domain, ``x``.
+      Return a random sample from a given 1D domain, ``x``.
 
       :arg x: a 1D domain with values that will be sampled from.
       :arg size: An optional integral value specifying the number of elements to
@@ -674,7 +674,7 @@ module Random {
         do return _choice(this, x, size, replace, prob);
 
     /*
-      Get the next value in the random stream.
+      Get the next value in the random stream and advance its position by one.
     */
     proc ref getNext(): eltType do
       return this.pcg.getNext();
@@ -698,7 +698,6 @@ module Random {
 
       :arg min: The minimum value to sample
       :arg max: The maximum value to sample
-
     */
     proc ref getNext(min: eltType, max: eltType): eltType do
       return this.pcg.getNext(min, max);
@@ -707,7 +706,7 @@ module Random {
       Advance or rewind the random stream to the ``n``-th position in the
       pseudorandom sequence (where ``n=0`` is the starting position)
 
-      :arg n: The position to skip to (must be greater than zero)
+      :arg n: The position to skip to
 
       :throws IllegalArgumentError: Thrown if ``n`` is negative
     */
@@ -723,7 +722,6 @@ module Random {
       :arg n: The position to skip to and retrieve (must be greater than zero)
 
       :throws IllegalArgumentError: Thrown if ``n`` is negative
-
     */
     @unstable("'getNth' is unstable and subject to change")
     proc ref getNth(n: integral): eltType throws do
