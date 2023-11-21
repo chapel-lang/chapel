@@ -864,7 +864,6 @@ module Random {
   /* _choice branch for uniform distribution */
   proc _choiceUniform(ref stream, X: domain, size: ?sizeType, replace: bool) throws
   {
-    // private import Set;
     const low = X.low,
           stride = abs(X.stride);
 
