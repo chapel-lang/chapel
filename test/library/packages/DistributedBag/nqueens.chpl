@@ -168,15 +168,11 @@ proc nqueens_search(const N: int)
         var (hasWork, parent) = bag.remove(taskId);
 
         // Check termination
-        if (hasWork == 1) { // we had an element
+        if hasWork {
           eachTaskState[taskId].write(BUSY);
           eachLocaleState[here.id].write(BUSY);
         }
-        else if (hasWork == 0) { // we didn't have an element (fast exit)
-          eachTaskState[taskId].write(IDLE);
-          continue;
-        }
-        else { // we didn't have an element (fail)
+        else {
           eachTaskState[taskId].write(IDLE);
           if allIdle(eachTaskState) {
             eachLocaleState[here.id].write(IDLE);

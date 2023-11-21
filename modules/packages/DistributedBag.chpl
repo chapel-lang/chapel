@@ -127,9 +127,13 @@ module DistributedBag
     The output phases of the 'remove' operation. They are used to indicate the
     final state of the operation: success, steal in progress, or fail.
   */
-  private param REMOVE_SUCCESS   =  1;
-  private param REMOVE_FAST_EXIT =  0;
-  private param REMOVE_FAIL      = -1;
+  private param REMOVE_SUCCESS   = true;
+  private param REMOVE_FAIL      = false;
+  // NOTE: A third output could be used to optimize user code in scenarios
+  // where the remove operation fails, but there is a pending work stealing
+  // operation - meaning that the DistBag is not necessarily empty.
+  // For now, it is considered as a usual fail.
+  private param REMOVE_FAST_EXIT = REMOVE_FAIL;
 
   /*
     The initial capacity of each segment. When a segment is full, we double its
@@ -397,9 +401,9 @@ module DistributedBag
       :type taskId: `int`
 
       :return: 2-tuple containing the final status of the operation: success (=1), fast exit (=0) or fail (=-1), and the retrieved element, if any.
-      :rtype: `(int, eltType)`
+      :rtype: `(bool, eltType)`
     */
-    proc remove(taskId: int): (int, eltType)
+    proc remove(taskId: int): (bool, eltType)
     {
       return bag!.remove(taskId);
     }
@@ -660,7 +664,7 @@ module DistributedBag
       bag instance is empty, it will attempt to steal elements from bags of other
       nodes.
     */
-    proc remove(const taskId: int): (int, eltType)
+    proc remove(const taskId: int): (bool, eltType)
     {
       var phase = REMOVE_SIMPLE;
       if (numLocales > 1) then phase = PERFORMANCE_PATCH;
