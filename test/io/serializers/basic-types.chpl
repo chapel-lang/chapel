@@ -14,6 +14,8 @@ use FormatHelper;
 var failures : list(string);
 
 proc test(val, type T = val.type) {
+  if FormatWriter.type == binarySerializer && isClassType(T) && val == nil then return;
+
   writeln();
   const header = "===== " + (T: string) + " =====";
   writeln(header);

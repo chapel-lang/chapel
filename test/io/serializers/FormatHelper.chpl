@@ -4,13 +4,15 @@ module FormatHelper {
   use JSON;
   use IO;
   use ChplFormat;
+  use ObjectSerialization;
 
   enum FormatKind {
     default,
     json,
     little,
     big,
-    syntax
+    syntax,
+    object
   }
 
   config param format : FormatKind = FormatKind.default;
@@ -37,6 +39,10 @@ module FormatHelper {
         if writing then return new chplSerializer();
         else return new chplDeserializer();
       }
+      when FormatKind.object {
+        if writing then return new objectSerializer(endian=IO.ioendian.little);
+        else return new objectDeserializer(endian=IO.ioendian.little);
+      }
       otherwise return nothing;
     }
   }
@@ -48,7 +54,8 @@ module FormatHelper {
     writeln("===== writing: =====");
     stdout.writeln(val);
     writeln("--------------------");
-    if format == FormatKind.little || format == FormatKind.big {
+    if format == FormatKind.little || format == FormatKind.big ||
+       format == FormatKind.object {
       var f = openMemFile();
       {
         var w = f.writer();
