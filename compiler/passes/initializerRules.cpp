@@ -710,6 +710,9 @@ static InitNormalize preNormalize(AggregateType* at,
                                block,
                                InitNormalize(block, state)));
       stmt = stmt->next;
+    } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
+      state.merge(preNormalize(at, tryStmt->body(), InitNormalize(tryStmt->body(), state)));
+      stmt = stmt->next;
 
     } else {
       stmt = stmt->next;
