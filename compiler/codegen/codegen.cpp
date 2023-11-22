@@ -2943,14 +2943,18 @@ static void codegenPartTwo() {
       }
 
       for (FnSymbol* fn : fns) {
-        if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
-          chpl::ID fnId = fn->astloc.id();
-          if (!fnId.isEmpty()) {
-            LibraryFileWriter::GenInfo info;
-            info.cname = UniqueString::get(gContext, fn->cname);
-            info.isInstantiation = fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
-            genMap[fnId].push_back(info);
-            filterGvs.insert(g);
+        if (fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
+          // skip chpl_gen_main
+        } else {
+          if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
+            chpl::ID fnId = fn->astloc.id();
+            if (!fnId.isEmpty()) {
+              LibraryFileWriter::GenInfo info;
+              info.cname = UniqueString::get(gContext, fn->cname);
+              info.isInstantiation = fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+              genMap[fnId].push_back(info);
+              filterGvs.insert(g);
+            }
           }
         }
       }
