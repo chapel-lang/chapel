@@ -173,7 +173,6 @@ proc main(args: [] string) {
     var OutputHost : [Inner] real(64); // D
 
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
-      const gpuId = 0;
 
       // Create distance mask
       const locLeftMaskDomain = LeftMask.domain;
