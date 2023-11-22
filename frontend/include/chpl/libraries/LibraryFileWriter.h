@@ -80,10 +80,38 @@ class LibraryFileSerializationHelper {
 };
 
 
+/** Helper to generate the LLVM IR for a function.
+    Code working with this can work through a GVMaterializer
+    to generate LLVM IR on-demand.
+ */
+/*class CodeGenerationHelper {
+ public:
+  #ifdef HAVE_LLVM
+    using ModulePtr = llvm::Module*;
+  #else
+    using ModulePtr = void*;
+  #endif
+
+ private:
+  ModulePtr mod_ = nullptr;
+
+ public:
+  CodeGenerationHelper(ModulePtr mod) : mod_(mod) { }
+  virtual ~CodeGenerationHelper() = 0; // abstract base class
+
+  ModulePtr getModule() const { return mod_; }
+}; */
+
 /** For writing a .dyno library file */
 class LibraryFileWriter {
  private:
   using PathToIndex = std::unordered_map<UniqueString, unsigned int>;
+  struct ModInfo {
+    UniqueString moduleName;
+    const uast::Module* moduleAst = nullptr;
+    UniqueString fromSourcePath;
+    std::string generatedCode;
+  };
 
   Context* context = nullptr;
   std::vector<UniqueString> inputFiles;
@@ -91,15 +119,15 @@ class LibraryFileWriter {
   std::ofstream fileStream;
   bool ok = true;
 
-  // top-level modules and paths where they came from
-  std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
+  // per-module information
+  std::vector<ModInfo> modules;
 
   /** Emit an error indicating failure to create the library and
       set 'ok' to 'false' */
   void fail(const char* msg);
 
   /** Gather the top-level modules and the paths they came from */
-  static std::vector<std::pair<const uast::Module*, UniqueString>>
+  static std::vector<ModInfo>
   gatherTopLevelModules(Context* context, std::vector<UniqueString> paths);
 
   /** Open the file */
@@ -162,15 +190,24 @@ class LibraryFileWriter {
 
  public:
   /**
-    Construct a LibraryFileWriter to output the uAST from the
-    top-level modules in the source files provided in 'paths'. */
-  LibraryFileWriter(Context* context,
-                    std::vector<UniqueString> paths,
-                    std::string outputFilePath) :
-    context(context),
-    inputFiles(paths),
-    outputFilePath(outputFilePath)
+    Construct a LibraryFileWriter to output to 'outputFilePath' */
+  LibraryFileWriter(Context* context, std::string outputFilePath)
+    : context(context), outputFilePath(outputFilePath)
   { }
+
+  /**
+    Parse the uAST for the provided source paths and save
+    the result.
+    */
+  void setSourcePaths(std::vector<UniqueString> paths);
+
+  /**
+    Set the buffer storing the generated LLVM IR byte code
+    for the top-level module with the passed name.
+
+    Must be done after 'setSourcePaths'.
+   */
+  void setGeneratedCode(UniqueString modName, std::string buffer);
 
   /**
     Write the header and sections to the library file.

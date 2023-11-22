@@ -72,10 +72,10 @@ void LibraryFileWriter::fail(const char* msg) {
   ok = false;
 }
 
-std::vector<std::pair<const uast::Module*, UniqueString>>
+std::vector<LibraryFileWriter::ModInfo>
 LibraryFileWriter::gatherTopLevelModules(Context* context,
                                          std::vector<UniqueString> paths) {
-  std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
+  std::vector<ModInfo> modules;
   // Parse the paths and gather a vector of top-level modules.
   for (auto path : paths) {
     path = cleanLocalPath(context, path);
@@ -83,10 +83,14 @@ LibraryFileWriter::gatherTopLevelModules(Context* context,
     std::vector<const uast::Module*> modsInFile =
       parsing::parse(context, path, empty);
     for (auto mod : modsInFile) {
-      modulesAndPaths.push_back(std::make_pair(mod, path));
+      ModInfo info;
+      info.moduleName = mod->name();
+      info.moduleAst = mod;
+      info.fromSourcePath = path;
+      modules.push_back(std::move(info));
     }
   }
-  return modulesAndPaths;
+  return modules;
 }
 
 void LibraryFileWriter::openFile() {
@@ -105,17 +109,17 @@ void LibraryFileWriter::writeHeader() {
   header.chplVersionMajor = getMajorVersion();
   header.chplVersionMinor = getMinorVersion();
   header.chplVersionUpdate = getUpdateVersion();
-  header.nModules = modulesAndPaths.size();
+  header.nModules = modules.size();
   // hash remains 0s at this point
   fileStream.write((const char*) &header, sizeof(header));
 
   // emit an error if there are too many modules for the file format
-  if (modulesAndPaths.size() >= MAX_NUM_MODULES) {
+  if (modules.size() >= MAX_NUM_MODULES) {
     fail("Too many modules to create library file");
   }
 
   // write the placeholder module section table
-  size_t n = modulesAndPaths.size();
+  size_t n = modules.size();
   for (size_t i = 0; i < n; i++) {
     uint64_t zero = 0;
     fileStream.write((const char*) &zero, sizeof(zero));
@@ -662,20 +666,36 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   }
 }
 
+
+void LibraryFileWriter::setSourcePaths(std::vector<UniqueString> paths) {
+  inputFiles = paths;
+  modules = gatherTopLevelModules(context, inputFiles);
+}
+
+void LibraryFileWriter::setGeneratedCode(UniqueString modName,
+                                         std::string buffer) {
+  bool handled = false;
+  for (auto& info : modules) {
+    if (info.moduleName == modName) {
+      info.generatedCode.swap(buffer);
+      CHPL_ASSERT(!handled && "two modules with same name?");
+      handled = true;
+    }
+  }
+  CHPL_ASSERT(handled && "did you forget to call setSourcePaths?");
+}
+
 bool LibraryFileWriter::writeAllSections() {
-  modulesAndPaths = gatherTopLevelModules(context, inputFiles);
   openFile();
   writeHeader();
 
   std::vector<uint64_t> moduleSectionOffsets;
   Region moduleRegion;
 
-  for (auto pair : modulesAndPaths) {
-    const uast::Module* mod = pair.first;
-    UniqueString fromFilePath = pair.second;
+  for (auto& info : modules) {
     // write the module section & update the header's table
     padToAlign();
-    moduleRegion = writeModuleSection(mod, fromFilePath);
+    moduleRegion = writeModuleSection(info.moduleAst, info.fromSourcePath);
     moduleSectionOffsets.push_back(moduleRegion.start);
   }
   // and the offset just after the last module
@@ -728,9 +748,8 @@ LibraryFileWriter::gatherTopLevelModuleNames(Context* context,
   // TODO: Should this be a query / be supported by a query?
   std::vector<UniqueString> ret;
   auto v = gatherTopLevelModules(context, paths);
-  for (auto pair : v) {
-    const uast::Module* mod = pair.first;
-    ret.push_back(mod->name());
+  for (auto& info : v) {
+    ret.push_back(info.moduleName);
   }
   return ret;
 }

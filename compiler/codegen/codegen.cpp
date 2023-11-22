@@ -35,6 +35,7 @@
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
+#include "llvmExtractIR.h"
 #include "llvmUtil.h"
 #include "misc.h"
 #include "mli.h"
@@ -62,6 +63,9 @@
 #include "llvm/Remarks/RemarkSerializer.h"
 #include "llvm/Remarks/YAMLRemarkSerializer.h"
 #include "llvm/Remarks/RemarkStreamer.h"
+
+#include "llvm/Bitcode/BitcodeWriter.h"
+
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -2678,6 +2682,22 @@ static bool shouldShowLLVMRemarks() {
 }
 #endif
 
+// is 'sym' stored in the provided top-level module?
+/*static bool isInToplevelModule(Symbol* sym, ModuleSymbol* topMod) {
+  ModuleSymbol* outermostModule = nullptr;
+  while (sym != nullptr) {
+    if (isModuleSymbol(outermostModule)) {
+      outermostModule = toModuleSymbol(outermostModule);
+    }
+    if (!sym->defPoint) {
+      break;
+    }
+    sym = sym->defPoint->getModule();
+  }
+
+  return outermostModule == topMod;
+}*/
+
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
   initializeGenInfo();
@@ -2886,11 +2906,65 @@ static void codegenPartTwo() {
 
 
   if (!gDynoGenLibOutput.empty()) {
-    using LibraryFileWriter = chpl::libraries::LibraryFileWriter;
-    auto libWriter = LibraryFileWriter(gContext,
-                                       gDynoGenLibSourcePaths,
-                                       gDynoGenLibOutput);
+    llvm::Module* llvmModule = gGenInfo->module;
 
+    // create the LibraryFileWriter
+    using LibraryFileWriter = chpl::libraries::LibraryFileWriter;
+    auto libWriter = LibraryFileWriter(gContext, gDynoGenLibOutput);
+
+    // set the source paths / gather the parsed uAST
+    libWriter.setSourcePaths(gDynoGenLibSourcePaths);
+
+    // gather the modules we are code generating
+    std::set<ModuleSymbol*> genModules;
+    forv_Vec(ModuleSymbol, modSym, gModuleSymbols) {
+      if (gDynoGenLibModuleNameAstrs.count(modSym->name) > 0) {
+        genModules.insert(modSym);
+      }
+    }
+
+    // for each module, extract only the LLVM IR for that module
+    for (ModuleSymbol* genMod : genModules) {
+      // compute the functions/globals from the requested module
+      std::set<const llvm::GlobalValue*> filterGvs;
+
+      std::vector<FnSymbol*> fns =
+        genMod->getTopLevelFunctions(/* includeExterns */ false);
+      std::vector<VarSymbol*> vars = genMod->getTopLevelVariables();
+      std::vector<VarSymbol*> configs = genMod->getTopLevelVariables();
+
+      for (FnSymbol* fn : fns) {
+        if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
+          filterGvs.insert(g);
+        }
+      }
+      for (VarSymbol* v : vars) {
+        if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
+          filterGvs.insert(g);
+        }
+      }
+      for (VarSymbol* v : configs) {
+        if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
+          filterGvs.insert(g);
+        }
+      }
+
+      // compute the pared-down module
+      std::unique_ptr<llvm::Module> M = extractLLVM(llvmModule, filterGvs);
+
+      // compute the bitcode for the pared-down module & save it
+      // in the libWriter's buffer
+      std::string generatedCodeBuffer;
+      {
+        llvm::raw_string_ostream OS(generatedCodeBuffer);
+        llvm::WriteBitcodeToFile(*M.get(), OS);
+      }
+
+      auto modName = UniqueString::get(gContext, genMod->name);
+      libWriter.setGeneratedCode(modName, std::move(generatedCodeBuffer));
+    }
+
+    // compute the cnamesfunction names
     libWriter.writeAllSections();
   }
 }
