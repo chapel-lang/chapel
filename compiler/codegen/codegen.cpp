@@ -2923,29 +2923,49 @@ static void codegenPartTwo() {
       }
     }
 
+    using LibGenInfo = LibraryFileWriter::GenInfo;
+    std::unordered_map<chpl::ID, std::vector<LibGenInfo>> genMap;
+
     // for each module, extract only the LLVM IR for that module
     for (ModuleSymbol* genMod : genModules) {
       // compute the functions/globals from the requested module
       std::set<const llvm::GlobalValue*> filterGvs;
 
+      // gather functions
       std::vector<FnSymbol*> fns =
         genMod->getTopLevelFunctions(/* includeExterns */ false);
+      // and variables
       std::vector<VarSymbol*> vars = genMod->getTopLevelVariables();
-      std::vector<VarSymbol*> configs = genMod->getTopLevelVariables();
+      {
+        // also config vars
+        std::vector<VarSymbol*> configs = genMod->getTopLevelConfigVars();
+        vars.insert(vars.end(), configs.begin(), configs.end());
+      }
 
       for (FnSymbol* fn : fns) {
         if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
-          filterGvs.insert(g);
+          chpl::ID fnId = fn->astloc.id();
+          if (!fnId.isEmpty()) {
+            LibraryFileWriter::GenInfo info;
+            info.cname = UniqueString::get(gContext, fn->cname);
+            info.isInstantiation = fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+            genMap[fnId].push_back(info);
+            filterGvs.insert(g);
+          }
         }
       }
       for (VarSymbol* v : vars) {
         if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
-          filterGvs.insert(g);
-        }
-      }
-      for (VarSymbol* v : configs) {
-        if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
-          filterGvs.insert(g);
+          chpl::ID vId = v->astloc.id();
+          if (!vId.isEmpty()) {
+            LibraryFileWriter::GenInfo info;
+            info.cname = UniqueString::get(gContext, v->cname);
+            // instantiations of module-scope variables should not be possible
+            info.isInstantiation = false;
+            INT_ASSERT(!v->hasFlag(FLAG_INSTANTIATED_GENERIC));
+            genMap[vId].push_back(info);
+            filterGvs.insert(g);
+          }
         }
       }
 
@@ -2962,7 +2982,9 @@ static void codegenPartTwo() {
       }
 
       auto modName = UniqueString::get(gContext, genMod->name);
-      libWriter.setGeneratedCode(modName, std::move(generatedCodeBuffer));
+      libWriter.setGeneratedCode(modName,
+                                 std::move(generatedCodeBuffer),
+                                 std::move(genMap));
     }
 
     // compute the cnamesfunction names

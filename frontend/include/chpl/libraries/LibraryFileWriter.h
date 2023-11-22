@@ -20,6 +20,7 @@
 #ifndef CHPL_LIBRARIES_LIBRARY_FILE_WRITER_H
 #define CHPL_LIBRARIES_LIBRARY_FILE_WRITER_H
 
+#include "chpl/framework/ID.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/libraries/LibraryFileFormat.h"
 
@@ -80,37 +81,23 @@ class LibraryFileSerializationHelper {
 };
 
 
-/** Helper to generate the LLVM IR for a function.
-    Code working with this can work through a GVMaterializer
-    to generate LLVM IR on-demand.
- */
-/*class CodeGenerationHelper {
- public:
-  #ifdef HAVE_LLVM
-    using ModulePtr = llvm::Module*;
-  #else
-    using ModulePtr = void*;
-  #endif
-
- private:
-  ModulePtr mod_ = nullptr;
-
- public:
-  CodeGenerationHelper(ModulePtr mod) : mod_(mod) { }
-  virtual ~CodeGenerationHelper() = 0; // abstract base class
-
-  ModulePtr getModule() const { return mod_; }
-}; */
-
 /** For writing a .dyno library file */
 class LibraryFileWriter {
+ public:
+  struct GenInfo {
+    UniqueString cname;
+    bool isInstantiation;
+    // TODO: other information about instantiations
+  };
+
  private:
   using PathToIndex = std::unordered_map<UniqueString, unsigned int>;
   struct ModInfo {
     UniqueString moduleName;
     const uast::Module* moduleAst = nullptr;
     UniqueString fromSourcePath;
-    std::string generatedCode;
+    std::string genCode; // LLVM IR bc data
+    std::unordered_map<ID, std::vector<GenInfo>> genMap;
   };
 
   Context* context = nullptr;
@@ -141,8 +128,7 @@ class LibraryFileWriter {
 
   /** Write the module section for the given module. Returns
      the file offset to this section. */
-  Region writeModuleSection(const uast::Module* mod,
-                            UniqueString fromFilePath);
+  Region writeModuleSection(const ModInfo& info);
 
   /** Note the top-level symbols for the passed module for the symbol table */
   void noteToplevelSymbolsForTable(const uast::Module* mod,
@@ -188,6 +174,12 @@ class LibraryFileWriter {
                             LibraryFileSerializationHelper& reg,
                             int& lastLine);
 
+  /** Write the generated code section and returns the
+      module-relative offset of the section. */
+  Region writeGenCode(uint64_t moduleSectionStart,
+                      Serializer& ser,
+                      const std::string& gen);
+
  public:
   /**
     Construct a LibraryFileWriter to output to 'outputFilePath' */
@@ -207,7 +199,9 @@ class LibraryFileWriter {
 
     Must be done after 'setSourcePaths'.
    */
-  void setGeneratedCode(UniqueString modName, std::string buffer);
+  void setGeneratedCode(UniqueString modName,
+                        std::string buffer,
+                        std::unordered_map<ID, std::vector<GenInfo>> genMap);
 
   /**
     Write the header and sections to the library file.

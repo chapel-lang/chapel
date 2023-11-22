@@ -134,8 +134,11 @@ void LibraryFileWriter::padToAlign() {
   }
 }
 
-Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
-                                             UniqueString fromFilePath) {
+Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
+  const uast::Module* mod = info.moduleAst;
+  UniqueString fromFilePath = info.fromSourcePath;
+  const std::string& genCode = info.genCode;
+
   auto moduleSectionStart = fileStream.tellp();
 
   // Construct a module section header and write it
@@ -175,6 +178,9 @@ Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   header.symbolTable = writeSymbolTable(mod, ser, reg);
   // note: implementation of writeSymbolTable assumes it runs
   // after writeAst and writeLocations
+
+  padToAlign();
+  header.genCodeSection = writeGenCode(moduleSectionStart, ser, genCode);
 
   // update the module header with the saved locations by writing the
   // header again.
@@ -667,17 +673,41 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
 }
 
 
+Region LibraryFileWriter::writeGenCode(uint64_t moduleSectionStart,
+                                       Serializer& ser,
+                                       const std::string& gen) {
+  uint64_t genSectionStart = fileStream.tellp();
+
+  GenCodeSectionHeader header;
+  memset(&header, 0, sizeof(header));
+  header.magic = GEN_CODE_SECTION_MAGIC;
+  header.len = gen.size();
+
+  // write the header
+  ser.writeData(&header, sizeof(header));
+
+  // write the gen code data
+  ser.writeData(&gen[0], gen.size());
+
+  uint64_t genSectionEnd = fileStream.tellp();
+  return makeRegion(genSectionStart - moduleSectionStart,
+                    genSectionEnd - moduleSectionStart);
+}
+
 void LibraryFileWriter::setSourcePaths(std::vector<UniqueString> paths) {
   inputFiles = paths;
   modules = gatherTopLevelModules(context, inputFiles);
 }
 
-void LibraryFileWriter::setGeneratedCode(UniqueString modName,
-                                         std::string buffer) {
+void LibraryFileWriter::setGeneratedCode(
+                         UniqueString modName,
+                         std::string buffer,
+                         std::unordered_map<ID, std::vector<GenInfo>> genMap) {
   bool handled = false;
   for (auto& info : modules) {
     if (info.moduleName == modName) {
-      info.generatedCode.swap(buffer);
+      info.genCode.swap(buffer);
+      info.genMap.swap(genMap);
       CHPL_ASSERT(!handled && "two modules with same name?");
       handled = true;
     }
@@ -695,7 +725,7 @@ bool LibraryFileWriter::writeAllSections() {
   for (auto& info : modules) {
     // write the module section & update the header's table
     padToAlign();
-    moduleRegion = writeModuleSection(info.moduleAst, info.fromSourcePath);
+    moduleRegion = writeModuleSection(info);
     moduleSectionOffsets.push_back(moduleRegion.start);
   }
   // and the offset just after the last module

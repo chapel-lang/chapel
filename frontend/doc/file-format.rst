@@ -335,6 +335,22 @@ The Location section consists of:
        * unsigned variable-byte encoded first last column
 
 
+Generated Code Section
+----------------------
+
+The generated code contains serialized LLVM IR for the result of
+compilation for the module (with the exception of generic functions that
+are not yet instantiated).
+
+The generated code section consists of:
+
+ * 8 bytes of magic number 0x4e4547075ec110e0
+
+ * 8 bytes, M, the size of the serialized LLVM IR bytecode
+
+ * M bytes of serialized LLVM IR bytecode
+
+
 Types Section
 -------------
 

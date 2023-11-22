@@ -40,6 +40,7 @@ static const uint64_t SYMBOL_TABLE_MAGIC =     0x4d59531e5ec110e0;
 static const uint64_t UAST_SECTION_MAGIC =     0x5453411e5ec110e0;
 static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x52545301;
 static const uint64_t LOCATION_SECTION_MAGIC = 0x434F4C075ec110e0;
+static const uint64_t GEN_CODE_SECTION_MAGIC = 0x4e4547075ec110e0;
 
 // current file format version numbers
 static const uint32_t FORMAT_VERSION_MAJOR =  0;
@@ -89,6 +90,7 @@ struct ModuleHeader {
   Region astSection;
   Region longStringsTable;
   Region locationSection;
+  Region genCodeSection;
   // TODO: add other sections
 
   // followed by a variable-byte length & string storing the module ID
@@ -131,6 +133,13 @@ struct LocationSectionHeader {
   // followed by file path strings
   // then followed serialized location groups
 };
+
+struct GenCodeSectionHeader {
+  uint64_t magic;
+  uint64_t len;
+  // followed by the LLVM IR bc data
+};
+
 
 
 } // end namespace libraries
