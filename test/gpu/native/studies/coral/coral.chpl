@@ -32,19 +32,18 @@ config const numChunksPerWorker = 1;
 
 proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL : ?, locC : ?, locR : ?, ref Output: [] real(64), t: stopwatch) : [] {
 
-  param bs = 1;
-  param be = 5;
+  param bs = 0;
+  param be = 4;
 
-  var first_point = centerPoints.first[1];
-  var last_point = centerPoints.last[1];
+  var first_point = centerPoints.first[0];
+  var last_point = centerPoints.last[0];
 
-  writeln("Before gpu ", centerPoints.dim(0));
+  writeln("Before gpu ", centerPoints.dim(1), " ", first_point, " ", last_point);
   if verbose_gpu then startVerboseGpu();
 
   
-  
   @assertOnGpu
-  foreach i in centerPoints.dim(0) {
+  foreach i in centerPoints.dim(1) {
     // Only these need to be real(64) in order to guarantee non-negative outputs
     var tmpLL : real(64) = 0;
     var tmpLC : real(64) = 0;
@@ -134,15 +133,15 @@ proc main(args: [] string) {
 
 
     // TODO make this 0-based, too
-    var Array : [1..5,1..y,1..x] real(32);
+    var Array : [0..#5,0..#y,0..#x] real(32);
 
     // Read in array
     if inputSize == -1 {
       var f = open(in_array, ioMode.r);
       var r = f.reader(deserializer=new binaryDeserializer());
-      for i in 1..5 {
-        for j in 1..x {
-          for k in 1..y {
+      for i in 0..#5 {
+        for j in 0..#x {
+          for k in 0..#y {
             var tmp : real;
             r.readBinary(tmp);
             Array[i,k,j] = tmp : real(32);
@@ -173,9 +172,13 @@ proc main(args: [] string) {
     const Inner = ImageSpace.expand(-offset);
     var OutputHost : [Inner] real(64); // D
 
+    writeln("Inner : ", Inner);
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
+    /*on here.gpus[0] {*/
+      const gpuId = 0;
 
       coforall taskId in 0..#numWorkers {
+      /*for taskId in 0..#numWorkers {*/
         const workerId = gpuId*numWorkers + taskId;
 
         for chunkId in 0..#numChunksPerWorker {
@@ -191,42 +194,56 @@ proc main(args: [] string) {
           outRowEnd += Inner.dim(0).low-1;
 
           /*writeln(gpuId, " started ", Inner.dim(0).size, " ", loc.gpus.size);*/
-          var (inRowStart, inRowEnd) =
-              _computeChunkStartEnd(Array.domain.dim(1).size,
-                                    loc.gpus.size*numWorkers*numChunksPerWorker,
-                                    globalChunkId+1);
+          /*var (inRowStart, inRowEnd) =*/
+              /*_computeChunkStartEnd(Array.domain.dim(1).size,*/
+                                    /*loc.gpus.size*numWorkers*numChunksPerWorker,*/
+                                    /*globalChunkId+1);*/
 
-          // offset for halo
-          inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);
-          inRowEnd = min(Array.domain.dim(1).high, inRowEnd+radius);
+          /*// offset for halo*/
+          /*inRowStart = max(Array.domain.dim(1).low, inRowStart-radius);*/
+          /*inRowEnd = min(Array.domain.dim(1).high, inRowEnd+radius);*/
 
 
 
           /*writeln(globalChunkId, " chunk computed", outRowStart, " ", outRowEnd);*/
+          /*writeln(taskId, " pre MyInner");*/
           const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
+          /*const MyInner = {Inner.dim(1), outRowStart..outRowEnd};*/
+          /*writeln(taskId, " post MyInner ", MyInner);*/
 
           /*writeln(gpuId, " MyInner ", MyInner);*/
 
           var OutputGpu: [MyInner] real(64); // D
 
 
+          const MyInnerExpanded = MyInner.expand(offset);
 
-          const MyArrayDom = {1..5, inRowStart..inRowEnd, Array.domain.dim(1)};
-          writeln(globalChunkId, " MyArrayDom ", MyArrayDom);
-          writeln(globalChunkId, " Array.domain ", Array.domain);
+          /*const MyArrayDom = {0..#5, inRowStart..inRowEnd, Array.domain.dim(2)};*/
+          const MyArrayDom = {0..#5, MyInnerExpanded.dim(0),
+                              MyInnerExpanded.dim(1)};
+          /*writeln(globalChunkId, " MyArrayDom ", MyArrayDom);*/
+          /*writeln(globalChunkId, " Array.domain ", Array.domain);*/
 
           var locArray : [MyArrayDom] Array.eltType;
 
-          writeln(globalChunkId, " here ");
+          /*writeln(globalChunkId, " here ");*/
 
           /*writeln(gpuId, " MyArrayDom ", MyArrayDom);*/
 
           locArray = Array[MyArrayDom];
 
+          /*writeln(taskId, " pre masks");*/
           // Create distance mask
+          /*writeln(taskId, " lm ", LeftMask.domain.size);*/
           const locLeftMaskDomain = LeftMask.domain;
+          /*writeln(taskId, " cm ", CenterMask.domain.size);*/
           const locCenterMaskDomain = CenterMask.domain;
+          /*writeln(taskId, " rm ", RightMask.domain.size);*/
           const locRightMaskDomain = RightMask.domain;
+          /*writeln(taskId, " post masks");*/
+
+          writef("Chunk %i, in: %?, out: %?\n", globalChunkId, MyArrayDom,
+                 MyInner);
 
           if report_times then
             writeln("Starting convolution at ", t.elapsed(), ".");

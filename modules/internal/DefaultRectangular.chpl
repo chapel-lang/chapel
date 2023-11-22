@@ -1533,7 +1533,7 @@ module DefaultRectangular {
           var keep = reallocD((...dom.ranges));
 
           // Copy the preserved elements
-          forall i in keep {
+          foreach i in keep {
             // "move" from the old buffer to the new one
             ref dst = copy.dsiAccess(i);
             const ref src = dsiAccess(i);
