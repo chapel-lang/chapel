@@ -40,10 +40,8 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
   var first_point = centerPoints.first[0];
   var last_point = centerPoints.last[0];
 
-  /*writeln("Before gpu ", centerPoints.dim(1), " ", first_point, " ", last_point);*/
   if verbose_gpu then startVerboseGpu();
 
-  
   @assertOnGpu
   foreach i in centerPoints.dim(1) {
     // Only these need to be real(64) in order to guarantee non-negative outputs
