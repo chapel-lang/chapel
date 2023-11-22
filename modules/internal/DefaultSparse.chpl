@@ -31,6 +31,18 @@ module DefaultSparse {
   config param debugDefaultSparse = false;
 
   config param defaultSparseSupportsAutoLocalAccess = true;
+  config param defaultSparseColMajor = false;
+
+  record ColMajorComparator {
+    param rank: int;
+    type idxType;
+
+    proc keyPart(x: rank*idxType, i:int) {
+      if i>=rank then return (-1, 0);
+
+      return (0, x(rank-1-i));
+    }
+  }
 
   class DefaultSparseDom: BaseSparseDomImpl(?) {
     var dist: unmanaged DefaultDist;
@@ -134,14 +146,22 @@ module DefaultSparse {
 
     // private
     proc find(ind) {
+      use Sort;
       use Search;
+
+
+      const comparator = if defaultSparseColMajor then new
+        ColMajorComparator(rank, idxType)
+                                                  else defaultComparator;
       //
       // sjd: unfortunate specialization for rank == 1
       //
       if rank == 1 && isTuple(ind) && ind.size == 1 then
-        return binarySearch(_indices, ind(0), lo=0, hi=_nnz-1);
+        return binarySearch(_indices, ind(0), lo=0, hi=_nnz-1,
+                            comparator=comparator);
       else
-        return binarySearch(_indices, ind, lo=0, hi=_nnz-1);
+        return binarySearch(_indices, ind, lo=0, hi=_nnz-1,
+                            comparator=comparator);
     }
 
     proc dsiMember(ind) { // ind should be verified to be index type
@@ -277,7 +297,9 @@ module DefaultSparse {
         }
       }
 
-      bulkAdd_prepareInds(inds, dataSorted, isUnique, Sort.defaultComparator);
+      bulkAdd_prepareInds(inds, dataSorted, isUnique,
+                          if defaultSparseColMajor then new
+                          ColMajorComparator(rank, idxType) else Sort.defaultComparator);
 
       if _nnz == 0 {
 
