@@ -901,7 +901,14 @@ static bool isUnacceptableTry(Expr* stmt) {
   bool retval = false;
 
   if (TryStmt* ts = toTryStmt(stmt)) {
-    if (ts->tryBang() == false) {
+    if (ts->isSyncTry()) {
+      // Ignore compiler-inserted sync-try statements for now since they
+      // are invisible to the user and sync statements on their own seem to
+      // be fine.
+      //
+      // TODO: What *should* we be doing here?
+      retval = false;
+    } else if (ts->tryBang() == false) {
       // Only allow try! statements in initializers at the moment
       retval = true;
 
