@@ -2888,7 +2888,8 @@ static void codegenPartTwo() {
   }
 
 
-  if (!gDynoGenLibOutput.empty()) {
+  if (!gDynoGenLibOutput.empty() && fLlvmCodegen) {
+#ifdef HAVE_LLVM
     llvm::Module* llvmModule = gGenInfo->module;
 
     // create the LibraryFileWriter
@@ -2975,6 +2976,7 @@ static void codegenPartTwo() {
 
     // compute the cnamesfunction names
     libWriter.writeAllSections();
+#endif
   }
 }
 

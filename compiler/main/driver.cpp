@@ -2016,6 +2016,12 @@ static void checkIncrementalAndOptimized() {
              "due to the use of separate compilation in the back-end.");
 }
 
+static void checkGenLibNotLLVM() {
+  if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
+    USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
+  }
+}
+
 static void checkUnsupportedConfigs(void) {
   // Check for cce classic
   if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
@@ -2183,6 +2189,8 @@ static void validateSettings() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkGenLibNotLLVM();
 
   checkUnsupportedConfigs();
 
