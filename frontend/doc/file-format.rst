@@ -182,15 +182,37 @@ This section consists of:
 
    * a byte storing flags / kind information
 
-   * unsigned variable-byte encoded, prefix A to copy from the
-     previous symbol table ID
+   * the symbol table ID, stored in a compressed form. It is formed by
+     concatenating the first A bytes of the previous symbol table ID with
+     the B bytes of suffix:
 
-   * unsigned variable-byte encoded, suffix size B stored here
+     * unsigned variable-byte encoded, prefix A to copy from the
+       previous symbol table ID
 
-   * B bytes of suffix
+     * unsigned variable-byte encoded, suffix size B stored here
 
-     * the symbol table ID string is formed by concatenating
-       first A bytes of the previous string with the B bytes of suffix
+     * B bytes of suffix
+
+  * unsigned variable-byte encoded number, G, of code-generated versions
+
+  * for each of the G code-generated versions
+
+    * byte indicating 0 if it is concrete and nonzero for an
+      instantiation
+
+    * additional information TBD for instantiations
+
+    * the name of the symbol in the generated code, also called a "cname",
+      stored in a compressed form. It is formed by concatenating the first
+      A bytes of the previous cname with the B bytes of suffix:
+
+       * unsigned variable-byte encoded, prefix A to copy from the
+         previous symbol's cname
+
+       * unsigned variable-byte encoded, suffix size B stored here
+
+       * B bytes of suffix
+
 
 uAST Section
 ------------

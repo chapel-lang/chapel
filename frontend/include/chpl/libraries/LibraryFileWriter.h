@@ -86,7 +86,7 @@ class LibraryFileWriter {
  public:
   struct GenInfo {
     UniqueString cname;
-    bool isInstantiation;
+    bool isInstantiation = false;
     // TODO: other information about instantiations
   };
 
@@ -136,7 +136,7 @@ class LibraryFileWriter {
 
   /** Write the symbol table for a given module. Returns the
       module-relative offset to the symbol table. */
-  Region writeSymbolTable(const uast::Module* mod,
+  Region writeSymbolTable(const ModInfo& info,
                           Serializer& ser,
                           LibraryFileSerializationHelper& reg);
 

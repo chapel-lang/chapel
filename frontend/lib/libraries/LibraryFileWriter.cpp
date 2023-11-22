@@ -175,7 +175,7 @@ Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
   // note: implementation of writeLocations assumes it runs after writeAst
 
   padToAlign();
-  header.symbolTable = writeSymbolTable(mod, ser, reg);
+  header.symbolTable = writeSymbolTable(info, ser, reg);
   // note: implementation of writeSymbolTable assumes it runs
   // after writeAst and writeLocations
 
@@ -328,10 +328,29 @@ computeSymbolNames(const uast::Module* mod,
   return result;
 }
 
+static unsigned int computeCommonPrefix(const std::string& last,
+                                        const std::string& str) {
+  unsigned int nCommonPrefix = 0;
+
+  // compute the minimum of the lengths
+  size_t n = last.size();
+  if (str.size() < n) n = str.size();
+
+  for (nCommonPrefix = 0; nCommonPrefix < n; nCommonPrefix++) {
+    if (last[nCommonPrefix] != str[nCommonPrefix]) {
+      break;
+    }
+  }
+
+  return nCommonPrefix;
+}
+
 Region
-LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
+LibraryFileWriter::writeSymbolTable(const ModInfo& info,
                                     Serializer& ser,
                                     LibraryFileSerializationHelper& reg) {
+
+  const uast::Module* mod = info.moduleAst;
 
   uint64_t symTableStart = fileStream.tellp();
   SymbolTableHeader header;
@@ -351,6 +370,7 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   auto symsAndNames = computeSymbolNames(mod, reg.symbolTableVec);
 
   std::string lastSymId;
+  std::string lastCname;
 
   for (auto pair : symsAndNames) {
     const uast::AstNode* sym = pair.first;
@@ -372,25 +392,39 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     CHPL_ASSERT((int) tag < 256);
     ser.writeByte(tag);
 
-    //  * write the number of bytes in common with the previous one
-    unsigned int nCommonPrefix = 0;
     {
-      // compute the minimum lengths
-      size_t n = lastSymId.size();
-      if (symId.size() < n) n = symId.size();
-
-      for (nCommonPrefix = 0; nCommonPrefix < n; nCommonPrefix++) {
-        if (lastSymId[nCommonPrefix] != symId[nCommonPrefix]) {
-          break;
-        }
-      }
+      //  * write the number of bytes in common with the previous one
+      unsigned int nCommonPrefix = computeCommonPrefix(lastSymId, symId);
+      ser.writeVUint(nCommonPrefix);
+      //  * write the number of bytes of suffix
+      unsigned int nSuffix = symId.size() - nCommonPrefix;
+      ser.writeVUint(nSuffix);
+      //  * write the suffix data
+      ser.writeData(&symId[nCommonPrefix], nSuffix);
     }
-    ser.writeVUint(nCommonPrefix);
-    //  * write the number of bytes of suffix
-    unsigned int nSuffix = symId.size() - nCommonPrefix;
-    ser.writeVUint(nSuffix);
-    //  * write the suffix data
-    ser.writeData(&symId[nCommonPrefix], nSuffix);
+
+    // write the number of generated versions
+    auto search = info.genMap.find(sym->id());
+    if (search != info.genMap.end()) {
+      const std::vector<GenInfo>& gens = search->second;
+      ser.writeVUint(gens.size()); // number of generated versions
+      for (const auto& g : gens) {
+        // output the byte indicating if it is an instantiation
+        ser.writeByte(g.isInstantiation);
+        // output the cname
+        std::string cname = g.cname.str();
+        // write the number of bytes in common with the previous one
+        unsigned int nCommonPrefix = computeCommonPrefix(lastCname, cname);
+        ser.writeVUint(nCommonPrefix);
+        // write the number of bytes of suffix
+        unsigned int nSuffix = cname.size() - nCommonPrefix;
+        ser.writeVUint(nSuffix);
+        //  * write the suffix data
+        ser.writeData(&cname[nCommonPrefix], nSuffix);
+      }
+    } else {
+      ser.writeVUint(0); // zero generated versions
+    }
 
     lastSymId = symId;
   }
