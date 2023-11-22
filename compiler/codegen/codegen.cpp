@@ -53,18 +53,17 @@
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
-#include "llvm/IR/Module.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Pass.h"
 #include "llvm/Remarks/RemarkSerializer.h"
-#include "llvm/Remarks/YAMLRemarkSerializer.h"
 #include "llvm/Remarks/RemarkStreamer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Support/raw_ostream.h"
 
-#include "llvm/Bitcode/BitcodeWriter.h"
 
 #endif
 
@@ -2682,22 +2681,6 @@ static bool shouldShowLLVMRemarks() {
 }
 #endif
 
-// is 'sym' stored in the provided top-level module?
-/*static bool isInToplevelModule(Symbol* sym, ModuleSymbol* topMod) {
-  ModuleSymbol* outermostModule = nullptr;
-  while (sym != nullptr) {
-    if (isModuleSymbol(outermostModule)) {
-      outermostModule = toModuleSymbol(outermostModule);
-    }
-    if (!sym->defPoint) {
-      break;
-    }
-    sym = sym->defPoint->getModule();
-  }
-
-  return outermostModule == topMod;
-}*/
-
 // Do this for GPU and then do for CPU
 static void codegenPartTwo() {
   initializeGenInfo();
@@ -2982,7 +2965,6 @@ static void codegenPartTwo() {
       {
         llvm::raw_string_ostream OS(generatedCodeBuffer);
         llvm::WriteBitcodeToFile(*M.get(), OS);
-        //M.get()->dump();
       }
 
       auto modName = UniqueString::get(gContext, genMod->name);

@@ -1184,7 +1184,7 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
               "Please use the .dyno suffix for the output file");
   }
 
-  // other variables will be set later
+  // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
 }
 
