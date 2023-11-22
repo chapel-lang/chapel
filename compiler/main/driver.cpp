@@ -1180,7 +1180,7 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   std::string noExt = path.substr(0, dot);
   std::string usePath = noExt + ".dyno";
   if (usePath != path) {
-    USR_FATAL("--dyno-gen-lib accepts the output file as an argument." \
+    USR_FATAL("--dyno-gen-lib accepts the output file as an argument. " \
               "Please use the .dyno suffix for the output file");
   }
 
