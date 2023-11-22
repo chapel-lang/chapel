@@ -34,6 +34,8 @@
 
 #include "llvmUtil.h"
 
+#include <map>
+
 using namespace llvm;
 
 std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
