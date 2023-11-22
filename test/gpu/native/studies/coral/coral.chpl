@@ -104,73 +104,66 @@ proc main(args: [] string) {
 
   var (LeftMask, CenterMask, RightMask, Mask_Size) = create_distance_mask(radius, dx, nx);
 
+  var x, y: int;
+  if inputSize != -1 {
+    x = inputSize;
+    y = inputSize;
+  }
+  else if bigInput {
+    x = 15243;
+    y = 10073;
+  }
+  else {
+    x = 1000;
+    y = 1000;
+  }
+  const ImageSpace = {0..#y, 0..#x};
+
+  var Array : [0..#5,0..#y,0..#x] real(32);
+
+  // Read in array
+  if inputSize == -1 {
+    var f = open(in_array, ioMode.r);
+    var r = f.reader(deserializer=new binaryDeserializer());
+    for i in 0..#5 {
+      for j in 0..#x {
+        for k in 0..#y {
+          var tmp : real;
+          r.readBinary(tmp);
+          Array[i,k,j] = tmp : real(32);
+        }
+      }
+    }
+    r.close();
+  }
+  else {
+    use Random;
+    fillRandom(Array, seed=13);
+    if write_data then writeln(Array);
+  }
+
+  // Create Block distribution of interior of PNG
+  const offset = nx+1; // maybe needs to be +1 to account for truncation?
+
+  /*
+
+     The code below can be used to use multiple locales. It is something
+     that existed in the original implementation, so we are keeping it for
+     now.
+
+     const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
+     const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
+
+  */
+  const Inner = ImageSpace.expand(-offset);
+  var OutputHost : [Inner] real(64); // D
+
   if report_times then
     writeln("Elapsed time at start of coforall loop: ", t.elapsed(), " seconds.");
 
   writeln("Starting coforall loop.");
 
   coforall loc in Locales do on loc {
-
-
-    const radius = (sqrt(window_size) / 2) : int;
-    const nx = (radius / dx) : int(16);
-    writeln("Distance circle has a radius of ", nx, " points.");
-
-    var x, y: int;
-    if inputSize != -1 {
-      x = inputSize;
-      y = inputSize;
-    }
-    else if bigInput {
-      x = 15243;
-      y = 10073;
-    }
-    else {
-      x = 1000;
-      y = 1000;
-    }
-    const ImageSpace = {0..#y, 0..#x};
-
-
-    // TODO make this 0-based, too
-    var Array : [0..#5,0..#y,0..#x] real(32);
-
-    // Read in array
-    if inputSize == -1 {
-      var f = open(in_array, ioMode.r);
-      var r = f.reader(deserializer=new binaryDeserializer());
-      for i in 0..#5 {
-        for j in 0..#x {
-          for k in 0..#y {
-            var tmp : real;
-            r.readBinary(tmp);
-            Array[i,k,j] = tmp : real(32);
-          }
-        }
-      }
-      r.close();
-    }
-    else {
-      use Random;
-      fillRandom(Array, seed=13);
-      if write_data then writeln(Array);
-    }
-
-    // Create Block distribution of interior of PNG
-    const offset = nx+1; // maybe needs to be +1 to account for truncation?
-
-    /*
-
-    The code below can be used to use multiple locales. It is something
-    that existed in the original implementation, so we are keeping it for
-    now.
-     
-    const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
-    const D = Inner dmapped blockDist(Inner, targetLocales=myTargetLocales);
-
-    */
-    const Inner = ImageSpace.expand(-offset);
-    var OutputHost : [Inner] real(64); // D
 
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
 
@@ -211,9 +204,6 @@ proc main(args: [] string) {
           locArray = Array[MyArrayDom];
           commTimer.stop();
 
-          /*if report_times then*/
-            /*writeln("Starting convolution at ", t.elapsed(), ".");*/
-
           convolveTimer.start();
           convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
               locCenterMaskDomain, locRightMaskDomain,
@@ -222,24 +212,23 @@ proc main(args: [] string) {
 
 
           commTimer.start();
-          on loc {
-            OutputHost[MyInner] = OutputGpu;
-          }
+          OutputHost[MyInner] = OutputGpu;
           commTimer.stop();
         }
 
         if report_times {
-          writef("(GPU %i, Task %i) Convolve time: %r\n", gpuId, taskId,
+          writef("(Locale %i, GPU %i, Task %i) Convolve time: %r\n", here.id, gpuId, taskId,
                  convolveTimer.elapsed());
-          writef("(GPU %i, Task %i) Comm     time: %r\n", gpuId, taskId,
+          writef("(Locale %i, GPU %i, Task %i) Comm     time: %r\n", here.id, gpuId, taskId,
                  commTimer.elapsed());
         }
       }
     }
-    if report_checksum {
-        writeln("Checksum: ", + reduce OutputHost);
-        if write_data then writeln(OutputHost);
-    }
+  }
+
+  if report_checksum {
+      writeln("Checksum: ", + reduce OutputHost);
+      if write_data then writeln(OutputHost);
   }
 
 
