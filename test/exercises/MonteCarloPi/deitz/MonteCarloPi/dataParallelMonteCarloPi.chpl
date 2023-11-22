@@ -5,7 +5,7 @@
 //
 // Use the standard random numbers module.
 //
-use Random;
+use NPBRandom;
 
 //
 // Declare command-line configuration constants for:
@@ -24,10 +24,10 @@ writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
 //
 // Construct a RandomStream object.  Since there are no parallel
-// accesses to this object, set parSafe to false to avoid locking
+// accesses to this object, set parSafe to false to avoid locking1
 // overhead.
 //
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new owned NPBRandomStream(real, seed);
 
 //
 // Create a domain over the number of random points to generate.

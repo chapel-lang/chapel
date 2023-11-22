@@ -1,181 +1,181 @@
 Initial Grid
 +--------------------+
-|    o       o       |
-|  oo   o        o   |
-| oo     o      o    |
-|     o  o  o        |
-|   o oo      o      |
-|           o        |
-| o              o  o|
-|   o              o |
-|       o     o o   o|
-|              o oooo|
-|o    oo o     o o   |
-|  o   ooo   o o     |
-|             o      |
-| o       o     o   o|
-|o o    oo           |
-|                 o  |
-|        o o     o   |
-|          o oo    o |
-|o        oo      oo |
-| o o  oo o        o |
+|   o                |
+|o         o      o  |
+|      o    ooo      |
+|     oo    o   o    |
+|  o o          o    |
+|         o          |
+|o         oo  o  o  |
+|    o o     o  oo o |
+| oo       o    o   o|
+|o o     o   o   oo  |
+|  oo oo o  oo   oo  |
+|   o oo   o   oo o  |
+|                    |
+|o            o   o o|
+|     o              |
+|      o   o  o      |
+|oo             o    |
+|      o  o o   o    |
+|  oo            o o |
+| oo            o o  |
 +--------------------+
 Iteration 1
 +--------------------+
-|   o                |
-| ooo                |
-| ooo   oo           |
-|  o oooo            |
-|    ooo     o       |
+|                    |
+|           oo       |
+|     oo   ooo       |
+|     oo    o  o     |
+|     o              |
+|          o         |
+|          oo   ooo  |
+| o        o   ooooo |
+| ooo       o   o  o |
+|       o o  o  o oo |
+| ooo oo  o ooo    o |
+|  oo ooo   o   o o  |
+|              o o o |
 |                    |
 |                    |
-|                  oo|
-|              ooo  o|
-|      oo     oo oooo|
-|     oo o     o o o |
-|     oo o     oo    |
-|       oo    oo     |
-| o      o           |
-| o      o           |
-|       ooo          |
-|         o o     o  |
-|          o       o |
-|        oooo     ooo|
-|        ooo      oo |
+|                    |
+|          o   o     |
+| oo            oo   |
+| ooo           ooo  |
+| ooo            oo  |
 +--------------------+
 Iteration 2
 +--------------------+
-|   o                |
-| o  o               |
-|     o oo           |
-| oo     o           |
-|   oo  o            |
-|     o              |
 |                    |
-|               o  oo|
-|             oo o   |
-|     ooo     o     o|
-|        o       o oo|
-|     o  oo          |
-|      o oo   ooo    |
-|        oo          |
+|          o o       |
+|     oo   o  o      |
+|    o     ooo       |
+|     oo             |
+|          oo    o   |
+|         ooo  o   o |
+| o        o   o   o |
+| oo       oo       o|
+|    o o o    oo oooo|
+| o o o     o oo   o |
+| o o o o  oo oooooo |
+|      o        ooo  |
 |                    |
-|       o oo         |
-|         o          |
-|        o          o|
-|        o  o       o|
-|        o  o     o o|
+|                    |
+|                    |
+|               o    |
+| o o          o  o  |
+|o                   |
+| o o           o o  |
 +--------------------+
 Iteration 3
 +--------------------+
 |                    |
-|    o               |
-| oo    oo           |
-|  ooo o o           |
-|  ooo               |
-|    o               |
+|           o        |
+|     o   oo  o      |
+|    o     ooo       |
+|     o      o       |
+|         o o        |
+|         o     o o  |
+| oo               oo|
+| oo      ooo ooo   o|
+| o ooo    oo ooo o o|
+|   o o o  oo        |
+|     o    oo o    o |
+|      o           o |
+|                o   |
 |                    |
-|              oo    |
-|      o      ooo  oo|
-|      oo     ooo ooo|
-|     o  oo        oo|
-|              oo    |
-|          o   o     |
-|       ooo    o     |
-|          o         |
-|        ooo         |
-|         oo         |
-|        oo          |
-|       ooo         o|
-|                  o |
+|                    |
+|                    |
+|                    |
+|oo              o   |
+|                    |
 +--------------------+
 Iteration 4
 +--------------------+
 |                    |
+|          o         |
+|         o          |
+|    oo   oo oo      |
+|            o       |
+|          o         |
+|          o       o |
+| oo      o     oo oo|
+|o   o    o o o oo  o|
+| o o oo      o oo o |
+|  oo o   o   o    o |
+|    oo    ooo       |
+|                 o  |
 |                    |
-| oo oo oo           |
-|    oo  o           |
-|  o                 |
-|    o               |
 |                    |
-|             o o    |
-|      oo         o o|
-|     oooo    o ooo  |
-|      ooo    o  oo o|
-|         o    oo    |
-|        oo   oo     |
-|        ooo         |
-|       o  o         |
-|        o  o        |
 |                    |
-|       o            |
-|       o o          |
-|        o           |
+|                    |
+|                    |
+|                    |
+|                    |
 +--------------------+
 Iteration 5
 +--------------------+
 |                    |
 |                    |
-|   oooooo           |
-| oo ooooo           |
-|   ooo              |
+|         o o        |
+|         ooooo      |
+|         oo oo      |
+|           o        |
+|         oo      ooo|
+| o       o    ooo oo|
+|o  ooo    o o      o|
+| o o oo   o  o oo oo|
+|  oo      oo oo  o  |
+|   ooo    ooo       |
+|           o        |
 |                    |
 |                    |
 |                    |
-|     o  o      o oo |
-|     o        oo    |
-|     o   o   o   oo |
-|         o     oo   |
-|             ooo    |
-|       o  o         |
-|       o  oo        |
 |                    |
 |                    |
-|        o           |
-|       o            |
-|        o           |
+|                    |
+|                    |
 +--------------------+
 Iteration 6
 +--------------------+
 |                    |
-|    oooo            |
-|  oo    o           |
-|  o     o           |
-|  oo   o            |
-|    o               |
+|                    |
+|         o o        |
+|        o    o      |
+|         o   o      |
+|           oo     o |
+|         oo    ooo o|
+|    o    o o   oo   |
+|oo o oo  ooo o      |
+| o   oo  oo  o ooooo|
+|      o  o   oooooo |
+|  ooo        o      |
+|    o     ooo       |
 |                    |
 |                    |
-|              ooo   |
-|    ooo       oo    |
-|                 o  |
-|             o ooo  |
-|              ooo   |
-|          oo  o     |
-|          oo        |
 |                    |
 |                    |
 |                    |
-|       oo           |
+|                    |
 |                    |
 +--------------------+
 Iteration 7
 +--------------------+
-|     oo             |
-|   ooooo            |
-|  ooooo o           |
-| o     oo           |
-|  oo                |
-|   o                |
 |                    |
-|               o    |
-|     o        o o   |
-|     o        o     |
-|     o           o  |
-|                 o  |
-|             o   o  |
-|          oo  o     |
-|          oo        |
+|                    |
+|                    |
+|        ooo o       |
+|             o      |
+|         o oo   ooo |
+|         o  o  o oo |
+|    oo  o  oo oo o  |
+|ooo   o o  o      o |
+|ooo o  oo  o o     o|
+|  ooo o  oo oo     o|
+|   ooo    oo o ooo  |
+|    o      oo       |
+|           o        |
+|                    |
 |                    |
 |                    |
 |                    |
@@ -184,21 +184,21 @@ Iteration 7
 +--------------------+
 Iteration 8
 +--------------------+
-|       o            |
-|  o                 |
-|  o     o           |
-| o   oooo           |
-|  oo                |
-|  oo                |
 |                    |
-|               o    |
-|              o     |
-|    ooo        o    |
 |                    |
-|                ooo |
+|         o          |
+|         o          |
+|        o    o   o  |
+|          oooo  o o |
+|        oo    oo    |
+| o   o ooooooooo o  |
+|o o o o oooo oo   o |
+|o   o o o  o o    oo|
+|      oooo   o  o o |
+|  o      o   oo o   |
+|   ooo          o   |
+|           oo       |
 |                    |
-|          ooo       |
-|          oo        |
 |                    |
 |                    |
 |                    |
@@ -209,19 +209,19 @@ Iteration 9
 +--------------------+
 |                    |
 |                    |
-| oo   o o           |
-| o o  ooo           |
-| o oo oo            |
-|  oo                |
 |                    |
+|        oo          |
+|         ooo o   o  |
+|        o oooo ooo  |
+|       o         o  |
+| o   oo         o   |
+|o  oo o        o ooo|
+| o o  o    o o    oo|
+|     oo  oo  o o  oo|
+|   ooooo o   oo o   |
+|   oo       oo o    |
+|    o               |
 |                    |
-|     o        oo    |
-|     o              |
-|     o          oo  |
-|                 o  |
-|           o     o  |
-|          o o       |
-|          o o       |
 |                    |
 |                    |
 |                    |
@@ -232,18 +232,18 @@ Iteration 10
 +--------------------+
 |                    |
 |                    |
-| oo   o o           |
-|oo oo   o           |
-| o  ooo o           |
-|  ooo               |
 |                    |
-|                    |
-|                    |
-|    ooo        oo   |
-|                oo  |
-|                 oo |
-|           o        |
-|          o o       |
+|        oo          |
+|             oo  o  |
+|        o    oo  oo |
+|      oo   oo  o o  |
+|    oooo        o   |
+|oo oo oo        oo o|
+|  oo  oo  o o   o   |
+|  oo    ooo  o o ooo|
+|   o   oooo     o   |
+|      o     oo o    |
+|   oo               |
 |                    |
 |                    |
 |                    |

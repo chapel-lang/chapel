@@ -14,8 +14,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
              numBuckets: int = 10;            // number of histogram buckets
 
 // seed the random stream with something reproducible?
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 // global variables
 var X: [1..numNumbers] real, // array of random numbers
@@ -29,7 +28,9 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill array with random numbers (using standard Random module)
-fillRandom(X, seed, algorithm=RNG.NPB);
+if useRandomSeed
+  then fillRandom(X);
+  else fillRandom(X, 314159265);
 
 // output array of random numbers
 if printRandomNumbers then

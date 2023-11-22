@@ -5,7 +5,7 @@ config const n = 1000000;
 config const m = 100;
 config const reps = 10;
 var A:[1..n] int;
-fillRandom(A, seed=1, algorithm=RNG.PCG);
+fillRandom(A, seed=1);
 forall a in A {
   a = abs(a) % m;
   if a <= 1 then

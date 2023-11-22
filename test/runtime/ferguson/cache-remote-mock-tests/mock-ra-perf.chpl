@@ -30,7 +30,7 @@ proc run(name:string,
   }
 
   coforall task in 0..#threads {
-    var rng = new RandomStream(uint, seed, parSafe=false);
+    var rng = new randomStream(uint, seed);
     var t:stopwatch;
     t.start();
     for update in 0..<numUpdates {

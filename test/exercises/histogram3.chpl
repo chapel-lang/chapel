@@ -15,9 +15,7 @@ config const printRandomNumbers: bool = true, // print random numbers to screen
              numThreads: int = 4;             // number of threads to use
 
 // seed the random stream with something reproducible?
-config const useRandomSeed = true,
-             seed  = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265,
-             seed2 = if useRandomSeed then SeedGenerator.oddCurrentTime else 161803399;
+config const useRandomSeed = true;
 
 // global variables
 var X, X2: [1..numNumbers] real, // arrays of random numbers
@@ -31,8 +29,13 @@ writef(" Number of Buckets        = %{########}\n", numBuckets);
 writeln();
 
 // fill arrays with random numbers (using standard Random module)
-fillRandom(X, seed, algorithm=RNG.NPB);
-fillRandom(X2, seed2, algorithm=RNG.NPB);
+if useRandomSeed {
+  fillRandom(X);
+  fillRandom(X2);
+} else {
+  fillRandom(X, 314159265);
+  fillRandom(X2, 161803399);
+}
 X = (X+X2)/2;
 
 // output arrays of random numbers as averages

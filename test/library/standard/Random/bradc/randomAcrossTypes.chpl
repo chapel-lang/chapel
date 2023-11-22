@@ -1,8 +1,5 @@
 use Random;
 
-config param useNPB = true;
-config param rtype = if useNPB then RNG.NPB else RNG.PCG;
-
 var A: [1..8] real;
 var B: [1..8] imag;
 var C: [1..4] complex;
@@ -10,40 +7,40 @@ var C: [1..4] complex;
 //
 // Check standalone routines
 //
-fillRandom(A, seed=314159265, algorithm=rtype);
-fillRandom(B, seed=314159265, algorithm=rtype);
-fillRandom(C, seed=314159265, algorithm=rtype);
+fillRandom(A, seed=314159265);
+fillRandom(B, seed=314159265);
+fillRandom(C, seed=314159265);
 writeln(A);
 writeln(B);
 writeln(C);
 
-var rs1 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs2 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs3 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs1 = new randomStream(seed=314159265, eltType=real);
+var rs2 = new randomStream(seed=314159265, eltType=imag);
+var rs3 = new randomStream(seed=314159265, eltType=complex);
 
 //
-// Check fillRandom method
+// Check fill method
 //
-rs1.fillRandom(A);
-rs2.fillRandom(B);
-rs3.fillRandom(C);
+rs1.fill(A);
+rs2.fill(B);
+rs3.fill(C);
 writeln(A);
 writeln(B);
 writeln(C);
 
-var rs4 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs5 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs6 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs4 = new randomStream(seed=314159265, eltType=real);
+var rs5 = new randomStream(seed=314159265, eltType=imag);
+var rs6 = new randomStream(seed=314159265, eltType=complex);
 
 //
 // Check consecutive implementations of fillRandom method()
 //
-rs4.fillRandom(A[1..4]);
-rs5.fillRandom(B[1..4]);
-rs6.fillRandom(C[1..2]);
-rs4.fillRandom(A[5..8]);
-rs5.fillRandom(B[5..8]);
-rs6.fillRandom(C[3..4]);
+rs4.fill(A[1..4]);
+rs5.fill(B[1..4]);
+rs6.fill(C[1..2]);
+rs4.fill(A[5..8]);
+rs5.fill(B[5..8]);
+rs6.fill(C[3..4]);
 writeln(A);
 writeln(B);
 writeln(C);
@@ -79,9 +76,9 @@ writeln(A);
 writeln(B);
 writeln(C);
 
-var rs7 = createRandomStream(seed=314159265, eltType=real, algorithm=rtype);
-var rs8 = createRandomStream(seed=314159265, eltType=imag, algorithm=rtype);
-var rs9 = createRandomStream(seed=314159265, eltType=complex, algorithm=rtype);
+var rs7 = new randomStream(seed=314159265, eltType=real);
+var rs8 = new randomStream(seed=314159265, eltType=imag);
+var rs9 = new randomStream(seed=314159265, eltType=complex);
 //
 // Check getNext() method
 //

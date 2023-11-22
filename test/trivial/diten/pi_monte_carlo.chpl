@@ -7,7 +7,7 @@ config const verbose: bool = false;
 
 var count:int;
 var pi, startTime, totalTime: real;
-var rs = new owned NPBRandomStream(real, seed);
+var rs = new randomStream(real, seed);
 
 startTime = timeSinceEpoch().totalSeconds();
 

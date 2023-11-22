@@ -15,7 +15,7 @@ var buf = allocate(uint(8), testSize, alignment=testSize);
 // store buf as a _ddata so we can GET from it (otherwise always narrow)
 const A = buf:_ddata(uint(8));
 
-var rng = new RandomStream(int);
+var rng = new randomStream(int);
 
 var expectSum = 0;
 for i in 0..#testSize {
