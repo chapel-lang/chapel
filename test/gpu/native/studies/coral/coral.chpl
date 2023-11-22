@@ -84,6 +84,7 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
 
       //Output = prev + current;
       prev = prev + current - tmpLL - 2*(tmpLC + tmpLR);
+      /*prev = current - tmpLL - 2*(tmpLC + tmpLR);*/
     }
 
   }
@@ -164,25 +165,29 @@ proc main(args: [] string) {
   writeln("Starting coforall loop.");
 
   coforall loc in Locales do on loc {
-
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
+      const globalGpuId = loc.gpus.size*loc.id+gpuId;
+      /*writeln("Global GPU ", globalGpuId);*/
 
       // Create distance mask
       const locLeftMaskDomain = LeftMask.domain;
       const locCenterMaskDomain = CenterMask.domain;
       const locRightMaskDomain = RightMask.domain;
 
+
       coforall taskId in 0..#numWorkers {
+        const workerId = globalGpuId*numWorkers + taskId;
+        /*writeln("worker ", workerId);*/
+
         var commTimer : stopwatch;
         var convolveTimer : stopwatch;
-        const workerId = gpuId*numWorkers + taskId;
 
         for chunkId in 0..#numChunksPerWorker {
           const globalChunkId = workerId*numChunksPerWorker + chunkId;
 
           var (outRowStart, outRowEnd) =
              _computeChunkStartEnd(Inner.dim(0).size,
-                                   loc.gpus.size*numWorkers*numChunksPerWorker,
+                                   numLocales*loc.gpus.size*numWorkers*numChunksPerWorker,
                                    globalChunkId+1);
           // offset for 1-based support function and start offset
           outRowStart += Inner.dim(0).low-1;
@@ -198,11 +203,15 @@ proc main(args: [] string) {
           const MyArrayDom = {0..#5, MyInnerExpanded.dim(0),
                               MyInnerExpanded.dim(1)};
 
+          /*writeln(globalChunkId, " in: ", MyArrayDom, " out: ", MyInner);*/
+
           var locArray : [MyArrayDom] Array.eltType = noinit;
+
 
           commTimer.start();
           locArray = Array[MyArrayDom];
           commTimer.stop();
+          if write_data then writeln(locArray);
 
           convolveTimer.start();
           convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
