@@ -27,6 +27,8 @@ config const verbose_gpu = false;
 config const numWorkers = 1;
 config const numChunksPerWorker = 1;
 
+extern proc printf(s...);
+
 //var bs = 1;
 //var be = 5;
 
@@ -38,7 +40,7 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
   var first_point = centerPoints.first[0];
   var last_point = centerPoints.last[0];
 
-  writeln("Before gpu ", centerPoints.dim(1), " ", first_point, " ", last_point);
+  /*writeln("Before gpu ", centerPoints.dim(1), " ", first_point, " ", last_point);*/
   if verbose_gpu then startVerboseGpu();
 
   
@@ -172,12 +174,17 @@ proc main(args: [] string) {
     const Inner = ImageSpace.expand(-offset);
     var OutputHost : [Inner] real(64); // D
 
-    writeln("Inner : ", Inner);
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
-    /*on here.gpus[0] {*/
       const gpuId = 0;
 
+      // Create distance mask
+      const locLeftMaskDomain = LeftMask.domain;
+      const locCenterMaskDomain = CenterMask.domain;
+      const locRightMaskDomain = RightMask.domain;
+
       coforall taskId in 0..#numWorkers {
+        var commTimer : stopwatch;
+        var convolveTimer : stopwatch;
         const workerId = gpuId*numWorkers + taskId;
 
         for chunkId in 0..#numChunksPerWorker {
@@ -193,7 +200,7 @@ proc main(args: [] string) {
 
           const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
 
-          var OutputGpu: [MyInner] real(64); // D
+          var OutputGpu: [MyInner] real(64) = noinit; // D
 
 
           const MyInnerExpanded = MyInner.expand(offset);
@@ -201,37 +208,36 @@ proc main(args: [] string) {
           const MyArrayDom = {0..#5, MyInnerExpanded.dim(0),
                               MyInnerExpanded.dim(1)};
 
-          var locArray : [MyArrayDom] Array.eltType;
+          var locArray : [MyArrayDom] Array.eltType = noinit;
 
+          commTimer.start();
           locArray = Array[MyArrayDom];
+          commTimer.stop();
 
-          // Create distance mask
-          const locLeftMaskDomain = LeftMask.domain;
-          const locCenterMaskDomain = CenterMask.domain;
-          const locRightMaskDomain = RightMask.domain;
+          /*if report_times then*/
+            /*writeln("Starting convolution at ", t.elapsed(), ".");*/
 
-          /*writef("Chunk %i, in: %?, out: %?\n", globalChunkId, MyArrayDom,*/
-                 /*MyInner);*/
-
-          if report_times then
-            writeln("Starting convolution at ", t.elapsed(), ".");
-
-          var t2 : stopwatch;
-          t2.start();
+          convolveTimer.start();
           convolve_and_calculate(locArray, MyInner, locLeftMaskDomain,
               locCenterMaskDomain, locRightMaskDomain,
               OutputGpu, t);
-          t2.stop();
+          convolveTimer.stop();
 
-          if report_times then writeln("Convolve time: ", t2.elapsed());
+
+          commTimer.start();
           on loc {
             OutputHost[MyInner] = OutputGpu;
           }
+          commTimer.stop();
         }
 
+        if report_times {
+          writef("(GPU %i, Task %i) Convolve time: %r\n", gpuId, taskId,
+                 convolveTimer.elapsed());
+          writef("(GPU %i, Task %i) Comm     time: %r\n", gpuId, taskId,
+                 commTimer.elapsed());
+        }
       }
-
-
     }
     if report_checksum {
         writeln("Checksum: ", + reduce OutputHost);
