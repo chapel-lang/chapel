@@ -65,6 +65,9 @@
     private use ChapelLocks;
     private use IO;
 
+    /*
+      Generate an odd integer seed value based on the current time.
+    */
     proc oddTimeSeed(): int(64) {
       use Time;
       const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
