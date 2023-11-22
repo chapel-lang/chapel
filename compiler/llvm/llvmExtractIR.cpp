@@ -59,11 +59,14 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
     names.insert(V->getName().str());
   }
 
+  std::map<std::string, GlobalValue::LinkageTypes> saveLinkage;
+
   // Make sure the function in the module is externally visible
   // (so the below cleanups don't remove it)
   for (Function &F : M) {
     std::string name = F.getName().str();
     if (names.count(name) > 0) {
+      saveLinkage[F.getName().str()] = F.getLinkage();
       F.setLinkage(GlobalValue::WeakAnyLinkage);
     }
   }
@@ -79,6 +82,15 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   Passes.add(createStripDeadPrototypesPass()); // Remove dead func decls
 
   Passes.run(M);
+
+  // Put the linkage for functions back
+  for (const auto& pair: saveLinkage) {
+    const std::string& name = pair.first;
+    GlobalValue::LinkageTypes linkage = pair.second;
+    if (Function* f = M.getFunction(name)) {
+      f->setLinkage(linkage);
+    }
+  }
 
   return ownedM;
 }
