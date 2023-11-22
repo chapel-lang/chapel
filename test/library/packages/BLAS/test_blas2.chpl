@@ -621,7 +621,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = new randomStream(t);
 
     rng.fill(A);
     rng.fill(X);
@@ -654,7 +654,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = new randomStream(t);
 
     rng.fill(A);
     rng.fill(X);
@@ -687,7 +687,7 @@ proc test_hemv_helper(type t){
 
 
     // Populate values
-    var rng = createRandomStream(eltType=t, algorithm=RNG.PCG);
+    var rng = new randomStream(t);
 
     rng.fill(A);
     rng.fill(X);
