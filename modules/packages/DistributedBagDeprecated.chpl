@@ -81,10 +81,6 @@
   locality (see :const:`distributedBagInitialBlockSize`). This data structure is unordered
   and employs its own work stealing algorithm to balance work across nodes.
 
-  .. note::
-
-    This module is a work in progress and may change in future releases.
-
   Usage
   _____
 
@@ -108,8 +104,8 @@
     bag.addBulk(1..N);
     bag.balance();
 
-  Planned Improvements
-  ____________________
+  Possible Improvements
+  _____________________
 
   1.  Dynamic work-stealing will require an overhaul to use a helper algorithm to keep down
       the number of tasks spawned. Currently user tasks will wait on the current work-stealer
@@ -207,7 +203,7 @@ module DistributedBagDeprecated {
   config const distributedBagMaxBlockSize = 1024 * 1024;
 
   /*
-    Reference counter for DistributedBag
+    Reference counter for DistributedBagDeprecated
   */
   @chpldoc.nodoc
   class DistributedBagRC {
