@@ -275,7 +275,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tKernel: %s\n"
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
-                 "\tNumThreads: %lld\n",
+                 "\tNumThreads: %ld\n",
                  chpl_task_getRequestedSubloc(),
                  chpl_lookupFilename(fn),
                  ln,
@@ -808,7 +808,7 @@ size_t chpl_gpu_get_alloc_size(void* ptr) {
 void* chpl_gpu_mem_alloc(size_t size, chpl_mem_descInt_t description,
                          int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%d file:%s line:%d\n", size,
+  CHPL_GPU_DEBUG("chpl_gpu_mem_alloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
   void *ptr = NULL;
@@ -868,7 +868,7 @@ void* chpl_gpu_mem_calloc(size_t number, size_t size,
                           chpl_mem_descInt_t description,
                           int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%d file:%s line:%d\n", size,
+  CHPL_GPU_DEBUG("chpl_gpu_mem_calloc called. Size:%zu file:%s line:%d\n", size,
                chpl_lookupFilename(filename), lineno);
 
   void *ptr = NULL;
@@ -906,7 +906,7 @@ void* chpl_gpu_mem_realloc(void* memAlloc, size_t size,
                            chpl_mem_descInt_t description,
                            int32_t lineno, int32_t filename) {
 
-  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%d\n", size);
+  CHPL_GPU_DEBUG("chpl_gpu_mem_realloc called. Size:%zu\n", size);
 
   assert(chpl_gpu_is_device_ptr(memAlloc));
 
@@ -951,7 +951,7 @@ void* chpl_gpu_mem_memalign(size_t boundary, size_t size,
 }
 
 void chpl_gpu_hostmem_register(void *memAlloc, size_t size) {
-  CHPL_GPU_DEBUG("chpl_gpu_hostmem_register is called. Ptr %p, size: %d\n", memAlloc, size);
+  CHPL_GPU_DEBUG("chpl_gpu_hostmem_register is called. Ptr %p, size: %zu\n", memAlloc, size);
   chpl_gpu_impl_hostmem_register(memAlloc, size);
 }
 

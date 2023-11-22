@@ -8,9 +8,9 @@ use Random;
 
 //
 // This primer shows two ways to generate a sequence of random numbers:
-// The first is by creating an array of random numbers using the
+// The first is by creating an array of random numbers using the top-level
 // :proc:`Random.fillRandom` function. The second way is to use
-// a :class:`~PCGRandom.PCGRandomStream` instance.
+// a :record:`~Random.randomStream` instance.
 //
 
 // Using fillRandom
@@ -40,27 +40,26 @@ writeln("rand16s = ", rand16s); // Here the output is deterministic
 writeln();
 
 
-// Using RandomStream
-// ------------------
+// Using ``randomStream``
+// ----------------------
 
 //
 // The second way to generate a sequence of random numbers is by creating a
-// :class:`~PCGRandom.PCGRandomStream` class instance.  The first argument is the
-// type of the elements that the instance should generate. If a particular seed
-// is desired, it should be specified upon creation of this instance.
-//
-var randStream = new RandomStream(real);
-var randStreamSeeded = new RandomStream(real, seed);
+// :record:`~Random.randomStream` instance.  The first argument in its
+// initializer is the type of the elements that the instance should generate.
+// The second argument is a seed value of type ``int``.
+var randStream = new randomStream(real);
+var randStreamSeeded = new randomStream(real, seed);
 
 //
 // Then the instance can be used to obtain the numbers.  This can be done in a
-// large chunk by calling :proc:`~PCGRandom.PCGRandomStream.fillRandom`:
+// large chunk by calling :proc:`~Random.randomStream.fill`:
 //
 var randsFromStream: [1..10] real;
-randStream.fillRandom(randsFromStream);
+randStream.fill(randsFromStream);
 
 //
-// Or random numbers can be requested one at a a time.
+// Or random numbers can be requested one at a a time:
 //
 var firstRand = randStreamSeeded.getNext();
 writeln(firstRand == randsSeeded[0]);
@@ -96,27 +95,8 @@ writeln(rand3 == randsSeeded[3]);
 
 
 //
-// The stream can be used to iterate over a specified set of positions.
+// The stream can also be used to iterate over a specified set of positions.
 //
-for i in randStreamSeeded.iterate({5..10}, real) {
+for i in randStreamSeeded.iterate({5..10}) {
   writeln(i);
 }
-
-
-//
-// By default, access using the :class:`~PCGRandom.PCGRandomStream` instance will
-// be safe in the presence of parallelism. This can be changed for the entire
-// stream during class creation.  As a result, two parallel accesses or updates
-// to the position from which reading is intended may conflict.
-//
-var parallelUnsafe       = new RandomStream(real, parSafe=false);
-var parallelSeededUnsafe = new RandomStream(real, seed, false);
-
-// Now :class:`~PCGRandom.PCGRandomStream` functions, such as
-// ``parallelUnsafe.getNext()`` and ``parallelSeededUnsafe.getNext()`` can be
-// called.
-
-//
-// The ``RandomStream`` instances above were created with ``new [owned]``
-// and so are automatically deleted when they go out of scope.
-//

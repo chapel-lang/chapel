@@ -1,3 +1,7 @@
+checkWriteThis.chpl:6: In module 'Foo':
+checkWriteThis.chpl:8: warning: 'PCGRandomStream' is deprecated; please use randomStream instead
+checkWriteThis.chpl:10: In function 'generateToken':
+checkWriteThis.chpl:23: warning: 'PCGRandomStream' is deprecated; please use randomStream instead
 uncaught SystemError: Invalid argument: Argument type mismatch in argument 0 (in string.format)
   checkWriteThis.chpl:35: thrown here
   checkWriteThis.chpl:42: uncaught here

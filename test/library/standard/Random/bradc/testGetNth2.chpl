@@ -2,16 +2,13 @@ use Random;
 
 config var n = 100;
 
-config param useNPB = true;
-config param rtype = if useNPB then RNG.NPB else RNG.PCG;
-
-var randStr1 = createRandomStream(real, 314159265, algorithm=rtype);
-var randStr2 = createRandomStream(real, 314159265, algorithm=rtype);
-var randStr3 = createRandomStream(real, 314159265, algorithm=rtype);
+var randStr1 = new randomStream(real, 314159265);
+var randStr2 = new randomStream(real, 314159265);
+var randStr3 = new randomStream(real, 314159265);
 
 var A, B: [1..n] real;
 
-randStr1.fillRandom(A);
+randStr1.fill(A);
 
 for i in 1..n {
   B(i) = randStr2.getNth(i-1);
@@ -60,7 +57,7 @@ checkArrays("6: ");
 
 randStr2.skipToNth(0);
 
-randStr2.fillRandom(B);
+randStr2.fill(B);
 
 checkArrays("7: ");
 

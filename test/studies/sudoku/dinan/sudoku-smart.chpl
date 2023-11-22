@@ -8,7 +8,7 @@ config const MAX_ITER  = 500000;
 var givenBoard: [1..9, 1..9] int;  // The given board
 var initBoard:  [1..9, 1..9] int;  // The initialized board
 
-var myRand = new owned RandomStream(real);
+var myRand = new randomStream(int);
 
 
 // Return a random number on the range [1, n]

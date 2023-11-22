@@ -215,7 +215,7 @@ class BoundedBuffer {
       head = 0,                            // the head's cursor position
       tail = 0;                            // the tail's cursor position
 
-  var rng = new owned RandomStream(real);
+  var rng = new randomStream(real, false);
 
   proc init(type eltType = real, capacity: int, sentinel: eltType = -1.0) {
     this.eltType = eltType;

@@ -1,4 +1,4 @@
-use Random, BlockDist;  // Add a use for the standard block distribution
+use NPBRandom, BlockDist;  // Add a use for the standard block distribution
 
 config const n = 100000,
              seed = 589494289;

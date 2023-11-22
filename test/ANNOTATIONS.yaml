@@ -2400,6 +2400,10 @@ arkouda: &arkouda-base
     - Closes 2790 Convert non sym entry array creations to new throwing interface (Bears-R-Us/arkouda#2791)
   09/29/23:
     - Closes 2796 Reduce Parquet IO benchmark default size (Bears-R-Us/arkouda#2797)
+  10/26/23:
+    - Fix chpl linker warnings on macOS (#23647)
+  11/07/23:
+    - Modify chpl link line change to not exclude jemalloc (#23767)
 
 
 arkouda-string:
