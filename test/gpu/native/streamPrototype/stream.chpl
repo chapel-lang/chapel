@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions.
 //
-use Time, Types /*, Random */;
+use Time, Types /*, NPBRandom */;
 
 use GpuDiagnostics;
 

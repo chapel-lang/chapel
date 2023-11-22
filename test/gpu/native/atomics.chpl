@@ -60,7 +60,7 @@ proc runTest(param op : string, type T) {
   var origVals : [0..2] T;
   var gpuVals  : [0..3] T;
   var cpuVals  : [0..3] T;
-  var rng = createRandomStream(eltType=T, parSafe=false);
+  var rng = new randomStream(eltType=T);
   for i in 0..2 {
     origVals[i] = rng.getNext();
     gpuVals[i] = origVals[i];

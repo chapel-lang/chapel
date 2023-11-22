@@ -1,6 +1,5 @@
 import GpuSort;
 import Random;
-import Random.RandomSupport;
 import Time;
 
 config const arrSize = 100_000;
@@ -36,7 +35,7 @@ proc checkSorted(arr: [] uint) {
 
 
 var cpuArr: [low..#arrSize] uint;
-config const seed = RandomSupport.SeedGenerator.oddCurrentTime;
+config const seed = Random.NPBRandom.oddTimeSeed();
 Random.fillRandom(cpuArr, seed);
 var cpuArr2 = cpuArr;
 
