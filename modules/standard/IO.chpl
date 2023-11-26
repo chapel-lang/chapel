@@ -3608,13 +3608,18 @@ record defaultDeserializer {
 @deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
 type DefaultDeserializer = defaultDeserializer;
 
-@chpldoc.nodoc
+@unstable("This config param is unstable and may be removed without warning prior to Chapel 2.0")
+/*
+  This config param allows users to disable a warning for reading and writing
+  classes and strings with ``binarySerializer`` and ``binaryDeserializer``
+  following a format change in the 1.33 release.
+*/
 config param warnBinaryStructured : bool = true;
 
 private proc warnBinary(type t, param depth : int) {
   if warnBinaryStructured {
     if t == string || isClassType(t) {
-      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning.";
+      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
       compilerWarning(msg, depth);
     }
   }
