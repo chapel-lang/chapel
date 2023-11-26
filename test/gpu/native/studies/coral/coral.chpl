@@ -21,6 +21,7 @@ config const dx : real;                      /* the resolution of the raster ima
 config const bigInput = false;
 config const inputSize = -1;
 config const report_times = true;
+config const report_detail_times = false;
 config const report_checksum = false;
 config const write_data = false;
 config const verbose_gpu = false;
@@ -171,12 +172,16 @@ proc main(args: [] string) {
     var locInput = locOutput.expand(offset);
     var locImage: [0..#5, locInput.dim(0), locInput.dim(1)] real(32);
 
+/*
     for i in 0..#5 {
       for (j,k) in locInput {
         const tmp = (1.0*i/j*k): real(32);
         locImage[i,j,k] = tmp - tmp:int(32);
       }
     }
+    */
+
+    locImage = Array[locImage.domain];
 
     /*writeln(here, " ", locImage.domain);*/
 
@@ -240,7 +245,7 @@ proc main(args: [] string) {
           commTimer.stop();
         }
 
-        if report_times {
+        if report_detail_times {
           writef("(Locale %i, GPU %i, Task %i) Convolve time: %r\n", here.id, gpuId, taskId,
                  convolveTimer.elapsed());
           writef("(Locale %i, GPU %i, Task %i) Comm     time: %r\n", here.id, gpuId, taskId,
