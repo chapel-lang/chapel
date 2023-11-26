@@ -172,32 +172,16 @@ proc main(args: [] string) {
     var locInput = locOutput.expand(offset);
     var locImage: [0..#5, locInput.dim(0), locInput.dim(1)] real(32);
 
-/*
-    for i in 0..#5 {
-      for (j,k) in locInput {
-        const tmp = (1.0*i/j*k): real(32);
-        locImage[i,j,k] = tmp - tmp:int(32);
-      }
-    }
-    */
-
     locImage = Array[locImage.domain];
 
-    /*writeln(here, " ", locImage.domain);*/
-
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
-      /*const globalGpuId = loc.gpus.size*loc.id+gpuId;*/
-      /*writeln("Global GPU ", globalGpuId);*/
-
       // Create distance mask
       const locLeftMaskDomain = LeftMask.domain;
       const locCenterMaskDomain = CenterMask.domain;
       const locRightMaskDomain = RightMask.domain;
 
-
       coforall taskId in 0..#numWorkers {
         const workerId = gpuId*numWorkers + taskId;
-        /*writeln("worker ", workerId);*/
 
         var commTimer : stopwatch;
         var convolveTimer : stopwatch;
@@ -223,10 +207,7 @@ proc main(args: [] string) {
           const MyArrayDom = {0..#5, MyInnerExpanded.dim(0),
                               MyInnerExpanded.dim(1)};
 
-          /*writeln(globalChunkId, " in: ", MyArrayDom, " out: ", MyInner);*/
-
           var locArray : [MyArrayDom] Array.eltType = noinit;
-
 
           commTimer.start();
           locArray = locImage[MyArrayDom];
@@ -246,22 +227,21 @@ proc main(args: [] string) {
         }
 
         if report_detail_times {
-          writef("(Locale %i, GPU %i, Task %i) Convolve time: %r\n", here.id, gpuId, taskId,
-                 convolveTimer.elapsed());
-          writef("(Locale %i, GPU %i, Task %i) Comm     time: %r\n", here.id, gpuId, taskId,
-                 commTimer.elapsed());
+          writef("(Locale %i, GPU %i, Task %i) Convolve time: %r\n", here.id,
+                 gpuId, taskId, convolveTimer.elapsed());
+          writef("(Locale %i, GPU %i, Task %i) Comm     time: %r\n", here.id,
+                 gpuId, taskId, commTimer.elapsed());
         }
       }
     }
   }
 
+  if report_times then
+    writeln("Elapsed time to finish coforall loop: ", t.elapsed(), " seconds.");
+
   if report_checksum {
       writeln("Checksum: ", + reduce OutputHost);
       if write_data then writeln(OutputHost);
   }
-
-
-  if report_times then
-    writeln("Elapsed time to finish coforall loop: ", t.elapsed(), " seconds.");
 
 }
