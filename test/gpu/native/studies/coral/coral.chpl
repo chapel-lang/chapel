@@ -157,7 +157,9 @@ proc main(args: [] string) {
 
   */
   const Inner = ImageSpace.expand(-offset);
-  var OutputHost : [Inner] real(64); // D
+  const myTargetLocales = reshape(Locales, {1..Locales.size, 1..1});
+  const D = blockDist.createDomain(Inner, targetLocales=myTargetLocales);
+  var OutputHost : [D] real(64); // D
 
   if report_times then
     writeln("Elapsed time at start of coforall loop: ", t.elapsed(), " seconds.");
@@ -165,8 +167,21 @@ proc main(args: [] string) {
   writeln("Starting coforall loop.");
 
   coforall loc in Locales do on loc {
+    var locOutput = D.localSubdomain();
+    var locInput = locOutput.expand(offset);
+    var locImage: [0..#5, locInput.dim(0), locInput.dim(1)] real(32);
+
+    for i in 0..#5 {
+      for (j,k) in locInput {
+        const tmp = (1.0*i/j*k): real(32);
+        locImage[i,j,k] = tmp - tmp:int(32);
+      }
+    }
+
+    /*writeln(here, " ", locImage.domain);*/
+
     coforall (gpuId, gpu) in zip(here.gpus.domain, here.gpus) do on gpu {
-      const globalGpuId = loc.gpus.size*loc.id+gpuId;
+      /*const globalGpuId = loc.gpus.size*loc.id+gpuId;*/
       /*writeln("Global GPU ", globalGpuId);*/
 
       // Create distance mask
@@ -176,7 +191,7 @@ proc main(args: [] string) {
 
 
       coforall taskId in 0..#numWorkers {
-        const workerId = globalGpuId*numWorkers + taskId;
+        const workerId = gpuId*numWorkers + taskId;
         /*writeln("worker ", workerId);*/
 
         var commTimer : stopwatch;
@@ -186,14 +201,14 @@ proc main(args: [] string) {
           const globalChunkId = workerId*numChunksPerWorker + chunkId;
 
           var (outRowStart, outRowEnd) =
-             _computeChunkStartEnd(Inner.dim(0).size,
-                                   numLocales*loc.gpus.size*numWorkers*numChunksPerWorker,
+             _computeChunkStartEnd(locOutput.dim(0).size,
+                                   loc.gpus.size*numWorkers*numChunksPerWorker,
                                    globalChunkId+1);
           // offset for 1-based support function and start offset
-          outRowStart += Inner.dim(0).low-1;
-          outRowEnd += Inner.dim(0).low-1;
+          outRowStart += locOutput.dim(0).low-1;
+          outRowEnd += locOutput.dim(0).low-1;
 
-          const MyInner = {outRowStart..outRowEnd, Inner.dim(1)};
+          const MyInner = {outRowStart..outRowEnd, locOutput.dim(1)};
 
           var OutputGpu: [MyInner] real(64) = noinit; // D
 
@@ -209,7 +224,7 @@ proc main(args: [] string) {
 
 
           commTimer.start();
-          locArray = Array[MyArrayDom];
+          locArray = locImage[MyArrayDom];
           commTimer.stop();
           if write_data then writeln(locArray);
 
