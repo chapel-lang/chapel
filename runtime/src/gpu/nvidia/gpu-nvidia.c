@@ -401,7 +401,6 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {
-      /*printf("dev dealloc\n");*/
       CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
 #else
     CUDA_CALL(cuMemFree((CUdeviceptr)memAlloc));
