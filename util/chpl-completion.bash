@@ -177,6 +177,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-compiler-driver \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
