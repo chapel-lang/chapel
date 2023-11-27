@@ -9,7 +9,10 @@ Compiler Driver Mode
    The compiler driver mode is relatively new. If you use it and encounter a bug
    or limitation not yet documented as a
    `Github issue <https://github.com/chapel-lang/chapel/issues>`_, consider
-   filing an issue as described in :ref:`readme-bugs`.
+   filing an issue as described in :ref:`readme-bugs`. Driver mode can be
+   disabled with the ``--no-compiler-driver`` compiler flag, to determine if the
+   problem is specific to driver mode or as a temporary workaround before it is
+   fixed.
 
 The Chapel compiler ``chpl`` previously ran as a single executable responsible
 for compilation, assembly, and linking, with some components done in
@@ -17,7 +20,9 @@ subprocesses depending on which backend is used. By contrast, many compiler
 executables (including ``gcc`` and ``clang``) are actually `compiler drivers`.
 A compiler driver is a smaller program responsible for processing arguments and
 invoking separate processes for the different stages of compilation required. As
-of release 1.33, ``chpl`` runs as a compiler driver by default.
+of release 1.33, ``chpl`` runs as a compiler driver by default, which can be
+opted-out of with ``--no-compiler-driver``. This flag will be removed at some
+point in the future when driver mode becomes the only option.
 
 ---------------------
 Motivation for Driver
@@ -72,6 +77,8 @@ Development History
   generation (C code or LLVM bitcode), and `makeBinary`, which is responsible
   for binary generation (including linking).
 - In release 1.33, the driver mode is on by default, and the
-  ``--compiler-driver`` flag is deprecated. The new ``--no-compiler-driver``
-  flag allows opting out of the driver mode and will cause the compiler to
-  run monolithically as before.
+  ``--compiler-driver`` flag is unstable. The new unstable
+  ``--no-compiler-driver`` flag allows opting out of the driver mode and will
+  cause the compiler to run monolithically as before. Both flags will be removed
+  in the future when support for monolithic mode is dropped and driver mode is
+  the only option.
