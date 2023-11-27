@@ -85,7 +85,6 @@ proc convolve_and_calculate(Array: [] real(32), const in centerPoints : ?, locL 
 
       //Output = prev + current;
       prev = prev + current - tmpLL - 2*(tmpLC + tmpLR);
-      /*prev = current - tmpLL - 2*(tmpLC + tmpLR);*/
     }
 
   }
