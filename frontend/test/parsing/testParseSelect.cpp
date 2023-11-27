@@ -98,8 +98,8 @@ static void test0(Parser* parser) {
       assert(!when->isOtherwise());
     }
 
-    assert(when->numStmts() == 1);
-    assert(when->stmt(0)->isFnCall());
+    assert(when->body()->numStmts() == 1);
+    assert(when->body()->stmt(0)->isFnCall());
   }
 }
 
@@ -177,7 +177,7 @@ static void test3(Parser* parser) {
   assert(w0->isOtherwise());
   assert(w0->numCaseExprs() == 0);
   assert(w0->blockStyle() == BlockStyle::UNNECESSARY_KEYWORD_AND_BLOCK);
-  assert(w0->numStmts() == 1);
+  assert(w0->body()->numStmts() == 1);
 }
 
 int main() {

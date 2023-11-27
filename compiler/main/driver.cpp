@@ -54,6 +54,8 @@
 
 #include <string>
 #include <map>
+#include <regex>
+#include <numeric>
 
 #ifdef HAVE_LLVM
 #include "llvm/Config/llvm-config.h"
@@ -142,8 +144,8 @@ static bool fBaseline = false;
 static bool fRungdb = false;
 static bool fRunlldb = false;
 bool fDriverDoMonolithic = true;
-bool fDriverPhaseOne = false;
-bool fDriverPhaseTwo = false;
+bool fDriverCompilationPhase = false;
+bool fDriverMakeBinaryPhase = false;
 bool driverDebugPhaseSpecified = false;
 // Tmp dir path managed by compiler driver
 char driverTmpDir[FILENAME_MAX] = "";
@@ -156,8 +158,8 @@ bool fMultiLocaleInterop = false;
 bool fMultiLocaleLibraryDebug = false;
 
 bool driverInSubInvocation = false;
-bool driverDebugPhaseOne = true;
-bool driverDebugPhaseTwo = false;
+bool driverDebugCompilation = true;
+bool driverDebugMakeBinary = false;
 bool no_codegen = false;
 int  debugParserLevel = 0;
 bool developer = false;
@@ -387,21 +389,13 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
-// TODO: with the updates to filesystem that utilize GetExecutablePath,
-// do we still need this block comment?
-/* Note -- LLVM provides a way to get the path to the executable...
-// This function isn't referenced outside its translation unit, but it
-// can't use the "static" keyword because its address is used for
-// GetMainExecutable (since some platforms don't support taking the
-// address of main, and some platforms can't implement GetMainExecutable
-// without being given the address of a function in the main executable).
-llvm::sys::Path GetExecutablePath(const char *Argv0) {
-  // This just needs to be some symbol in the binary; C++ doesn't
-  // allow taking the address of ::main however.
-  void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-  return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
-}
-*/
+// support for separate compilation
+// what is the name of the output library file e.g. MyModule.dyno
+std::string gDynoGenLibOutput;
+// what source code paths were requested to be compiled into the lib?
+std::vector<UniqueString> gDynoGenLibSourcePaths;
+// what top-level module names as astrs were requested to be stored in the lib?
+std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 static bool isMaybeChplHome(const char* path)
 {
@@ -800,62 +794,66 @@ static int invokeChplWithArgs(int argc, char* argv[],
                   /* ignoreStatus */ true, /* quiet */ false);
 }
 
-static int runDriverPhaseOne(int argc, char* argv[]);
-static int runDriverPhaseTwo(int argc, char* argv[]);
+static int runDriverCompilationPhase(int argc, char* argv[]);
+static int runDriverMakeBinaryPhase(int argc, char* argv[]);
+
+// Skip makeBinary phase if the compile command does not require it, or if we
+// are running in a debugger for compilation phase only. By default, warn if
+// skipping for the debugger reason.
+static bool shouldSkipMakeBinary(bool warnIfSkipping = true) {
+  // Check if skipping due to only debugging compilation phase.
+  bool debugCompilationPhaseOnly =
+      (fRungdb || fRunlldb) && (driverDebugCompilation && !driverDebugMakeBinary);
+  if (debugCompilationPhaseOnly && warnIfSkipping) {
+    USR_WARN(
+        "Skipping makeBinary driver phase due to running only compilation "
+        "phase in debugger; change this with --driver-debug-phase if desired");
+  }
+
+  // Check if skipping for the above reason or any other early stop.
+  bool shouldSkipMakeBinary =
+      debugCompilationPhaseOnly || fParseOnly || countTokens || printTokens ||
+      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
+
+  return shouldSkipMakeBinary;
+}
 
 // Use 'chpl' executable as a compiler-driver, re-invoking itself with flags
 // that trigger components of the actual compilation work to be performed.
-// After all phases are complete, or upon failure, the driver exits.
+// Exits if a phase fails.
 static void runAsCompilerDriver(int argc, char* argv[]) {
   int status = 0;
 
   // Save initial compilation command before re-invocations.
   saveDriverTmp(compileCommandFilename, compileCommand);
 
-  // invoke phase one
-  if ((status = runDriverPhaseOne(argc, argv)) != 0) {
+  // invoke compilation phase
+  if ((status = runDriverCompilationPhase(argc, argv)) != 0) {
     clean_exit(status);
   }
 
-  // Skip phase two if the compile command does not require it, or if we are
-  // running in a debugger for phase one only.
-  bool debugPhaseOneOnly =
-      (fRungdb || fRunlldb) && (driverDebugPhaseOne && !driverDebugPhaseTwo);
-  if (debugPhaseOneOnly) {
-    USR_WARN(
-        "Skipping phase two due to running only phase one "
-        "in debugger; change this with --driver-debug-phase if desired");
-  }
-  bool shouldSkipPhaseTwo =
-      debugPhaseOneOnly || fParseOnly || countTokens || printTokens ||
-      (stopAfterPass[0] && strcmp(stopAfterPass, "makeBinary") != 0);
-  if (!shouldSkipPhaseTwo) {
-    // invoke phase two
-    if ((status = runDriverPhaseTwo(argc, argv)) != 0) {
+  if (!shouldSkipMakeBinary()) {
+    // invoke makeBinary phase
+    if ((status = runDriverMakeBinaryPhase(argc, argv)) != 0) {
       clean_exit(status);
     }
   }
-
-  // Tmp dir will be deleted if necessary when the compiler-driver's Context is
-  // deleted.
-
-  clean_exit(status);
 }
 
-// Run phase one of compiler-driver
-static int runDriverPhaseOne(int argc, char* argv[]) {
+// Run compilation phase of driver mode
+static int runDriverCompilationPhase(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
-      "--driver-phase-one", "--driver-tmp-dir", gContext->tmpDir()};
+      "--driver-compilation-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking driver phase one");
+                            "invoking driver compilation phase");
 }
 
-// Run phase two of compiler-driver
-static int runDriverPhaseTwo(int argc, char* argv[]) {
+// Run makeBinary phase of driver mode
+static int runDriverMakeBinaryPhase(int argc, char* argv[]) {
   std::vector<std::string> additionalArgs = {
-      "--driver-phase-two", "--driver-tmp-dir", gContext->tmpDir()};
+      "--driver-makebinary-phase", "--driver-tmp-dir", gContext->tmpDir()};
   return invokeChplWithArgs(argc, argv, additionalArgs,
-                            "invoking driver phase two");
+                            "invoking driver makeBinary phase");
 }
 
 static void runCompilerInGDB(int argc, char* argv[]) {
@@ -908,19 +906,20 @@ static void setDriverDebugPhase(const ArgumentDescription* desc,
                                 const char* arg) {
   driverDebugPhaseSpecified = true;
 
-  if (0 == strcmp(arg, "1")) {
-    driverDebugPhaseOne = true;
-    driverDebugPhaseTwo = false;
-  } else if (0 == strcmp(arg, "2")) {
-    driverDebugPhaseOne = false;
-    driverDebugPhaseTwo = true;
+  if (0 == strcmp(arg, "compilation")) {
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = false;
+  } else if (0 == strcmp(arg, "makeBinary") || 0 == strcmp(arg, "makebinary")) {
+    driverDebugCompilation = false;
+    driverDebugMakeBinary = true;
   } else if (0 == strcmp(arg, "all")) {
-    driverDebugPhaseOne = true;
-    driverDebugPhaseTwo = true;
+    driverDebugCompilation = true;
+    driverDebugMakeBinary = true;
   } else {
     USR_FATAL(
-        "--driver-debug-phase requires either '1', '2', or 'all' as input, "
-        "but got: %s\n", arg);
+        "--driver-debug-phase requires either 'compilation', 'makeBinary', or "
+        "'all' as input, but got: %s\n",
+        arg);
   }
 }
 
@@ -1115,6 +1114,10 @@ static void setLogPass(const ArgumentDescription* desc, const char* arg) {
   logSelectPass(arg);
 }
 
+static void setLogFormat(const ArgumentDescription* desc, const char* arg) {
+  logSelectFormat(arg);
+}
+
 static void setLogModule(const ArgumentDescription* desc, const char* arg) {
   log_modules.insert(std::string(arg));
 }
@@ -1170,6 +1173,20 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   } else {
     ccwarnings = false;
   }
+}
+
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  std::string path = std::string(newpath);
+  auto dot = path.find_last_of(".");
+  std::string noExt = path.substr(0, dot);
+  std::string usePath = noExt + ".dyno";
+  if (usePath != path) {
+    USR_FATAL("--dyno-gen-lib accepts the output file as an argument. " \
+              "Please use the .dyno suffix for the output file");
+  }
+
+  // set the output path. other variables will be set later
+  gDynoGenLibOutput = usePath;
 }
 
 /*
@@ -1352,6 +1369,7 @@ static ArgumentDescription arg_desc[] = {
  {"log-ids", ' ', NULL, "[Don't] include BaseAST::ids in log files", "N", &fLogIds, "CHPL_LOG_IDS", NULL},
  {"log-module", ' ', "<module-name>", "Restrict IR dump to the named module. Can be specified multiple times", "S", NULL, "CHPL_LOG_MODULE", setLogModule},
  {"log-pass", ' ', "<passname>", "Restrict IR dump to the named pass. Can be specified multiple times", "S", NULL, "CHPL_LOG_PASS", setLogPass},
+ {"log-fmt", ' ', "<format>", "May be set to 'default' or 'nprint' to specify format to use", "S", NULL, "CHPL_LOG_FORMAT", setLogFormat},
 // {"log-symbol", ' ', "<symbol-name>", "Restrict IR dump to the named symbol(s)", "S256", log_symbol, "CHPL_LOG_SYMBOL", NULL}, // This doesn't work yet.
  {"llvm-print-ir", ' ', "<name>", "Dump LLVM Intermediate Representation of given function to stdout", "S", NULL, "CHPL_LLVM_PRINT_IR", &setPrintIr},
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
@@ -1394,9 +1412,9 @@ static ArgumentDescription arg_desc[] = {
  {"denormalize", ' ', NULL, "Enable [disable] denormalization", "N", &fDenormalize, "CHPL_DENORMALIZE", NULL},
  {"driver-tmp-dir", ' ', "<tmpDir>", "Set temp dir to be used by compiler driver (internal use flag)", "P", &driverTmpDir, NULL, NULL},
  {"compiler-driver", ' ', NULL, "Run chpl executable as a compiler driver", "f", &fDriverDoMonolithic, NULL, NULL},
- {"driver-phase-one", ' ', NULL, "Run driver phase one (internal use flag)", "F", &fDriverPhaseOne, NULL, setSubInvocation},
- {"driver-phase-two", ' ', NULL, "Run driver phase two (internal use flag)", "F", &fDriverPhaseTwo, NULL, setSubInvocation},
- {"driver-debug-phase", ' ', "<phase>", "Specify driver compilation phase to run when debugging: 1, 2, all", "S", NULL, NULL, setDriverDebugPhase},
+ {"driver-compilation-phase", ' ', NULL, "Run driver compilation phase (internal use flag)", "F", &fDriverCompilationPhase, NULL, setSubInvocation},
+ {"driver-makebinary-phase", ' ', NULL, "Run driver makeBinary phase (internal use flag)", "F", &fDriverMakeBinaryPhase, NULL, setSubInvocation},
+ {"driver-debug-phase", ' ', "<phase>", "Specify driver phase to run when debugging: compilation, makeBinary, all", "S", NULL, NULL, setDriverDebugPhase},
  {"gdb", ' ', NULL, "Run compiler in gdb", "F", &fRungdb, NULL, NULL},
  {"lldb", ' ', NULL, "Run compiler in lldb", "F", &fRunlldb, NULL, NULL},
  {"interprocedural-alias-analysis", ' ', NULL, "Enable [disable] interprocedural alias analysis", "n", &fNoInterproceduralAliasAnalysis, NULL, NULL},
@@ -1465,7 +1483,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
- {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
@@ -1943,7 +1961,7 @@ static void checkCompilerDriverFlags() {
     }
   }
 
-  if (fDriverPhaseOne && fDriverPhaseTwo) {
+  if (fDriverCompilationPhase && fDriverMakeBinaryPhase) {
       USR_FATAL(
           "Multiple internal compiler-driver phase flags set simultaneously");
   }
@@ -1974,6 +1992,12 @@ static void checkLLVMCodeGen() {
               "       'chpl' was built without LLVM support.  Either select a different\n"
               "       target compiler or re-build your compiler with LLVM enabled.");
 #endif
+  if (fLlvmCodegen) {
+    auto re = std::regex("(^|\\s)-pg($|\\s)");
+    if (std::regex_search(ccflags, re) || std::regex_search(ldflags, re)) {
+      USR_WARN("The LLVM target compiler does not currently support '-pg'");
+    }
+  }
 }
 
 static void checkTargetCpu() {
@@ -1991,6 +2015,12 @@ static void checkIncrementalAndOptimized() {
     USR_WARN("Compiling with '--incremental' or '--parallel-make' with "
              "optimizations enabled may lead to a slower execution time "
              "due to the use of separate compilation in the back-end.");
+}
+
+static void checkGenLibNotLLVM() {
+  if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
+    USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
+  }
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -2160,6 +2190,8 @@ static void validateSettings() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkGenLibNotLLVM();
 
   checkUnsupportedConfigs();
 
@@ -2389,21 +2421,35 @@ int main(int argc, char* argv[]) {
     validateSettings();
   }
 
-  if (!fDriverDoMonolithic && !driverInSubInvocation)
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Trigger initial driver mode invocation.
+    tracker.Stop();
     runAsCompilerDriver(argc, argv);
+    tracker.Resume();
+  } else {
+    // This branch runs for individual driver phases ("sub-invocations") or as
+    // the whole compiler in monolithic mode.
 
-  // In driver mode, debug only if we are in a driver phase that was requested
-  // to be debugged.
-  if (!((fDriverPhaseOne && !driverDebugPhaseOne) ||
-        (fDriverPhaseTwo && !driverDebugPhaseTwo))) {
-    // re-run compiler in appropriate debugger if requested
-    if (fRungdb) runCompilerInGDB(argc, argv);
-    if (fRunlldb) runCompilerInLLDB(argc, argv);
+    // Run compiler in the debugger if requested.
+    // Skip if we are in a driver phase that was not requested to be debugged.
+    if (!((fDriverCompilationPhase && !driverDebugCompilation) ||
+          (fDriverMakeBinaryPhase && !driverDebugMakeBinary))) {
+      // re-run compiler in appropriate debugger if requested
+      if (fRungdb) runCompilerInGDB(argc, argv);
+      if (fRunlldb) runCompilerInLLDB(argc, argv);
+    }
+
+    assertSourceFilesFound();
+
+    runPasses(tracker);
   }
 
-  assertSourceFilesFound();
-
-  runPasses(tracker);
+  if (!fDriverDoMonolithic && !driverInSubInvocation) {
+    // Begin reporting driver init process timing
+    Phase::ReportText(
+        "\n\nTiming for driver mode overhead\n--------------\n");
+    tracker.ReportPass();
+  }
 
   tracker.StartPhase("driverCleanup");
 
@@ -2412,9 +2458,73 @@ int main(int argc, char* argv[]) {
   tracker.Stop();
 
   if (printPasses == true || printPassesFile != NULL) {
-    tracker.ReportPass();
-    tracker.ReportTotal();
-    tracker.ReportRollup();
+    // Report out timing totals information, with adjustments for driver mode.
+    if (fDriverDoMonolithic) {
+      // Report normally in monolithic mode.
+      tracker.ReportPass();
+      tracker.ReportRollup();
+      tracker.ReportPassGroupTotals();
+      tracker.ReportOverallTotal();
+    } else {
+      // Save timing totals in sub-invocations, to restore and output by driver.
+
+      static const char* groupTimesFilename = "passGroupTimings.tmp";
+      std::vector<unsigned long> groupTimes;
+
+      if (driverInSubInvocation) {
+        // This is a sub-invocation, capture timing totals information for later
+        // reporting by driver init process.
+
+        // Report final sub-invocation specific timing information
+        tracker.ReportPass();
+        tracker.ReportRollup();
+
+        // Get timing information
+        tracker.ReportPassGroupTotals(&groupTimes);
+
+        // Save times to file
+        std::vector<const char*> groupTimesStrs;
+        for (const unsigned long groupTime : groupTimes) {
+          groupTimesStrs.emplace_back(astr(std::to_string(groupTime).c_str()));
+        }
+        saveDriverTmpMultiple(groupTimesFilename, groupTimesStrs);
+      } else {
+        // The driver initial process is ending, restore sub-invocation results
+        // and report out everything.
+
+        // Restore times from file
+        restoreDriverTmp(groupTimesFilename,
+                         [&groupTimes](const char* timeStr) {
+                           groupTimes.emplace_back(std::stoul(timeStr));
+                         });
+
+        // Unless stopping early, expect frontend, middle-end, and (incomplete)
+        // backend results from compilation phase, plus the other half of
+        // backend results from makeBinary phase that need to be added in.
+        if (!shouldSkipMakeBinary(/* warnIfSkipping */ false)) {
+          const size_t numPassGroups = 3;
+          INT_ASSERT(
+              groupTimes.size() == (numPassGroups + 1) &&
+              "unexpected number of saved timing results from driver phases");
+          // Combine the two halves of the backend total time into one value.
+          groupTimes[numPassGroups - 1] += groupTimes[numPassGroups];
+          groupTimes.pop_back();
+        }
+
+        // Report final driver overhead timing information.
+        // Done here to include the footprint of restoring sub-invocation info.
+        tracker.ReportPass();
+        tracker.ReportRollup();
+
+        // Report restored times
+        tracker.ReportPassGroupTotals(&groupTimes);
+        // Report total time including both pass group times and driver overhead
+        auto groupTimesSum =
+            std::accumulate(groupTimes.begin(), groupTimes.end(),
+                            decltype(groupTimes)::value_type(0));
+        tracker.ReportOverallTotal(groupTimesSum);
+      }
+    }
   }
 
   if (printPassesFile != NULL) {

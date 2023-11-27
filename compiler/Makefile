@@ -164,6 +164,9 @@ CMAKE_FLAGS_NO_NDEBUG=$(subst -DNDEBUG,,$(CMAKE_FLAGS))
 frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) ChplFrontend
 
+frontend-shared: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) ChplFrontendShared
+
 test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	@echo "Making and running the frontend tests..."
 	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests

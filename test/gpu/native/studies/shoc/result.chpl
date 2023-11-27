@@ -152,7 +152,7 @@ module ResultDatabaseTest {
     proc testOutput(){
         var flopsDB = new ResultDatabase("TriadFlops", "GFLOP/s");
         var bdwthDB = new ResultDatabase("TriadBdwth", "GB/s");
-        // var randStreamSeeded = new RandomStream(real, 1032435);
+        // var randStreamSeeded = new randomStream(real, 1032435);
 
         flopsDB.printDatabaseStats();
 

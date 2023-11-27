@@ -173,7 +173,7 @@ proc test_expm() {
     // Sparse Input Matrix
     // 10% Filled.
 
-    var r = new owned PCGRandomStream(int);
+    var r = new randomStream(int, false);
 
     var X: [Space] eltType;
 
@@ -204,7 +204,7 @@ proc test_expm() {
     // Dense Input Matrix
     // 90% Filled.
 
-    var r = new owned PCGRandomStream(int);
+    var r = new randomStream(int, false);
 
     var X: [Space] eltType;
     X = X + 1.0;

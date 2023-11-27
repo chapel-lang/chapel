@@ -2,7 +2,7 @@
 // Use standard modules for Block distributions, Timing routines, Type
 // utility functions, and Random numbers
 //
-use BlockDist, Time, Types, Random;
+use BlockDist, Time, Types, NPBRandom;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -34,8 +34,7 @@ config const numTrials = 10,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -105,12 +104,14 @@ proc printConfiguration() {
 // optionally print them to the console
 //
 proc initVectors(ref B, ref C) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+  var randlist = if useRandomSeed
+    then new NPBRandomStream(eltType=real)
+    else new NPBRandomStream(eltType=real, 314159265);
 
   randlist.fillRandom(B);
   randlist.fillRandom(C);
 
-  if (printArrays) {
+  if printArrays {
     writeln("B is: ", B, "\n");
     writeln("C is: ", C, "\n");
   }

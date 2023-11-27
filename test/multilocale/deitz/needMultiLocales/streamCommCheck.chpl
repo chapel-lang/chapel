@@ -14,9 +14,9 @@ proc main() {
   const ProblemSpace: domain(1, int(64)) dmapped Dist = {1..m};
   var A, B, C: [ProblemSpace] elemType;
 
-  var randlist = new owned NPBRandomStream(real, seed);
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  var randlist = new randomStream(real, seed);
+  randlist.fill(B);
+  randlist.fill(C);
   startCommDiagnostics();
   forall (a, b, c) in zip(A, B, C) do
     a = b + alpha * c;

@@ -5,8 +5,6 @@
 // as it should.
 
 use Random;
-config param useNPB = true;
-config param rtype = if useNPB then RNG.NPB else RNG.PCG;
 
 proc main() {
   var Vector1 = {1..20};
@@ -14,16 +12,15 @@ proc main() {
   var Vec2 : [Vector1] real;
   var Vec3 : [Vector1] real;
 
-  var rng = createRandomStream(real, 314159264, algorithm=rtype);
+  var rng = new randomStream(real, 314159264);
 
-  rng.fillRandom(Vec1);
+  rng.fill(Vec1);
 
-  fillRandom(Vec2,314159264, algorithm=rtype);
-  fillRandom(Vec3,314159264, algorithm=rtype);
+  fillRandom(Vec2, 314159264);
+  fillRandom(Vec3, 314159264);
 
   for (a,b,c) in zip(Vec1, Vec2, Vec3) {
     assert( a == b );
     assert( b == c );
   }
 }
-

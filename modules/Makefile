@@ -104,7 +104,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl
+	standard/Version.chpl \
+	standard/WeakPointer.chpl \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -136,6 +137,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/NPBRandom.chpl \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \

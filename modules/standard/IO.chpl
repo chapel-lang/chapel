@@ -981,6 +981,11 @@ proc stringStyleExactLen(len:int(64)) {
 @deprecated
 ("stringStyleWithVariableLength is deprecated following the deprecation of 'iostyle', please use Serializers or Deserializers instead")
 proc stringStyleWithVariableLength() {
+  return stringStyleWithVariableLengthInternal();
+}
+
+@chpldoc.nodoc
+proc stringStyleWithVariableLengthInternal() {
   return iostringstyleInternal.lenVb_data: int(64);
 }
 
@@ -1651,7 +1656,7 @@ proc defaultIOStyleInternal(): iostyleInternal {
 
 /* Get an iostyleInternal indicating binary I/O in native byte order. */
 @chpldoc.nodoc
-proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
+proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = _iokind.native:uint(8);
@@ -1661,7 +1666,7 @@ proc iostyleInternal.native(str_style:int(64)=stringStyleWithVariableLength()):i
 
 /* Get an iostyleInternal indicating binary I/O in big-endian byte order.*/
 @chpldoc.nodoc
-proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
+proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = _iokind.big:uint(8);
@@ -1671,7 +1676,7 @@ proc iostyleInternal.big(str_style:int(64)=stringStyleWithVariableLength()):iost
 
 /* Get an iostyleInternal indicating binary I/O in little-endian byte order. */
 @chpldoc.nodoc
-proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLength()):iostyleInternal {
+proc iostyleInternal.little(str_style:int(64)=stringStyleWithVariableLengthInternal()):iostyleInternal {
   var ret = this;
   ret.binary = 1;
   ret.byteorder = _iokind.little:uint(8);
@@ -8934,10 +8939,12 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
     // Allow either DefaultRectangular arrays or dense slices of DR arrays
     if !data._value.isDataContiguous(d._value) {
       err = "writeBinary() array data must be contiguous";
-    } else if data.locale != this._home {
+    } else if data.locale.id != this._home.id {
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
     } else if endian == ioendian.native {
-      e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
+      if data.size > 0 {
+        e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
+      } // else no-op, writing a 0-element array writes nothing
     } else {
       for b in data {
         select (endian) {
@@ -9198,10 +9205,12 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
 
     if !data._value.isDataContiguous(d._value) {
       err = "readBinary() array data must be contiguous";
-    } else if data.locale != this._home {
+    } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
     } else if endian == ioendian.native {
-      e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+      if data.size > 0 {
+        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+      } // else no-op, reading a 0-element array reads nothing
     } else {
       for (i, b) in zip(data.domain, data) {
         select (endian) {

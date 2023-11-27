@@ -20,8 +20,11 @@
 
 #include "codegen.h"
 
+#include "LayeredValueTable.h"
 #include "astutil.h"
 #include "baseAST.h"
+#include "chpl/libraries/LibraryFileWriter.h"
+#include "chpl/util/filesystem.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -32,10 +35,10 @@
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
+#include "llvmExtractIR.h"
 #include "llvmUtil.h"
-#include "LayeredValueTable.h"
-#include "mli.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -45,22 +48,23 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "chpl/util/filesystem.h"
 
 #include "global-ast-vecs.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
-#include "llvm/IR/Module.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Pass.h"
 #include "llvm/Remarks/RemarkSerializer.h"
-#include "llvm/Remarks/YAMLRemarkSerializer.h"
 #include "llvm/Remarks/RemarkStreamer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Support/raw_ostream.h"
+
+
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1902,8 +1906,8 @@ static void codegen_header(std::set<const char*> & cnames,
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.push_back(fn2);
-    ftableMap[fn2] = ftableVec.size()-1;
+      ftableVec.push_back(fn2);
+      ftableMap[fn2] = ftableVec.size()-1;
     }
   }
 
@@ -2325,14 +2329,15 @@ static const char* getClangBuiltinWrappedName(const char* name)
 #endif
 
 // Gets the name of the main module as an astr.
-// Includes support for driver mode, since in driver phase two we cannot access
-// the main module. So, when this is run in phase one it saves the result to a
-// tmp file on disk, and when run in phase two it retrieves the name from there.
+// Includes support for driver mode, since in the makeBinary phase we cannot
+// access the main module. So, when this is run in the compilation phase it
+// saves the result to a tmp file on disk, and when run in the makeBinary phase
+// it retrieves the name from there.
 static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
   const char* filename;
-  if (fDriverPhaseTwo) {
+  if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
     restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
       filename = astr(mainModName);
@@ -2347,9 +2352,9 @@ static const char* getMainModuleFilename() {
 
     // Save result in tmp file for future usage if in driver mode
     if (!fDriverDoMonolithic) {
-      assert(fDriverPhaseOne &&
+      assert(fDriverCompilationPhase &&
              "should not be reachable outside of driver "
-             "phase one");
+             "compilation phase");
       saveDriverTmp(mainModTmpFilename, filename);
     }
   }
@@ -2363,11 +2368,11 @@ static const char* getMainModuleFilename() {
 // already. If in library mode, set the name of the header file as well.
 void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
-    // Retrieve module for use in errors in phase one. It can't be retrieved in
-    // phase two, but that's not a problem because the errors would have already
-    // been hit (and are fatal) in phase one.
+    // Retrieve module for use in errors in the compilation phase. It can't be
+    // retrieved in the makeBinary phase, but that's not a problem because the
+    // errors would have already been hit (and are fatal) in compilation.
     ModuleSymbol* mainMod =
-        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
+        (fDriverMakeBinaryPhase ? nullptr : ModuleSymbol::mainModule());
     const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2385,9 +2390,9 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
-                     "encountered error in phase two that should only be "
-                     "reachable in phase one");
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
+                     "encountered error in makeBinary phase that should only be "
+                     "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
@@ -2405,9 +2410,9 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
-                     "encountered error in phase two that should only be "
-                     "reachable in phase one");
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
+                     "encountered error in makeBinary phase that should only be "
+                     "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     pythonModulename);
@@ -2428,9 +2433,9 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_ASSERT(!fDriverPhaseTwo &&
-                 "encountered error in phase two that should only be "
-                 "reachable in phase one");
+      INT_ASSERT(!fDriverMakeBinaryPhase &&
+                 "encountered error in makeBinary phase that should only be "
+                 "reachable in compilation phase");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
@@ -2560,7 +2565,7 @@ static void embedGpuCode() {
   std::string fatbinFilename = genIntermediateFilename("chpl__gpu.fatbin");
   std::string buffer;
   std::string err;
-  chpl::readfile(fatbinFilename.c_str(), buffer, err);
+  chpl::readFile(fatbinFilename.c_str(), buffer, err);
   if (!err.empty()) {
     USR_FATAL("Error while reading GPU binary: %s", err.c_str());
   }
@@ -2814,7 +2819,7 @@ static void codegenPartTwo() {
 
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
-  // currently in codegen_header.
+  // currently in codegenPartOne.
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
@@ -2882,6 +2887,98 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
+
+
+  if (!gDynoGenLibOutput.empty() && fLlvmCodegen) {
+#ifdef HAVE_LLVM
+    llvm::Module* llvmModule = gGenInfo->module;
+
+    // create the LibraryFileWriter
+    using LibraryFileWriter = chpl::libraries::LibraryFileWriter;
+    auto libWriter = LibraryFileWriter(gContext, gDynoGenLibOutput);
+
+    // set the source paths / gather the parsed uAST
+    libWriter.setSourcePaths(gDynoGenLibSourcePaths);
+
+    // gather the modules we are code generating
+    std::set<ModuleSymbol*> genModules;
+    forv_Vec(ModuleSymbol, modSym, gModuleSymbols) {
+      if (gDynoGenLibModuleNameAstrs.count(modSym->name) > 0) {
+        genModules.insert(modSym);
+      }
+    }
+
+    using LibGenInfo = LibraryFileWriter::GenInfo;
+    std::unordered_map<chpl::ID, std::vector<LibGenInfo>> genMap;
+
+    // for each module, extract only the LLVM IR for that module
+    for (ModuleSymbol* genMod : genModules) {
+      // compute the functions/globals from the requested module
+      std::set<const llvm::GlobalValue*> filterGvs;
+
+      // gather functions
+      std::vector<FnSymbol*> fns =
+        genMod->getTopLevelFunctions(/* includeExterns */ false);
+      // and variables
+      std::vector<VarSymbol*> vars = genMod->getTopLevelVariables();
+      {
+        // also config vars
+        std::vector<VarSymbol*> configs = genMod->getTopLevelConfigVars();
+        vars.insert(vars.end(), configs.begin(), configs.end());
+      }
+
+      for (FnSymbol* fn : fns) {
+        if (fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
+          // skip chpl_gen_main
+        } else {
+          if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
+            chpl::ID fnId = fn->astloc.id();
+            if (!fnId.isEmpty()) {
+              LibraryFileWriter::GenInfo info;
+              info.cname = UniqueString::get(gContext, fn->cname);
+              info.isInstantiation = fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+              genMap[fnId].push_back(info);
+              filterGvs.insert(g);
+            }
+          }
+        }
+      }
+      for (VarSymbol* v : vars) {
+        if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
+          chpl::ID vId = v->astloc.id();
+          if (!vId.isEmpty()) {
+            LibraryFileWriter::GenInfo info;
+            info.cname = UniqueString::get(gContext, v->cname);
+            // instantiations of module-scope variables should not be possible
+            info.isInstantiation = false;
+            INT_ASSERT(!v->hasFlag(FLAG_INSTANTIATED_GENERIC));
+            genMap[vId].push_back(info);
+            filterGvs.insert(g);
+          }
+        }
+      }
+
+      // compute the pared-down module
+      std::unique_ptr<llvm::Module> M = extractLLVM(llvmModule, filterGvs);
+
+      // compute the bitcode for the pared-down module & save it
+      // in the libWriter's buffer
+      std::string generatedCodeBuffer;
+      {
+        llvm::raw_string_ostream OS(generatedCodeBuffer);
+        llvm::WriteBitcodeToFile(*M.get(), OS);
+      }
+
+      auto modName = UniqueString::get(gContext, genMod->name);
+      libWriter.setGeneratedCode(modName,
+                                 std::move(generatedCodeBuffer),
+                                 std::move(genMap));
+    }
+
+    // compute the cnamesfunction names
+    libWriter.writeAllSections();
+#endif
+  }
 }
 
 void codegen() {
@@ -2893,6 +2990,7 @@ void codegen() {
   if (isFullGpuCodegen()) {
     // flush stdout before forking process so buffered output doesn't get copied over
     fflush(stdout);
+    fflush(stderr);
 
     pid_t pid = fork();
 
@@ -2946,9 +3044,14 @@ void makeBinary(void) {
   if (no_codegen)
     return;
 
-  // makeBinary shouldn't run in a phase-one invocation.
-  // (Unless we're doing GPU codegen, which currently happens in phase one.)
-  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
+  // don't run makeBinary when using --dyno-gen-lib
+  if (gDynoGenLibSourcePaths.size() > 0)
+    return;
+
+  // makeBinary shouldn't run in a compilation phase invocation.
+  // (Unless we're doing GPU codegen, which currently happens in the compilation
+  // phase.)
+  INT_ASSERT(!fDriverCompilationPhase || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

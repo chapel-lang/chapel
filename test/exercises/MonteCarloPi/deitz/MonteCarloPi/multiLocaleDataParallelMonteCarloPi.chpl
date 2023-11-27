@@ -6,7 +6,7 @@
 // Use the standard random numbers module and the standard block
 // distribution module.
 //
-use Random, BlockDist;
+use NPBRandom, BlockDist;
 
 //
 // Declare command-line configuration constants for:

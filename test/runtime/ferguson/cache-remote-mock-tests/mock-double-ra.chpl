@@ -28,7 +28,7 @@ config const printStats = false;
 config const printMissRate = false;
 
 proc main() {
-  var rng = new RandomStream(uint, seed);
+  var rng = new randomStream(uint, seed);
   var streamOneUpdates = 0;
   var streamOneMisses = 0;
   var streamTwoUpdates = 0;

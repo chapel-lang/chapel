@@ -2339,6 +2339,7 @@ module DefaultRectangular {
   // are on vs. where the source and destination are.
   //
   private proc complexTransferComm(A, B, stridelevels:int(32), dstStride, srcStride, count, AFirst, BFirst) {
+    use ChplConfig;
     if debugDefaultDistBulkTransfer {
       chpl_debug_writeln("BulkTransferStride with values:\n",
                     try! "\tLocale        = %?\n".format(here.id),
@@ -2359,7 +2360,9 @@ module DefaultRectangular {
     const cnt    = count._value.data;
 
     if dest.locale.id == here.id {
-      const srclocale = src.locale.id : int(32);
+      const srclocale = src.locale.id;
+      const src_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                         chpl_sublocFromLocaleID(src.locale.chpl_localeid());
 
       if debugBulkTransfer {
         chpl_debug_writeln("BulkTransferStride: On LHS - GET from ", srclocale);
@@ -2369,13 +2372,16 @@ module DefaultRectangular {
                   dest[AO],
                   dststr[0],
                   srclocale,
+                  src_subloc,
                   src[BO],
                   srcstr[0],
                   cnt[0],
                   stridelevels);
     }
     else {
-      const destlocale = dest.locale.id : int(32);
+      const destlocale = dest.locale.id;
+      const dest_subloc = if CHPL_LOCALE_MODEL != "gpu" then c_sublocid_any else
+                          chpl_sublocFromLocaleID(dest.locale.chpl_localeid());
 
       if debugDefaultDistBulkTransfer {
         assert(src.locale.id == here.id,
@@ -2391,6 +2397,7 @@ module DefaultRectangular {
                   dest[AO],
                   dststr[0],
                   destlocale,
+                  dest_subloc,
                   src[BO],
                   srcstr[0],
                   cnt[0],

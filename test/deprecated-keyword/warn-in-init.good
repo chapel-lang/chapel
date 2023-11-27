@@ -1,0 +1,1 @@
+warn-in-init.chpl:16: warning: converting myOwned to myShared is deprecated

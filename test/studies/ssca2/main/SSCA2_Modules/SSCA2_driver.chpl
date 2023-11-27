@@ -43,7 +43,7 @@ module SSCA2_driver
       use SSCA2_compilation_config_params, 
 	  SSCA2_execution_config_consts,
 	  SSCA2_kernels, 
-          Random;
+          NPBRandom;
 
       type vertex = index (G.vertices),
            edge   = 2*vertex;

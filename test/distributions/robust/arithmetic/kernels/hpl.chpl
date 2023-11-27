@@ -9,7 +9,7 @@ use driver;
 // Use standard modules for vector and matrix Norms, Random numbers
 // and Timing routines
 //
-use LinearAlgebra, Random, Time;
+use LinearAlgebra, NPBRandom, Time;
 
 //
 // Use the user module for computing HPCC problem sizes
@@ -42,7 +42,7 @@ config const epsilon = 2.0e-15;
 // specify the fixed seed explicitly
 //
 config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
+             seed = if useRandomSeed then oddTimeSeed() else 31415;
 
 //
 // Configuration constants to control what's printed -- benchmark

@@ -27,7 +27,9 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
 
 class Timer;
 
@@ -162,8 +164,8 @@ extern bool fExplainVerbose;
 extern bool fParseOnly;
 // begin compiler driver control flags
 extern bool fDriverDoMonolithic;
-extern bool fDriverPhaseOne;
-extern bool fDriverPhaseTwo;
+extern bool fDriverCompilationPhase;
+extern bool fDriverMakeBinaryPhase;
 extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
 extern bool fPrintAllCandidates;
@@ -324,6 +326,10 @@ extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 extern std::vector<std::string> gDynoPrependInternalModulePaths;
 extern std::vector<std::string> gDynoPrependStandardModulePaths;
+
+extern std::string gDynoGenLibOutput;
+extern std::vector<UniqueString> gDynoGenLibSourcePaths;
+extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 extern bool fForeachIntents;
 

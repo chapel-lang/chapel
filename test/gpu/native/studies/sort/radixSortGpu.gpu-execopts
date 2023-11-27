@@ -1,4 +1,3 @@
 --arrSize=10_000_000 --perftest=true --bitsAtATime=16 --scanType=serial # serialScan
 --arrSize=10_000_000 --perftest=true --bitsAtATime=16 --scanType=hillisSteele # hillisSteeleScan
 --arrSize=10_000_000 --perftest=true --bitsAtATime=16 --scanType=blelloch # blellochScan
---arrSize=10_000_000 --perftest=true --bitsAtATime=8  --scanType=blelloch --parallel=true --chunkSize=6250 # parallelSort

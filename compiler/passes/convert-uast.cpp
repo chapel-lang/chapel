@@ -955,7 +955,7 @@ struct Converter {
     }
 
     CallExpr* when = new CallExpr(PRIM_WHEN, args);
-    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
+    auto block = createBlockWithStmts(node->body()->stmts(), node->blockStyle());
 
     return new CondStmt(when, block);
   }
@@ -3155,8 +3155,6 @@ struct Converter {
 
     if (node->body()) {
       INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
-
-      // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
     }
@@ -3432,9 +3430,6 @@ struct Converter {
     CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
-    // TODO (dlongnecke): For now, the tag is overridden by the caller.
-    // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
-    // could note if a module is standard/internal/user.
     const ModTag tag = this->topLevelModTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||

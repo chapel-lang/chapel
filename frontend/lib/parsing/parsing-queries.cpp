@@ -63,7 +63,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readfile(path.c_str(), text, error)) {
+  if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }
@@ -221,7 +221,7 @@ const Location& locateId(Context* context, ID id) {
 
   UniqueString path;
   if (auto br = builderResultOrNull(context, id, path)) {
-    result = br->idToLocation(id, path);
+    result = br->idToLocation(context, id, path);
   }
 
   return QUERY_END(result);
@@ -242,7 +242,7 @@ const Location& locateAst(Context* context, const AstNode* ast) {
     UniqueString path; \
     if (!id) return QUERY_END(ret); \
     if (auto br = builderResultOrNull(context, id, path)) { \
-      ret = br->idTo##location__##Location(id, path); \
+      ret = br->idTo##location__##Location(context, id, path); \
     } \
     return QUERY_END(ret); \
   }

@@ -115,4 +115,4 @@ Utilities
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
-   WeakPointer <../builtins/WeakPointer>
+   WeakPointer <standard/WeakPointer>

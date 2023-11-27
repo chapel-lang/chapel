@@ -208,12 +208,19 @@ WARNINGS=0``).
   ========  ================================================================
   Option    Effect
   ========  ================================================================
+  ASSERTS   Enables correctness assertions in the compiler and runtime
   DEBUG     Generate debug information (e.g., pass ``-g`` to the C compiler)
   OPTIMIZE  Enable optimizations (e.g., pass ``-O3`` to the C compiler)
   PROFILE   Enable profiling support (e.g., pass ``-pg`` to C compiler)
   WARNINGS  Enable more warnings and treat them as errors
-  ASSERTS   Enables correctness assertions in the compiler and runtime
   ========  ================================================================
+
+Note that these settings only affect how the ``chpl`` compiler and its
+runtime libraries are built, as well as the third-party packages that
+they rely upon.  In particular, building Chapel with ``DEBUG`` or
+``OPTIMIZE`` set will not cause invocations of the resulting ``chpl``
+compiler to automatically generate executables with debugging or
+optimizations enabled.
 
 
 ------------------------

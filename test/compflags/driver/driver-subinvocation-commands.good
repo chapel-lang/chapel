@@ -1,2 +1,2 @@
-# invoking driver phase one
-# invoking driver phase two
+# invoking driver compilation phase
+# invoking driver makeBinary phase

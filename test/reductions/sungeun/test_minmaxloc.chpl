@@ -85,7 +85,7 @@ config const debug = false;
 var R: [1..n] real;
 var A: [1..n] int;
 
-fillRandom(R, seed, algorithm=RNG.NPB);
+fillRandom(R, seed);
 
 proc getSigDigit(r: real) {
   var rn = r*10;
@@ -109,4 +109,3 @@ ml = maxloc reduce zip(A, {1..n});
 writeln(ml);
 ml = lastmaxloc reduce zip(A, {1..n});
 writeln(ml);
-

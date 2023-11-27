@@ -57,9 +57,9 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
+--driver-compilation-phase \
 --driver-debug-phase \
---driver-phase-one \
---driver-phase-two \
+--driver-makebinary-phase \
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
@@ -151,6 +151,7 @@ _chpl ()
 --log \
 --log-deleted-ids-to \
 --log-dir \
+--log-fmt \
 --log-ids \
 --log-module \
 --log-pass \

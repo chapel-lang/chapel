@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+comp_unit_test(testAssertions)
 comp_unit_test(testIteratorAdapters)
 comp_unit_test(testLLVMsupport)
 comp_unit_test(testQueryTimingAndTrace)
 comp_unit_test(testQuoteStrings)
+comp_unit_test(testShaFile)
 comp_unit_test(testSubprocess)
-comp_unit_test(testAssertions)

@@ -37,16 +37,19 @@ static PyMethodDef ContextObject_methods[] = {
 
 PyTypeObject ContextType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "Context",
-  .tp_basicsize = sizeof(ContextObject),
-  .tp_itemsize = 0,
-  .tp_dealloc = (destructor) ContextObject_dealloc,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state"),
-  .tp_methods = ContextObject_methods,
-  .tp_init = (initproc) ContextObject_init,
-  .tp_new = PyType_GenericNew,
 };
+
+void setupContextType() {
+  ContextType.tp_name = "Context";
+  ContextType.tp_basicsize = sizeof(ContextObject);
+  ContextType.tp_itemsize = 0;
+  ContextType.tp_dealloc = (destructor) ContextObject_dealloc;
+  ContextType.tp_flags = Py_TPFLAGS_DEFAULT;
+  ContextType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
+  ContextType.tp_methods = ContextObject_methods;
+  ContextType.tp_init = (initproc) ContextObject_init;
+  ContextType.tp_new = PyType_GenericNew;
+}
 
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   Context::Configuration config;
@@ -213,16 +216,19 @@ static PyMethodDef LocationObject_methods[] = {
 
 PyTypeObject LocationType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "Location",
-  .tp_basicsize = sizeof(LocationObject),
-  .tp_itemsize = 0,
-  .tp_dealloc = (destructor) LocationObject_dealloc,
-  .tp_flags = Py_TPFLAGS_DEFAULT,
-  .tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state"),
-  .tp_methods = LocationObject_methods,
-  .tp_init = (initproc) LocationObject_init,
-  .tp_new = PyType_GenericNew,
 };
+
+void setupLocationType() {
+  LocationType.tp_name = "Location";
+  LocationType.tp_basicsize = sizeof(LocationObject);
+  LocationType.tp_itemsize = 0;
+  LocationType.tp_dealloc = (destructor) LocationObject_dealloc;
+  LocationType.tp_flags = Py_TPFLAGS_DEFAULT;
+  LocationType.tp_doc = PyDoc_STR("The Chapel context object that tracks various frontend state");
+  LocationType.tp_methods = LocationObject_methods;
+  LocationType.tp_init = (initproc) LocationObject_init;
+  LocationType.tp_new = PyType_GenericNew;
+}
 
 int LocationObject_init(LocationObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->location) Location();
@@ -261,17 +267,20 @@ static PyMethodDef AstNodeObject_methods[] = {
 
 PyTypeObject AstNodeType = {
   PyVarObject_HEAD_INIT(NULL, 0)
-  .tp_name = "AstNode",
-  .tp_basicsize = sizeof(AstNodeObject),
-  .tp_itemsize = 0,
-  .tp_dealloc = (destructor) AstNodeObject_dealloc,
-  .tp_flags = Py_TPFLAGS_BASETYPE,
-  .tp_doc = PyDoc_STR("The base type of Chapel AST nodes"),
-  .tp_iter = (getiterfunc) AstNodeObject_iter,
-  .tp_methods = AstNodeObject_methods,
-  .tp_init = (initproc) AstNodeObject_init,
-  .tp_new = PyType_GenericNew,
 };
+
+void setupAstNodeType() {
+  AstNodeType.tp_name = "AstNode";
+  AstNodeType.tp_basicsize = sizeof(AstNodeObject);
+  AstNodeType.tp_itemsize = 0;
+  AstNodeType.tp_dealloc = (destructor) AstNodeObject_dealloc;
+  AstNodeType.tp_flags = Py_TPFLAGS_BASETYPE;
+  AstNodeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
+  AstNodeType.tp_iter = (getiterfunc) AstNodeObject_iter;
+  AstNodeType.tp_methods = AstNodeObject_methods;
+  AstNodeType.tp_init = (initproc) AstNodeObject_init;
+  AstNodeType.tp_new = PyType_GenericNew;
+}
 
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) {
   PyObject* contextObjectPy;

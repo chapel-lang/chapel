@@ -131,6 +131,7 @@ public:
   // const ref. It can depend on the variable for ref to arrays.
   Qualifier*         fieldQualifiers;
 
+  // these two must be astrs
   const char*        name;
   const char*        cname;    // Name of symbol for C code
 

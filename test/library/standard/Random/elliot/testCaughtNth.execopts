@@ -1,4 +1,2 @@
---useNPB=true   --getNth=true
---useNPB=true   --getNth=false
---useNPB=false  --getNth=true
---useNPB=false  --getNth=false
+--getNth=true
+--getNth=false

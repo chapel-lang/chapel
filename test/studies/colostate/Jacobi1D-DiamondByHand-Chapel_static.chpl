@@ -27,7 +27,7 @@ use Random;
 use IO;
 
 config const printTime: bool = true; // print timer
-config const globalSeed = SeedGenerator.oddCurrentTime;
+config const globalSeed = NPBRandom.oddTimeSeed();
 config const problemSize = 100000;
 config const T = 1000; // number of time steps
 config const tau = 10;
@@ -112,7 +112,7 @@ proc main(){
   var timer: stopwatch;
 
   // initialize space with values
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream(real, globalSeed);
 
   forall i in computationSpaceRange with (ref space) do{
     space[0, i] = 0;
@@ -160,7 +160,7 @@ proc verifyResult(ref space: [] Cell, lowerBound: int, upperBound: int,
   for x in computationSpaceRange do
     spaceEndState[ x ] = space[ T & 1, x ];
 
-  var generator = new RandomStream( real, globalSeed, parSafe = false );
+  var generator = new randomStream( real, globalSeed );
 
   for i in computationSpaceRange do
     space[0, i] = generator.getNext();
