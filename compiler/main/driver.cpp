@@ -1942,11 +1942,17 @@ static void warnDeprecatedFlags() {
 
 // Check for inconsistencies in compiler-driver control flags
 static void checkCompilerDriverFlags() {
-  // Warn in initial driver invocation if extraneous --compiler-driver was set
-  if (driverModeSpecified && !fDriverDoMonolithic && !driverInSubInvocation) {
-    USR_WARN(
-        "--compiler-driver is deprecated; driver mode is now on by default, "
-        "use --no-compiler-driver to disable it");
+  // Warn in initial driver invocation for unstable --[no-]compiler-driver
+  if (fWarnUnstable && driverModeSpecified && !driverInSubInvocation) {
+    if (!fDriverDoMonolithic) {
+      USR_WARN(
+          "--compiler-driver is unstable; driver mode is now on by default, "
+          "use --no-compiler-driver to disable it");
+    } else {
+      USR_WARN(
+          "--no-compiler-driver is unstable; driver mode is now on by default "
+          "and will become the only option in the future");
+    }
   }
 
   if (fDriverDoMonolithic) {
