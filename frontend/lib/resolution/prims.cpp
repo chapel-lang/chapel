@@ -488,6 +488,35 @@ static QualifiedType primToNonNilableClass(Context* context,
   return setClassNilability(context, call, ci, /* nilability */ false, checked);
 }
 
+template <typename FromParam, typename ToParam>
+QualifiedType primNumericTransmute(Context* context,
+                                   const PrimCall* call,
+                                   const CallInfo& ci,
+                                   const Type* sourceType,
+                                   const Type* targetType) {
+  using FromCppType = typename FromParam::ValueType;
+  using ToCppType = typename ToParam::ValueType;
+
+  CHPL_ASSERT(sizeof(FromCppType) == sizeof(ToCppType));
+  if (call->numActuals() != 1) return QualifiedType();
+
+  auto& fromQt = ci.actual(0).type();
+  if (fromQt.type() != sourceType) return QualifiedType();
+
+  const Param* param = nullptr;
+  if (auto fromParam = fromQt.param()) {
+    // Note: assuming that the param matches the type here, because we can't
+    // call a toWhateverParam. Perform an "unsafe" cast, which should be
+    // safe if the param QT is well-formed.
+    FromCppType fromVal = ((const FromParam*) fromParam)->value();
+    ToCppType toVal;
+    memcpy(&toVal, &fromVal, sizeof(ToCppType));
+    param = ToParam::get(context, toVal);
+  }
+
+  return QualifiedType(fromQt.kind(), targetType, param);
+}
+
 static QualifiedType primRealToInt(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -703,10 +732,23 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_UINT32_AS_REAL32:
+      type = primNumericTransmute<UintParam, RealParam>(context, call, ci,
+          UintType::get(context, 32), RealType::get(context, 32));
+      break;
+
     case PRIM_UINT64_AS_REAL64:
+      type = primNumericTransmute<UintParam, RealParam>(context, call, ci,
+          UintType::get(context, 64), RealType::get(context, 64));
+      break;
+
     case PRIM_REAL32_AS_UINT32:
+      type = primNumericTransmute<RealParam, UintParam>(context, call, ci,
+          RealType::get(context, 32), UintType::get(context, 32));
+      break;
+
     case PRIM_REAL64_AS_UINT64:
-      CHPL_UNIMPL("uint <-> real primitives");
+      type = primNumericTransmute<RealParam, UintParam>(context, call, ci,
+          RealType::get(context, 64), UintType::get(context, 64));
       break;
 
     /* string operations */
