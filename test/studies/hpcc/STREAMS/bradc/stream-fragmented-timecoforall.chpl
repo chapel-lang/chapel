@@ -1,4 +1,4 @@
-use Time, Types, Random;
+use Time, Types, NPBRandom;
 use hpccMultilocale;
 
 use HPCCProblemSize;
@@ -14,7 +14,8 @@ config const m = computeProblemSize(elemType, numVectors),
 config const numTrials = 10,
              epsilon = 0.0;
 
-config const useRandomSeed = true;
+config const useRandomSeed = true,
+             seed = if useRandomSeed then oddTimeSeed() else 314159265;
 
 config const printParams = true,
              printArrays = false,
@@ -63,14 +64,12 @@ proc printConfiguration() {
 
 
 proc initVectors(ref B, ref C, ProblemSpace, print) {
-  var randlist = if useRandomSeed
-    then new randomStream(eltType=real)
-    else new randomStream(eltType=real, seed=314159265);
+  var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low-1);
-  randlist.fill(B);
+  randlist.fillRandom(B);
   randlist.skipToNth(ProblemSpace.size + C.domain.low-1);
-  randlist.fill(C);
+  randlist.fillRandom(C);
 
   if (printArrays && print) {
     writelnFragArray("B is: ", B, "\n");

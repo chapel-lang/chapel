@@ -2,7 +2,7 @@ use Random, Map;
 
 config const debug = false;
 
-proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, trials=1000) throws {
+proc test(ref stream, X, size:?sizeType=none, replace=true, prob:?probType=none, trials=1000) throws {
   var counts;
   if isArrayValue(X) {
     counts = new map(X.eltType, int);

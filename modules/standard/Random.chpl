@@ -860,7 +860,8 @@ module Random {
     if isNothingType(probType) {
       return _choiceUniform(stream, X, size, replace);
     } else {
-      return _choiceProbabilities(stream, X, size, replace, prob);
+      var realStream = new randomStream(real, seed=stream.seed);
+      return _choiceProbabilities(realStream, X, size, replace, prob);
     }
   }
 
@@ -978,7 +979,7 @@ module Random {
     // Begin sampling
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randNum = stream.getNext(resultType=real);
+      var randNum = stream.getNext();
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
       return X.dim(0).orderToIndex(idx);
     } else {
@@ -997,7 +998,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randNum = stream.getNext(resultType=real);
+          var randNum = stream.getNext();
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           sample = X.dim(0).orderToIndex(idx);
         }
@@ -1014,7 +1015,7 @@ module Random {
           }
 
           var remainingSamples = samples.sizeAs(int) - indicesChosen.sizeAs(int);
-          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}, resultType=real) {
+          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);

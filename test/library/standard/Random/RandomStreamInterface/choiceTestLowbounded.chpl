@@ -7,7 +7,7 @@ proc main() throws {
 
   var success = true;
 
-  var stream = createRandomStream(real);
+  var stream = new randomStream(int);
 
   var c = stream.choice(1..);
   writeln('Error: unbounded range did not throw error');
