@@ -67,9 +67,9 @@ proc initVectors(ref B, ref C, ProblemSpace, print) {
   var randlist = new NPBRandomStream(eltType=real, seed=seed);
 
   randlist.skipToNth(B.domain.low-1);
-  randlist.fill(B);
+  randlist.fillRandom(B);
   randlist.skipToNth(ProblemSpace.size + C.domain.low-1);
-  randlist.fill(C);
+  randlist.fillRandom(C);
 
   if (printArrays && print) {
     writelnFragArray("B is: ", B, "\n");
