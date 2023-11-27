@@ -53,9 +53,6 @@ correctness test on the entire chapel test suite::
     # Config vars that need to be set
     #
 
-    # Change to appropriate mailing list or email
-    export CHPL_NIGHTLY_CRON_RECIPIENT=email.example.com
-
     # Config name used in mail and log file names
     export CHPL_NIGHTLY_TEST_CONFIG_NAME="chapel.test"
 

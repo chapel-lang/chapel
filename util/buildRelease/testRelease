@@ -49,16 +49,16 @@ if ($debug == 1 && $debugmail eq "") {
     exit 1;
 }
 
-if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
-    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
-}
+# if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
+#     $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
+# }
 
-if ($cronrecipient ne "") {
-    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
-    $failuremail = $cronrecipient;
-    $allmail = $cronrecipient;
-    $replymail = $cronrecipient;
-}
+# if ($cronrecipient ne "") {
+#     print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
+#     $failuremail = $cronrecipient;
+#     $allmail = $cronrecipient;
+#     $replymail = $cronrecipient;
+# }
 
 
 #
