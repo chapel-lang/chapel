@@ -99,6 +99,21 @@ static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
   return paramStringBytesHelper(type, into, true);
 }
 
+static QualifiedType makeParamBool(Context* context, bool b) {
+  return { QualifiedType::PARAM, BoolType::get(context),
+           BoolParam::get(context, b) };
+}
+
+static QualifiedType makeParamString(Context* context, UniqueString s) {
+  return { QualifiedType::PARAM, RecordType::getStringType(context),
+           StringParam::get(context, s) };
+}
+
+static QualifiedType makeParamString(Context* context, std::string s) {
+  auto ustr = UniqueString::get(context, s);
+  return makeParamString(context, ustr);
+}
+
 static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
   auto type = QualifiedType();
   if (ci.numActuals() != 2) return type;
@@ -118,9 +133,7 @@ static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
       // will only return true if the field's type is concrete.
       auto isBound =
         fields->fieldType(i).genericity() == Type::Genericity::CONCRETE;
-      type = QualifiedType(QualifiedType::PARAM,
-                           BoolType::get(context),
-                           BoolParam::get(context, isBound));
+      type = makeParamBool(context, isBound);
       break;
     }
   }
@@ -265,7 +278,6 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   return QualifiedType(QualifiedType::PARAM,
                        BoolType::get(context),
                        BoolParam::get(context, callAndFnResolved));
-
 }
 
 static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
@@ -658,6 +670,184 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
                        BoolParam::get(context, isCopyableOrAssignable));
 }
 
+// TODO: What should be done for 'MAYBE_GENERIC', if anything?
+static QualifiedType primIsGenericType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() < 1) return QualifiedType();
+  bool eval = false;
+  auto qt = ci.actual(0).type();
+  if (auto t = qt.type()) {
+    auto g = t->genericity();
+
+    if (g == Type::MAYBE_GENERIC) {
+      QualifiedType qtEval = qt;
+      auto ct = t->toCompositeType();
+      if (auto cls = t->toClassType()) ct = cls->basicClassType();
+
+      // A generic type with defaults will be computed to have default subs
+      // at this point, so calling 'getTypeGenericity' on it will produce
+      // 'CONCRETE' instead of 'GENERIC_WITH_DEFAULTS'. Back up and use the
+      // uninstantiated type to produce the latter.
+      if (ct) {
+        if (auto ctGeneric = ct->instantiatedFromCompositeType()) {
+          qtEval = QualifiedType(qt.kind(), ctGeneric);
+        }
+      }
+      g = getTypeGenericity(context, qtEval);
+    }
+
+    // Both cases are considered 'generic' for this primitive.
+    eval = (g == Type::GENERIC || g == Type::GENERIC_WITH_DEFAULTS);
+  }
+  return makeParamBool(context, eval);
+}
+
+
+static QualifiedType primIsClassType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() < 1) return QualifiedType();
+  bool eval = false;
+  if (auto t = ci.actual(0).type().type()) {
+    const bool isClassLike =
+        t->isClassType()      ||  // E.g., 'owned C' or 'owned class'.
+        t->isBasicClassType() ||  // TODO: This probably shouldn't appear.
+        t->isAnyClassType();      // E.g., 'class'.
+    // TODO: No to extern types.
+    const bool isExtern = false;
+    const bool isDdata = t->hasPragma(context, PRAGMA_DATA_CLASS);
+    eval = isClassLike && !isExtern && !isDdata;
+  }
+  return makeParamBool(context, eval);
+}
+
+template <typename F>
+static QualifiedType
+actualTypeHasProperty(Context* context, const CallInfo& ci, F&& f) {
+  if (ci.numActuals() < 1) return QualifiedType();
+  bool eval = false;
+  if (auto t = ci.actual(0).type().type()) eval = f(t);
+  return makeParamBool(context, eval);
+}
+
+static QualifiedType
+primIsNilableClassType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    auto mt = t->toClassType();
+    return mt ? mt->decorator().isNilable() : false;
+  });
+}
+
+static QualifiedType
+primIsNonNilableClassType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    auto mt = t->toClassType();
+    return mt ? mt->decorator().isNonNilable() : false;
+  });
+}
+
+static QualifiedType primIsRecordType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    return t->isUserRecordType();
+  });
+}
+
+static QualifiedType primIsFcfType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_FCF_TYPE");
+  return QualifiedType();
+}
+
+static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    return t->isUnionType();
+  });
+}
+
+static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_EXTERN_TYPE");
+  return QualifiedType();
+}
+
+static QualifiedType
+primIsExternUnionType(Context* context, const CallInfo& ci) {
+  auto qt1 = primIsExternType(context, ci);
+  auto qt2 = primIsUnionType(context, ci);
+  const bool eval = qt1.isParamTrue() && qt2.isParamTrue();
+  return makeParamBool(context, eval);
+}
+
+static QualifiedType
+primIsAtomicType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return t->hasPragma(context, PRAGMA_ATOMIC_TYPE);
+  });
+}
+
+static QualifiedType
+primIsRefIterType(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_REF_ITER_TYPE");
+  return QualifiedType();
+}
+
+static QualifiedType
+primIsBorrowedClassType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    auto mt = t->toClassType();
+    return mt ? mt->decorator().isBorrowed() : false;
+  });
+}
+
+static QualifiedType
+primIsAbsEnumType(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [](auto t) {
+    auto et = t->toEnumType();
+    return et ? et->isAbstract() : false;
+  });
+}
+
+static QualifiedType
+primIsPod(Context* context, const CallInfo& ci) {
+  CHPL_UNIMPL("PRIM_IS_POD");
+  return QualifiedType();
+}
+
+static QualifiedType
+primIsCoercible(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() < 2) return QualifiedType();
+  auto qtFrom = ci.actual(0).type();
+  auto qtTo = ci.actual(1).type();
+  auto canPass = CanPassResult::canPass(context, qtFrom, qtTo);
+  bool eval = canPass.passes() &&
+              (canPass.instantiates() || canPass.converts()) &&
+              !canPass.promotes();
+  return makeParamBool(context, eval);
+}
+
+static QualifiedType
+primTypeToString(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() < 1) return QualifiedType();
+  std::string eval;
+  if (auto t = ci.actual(0).type().type()) {
+    std::stringstream ss;
+    t->stringify(ss, CHPL_SYNTAX);
+    eval = ss.str();
+  }
+  return makeParamString(context, eval);
+}
+
+static QualifiedType
+primSimpleTypeName(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() < 1) return QualifiedType();
+  std::string eval;
+  if (auto t = ci.actual(0).type().type()) {
+    const Type* root = t;
+    if (auto ct = t->toCompositeType()) {
+      if (auto ins = ct->instantiatedFromCompositeType()) root = ins;
+    }
+    std::stringstream ss;
+    root->stringify(ss, CHPL_SYNTAX);
+    eval = ss.str();
+  }
+  return makeParamString(context, eval);
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -703,15 +893,23 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_IS_COERCIBLE:
-    case PRIM_TYPE_TO_STRING:
-    case PRIM_HAS_LEADER:
-      CHPL_UNIMPL("misc primitives");
+      type = primIsCoercible(context, ci);
       break;
+
+    case PRIM_TYPE_TO_STRING:
+      type = primTypeToString(context, ci);
+      break;
+
+    case PRIM_HAS_LEADER:
+      CHPL_UNIMPL("PRIM_HAS_LEADER");
+      break;
+
     case PRIM_IS_TUPLE_TYPE:
       type = primIsTuple(context, ci);
       break;
+
     case PRIM_SIMPLE_TYPE_NAME:
-      CHPL_UNIMPL("misc primitives");
+      type = primSimpleTypeName(context, ci);
       break;
 
     case PRIM_NUM_FIELDS:
@@ -738,24 +936,70 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
+      CHPL_UNIMPL("PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL");
+      break;
+
     case PRIM_IS_GENERIC_TYPE:
+      type = primIsGenericType(context, ci);
+      break;
+
     case PRIM_IS_CLASS_TYPE:
+      type = primIsClassType(context, ci);
+      break;
+
     case PRIM_IS_NILABLE_CLASS_TYPE:
+      type = primIsNilableClassType(context, ci);
+      break;
+
     case PRIM_IS_NON_NILABLE_CLASS_TYPE:
+      type = primIsNonNilableClassType(context, ci);
+      break;
+
     case PRIM_IS_RECORD_TYPE:
+      type = primIsRecordType(context, ci);
+      break;
+
     case PRIM_IS_FCF_TYPE:
+      type = primIsFcfType(context, ci);
+      break;
+
     case PRIM_IS_UNION_TYPE:
+      type = primIsUnionType(context, ci);
+      break;
+
     case PRIM_IS_EXTERN_UNION_TYPE:
+      type = primIsExternUnionType(context, ci);
+      break;
+
     case PRIM_IS_ATOMIC_TYPE:
+      type = primIsAtomicType(context, ci);
+      break;
+
     case PRIM_IS_REF_ITER_TYPE:
+      type = primIsRefIterType(context, ci);
+      break;
+
     case PRIM_IS_EXTERN_TYPE:
+      type = primIsExternType(context, ci);
+      break;
+
     case PRIM_IS_BORROWED_CLASS_TYPE:
+      type = primIsBorrowedClassType(context, ci);
+      break;
+
     case PRIM_IS_ABS_ENUM_TYPE:
+      type = primIsAbsEnumType(context, ci);
+      break;
+
     case PRIM_IS_POD:
-    case PRIM_HAS_DEFAULT_VALUE:  // param uses in module code
-    case PRIM_NEEDS_AUTO_DESTROY: // param uses in module code
+      type = primIsPod(context, ci);
+      break;
+
+    case PRIM_HAS_DEFAULT_VALUE:
+    case PRIM_NEEDS_AUTO_DESTROY:
       CHPL_UNIMPL("various primitives");
       break;
+
     case PRIM_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
     case PRIM_METHOD_CALL_AND_FN_RESOLVES:

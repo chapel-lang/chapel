@@ -39,6 +39,7 @@
 #include "chpl/types/UnknownType.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
+#include "chpl/parsing/parsing-queries.h"
 
 namespace chpl {
 namespace types {
@@ -206,6 +207,16 @@ bool Type::isUserRecordType() const {
   return true;
 }
 
+bool Type::hasPragma(Context* context, uast::pragmatags::PragmaTag p) const {
+  if (auto ct = this->toCompositeType()) {
+    if (auto id = ct->id()) {
+      if (auto ag = parsing::idToAttributeGroup(context, id)) {
+        return ag->hasPragma(p);
+      }
+    }
+  }
+  return false;
+}
 
 const CompositeType* Type::getCompositeType() const {
   if (auto at = toCompositeType())
