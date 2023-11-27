@@ -1,5 +1,3 @@
-choiceTestLowbounded.chpl:6: In function 'main':
-choiceTestLowbounded.chpl:10: warning: 'createRandomStream' is deprecated; please use 'new randomStream' instead
 $CHPL_HOME/modules/standard/Random.chpl:nnnn: In method 'choice':
-$CHPL_HOME/modules/standard/Random.chpl:nnnn: error: input range must be bounded
-  choiceTestLowbounded.chpl:12: called as (PCGRandomStreamInternal(real(64),true)).choice(x: range(int(64),low,one), size: nothing, replace: bool, prob: nothing)
+$CHPL_HOME/modules/standard/Random.chpl:nnnn: error: one of domain's dimensions is not a bounded range
+  choiceTestLowbounded.chpl:12: called as (randomStream(int(64))).choice(x: range(int(64),low,one), size: nothing, replace: bool, prob: nothing)
