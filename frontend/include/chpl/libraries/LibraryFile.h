@@ -370,6 +370,8 @@ class LibraryFile {
                 int moduleIndex,
                 int symbolTableEntryIndex,
                 const uast::AstNode* symbolTableEntryAst) const;
+
+  // TODO: reading LLVM IR, getLazyIRModule con work with a MemoryBuffer
 };
 
 

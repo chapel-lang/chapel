@@ -182,15 +182,37 @@ This section consists of:
 
    * a byte storing flags / kind information
 
-   * unsigned variable-byte encoded, prefix A to copy from the
-     previous symbol table ID
+   * the symbol table ID, stored in a compressed form. It is formed by
+     concatenating the first A bytes of the previous symbol table ID with
+     the B bytes of suffix:
 
-   * unsigned variable-byte encoded, suffix size B stored here
+     * unsigned variable-byte encoded, prefix A to copy from the
+       previous symbol table ID
 
-   * B bytes of suffix
+     * unsigned variable-byte encoded, suffix size B stored here
 
-     * the symbol table ID string is formed by concatenating
-       first A bytes of the previous string with the B bytes of suffix
+     * B bytes of suffix
+
+  * unsigned variable-byte encoded number, G, of code-generated versions
+
+  * for each of the G code-generated versions
+
+    * byte indicating 0 if it is concrete and nonzero for an
+      instantiation
+
+    * additional information TBD for instantiations
+
+    * the name of the symbol in the generated code, also called a "cname",
+      stored in a compressed form. It is formed by concatenating the first
+      A bytes of the previous cname with the B bytes of suffix:
+
+       * unsigned variable-byte encoded, prefix A to copy from the
+         previous symbol's cname
+
+       * unsigned variable-byte encoded, suffix size B stored here
+
+       * B bytes of suffix
+
 
 uAST Section
 ------------
@@ -333,6 +355,22 @@ The Location section consists of:
        * unsigned variable-byte encoded first column
 
        * unsigned variable-byte encoded first last column
+
+
+Generated Code Section
+----------------------
+
+The generated code contains serialized LLVM IR for the result of
+compilation for the module (with the exception of generic functions that
+are not yet instantiated).
+
+The generated code section consists of:
+
+ * 8 bytes of magic number 0x4e4547075ec110e0
+
+ * 8 bytes, M, the size of the serialized LLVM IR bytecode
+
+ * M bytes of serialized LLVM IR bytecode
 
 
 Types Section

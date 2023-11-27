@@ -389,21 +389,13 @@ static bool compilerSetChplLLVM = false;
 
 static std::vector<std::string> cmdLineModPaths;
 
-// TODO: with the updates to filesystem that utilize GetExecutablePath,
-// do we still need this block comment?
-/* Note -- LLVM provides a way to get the path to the executable...
-// This function isn't referenced outside its translation unit, but it
-// can't use the "static" keyword because its address is used for
-// GetMainExecutable (since some platforms don't support taking the
-// address of main, and some platforms can't implement GetMainExecutable
-// without being given the address of a function in the main executable).
-llvm::sys::Path GetExecutablePath(const char *Argv0) {
-  // This just needs to be some symbol in the binary; C++ doesn't
-  // allow taking the address of ::main however.
-  void *MainAddr = (void*) (intptr_t) GetExecutablePath;
-  return llvm::sys::Path::GetMainExecutable(Argv0, MainAddr);
-}
-*/
+// support for separate compilation
+// what is the name of the output library file e.g. MyModule.dyno
+std::string gDynoGenLibOutput;
+// what source code paths were requested to be compiled into the lib?
+std::vector<UniqueString> gDynoGenLibSourcePaths;
+// what top-level module names as astrs were requested to be stored in the lib?
+std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 static bool isMaybeChplHome(const char* path)
 {
@@ -1182,6 +1174,20 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
   }
 }
 
+void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  std::string path = std::string(newpath);
+  auto dot = path.find_last_of(".");
+  std::string noExt = path.substr(0, dot);
+  std::string usePath = noExt + ".dyno";
+  if (usePath != path) {
+    USR_FATAL("--dyno-gen-lib accepts the output file as an argument. " \
+              "Please use the .dyno suffix for the output file");
+  }
+
+  // set the output path. other variables will be set later
+  gDynoGenLibOutput = usePath;
+}
+
 /*
 Flag types:
 
@@ -1476,7 +1482,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-scope-bundled", ' ', NULL, "Enable [disable] using dyno to scope resolve bundled modules", "N", &fDynoScopeBundled, "CHPL_DYNO_SCOPE_BUNDLED", NULL},
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
- {"dyno-gen-lib", ' ', "<path>", "Specify file to be generated as a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
@@ -2010,6 +2016,12 @@ static void checkIncrementalAndOptimized() {
              "due to the use of separate compilation in the back-end.");
 }
 
+static void checkGenLibNotLLVM() {
+  if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
+    USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
+  }
+}
+
 static void checkUnsupportedConfigs(void) {
   // Check for cce classic
   if (!strcmp(CHPL_TARGET_COMPILER, "cray-prgenv-cray")) {
@@ -2177,6 +2189,8 @@ static void validateSettings() {
   checkTargetCpu();
 
   checkIncrementalAndOptimized();
+
+  checkGenLibNotLLVM();
 
   checkUnsupportedConfigs();
 

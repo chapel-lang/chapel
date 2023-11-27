@@ -369,6 +369,7 @@ bool LibraryFile::readModuleSection(Context* context,
                    helper);
   uint32_t n = symTableHeader->nEntries;
   std::string lastSymId;
+  std::string lastCname;
   for (uint32_t i = 0; i < n; i++) {
     uint64_t pos = des.position();
 
@@ -377,25 +378,55 @@ bool LibraryFile::readModuleSection(Context* context,
     des.readData(&entry, sizeof(entry));
     // read the tag
     des.readByte();
-    // read the variable-byte encoded common prefix length
-    unsigned int nCommonPrefix = des.readVUint();
-    // shorten lastSymId to the first nCommonPrefix bytes
-    if (lastSymId.size() > nCommonPrefix) {
-      lastSymId.erase(nCommonPrefix, lastSymId.size()-nCommonPrefix);
-    }
-    // read the variable-byte encoded suffix length
-    unsigned int nSuffix = des.readVUint();
 
-    if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
-        !des.checkStringLengthAvailable(nSuffix)) {
-      invalidFileError(context);
-      return false;
+    {
+      // read the variable-byte encoded common prefix length
+      unsigned int nCommonPrefix = des.readVUint();
+      // shorten lastSymId to the first nCommonPrefix bytes
+      if (lastSymId.size() > nCommonPrefix) {
+        lastSymId.erase(nCommonPrefix, lastSymId.size()-nCommonPrefix);
+      }
+      // read the variable-byte encoded suffix length
+      unsigned int nSuffix = des.readVUint();
+
+      if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
+          !des.checkStringLengthAvailable(nSuffix)) {
+        invalidFileError(context);
+        return false;
+      }
+
+      // expand lastSymId to have room to store the suffix
+      lastSymId.resize(nCommonPrefix+nSuffix);
+      // read the string data
+      des.readData(&lastSymId[nCommonPrefix], nSuffix);
     }
 
-    // expand lastSymId to have room to store the suffix
-    lastSymId.resize(nCommonPrefix+nSuffix);
-    // read the string data
-    des.readData(&lastSymId[nCommonPrefix], nSuffix);
+    // consider the code-generated versions
+    unsigned nGenerated = des.readVUint();
+    // read the data from each code-generated version
+    for (unsigned int j = 0; j < nGenerated; j++) {
+      des.readByte(); // isInstantiation
+
+      // read the variable-byte encoded common prefix length
+      unsigned int nCommonPrefix = des.readVUint();
+      // shorten lastCname to the first nCommonPrefix bytes
+      if (lastCname.size() > nCommonPrefix) {
+        lastCname.erase(nCommonPrefix, lastCname.size()-nCommonPrefix);
+      }
+      // read the variable-byte encoded suffix length
+      unsigned int nSuffix = des.readVUint();
+
+      if (!des.checkStringLength(nCommonPrefix+nSuffix) ||
+          !des.checkStringLengthAvailable(nSuffix)) {
+        invalidFileError(context);
+        return false;
+      }
+
+      // expand lastCname to have room to store the suffix
+      lastCname.resize(nCommonPrefix+nSuffix);
+      // read the string data
+      des.readData(&lastCname[nCommonPrefix], nSuffix);
+    }
 
     // record the information
     ModuleSection::SymbolInfo info;

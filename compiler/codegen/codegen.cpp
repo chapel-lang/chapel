@@ -20,8 +20,11 @@
 
 #include "codegen.h"
 
+#include "LayeredValueTable.h"
 #include "astutil.h"
 #include "baseAST.h"
+#include "chpl/libraries/LibraryFileWriter.h"
+#include "chpl/util/filesystem.h"
 #include "clangBuiltinsWrappedSet.h"
 #include "clangUtil.h"
 #include "config.h"
@@ -32,10 +35,10 @@
 #include "insertLineNumbers.h"
 #include "library.h"
 #include "llvmDebug.h"
+#include "llvmExtractIR.h"
 #include "llvmUtil.h"
-#include "LayeredValueTable.h"
-#include "mli.h"
 #include "misc.h"
+#include "mli.h"
 #include "mysystem.h"
 #include "passes.h"
 #include "stlUtil.h"
@@ -45,22 +48,23 @@
 #include "typeSpecifier.h"
 #include "view.h"
 #include "virtualDispatch.h"
-#include "chpl/util/filesystem.h"
 
 #include "global-ast-vecs.h"
 
 #ifdef HAVE_LLVM
 // Include relevant LLVM headers
-#include "llvm/IR/Module.h"
-#include "llvm/Pass.h"
-#include "llvm/Support/raw_ostream.h"
-
+#include "llvm/Bitcode/BitcodeWriter.h"
 #include "llvm/IR/DiagnosticInfo.h"
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
+#include "llvm/IR/Module.h"
+#include "llvm/Pass.h"
 #include "llvm/Remarks/RemarkSerializer.h"
-#include "llvm/Remarks/YAMLRemarkSerializer.h"
 #include "llvm/Remarks/RemarkStreamer.h"
+#include "llvm/Remarks/YAMLRemarkSerializer.h"
+#include "llvm/Support/raw_ostream.h"
+
+
 #endif
 
 #ifndef __STDC_FORMAT_MACROS
@@ -1902,8 +1906,8 @@ static void codegen_header(std::set<const char*> & cnames,
     if (fn2->hasFlag(FLAG_BEGIN_BLOCK) ||
         fn2->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK) ||
         fn2->hasFlag(FLAG_ON_BLOCK)) {
-    ftableVec.push_back(fn2);
-    ftableMap[fn2] = ftableVec.size()-1;
+      ftableVec.push_back(fn2);
+      ftableMap[fn2] = ftableVec.size()-1;
     }
   }
 
@@ -2814,7 +2818,7 @@ static void codegenPartTwo() {
 
   // Prepare the LLVM IR dumper for code generation
   // This needs to happen after protectNameFromC which happens
-  // currently in codegen_header.
+  // currently in codegenPartOne.
   preparePrintLlvmIrForCodegen();
 
   info->cfile = defnfile.fptr;
@@ -2882,6 +2886,98 @@ static void codegenPartTwo() {
   {
     fprintf(stderr, "Statements emitted: %d\n", gStmtCount);
   }
+
+
+  if (!gDynoGenLibOutput.empty() && fLlvmCodegen) {
+#ifdef HAVE_LLVM
+    llvm::Module* llvmModule = gGenInfo->module;
+
+    // create the LibraryFileWriter
+    using LibraryFileWriter = chpl::libraries::LibraryFileWriter;
+    auto libWriter = LibraryFileWriter(gContext, gDynoGenLibOutput);
+
+    // set the source paths / gather the parsed uAST
+    libWriter.setSourcePaths(gDynoGenLibSourcePaths);
+
+    // gather the modules we are code generating
+    std::set<ModuleSymbol*> genModules;
+    forv_Vec(ModuleSymbol, modSym, gModuleSymbols) {
+      if (gDynoGenLibModuleNameAstrs.count(modSym->name) > 0) {
+        genModules.insert(modSym);
+      }
+    }
+
+    using LibGenInfo = LibraryFileWriter::GenInfo;
+    std::unordered_map<chpl::ID, std::vector<LibGenInfo>> genMap;
+
+    // for each module, extract only the LLVM IR for that module
+    for (ModuleSymbol* genMod : genModules) {
+      // compute the functions/globals from the requested module
+      std::set<const llvm::GlobalValue*> filterGvs;
+
+      // gather functions
+      std::vector<FnSymbol*> fns =
+        genMod->getTopLevelFunctions(/* includeExterns */ false);
+      // and variables
+      std::vector<VarSymbol*> vars = genMod->getTopLevelVariables();
+      {
+        // also config vars
+        std::vector<VarSymbol*> configs = genMod->getTopLevelConfigVars();
+        vars.insert(vars.end(), configs.begin(), configs.end());
+      }
+
+      for (FnSymbol* fn : fns) {
+        if (fn->hasFlag(FLAG_GEN_MAIN_FUNC)) {
+          // skip chpl_gen_main
+        } else {
+          if (llvm::Function* g = llvmModule->getFunction(fn->cname)) {
+            chpl::ID fnId = fn->astloc.id();
+            if (!fnId.isEmpty()) {
+              LibraryFileWriter::GenInfo info;
+              info.cname = UniqueString::get(gContext, fn->cname);
+              info.isInstantiation = fn->hasFlag(FLAG_INSTANTIATED_GENERIC);
+              genMap[fnId].push_back(info);
+              filterGvs.insert(g);
+            }
+          }
+        }
+      }
+      for (VarSymbol* v : vars) {
+        if (llvm::GlobalVariable* g = llvmModule->getGlobalVariable(v->cname)) {
+          chpl::ID vId = v->astloc.id();
+          if (!vId.isEmpty()) {
+            LibraryFileWriter::GenInfo info;
+            info.cname = UniqueString::get(gContext, v->cname);
+            // instantiations of module-scope variables should not be possible
+            info.isInstantiation = false;
+            INT_ASSERT(!v->hasFlag(FLAG_INSTANTIATED_GENERIC));
+            genMap[vId].push_back(info);
+            filterGvs.insert(g);
+          }
+        }
+      }
+
+      // compute the pared-down module
+      std::unique_ptr<llvm::Module> M = extractLLVM(llvmModule, filterGvs);
+
+      // compute the bitcode for the pared-down module & save it
+      // in the libWriter's buffer
+      std::string generatedCodeBuffer;
+      {
+        llvm::raw_string_ostream OS(generatedCodeBuffer);
+        llvm::WriteBitcodeToFile(*M.get(), OS);
+      }
+
+      auto modName = UniqueString::get(gContext, genMod->name);
+      libWriter.setGeneratedCode(modName,
+                                 std::move(generatedCodeBuffer),
+                                 std::move(genMap));
+    }
+
+    // compute the cnamesfunction names
+    libWriter.writeAllSections();
+#endif
+  }
 }
 
 void codegen() {
@@ -2893,6 +2989,7 @@ void codegen() {
   if (isFullGpuCodegen()) {
     // flush stdout before forking process so buffered output doesn't get copied over
     fflush(stdout);
+    fflush(stderr);
 
     pid_t pid = fork();
 
@@ -2944,6 +3041,10 @@ void codegen() {
 
 void makeBinary(void) {
   if (no_codegen)
+    return;
+
+  // don't run makeBinary when using --dyno-gen-lib
+  if (gDynoGenLibSourcePaths.size() > 0)
     return;
 
   // makeBinary shouldn't run in a phase-one invocation.

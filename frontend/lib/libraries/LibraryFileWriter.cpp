@@ -72,17 +72,25 @@ void LibraryFileWriter::fail(const char* msg) {
   ok = false;
 }
 
-void LibraryFileWriter::gatherTopLevelModules() {
+std::vector<LibraryFileWriter::ModInfo>
+LibraryFileWriter::gatherTopLevelModules(Context* context,
+                                         std::vector<UniqueString> paths) {
+  std::vector<ModInfo> modules;
   // Parse the paths and gather a vector of top-level modules.
-  for (auto path : inputFiles) {
+  for (auto path : paths) {
     path = cleanLocalPath(context, path);
     UniqueString empty;
     std::vector<const uast::Module*> modsInFile =
       parsing::parse(context, path, empty);
     for (auto mod : modsInFile) {
-      modulesAndPaths.push_back(std::make_pair(mod, path));
+      ModInfo info;
+      info.moduleName = mod->name();
+      info.moduleAst = mod;
+      info.fromSourcePath = path;
+      modules.push_back(std::move(info));
     }
   }
+  return modules;
 }
 
 void LibraryFileWriter::openFile() {
@@ -101,17 +109,17 @@ void LibraryFileWriter::writeHeader() {
   header.chplVersionMajor = getMajorVersion();
   header.chplVersionMinor = getMinorVersion();
   header.chplVersionUpdate = getUpdateVersion();
-  header.nModules = modulesAndPaths.size();
+  header.nModules = modules.size();
   // hash remains 0s at this point
   fileStream.write((const char*) &header, sizeof(header));
 
   // emit an error if there are too many modules for the file format
-  if (modulesAndPaths.size() >= MAX_NUM_MODULES) {
+  if (modules.size() >= MAX_NUM_MODULES) {
     fail("Too many modules to create library file");
   }
 
   // write the placeholder module section table
-  size_t n = modulesAndPaths.size();
+  size_t n = modules.size();
   for (size_t i = 0; i < n; i++) {
     uint64_t zero = 0;
     fileStream.write((const char*) &zero, sizeof(zero));
@@ -126,8 +134,11 @@ void LibraryFileWriter::padToAlign() {
   }
 }
 
-Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
-                                             UniqueString fromFilePath) {
+Region LibraryFileWriter::writeModuleSection(const ModInfo& info) {
+  const uast::Module* mod = info.moduleAst;
+  UniqueString fromFilePath = info.fromSourcePath;
+  const std::string& genCode = info.genCode;
+
   auto moduleSectionStart = fileStream.tellp();
 
   // Construct a module section header and write it
@@ -164,9 +175,12 @@ Region LibraryFileWriter::writeModuleSection(const uast::Module* mod,
   // note: implementation of writeLocations assumes it runs after writeAst
 
   padToAlign();
-  header.symbolTable = writeSymbolTable(mod, ser, reg);
+  header.symbolTable = writeSymbolTable(info, ser, reg);
   // note: implementation of writeSymbolTable assumes it runs
   // after writeAst and writeLocations
+
+  padToAlign();
+  header.genCodeSection = writeGenCode(moduleSectionStart, ser, genCode);
 
   // update the module header with the saved locations by writing the
   // header again.
@@ -314,10 +328,29 @@ computeSymbolNames(const uast::Module* mod,
   return result;
 }
 
+static unsigned int computeCommonPrefix(const std::string& last,
+                                        const std::string& str) {
+  unsigned int nCommonPrefix = 0;
+
+  // compute the minimum of the lengths
+  size_t n = last.size();
+  if (str.size() < n) n = str.size();
+
+  for (nCommonPrefix = 0; nCommonPrefix < n; nCommonPrefix++) {
+    if (last[nCommonPrefix] != str[nCommonPrefix]) {
+      break;
+    }
+  }
+
+  return nCommonPrefix;
+}
+
 Region
-LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
+LibraryFileWriter::writeSymbolTable(const ModInfo& info,
                                     Serializer& ser,
                                     LibraryFileSerializationHelper& reg) {
+
+  const uast::Module* mod = info.moduleAst;
 
   uint64_t symTableStart = fileStream.tellp();
   SymbolTableHeader header;
@@ -337,6 +370,7 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
   auto symsAndNames = computeSymbolNames(mod, reg.symbolTableVec);
 
   std::string lastSymId;
+  std::string lastCname;
 
   for (auto pair : symsAndNames) {
     const uast::AstNode* sym = pair.first;
@@ -358,25 +392,39 @@ LibraryFileWriter::writeSymbolTable(const uast::Module* mod,
     CHPL_ASSERT((int) tag < 256);
     ser.writeByte(tag);
 
-    //  * write the number of bytes in common with the previous one
-    unsigned int nCommonPrefix = 0;
     {
-      // compute the minimum lengths
-      size_t n = lastSymId.size();
-      if (symId.size() < n) n = symId.size();
-
-      for (nCommonPrefix = 0; nCommonPrefix < n; nCommonPrefix++) {
-        if (lastSymId[nCommonPrefix] != symId[nCommonPrefix]) {
-          break;
-        }
-      }
+      //  * write the number of bytes in common with the previous one
+      unsigned int nCommonPrefix = computeCommonPrefix(lastSymId, symId);
+      ser.writeVUint(nCommonPrefix);
+      //  * write the number of bytes of suffix
+      unsigned int nSuffix = symId.size() - nCommonPrefix;
+      ser.writeVUint(nSuffix);
+      //  * write the suffix data
+      ser.writeData(&symId[nCommonPrefix], nSuffix);
     }
-    ser.writeVUint(nCommonPrefix);
-    //  * write the number of bytes of suffix
-    unsigned int nSuffix = symId.size() - nCommonPrefix;
-    ser.writeVUint(nSuffix);
-    //  * write the suffix data
-    ser.writeData(&symId[nCommonPrefix], nSuffix);
+
+    // write the number of generated versions
+    auto search = info.genMap.find(sym->id());
+    if (search != info.genMap.end()) {
+      const std::vector<GenInfo>& gens = search->second;
+      ser.writeVUint(gens.size()); // number of generated versions
+      for (const auto& g : gens) {
+        // output the byte indicating if it is an instantiation
+        ser.writeByte(g.isInstantiation);
+        // output the cname
+        std::string cname = g.cname.str();
+        // write the number of bytes in common with the previous one
+        unsigned int nCommonPrefix = computeCommonPrefix(lastCname, cname);
+        ser.writeVUint(nCommonPrefix);
+        // write the number of bytes of suffix
+        unsigned int nSuffix = cname.size() - nCommonPrefix;
+        ser.writeVUint(nSuffix);
+        //  * write the suffix data
+        ser.writeData(&cname[nCommonPrefix], nSuffix);
+      }
+    } else {
+      ser.writeVUint(0); // zero generated versions
+    }
 
     lastSymId = symId;
   }
@@ -658,20 +706,60 @@ LibraryFileWriter::writeLocationEntries(const uast::AstNode* ast,
   }
 }
 
+
+Region LibraryFileWriter::writeGenCode(uint64_t moduleSectionStart,
+                                       Serializer& ser,
+                                       const std::string& gen) {
+  uint64_t genSectionStart = fileStream.tellp();
+
+  GenCodeSectionHeader header;
+  memset(&header, 0, sizeof(header));
+  header.magic = GEN_CODE_SECTION_MAGIC;
+  header.len = gen.size();
+
+  // write the header
+  ser.writeData(&header, sizeof(header));
+
+  // write the gen code data
+  ser.writeData(&gen[0], gen.size());
+
+  uint64_t genSectionEnd = fileStream.tellp();
+  return makeRegion(genSectionStart - moduleSectionStart,
+                    genSectionEnd - moduleSectionStart);
+}
+
+void LibraryFileWriter::setSourcePaths(std::vector<UniqueString> paths) {
+  inputFiles = paths;
+  modules = gatherTopLevelModules(context, inputFiles);
+}
+
+void LibraryFileWriter::setGeneratedCode(
+                         UniqueString modName,
+                         std::string buffer,
+                         std::unordered_map<ID, std::vector<GenInfo>> genMap) {
+  bool handled = false;
+  for (auto& info : modules) {
+    if (info.moduleName == modName) {
+      info.genCode.swap(buffer);
+      info.genMap.swap(genMap);
+      CHPL_ASSERT(!handled && "two modules with same name?");
+      handled = true;
+    }
+  }
+  CHPL_ASSERT(handled && "did you forget to call setSourcePaths?");
+}
+
 bool LibraryFileWriter::writeAllSections() {
-  gatherTopLevelModules();
   openFile();
   writeHeader();
 
   std::vector<uint64_t> moduleSectionOffsets;
   Region moduleRegion;
 
-  for (auto pair : modulesAndPaths) {
-    const uast::Module* mod = pair.first;
-    UniqueString fromFilePath = pair.second;
+  for (auto& info : modules) {
     // write the module section & update the header's table
     padToAlign();
-    moduleRegion = writeModuleSection(mod, fromFilePath);
+    moduleRegion = writeModuleSection(info);
     moduleSectionOffsets.push_back(moduleRegion.start);
   }
   // and the offset just after the last module
@@ -716,6 +804,18 @@ bool LibraryFileWriter::writeAllSections() {
   }
 
   return ok;
+}
+
+std::vector<UniqueString>
+LibraryFileWriter::gatherTopLevelModuleNames(Context* context,
+                                             std::vector<UniqueString> paths) {
+  // TODO: Should this be a query / be supported by a query?
+  std::vector<UniqueString> ret;
+  auto v = gatherTopLevelModules(context, paths);
+  for (auto& info : v) {
+    ret.push_back(info.moduleName);
+  }
+  return ret;
 }
 
 

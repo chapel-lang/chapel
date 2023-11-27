@@ -109,7 +109,8 @@ static void testStoreLoadAst(const char* test,
   parsedMod->dump();
 
   // Use a LibraryWriter to create a library file
-  LibraryFileWriter writer(context, paths, libpath.str());
+  LibraryFileWriter writer(context, libpath.str());
+  writer.setSourcePaths(paths);
   writer.writeAllSections();
 
   // use a LibraryFile to read the serialized uAST

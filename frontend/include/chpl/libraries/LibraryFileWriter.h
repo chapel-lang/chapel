@@ -20,6 +20,7 @@
 #ifndef CHPL_LIBRARIES_LIBRARY_FILE_WRITER_H
 #define CHPL_LIBRARIES_LIBRARY_FILE_WRITER_H
 
+#include "chpl/framework/ID.h"
 #include "chpl/framework/UniqueString.h"
 #include "chpl/libraries/LibraryFileFormat.h"
 
@@ -82,8 +83,22 @@ class LibraryFileSerializationHelper {
 
 /** For writing a .dyno library file */
 class LibraryFileWriter {
+ public:
+  struct GenInfo {
+    UniqueString cname;
+    bool isInstantiation = false;
+    // TODO: other information about instantiations
+  };
+
  private:
   using PathToIndex = std::unordered_map<UniqueString, unsigned int>;
+  struct ModInfo {
+    UniqueString moduleName;
+    const uast::Module* moduleAst = nullptr;
+    UniqueString fromSourcePath;
+    std::string genCode; // LLVM IR bc data
+    std::unordered_map<ID, std::vector<GenInfo>> genMap;
+  };
 
   Context* context = nullptr;
   std::vector<UniqueString> inputFiles;
@@ -91,15 +106,16 @@ class LibraryFileWriter {
   std::ofstream fileStream;
   bool ok = true;
 
-  // top-level modules and paths where they came from
-  std::vector<std::pair<const uast::Module*, UniqueString>> modulesAndPaths;
+  // per-module information
+  std::vector<ModInfo> modules;
 
   /** Emit an error indicating failure to create the library and
       set 'ok' to 'false' */
   void fail(const char* msg);
 
-  /** Gather the top-level modules */
-  void gatherTopLevelModules();
+  /** Gather the top-level modules and the paths they came from */
+  static std::vector<ModInfo>
+  gatherTopLevelModules(Context* context, std::vector<UniqueString> paths);
 
   /** Open the file */
   void openFile();
@@ -112,8 +128,7 @@ class LibraryFileWriter {
 
   /** Write the module section for the given module. Returns
      the file offset to this section. */
-  Region writeModuleSection(const uast::Module* mod,
-                            UniqueString fromFilePath);
+  Region writeModuleSection(const ModInfo& info);
 
   /** Note the top-level symbols for the passed module for the symbol table */
   void noteToplevelSymbolsForTable(const uast::Module* mod,
@@ -121,7 +136,7 @@ class LibraryFileWriter {
 
   /** Write the symbol table for a given module. Returns the
       module-relative offset to the symbol table. */
-  Region writeSymbolTable(const uast::Module* mod,
+  Region writeSymbolTable(const ModInfo& info,
                           Serializer& ser,
                           LibraryFileSerializationHelper& reg);
 
@@ -159,17 +174,34 @@ class LibraryFileWriter {
                             LibraryFileSerializationHelper& reg,
                             int& lastLine);
 
+  /** Write the generated code section and returns the
+      module-relative offset of the section. */
+  Region writeGenCode(uint64_t moduleSectionStart,
+                      Serializer& ser,
+                      const std::string& gen);
+
  public:
   /**
-    Construct a LibraryFileWriter to output the uAST from the
-    top-level modules in the source files provided in 'paths'. */
-  LibraryFileWriter(Context* context,
-                    std::vector<UniqueString> paths,
-                    std::string outputFilePath) :
-    context(context),
-    inputFiles(paths),
-    outputFilePath(outputFilePath)
+    Construct a LibraryFileWriter to output to 'outputFilePath' */
+  LibraryFileWriter(Context* context, std::string outputFilePath)
+    : context(context), outputFilePath(outputFilePath)
   { }
+
+  /**
+    Parse the uAST for the provided source paths and save
+    the result.
+    */
+  void setSourcePaths(std::vector<UniqueString> paths);
+
+  /**
+    Set the buffer storing the generated LLVM IR byte code
+    for the top-level module with the passed name.
+
+    Must be done after 'setSourcePaths'.
+   */
+  void setGeneratedCode(UniqueString modName,
+                        std::string buffer,
+                        std::unordered_map<ID, std::vector<GenInfo>> genMap);
 
   /**
     Write the header and sections to the library file.
@@ -177,6 +209,11 @@ class LibraryFileWriter {
     error in the process.
     */
   bool writeAllSections();
+
+  /** Gather the names of the top-level modules in the source
+      code files from 'paths' */
+  static std::vector<UniqueString>
+  gatherTopLevelModuleNames(Context* context, std::vector<UniqueString> paths);
 };
 
 
