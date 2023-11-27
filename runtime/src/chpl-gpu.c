@@ -149,7 +149,7 @@ void chpl_gpu_task_fence(void) {
     int i;
     for (i=0 ; i<chpl_gpu_num_devices ; i++) {
       if (prvData->streams[i] != NULL) {
-        /*CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);*/
+        CHPL_GPU_DEBUG("Synchronizing stream %p (subloc %d)\n", prvData->streams[i], i);
         wait_stream(prvData->streams[i]);
       }
     }

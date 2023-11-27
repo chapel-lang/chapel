@@ -398,7 +398,6 @@ void chpl_gpu_impl_mem_free(void* memAlloc) {
     assert(chpl_gpu_is_device_ptr(memAlloc));
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
     if (chpl_gpu_impl_is_host_ptr(memAlloc)) {
-      /*printf("host dealloc\n");*/
       CUDA_CALL(cuMemFreeHost(memAlloc));
     }
     else {

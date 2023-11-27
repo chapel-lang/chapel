@@ -141,7 +141,6 @@ proc _computeChunkStartEnd(nElems, nChunks, myCnk): 2*nElems.type {
   var rem = numElems % numChunks;
 
   // Caller's responsibility.
-  /*writeln("myChunk ", myChunk, " numChunks ", numChunks);*/
   assert(1 <= myChunk && myChunk <= numChunks);
 
   if myChunk <= rem then {
