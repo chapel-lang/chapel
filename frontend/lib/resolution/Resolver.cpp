@@ -1972,6 +1972,43 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   return false;
 }
 
+bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
+  auto primCall = call->toPrimCall();
+  if (!primCall) return false;
+
+  if (primCall->prim() == PRIM_RESOLVES) {
+    QualifiedType result;
+
+    if (primCall->numActuals() != 1) {
+      result = typeErr(primCall, "invalid call to \"resolves\" primitive");
+    } else {
+      auto resultAndErrors = context->runAndTrackErrors([&](Context* context) {
+        primCall->actual(0)->traverse(*this);
+        return byPostorder.byAst(primCall->actual(0)).type();
+      });
+
+      bool resultBool = true;
+      if (!resultAndErrors.ranWithoutErrors()) {
+        // Errors were emitted, so even if we have a type, it doesn't
+        // "resolve".
+        resultBool = false;
+      } else if (resultAndErrors.result().isErroneousType() ||
+                 resultAndErrors.result().isUnknown()) {
+        // We got an erroneous or unknown type, so it didn't resolve.
+        resultBool = false;
+      }
+
+      result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                             BoolParam::get(context, resultBool));
+    }
+
+    byPostorder.byAst(primCall).setType(result);
+    return true;
+  }
+
+  return false;
+}
+
 bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   if (!call->isFnCall()) return false;
 
@@ -2008,6 +2045,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
 bool Resolver::resolveSpecialCall(const Call* call) {
   if (resolveSpecialOpCall(call)) {
+    return true;
+  } else if (resolveSpecialPrimitiveCall(call)) {
     return true;
   } else if (resolveSpecialNewCall(call)) {
     return true;
@@ -3223,6 +3262,15 @@ bool Resolver::enter(const Call* call) {
     // Don't visit the children since we already did
     return false;
   }
+
+  // Do not descend into children for 'prim resolves' since it accepts a single
+  // _expression_ (not a value!) and checks if it resolves.
+  if (auto primCall = call->toPrimCall()) {
+    if (primCall->prim() == PRIM_RESOLVES) {
+      return false;
+    }
+  }
+
   return true;
 }
 
