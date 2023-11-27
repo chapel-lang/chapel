@@ -342,7 +342,6 @@ static bool fPrintChplHome = false;
 std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
-bool fLlvmPrintPasses = false;
 
 bool fPrintAdditionalErrors;
 
