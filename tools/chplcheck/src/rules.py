@@ -157,7 +157,7 @@ def register_rules(driver):
                     prev = blockchild
                     break
 
-    @driver.advanced_rule
+    @driver.advanced_rule(default=False)
     def UnusedFormal(context, root):
         formals = dict()
         uses = set()
