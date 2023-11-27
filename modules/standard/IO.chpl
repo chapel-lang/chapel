@@ -8964,6 +8964,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       for b in data {
         e = try _write_binary_internal(this._channel_internal,
                                        endianToIoKind(endian), b);
+        if e != 0 then break;
       }
     }
   }
@@ -9204,7 +9205,6 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       e : errorCode = 0,  // errors from perform the IO
       numRead : c_ssize_t = 0;
 
-//    extern proc printf(x...);
   on this._home {
     try this.lock(); defer { this.unlock(); }
 
@@ -9213,12 +9213,11 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
     } else if endian == ioendian.native || endian == sysEndianness() {
-//      printf("On fast path\n");
       if data.size > 0 {
-        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
+        numRead /= c_sizeof(t):int;  // convert from #bytes to #elements
       } // else no-op, reading a 0-element array reads nothing
     } else {
-//      printf("On slow path\n");
       for (i, b) in zip(data.domain, data) {
         e = try _read_binary_internal(this._channel_internal,
                                       endianToIoKind(endian), b);
