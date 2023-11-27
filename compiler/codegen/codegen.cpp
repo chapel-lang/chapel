@@ -2329,14 +2329,15 @@ static const char* getClangBuiltinWrappedName(const char* name)
 #endif
 
 // Gets the name of the main module as an astr.
-// Includes support for driver mode, since in driver phase two we cannot access
-// the main module. So, when this is run in phase one it saves the result to a
-// tmp file on disk, and when run in phase two it retrieves the name from there.
+// Includes support for driver mode, since in the makeBinary phase we cannot
+// access the main module. So, when this is run in the compilation phase it
+// saves the result to a tmp file on disk, and when run in the makeBinary phase
+// it retrieves the name from there.
 static const char* getMainModuleFilename() {
   static const char* mainModTmpFilename = "mainmodpath.tmp";
 
   const char* filename;
-  if (fDriverPhaseTwo) {
+  if (fDriverMakeBinaryPhase) {
     // Retrieve saved main module filename
     restoreDriverTmp(mainModTmpFilename, [&filename](const char* mainModName) {
       filename = astr(mainModName);
@@ -2351,9 +2352,9 @@ static const char* getMainModuleFilename() {
 
     // Save result in tmp file for future usage if in driver mode
     if (!fDriverDoMonolithic) {
-      assert(fDriverPhaseOne &&
+      assert(fDriverCompilationPhase &&
              "should not be reachable outside of driver "
-             "phase one");
+             "compilation phase");
       saveDriverTmp(mainModTmpFilename, filename);
     }
   }
@@ -2367,11 +2368,11 @@ static const char* getMainModuleFilename() {
 // already. If in library mode, set the name of the header file as well.
 void setupDefaultFilenames() {
   if (executableFilename[0] == '\0') {
-    // Retrieve module for use in errors in phase one. It can't be retrieved in
-    // phase two, but that's not a problem because the errors would have already
-    // been hit (and are fatal) in phase one.
+    // Retrieve module for use in errors in the compilation phase. It can't be
+    // retrieved in the makeBinary phase, but that's not a problem because the
+    // errors would have already been hit (and are fatal) in compilation.
     ModuleSymbol* mainMod =
-        (fDriverPhaseTwo ? nullptr : ModuleSymbol::mainModule());
+        (fDriverMakeBinaryPhase ? nullptr : ModuleSymbol::mainModule());
     const char* filename = getMainModuleFilename();
 
     // "Executable" name should be given a "lib" prefix in library compilation,
@@ -2389,9 +2390,9 @@ void setupDefaultFilenames() {
         // remove the filename extension from the library header name.
         char* lastDot = strrchr(libmodeHeadername, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
-                     "encountered error in phase two that should only be "
-                     "reachable in phase one");
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
+                     "encountered error in makeBinary phase that should only be "
+                     "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     libmodeHeadername);
@@ -2409,9 +2410,9 @@ void setupDefaultFilenames() {
         pythonModulename[sizeof(pythonModulename)-1] = '\0';
         char* lastDot = strrchr(pythonModulename, '.');
         if (lastDot == NULL) {
-          INT_ASSERT(!fDriverPhaseTwo &&
-                     "encountered error in phase two that should only be "
-                     "reachable in phase one");
+          INT_ASSERT(!fDriverMakeBinaryPhase &&
+                     "encountered error in makeBinary phase that should only be "
+                     "reachable in compilation phase");
           INT_FATAL(mainMod,
                     "main module filename is missing its extension: %s\n",
                     pythonModulename);
@@ -2432,9 +2433,9 @@ void setupDefaultFilenames() {
     // remove the filename extension from the executable filename
     char* lastDot = strrchr(executableFilename, '.');
     if (lastDot == NULL) {
-      INT_ASSERT(!fDriverPhaseTwo &&
-                 "encountered error in phase two that should only be "
-                 "reachable in phase one");
+      INT_ASSERT(!fDriverMakeBinaryPhase &&
+                 "encountered error in makeBinary phase that should only be "
+                 "reachable in compilation phase");
       INT_FATAL(mainMod, "main module filename is missing its extension: %s\n",
                 executableFilename);
     }
@@ -3047,9 +3048,10 @@ void makeBinary(void) {
   if (gDynoGenLibSourcePaths.size() > 0)
     return;
 
-  // makeBinary shouldn't run in a phase-one invocation.
-  // (Unless we're doing GPU codegen, which currently happens in phase one.)
-  INT_ASSERT(!fDriverPhaseOne || gCodegenGPU);
+  // makeBinary shouldn't run in a compilation phase invocation.
+  // (Unless we're doing GPU codegen, which currently happens in the compilation
+  // phase.)
+  INT_ASSERT(!fDriverCompilationPhase || gCodegenGPU);
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM
