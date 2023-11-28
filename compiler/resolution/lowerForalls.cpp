@@ -487,6 +487,7 @@ static VarSymbol* createCurrRP(ShadowVarSymbol* RP) {
 static VarSymbol* createCurrAS(ShadowVarSymbol* AS) {
   VarSymbol* currAS = new VarSymbol(astr("AS_", AS->name), AS->type);
   currAS->qual = QUAL_VAL;
+  currAS->addFlag(FLAG_REDUCTION_TEMP);
   return currAS;
  }
 
