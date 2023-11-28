@@ -1,0 +1,2 @@
+warning: --compiler-driver is unstable; driver mode is now on by default, use --no-compiler-driver to disable it
+hi
