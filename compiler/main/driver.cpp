@@ -764,14 +764,6 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
   }
 }
 
-static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg) {
-#ifdef LLVM_USE_OLD_PASSES
-  printf("Cannot use '--llvm-print-passes' with this version of LLVM");
-  clean_exit(1);
-#endif
-}
-
-
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
  addLibFile(libraryFilename, /* fromCmdLine */ true);
 }
@@ -1363,7 +1355,6 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
- {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
