@@ -1,5 +1,4 @@
-TestSorted.chpl:9: warning: 'randomStream.fillRandom' is deprecated; please use 'fill' instead
 A: 7 5 2 3 7 4 5 6 1 7
-sorted? true
+sorted? false
 A: 1 2 3 4 5 5 6 7 7 7
 sorted? true
