@@ -2,13 +2,12 @@
 
 `chplcheck` is a linter for the Chapel programming language implemented in
 Python using the [Python bindings for the compiler frontend](https://github.com/chapel-lang/chapel/tree/main/tools/chapel-py).
-It is intended to catch stylistics mistakes and bad practices in Chapel programs.
+It is intended to catch stylistic mistakes and bad practices in Chapel programs.
 It is also intended to be customizable and extensible, using a system of named
 'rules' that lead to warnings.
 
 `chplcheck` supports the Language Server Protocol, allowing it to be used as
-part of your favorite editor. The following image demonstrates its use
-in my editor of choice, Neovim.
+part of your favorite editor. The following image demonstrates its use in Neovim:
 
 ![Screenshot of code using `chplcheck`](./ineditor.png)
 
@@ -59,8 +58,7 @@ path/to/myfile/myfile.chpl:1: node violates rule CamelCaseRecords
 path/to/myfile/myfile.chpl:3: node violates rule DoKeywordAndBlock
 ```
 
-Some rules are disabled by default, particularly if they are in
-"debatable code style" territory. One such rule is `UseExplicitModules`, which
+Some rules are disabled by default. One such rule is `UseExplicitModules`, which
 warns against letting Chapel automatically create the top-level module in a file.
 
 ```
@@ -127,6 +125,7 @@ Python API provides two decorators. These decorators correspond to the two
 'basic' and 'advanced'.
 
 ### Basic Rules
+
 Basic rules are specified using a pattern (see the [pattern matching section of the `chapel-py` `README`](https://github.com/chapel-lang/chapel/tree/main/tools/chapel-py#chapelmatch_pattern)).
 This pattern represents which AST nodes should be scrutinized to check if something.
 The `driver.basic_rule` decorator is used to specify such rules. For instance,
@@ -143,7 +142,7 @@ the `PascalCaseModules` function with each `Module` node it encounters. If
 the function returns `True`, all is well, and no warning should be emitted.
 On the other hand, if the function returns `False`, the linter should produce
 a warning. The conditional returns `True` for all implicit modules, regardless
-of their name: this is bacause implicit modules are named after the file they
+of their name: this is because implicit modules are named after the file they
 are in, so the user cannot "fix" the code by editing it. For explicit modules,
 a helper function `check_pascal_case` is used to ensure that the node's name
 is appropriately cased.
@@ -163,12 +162,12 @@ def BoolLitInCondStmt(context, node):
 
 Sometimes, specifying a pattern is not precise enough to implement a rule.
 Alternatively, a linting check might require considering two sibling nodes,
-or other less-straightforward relationhips than "does it match the pattern?".
+or other less-straightforward relationships than "does it match the pattern?".
 This is the purpose of advanced rules. These functions are called with the
 _root_ AST node (usually one of the top-level `Module`s). Then, it's the
 responsibility of the function to find and `yield` AST nodes that should be
 warned about. For instance, at the time of writing, the following rule
-implemnts checking for unused formals.
+implements checking for unused formals.
 
 ```Python
 @driver.advanced_rule
