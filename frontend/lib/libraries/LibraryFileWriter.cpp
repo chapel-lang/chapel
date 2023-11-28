@@ -755,6 +755,7 @@ bool LibraryFileWriter::writeAllSections() {
 
   std::vector<uint64_t> moduleSectionOffsets;
   Region moduleRegion;
+  memset(&moduleRegion, 0, sizeof(moduleRegion));
 
   for (auto& info : modules) {
     // write the module section & update the header's table
