@@ -16,29 +16,29 @@ cd $CHPL_HOME >& /dev/null
 passed=true 
 
 
-git grep -n ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
-                             ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
-                             ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
-                             ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'
+git grep -I -n ' $' -- compiler ':!*bison-chapel.cpp'   ':!*bison-chapel.h' \
+                                ':!*bison-chpl-lib.cpp' ':!*bison-chpl-lib.h' \
+                                ':!*flex-chapel.cpp'    ':!*flex-chapel.h' \
+                                ':!*flex-chpl-lib.cpp'  ':!*flex-chpl-lib.h'
 
   
 if [ $? -ne 1 ]; then 
   passed=false
 fi   
 
-git grep -n ' $' -- runtime
+git grep -I -n ' $' -- runtime
 
 if [ $? -ne 1 ]; then 
   passed=false
 fi 
 
-git grep -n ' $' -- modules
+git grep -I -n ' $' -- modules
 
 if [ $? -ne 1 ]; then 
   passed=false
 fi 
 
-git grep -n ' $' -- tools
+git grep -I -n ' $' -- tools
 
 if [ $? -ne 1 ]; then 
   passed=false
