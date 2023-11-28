@@ -3625,11 +3625,7 @@ private proc warnBinary(type t, param depth : int) {
   }
 }
 
-private proc _binaryError(param depth: int) {
-  compilerError("binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.", depth+1);
-}
-
-private proc warnBinaryRead(type t, param depth : int) {
+private proc warnBinaryRead(type t, param depth : int) throws {
   if warnBinaryStructured {
     if isClassType(t) {
       param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
@@ -3637,7 +3633,7 @@ private proc warnBinaryRead(type t, param depth : int) {
     }
   }
   if t == string || t == bytes {
-    _binaryError(depth);
+    throw new IllegalArgumentError("binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.");
   }
 }
 
@@ -11814,7 +11810,7 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
           if serializerType == binarySerializer && this._kind == _iokind.dynamic {
-            warnBinary(args(i).type, 2);
+            warnBinary(arg.type, 3);
           }
           this._serializeOne(arg, origLocale);
         } else {
@@ -12157,7 +12153,7 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
                 if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
-                  warnBinaryRead(args[i].type, 3);
+                  warnBinaryRead(args(i).type, 4);
                 }
                 this._deserializeOne(args(i), origLocale);
               } else {
