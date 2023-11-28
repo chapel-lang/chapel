@@ -325,6 +325,11 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
 }
 
 static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
+  // Note: this is slightly different semantically from the primitive in
+  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
+  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
+  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
+
   if (ci.numActuals() != 2) return QualifiedType();
 
   auto typeActualQt = ci.actual(0).type();
