@@ -3625,6 +3625,22 @@ private proc warnBinary(type t, param depth : int) {
   }
 }
 
+private proc _binaryError(param depth: int) {
+  compilerError("binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.", depth+1);
+}
+
+private proc warnBinaryRead(type t, param depth : int) {
+  if warnBinaryStructured {
+    if isClassType(t) {
+      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      compilerWarning(msg, depth);
+    }
+  }
+  if t == string || t == bytes {
+    _binaryError(depth);
+  }
+}
+
 /*
   A binary Serializer that implements a simple binary format.
 
@@ -7325,7 +7341,7 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
     for param i in 0..k-1 {
       if deserializerType != nothing {
         if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
-          warnBinary(args[i].type, 3);
+          warnBinaryRead(args[i].type, 3);
         }
         _deserializeOne(args[i], origLocale);
       } else {
@@ -9470,7 +9486,7 @@ proc fileReader.read(type t) throws {
 
     if deserializerType != nothing {
       if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
-        warnBinary(t, 2);
+        warnBinaryRead(t, 2);
       }
       __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
@@ -11797,6 +11813,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         try _writeOne(_iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
+          if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+            warnBinary(args(i).type, 2);
+          }
           this._serializeOne(arg, origLocale);
         } else {
           try _writeOne(_iokind.dynamic, arg, origLocale);
@@ -12137,6 +12156,9 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               try _readOne(_iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
+                if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+                  warnBinaryRead(args[i].type, 3);
+                }
                 this._deserializeOne(args(i), origLocale);
               } else {
                 try _readOne(_iokind.dynamic, args(i), origLocale);
