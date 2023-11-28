@@ -284,6 +284,24 @@ static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   return QualifiedType();
 }
 
+static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto actualQt = ci.actual(0).type();
+  auto kp = KindProperties::fromKind(actualQt.kind());
+
+  // Combine the properties of the argument's kind with those of the 'REF'
+  // kind. This should inherit const-ness, throw off param-ness, and result in
+  // errors if the argument is a TYPE.
+  kp.combineWith(KindProperties::fromKind(QualifiedType::REF));
+  if (!kp.valid()) return QualifiedType();
+
+  // 'combineWith' actually disables ref-ness if either argument is non-ref.
+  // Insist that we do really want a reference.
+  kp.setRef(true);
+  return QualifiedType(kp.toKind(), actualQt.type());
+}
+
 static QualifiedType primIsTuple(Context* context,
                                  const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -928,7 +946,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_ADDR_OF:
+      type = primAddrOf(context, ci);
+      break;
+
     case PRIM_DEREF:
     case PRIM_SET_REFERENCE:
     case PRIM_GET_END_COUNT:
