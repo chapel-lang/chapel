@@ -6326,7 +6326,7 @@ DEFINE_PRIM(CONST_ARG_HASH) {
     // Could potentially have the sizeof call inserted at the creation of the
     // primitive
     ret = codegenCallExpr("const_arg_hash", ptr,
-                          codegenSizeof(call->get(1)->typeInfo()));
+                          codegenSizeof(call->get(1)->typeInfo()->getValType()));
   }
 }
 
