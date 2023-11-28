@@ -1,0 +1,2 @@
+# this test checks whether --fast impacts it, so don't run when it is set
+COMPOPTS <= --fast
