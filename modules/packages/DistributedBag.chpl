@@ -547,11 +547,9 @@ module DistributedBag
 
       .. warning::
 
-        This method is best-effort and can be non-deterministic for concurrent
-        updates across nodes, and may miss elements resulting from any concurrent
-        insertion or removal operations. In addition, if the data structure is
-        large, the user is doubly advised to use parallel iteration, for both
-        performance and memory benefit.
+        Iteration takes a snapshot approach, and as such can easily result in a
+        Out-Of-Memory issue. If the data structure is large, the user is doubly
+        advised to use parallel iteration, for both performance and memory benefit.
     */
     override iter these(): eltType
     {
@@ -560,13 +558,17 @@ module DistributedBag
           // The size of the snapshot is only known once we have the lock.
           var dom: domain(1) = {0..-1};
           var buffer: [dom] eltType;
+
           on loc {
             ref segment = getPrivatizedThis.bag!.segments[taskId];
 
+            segment.lock_block.readFE();
+            // Create a snapshot
             dom = {0..#segment.nElts};
             for i in dom {
               buffer[i] = segment.block.elts[segment.block.headId + i];
             }
+            segment.lock_block.writeEF(true);
           }
           // Process this chunk if we have one...
           foreach elt in buffer {
@@ -584,12 +586,17 @@ module DistributedBag
         coforall taskId in 0..#here.maxTaskPar {
           ref segment = instance.bag!.segments[taskId];
 
+          segment.lock_block.readFE();
           // Create a snapshot
-          var block = segment.block;
           var bufferSize = segment.nElts;
+          var buffer: [0..#bufferSize] eltType;
+          for i in 0..#bufferSize {
+            buffer[i] = segment.block.elts[segment.block.headId + i];
+          }
+          segment.lock_block.writeEF(true);
 
           // Yield this chunk
-          yield (bufferSize, block.elts[block.headId..block.tailId]);
+          yield (bufferSize, buffer);
         }
       }
     }
