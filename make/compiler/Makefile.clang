@@ -179,6 +179,9 @@ RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-variable -Wno-unused-function
 CLANG_VER := $(shell echo __clang_major__ | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//')
 CHPL_GASNET_MORE_CFLAGS += $(shell test $(DEF_CXX_VER) -lt 16 || echo -Wno-cast-function-type-strict)
+
+endif
+
 ifdef CHPL_COMM_DEBUG
 CHPL_GASNET_MORE_CFLAGS += -O0 -UNDEBUG
 CHPL_GASNET_MORE_GEN_CFLAGS += -Wno-uninitialized
