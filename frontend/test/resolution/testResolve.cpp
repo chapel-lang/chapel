@@ -571,6 +571,44 @@ static void test12() {
   assert(type.param()->toUintParam()->value() == 4607182418800017408);
 }
 
+static void test14() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      param xp = 42;
+      var xv = 42;
+      const xcv = 42;
+      param yp = "hello";
+      var yv = "hello";
+      const ycv = "hello";
+
+      var r1 = __primitive("addr of", xp);
+      var r2 = __primitive("addr of", xv);
+      var r3 = __primitive("addr of", xcv);
+      var r4 = __primitive("addr of", yp);
+      var r5 = __primitive("addr of", yv);
+      var r6 = __primitive("addr of", ycv);
+      var r7 = __primitive("addr of", int);
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
+
+  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(&context, 0));
+  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(&context, 0));
+  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(&context));
+  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(&context));
+
+  assert(variables.at("r1") == constRefInt);
+  assert(variables.at("r2") == refInt);
+  assert(variables.at("r3") == constRefInt);
+  assert(variables.at("r4") == constRefStr);
+  assert(variables.at("r5") == refStr);
+  assert(variables.at("r6") == constRefStr);
+  assert(variables.at("r7").isErroneousType());
+
+  // One error for the invalid call of "addr of" with type.
+  assert(guard.realizeErrors() == 1);
+}
 
 int main() {
   test1();
@@ -585,6 +623,7 @@ int main() {
   test10();
   test11();
   test12();
+  test14();
 
   return 0;
 }
