@@ -3915,7 +3915,7 @@ record binarySerializer {
     */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
-      if endian == ioendian.native {
+      if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         writer.writeBinary(data, n.safeCast(int));
       } else {
@@ -4380,7 +4380,7 @@ record binaryDeserializer {
     */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
-      if endian == ioendian.native {
+      if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         const got = reader.readBinary(data, n.safeCast(int));
         if got < n then throw new EofError();
@@ -8702,6 +8702,10 @@ private proc sysEndianness() {
     return ioendian.little;
 }
 
+private proc isNativeEndianness(endian) {
+  return endian == ioendian.native || endian == sysEndianness();
+}
+
 private proc endianToIoKind(param e: ioendian) param {
   if e == ioendian.native then
     return _iokind.native;
@@ -8791,19 +8795,9 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
  */
 proc fileWriter.writeBinary(arg:numeric,
                             param endian:ioendian = ioendian.native) throws {
-  var e:errorCode = 0;
-
-  select (endian) {
-    when ioendian.native {
-      e = try _write_binary_internal(_channel_internal, _iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _write_binary_internal(_channel_internal, _iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _write_binary_internal(_channel_internal, _iokind.little, arg);
-    }
-  }
+  const e: errorCode = try _write_binary_internal(_channel_internal,
+                                                  endianToIOKind(endian),
+                                                  arg);
   if (e != 0) {
     throw createSystemOrChplError(e);
   }
@@ -8956,7 +8950,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       err = "writeBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
-    } else if endian == ioendian.native || endian == sysEndianness() {
+    } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
       } // else no-op, writing a 0-element array writes nothing
@@ -9038,19 +9032,10 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
-  var e:errorCode = 0;
+  const e:errorCode = try _read_binary_internal(_channel_internal,
+                                                endianToIoKind(endian),
+                                                arg);
 
-  select (endian) {
-    when ioendian.native {
-      e = try _read_binary_internal(_channel_internal, _iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _read_binary_internal(_channel_internal, _iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _read_binary_internal(_channel_internal, _iokind.little, arg);
-    }
-  }
   if (e == EEOF) {
     return false;
   } else if (e != 0) {
@@ -9212,7 +9197,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       err = "readBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
-    } else if endian == ioendian.native || endian == sysEndianness() {
+    } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
         numRead /= c_sizeof(t):int;  // convert from #bytes to #elements
