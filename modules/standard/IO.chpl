@@ -3920,7 +3920,7 @@ record binarySerializer {
     */
     proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
-      if endian == ioendian.native {
+      if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         writer.writeBinary(data, n.safeCast(int));
       } else {
@@ -4385,7 +4385,7 @@ record binaryDeserializer {
     */
     proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
     where isNumericType(eltType) {
-      if endian == ioendian.native {
+      if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         const got = reader.readBinary(data, n.safeCast(int));
         if got < n then throw new EofError();
@@ -8698,6 +8698,30 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
   try this.writeBinary(b, size);
 }
 
+private proc sysEndianness() {
+  var x: int(16) = 1;
+  // if the initial byte is 0, this is a little endian system
+  if (c_addrOf(x): c_ptr(void): c_ptr(uint(8))).deref() == 0 then
+    return ioendian.big;
+  else
+    return ioendian.little;
+}
+
+private proc isNativeEndianness(endian) {
+  return endian == ioendian.native || endian == sysEndianness();
+}
+
+private proc endianToIoKind(param e: ioendian) param {
+  if e == ioendian.native then
+    return _iokind.native;
+  else if e == ioendian.big then
+    return _iokind.big;
+  else if e == ioendian.little then
+    return _iokind.little;
+  else
+    compilerError("Unexpected value in chpl_endianToIoKind(): ", e);
+}
+
 /*
   Write ``numBytes`` of data from a :class:`~CTypes.c_ptr` to a ``fileWriter``
 
@@ -8776,19 +8800,9 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
  */
 proc fileWriter.writeBinary(arg:numeric,
                             param endian:ioendian = ioendian.native) throws {
-  var e:errorCode = 0;
-
-  select (endian) {
-    when ioendian.native {
-      e = try _write_binary_internal(_channel_internal, _iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _write_binary_internal(_channel_internal, _iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _write_binary_internal(_channel_internal, _iokind.little, arg);
-    }
-  }
+  const e: errorCode = try _write_binary_internal(_channel_internal,
+                                                  endianToIoKind(endian),
+                                                  arg);
   if (e != 0) {
     throw createSystemOrChplError(e);
   }
@@ -8941,24 +8955,14 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
       err = "writeBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "writeBinary() array data must be on same locale as 'fileWriter'";
-    } else if endian == ioendian.native {
+    } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = try qio_channel_write_amt(false, this._channel_internal, data[d.low], data.size:c_ssize_t * tSize);
       } // else no-op, writing a 0-element array writes nothing
     } else {
       for b in data {
-        select (endian) {
-          when ioendian.native {
-            compilerError("unreachable");
-          }
-          when ioendian.big {
-            e = try _write_binary_internal(this._channel_internal, _iokind.big, b);
-          }
-          when ioendian.little {
-            e = try _write_binary_internal(this._channel_internal, _iokind.little, b);
-          }
-        }
-
+        e = try _write_binary_internal(this._channel_internal,
+                                       endianToIoKind(endian), b);
         if e != 0 then break;
       }
     }
@@ -9033,19 +9037,10 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
-  var e:errorCode = 0;
+  const e:errorCode = try _read_binary_internal(_channel_internal,
+                                                endianToIoKind(endian),
+                                                arg);
 
-  select (endian) {
-    when ioendian.native {
-      e = try _read_binary_internal(_channel_internal, _iokind.native, arg);
-    }
-    when ioendian.big {
-      e = try _read_binary_internal(_channel_internal, _iokind.big, arg);
-    }
-    when ioendian.little {
-      e = try _read_binary_internal(_channel_internal, _iokind.little, arg);
-    }
-  }
   if (e == EEOF) {
     return false;
   } else if (e != 0) {
@@ -9207,23 +9202,15 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
       err = "readBinary() array data must be contiguous";
     } else if data.locale.id != this._home.id {
       err = "readBinary() array data must be on same locale as 'fileReader'";
-    } else if endian == ioendian.native {
+    } else if isNativeEndianness(endian) {
       if data.size > 0 {
-        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(data.eltType)) : c_ssize_t, numRead);
+        e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
+        numRead /= c_sizeof(t):int;  // convert from #bytes to #elements
       } // else no-op, reading a 0-element array reads nothing
     } else {
       for (i, b) in zip(data.domain, data) {
-        select (endian) {
-          when ioendian.native {
-            compilerError("unreachable");
-          }
-          when ioendian.big {
-            e = try _read_binary_internal(this._channel_internal, _iokind.big,    b);
-          }
-          when ioendian.little {
-            e = try _read_binary_internal(this._channel_internal, _iokind.little, b);
-          }
-        }
+        e = try _read_binary_internal(this._channel_internal,
+                                      endianToIoKind(endian), b);
 
         if e == EEOF {
           break;
