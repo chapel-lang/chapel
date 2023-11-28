@@ -258,6 +258,13 @@ static void warnForConstIntent(ArgSymbol* arg) {
   SET_LINENO(arg);
   // TODO: wrap in compiler flag
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
+  if (fn->body->length() == 0) {
+    // Exit early if the body is empty - this can happen when
+    // concreteIntentForArg is called during function instantiation, as the
+    // function body won't have been populated yet.  Such functions will have
+    // resolveIntents called on them later
+    return;
+  }
 
   // Hash the argument at the start of the function
   CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
