@@ -2,6 +2,165 @@ Release Changes List
 ====================
 
 
+version 1.33.0
+==============
+
+released December 14, 2023
+
+Highlights (see subsequent sections for further details)
+--------------------------------------------------------
+
+Configuration / Build / Packaging Changes
+-----------------------------------------
+
+New Language Features
+---------------------
+
+Language Feature Improvements
+-----------------------------
+
+Syntactic / Naming Changes
+--------------------------
+
+Semantic Changes / Changes to the Chapel Language
+-------------------------------------------------
+
+Deprecated / Unstable / Removed Language Features
+-------------------------------------------------
+
+Namespace Changes
+-----------------
+
+Standard Library Modules
+------------------------
+
+Package Modules
+---------------
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
+
+Changes / Feature Improvements in Libraries
+-------------------------------------------
+
+Name Changes in Libraries
+-------------------------
+
+Deprecated / Unstable / Removed Library Features
+------------------------------------------------
+
+GPU Computing
+-------------
+
+Performance Optimizations / Improvements
+----------------------------------------
+
+Platform-specific Performance Optimizations / Improvements
+----------------------------------------------------------
+
+Compilation-Time / Generated Code Improvements
+----------------------------------------------
+
+Memory Improvements
+-------------------
+
+Tool Improvements
+-----------------
+
+Language Specification Improvements
+-----------------------------------
+
+Other Documentation Improvements
+--------------------------------
+
+Example Codes
+-------------
+
+Syntax Highlighting
+-------------------
+
+Portability / Platform-specific Improvements
+--------------------------------------------
+
+Compiler Improvements
+---------------------
+
+Compiler Flags
+--------------
+
+Generated Executable Flags
+--------------------------
+
+Runtime Library Changes
+-----------------------
+
+Launchers
+---------
+
+Error Messages / Semantic Checks
+--------------------------------
+
+Bug Fixes
+---------
+
+Bug Fixes for Build Issues
+--------------------------
+
+Bug Fixes for GPU Computing
+---------------------------
+
+Bug Fixes for Libraries
+-----------------------
+
+Bug Fixes for Tools
+-------------------
+
+Third-Party Software Changes
+----------------------------
+
+Developer-oriented changes: Process
+-----------------------------------
+
+Developer-oriented changes: Documentation
+-----------------------------------------
+
+Developer-oriented changes: Syntactic / Naming Changes
+------------------------------------------------------
+
+Developer-oriented changes: Module changes
+------------------------------------------
+
+Developer-oriented changes: Performance improvements
+----------------------------------------------------
+
+Developer-oriented changes: Makefile / Build-time changes
+---------------------------------------------------------
+
+Developer-oriented changes: Compiler Flags
+------------------------------------------
+
+Developer-oriented changes: Compiler improvements / changes
+-----------------------------------------------------------
+
+Developer-oriented changes: 'dyno' Compiler improvements / changes
+------------------------------------------------------------------
+
+Developer-oriented changes: Runtime improvements
+------------------------------------------------
+
+Developer-oriented changes: Platform-specific bug fixes
+-------------------------------------------------------
+
+Developer-oriented changes: Testing System
+------------------------------------------
+
+Developer-oriented changes: Tool Improvements
+---------------------------------------------
+
+Developer-oriented changes: Utilities
+-------------------------------------
+
+
 version 1.32.0
 ==============
 
@@ -455,7 +614,7 @@ Unstable Library Features
   (see https://chapel-lang.org/docs/1.32/modules/standard/ChplConfig.html#ChplConfig.CHPL_HOME et al.)
 
 Deprecated / Removed Library Features
-------------------------------------------------
+-------------------------------------
 * deprecated `c_void_ptr` in favor of now-equivalent `c_ptr(void)`  
   (see https://chapel-lang.org/docs/1.32/modules/standard/CTypes.html#CTypes.c_ptr)
 * deprecated casts from classes to `c_ptr(void)` in favor of `c_ptrTo()`  
