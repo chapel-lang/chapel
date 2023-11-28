@@ -2197,6 +2197,16 @@ static void cleanupFunctionOptManagers() {
     info->FunctionSimplificationPM = nullptr;
   }
 
+  if (info->SI) {
+    delete info->SI;
+    info->SI = nullptr;
+  }
+
+  if (info->PIC) {
+    delete info->PIC;
+    info->PIC = nullptr;
+  }
+
   if (info->MAM) {
     delete info->MAM;
     info->MAM = nullptr;
@@ -2453,6 +2463,12 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
 static void registerDumpIrExtensions(PassBuilder& PB);
 
+// expose a command line option from LLVM
+// we set it via a chpl command line option
+namespace llvm {
+extern cl::opt<bool> PrintPipelinePasses;
+}
+
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
 
@@ -2473,9 +2489,14 @@ static void runModuleOptPipeline(bool addWideOpts) {
   SI.registerCallbacks(PIC, &FAM);
 #endif
 
+  // this is required to be set, or LLVM will not properly populate the pass
+  // names technically this flag enables extra printing to the dbg() output,
+  // but we only keep the flag long enough to populate the pass names
+  llvm::PrintPipelinePasses = fLlvmPrintPasses;
   chpl::optional<PGOOptions> PGOOpt;
   PassBuilder PB(info->targetMachine, createPipelineOptions(false),
                  PGOOpt, &PIC);
+  llvm::PrintPipelinePasses = false;
 
 
   // some FAM add-ins
@@ -2517,11 +2538,23 @@ static void runModuleOptPipeline(bool addWideOpts) {
   if (addWideOpts) {
     if (optLvl != LlvmOptimizationLevel::O0) {
       auto globalSpace = info->globalToWideInfo.globalSpace;
+      PIC.addClassToPassName("AggregateGlobalOpsOptPass", "aggregate-global-ops");
       MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
                            AggregateGlobalOpsOptPass(globalSpace)));
     }
+    PIC.addClassToPassName("GlobalToWidePass", "global-to-wide");
     MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
                                  info->clangInfo->asmTargetLayoutStr));
+  }
+
+  if (fLlvmPrintPasses) {
+    std::string Pipeline;
+    llvm::raw_string_ostream SOS(Pipeline);
+    MPM.printPipeline(SOS, [&PIC](StringRef ClassName) {
+      auto PassName = PIC.getPassNameForClassName(ClassName);
+      return PassName.empty() ? ClassName : PassName;
+    });
+    llvm::errs() << "Module Pipeline: '" << Pipeline << "'\n";
   }
 
   // Run the opts
@@ -2596,8 +2629,23 @@ void prepareCodegenLLVM()
   llvm::TargetLibraryInfoImpl TLII(TargetTriple);
   info->FAM->registerPass([&TLII] { return TargetLibraryAnalysis(TLII); });
 
+  info->PIC = new PassInstrumentationCallbacks();
+  info->SI = new StandardInstrumentations(
+  #if HAVE_LLVM_VER >= 160
+                              info->llvmContext,
+  #endif
+                              /* DebugLogging */ false);
+  info->SI->registerCallbacks(*info->PIC, info->FAM);
+
+  // this is required to be set, or LLVM will not properly populate the pass
+  // names technically this flag enables extra printing to the dbg() output,
+  // but we only keep the flag long enough to populate the pass names
+  llvm::PrintPipelinePasses = fLlvmPrintPasses;
   // Construct a function simplification pass manager
-  PassBuilder PB(info->targetMachine, createPipelineOptions(true));
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(info->targetMachine, createPipelineOptions(true),
+                 PGOOpt, info->PIC);
+  llvm::PrintPipelinePasses = false;
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(*info->MAM);
@@ -2610,6 +2658,16 @@ void prepareCodegenLLVM()
   if (lvl != LlvmOptimizationLevel::O0) {
     info->FunctionSimplificationPM = new FunctionPassManager(
         PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+
+    if (fLlvmPrintPasses) {
+      std::string Pipeline;
+      llvm::raw_string_ostream SOS(Pipeline);
+      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+        auto PassName = info->PIC->getPassNameForClassName(ClassName);
+        return PassName.empty() ? ClassName : PassName;
+      });
+      llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
+    }
   }
 #endif
 }
