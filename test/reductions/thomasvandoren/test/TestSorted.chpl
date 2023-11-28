@@ -6,7 +6,7 @@ use sorted;
 use Common;
 
 var rA: [1..10] real;
-randStream.fillRandom(rA);
+randStream.fill(rA);
 var A = [i in rA] (10 * i): int;
 
 writeln("A: ", A);
