@@ -586,7 +586,7 @@ static void test13() {
   ensureParamInt(variables.at("r1"), getMajorVersion());
   ensureParamInt(variables.at("r2"), getMinorVersion());
   ensureParamInt(variables.at("r3"), getUpdateVersion());
-  ensureParamString(variables.at("r4"), getCommitHash());
+  ensureParamString(variables.at("r4"), getIsOfficialRelease() ? "" : getCommitHash());
 }
 
 static void test14() {

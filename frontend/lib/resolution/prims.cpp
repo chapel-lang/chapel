@@ -1123,18 +1123,27 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
                            IntParam::get(context, getMajorVersion()));
       break;
+
     case PRIM_VERSION_MINOR:
       type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
                            IntParam::get(context, getMinorVersion()));
       break;
+
     case PRIM_VERSION_UPDATE:
       type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
                            IntParam::get(context, getUpdateVersion()));
       break;
-    case PRIM_VERSION_SHA:
+
+    case PRIM_VERSION_SHA: {
+      UniqueString versionHash;
+      if (!getIsOfficialRelease()) {
+        versionHash = UniqueString::get(context, getCommitHash());
+      }
+
       type = QualifiedType(QualifiedType::PARAM, RecordType::getStringType(context),
-                           StringParam::get(context, UniqueString::get(context, getCommitHash())));
+                           StringParam::get(context, versionHash));
       break;
+    }
 
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
