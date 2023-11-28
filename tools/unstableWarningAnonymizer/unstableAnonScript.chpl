@@ -127,6 +127,10 @@ proc anonymizeWarning(warning: string) : string {
   if warning.find(pragmas) != -1 then
     return "warning: <proc> " + pragmas;
 
+  const constArgs = "was modified indirectly during this function, this behavior is unstable and may change in the future.";
+  if warning.find(constArgs) != -1 then
+    return "warning: The argument " + constArgs;
+
   return warning;
 }
 
