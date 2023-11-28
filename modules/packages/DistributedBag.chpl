@@ -29,14 +29,14 @@
   segment, in a First-In First-Out (FIFO) manner. This implementation allows lock-free
   local access to the private portion of the segments and copy-free transfer of
   elements between the public and private portions. Work transfer is done by moving
-  the split pointer in either directions using appropriate methods.
+  the split pointer in either direction using appropriate methods.
 
   The data structure is equipped with a dynamic load balancing mechanism, based on
   the work stealing (WS) paradigm. In few words, when a segment is (near)-empty,
   the associated task will try to steal elements from the public portion of other
-  segments, potentially from other locales. During WS operations, thieve tasks
+  segments, potentially from other locales. During WS operations, thief tasks
   synchronize using a lock. This mechanism is transparently managed by the remove
-  method of the DistBag. Three scenarios may occurs:
+  method of the DistBag. Three scenarios may occur:
 
       * Best case: the private portion of the calling task is not empty, and we
                    simply get a element.
@@ -47,17 +47,17 @@
                      either the "random" (default) or "round-robin" policy. When a
                      segment is eligible to be stolen from, one element is removed.
                      Since DFS ensures that the shallowest nodes in a search tree
-                     are stored at the head of each segment, the steal-1 strategy
-                     is generally sufficient since the stolen node lead to a
+                     are stored at the head of each segment, stealing one
+                     is generally sufficient since the stolen node leads to a
                      potentially large sub-tree.
 
-      * Global steal: if the local steal failed, the calling task try to steal
+      * Global steal: if the local steal failed, the calling task tries to steal
                       elements globally, i.e. from another bag instance. Similarly
                       to the previous case, we choose the victim tasks by iterating
                       over the locales, and then over their segments. When an
                       eligible locale is found, we try to steal one element from
-                      each of its segments. Since the global WS is a heavy-weigth
-                      operation, the steal-1 strategy is no more appropriate, and
+                      each of its segments. Since the global WS is a heavy-weight
+                      operation, stealing one is no more appropriate, and
                       we steal each segment in order to not create load-unbalance
                       between them.
 
@@ -153,7 +153,7 @@ module DistributedBag
   use Math;
 
   /*
-    The scenarios of the remove operation (see header).
+    The scenarios of the remove operation (See the Implementation Details section).
   */
   private param REMOVE_BEST_CASE    = 1;
   private param REMOVE_LOCAL_STEAL  = 2;
@@ -184,7 +184,7 @@ module DistributedBag
   config const distributedBagMaxSegmentCap: int = 1024 * 1024;
   /*
     The minimum number of elements a segment must have to become eligible to be
-    stolen from. This may be useful if some segments contain less elements than
+    stolen from. This may be useful if some segments contain fewer elements than
     others and should not be stolen from.
   */
   config const distributedBagWorkStealingMinElts: int = 1;
@@ -653,7 +653,7 @@ module DistributedBag
     /*
       Iterate over the segments/locales eligible to be stolen from, according to
       the specified policy. By default, the random strategy is chosen and the
-      calling thask/locale cannot be chosen. We can specify how many tries we
+      calling task/locale cannot be chosen. We can specify how many tries we
       want, by default, only 1 is performed.
     */
     iter victim(const N: int, const callerId: int, const policy: string = "rand",
@@ -694,7 +694,8 @@ module DistributedBag
     /*
       Remove an element from segment ``taskId``. The order in which elements are
       removed is guaranteed to be the same order they have been inserted. If the
-      best case fails, it trigger a work stealing mechanism (see hearder).
+      best case fails, it trigger a work stealing mechanism (See the Implementation
+      Details section).
     */
     proc remove(const taskId: int): (bool, eltType)
     {
@@ -735,7 +736,7 @@ module DistributedBag
                          either the "random" (default) or "round-robin" policy. When a
                          segment is eligible to be stolen from, one element is removed.
                          Since DFS ensures that the shallowest nodes in a search tree
-                         are stored at the head of each segment, the steal-1 strategy
+                         are stored at the head of each segment, stealing one
                          is generally sufficient since the stolen node lead to a
                          potentially large sub-tree.
           */
@@ -778,8 +779,8 @@ module DistributedBag
                           to the previous case, we choose the victim tasks by iterating
                           over the locales, and then over their segments. When an
                           eligible locale is found, we try to steal one element from
-                          each of its segments. Since the global WS is a heavy-weigth
-                          operation, the steal-1 strategy is no more appropriate, and
+                          each of its segments. Since the global WS is a heavy-weight
+                          operation, stealing one is no more appropriate, and
                           we steal each segment in order to not create load-unbalance
                           between them.
           */
