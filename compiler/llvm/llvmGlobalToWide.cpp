@@ -465,6 +465,12 @@ namespace {
       }
 
       switch(insn->getOpcode()) {
+        // Workaround: LLVM optimizations on machines with sufficiently large
+        // vector widths can generate vectors of global pointers, which cannot
+        // be directly translated to vectors of wide pointers. The workaround
+        // is to bitcast to and from i128 (the size of a wide pointer), which
+        // can be represented in a vector. This requires the cases for
+        // `InsertElement`, `ExtractElement`, and `ShuffleVector`
         case Instruction::InsertElement: {
           // if we are inserting a global addr to a vector of i128
           // need a cast to i128 first, then convert back to the original vector type

@@ -30,7 +30,6 @@ if(LLVM_VERSION VERSION_LESS 16)
   message(FATAL_ERROR "Did not find LLVM 16 -- found ${LLVM_VERSION}")
 endif()
 
-# assumes ~/llvm-project has an LLVM 16 source checkout
 set(LLVM_LIT "$ENV{CHPL_HOME}/third-party/llvm/llvm-src/utils/lit/lit.py")
 
 set(CMAKE_CXX_STANDARD 17)
