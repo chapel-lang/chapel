@@ -4177,6 +4177,11 @@ static void addDumpIrModule(ModulePassManager& MPM,
                             llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
+static void addDumpIrCG(CGSCCPassManager& CPM,
+                        LlvmOptimizationLevel v,
+                        llvmStageNum::llvmStageNum_t stage) {
+  CPM.addPass(DumpIRPass(stage));
+}
 static void addDumpIrFunction(FunctionPassManager& FPM,
                               LlvmOptimizationLevel v,
                               llvmStageNum::llvmStageNum_t stage) {
@@ -4206,6 +4211,12 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       "with the new pass manager\n");
           }
           break;
+        case llvmStageNum::LateLoopOptimizer:
+          PB.registerLateLoopOptimizationsEPCallback(
+            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
+                      addDumpIrLoop(LPM, v, stage);
+                    });
+          break;
         case llvmStageNum::LoopOptimizerEnd:
           PB.registerLoopOptimizerEndEPCallback(
             [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
@@ -4218,10 +4229,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       addDumpIrFunction(FPM, v, stage);
                     });
           break;
+        case llvmStageNum::EarlySimplification:
+          PB.registerPipelineEarlySimplificationEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::OptimizerEarly:
+          PB.registerOptimizerEarlyEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
         case llvmStageNum::OptimizerLast:
           PB.registerOptimizerLastEPCallback(
             [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
                       addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::CGSCCOptimizerLate:
+          PB.registerCGSCCOptimizerLateEPCallback(
+            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
+                      addDumpIrCG(CPM, v, stage);
                     });
           break;
         case llvmStageNum::VectorizerStart:

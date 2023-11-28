@@ -922,9 +922,13 @@ typedef enum {
        // and match ExtensionPointTy in PassManagerBuilder
        EarlyAsPossible,
        ModuleOptimizerEarly,
+       LateLoopOptimizer,
        LoopOptimizerEnd,
        ScalarOptimizerLate,
+       EarlySimplification,
+       OptimizerEarly,
        OptimizerLast,
+       CGSCCOptimizerLate,
        VectorizerStart,
        EnabledOnOptLevel0,
        Peephole,

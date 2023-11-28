@@ -104,9 +104,13 @@ const char* llvmStageName[llvmStageNum::LAST] = {
   "every", //llvmStageNum::EVERY
   "early-as-possible",
   "module-optimizer-early",
+  "late-loop-optimizer",
   "loop-optimizer-end",
   "scalar-optimizer-late",
+  "early-simplification",
+  "optimizer-early",
   "optimizer-last",
+  "cgscc-optimizer-late",
   "vectorizer-start",
   "enabled-on-opt-level0",
   "peephole",

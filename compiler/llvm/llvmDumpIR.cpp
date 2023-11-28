@@ -63,6 +63,18 @@ PreservedAnalyses DumpIRPass::run(Loop& L,
   return llvm::PreservedAnalyses::all();
 }
 
+PreservedAnalyses DumpIRPass::run(LazyCallGraph::SCC &C,
+                                  CGSCCAnalysisManager &AM,
+                                  LazyCallGraph &CG,
+                                  CGSCCUpdateResult &) {
+  for (auto node: C) {
+    Function* F = &node.getFunction();
+    pass.run(*F);
+  }
+  // We don't modify the program, so we preserve all analyses.
+  return llvm::PreservedAnalyses::all();
+}
+
 bool LegacyDumpIRPass::runOnFunction(llvm::Function& function) {
   pass.run(function);
   return false;

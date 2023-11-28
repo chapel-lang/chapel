@@ -32,6 +32,7 @@ namespace llvm {
 }
 
 #include "llvm/Analysis/LoopAnalysisManager.h"
+#include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/Pass.h"
 
@@ -59,6 +60,10 @@ struct DumpIRPass : public llvm::PassInfoMixin<DumpIRPass> {
                               llvm::LoopAnalysisManager& AM,
                               llvm::LoopStandardAnalysisResults& AR,
                               llvm::LPMUpdater& U);
+  llvm::PreservedAnalyses run(llvm::LazyCallGraph::SCC &C,
+                              llvm::CGSCCAnalysisManager &AM,
+                              llvm::LazyCallGraph &CG,
+                              llvm::CGSCCUpdateResult &);
 };
 // old pass manager version
 struct LegacyDumpIRPass : public llvm::FunctionPass {
