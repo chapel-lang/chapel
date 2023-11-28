@@ -1,3 +1,9 @@
+fasta-enum.chpl:133: In function 'repeatMake':
+fasta-enum.chpl:134: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
+  fasta-enum.chpl:156: called as repeatMake(desc: string, alu: [domain(1,int(64),one)] Ntide, n: int(64))
+fasta-enum.chpl:121: In function 'randomMake':
+fasta-enum.chpl:124: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
+  fasta-enum.chpl:157: called as randomMake(desc: string, a: [domain(1,int(64),one)] Freq, n: int(64))
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT

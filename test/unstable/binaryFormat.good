@@ -15,17 +15,14 @@ $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._deserializeOne(x: owned C, loc: locale) from method '_readInner'
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._readInner(args(0): owned C) from method 'read'
   binaryFormat.chpl:21: called as (fileReader(true,binaryDeserializer)).read(args(0): owned C)
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_readInner':
-$CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._readInner(args(0): string) from method 'read'
-  binaryFormat.chpl:23: called as (fileReader(true,binaryDeserializer)).read(args(0): string)
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'read':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  binaryFormat.chpl:32: called as (fileReader(true,binaryDeserializer)).read(type t = string)
+  binaryFormat.chpl:36: called as (fileReader(true,binaryDeserializer)).read(type t = owned C)
 ----- WRITING -----
 ----- READ BY VALUE -----
+string error: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.
 {x = 5}
-abcdefg
+
 ----- READ TYPE -----
 {x = 5}
-abcdefg
+string error: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.

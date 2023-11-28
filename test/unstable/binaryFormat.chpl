@@ -19,8 +19,13 @@ proc main() {
     var r = f.reader(deserializer=new binaryDeserializer());
     var c = new owned C();
     r.read(c);
+
     var s : string;
-    r.read(s);
+    try {
+      r.read(s);
+    } catch e {
+      writeln("string error: ", e.message());
+    }
 
     writeln(c);
     writeln(s);
@@ -29,8 +34,12 @@ proc main() {
     writeln("----- READ TYPE -----");
     var r = f.reader(deserializer=new binaryDeserializer());
     var c = r.read(owned C);
-    var s = r.read(string);
     writeln(c);
-    writeln(s);
+    try {
+      var s = r.read(string);
+      writeln(s);
+    } catch e {
+      writeln("string error: ", e.message());
+    }
   }
 }
