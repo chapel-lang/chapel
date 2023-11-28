@@ -17,7 +17,10 @@
  * limitations under the License.
  */
 
- /*
+/*
+  Implementation Description:
+  ___________________________
+
   A highly parallel segmented multi-pool specialized for depth-first search (DFS).
   Each locale gets its own bag, and each bag is segmented into 'here.maxTaskPar'
   segments. To allow high performance at scale, segments are implemented as
@@ -35,31 +38,31 @@
   the work stealing (WS) paradigm. In few words, when a segment is (near)-empty,
   the associated task will try to steal elements from the public portion of other
   segments, potentially from other locales. During WS operations, thief tasks
-  synchronize using a lock. This mechanism is transparently managed by the remove
-  method of the DistBag. Three scenarios may occur:
+  synchronize using a lock. This mechanism is transparently managed by the
+  :proc:`DistBag.remove` method of the DistBag. Three scenarios may occur:
 
       * Best case: the private portion of the calling task is not empty, and we
                    simply get a element.
 
-      * Local steal: if the best case failed, the calling task first try to steal
+      * Local steal: if the best case failed, the calling task first tries to steal
                      elements locally, i.e. from another segment of its bag instance.
                      To select the victim task, we iterate over the segments using
                      either the "random" (default) or "round-robin" policy. When a
-                     segment is eligible to be stolen from, one element is removed.
-                     Since DFS ensures that the shallowest nodes in a search tree
-                     are stored at the head of each segment, stealing one
-                     is generally sufficient since the stolen node leads to a
-                     potentially large sub-tree.
+                     segment is eligible to be stolen from, one element is removed,
+                     and the stealing process stops. Since DFS ensures that the
+                     shallowest nodes in a search tree are stored at the head of each
+                     segment, stealing one is generally sufficient since the stolen
+                     node leads to a potentially large sub-tree.
 
       * Global steal: if the local steal failed, the calling task tries to steal
-                      elements globally, i.e. from another bag instance. Similarly
-                      to the previous case, we choose the victim tasks by iterating
-                      over the locales, and then over their segments. When an
-                      eligible locale is found, we try to steal one element from
-                      each of its segments. Since the global WS is a heavy-weight
-                      operation, stealing one is no more appropriate, and
-                      we steal each segment in order to not create load-unbalance
-                      between them.
+                      elements globally, i.e. from another bag instance. To choose
+                      victim tasks, we iterate over locales to find an eligible
+                      locale. When considering a locale, we iterate over its segments
+                      similarly to the previous case. When an eligible locale is
+                      found, we try to steal one element from each of its segments.
+                      Since the global WS is a heavy-weight operation, stealing
+                      one is no more appropriate, and we steal each segment in order
+                      to not create load-unbalance between them.
 
   The data structure scales in terms of nodes, processors per node, and even workload.
   Nevertheless, it does not come without flaws; as WS is dynamic and triggered
@@ -101,8 +104,9 @@
 
     var bag = new DistBag(int, targetLocales=ourTargetLocales);
 
-  DistBag supports a set of basic methods applying to the segment indexed by
-  ``taskId`` in ``{0..<here.maxTaskPar}``. This guarantees the local DFS ordering.
+  The basic methods that DistBag supports require a ``taskId`` argument. This
+  ``taskId`` will serve as an index to the segment to be updated and it should be
+  in ``0..<here.maskTaskPar``. This guarantees the local DFS ordering.
 
   .. code-block:: chapel
 
@@ -113,7 +117,8 @@
   While the bag is safe to use in a distributed manner, each locale always operates
   on its privatized instance. This means that it is easy to add data in bulk,
   expecting it to be distributed, when in reality it is not; if another locale needs
-  data, it will steal work on-demand.
+  data, it will steal work on-demand. Here is an example of concurrent operations
+  on DistBag across multiple locales and tasks:
 
   .. code-block:: chapel
 
@@ -128,7 +133,8 @@
     }
 
   Finally, DistBag supports serial and parallel iteration, as well as a set of
-  global operations.
+  global operations. Here is an example of a distributed parallel iteration and a
+  few global operations working with a ``DistBag``:
 
   .. code-block:: chapel
 
@@ -158,6 +164,13 @@ module DistributedBag
   private param REMOVE_BEST_CASE    = 1;
   private param REMOVE_LOCAL_STEAL  = 2;
   private param REMOVE_GLOBAL_STEAL = 3;
+
+  /*
+    TODO: For some reasons, this patch allows the dynamic work stealing to alleviate
+    the bottleneck that may occur in distributed settings. This is expected
+    to be remove in the future. I need to understand the phenomenon, fix it
+    and remove this patch.
+  */
   private param PERFORMANCE_PATCH   = 4;
 
   /*
@@ -166,10 +179,12 @@ module DistributedBag
   */
   private param REMOVE_SUCCESS   = true;
   private param REMOVE_FAIL      = false;
-  // NOTE: A third output could be used to optimize user code in scenarios
-  // where the remove operation fails, but there is a pending work stealing
-  // operation - meaning that the DistBag is not necessarily empty.
-  // For now, it is considered as a usual fail.
+  /*
+    NOTE: A third output could be used to optimize user code in scenarios
+    where the remove operation fails, but there is a pending work stealing
+    operation - meaning that the DistBag is not necessarily empty.
+    For now, it is considered as a usual fail.
+  */
   private param REMOVE_FAST_EXIT = REMOVE_FAIL;
 
   /*
@@ -188,27 +203,6 @@ module DistributedBag
     others and should not be stolen from.
   */
   config const distributedBagWorkStealingMinElts: int = 1;
-  /*
-    NOTE: Artifact of the old DistBag; could be use in a future version.
-    The maximum amount of work to steal from a segment. This should be set to a
-    value, in megabytes, that determines the maximum amount of data that should
-    be sent in bulk at once. The maximum number of elements is determined by:
-    ``(distributedBagWorkStealingMemCap * 1024 * 1024) / sizeof(eltType)``.
-    For example, if we are storing 8-byte integers and have a 1MB limit, we would
-    have a maximum of 125,000 elements stolen at once.
-  */
-  /* config const distributedBagWorkStealingMemCap: real = 1.0; */
-  /*
-    NOTE: Artifact of the old DistBag; could be use in a future version.
-    To prevent stealing too many elements from another segment (hence creating an
-    artificial load imbalance), if the segment has less than a certain threshold
-    (see :const:`distributedBagWorkStealingMemCap`) but above another threshold
-    (see :const:`distributedBagWorkStealingMinElts`), we steal a percentage of
-    their elements, leaving them with majority of their elements. This way, the
-    amount the other segment loses is proportional to how much it owns, ensuring
-    a balance.
-  */
-  /* config const distributedBagWorkStealingRatio: real = 0.25; */
 
   /*
     Reference counter for DistributedBag.
@@ -445,6 +439,12 @@ module DistributedBag
     {
       return bag!.remove(taskId);
     }
+    /*
+      TODO: There are types in Chapel that cannot be default-initialized. One example
+      is owned MyClass (rather than owned MyClass?). To support storing such types
+      in a DistBag, we would have it throw if the removal failed, and always return
+      the removed element on success.
+    */
 
     // TODO: implement 'removeBulk'.
 
@@ -547,9 +547,11 @@ module DistributedBag
 
       .. warning::
 
-        Iteration takes a snapshot approach, and as such can easily result in a
-        Out-Of-Memory issue. If the data structure is large, the user is doubly
-        advised to use parallel iteration, for both performance and memory benefit.
+        This method is best-effort and can be non-deterministic for concurrent
+        updates across nodes, and may miss elements resulting from any concurrent
+        insertion or removal operations. In addition, if the data structure is
+        large, the user is doubly advised to use parallel iteration, for both
+        performance and memory benefit.
     */
     override iter these(): eltType
     {
@@ -561,10 +563,10 @@ module DistributedBag
           on loc {
             ref segment = getPrivatizedThis.bag!.segments[taskId];
 
-              dom = {0..#segment.nElts};
-              for i in dom {
-                buffer[i] = segment.block.elts[segment.block.headId + i];
-              }
+            dom = {0..#segment.nElts};
+            for i in dom {
+              buffer[i] = segment.block.elts[segment.block.headId + i];
+            }
           }
           // Process this chunk if we have one...
           foreach elt in buffer {
@@ -653,8 +655,8 @@ module DistributedBag
     /*
       Iterate over the segments/locales eligible to be stolen from, according to
       the specified policy. By default, the random strategy is chosen and the
-      calling task/locale cannot be chosen. We can specify how many tries we
-      want, by default, only 1 is performed.
+      calling task/locale cannot be chosen. We can also specify how many victims
+      to check for eligibility; 1 by default.
     */
     iter victim(const N: int, const callerId: int, const policy: string = "rand",
       const tries: int = 1): int
@@ -690,6 +692,24 @@ module DistributedBag
         otherwise halt("DistributedBag internal error: Unknown victim choice policy");
       }
     }
+    /*
+      TODO: Probably better to use an enum Policy instead of string here.
+    */
+    /*
+      TODO: Create a seed here for the RNG that includes the locale ID. Since we aren't
+      specifying the seed, we get one based on the time, but this might lead multiple
+      locales running this in parallel choosing the same permutation.
+    */
+    /*
+      TODO: Computing the permutation as an array seems pretty heavy-weight if we
+      are only going to try 1 segment. For tries < N, it might be better to create
+      a random stream and get bounded numbers with getNext with min and max arguments;
+      and then just accept that the same candidate might be checked multiple times.
+      If the iteration is bounded by limit, then indeed it might be necessary to
+      compute the permutation to ensure that each segment is visited. I suppose
+      it could do some random searching and then a round-robin strategy to make
+      sure each is visited.
+    */
 
     /*
       Remove an element from segment ``taskId``. The order in which elements are
@@ -730,15 +750,15 @@ module DistributedBag
           }
 
           /*
-            Local steal: if the best case failed, the calling task first try to steal
+            Local steal: if the best case failed, the calling task first tries to steal
                          elements locally, i.e. from another segment of its bag instance.
                          To select the victim task, we iterate over the segments using
                          either the "random" (default) or "round-robin" policy. When a
-                         segment is eligible to be stolen from, one element is removed.
-                         Since DFS ensures that the shallowest nodes in a search tree
-                         are stored at the head of each segment, stealing one
-                         is generally sufficient since the stolen node lead to a
-                         potentially large sub-tree.
+                         segment is eligible to be stolen from, one element is removed,
+                         and the stealing process stops. Since DFS ensures that the
+                         shallowest nodes in a search tree are stored at the head of
+                         each segment, stealing one is generally sufficient since the
+                         stolen node lead to a potentially large sub-tree.
           */
           when REMOVE_LOCAL_STEAL {
             var splitreq: bool = false;
@@ -774,15 +794,15 @@ module DistributedBag
           }
 
           /*
-            Global steal: if the local steal failed, the calling task try to steal
-                          elements globally, i.e. from another bag instance. Similarly
-                          to the previous case, we choose the victim tasks by iterating
-                          over the locales, and then over their segments. When an
-                          eligible locale is found, we try to steal one element from
-                          each of its segments. Since the global WS is a heavy-weight
-                          operation, stealing one is no more appropriate, and
-                          we steal each segment in order to not create load-unbalance
-                          between them.
+            Global steal: if the local steal failed, the calling task tries to steal
+                          elements globally, i.e. from another bag instance. To choose
+                          victim tasks, we iterate over locales to find an eligible
+                          locale. When considering a locale, we iterate over its segments
+                          similarly to the previous case. When an eligible locale is
+                          found, we try to steal one element from each of its segments.
+                          Since the global WS is a heavy-weight operation, stealing
+                          one is no more appropriate, and we steal each segment in order
+                          to not create load-unbalance between them.
           */
           when REMOVE_GLOBAL_STEAL {
             // fast exit for single-node execution
@@ -795,9 +815,14 @@ module DistributedBag
 
             const parentPid = parentHandle.pid;
             var stolenElts: list(eltType);
+            /*
+              TODO: Such distributed list insertion should not be particularly efficient.
+              The list data type works better if you are appending; inserting at
+              the 0th position is O(n).
+            */
 
             // iterate over the victim locales
-            for victimLocaleId in victim(numLocales, here.id, "rand", 1) { //numLocales-1) {
+            for victimLocaleId in victim(numLocales, here.id, "rand", 1) {
               on Locales[victimLocaleId] {
                 var targetBag = chpl_getPrivatizedCopy(parentHandle.type, parentPid).bag;
                 // iterate over the victim tasks
