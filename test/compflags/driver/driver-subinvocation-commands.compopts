@@ -1,1 +1,1 @@
---print-commands
+--compiler-driver --print-commands
