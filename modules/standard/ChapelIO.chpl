@@ -1024,7 +1024,11 @@ module ChapelIO {
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
-      writer.write(this:string);
+      if serializer.type == binarySerializer {
+        writer.write((this.low, this.high, this.stride, this.alignment));
+      } else {
+        writer.write(this:string);
+      }
     }
   }
   implements writeSerializable(range);
@@ -1075,10 +1079,15 @@ module ChapelIO {
     } else {
       if chpl_warnUnstable then
         compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
-      const data = reader.read(string);
-      var f = openMemFile();
-      f.writer().write(data);
-      readThis(f.reader());
+      if deserializer.type == binaryDeserializer {
+        var (lo, hi, str, al) = reader.read((idxType, idxType, strType, idxType));
+        this = (lo..hi by str align al):this.type;
+      } else {
+        const data = reader.read(string);
+        var f = openMemFile();
+        f.writer().write(data);
+        readThis(f.reader());
+      }
     }
   }
   implements readDeserializable(range);
