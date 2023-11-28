@@ -302,6 +302,28 @@ static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   return QualifiedType(kp.toKind(), actualQt.type());
 }
 
+static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto actualQt = ci.actual(0).type();
+
+  if ((actualQt.isType() && prim == PRIM_TYPEOF)) {
+    // PRIM_TYPEOF (intended to behave like .type) is only allowed on types.
+    // On the other hand, PRIM_STATIC_TYPEOF is applied to types on many occasions
+    // in the compiler code, so it does not cause an error here.
+    return QualifiedType();
+  }
+
+  auto typePtr = actualQt.type();
+  if (!typePtr) return QualifiedType();
+
+  if (auto tupleType = typePtr->toTupleType()) {
+    typePtr = tupleType->toValueTuple(context);
+  }
+
+  return QualifiedType(QualifiedType::TYPE, typePtr);
+}
+
 static QualifiedType primIsTuple(Context* context,
                                  const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -980,8 +1002,14 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_INIT_FIELDS:
     case PRIM_LIFETIME_OF:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_TYPEOF:
     case PRIM_STATIC_TYPEOF:
+      type = primTypeof(context, prim, ci);
+      break;
+
     case PRIM_SCALAR_PROMOTION_TYPE:
     case PRIM_STATIC_FIELD_TYPE:
     case PRIM_USED_MODULES_LIST:
