@@ -326,7 +326,8 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
         bool shouldWarnStandard = (mod->modTag == MOD_STANDARD &&
                                    fWarnUnstableStandard);
         if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
-                              mod->modTag == MOD_USER)) {
+                              mod->modTag == MOD_USER) &&
+            !fNoConstArgChecks) {
           warnForConstIntent(arg);
         }
       }

@@ -189,6 +189,7 @@ bool fNoFastFollowers = false;
 bool fNoInlineIterators = false;
 bool fNoLiveAnalysis = false;
 bool fNoBoundsChecks = false;
+bool fNoConstArgChecks = false;
 bool fNoDivZeroChecks = false;
 bool fNoFormalDomainChecks = false;
 bool fNoLocalChecks = false;
@@ -979,6 +980,7 @@ static void setVectorize(const ArgumentDescription* desc, const char* unused)
 static void setChecks(const ArgumentDescription* desc, const char* unused) {
   fNoNilChecks    = fNoChecks;
   fNoBoundsChecks = fNoChecks;
+  fNoConstArgChecks = fNoChecks;
   fNoFormalDomainChecks = fNoChecks;
   fNoLocalChecks  = fNoChecks;
   fNoStackChecks  = fNoChecks;
@@ -1272,6 +1274,7 @@ static ArgumentDescription arg_desc[] = {
  {"checks", ' ', NULL, "Enable [disable] all following run-time checks", "n", &fNoChecks, "CHPL_NO_CHECKS", setChecks},
  {"bounds-checks", ' ', NULL, "Enable [disable] bounds checking", "n", &fNoBoundsChecks, "CHPL_NO_BOUNDS_CHECKING", NULL},
  {"cast-checks", ' ', NULL, "Enable [disable] safeCast() value checks", "n", &fNoCastChecks, NULL, NULL},
+ {"const-arg-checks", ' ', NULL, "Enable [disable] const argument checks (only when --warn-unstable is also used)", "n", &fNoConstArgChecks, NULL, NULL},
  {"div-by-zero-checks", ' ', NULL, "Enable [disable] divide-by-zero checks", "n", &fNoDivZeroChecks, NULL, NULL},
  {"formal-domain-checks", ' ', NULL, "Enable [disable] formal domain checking", "n", &fNoFormalDomainChecks, NULL, NULL},
  {"local-checks", ' ', NULL, "Enable [disable] local block checking", "n", &fNoLocalChecks, NULL, NULL},
@@ -1898,6 +1901,7 @@ static void setGPUFlags() {
       fNoChecks = true;
       fNoNilChecks    = true;
       fNoBoundsChecks = true;
+      fNoConstArgChecks = true;
       fNoFormalDomainChecks = true;
       fNoLocalChecks  = true;
       fNoStackChecks  = true;
@@ -2202,6 +2206,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
   return {
     .boundsChecking = !fNoBoundsChecks,
     .castChecking = !fNoCastChecks,
+    .constArgChecking = !fNoConstArgChecks,
     .nilDerefChecking = !fNoNilChecks,
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
