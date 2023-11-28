@@ -74,6 +74,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
 bool fWarnUnknownAttributeToolname = true;
+bool fDocsReport = false;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
@@ -184,6 +185,7 @@ ArgumentDescription docs_arg_desc[] = {
  {"text-only", ' ', NULL, "Generate text documentation only", "F", &fDocsTextOnly, NULL, NULL},
  {"html", ' ', NULL, "[Don't] generate html documentation (on by default)", "N", &fDocsHTML, NULL, NULL},
  {"project-version", ' ', "<projectversion>", "Sets the documentation version to <projectversion>", "S256", fDocsProjectVersion, "CHPLDOC_PROJECT_VERSION", NULL},
+ {"report", ' ', NULL, "Highlight undocumented procedures", "F", &fDocsReport, NULL, NULL},
 
  {"print-commands", ' ', NULL, "[Don't] print system commands", "N", &printSystemCommands, "CHPL_PRINT_COMMANDS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
@@ -1962,6 +1964,77 @@ struct CommentVisitor {
 };
 
 /**
+ Visitor used for the --report command.
+*/
+struct ReportVisitor {
+  std::vector<const Function*> undocProcs;
+  std::vector<const Function*> deprecatedProcs;
+  std::vector<const Function*> nodocProc;
+  Context* context_;
+
+  ReportVisitor(Context* context) : context_(context) {}
+
+  bool enter(const Function* node) {
+    auto comment = previousComment(context_, node->id());
+
+    // Undocumented Public Procedures
+    if ((!isNoDoc(node)) && (node->visibility() != chpl::uast::Decl::PRIVATE) && (comment == nullptr)) {
+      undocProcs.push_back(node);
+    }
+
+    // Deprecated Private Procedures
+    if (auto attrs = node->attributeGroup()) {
+      if ((node->visibility() == chpl::uast::Decl::PRIVATE) && (attrs->isDeprecated())) {
+        deprecatedProcs.push_back(node);
+      }
+    }
+
+    // @nodoc Procedures with Documentation
+    if ((isNoDoc(node)) && (comment != nullptr)) {
+      nodocProc.push_back(node);
+    }
+
+    return false;
+  }
+
+  bool enter(const AstNode* node) {
+    return true;
+  }
+
+  void exit(const AstNode* node) {}
+};
+
+static void printUndocProc(Context* context, ID id) {
+  int count = 0;
+  if (!id.isEmpty()) {
+    const AstNode* node = idToAst(context, id);
+    ReportVisitor visitor{context};
+    node->traverse(visitor);
+
+    for (auto proc : visitor.undocProcs) {
+      count++;
+      std::cout << "warning: undocumented public procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
+    }
+    std::cout << count << " undocumented public procedure(s).\n" << std::endl;
+
+    count = 0;
+    for (auto proc: visitor.deprecatedProcs) {
+      count++;
+      std::cout << "warning: deprecated private procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
+    }
+    std::cout << count << " deprecated private procedure(s).\n" << std::endl;
+
+    count = 0;
+    for (auto proc: visitor.nodocProc) {
+      count++;
+      std::cout << "warning: @nodoc documented procedure " << count << ": '" << proc->name().c_str() << "'" << std::endl;
+    }
+    std::cout << count << " @nodoc documented procedure(s)." << std::endl;
+
+  }
+}
+
+/**
  Get a mapping from ID -> doc comment for an entire file. This mapping is only
  populated for IDs that can have a doc comment. We work at a file level here
  because the doc comment for a Module is its previous sibling
@@ -2144,6 +2217,7 @@ struct Args {
   std::string commentStyle =  "/*";
   std::string projectVersion = "0.0.1";
   std::vector<std::string> files;
+  bool docreport = false;
   bool printSystemCommands = false;
   bool noHTML = false;
 };
@@ -2165,6 +2239,7 @@ static Args parseArgs(int argc, char **argv, void* mainAddr) {
   ret.saveSphinx = std::string(fDocsSphinxDir);
   ret.printSystemCommands = printSystemCommands;
   ret.projectVersion = checkProjectVersion(fDocsProjectVersion);
+  ret.docreport = fDocsReport;
   ret.noHTML = !fDocsHTML;
   // add source files
   // TODO: Check for proper file type, duplicate file names, was file found, etc.
@@ -2408,6 +2483,13 @@ int main(int argc, char** argv) {
           which it seems satisfied with.
       */
       ast->traverse(gather);
+    }
+  }
+
+  if (args.docreport) {
+    args.noHTML = true;
+    for (auto id: gather.modules) {
+      printUndocProc(gContext, id);
     }
   }
 
