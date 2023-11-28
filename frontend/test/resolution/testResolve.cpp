@@ -610,6 +610,67 @@ static void test14() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void test15() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      record R {}
+
+      var r: R;
+      var x = 42;
+
+      type t0 = __primitive("typeof", int);
+      type t1 = __primitive("typeof", r);
+      type t2 = __primitive("typeof", x);
+      type t3 = __primitive("typeof", 42);
+      type t4 = __primitive("typeof", (r, r));
+
+      type t5 = __primitive("static typeof", int);
+      type t6 = __primitive("static typeof", r);
+      type t7 = __primitive("static typeof", x);
+      type t8 = __primitive("static typeof", 42);
+      type t9 = __primitive("static typeof", (r, r));
+      )""", { "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"});
+
+  for (auto& pair : variables) {
+    if (!pair.second.isErroneousType()) {
+      assert(pair.second.isType());
+      assert(pair.second.type() != nullptr);
+    }
+  }
+
+  assert(variables.at("t0").isErroneousType());
+  assert(variables.at("t1").type()->isRecordType());
+  assert(variables.at("t2").type()->isIntType());
+  assert(variables.at("t3").type()->isIntType());
+  auto tupQt1 = variables.at("t4");
+  auto tupType1 = tupQt1.type()->toTupleType();
+  assert(tupType1);
+  assert(tupType1->numElements() == 2);
+  assert(tupType1->elementType(0).kind() == QualifiedType::VAR);
+  assert(tupType1->elementType(0).type()->isRecordType());
+  assert(tupType1->elementType(1).kind() == QualifiedType::VAR);
+  assert(tupType1->elementType(1).type()->isRecordType());
+
+  assert(variables.at("t5").type()->isIntType());
+  assert(variables.at("t6").type()->isRecordType());
+  assert(variables.at("t7").type()->isIntType());
+  assert(variables.at("t8").type()->isIntType());
+  auto tupQt2 = variables.at("t9");
+  auto tupType2 = tupQt2.type()->toTupleType();
+  assert(tupType2);
+  assert(tupType2->numElements() == 2);
+  assert(tupType2->elementType(0).kind() == QualifiedType::VAR);
+  assert(tupType2->elementType(0).type()->isRecordType());
+  assert(tupType2->elementType(1).kind() == QualifiedType::VAR);
+  assert(tupType2->elementType(1).type()->isRecordType());
+
+  // One error for the invalid call of "typeof" with type.
+  assert(guard.realizeErrors() == 1);
+}
+
 int main() {
   test1();
   test2();
@@ -624,6 +685,7 @@ int main() {
   test11();
   test12();
   test14();
+  test15();
 
   return 0;
 }
