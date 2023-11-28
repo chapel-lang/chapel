@@ -245,6 +245,7 @@ endif()
 
 # We set the cxx standard in the sub folders, strip the standard from the bunch of flags we got
 string(REPLACE "-std=c++14" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
+string(REPLACE "-std=c++17" "" CHPL_CXX_FLAGS "${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ compile options ${CHPL_CXX_FLAGS}")
 message(VERBOSE "Using C++ link options ${CHPL_LD_FLAGS}")
 

@@ -24,7 +24,6 @@
 #include "chpl/types/all-types.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/resolution/resolution-types.h"
-#include "llvm/ADT/Optional.h"
 
 namespace chpl {
 
