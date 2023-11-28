@@ -1,3 +1,2 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 assertOnGpu.chpl:X: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
 assertOnGpu.chpl:X: note: call has outer var access
