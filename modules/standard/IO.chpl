@@ -8796,7 +8796,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
 proc fileWriter.writeBinary(arg:numeric,
                             param endian:ioendian = ioendian.native) throws {
   const e: errorCode = try _write_binary_internal(_channel_internal,
-                                                  endianToIOKind(endian),
+                                                  endianToIoKind(endian),
                                                   arg);
   if (e != 0) {
     throw createSystemOrChplError(e);
