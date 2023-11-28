@@ -324,6 +324,34 @@ static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallI
   return QualifiedType(QualifiedType::TYPE, typePtr);
 }
 
+static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto typeActualQt = ci.actual(0).type();
+  auto fieldActualQt = ci.actual(1).type();
+
+  if (!typeActualQt.type() ||
+      !fieldActualQt.isParam() || !fieldActualQt.type() || !fieldActualQt.param()) {
+    return QualifiedType();
+  }
+
+  auto compositeType = typeActualQt.type()->getCompositeType();
+  auto fieldNameParam = fieldActualQt.param()->toStringParam();
+
+  if (!compositeType || !fieldNameParam) {
+    return QualifiedType();
+  }
+
+  auto& fields = fieldsForTypeDecl(context, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+  for (int i = 0; fields.numFields(); i++) {
+    if (fields.fieldName(i) == fieldNameParam->value()) {
+      auto returnType = fields.fieldType(i).type();
+      return QualifiedType(QualifiedType::TYPE, returnType);
+    }
+  }
+  return QualifiedType();
+}
+
 static QualifiedType primIsTuple(Context* context,
                                  const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -1011,7 +1039,12 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_SCALAR_PROMOTION_TYPE:
+      CHPL_UNIMPL("misc primitives");
+      break;
     case PRIM_STATIC_FIELD_TYPE:
+      type = staticFieldType(context, ci);
+      break;
+
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:

@@ -671,6 +671,41 @@ static void test15() {
   assert(guard.realizeErrors() == 1);
 }
 
+static void test16() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      record Concrete {
+          var x: int;
+          var y: string;
+          var z: (int, string);
+      };
+
+      record Generic {
+          var x;
+          var y;
+          var z;
+      }
+
+      var conc: Concrete;
+      var inst: Generic(int, string, (int, string));
+
+      param r1 = __primitive("static field type", conc, "x") == int;
+      param r2 = __primitive("static field type", conc, "y") == string;
+      param r3 = __primitive("static field type", conc, "z") == (int, string);
+      param r4 = __primitive("static field type", inst, "x") == int;
+      param r5 = __primitive("static field type", inst, "y") == string;
+      param r6 = __primitive("static field type", inst, "z") == (int, string);
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6"});
+
+  for (auto& pair : variables) {
+    pair.second.isParamTrue();
+  }
+
+}
+
 int main() {
   test1();
   test2();
@@ -686,6 +721,7 @@ int main() {
   test12();
   test14();
   test15();
+  test16();
 
   return 0;
 }
