@@ -1,10 +1,10 @@
 /*
-  This test checks the 'DistBag.writeThis()' method.
+  This test checks the 'distBag.writeThis()' method.
 */
 
 use DistributedBag;
 
-var bag = new DistBag(int);
+var bag = new distBag(int);
 
 // Insert multiple values concurrently.
 forall taskId in 0..#here.maxTaskPar do

@@ -1,5 +1,5 @@
 /*
-  This test checks the ability of DistBag to implement a distributed
+  This test checks the ability of distBag to implement a distributed
   backtracking algorithm to find the exact solution count of N-Queens
   instances. It solves the instances of N-Queens from 1 to maxN.
 
@@ -138,7 +138,7 @@ proc nqueens_search(const N: int)
   var eachExploredSol: [PrivateSpace] int;
 
   // Initialization
-  var bag = new DistBag(Node, targetLocales = Locales);
+  var bag = new distBag(Node, targetLocales = Locales);
   var root = new Node(N);
   bag.add(root, 0);
 

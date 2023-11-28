@@ -1,5 +1,5 @@
 /*
-  This test checks the 'DistBag.add()' method.
+  This test checks the 'distBag.add()' method.
 */
 
 use DistributedBag;
@@ -7,7 +7,7 @@ use DistributedBag;
 config param nElems = 3;
 config param defaultMaxSegmentCap = 1024*1024;
 
-var bag = new DistBag(int);
+var bag = new distBag(int);
 
 // Check the number of elements inserted.
 for i in 1..nElems do bag.add(i, 0);

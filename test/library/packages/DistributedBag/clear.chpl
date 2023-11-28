@@ -1,10 +1,10 @@
 /*
-  This test checks the 'DistBag.clear()' method.
+  This test checks the 'distBag.clear()' method.
 */
 
 use DistributedBag;
 
-var bag = new DistBag(int);
+var bag = new distBag(int);
 
 // Insert multiple values concurrently from different locales.
 coforall locId in 0..#numLocales do on Locales[locId] {

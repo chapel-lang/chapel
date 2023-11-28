@@ -39,7 +39,7 @@
   the associated task will try to steal elements from the public portion of other
   segments, potentially from other locales. During WS operations, thief tasks
   synchronize using a lock. This mechanism is transparently managed by the
-  :proc:`DistBag.remove` method of the DistBag. Three scenarios may occur:
+  :proc:`distBag.remove` method of the distBag. Three scenarios may occur:
 
       * Best case: the private portion of the calling task is not empty, and we
                    simply get a element.
@@ -96,15 +96,15 @@
   Usage
   _____
 
-  To use :record:`DistBag`, the initializer must be invoked explicitly to
+  To use :record:`distBag`, the initializer must be invoked explicitly to
   properly initialize the data structure. By default, one bag instance is
   initialized per locale, and one segment per task.
 
   .. code-block:: chapel
 
-    var bag = new DistBag(int, targetLocales=ourTargetLocales);
+    var bag = new distBag(int, targetLocales=ourTargetLocales);
 
-  The basic methods that DistBag supports require a ``taskId`` argument. This
+  The basic methods that distBag supports require a ``taskId`` argument. This
   ``taskId`` will serve as an index to the segment to be updated and it should be
   in ``0..<here.maskTaskPar``. This guarantees the local DFS ordering.
 
@@ -118,7 +118,7 @@
   on its privatized instance. This means that it is easy to add data in bulk,
   expecting it to be distributed, when in reality it is not; if another locale needs
   data, it will steal work on-demand. Here is an example of concurrent operations
-  on DistBag across multiple locales and tasks:
+  on distBag across multiple locales and tasks:
 
   .. code-block:: chapel
 
@@ -132,9 +132,9 @@
       }
     }
 
-  Finally, DistBag supports serial and parallel iteration, as well as a set of
+  Finally, distBag supports serial and parallel iteration, as well as a set of
   global operations. Here is an example of a distributed parallel iteration and a
-  few global operations working with a ``DistBag``:
+  few global operations working with a ``distBag``:
 
   .. code-block:: chapel
 
@@ -182,7 +182,7 @@ module DistributedBag
   /*
     NOTE: A third output could be used to optimize user code in scenarios
     where the remove operation fails, but there is a pending work stealing
-    operation - meaning that the DistBag is not necessarily empty.
+    operation - meaning that the distBag is not necessarily empty.
     For now, it is considered as a usual fail.
   */
   private param REMOVE_FAST_EXIT = REMOVE_FAIL;
@@ -231,10 +231,10 @@ module DistributedBag
     instance of the data structure for maximized performance.
   */
   pragma "always RVF"
-  record DistBag : serializable
+  record distBag : serializable
   {
     /*
-      The type of the elements contained in this DistBag.
+      The type of the elements contained in this distBag.
     */
     type eltType;
 
@@ -264,27 +264,27 @@ module DistributedBag
     @chpldoc.nodoc
     inline proc _value
     {
-      if (_pid == -1) then halt("DistBag is uninitialized.");
+      if (_pid == -1) then halt("distBag is uninitialized.");
       return chpl_getPrivatizedCopy(unmanaged DistributedBagImpl(eltType), _pid);
     }
 
     @chpldoc.nodoc
     proc readThis(f) throws {
-      compilerError("Reading a DistBag is not supported");
+      compilerError("Reading a distBag is not supported");
     }
 
     @chpldoc.nodoc
     proc deserialize(reader, ref deserializer) throws {
-      compilerError("Reading a DistBag is not supported");
+      compilerError("Reading a distBag is not supported");
     }
 
     @chpldoc.nodoc
     proc init(type eltType, reader: fileReader, ref deserializer) {
       this.init(eltType);
-      compilerError("Deserializing a DistBag is not yet supported");
+      compilerError("Deserializing a distBag is not yet supported");
     }
 
-    // Write the contents of this DistBag to a channel.
+    // Write the contents of this distBag to a channel.
     @chpldoc.nodoc
     proc writeThis(ch) throws {
       ch.write("[");
@@ -302,7 +302,7 @@ module DistributedBag
     }
 
     forwarding _value;
-  } // end 'DistBag' record
+  } // end 'distBag' record
 
   class DistributedBagImpl : CollectionImpl(?)
   {
@@ -325,7 +325,7 @@ module DistributedBag
     var bag: unmanaged Bag(eltType)?;
 
     /*
-      Initialize an empty DistBag.
+      Initialize an empty distBag.
     */
     proc init(type eltType, targetLocales: [?targetLocDom] locale = Locales)
     {
@@ -432,7 +432,7 @@ module DistributedBag
       :type taskId: `int`
 
       :return: Depending on the scenarios: `(true, elt)` if we successfully removed
-               element `elt` from DistBag; `(false, defaultOf(eltType))` otherwise.
+               element `elt` from distBag; `(false, defaultOf(eltType))` otherwise.
       :rtype: `(bool, eltType)`
     */
     proc remove(taskId: int): (bool, eltType)
@@ -442,16 +442,16 @@ module DistributedBag
     /*
       TODO: There are types in Chapel that cannot be default-initialized. One example
       is owned MyClass (rather than owned MyClass?). To support storing such types
-      in a DistBag, we would have it throw if the removal failed, and always return
+      in a distBag, we would have it throw if the removal failed, and always return
       the removed element on success.
     */
 
     // TODO: implement 'removeBulk'.
 
     /*
-      Obtain the number of elements held in this DistBag.
+      Obtain the number of elements held in this distBag.
 
-      :return: The current number of elements contained in this DistBag.
+      :return: The current number of elements contained in this distBag.
       :rtype: `int`
 
       .. warning::
@@ -474,12 +474,12 @@ module DistributedBag
 
     /*
       Perform a lookup to determine if the requested element exists in this
-      DistBag.
+      distBag.
 
       :arg elt: An element to search for.
       :type elt: `eltType`
 
-      :return: `true` if this DistBag contains ``elt``.
+      :return: `true` if this distBag contains ``elt``.
       :rtype: `bool`
 
       .. warning::
@@ -499,7 +499,7 @@ module DistributedBag
     }
 
     /*
-      Clear this DistBag.
+      Clear this distBag.
 
       .. warning::
 
@@ -537,13 +537,13 @@ module DistributedBag
     // TODO: implement a static load balancing?
 
     /*
-      Iterate over the elements of this DistBag. To avoid holding onto locks,
+      Iterate over the elements of this distBag. To avoid holding onto locks,
       we take a snapshot approach, increasing memory consumption but also
       increasing parallelism. This allows other concurrent, even mutating,
       operations while iterating, but opens the possibility to iterating over
       duplicates or missing elements from concurrent operations.
 
-      :yields: A reference to one of the elements contained in this DistBag.
+      :yields: A reference to one of the elements contained in this distBag.
 
       .. warning::
 
