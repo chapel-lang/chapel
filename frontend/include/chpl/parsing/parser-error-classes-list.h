@@ -49,7 +49,6 @@ PARSER_SYNTAX_CLASS(LabelIneligibleStmt, const uast::AstNode*)
 PARSER_ERROR_CLASS(MultipleExternalRenaming)
 PARSER_SYNTAX_CLASS(NewWithoutArgs, const uast::AstNode*)
 PARSER_WARNING_CLASS(PreIncDecOp, bool)
-PARSER_WARNING_CLASS(SingleStmtReturnDeprecated, const uast::AstNode*)
 PARSER_SYNTAX_CLASS(StringLiteralEOF, char, int)
 PARSER_SYNTAX_CLASS(UseImportNeedsModule, bool)
 
