@@ -1,2 +1,2 @@
-0 (gpu 0): $CHPL_HOME/modules/internal/ChapelArray.chpl:3754: kernel launch (block size: 512x1x1)
 2 4 6 8 10
+1
