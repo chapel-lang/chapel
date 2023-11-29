@@ -45,6 +45,8 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #include "gpu/chpl-gpu-reduce-util.h"
 
+#include <inttypes.h>
+
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
@@ -275,7 +277,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tKernel: %s\n"
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
-                 "\tNumThreads: %ld\n",
+                 "\tNumThreads: %"PRId64"\n",
                  chpl_task_getRequestedSubloc(),
                  chpl_lookupFilename(fn),
                  ln,
