@@ -8700,7 +8700,7 @@ proc fileWriter.writeBytes(b: bytes, size = b.size) throws {
 
 private proc sysEndianness() {
   var x: int(16) = 1;
-  // if the initial byte is 0, this is a little endian system
+  // if the initial byte is 0, this is a big-endian system
   if (c_addrOf(x): c_ptr(void): c_ptr(uint(8))).deref() == 0 then
     return ioendian.big;
   else
@@ -9205,7 +9205,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
     } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
-        numRead /= c_sizeof(t):int;  // convert from #bytes to #elements
+        numRead /= c_sizeof(t): numRead.type;  // convert from #bytes to #elts
       } // else no-op, reading a 0-element array reads nothing
     } else {
       for (i, b) in zip(data.domain, data) {
