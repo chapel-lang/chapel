@@ -5,7 +5,7 @@ use CTypes;
 
 type eltType = int;
 
-proc test(const n : int, seekRange: range(?), endian: ioendian) {
+proc test(const n : int, seekRange: range(?), endian: endianness) {
   writeln("=== n=", n, "; ", seekRange, " ===");
   const D = {0..#n};
   const SENTINEL = 5;
@@ -68,7 +68,7 @@ proc test(const n : int, seekRange: range(?), endian: ioendian) {
   }
 }
 
-proc runTest(endian:ioendian) {
+proc runTest(endian:endianness) {
   writeln("===== ", endian, " =====");
   const open = 0..;
   const full = 0..#(100 * numBytes(eltType));
@@ -82,7 +82,7 @@ proc runTest(endian:ioendian) {
 }
 
 proc main() {
-  runTest(ioendian.native);
-  runTest(ioendian.little);
-  runTest(ioendian.big);
+  runTest(endianness.native);
+  runTest(endianness.little);
+  runTest(endianness.big);
 }

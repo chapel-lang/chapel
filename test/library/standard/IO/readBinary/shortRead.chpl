@@ -1,7 +1,7 @@
 
 use IO;
 
-proc test(param endian : ioendian) {
+proc test(param endian : endianness) {
   writeln("===== ", endian:string, " =====");
   {
     write("Actual EOF: ");
@@ -58,7 +58,7 @@ proc test(param endian : ioendian) {
 }
 
 proc main() {
-  test(ioendian.native);
-  test(ioendian.little);
-  test(ioendian.big);
+  test(endianness.native);
+  test(endianness.little);
+  test(endianness.big);
 }
