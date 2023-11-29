@@ -1,5 +1,5 @@
 #!/bin/bash
 
-# get rid of the 'executeOn' lines from verboseComm
-cat $2 | grep -v 'executeOn' > $2.prediff.tmp
+# only keep the 'warning' lines and the 'start/stop' lines
+cat $2 | grep 'warning\|start/stop' > $2.prediff.tmp
 mv $2.prediff.tmp $2
