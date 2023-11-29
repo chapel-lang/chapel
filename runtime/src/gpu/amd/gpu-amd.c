@@ -40,6 +40,7 @@
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
+#include <rocm_version.h>
 
 
 static inline
@@ -485,4 +486,9 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
     ROCM_CALL(hipStreamSynchronize(stream));
   }
 }
+
+bool chpl_gpu_impl_can_reduce(void) {
+  return ROCM_VERSION_MAJOR>=5;
+}
+
 #endif // HAS_GPU_LOCALE

@@ -421,7 +421,7 @@ module GPU
                     " elements cannot be reduced with gpu*Reduce functions");
     }
 
-    if CHPL_GPU == "cpu" {
+    proc doCpuReduceHelp(param op: string, const ref A: [] ?t) {
       select op {
         when "sum" do return + reduce A;
         when "min" do return min reduce A;
@@ -432,6 +432,19 @@ module GPU
       }
     }
 
+    proc doCpuReduce(param op: string, const ref A: [] ?t) {
+      if CHPL_GPU=="cpu" {
+        return doCpuReduceHelp(op, A);
+      }
+      else {
+        var res;
+        on here.parent {
+          var HostArr = A;
+          res = doCpuReduceHelp(op, HostArr);
+        }
+        return res;
+      }
+    }
 
     proc getExternFuncName(param op: string, type t) param: string {
       return "chpl_gpu_"+op+"_reduce_"+cTypeName;
@@ -498,6 +511,10 @@ module GPU
     }
 
     use CTypes;
+    extern proc chpl_gpu_can_reduce(): bool;
+    if !chpl_gpu_can_reduce() {
+      return doCpuReduce(op, A);
+    }
 
     // find the extern function we'll use
     param externFunc = getExternFuncName(op, t);
