@@ -421,6 +421,13 @@ module GPU
                     " elements cannot be reduced with gpu*Reduce functions");
     }
 
+    proc retType(param op: string, const ref A: [] ?t) type {
+      if isValReduce(op) then return A.eltType;
+      if isValIdxReduce(op) then return (A.eltType, int);
+      compilerError("Unknown reduction operation: ", op);
+    }
+
+
     proc doCpuReduceHelp(param op: string, const ref A: [] ?t) {
       select op {
         when "sum" do return + reduce A;
@@ -437,7 +444,7 @@ module GPU
         return doCpuReduceHelp(op, A);
       }
       else {
-        var res;
+        var res: retType(op, A);
         on here.parent {
           var HostArr = A;
           res = doCpuReduceHelp(op, HostArr);

@@ -23,6 +23,21 @@
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
 
+#if __has_include(<rocm_version.h>)
+#include <rocm_version.h>
+#elif __has_include(<rocm/rocm_version.h>)
+#include <rocm/rocm_version.h>
+#elif !defined(ROCM_VERSION_MAJOR)
+#define ROCM_VERSION_MAJOR 4 // this is the safe bet
+#endif
+
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+extern void chpl_internal_error(const char*);
+
+
 static void chpl_gpu_rocm_check(int err, const char* file, int line) {
   if(err == hipErrorContextAlreadyInUse) { return; }
   if(err != hipSuccess) {
@@ -36,6 +51,10 @@ static void chpl_gpu_rocm_check(int err, const char* file, int line) {
     chpl_internal_error(msg);
   }
 }
+
+#ifdef __cplusplus
+}
+#endif
 
 #define ROCM_CALL(call) do {\
   chpl_gpu_rocm_check((int)call, __FILE__, __LINE__);\

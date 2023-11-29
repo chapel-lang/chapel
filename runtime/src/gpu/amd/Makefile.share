@@ -21,7 +21,7 @@ SRCS = $(GPU_SRCS)
 
 GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 
-RUNTIME_CXXFLAGS += -x hip --offload-arch=gfx906,gfx908,gfx90a
+RUNTIME_CXXFLAGS += -x hip --offload-arch=gfx906 --offload-arch=gfx908 --offload-arch=gfx90a
 
 $(RUNTIME_OBJ_DIR)/gpu-amd-reduce.o: gpu-amd-reduce.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)

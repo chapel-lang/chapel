@@ -19,28 +19,20 @@
 
 #ifdef HAS_GPU_LOCALE
 
+#include "../common/rocm-utils.h"
+
 #include <hip/hip_common.h>
+
+#if ROCM_VERSION_MAJOR >= 5
 #include <hipcub/hipcub.hpp>
-#include <rocm_version.h>
+#endif
+
 
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "gpu/chpl-gpu-reduce-util.h"
-#include "../common/rocm-utils.h"
 
-// Engin: I can't get neither hipCUB nor rocprim to work. (hipCUB is a light
-// wrapper around rocprim anyways). I filed
-// https://github.com/ROCmSoftwarePlatform/hipCUB/issues/304, but I don't know
-// if/when I'll hear back something. For now, I am merging the code that's
-// supposed to work but doesn't instead of removing them from my branch.
-#if 0
-#define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
-}
-#elif ROCM_VERSION_MAJOR >= 5
+#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -61,9 +53,9 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
 #else
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val,\
+                                                    data_type* val, int* idx,\
                                                     void* stream) {\
-  chpl_internal_error("Reduction is not supported with AMD GPUs using ROCm version <5\n");\
+  chpl_internal_error("Reduction via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
 }
 #endif // 1
 
@@ -73,14 +65,7 @@ GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
-#if 0
-#define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
-void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
-                                                    data_type* val, int* idx,\
-                                                    void* stream) {\
-  chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
-}
-#else
+#if ROCM_VERSION_MAJOR >= 5
 #define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -102,14 +87,19 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   *idx = result_host.key; \
   ROCM_CALL(hipFree(result)); \
 }
+#else
+#define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream) {\
+  chpl_internal_error("Reduction via runtime calls is not supported with AMD GPUs using ROCm version <5\n");\
+}
 #endif // 1
 
 GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMin, minloc)
 GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL_IDX, ArgMax, maxloc)
 
 #undef DEF_ONE_REDUCE_RET_VAL_IDX
-
-#undef DEF_REDUCE
 
 #endif // HAS_GPU_LOCALE
 
