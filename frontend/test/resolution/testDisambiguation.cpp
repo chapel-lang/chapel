@@ -265,6 +265,74 @@ static void test3() {
         f(x);
       )"""",
     1);
+
+  // updated disambiguation based on visibility of proc
+  checkCalledIndex(context,
+      R""""(
+        proc f(arg: int) { }                     // 1
+        {
+          proc f(arg) { }                        // 2
+
+          var x = 1;
+          f(x);
+        }
+      )"""",
+    2);
+}
+
+// updated disambiguation based on width of argument
+static void test4() {
+  Context ctx;
+  Context* context = &ctx;
+
+  std::string program =
+    R""""(
+      proc f(arg: int(8)) { }                   // 1
+      proc f(arg: uint(64)) { }                 // 2
+      var x: int(64);
+      f(x);
+    )"""";
+
+  auto name = std::string("test4.chpl");
+
+  printf("%s\n", name.c_str());
+
+  auto path = UniqueString::get(context, name);
+
+  setFileText(context, path, program);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+
+  // gather the Function and FnCalls
+  GatherStuff stuff;
+  m->traverse(stuff);
+
+  assert(stuff.fns.size() > 1); // > 1 needed for disambiguation
+  assert(stuff.fnCalls.size() == 4); // we have 3 calls defining types prior to
+                                      // the call to f that we care about
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  auto fnCall = stuff.fnCalls[3];
+  assert(fnCall->calledExpression()->toIdentifier()->name().compare("f") == 0);
+  const ResolvedExpression& re = rr.byAst(fnCall);
+  const MostSpecificCandidates& s = re.mostSpecific();
+
+  // disambiguation tests should either have a best candidate or be ambiguous.
+  assert (!s.isEmpty());
+
+  int foundOnlyIdx = 0;
+  int i = 1;
+  for (auto fn : stuff.fns) {
+    if (s.only() && s.only().fn()->id() == fn->id()) {
+      foundOnlyIdx = i;
+    }
+    i++;
+  }
+  // should pick the uint(64) overload
+  assert(foundOnlyIdx == 2);
 }
 
 int main() {
@@ -272,6 +340,7 @@ int main() {
   test1();
   test2();
   test3();
+  test4();
 
   return 0;
 }
