@@ -327,7 +327,7 @@ void init_args(ArgumentState* state, const char* argv0, void* mainAddr) {
  */
 
 void init_arg_desc(ArgumentState* state, ArgumentDescription* arg_desc,
-    DeprecatedArgument* deprecated_args)
+                   DeprecatedArgument* deprecated_args)
 {
   state->desc = arg_desc;
   state->deprecated_args = deprecated_args;
