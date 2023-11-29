@@ -2206,7 +2206,6 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
   return {
     .boundsChecking = !fNoBoundsChecks,
     .castChecking = !fNoCastChecks,
-    .constArgChecking = !fNoConstArgChecks,
     .nilDerefChecking = !fNoNilChecks,
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,

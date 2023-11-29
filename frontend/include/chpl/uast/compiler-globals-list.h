@@ -19,7 +19,6 @@
 
 COMPILER_GLOBAL(bool, "boundsChecking", boundsChecking)
 COMPILER_GLOBAL(bool, "castChecking", castChecking)
-COMPILER_GLOBAL(bool, "constArgChecking", constArgChecking)
 COMPILER_GLOBAL(bool, "chpl_checkNilDereferences", nilDerefChecking)
 COMPILER_GLOBAL(bool, "chpl_overloadSetsChecks", overloadSetsChecking)
 COMPILER_GLOBAL(bool, "chpl_checkDivByZero", divByZeroChecking)

@@ -1274,7 +1274,19 @@ initPrimitive() {
 
   prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
 
+  // Expects a single argument, which will be passed by pointer to an underlying
+  // runtime function, so that the memory can be hashed.
   prim_def(PRIM_CONST_ARG_HASH, "hash const arguments", returnInfoUInt64, true);
+  // Expects five arguments:
+  // 1. hash of the const argument at the start of the function
+  // 2. hash of the const argument at the end of the function
+  // 3. the name of the const argument
+  // 4. and 5. the line number and file name where the argument was defined.
+  //
+  // The latter two will be inserted by the compiler before code generation
+  //
+  // 1 and 2 are used to determine if the argument has been indirectly modified,
+  // 3-5 are used to generate a warning message if it was.
   prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
 }
 

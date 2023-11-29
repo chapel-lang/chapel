@@ -6305,17 +6305,15 @@ DEFINE_PRIM(CONST_ARG_HASH) {
   GenRet arg = call->get(1);
 
   if (call->get(1)->isWideRef()) {
-    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
-
     // Don't send arg in with `&`
     GenRet ptr = codegenValue(arg);
     // Do shallow GET on record
-    GenRet remotePtr = codegenValue(codegenDeref(ptr));
+    GenRet val = codegenValue(codegenDeref(ptr));
     // Create temporary that we can pass a pointer to
-    GenRet tmp = createTempVar(call->get(1)->getValType());
-    codegenAssign(tmp, remotePtr);
+    GenRet tmp = createTempVarWith(val);
     GenRet addr = codegenAddrOf(tmp);
 
+    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
     // Could potentially have the sizeof call inserted at the creation of the
     // primitive
     ret = codegenCallExpr("const_arg_hash", addr,

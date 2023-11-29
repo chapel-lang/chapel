@@ -254,9 +254,11 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
-// Generate an unstable warning if a `const` argument would be transformed into
-// `const ref` and the argument is implicitly modified over the course of the
-// function.  We may decide to change this behavior in the future.
+// Add calls to some runtime functions used to determine if a `const` argument
+// that would be transformed into `const ref` is implicitly modified over the
+// course of the function.  We may decide to change this behavior in the future,
+// so want to generate a warning if it occurs (and one of the primitives will
+// handle generating that warning).
 static void warnForConstIntent(ArgSymbol* arg) {
   SET_LINENO(arg);
 
@@ -272,7 +274,7 @@ static void warnForConstIntent(ArgSymbol* arg) {
   // Hash the argument at the start of the function
   CallExpr* getStartHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
-  VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_DEFAULT]);
+  VarSymbol* startHash = newTemp(dtUInt[INT_SIZE_64]);
   DefExpr* startDef = new DefExpr(startHash);
 
   CallExpr* outerStart = new CallExpr(PRIM_MOVE, new SymExpr(startHash),
@@ -284,7 +286,7 @@ static void warnForConstIntent(ArgSymbol* arg) {
   // Hash the argument at the end of the function
   CallExpr* getEndHash = new CallExpr(PRIM_CONST_ARG_HASH, new SymExpr(arg));
 
-  VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_DEFAULT]);
+  VarSymbol* endHash = newTemp(dtUInt[INT_SIZE_64]);
   DefExpr* endDef = new DefExpr(endHash);
 
   CallExpr* outerEnd = new CallExpr(PRIM_MOVE, new SymExpr(endHash),
@@ -338,6 +340,9 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
         if (fWarnUnstable && (shouldWarnInternal || shouldWarnStandard ||
                               mod->modTag == MOD_USER) &&
             !fNoConstArgChecks) {
+          // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
+          // in a later pass that does more AST transformation.  Potentially
+          // callDestructors?
           warnForConstIntent(arg);
         }
       }
