@@ -3608,7 +3608,7 @@ record defaultDeserializer {
 @deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
 type DefaultDeserializer = defaultDeserializer;
 
-@unstable("This config param is unstable and may be removed without warning prior to Chapel 2.0")
+@unstable("This config param is unstable and may be removed without advance notice")
 /*
   This config param allows users to disable a warning for reading and writing
   classes and strings with ``binarySerializer`` and ``binaryDeserializer``
@@ -3618,8 +3618,8 @@ config param warnBinaryStructured : bool = true;
 
 private proc warnBinary(type t, param depth : int) {
   if warnBinaryStructured {
-    if t == string || isClassType(t) {
-      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+    if t == string || t == bytes || isClassType(t) {
+      param msg = "binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
       compilerWarning(msg, depth);
     }
   }
@@ -3628,7 +3628,7 @@ private proc warnBinary(type t, param depth : int) {
 private proc warnBinaryRead(type t, param depth : int) throws {
   if warnBinaryStructured {
     if isClassType(t) {
-      param msg = "binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      param msg = "binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
       compilerWarning(msg, depth);
     }
   }
@@ -3689,9 +3689,9 @@ record binarySerializer {
 
     ``string`` values are serialized as a raw sequence of bytes that does not
     include a null terminator, nor any bytes representing length. This means
-    that ``string`` values cannot be read back in without manual intervention
+    that ``string`` values cannot be deserialized without manual intervention
     by users to decide how their strings should be stored such that they can
-    be read back in.
+    be deserialized.
 
     The ``nil`` value is serialized as a single unsigned byte of value ``0``.
 
