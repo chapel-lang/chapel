@@ -6,19 +6,21 @@ config const kind = "min";
 const isMin = kind=="min";
 assert(isMin || kind=="max");
 
-config const n = 4_000_000_000;
+config var n = 4_000_000_000;
+config var setIdx = n-1;
 
 // testing large data:
 // 1. is only meaningful if the reduction is actually done on a device
 // 2. times out testing if we use CPU-based reduction, especially if it is a
 //    fallback.
-// So, override n to be something smaller
-var nOverride = n;
+// So, override n/setIdx to be something smaller
 extern proc chpl_gpu_can_reduce(): bool;
-if !chpl_gpu_can_reduce() then nOverride = 100;
+if !chpl_gpu_can_reduce() {
+  n = 100;
+  setIdx = n-1;
+}
 
-config const setIdx = nOverride-1;
-assert(nOverride>setIdx);
+assert(n>setIdx);
 
 config const printResult = false;
 
@@ -34,7 +36,7 @@ inline proc doReduce(Arr) {
 
 var result: if withLoc then (uint(8), int) else uint(8);
 on here.gpus[0] {
-  var Arr: [0..#nOverride] uint(8) = 10;
+  var Arr: [0..#n] uint(8) = 10;
   Arr[setIdx] = expectedVal;
 
   result = doReduce(Arr);
