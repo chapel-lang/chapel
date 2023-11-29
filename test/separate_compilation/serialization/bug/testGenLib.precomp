@@ -12,7 +12,9 @@ def genDyno(val):
         stem = Path(val).stem
         dyno = stem + ".dyno"
     if not os.path.exists(dyno):
-        subprocess.run([sys.argv[3], "--dyno-gen-lib", dyno, val])
+        cmd = [sys.argv[3], "--dyno-gen-lib", dyno, val]
+        print("Creating lib with", " ".join(cmd))
+        subprocess.run(cmd, check=True)
 
 def genAndMod(name):
     dotChpl = name + ".chpl"
