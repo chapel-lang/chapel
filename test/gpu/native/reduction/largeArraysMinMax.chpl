@@ -6,7 +6,7 @@ config const kind = "min";
 const isMin = kind=="min";
 assert(isMin || kind=="max");
 
-config const n = 2*max(int(32));
+config const n = 4_000_000_000;
 config const setIdx = n-1;
 assert(n>setIdx);
 

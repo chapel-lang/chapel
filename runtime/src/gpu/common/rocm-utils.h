@@ -23,10 +23,12 @@
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
 
-#if __has_include(<rocm_version.h>)
-#include <rocm_version.h>
-#elif __has_include(<rocm/rocm_version.h>)
+#if __has_include(<rocm-core/rocm_version.h>)  // 5.x wants this
+#include <rocm-core/rocm_version.h>
+#elif __has_include(<rocm/rocm_version.h>)  // 4.x wants this
 #include <rocm/rocm_version.h>
+#elif __has_include(<rocm_version.h>)  // Deprecated. 5.x used to want this
+#include <rocm_version.h>
 #elif !defined(ROCM_VERSION_MAJOR)
 #define ROCM_VERSION_MAJOR 4 // this is the safe bet
 #endif
