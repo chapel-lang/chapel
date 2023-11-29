@@ -4388,10 +4388,18 @@ record binaryDeserializer {
       if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         const got = reader.readBinary(data, n.safeCast(int));
-        if got < n then throw new EofError();
+        if got < n then throw createSystemOrChplError(EEOF);
       } else {
-        for i in 0..<numElements do
-          reader.read(data[i]);
+        for i in 0..<numElements {
+          try {
+            if !reader.read(data[i]) then
+              throw createSystemOrChplError(EEOF);
+          } catch e: UnexpectedEofError {
+            // Match behavior of ``readBinary``, where we tolerate such partial
+            // reads.
+            throw createSystemOrChplError(EEOF);
+          }
+        }
       }
     }
 
