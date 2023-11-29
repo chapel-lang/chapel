@@ -421,10 +421,7 @@ module GPU
                     " elements cannot be reduced with gpu*Reduce functions");
     }
 
-    if CHPL_GPU == "amd" {
-      compilerError("gpu*Reduce functions are not supported on AMD GPUs");
-    }
-    else if CHPL_GPU == "cpu" {
+    if CHPL_GPU == "cpu" {
       select op {
         when "sum" do return + reduce A;
         when "min" do return min reduce A;
@@ -433,9 +430,6 @@ module GPU
         when "maxloc" do return maxloc reduce zip (A, A.domain);
         otherwise do compilerError("Unknown reduction operation: ", op);
       }
-    }
-    else {
-      compilerAssert(CHPL_GPU=="nvidia");
     }
 
 

@@ -19,22 +19,21 @@
 
 #ifdef HAS_GPU_LOCALE
 
-/* TODO uncomment these when the implementations are in
 #include <hip/hip_common.h>
 #include <hipcub/hipcub.hpp>
 #include <rocm_version.h>
-*/
 
 #include "chpl-gpu.h"
 #include "chpl-gpu-impl.h"
 #include "gpu/chpl-gpu-reduce-util.h"
+#include "../common/rocm-utils.h"
 
 // Engin: I can't get neither hipCUB nor rocprim to work. (hipCUB is a light
 // wrapper around rocprim anyways). I filed
 // https://github.com/ROCmSoftwarePlatform/hipCUB/issues/304, but I don't know
 // if/when I'll hear back something. For now, I am merging the code that's
 // supposed to work but doesn't instead of removing them from my branch.
-#if 1
+#if 0
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
