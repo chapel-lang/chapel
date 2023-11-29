@@ -138,7 +138,17 @@ disambiguateByMatch(const DisambiguationContext& dctx,
                     CandidatesVec& ambiguousBest);
 
 static MostSpecificCandidates
-disambiguateByMatch(DisambiguationContext& dctx, CandidatesVec& candidates);
+computeMostSpecificCandidates(Context* context,
+                              const DisambiguationContext& dctx,
+                              const CandidatesVec& candidates) ;
+
+// handle the more complex case where there is > 1 candidate
+// with a particular return intent by disambiguating each group
+// individually.
+static MostSpecificCandidates
+computeMostSpecificCandidatesWithVecs(Context* context,
+                                      const DisambiguationContext& dctx,
+                                      const CandidatesVec& vec);
 
 static int compareSpecificity(const DisambiguationContext& dctx,
                               const DisambiguationCandidate& candidate1,
@@ -342,8 +352,8 @@ findMostSpecificCandidatesQuery(Context* context,
   }
 
   MostSpecificCandidates result =
-    disambiguateByMatch(dctx, candidates);
-    // computeMostSpecificCandidates(context, dctx, candidates);
+    // disambiguateByMatch(dctx, candidates);
+    computeMostSpecificCandidates(context, dctx, candidates);
 
   // Delete all of the FormalActualMaps
   for (auto elt : candidates) {
@@ -368,7 +378,8 @@ findMostSpecificCandidates(Context* context,
 
   if (lst.size() == 1) {
     // If there is just one candidate, return it
-    return MostSpecificCandidates::getOnly(MostSpecificCandidate::fromTypedFnSignature(context, lst[0], call));
+    auto msc = MostSpecificCandidate::fromTypedFnSignature(context, lst[0], call);
+    return MostSpecificCandidates::getOnly(msc);
   }
 
   // if we get here, > 1 candidates
@@ -378,6 +389,135 @@ findMostSpecificCandidates(Context* context,
   return findMostSpecificCandidatesQuery(context, lst, forwardingInfo,
                                          call,
                                          callInScope, callInPoiScope);
+}
+
+
+static MostSpecificCandidates
+computeMostSpecificCandidates(Context* context,
+                              const DisambiguationContext& dctx,
+                              const CandidatesVec& candidates) {
+  using Dcp = DisambiguationCandidate*;
+  CandidatesVec ambiguousBest;
+
+  // The common case is that there is no ambiguity because the
+  // return intent overload feature is not used.
+  auto best = (Dcp)disambiguateByMatch(dctx, candidates,
+                                       /* ignoreWhere */ true,
+                                       ambiguousBest);
+
+  if (best != nullptr) {
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
+  }
+
+  if (ambiguousBest.size() == 0) {
+    // nothing to do, return no candidates
+    return MostSpecificCandidates::getEmpty();
+  }
+
+  // Now, if there was ambiguity, try again while considering
+  // separately each category of return intent.
+  //
+  // If there is only one most specific function in each category,
+  // that is what we need to return.
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+  int nOther = 0;
+
+  // Count number of candidates in each category.
+  countByReturnIntent(dctx, ambiguousBest, nRef, nConstRef, nValue, nOther);
+
+  if (nOther > 0) {
+    // If there are *any* type/param candidates, we need to cause ambiguity
+    // if they are not selected... including consideration of where clauses.
+    ambiguousBest.clear();
+    auto best = (Dcp)disambiguateByMatch(dctx, candidates,
+                                         /* ignoreWhere */ false,
+                                         ambiguousBest);
+
+    if (ambiguousBest.size() > 1)
+      return MostSpecificCandidates::getAmbiguous();
+
+    return MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(context));
+  }
+
+  if (nRef <= 1 && nConstRef <= 1 && nValue <= 1) {
+    return gatherByReturnIntent(context, dctx, ambiguousBest);
+  }
+
+  // Otherwise, nRef > 1 || nConstRef > 1 || nValue > 1.
+
+  // handle the more complex case where there is > 1 candidate
+  // with a particular return intent by disambiguating each group
+  // individually.
+  return computeMostSpecificCandidatesWithVecs(context, dctx, ambiguousBest);
+}
+
+static MostSpecificCandidates
+computeMostSpecificCandidatesWithVecs(Context* context,
+                                      const DisambiguationContext& dctx,
+                                      const CandidatesVec& vec) {
+  CandidatesVec refCandidates;
+  CandidatesVec constRefCandidates;
+  CandidatesVec valueCandidates;
+  CandidatesVec ambiguousBest;
+
+  // Split candidates into ref, const ref, and value candidates
+  gatherVecsByReturnIntent(dctx, vec,
+                           refCandidates,
+                           constRefCandidates,
+                           valueCandidates);
+
+  // Disambiguate each group and update the counts
+  int nRef = 0;
+  int nConstRef = 0;
+  int nValue = 0;
+
+  bool ignoreWhere = false;
+  using Dcp = DisambiguationCandidate*;
+  ambiguousBest.clear();
+  auto bestRef = (Dcp)disambiguateByMatch(dctx, refCandidates, ignoreWhere,
+                                          ambiguousBest);
+  if (bestRef != nullptr) {
+    nRef = 1;
+  } else {
+    nRef = ambiguousBest.size();
+  }
+
+  ambiguousBest.clear();
+  auto bestCRef = (Dcp)disambiguateByMatch(dctx, constRefCandidates, ignoreWhere,
+                                           ambiguousBest);
+  if (bestCRef != nullptr) {
+    nConstRef = 1;
+  } else {
+    nConstRef = ambiguousBest.size();
+  }
+
+  ambiguousBest.clear();
+  auto bestValue = (Dcp)disambiguateByMatch(dctx, valueCandidates, ignoreWhere,
+                                            ambiguousBest);
+  if (bestValue != nullptr) {
+    nValue = 1;
+  } else {
+    nValue = ambiguousBest.size();
+  }
+
+  // if there is > 1 match in any category, fail to match due to ambiguity
+  if (nRef > 1 || nConstRef > 1 || nValue > 1) {
+    return MostSpecificCandidates::getAmbiguous();
+  }
+
+  // otherwise, there is 1 or fewer match in each category,
+  // so there is no ambiguity.
+  MostSpecificCandidates ret;
+  if (bestRef != nullptr)
+    ret.setBestRef(bestRef->toMostSpecificCandidate(context));
+  if (bestCRef != nullptr)
+    ret.setBestConstRef(bestCRef->toMostSpecificCandidate(context));
+  if (bestValue != nullptr)
+    ret.setBestValue(bestValue->toMostSpecificCandidate(context));
+
+  return ret;
 }
 
 
@@ -523,8 +663,11 @@ static int testOpArgMapping(const DisambiguationContext& dctx,
   const FormalActual* fa1 = candidate1.formalActualMap.byActualIdx(actualIdx);
   const FormalActual* fa2 = candidate2.formalActualMap.byActualIdx(actualIdx);
 
-  CHPL_ASSERT((candidate1.fn->untyped()->kind()==Function::Kind::OPERATOR) == (fa1 == nullptr));
-  CHPL_ASSERT((candidate2.fn->untyped()->kind()==Function::Kind::OPERATOR) == (fa2 == nullptr));
+  bool cand1IsOp = candidate1.fn->untyped()->kind() == Function::Kind::OPERATOR;
+  bool cand2IsOp = candidate2.fn->untyped()->kind() == Function::Kind::OPERATOR;
+
+  CHPL_ASSERT(cand1IsOp == (fa1 == nullptr));
+  CHPL_ASSERT(cand2IsOp == (fa2 == nullptr));
   CHPL_ASSERT(fa1->actualType() == fa2->actualType());
 
   if (fa1 == nullptr) {
@@ -690,7 +833,9 @@ static void discardWorseVisibility(const DisambiguationContext& dctx,
     }
 
     DisambiguationCandidate* candidate = (DisambiguationCandidate*)candidates[i];
-    auto scope = dctx.callInPoiScope == nullptr ? dctx.callInScope : dctx.callInPoiScope->inScope();
+    auto scope = dctx.callInPoiScope == nullptr ?
+                                        dctx.callInScope :
+                                        dctx.callInPoiScope->inScope();
     int distance = computeVisibilityDistance(dctx.context, scope, candidate->fn);
     candidate->visibilityDistance = distance;
 
@@ -816,11 +961,12 @@ computeIsMoreVisible(Context* context,
 
   return MoreVisibleResult::FOUND_NEITHER;
 }
+
 static const DisambiguationCandidate*
 disambiguateByMatchInner(const DisambiguationContext& dctx,
-                        const CandidatesVec& candidates,
-                               bool ignoreWhere,
-                               CandidatesVec& ambiguous) {
+                         const CandidatesVec& candidates,
+                         bool ignoreWhere,
+                         CandidatesVec& ambiguous) {
 
   // quick exit if there is nothing to do
   if (candidates.size() == 0) {
@@ -898,7 +1044,8 @@ disambiguateByMatch(const DisambiguationContext& dctx,
 
   //   for (int i = 0; i < candidates.n; ++i) {
   //     ResolutionCandidate* candidate1         = candidates.v[i];
-  //     bool forGenericInit = candidate1->fn->isInitializer() || candidate1->fn->isCopyInit();
+  //     bool forGenericInit = candidate1->fn->isInitializer() ||
+  //                           candidate1->fn->isCopyInit();
 
   //     for (int j = i; j < candidates.n; ++j) {
   //       ResolutionCandidate* candidate2 = candidates.v[j];
@@ -919,111 +1066,6 @@ disambiguateByMatch(const DisambiguationContext& dctx,
 
 }
 
-
-static MostSpecificCandidates
-disambiguateByMatch(DisambiguationContext& dctx, CandidatesVec& candidates) {
-  CandidatesVec ambiguous;
-
-  DisambiguationCandidate* bestValue = nullptr;
-
-  DisambiguationCandidate* best = (DisambiguationCandidate*)disambiguateByMatch(dctx, candidates, true,
-                                                    ambiguous);
-  MostSpecificCandidates ret = MostSpecificCandidates::getAmbiguous();
-
-  // The common case is that there is no ambiguity because the
-  // return intent overload feature is not used.
-  if (best != nullptr) {
-    ret = MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(dctx.context));
-
-  } else {
-    // Now, if there was ambiguity, find candidates with different
-    // return intent in ambiguousCandidates.
-    // If there is only one of each, we are good to go.
-    int                  nRef              = 0;
-    int                  nConstRef         = 0;
-    int                  nValue            = 0;
-    int                  nOther            = 0;
-    int                  total             = 0;
-
-    DisambiguationCandidate* refCandidate      = NULL;
-    DisambiguationCandidate* constRefCandidate = NULL;
-    DisambiguationCandidate* valueCandidate    = NULL;
-
-    // Count number of candidates in each category.
-    countByReturnIntent(dctx, ambiguous, nRef, nConstRef, nValue, nOther);
-
-    total = nRef + nConstRef + nValue + nOther;
-
-    // 0 or 1 matches -> return now, not a ref pair.
-    if (total <= 1) {
-      ret = MostSpecificCandidates::getAmbiguous();
-
-      // 1 match is possible with best==NULL in cases
-      // where the 'more specific' relation is not transitive.
-
-    } else if (nOther > 0) {
-      ambiguous.clear();
-
-      // If there are *any* type/param candidates, we need to cause ambiguity
-      // if they are not selected... including consideration of where clauses.
-      bestValue  = (DisambiguationCandidate*)disambiguateByMatch(dctx, candidates, false, ambiguous);
-      if (bestValue)
-        ret = MostSpecificCandidates::getOnly(best->toMostSpecificCandidate(dctx.context));
-      else
-        ret = MostSpecificCandidates::getAmbiguous();
-
-    } else {
-      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-        // Split candidates into ref, const ref, and value candidates
-        CandidatesVec refCandidates;
-        CandidatesVec constRefCandidates;
-        CandidatesVec valueCandidates;
-        CandidatesVec tmpAmbiguous;
-
-        // Move candidates to above Vecs according to return intent
-        gatherVecsByReturnIntent(dctx,
-                                 candidates,
-                                 refCandidates,
-                                 constRefCandidates,
-                                 valueCandidates);
-
-        // Disambiguate each group
-        refCandidate      = (DisambiguationCandidate*)disambiguateByMatch(dctx, refCandidates,
-                                                false,
-                                                tmpAmbiguous);
-
-        constRefCandidate = (DisambiguationCandidate*)disambiguateByMatch(dctx, constRefCandidates,
-                                                false,
-                                                tmpAmbiguous);
-
-        valueCandidate    = (DisambiguationCandidate*)disambiguateByMatch(dctx, valueCandidates,
-                                                false,
-                                                tmpAmbiguous);
-        // update the counts
-        if (refCandidate      != NULL) nRef      = 1;
-        if (constRefCandidate != NULL) nConstRef = 1;
-        if (valueCandidate    != NULL) nValue    = 1;
-      }
-
-      // Now we know there are >= 2 matches.
-      // If there are more than 2 matches in any category, fail for ambiguity.
-      if (nRef > 1 || nConstRef > 1 || nValue > 1) {
-        return MostSpecificCandidates::getAmbiguous();
-      } else {
-        ret = gatherByReturnIntent(dctx.context, dctx, ambiguous);
-        // otherwise, there is 1 or fewer match in each category,
-        // so there is no ambiguity.
-        if (refCandidate != nullptr)
-          ret.setBestRef(refCandidate->toMostSpecificCandidate(dctx.context));
-        if (constRefCandidate != nullptr)
-          ret.setBestConstRef(constRefCandidate->toMostSpecificCandidate(dctx.context));
-        if (valueCandidate != nullptr)
-          ret.setBestValue(valueCandidate->toMostSpecificCandidate(dctx.context));
-      }
-    }
-  }
-  return ret;
-}
 
 // Discard any candidate that has a worse argument mapping than another
 // candidate.
@@ -1077,7 +1119,8 @@ static void discardWorseArgs(const DisambiguationContext& dctx,
       // Note that this part is a partial order;
       // in other words, "incomparable" is an option when comparing
       // two candidates.
-      int cmp = compareSpecificity(dctx, *candidate1, *candidate2, i, j, forGenericInit);
+      int cmp = compareSpecificity(dctx, *candidate1, *candidate2, i, j,
+                                   forGenericInit);
 
       if (cmp == 1) {
         EXPLAIN("X: Fn %d is a better match than Fn %d\n\n\n", i, j);
@@ -1180,7 +1223,6 @@ static const Type*
 normalizeTupleTypeToValueTuple(Context* context, const Type* t) {
   if (auto tt = t->toTupleType()) {
     return (const Type*)tt->toValueTuple(context);
-    // return do_computeTupleWithIntent(false, intent, t, NULL, NULL, false);
   }
   return t;
 }
@@ -1266,12 +1308,12 @@ static void computeConversionInfo(const DisambiguationContext& dctx,
       continue;
     }
 
-    // TODO: skipping for now b/c I think this is implemented in canPass
-    //       otherwise need to implement something here still
     // Not counting tuple value vs referential tuple changes
     if (actualType->isTupleType() && formalType->isTupleType()) {
-      const Type* actualNormTup = normalizeTupleTypeToValueTuple(dctx.context, fa1->actualType().type());
-      const Type* formalNormTup = normalizeTupleTypeToValueTuple(dctx.context, fa1->formalType().type());
+      auto actualNormTup = normalizeTupleTypeToValueTuple(dctx.context,
+                                                          fa1->actualType().type());
+      auto formalNormTup = normalizeTupleTypeToValueTuple(dctx.context,
+                                                          fa1->formalType().type());
       if (actualNormTup == formalNormTup) {
         // it is only a change in the tuple ref-ness
         continue;
@@ -1503,11 +1545,11 @@ static int testArgMapping(const DisambiguationContext& dctx,
   // Additionally, ignore the difference between referential tuples
   // and value tuples.
   // TODO: not sure how to reproduce this code in Dyno
-
-  f1Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f1Type.type()));
-  f2Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f2Type.type()));
-  actualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, actualType.type()));
-
+  if (actualType.type()->isTupleType()) {
+    f1Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f1Type.type()));
+    f2Type = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, f2Type.type()));
+    actualType = QualifiedType(QualifiedType::Kind::IN, normalizeTupleTypeToValueTuple(dctx.context, actualType.type()));
+  }
   // TODO: Not sure we still need this here, based on production
   // Initializer work-around: Skip 'this' for generic initializers
   // if (dctx.call->name() == USTR("init") || dctx.call->name() == USTR("init=")) {
