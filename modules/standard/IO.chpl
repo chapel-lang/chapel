@@ -9213,6 +9213,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
     } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
+        // Note: partial reads of values are possible and are currently ignored.
         numRead /= c_sizeof(t): numRead.type;  // convert from #bytes to #elts
       } // else no-op, reading a 0-element array reads nothing
     } else {
