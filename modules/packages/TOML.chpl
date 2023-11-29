@@ -62,7 +62,7 @@ to access to the following TOML file's project name,
      name = "example"
      version = "1.0.0"
 
-Use the following code in chapel.
+Use the following code in Chapel.
 
 .. code-block:: chapel
 

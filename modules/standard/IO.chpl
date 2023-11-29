@@ -2819,7 +2819,7 @@ record defaultSerializer {
         {x = 5, y = 2.0}
 
       :arg writer: The ``fileWriter`` to be used when serializing. Must match
-        the writer used to create current AggregateSerializer.
+                   the writer used to create current AggregateSerializer.
       :arg name: The name of the class type.
       :arg size: The number of fields in the class.
 
@@ -9059,13 +9059,13 @@ proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nat
 }
 
 /*
-   Read a binary number from the ``fileReader``
+  Read a binary number from the ``fileReader``
 
-   :arg arg: number to be read
-   :arg endian: :type:`ioendian` specifies the byte order in which
-                to read the number.
-   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
-             the ``fileReader`` was already at EOF).
+  :arg arg: number to be read
+  :arg endian: :type:`ioendian` specifies the byte order in which
+               to read the number.
+  :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
+            the ``fileReader`` was already at EOF).
 
   :throws UnexpectedEofError: Thrown if EOF was encountered while reading the
                               number.

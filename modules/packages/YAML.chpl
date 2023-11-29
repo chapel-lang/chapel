@@ -88,7 +88,7 @@ module YAML {
   type yamlReader = fileReader(deserializerType=yamlDeserializer, ?);
 
   /*
-  A YAML-format serializer for emitting chapel values in Yaml format
+  A YAML-format serializer for emitting Chapel values in Yaml format
   via the IO module's :record:`~IO.fileWriter` interface
 */
   record yamlSerializer {
