@@ -16,7 +16,7 @@ correctness run, though it can also be configured to test performance, compiler
 performance, memleaks, and several other configurations.
 
 In the following script you'll need to set whatever special ``CHPL_*`` vars are
-required for your testing and at a minimum ``CHPL_NIGHTLY_CRON_RECIPIENT`` and
+required for your testing and at a minimum 
 ``CHPL_NIGHTLY_TEST_CONFIG_NAME``. There are additional configuration variables
 that can be set, but they have pretty sane defaults so they can probably be
 left alone.
