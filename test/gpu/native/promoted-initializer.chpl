@@ -9,4 +9,4 @@ on here.gpus[0] {
 
 stopGpuDiagnostics();
 
-writeln(+ reduce getGpuDiagnostics().kernel_launch);
+assertGpuDiags(kernel_launch=1);
