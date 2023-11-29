@@ -254,9 +254,12 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
+// Generate an unstable warning if a `const` argument would be transformed into
+// `const ref` and the argument is implicitly modified over the course of the
+// function.  We may decide to change this behavior in the future.
 static void warnForConstIntent(ArgSymbol* arg) {
   SET_LINENO(arg);
-  // TODO: wrap in compiler flag
+
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
   if (fn->body->length() == 0) {
     // Exit early if the body is empty - this can happen when
