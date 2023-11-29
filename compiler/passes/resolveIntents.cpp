@@ -254,12 +254,12 @@ IntentTag blankIntentForExternFnArg(Type* type) {
     return INTENT_CONST_IN;
 }
 
-// Add calls to some runtime functions used to determine if a `const` argument
-// that would be transformed into `const ref` is implicitly modified over the
-// course of the function.  We may decide to change this behavior in the future,
-// so want to generate a warning if it occurs (and one of the primitives will
-// handle generating that warning).
-static void warnForConstIntent(ArgSymbol* arg) {
+// Add calls to some runtime functions used to determine if a `const` or blank
+// intent argument that would be transformed into `const ref` is implicitly
+// modified over the course of the function.  We may decide to change this
+// behavior in the future, so want to generate a warning if it occurs (and one
+// of the primitives will handle generating that warning).
+static void warnForInferredConstRef(ArgSymbol* arg) {
   SET_LINENO(arg);
 
   FnSymbol* fn = toFnSymbol(arg->defPoint->parentSymbol);
@@ -346,7 +346,7 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
         // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
         // in a later pass that does more AST transformation.  Potentially
         // callDestructors?
-        warnForConstIntent(arg);
+        warnForInferredConstRef(arg);
       }
     } else if (arg->intent == INTENT_BLANK) {
       // Only warn if the argument intent was going to be converted to `const
@@ -355,7 +355,7 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
         // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
         // in a later pass that does more AST transformation.  Potentially
         // callDestructors?
-        warnForConstIntent(arg);
+        warnForInferredConstRef(arg);
       }
     }
     return concreteIntent(arg->intent, arg->type);
