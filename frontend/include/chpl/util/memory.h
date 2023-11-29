@@ -20,8 +20,10 @@
 #ifndef CHPL_UTIL_MEMORY_H
 #define CHPL_UTIL_MEMORY_H
 
+#include "llvm/Config/llvm-config.h"
+
 #include <memory>
-#if HAVE_LLVM_VER >= 160
+#if LLVM_VERSION_MAJOR >= 16
 #include <optional>
 #else
 #include "llvm/ADT/Optional.h"
@@ -36,7 +38,7 @@ namespace chpl {
  underlying optional types.
  */
 template<typename T>
-#if HAVE_LLVM_VER >= 160
+#if LLVM_VERSION_MAJOR >= 16
 using optional = std::optional<T>;
 #else
 using optional = llvm::Optional<T>;
@@ -46,7 +48,7 @@ using optional = llvm::Optional<T>;
 /**
   This is the "empty" value for the above optional<T> type.
  */
-#if HAVE_LLVM_VER >= 160
+#if LLVM_VERSION_MAJOR >= 16
 static const auto empty = std::nullopt;
 #else
 static const auto empty = llvm::None;
