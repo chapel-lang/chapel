@@ -1734,19 +1734,28 @@ proc norm(x: [], param p = normType.default) {
 }
 
 /*
-  Indicates the different types of norms supported by :proc:`norm`:
-
-    * Default - depends on array dimensions. See :proc:`norm` for details.
-    * 1-norm
-    * 2-norm
-    * Infinity norm
-    * Frobenius norm
- */
+  Indicates the different types of norms supported by :proc:`norm`.
+*/
 enum normType {
+  /*
+    Default - depends on array dimensions. See :proc:`norm` for details.
+  */
   default,
+  /*
+    1-norm
+  */
   norm1,
+  /*
+    2-norm
+  */
   norm2,
+  /*
+    Infinity norm
+  */
   normInf,
+  /*
+    Frobenius norm
+  */
   normFrob
 };
 

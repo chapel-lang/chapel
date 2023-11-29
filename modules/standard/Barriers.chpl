@@ -66,12 +66,18 @@ module Barriers {
 
   /* An enumeration of the different barrier implementations.  Used to choose
      the implementation to use when constructing a new barrier object.
-
-     * `BarrierType.Atomic` uses Chapel atomic variables to control the barrier.
-     * `BarrierType.Sync` uses Chapel sync variables to control the barrier.
   */
   @deprecated(notes="BarrierType is deprecated, please use the default barrier implementation")
-  enum BarrierType {Atomic, Sync}
+  enum BarrierType {
+    /*
+      Use Chapel atomic variables to control the barrier.
+    */
+    Atomic,
+    /*
+      Use Chapel sync variables to control the barrier.
+    */
+    Sync
+  }
 
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   @deprecated(notes="The 'Barrier' type is deprecated, please use 'Collectives.barrier' instead")

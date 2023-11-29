@@ -891,32 +891,37 @@ enum iostringstyleInternal {
 }
 
 /*
-
-This enum contains values used to control text I/O with strings
-via the ``string_format`` field in :record:`iostyle`.
-
-  * ``iostringformat.word`` means string is as-is;
-    reading reads until whitespace. This is the default.
-  * ``iostringformat.basic`` means only escape *string_end* and ``\``
-    with ``\``
-  * ``iostringformat.chpl`` means  escape *string_end*
-    ``\`` ``'`` ``"`` ``\n`` with ``\`` and
-    nonprinting characters ``c = 0xXY`` with ``\xXY``
-  * ``iostringformat.json`` means  escape *string_end* ``"`` and ``\``
-    with ``\``, and nonprinting characters ``c = \uABCD``
-  * ``iostringformat.toend`` means string is as-is; reading reads until
-    *string_end*
-  * ``iostringformat.toeof`` means string is as-is; reading reads until
-    end of file
+  This enum contains values used to control text I/O with strings
+  via the ``string_format`` field in :record:`iostyle`.
 */
 @deprecated
 ("iostringformat is deprecated, please use Serializers or Deserializers instead")
 enum iostringformat {
+  /*
+    Means string is as-is; reading reads until whitespace. This is the default.
+  */
   word = 0,
+  /*
+    Means only escape *string_end* and ``\`` with ``\``.
+  */
   basic = 1,
+  /*
+    Means escape *string_end* ``\`` ``'`` ``"`` ``\n`` with ``\`` and
+    nonprinting characters ``c = 0xXY`` with ``\xXY``.
+  */
   chpl = 2,
+  /*
+    Means escape *string_end* ``"`` and ``\`` with ``\``, and nonprinting
+    characters ``c = \uABCD``.
+  */
   json = 3,
+  /*
+    Means string is as-is; reading reads until *string_end*.
+  */
   toend = 4,
+  /*
+    Means string is as-is; reading reads until end of file.
+  */
   toeof = 5,
 }
 
