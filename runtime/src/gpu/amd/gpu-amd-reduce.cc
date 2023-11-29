@@ -49,13 +49,14 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   ROCM_CALL(hipMalloc(&result, sizeof(data_type)));\
   void* temp = NULL; \
   size_t temp_bytes = 0; \
-  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (data_type*)result, n,\
-                                  0, true));\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
+                                            (data_type*)result, n));\
   ROCM_CALL(hipMalloc(((hipDeviceptr_t*)&temp), temp_bytes)); \
-  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (data_type*)result, n,\
-                                  0, true));\
+  ROCM_CALL(hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, \
+                                            (data_type*)result, n));\
   ROCM_CALL(hipMemcpyDtoHAsync(val, result, sizeof(data_type),\
                               (hipStream_t)stream)); \
+  ROCM_CALL(hipFree(result)); \
 }
 #else
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \
@@ -72,7 +73,7 @@ GPU_IMPL_REDUCE(DEF_ONE_REDUCE_RET_VAL, Max, max)
 
 #undef DEF_ONE_REDUCE_RET_VAL
 
-#if 1
+#if 0
 #define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
@@ -80,14 +81,26 @@ void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
   chpl_internal_error("This function shouldn't have been called. Reduction is not supported with AMD GPUs\n");\
 }
 #else
-#define DEF_ONE_REDUCE_RET_VAL_IDX(cub_kind, chpl_kind, data_type) \
+#define DEF_ONE_REDUCE_RET_VAL_IDX(impl_kind, chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\
                                                     void* stream) {\
-  // TODO I don't know any other specific issues with these versions. Should be
-  // able to whip up the implementation quickly once we figure out what's going
-  // wrong here.
-  chpl_internal_error("Unimplemented");
+  using kvp = hipcub::KeyValuePair<int,data_type>; \
+  kvp* result; \
+  ROCM_CALL(hipMalloc(&result, sizeof(kvp))); \
+  void* temp = NULL; \
+  size_t temp_bytes = 0; \
+  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
+                                  (hipStream_t)stream);\
+  ROCM_CALL(hipMalloc(&temp, temp_bytes)); \
+  hipcub::DeviceReduce::impl_kind(temp, temp_bytes, data, (kvp*)result, n,\
+                                  (hipStream_t)stream);\
+  kvp result_host; \
+  ROCM_CALL(hipMemcpyDtoHAsync(&result_host, result, sizeof(kvp),\
+                               (hipStream_t)stream)); \
+  *val = result_host.value; \
+  *idx = result_host.key; \
+  ROCM_CALL(hipFree(result)); \
 }
 #endif // 1
 
