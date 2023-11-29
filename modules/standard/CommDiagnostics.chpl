@@ -348,22 +348,30 @@ module CommDiagnostics
 
   commDiagnostics implements writeSerializable;
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerboseHere(stacktrace: bool,
                                                  print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnosticsHere();
 
   private extern proc chpl_comm_resetDiagnosticsHere();
@@ -373,52 +381,52 @@ module CommDiagnostics
   /*
     Start on-the-fly reporting of communication initiated on any locale.
    */
-  proc startVerboseComm() {
+  inline proc startVerboseComm() {
     chpl_comm_startVerbose(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of communication initiated on any locale.
    */
-  proc stopVerboseComm() { chpl_comm_stopVerbose(); }
+  inline proc stopVerboseComm() { chpl_comm_stopVerbose(); }
 
   /*
     Start on-the-fly reporting of communication initiated on this locale.
    */
-  proc startVerboseCommHere() {
+  inline proc startVerboseCommHere() {
     chpl_comm_startVerboseHere(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of communication initiated on this locale.
    */
-  proc stopVerboseCommHere() { chpl_comm_stopVerboseHere(); }
+  inline proc stopVerboseCommHere() { chpl_comm_stopVerboseHere(); }
 
   /*
     Start counting communication operations across the whole program.
    */
-  proc startCommDiagnostics() {
+  inline proc startCommDiagnostics() {
     chpl_comm_startDiagnostics(commDiagsPrintUnstable);
   }
 
   /*
     Stop counting communication operations across the whole program.
    */
-  proc stopCommDiagnostics() {
+  inline proc stopCommDiagnostics() {
     chpl_comm_stopDiagnostics();
   }
 
   /*
     Start counting communication operations initiated on this locale.
    */
-  proc startCommDiagnosticsHere() {
+  inline proc startCommDiagnosticsHere() {
     chpl_comm_startDiagnosticsHere(commDiagsPrintUnstable);
   }
 
   /*
     Stop counting communication operations initiated on this locale.
    */
-  proc stopCommDiagnosticsHere() {
+  inline proc stopCommDiagnosticsHere() {
     chpl_comm_stopDiagnosticsHere();
   }
 
