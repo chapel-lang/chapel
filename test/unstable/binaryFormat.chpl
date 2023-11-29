@@ -1,6 +1,8 @@
 
 use IO;
 
+use ObjectSerialization;
+
 class C {
   var x : int;
 }

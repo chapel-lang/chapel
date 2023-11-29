@@ -1,10 +1,11 @@
-binaryFormat.chpl:8: In function 'main':
-binaryFormat.chpl:14: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
+binaryFormat.chpl:4: warning: The ObjectSerialization module is unstable. The module's name, its types, and serialization format are subject to change.
+binaryFormat.chpl:10: In function 'main':
+binaryFormat.chpl:16: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method 'write':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  binaryFormat.chpl:15: called as (fileWriter(true,binarySerializer)).write(args(0): string)
-binaryFormat.chpl:8: In function 'main':
-binaryFormat.chpl:21: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
+  binaryFormat.chpl:17: called as (fileWriter(true,binarySerializer)).write(args(0): string)
+binaryFormat.chpl:10: In function 'main':
+binaryFormat.chpl:23: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: In method '_readInner':
 $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(false,binaryDeserializer))._readInner(args(0): borrowed C) from method 'read'
@@ -14,9 +15,9 @@ $CHPL_HOME/modules/standard/IO.chpl:nnnn: warning: binary(De)Serializer's format
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as binaryDeserializer.deserializeValue(reader: fileReader(false,binaryDeserializer), val: owned C) from method '_deserializeOne'
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._deserializeOne(x: owned C, loc: locale) from method '_readInner'
   $CHPL_HOME/modules/standard/IO.chpl:nnnn: called as (fileReader(true,binaryDeserializer))._readInner(args(0): owned C) from method 'read'
-  binaryFormat.chpl:21: called as (fileReader(true,binaryDeserializer)).read(args(0): owned C)
-binaryFormat.chpl:8: In function 'main':
-binaryFormat.chpl:36: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
+  binaryFormat.chpl:23: called as (fileReader(true,binaryDeserializer)).read(args(0): owned C)
+binaryFormat.chpl:10: In function 'main':
+binaryFormat.chpl:38: warning: binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
 ----- WRITING -----
 ----- READ BY VALUE -----
 string error: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.
