@@ -1,0 +1,3 @@
+ConsecutiveDecls.chpl:3: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:6: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:19: node violates rule ConsecutiveDecls

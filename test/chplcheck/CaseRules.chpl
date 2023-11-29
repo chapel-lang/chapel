@@ -1,7 +1,7 @@
 module CaseRules {
     var camelVar: int;
-    var PascalVar: int;
-    var snake_var: int;
+    const PascalVar: real;
+    var snake_var: string;
 
     record camelRecord {
         proc camelCaseMethod() {return 0;}
@@ -11,7 +11,7 @@ module CaseRules {
     record PascalRecord {}
     record snake_record {
         var camelField, anotherCamelField: int;
-        var camelField2, PascalField: real;
+        const camelField2, PascalField: real;
         var camelField3, snake_field: string;
     }
 
@@ -19,8 +19,8 @@ module CaseRules {
     proc PascalProc() {return 0;}
     proc snake_proc() {
         var camelVar: int;
-        var PascalVar: int;
-        var snake_var: int;
+        const PascalVar: real;
+        var snake_var: string;
         return 0;
     }
 
@@ -35,4 +35,7 @@ module CaseRules {
     class camelClass {}
     class PascalClass {}
     class snake_class {}
+
+    var snake_CapVar: real;
+    const snake_Var: string;
 }
