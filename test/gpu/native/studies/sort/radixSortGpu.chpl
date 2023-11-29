@@ -4,6 +4,7 @@ module RadixSort {
   import Time;
   use GPU;
 
+  config param useGpuId = 0;
   config const noisy = false;
   config const bitsAtATime = 16; // 1-8 are all reasonable values
                                 // but for some reason 16 performs best.
@@ -12,10 +13,10 @@ module RadixSort {
                                 // since its a nice even factor and causes
                                 // only 4 iterations of a single radix sort step
 
-  private proc arrCountAndScan(ref count: [?D] uint, ref inputArr: [] uint, exp: int, bitMask: int){
+  private proc arrCountAndScan(ref count : [?D] uint, ref inputArr : [] uint, exp : int, bitMask : int) {
     // Count the number of occurrences of each bitsAtATime-bit chunk in the array
     // at the current exp position
-    on here.gpus[0]{
+    on here.gpus[useGpuId]{
       var gpuCount : [D] uint; // Initialized all 0s
       var gpuInputArr = inputArr;
       @assertOnGpu
@@ -30,43 +31,32 @@ module RadixSort {
     }
   }
 
-  proc atomicRadixSort(ref inputArr: [] uint){
+  proc atomicRadixSort(ref inputArr : [] uint) {
     const buckets = 1 << bitsAtATime; // 2^bitsAtATime, ex: 2^4 = 16 = 0b10000
     const bitMask = buckets - 1; // 2^bitsAtATime - 1, ex: 2^4 - 1 = 15 = 0b1111
 
-    if (noisy){
+    if noisy {
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
         writeln("Bit mask: ", bitMask);
     }
 
     // Create the output array and copy input
-    var outputArr: [0..<inputArr.size] uint;
+    var outputArr : [0..<inputArr.size] uint;
 
     // Create the count and prefix sum arrays once
     // This was we can reuse it for each iteration of radix Sort
-    var prefixSum: [0..<buckets] uint;
+    var prefixSum : [0..<buckets] uint;
 
     // Ceiling on number of iterations based on max element in array
-    var maxVal =  max(uint);
-    // Reduce can be used to do this faster
-    // We do this because the preferred ways below either don't work
-    // or take too long
-    // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
-    // var maxVal = max reduce inputArr; // Doesn't work actually
-    // var maxVal = inputArr[0]; // Takes toooo long
-    // for i in 1..<inputArr.size {
-    //   if inputArr[i] > maxVal {
-    //     maxVal = inputArr[i];
-    //   }
-    // }
+    var maxVal = max reduce inputArr;
 
     // Number of iterations is the number of bits in the max element divided by number of bits we sort at a time
     var exp = 0;
-    while (maxVal> 0){
-      if(noisy) then writeln("       Exp: ", exp);
+    while maxVal > 0 {
+      if noisy then writeln("       Exp: ", exp);
 
-      var timer: Time.stopwatch;
+      var timer : Time.stopwatch;
       timer.start();
       arrCountAndScan(prefixSum, inputArr, exp, bitMask);
       timer.stop();
@@ -78,7 +68,7 @@ module RadixSort {
       // and placing each element in the correct position in the output array
       timer.clear();
       timer.start();
-      for i in inputArr.dim(0){
+      for i in inputArr.dim(0) {
         const idx = ((inputArr[i]>>exp) & bitMask):int;
         outputArr[prefixSum[idx]:int] = inputArr[i];
         prefixSum[idx] += 1;
@@ -101,21 +91,22 @@ module RadixSort {
 module SortTest {
   use GpuDiagnostics;
   use RadixSort;
+
   config const arrSize = 100;
   config const validate = true;
   config const printArr = false;
   config const perftest = false;
   config const gpuDiags = false;
+  config const atomicSort = false;
   config const verboseGpu = false;
-  config const parallel = false;
 
-  proc checkSorted(arr: [] uint) {
+  proc checkSorted(arr : [] uint) {
     for i in 0..<arr.size-1 {
       if arr[i] > arr[i+1] {
         writeln("Not sorted");
         return;
       }
-      if arr[i]==0 {
+      if arr[i] == 0 {
         writeln("Zero");  // sanity check. This should *not* happen
                           //based on our random seed
         return;
@@ -139,17 +130,16 @@ module SortTest {
 
     if printArr then writeln(arr);
 
-    if parallel then on here.gpus[0]{
+    if atomicSort then {
+      timer.start();
+      RadixSort.atomicRadixSort(arr);
+      timer.stop();
+    } else on here.gpus[useGpuId] {
       var gpuArr = arr; // Copy to GPU
       timer.start();
       GpuSort.sort(gpuArr);
       timer.stop();
       arr = gpuArr; // Copy back to CPU
-    }
-    else {
-      timer.start();
-      RadixSort.atomicRadixSort(arr);
-      timer.stop();
     }
 
     if printArr then writeln(arr);
@@ -158,12 +148,12 @@ module SortTest {
     if verboseGpu then stopVerboseGpu();
     if gpuDiags then {
       stopGpuDiagnostics();
-      if parallel == true then
-        assertGpuDiags(kernel_launch_aod=225, kernel_launch_um=201, host_to_device=9,
-                       device_to_host=1, device_to_device=184);
-      else
+      if atomicSort then
         assertGpuDiags(kernel_launch_aod=52, kernel_launch_um=44, host_to_device=8,
                        device_to_host=4, device_to_device=32);
+      else
+        assertGpuDiags(kernel_launch_aod=225, kernel_launch_um=201, host_to_device=9,
+                       device_to_host=1, device_to_device=184);
     }
   }
 }

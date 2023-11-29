@@ -49,8 +49,8 @@ module GpuSort
          writeln(Arr); // [1, 2, 3, 4, 5]
        }
   */
-  proc sort(ref gpuInputArr: [] uint) {
-    if(!here.isGpu()) then halt("GpuSort.sort must be run on a gpu locale");
+  proc sort(ref gpuInputArr : [] uint) {
+    if !here.isGpu() then halt("GpuSort.sort must be run on a gpu locale");
 
     if gpuInputArr.size == 0 then return;
     // Based on the inputArr size, get a chunkSize such that numChunks is on the order of thousands
@@ -61,7 +61,7 @@ module GpuSort
 
   // We no doc it so we can test this independently to simulate all cases that can happen with sort
   @chpldoc.nodoc
-  proc parallelRadixSort(ref gpuInputArr: [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
+  proc parallelRadixSort(ref gpuInputArr : [] uint, const bitsAtATime : int = 8, const chunkSize : int = 512, const noisy : bool = false,
                          const distributed : bool = false) { // The last argument is for multi GPU sort that is pending a patch before it can work
 
     // How many bits we sort at once based on the bitsAtATime
@@ -75,11 +75,10 @@ module GpuSort
     // TODO: make up some heuristic to chose a good chunkSize and numChunks?
 
 
-    if (noisy){
+    if noisy {
         writeln("Bits at a time: ", bitsAtATime);
         writeln("Buckets: ", buckets);
         writeln("Bit mask: ", bitMask);
-        // writeln("Input: ", gpuInputArr);
         writeln("Chunk Size: ", chunkSize);
         writeln("Num Chunks: ", numChunks);
     }
@@ -88,18 +87,17 @@ module GpuSort
     // we create the prefixSum arrays, one for each chunk
     // And we only create it once
     // This was we can reuse it for each iteration of radix Sort
-    var prefixSums: [0..<numChunks*buckets] uint;
+    var prefixSums : [0..<numChunks*buckets] uint;
 
-    var timer: Time.stopwatch;
+    var timer : Time.stopwatch;
     // Ceiling on number of iterations based on max element in array
     timer.start();
     var maxVal = max(uint);
     // Reduce can be used to do this faster
-    // We do this because the preferred ways below either don't work
-    // or take too long
+    // We do this because the preferred ways below either don't work or take too long
     // But I'm leaving this as is due to https://github.com/chapel-lang/chapel/issues/22736
-    // var maxVal = max reduce gpuInputArr; // Doesn't work actually
-    // var maxVal = gpuInputArr[0]; // Takes toooo long
+    // var maxVal = max reduce gpuInputArr;
+    // var maxVal = gpuInputArr[0]; // Takes toooo long for GPU Arrays
     // for i in 1..<gpuInputArr.size {
     //   if gpuInputArr[i] > maxVal {
     //     maxVal = gpuInputArr[i];
@@ -111,8 +109,8 @@ module GpuSort
 
     // Number of iterations is the number of bits in the max element divided by number of bits we sort at a time
     var exp = 0;
-    while (maxVal> 0){
-      if(noisy) then writeln("       Exp: ", exp);
+    while maxVal> 0 {
+      if noisy then writeln("       Exp: ", exp);
 
       // Each chunk maintains it's own count array (here it's called prefixSum)
       // First we do the counts in parallel
@@ -161,11 +159,11 @@ module GpuSort
     }
   }
 
-  private proc parallelCount(ref gpuCounts: [], ref gpuInputArr: [] uint, const exp: int,
-                    const bitMask: int, const chunkSize: int,
-                    const numChunks: int,  const numChunksThisGpu : int = numChunks,
-                    const startChunk: int = 0,
-                    const gpuId: int = 0, const resetCountsArray = true){
+  private proc parallelCount(ref gpuCounts : [], ref gpuInputArr : [] uint, const exp : int,
+                    const bitMask : int, const chunkSize : int,
+                    const numChunks : int,  const numChunksThisGpu : int = numChunks,
+                    const startChunk : int = 0,
+                    const gpuId : int = 0, const resetCountsArray = true) {
 
     // Instead of using a nested array of arrays, use a simple 1D array of
     // size numChunks*buckets which is a column major representation
@@ -196,8 +194,8 @@ module GpuSort
 
   // Multi GPU Experimental function
   // This won't work for now since it wasn't updated with the modularization of radix sort
-  private proc distributedCount(ref counts: [], ref gpuInputArr: [] uint, const exp: int, const bitMask: int,
-                        const numChunks: int, const numGpus : int ) {
+  private proc distributedCount(ref counts : [], ref gpuInputArr : [] uint, const exp : int, const bitMask : int,
+                        const numChunks : int, const numGpus : int ) {
     // Counts should be all 0s
     // counts = 0;
 
@@ -207,7 +205,7 @@ module GpuSort
 
     // Distribute the counts across the GPUs
     for gpu in 0..<numGpus {
-      const numChunksThisGpu = if (gpu==numGpus-1) then numChunksPerGpuLast else numChunksPerGpu;
+      const numChunksThisGpu = if gpu == numGpus-1 then numChunksPerGpuLast else numChunksPerGpu;
       const startChunk = gpu*numChunksPerGpu;
 
       // Distributing the counts across the GPUs
@@ -234,9 +232,9 @@ module GpuSort
     }
   }
 
-  private proc parallelScatter(ref gpuOffsets: [], ref gpuInputArr: [] uint,
-                       const exp: int, const bitMask: int,
-                       const chunkSize: int, const numChunks: int){
+  private proc parallelScatter(ref gpuOffsets : [], ref gpuInputArr : [] uint,
+                       const exp : int, const bitMask : int,
+                       const chunkSize : int, const numChunks : int) {
 
     var gpuOutputArr : gpuInputArr.type;
     const arrSize = gpuInputArr.size;

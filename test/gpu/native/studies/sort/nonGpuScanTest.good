@@ -1,1 +1,1 @@
-scanTest.chpl:14: error: halt reached - gpuScan must be run on a gpu locale
+scanTest.chpl:15: error: halt reached - gpuScan must be run on a gpu locale

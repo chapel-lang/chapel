@@ -670,10 +670,10 @@ module GPU
          writeln(Arr); // [0, 3, 5, 6, 11]
        }
   */
-  proc gpuScan(ref gpuArr: [] ?t) where isNumericType(t) && !isComplexType(t) {
-    if(!here.isGpu()) then halt("gpuScan must be run on a gpu locale");
+  proc gpuScan(ref gpuArr : [] ?t) where isNumericType(t) && !isComplexType(t) {
+    if !here.isGpu()  then halt("gpuScan must be run on a gpu locale");
     if gpuArr.size==0 then return;
-    if(gpuArr.rank > 1) then compilerError("gpuScan only supports 1D arrays");
+    if gpuArr.rank > 1 then compilerError("gpuScan only supports 1D arrays");
 
     // Use a simple algorithm for small arrays
     // TODO check the actual thread block size rather than 2*default
@@ -692,14 +692,14 @@ module GPU
       singleBlockScan(arr);
 
       // Copy back
-      gpuArr=arr[0..<gpuArr.size];
+      gpuArr = arr[0..<gpuArr.size];
     } else {
       // We use a parallel scan algorithm for large arrays
       parallelArrScan(gpuArr);
     }
   }
 
-  private proc singleBlockScan(ref gpuArr: [] ?t) {
+  private proc singleBlockScan(ref gpuArr : [] ?t) {
     // Hillis Steele Scan is better if we can scan in
     // a single thread block
     // TODO check the actual thread block size rather than the default
@@ -709,7 +709,7 @@ module GPU
       blellochScan(gpuArr);
   }
 
-  private proc parallelArrScan(ref gpuArr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+  private proc parallelArrScan(ref gpuArr : [] ?t) where isNumericType(t) && !isComplexType(t) {
     // Divide up the array into chunks of a reasonable size
     // For our default, we choose our default block size which is 512
     const scanChunkSize = DefaultGpuBlockSize;
@@ -723,15 +723,15 @@ module GPU
     // Allocate an accumulator array
     var gpuScanArr : [0..<numScanChunks] t;
     const low = gpuArr.domain.low; // https://github.com/chapel-lang/chapel/issues/22433
-
     const ceil = gpuArr.domain.high;
+
     // In parallel: For each chunk we do an in lane serial scan
     @assertOnGpu
     foreach chunk in 0..<numScanChunks {
       const start = low+chunk*scanChunkSize;
       const end = min(ceil, start+scanChunkSize-1);
-      gpuScanArr[chunk] = gpuArr[end]; // Save the last element before the scan overwrites it
-      serialScan(gpuArr, start, end); // Exclusive scan in serial
+      gpuScanArr[chunk] = gpuArr[end];  // Save the last element before the scan overwrites it
+      serialScan(gpuArr, start, end);   // Exclusive scan in serial
       gpuScanArr[chunk] += gpuArr[end]; // Save inclusive scan in the scan Arr
 
     }
@@ -748,7 +748,7 @@ module GPU
       }
   }
 
-  private proc roundToPowerof2(const x: uint) {
+  private proc roundToPowerof2(const x : uint) {
     // Powers of two only have the highest bit set.
     // Power of two minus one will have all bits set except the highest.
     // & those two together should give us 0;
@@ -764,13 +764,12 @@ module GPU
 
   // This function requires that startIdx and endIdx are within the bounds of the array
   // it checks that only if boundsChecking is true (i.e. NOT with --fast or --no-checks)
-  private proc serialScan(ref arr: [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high){
+  private proc serialScan(ref arr : [] ?t, startIdx = arr.domain.low, endIdx = arr.domain.high) {
     // Convert this count array into a prefix sum
     // This is the same as the count array, but each element is the sum of all previous elements
     // This is an exclusive scan
     // Serial implementation
-    if boundsChecking then
-      assert(startIdx >= arr.domain.low && endIdx <= arr.domain.high);
+    if boundsChecking then assert(startIdx >= arr.domain.low && endIdx <= arr.domain.high);
     // Calculate the prefix sum
     var sum : t = 0;
     for i in startIdx..endIdx {
@@ -780,14 +779,14 @@ module GPU
     }
   }
 
-  private proc hillisSteeleScan(ref arr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+  private proc hillisSteeleScan(ref arr : [] ?t) where isNumericType(t) && !isComplexType(t) {
     // Hillis Steele Scan
     // This is the same as the count array, but each element is the sum of all previous elements
     // Uses a naive algorithm that does O(nlogn) work
     // Hillis and Steele (1986)
     const x = arr.size;
-    if(x== 0) then return;
-    if (x & (x - 1)) !=0 then {
+    if x == 0 then return;
+    if (x & (x - 1)) != 0 then {
       halt("Hillis Steele Scan only works for arrays of size a power of two.");
     }
 
@@ -811,15 +810,15 @@ module GPU
     arr[arr.domain.low] = 0;
   }
 
-  private proc blellochScan(ref arr: [] ?t) where isNumericType(t) && !isComplexType(t) {
+  private proc blellochScan(ref arr : [] ?t) where isNumericType(t) && !isComplexType(t) {
     // Blelloch Scan
     // This is the same as the count array, but each element is the sum of all previous elements
     // Uses a more efficient algorithm that does O(n) work
     // Blelloch (1990)
 
     const x = arr.size;
-    if(x== 0) then return;
-    if (x & (x - 1)) !=0 then {
+    if x == 0 then return;
+    if (x & (x - 1)) != 0 then {
       halt("Blelloch Scan only works for arrays of size a power of two.");
     }
 
