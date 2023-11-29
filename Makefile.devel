@@ -25,6 +25,9 @@ develall:
 docs: chpldoc man-chpl man-chpldoc
 	cd doc && $(MAKE) docs
 
+docs-only:
+	cd doc && $(MAKE) docs
+
 checkdocs: FORCE
 	cd doc && $(MAKE) checkdocs
 
