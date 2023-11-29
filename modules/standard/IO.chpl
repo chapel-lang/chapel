@@ -5775,6 +5775,7 @@ This function is equivalent to calling :proc:`open` and then
             point.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg deserializer: deserializer to use when reading.
 :returns: an open fileReader to the requested resource.
 
 .. warning::
@@ -5845,6 +5846,7 @@ This function is equivalent to calling :proc:`open` with ``ioMode.cwr`` and then
               can improve performance.
 :arg hints: optional argument to specify any hints to the I/O system about
             this file. See :record:`ioHintSet`.
+:arg serializer: serializer to use when writing.
 :returns: an open fileWriter to the requested resource.
 
 :throws FileNotFoundError: Thrown if part of the provided path did not exist
@@ -5928,6 +5930,7 @@ config param useNewFileReaderRegionBounds = true;
                See :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the fileReader to use the hints provided when the
                file was opened.
+   :arg deserializer: deserializer to use when reading.
 
    .. warning::
 
@@ -6053,6 +6056,7 @@ config param useNewFileWriterRegionBounds = true;
                See :record:`ioHintSet`. The default value of `ioHintSet.empty`
                will cause the fileWriter to use the hints provided when the
                file was opened.
+   :arg serializer: serializer to use when writing.
 
    .. warning::
 
@@ -7899,7 +7903,7 @@ proc fileReader.readThrough(separator: string, ref s: string, maxSize=-1, stripS
   more details.
 
   :arg separator: The separator to match with.
-  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of codepoints to read. For the default value
                 of ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned ``bytes``.
@@ -8578,7 +8582,7 @@ proc fileReader.readCodepoint(): int throws {
 /*
   Read a single Unicode codepoint from a ``fileReader``
 
-  :arg c: where to store the read codepoint
+  :arg codepoint: where to store the read codepoint
   :returns: ``true`` if the codepoint was read, and ``false`` otherwise (i.e.,
             the ``fileReader`` was already at EOF).
 

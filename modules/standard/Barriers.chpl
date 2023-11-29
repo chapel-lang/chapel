@@ -90,7 +90,6 @@ module Barriers {
     /* Construct a new barrier object.
 
        :arg numTasks: The number of tasks that will use this barrier
-       :arg barrierType: The barrier implementation to use
        :arg reusable: Incur some extra overhead to allow reuse of this barrier?
 
     */

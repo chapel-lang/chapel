@@ -162,6 +162,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(type eltType, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(eltType);
@@ -183,6 +186,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: list(?t), param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);
@@ -207,6 +213,9 @@ module UnrolledLinkedList {
 
       :arg parSafe: If `true`, this unrolledLinkedList will use parallel safe operations.
       :type parSafe: `param bool`
+
+      :arg nodeCapacity: The capacity of one linked node of this unrolledLinkedList.
+      :type nodeCapacity: `int`
     */
     proc init(other: [?d] ?t, param parSafe=false, nodeCapacity: int = 32) {
       _checkType(t);

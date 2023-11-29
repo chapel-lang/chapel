@@ -125,7 +125,7 @@ module URL {
 
   Open a fileWriter to a particular URL.
 
-  :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
+  :arg url: which url to open (for example, "ftp://127.0.0.1/upload/test.txt")
   :arg locking: compile-time argument to determine whether or not the
                 fileWriter should use locking; sets the
                 corresponding parameter of the :record:`~IO.fileWriter` type.

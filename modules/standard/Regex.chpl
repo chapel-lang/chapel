@@ -924,8 +924,8 @@ record regex : serializable {
      the text or ``maxMatches`` is reached.
 
      :arg text: the string or bytes to search
-     :arg captures: (compile-time constant) the size of the captures to return
-     :arg maxmatches: the maximum number of matches to return
+     :arg numCaptures: (compile-time constant) the size of the captures to return
+     :arg maxMatches: the maximum number of matches to return
      :yields: tuples of :record:`regexMatch` objects, the 1st is always
               the match for the whole pattern and the rest are the capture groups.
    */
@@ -1367,7 +1367,7 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   more details.
 
   :arg separator: The :type:`~Regex.regex` separator to match with.
-  :arg s: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
+  :arg b: The :type:`~Bytes.bytes` to read into. Contents will be overwritten.
   :arg maxSize: The maximum number of bytes to read. For the default value of
     ``-1``, this method can read until EOF.
   :arg stripSeparator: Whether to strip the separator from the returned

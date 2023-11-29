@@ -216,8 +216,8 @@ module Set {
       set, it will not be added again. The formal `iterable` must be a type
       with an iterator named "these" defined for it.
 
+      :arg eltType: The type of the elements of this set.
       :arg iterable: A collection of elements to add to this set.
-      :arg parSafe: If `true`, this set will use parallel safe operations.
       :arg resizeThreshold: Fractional value that specifies how full this map
                             can be before requesting additional memory.
       :arg initialCapacity: Integer value that specifies starting map size. The

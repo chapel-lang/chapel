@@ -180,7 +180,7 @@ module Channel {
     /*
      Initialize a channel
 
-     :arg elt: The element type used for sending and receiving
+     :arg eltType: The element type used for sending and receiving
      :type elt: `type`
 
      :arg size: Specify the maximum capacity for the channel ``bufferSize``.

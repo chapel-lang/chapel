@@ -187,9 +187,6 @@ module Map {
 
       :arg other: The map to initialize from.
       :type other: map
-
-      :arg parSafe: If `true`, this map will use parallel safe operations.
-      :type parSafe: bool
     */
     proc init=(ref other: map(?kt, ?vt, ?ps)) lifetime this < other {
 
