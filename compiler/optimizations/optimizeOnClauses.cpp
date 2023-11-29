@@ -324,6 +324,10 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_BREAKPOINT:
     return FAST_AND_LOCAL;
 
+  case PRIM_CONST_ARG_HASH:
+  case PRIM_CHECK_CONST_ARG_HASH:
+    return FAST_AND_LOCAL;
+
   // no default, so that it is usually a C compilation
   // error when a primitive is added but not included here.
   }

@@ -54,6 +54,7 @@ extern bool fIgnoreNilabilityErrors;
 extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
+extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;

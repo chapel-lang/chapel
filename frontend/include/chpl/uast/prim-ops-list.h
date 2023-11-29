@@ -398,3 +398,6 @@ PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
 PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")
 
 PRIMITIVE_G(BREAKPOINT, "breakpoint")
+
+PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
+PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")

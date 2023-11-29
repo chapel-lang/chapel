@@ -336,6 +336,11 @@ OPTIONS
     Enable [disable] run-time checks in safeCast calls for casts that
     wouldn't preserve the logical value being cast.
 
+**\--[no-]const-arg-checks**
+
+    Enable [disable] const argument checks (only when --warn-unstable is also
+    used)
+
 **\--[no-]div-by-zero-checks**
 
     Enable [disable] run-time checks in integer division and modulus operations
