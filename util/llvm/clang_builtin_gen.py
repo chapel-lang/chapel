@@ -141,7 +141,7 @@ class ClangLibBuiltin(ClangBuiltin):
 
 def parseLibBuiltin(b):
     regex = re.compile(
-        r"LIBBUILTIN\((?P<name>\w+)[, ]+\"(?P<type>[\w*.]+)\"[, ]+\"(?P<attrs>[\w+:]+)\"[, ]+\"(?P<header>[\w./-]+)\"[, ]+(?P<langs>\w+)\)")
+        r"LIBBUILTIN\((?P<name>\w+)[, ]+\"(?P<type>[\w*.]+)\"[, ]+\"(?P<attrs>[\w+:]+)\"[, ]+(?P<header>[\w./-]+)[, ]+(?P<langs>\w+)\)")
     result = regex.match(b)
     if(result):
         d = result.groupdict()
