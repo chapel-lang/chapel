@@ -138,22 +138,30 @@ module GpuDiagnostics
     assert(success, "GPU Diagnostics assertion failed");
   }
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerboseHere(stacktrace: bool,
                                                 print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnosticsHere();
 
   private extern proc chpl_gpu_resetDiagnosticsHere();
@@ -163,26 +171,26 @@ module GpuDiagnostics
   /*
     Start on-the-fly reporting of GPU operations initiated on any locale.
    */
-  proc startVerboseGpu() {
+  inline proc startVerboseGpu() {
     chpl_gpu_startVerbose(gpuDiagsStacktrace, gpuDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of GPU operations initiated on any locale.
    */
-  proc stopVerboseGpu() { chpl_gpu_stopVerbose(); }
+  inline proc stopVerboseGpu() { chpl_gpu_stopVerbose(); }
 
   /*
     Start counting GPU operations across the whole program.
    */
-  proc startGpuDiagnostics() {
+  inline proc startGpuDiagnostics() {
     chpl_gpu_startDiagnostics(gpuDiagsPrintUnstable);
   }
 
   /*
     Stop counting GPU operations across the whole program.
    */
-  proc stopGpuDiagnostics() {
+  inline proc stopGpuDiagnostics() {
     chpl_gpu_stopDiagnostics();
   }
 
