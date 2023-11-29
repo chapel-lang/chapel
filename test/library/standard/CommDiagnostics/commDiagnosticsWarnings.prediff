@@ -1,0 +1,5 @@
+#!/bin/bash
+
+# get rid of the 'executeOn' lines from verboseComm
+cat $2 | grep -v 'executeOn' > $2.prediff.tmp
+mv $2.prediff.tmp $2
