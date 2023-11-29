@@ -106,13 +106,6 @@ struct DisambiguationState {
 
 using CandidatesVec = std::vector<const DisambiguationCandidate*>;
 
-enum MoreVisibleResult {
-  FOUND_F1_FIRST,
-  FOUND_F2_FIRST,
-  FOUND_BOTH,
-  FOUND_NEITHER
-};
-
 #ifdef ENABLE_TRACING_OF_DISAMBIGUATION
 
 #define EXPLAIN(...) \
@@ -696,33 +689,6 @@ static int testOpArgMapping(const DisambiguationContext& dctx,
 
 }
 
-
-static MoreVisibleResult
-checkVisibilityInVec(Context* context,
-                     const std::vector<BorrowedIdsWithName>& vec,
-                     ID fn1Id,
-                     ID fn2Id) {
-  bool found1 = false;
-  bool found2 = false;
-  for (const auto& borrowedIds : vec) {
-    for (const auto& id : borrowedIds) {
-      if (id == fn1Id) found1 = true;
-      if (id == fn2Id) found2 = true;
-    }
-  }
-
-  if (found1 || found2) {
-    if (found1 && found2)
-      return MoreVisibleResult::FOUND_BOTH;
-    if (found1)
-      return MoreVisibleResult::FOUND_F1_FIRST;
-    if (found2)
-      return MoreVisibleResult::FOUND_F2_FIRST;
-  }
-
-  return MoreVisibleResult::FOUND_NEITHER;
-}
-
 //
 // helper routines for isMoreVisible (below);
 //
@@ -913,53 +879,6 @@ static void disambiguateDiscarding(const DisambiguationContext&   dctx,
     // This filter should not be applied to method calls.
     discardWorseVisibility(dctx, candidates, discarded);
   }
-}
-
-static MoreVisibleResult
-computeIsMoreVisible(Context* context,
-                     UniqueString callName,
-                     const Scope* callInScope,
-                     ID fn1Id,
-                     ID fn2Id) {
-
-  // TODO: This might be over-simplified -- see issue #19167
-
-  // In both cases, include methods since they're considered for candidate
-  // search.
-  LookupConfig onlyDecls = LOOKUP_DECLS | LOOKUP_METHODS;
-  LookupConfig importAndUse = LOOKUP_IMPORT_AND_USE | LOOKUP_METHODS;
-
-  // Go up scopes to figure out which of the two IDs is
-  // declared first / innermost
-  for (auto curScope = callInScope;
-       curScope != nullptr;
-       curScope = curScope->parentScope()) {
-
-    auto decls = lookupNameInScope(context, curScope,
-                                   /* receiver scopes */ {},
-                                   callName, onlyDecls);
-    auto declVis = checkVisibilityInVec(context, decls, fn1Id, fn2Id);
-    if (declVis != MoreVisibleResult::FOUND_NEITHER) {
-      return declVis;
-    }
-
-    // otherwise, check also in use/imports
-    if (curScope->containsUseImport()) {
-      // TODO: this does not handle
-      // use M putting M in a nearer scope than something called M
-      // within the used module.
-      // see issue #19219
-      auto more = lookupNameInScope(context, curScope,
-                                    /* receiver scopes */ {},
-                                    callName, importAndUse);
-      auto importUseVis = checkVisibilityInVec(context, more, fn1Id, fn2Id);
-      if (importUseVis != MoreVisibleResult::FOUND_NEITHER) {
-        return importUseVis;
-      }
-    }
-  }
-
-  return MoreVisibleResult::FOUND_NEITHER;
 }
 
 static const DisambiguationCandidate*
@@ -1466,34 +1385,6 @@ static void discardWorsePromoting(const DisambiguationContext& dctx,
       }
     }
   }
-}
-
-static const MoreVisibleResult&
-moreVisibleQuery(Context* context,
-                 UniqueString callName,
-                 const Scope* callInScope,
-                 const PoiScope* callInPoiScope,
-                 ID fn1Id,
-                 ID fn2Id) {
-  QUERY_BEGIN(moreVisibleQuery, context,
-              callName, callInScope, callInPoiScope,
-              fn1Id, fn2Id);
-
-  MoreVisibleResult result =
-    computeIsMoreVisible(context, callName, callInScope, fn1Id, fn2Id);
-
-  for (const PoiScope* curPoi = callInPoiScope;
-       curPoi != nullptr;
-       curPoi = curPoi->inFnPoi()) {
-    // stop if we have found one of them
-    if (result != FOUND_NEITHER)
-      break;
-
-    result = computeIsMoreVisible(context, callName, curPoi->inScope(),
-                                  fn1Id, fn2Id);
-  }
-
-  return QUERY_END(result);
 }
 
 
@@ -2018,21 +1909,6 @@ static bool moreSpecificCanDispatch(const DisambiguationContext& dctx,
 
 
 } // end namespace resolution
-
-
-template<> struct update<resolution::MoreVisibleResult> {
-  bool operator()(resolution::MoreVisibleResult& keep,
-                  resolution::MoreVisibleResult& addin) const {
-    return defaultUpdateBasic(keep, addin);
-  }
-};
-
-template<> struct mark<resolution::MoreVisibleResult> {
-  void operator()(Context* context,
-                  const resolution::MoreVisibleResult& keep) const {
-    // nothing to do for enum
-  }
-};
 
 
 } // end namespace chpl
