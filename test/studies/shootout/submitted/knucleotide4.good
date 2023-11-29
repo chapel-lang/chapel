@@ -18,7 +18,6 @@ knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:52: In function 'writeFreqs':
 knucleotide4.chpl:56: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:75: In function 'calculate':
 knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
@@ -26,7 +25,6 @@ knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to
   knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
 knucleotide4.chpl:52: In function 'writeFreqs':
 knucleotide4.chpl:56: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
   knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
 knucleotide4.chpl:75: In function 'calculate':
 knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
