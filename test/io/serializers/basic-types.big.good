@@ -44,6 +44,15 @@ a-b-c-d-e-f-g
 FAILURE: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.
 ==================
 
+===== bytes =====
+===== writing: =====
+12345
+--------------------
+3132333435
+====================
+FAILURE: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.
+=================
+
 ===== 3*int(64) =====
 ===== writing: =====
 (1, 2, 3)
@@ -275,3 +284,4 @@ SUCCESS
 ==============================
 FAILURES:
 - string
+- bytes
