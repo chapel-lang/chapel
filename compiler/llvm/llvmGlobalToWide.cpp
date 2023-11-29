@@ -2424,8 +2424,9 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     assert(t != eltType); // detect simple recursion
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
 
-    // if wideEltType is a wide ptr (ie a struct), it will no longer fit in the vector
-    // we adjust the type to be a i128, and just shove the bits around
+    // Workaround: if wideEltType is a wide ptr (ie a struct), it will no longer
+    // fit in the vector we adjust the type to be a i128, and just shove the
+    // bits around
     if (wideEltType->isStructTy() &&
         cast<StructType>(wideEltType)->getElementType(0) == info->localeIdType &&
         cast<StructType>(wideEltType)->getElementType(1)->isPointerTy()) {
