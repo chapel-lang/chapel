@@ -131,7 +131,7 @@ module Collectives {
     }
 
     /* Reset the barrier, setting it to work with `nTasks` tasks.  If some
-       (but not all) tasks had already called :proc:`barrier` or :proc:`check`
+       (but not all) tasks had already called :proc:`barrier` or :proc:`pending`
        when :proc:`reset` is called, the behavior is undefined.
      */
     inline proc reset(nTasks: int) {
