@@ -9236,7 +9236,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
   //
   // https://github.com/chapel-lang/chapel/issues/23400
   if !err.isEmpty() then throw new IllegalArgumentError(err);
-  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
+  // Tolerate EOFs or ESHORTs since we are returning the number of elements
+  // that were read.
+  if e != 0 && e != EEOF && e != ESHORT then throw createSystemOrChplError(e);
 
   return numRead : int;
 }
