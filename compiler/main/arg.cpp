@@ -389,15 +389,17 @@ static bool ProcessEnvironment(const ArgumentState* state)
   DeprecatedArgument* deprecated_args = state->deprecated_args;
   bool hadError = false;
 
-  for (int i = 0; deprecated_args[i].env; i++) {
-      const char* env = getenv(deprecated_args[i].env);
-      if (env != 0) {
-        arg_warn(deprecated_args[i].msg, "");
+  if(deprecated_args) {
+    for (int i = 0; deprecated_args[i].env; i++) {
+        const char* env = getenv(deprecated_args[i].env);
+        if (env != 0) {
+          arg_warn(deprecated_args[i].msg, "");
 
-        if(deprecated_args[i].replacementEnv) {
-          setenv(deprecated_args[i].replacementEnv, env, 0);
+          if(deprecated_args[i].replacementEnv) {
+            setenv(deprecated_args[i].replacementEnv, env, 0);
+          }
         }
-      }
+    }
   }
 
   // The name field is defined by every row except the final guard
