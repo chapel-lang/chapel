@@ -1,9 +1,3 @@
-fasta-qio.chpl:130: In function 'repeatMake':
-fasta-qio.chpl:131: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  fasta-qio.chpl:153: called as repeatMake(desc: string, alu: [domain(1,int(64),one)] int(64), n: int(64))
-fasta-qio.chpl:118: In function 'randomMake':
-fasta-qio.chpl:121: warning: binary(De)Serializer's format for strings and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.
-  fasta-qio.chpl:154: called as randomMake(desc: string, a: [domain(1,int(64),one)] Freq, n: int(64))
 >ONE Homo sapiens alu
 GGCCGGGCGCGGTGGCTCACGCCTGTAATCCCAGCACTTTGGGAGGCCGAGGCGGGCGGA
 TCACCTGAGGTCAGGAGTTCGAGACCAGCCTGGCCAACATGGTGAAACCCCGTCTCTACT
