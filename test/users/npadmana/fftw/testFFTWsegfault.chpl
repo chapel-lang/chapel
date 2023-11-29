@@ -19,7 +19,7 @@ proc runtest(param ndim : int, fn : string) {
   var rD,cD,reD,imD : domain(ndim,int,strideKind.any); 
   var A,B,goodA,goodB : [D] fftw_complex;
   {
-    var f = open(fn,ioMode.r).reader(deserializer=new binaryDeserializer(ioendian.little));
+    var f = open(fn,ioMode.r).reader(deserializer=new binaryDeserializer(endianness.little));
     for ii in 1..ndim {
       f.read(dims(ii));
     }

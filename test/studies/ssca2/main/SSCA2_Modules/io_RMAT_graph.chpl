@@ -17,7 +17,7 @@ config const EV2_FILENAME    = "ev2_snapshot.data";
 config const START_FILENAME  = "start_snapshot.data";
 config const WEIGHT_FILENAME = "weight_snapshot.data";
 config type  IONumType       = int(64);
-config param IOendianness    = ioendian.big;
+config param IOendianness    = endianness.big;
 config const IOserial        = false;
 config const IOsingleTaskPerLocale = true;
 

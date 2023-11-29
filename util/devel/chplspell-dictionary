@@ -7908,7 +7908,7 @@ iobig
 ioctldata
 ioctlfunction
 iodynamic
-ioendian
+endianness
 ioerror
 iohint
 iohints
@@ -9833,4 +9833,3 @@ zypper
 øbenhavns
 ławski
 śniak
-
