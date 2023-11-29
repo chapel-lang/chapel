@@ -1,2 +1,0 @@
-# Reductions are not supported with AMD gpus yet.
-CHPL_GPU==amd
