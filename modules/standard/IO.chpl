@@ -8826,7 +8826,7 @@ proc fileWriter.writeBinary(arg:numeric, endian:endianness) throws {
     when endianness.native {
       this.writeBinary(arg, endianness.native);
     }
-    when endiannessssss.big {
+    when endianness.big {
       this.writeBinary(arg, endianness.big);
     }
     when endianness.little {
