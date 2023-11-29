@@ -2280,7 +2280,7 @@ int main(int argc, char** argv) {
       // need to determine and update third-party location before calling
       // getChplDepsApp to make sure we get an updated path in the case
       // chpldoc was installed using --prefix mode
-      std::string CHPL_THIRD_PARTY = std::string(getConfiguredPrefix());
+      CHPL_THIRD_PARTY = std::string(getConfiguredPrefix());
       CHPL_THIRD_PARTY += "/lib/chapel/";
       CHPL_THIRD_PARTY += getMajorMinorVersion();
       CHPL_THIRD_PARTY += "/third-party";
