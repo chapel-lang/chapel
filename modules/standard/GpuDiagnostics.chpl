@@ -171,26 +171,26 @@ module GpuDiagnostics
   /*
     Start on-the-fly reporting of GPU operations initiated on any locale.
    */
-  inline proc startVerboseGpu() {
+  proc startVerboseGpu() {
     chpl_gpu_startVerbose(gpuDiagsStacktrace, gpuDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of GPU operations initiated on any locale.
    */
-  inline proc stopVerboseGpu() { chpl_gpu_stopVerbose(); }
+  proc stopVerboseGpu() { chpl_gpu_stopVerbose(); }
 
   /*
     Start counting GPU operations across the whole program.
    */
-  inline proc startGpuDiagnostics() {
+  proc startGpuDiagnostics() {
     chpl_gpu_startDiagnostics(gpuDiagsPrintUnstable);
   }
 
   /*
     Stop counting GPU operations across the whole program.
    */
-  inline proc stopGpuDiagnostics() {
+  proc stopGpuDiagnostics() {
     chpl_gpu_stopDiagnostics();
   }
 

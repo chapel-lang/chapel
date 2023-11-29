@@ -381,52 +381,52 @@ module CommDiagnostics
   /*
     Start on-the-fly reporting of communication initiated on any locale.
    */
-  inline proc startVerboseComm() {
+  proc startVerboseComm() {
     chpl_comm_startVerbose(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of communication initiated on any locale.
    */
-  inline proc stopVerboseComm() { chpl_comm_stopVerbose(); }
+  proc stopVerboseComm() { chpl_comm_stopVerbose(); }
 
   /*
     Start on-the-fly reporting of communication initiated on this locale.
    */
-  inline proc startVerboseCommHere() {
+  proc startVerboseCommHere() {
     chpl_comm_startVerboseHere(commDiagsStacktrace, commDiagsPrintUnstable);
   }
 
   /*
     Stop on-the-fly reporting of communication initiated on this locale.
    */
-  inline proc stopVerboseCommHere() { chpl_comm_stopVerboseHere(); }
+  proc stopVerboseCommHere() { chpl_comm_stopVerboseHere(); }
 
   /*
     Start counting communication operations across the whole program.
    */
-  inline proc startCommDiagnostics() {
+  proc startCommDiagnostics() {
     chpl_comm_startDiagnostics(commDiagsPrintUnstable);
   }
 
   /*
     Stop counting communication operations across the whole program.
    */
-  inline proc stopCommDiagnostics() {
+  proc stopCommDiagnostics() {
     chpl_comm_stopDiagnostics();
   }
 
   /*
     Start counting communication operations initiated on this locale.
    */
-  inline proc startCommDiagnosticsHere() {
+  proc startCommDiagnosticsHere() {
     chpl_comm_startDiagnosticsHere(commDiagsPrintUnstable);
   }
 
   /*
     Stop counting communication operations initiated on this locale.
    */
-  inline proc stopCommDiagnosticsHere() {
+  proc stopCommDiagnosticsHere() {
     chpl_comm_stopDiagnosticsHere();
   }
 
