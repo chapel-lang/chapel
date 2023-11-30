@@ -40,8 +40,8 @@ module FormatHelper {
         else return new chplDeserializer();
       }
       when FormatKind.object {
-        if writing then return new objectSerializer(endian=IO.ioendian.little);
-        else return new objectDeserializer(endian=IO.ioendian.little);
+        if writing then return new objectSerializer(endian=IO.endianness.little);
+        else return new objectDeserializer(endian=IO.endianness.little);
       }
       otherwise return nothing;
     }

@@ -40,7 +40,7 @@ module ObjectSerialization {
       'endian' represents the endianness of the binary output produced by this
       Serializer.
     */
-    const endian : ioendian = ioendian.native;
+    const endian : endianness = endianness.native;
 
     @chpldoc.nodoc
     const _structured = true;
@@ -109,9 +109,9 @@ module ObjectSerialization {
                         const val:?t) throws {
       if isNumericType(t) {
         select endian {
-          when ioendian.native do writer.writeBinary(val, ioendian.native);
-          when ioendian.little do writer.writeBinary(val, ioendian.little);
-          when ioendian.big do writer.writeBinary(val, ioendian.big);
+          when endianness.native do writer.writeBinary(val, endianness.native);
+          when endianness.little do writer.writeBinary(val, endianness.little);
+          when endianness.big do writer.writeBinary(val, endianness.big);
         }
       } else if t == string  || isEnumType(t) || t == bytes ||
                 isBoolType(t) {
@@ -302,7 +302,7 @@ module ObjectSerialization {
       @chpldoc.nodoc
       var writer : fileWriter(false, objectSerializer);
       @chpldoc.nodoc
-      const endian : ioendian;
+      const endian : endianness;
 
       /*
         Start serializing a new dimension of the array.
@@ -338,7 +338,7 @@ module ObjectSerialization {
       */
       proc writeBulkElements(data: c_ptr(?eltType), numElements: int) throws
       where isNumericType(eltType) {
-        if endian == ioendian.native {
+        if endian == endianness.native {
           const n = c_sizeof(eltType)*numElements;
           writer.writeBinary(data, n.safeCast(int));
         } else {
@@ -419,13 +419,13 @@ module ObjectSerialization {
       'endian' represents the endianness that this Deserializer should use when
       deserializing input.
     */
-    const endian : IO.ioendian = IO.ioendian.native;
+    const endian : IO.endianness = IO.endianness.native;
 
     @chpldoc.nodoc
     var _structured = true;
 
     @chpldoc.nodoc
-    proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
+    proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = true) {
       this.endian = endian;
       this._structured = _structured;
       init this;
@@ -494,9 +494,9 @@ module ObjectSerialization {
         var x : readType;
         var ret : bool;
         select endian {
-          when ioendian.native do ret = reader.readBinary(x, ioendian.native);
-          when ioendian.little do ret = reader.readBinary(x, ioendian.little);
-          when ioendian.big    do ret = reader.readBinary(x, ioendian.big);
+          when endianness.native do ret = reader.readBinary(x, endianness.native);
+          when endianness.little do ret = reader.readBinary(x, endianness.little);
+          when endianness.big    do ret = reader.readBinary(x, endianness.big);
         }
         if !ret then
           throw new EofError();
@@ -756,7 +756,7 @@ module ObjectSerialization {
       @chpldoc.nodoc
       var reader : fileReader(false, objectDeserializer);
       @chpldoc.nodoc
-      const endian : ioendian;
+      const endian : endianness;
 
       /*
         Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
@@ -801,7 +801,7 @@ module ObjectSerialization {
       */
       proc readBulkElements(data: c_ptr(?eltType), numElements: int) throws
       where isNumericType(eltType) {
-        if endian == ioendian.native {
+        if endian == endianness.native {
           const n = c_sizeof(eltType)*numElements;
           const got = reader.readBinary(data, n.safeCast(int));
           if got < n then throw new EofError();
