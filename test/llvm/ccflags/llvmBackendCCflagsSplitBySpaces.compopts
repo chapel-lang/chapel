@@ -1,1 +1,1 @@
---ccflags -mllvm --ccflags -force-vector-width=8
+--ccflags -mllvm --ccflags -force-vector-width=0
