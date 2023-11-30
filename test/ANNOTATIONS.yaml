@@ -2404,6 +2404,10 @@ arkouda: &arkouda-base
     - Fix chpl linker warnings on macOS (#23647)
   11/07/23:
     - Modify chpl link line change to not exclude jemalloc (#23767)
+  11/15/23:
+    - Scaffolding for multi-dimensional arrays (Bears-R-Us/arkouda#2829)
+  11/21/23:
+    - Update Arkouda release testing from 1.31 to 1.32 (#23900)
 
 
 arkouda-string:
