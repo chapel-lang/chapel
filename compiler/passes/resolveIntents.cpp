@@ -339,22 +339,19 @@ IntentTag concreteIntentForArg(ArgSymbol* arg) {
     return INTENT_REF;
 
   else {
+    // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
+    // in a later pass that does more AST transformation.  Potentially
+    // callDestructors?
     if (arg->intent == INTENT_CONST) {
       // No need to warn if the argument intent was going to be converted to
       // `const in`
       if (constIntentForType(arg->type) == INTENT_CONST_REF) {
-        // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
-        // in a later pass that does more AST transformation.  Potentially
-        // callDestructors?
         warnForInferredConstRef(arg);
       }
     } else if (arg->intent == INTENT_BLANK) {
       // Only warn if the argument intent was going to be converted to `const
       // ref`
       if (blankIntentForType(arg->type) == INTENT_CONST_REF) {
-        // Lydia 11/29/23 TODO: use `ArgSymbol->originalIntent` and check this
-        // in a later pass that does more AST transformation.  Potentially
-        // callDestructors?
         warnForInferredConstRef(arg);
       }
     }
