@@ -821,11 +821,11 @@ param iobig = _iokind.big;
 param iolittle = _iokind.little;
 
 /*
-The :type:`ioendian` type is an enum. When used as an argument to the
+The :type:`endianness` type is an enum. When used as an argument to the
 :record:`fileReader` or :record:`fileWriter` methods, its constants have the
 following meanings:
 */
-enum ioendian {
+enum endianness {
   /* ``native`` means binary I/O is performed in the byte order that is native
   to the target platform. */
   native = 0,
@@ -835,6 +835,8 @@ enum ioendian {
   little = 2
 }
 
+@deprecated(":enum: ioendian is deprecated; please use :enum: endianness instead")
+type ioendian = endianness;
 
 /*
 
@@ -2463,9 +2465,9 @@ private proc defaultSerializeVal(param writing : bool,
   if !useIOSerializers then return none;
 
   if kind != _iokind.dynamic {
-    var endian = if kind == _iokind.native then ioendian.native
-                 else if kind == _iokind.big then ioendian.big
-                 else ioendian.little;
+    var endian = if kind == _iokind.native then endianness.native
+                 else if kind == _iokind.big then endianness.big
+                 else endianness.little;
     if writing then return new binarySerializer(endian, _structured=false);
     else return new binaryDeserializer(endian, _structured=false);
   }
@@ -3608,6 +3610,35 @@ record defaultDeserializer {
 @deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
 type DefaultDeserializer = defaultDeserializer;
 
+@unstable("This config param is unstable and may be removed without advance notice")
+/*
+  This config param allows users to disable a warning for reading and writing
+  classes and strings with ``binarySerializer`` and ``binaryDeserializer``
+  following a format change in the 1.33 release.
+*/
+config param warnBinaryStructured : bool = true;
+
+private proc warnBinary(type t, param depth : int) {
+  if warnBinaryStructured {
+    if t == string || t == bytes || isClassType(t) {
+      param msg = "binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      compilerWarning(msg, depth);
+    }
+  }
+}
+
+private proc warnBinaryRead(type t, param depth : int) throws {
+  if warnBinaryStructured {
+    if isClassType(t) {
+      param msg = "binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      compilerWarning(msg, depth);
+    }
+  }
+  if t == string || t == bytes {
+    throw new IllegalArgumentError("binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.");
+  }
+}
+
 /*
   A binary Serializer that implements a simple binary format.
 
@@ -3622,10 +3653,10 @@ record binarySerializer {
     'endian' represents the endianness of the binary output produced by this
     Serializer.
   */
-  const endian : ioendian = ioendian.native;
+  const endian : endianness = endianness.native;
 
   @chpldoc.nodoc
-  const _structured = true;
+  const _structured = false;
 
   // TODO: rewrite to use correct IO methods (e.g. writeBinary)
   // For now, this is just a helper to mirror the old behavior for basic
@@ -3658,19 +3689,13 @@ record binarySerializer {
     Booleans are serialized as single byte unsigned values of either ``0`` or
     ``1``.
 
-    ``string`` values are serialized beginning with a length represented by a
-    variable-length byte scheme (which is always the same no matter what
-    endianness). In this scheme, the high bit of each encoded length byte records
-    whether or not there are more length bytes (and the remaining bits encode the
-    length in a big-endian manner). Then, the raw binary data of the string is
-    written to the ``writer``.
+    ``string`` values are serialized as a raw sequence of bytes that does not
+    include a null terminator, nor any bytes representing length. This means
+    that ``string`` values cannot be deserialized without manual intervention
+    by users to decide how their strings should be stored such that they can
+    be deserialized.
 
     The ``nil`` value is serialized as a single unsigned byte of value ``0``.
-
-    Classes are serialized beginning with a single unsigned byte of either ``0``
-    or ``1`` indicating ``nil``. Nilable classes that are ``nil`` will always
-    serialize as ``0``, and non-nilable classes will always begin serializing
-    as ``1``.
 
     Classes and records will have their ``serialize`` method invoked, passing
     in ``writer`` and this Serializer as arguments. Please see the
@@ -3684,6 +3709,17 @@ record binarySerializer {
 
       Serializing and deserializing enums is not stable in this format.
 
+    .. warning::
+
+      In the 1.32 release this format included bytes representing the length of
+      a string. Also, classes were serialized beginning with a single byte to
+      indicate whether the class value was ``nil``. This behavior was changed
+      in the subsequent release to provide users with a more flexible
+      serializer that did not insert bytes that the user did not request. A
+      compile-time warning will be issued to indicate that this behavior has
+      changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+      silence the warning.
+
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
   */
@@ -3691,9 +3727,9 @@ record binarySerializer {
                       const val:?t) throws {
     if isNumericType(t) {
       select endian {
-        when ioendian.native do writer.writeBinary(val, ioendian.native);
-        when ioendian.little do writer.writeBinary(val, ioendian.little);
-        when ioendian.big do writer.writeBinary(val, ioendian.big);
+        when endianness.native do writer.writeBinary(val, endianness.native);
+        when endianness.little do writer.writeBinary(val, endianness.little);
+        when endianness.big do writer.writeBinary(val, endianness.big);
       }
     } else if t == string  || isEnumType(t) || t == bytes ||
               isBoolType(t) {
@@ -3884,7 +3920,7 @@ record binarySerializer {
     @chpldoc.nodoc
     var writer : fileWriter(false, binarySerializer);
     @chpldoc.nodoc
-    const endian : ioendian;
+    const endian : endianness;
 
     /*
       Start serializing a new dimension of the array.
@@ -3998,19 +4034,30 @@ type BinarySerializer = binarySerializer;
   Otherwise, please refer to :type:`binarySerializer` for a description of the
   binary format. Individual methods on this type may clarify relevant behavior
   specific to deserialization
+
+  .. warning::
+
+    In the 1.32 release this format included bytes representing the length of
+    a string. Also, classes were serialized beginning with a single byte to
+    indicate whether the class value was ``nil``. This behavior was changed
+    in the subsequent release to provide users with a more flexible
+    deserializer that did not read bytes that the user did not request. A
+    compile-time warning will be issued to indicate that this behavior has
+    changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+    silence the warning.
 */
 record binaryDeserializer {
   /*
     'endian' represents the endianness that this Deserializer should use when
     deserializing input.
   */
-  const endian : IO.ioendian = IO.ioendian.native;
+  const endian : IO.endianness = IO.endianness.native;
 
   @chpldoc.nodoc
-  var _structured = true;
+  var _structured = false;
 
   @chpldoc.nodoc
-  proc init(endian: IO.ioendian = IO.ioendian.native, _structured : bool = true) {
+  proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = false) {
     this.endian = endian;
     this._structured = _structured;
     init this;
@@ -4079,9 +4126,9 @@ record binaryDeserializer {
       var x : readType;
       var ret : bool;
       select endian {
-        when ioendian.native do ret = reader.readBinary(x, ioendian.native);
-        when ioendian.little do ret = reader.readBinary(x, ioendian.little);
-        when ioendian.big    do ret = reader.readBinary(x, ioendian.big);
+        when endianness.native do ret = reader.readBinary(x, endianness.native);
+        when endianness.little do ret = reader.readBinary(x, endianness.little);
+        when endianness.big    do ret = reader.readBinary(x, endianness.big);
       }
       if !ret then
         throw new EofError();
@@ -4340,7 +4387,7 @@ record binaryDeserializer {
     @chpldoc.nodoc
     var reader : fileReader(false, binaryDeserializer);
     @chpldoc.nodoc
-    const endian : ioendian;
+    const endian : endianness;
 
     /*
       Inform the ``ArrayDeserializer`` to start deserializing a new dimension.
@@ -7291,6 +7338,9 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if deserializerType != nothing {
+        if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+          warnBinaryRead(args[i].type, 3);
+        }
         _deserializeOne(args[i], origLocale);
       } else {
         _readOne(_kind, args[i], origLocale);
@@ -8702,21 +8752,21 @@ private proc sysEndianness() {
   var x: int(16) = 1;
   // if the initial byte is 0, this is a big-endian system
   if (c_addrOf(x): c_ptr(void): c_ptr(uint(8))).deref() == 0 then
-    return ioendian.big;
+    return endianness.big;
   else
-    return ioendian.little;
+    return endianness.little;
 }
 
 private proc isNativeEndianness(endian) {
-  return endian == ioendian.native || endian == sysEndianness();
+  return endian == endianness.native || endian == sysEndianness();
 }
 
-private proc endianToIoKind(param e: ioendian) param {
-  if e == ioendian.native then
+private proc endianToIoKind(param e: endianness) param {
+  if e == endianness.native then
     return _iokind.native;
-  else if e == ioendian.big then
+  else if e == endianness.big then
     return _iokind.big;
-  else if e == ioendian.little then
+  else if e == endianness.little then
     return _iokind.little;
   else
     compilerError("Unexpected value in chpl_endianToIoKind(): ", e);
@@ -8788,9 +8838,9 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
   Write a binary number to the ``fileWriter``
 
   :arg arg: number to be written
-  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+  :arg endian: :type:`endianness` compile-time argument that specifies the byte
                order in which to write the number. Defaults to
-               :enumconstant:`ioendian.native`.
+               :enumconstant:`endianness.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8799,7 +8849,7 @@ proc fileWriter.writeBinary(ptr: c_ptr(void), numBytes: int) throws {
                        due to a :ref:`system error<io-general-sys-error>`.
  */
 proc fileWriter.writeBinary(arg:numeric,
-                            param endian:ioendian = ioendian.native) throws {
+                            param endian:endianness = endianness.native) throws {
   const e: errorCode = try _write_binary_internal(_channel_internal,
                                                   endianToIoKind(endian),
                                                   arg);
@@ -8812,7 +8862,7 @@ proc fileWriter.writeBinary(arg:numeric,
   Write a binary number to the ``fileWriter``
 
   :arg arg: number to be written
-  :arg endian: :type:`ioendian` specifies the byte order in which
+  :arg endian: :type:`endianness` specifies the byte order in which
                to write the number.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
@@ -8821,16 +8871,16 @@ proc fileWriter.writeBinary(arg:numeric,
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(arg:numeric, endian:ioendian) throws {
+proc fileWriter.writeBinary(arg:numeric, endian:endianness) throws {
   select (endian) {
-    when ioendian.native {
-      this.writeBinary(arg, ioendian.native);
+    when endianness.native {
+      this.writeBinary(arg, endianness.native);
     }
-    when ioendian.big {
-      this.writeBinary(arg, ioendian.big);
+    when endianness.big {
+      this.writeBinary(arg, endianness.big);
     }
-    when ioendian.little {
-      this.writeBinary(arg, ioendian.little);
+    when endianness.little {
+      this.writeBinary(arg, endianness.little);
     }
   }
 }
@@ -8929,9 +8979,9 @@ private proc isSuitableForBinaryReadWrite(arr: _array) param {
   Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
-  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+  :arg endian: :type:`endianness` compile-time argument that specifies the byte
                order in which to read the numbers. Defaults to
-               :enumconstant:`ioendian.native`.
+               :enumconstant:`endianness.native`.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
   :throws UnexpectedEofError: Thrown if the write operation exceeds the
@@ -8939,7 +8989,7 @@ private proc isSuitableForBinaryReadWrite(arr: _array) param {
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:endianness = endianness.native) throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
@@ -8978,7 +9028,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
 
 
 @chpldoc.nodoc
-proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioendian.native) throws {
+proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:endianness = endianness.native) throws {
   compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
 
@@ -8989,7 +9039,7 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array of numbers to write to the fileWriter
-  :arg endian: :type:`ioendian` specifies the byte order in which
+  :arg endian: :type:`endianness` specifies the byte order in which
                to write the number.
 
   :throws EofError: Thrown if the ``fileWriter`` offset was already at EOF.
@@ -8998,25 +9048,25 @@ proc fileWriter.writeBinary(const ref data: [?d] ?t, param endian:ioendian = ioe
   :throws SystemError: Thrown if data could not be written to the ``fileWriter``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:endianness) throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
     isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   select (endian) {
-    when ioendian.native {
-      this.writeBinary(data, ioendian.native);
+    when endianness.native {
+      this.writeBinary(data, endianness.native);
     }
-    when ioendian.big {
-      this.writeBinary(data, ioendian.big);
+    when endianness.big {
+      this.writeBinary(data, endianness.big);
     }
-    when ioendian.little {
-      this.writeBinary(data, ioendian.little);
+    when endianness.little {
+      this.writeBinary(data, endianness.little);
     }
   }
 }
 
 @chpldoc.nodoc
-proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
+proc fileWriter.writeBinary(const ref data: [] ?t, endian:endianness) throws
 {
   compilerError("writeBinary() only supports local, rectangular, non-strided arrays of simple types");
 }
@@ -9025,9 +9075,9 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
   Read a binary number from the ``fileReader``
 
   :arg arg: number to be read
-  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+  :arg endian: :type:`endianness` compile-time argument that specifies the byte
                order in which to read the number. Defaults to
-               :enumconstant:`ioendian.native`.
+               :enumconstant:`endianness.native`.
   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
             the ``fileReader`` was already at EOF).
 
@@ -9036,7 +9086,7 @@ proc fileWriter.writeBinary(const ref data: [] ?t, endian:ioendian) throws
   :throws SystemError: Thrown if data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
  */
-proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.native):bool throws {
+proc fileReader.readBinary(ref arg:numeric, param endian:endianness = endianness.native):bool throws {
   const e:errorCode = try _read_binary_internal(_channel_internal,
                                                 endianToIoKind(endian),
                                                 arg);
@@ -9053,7 +9103,7 @@ proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nat
    Read a binary number from the ``fileReader``
 
    :arg arg: number to be read
-   :arg endian: :type:`ioendian` specifies the byte order in which
+   :arg endian: :type:`endianness` specifies the byte order in which
                 to read the number.
    :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
              the ``fileReader`` was already at EOF).
@@ -9063,18 +9113,18 @@ proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nat
   :throws SystemError: Thrown if data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
  */
-proc fileReader.readBinary(ref arg:numeric, endian: ioendian):bool throws {
+proc fileReader.readBinary(ref arg:numeric, endian: endianness):bool throws {
   var rv: bool = false;
 
   select (endian) {
-    when ioendian.native {
-      rv = this.readBinary(arg, ioendian.native);
+    when endianness.native {
+      rv = this.readBinary(arg, endianness.native);
     }
-    when ioendian.big {
-      rv = this.readBinary(arg, ioendian.big);
+    when endianness.big {
+      rv = this.readBinary(arg, endianness.big);
     }
-    when ioendian.little {
-      rv = this.readBinary(arg, ioendian.little);
+    when endianness.little {
+      rv = this.readBinary(arg, endianness.little);
     }
   }
   return rv;
@@ -9108,7 +9158,7 @@ proc fileReader.readBinary(ref s: string, maxSize: int): bool throws {
     var len: int(64),
         tx: c_ptrConst(c_char);
 
-    e = qio_channel_read_string(false, ioendian.native: c_int,
+    e = qio_channel_read_string(false, endianness.native: c_int,
                                 qio_channel_str_style(this._channel_internal),
                                 this._channel_internal, tx, len, maxSize:c_ssize_t);
 
@@ -9147,7 +9197,7 @@ proc fileReader.readBinary(ref b: bytes, maxSize: int): bool throws {
     var len: int(64),
         tx: c_ptrConst(c_char);
 
-    e = qio_channel_read_string(false, ioendian.native: c_int,
+    e = qio_channel_read_string(false, endianness.native: c_int,
                                 qio_channel_str_style(this._channel_internal),
                                 this._channel_internal, tx, len, maxSize:c_ssize_t);
 
@@ -9177,9 +9227,9 @@ config param ReadBinaryArrayReturnInt = true;
   Note that this routine currently requires a local rectangular non-strided array.
 
   :arg data: an array to read into – existing values are overwritten.
-  :arg endian: :type:`ioendian` compile-time argument that specifies the byte
+  :arg endian: :type:`endianness` compile-time argument that specifies the byte
                order in which to read the numbers in. Defaults to
-               :enumconstant:`ioendian.native`.
+               :enumconstant:`endianness.native`.
   :returns: the number of values that were read into the array. This can be
             less than ``data.size`` if EOF was reached, or an error occurred,
             before filling the array.
@@ -9187,7 +9237,7 @@ config param ReadBinaryArrayReturnInt = true;
   :throws SystemError: Thrown if data could not be read from the ``fileReader``
                        due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): int throws
+proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native): int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
         isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
@@ -9242,7 +9292,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    Note that this routine currently requires a local rectangular non-strided array.
 
    :arg data: an array to read into – existing values are overwritten.
-   :arg endian: :type:`ioendian` specifies the byte order in which
+   :arg endian: :type:`endianness` specifies the byte order in which
                 to read the number.
    :returns: the number of values that were read into the array. This can be
              less than ``data.size`` if EOF was reached, or an error occurred,
@@ -9251,21 +9301,21 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = ioendian.native): i
    :throws SystemError: Thrown if data could not be read from the ``fileReader``
                         due to a :ref:`system error<io-general-sys-error>`.
 */
-proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+proc fileReader.readBinary(ref data: [] ?t, endian: endianness):int throws
   where isSuitableForBinaryReadWrite(data) && data.strides == strideKind.one && (
         isIntegralType(t) || isRealType(t) || isImagType(t) || isComplexType(t) )
 {
   var nr: int = 0;
 
   select (endian) {
-    when ioendian.native {
-      nr = this.readBinary(data, ioendian.native);
+    when endianness.native {
+      nr = this.readBinary(data, endianness.native);
     }
-    when ioendian.big {
-      nr = this.readBinary(data, ioendian.big);
+    when endianness.big {
+      nr = this.readBinary(data, endianness.big);
     }
-    when ioendian.little {
-      nr = this.readBinary(data, ioendian.little);
+    when endianness.little {
+      nr = this.readBinary(data, endianness.little);
     }
   }
 
@@ -9273,14 +9323,14 @@ proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
 }
 
 @chpldoc.nodoc
-proc fileReader.readBinary(ref data: [] ?t, endian: ioendian):int throws
+proc fileReader.readBinary(ref data: [] ?t, endian: endianness):int throws
 {
   compilerError("readBinary() only supports local, rectangular, non-strided ",
                   "arrays of simple types");
 }
 
 @chpldoc.nodoc
-proc fileReader.readBinary(ref data: [] ?t, param endian = ioendian.native): bool throws
+proc fileReader.readBinary(ref data: [] ?t, param endian = endianness.native): bool throws
 {
   compilerError("readBinary() only supports local, rectangular, non-strided ",
                   "arrays of simple types");
@@ -9433,6 +9483,9 @@ proc fileReader.read(type t) throws {
     try this.lock(); defer { this.unlock(); }
 
     if deserializerType != nothing {
+      if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+        warnBinaryRead(t, 2);
+      }
       __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
       pragma "no auto destroy"
@@ -9531,6 +9584,9 @@ inline proc fileWriter.write(const args ...?k) throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if serializerType != nothing {
+        if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+          warnBinary(args(i).type, 2);
+        }
         this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(_kind, args(i), origLocale);
@@ -11755,6 +11811,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         try _writeOne(_iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
+          if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+            warnBinary(arg.type, 3);
+          }
           this._serializeOne(arg, origLocale);
         } else {
           try _writeOne(_iokind.dynamic, arg, origLocale);
@@ -12095,6 +12154,9 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               try _readOne(_iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
+                if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+                  warnBinaryRead(args(i).type, 4);
+                }
                 this._deserializeOne(args(i), origLocale);
               } else {
                 try _readOne(_iokind.dynamic, args(i), origLocale);

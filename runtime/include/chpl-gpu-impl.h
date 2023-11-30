@@ -76,6 +76,8 @@ void chpl_gpu_impl_stream_destroy(void* stream);
 bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
 
+bool chpl_gpu_impl_can_reduce(void);
+
 #define DECL_ONE_REDUCE_IMPL(chpl_kind, data_type) \
 void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
                                                     data_type* val, int* idx,\

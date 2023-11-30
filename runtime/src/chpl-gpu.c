@@ -973,6 +973,10 @@ void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
 }
 
+bool chpl_gpu_can_reduce(void) {
+  return chpl_gpu_impl_can_reduce();
+}
+
 #define DEF_ONE_REDUCE(kind, data_type)\
 void chpl_gpu_##kind##_reduce_##data_type(data_type *data, int n, \
                                           data_type* val, int* idx) { \

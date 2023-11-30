@@ -1,0 +1,1 @@
+writeln(chpl_checkNilDereferences);

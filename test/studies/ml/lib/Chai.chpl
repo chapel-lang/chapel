@@ -16,7 +16,7 @@
         - Returns a string that uniquely identifies the layer and its hyperparameters parameters.
 */
 module Chai {
-    
+
     import Tensor as tn;
     use Tensor only Tensor;
 
@@ -671,7 +671,7 @@ module Chai {
 
         proc ref save(path: string) throws {
             var file = IO.open(path, IO.ioMode.cw);
-            var serializer = new IO.binarySerializer(IO.ioendian.big);
+            var serializer = new IO.binarySerializer(IO.endianness.big);
             var fw = file.writer(serializer=serializer);
             // fw.write("[network]");
             fw.write(layers.size);
@@ -683,7 +683,7 @@ module Chai {
 
         proc ref load(path: string) throws {
             var file = IO.open(path, IO.ioMode.rw);
-            var deserializer = new IO.binaryDeserializer(IO.ioendian.big);
+            var deserializer = new IO.binaryDeserializer(IO.endianness.big);
             var fr = file.reader(deserializer=deserializer);
             var size = fr.read(int);
             if size != layers.size then err("Network load: size mismatch");

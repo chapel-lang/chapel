@@ -1,7 +1,15 @@
 use GPU;
 
 config const printResult = false;
-config const n = 100;
+config var n = 100;
+
+// testing large data:
+// 1. is only meaningful if the reduction is actually done on a device
+// 2. times out testing if we use CPU-based reduction, especially if it is a
+//    fallback.
+// So, override n to be something smaller
+extern proc chpl_gpu_can_reduce(): bool;
+if !chpl_gpu_can_reduce() then n = 100;
 
 var result: uint(8);
 on here.gpus[0] {

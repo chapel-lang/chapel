@@ -344,8 +344,8 @@ proc createGraphChannel(prefix:string, suffix:string, param forWriting:bool) {
                  if forWriting then ioMode.cw else ioMode.r,
                  ioHintSet.sequential);
   const chan = if forWriting
-    then f.writer(serializer=new binarySerializer(ioendian.big), false)
-    else f.reader(deserializer=new binaryDeserializer(ioendian.big), false);
+    then f.writer(serializer=new binarySerializer(endianness.big), false)
+    else f.reader(deserializer=new binaryDeserializer(endianness.big), false);
   return chan;
 }
 

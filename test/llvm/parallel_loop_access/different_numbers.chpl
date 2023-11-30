@@ -14,7 +14,7 @@ proc loop (A, B, n) {
     //CHECK-LABEL: start_loop1
     start_loop1();
 
-    //CHECK: %[[LOAD_DEST1:[0-9]+]] = load i32
+    //CHECK: %[[LOAD_DEST1:[0-9]+]] = load i32,
     //CHECK-SAME: !llvm.access.group ![[GROUP1:[0-9]+]]
 
     //CHECK: %[[MUL_DEST1:[0-9]+]] = mul
@@ -34,7 +34,7 @@ proc loop (A, B, n) {
     //CHECK-LABEL: start_loop2
     start_loop2();
 
-    //CHECK: %[[LOAD_DEST2:[0-9]+]] = load i32
+    //CHECK: %[[LOAD_DEST2:[0-9]+]] = load i32,
     //CHECK-SAME: !llvm.access.group ![[GROUP2:[0-9]+]]
     //CHECK-NOT: !llvm.access.group ![[GROUP1]]
 
@@ -49,7 +49,7 @@ proc loop (A, B, n) {
       //CHECK-LABEL: start_loop3
       start_loop3();
 
-      //CHECK: %[[LOAD_DEST3:[0-9]+]] = load i32
+      //CHECK: %[[LOAD_DEST3:[0-9]+]] = load i32,
       //CHECK-SAME: !llvm.access.group ![[GROUP3:[0-9]+]]
       //CHECK-NOT: !llvm.access.group ![[GROUP2]]
       //CHECK-NOT: !llvm.access.group ![[GROUP1]]
