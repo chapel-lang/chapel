@@ -1,3 +1,7 @@
 ConsecutiveDecls.chpl:3: node violates rule ConsecutiveDecls
 ConsecutiveDecls.chpl:6: node violates rule ConsecutiveDecls
 ConsecutiveDecls.chpl:19: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:34: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:39: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:42: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:52: node violates rule ConsecutiveDecls

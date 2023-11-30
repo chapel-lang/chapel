@@ -48,4 +48,6 @@ module CaseRules {
   extern var c_var: int(32);
   extern const c_const: int(32);
 
+  var justOneCapitalLetterAtTheE: string;
+  var justO: real;
 }

@@ -42,16 +42,16 @@ def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context, node):
         if node.name() == "_": return True
-        if node.linkage() == 'extern': return True 
+        if node.linkage() == 'extern': return True
         return check_camel_case(node) or check_pascal_case(node)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context, node):
         return check_camel_case(node)
-    
+
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
-        if node.linkage() == 'extern': return True 
+        if node.linkage() == 'extern': return True
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
@@ -120,8 +120,7 @@ def register_rules(driver):
                 is_multi_or_tuple = isinstance(child, MultiDecl) \
                     or isinstance(child, TupleDecl)
                 
-                yield from recurse(child, 
-                                   skip_direct = is_multi_or_tuple)
+                yield from recurse(child, skip_direct = is_multi_or_tuple)
 
                 if skip_direct: continue
 
@@ -143,10 +142,6 @@ def register_rules(driver):
                     consecutive.append(child)
 
             if len(consecutive) > 1:
-                print(child)
-                print(type(child))
-                print(node)
-                print(type(node))
                 yield consecutive[1]
 
         yield from recurse(root)
