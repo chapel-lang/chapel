@@ -4435,10 +4435,18 @@ record binaryDeserializer {
       if isNativeEndianness(endian) {
         const n = c_sizeof(eltType)*numElements;
         const got = reader.readBinary(data, n.safeCast(int));
-        if got < n then throw new EofError();
+        if got < n then throw createSystemOrChplError(EEOF);
       } else {
-        for i in 0..<numElements do
-          reader.read(data[i]);
+        for i in 0..<numElements {
+          try {
+            if !reader.read(data[i]) then
+              throw createSystemOrChplError(EEOF);
+          } catch e: UnexpectedEofError {
+            // Match behavior of ``readBinary``, where we tolerate such partial
+            // reads.
+            throw createSystemOrChplError(EEOF);
+          }
+        }
       }
     }
 
@@ -9255,6 +9263,7 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
     } else if isNativeEndianness(endian) {
       if data.size > 0 {
         e = qio_channel_read(false, this._channel_internal, data[d.low], (data.size * c_sizeof(t)) : c_ssize_t, numRead);
+        // Note: partial reads of values are possible and are currently ignored.
         numRead /= c_sizeof(t): numRead.type;  // convert from #bytes to #elts
       } // else no-op, reading a 0-element array reads nothing
     } else {
@@ -9278,7 +9287,9 @@ proc fileReader.readBinary(ref data: [?d] ?t, param endian = endianness.native):
   //
   // https://github.com/chapel-lang/chapel/issues/23400
   if !err.isEmpty() then throw new IllegalArgumentError(err);
-  if e != 0 && e != EEOF then throw createSystemOrChplError(e);
+  // Tolerate EOFs or ESHORTs since we are returning the number of elements
+  // that were read.
+  if e != 0 && e != EEOF && e != ESHORT then throw createSystemOrChplError(e);
 
   return numRead : int;
 }
