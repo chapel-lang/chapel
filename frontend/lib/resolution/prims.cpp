@@ -820,14 +820,82 @@ primIsCoercible(Context* context, const CallInfo& ci) {
   return makeParamBool(context, eval);
 }
 
+static std::string typeToString(Context* context, const Type* t);
+
+static void
+doRegularCompositeTypeToString(Context* context, const CompositeType* ct,
+                               const ClassType* asClassType,
+                               std::stringstream& ss) {
+  bool shouldAddNilableQuestionMark = false;
+
+  // Handle class management and check for nilability.
+  if (auto cls = asClassType) {
+    auto d = cls->decorator();
+    shouldAddNilableQuestionMark = d.isNilable();
+    if (d.isBorrowed()) {
+      ss << "borrowed ";
+    } else if (d.isUnmanaged()) {
+      ss << "unmanaged ";
+    } else if (d.isManaged()) {
+      auto m = cls->manager();
+      CHPL_ASSERT(m);
+      // Just print the manager type name (they're all builtins for now).
+      ss << typeToString(context, cls->manager()) << " ";
+    }
+  }
+
+  ss << ct->name().c_str();
+
+  if (shouldAddNilableQuestionMark) ss << "?";
+
+  // Recursively print substitutions.
+  if (!ct->substitutions().empty()) {
+    auto sortedSubs = ct->sortedSubstitutions();
+    ss << "(";
+    for (size_t i = 0; i < sortedSubs.size(); i++) {
+      auto& qt = sortedSubs[i].second;
+      ss << typeToString(context, qt.type());
+      const bool last = (i+1) == sortedSubs.size();
+      if (!last) ss << ", ";
+    }
+    ss << ")";
+  }
+}
+
+static std::string typeToString(Context* context, const Type* t) {
+  std::stringstream ss;
+
+  // TODO: Should stringify be able to handle everything?
+  const bool canSimpleStringify = t->isPrimitiveType() ||
+                                  t->isBuiltinType() ||
+                                  t->isStringType() ||
+                                  t->isBytesType() ||
+                                  t->isEnumType() ||
+                                  t->isAnyType();
+
+  if (canSimpleStringify) {
+    t->stringify(ss, CHPL_SYNTAX);
+
+  } else if (t->isRecordType() && !t->isUserRecordType()) {
+    CHPL_UNIMPL("Record-wrapped language types");
+
+  } else if (auto ct = t->getCompositeType()) {
+    doRegularCompositeTypeToString(context, ct, t->toClassType(), ss);
+
+  } else {
+    CHPL_UNIMPL("Unimplemented type-to-string");
+  }
+
+  auto ret = ss.str();
+  return ret;
+}
+
 static QualifiedType
 primTypeToString(Context* context, const CallInfo& ci) {
   if (ci.numActuals() < 1) return QualifiedType();
   std::string eval;
   if (auto t = ci.actual(0).type().type()) {
-    std::stringstream ss;
-    t->stringify(ss, CHPL_SYNTAX);
-    eval = ss.str();
+    eval = typeToString(context, t);
   }
   return makeParamString(context, eval);
 }
@@ -841,9 +909,7 @@ primSimpleTypeName(Context* context, const CallInfo& ci) {
     if (auto ct = t->toCompositeType()) {
       if (auto ins = ct->instantiatedFromCompositeType()) root = ins;
     }
-    std::stringstream ss;
-    root->stringify(ss, CHPL_SYNTAX);
-    eval = ss.str();
+    eval = typeToString(context, root);
   }
   return makeParamString(context, eval);
 }

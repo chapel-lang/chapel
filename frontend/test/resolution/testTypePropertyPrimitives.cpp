@@ -58,6 +58,32 @@ struct Test {
   std::vector<PrimitiveCalls> calls;
 };
 
+static bool
+isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
+                   std::string* out) {
+  if (qt.kind() == QualifiedType::PARAM) {
+    if (auto t = qt.type()) {
+      if (auto p = qt.param()) {
+        if (auto sp = p->toStringParam()) {
+          if (out) *out = sp->value().c_str();
+          return sp->value() == str;
+        }
+      }
+    }
+  }
+  return false;
+}
+
+static void
+assertParamStringMatch(chpl::types::QualifiedType qt, std::string str,
+                       std::string* out) {
+  bool match = isParamStringMatch(qt, str, out);
+  if (!match) {
+    std::cout << "Expected " << str << ", but got -> " << *out << std::endl;
+    std::abort();
+  }
+}
+
 static void testPrimitive(Test tpg) {
   Context::Configuration config;
   if (tpg.isChplHomeRequired) {
@@ -105,23 +131,29 @@ static void testPrimitive(Test tpg) {
   auto varTypes = resolveTypesOfVariables(context, text, variables);
 
   for (size_t i = 0; i < varTypes.size(); i++) {
+    auto& call = tpg.calls[i];
     auto& var = variables[i];
     auto& type = varTypes.at(var);
     std::cout << "Checking " << var << " -> ";
 
     switch (expected[i]) {
-      case Test::TRUE:
+      case Test::TRUE: {
         assert(type.isParamTrue());
         std::cout << "true";
-        break;
-      case Test::FALSE:
+      } break;
+      case Test::FALSE: {
         assert(type.isParamFalse());
         std::cout << "false";
-        break;
-      case Test::ERROR:
+      } break;
+      case Test::STRING: {
+        std::string str;
+        assertParamStringMatch(type, call.str, &str);
+        std::cout << str;
+      } break;
+      case Test::ERROR: {
         assert(type.isErroneousType());
         std::cout << "error";
-        break;
+      } break;
       default: assert(false);
         break;
     }
@@ -428,6 +460,109 @@ static void test9() {
   testPrimitive(tpg);
 }
 
+static void test10() {
+  Test tpg {
+    .testName=__FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude=R"""(
+            record r1 { var x: int; }
+            record r2 { type T; var x: T; }
+            record r3 { type T=int; var x: T; }
+            record r4 { type T, Y; var x: T; }
+            class c1 {}
+            class d1 : c1 {}
+            union u1 {}
+            enum e1 { foo }
+            )""",
+    .primitive=chpl::uast::primtags::PRIM_TYPE_TO_STRING,
+    .calls={
+      { {"bool"}, Test::STRING, "bool" },
+      { {"int"}, Test::STRING, "int(64)" },
+      { {"int(8)"}, Test::STRING, "int(8)" },
+      { {"int(16)"}, Test::STRING, "int(16)" },
+      { {"int(32)"}, Test::STRING, "int(32)" },
+      { {"int(64)"}, Test::STRING, "int(64)" },
+      { {"real"}, Test::STRING, "real(64)" },
+      { {"real(32)"}, Test::STRING, "real(32)" },
+      { {"real(64)"}, Test::STRING, "real(64)" },
+      { {"bytes"}, Test::STRING, "bytes" },
+      { {"string"}, Test::STRING, "string" },
+      { {"r1"}, Test::STRING, "r1" },
+      { {"r2"}, Test::STRING, "r2" },
+      // TODO: In production 'r3' and 'r3(int)' are sometimes not the same.
+      // TODO: Frontend seems to store dependent substitutions, which is
+      //       printing out two+ subs instead of one...
+      // { {"r3"}, Test::STRING, "r3(int(64))" },
+      // { {"r3(int)"}, Test::STRING, "r3(int(64))" },
+      // { {"r2(int)"}, Test::STRING, "r2(int(64))" },
+      // { {"r3(real)"}, Test::STRING, "r3(real(64))" },
+      // { {"r4(real, r1)"}, Test::STRING, "r4(real(64), r1)" },
+      // { {"r4(r3, r2(int))"}, Test::STRING, "r4(r3, r2(int(64)))" },
+      { {"c1"}, Test::STRING, "c1" },
+      { {"c1?"}, Test::STRING, "c1?" },
+      { {"d1"}, Test::STRING, "d1" },
+      { {"d1?"}, Test::STRING, "d1?" },
+      { {"borrowed c1"}, Test::STRING, "borrowed c1" },
+      { {"unmanaged c1"}, Test::STRING, "unmanaged c1" },
+      { {"shared c1"}, Test::STRING, "shared c1" },
+      { {"owned c1"}, Test::STRING, "owned c1" },
+      { {"u1"}, Test::STRING, "u1" },
+      { {"e1"}, Test::STRING, "e1" },
+     },
+  };
+  testPrimitive(tpg);
+}
+
+static void test11() {
+  Test tpg {
+    .testName=__FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude=R"""(
+            record r1 { var x: int; }
+            record r2 { type T; var x: T; }
+            record r3 { type T=int; var x: T; }
+            record r4 { type T, Y; var x: T; }
+            class c1 {}
+            class d1 : c1 {}
+            union u1 {}
+            enum e1 { foo }
+            )""",
+    .primitive=chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
+    .calls={
+      { {"bool"}, Test::STRING, "bool" },
+      { {"int"}, Test::STRING, "int(64)" },
+      { {"int(8)"}, Test::STRING, "int(8)" },
+      { {"int(16)"}, Test::STRING, "int(16)" },
+      { {"int(32)"}, Test::STRING, "int(32)" },
+      { {"int(64)"}, Test::STRING, "int(64)" },
+      { {"real"}, Test::STRING, "real(64)" },
+      { {"real(32)"}, Test::STRING, "real(32)" },
+      { {"real(64)"}, Test::STRING, "real(64)" },
+      { {"bytes"}, Test::STRING, "bytes" },
+      { {"string"}, Test::STRING, "string" },
+      { {"r1"}, Test::STRING, "r1" },
+      { {"r2"}, Test::STRING, "r2" },
+      { {"r3"}, Test::STRING, "r3" },
+      { {"r3(int)"}, Test::STRING, "r3" },
+      { {"r2(int)"}, Test::STRING, "r2" },
+      { {"r3(real)"}, Test::STRING, "r3" },
+      { {"r4(real, r1)"}, Test::STRING, "r4" },
+      { {"r4(r3, r2(int))"}, Test::STRING, "r4" },
+      { {"c1"}, Test::STRING, "c1" },
+      { {"c1?"}, Test::STRING, "c1?" },
+      { {"d1"}, Test::STRING, "d1" },
+      { {"d1?"}, Test::STRING, "d1?" },
+      { {"borrowed c1"}, Test::STRING, "borrowed c1" },
+      { {"unmanaged c1"}, Test::STRING, "unmanaged c1" },
+      { {"shared c1"}, Test::STRING, "shared c1" },
+      { {"owned c1"}, Test::STRING, "owned c1" },
+      { {"u1"}, Test::STRING, "u1" },
+      { {"e1"}, Test::STRING, "e1" },
+     },
+  };
+  testPrimitive(tpg);
+}
+
 int main() {
   test0();
   test1();
@@ -439,4 +574,6 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
 }
