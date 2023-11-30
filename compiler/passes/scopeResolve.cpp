@@ -1705,6 +1705,7 @@ static void resolveEnumeratedTypes() {
         // Go through chains like:
         // enum color = { ... }
         // type col = color;
+        // var a = col.red;
         SymExpr* firstDeAliased = first;
         while (auto varSym = toVarSymbol(firstDeAliased->symbol())) {
           if (!varSym->hasFlag(FLAG_TYPE_VARIABLE)) break;
