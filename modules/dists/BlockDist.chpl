@@ -2302,27 +2302,3 @@ proc BlockArr.doiScan(op, dom) where (rank == 1) &&
   delete op;
   return res;
 }
-
-////// Factory functions ////////////////////////////////////////////////////
-
-@deprecated(notes="'newBlockDom' is deprecated - please use 'blockDist.createDomain' instead")
-proc newBlockDom(dom: domain) {
-  return dom dmapped blockDist(dom);
-}
-
-@deprecated(notes="'newBlockArr' is deprecated - please use 'blockDist.createArray' instead")
-proc newBlockArr(dom: domain, type eltType) {
-  var D = newBlockDom(dom);
-  var A: [D] eltType;
-  return A;
-}
-
-@deprecated(notes="'newBlockDom' is deprecated - please use 'blockDist.createDomain' instead")
-proc newBlockDom(rng: range...) {
-  return newBlockDom({(...rng)});
-}
-
-@deprecated(notes="'newBlockArr' is deprecated - please use 'blockDist.createArray' instead")
-proc newBlockArr(rng: range..., type eltType) {
-  return newBlockArr({(...rng)}, eltType);
-}

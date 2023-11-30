@@ -260,7 +260,6 @@ module ChapelArray {
   @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
   config param useNewArrayFind = false;
 
-
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -1770,24 +1769,6 @@ module ChapelArray {
       return _value.IRV;
     }
 
-    /* Yield the array elements in sorted order. */
-    @deprecated(notes="'Array.sorted' is deprecated - use Sort.sort instead")
-    iter sorted(comparator:?t = chpl_defaultComparator()) {
-      if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
-        for i in _value.dsiSorted(comparator) {
-          yield i;
-        }
-      } else if Reflection.canResolveMethod(_value, "dsiSorted") {
-        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
-      } else {
-        use Sort;
-        var copy = this;
-        sort(copy, comparator=comparator);
-        for ind in copy do
-          yield ind;
-      }
-    }
-
     @chpldoc.nodoc
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
@@ -1862,24 +1843,6 @@ module ChapelArray {
       return this.sizeAs(uint) == 0;
     }
 
-    /* Return the first value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
-    proc head(): this._value.eltType {
-      return this[this.domain.low];
-    }
-
-    /* Return the last value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
-    proc tail(): this._value.eltType {
-      return this[this.domain.high];
-    }
-
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -1904,19 +1867,6 @@ module ChapelArray {
         halt("first called on an empty array");
 
       return this(this.domain.first);
-    }
-
-    /* Reverse the order of the values in the array. */
-    @deprecated(notes="'Array.reverse' is deprecated")
-    proc ref reverse() {
-      if (!chpl__isDense1DArray()) then
-        compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.low,
-            mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.high;
-      for i in 0..#mid {
-        this[lo + i] <=> this[hi - i];
-      }
     }
 
     /*
