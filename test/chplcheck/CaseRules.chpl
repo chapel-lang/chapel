@@ -25,7 +25,7 @@ module CaseRules {
   }
 
   proc foo(camelArg: int, PascalArg: string, snake_arg: real) {
-    return camelArg + int(snake_arg) + PascalArg.size();
+    return camelArg + snake_arg : int + PascalArg.size();
   }
 
   module camelModule {}
