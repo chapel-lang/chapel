@@ -3145,11 +3145,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
 
 
 ParserExprList*
-ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
-                                          YYLTYPE* warnLoc) {
-  if (warnLoc != NULL) {
-    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc, cs.stmt);
-  }
+ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs) {
   this->clearComments();
   return this->makeList(cs);
 }

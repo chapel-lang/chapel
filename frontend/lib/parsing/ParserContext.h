@@ -717,6 +717,5 @@ struct ParserContext {
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
 
-  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs,
-                                             YYLTYPE* warnLoc = NULL);
+  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs);
 };

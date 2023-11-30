@@ -113,8 +113,8 @@ static void test4(Context* context) {
                            inline proc combine(x) {
                              value = value || x.value;
                            }
-                           inline proc generate() return value;
-                           inline proc clone() return new unmanaged AnyEvenReduceScanOp(eltType=eltType);
+                           inline proc generate() do return value;
+                           inline proc clone() do return new unmanaged AnyEvenReduceScanOp(eltType=eltType);
                          }
                          var x = AnyEvenReduceScanOp reduce f();
                          )"""");

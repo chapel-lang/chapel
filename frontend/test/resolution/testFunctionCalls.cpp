@@ -35,7 +35,7 @@ static void test1() {
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
                          R""""(
-                         proc p(param x: int(64), param y: int(64)) param return __primitive("+", x, y);
+                         proc p(param x: int(64), param y: int(64)) param do return __primitive("+", x, y);
 
                          param x = p(1,2);
                          )"""");
