@@ -117,7 +117,11 @@ def register_rules(driver):
             last_has_attribute = False
 
             for child in node:
-                yield from recurse(child, skip_direct = isinstance(child, MultiDecl))
+                is_multi_or_tuple = isinstance(child, MultiDecl) \
+                    or isinstance(child, TupleDecl)
+                
+                yield from recurse(child, 
+                                   skip_direct = is_multi_or_tuple)
 
                 if skip_direct: continue
 
@@ -139,6 +143,10 @@ def register_rules(driver):
                     consecutive.append(child)
 
             if len(consecutive) > 1:
+                print(child)
+                print(type(child))
+                print(node)
+                print(type(node))
                 yield consecutive[1]
 
         yield from recurse(root)
