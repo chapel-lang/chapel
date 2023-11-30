@@ -52,5 +52,7 @@ module ConsDecls {
   @chpldoc.nodoc
   extern var j: real;
 
-
+  //should not warn
+  var k: int;
+  var l: string;
 }
