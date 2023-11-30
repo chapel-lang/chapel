@@ -21,7 +21,7 @@
 /* Helper procedures for doing parallel I/O */
 @unstable("the 'parallelIO' module is unstable and subject to change in a future release")
 module ParallelIO {
-  use IO, BlockDist, List, CTypes, OS;
+  private use IO, BlockDist, List, CTypes, OS;
 
   private extern const qbytes_iobuf_size: c_ssize_t;
   private extern proc qio_channel_seek_unsafe(ch: qio_channel_ptr_t, nbytes:int(64)): errorCode;
@@ -33,12 +33,12 @@ module ParallelIO {
     values of type ``t`` (optionally with a header at the beginning of the file).
     It is intended to be used for situations where a ``t`` value can be of
     variable size and thus cannot be read in parallel by simply splitting the
-    file into equally sized blocks.
+    file into equally sized chunks.
 
-    The algorithm will split the file into ``d.size`` blocks of roughly equal
-    size and read each block in parallel on each locale. If multiple tasks are
-    used per locale, each locale will further decompose its block into smaller
-    blocks and read each of those in parallel.
+    The algorithm will split the file into ``d.size`` chunks of roughly equal
+    size and read each chunk in parallel on each locale. If multiple tasks are
+    used per locale, each locale will further decompose its chunk into smaller
+    chunks and read each of those in parallel.
 
     .. note:: ``t`` must:
 
@@ -55,14 +55,14 @@ module ParallelIO {
     :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
-    :returns: a block distributed array of lists of ``t`` values with one
+    :returns: a block-distributed array of lists of ``t`` values with one
       list per locale
 
     :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
-             in any of the blocks
+             in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-      to open the file
+    to open the file
   */
   proc readParallel(filePath: string, type t, tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
                     type deserializerType = defaultDeserializer,
@@ -99,7 +99,7 @@ module ParallelIO {
             r = locFile.reader(locking=false, region=taskBounds, deserializer=des),
             s = new t();
 
-        // read all the 't' values in the block into a list
+        // read all the 't' values in the chunk into a list
         while r.read(s) do
           tResults[tid].pushBack(s);
       }
@@ -117,7 +117,7 @@ module ParallelIO {
 
     This routine is essentially the same as :proc:`readParallel`, except that it
     only operates on a single locale. As such, it does not accept a ``targetLocales``
-    argument and returns a single list of ``t`` values rather than a block
+    argument and returns a single list of ``t`` values rather than a block-
     distributed array of lists.
 
     :arg filePath: a path to the file to read from
@@ -130,10 +130,10 @@ module ParallelIO {
     :returns: a list of ``t`` values
 
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
-             any of the blocks
+             any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-      to open the file
+    to open the file
   */
   proc readParallelLocal(filePath: string, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
                          type deserializerType = defaultDeserializer
@@ -158,7 +158,7 @@ module ParallelIO {
           r = f.reader(locking=false, region=taskBounds, deserializer=des),
           s = new t();
 
-      // read all the 't' values in the block into a list
+      // read all the 't' values in the chunk into a list
       while r.read(s) do
         results[tid].pushBack(s);
     }
@@ -176,13 +176,13 @@ module ParallelIO {
 
     This routine assumes that the file is composed of a series of deserializable
     values of type ``t`` (optionally with a header at the beginning of the file).
-    Each ``t`` must be separated by a delimiter which can either be provided as
-    a ``string`` or ``bytes`` value.
+    Each ``t`` must be separated by exactly one delimiter which can either be
+    provided as a ``string`` or ``bytes`` value.
 
-    The algorithm will use the delimiter to split the file into ``d.size`` blocks
-    of roughly equal size and read each block in parallel on each locale. If
+    The algorithm will use the delimiter to split the file into ``d.size`` chunks
+    of roughly equal size and read each chunk in parallel on each locale. If
     multiple tasks are used per locale, each locale will further decompose its
-    block into smaller blocks and read each of those in parallel.
+    chunk into smaller chunks and read each of those in parallel.
 
     This procedure can be used for a variety of purposes, such as reading a CSV
     file in parallel. To do so, the delimiter should keep its default value of
@@ -216,13 +216,13 @@ module ParallelIO {
     :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
-    :returns: a block distributed array of ``t`` values
+    :returns: a block-distributed array of ``t`` values
 
     :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
-             in any of the blocks
+             in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-      to open the file
+    to open the file
   */
   proc readParallelDelimited(filePath: string, in delim: ?dt = b"\n", type t, tasksPerLoc: int = -1,
                              skipHeaderLines: int = 0, type deserializerType = defaultDeserializer,
@@ -281,10 +281,10 @@ module ParallelIO {
     :returns: an array of ``t`` values
 
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
-              any of the blocks
+              any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-      to open the file
+    to open the file
   */
   proc readParallelDelimitedLocal(filePath: string, in delim: ?dt = b"\n", type t,
                                   nTasks: int = here.maxTaskPar, skipHeaderLines: int = 0,
@@ -318,42 +318,43 @@ module ParallelIO {
   }
 
   /*
-    Find ``n`` byte offsets in the file ``f`` where a deserializable value of
-    type ``t`` begins.
+    Get an array of ``n+1`` roughly evenly spaced byte offsets in the file
+    ``f`` where a deserializable value of type ``t`` begins.
 
-    The procedure will split the file into ``bounds.size / n`` blocks and
-    search for a starting offset as close to the start of each block as
-    possible.
+    The procedure will split the file into approximately ``bounds.size / n``
+    sized chunks and search for a starting offset near the boundary of each
+    chunk where a ``t`` can be deserialized.
 
     :arg f: the file to search
-    :arg n: the number of starting offsets to find
-    :arg bounds: a range of byte offsets in the file to search
-    :findStart: whether or not to search for the first offset (near the beginning of the file).
-        if ``false``, the first offset will be ``bounds.low``
-        if ``true``, the first offset will be the first offset in the file where a value of type ``t`` can be found
+    :arg n: the number of chunks to find
+    :arg bounds: a range of byte offsets to break into chunks
+    :arg findStart: whether or not to search for the first offset
+                  * if ``false``, the first offset will be ``bounds.low``
+                  * if ``true``, the first offset will be found by searching for a ``t`` after ``bounds.low``
     :arg deserializerType: the type of deserializer to use
 
-    :returns: a length ``n+1`` array of offsets (the last offset is ``bounds.high``)
+    :returns: a length ``n+1`` array of byte offsets (the last offset is
+              ``bounds.high``)
 
-    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in any of the blocks
+    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
+              any of the chunks
   */
   proc findByteOffsets(f: file, n: int, bounds: range, type t, findStart: bool,
                        type deserializerType = defaultDeserializer
   ) : [] int throws {
-    var startOffsets: [0..n] int;
-    const numBytesPerBlock = bounds.size / n;
+    const approxBytesPerChunk = bounds.size / n,
+          offsetIndices = if findStart then 0..<n else 1..<n;
 
+    var startOffsets: [0..n] int;
     startOffsets[0] = bounds.low;
     startOffsets[n] = bounds.high;
 
-    const offsetIndices = if findStart then 0..<n else 1..<n;
-
     for i in offsetIndices do {
-      const estOffset = bounds.low + i * numBytesPerBlock,
+      const estOffset = bounds.low + i * approxBytesPerChunk,
             startOffset = max(estOffset - (qbytes_iobuf_size / 2), bounds.low),
             stopOffset = min(startOffset + qbytes_iobuf_size, bounds.high);
 
-      // TODO: if numBytesPerBlock > qbytes_iobuf_size and each 't' is _very_ large,
+      // TODO: if approxBytesPerChunk > qbytes_iobuf_size and each 't' is _very_ large,
       // this method could fail to find a starting offset in the first iobuf chunk.
       // Setup a mechanism to read a new buffer-chunk from the file if we step
       // outside the first?
@@ -378,9 +379,9 @@ module ParallelIO {
         // error out if a starting offset cannot be found in the iobuf chunk
         if offset < startOffset || offset > stopOffset {
           r.revert();
-          throw new Error(
+          throw new OffsetNotFoundError(
             "Failed to find starting file offset in the range (" + startOffset:string + " .. " + stopOffset:string +
-            ") for block " + i:string + " of " + n:string + ". Try using fewer tasks."
+            ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
           );
         }
 
@@ -399,7 +400,7 @@ module ParallelIO {
         r.commit();
 
         // if successful, we found a starting offset
-        // save it and move on to the next block
+        // save it and move on to the next chunk
         startOffsets[i] = offset;
         break;
       }
@@ -426,11 +427,21 @@ module ParallelIO {
   }
 
   /*
-    Get an array of n+1 byte offsets that divide the file 'f' into 'n' roughly
-    equally sized chunks, where each file offset lines up with a delimiter.
+    Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+    roughly equally sized chunks, where each byte offset lines up with a
+    delimiter.
 
-    Skip the first 'skipHeaderLines' lines of the file before dividing it
-    into chunks.
+    :arg f: the file to search
+    :arg delim: the delimiter to use to separate the file into chunks
+    :arg n: the number of chunks to find
+    :arg bounds: a range of byte offsets to break into chunks
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the range
+
+    :returns: a length ``n+1`` array of byte offsets (the last offset is
+              ``bounds.high``)
+
+    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
+              any of the chunks
   */
   proc findFileChunks(ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
     where dt == bytes || dt == string
@@ -461,9 +472,16 @@ module ParallelIO {
   }
 
   /*
-      Given an array of byte offsets, return an array of line offsets, where
-      lineOffsets[i] is the number of delimited items in the file up to the i-th
-      byte offset.
+    Get a prefix sum of the number of items in each chunk of the file ``f``,
+    where the chunks are defined by the ``byteOffsets`` array, and each item
+    is separated by the given delimiter.
+
+    :arg f: the file to search
+    :arg delim: the delimiter used to separate items in the file
+    :arg byteOffsets: an array of byte offsets that divide the file into chunks
+
+    :returns: an array of length ``byteOffsets.size`` containing the number of
+              items in the file before the start of each chunk
   */
   proc findItemOffsets(ref f: file, delim: ?dt, byteOffsets: [?d] int): [d] int
     where dt == bytes || dt == string
@@ -471,7 +489,6 @@ module ParallelIO {
     var nPerChunk: [d] int;
 
     coforall c in 0..<d.high with (ref nPerChunk) {
-      // open a fileReader over the region of the file corresponding to the c'th chunk
       const r = f.reader(locking=false, region=byteOffsets[c]..<byteOffsets[c+1]);
 
       // count the number of items in the chunk
@@ -484,14 +501,14 @@ module ParallelIO {
           break;
         }
       }
-      nPerChunk[c+1] = n; // (c+1) because we want an _exclusive_ prefix-sum below
+      nPerChunk[c+1] = n; // (c+1) because we want an exclusive prefix-sum below
     }
 
     return (+ scan nPerChunk); // compute the number of items leading up to each chunk
   }
 
   /*
-    An error thrown when a starting offset cannot be found in a block of a file.
+    An error thrown when a starting offset cannot be found in a chunk of a file.
   */
   class OffsetNotFoundError: Error {}
 }
