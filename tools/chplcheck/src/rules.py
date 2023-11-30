@@ -101,45 +101,86 @@ def register_rules(driver):
                 method_seen = True
         return True
 
+    #Four things have to match between consecutive decls for this to warn:
+    # 1. same type (or lack thereof)
+    # 2. same kind
+    # 3. same attributes
+    # 4. same linkage
     @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
+            var_node = None
             if isinstance(node, MultiDecl):
-                for child in node:
-                    if isinstance(child, Variable): return child.kind()
-            elif isinstance(node, Variable):
-                return node.kind()
-            return None
-
-        def recurse(node, skip_direct = False):
-            consecutive = []
-            last_kind = None
-            last_has_attribute = False
-
-            for child in node:
-                is_multi_or_tuple = isinstance(child, MultiDecl) \
-                    or isinstance(child, TupleDecl)
                 
-                yield from recurse(child, skip_direct = is_multi_or_tuple)
+                for child in node:
+                    if isinstance(child, Variable): var_node = child
+            elif isinstance(node, Variable):
+                var_node = node
+            
+            if var_node is None:
+                return None
+            
+            var_type = None
+            var_type_expr = var_node.type_expression()
 
-                if skip_direct: continue
+            if isinstance(var_type_expr, FnCall):
+                #for function call, we need to match all the components
+                var_type = ''
+                for child in var_type_expr:
+                    if child is None:
+                        continue
+                    if 'name' in dir(child):
+                        var_type += child.name()
+                    elif 'text' in dir(child):
+                        var_type += child.text()
+            elif isinstance(var_type_expr, Identifier):
+                var_type = var_type_expr.name()
+            
+            var_kind = var_node.kind()
 
-                new_kind = is_relevant_decl(child)
-                has_attribute = child.attribute_group() is not None
-                any_has_attribute = last_has_attribute or has_attribute
-                compatible_kinds = not any_has_attribute and (last_kind is None or last_kind == new_kind)
-                last_kind = new_kind
-                last_has_attribute = has_attribute
+            var_attributes = ''
+            var_attribute_group = var_node.attribute_group()
+            if var_attribute_group is not None:
+                for attribute_node in var_attribute_group:
+                    if attribute_node is not None:
+                        var_attributes += attribute_node.name() + " "
+            
+            var_linkage = var_node.linkage()
 
-                # If we ran out of compatible decls, see if we can return them.
-                if not compatible_kinds:
+            return (var_type, var_kind, var_attributes, var_linkage)
+        
+        def recurse(node):
+            consecutive = []
+            last_characteristics = None
+
+            
+            for child in node:
+                #we want to skip Comments entirely
+                if isinstance(child,Comment):
+                    continue
+                
+                #we want to do MultiDecls and TupleDecls, but not recurse
+                skip_children = isinstance(child, MultiDecl) \
+                    or isinstance(child, TupleDecl) \
+                
+                if not skip_children:
+                    yield from recurse(child)
+
+                new_characteristics = is_relevant_decl(child)
+                compatible = new_characteristics is not None and \
+                    new_characteristics == last_characteristics
+                
+                last_characteristics = new_characteristics
+                
+                
+                if compatible:
+                    consecutive.append(child)
+                else:
+                    #this one doesn't match, yield any from previous sequence
+                    # and start looking for matches for this one
                     if len(consecutive) > 1:
                         yield consecutive[1]
-                    consecutive = []
-
-                # If this could be a compatible decl, start a new list.
-                if new_kind is not None:
-                    consecutive.append(child)
+                    consecutive = [child]
 
             if len(consecutive) > 1:
                 yield consecutive[1]

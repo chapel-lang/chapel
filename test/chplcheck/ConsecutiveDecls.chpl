@@ -55,4 +55,17 @@ module ConsDecls {
   //should not warn
   var k: int;
   var l: string;
+
+  //should not warn
+  var m: int;
+  class MyClass {
+    var n: int;
+  }
+  var o: int;
+  //comment between should not interfere.
+  var p: int;
+  extern var c_var: int(32); //its type is a function call
+  extern var c_var2: int(32);
+
+
 }
