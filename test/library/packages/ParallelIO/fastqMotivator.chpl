@@ -3,14 +3,10 @@ use fastqSequence;
 
 config const nTasks = here.maxTaskPar;
 
-// read in parallel
-var sequences = readParallelLocal("data.fastq", fastQSequence, nTasks);
+const sequences = readParallelLocal("data.fastq", fastQSequence, nTasks);
 
-// print a few sequences
 const n = sequences.size;
-writeln(n);
-writeln(sequences[0].seq);
-writeln(sequences[1].seq);
-writeln(sequences[25].seq);
-writeln(sequences[n-2].seq);
-writeln(sequences[n-1].seq);
+writeln("read ", n, " sequences");
+for i in 0..<5 do writeln(sequences[i].seq);
+writeln("...");
+for i in n-5..<n do writeln(sequences[i].seq);

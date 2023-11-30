@@ -14,6 +14,7 @@ proc main() {
   const l1 = createRandomJsonFile(n, fileName);
   const l2 = readParallelLocal(fileName, R, nTasks, skipHeaderBytes=-1, jsonDeserializer);
 
+  assert(l2.size == n);
   for (j1, j2) in zip(l1, l2) {
     assert(j1.x == j2.x);
     assert(abs(j1.y - j2.y) < 1e-6);

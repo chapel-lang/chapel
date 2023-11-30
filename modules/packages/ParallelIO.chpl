@@ -67,10 +67,10 @@ module ParallelIO {
   proc readParallel(filePath: string, type t, tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
                     type deserializerType = defaultDeserializer,
                     targetLocales: [?d] locale = Locales
-  ): [] list(t) throws
+  ): [] t throws
     where d.rank == 1
   {
-    const OnePerLoc = blockDist.createDomain(d);
+    const OnePerLoc = blockDist.createDomain({0..<d.size}, targetLocales=targetLocales);
     var results: [OnePerLoc] list(t),
         findStart = false,
         globalStartOffset = 0;
@@ -81,14 +81,15 @@ module ParallelIO {
       globalStartOffset = skipHeaderBytes;
     }
 
+
     // find the starting offsets for each locale
     const fMeta = open(filePath, ioMode.r),
           fileBounds = globalStartOffset..<fMeta.size,
           byteOffsets = findByteOffsets(fMeta, d.size, fileBounds, t, findStart, deserializerType);
 
-    coforall loc in targetLocales with (ref results) do on loc {
+    coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
-            locBounds = byteOffsets[loc.id]..<byteOffsets[loc.id+1],
+            locBounds = byteOffsets[id]..<byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
             tByteOffsets = findByteOffsets(locFile, nTasks, locBounds, t, false, deserializerType);
 
@@ -106,19 +107,26 @@ module ParallelIO {
 
       // gather the results from each task into a single list
       for tid in 0..<nTasks do
-        results[loc.id].pushBack(tResults[tid]);
+        results[id].pushBack(tResults[tid]);
     }
 
-    return results;
+    const nPerLoc = [i in 0..d.size] if i > d.high then 0 else results[i].size,
+          itemOffsets = (+ scan nPerLoc) - nPerLoc;
+
+    var result: [0..<itemOffsets.last] t;
+    coforall (loc, id) in zip(targetLocales, 0..) do on loc do
+      // TODO: maybe add some aggregation here for the few items that will end up on adjacent locales?
+      result[itemOffsets[id]..<itemOffsets[id+1]] = results[id].toArray();
+
+    return result;
   }
 
   /*
     Read a file in parallel into a list.
 
     This routine is essentially the same as :proc:`readParallel`, except that it
-    only operates on a single locale. As such, it does not accept a ``targetLocales``
-    argument and returns a single list of ``t`` values rather than a block-
-    distributed array of lists.
+    only operates on a single locale. As such, it does not accept a
+    ``targetLocales`` argument and it returns a non-distributed array.`
 
     :arg filePath: a path to the file to read from
     :arg t: the type of value to read from the file
@@ -127,7 +135,7 @@ module ParallelIO {
         (if ``-1``, search for the first ``t`` value in the file and start there)
     :arg deserializerType: the type of deserializer to use
 
-    :returns: a list of ``t`` values
+    :returns: a default rectangular array of ``t`` values
 
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
              any of the chunks
@@ -137,7 +145,7 @@ module ParallelIO {
   */
   proc readParallelLocal(filePath: string, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
                          type deserializerType = defaultDeserializer
-  ): list(t) throws {
+  ): [] t throws {
     var findStart = false,
         globalStartOffset = 0;
 
@@ -163,10 +171,12 @@ module ParallelIO {
         results[tid].pushBack(s);
     }
 
-    // gather the results from each task into a single list
-    var result = new list(t);
-    for tid in 0..<nTasks do
-      result.pushBack(results[tid]);
+    const nPerTask = [r in results] r.size,
+          itemOffsets = (+ scan nPerTask) - nPerTask;
+
+    var result: [0..<itemOffsets.last] t;
+    coforall tid in 0..<nTasks do
+      result[itemOffsets[tid]..<itemOffsets[tid+1]] = results[tid].toArray();
 
     return result;
   }
@@ -184,12 +194,18 @@ module ParallelIO {
     multiple tasks are used per locale, each locale will further decompose its
     chunk into smaller chunks and read each of those in parallel.
 
+    .. note:: ``t`` must:
+
+          * have a 'deserialize method'
+          * have a default (zero argument) initializer
+          * not contain the delimiter in its serialized form
+
     This procedure can be used for a variety of purposes, such as reading a CSV
-    file in parallel. To do so, the delimiter should keep its default value of
-    ``b"\n"``. This will cause the file to be split by lines, where each line
-    will be parsed as a ``t`` value.  The comma values between fields must be
-    parsed by ``t``'s deserialize method. The two ways to accomplish this are
-    (1) by using a custom ``deserialize`` method that parses the comma values, e.g.,
+    file. To do so, the delimiter should keep its default value of ``b"\n"``.
+    The file will then split by lines, where each line will be parsed as a ``t``
+    value. The commas between ``t``s fields must be parsed by it's deserialize
+    method. This can be accomplished in one of two ways: (1) by using a custom
+    ``deserialize`` method that parses the comma values manually, e.g.,
 
     .. code-block:: chapel
 
@@ -204,7 +220,7 @@ module ParallelIO {
           this.b = reader.read(int(8));
         }
 
-    or (2) by providing a deserializer that will handle commas appropriately
+    or (2) by using a deserializer that will handle commas appropriately
     with ``t``'s default ``deserialize`` method.
 
     :arg filePath: a path to the file to read from
@@ -235,28 +251,26 @@ module ParallelIO {
           byteOffsets = findFileChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
           itemOffsets = findItemOffsets(fMeta, delim, byteOffsets);
 
-    const resDom = blockDist.createDomain({0..<itemOffsets.last}, targetLocales=targetLocales),
-          results: [resDom] t;
+    const resDom = blockDist.createDomain({0..<itemOffsets.last}, targetLocales=targetLocales);
+    var results: [resDom] t;
 
-    coforall loc in targetLocales with (ref results) do on loc {
+    coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
-            locBounds = byteOffsets[loc.id]..<byteOffsets[loc.id+1],
+            locBounds = byteOffsets[id]..byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
             tByteOffsets = findFileChunks(locFile, delim, nTasks, locBounds, 0),
-            tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[loc.id];
+            tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
 
-      coforall tid in 0..<nTasks {
+      coforall tid in 0..<nTasks with (ref results) {
         var des: deserializerType;
-        const taskBounds = tByteOffsets[tid]..<tByteOffsets[tid+1],
+        const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1],
               r = locFile.reader(locking=false, region=taskBounds, deserializer=des);
 
-        var item: t,
-            i = tItemOffsets[c];
-        while r.read(item) {
-          // TODO: maybe add some aggregation here for the few items that will end up on adjacent locales?
+        var item: t, first = true;
+        for i in tItemOffsets[tid]..<tItemOffsets[tid+1] {
+          if first then first = false; else r.advanceThrough(delim);
+          r.read(item);
           results[i] = item;
-          r.advanceThrough(delim);
-          i += 1;
         }
       }
     }
@@ -278,7 +292,7 @@ module ParallelIO {
     :arg skipHeaderLines: the number of lines to skip at the beginning of the file
     :arg deserializerType: the type of deserializer to use
 
-    :returns: an array of ``t`` values
+    :returns: a default rectangular array of ``t`` values
 
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
               any of the chunks
@@ -297,8 +311,8 @@ module ParallelIO {
           byteOffsets = findFileChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
           itemOffsets = findItemOffsets(f, delim, byteOffsets);
 
-    const resDom = blockDist.createDomain({0..<itemOffsets.last}),
-          results: [resDom] t;
+    const resDom = {0..<itemOffsets.last};
+    var results: [resDom] t;
 
     coforall tid in 0..<nTasks with (ref results) {
       var des: deserializerType;
@@ -339,7 +353,7 @@ module ParallelIO {
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
               any of the chunks
   */
-  proc findByteOffsets(f: file, n: int, bounds: range, type t, findStart: bool,
+  proc findByteOffsets(const ref f: file, n: int, bounds: range, type t, findStart: bool,
                        type deserializerType = defaultDeserializer
   ) : [] int throws {
     const approxBytesPerChunk = bounds.size / n,
@@ -349,82 +363,146 @@ module ParallelIO {
     startOffsets[0] = bounds.low;
     startOffsets[n] = bounds.high;
 
-    for i in offsetIndices do {
+    for i in offsetIndices {
       const estOffset = bounds.low + i * approxBytesPerChunk,
-            startOffset = max(estOffset - (qbytes_iobuf_size / 2), bounds.low),
-            stopOffset = min(startOffset + qbytes_iobuf_size, bounds.high);
-
-      // TODO: if approxBytesPerChunk > qbytes_iobuf_size and each 't' is _very_ large,
-      // this method could fail to find a starting offset in the first iobuf chunk.
-      // Setup a mechanism to read a new buffer-chunk from the file if we step
-      // outside the first?
-      // Or is that a non issue since this method would be extremely slow in that
-      // case anyway? (many many sequential try/throw/catch attempts)
+            maxOffset = min(estOffset + qbytes_iobuf_size, bounds.high);
 
       var des: deserializerType,
-          r = f.reader(locking=false, region=startOffset.., deserializer=des);
-      r.mark();
+          r = f.reader(locking=false, region=estOffset.., deserializer=des);
 
-      // seek to the start offset and 'mark' to ensure the iobuf chunk stays in memory
-      // r.seek(startOffset..); r.mark();
-      // read a byte to force the buffer to be filled
-      r.mark(); r.readByte(); r.revert();
-      // start reading from the estimated offset
-      qio_channel_seek_unsafe(r._channel_internal, estOffset - startOffset);
-
-      var prevOffset = r.offset();
-      for delta in seekIndices(rightOnly = (i == 0)) {
-        const offset = estOffset + delta;
-
-        // error out if a starting offset cannot be found in the iobuf chunk
-        if offset < startOffset || offset > stopOffset {
-          r.revert();
-          throw new OffsetNotFoundError(
-            "Failed to find starting file offset in the range (" + startOffset:string + " .. " + stopOffset:string +
-            ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
-          );
-        }
-
-        // seek to 'offset'
-        qio_channel_seek_unsafe(r._channel_internal, offset - prevOffset);
-        prevOffset = offset;
-
-        // try to read a 't'
+      for byteOffset in estOffset..<maxOffset {
         r.mark();
         try {
           r.read(t);
-        } catch e {
-          r.revert();
-          continue;
+        } catch {
+          r.revert();   // move back to the marked position
+          r.readByte(); // advance to the next byte
+          continue;     // try again
         }
         r.commit();
-
-        // if successful, we found a starting offset
-        // save it and move on to the next chunk
-        startOffsets[i] = offset;
+        startOffsets[i] = byteOffset;
         break;
       }
+
+      if r.offset() == maxOffset - 1 {
+        throw new OffsetNotFoundError(
+          "Failed to find starting file offset in the range (" + estOffset:string + " .. " + maxOffset:string +
+          ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+        );
+      }
     }
+
     return startOffsets;
   }
 
-  private iter seekIndices(rightOnly: bool) {
-    if rightOnly {
-      for i in 0.. do yield i;
-    } else {
-      // 0, 1, -1, 2, -2, 3, -3, ...
-      var step = 1,
-          dir = 1,
-          i = 0;
+  // /*
+  //   Get an array of ``n+1`` roughly evenly spaced byte offsets in the file
+  //   ``f`` where a deserializable value of type ``t`` begins.
 
-      while true {
-        yield i;
-        i += step * dir;
-        step += 1;
-        dir *= -1;
-      }
-    }
-  }
+  //   The procedure will split the file into approximately ``bounds.size / n``
+  //   sized chunks and search for a starting offset near the boundary of each
+  //   chunk where a ``t`` can be deserialized.
+
+  //   :arg f: the file to search
+  //   :arg n: the number of chunks to find
+  //   :arg bounds: a range of byte offsets to break into chunks
+  //   :arg findStart: whether or not to search for the first offset
+  //                 * if ``false``, the first offset will be ``bounds.low``
+  //                 * if ``true``, the first offset will be found by searching for a ``t`` after ``bounds.low``
+  //   :arg deserializerType: the type of deserializer to use
+
+  //   :returns: a length ``n+1`` array of byte offsets (the last offset is
+  //             ``bounds.high``)
+
+  //   :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
+  //             any of the chunks
+  // */
+  // proc findByteOffsets(f: file, n: int, bounds: range, type t, findStart: bool,
+  //                      type deserializerType = defaultDeserializer
+  // ) : [] int throws {
+  //   const approxBytesPerChunk = bounds.size / n,
+  //         offsetIndices = if findStart then 0..<n else 1..<n;
+
+  //   var startOffsets: [0..n] int;
+  //   startOffsets[0] = bounds.low;
+  //   startOffsets[n] = bounds.high;
+
+  //   for i in offsetIndices {
+  //     const estOffset = bounds.low + i * approxBytesPerChunk,
+  //           startOffset = max(estOffset - (qbytes_iobuf_size / 2), bounds.low),
+  //           stopOffset = min(startOffset + qbytes_iobuf_size, bounds.high);
+
+  //     // TODO: if approxBytesPerChunk > qbytes_iobuf_size and each 't' is _very_ large,
+  //     // this method could fail to find a starting offset in the first iobuf chunk.
+  //     // Setup a mechanism to read a new buffer-chunk from the file if we step
+  //     // outside the first?
+  //     // Or is that a non issue since this method would be extremely slow in that
+  //     // case anyway? (many many sequential try/throw/catch attempts)
+
+  //     var des: deserializerType,
+  //         r = f.reader(locking=false, region=startOffset.., deserializer=des);
+  //     r.mark();
+
+  //     // seek to the start offset and 'mark' to ensure the iobuf chunk stays in memory
+  //     // r.seek(startOffset..); r.mark();
+  //     // read a byte to force the buffer to be filled
+  //     r.mark(); r.readByte(); r.revert();
+  //     // start reading from the estimated offset
+  //     qio_channel_seek_unsafe(r._channel_internal, estOffset - startOffset);
+
+  //     var prevOffset = r.offset();
+  //     for delta in seekIndices(rightOnly = (i == 0)) {
+  //       const offset = estOffset + delta;
+
+  //       // error out if a starting offset cannot be found in the iobuf chunk
+  //       if offset < startOffset || offset > stopOffset {
+  //         r.revert();
+  //         throw new OffsetNotFoundError(
+  //           "Failed to find starting file offset in the range (" + startOffset:string + " .. " + stopOffset:string +
+  //           ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+  //         );
+  //       }
+
+  //       // seek to 'offset'
+  //       qio_channel_seek_unsafe(r._channel_internal, offset - prevOffset);
+  //       prevOffset = offset;
+
+  //       // try to read a 't'
+  //       r.mark();
+  //       try {
+  //         r.read(t);
+  //       } catch e {
+  //         r.revert();
+  //         continue;
+  //       }
+  //       r.commit();
+
+  //       // if successful, we found a starting offset
+  //       // save it and move on to the next chunk
+  //       startOffsets[i] = offset;
+  //       break;
+  //     }
+  //   }
+  //   return startOffsets;
+  // }
+
+  // private iter seekIndices(rightOnly: bool) {
+  //   if rightOnly {
+  //     for i in 0.. do yield i;
+  //   } else {
+  //     // 0, 1, -1, 2, -2, 3, -3, ...
+  //     var step = 1,
+  //         dir = 1,
+  //         i = 0;
+
+  //     while true {
+  //       yield i;
+  //       i += step * dir;
+  //       step += 1;
+  //       dir *= -1;
+  //     }
+  //   }
+  // }
 
   /*
     Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
@@ -443,7 +521,7 @@ module ParallelIO {
     :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
               any of the chunks
   */
-  proc findFileChunks(ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
+  proc findFileChunks(const ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
     where dt == bytes || dt == string
   {
     const r = f.reader(locking=false, region=bounds);
@@ -456,7 +534,7 @@ module ParallelIO {
     chunkOffsets[0] = r.offset();
     chunkOffsets[n] = bounds.high;
 
-    for i in 1..<n do {
+    for i in 1..<n {
       const estOffset = chunkOffsets[i-1] + approxBytesPerChunk;
       r.seek(estOffset..);              // seek to the estimated offset
       try {
@@ -483,13 +561,13 @@ module ParallelIO {
     :returns: an array of length ``byteOffsets.size`` containing the number of
               items in the file before the start of each chunk
   */
-  proc findItemOffsets(ref f: file, delim: ?dt, byteOffsets: [?d] int): [d] int
+  proc findItemOffsets(const ref f: file, delim: ?dt, byteOffsets: [?d] int): [d] int throws
     where dt == bytes || dt == string
   {
     var nPerChunk: [d] int;
 
     coforall c in 0..<d.high with (ref nPerChunk) {
-      const r = f.reader(locking=false, region=byteOffsets[c]..<byteOffsets[c+1]);
+      const r = f.reader(locking=false, region=byteOffsets[c]..byteOffsets[c+1]);
 
       // count the number of items in the chunk
       var n = 0, line: bytes;
@@ -510,5 +588,8 @@ module ParallelIO {
   /*
     An error thrown when a starting offset cannot be found in a chunk of a file.
   */
-  class OffsetNotFoundError: Error {}
+  class OffsetNotFoundError: Error {
+    proc init() do super.init();
+    proc init(msg: string) do super.init(msg);
+  }
 }
