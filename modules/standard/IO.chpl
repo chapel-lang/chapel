@@ -835,6 +835,8 @@ enum endianness {
   little = 2
 }
 
+@deprecated(":enum: ioendian is dprecated - please use :enum: endianness instead")
+type ioendian = endianness;
 
 /*
 
