@@ -202,6 +202,9 @@ void checkForInvalidPromotions() {
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+
+    if (!shouldWarnUnstableFor(ce)) continue;
+
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
           fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
@@ -218,9 +221,8 @@ void checkForInvalidPromotions() {
             if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
               if(symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
-                         "modifying an array over an array of indices is "
-                         "deprecated and will be an error in a future release "
-                         "- please use an explicit loop instead");
+                         "modifying the result of a promoted index expression "
+                         "is unstable");
               }
             }
           }
