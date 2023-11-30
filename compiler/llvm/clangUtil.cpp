@@ -4712,11 +4712,13 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets;
+  std::string targets = "-targets=host-x86_64-unknown-linux";
 #if HAVE_LLVM_VER >= 150
   std::string inputs = "-input=/dev/null ";
+  std::string outputs = "-output=" + fatbinFilename;
 #else
   std::string inputs = "-inputs=/dev/null";
+  std::string outputs = "-outputs=" + fatbinFilename;
 #endif
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
@@ -4748,11 +4750,10 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
 
   }
   std::string bundlerCmd = findSiblingClangToolPath("clang-offload-bundler") +
-                           " -type=o -bundle-align=4096" +
-                           " -targets=host-x86_64-unknown-linux" +
+                           " -type=o -bundle-align=4096 " +
                            targets + " " +
-                           inputs +
-                           " -output=" + fatbinFilename;
+                           inputs + " " +
+                           outputs;
 
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
