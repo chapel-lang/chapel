@@ -256,6 +256,9 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
+  @chpldoc.nodoc
+  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
+  config param useNewArrayFind = false;
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
