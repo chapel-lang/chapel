@@ -112,7 +112,6 @@ def register_rules(driver):
         def is_relevant_decl(node):
             var_node = None
             if isinstance(node, MultiDecl):
-                
                 for child in node:
                     if isinstance(child, Variable): var_node = child
             elif isinstance(node, Variable):
@@ -155,7 +154,6 @@ def register_rules(driver):
             consecutive = []
             last_characteristics = None
 
-            
             for child in node:
                 #we want to skip Comments entirely
                 if isinstance(child,Comment):
@@ -173,8 +171,7 @@ def register_rules(driver):
                     new_characteristics == last_characteristics
                 
                 last_characteristics = new_characteristics
-                
-                
+
                 if compatible:
                     consecutive.append(child)
                 else:
