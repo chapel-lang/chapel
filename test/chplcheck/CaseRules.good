@@ -1,0 +1,16 @@
+CaseRules.chpl:4: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:8: node violates rule CamelCaseFunctions
+CaseRules.chpl:9: node violates rule CamelCaseFunctions
+CaseRules.chpl:11: node violates rule CamelCaseRecords
+CaseRules.chpl:12: node violates rule CamelCaseRecords
+CaseRules.chpl:15: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:19: node violates rule CamelCaseFunctions
+CaseRules.chpl:20: node violates rule CamelCaseFunctions
+CaseRules.chpl:23: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:27: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:31: node violates rule PascalCaseModules
+CaseRules.chpl:33: node violates rule PascalCaseModules
+CaseRules.chpl:35: node violates rule PascalCaseClasses
+CaseRules.chpl:37: node violates rule PascalCaseClasses
+CaseRules.chpl:39: node violates rule CamelOrPascalCaseVariables
+CaseRules.chpl:40: node violates rule CamelOrPascalCaseVariables

@@ -56,7 +56,10 @@ def main():
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as errors:
             asts = context.parse(filename)
-            for (node, rule) in driver.run_checks(context, asts):
+            violations = list(driver.run_checks(context, asts))
+            #sort the failures in order of appearance
+            violations.sort(key=lambda f : f[0].location().start()[0])
+            for (node, rule) in violations:
                 print_violation(node, rule)
 
 if __name__ == "__main__":
