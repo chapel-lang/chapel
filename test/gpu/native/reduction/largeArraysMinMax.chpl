@@ -6,8 +6,20 @@ config const kind = "min";
 const isMin = kind=="min";
 assert(isMin || kind=="max");
 
-config const n = 2*max(int(32));
-config const setIdx = n-1;
+config var n = 4_000_000_000;
+config var setIdx = n-1;
+
+// testing large data:
+// 1. is only meaningful if the reduction is actually done on a device
+// 2. times out testing if we use CPU-based reduction, especially if it is a
+//    fallback.
+// So, override n/setIdx to be something smaller
+extern proc chpl_gpu_can_reduce(): bool;
+if !chpl_gpu_can_reduce() {
+  n = 100;
+  setIdx = n-1;
+}
+
 assert(n>setIdx);
 
 config const printResult = false;

@@ -480,4 +480,8 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   }
 }
 
+bool chpl_gpu_impl_can_reduce(void) {
+  return true;
+}
+
 #endif // HAS_GPU_LOCALE
