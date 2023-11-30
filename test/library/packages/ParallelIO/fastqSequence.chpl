@@ -13,18 +13,6 @@ record fastQSequence: serializable {
     this.qualities = b"";
   }
 
-  // this initializer must throw when a sequence cannot be deserialized
-  // thus deserialization is done in phase 2 (after "init this")
-  proc init(reader: fileReader(?), ref deserializer) throws {
-    init this;
-    var x = new fastQSequence();
-    x.deserialize(reader, deserializer);
-    this.seqID = x.seqID;
-    this.seq = x.seq;
-    this.desc = x.desc;
-    this.qualities = x.qualities;
-  }
-
   proc ref deserialize(reader: fileReader(?), ref deserializer) throws {
     reader.readLiteral(b"@", ignoreWhitespace=false);
     const ID   = reader.readLine(string, stripNewline=true);

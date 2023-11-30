@@ -58,13 +58,13 @@ proc R.init(x: int, y:real) {
   this.y = y;
 }
 
-proc R.init(reader: fileReader(?), ref deserializer) throws {
-  init this;
-  var r = new R();
-  r.deserialize(reader, deserializer);
-  this.x = r.x;
-  this.y = r.y;
-}
+// proc R.init(reader: fileReader(?), ref deserializer) throws {
+//   init this;
+//   var r = new R();
+//   r.deserialize(reader, deserializer);
+//   this.x = r.x;
+//   this.y = r.y;
+// }
 
 proc ref R.deserialize(reader: fileReader(?), ref deserializer) throws {
   var des = deserializer.startRecord(reader, "R");

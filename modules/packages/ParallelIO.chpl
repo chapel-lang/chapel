@@ -27,23 +27,23 @@ module ParallelIO {
   private extern proc qio_channel_seek_unsafe(ch: qio_channel_ptr_t, nbytes:int(64)): errorCode;
 
   /*
-    Read a file in parallel into a distributed array of lists.
+    Read a file in parallel into a block-distributed array.
 
     This routine assumes that the file is composed of a series of deserializable
     values of type ``t`` (optionally with a header at the beginning of the file).
-    It is intended to be used for situations where a ``t`` value can be of
-    variable size and thus cannot be read in parallel by simply splitting the
-    file into equally sized chunks.
+    It is intended for use in situations where a ``t``'s serialized form is of
+    variable length, such as when it contains a string field. If the file contains a
+    reliable delimiter between each ``t``, consider using :proc:`readParallelDelimited`
+    instead for better performance.
 
-    The algorithm will split the file into ``d.size`` chunks of roughly equal
-    size and read each chunk in parallel on each locale. If multiple tasks are
-    used per locale, each locale will further decompose its chunk into smaller
-    chunks and read each of those in parallel.
+    This procedure uses :proc:`findDeserChunks` to split the file into ``d.size``
+    chunks of roughly equal size where each chunk is read concurrently across the
+    target locales. If multiple tasks are used per locale, each will further decompose
+    its chunk into smaller chunks and read each of those in parallel.
 
     .. note:: ``t`` must:
 
-          * have a 'deserialize method'
-          * have a throwing deserializing initializer
+          * have a 'deserialize method' that throws when a ``t`` cannot be read
           * have a default (zero argument) initializer
 
     :arg filePath: a path to the file to read from
@@ -55,10 +55,9 @@ module ParallelIO {
     :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
-    :returns: a block-distributed array of lists of ``t`` values with one
-      list per locale
+    :returns: a block-distributed array of ``t`` values
 
-    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
@@ -75,23 +74,20 @@ module ParallelIO {
         findStart = false,
         globalStartOffset = 0;
 
-    if skipHeaderBytes < 0 {
-      findStart = true;
-    } else {
-      globalStartOffset = skipHeaderBytes;
-    }
-
+    if skipHeaderBytes < 0
+      then findStart = true;
+      else globalStartOffset = skipHeaderBytes;
 
     // find the starting offsets for each locale
     const fMeta = open(filePath, ioMode.r),
           fileBounds = globalStartOffset..<fMeta.size,
-          byteOffsets = findByteOffsets(fMeta, d.size, fileBounds, t, findStart, deserializerType);
+          byteOffsets = findDeserChunks(fMeta, d.size, fileBounds, t, findStart, deserializerType);
 
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
             locBounds = byteOffsets[id]..<byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
-            tByteOffsets = findByteOffsets(locFile, nTasks, locBounds, t, false, deserializerType);
+            tByteOffsets = findDeserChunks(locFile, nTasks, locBounds, t, false, deserializerType);
 
       var tResults: [0..nTasks] list(t);
       coforall tid in 0..<nTasks with (ref tResults) {
@@ -110,10 +106,11 @@ module ParallelIO {
         results[id].pushBack(tResults[tid]);
     }
 
+    // gather results from each locale into an array
     const nPerLoc = [i in 0..d.size] if i > d.high then 0 else results[i].size,
           itemOffsets = (+ scan nPerLoc) - nPerLoc;
 
-    var result: [0..<itemOffsets.last] t;
+    var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
     coforall (loc, id) in zip(targetLocales, 0..) do on loc do
       // TODO: maybe add some aggregation here for the few items that will end up on adjacent locales?
       result[itemOffsets[id]..<itemOffsets[id+1]] = results[id].toArray();
@@ -122,11 +119,11 @@ module ParallelIO {
   }
 
   /*
-    Read a file in parallel into a list.
+    Read a file in parallel into an array.
 
-    This routine is essentially the same as :proc:`readParallel`, except that it
-    only operates on a single locale. As such, it does not accept a
-    ``targetLocales`` argument and it returns a non-distributed array.`
+    This routine is essentially the same as :proc:`readParallel`, except that
+    it only executes on the calling locale. As such, it does not accept a
+    ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
     :arg t: the type of value to read from the file
@@ -137,8 +134,8 @@ module ParallelIO {
 
     :returns: a default rectangular array of ``t`` values
 
-    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
-             any of the chunks
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+             in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
@@ -158,7 +155,7 @@ module ParallelIO {
     var results: [0..nTasks] list(t);
     const f = open(filePath, ioMode.r),
           fileBounds = globalStartOffset..<f.size,
-          byteOffsets = findByteOffsets(f, nTasks, fileBounds, t, findStart, deserializerType);
+          byteOffsets = findDeserChunks(f, nTasks, fileBounds, t, findStart, deserializerType);
 
     coforall tid in 0..<nTasks with (ref results) {
       const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1];
@@ -189,35 +186,40 @@ module ParallelIO {
     Each ``t`` must be separated by exactly one delimiter which can either be
     provided as a ``string`` or ``bytes`` value.
 
-    The algorithm will use the delimiter to split the file into ``d.size`` chunks
-    of roughly equal size and read each chunk in parallel on each locale. If
-    multiple tasks are used per locale, each locale will further decompose its
-    chunk into smaller chunks and read each of those in parallel.
+    This routine will use the delimiter to split the file into ``d.size`` chunks
+    of roughly equal size and read each chunk concurrently across the target locales.
+    If multiple tasks are used per locale, each locale will further decompose its
+    chunk into smaller chunks and read each of those in parallel. The chunks and
+    corresponding array indices are computed using :proc:`findDelimChunks` and
+    :proc:`findItemOffsets` respectively.
 
     .. note:: ``t`` must:
 
           * have a 'deserialize method'
           * have a default (zero argument) initializer
-          * not contain the delimiter in its serialized form
+          * not contain the delimiter in its serialized form (if it does, use
+            :proc:`readParallel` instead)
 
     This procedure can be used for a variety of purposes, such as reading a CSV
     file. To do so, the delimiter should keep its default value of ``b"\n"``.
-    The file will then split by lines, where each line will be parsed as a ``t``
-    value. The commas between ``t``s fields must be parsed by it's deserialize
-    method. This can be accomplished in one of two ways: (1) by using a custom
-    ``deserialize`` method that parses the comma values manually, e.g.,
+    The file will then be split by lines, where each line will be parsed as a
+    ``t`` value. For CSV, the commas between ``t``'s fields must be parsed by
+    it's ``deserialize`` method. This can be accomplished in one of two ways:
+    (1) by using a custom deserialize method that parses the comma values
+    manually, e.g.,
 
     .. code-block:: chapel
 
         record color {
-          var r, g, b: int(8);
+          var r, g, b: uint(8);
         }
-        proc ref color.deserialize(ref reader, deserializer) throws {
-          this.r = reader.read(int(8));
-          reader.matchLiteral(b",");
-          this.g = reader.read(int(8));
-          reader.matchLiteral(b",");
-          this.b = reader.read(int(8));
+
+        proc ref color.deserialize(reader, ref deserializer) throws {
+          reader.read(this.r);
+          reader.readLiteral(b",");
+          reader.read(this.g);
+          reader.readLiteral(b",");
+          reader.read(this.b);
         }
 
     or (2) by using a deserializer that will handle commas appropriately
@@ -248,17 +250,16 @@ module ParallelIO {
   {
     const fMeta = open(filePath, ioMode.r),
           fileBounds = 0..<fMeta.size,
-          byteOffsets = findFileChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
+          byteOffsets = findDelimChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
           itemOffsets = findItemOffsets(fMeta, delim, byteOffsets);
 
-    const resDom = blockDist.createDomain({0..<itemOffsets.last}, targetLocales=targetLocales);
-    var results: [resDom] t;
+    var results = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
 
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
             locBounds = byteOffsets[id]..byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
-            tByteOffsets = findFileChunks(locFile, delim, nTasks, locBounds, 0),
+            tByteOffsets = findDelimChunks(locFile, delim, nTasks, locBounds, 0),
             tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
 
       coforall tid in 0..<nTasks with (ref results) {
@@ -282,8 +283,8 @@ module ParallelIO {
     Read a delimited file in parallel into a block-distributed array.
 
     This procedure is essentially the same as :proc:`readParallelDelimited`,
-    except that it only operates on a single locale. As such, it does not
-    accept a ``targetLocales`` argument and it returns a non-distributed array.
+    except that it only executesint on the calling locale. As such, it does not
+    accept a ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
     :arg delim: the delimiter to use to separate ``t`` values in the file
@@ -294,7 +295,7 @@ module ParallelIO {
 
     :returns: a default rectangular array of ``t`` values
 
-    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
+    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found in
               any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
@@ -308,7 +309,7 @@ module ParallelIO {
   {
     const f = open(filePath, ioMode.r),
           fileBounds = 0..<f.size,
-          byteOffsets = findFileChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
+          byteOffsets = findDelimChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
           itemOffsets = findItemOffsets(f, delim, byteOffsets);
 
     const resDom = {0..<itemOffsets.last};
@@ -339,6 +340,12 @@ module ParallelIO {
     sized chunks and search for a starting offset near the boundary of each
     chunk where a ``t`` can be deserialized.
 
+    This procedure uses ``t``'s throwing ``deserialize`` method to determine
+    whether or not a ``t`` can be deserialized at a given offset. If the
+    deserialize method throws, the procedure will move on to the next byte
+    offset and try again. Note that this can be inefficient if ``t`` is large
+    and/or has a complex deserialize method.
+
     :arg f: the file to search
     :arg n: the number of chunks to find
     :arg bounds: a range of byte offsets to break into chunks
@@ -350,10 +357,10 @@ module ParallelIO {
     :returns: a length ``n+1`` array of byte offsets (the last offset is
               ``bounds.high``)
 
-    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
-              any of the chunks
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+              in any of the chunks
   */
-  proc findByteOffsets(const ref f: file, n: int, bounds: range, type t, findStart: bool,
+  proc findDeserChunks(const ref f: file, n: int, bounds: range, type t, findStart: bool,
                        type deserializerType = defaultDeserializer
   ) : [] int throws {
     const approxBytesPerChunk = bounds.size / n,
@@ -368,12 +375,13 @@ module ParallelIO {
             maxOffset = min(estOffset + qbytes_iobuf_size, bounds.high);
 
       var des: deserializerType,
-          r = f.reader(locking=false, region=estOffset.., deserializer=des);
+          r = f.reader(locking=false, region=estOffset.., deserializer=des),
+          tTest: t;
 
       for byteOffset in estOffset..<maxOffset {
         r.mark();
         try {
-          r.read(t);
+          r.read(tTest);
         } catch {
           r.revert();   // move back to the marked position
           r.readByte(); // advance to the next byte
@@ -386,7 +394,7 @@ module ParallelIO {
 
       if r.offset() == maxOffset - 1 {
         throw new OffsetNotFoundError(
-          "Failed to find starting file offset in the range (" + estOffset:string + " .. " + maxOffset:string +
+          "Failed to find byte offset in the range (" + estOffset:string + ".." + maxOffset:string +
           ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
         );
       }
@@ -518,10 +526,10 @@ module ParallelIO {
     :returns: a length ``n+1`` array of byte offsets (the last offset is
               ``bounds.high``)
 
-    :throws: ``OffsetNotFoundError`` if a starting offset cannot be found in
-              any of the chunks
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+              in any of the chunks
   */
-  proc findFileChunks(const ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
+  proc findDelimChunks(const ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
     where dt == bytes || dt == string
   {
     const r = f.reader(locking=false, region=bounds);
@@ -541,7 +549,10 @@ module ParallelIO {
         r.advanceThrough(delim);        // advance past the next delimiter
       } catch {
         // there wasn't an offset in this chunk
-        throw new OffsetNotFoundError();
+        throw new OffsetNotFoundError(
+          "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+          ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+        );
       }
       chunkOffsets[i] = r.offset();     // record the offset for this chunk
     }
@@ -559,9 +570,10 @@ module ParallelIO {
     :arg byteOffsets: an array of byte offsets that divide the file into chunks
 
     :returns: an array of length ``byteOffsets.size`` containing the number of
-              items in the file before the start of each chunk
+              items in the file before the start of each chunk. The last entry
+              contains the total number of items in the file.
   */
-  proc findItemOffsets(const ref f: file, delim: ?dt, byteOffsets: [?d] int): [d] int throws
+  proc findItemOffsets(const ref f: file, in delim: ?dt, const ref byteOffsets: [?d] int): [d] int throws
     where dt == bytes || dt == string
   {
     var nPerChunk: [d] int;
@@ -570,7 +582,7 @@ module ParallelIO {
       const r = f.reader(locking=false, region=byteOffsets[c]..byteOffsets[c+1]);
 
       // count the number of items in the chunk
-      var n = 0, line: bytes;
+      var n = 0;
       while true {
         try {
           r.advanceThrough(delim); // throws if we advance to the end of the region
