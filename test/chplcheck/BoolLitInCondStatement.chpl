@@ -1,18 +1,16 @@
 module BoolLits {
   proc myProc () {
-    if(true) then {
+    if true then
       writeln("true");
-    } else {
+    else
       writeln("false");
-    }
 
-    if (false) then {
+    if false then 
       writeln("false");
-    } else {
+    else 
       writeln("true");
-    }
 
-    while(true) {
+    while true {
       writeln("and I loop!");
       break;
     }

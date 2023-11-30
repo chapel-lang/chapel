@@ -42,6 +42,7 @@ def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
     def CamelOrPascalCaseVariables(context, node):
         if node.name() == "_": return True
+        if node.linkage() == 'extern': return True 
         return check_camel_case(node) or check_pascal_case(node)
 
     @driver.basic_rule(Record)
@@ -50,6 +51,7 @@ def register_rules(driver):
     
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
+        if node.linkage() == 'extern': return True 
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
