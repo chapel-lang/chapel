@@ -8,3 +8,4 @@ ConsecutiveDecls.chpl:42: node violates rule ConsecutiveDecls
 ConsecutiveDecls.chpl:53: node violates rule ConsecutiveDecls
 ConsecutiveDecls.chpl:66: node violates rule ConsecutiveDecls
 ConsecutiveDecls.chpl:68: node violates rule ConsecutiveDecls
+ConsecutiveDecls.chpl:73: node violates rule ConsecutiveDecls

@@ -67,5 +67,12 @@ module ConsDecls {
   extern var c_var: int(32); //its type is a function call
   extern var c_var2: int(32);
 
+  pragma "always RVF"
+  var q: real;
+  pragma "always RVF"
+  var r: real;
+  pragma "always RVF"
+  var s: int;
+  var t: int;
 
 }

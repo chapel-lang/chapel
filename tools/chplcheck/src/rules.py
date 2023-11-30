@@ -101,11 +101,12 @@ def register_rules(driver):
                 method_seen = True
         return True
 
-    #Four things have to match between consecutive decls for this to warn:
-    # 1. same type (or lack thereof)
+    #Five things have to match between consecutive decls for this to warn:
+    # 1. same type
     # 2. same kind
     # 3. same attributes
     # 4. same linkage
+    # 5. same pragmas
     @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
@@ -147,7 +148,8 @@ def register_rules(driver):
             
             var_linkage = var_node.linkage()
 
-            return (var_type, var_kind, var_attributes, var_linkage)
+            var_pragmas = ' '.join(var_node.pragmas())
+            return (var_type, var_kind, var_attributes, var_linkage, var_pragmas)
         
         def recurse(node):
             consecutive = []
