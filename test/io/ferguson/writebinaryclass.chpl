@@ -40,7 +40,6 @@ var A = ownA.borrow();
   var ownB = new owned R(0,0,0,0,0);
   var B = ownB.borrow();
 
-  assert(r.readByte() == 1);
   assert(r.read(B.a));
   assert(r.read(B.b));
   assert(r.read(B.c));

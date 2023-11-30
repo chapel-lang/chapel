@@ -3608,6 +3608,35 @@ record defaultDeserializer {
 @deprecated(notes="'DefaultDeserializer' is deprecated; please use 'defaultDeserializer' instead")
 type DefaultDeserializer = defaultDeserializer;
 
+@unstable("This config param is unstable and may be removed without advance notice")
+/*
+  This config param allows users to disable a warning for reading and writing
+  classes and strings with ``binarySerializer`` and ``binaryDeserializer``
+  following a format change in the 1.33 release.
+*/
+config param warnBinaryStructured : bool = true;
+
+private proc warnBinary(type t, param depth : int) {
+  if warnBinaryStructured {
+    if t == string || t == bytes || isClassType(t) {
+      param msg = "binary(De)Serializer's format for strings, bytes, and classes no longer includes length-bytes or nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      compilerWarning(msg, depth);
+    }
+  }
+}
+
+private proc warnBinaryRead(type t, param depth : int) throws {
+  if warnBinaryStructured {
+    if isClassType(t) {
+      param msg = "binary(De)Serializer's format for classes no longer includes nilability-bytes. Recompile with ``-swarnBinaryStructured=false`` to disable this warning. To utilize the old format, please use the unstable 'ObjectSerialization' package module.";
+      compilerWarning(msg, depth);
+    }
+  }
+  if t == string || t == bytes {
+    throw new IllegalArgumentError("binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.");
+  }
+}
+
 /*
   A binary Serializer that implements a simple binary format.
 
@@ -3625,7 +3654,7 @@ record binarySerializer {
   const endian : endianness = endianness.native;
 
   @chpldoc.nodoc
-  const _structured = true;
+  const _structured = false;
 
   // TODO: rewrite to use correct IO methods (e.g. writeBinary)
   // For now, this is just a helper to mirror the old behavior for basic
@@ -3658,19 +3687,13 @@ record binarySerializer {
     Booleans are serialized as single byte unsigned values of either ``0`` or
     ``1``.
 
-    ``string`` values are serialized beginning with a length represented by a
-    variable-length byte scheme (which is always the same no matter what
-    endianness). In this scheme, the high bit of each encoded length byte records
-    whether or not there are more length bytes (and the remaining bits encode the
-    length in a big-endian manner). Then, the raw binary data of the string is
-    written to the ``writer``.
+    ``string`` values are serialized as a raw sequence of bytes that does not
+    include a null terminator, nor any bytes representing length. This means
+    that ``string`` values cannot be deserialized without manual intervention
+    by users to decide how their strings should be stored such that they can
+    be deserialized.
 
     The ``nil`` value is serialized as a single unsigned byte of value ``0``.
-
-    Classes are serialized beginning with a single unsigned byte of either ``0``
-    or ``1`` indicating ``nil``. Nilable classes that are ``nil`` will always
-    serialize as ``0``, and non-nilable classes will always begin serializing
-    as ``1``.
 
     Classes and records will have their ``serialize`` method invoked, passing
     in ``writer`` and this Serializer as arguments. Please see the
@@ -3683,6 +3706,17 @@ record binarySerializer {
     .. note::
 
       Serializing and deserializing enums is not stable in this format.
+
+    .. warning::
+
+      In the 1.32 release this format included bytes representing the length of
+      a string. Also, classes were serialized beginning with a single byte to
+      indicate whether the class value was ``nil``. This behavior was changed
+      in the subsequent release to provide users with a more flexible
+      serializer that did not insert bytes that the user did not request. A
+      compile-time warning will be issued to indicate that this behavior has
+      changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+      silence the warning.
 
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
@@ -3998,6 +4032,17 @@ type BinarySerializer = binarySerializer;
   Otherwise, please refer to :type:`binarySerializer` for a description of the
   binary format. Individual methods on this type may clarify relevant behavior
   specific to deserialization
+
+  .. warning::
+
+    In the 1.32 release this format included bytes representing the length of
+    a string. Also, classes were serialized beginning with a single byte to
+    indicate whether the class value was ``nil``. This behavior was changed
+    in the subsequent release to provide users with a more flexible
+    deserializer that did not read bytes that the user did not request. A
+    compile-time warning will be issued to indicate that this behavior has
+    changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+    silence the warning.
 */
 record binaryDeserializer {
   /*
@@ -4007,10 +4052,10 @@ record binaryDeserializer {
   const endian : IO.endianness = IO.endianness.native;
 
   @chpldoc.nodoc
-  var _structured = true;
+  var _structured = false;
 
   @chpldoc.nodoc
-  proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = true) {
+  proc init(endian: IO.endianness = IO.endianness.native, _structured : bool = false) {
     this.endian = endian;
     this._structured = _structured;
     init this;
@@ -7291,6 +7336,9 @@ inline proc fileReader._readInner(ref args ...?k):void throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if deserializerType != nothing {
+        if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+          warnBinaryRead(args[i].type, 3);
+        }
         _deserializeOne(args[i], origLocale);
       } else {
         _readOne(_kind, args[i], origLocale);
@@ -9433,6 +9481,9 @@ proc fileReader.read(type t) throws {
     try this.lock(); defer { this.unlock(); }
 
     if deserializerType != nothing {
+      if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+        warnBinaryRead(t, 2);
+      }
       __primitive("move", ret, _deserializeOne(t, origLocale));
     } else {
       pragma "no auto destroy"
@@ -9531,6 +9582,9 @@ inline proc fileWriter.write(const args ...?k) throws {
     try this.lock(); defer { this.unlock(); }
     for param i in 0..k-1 {
       if serializerType != nothing {
+        if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+          warnBinary(args(i).type, 2);
+        }
         this._serializeOne(args(i), origLocale);
       } else {
         try _writeOne(_kind, args(i), origLocale);
@@ -11755,6 +11809,9 @@ proc fileWriter._writefOne(fmtStr, ref arg, i: int,
         try _writeOne(_iokind.dynamic, arg, origLocale);
       } when QIO_CONV_ARG_TYPE_SERDE {
         if serializerType != nothing {
+          if serializerType == binarySerializer && this._kind == _iokind.dynamic {
+            warnBinary(arg.type, 3);
+          }
           this._serializeOne(arg, origLocale);
         } else {
           try _writeOne(_iokind.dynamic, arg, origLocale);
@@ -12095,6 +12152,9 @@ proc fileReader.readf(fmtStr:?t, ref args ...?k): bool throws
               try _readOne(_iokind.dynamic, args(i), origLocale);
             } when QIO_CONV_ARG_TYPE_SERDE {
               if deserializerType != nothing {
+                if deserializerType == binaryDeserializer && this._kind == _iokind.dynamic {
+                  warnBinaryRead(args(i).type, 4);
+                }
                 this._deserializeOne(args(i), origLocale);
               } else {
                 try _readOne(_iokind.dynamic, args(i), origLocale);
