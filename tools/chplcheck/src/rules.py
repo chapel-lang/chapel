@@ -116,10 +116,9 @@ def register_rules(driver):
                     if isinstance(child, Variable): var_node = child
             elif isinstance(node, Variable):
                 var_node = node
-            
-            if var_node is None:
+            else:
                 return None
-            
+
             var_type = None
             var_type_expr = var_node.type_expression()
 
@@ -135,21 +134,19 @@ def register_rules(driver):
                         var_type += child.text()
             elif isinstance(var_type_expr, Identifier):
                 var_type = var_type_expr.name()
-            
+
             var_kind = var_node.kind()
 
             var_attributes = ''
-            var_attribute_group = var_node.attribute_group()
-            if var_attribute_group is not None:
-                for attribute_node in var_attribute_group:
-                    if attribute_node is not None:
-                        var_attributes += attribute_node.name() + " "
-            
+            if var_attribute_group := var_node.attribute_group():
+                var_attributes = " ".join(
+                    [a.name() for a in var_attribute_group if a is not None])
+
             var_linkage = var_node.linkage()
 
             var_pragmas = ' '.join(var_node.pragmas())
             return (var_type, var_kind, var_attributes, var_linkage, var_pragmas)
-        
+
         def recurse(node):
             consecutive = []
             last_characteristics = None
@@ -158,18 +155,17 @@ def register_rules(driver):
                 #we want to skip Comments entirely
                 if isinstance(child,Comment):
                     continue
-                
+
                 #we want to do MultiDecls and TupleDecls, but not recurse
-                skip_children = isinstance(child, MultiDecl) \
-                    or isinstance(child, TupleDecl) \
-                
+                skip_children = isinstance(child, (MultiDecl, TupleDecl))
+
                 if not skip_children:
                     yield from recurse(child)
 
                 new_characteristics = is_relevant_decl(child)
                 compatible = new_characteristics is not None and \
                     new_characteristics == last_characteristics
-                
+
                 last_characteristics = new_characteristics
 
                 if compatible:
