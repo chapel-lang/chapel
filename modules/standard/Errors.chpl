@@ -197,8 +197,7 @@ module Errors {
     proc ref append(err: unmanaged Error) {
       on this {
         _errorsLock.lock();
-        var tmp = _head;
-        err._next = tmp;
+        err._next = _head;
         _head = err;
         _errorsLock.unlock();
       }
@@ -242,21 +241,17 @@ module Errors {
       group._head = nil;
       init this;
 
-      var cur: unmanaged Error?;
-
       // Count the number of errors, including from nested errors
       var n = 0;
-      cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          n += 1;
-        } else {
-          for e in asTaskErr! {
-            if e != nil then
+      var cur = head;
+      while const curr = cur {
+        var curnext = curr._next;
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          on asTaskErr do
+            for e in asTaskErr do
               n += 1;
-          }
+        } else {
+          n += 1;
         }
         cur = curnext;
       }
@@ -270,22 +265,25 @@ module Errors {
       // Gather the errors into errorsArray starting at index idx
       var idx = 0;
       cur = head;
-      while cur != nil {
-        var curnext = cur!._next;
-        cur!._next = nil; // remove from any lists
-        var asTaskErr: unmanaged TaskErrors? = cur: unmanaged TaskErrors?;
-        if asTaskErr == nil {
-          errorsArray[idx] = owned.adopt(cur!);
-          idx += 1;
-        } else {
-          for e in asTaskErr!.these() {
-            // e is an owned error
-            if e != nil {
-              errorsArray[idx] = e;
-              idx += 1;
-            }
-          }
+      while const curr = cur {
+        var curnext = curr._next;
+        curr._next = nil; // remove from any lists
+        if const asTaskErr = curr: unmanaged TaskErrors? {
+          const origLoc = here, EA = errorsArray, idxPtr = c_ptrTo(idx); //RVF
+          // For performance we want to bring over asTaskError.errorsArrays
+          // in one comm. [Ensure asTaskError.deinit happens properly.]
+          // Ideally, use the same copy in the first while-loop as well.
+          on asTaskErr do
+            for e in asTaskErr do
+              // e is an owned error
+              on origLoc {
+                EA[idxPtr.deref()] = e;
+                idxPtr.deref() += 1;
+              }
           delete asTaskErr;
+        } else {
+          errorsArray[idx] = owned.adopt(curr);
+          idx += 1;
         }
         cur = curnext;
       }
@@ -308,7 +306,7 @@ module Errors {
 
     @chpldoc.nodoc
     proc deinit() {
-      if errorsArray {
+      if errorsArray then on this {
         for i in 0..#nErrors {
           errorsArray[i] = nil;
         }
@@ -331,6 +329,9 @@ module Errors {
        that are not storing ``nil`` at the time of the call.
      */
     iter these() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "iterating over a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       foreach i in 0..#nErrors {
         if errorsArray[i] != nil {
           yield errorsArray[i];
@@ -341,6 +342,9 @@ module Errors {
     /* Returns the first non-nil error contained in this TaskErrors group */
     @unstable("`TaskErrors.first` is unstable; expect this method to change in the future.")
     proc first() ref : owned Error? {
+      if boundsChecking then assert(this.locale.id == here.id,
+        "querying first() of a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       var first = 0;
       for i in 0..#nErrors {
         if errorsArray[i] != nil {

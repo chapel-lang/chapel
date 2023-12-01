@@ -1,0 +1,3 @@
+uncaught TaskErrors: 8 errors: Error: in forall ... Error: in forall
+  issue-23905.chpl:6: thrown here
+  issue-23905.chpl:2: uncaught here
