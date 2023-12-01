@@ -118,7 +118,7 @@ module SortTest {
   proc main() {
     import Random;
     import Time;
-    import GpuSort;
+    import GPU;
 
     if gpuDiags then startGpuDiagnostics();
     if verboseGpu then startVerboseGpu();
@@ -137,7 +137,7 @@ module SortTest {
     } else on here.gpus[useGpuId] {
       var gpuArr = arr; // Copy to GPU
       timer.start();
-      GpuSort.sort(gpuArr);
+      GPU.gpuSort(gpuArr);
       timer.stop();
       arr = gpuArr; // Copy back to CPU
     }

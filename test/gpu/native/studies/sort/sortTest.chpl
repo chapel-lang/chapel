@@ -1,6 +1,6 @@
-import GpuSort;
 import Random;
 import Time;
+import GPU;
 
 config const useGpuId = 0;
 config const arrSize = 100_000;
@@ -47,7 +47,7 @@ if printArr then writeln(cpuArr);
 on here.gpus[useGpuId]{
   var arr = cpuArr; // Copy to gpu
   timer.start();
-  GpuSort.parallelRadixSort(arr, bitsAtATime, chunkSize, noisy);
+  GPU.parallelRadixSort(arr, bitsAtATime, chunkSize, noisy);
   timer.stop();
   cpuArr = arr; // Copy back to cpu
 }
@@ -57,7 +57,7 @@ on here.gpus[useGpuId] {
   var arr = cpuArr; // Copy to gpu
   timer.clear();
   timer.start();
-  GpuSort.sort(arr);
+  GPU.gpuSort(arr);
   timer.stop();
   cpuArr2 = arr; // Copy back to cpu
 }
