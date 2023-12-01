@@ -3632,6 +3632,20 @@ private proc warnBinaryRead(type t, param depth : int) throws {
 
   See :ref:`the serializers technote<ioSerializers>` for a general overview
   of Serializers and their usage.
+
+  .. warning::
+
+    In the 1.32 release this format included bytes representing the length of
+    a string. Also, classes were serialized beginning with a single byte to
+    indicate whether the class value was ``nil``. This behavior was changed
+    in the subsequent release to provide users with a more flexible
+    serializer that did not insert bytes that the user did not request. A
+    compile-time warning will be issued to indicate that this behavior has
+    changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+    silence the warning.
+
+    To mimic the old behavior, please use the unstable
+    :mod:`ObjectSerialization` module.
 */
 record binarySerializer {
   /*
@@ -3693,17 +3707,6 @@ record binarySerializer {
     .. note::
 
       Serializing and deserializing enums is not stable in this format.
-
-    .. warning::
-
-      In the 1.32 release this format included bytes representing the length of
-      a string. Also, classes were serialized beginning with a single byte to
-      indicate whether the class value was ``nil``. This behavior was changed
-      in the subsequent release to provide users with a more flexible
-      serializer that did not insert bytes that the user did not request. A
-      compile-time warning will be issued to indicate that this behavior has
-      changed. Users can recompile with ``-swarnBinaryStructured=false`` to
-      silence the warning.
 
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
@@ -4020,6 +4023,12 @@ type BinarySerializer = binarySerializer;
   binary format. Individual methods on this type may clarify relevant behavior
   specific to deserialization
 
+  .. note::
+
+    Deserializing ``string`` or ``bytes`` types will result in an
+    IllegalArgumentError because these types cannot currently be deserialized
+    with the raw nature of the format.
+
   .. warning::
 
     In the 1.32 release this format included bytes representing the length of
@@ -4030,6 +4039,10 @@ type BinarySerializer = binarySerializer;
     compile-time warning will be issued to indicate that this behavior has
     changed. Users can recompile with ``-swarnBinaryStructured=false`` to
     silence the warning.
+
+    To mimic the old behavior, please use the unstable
+    :mod:`ObjectSerialization` module.
+
 */
 record binaryDeserializer {
   /*

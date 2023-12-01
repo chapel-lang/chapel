@@ -63,6 +63,7 @@ File Formats and I/O
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>
+   ObjectSerialization <packages/ObjectSerialization>
 
 Math / Numerical Computing
 --------------------------
