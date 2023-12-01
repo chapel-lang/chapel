@@ -50,4 +50,6 @@ module CaseRules {
 
   var justOneCapitalLetterAtTheE: string;
   const justO: real;
+
+  operator +(a: int, b: string) {}
 }
