@@ -1,12 +1,12 @@
 BootStrap: docker
-From: quay.io/fedora/fedora:39
+From: almalinux:9.3
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installs llvm / clang version 16 ?
+    # installs llvm/clang 15
     /provision-scripts/dnf-llvm.sh
 
 %runscript

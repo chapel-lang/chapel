@@ -1,12 +1,12 @@
 BootStrap: docker
-From: quay.io/fedora/fedora:39
+From: quay.io/fedora/fedora:40
 
 %files
     ../../provision-scripts/* /provision-scripts/
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installs llvm / clang version 16 ?
+    # installs llvm / clang version 17
     /provision-scripts/dnf-llvm.sh
 
 %runscript
