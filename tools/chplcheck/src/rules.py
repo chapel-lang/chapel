@@ -36,7 +36,7 @@ def check_camel_case(node):
     return re.fullmatch(r'_?([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
 
 def check_pascal_case(node):
-    return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'_?(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
