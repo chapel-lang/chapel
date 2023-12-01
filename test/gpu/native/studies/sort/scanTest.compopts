@@ -1,2 +1,2 @@
---devel
+ # scanTest.good
 -smultiDimArray  # multiDimScanArray.good # This tests multi dimensional arrays (unsupported)
