@@ -8865,6 +8865,12 @@ static void resolveMove(CallExpr* call) {
 
 
   } else {
+    // ask for 'type t = genericType(?)' rather than 'type t = genericType'
+    if (SymExpr* lhsSe = toSymExpr(call->get(1)))
+      if (lhsSe->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        checkSurprisingGenericDecls(lhsSe->symbol(), call->get(2),
+                                    /* forFieldInHere */ nullptr);
+
     // These calls might modify the fields in call
     Type* rhsType = moveDetermineRhsTypeErrorIfInvalid(call);
     Type* lhsType = moveDetermineLhsType(call);
@@ -14193,8 +14199,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
         declType != dtAny && // workaround for interfaces
         !genericWithDefaults &&
         !sym->hasFlag(FLAG_MARKED_GENERIC) &&
-        !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC) &&
-        !sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+        !sym->hasFlag(FLAG_RET_TYPE_MARKED_GENERIC)) {
 
       // is it a field? check to see if it's a temp within an initializer
       // initializing field (in which case, we should think about
@@ -14307,6 +14312,9 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
 
           } else {
             const char* fieldOrVar = isField?"field":"variable";
+            if (sym->hasFlag(FLAG_TYPE_VARIABLE)) {
+              fieldOrVar = "type alias";
+            }
             USR_WARN(sym,
                      "please use '?' when declaring a %s with generic type",
                      fieldOrVar);

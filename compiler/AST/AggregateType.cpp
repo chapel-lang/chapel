@@ -1835,6 +1835,12 @@ AggregateType* AggregateType::getNewInstantiation(Symbol* sym, Type* symType, Ex
 
   instantiations.push_back(retval);
 
+  if (field->hasFlag(FLAG_TYPE_VARIABLE) &&
+      symType->symbol->hasFlag(FLAG_GENERIC)) {
+    USR_FATAL(field,
+              "cannot use a generic type as the default for a type field, '%s'",
+              field->name);
+  }
   checkSurprisingGenericDecls(field, field->defPoint->exprType, this);
 
   handleDefaultAssociativeWarnings(field, field->defPoint->exprType,
