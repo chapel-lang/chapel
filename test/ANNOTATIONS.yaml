@@ -522,7 +522,7 @@ all:
     - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
       config: chapcs
     - text: Avoid loading CUDA module at each kernel launch (#21346)
-      config: gpu
+      config: 1-node-p100
   01/19/23:
     - text: Support for one locale per socket (#21057)
       config: 16-node-xc, 16-node-cs-hdr
@@ -533,7 +533,7 @@ all:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
     - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
-      config: gpu
+      config: 1-node-p100
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
@@ -542,7 +542,7 @@ all:
       config: chapcs
   03/16/23:
     - text: Update GPU performance tests to not count launches in perf mode (#21891)
-      config: gpu
+      config: 1-node-p100
   04/06/23:
     - text: Make Dyno scope resolution default (#21983)
       config: chapcs
