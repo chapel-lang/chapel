@@ -720,11 +720,6 @@ iter findfiles(startdir: string = ".", recursive: bool = false,
       yield startdir+"/"+file;
 }
 
-@deprecated(notes="getGID is deprecated, please use getGid instead")
-proc getGID(name: string): int throws {
-  return getGid(name);
-}
-
 /* Obtains and returns the group id associated with the file or directory
    specified by `name`.
 
@@ -785,11 +780,6 @@ proc getFileSize(name: string): int throws {
   var err = chpl_fs_get_size(result, unescape(name).c_str());
   if err then try ioerror(err, "in getFileSize", name);
   return result;
-}
-
-@deprecated(notes="getUID is deprecated, please use getUid instead")
-proc getUID(name: string): int throws {
-  return getUid(name);
 }
 
 /* Obtains and returns the user id associated with the file or directory
@@ -1063,14 +1053,6 @@ proc isMount(name: string): bool throws {
   var err = chpl_fs_is_mount(ret, unescape(name).c_str());
   if err then try ioerror(err, "in isMount", name);
   return ret != 0;
-}
-
-@deprecated(notes="listdir is deprecated, please use listDir instead")
-iter listdir(path: string = ".", hidden: bool = false, dirs: bool = true,
-             files: bool = true, listlinks: bool = true): string {
-  for filename in listDir(path, hidden, dirs, files, listlinks) {
-    yield filename;
-  }
 }
 
 /* Lists the contents of a directory.  May be invoked in serial
@@ -1457,15 +1439,6 @@ proc locale.umaskHelper(mask: int): int {
   return result.safeCast(int);
 }
 
-@deprecated(notes="walkdirs is deprecated; please use walkDirs instead")
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int = max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false): string {
-  for dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
-    yield dir;
-  }
-}
-
 /* Recursively walk a directory structure, yielding directory names.
    May be invoked in serial or non-zippered parallel contexts.
 
@@ -1519,16 +1492,6 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int = max(int),
 
   if (!topdown) then
     yield path;
-}
-
-@chpldoc.nodoc
-iter walkdirs(path: string = ".", topdown: bool = true, depth: int =max(int),
-              hidden: bool = false, followlinks: bool = false,
-              sort: bool = false, param tag: iterKind): string
-       where tag == iterKind.standalone {
-  forall dir in walkDirs(path, topdown, depth, hidden, followlinks, sort) {
-    yield dir;
-  }
 }
 
 //
