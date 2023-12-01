@@ -109,7 +109,7 @@ jobs:
         fetch-depth: 100000
     - name: Set ownership
       run: |
-        chown -R $(id -u):$(id -g) $PWD   
+        chown -R $(id -u):$(id -g) $PWD
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
@@ -123,3 +123,19 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
+
+  check_stable_docs:
+    runs-on: ubuntu-latest
+    container:
+      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
+      credentials:
+        username: ${{ github.actor }}
+        password: ${{ secrets.github_token }}
+    steps:
+    - uses: actions/checkout@v3
+    - name: make chapel-py-venv
+      run: |
+        CHPL_HOME=$PWD make chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
+    - name: find missing stable docs
+      run: |
+        $PWD/tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable modules/standard
