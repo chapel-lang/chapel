@@ -473,9 +473,14 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
       syntax(loc, "pragma list must come before deprecation statement.");
     }
 
+  } else if (cs.stmt && cs.stmt->isErroneousExpression()) {
+    // do nothing on an erroneous statement
+    // Clean up the attribute parts.
+    resetAttributeGroupPartsState();
   } else {
     // CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
+    if(cs.stmt)
+      CHPL_ASSERT(hasAttributeGroupParts);
 
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
