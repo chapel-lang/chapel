@@ -2269,9 +2269,7 @@ proc eig(A: [] ?t, param left = false, param right = false)
                    eltType=real);
     var (U, s, Vh) = svd(A);
 
-  ``LinearAlgebraError`` will be thrown if the SVD computation does not
-  converge or an illegal argument, such as a matrix containing a ``NAN`` value,
-  is given.
+  :throws LinearAlgebraError: if the SVD computation does not converge or an illegal argument, such as a matrix containing a ``NAN`` value, is given.
 
   .. note::
 
@@ -2537,6 +2535,8 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
 
   :returns: Matrix a tuple of sin and cosine of the given matrix.
   :rtype: (`A`, `A`)
+
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 */
 proc sincos(A: []) throws {
   if A.eltType == real {
@@ -2562,6 +2562,8 @@ proc sincos(A: []) throws {
 
   :returns: Matrix returns the sine of the given matrix.
   :rtype: `A`
+
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 */
 proc sinm(A: []) throws {
   if A.eltType == real {
@@ -2582,6 +2584,8 @@ proc sinm(A: []) throws {
 
   :returns: Matrix returns the cosine of the given matrix.
   :rtype: `A`
+
+  :throws LinearAlgebraError: If input matrix is not square matrix.
 */
 proc cosm(A: []) throws {
   if A.eltType == real {

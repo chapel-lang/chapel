@@ -1295,11 +1295,11 @@ iter bytes.split(sep: regex(bytes), maxsplit: int = 0)
   :returns: A ``string`` or ``bytes`` with the contents of the ``fileReader``
     up to (and possibly including) the match.
 
-  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+  :throws EofError: If nothing could be read because the ``fileReader``
     was already at EOF.
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=false): t throws
   where t==string || t==bytes
@@ -1326,9 +1326,9 @@ proc fileReader.readThrough(separator: regex(?t), maxSize=-1, stripSeparator=fal
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1, stripSeparator=false): bool throws {
   use Regex.RegexIoSupport;
@@ -1375,9 +1375,9 @@ proc fileReader.readThrough(separator: regex(string), ref s: string, maxSize=-1,
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next ``maxSize``
+  :throws BadFormatError: If the separator was not found in the next ``maxSize``
     bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, stripSeparator=false): bool throws {
   use Regex.RegexIoSupport;
@@ -1412,11 +1412,11 @@ proc fileReader.readThrough(separator: regex(bytes), ref b: bytes, maxSize=-1, s
   :returns: A ``string`` or ``bytes`` with the contents of the channel up to
     the ``separator``.
 
-  :throws EofError: Thrown if nothing could be read because the ``fileReader``
+  :throws EofError: If nothing could be read because the ``fileReader``
     was already at EOF.
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   where t == string || t == bytes
@@ -1441,9 +1441,9 @@ proc fileReader.readTo(separator: regex(?t), maxSize=-1): t throws
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` codepoints. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): bool throws {
   use Regex.RegexIoSupport;
@@ -1487,9 +1487,9 @@ proc fileReader.readTo(separator: regex(string), ref s: string, maxSize=-1): boo
   :returns: ``true`` if something was read, and ``false`` otherwise (i.e., the
     ``fileReader`` was already at EOF).
 
-  :throws BadFormatError: Thrown if the separator was not found in the next
+  :throws BadFormatError: If the separator was not found in the next
     `maxSize` bytes. The ``fileReader`` position is not moved.
-  :throws SystemError: Thrown if data could not be read from the ``fileReader``.
+  :throws SystemError: If data could not be read from the ``fileReader``.
 */
 proc fileReader.readTo(separator: regex(bytes), ref b: bytes, maxSize=-1): bool throws {
   use Regex.RegexIoSupport;

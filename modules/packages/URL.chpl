@@ -79,7 +79,7 @@ module URL {
                start of the file to no end point.
   :returns: an open fileReader to the requested resource.
 
-  :throws SystemError: Thrown if a fileReader could not be returned.
+  :throws SystemError: If a fileReader could not be returned.
    */
   proc openUrlReader(url:string, param locking=true,
                      region: range(?) = 0..)
@@ -136,7 +136,7 @@ module URL {
                start of the file to no end point.
   :returns: an open fileWriter to the requested resource.
 
-  :throws SystemError: Thrown if a fileWriter could not be returned.
+  :throws SystemError: If a fileWriter could not be returned.
   */
   proc openUrlWriter(url:string, param locking=true,
                  region: range(?) = 0..)

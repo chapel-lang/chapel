@@ -203,9 +203,9 @@ proc locale.chdir(name: string) throws {
               values.
    :type mode: `int`
 
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
+   :throws FileNotFoundError: When the name specified does not correspond
                               to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
+   :throws PermissionError: When the current user does not have
                             permission to change the permissions
 */
 @deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
@@ -466,9 +466,9 @@ proc copyFile(src: string, dest: string) throws {
    :arg dest: The intended destination of the permissions.
    :type dest: `string`
 
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
+   :throws FileNotFoundError: When the name specified does not correspond
                               to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
+   :throws PermissionError: When the current user does not have
                             permission to change the permissions
 */
 @deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
