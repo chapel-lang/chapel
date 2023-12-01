@@ -2411,8 +2411,11 @@ fn_decl_stmt:
     context->clearComments();
     context->resetDeclState();
 
+    bool hadError =
+      $1.errorExpr != nullptr ||
+      ($3 != nullptr && $3->isErroneousExpression());
     // May never have been built if there was a syntax error.
-    if ($1.errorExpr == nullptr) {
+    if (!hadError) {
       context->enterScope(asttags::Function, $1.name->name());
     }
   }
@@ -2428,8 +2431,11 @@ fn_decl_stmt:
     fp.where = wl.where;
     context->clearComments();
 
+    bool hadError =
+      $1.errorExpr != nullptr ||
+      ($3 != nullptr && $3->isErroneousExpression());
     // May never have been built if there was a syntax error.
-    if ($1.errorExpr == nullptr) {
+    if (!hadError) {
       context->exitScope(asttags::Function, $1.name->name());
     }
 
@@ -2821,6 +2827,13 @@ var_decl_stmt:
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $2);
     context->resetDeclState();
+  }
+| var_decl_type error TSEMI
+  {
+    auto err = ErroneousExpression::build(BUILDER, LOC(@2));
+    CommentsAndStmt cs = { .comments=nullptr, .stmt=err.release() };
+    $$ = cs;
+    context->resetDeclStateOnError();
   }
 ;
 
