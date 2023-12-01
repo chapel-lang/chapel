@@ -19,11 +19,12 @@
 
 #ifdef HAS_GPU_LOCALE
 
-#include "../common/rocm-utils.h"
 
 #include <hip/hip_common.h>
 
 #if ROCM_VERSION_MAJOR >= 5
+// if we include this all the time, we get unused function errors
+#include "../common/rocm-utils.h"
 #include <hipcub/hipcub.hpp>
 #endif
 
