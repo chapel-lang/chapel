@@ -313,9 +313,9 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   }
   va_end(args);
 
-  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
+  CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d, %p)\n"
                  "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(),
+                 chpl_task_getRequestedSubloc(), stream,
                  name);
 }
 
