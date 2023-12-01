@@ -52,6 +52,7 @@ def register_rules(driver):
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
         if node.linkage() == 'extern': return True
+        if node.kind() == 'operator': return True
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
