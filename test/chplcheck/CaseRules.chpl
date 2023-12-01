@@ -2,6 +2,7 @@ module CaseRules {
   var camelVar: int;
   const PascalVar: real;
   var snake_var: string;
+  var AVar: bool;
 
   record camelRecord {
     proc camelCaseMethod() {return 0;}
@@ -31,10 +32,12 @@ module CaseRules {
   module camelModule {}
   module PascalModule {}
   module snake_module {}
+  module AModule {}
   
   class camelClass {}
   class PascalClass {}
   class snake_class {}
+  class AClass {}
 
   var snake_CapVar: real;
   const snake_Var: string;
