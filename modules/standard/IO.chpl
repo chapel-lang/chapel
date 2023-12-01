@@ -1623,21 +1623,6 @@ private extern proc qio_format_error_arg_mismatch(arg:int):errorCode;
 extern proc qio_format_error_bad_regex():errorCode;
 private extern proc qio_format_error_write_regex():errorCode;
 
-@chpldoc.nodoc
-// flag to controll whether the dynamic buffering optimization is active
-//  * when 'true', read and write ops above a certain size can bypass the IO
-//      rutime's buffering mechanism in some cases
-//      (see `_qio_buffered_write` and `_qio_buffered_read` in `qio.c` for more)
-//  * when 'false', buffering is always used
-config param IOSkipBufferingForLargeOps = true;
-private extern var qio_write_unbuffered_threshold: c_ssize_t;
-private extern var qio_read_unbuffered_threshold: c_ssize_t;
-
-if !IOSkipBufferingForLargeOps {
-  qio_write_unbuffered_threshold = max(c_ssize_t);
-  qio_read_unbuffered_threshold = max(c_ssize_t);
-}
-
 /*
    :returns: the default I/O style. See :record:`iostyle`
              and :ref:`about-io-styles`
@@ -8719,6 +8704,28 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   return false;
 }
 
+/*
+  Controll whether large read/write operations can bypass the IO runtime's
+  buffering mechanism.
+
+  This optimization is on by default as it can improve performance for large
+  operations where buffering doesn't segnificantly reduce the number of system
+  I/O calls and thus adds unnecessary overhead.
+
+  To disable the optimization, compile with ``-sIOSkipBufferingForLargeOps=false``.
+
+  Note that this is flag controlls an implementation-specific feature and
+  thus is not part of the Chapel language specification.
+*/
+@unstable("IOSkipBufferingForLargeOps is unstable and could change or be removed in the future")
+config param IOSkipBufferingForLargeOps = true;
+private extern var qio_write_unbuffered_threshold: c_ssize_t;
+private extern var qio_read_unbuffered_threshold: c_ssize_t;
+
+if !IOSkipBufferingForLargeOps {
+  qio_write_unbuffered_threshold = max(c_ssize_t);
+  qio_read_unbuffered_threshold = max(c_ssize_t);
+}
 
 /*
   Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
