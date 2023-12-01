@@ -43,7 +43,6 @@
    File/Directory Manipulations
    ----------------------------
    :proc:`copy`
-   :proc:`copyFile`
    :proc:`copyTree`
    :proc:`mkdir`
    :proc:`moveDir`
@@ -451,11 +450,6 @@ private proc copyFileImpl(src: string, dest: string) throws {
   try srcChnl.close();
   try destFile.close();
   try srcFile.close();
-}
-
-@deprecated(notes="'FileSystem.copyFile' is deprecated. Please use 'FileSystem.copy' instead")
-proc copyFile(src: string, dest: string) throws {
-  copyFileImpl(src, dest);
 }
 
 /* Copies the permissions of the file indicated by `src` to the file indicated
