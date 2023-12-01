@@ -55,6 +55,8 @@ def title(name):
         name = '22.10 "Kinetic Kudu"'
     if name == "Lunar":
         name = '23.04 "Lunar Lobster"'
+    if name == "Mantic":
+        name = '23.10 "Mantic Minotaur"'
     return name
 
 def fixname(subdir):
