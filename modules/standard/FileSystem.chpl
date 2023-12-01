@@ -985,11 +985,6 @@ proc isSymlink(name: string): bool throws {
   return ret != 0;
 }
 
-@deprecated(notes="'isLink' is deprecated. Please use 'isSymlink' instead")
-proc isLink(name: string): bool throws {
-  return isSymlink(name);
-}
-
 /* Determine if the provided path `name` corresponds to a mount point and
    return the result.
 
