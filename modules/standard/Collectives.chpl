@@ -63,21 +63,6 @@ module Collectives {
   import ChplConfig;
   use CTypes;
 
-  /* An enumeration of the different barrier implementations.  Used to choose
-     the implementation to use when constructing a new barrier object.
-  */
-  @deprecated(notes="BarrierType is deprecated, please use the default barrier implementation")
-  enum BarrierType {
-    /*
-      Use Chapel atomic variables to control the barrier.
-    */
-    Atomic,
-    /*
-      Use Chapel sync variables to control the barrier.
-    */
-    Sync
-  }
-
   /* A barrier that will cause `numTasks` to wait before proceeding. */
   record barrier {
     @chpldoc.nodoc

@@ -9062,7 +9062,7 @@ proc fileReader.readBinary(ref arg:numeric, param endian:ioendian = ioendian.nat
   Read a binary number from the ``fileReader``
 
   :arg arg: number to be read
-  :arg endian: :type:`ioendian` specifies the byte order in which
+  :arg endian: :type:`endianness` specifies the byte order in which
                to read the number.
   :returns: ``true`` if the number was read, and ``false`` otherwise (i.e.,
             the ``fileReader`` was already at EOF).
