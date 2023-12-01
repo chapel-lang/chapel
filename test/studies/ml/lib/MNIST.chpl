@@ -4,7 +4,7 @@ use IO;
 
 proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx3-ubyte") {
 
-    var deserializer = new binaryDeserializer(ioendian.big);
+    var deserializer = new binaryDeserializer(endianness.big);
 
     var fr = openReader(fileName, deserializer=deserializer);
 
@@ -43,7 +43,7 @@ proc loadImages(num: int, fileName: string = "week2/emnist/data/train-images-idx
 
 proc loadLabels(num: int, fileName: string = "week2/emnist/data/train-labels-idx1-ubyte") {
 
-    var deserializer = new binaryDeserializer(ioendian.big);
+    var deserializer = new binaryDeserializer(endianness.big);
 
     var fr = openReader(fileName, deserializer=deserializer);
 

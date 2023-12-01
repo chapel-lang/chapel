@@ -438,6 +438,7 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
+  bool containsReductionTemporary();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
@@ -536,6 +537,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
+         !containsReductionTemporary() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -568,6 +570,20 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
     }
   }
   return true;
+}
+
+// forall loops that contain a reduction intent introduce a temporary variable
+// with a special flag that we'll look for (for the time being we want to
+// not gpuize these loops).
+bool GpuizableLoop::containsReductionTemporary() {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(this->loop_, symExprs);
+  for(auto *symExpr : symExprs) {
+    if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
+      return true;
+    }
+  }
+  return false;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {

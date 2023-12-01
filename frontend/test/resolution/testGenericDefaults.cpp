@@ -33,7 +33,7 @@ static void test1() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return t;
+                         proc id(type t) type do return t;
 
                          record r {
                            type typeWithDefault = int;
@@ -70,7 +70,7 @@ static void test2() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return t;
+                         proc id(type t) type do return t;
 
                          record r {
                            type typeWithDefault;
@@ -103,7 +103,7 @@ static void test3() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return enum;
+                         proc id(type t) type do return enum;
 
                          record r {
                            type typeWithDefault = int;

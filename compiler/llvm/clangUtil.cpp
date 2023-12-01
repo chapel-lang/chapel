@@ -2480,7 +2480,12 @@ static void runModuleOptPipeline(bool addWideOpts) {
 
   // Build the pipeline
   auto optLvl = translateOptLevel();
-  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  ModulePassManager MPM;
+  if (optLvl == LlvmOptimizationLevel::O0) {
+    MPM = PB.buildO0DefaultPipeline(optLvl);
+  } else {
+    MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  }
 
   // Add the Global to Wide optimization if necessary.
   // This is done in this way to be added even with -O0
@@ -5280,7 +5285,8 @@ static void llvmRunOptimizations(void) {
 
   // Run optimizations with the new PassManager
   runModuleOptPipeline(fLLVMWideOpt);
-  saveIrToBcFileIfNeeded(opt1Filename);
+  saveIrToBcFileIfNeeded(filenames->opt1Filename,
+                         /* forceSave */ !fDriverDoMonolithic && !fLLVMWideOpt);
 
   if (fLLVMWideOpt) {
     // the GlobalToWide pass creates calls to inline functions, among
@@ -5288,7 +5294,8 @@ static void llvmRunOptimizations(void) {
     // battery of optimizations now.
     runModuleOptPipeline(/* don't add global to wide opts */ false);
 
-    saveIrToBcFileIfNeeded(opt2Filename);
+    saveIrToBcFileIfNeeded(filenames->opt2Filename,
+                           /* forceSave */ !fDriverDoMonolithic);
   }
 
 #endif

@@ -31,16 +31,10 @@ def main():
     sys.exit(1)
 
   while True:
-    if a_line == None:
+    while a_line == None or a_line[0].startswith('#'):
       a_line = args.file_a.readline().split('\t')
-    if b_line == None:
+    while b_line == None or b_line[0].startswith('#'):
       b_line = args.file_b.readline().split('\t')
-
-    # skip comments
-    if a_line[0].startswith('#'):
-      a_line = None
-    if b_line[0].startswith('#'):
-      b_line = None
 
     if a_line and a_line[0]:
       a_date = parse_date(a_line[0])

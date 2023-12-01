@@ -18,7 +18,7 @@
   CHECKLIST:
 
     - [ ] In the technote search for any mentions of the previous version of
-          LLVM and replace them with the newer version. 
+          LLVM and replace them with the newer version.
 
     - [ ] Check to see what version of CUDA and ROCm this version of LLVM
           supports for its NVPTX and AMDGPU backend.  If (compared to our
@@ -37,7 +37,7 @@
         - [ ] Check to see if there are any mentions of these version
               requirements in the tech note and update as needed.
 
-        - [ ] Check public issue #22085, we believe this should be resolved
+         - [ ] Check public issue #22085, we believe this should be resolved
               once LLVM adds support for CUDA 12. If LLVM has added support for
               CUDA 12 and it's resolved remove this checklist item.  If LLVM
               added support for CUDA 12 and it's not resolved reopen the issue

@@ -1,7 +1,7 @@
 first_longer()
 Flavour: FAIL
 ======================================================================
-AssertionError: Strings differ: 'Goodbye, Mars!' != 'Hello, World!'
+AssertionError: in test_string_equality.chpl:4 - Strings differ: 'Goodbye, Mars!' != 'Hello, World!'
 First differing element at index 0:
 'G'
 'H'
@@ -14,7 +14,7 @@ First extra element is at index 13
 equality_diff_lengths()
 Flavour: FAIL
 ======================================================================
-AssertionError: Strings differ: 'aaaaa' != 'aa'
+AssertionError: in test_string_equality.chpl:8 - Strings differ: 'aaaaa' != 'aa'
 First String contains 3 additional elements.
 First extra element is at index 2
 'a'

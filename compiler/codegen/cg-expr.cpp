@@ -3200,7 +3200,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
   args.push_back(a4);
   codegenCallWithArgs(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5)
@@ -3213,7 +3213,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCallWithArgs(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -6297,6 +6297,42 @@ DEFINE_PRIM(BREAKPOINT) {
     ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
     #endif
   }
+}
+
+DEFINE_PRIM(CONST_ARG_HASH) {
+  INT_ASSERT(call->numActuals() == 1);
+  INT_ASSERT(call->get(1)->isRefOrWideRef());
+  GenRet arg = call->get(1);
+
+  if (call->get(1)->isWideRef()) {
+    // Don't send arg in with `&`
+    GenRet ptr = codegenValue(arg);
+    // Do shallow GET on record
+    GenRet val = codegenValue(codegenDeref(ptr));
+    // Create temporary that we can pass a pointer to
+    GenRet tmp = createTempVarWith(val);
+    GenRet addr = codegenAddrOf(tmp);
+
+    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", addr,
+                          codegenSizeof(sym->typeInfo()->getValType()));
+  } else {
+    GenRet ptr = codegenValue(arg);
+
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", ptr,
+                          codegenSizeof(call->get(1)->typeInfo()->getValType()));
+  }
+}
+
+DEFINE_PRIM(CHECK_CONST_ARG_HASH) {
+    INT_ASSERT(call->numActuals() == 5);
+
+    codegenCall("check_const_hash_matches", call->get(1), call->get(2),
+                call->get(3), call->get(4), call->get(5));
 }
 
 DEFINE_BASIC_PRIM(ASCII)

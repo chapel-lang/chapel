@@ -220,8 +220,7 @@ static Expr* convertToChplType(ModuleSymbol* module,
                                const char* typedefName) {
 
   //typedefs
-  if (const clang::TypedefType *td =
-      llvm::dyn_cast_or_null<clang::TypedefType>(type)) {
+  if (auto td = type->getAs<clang::TypedefType>()) {
 
     return convertTypedefToChplType(module, td, typedefName);
 
@@ -234,14 +233,18 @@ static Expr* convertToChplType(ModuleSymbol* module,
 
   //arrays
   } else if (type->isArrayType()) {
+    // TODO: `getAsArrayTypeUnsafe` is required to desugar types. A better
+    // solution which doesn't discard qualifiers would be
+    // `Ctx.getAsConstantArrayType(type)` where `Ctx` is a `clang::AstContext`,
+    // however that would require some heavy rewrites
+    const clang::ArrayType* at = type->getAsArrayTypeUnsafe();
 
     if (type->isConstantArrayType()) {
       const clang::ConstantArrayType* cat =
-        llvm::dyn_cast<clang::ConstantArrayType>(type);
+        llvm::dyn_cast<clang::ConstantArrayType>(at);
 
       return convertFixedSizeArrayToChplType(module, cat, typedefName);
     } else {
-      const clang::ArrayType* at = llvm::dyn_cast<clang::ArrayType>(type);
 
       return convertArrayToChplType(module, at, typedefName);
     }

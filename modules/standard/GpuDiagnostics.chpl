@@ -138,22 +138,30 @@ module GpuDiagnostics
     assert(success, "GPU Diagnostics assertion failed");
   }
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerboseHere(stacktrace: bool,
                                                 print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnosticsHere();
 
   private extern proc chpl_gpu_resetDiagnosticsHere();

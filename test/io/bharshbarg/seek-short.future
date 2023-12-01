@@ -1,2 +1,0 @@
-bug: read/readBinary does not throw when reading array past region
-#23716

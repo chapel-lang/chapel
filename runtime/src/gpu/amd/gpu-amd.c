@@ -29,31 +29,18 @@
 #include "chplcgfns.h"
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
+#include "../common/rocm-utils.h"
+
 
 #include <assert.h>
 
+#ifndef __HIP_PLATFORM_AMD__
 #define __HIP_PLATFORM_AMD__
+#endif
 #include <hip/hip_runtime.h>
 #include <hip/hip_runtime_api.h>
 #include <hip/hip_common.h>
 
-static void chpl_gpu_rocm_check(int err, const char* file, int line) {
-  if(err == hipErrorContextAlreadyInUse) { return; }
-  if(err != hipSuccess) {
-    const int msg_len = 256;
-    char msg[msg_len];
-
-    snprintf(msg, msg_len,
-             "%s:%d: Error calling HIP function: %s (Code: %d)",
-             file, line, hipGetErrorString((hipError_t)err), err);
-
-    chpl_internal_error(msg);
-  }
-}
-
-#define ROCM_CALL(call) do {\
-  chpl_gpu_rocm_check((int)call, __FILE__, __LINE__);\
-} while(0);
 
 static inline
 void* chpl_gpu_load_module(const char* fatbin_data) {
@@ -498,4 +485,9 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
     ROCM_CALL(hipStreamSynchronize(stream));
   }
 }
+
+bool chpl_gpu_impl_can_reduce(void) {
+  return ROCM_VERSION_MAJOR>=5;
+}
+
 #endif // HAS_GPU_LOCALE

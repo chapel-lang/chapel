@@ -1,0 +1,1 @@
+modify-with-method.chpl:3: warning: modifying the result of a promoted index expression is unstable

@@ -28,7 +28,7 @@ add_custom_command(
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
-set_property(TARGET chpldoc PROPERTY CXX_STANDARD 14)
+set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
 target_link_libraries(chpldoc ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}

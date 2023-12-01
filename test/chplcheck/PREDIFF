@@ -1,3 +1,9 @@
 #!/bin/bash
-$CHPL_HOME/tools/chplcheck/chplcheck $1.chpl >> $2
+$CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
+  --enable-rule BoolLitInCondStatement \
+  --enable-rule UseExplicitModules \
+  --enable-rule UnusedFormal \
+  --enable-rule CamelOrPascalCaseVariables \
+  $1.chpl >> $2
 sed -i .tmp "s#$(pwd)/##" $2 # strip the working directory from output
+rm $2.tmp

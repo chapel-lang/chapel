@@ -14,6 +14,8 @@ use FormatHelper;
 var failures : list(string);
 
 proc test(val, type T = val.type) {
+  if FormatWriter.type == binarySerializer && isClassType(T) && val == nil then return;
+
   writeln();
   const header = "===== " + (T: string) + " =====";
   writeln(header);
@@ -152,13 +154,12 @@ class Child101 : ParentZeroOne  {
   }
 }
 
-// TODO: Add ranges back in once they can be printed across different
-// formats correctly
 proc main() {
   test(true);
   test(5);
   test(42.0);
   test("a-b-c-d-e-f-g");
+  test(b"12345");
   test((1, 2, 3));
   test((1, 42.0, false));
   test(colors.red);

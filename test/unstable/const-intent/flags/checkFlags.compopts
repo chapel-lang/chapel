@@ -1,0 +1,14 @@
+ # checkFlags.no-warn.good
+--no-const-arg-checks # checkFlags.no-warn.good
+--const-arg-checks # checkFlags.no-warn.good
+--checks # checkFlags.no-warn.good
+--no-checks # checkFlags.no-warn.good
+--fast # checkFlags.no-warn.good
+--warn-unstable # checkFlags.warn.good
+--warn-unstable --no-const-arg-checks # checkFlags.no-warn.good
+--warn-unstable --no-checks # checkFlags.no-warn.good
+--warn-unstable --fast # checkFlags.no-warn.good
+--warn-unstable --const-arg-checks # checkFlags.warn.good
+--warn-unstable --checks # checkFlags.warn.good
+--warn-unstable --fast --const-arg-checks # checkFlags.warn.good
+--warn-unstable --fast --checks # checkFlags.warn.good

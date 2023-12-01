@@ -72,11 +72,5 @@ to be useful to compiler developers. Both are documented here.
 Future Work
 -----------
 
-- Fix driver behavior for GPU compilation, which currently performs all work
-  in compilation and skips makeBinary.
-- Reduce work re-done between driver and phase invocations.
-- Enable our usual performance and correctness testing for driver mode, and
-  reach parity with monolithic mode.
-- Measure performance of compiler itself in driver mode, including change in
-  memory pressure.
-- Eventually, make compiler driver mode the default, with an opt-out flag.
+- Fix driver mode bugs encountered in testing.
+- Make compiler driver mode the default, with an opt-out flag.

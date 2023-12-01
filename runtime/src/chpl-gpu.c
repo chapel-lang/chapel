@@ -45,6 +45,8 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #include "gpu/chpl-gpu-reduce-util.h"
 
+#include <inttypes.h>
+
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
@@ -275,7 +277,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tKernel: %s\n"
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
-                 "\tNumThreads: %ld\n",
+                 "\tNumThreads: %"PRId64"\n",
                  chpl_task_getRequestedSubloc(),
                  chpl_lookupFilename(fn),
                  ln,
@@ -969,6 +971,10 @@ bool chpl_gpu_can_access_peer(int dev1, int dev2) {
 
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable) {
   chpl_gpu_impl_set_peer_access(dev1, dev2, enable);
+}
+
+bool chpl_gpu_can_reduce(void) {
+  return chpl_gpu_impl_can_reduce();
 }
 
 #define DEF_ONE_REDUCE(kind, data_type)\

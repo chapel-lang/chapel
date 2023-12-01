@@ -44,6 +44,7 @@ _chpl ()
 --comm-substrate \
 --compile-time-nil-checking \
 --compiler-driver \
+--const-arg-checks \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -177,6 +178,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-const-arg-checks \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -410,6 +412,7 @@ _chpl ()
 --codegen \
 --comm \
 --comm-substrate \
+--const-arg-checks \
 --copy-propagation \
 --copyright \
 --count-tokens \
@@ -470,6 +473,7 @@ _chpl ()
 --no-cast-checks \
 --no-checks \
 --no-codegen \
+--no-const-arg-checks \
 --no-copy-propagation \
 --no-count-tokens \
 --no-cpp-lines \
