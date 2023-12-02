@@ -5,8 +5,10 @@ use IO;
 
     // This works around "unresolved call serializeDefaultImpl(..., locale)"
     // due to passing a 'locale' to assert() in TaskErrors.these().
+    // It differs from test/modules/bradc/userInsteadOfStandard/ChapelIO.chpl
+    // by the lack of '(?)' after 'writer:fileWriter'.
     @chpldoc.nodoc
-    proc serializeDefaultImpl(writer:fileWriter(?), ref serializer,
+    proc serializeDefaultImpl(writer:fileWriter, ref serializer,
                               const x:?t) throws {
       writer.writeLiteral("(dummy serializeDefaultImpl)");
     }
