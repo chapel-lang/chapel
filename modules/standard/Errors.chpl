@@ -330,8 +330,8 @@ module Errors {
      */
     iter these() ref : owned Error? {
       if boundsChecking then assert(this.locale.id == here.id,
-        "iterating over a TaskErrors object allocated on ", this.locale,
-        " while being on ", here);
+        "iterating over a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       foreach i in 0..#nErrors {
         if errorsArray[i] != nil {
           yield errorsArray[i];
@@ -343,8 +343,8 @@ module Errors {
     @unstable("`TaskErrors.first` is unstable; expect this method to change in the future.")
     proc first() ref : owned Error? {
       if boundsChecking then assert(this.locale.id == here.id,
-        "querying first() of a TaskErrors object allocated on ", this.locale,
-        " while being on ", here);
+        "querying first() of a TaskErrors object allocated on locale ",
+        this.locale.id, " while being on locale ", here.id);
       var first = 0;
       for i in 0..#nErrors {
         if errorsArray[i] != nil {
