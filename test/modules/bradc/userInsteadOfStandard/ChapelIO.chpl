@@ -3,14 +3,6 @@
 
 use IO;
 
-    // This works around "unresolved call serializeDefaultImpl(..., locale)"
-    // due to passing a 'locale' to assert() in TaskErrors.these().
-    @chpldoc.nodoc
-    proc serializeDefaultImpl(writer:fileWriter(?), ref serializer,
-                              const x:?t) throws {
-      writer.writeLiteral("(dummy serializeDefaultImpl)");
-    }
-
   proc chpl_stringify_wrapper(const args ...):string {
     use IO only chpl_stringify;
     return chpl_stringify((...args));
