@@ -941,7 +941,7 @@ a value that cannot be used as an lvalue. This value is obtained
 by copy-initialization from the returned expression,
 see :ref:`Copy_and_Move_Initialization`.
 
-It is an error to return a ``sync`` or ``atomic`` by value.
+It is an error to return a ``sync`` or ``atomic`` by ``out`` intent.
 
 .. _Ref_Return_Intent:
 
