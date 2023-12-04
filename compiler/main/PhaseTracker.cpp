@@ -174,7 +174,7 @@ void PhaseTracker::ReportPassGroupTotals(
     if (saveToList) {
       groupTimes->emplace_back(passTime);
     } else {
-      // No out-paremeter to save into, report time normally
+      // No out-parameter to save into, report time normally
       // (whether it was calculated or retrieved from list).
 
       const char* groupName = passGroups[i][0];
