@@ -134,6 +134,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  void handleSelect(const Select* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -1027,6 +1028,11 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   // propagate information out of the Try itself
   processDeinitsAndPropagate(frame, parent, rv);
 }
+
+void CallInitDeinit::handleSelect(const Select* s, RV& rv) {
+  
+}
+
 void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* parent = currentParentFrame();

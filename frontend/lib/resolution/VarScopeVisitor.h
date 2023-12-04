@@ -104,6 +104,11 @@ class VarScopeVisitor {
       should update currentFrame() which is the frame for the Try.
       The catch clause frames are sitting in currentFrame().subBlocks. */
   virtual void handleTry(const uast::Try* t, RV& rv) = 0;
+  /** Called to process a Select after handling its contents --
+      should update currentFrame() which is the frame for the Select.
+      The when frames are sitting in currentFrame().subBlocks. */
+  virtual void handleSelect(const uast::Select* cond, RV& rv) = 0;
+
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
       Not called for Conditional or Try. */
@@ -154,6 +159,13 @@ class VarScopeVisitor {
   /** Assuming that the current frame refers to a Try,
       returns the i'th saved Catch frame. */
   VarFrame* currentCatchFrame(int i);
+
+  /** Assuming that the current frame refers to a Select,
+      returns the number of frames saved for When clauses.  */
+  int currentNumWhenFrames();
+  /** Assuming that the current frame refers to a Select,
+      returns the i'th saved When frame.  */
+  VarFrame * currentWhenFrame(int i);
 
   /** If ast is an Identifier that refers to a VarLikeDecl, return the
       Id of the VarLikeDecl. Otherwise, return an empty ID. */
@@ -213,6 +225,9 @@ class VarScopeVisitor {
 
   bool enter(const uast::Conditional* node, RV& rv);
   void exit(const uast::Conditional* node, RV& rv);
+
+  bool enter(const uast::Select* node, RV& rv);
+  void exit(const uast::Select* node, RV& rv);
 
   bool enter(const uast::AstNode* node, RV& rv);
   void exit(const uast::AstNode* node, RV& rv);

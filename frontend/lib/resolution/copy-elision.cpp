@@ -101,6 +101,7 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+  void handleSelect(const Select* t, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -568,7 +569,9 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   handleScope(t, rv);
 }
+void FindElidedCopies::handleSelect(const Select* s, RV& rv) {
 
+}
 static bool allowsCopyElision(const AstNode* ast) {
   return ast->isBlock() ||
          ast->isConditional() ||

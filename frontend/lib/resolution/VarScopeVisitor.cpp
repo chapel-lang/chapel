@@ -136,6 +136,22 @@ VarFrame* VarScopeVisitor::currentCatchFrame(int i) {
   return ret;
 }
 
+int VarScopeVisitor::currentNumWhenFrames() {
+  VarFrame* frame = currentFrame();
+  CHPL_ASSERT(frame->scopeAst->isSelect());
+  int ret = frame->subBlocks.size();
+  CHPL_ASSERT(frame->scopeAst->toSelect()->numWhenStmts() == ret);
+  return ret;
+}
+VarFrame* VarScopeVisitor::currentWhenFrame(int i) {
+  VarFrame* frame = currentFrame();
+  CHPL_ASSERT(frame->scopeAst->isSelect());
+  CHPL_ASSERT(0 <= i && (size_t) i < frame->subBlocks.size());
+  VarFrame* ret = frame->subBlocks[i].frame.get();
+  CHPL_ASSERT(ret);
+  return ret;
+}
+
 ID VarScopeVisitor::refersToId(const AstNode* ast, RV& rv) {
   ID toId;
   if (ast != nullptr) {
@@ -216,6 +232,11 @@ void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
     for (auto clause : t->handlers()) {
       tryFrame->subBlocks.push_back(ControlFlowSubBlock(clause));
     }
+  } else if (auto s = ast->toSelect()) {
+    VarFrame* selFrame = scopeStack.back().get();
+    for (auto when : s->whenStmts()) {
+      selFrame->subBlocks.push_back(ControlFlowSubBlock(when));
+    }
   }
 }
 void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
@@ -242,7 +263,8 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
     if (savedSubBlock) {
       // frame will be processed with parent block
       CHPL_ASSERT(parentFrame->scopeAst->isConditional() ||
-             parentFrame->scopeAst->isTry());
+             parentFrame->scopeAst->isTry() || 
+             parentFrame->scopeAst->isSelect());
     } else if (auto cond = ast->toConditional()) {
       handleConditional(cond, rv);
       if (parentFrame != nullptr) {
@@ -281,6 +303,9 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
           }
         }
       }
+    } else if (auto s = ast->toSelect()) {
+      handleSelect(s, rv);
+      //TODO: update parent frame with returnsOrThrows information
     } else {
       handleScope(ast, rv);
       // update the parent frame with the returns/throws status
@@ -526,6 +551,22 @@ void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
   exitScope(cond, rv);
   exitAst(cond);
 }
+
+bool VarScopeVisitor::enter(const Select* ast, RV& rv) {
+  enterAst(ast);
+  enterScope(ast, rv);
+
+  //TODO: check the conditions for param true and fales stuff
+
+  return true;
+}
+
+void VarScopeVisitor::exit(const Select* ast, RV& rv) {
+  exitScope(ast, rv);
+  exitAst(ast);
+  
+}
+
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
   enterAst(ast);
