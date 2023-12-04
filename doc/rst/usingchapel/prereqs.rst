@@ -85,6 +85,17 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
+  * Alpine 3.17 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+
+      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
+      sudo apk add llvm-dev clang-dev clang-static llvm-static
+
+
+  * Alpine 3.18 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+
+      sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
+      sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
+
   * Amazon Linux 2::
 
       sudo yum install git gcc gcc-c++ m4 perl python tcsh bash gcc gcc-c++ perl python python-devel python-setuptools bash make gawk python3 which
@@ -114,7 +125,7 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -S llvm14 clang14
 
 
-  * CentOS 7 Devtoolset 11::
+  * CentOS 7 Devtoolset 11 (but note `CentOS 7 CHPL_LLVM=system incompatability`_)::
 
       sudo yum install centos-release-scl
       sudo yum install devtoolset-11-gcc*
@@ -146,7 +157,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 37, 40::
+  * Fedora 37, 38, 39, 40 (but note `Fedora CHPL_LLVM=system incompatabilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -196,3 +207,28 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
+Compatability Notes
+-------------------
+
+Alpine CHPL_TASKS=qthreads incompatability
+++++++++++++++++++++++++++++++++++++++++++
+
+Qthreads does not currently build on Alpine, although Chapel does
+work on Alpine with the quickstart configuration or ``CHPL_TASKS=fifo``.
+
+CentOS 7 CHPL_LLVM=system incompatability
++++++++++++++++++++++++++++++++++++++++++
+
+CentOS 7 does not include a new enough LLVM release to work with
+``CHPL_LLVM=system``. ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are
+available as alternatives.
+
+Fedora CHPL_LLVM=system incompatabilities
++++++++++++++++++++++++++++++++++++++++++
+
+Fedora does only allows installation of a single version of ``clang``. As
+a result, ``CHPL_LLVM=system`` only works on Fedora releases that have a
+version of ``clang`` that Chapel supports. As a result,
+``CHPL_LLVM=system`` does not work on the newest versions of Fedora.
+``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are available as
+alternatives.
