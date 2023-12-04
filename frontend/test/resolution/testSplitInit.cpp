@@ -1335,7 +1335,256 @@ static void test53() {
     {});
 }
 
+static void test54() {
+  testSplitInit("test54",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
 
+        proc test() {
+          var x;
+          if true then
+            return;
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test55() {
+  testSplitInit("test55",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x;
+          if false then
+            return;
+          x = 11;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test56() {
+  testSplitInit("test56",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = int;
+          var x;
+          if T == int then
+            return;
+          x = 11;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test57() {
+  testSplitInit("test57",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x;
+          if false then
+            return;
+          x = 11;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+
+static void test58() {
+  testSplitInit("test58",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x;
+          if true then
+            x = 2;
+          else
+            var y = 0;
+          x = 3;
+          return;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test59() {
+  testSplitInit("test59",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x;
+          if false then
+            x = 2;
+          else
+            var y = 0;
+          x = 3;
+          return;
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test60() {
+  testSplitInit("test60",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        config const cond: bool = true;
+        proc test() {
+          var x;
+          if cond then
+            x = 2;
+          else
+            var y = 0;
+          x = 3;
+          return;
+        }
+      }
+    )"""",
+    {});
+}
+
+static void test61() {
+  testSplitInit("test61",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        config const cond: bool = true;
+        proc test() {
+          var x;
+          if false then
+            var y = 0;
+          else
+            x=2;
+          x = 3;
+          return;
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test62() {
+  testSplitInit("test62",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = int;
+          var x;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+              return;
+            }
+          }
+        }
+      }
+    )"""",
+    {"x"});
+}
+
+static void test63() {
+  testSplitInit("test63",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = real;
+          var x;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+              return;
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+}
+static void test64() {
+  testSplitInit("test64",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = real;
+          var x;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+              writeln("");
+            }
+          }
+          x = 12;
+        }
+      }
+    )"""",
+    {"x"});
+}
 int main() {
   test1();
   test2();
@@ -1392,6 +1641,16 @@ int main() {
   test51();
   test52();
   test53();
-
+  test54();
+  test55();
+  test56();
+  test57();
+  test58();
+  test59();
+  test60();
+  test61();
+  test62();
+  test63();
+  test64();
   return 0;
 }

@@ -253,6 +253,12 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
             thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
           parentFrame->returnsOrThrows = true;
         }
+        if (thenFrame && thenFrame->returnsOrThrows && thenFrame->isParamTrue) {
+          parentFrame->returnsOrThrows = true;
+        }
+        if (elseFrame && elseFrame->returnsOrThrows && elseFrame->isParamTrue) {
+          parentFrame->returnsOrThrows = true;
+        }
       }
     } else if (auto t = ast->toTry()) {
       handleTry(t, rv);
@@ -502,10 +508,12 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   if (condRE.type().isParamTrue()) {
     // Don't need to process the false branch.
     cond->thenBlock()->traverse(rv);
+    currentThenFrame()->isParamTrue = true;
     return false;
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = cond->elseBlock()) {
       elseBlock->traverse(rv);
+      currentElseFrame()->isParamTrue = true;
     }
     return false;
   }

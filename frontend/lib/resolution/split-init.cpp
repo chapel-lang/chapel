@@ -254,7 +254,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       if (elseFrame->eligibleVars.count(id) > 0) {
         // variable declared in this scope, so save the result
         allSplitInitedVars.insert(id);
-      } else if (thenFrame->mentionedVars.count(id) == 0) {
+      } else if (thenFrame == nullptr ||
+                 thenFrame->mentionedVars.count(id) == 0) {
         // variable inited in 'else' and not mentioned in 'then'
         locInitedVars.insert(id);
       }
@@ -276,21 +277,22 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
   // split init is OK if:
   //   both then & else blocks initialize it before mentioning it
   //   one initializes it and the other returns
+  //   one initializes and its statically known to be the only path
   for (const auto& id : locInitedVars) {
+    
     bool thenInits = false;
-    if (thenFrame) {
-      thenInits = thenFrame->initedVars.count(id) > 0;
-    }
+    thenInits = thenFrame && thenFrame->initedVars.count(id) > 0;
     bool elseInits = false;
-    if (elseFrame) {
-      elseInits = elseFrame->initedVars.count(id) > 0;
-    }
+    elseInits = elseFrame && elseFrame->initedVars.count(id) > 0;
 
     if (thenInits && elseInits) {
       locSplitInitedVars.insert(id);
     } else if ((thenInits         && elseReturnsThrows) ||
                (thenReturnsThrows && elseInits)) {
       // one branch returns or throws and the other inits
+      locSplitInitedVars.insert(id);
+    } else if ((thenInits && thenFrame && thenFrame->isParamTrue) ||
+               (elseInits && elseFrame && elseFrame->isParamTrue)) {
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);

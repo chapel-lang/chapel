@@ -250,6 +250,7 @@ struct VarFrame {
   // has the block already encountered a return or a throw?
   bool returnsOrThrows = false;
 
+  bool isParamTrue = false;
   // When processing a conditional or catch blocks,
   // instead of popping the SplitInitFrame for the then/else/catch blocks,
   // store them here, for use in handleExitScope(Conditional or Try).
