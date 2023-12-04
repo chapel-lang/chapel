@@ -28,10 +28,7 @@ GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 # a comma-separated list.
 RUNTIME_CXXFLAGS += -x cuda -Wno-unknown-cuda-version \
                     -Xclang -fcuda-allow-variadic-functions \
-                    --offload-arch=sm_60 \
-                    --offload-arch=sm_61 \
-                    --offload-arch=sm_70 \
-                    --offload-arch=sm_75
+                    --offload-arch=$(CHPL_MAKE_GPU_ARCH)
 
 $(RUNTIME_OBJ_DIR)/gpu-nvidia-reduce.o: gpu-nvidia-reduce.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
