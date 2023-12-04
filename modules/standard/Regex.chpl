@@ -633,7 +633,7 @@ record regex : serializable {
     :param:`~ChplConfig.CHPL_COMM`.
 
     .. note::
-       If you are looking to default intialize a :type:`regex`, you might be
+       If you are looking to default initialize a :type:`regex`, you might be
        looking for ``new regex("")``, which will create a regular expression
        matching the empty string.
   */
