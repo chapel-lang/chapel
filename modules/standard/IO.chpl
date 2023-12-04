@@ -8722,12 +8722,12 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   buffering mechanism.
 
   This optimization is on by default as it can improve performance for large
-  operations where buffering doesn't segnificantly reduce the number of system
+  operations where buffering doesn't significantly reduce the number of system
   I/O calls and thus adds unnecessary overhead.
 
   To disable the optimization, compile with ``-sIOSkipBufferingForLargeOps=false``.
 
-  Note that this is flag controlls an implementation-specific feature and
+  Note that this flag controls an implementation-specific feature and
   thus is not part of the Chapel language specification.
 */
 @unstable("IOSkipBufferingForLargeOps is unstable and could change or be removed in the future")
