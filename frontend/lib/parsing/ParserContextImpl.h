@@ -1399,6 +1399,37 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
   return cs;
 }
 
+ErroneousExpression* ParserContext::checkForFunctionErrors(FunctionParts& fp,
+                                                           AstNode* retType) {
+  if (fp.errorExpr != nullptr) {
+    return fp.errorExpr;
+  }
+  if (retType != nullptr && retType->isErroneousExpression()) {
+    return retType->toErroneousExpression();
+  }
+  return nullptr;
+}
+void ParserContext::enterScopeForFunctionDecl(FunctionParts& fp,
+                                              AstNode* retType) {
+  this->clearComments();
+  this->resetDeclState();
+
+  fp.errorExpr = checkForFunctionErrors(fp, retType);
+  // May never have been built if there was a syntax error.
+  if (!fp.errorExpr) {
+    this->enterScope(asttags::Function, fp.name->name());
+  }
+}
+void ParserContext::exitScopeForFunctionDecl(FunctionParts& fp) {
+  this->clearComments();
+
+  fp.errorExpr = checkForFunctionErrors(fp, fp.returnType);
+  // May never have been built if there was a syntax error.
+  if (!fp.errorExpr) {
+    this->exitScope(asttags::Function, fp.name->name());
+  }
+}
+
 AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
   // drop any comments before the lambda
   clearComments(fp.comments);

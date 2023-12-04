@@ -2408,16 +2408,7 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
   {
-    context->clearComments();
-    context->resetDeclState();
-
-    bool hadError =
-      $1.errorExpr != nullptr ||
-      ($3 != nullptr && $3->isErroneousExpression());
-    // May never have been built if there was a syntax error.
-    if (!hadError) {
-      context->enterScope(asttags::Function, $1.name->name());
-    }
+    context->enterScopeForFunctionDecl($1, $3);
   }
   opt_function_body_stmt
   {
@@ -2429,16 +2420,7 @@ fn_decl_stmt:
     fp.body = $7;
     fp.lifetime = wl.lifetime;
     fp.where = wl.where;
-    context->clearComments();
-
-    bool hadError =
-      $1.errorExpr != nullptr ||
-      ($3 != nullptr && $3->isErroneousExpression());
-    // May never have been built if there was a syntax error.
-    if (!hadError) {
-      context->exitScope(asttags::Function, $1.name->name());
-    }
-
+    context->exitScopeForFunctionDecl(fp);
     $$ = fp;
   }
 ;

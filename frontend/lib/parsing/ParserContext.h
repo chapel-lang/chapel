@@ -376,6 +376,13 @@ struct ParserContext {
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
+  ErroneousExpression* checkForFunctionErrors(FunctionParts& fp,
+                                              AstNode* retType);
+
+  void enterScopeForFunctionDecl(FunctionParts& fp,
+                                 AstNode* retType);
+  void exitScopeForFunctionDecl(FunctionParts& fp);
+
   AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
 
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
