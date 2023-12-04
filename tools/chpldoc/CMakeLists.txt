@@ -28,7 +28,13 @@ add_custom_command(
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
-set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
+# request C++14 -- or C++17 if using LLVM 16
+if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 target_link_libraries(chpldoc ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}
