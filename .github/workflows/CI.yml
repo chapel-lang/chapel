@@ -83,6 +83,10 @@ jobs:
     - name: run dyno linters
       run: |
         CHPL_HOME=$PWD CHPL_HOST_CC=clang-13 CHPL_HOST_CXX=clang++-13 make run-dyno-linters
+    - name: check undocumented symbols
+    run: |
+        CHPL_HOME=$PWD make chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
+        $PWD/tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable modules/standard
 
   make_check_llvm_none:
     runs-on: ubuntu-latest
@@ -123,19 +127,3 @@ jobs:
     - name: smokeTest lint
       run: |
         ./util/buildRelease/smokeTest lint
-
-  check_stable_docs:
-    runs-on: ubuntu-latest
-    container:
-      image: ghcr.io/${{ github.repository_owner }}/chapel-github-ci:latest
-      credentials:
-        username: ${{ github.actor }}
-        password: ${{ secrets.github_token }}
-    steps:
-    - uses: actions/checkout@v3
-    - name: make chapel-py-venv
-      run: |
-        CHPL_HOME=$PWD make chapel-py-venv -j`util/buildRelease/chpl-make-cpu_count`
-    - name: find missing stable docs
-      run: |
-        $PWD/tools/chpldoc/findUndocumentedSymbols --ci --ignore-deprecated --ignore-unstable modules/standard
