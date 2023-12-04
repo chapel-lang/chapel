@@ -79,7 +79,7 @@ Syntactic / Naming Changes
 * added a warning for fields with generic class management to avoid confusion
 * renamed context manager `[enter|leave]This()` to `[enter|exit]Context()`  
   (see https://chapel-lang.org/docs/1.32/language/spec/statements.html#the-manage-statement)
-* renamed `sync` formals from `x: valtype` to `val: valType`
+* renamed `sync` formals from `x: valType` to `val: valType`
 * renamed `atomic` formals and formal types from `value: T` to `val: valType`
 
 Semantic Changes / Changes to the Chapel Language
@@ -171,7 +171,7 @@ Deprecated / Removed Language Features
 * deprecated relying on default initializers for `sync`, `single`, and `atomic`
 * deprecated the `owned.borrow()` type method  
   (see https://chapel-lang.org/docs/1.32/language/spec/classes.html#OwnedObject.owned.borrow)
-* deprecated assignment between unbounded ranges of incompatible `idxtype`
+* deprecated assignment between unbounded ranges of incompatible `idxType`
 * deprecated `range.isAmbiguous()` in favor of `!range.isAligned()`
 * deprecated `range.isNaturallyAligned()` and `range.boundsCheck()`
 * deprecated the `.intIdxType` query on ranges, domains, and arrays  
