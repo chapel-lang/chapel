@@ -555,7 +555,7 @@ all:
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
-  09/01/23:
+  08/31/23:
     - text: GPU: Relax LICM aliasing rules for GPU kernels to try benefit performance (#22664)
       config: 1-node-p100, 1-node-mi60
   09/01/23:
@@ -2472,6 +2472,8 @@ chplGPU:
     - Upstream changes
 
 coral:
+  09/20/23:
+    - Can't repro on RTX A2000
   11/21/23:
     - text: Pin CUDA 11.3 on a test system that was defaulting to 11.0 (#23894)
       config: 1-node-p100
