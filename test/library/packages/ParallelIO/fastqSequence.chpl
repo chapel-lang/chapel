@@ -41,3 +41,17 @@ record fastQSequence: serializable {
     ser.endRecord();
   }
 }
+
+proc serialReadFastQ(path: string): [] fastQSequence {
+  use List;
+
+  var f = open(path, ioMode.r),
+      r = f.reader(locking=false),
+      l = new list(fastQSequence);
+
+  var seq: fastQSequence;
+  while r.read(seq) do
+    l.pushBack(seq);
+
+  return l.toArray();
+}

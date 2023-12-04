@@ -280,10 +280,10 @@ module ParallelIO {
   }
 
   /*
-    Read a delimited file in parallel into a block-distributed array.
+    Read a delimited file in parallel into an array.
 
     This procedure is essentially the same as :proc:`readParallelDelimited`,
-    except that it only executesint on the calling locale. As such, it does not
+    except that it only executes on the calling locale. As such, it does not
     accept a ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
@@ -327,6 +327,108 @@ module ParallelIO {
         r.advanceThrough(delim);
         i += 1;
       }
+    }
+
+    return results;
+  }
+
+  /*
+    Read a file's lines in parallel into a block-distributed array.
+
+    This routine is similar to :proc:`readParallelDelimited`, except that it
+    reads each line as a :type:`~String.string` or :type:`~Bytes.bytes` value.
+
+    :arg filePath: a path to the file to read from
+    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
+    :arg tasksPerLoc: the number of tasks to use per locale
+        (if ``-1``, query ``here.maxTaskPar`` on each locale)
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
+    :arg deserializerType: the type of deserializer to use
+    :arg targetLocales: the locales to read the file on
+
+    :returns: a block-distributed array of ``lineType`` values
+
+    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
+             in any of the chunks
+
+    See :proc:`~IO.open` for other errors that could be thrown when attempting
+  */
+  proc readParallelLines(filePath: string, type lineType = string, tasksPerLoc: int = -1,
+                         skipHeaderLines: int = 0, type deserializerType = defaultDeserializer,
+                         targetLocales: [?d] locale = Locales
+  ): [] lineType throws
+    where lineType == string || lineType == bytes
+  {
+    param delim = b"\n";
+
+    const fMeta = open(filePath, ioMode.r),
+          fileBounds = 0..<fMeta.size,
+          byteOffsets = findDelimChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
+          itemOffsets = findItemOffsets(fMeta, delim, byteOffsets);
+
+    var results = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
+
+    coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
+      const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
+            locBounds = byteOffsets[id]..byteOffsets[id+1],
+            locFile = open(filePath, ioMode.r),
+            tByteOffsets = findDelimChunks(locFile, delim, nTasks, locBounds, 0),
+            tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
+
+      coforall tid in 0..<nTasks with (ref results) {
+        var des: deserializerType;
+        const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1],
+              r = locFile.reader(locking=false, region=taskBounds, deserializer=des);
+
+        for i in tItemOffsets[tid]..<tItemOffsets[tid+1] do
+          results[i] = r.readLine(lineType);
+      }
+    }
+
+    return results;
+  }
+
+  /*
+    Read a file's lines in parallel into an array.
+
+    This routine is essentially the same as :proc:`readParallelLines`, except
+    that it only executes on the calling locale. As such, it does not accept a
+    ``targetLocales`` argument and returns a non-distributed array.
+
+    :arg filePath: a path to the file to read from
+    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
+    :arg nTasks: the number of tasks to use
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
+    :arg deserializerType: the type of deserializer to use
+
+    :returns: a default rectangular array of ``lineType`` values
+
+    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
+             in any of the chunks
+
+    See :proc:`~IO.open` for other errors that could be thrown when attempting
+  */
+  proc readParallelLinesLocal(filePath: string, type lineType = string, nTasks: int = here.maxTaskPar,
+                              skipHeaderLines: int = 0, type deserializerType = defaultDeserializer
+  ): [] lineType throws
+    where lineType == string || lineType == bytes
+  {
+    param delim = b"\n";
+
+    const f = open(filePath, ioMode.r),
+          fileBounds = 0..<f.size,
+          byteOffsets = findDelimChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
+          itemOffsets = findItemOffsets(f, delim, byteOffsets);
+
+    var results: [0..<itemOffsets.last] lineType;
+
+    coforall tid in 0..<nTasks with (ref results) {
+      var des: deserializerType;
+      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
+            r = f.reader(locking=false, region=taskBounds, deserializer=des);
+
+      for i in itemOffsets[tid]..<itemOffsets[tid+1] do
+        results[i] = r.readLine(lineType);
     }
 
     return results;

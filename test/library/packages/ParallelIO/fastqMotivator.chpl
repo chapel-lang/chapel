@@ -1,9 +1,24 @@
-use ParallelIO, IO;
+use ParallelIO, IO, Time;
 use fastqSequence;
 
-config const nTasks = here.maxTaskPar;
+config const nTasks = here.maxTaskPar,
+             fileName = "data.fastq";
+config param comparePerf = false;
 
-const sequences = readParallelLocal("data.fastq", fastQSequence, nTasks);
+var s = new stopwatch();
+
+if comparePerf then s.start();
+const sequences = readParallelLocal(fileName, fastQSequence, nTasks);
+
+if comparePerf {
+  s.stop();
+  writeln("parallel time: ", s.elapsed(), " (sec)");
+
+  s.restart();
+  const seqSerial = serialReadFastQ(fileName);
+  s.stop();
+  writeln("serial time: ", s.elapsed(), " (sec)");
+}
 
 const n = sequences.size;
 writeln("read ", n, " sequences");
