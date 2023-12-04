@@ -226,9 +226,9 @@ available as alternatives.
 Fedora CHPL_LLVM=system incompatabilities
 +++++++++++++++++++++++++++++++++++++++++
 
-Fedora does only allows installation of a single version of ``clang``. As
+Fedora only includes a single version of ``clang``. As
 a result, ``CHPL_LLVM=system`` only works on Fedora releases that have a
-version of ``clang`` that Chapel supports. As a result,
+version of ``clang`` that Chapel supports. In particular,
 ``CHPL_LLVM=system`` does not work on the newest versions of Fedora.
 ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are available as
 alternatives.
