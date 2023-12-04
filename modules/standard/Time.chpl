@@ -191,17 +191,23 @@ module Time {
   private const DI100Y = daysBeforeYear(101);
   private const DI4Y   = daysBeforeYear(5);
 
-  private proc getTimeOfDay() {
+  private proc getTimeOfDay() : (int, int) {
+    // POSIX sys/time.h types used with gettimeofday
+    extern type time_t;
+    extern type suseconds_t;
     extern "struct timeval" record timeval {
-      var tv_sec: int;
-      var tv_usec: int;
+      var tv_sec: time_t;
+      var tv_usec: suseconds_t;
     }
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
     var ret = gettimeofday(tv, nil);
     assert(ret == 0);
-    return (tv.tv_sec, tv.tv_usec);
+
+    // These should both fit in our 64-bit int
+    return (__primitive("cast", int, tv.tv_sec),
+            __primitive("cast", int, tv.tv_usec));
   }
 
   private proc tm_zoneType type {
