@@ -14,7 +14,7 @@ startCommDiagnostics(); // triggers warning
 stopCommDiagnostics();
 stopCommDiagnostics(); // trigers warning
 
-if compiledForSingleLocale() {
+if compiledForSingleLocale() || numLocales == 1 {
   stderr.writeln("here start/stop");
   startVerboseCommHere();
   startVerboseCommHere(); // triggers warning
