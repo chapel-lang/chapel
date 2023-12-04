@@ -307,7 +307,7 @@ static QualifiedType primCast(Context* context,
 
   // Note: the production compiler also handles wide classes here (if
   // cast-from is a wide class, turn cast-to into a wide class). We don't
-  // currently track wide classs in Dyno so this logic is omitted here.
+  // currently track wide classes in Dyno so this logic is omitted here.
 
   return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
 }
