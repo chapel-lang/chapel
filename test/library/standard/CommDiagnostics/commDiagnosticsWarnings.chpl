@@ -14,7 +14,7 @@ startCommDiagnostics(); // triggers warning
 stopCommDiagnostics();
 stopCommDiagnostics(); // trigers warning
 
-if compiledForSingleLocale() {
+if compiledForSingleLocale() || numLocales == 1 {
   stderr.writeln("here start/stop");
   startVerboseCommHere();
   startVerboseCommHere(); // triggers warning
@@ -25,9 +25,9 @@ if compiledForSingleLocale() {
   startCommDiagnosticsHere(); // triggers warning
   stopCommDiagnosticsHere();
   stopCommDiagnosticsHere(); // trigers warning
-} else {
+
+} else if (numLocales == 4) {
   // test is built for 4 locales
-  assert(numLocales == 4);
 
   //
   // test starting and stopping in order on all locales
