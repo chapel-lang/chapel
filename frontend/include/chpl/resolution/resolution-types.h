@@ -1233,7 +1233,7 @@ class MostSpecificCandidates {
 
   /**
     If there is exactly one candidate, return that candidate.
-    Otherwise, return an empty candiate.
+    Otherwise, return an empty candidate.
    */
   MostSpecificCandidate only() const {
     const MostSpecificCandidate* ret = nullptr;
