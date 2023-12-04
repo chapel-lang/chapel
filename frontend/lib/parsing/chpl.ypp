@@ -2830,9 +2830,7 @@ var_decl_stmt:
   }
 | var_decl_type error TSEMI
   {
-    auto err = ErroneousExpression::build(BUILDER, LOC(@2));
-    CommentsAndStmt cs = { .comments=nullptr, .stmt=err.release() };
-    $$ = cs;
+    $$ = { .comments=nullptr, .stmt=context->syntax(@2, "invalid variable declaration") };
     context->resetDeclStateOnError();
   }
 ;
