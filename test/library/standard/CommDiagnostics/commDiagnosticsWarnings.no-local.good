@@ -1,0 +1,5 @@
+global start/stop
+commDiagnosticsWarnings.chpl:8: warning: verbose comm was already started
+commDiagnosticsWarnings.chpl:10: warning: verbose comm was never started
+commDiagnosticsWarnings.chpl:13: warning: comm diagnostics was already started
+commDiagnosticsWarnings.chpl:15: warning: comm diagnostics was never started
