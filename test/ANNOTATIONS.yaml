@@ -2477,3 +2477,7 @@ coral:
   11/21/23:
     - text: Pin CUDA 11.3 on a test system that was defaulting to 11.0 (#23894)
       config: 1-node-p100
+
+transpose-time:
+  09/01/23:
+    - Can only repro on nightly testing system
