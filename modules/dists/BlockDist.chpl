@@ -500,7 +500,7 @@ operator =(ref a: blockDist(?), b: blockDist(?)) {
 
 
 @deprecated("'Block' is deprecated, please use 'blockDist' instead")
-type Block = blockDist;
+type Block = blockDist(?);
 
 
 @chpldoc.nodoc

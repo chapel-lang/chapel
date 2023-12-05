@@ -110,8 +110,8 @@ module Random {
   param defaultRNG = _defaultRNG;
 
   @deprecated("the RandomStream class is deprecated; please use the :record:`randomStream` record instead")
-  type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
-                                                 else NPBRandom.NPBRandomStream;
+  type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal(?)
+                                                 else NPBRandom.NPBRandomStream(?);
 
 
   private proc isNumericOrBoolType(type t) param do

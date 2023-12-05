@@ -359,7 +359,7 @@ operator =(ref a: cyclicDist(?), b: cyclicDist(?)) {
 }
 
 @deprecated("'Cyclic' is deprecated, please use 'cyclicDist' instead")
-type Cyclic = cyclicDist;
+type Cyclic = cyclicDist(?);
 
 @chpldoc.nodoc
 class CyclicImpl: BaseDist, writeSerializable {
