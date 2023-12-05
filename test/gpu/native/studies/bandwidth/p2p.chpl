@@ -112,8 +112,11 @@ proc checkNumAccessEnabled_rocm(valFromChpl) {
   var sub = spawn(["rocm-smi", "--showtopotype"], stdout=pipeStyle.pipe);
   var line : string;
   var count = 0;
-  while sub.stdout.readLine(line) do
-    count += line.count("PCIE");
+  while sub.stdout.readLine(line) {
+    // these two shold be mutually exclusive
+    count += line.count("PCIE");  // older GPUs
+    count += line.count("XGMI");  // newer ones
+  }
 
   assert(count == valFromChpl,
     "peer accesses enabled by Chapel does not match number of PCIE ",
