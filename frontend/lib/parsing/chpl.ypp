@@ -2408,13 +2408,7 @@ fn_decl_stmt:
   opt_ret_tag opt_ret_type
   opt_throws_error opt_lifetime_where
   {
-    context->clearComments();
-    context->resetDeclState();
-
-    // May never have been built if there was a syntax error.
-    if ($1.errorExpr == nullptr) {
-      context->enterScope(asttags::Function, $1.name->name());
-    }
+    context->enterScopeForFunctionDecl($1, $3);
   }
   opt_function_body_stmt
   {
@@ -2426,13 +2420,7 @@ fn_decl_stmt:
     fp.body = $7;
     fp.lifetime = wl.lifetime;
     fp.where = wl.where;
-    context->clearComments();
-
-    // May never have been built if there was a syntax error.
-    if ($1.errorExpr == nullptr) {
-      context->exitScope(asttags::Function, $1.name->name());
-    }
-
+    context->exitScopeForFunctionDecl(fp);
     $$ = fp;
   }
 ;
@@ -2821,6 +2809,11 @@ var_decl_stmt:
   {
     $$ = context->buildVarOrMultiDeclStmt(@$, $2);
     context->resetDeclState();
+  }
+| var_decl_type error TSEMI
+  {
+    $$ = { .comments=nullptr, .stmt=context->syntax(@2, "invalid variable declaration") };
+    context->resetDeclStateOnError();
   }
 ;
 
