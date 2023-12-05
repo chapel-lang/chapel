@@ -4,17 +4,25 @@
 
 use DistributedBag;
 
-config param nElems = 3;
-config param defaultMaxSegmentCap = 1024*1024;
+config const nElems = 3;
+const defaultMaxSegmentCap = DistributedBag.distributedBagMaxSegmentCap;
 
 var bag = new distBag(int);
 
 // Check the number of elements inserted.
-for i in 1..nElems do bag.add(i, 0);
+for i in 1..nElems {
+  const res = bag.add(i, 0);
+  assert(res == true);
+}
 assert(bag.getSize() == nElems);
 
-// Test the limit of the segments (their maximum capacity is 1024*1024).
-for i in 1..defaultMaxSegmentCap do bag.add(i, 0);
+// Test the limit of the segments.
+var c = 0;
+for i in 1..defaultMaxSegmentCap {
+  const res = bag.add(i, 0);
+  if !res then c += 1; // count the failures
+}
+assert(c == nElems);
 assert(bag.getSize() == defaultMaxSegmentCap);
 
 writeln("SUCCESS");

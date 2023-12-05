@@ -153,12 +153,14 @@ proc nqueens_search(const N: int)
     var eachLocalExploredTree: [0..#here.maxTaskPar] int;
     var eachLocalExploredSol: [0..#here.maxTaskPar] int;
 
-    coforall taskId in 0 .. #here.maxTaskPar with (ref eachLocalExploredTree,
+    coforall taskId in 0..#here.maxTaskPar with (ref eachLocalExploredTree,
       ref eachLocalExploredSol, ref eachTaskState, ref eachLocaleState) {
 
       // Task variables
       ref tree_loc = eachLocalExploredTree[taskId];
       ref num_sol = eachLocalExploredSol[taskId];
+      ref curTaskState = eachTaskState[taskId];
+      ref curLocState = eachLocaleState[here.id];
 
       allLocalesBarrier.barrier();
 
@@ -169,13 +171,13 @@ proc nqueens_search(const N: int)
 
         // Check termination
         if hasWork {
-          eachTaskState[taskId].write(BUSY);
-          eachLocaleState[here.id].write(BUSY);
+          curTaskState.write(BUSY);
+          curLocState.write(BUSY);
         }
         else {
-          eachTaskState[taskId].write(IDLE);
+          curTaskState.write(IDLE);
           if allIdle(eachTaskState) {
-            eachLocaleState[here.id].write(IDLE);
+            curLocState.write(IDLE);
             if allIdle(eachLocaleState) {
               break; // end of the global search
             }

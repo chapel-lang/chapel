@@ -13,6 +13,8 @@ coforall locId in 0..#numLocales do on Locales[locId] {
   }
 }
 
-writeln("before clear: ", bag);
+assert(bag.getSize() == numLocales * here.maxTaskPar);
 bag.clear();
-writeln("after clear:  ", bag);
+assert(bag.getSize() == 0);
+
+writeln("SUCCESS");

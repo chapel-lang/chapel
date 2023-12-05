@@ -388,7 +388,8 @@ module DistributedBag
 
     /*
       Insert an element in segment ``taskId``. The ordering is guaranteed to be
-      preserved.
+      preserved. If :const:`distributedBagMaxSegmentCap` is reached, the insertion
+      fails and returns `false`.
 
       :arg elt: The element to insert.
       :type elt: `eltType`
@@ -642,7 +643,8 @@ module DistributedBag
 
     /*
       Insert an element in segment ``taskId``. The ordering is guaranteed to be
-      preserved.
+      preserved. If :const:`distributedBagMaxSegmentCap` is reached, the insertion
+      fails and returns `false`.
     */
     proc add(elt: eltType, const taskId: int): bool
     {
@@ -943,16 +945,16 @@ module DistributedBag
     }
 
     /*
-      Insert an element.
+      Insert an element. The ordering is guaranteed to be preserved. If
+      :const:`distributedBagMaxSegmentCap` is reached, the insertion fails and
+      returns `false`.
     */
     inline proc ref addElement(elt: eltType): bool
     {
       // allocate a larger block with the double capacity.
       if block.isFull {
-        if (block.cap == distributedBagMaxSegmentCap) {
-          warning("maximum capacity reached: some elements may have been missed.");
+        if (block.cap == distributedBagMaxSegmentCap) then
           return false;
-        }
         lock_block.readFE();
         block.cap *= 2;
         block.dom = {0..#block.cap};
@@ -981,10 +983,8 @@ module DistributedBag
       // allocate a larger block.
       if (block.tailId + size > block.cap) {
         const neededCap = block.cap*2**ceil(log2((block.tailId + size) / block.cap:real)):int;
-        if (neededCap >= distributedBagMaxSegmentCap) {
-          warning("maximum capacity reached: some elements may have been missed.");
+        if (neededCap >= distributedBagMaxSegmentCap) then
           size = distributedBagMaxSegmentCap - block.tailId - 1;
-        }
         lock_block.readFE();
         block.cap = min(distributedBagMaxSegmentCap, neededCap);
         block.dom = {0..#block.cap};
