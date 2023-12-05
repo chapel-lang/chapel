@@ -556,7 +556,7 @@ all:
     - text: Deprecate c_string in user facing modules (#22622)
       config: chapcs
   08/31/23:
-    - text: GPU: Relax LICM aliasing rules for GPU kernels to try benefit performance (#22664)
+    - text: Relax LICM aliasing rules for GPU kernels to try benefit performance (#22664)
       config: 1-node-p100, 1-node-mi60
   09/01/23:
     - text: Switch the default GPU memory strategy to `array_on_device` (#23138)
