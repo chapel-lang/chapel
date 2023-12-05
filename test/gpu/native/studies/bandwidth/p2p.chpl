@@ -113,7 +113,7 @@ proc checkNumAccessEnabled_rocm(valFromChpl) {
   var line : string;
   var count = 0;
   while sub.stdout.readLine(line) {
-    // these two shold be mutually exclusive
+    // these two should be mutually exclusive
     count += line.count("PCIE");  // older GPUs
     count += line.count("XGMI");  // newer ones
   }
