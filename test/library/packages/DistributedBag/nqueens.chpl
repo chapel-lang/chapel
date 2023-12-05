@@ -34,7 +34,7 @@ use List;
 
 /*** Command-line constants ***/
 
-config const maxN = 13;
+config const maxN = 12;
 if (maxN < 1 || maxN > 18) then halt("maxN must be > 0 and <= 18");
 
 
@@ -178,7 +178,7 @@ proc nqueens_search(const N: int)
           curTaskState.write(IDLE);
           if allIdle(eachTaskState) {
             curLocState.write(IDLE);
-            if allIdle(eachLocaleState) {
+            if allIdle(eachLocaleState) && bag.getSize() == 0 {
               break; // end of the global search
             }
           }
