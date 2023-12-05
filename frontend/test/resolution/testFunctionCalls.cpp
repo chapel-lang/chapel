@@ -228,6 +228,34 @@ static void test9() {
   assert(realPtr->bitwidth()==32);
 }
 
+static void test10() {
+  // check that prim_gather_tests returns an int
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("gather tests");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+}
+
+static void test11() {
+  // check that prim_is_wide_pointer returns a bool
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("is wide pointer");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isBoolType());
+}
+
 
 int main() {
   test1();
@@ -240,6 +268,8 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
+  test11();
 
   return 0;
 }

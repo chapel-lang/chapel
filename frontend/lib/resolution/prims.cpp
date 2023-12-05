@@ -725,11 +725,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_COPYABLE:
     case PRIM_IS_ASSIGNABLE:
     case PRIM_IS_CONST_ASSIGNABLE:
-    case PRIM_HAS_DEFAULT_VALUE:
-    case PRIM_NEEDS_AUTO_DESTROY:
       CHPL_UNIMPL("various primitives");
       break;
-
     case PRIM_CALL_RESOLVES:
     case PRIM_CALL_AND_FN_RESOLVES:
     case PRIM_METHOD_CALL_AND_FN_RESOLVES:
@@ -886,6 +883,9 @@ CallResolutionResult resolvePrimCall(Context* context,
                              BoolParam::get(context, isEqual));
         break;
       }
+    case PRIM_IS_WIDE_PTR:
+    case PRIM_HAS_DEFAULT_VALUE:
+    case PRIM_NEEDS_AUTO_DESTROY:
     case PRIM_NOTEQUAL:
     case PRIM_LESSOREQUAL:
     case PRIM_GREATEROREQUAL:
@@ -930,12 +930,23 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_POW:
     case PRIM_MIN:
     case PRIM_MAX:
+    case PRIM_STEAL:
       if (ci.numActuals() > 0) {
         type = QualifiedType(QualifiedType::CONST_VAR,
                              ci.actual(0).type().type());
       }
       break;
-
+    /* primitives that return default int */
+    case PRIM_GATHER_TESTS:
+    case PRIM_GET_UNION_ID:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           IntType::get(context, 0));
+      break;
+    /* primitives that return an int32 */
+    case PRIM_GETCID:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           IntType::get(context, 32));
+      break;
     /* primitives that return void */
     case PRIM_NOOP:
     case PRIM_MOVE:
@@ -992,6 +1003,17 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_INVARIANT_START:
     case PRIM_GET_TEST_BY_NAME:
     case PRIM_GET_TEST_BY_INDEX:
+    case PRIM_ARRAY_SET:
+    case PRIM_ARRAY_SET_FIRST:
+    case PRIM_INIT_FIELDS:
+    case PRIM_CHPL_COMM_GET:
+    case PRIM_CHPL_COMM_PUT:
+    case PRIM_CHPL_COMM_ARRAY_GET:
+    case PRIM_CHPL_COMM_ARRAY_PUT:
+    case PRIM_CHPL_COMM_REMOTE_PREFETCH:
+    case PRIM_CHPL_COMM_GET_STRD:
+    case PRIM_CHPL_COMM_PUT_STRD:
+    case PRIM_ARRAY_SHIFT_BASE_POINTER:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1016,11 +1038,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_IMAG:
       type = primComplexGetComponent(context, ci);
       break;
+    case PRIM_WIDE_GET_ADDR:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CPtrType::getCVoidPtrType(context));
+      break;
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
     case PRIM_REF_TO_STRING:
-    case PRIM_GETCID:
-    case PRIM_GET_UNION_ID:
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
@@ -1059,7 +1083,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_ELIGIBLE:
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
-    case PRIM_INIT_FIELDS:
     case PRIM_LIFETIME_OF:
       CHPL_UNIMPL("misc primitives");
       break;
@@ -1079,17 +1102,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:
-    case PRIM_CHPL_COMM_GET:
-    case PRIM_CHPL_COMM_PUT:
-    case PRIM_CHPL_COMM_ARRAY_GET:
-    case PRIM_CHPL_COMM_ARRAY_PUT:
-    case PRIM_CHPL_COMM_REMOTE_PREFETCH:
-    case PRIM_CHPL_COMM_GET_STRD:
-    case PRIM_CHPL_COMM_PUT_STRD:
     case PRIM_ARRAY_GET:
-    case PRIM_ARRAY_SHIFT_BASE_POINTER:
-    case PRIM_ARRAY_SET:
-    case PRIM_ARRAY_SET_FIRST:
     case PRIM_MAYBE_LOCAL_THIS:
     case PRIM_MAYBE_LOCAL_ARR_ELEM:
     case PRIM_MAYBE_AGGREGATE_ASSIGN:
@@ -1111,8 +1124,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
     case PRIM_WIDE_GET_NODE:
-    case PRIM_WIDE_GET_ADDR:
-    case PRIM_IS_WIDE_PTR:
     case PRIM_ON_LOCALE_NUM:
     case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_REGISTER_GLOBAL_VAR:
@@ -1130,7 +1141,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:
-    case PRIM_STEAL:
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_GET_RUNTIME_TYPE_FIELD:
     case PRIM_LOOKUP_FILENAME:
@@ -1140,7 +1150,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
-    case PRIM_GATHER_TESTS:
       CHPL_UNIMPL("misc primitives");
       break;
 
