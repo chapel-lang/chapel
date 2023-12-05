@@ -98,6 +98,10 @@ const char* BuiltinType::c_str() const {
 
 }
 
+void BuiltinType::stringify(std::ostream& ss, StringifyKind stringKind) const {
+  ss << c_str();
+}
+
 
 } // end namespace types
 } // end namespace chpl

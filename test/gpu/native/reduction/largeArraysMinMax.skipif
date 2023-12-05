@@ -1,0 +1,4 @@
+# this test is to exercise a code path that will never be run with
+# cpu-as-device. Moreover, the large size makes this mode take too long to
+# finish. So, I am skipping this test.
+CHPL_GPU==cpu

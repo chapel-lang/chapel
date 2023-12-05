@@ -69,7 +69,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/AutoMath.chpl \
-	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
@@ -77,6 +76,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Collectives.chpl \
 	standard/CommDiagnostics.chpl \
 	standard/Communication.chpl \
+	standard/Debugger.chpl \
 	standard/GpuDiagnostics.chpl \
 	standard/GPU.chpl \
 	standard/CTypes.chpl \
@@ -92,10 +92,7 @@ MODULES_TO_DOCUMENT = \
 	standard/Map.chpl \
 	standard/Math.chpl \
 	standard/MemMove.chpl \
-	standard/Memory.chpl \
 	standard/MemDiagnostics.chpl \
-	standard/Memory/Diagnostics.chpl \
-	standard/Memory/Initialization.chpl \
 	standard/OS.chpl \
 	standard/Path.chpl \
 	standard/Random.chpl \
@@ -106,7 +103,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl
+	standard/Version.chpl \
+	standard/WeakPointer.chpl \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -139,6 +137,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/NPBRandom.chpl \
+	packages/ObjectSerialization.chpl \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \

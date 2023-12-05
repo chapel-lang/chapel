@@ -156,9 +156,9 @@ proc main() {
   use Random;
 
   var lst = new owned List(int);
-  var rnd = if useClockSeed 
-              then new owned NPBRandomStream(real)
-              else new owned NPBRandomStream(real, seed = randomSeed);
+  var rnd = if useClockSeed
+              then new randomStream(real)
+              else new randomStream(real, seed = randomSeed);
   const maxValue = 100;
 
   //

@@ -1,4 +1,4 @@
-use Random;
+use NPBRandom;
 
 config const n = 100000,
              tasksPerLocale = here.maxTaskPar,

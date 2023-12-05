@@ -41,6 +41,8 @@ namespace uast {
   The scan expression is '+ scan A'.
 */
 class Scan final : public Call {
+ friend class AstNode;
+
  private:
   static const int opChildNum_ = 0;
   static const int iterandChildNum_ = 1;
@@ -50,7 +52,11 @@ class Scan final : public Call {
     CHPL_ASSERT(numChildren() == 2);
   }
 
-  Scan(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+  }
+
+  explicit Scan(Deserializer& des)
     : Call(asttags::Scan, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -87,13 +93,6 @@ class Scan final : public Call {
   const AstNode* iterand() const {
     return this->child(iterandChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Scan);
-
 };
 
 

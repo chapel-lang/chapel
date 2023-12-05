@@ -1,2 +1,8 @@
+test_use_chain_resolution2.chpl:23: In function 'main':
+test_use_chain_resolution2.chpl:25: warning: potentially surprising shadowing for 'aaa'
+test_use_chain_resolution2.chpl:24: note: it refers to a symbol found through the 'use' of 'M2' here
+test_use_chain_resolution2.chpl:6: note: and then through the 'use' of 'M1' here
+test_use_chain_resolution2.chpl:2: note: leading to 'aaa' defined here
+test_use_chain_resolution2.chpl:22: note: but, there is a shadowed symbol 'aaa' defined here
 test_use_chain_resolution2.chpl:2: error: symbol aaa is multiply defined
 test_use_chain_resolution2.chpl:14: note: also defined here

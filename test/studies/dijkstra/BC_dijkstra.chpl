@@ -1,6 +1,6 @@
 module BC_dijkstra {
 
-  use Heap, NodesEdges;
+  use heap, NodesEdges;
 
   proc dijkstra(S: int, nEdges: int, nNodes: int, Edges, Nodes) {
     // Initialize stack

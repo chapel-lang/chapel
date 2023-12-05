@@ -1584,10 +1584,14 @@ static void deleteClang(ClangInfo* clangInfo){
     delete clangInfo->cCodeGen;
     clangInfo->cCodeGen = NULL;
   }
-  delete clangInfo->Clang;
-  clangInfo->Clang = NULL;
-  delete clangInfo->cCodeGenAction;
-  clangInfo->cCodeGenAction = NULL;
+  if ( clangInfo->Clang ) {
+    delete clangInfo->Clang;
+    clangInfo->Clang = NULL;
+  }
+  if ( clangInfo->cCodeGenAction ) {
+    delete clangInfo->cCodeGenAction;
+    clangInfo->cCodeGenAction = NULL;
+  }
 }
 
 static void cleanupClang(ClangInfo* clangInfo)
@@ -1829,7 +1833,7 @@ void setupClang(GenInfo* info, std::string mainFile)
 
 
 // copied from clang's BackendUtil.cpp
-static Optional<llvm::CodeModel::Model>
+static chpl::optional<llvm::CodeModel::Model>
 getCodeModel(const CodeGenOptions &CodeGenOpts) {
   unsigned CodeModel = llvm::StringSwitch<unsigned>(CodeGenOpts.CodeModel)
                            .Case("tiny", llvm::CodeModel::Tiny)
@@ -2004,7 +2008,7 @@ static llvm::TargetOptions getTargetOptions(
 // deserialize the module from previously-outputted LLVM bitcode file
 static void loadModuleFromBitcode() {
   // should only be used for the backend to retrieve codegen results
-  INT_ASSERT(fDriverPhaseTwo);
+  INT_ASSERT(fDriverMakeBinaryPhase);
 
   GenInfo* info = gGenInfo;
   INT_ASSERT(info);
@@ -2104,7 +2108,7 @@ static void setupModule()
   }
 
   // Choose the code model
-  llvm::Optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
+  chpl::optional<CodeModel::Model> codeModel = getCodeModel(ClangCodeGenOpts);
 
   llvm::CodeGenOpt::Level optLevel =
     fFastFlag ? llvm::CodeGenOpt::Aggressive : llvm::CodeGenOpt::None;
@@ -2476,7 +2480,12 @@ static void runModuleOptPipeline(bool addWideOpts) {
 
   // Build the pipeline
   auto optLvl = translateOptLevel();
-  ModulePassManager MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  ModulePassManager MPM;
+  if (optLvl == LlvmOptimizationLevel::O0) {
+    MPM = PB.buildO0DefaultPipeline(optLvl);
+  } else {
+    MPM = PB.buildPerModuleDefaultPipeline(optLvl);
+  }
 
   // Add the Global to Wide optimization if necessary.
   // This is done in this way to be added even with -O0
@@ -3032,6 +3041,23 @@ void runClang(const char* just_parse_filename) {
   std::string rtmain = home + "/runtime/etc/rtmain.c";
 
   setupClang(gGenInfo, rtmain);
+
+
+  // If running in makeBinary phase, we only need the Clang setup work,
+  // so stop before code generation.
+  if (fDriverMakeBinaryPhase) {
+    // Needed for makeBinary but is only otherwise run by the skipped
+    // ExecuteAction below.
+#if HAVE_LLVM_VER >= 130
+    clangInfo->Clang->createTarget();
+#else
+    clangInfo->Clang->setTarget(TargetInfo::CreateTargetInfo(
+        clangInfo->Clang->getDiagnostics(),
+        clangInfo->Clang->getInvocation().TargetOpts));
+#endif
+
+    return;
+  }
 
   if( fLlvmCodegen || fAllowExternC )
   {
@@ -4686,8 +4712,14 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets;
-  std::string inputs;
+  std::string targets = "-targets=host-x86_64-unknown-linux";
+#if HAVE_LLVM_VER >= 150
+  std::string inputs = "-input=/dev/null ";
+  std::string outputs = "-output=" + fatbinFilename;
+#else
+  std::string inputs = "-inputs=/dev/null";
+  std::string outputs = "-outputs=" + fatbinFilename;
+#endif
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4710,17 +4742,18 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
     mysystem(lldCmd.c_str(), "Device .o file to .out file");
 
     targets += std::string(",hipv4-amdgcn-amd-amdhsa--") + gpuArch;
-    inputs += std::string(",") + gpuOut;
+#if HAVE_LLVM_VER >= 150
+    inputs += "-input=" + gpuOut + " ";
+#else
+    inputs += "," + gpuOut;
+#endif
 
   }
-  std::string bundlerCmd = std::string(gGpuSdkPath) +
-                          "/llvm/bin/clang-offload-bundler" +
-                           " -type=o -bundle-align=4096" +
-                           " -targets=host-x86_64-unknown-linux" +
-                           targets +
-                           " -inputs=/dev/null" +
-                           inputs +
-                           " -outputs=" + fatbinFilename;
+  std::string bundlerCmd = findSiblingClangToolPath("clang-offload-bundler") +
+                           " -type=o -bundle-align=4096 " +
+                           targets + " " +
+                           inputs + " " +
+                           outputs;
 
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
@@ -4811,7 +4844,7 @@ static void checkLoopsAssertVectorize(void) {
 #endif
 
 void makeBinaryLLVM(void) {
-  if (fDriverPhaseTwo) {
+  if (fDriverMakeBinaryPhase) {
     // Set up necessary resources for a driver makeBinary phase invocation.
 
     initializeGenInfo();
@@ -4825,10 +4858,6 @@ void makeBinaryLLVM(void) {
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
     runClang(NULL);
-    // delete the new Builder module since we will be loading from bitcode
-    gGenInfo->clangInfo->cCodeGen->ReleaseModule();
-    delete gGenInfo->module;
-    gGenInfo->module = nullptr;
 
     // load in module from codegen'd bitcode
     loadModuleFromBitcode();
@@ -5263,7 +5292,8 @@ static void llvmRunOptimizations(void) {
 
   // Run optimizations with the new PassManager
   runModuleOptPipeline(fLLVMWideOpt);
-  saveIrToBcFileIfNeeded(opt1Filename);
+  saveIrToBcFileIfNeeded(filenames->opt1Filename,
+                         /* forceSave */ !fDriverDoMonolithic && !fLLVMWideOpt);
 
   if (fLLVMWideOpt) {
     // the GlobalToWide pass creates calls to inline functions, among
@@ -5271,7 +5301,8 @@ static void llvmRunOptimizations(void) {
     // battery of optimizations now.
     runModuleOptPipeline(/* don't add global to wide opts */ false);
 
-    saveIrToBcFileIfNeeded(opt2Filename);
+    saveIrToBcFileIfNeeded(filenames->opt2Filename,
+                           /* forceSave */ !fDriverDoMonolithic);
   }
 
 #endif
@@ -5310,30 +5341,23 @@ static void handlePrintAsm(std::string dotOFile) {
       disSymArg += "_";
     }
 
-    if (fDriverPhaseTwo) restorePrintIrCNames();
-    // TODO: skip calling this (and remove the function) as the set should
-    // already have deterministic ordering and be fine to iterate through
-    std::vector<std::string> names = gatherPrintLlvmIrCNames();
+    // If in driver mode, restore list of C symbols to print from disk.
+    if (fDriverMakeBinaryPhase) restorePrintIrCNames();
+    const auto& names = gatherPrintLlvmIrCNames();
     printf("%lu symbol names to disassemble\n", names.size());
-    if (names.empty()) {
-      USR_WARN(
-          "requested assembly dump, but none of the symbols requested to be "
-          "disassembled could be found in the object file");
-    } else {
-      for (const auto& name : names) {
-        printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
-        fflush(stdout);
-        std::vector<std::string> cmd;
-        cmd.push_back(llvmObjDump);
-        std::string arg = disSymArg; // e.g. --disassemble=
-        arg += name;
-        cmd.push_back(arg);
-        cmd.push_back(dotOFile);
+    for (const auto& name : names) {
+      printf("\n\n# Disassembling symbol %s\n\n", name.c_str());
+      fflush(stdout);
+      std::vector<std::string> cmd;
+      cmd.push_back(llvmObjDump);
+      std::string arg = disSymArg; // e.g. --disassemble=
+      arg += name;
+      cmd.push_back(arg);
+      cmd.push_back(dotOFile);
 
-        mysystem(cmd, "disassemble a symbol",
-                 /* ignoreStatus */ true,
-                 /* quiet */ false);
-      }
+      mysystem(cmd, "disassemble a symbol",
+               /* ignoreStatus */ true,
+               /* quiet */ false);
     }
   }
 }

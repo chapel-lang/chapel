@@ -710,7 +710,13 @@ static void test18() {
 
   const ResolvedExpression& reY = scopeResolveIt(context, x->initExpression());
   assert(reY.toId().str() == "M@1");
+
+  // expect a warning for this code
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->kind() == ErrorBase::WARNING);
+  guard.realizeErrors();
 }
+
 // check that 'private use M' puts M in a further shadow scope from contents
 static void test19() {
   printf("test19\n");

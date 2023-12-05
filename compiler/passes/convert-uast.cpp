@@ -278,7 +278,11 @@ struct Converter {
     return false;
   }
   bool shouldResolve(ID symbolId) {
-    return shouldResolve(symbolId.symbolPath());
+    if (fDynoCompilerLibrary) {
+      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+    } else {
+      return shouldResolve(symbolId.symbolPath());
+    }
   }
   bool shouldResolve(const uast::AstNode* node) {
     return shouldResolve(node->id());
@@ -951,7 +955,7 @@ struct Converter {
     }
 
     CallExpr* when = new CallExpr(PRIM_WHEN, args);
-    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
+    auto block = createBlockWithStmts(node->body()->stmts(), node->blockStyle());
 
     return new CondStmt(when, block);
   }
@@ -1400,6 +1404,11 @@ struct Converter {
       // Handle reductions in with clauses explicitly here.
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
+
+        //if(fForeachIntents && parent->toForeach()) {
+        if(parent->toForeach()) {
+          USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
+        }
 
         Expr* ovar = new UnresolvedSymExpr(rd->name().c_str());
         Expr* riExpr = convertScanReduceOp(rd->op());
@@ -1972,7 +1981,7 @@ struct Converter {
     // Does not appear possible right now, from reading the grammar.
     INT_ASSERT(!node->isExpressionLevel());
 
-    if (node->withClause()) {
+    if (!fForeachIntents && node->withClause()) {
       USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
                                                "support task intents");
     }
@@ -1980,6 +1989,7 @@ struct Converter {
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());
     Expr* iteratorExpr = toExpr(convertAST(node->iterand()));
+    CallExpr* intents = convertWithClause(node->withClause(), node);
     auto body = createBlockWithStmts(node->stmts(), node->blockStyle());
     bool zippered = node->iterand()->isZip();
     bool isForExpr = node->isExpressionLevel();
@@ -1989,7 +1999,7 @@ struct Converter {
 
     auto loopAttributes = buildLoopAttributes(node);
     loopAttributes.insertGpuEligibilityAssertion(body);
-    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, body,
+    auto ret = ForLoop::buildForeachLoop(indices, iteratorExpr, intents, body,
                                          zippered,
                                          isForExpr, std::move(loopAttributes.llvmMetadata));
 
@@ -2959,7 +2969,6 @@ struct Converter {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
-    const resolution::TypedFnSignature* initialSig = nullptr;
     const resolution::PoiScope* poiScope = nullptr;
 
     if (shouldResolveFunction || shouldScopeResolveFunction) {
@@ -3146,8 +3155,6 @@ struct Converter {
 
     if (node->body()) {
       INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
-
-      // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
     }
@@ -3168,8 +3175,8 @@ struct Converter {
     }
 
     // Update the function symbol with any resolution results.
-    if (shouldResolveFunction) {
-      auto retType = resolution::returnType(context, initialSig, poiScope);
+    if (shouldResolveFunction && resolvedFn != nullptr) {
+      auto retType = resolution::returnType(context, resolvedFn->signature(), poiScope);
       fn->retType = convertType(retType);
     }
 
@@ -3423,9 +3430,6 @@ struct Converter {
     CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
-    // TODO (dlongnecke): For now, the tag is overridden by the caller.
-    // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
-    // could note if a module is standard/internal/user.
     const ModTag tag = this->topLevelModTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
@@ -3966,10 +3970,8 @@ struct Converter {
     bool inheritMarkedGeneric = false;
 
     std::vector<Expr*> inherits;
-    if (auto cls = node->toClass()) {
-      convertInheritsExprs(cls->inheritExprs(), inherits, inheritMarkedGeneric);
-    } else if (auto rec = node->toRecord()) {
-      convertInheritsExprs(rec->interfaceExprs(), inherits, inheritMarkedGeneric);
+    if (auto ad = node->toAggregateDecl()) {
+      convertInheritsExprs(ad->inheritExprs(), inherits, inheritMarkedGeneric);
     }
 
     if (node->linkageName()) {
@@ -4086,7 +4088,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       } else if (nBest > 1) {
         INT_FATAL("return intent overloading not yet handled");
       } else if (nBest == 1) {
-        const resolution::TypedFnSignature* sig = candidates.only();
+        const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
         if (fn == nullptr) {
           // we will fix it later
@@ -4127,12 +4129,10 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::CVoidPtrType:  return dtCVoidPtr;
     case typetags::OpaqueType:    return dtOpaque;
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
+    case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
 
     // generic builtin types
-    case typetags::AnyBorrowedNilableType:       return dtBorrowedNilable;
-    case typetags::AnyBorrowedNonNilableType:    return dtBorrowedNonNilable;
-    case typetags::AnyBorrowedType:              return dtBorrowed;
     case typetags::AnyComplexType:               return dtAnyComplex;
     case typetags::AnyEnumType:                  return dtAnyEnumerated;
     case typetags::AnyImagType:                  return dtAnyImag;
@@ -4140,8 +4140,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyIntegralType:              return dtIntegral;
     case typetags::AnyIteratorClassType:         return dtIteratorClass;
     case typetags::AnyIteratorRecordType:        return dtIteratorRecord;
-    case typetags::AnyManagementAnyNilableType:  return dtAnyManagementAnyNilable;
-    case typetags::AnyManagementNilableType:     return dtAnyManagementNilable;
     case typetags::AnyNumericType:               return dtNumeric;
     case typetags::AnyOwnedType:                 return dtOwned;
     case typetags::AnyPodType:                   return dtAnyPOD;
@@ -4151,9 +4149,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::AnyUintType:                  return dtIntegral; // a lie
     case typetags::AnyUninstantiatedType:        return dtUninstantiated;
     case typetags::AnyUnionType:                 return dtUnknown; // a lie
-    case typetags::AnyUnmanagedNilableType:      return dtUnmanagedNilable;
-    case typetags::AnyUnmanagedNonNilableType:   return dtUnmanagedNonNilable;
-    case typetags::AnyUnmanagedType:             return dtUnmanaged;
 
     // declared types
     case typetags::ClassType:   return convertClassType(qt);
@@ -4206,6 +4201,30 @@ Type* Converter::convertCPtrType(const types::QualifiedType qt) {
 }
 
 Type* Converter::convertClassType(const types::QualifiedType qt) {
+  auto classType = qt.type()->toClassType();
+
+  if (auto mt = classType->manageableType()) {
+    if (mt->isAnyClassType()) {
+      // The production compiler represents these as special builtins
+      auto dec = classType->decorator();
+      if (dec.isUnmanaged()) {
+        if (dec.isNilable()) return dtUnmanagedNilable;
+        if (dec.isNonNilable()) return dtUnmanagedNonNilable;
+        return dtUnmanaged;
+      } else if (dec.isBorrowed()) {
+        if (dec.isNilable()) return dtBorrowedNilable;
+        if (dec.isNonNilable()) return dtBorrowedNonNilable;
+        return dtBorrowed;
+      } else if (dec.isUnknownManagement()) {
+        if (dec.isNilable()) return dtAnyManagementNilable;
+        if (dec.isNonNilable()) return dtAnyManagementNonNilable;
+        return dtAnyManagementAnyNilable;
+      } else {
+        // fall through
+      }
+    }
+  }
+
   INT_FATAL("not implemented yet");
   return nullptr;
 }

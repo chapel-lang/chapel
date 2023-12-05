@@ -25,6 +25,8 @@
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 
+#include <functional>
+
 // Test resolving a simple primary and secondary method in defining scope.
 static void test1() {
   Context ctx;
@@ -77,8 +79,9 @@ static void test1() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());
@@ -90,8 +93,9 @@ static void test1() {
   auto& reCallSecondary = rr.byAst(callSecondary);
   auto& qtCallSecondary = reCallSecondary.type();
   assert(qtCallSecondary.type()->isVoidType());
-  auto tfsCallSecondary = reCallSecondary.mostSpecific().only();
-  assert(tfsCallSecondary);
+  auto mscCallSecondary = reCallSecondary.mostSpecific().only();
+  assert(mscCallSecondary);
+  auto tfsCallSecondary = mscCallSecondary.fn();
 
   // Check the secondary call receiver.
   assert(tfsCallSecondary->id() == fnSecondary->id());
@@ -151,8 +155,9 @@ static void test2() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());
@@ -164,8 +169,9 @@ static void test2() {
   auto& reCallSecondary = rr.byAst(callSecondary);
   auto& qtCallSecondary = reCallSecondary.type();
   assert(qtCallSecondary.type()->isVoidType());
-  auto tfsCallSecondary = reCallSecondary.mostSpecific().only();
-  assert(tfsCallSecondary);
+  auto mscCallSecondary = reCallSecondary.mostSpecific().only();
+  assert(mscCallSecondary);
+  auto tfsCallSecondary = mscCallSecondary.fn();
 
   // Check the secondary call receiver.
   assert(tfsCallSecondary->id() == fnSecondary->id());
@@ -304,8 +310,9 @@ static void test5() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());
@@ -383,6 +390,116 @@ static void test7() {
   }
 }
 
+static void runAndAssert(std::string program,
+                         std::function<bool(QualifiedType)> fn) {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+  QualifiedType initType = resolveTypeOfXInit(context, program);
+  //assert(initType.type()->isStringType());
+  assert(fn(initType));
+}
+
+//
+// Test method signatures that use fields or methods in the same type.
+//
+static void test8() {
+  std::string base =
+  R"""(
+    record R {
+      param flag : bool;
+
+      proc paramMethod() param : bool {
+        return flag;
+      }
+
+      proc withDefaultField(arg = flag) {
+        return "hello";
+      }
+
+      proc withDefault(arg = paramMethod()) {
+        return "hello";
+      }
+
+      proc whereMethod() where paramMethod() {
+        return "hello";
+      }
+
+      proc whereMethod() where !paramMethod() {
+        return 5;
+      }
+
+      proc onlyFalse() where !paramMethod() {
+        return 42.0;
+      }
+
+      proc whereField() where flag {
+        return "hello";
+      }
+
+      proc whereField() where !flag {
+        return 5;
+      }
+    }
+  )""";
+
+  auto isString = [](QualifiedType qt) { return qt.type()->isStringType(); };
+  auto isInt    = [](QualifiedType qt) { return qt.type()->isIntType(); };
+
+  // Resolve method using a sibling method as an argument's default
+  runAndAssert(base + R""""(
+    var r : R(false);
+    var x = r.withDefault();
+    )"""", isString);
+
+  // Resolve method using a field as an argument's default value
+  runAndAssert(base + R""""(
+      var r : R(false);
+      var x = r.withDefaultField();
+    )"""", isString);
+
+  // Resolve method using another method as the where-clause condition
+  runAndAssert(base + R""""(
+      var r : R(true);
+      var x = r.whereMethod();
+    )"""", isString);
+
+  runAndAssert(base + R""""(
+      var r : R(false);
+      var x = r.whereMethod();
+    )"""", isInt);
+
+  // Resolve method using a field as the where-clause condition
+  runAndAssert(base + R""""(
+      var r : R(true);
+      var x = r.whereField();
+    )"""", isString);
+
+  runAndAssert(base + R""""(
+      var r : R(false);
+      var x = r.whereField();
+    )"""", isInt);
+
+  // Ensure that methods whose where-clause always results in 'false' cannot
+  // be called.
+  {
+    Context ctx;
+    Context* context = &ctx;
+    ErrorGuard guard(context);
+
+    std::string program = base + R""""(
+      var r : R(true);
+      var x = r.onlyFalse();
+    )"""";
+
+    QualifiedType initType = resolveTypeOfXInit(context, program);
+    assert(guard.numErrors() == 1);
+    assert(initType.type()->isErroneousType());
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
+    guard.realizeErrors();
+  }
+}
+
 
 int main() {
   test1();
@@ -392,6 +509,7 @@ int main() {
   test5();
   test6();
   test7();
+  test8();
 
   return 0;
 }

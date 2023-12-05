@@ -1694,7 +1694,7 @@ static void warnForImproperAutomaticImplements(InterfaceSymbol* isym,
         if (!fnWitness->hasFlag(FLAG_COMPILER_GENERATED)) {
           istm->iConstraint->entirelyGenerated = false;
 
-          // If we're speciulating, don't issue the warning.
+          // If we're speculating, don't issue the warning.
           if (tryingToResolve() || tryingToImplementInterface()) continue;
 
           USR_WARN(fnWitness, "automatically implementing interface %s for"

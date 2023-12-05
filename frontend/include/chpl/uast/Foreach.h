@@ -45,6 +45,8 @@ namespace uast {
 
  */
 class Foreach final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   Foreach(AstList children, int8_t indexChildNum,
           int8_t iterandChildNum,
@@ -63,8 +65,11 @@ class Foreach final : public IndexableLoop {
 
   }
 
-  Foreach(Deserializer& des)
-    : IndexableLoop(asttags::Foreach, des) {}
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
+  }
+
+  explicit Foreach(Deserializer& des) : IndexableLoop(asttags::Foreach, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
     return indexableLoopContentsMatchInner(other->toIndexableLoop());
@@ -87,14 +92,6 @@ class Foreach final : public IndexableLoop {
                               BlockStyle blockStyle,
                               owned<Block> body,
                               owned<AttributeGroup> attributeGroup = nullptr);
-
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Foreach);
-
 };
 
 

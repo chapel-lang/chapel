@@ -39,6 +39,8 @@ namespace uast {
   is a declaration for a module named M.
  */
 class Module final : public NamedDecl {
+ friend class AstNode;
+
  public:
   enum Kind {
     DEFAULT_MODULE_KIND,
@@ -61,7 +63,12 @@ class Module final : public NamedDecl {
 
   }
 
-  Module(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    namedDeclSerializeInner(ser);
+    ser.write(kind_);
+  }
+
+  explicit Module(Deserializer& des)
     : NamedDecl(asttags::Module, des) {
     kind_ = des.read<Kind>();
   }
@@ -130,13 +137,6 @@ class Module final : public NamedDecl {
     Return a string describing a Module::Kind
    */
   static const char* moduleKindToString(Kind kind);
-
-  void serialize(Serializer& ser) const override {
-    NamedDecl::serialize(ser);
-    ser.write(kind_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Module);
 };
 
 

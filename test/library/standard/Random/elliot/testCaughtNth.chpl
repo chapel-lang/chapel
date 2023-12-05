@@ -1,24 +1,14 @@
 use Random;
 
-config const useNPB = true;
 config const getNth = true;
 
-var npbRand = createRandomStream(real, 314159265, algorithm=RNG.NPB);
-var pcgRand = createRandomStream(real, 314159265, algorithm=RNG.PCG);
+var r = new randomStream(real, 314159265);
 
 try! {
-  if useNPB {
-    if getNth {
-      npbRand.getNth(-1);
-    } else {
-      npbRand.skipToNth(-1);
-    }
+  if getNth {
+    r.getNth(-1);
   } else {
-    if getNth {
-      pcgRand.getNth(-1);
-    } else {
-      pcgRand.skipToNth(-1);
-    }
+    r.skipToNth(-1);
   }
 } catch (e: IllegalArgumentError) {
   writeln("Successfully caught IllegalArgumentError");

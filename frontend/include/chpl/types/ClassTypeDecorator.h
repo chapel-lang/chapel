@@ -199,6 +199,12 @@ class ClassTypeDecorator final {
     return ClassTypeDecorator(combineDecorators(val_, actual.val_));
   }
 
+  ClassTypeDecorator copyNilabilityFrom(ClassTypeDecorator other) const {
+    if (other.isNilable()) return addNilable();
+    if (other.isNonNilable()) return addNonNil();
+    return removeNilable();
+  }
+
   bool operator==(ClassTypeDecorator other) const {
     return this->val_ == other.val_;
   }

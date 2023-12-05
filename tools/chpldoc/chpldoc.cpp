@@ -74,6 +74,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
 bool fWarnUnknownAttributeToolname = true;
+std::string CHPL_THIRD_PARTY;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
@@ -325,7 +326,7 @@ static bool isNoDoc(const Decl* e) {
   if (attrs) {
     auto attr = attrs->getAttributeNamed(UniqueString::get(gContext,
                                                            "chpldoc.nodoc"));
-    if (attr || attrs->hasPragma(pragmatags::PRAGMA_NO_DOC)) {
+    if (attr) {
       return true;
     }
   }
@@ -489,9 +490,11 @@ static int myshell(std::string command,
 
 static
 std::string getChplDepsApp() {
+  std::string thirdParty =
+        CHPL_THIRD_PARTY.empty() ? "" : " CHPL_THIRD_PARTY=" + CHPL_THIRD_PARTY;
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
   std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" +
-                         CHPL_HOME + " python3 ";
+                         CHPL_HOME + thirdParty + " python3 ";
   command += CHPL_HOME + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
@@ -1214,14 +1217,14 @@ struct RstSignatureVisitor {
     if (textOnly_) os_ << "Record: ";
     os_ << r->name().c_str();
 
-    if (r->numInterfaceExprs() > 0) {
+    if (r->numInheritExprs() > 0) {
       os_ << " : ";
       bool printComma = false;
-      for (auto interfaceExpr : r->interfaceExprs()) {
+      for (auto inheritExpr : r->inheritExprs()) {
         if (printComma) os_ << ", ";
         printComma = true;
 
-        interfaceExpr->traverse(*this);
+        inheritExpr->traverse(*this);
       }
     }
     return false;
@@ -1416,7 +1419,17 @@ struct RstResultBuilder {
   bool showComment(const AstNode* node, bool indent=true) {
     std::string errMsg;
     auto lastComment = previousComment(context_, node->id());
+
+    bool isNested = false;
+    if (node->isRecord() || node->isClass()) {
+      auto parent = parentAst(context_, node);
+      isNested = parent->isRecord() || parent->isClass();
+    }
+
+    if (isNested) indentDepth_ += 1;
     bool commentShown = showComment(lastComment, errMsg, indent);
+    if (isNested) indentDepth_ -= 1;
+
     if (!errMsg.empty()) {
       // process the warning about comments
       auto br = parseFileContainingIdToBuilderResult(context_, node->id());
@@ -1447,18 +1460,17 @@ struct RstResultBuilder {
     node->traverse(ppv);
     if (!textOnly_) os_ << "\n";
 
-    bool commentShown = showComment(node, indentComment);
-    // TODO: Fix all this because why are we checking for specific node types
-    //  just to add a newline?
-    if (commentShown && !textOnly_ && (node->isClass() ||
-                                       node->isRecord() ||
-                                       node->isModule())) {
-      os_ << "\n";
-    }
-
     showDeprecationMessage(node, indentComment);
     // TODO: how do deprecation and unstable messages interplay?
     showUnstableWarning(node, indentComment);
+
+    bool commentShown = showComment(node, indentComment);
+    // TODO: Fix all this because why are we checking for specific node types
+    //  just to add a newline?
+    if (commentShown && !textOnly_ && node->isModule()) {
+      os_ << "\n";
+    }
+
     return commentShown;
   }
 
@@ -1472,6 +1484,8 @@ struct RstResultBuilder {
           // do nothing because unstable was mentioned in doc comment
         } else {
           // write the unstable warning and message
+          os_ << "\n";
+
           int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
@@ -1486,7 +1500,7 @@ struct RstResultBuilder {
             // use the specific unstable message
             os_ << strip(attrs->unstableMessage().c_str());
           }
-          os_ << "\n\n";
+          os_ << "\n";
         }
       }
     }
@@ -1502,6 +1516,8 @@ struct RstResultBuilder {
             // do nothing because deprecation was mentioned in doc comment
         } else {
           // write the deprecation warning and message
+          os_ << "\n";
+
           int commentShift = 0;
           if (indentComment) {
             indentStream(os_, indentDepth_ * indentPerDepth);
@@ -1516,7 +1532,7 @@ struct RstResultBuilder {
             // use the specific deprecation message
             os_ << strip(attrs->deprecationMessage().c_str());
           }
-          os_ << "\n\n";
+          os_ << "\n";
         }
       }
     }
@@ -1626,7 +1642,7 @@ struct RstResultBuilder {
         visitChildren(m);
         return getResult(textOnly_);
       }
-        os_ << ".. module:: " << m->name().c_str() << '\n';
+      os_ << ".. module:: " << m->name().c_str() << '\n';
       // Don't index internal modules since that will make them show up
       // in the module index (chpl-modindex.html).  This has the side
       // effect of making references to the :mod: tag for the module
@@ -1653,31 +1669,31 @@ struct RstResultBuilder {
           }
         }
       }
-        os_ << '\n';
+      os_ << '\n';
 
-        // module title
-        os_ << m->name().c_str() << "\n";
-        os_ << std::string(m->name().length(), '=') << "\n";
+      // module title
+      os_ << m->name().c_str() << "\n";
+      os_ << std::string(m->name().length(), '=') << "\n";
 
-        // usage
-        if (includedByDefault) {
-          os_ << ".. note::" << std::endl << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ <<
-                "All Chapel programs automatically ``use`` this module by default.";
-          os_ << std::endl;
-          indentStream(os_, 1 * indentPerDepth);
-          os_ << "An explicit ``use`` statement is not necessary.";
-          os_ << std::endl;
-        } else {
-          os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
-        }
-
+      // usage
+      if (includedByDefault) {
+        os_ << ".. note::" << std::endl << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ <<
+              "All Chapel programs automatically ``use`` this module by default.";
+        os_ << std::endl;
+        indentStream(os_, 1 * indentPerDepth);
+        os_ << "An explicit ``use`` statement is not necessary.";
+        os_ << std::endl;
       } else {
-        os_ << m->name().c_str();
-        os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
-        lastComment = previousComment(context_, m->id());
+        os_ << templateReplace(templateUsage, "MODULE", moduleName) << "\n";
       }
+
+    } else {
+      os_ << m->name().c_str();
+      os_ << templateReplace(textOnlyTemplateUsage, "MODULE", moduleName) << "\n";
+      lastComment = previousComment(context_, m->id());
+    }
 
     if (hasSubmodule(m) || hasIncludes) {
       moduleName = m->name().c_str();
@@ -1701,9 +1717,9 @@ struct RstResultBuilder {
       }
     }
     if (textOnly_) indentDepth_ --;
-    showComment(m, textOnly_);
     showDeprecationMessage(m, false);
     showUnstableWarning(m, false);
+    showComment(m, textOnly_);
     if (textOnly_) indentDepth_ ++;
 
     visitChildren(m);
@@ -2213,6 +2229,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   }
   if (myshell(cmd, "building html output from chpldoc sphinx project") == 0) {
     printf("HTML files are at: %s\n", outputDir.c_str());
+  } else {
+    clean_exit(1);
   }
 }
 
@@ -2256,7 +2274,17 @@ int main(int argc, char** argv) {
   bool installed = false;
   // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
-    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME, installed, foundEnv, warningMsg);
+    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME,
+                                       installed, foundEnv, warningMsg);
+    if (installed) {
+      // need to determine and update third-party location before calling
+      // getChplDepsApp to make sure we get an updated path in the case
+      // chpldoc was installed using --prefix mode
+      CHPL_THIRD_PARTY = std::string(getConfiguredPrefix());
+      CHPL_THIRD_PARTY += "/lib/chapel/";
+      CHPL_THIRD_PARTY += getMajorMinorVersion();
+      CHPL_THIRD_PARTY += "/third-party";
+    }
     if (!warningMsg.empty()) {
       fprintf(stderr, "%s\n", warningMsg.c_str());
     }

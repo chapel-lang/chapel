@@ -315,6 +315,7 @@ module CommDiagnostics
     */
     var cache_readahead_waited : uint(64);
 
+    @chpldoc.nodoc
     proc writeThis(c) throws {
       use Reflection;
 
@@ -334,6 +335,7 @@ module CommDiagnostics
       c.write(")");
     }
 
+    @chpldoc.nodoc
     proc serialize(writer, ref serializer) throws {
       writeThis(writer);
     }
@@ -346,22 +348,30 @@ module CommDiagnostics
 
   commDiagnostics implements writeSerializable;
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startVerboseHere(stacktrace: bool,
                                                  print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_comm_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_comm_stopDiagnosticsHere();
 
   private extern proc chpl_comm_resetDiagnosticsHere();

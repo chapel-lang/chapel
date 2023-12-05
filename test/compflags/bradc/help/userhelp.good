@@ -88,6 +88,8 @@ Run-time Semantic Check Options:
                                       checks
       --[no-]bounds-checks            Enable [disable] bounds checking
       --[no-]cast-checks              Enable [disable] safeCast() value checks
+      --[no-]const-arg-checks         Enable [disable] const argument checks
+                                      (only when --warn-unstable is also used)
       --[no-]div-by-zero-checks       Enable [disable] divide-by-zero checks
       --[no-]formal-domain-checks     Enable [disable] formal domain checking
       --[no-]local-checks             Enable [disable] local block checking
@@ -133,6 +135,7 @@ Compilation Trace Options:
       --print-passes-file <filename>  Print compiler passes to <filename>
 
 Miscellaneous Options:
+      --[no-]detailed-errors          Enable [disable] detailed error messages
       --[no-]devel                    Compile as a developer [user]
       --explain-call <call>[:<module>][:<line>]
                                       Explain resolution of call

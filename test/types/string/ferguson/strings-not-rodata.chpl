@@ -20,18 +20,18 @@ writeln("Modifying");
 
 {
   var s = "Hello World!";
-  var cptr = c_ptrTo_helper(s);
+  var cptr = c_ptrTo(s);
   cptr[0] = 66; // 'B'
   writeln("Hello World!");
   writeln(s);
-  writeln(string.createBorrowingBuffer(c_ptrTo_helper(s)));
+  writeln(string.createBorrowingBuffer(c_ptrTo(s)));
 }
 
 {
   var s = b"Hello World!";
-  var cptr = c_ptrTo_helper(s);
+  var cptr = c_ptrTo(s);
   cptr[0] = 66; // 'B'
   writeln(b"Hello World!");
   writeln(s);
-  writeln(string.createBorrowingBuffer(c_ptrTo_helper(s)));
+  writeln(string.createBorrowingBuffer(c_ptrTo(s)));
 }

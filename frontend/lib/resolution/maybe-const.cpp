@@ -254,10 +254,10 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
   // is it return intent overloading? resolve that
   if (candidates.numBest() > 1) {
     Access access = currentAccess();
-    const TypedFnSignature* bestRef = candidates.bestRef();
-    const TypedFnSignature* bestConstRef = candidates.bestConstRef();
-    const TypedFnSignature* bestValue = candidates.bestValue();
-    const TypedFnSignature* best = nullptr;
+    MostSpecificCandidate bestRef = candidates.bestRef();
+    MostSpecificCandidate bestConstRef = candidates.bestConstRef();
+    MostSpecificCandidate bestValue = candidates.bestValue();
+    MostSpecificCandidate best = {};
     if (access == REF) {
       if (bestRef) best = bestRef;
       else if (bestConstRef) best = bestConstRef;
@@ -278,18 +278,19 @@ bool AdjustMaybeRefs::enter(const Call* ast, RV& rv) {
       else best = bestRef;
     }
 
-    re.setMostSpecific(MostSpecificCandidates::getOnly(best));
+    resolver.validateAndSetMostSpecific(re, ast, MostSpecificCandidates::getOnly(best));
 
     // recompute the return type
     // (all that actually needs to change is the return intent)
-    re.setType(returnType(context, best, resolver.poiScope));
+    re.setType(returnType(context, best.fn(), resolver.poiScope));
   }
 
   // there should be only one candidate at this point
   CHPL_ASSERT(candidates.numBest() <= 1);
 
   // then, traverse nested call-expressions
-  if (const TypedFnSignature* fn = candidates.only()) {
+  if (auto msc = candidates.only()) {
+    auto fn = msc.fn();
     auto resolvedFn = inferRefMaybeConstFormals(context, fn, resolver.poiScope);
     if (resolvedFn) {
       fn = resolvedFn;

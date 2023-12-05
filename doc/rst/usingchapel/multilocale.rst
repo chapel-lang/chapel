@@ -64,7 +64,7 @@ compiling and running multilocale Chapel programs.
    .. code-block:: bash
 
      export GASNET_SPAWNFN=S
-     export GASNET_SSH_SERVERS="host1 host2 host3 ..."
+     export GASNET_SSH_SERVERS="host1 host2 host3 ..."  # or SSH_SERVERS
 
 #. Specify the number of locales on the command line. For example:
 
@@ -179,30 +179,32 @@ other                everything
 Co-locales
 ++++++++++
 
-On some platforms Chapel can run multiple locales on the same node without oversubscribing
-(i.e., without sharing cores). For example, on a node with multiple sockets
-performance may be improved by running one locale in each socket to avoid
-inter-socket memory latencies. We refer to this functionality as *co-locales*
-and currently Chapel can run one locale per socket in the following
-configurations:
+On some platforms Chapel can run multiple locales on the same node without
+oversubscription (i.e., without sharing cores). For example, on a node with
+multiple sockets performance may be improved by running one locale in each
+socket to avoid inter-socket memory latencies. We refer to this functionality
+as *co-locales*. Chapel supports co-locales in the
+following configurations:
 
-=========  =================== =============
-CHPL_COMM  CHPL_COMM_SUBSTRATE CHPL_LAUNCHER
-=========  =================== =============
-ofi        NA                  slurm-srun
-gasnet     ibv                 slurm-srun
-gasnet     ibv                 pbs-gasnetrun_ibv
-=========  =================== =============
+=========   =============
+CHPL_COMM   CHPL_LAUNCHER
+=========   =============
+gasnet      gasnetrun_*
+gasnet      pbs-gasnetrun_ibv
+gasnet      slurm-gasnetrun_*
+gasnet      slurm-srun
+ofi         slurm-srun
+=========   =============
 
-There are two ways to enable this functionality. The first is to set the
-``CHPL_RT_LOCALES_PER_NODE`` environment variable. If its value is greater than
-one and less than or equal to the number of sockets on a node, then the
-Chapel runtime will run each locale in its own socket. Alternatively, you
-can create co-locales via ``-nl MxN``, where ``M`` is the
-number of nodes and ``N`` is the number of locales per node. The ``N`` is
-optional; if it isn't specified then Chapel will run the "ideal" number of
+There are two ways to create co-locales. The first is to set the
+``CHPL_RT_LOCALES_PER_NODE`` environment variable. If its value is greater
+than one and less than or equal to the number of sockets on a node, then the
+Chapel runtime will run each locale in its own socket. The second way to
+create co-locales is to use the command-line argument ``-nl NxL``, where ``N``
+is the number of nodes and ``L`` is the number of locales per node. The ``L``
+is optional; if it isn't specified then Chapel will run the "ideal" number of
 locales based on the node architecture. Currently this is limited to the
-value of ``CHPL_RT_LOCALES_PER_NODE``, in future releases we plan to include
+value of ``CHPL_RT_LOCALES_PER_NODE``; in future releases we plan to include
 more sophisticated heuristics such as automatically running one locale per
 socket on nodes with multiple sockets.
 

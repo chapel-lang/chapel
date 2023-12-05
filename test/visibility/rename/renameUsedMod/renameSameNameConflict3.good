@@ -1,2 +1,7 @@
+renameSameNameConflict3.chpl:7: In module 'User':
+renameSameNameConflict3.chpl:11: warning: potentially surprising shadowing for 'L'
+renameSameNameConflict3.chpl:8: note: it refers to a symbol found through the 'use' of 'LongName' here
+renameSameNameConflict3.chpl:1: note: leading to 'LongName' defined here
+renameSameNameConflict3.chpl:4: note: but, there is a shadowed symbol 'L' defined here
 0
 0

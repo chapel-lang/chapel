@@ -1,0 +1,2 @@
+# doesn't trigger with checks turned off, so skip testing that
+COMPOPTS <= --fast

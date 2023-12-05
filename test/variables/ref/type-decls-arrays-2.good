@@ -1,0 +1,1 @@
+type-decls-arrays.chpl-2:8: error: halt reached - the domain of the declared array type of the reference differs from the domain of the referenced array

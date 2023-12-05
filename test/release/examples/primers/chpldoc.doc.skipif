@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import sys
+import os
 
 # chpldoc, which this test directory relies on, requires Python version 3.6 or
 # greater
@@ -11,4 +12,6 @@ else:
     if sys.version_info[0] == 3 and sys.version_info[1] <= 5:
         version_is_good = False
 
-print(not version_is_good)
+# for now CHPL_TEST_GPU implies `--no-checks`, which throws off this test, so
+# avoid that, too.
+print(not version_is_good or os.getenv('CHPL_TEST_GPU')!=None)

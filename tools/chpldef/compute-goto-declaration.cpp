@@ -19,8 +19,8 @@
  */
 
 #include "compiler-gadgets.h"
-#include "./Message.h"
-#include "./Server.h"
+#include "Message.h"
+#include "Server.h"
 
 namespace chpldef {
 
@@ -33,16 +33,41 @@ chooseAstClosestToLocation(chpl::Context* chapel,
   CHPL_ASSERT(astNew);
   CHPL_ASSERT(astOld != astNew);
 
+  // If there is no new candidate then bail early.
+  if (!astNew) return astOld;
+
   // TODO: This can run 'locateAst' on the same AST node O(n) times.
   auto locOld = astOld ? locateAst(chapel, astOld) : chpl::Location();
   auto locNew = locateAst(chapel, astNew);
 
+  // If the new candidate has an empty location, bail early (and if the
+  // old candidate's location is empty, clear it as well).
+  if (!locNew) return !locOld ? nullptr : astOld;
+
+  // A valid candidate must contain the range of interest (note that 'astOld'
+  // can stay 'nullptr' along this path as long as no new AST's location
+  // range contains 'loc').
   if (!locNew.contains(loc)) return astOld;
+
+  // If there is no old candidate, the new one trivially wins because it
+  // contains the range of interest.
   if (!astOld) return astNew;
 
-  // Prefer the location furthest towards the end of the range.
-  // TODO: Need to compute distance.
-  auto ret = (locNew > locOld) ? astNew : astOld;
+  // We know that both candidates contain the range of interest. If either
+  // candidate is a tighter range than the other, then it trivially wins
+  // (because it must be closer to the range of interest).
+  if (locNew.contains(locOld)) return astOld;
+  if (locOld.contains(locNew)) return astNew;
+
+  // Construct two LSP ranges to use for comparison.
+  Range rangeOld(std::move(locOld));
+  Range rangeNew(std::move(locNew));
+
+  // At this point, candidates only partially overlap, so we have to
+  // determine distance another way. Since AST are pretty granular,
+  // try just preferring the lesser location (the one earlier in the
+  // source code).
+  auto ret = (rangeNew < rangeOld) ? astNew : astOld;
 
   return ret;
 }
@@ -81,79 +106,91 @@ astAtLocation(Server* ctx, chpl::Location loc) {
     if (ret && ret == last) break;
   }
 
+  // Do final filtering. E.g., for 'x.   foo', was the cursor on 'foo'?
+  // If we were not clicking on the field part then clear the result.
+  ctx->withChapel([&](auto chapel) {
+    if (auto dot = ret->toDot()) {
+      auto locField = chpl::parsing::locateDotFieldWithAst(chapel, dot);
+      if (!locField.contains(loc)) ret = nullptr;
+    }
+  });
+
   return ret;
-}
-
-static const chpl::uast::Module*
-closestModule(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
-  if (auto mod = ast->toModule()) return mod;
-  if (auto id = chpl::parsing::idToParentModule(chapel, ast->id())) {
-    auto mod = chpl::parsing::idToAst(chapel, id);
-    return mod->toModule();
-  }
-  return nullptr;
-}
-
-static const chpl::resolution::ResolutionResultByPostorderID&
-resolveModule(Server* ctx, chpl::ID idMod) {
-  return ctx->withChapel(chpl::resolution::resolveModule, idMod);
 }
 
 static std::vector<chpl::ID>
 sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
+  using namespace chpl::resolution;
+
+  if (!ast) return {};
+
+  const ResolvedFunction* rf = nullptr;
+  const ResolutionResultByPostorderID* rr = nullptr;
+  auto parentCall = ctx->withChapel(parentCallIfBaseExpression, ast);
+  const bool isCallBaseExpr = (parentCall != nullptr);
+  const chpl::uast::AstNode* sym = nullptr;
+  bool canScopeResolveFunction = false;
   std::vector<chpl::ID> ret;
 
-  if (!ast) return ret;
+  // We need to look at the ID in order to determine the closest entity to
+  // resolve, and then we need to fetch some sort of 'ResolutionResult'.
+  ctx->withChapel([&](auto chapel) {
+    if (auto idParent = ast->id().parentSymbolId(chapel)) {
+      auto astParent = chpl::parsing::idToAst(chapel, idParent);
+      CHPL_ASSERT(astParent);
 
-  auto mod = ctx->withChapel(closestModule, ast);
-  CHPL_ASSERT(mod);
+      if (chpl::parsing::idIsFunction(chapel, idParent)) {
+        rf = resolveConcreteFunction(chapel, idParent);
+        // TODO: What do we do if the symbol is a generic function?
+        if (rf == nullptr) CHPLDEF_TODO();
+        canScopeResolveFunction = true;
+        rr = &rf->resolutionById();
+        sym = astParent;
 
-  if (mod == ast) CHPLDEF_TODO();
+      } else if (astParent->isModule()) {
+        rr = &resolveModule(chapel, idParent);
+        sym = astParent;
 
-  ctx->trace("Target '%s' in containing module '%s'\n",
-             ctx->fmt(ast).c_str(),
-             ctx->fmt(mod).c_str());
-
-  auto& rr = resolveModule(ctx, mod->id());
-  auto& re = rr.byAst(ast);
-  auto parentCall = ctx->withChapel(parentCallIfBaseExpression, ast);
-
-  if (re.isBuiltin()) CHPLDEF_TODO();
-
-  ctx->trace("Encountered '%zu' errors resolving\n",
-             ctx->errorHandler()->numErrors());
-
-  // First do a simple check for target location.
-  if (auto idTarget = re.toId()) {
-    ret.push_back(idTarget);
-
-  // It's a call base expression, so we need to pick apart the call.
-  } else if (parentCall) {
-    auto& reCall = rr.byAst(parentCall);
-
-    if (auto idTarget = re.toId()) {
-      ret.push_back(idTarget);
-    } else {
-      if (auto tfs = reCall.mostSpecific().only()) {
-        ret.push_back(tfs->id());
-      } else {
+      } else if (astParent && astParent->isAggregateDecl()) {
         CHPLDEF_TODO();
       }
     }
+  });
 
-  // Else, more work is required...
-  } else {
-    CHPLDEF_TODO();
+  if (!sym || sym == ast) CHPLDEF_TODO();
+
+  // If we are a call base expression, inspect the parent call.
+  const auto node = isCallBaseExpr ? parentCall : ast;
+
+  // In most cases, just inspect the resolution results we were given.
+  if (auto re = rr->byAstOrNull(node)) {
+    auto& ms = re->mostSpecific();
+
+    if (re->isBuiltin()) CHPLDEF_TODO();
+
+    if (auto id = re->toId()) {
+      ret.push_back(std::move(id));
+    } else if (auto tfs = ms.only()) {
+      ret.push_back(tfs->id());
+    } else {
+      CHPLDEF_TODO();
+    }
+
+  // If we failed to find something and our symbol is a function, try again
+  // with just scope resolving since the info for this AST may have been
+  // discarded if it is e.g., a formal's type.
+  // TODO: This branch is not sufficient to cover all cases and should be
+  // replaced with a new dyno query that populates the ResolutionResult
+  // for formal components.
+  } else if (canScopeResolveFunction) {
+    auto rf = ctx->withChapel(scopeResolveFunction, sym->id());
+    auto& rr = rf->resolutionById();
+    if (auto re = rr.byAstOrNull(node)) {
+      if (auto id = re->toId()) ret.push_back(std::move(id));
+    }
   }
 
   return ret;
-}
-
-static bool chplLocIsValid(const chpl::Location& loc) {
-  return !loc.isEmpty() && loc.firstLine() >= 1 &&
-        loc.firstColumn() >= 1 &&
-        loc.lastLine() >= 1 &&
-        loc.lastColumn() >= 1;
 }
 
 static std::variant<LocationArray, LocationLinkArray>
@@ -176,12 +213,8 @@ computeDeclarationPoints(Server* ctx, const TextDocumentPositionParams& p) {
 
     ctx->trace("Found entity at '%s'\n", ctx->fmt(loc).c_str());
 
-    if (chplLocIsValid(loc)) {
-      Position start = { static_cast<uint64_t>(loc.firstLine()-1),
-                         static_cast<uint64_t>(loc.firstColumn()-1) };
-      Position end = { static_cast<uint64_t>(loc.lastLine()-1),
-                       static_cast<uint64_t>(loc.lastColumn()-1) };
-      Location out(loc.path().str(), { start, end });
+    if (loc.isValid()) {
+      Location out(loc);
       ret.push_back(std::move(out));
     }
   }

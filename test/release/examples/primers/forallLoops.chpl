@@ -32,8 +32,9 @@ an expression. Both kinds are shown in the following sections.
 "Must-parallel" forall statement
 --------------------------------
 
-In the following example, the forall loop iterates over the array indices
-in parallel:
+In the following example, the forall loop iterates over the array indices in
+parallel. Since the loop iterates over ``1..n`` and not ``A``, an explicit
+``ref`` intent must be used to allow modification of ``A``.
 */
 
 config const n = 5;
@@ -81,7 +82,8 @@ provide a "leader" iterator and all iterables provide "follower" iterators.
 These are described in the :ref:`parallel iterators primer
 <primers-parIters-leader-follower>`.
 
-Here we illustrate zippering arrays and domains:
+Here we illustrate zippering arrays and domains. In this example, we must
+explicitly mark ``C`` as modified with a ``ref`` intent.
 */
 
 var C: [1..n] real;
@@ -187,7 +189,8 @@ of shadow variables, one per outer variable.
 The default argument intent (:ref:`The_Default_Intent`) is used by default.
 For numeric types, this implies capturing the value of the outer
 variable by the time the task starts executing. Arrays are passed by
-reference, as are sync and atomic variables
+constant reference, so to modify them we must use an explicit intent.
+Sync and atomic variables are passed by reference
 (:ref:`primers-syncs`, :ref:`primers-atomics`).
 */
 
@@ -325,11 +328,14 @@ Task Intents Inside Record Methods
 When the forall loop occurs inside a method on a record,
 the fields of the receiver record are represented in the loop body
 with shadow variables as if they were outer variables.
-This, for example, allows the forall loop body to update
-record fields of array types.
 
-At present, the record fields, as well as the method receiver ``this``,
-are always passed by default intent and cannot be listed in a with-clause.
+At present, record fields are always passed by the default intent
+(:ref:`The_Default_Intent`), so the fields of ``MyRecord`` cannot be modified
+inside of the first forall loop loop below.
+
+To modify the fields within the body of a forall loop,
+use the ``ref`` intent for ``this`` in the with-clause of the forall loop,
+as in the second forall loop below.
 */
 
 record MyRecord {
@@ -339,8 +345,12 @@ record MyRecord {
 
 proc ref MyRecord.myMethod() {
   forall i in 1..n {
-    arrField[i] = i * 2;  // beware of potential for data races
     // intField += 1;     // would cause "illegal assignment" error
+  }
+  forall i in 1..n with (ref this) {
+    arrField[i] = i * 2;  
+    if i == 1 then
+      intField += 1;      // beware of potential for data races
   }
 }
 

@@ -19,6 +19,9 @@ version 1.32, September 2023
 
 .. _readme-evolution.c_string-deprecation:
 
+``c_string`` deprecation
+************************
+
 Version 1.32 deprecates the ``c_string`` type in user interfaces. Please
 replace occurrences of ``c_string`` with ``c_ptrConst(c_char)``. Note that you
 need to ``use`` or ``import`` the ``CTypes`` module to have access to
@@ -50,6 +53,105 @@ Additionally, several ``c_string`` methods are deprecated without replacement:
 
 An equivalent for ``.size`` is the unstable procedure ``strLen(x)`` in the
 ``CTypes`` module.
+
+.. _readme-evolution.ref-if-modified-deprecation:
+
+The default intent for arrays and records
+*****************************************
+
+In version 1.32, arrays and records now always have a default intent of
+``const``. This means that if arrays and records are modified inside of a
+function, a ``coforall``, a ``begin``, or ``cobegin``,  they must use a ``ref``
+intent. This also means that record methods which modify their implicit
+``this`` argument must also use a ``ref`` intent. Previously, the compiler would treat
+these types as either ``const ref`` intent or ``ref`` intent, depending on if
+they were modified. This change was motivated by improving the consistency
+across types and making potential problems more apparent.
+
+Since there is a lot of user code relying on modifying an outer array, the
+corresponding change for ``forall`` is still under discussion. As a result, it
+will not warn by default, but modifying an outer array from a ``forall`` might
+not be allowed in the future in some or all cases.
+
+Consider the following code segment, which contains a ``coforall`` statement
+which modifies local variables. Prior to version 1.32, this code compiled and
+worked without warning.
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   coforall i in 2..9 with (ref myInt) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+Note that to modify ``myInt``, an explicit ``ref`` intent must be used whereas
+``myArray`` can be modified freely. The changes to the default intent for
+arrays is an attempt to remove this inconsistency and make the treatment of
+types in Chapel more uniform. This code also modifies both ``myInt`` and
+``myArray`` in a way that can produce race conditions. With ``myInt``, it is
+very apparent that there is something different than a simple serial iteration
+occurring and this can signal to users to more careful inspect their code for
+potential bugs. However ``myArray`` can be used without that same restriction,
+which can be a source of subtle bugs. In 1.32, the loop is written as:
+
+.. code-block:: chapel
+
+   var myInt: int;
+   const myDomain = {1..10};
+   var myArray: [myDomain] int;
+
+   coforall i in 2..9 with (ref myInt, ref myArray) {
+     myInt += i;
+     myArray[i] = myArray[i-1] + 1;
+   }
+
+This removes the inconsistency and calls greater attention to potential race
+conditions.
+
+This change also applies to procedures. Consider the following procedure:
+
+.. code-block:: chapel
+
+   proc computeAndPrint(ref myInt: int, myArray: []) {
+     ...
+   }
+
+It is clear that ``myInt`` may be modified and a user of this function can save
+this value beforehand if they need the value later. But without knowing what is
+contained in this function, it is impossible to tell if ``myArray`` is going to
+be modified. Making the default intent for arrays ``const`` removes this
+ambiguity.
+
+This consistency is extended to records as well. Consider the following record
+definition:
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc doSomething() {
+       ...
+     }
+   }
+
+Without knowing what the body of ``doSomething`` does, it is not clear
+whether ``x`` may be modified. In version 1.32, if ``x`` is modified the
+method must be marked as a modifying record using a this-intent.
+
+.. code-block:: chapel
+
+   record myRecord {
+     var x: int;
+     proc ref doSomething() {
+       ...
+     }
+   }
+
+Now it is clear that the method may modify ``x``.
 
 version 1.31, June 2023
 -----------------------

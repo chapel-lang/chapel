@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_QUERIES_CONTEXT_H
-#define CHPL_QUERIES_CONTEXT_H
+#ifndef CHPL_FRAMEWORK_CONTEXT_H
+#define CHPL_FRAMEWORK_CONTEXT_H
 
 #include "chpl/framework/Context-detail.h"
 #include "chpl/framework/ID.h"
@@ -103,6 +103,14 @@ class Context {
 
     /** Tool name (for use when creating the tmpDir in /tmp if needed) */
     std::string toolName = "chpl";
+
+    /**
+      If 'true', some comments will be included in the uAST.
+
+      Note that, even when this is set, some comments are not included (for
+      example, comments between actual arguments in a function call
+     */
+    bool includeComments = true;
 
     void swap(Configuration& other);
   };
@@ -668,7 +676,7 @@ class Context {
    markPointer can be used to mark a pointer, where
    it is considered owned if the type is owned.
 
-   This overload just calls markPointer.
+   This overload just calls markUnownedPointer.
    */
   template<typename T>
   void markPointer(const T* ptr) {
@@ -710,12 +718,14 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(const UniqueString& filePath, UniqueString& pathOut);
+  bool pathHasLibrary(UniqueString filePath, UniqueString& pathOut);
 
   /**
-    Sets the library path for the given file path.
+    Register a module ID and file path to be supported by a library file.
    */
-  void setLibraryForFilePath(const UniqueString& filePath, const UniqueString& libPath);
+  void registerLibraryForModule(ID moduleId,
+                                UniqueString filePath,
+                                UniqueString libPath);
 
   /**
     This function increments the current revision number stored

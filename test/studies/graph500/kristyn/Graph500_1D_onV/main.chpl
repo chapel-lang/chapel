@@ -4,7 +4,7 @@ module Graph500_main
 
   use BlockDist;
   use Time;
-  use Random;
+  use NPBRandom;
   use Sort;
 
   use Graph500_defs;

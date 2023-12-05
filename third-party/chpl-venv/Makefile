@@ -92,6 +92,28 @@ chpldoc-venv: install-chpldeps
 
 c2chapel-venv: install-chpldeps
 
+# the Python bindings depend on libChplFrontendShared.so and some additional
+# files listed in setup.py. The former is not consistently named (.so on UNIX,
+# .dylib on macOS), making it harder to list as a dependency. The latter we
+# could duplicate in the Makefile here, but that would be a possible 'gotcha':
+# adding to setup.py but not here would break the build system. Thus, take
+# the easy way out and mark this target as FORCE. This isn't too bad since setup.py
+# generally skips re-compiling files that haven't changed.
+#
+# Since the target is always forced, no reason to keep around a sentinel file
+# like ok1/ok2.
+chapel-py-venv: FORCE $(CHPL_VENV_VIRTUALENV_DIR_OK)
+	@# Install chapel-py's Python package into the Python Application
+	@# directory structure at $(CHPL_VENV_CHPLDEPS)
+	export PATH="$(CHPL_VENV_VIRTUALENV_BIN):$$PATH" && \
+	export VIRTUAL_ENV=$(CHPL_VENV_VIRTUALENV_DIR) && \
+	$(PIP) install --upgrade $(CHPL_PIP_INSTALL_PARAMS) $(LOCAL_PIP_FLAGS) \
+	  --target $(CHPL_VENV_CHPLDEPS) \
+	  $(CHPL_MAKE_HOME)/tools/chapel-py \
+	  -r $(CHPL_VENV_CHPLCHECK_REQUIREMENTS_FILE)
+
+chplcheck-venv: chapel-py-venv
+
 install-requirements: install-chpldeps
 
 $(CHPL_VENV_CHPLSPELL_REQS): $(CHPL_VENV_VIRTUALENV_DIR_OK) $(CHPL_VENV_CHPLSPELL_REQUIREMENTS_FILE)

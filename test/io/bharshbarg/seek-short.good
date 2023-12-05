@@ -1,0 +1,66 @@
+===== native =====
+=== n=100; 0.. ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..799 ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..399 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 50; FAILURE
+readBinary(int): FAILURE
+readBinary(c_ptr(int)): got 400; 
+=== n=100; 0..398 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 49; FAILURE
+readBinary(int): ERROR: short read or write
+readBinary(c_ptr(int)): got 399; 
+
+===== little =====
+=== n=100; 0.. ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..799 ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..399 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 50; FAILURE
+readBinary(int): FAILURE
+readBinary(c_ptr(int)): got 400; 
+=== n=100; 0..398 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 49; FAILURE
+readBinary(int): ERROR: short read or write
+readBinary(c_ptr(int)): got 399; 
+
+===== big =====
+=== n=100; 0.. ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..799 ===
+fileReader.read: return = true; SUCCESS
+readBinary([]): got 100; SUCCESS
+readBinary(int): SUCCESS
+readBinary(c_ptr(int)): got 800; 
+=== n=100; 0..399 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 50; FAILURE
+readBinary(int): FAILURE
+readBinary(c_ptr(int)): got 400; 
+=== n=100; 0..398 ===
+fileReader.read: return = false; FAILURE
+readBinary([]): got 49; FAILURE
+readBinary(int): ERROR: short read or write
+readBinary(c_ptr(int)): got 399; 
+

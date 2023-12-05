@@ -1,4 +1,3 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 Distance circle has a radius of 2 points.
 inputSize = 200
 Starting coforall loop.

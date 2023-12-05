@@ -40,6 +40,7 @@ module ChapelRange {
      When slicing with a range with a negative stride, the old rule
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
+  @chpldoc.nodoc
   config param newSliceRule = false;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
@@ -49,6 +50,7 @@ module ChapelRange {
      The new rule defines such idxType to be the type produced by adding
      the two bounds. I.e.,``(low..high).idxType`` is ``(low+high).type``
      when ``low`` and ``high`` are integral params. */
+  @chpldoc.nodoc
   config param newRangeLiteralType = false;
 
   private param unalignedMark = -1;
@@ -141,6 +143,8 @@ module ChapelRange {
                      else chpl__rangeStrideType(idxType); // alignment or -1
   }
 
+  /* Returns the type of the range's stride. */
+  @unstable("range.strType is unstable and may be removed or renamed")
   proc range.strType type do return chpl__rangeStrideType(idxType);
 
   proc range.chpl__promotionType() type do return idxType;
@@ -337,7 +341,7 @@ module ChapelRange {
       this._stride    = _stride;
       this._alignment =  alignmentValue;
 
-      if boundsChecking then verifyAppropriateStide(strides, _stride);
+      if boundsChecking then verifyAppropriateStride(strides, _stride);
     }
   }
 
@@ -677,12 +681,14 @@ module ChapelRange {
 
 
   /* Returns the range's stride. */
+  pragma "no where doc"
   inline proc range.stride where !hasParamStride() do return _stride;
 
   @chpldoc.nodoc proc range.stride param where hasParamStride() do
     return (if strides == strideKind.one then 1 else -1) : strType;
 
   /* Returns the range's alignment. */
+  pragma "no where doc"
   inline proc range.alignment where !hasParamAlignment() do
     return chpl_intToIdx(if hasParamAlignmentField() then 0 else _alignment);
 
@@ -691,6 +697,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
+  pragma "no where doc"
   inline proc range.isAligned() where !hasParamAligned() do
     return _alignment != unalignedMark;
 
@@ -699,6 +706,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range's alignment is unambiguous,
      ``false`` otherwise. */
+  pragma "no where doc"
   @deprecated("'range.aligned' is deprecated; please use '.isAligned()' instead")
   inline proc range.aligned where !hasParamAligned() do
     return isAligned();
@@ -887,7 +895,7 @@ module ChapelRange {
   private proc isNegativeStride(param strides: strideKind, stride) param
     where strides.hasSign() do return strides.isNegative();
 
-  // chpl_strideProduct(s1,s2) returns the strideKind that accomodates
+  // chpl_strideProduct(s1,s2) returns the strideKind that accommodates
   // the product of two strides that fit in 's1' and 's2'
 
   proc chpl_strideProduct(param s1: strideKind, param s2: strideKind) param {
@@ -1052,7 +1060,7 @@ module ChapelRange {
     return !assignmentIsLegal(to, from, boundKind.both);
   }
 
-  private proc verifyAppropriateStide(param strides, stride) {
+  private proc verifyAppropriateStride(param strides, stride) {
     if strides.isPositive() then assert(stride > 0);
     if strides.isNegative() then assert(stride < 0);
   }
@@ -1065,7 +1073,7 @@ module ChapelRange {
     this._low  = chpl__idxToInt(low):  this.chpl_integralIdxType;
     this._high = chpl__idxToInt(high): this.chpl_integralIdxType;
     if this.hasParamStrideAltvalAld() {
-      if boundsChecking then verifyAppropriateStide(this.strides, stride);
+      if boundsChecking then verifyAppropriateStride(this.strides, stride);
     } else {
       this._stride    = stride: this.strType;
       const first     = if this.hasPositiveStride() then low else high;
@@ -1149,7 +1157,7 @@ module ChapelRange {
   proc range.hasHighBound() param do
     return bounds == boundKind.both || bounds == boundKind.high;
 
-  /* Return the range's high bound. If the range does not have a high
+  /* Returns the range's high bound. If the range does not have a high
      bound (e.g., ``1..``), the behavior is undefined.  See also
      :proc:`range.hasHighBound`.
   */
@@ -1203,7 +1211,7 @@ module ChapelRange {
   }
 
 
-  /* Return the range's aligned high bound.  Note that this is a
+  /* Returns the range's aligned high bound.  Note that this is a
      synonym for :proc:`range.high`.
   */
   @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
@@ -1242,6 +1250,7 @@ module ChapelRange {
 
   /* Returns ``true`` if this range is naturally aligned, ``false``
      otherwise. */
+  pragma "no where doc"
   @deprecated("'range.isNaturallyAligned()' is deprecated; please feel encouraged to file a GitHub issue requesting it: https://github.com/chapel-lang/chapel/issues")
   proc range.isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
@@ -1253,6 +1262,7 @@ module ChapelRange {
   do return chpl_isNaturallyAligned();
 
   // tells whether omitting the 'align' clause results in the same range
+  pragma "no where doc"
   proc range.chpl_isNaturallyAligned()
     where ! hasPosNegUnitStride() && bounds != boundKind.neither
   do if bounds == boundKind.both {
@@ -1274,6 +1284,7 @@ module ChapelRange {
 
   /* Returns ``true`` if the range is ambiguously aligned, ``false``
      otherwise. */
+  pragma "no where doc"
   @deprecated("'range.isAmbiguous()' is deprecated; please use '! range.isAligned()' instead")
   proc range.isAmbiguous() param where hasPosNegUnitStride() do
     return ! isAligned();
@@ -1660,7 +1671,7 @@ module ChapelRange {
   operator ==(r1: range(?), r2: range(?)) param
     where r1.bounds != r2.bounds &&
           (!isFiniteIdxType(r1.idxType) ||
-          !isFiniteIdxType(r2.idxType)) do
+           !isFiniteIdxType(r2.idxType)) do
   return false;
 
   @chpldoc.nodoc
@@ -1720,6 +1731,20 @@ module ChapelRange {
 
   @chpldoc.nodoc
   operator !=(r1: range(?), r2: range(?)) do  return !(r1 == r2);
+
+  @chpldoc.nodoc
+  @unstable("!= between unbounded and bounded ranges is unstable and its behavior may change in the future")
+  operator !=(r1: range(?), r2: range(?)): bool
+    where r1.bounds != r2.bounds && isFiniteIdxType(r1.idxType) &&
+          isFiniteIdxType(r2.idxType)
+    do return !(r1 == r2);
+
+  @chpldoc.nodoc
+  operator !=(r1: range(?), r2: range(?)) param
+    where r1.bounds != r2.bounds &&
+          (!isFiniteIdxType(r1.idxType) ||
+           !isFiniteIdxType(r2.idxType)) do
+  return true;
 
   @chpldoc.nodoc
   operator <(r1: range(?), r2: range(?))
@@ -1783,7 +1808,7 @@ module ChapelRange {
                    this.alignedLowAsInt, this.alignedHighAsInt, none, none);
 }
 
-/* Cast a range to another range type. If the old type is stridable and the
+/* Casts a range to another range type. If the old type is stridable and the
    new type is not stridable, ensure at runtime that the old stride was 1.
  */
 @chpldoc.nodoc
@@ -1839,7 +1864,7 @@ proc range.safeCast(type t: range(?)) {
   return tmp;
 }
 
-/* Cast a range to a new range type. Throw an IllegalArgumentError when
+/* Casts a range to a new range type. Throws an IllegalArgumentError when
    the original bounds and/or stride do not fit in the new idxType
    or when the original stride is not legal for the new `strides` parameter.
  */
@@ -2004,8 +2029,8 @@ private proc checkEnumIdx(type toType, from) {
     compilerWarning("Casts between ranges involving 'enum' indices are currently unstable (see issue #22406); consider performing the conversion manually");
 }
 
-/* Return 'nil' if 'this.stride' fits into 'toType.strides',
-   an IllegalArgumentError otherwise. */
+/* Returns 'nil' if 'this.stride' fits into 'toType.strides',
+   otherwise returns an IllegalArgumentError. */
 proc range.chpl_checkStrides(type toType): owned IllegalArgumentError? {
   if chpl_assignStrideIsUnsafe(toType.strides, this.strides) then
     compilerError("cannot cast range from strideKind.", this.strides:string,
@@ -2376,7 +2401,7 @@ private proc isBCPindex(type t) param do
     compilerError("exterior is not supported on unbounded ranges");
   }
 
-  /* Return a range with ``offset`` elements from the exterior portion of this
+  /* Returns a range with ``offset`` elements from the exterior portion of this
      range. If ``offset`` is positive, take elements from the high end, and if
      ``offset`` is negative, take elements from the low end.
 
@@ -2465,9 +2490,11 @@ private proc isBCPindex(type t) param do
 
   /////////// operators + and - ///////////
 
+  @chpldoc.nodoc
   operator +(r1: range(?), r2: range(?)) do
     compilerError("range addition is currently not supported");
 
+  @chpldoc.nodoc
   operator -(r1: range(?), r2: range(?)) do
     compilerError("range subtraction is currently not supported");
 

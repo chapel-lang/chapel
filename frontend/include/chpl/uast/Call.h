@@ -34,8 +34,11 @@ namespace uast {
   are the actuals.
  */
 class Call : public AstNode {
+ friend class AstNode;
+
  protected:
   bool hasCalledExpression_;
+
   Call(AstTag tag)
     : AstNode(tag), hasCalledExpression_(false) {
   }
@@ -43,7 +46,12 @@ class Call : public AstNode {
     : AstNode(tag, std::move(children)),
       hasCalledExpression_(hasCalledExpression) {
   }
-  Call(AstTag tag, Deserializer& des)
+
+  void callSerializeInner(Serializer& ser) const {
+    ser.write(hasCalledExpression_);
+  }
+
+  explicit Call(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     hasCalledExpression_ = des.read<bool>();
   }
@@ -93,11 +101,6 @@ class Call : public AstNode {
       const AstNode* ast = this->child(0);
       return ast;
     }
-  }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(hasCalledExpression_);
   }
 };
 

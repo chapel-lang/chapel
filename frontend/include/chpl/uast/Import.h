@@ -44,7 +44,11 @@ namespace uast {
   and 'Bar as A'.
 */
 class Import final : public AstNode {
+ friend class AstNode;
+
  private:
+  Decl::Visibility visibility_;
+
   Import(AstList children, Decl::Visibility visibility)
     : AstNode(asttags::Import, std::move(children)),
       visibility_(visibility) {
@@ -59,9 +63,14 @@ class Import final : public AstNode {
     #endif
   }
 
-  Import(Deserializer& des)
-    : AstNode(asttags::Import, des)
-      {visibility_=des.read<Decl::Visibility>();}
+  void serializeInner(Serializer& ser) const override {
+    ser.write(visibility_);
+  }
+
+  explicit Import(Deserializer& des)
+    : AstNode(asttags::Import, des) {
+    visibility_ = des.read<Decl::Visibility>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Import* rhs = other->toImport();
@@ -70,8 +79,6 @@ class Import final : public AstNode {
 
   void markUniqueStringsInner(Context* context) const override {
   }
-
-  Decl::Visibility visibility_;
 
  public:
 
@@ -112,14 +119,6 @@ class Import final : public AstNode {
     CHPL_ASSERT(ret->isVisibilityClause());
     return (const VisibilityClause*)ret;
   }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(visibility_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Import);
-
 };
 
 

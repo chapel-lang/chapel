@@ -99,11 +99,11 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "_any", AnyType::get(context));
   gatherType(context, map, "_nilType", NilType::get(context));
   gatherType(context, map, "_unknown", UnknownType::get(context));
-  gatherType(context, map, "c_string", CStringType::get(context));
+  gatherType(context, map, "chpl_c_string", CStringType::get(context));
   gatherType(context, map, "nothing", NothingType::get(context));
   gatherType(context, map, "void", VoidType::get(context));
 
-  gatherType(context, map, "object", BasicClassType::getObjectType(context));
+  gatherType(context, map, "RootClass", BasicClassType::getRootClassType(context));
 
   gatherType(context, map, "_tuple", TupleType::getGenericTupleType(context));
 
@@ -166,6 +166,14 @@ bool Type::isStringType() const {
 bool Type::isBytesType() const {
   if (auto rec = toRecordType()) {
     if (rec->name() == USTR("bytes"))
+      return true;
+  }
+  return false;
+}
+
+bool Type::isLocaleType() const {
+  if (auto rec = toRecordType()) {
+    if (rec->name() == USTR("locale"))
       return true;
   }
   return false;

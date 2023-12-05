@@ -402,11 +402,15 @@ private extern proc qio_regex_replace(const ref re:qio_regex_t, repl:c_ptrConst(
 // (or any way to use 'nil' in pass-by-ref)
 // This one is documented below.
 
+/* Error thrown if a regular expression fails to compile */
 class BadRegexError : Error {
+  @chpldoc.nodoc
   var msg:string;
+  @chpldoc.nodoc
   proc init(msg: string) {
     this.msg = msg;
   }
+  @chpldoc.nodoc
   override proc message() {
     return msg;
   }
@@ -515,10 +519,6 @@ record regex : serializable {
   @chpldoc.nodoc
   var _regex:qio_regex_t = qio_regex_null();
 
-  proc init(type exprType) {
-    this.exprType = exprType;
-  }
-
   /*
      Initializer for a compiled regular expression. ``new regex()`` throws a
      :class:`BadRegexError` if compilation failed.
@@ -608,6 +608,7 @@ record regex : serializable {
     }
   }
 
+  /* Creates a new :type:`regex` with the same pattern as ``x``. */
   proc init=(x: regex(?)) {
     this.exprType = x.exprType;
     /* always bring the regex local */
@@ -623,6 +624,21 @@ record regex : serializable {
       var serialized = x._serialize();
       this._deserialize(serialized);
     }
+  }
+
+  /*
+    Default type initializer for a compiled regular expression. This does not
+    initialize any fields and the resulting :type:`regex` may produce erroneous
+    results when used. The behavior may differ based on values of
+    :param:`~ChplConfig.CHPL_COMM`.
+
+    .. note::
+       If you are looking to default intialize a :type:`regex`, you might be
+       looking for ``new regex("")``, which will create a regular expression
+       matching the empty string.
+  */
+  proc init(type exprType) {
+    this.exprType = exprType;
   }
 
   @chpldoc.nodoc
@@ -1010,6 +1026,7 @@ operator regex.=(ref ret:regex(?t), x:regex(t))
   }
 }
 
+/* Returns the pattern of the :type:`regex`. */
 inline operator :(x: regex(?exprType), type t: exprType) {
   var pattern: t;
   on x.home {
@@ -1535,9 +1552,9 @@ private proc _findSeparator(separator: regex(?t), maxBytes=-1, ch) : (errorCode,
   }
 
   // move back to the starting offset and compute the total number of bytes read
-  const endOffset = ch.chpl_offset();
+  const endOffset = ch.offset();
   ch.revert(); // A
-  const numBytesRead: int = endOffset - ch.chpl_offset();
+  const numBytesRead: int = endOffset - ch.offset();
 
   _ddata_free(matches, nm);
 

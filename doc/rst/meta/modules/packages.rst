@@ -19,6 +19,7 @@ Algorithms
    :maxdepth: 1
 
    Crypto <packages/Crypto>
+   NPBRandom <packages/NPBRandom>
    Search <packages/Search>
    Sort <packages/Sort>
 
@@ -63,6 +64,7 @@ File Formats and I/O
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>
+   ObjectSerialization <packages/ObjectSerialization>
 
 Math / Numerical Computing
 --------------------------

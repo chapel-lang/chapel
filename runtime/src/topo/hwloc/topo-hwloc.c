@@ -408,7 +408,7 @@ static void cpuInfoInit(void) {
       char buf[1024];
       hwloc_bitmap_list_snprintf(buf, sizeof(buf), cpuset);
       _DBG_P("core cpuset: %s", buf);
-    // filter the core's PUs in case they are heterogeneous
+    // filter the core's PUs in case they are hybrid
     _DBG_P("filtering core's cpuset");
     filterPUsByKind(numKinds, ignoreKinds, cpuset);
 

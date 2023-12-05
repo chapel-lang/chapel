@@ -1,0 +1,5 @@
+submodule-in-used-vs-toplevel-3.chpl:12: In function 'main':
+submodule-in-used-vs-toplevel-3.chpl:14: warning: potentially surprising shadowing for 'N'
+submodule-in-used-vs-toplevel-3.chpl:13: note: it refers to a symbol found through the 'use' of 'M' here
+submodule-in-used-vs-toplevel-3.chpl:2: note: leading to 'N' defined here
+submodule-in-used-vs-toplevel-3.chpl:7: note: but, there is a shadowed symbol 'N' defined here

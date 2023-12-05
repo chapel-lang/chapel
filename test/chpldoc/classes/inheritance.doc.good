@@ -21,7 +21,6 @@ or
 
    The eldest 
 
-
    .. method:: proc getOffMyLawn()
 
       You durn kids! 
@@ -32,7 +31,6 @@ or
 
    Second generation 
 
-
    .. method:: proc goToYourRoom()
 
       Grounded! 
@@ -42,7 +40,6 @@ or
 .. class:: Child : Parent
 
    Reaping the benefits of third generation status 
-
 
    .. method:: proc whine()
 

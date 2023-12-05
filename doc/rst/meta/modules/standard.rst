@@ -16,10 +16,10 @@ default:
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    Errors <standard/Errors>
-   IO Support <standard/ChapelIO>
    Types <standard/Types>
+   A subset of the IO symbols <standard/ChapelIO>
+   A subset of the Math symbols <standard/Math>
 
 
 Data Structures
@@ -43,7 +43,7 @@ Diagnostics
    CommDiagnostics <standard/CommDiagnostics>
    GpuDiagnostics <standard/GpuDiagnostics>
    MemDiagnostics <standard/MemDiagnostics>
-   Memory <standard/Memory>
+   Debugger <standard/Debugger>
 
 
 Files/IO
@@ -74,7 +74,6 @@ Math/Numerical
 .. toctree::
    :maxdepth: 1
 
-   AutoMath <standard/AutoMath>
    BigInteger <standard/BigInteger>
    BitOps <standard/BitOps>
    GMP <standard/GMP>
@@ -88,7 +87,6 @@ Parallelism/Distributed Computing
 .. toctree::
    :maxdepth: 1
 
-   Barriers <standard/Barriers>
    Collectives <standard/Collectives>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>
@@ -116,4 +114,4 @@ Utilities
    Regex <standard/Regex>
    Time <standard/Time>
    Version <standard/Version>
-   WeakPointer <../builtins/WeakPointer>
+   WeakPointer <standard/WeakPointer>

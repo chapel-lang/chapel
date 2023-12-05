@@ -2802,6 +2802,7 @@ static bool resolveClassBorrowMethod(CallExpr* call);
 static bool resolveFunctionPointerCall(CallExpr* call);
 static void resolveCoerceCopyMove(CallExpr* call);
 static void resolvePrimInit(CallExpr* call);
+static void resolveInitRef(CallExpr* call);
 static void resolveRefDeserialization(CallExpr* call);
 
 void resolveCall(CallExpr* call) {
@@ -2831,6 +2832,10 @@ void resolveCall(CallExpr* call) {
     case PRIM_INIT_VAR_SPLIT_INIT:
       resolveGenericActuals(call);
       resolveInitVar(call);
+      break;
+
+    case PRIM_INIT_REF_DECL:
+      resolveInitRef(call);
       break;
 
     case PRIM_MOVE:
@@ -2934,20 +2939,15 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 
       bool eq  = name == astrSeq;
       bool ne  = name == astrSne;
-      bool lt  = name == astrSlt;
-      bool lte = name == astrSlte;
-      bool gt  = name == astrSgt;
-      bool gte = name == astrSgte;
 
-      if (eq || ne || lt || lte || gt || gte) {
+      if (eq || ne) {
         SymExpr* lhs = toSymExpr(call->get(1));
         SymExpr* rhs = toSymExpr(call->get(2));
 
         if (lhs && rhs &&
             lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
-            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-          if (eq || ne) {
+            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        {
             Symbol* value = gFalse;
             bool sameType = lhs->symbol()->type == rhs->symbol()->type;
             if (eq && sameType)
@@ -2959,29 +2959,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             call->replace(se);
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
-          } else {
-            USR_WARN(call, "type comparison operators are deprecated; "
-              "use isSubtype/isProperSubtype instead");
 
-            rhs->remove();
-            lhs->remove();
-            call->baseExpr->remove();
-
-            if (lte || gte)
-              call->primitive = primitives[PRIM_IS_SUBTYPE];
-            else
-              call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
-
-            if (lt || lte) {
-              call->insertAtTail(rhs);
-              call->insertAtTail(lhs);
-            } else {
-              call->insertAtTail(lhs);
-              call->insertAtTail(rhs);
-            }
-          }
-
-          return true;
+            return true;
         }
       }
     }
@@ -3123,6 +3102,22 @@ static void adjustClassCastCall(CallExpr* call)
   }
 }
 
+static bool isGenericSubclass(Type* targetType, Type* valueType) {
+  if (!isClassLikeOrManaged(targetType) ||
+      !isClassLikeOrManaged(valueType)) return false;
+
+  auto atTarget = toAggregateType(canonicalClassType(targetType));
+  auto atValue = toAggregateType(canonicalClassType(valueType));
+  INT_ASSERT(atTarget && atValue);
+
+  const bool isDowncast = isSubType(atTarget, atValue);
+  const bool isTargetTypeGeneric = atTarget->isGeneric();
+  const bool targetTypeHasDefaults = atTarget->isGenericWithDefaults();
+  bool ret = isDowncast && isTargetTypeGeneric && !targetTypeHasDefaults;
+
+  return ret;
+}
+
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
@@ -3238,6 +3233,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       }
 
       return true;
+    }
+
+    // Check to make sure we're not doing 'C: shared D(?)'. We have to stop
+    // here to make sure we don't emit a nonsensical error from later in the
+    // pass (e.g., in the module code for the owned manager).
+    if (isGenericSubclass(targetType, valueType)) {
+      USR_FATAL(call, "illegal downcast to generic subclass type '%s'",
+                      toString(targetType));
     }
   }
 
@@ -7656,7 +7659,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
     Expr* enclLoop = aVar->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
-              "The shadow variable '%s' is constant due to forall intents "
+              "The shadow variable '%s' is constant due to task intents "
               "in this loop",
               varname);
   }
@@ -8952,38 +8955,10 @@ static Type* moveDetermineRhsTypeErrorIfInvalid(CallExpr* call) {
           if (rhsFn->hasFlag(FLAG_PROMOTION_WRAPPER))
             rhsName = unwrapFnName(rhsFn);
 
-          // TODO <June 23 Release>: this deprecation-specific error message should be removed
-          //                         when the bool-returning-writers deprecation is finalized
-          if (
-            rhsFn->getModule()->modTag != MOD_USER && (
-              // writer methods on channels
-              (rhsFn->isMethod() == 1 &&
-                (
-                    std::strcmp("write", rhsName) == 0 ||
-                    std::strcmp("writeln", rhsName) == 0 ||
-                    std::strcmp("writeBits", rhsName) == 0 ||
-                    std::strcmp("writeBytes", rhsName) == 0 ||
-                    std::strcmp("writef", rhsName) == 0
-                )
-              ) ||
-              // or, top-level writef
-              std::strcmp("writef", rhsName) == 0
-            )
-          ) {
-            // emit the write* specific error message:
-            // (https://github.com/chapel-lang/chapel/pull/20907#pullrequestreview-1155017128)
-            USR_FATAL(userCall(call),
-                    "illegal use of return value from '%s'. "
-                    "Note: if you wish to detect early EOF from a write call, "
-                    "check for an EofError using a try-catch block",
-                    rhsName);
-          } else {
-            // otherwise, emit the normal error message:
-            USR_FATAL(userCall(call),
-                    "illegal use of function that does not "
-                    "return a value: '%s'",
-                    rhsName);
-          }
+          USR_FATAL(userCall(call),
+                  "illegal use of function that does not "
+                  "return a value: '%s'",
+                  rhsName);
         }
       }
     }
@@ -9111,6 +9086,36 @@ static void moveHaltForUnacceptableTypes(CallExpr* call) {
 //
 //
 
+static void checkAndAdjustLhsRefType(Expr* call, Symbol* lhs, Type* rhsType) {
+  Type* rhsValType = rhsType->getValType();
+  Type* lhsValType = lhs->type->getValType();
+
+  if (lhsValType->symbol->hasFlag(FLAG_GENERIC)) {
+    // check if 'rhsType' is an instantiation of lhs's type
+    Type* inst = getInstantiationType(rhsValType, NULL, lhsValType, NULL, call);
+    if (inst != rhsValType) {
+      USR_FATAL_CONT(call,
+        "initializing a reference using an expression whose type '%s"
+        "' is not an instantiation of the declared type '%s'",
+        toString(rhsValType), toString(lhsValType));
+    }
+    // even if there was an error, we can continue resolving
+    // using the declared type if possible
+    lhs->type = (inst ? inst : rhsType)->getRefType();
+  }
+  else {
+    if (lhsValType != rhsValType) {
+      USR_FATAL_CONT(call, "Initializing a reference with another type");
+      USR_PRINT(lhs, "Reference has type %s", toString(lhsValType));
+      USR_PRINT(call, "Initializing with type %s", toString(rhsValType));
+      // even if there was an error, we can continue resolving
+      // using the declared type
+    }
+  }
+
+  INT_ASSERT(lhs->isRef());
+}
+
 // Check the 'move' into an YVV from the result of an addrOf of 'argOfAddrOf'
 // when the iterator has the 'ref' return/yield intent.
 // Disallow args that are not references or are const references.
@@ -9212,6 +9217,12 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
     if (lhsSym->qual == QUAL_CONST_REF) checkMoveSymToCRefYVV(call, rhsSym);
   }
 
+  if (lhsSym->hasFlag(FLAG_REF_VAR)                       &&
+      ! lhsSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP)  &&
+      call->isPrimitive(PRIM_MOVE)                         )  {
+    checkAndAdjustLhsRefType(call, lhsSym, rhsSym->type);
+  }
+
   moveFinalize(call);
 }
 
@@ -9294,15 +9305,8 @@ static void resolveMoveForRhsCallExpr(CallExpr* call, Type* rhsType) {
       // Check that the types match
       SymExpr* lhsSe = toSymExpr(call->get(1));
       Symbol* lhs = lhsSe->symbol();
-      INT_ASSERT(lhs->isRef());
 
-      if (lhs->getValType() != rhsType->getValType()) {
-        USR_FATAL_CONT(call, "Initializing a reference with another type");
-        USR_PRINT(lhs, "Reference has type %s", toString(lhs->getValType()));
-        USR_PRINT(call, "Initializing with type %s",
-                        toString(rhsType->getValType()));
-        USR_STOP();
-      }
+      checkAndAdjustLhsRefType(call, lhs, rhsType);
 
       if (lhs->hasFlag(FLAG_YVV)) {
         Expr* arg = rhs->get(1);
@@ -9482,7 +9486,6 @@ static void resolveNew(CallExpr* newExpr) {
   // The following variables allow the latter half of this function
   // to construct the AST for initializing the owned/shared if necessary.
   // Manager is:
-  //  dtBorrowed for 'new borrowed'
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
@@ -9651,17 +9654,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             // Set the type to initialize
             typeExpr->setSymbol(initType->symbol);
         }
-      }
-
-      if (manager == dtBorrowed && fWarnUnstable) {
-        Type* ct = canonicalClassType(type);
-        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
-        USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                           "'new owned %s' or "
-                           "'new shared %s'",
-                           ct->symbol->name,
-                           ct->symbol->name,
-                           ct->symbol->name);
       }
     }
   }
@@ -10553,6 +10545,25 @@ static void        resolveExprMaybeIssueError(CallExpr* call);
 
 static bool        isMentionOfFnTriggeringCapture(SymExpr* se);
 
+static LoopWithShadowVarsInterface*
+  isForeachWhoseShadowVarsShouldBeResolved(SymExpr *se)
+{
+  ForLoop* pfl = toForLoop(se->parentExpr);
+
+  // The pfl->shadowVariables().length > 0 part of the above condition is a
+  // bit of a hack to ensure we don't apply implicit intents on a loop where
+  // we haven't added an explicit intent (via a 'with' clause). Getting
+  // intents to work for 'foreach' loops is a bit of a work in progress and
+  // for the time being I would like to keep the behavior of loops that
+  // don't have a 'with' clause unchanged.
+  if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
+     (pfl->shadowVariables().length > 0))
+  {
+    return pfl;
+  }
+  return nullptr;
+}
+
 Expr* resolveExpr(Expr* expr) {
   FnSymbol* fn     = toFnSymbol(expr->parentSymbol);
   Expr*     retval = NULL;
@@ -10593,6 +10604,12 @@ Expr* resolveExpr(Expr* expr) {
     if (ForallStmt* pfs = isForallIterExpr(se)) {
       CallExpr* call = resolveForallHeader(pfs, se);
       retval = resolveExprPhase2(expr, fn, preFold(call));
+    }
+    else if(LoopWithShadowVarsInterface *loop =
+      isForeachWhoseShadowVarsShouldBeResolved(se))
+    {
+      setupAndResolveShadowVars(loop);
+      retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
       auto fn = toFnSymbol(se->symbol());
       INT_ASSERT(fn);
@@ -14025,7 +14042,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       }
 
 
-      // supress the warning for builtin types like
+      // suppress the warning for builtin types like
       // 'integral', 'record', 'borrowed'.
       if (isBuiltinGenericType(declType)) {
         return;
@@ -14037,7 +14054,7 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
         return;
 
 
-      // supress the warning for fields within owned/shared
+      // suppress the warning for fields within owned/shared
       // themselves (better to see the warning at uses of owned/shared
       // that create generic owned/shared).
       if (TypeSymbol* ts = toTypeSymbol(sym->defPoint->parentSymbol))
@@ -14142,6 +14159,53 @@ void checkSurprisingGenericDecls(Symbol* sym, Expr* typeExpr,
       }
     }
   }
+}
+
+// Handles:
+//  CallExpr(PRIM_INIT_REF_DECL, refSym, typeExpr[opt])
+// which result from:
+//  ref refSym: typeExpr;
+//  ref refSym: typeExpr = initExpr;
+// by:
+//  resolving typeExpr and storing it in refSym->type
+//
+static void resolveInitRef(CallExpr* call) {
+  INT_ASSERT(call->numActuals() <= 2);
+  // nothing to do if there was no declared type
+  if (call->numActuals() == 2) {
+    Symbol* refSym = toSymExpr(call->get(1))->symbol();
+    INT_ASSERT(!isShadowVarSymbol(refSym) &&
+               !refSym->hasEitherFlag(FLAG_TEMP, FLAG_EXPR_TEMP) &&
+               refSym->hasFlag(FLAG_REF_VAR));
+    INT_ASSERT(refSym->type == dtUnknown); // fyi
+
+    if (refSym->id == breakOnResolveID) gdbShouldBreakHere();
+    resolveExpr(call->get(2)); // the normalized type expression
+    Expr* typeExpr = call->get(2)->remove();
+    if (SymExpr* typeSE = toSymExpr(typeExpr))
+      if (! typeSE->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        USR_FATAL_CONT(typeExpr, "the type declaration of the reference %s"
+                       " is not a type", refSym->name);
+    refSym->type = typeExpr->typeInfo();
+
+    if (refSym->type->getValType()->symbol->hasFlag(FLAG_ARRAY)) {
+      // TODO also issue this warning when it is a domain type
+      // except for dtDomain or default rectangular
+      USR_WARN(call, "there is no checking"
+           " that the domain of the initialization expression"
+           " matches the domain of the declared type of the reference '%s'",
+           refSym->name);
+    }
+
+    if (refSym->type->symbol->hasFlag(FLAG_GENERIC)) {
+      // it will be instantiated in resolveMove() / checkAndAdjustLhsRefType()
+    } else {
+      // checkAndAdjustLhsRefType() expects a ref type
+      refSym->type = refSym->type->getRefType();
+    }
+  }
+
+  call->primitive = primitives[PRIM_NOOP];
 }
 
 

@@ -334,7 +334,7 @@ static void testCForLoop() {
   auto idx = rr.byAst(loop->index());
   assert(idx.type().type() == IntType::get(context, 0));
 
-  const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only();
+  const TypedFnSignature* sig = rr.byAst(loop->iterand()).mostSpecific().only().fn();
   auto fn = resolveFunction(context, sig, nullptr);
   auto rf = fn->resolutionById();
   auto whileLoop = m->stmt(0)->toFunction()->stmt(1)->toWhile();

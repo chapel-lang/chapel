@@ -42,9 +42,11 @@ static char _nnbuf[16];
 static char** chpl_launch_create_argv(const char *launch_cmd,
                                       int argc, char* argv[],
                                       int32_t numLocales,
-                                      int32_t numNodes) {
+                                      int32_t numLocalesPerNode) {
   const int maxlargc = 9;
   char *largv[maxlargc];
+
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
 
   snprintf(_nlbuf, sizeof(_nlbuf), "%d", numLocales);
   snprintf(_nnbuf, sizeof(_nnbuf), "%d", numNodes);
@@ -65,26 +67,14 @@ static char** chpl_launch_create_argv(const char *launch_cmd,
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
-  if (numLocalesPerNode > 1) {
-    chpl_launcher_no_colocales_error(GASNETRUN_LAUNCHER);
-  }
+
   int len = strlen(CHPL_THIRD_PARTY) + strlen(WRAP_TO_STR(LAUNCH_PATH)) + strlen(GASNETRUN_LAUNCHER) + 2;
   char *cmd = chpl_mem_allocMany(len, sizeof(char), CHPL_RT_MD_COMMAND_BUFFER, -1, 0);
   snprintf(cmd, len, "%s/%s%s", CHPL_THIRD_PARTY, WRAP_TO_STR(LAUNCH_PATH), GASNETRUN_LAUNCHER);
 
-  int localesPerNode = chpl_env_rt_get_int(CHPL_LPN_VAR, 1);
-  if (localesPerNode <= 0) {
-    char msg[100];
-    snprintf(msg, sizeof(msg), "%s must be > 0.", "CHPL_RT_" CHPL_LPN_VAR);
-    chpl_warning(msg, 0, 0);
-    localesPerNode = 1;
-  }
-
-  int32_t numNodes = (numLocales + localesPerNode - 1) / localesPerNode;
-
   return chpl_launch_using_exec(cmd,
                                 chpl_launch_create_argv(cmd, argc, argv,
-                                                        numLocales, numNodes),
+                                                        numLocales, numLocalesPerNode),
                                 argv[0]);
 }
 

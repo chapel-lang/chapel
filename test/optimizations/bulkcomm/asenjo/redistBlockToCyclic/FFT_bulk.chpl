@@ -68,7 +68,7 @@ proc BlockArr.copyBtoC(B)
 		  __primitive("array_get",destr,
 			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst,
+		  dst, c_sublocid_any,
 		  __primitive("array_get",src,
 			      locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -129,7 +129,7 @@ proc  BlockArr.copyCtoB(B)
 		  __primitive("array_get",src,
                               locArr[lid].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",dststr,dststrides._value.getDataIndex(1)),
-		  dst,
+		  dst, c_sublocid_any,
 		  __primitive("array_get",destr,
 			      B._value.locArr[dst].myElems._value.getDataIndex(schunkini)),
 		  __primitive("array_get",srcstr,srcstrides._value.getDataIndex(1)),
@@ -185,8 +185,7 @@ config const epsilon = 2.0 ** -51.0,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-  seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -431,7 +430,9 @@ proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed);
+  if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

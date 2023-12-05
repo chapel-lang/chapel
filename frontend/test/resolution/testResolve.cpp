@@ -237,7 +237,7 @@ static void test4() {
                              class Parent { }
                              class C : Parent { type t; var x: t; }
 
-                             proc f(arg: Parent) { }
+                             proc f(in arg: Parent) { }
                              var x: owned C(int);
                              f(x);
                           }
@@ -258,9 +258,9 @@ static void test4() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 }
 
 // this test checks a simple instantiation situation
@@ -294,14 +294,14 @@ static void test5() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
 }
 
 // this test checks a particular incremental pattern
@@ -386,10 +386,10 @@ static void test7() {
   assert(re.type().type());
   assert(re.type().type()->isIntType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "parenless");
-  assert(fn->numFormals() == 0);
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "parenless");
+  assert(c.fn()->numFormals() == 0);
 }
 
 // check a simple recursive function
@@ -424,14 +424,14 @@ static void test8() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
 }
 
 // check a generic recursive function
@@ -466,14 +466,60 @@ static void test9() {
 
   assert(re.type().type()->isVoidType());
 
-  const TypedFnSignature* fn = re.mostSpecific().only();
-  assert(fn != nullptr);
-  assert(fn->untyped()->name() == "f");
+  auto c = re.mostSpecific().only();
+  assert(c);
+  assert(c.fn()->untyped()->name() == "f");
 
-  assert(fn->numFormals() == 1);
-  assert(fn->formalName(0) == "arg");
-  assert(fn->formalType(0).kind() == QualifiedType::CONST_IN);
-  assert(fn->formalType(0).type() == IntType::get(context, 64));
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "arg");
+  assert(c.fn()->formalType(0).kind() == QualifiedType::CONST_IN);
+  assert(c.fn()->formalType(0).type() == IntType::get(context, 64));
+}
+
+// Tests 'const ref' formals disallowing coercion, and that this
+// error happens after disambiguation.
+static void test10() {
+  printf("test10\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+                           module M {
+                             class Parent { }
+                             class Child : Parent { }
+
+                             /* Both functions should be considered, one
+                                should be picked (numeric, since we prefer
+                                instantiating), and this function should be
+                                rejected. */
+                             proc f(const ref arg: Parent, x: int(8)) { }
+                             proc f(const ref arg: Parent, x: numeric) { }
+
+                             var x: owned Child;
+                             var sixtyFourBits: int = 0;
+                             f(x, sixtyFourBits);
+                          }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 8);
+  const Call* call = m->stmt(7)->toCall();
+  assert(call);
+
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(call);
+
+  assert(re.type().type()->isErroneousType());
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() == chpl::ConstRefCoercion);
+  guard.realizeErrors();
 }
 
 
@@ -487,6 +533,7 @@ int main() {
   test7();
   test8();
   test9();
+  test10();
 
   return 0;
 }

@@ -2098,6 +2098,58 @@ GenRet codegenMod(GenRet a, GenRet b)
   return ret;
 }
 
+// TODO: We could call the C 'fma' function from 'math.h' here.
+static GenRet emitFmaForC(GenRet av, GenRet bv, GenRet cv) {
+  INT_FATAL("Should not reach here, user facing functions should call the "
+            "appropriate C intrinsic in module code instead");
+  GenRet ret;
+  return ret;
+}
+
+static GenRet emitFmaForLlvm(GenRet av, GenRet bv, GenRet cv) {
+  GenRet ret;
+#ifdef HAVE_LLVM
+  GenInfo* info = gGenInfo;
+  INT_ASSERT(av.chplType == bv.chplType && bv.chplType == cv.chplType);
+  INT_ASSERT(av.chplType == dtReal[FLOAT_SIZE_64] ||
+             av.chplType == dtReal[FLOAT_SIZE_32]);
+  auto ty = av.val->getType();
+  INT_ASSERT(ty);
+
+  if (!ty->isFPOrFPVectorTy()) {
+    INT_FATAL("The FMA primitive can only evaluate floating point types!");
+  }
+
+  // The 'id' is the base intrinsic, and then 'tys' is used to mangle
+  // the name, for example to create 'llvm.fma.64'. Since the types of
+  // all arguments should be the same, we only need one type in 'tys'.
+  auto id = llvm::Intrinsic::fma;
+  std::vector<llvm::Type*> tys = { ty };
+  std::vector<llvm::Value*> args = { av.val, bv.val, cv.val };
+  ret.val = info->irBuilder->CreateIntrinsic(id, tys, args);
+#endif
+
+  return ret;
+}
+
+static GenRet codegenFma(GenRet a, GenRet b, GenRet c) {
+  GenInfo* info = gGenInfo;
+  GenRet ret;
+  if (a.chplType && a.chplType->symbol->isRefOrWideRef()) a = codegenDeref(a);
+  if (b.chplType && b.chplType->symbol->isRefOrWideRef()) b = codegenDeref(b);
+  if (c.chplType && c.chplType->symbol->isRefOrWideRef()) c = codegenDeref(c);
+  GenRet av = codegenValue(a);
+  GenRet bv = codegenValue(b);
+  GenRet cv = codegenValue(c);
+  if (info->cfile) {
+    ret = emitFmaForC(av, bv, cv);
+  }
+  else {
+    ret = emitFmaForLlvm(av, bv, cv);
+  }
+  return ret;
+}
+
 
 static
 GenRet codegenLsh(GenRet a, GenRet b)
@@ -3148,7 +3200,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3, GenRet a4)
   args.push_back(a4);
   codegenCallWithArgs(fnName, args);
 }
-/*
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5)
@@ -3161,7 +3213,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a5);
   codegenCallWithArgs(fnName, args);
 }
-*/
+
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6)
@@ -3246,6 +3298,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   codegenCallWithArgs(fnName, args);
 }*/
 
+/*
 static
 void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
                  GenRet a4, GenRet a5, GenRet a6, GenRet a7, GenRet a8,
@@ -3265,6 +3318,7 @@ void codegenCall(const char* fnName, GenRet a1, GenRet a2, GenRet a3,
   args.push_back(a11);
   codegenCallWithArgs(fnName, args);
 }
+*/
 
 /*
 static
@@ -4583,6 +4637,9 @@ DEFINE_PRIM(DIV) {
 DEFINE_PRIM(MOD) {
     ret = codegenMod(call->get(1), call->get(2));
 }
+DEFINE_PRIM(FMA) {
+    ret = codegenFma(call->get(1), call->get(2), call->get(3));
+}
 DEFINE_PRIM(LSH) {
     ret = codegenLsh(call->get(1), call->get(2));
 }
@@ -5564,8 +5621,10 @@ DEFINE_PRIM(CHPL_COMM_REMOTE_PREFETCH) {
 
 // Strided versions of get and put
 static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
-    // args are: localvar, dststr addr, locale, remote addr, srcstr addr
-    // count addr, strlevels, elem
+    // args are: local addr, dststr addr,
+    //           locale, sublocale, remote addr, srcstr addr,
+    //           count addr, strlevels,
+    //           line number, function id
     const char* fn;
     TypeSymbol* dt;
 
@@ -5575,94 +5634,109 @@ static void codegenPutGetStrd(CallExpr* call, GenRet &ret) {
       fn = "chpl_gen_comm_put_strd";
     }
 
-    GenRet localAddr = codegenValuePtr(call->get(1));
+    auto destData = call->get(1);
+    GenRet localAddr = codegenValuePtr(destData);
 
     // destination data array
-    if (call->get(1)->isWideRef()) {
-      Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    if (destData->isWideRef()) {
+      Symbol* sym = destData->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
       dt        = sym->typeInfo()->getValType()->symbol;
       localAddr = codegenRaddr(localAddr);
     } else {
-      dt = call->get(1)->typeInfo()->getValType()->symbol;
+      dt = destData->typeInfo()->getValType()->symbol;
 
-      if (call->get(1)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (destData->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         localAddr = codegenDeref(localAddr);
       }
     }
 
     // destination strides local array
-    GenRet dststr = codegenValuePtr(call->get(2));
+    auto destStride = call->get(2);
+    GenRet dststr = codegenValuePtr(destStride);
 
-    if (call->get(2)->isWideRef()) {
-      Symbol* sym = call->get(2)->typeInfo()->getField("addr", true);
+    if (destStride->isWideRef()) {
+      Symbol* sym = destStride->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       dststr = codegenRaddr(dststr);
-    } else if (call->get(2)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (destStride->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       dststr = codegenDeref(dststr);
     }
 
     // locale id
     GenRet locale = codegenValueMaybeDeref(call->get(3));
 
-    // source data array
-    GenRet   remoteAddr = call->get(4);
+    // sublocale id
+    GenRet subloc = codegenValueMaybeDeref(call->get(4));
 
-    if (call->get(4)->isWideRef() == true) {
+    // source data array
+    auto srcExpr = call->get(5);
+    GenRet   remoteAddr = srcExpr;
+
+    if (srcExpr->isWideRef() == true) {
       remoteAddr = codegenRaddr(remoteAddr);
-    } else if (call->get(4)->isRef() == false) {
+    } else if (srcExpr->isRef() == false) {
       remoteAddr = codegenAddrOf(remoteAddr);
     }
 
     // source strides local array
-    GenRet srcstr = codegenValuePtr(call->get(5));
+    auto srcStrideExpr = call->get(6);
+    GenRet srcstr = codegenValuePtr(srcStrideExpr);
 
-    if (call->get(5)->isWideRef()) {
-      Symbol* sym = call->get(5)->typeInfo()->getField("addr", true);
+    if (srcStrideExpr->isWideRef()) {
+      Symbol* sym = srcStrideExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       srcstr = codegenRaddr(srcstr);
     } else {
-      if (call->get(5)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+      if (srcStrideExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
         srcstr = codegenDeref(srcstr);
       }
     }
 
     // count local array
-    GenRet count = codegenValuePtr(call->get(6));
+    auto countExpr = call->get(7);
+    GenRet count = codegenValuePtr(countExpr);
 
-    if (call->get(6)->isWideRef()) {
-      Symbol* sym = call->get(6)->typeInfo()->getField("addr", true);
+    if (countExpr->isWideRef()) {
+      Symbol* sym = countExpr->typeInfo()->getField("addr", true);
 
       INT_ASSERT(sym);
 
       count = codegenRaddr(count);
-    } else if (call->get(6)->typeInfo()->symbol->hasFlag(FLAG_REF)) {
+    } else if (countExpr->typeInfo()->symbol->hasFlag(FLAG_REF)) {
       count = codegenDeref(count);
     }
 
     // stridelevels
-    GenRet stridelevels = codegenValueMaybeDeref(call->get(7));
+    GenRet stridelevels = codegenValueMaybeDeref(call->get(8));
+
+    auto lineno = call->get(9);
+    auto fnID = call->get(10);
 
     // eltSize
     GenRet eltSize = codegenSizeof(dt->typeInfo());
 
-    codegenCall(fn,
-                codegenCastToVoidStar(localAddr),
-                codegenCastToVoidStar(dststr),
-                locale,
-                remoteAddr,
-                codegenCastToVoidStar(srcstr),
-                codegenCastToVoidStar(count),
-                stridelevels,
-                eltSize,
-                genCommID(gGenInfo),
-                call->get(8),
-                call->get(9));
+    std::vector<GenRet> args;
+
+    args.push_back(codegenCastToVoidStar(localAddr));
+    args.push_back(codegenCastToVoidStar(dststr));
+    args.push_back(locale);
+    args.push_back(subloc);
+    args.push_back(remoteAddr);
+    args.push_back(codegenCastToVoidStar(srcstr));
+    args.push_back(codegenCastToVoidStar(count));
+    args.push_back(stridelevels);
+    args.push_back(eltSize);
+    args.push_back(genCommID(gGenInfo));
+    args.push_back(lineno);
+    args.push_back(fnID);
+
+    codegenCallWithArgs(fn, args);
 }
 DEFINE_PRIM(CHPL_COMM_PUT_STRD) {
   codegenPutGetStrd(call, ret);
@@ -6211,6 +6285,54 @@ DEFINE_PRIM(COPIES_NO_ALIAS_SET) {
 
 DEFINE_PRIM(OPTIMIZATION_INFO) {
   // No action required here
+}
+
+DEFINE_PRIM(BREAKPOINT) {
+  GenInfo* info = gGenInfo;
+  if (info->cfile) {
+    ret = codegenCallExpr("chpl_debugtrap");
+  }
+  else {
+    #ifdef HAVE_LLVM
+    ret.val = info->irBuilder->CreateIntrinsic(llvm::Intrinsic::debugtrap, {}, {});
+    #endif
+  }
+}
+
+DEFINE_PRIM(CONST_ARG_HASH) {
+  INT_ASSERT(call->numActuals() == 1);
+  INT_ASSERT(call->get(1)->isRefOrWideRef());
+  GenRet arg = call->get(1);
+
+  if (call->get(1)->isWideRef()) {
+    // Don't send arg in with `&`
+    GenRet ptr = codegenValue(arg);
+    // Do shallow GET on record
+    GenRet val = codegenValue(codegenDeref(ptr));
+    // Create temporary that we can pass a pointer to
+    GenRet tmp = createTempVarWith(val);
+    GenRet addr = codegenAddrOf(tmp);
+
+    Symbol* sym = call->get(1)->typeInfo()->getField("addr", true);
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", addr,
+                          codegenSizeof(sym->typeInfo()->getValType()));
+  } else {
+    GenRet ptr = codegenValue(arg);
+
+    // Could potentially have the sizeof call inserted at the creation of the
+    // primitive
+    ret = codegenCallExpr("const_arg_hash", ptr,
+                          codegenSizeof(call->get(1)->typeInfo()->getValType()));
+  }
+}
+
+DEFINE_PRIM(CHECK_CONST_ARG_HASH) {
+    INT_ASSERT(call->numActuals() == 5);
+
+    codegenCall("check_const_hash_matches", call->get(1), call->get(2),
+                call->get(3), call->get(4), call->get(5));
 }
 
 DEFINE_BASIC_PRIM(ASCII)

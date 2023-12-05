@@ -30,16 +30,6 @@
 namespace chpl {
 namespace resolution {
 
-/**
-  Helper macro to report an error to the context, and produce an
-  erroneous QualifiedType. Accepts the pointer to the context,
-  the name of the error to report, and additional error information arguments,
-  the exact types of which depend on the type of error (see error-classes-list.h)
- */
-#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
-  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
-   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
-
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
@@ -208,6 +198,10 @@ struct Resolver {
                                     const uast::For* loop,
                                     ResolutionResultByPostorderID& bodyResults);
 
+  // Set the composite type of this Resolver. It is an error to call this
+  // method when a composite type is already set.
+  void setCompositeType(const types::CompositeType* ct);
+
   /* Get the formal types from a Resolver that computed them
    */
   std::vector<types::QualifiedType> getFormalTypes(const uast::Function* fn);
@@ -337,12 +331,31 @@ struct Resolver {
   //  * r.setMostSpecific
   //  * r.setPoiScope
   //  * r.setType
-  //  * issueErrorForFailedCallResolution if there was an error
   //  * poiInfo.accumulate
+  //
+  // Does not handle:
+  //
+  //  * issueErrorForFailedCallResolution if there was an error
+  //
+  // Instead, returns 'true' if an error needs to be issued.
+  bool handleResolvedCallWithoutError(ResolvedExpression& r,
+                                      const uast::AstNode* astForErr,
+                                      const CallInfo& ci,
+                                      const CallResolutionResult& c);
+  // Same as handleResolvedCallWithoutError, except actually issues the error.
   void handleResolvedCall(ResolvedExpression& r,
                           const uast::AstNode* astForErr,
                           const CallInfo& ci,
                           const CallResolutionResult& c);
+  // like handleResolvedCall, but prints the candidates that were rejected
+  // by the error in detail.
+  void handleResolvedCallPrintCandidates(ResolvedExpression& r,
+                                         const uast::Call* call,
+                                         const CallInfo& ci,
+                                         const Scope* scope,
+                                         const PoiScope* poiScope,
+                                         const types::QualifiedType& receiverType,
+                                         const CallResolutionResult& c);
   // like handleResolvedCall saves the call in associatedFns.
   void handleResolvedAssociatedCall(ResolvedExpression& r,
                                     const uast::AstNode* astForErr,
@@ -391,6 +404,10 @@ struct Resolver {
                           const uast::AstNode* exr,
                           const ID& id);
 
+  void validateAndSetMostSpecific(ResolvedExpression& r,
+                                  const uast::AstNode* exr,
+                                  const MostSpecificCandidates& mostSpecific);
+
   // e.g. new shared C(a, 0)
   // also resolves initializer call as a side effect
   bool resolveSpecialNewCall(const uast::Call* call);
@@ -403,11 +420,6 @@ struct Resolver {
 
   // Resolve a || or && operation.
   types::QualifiedType typeForBooleanOp(const uast::OpCall* op);
-
-  // Handle ==, !=, and other operators as defined on types.
-  types::QualifiedType typeForTypeOperator(const uast::OpCall* op,
-                                           const types::QualifiedType& left,
-                                           const types::QualifiedType& right);
 
   // find the element, if any, that a name refers to.
   // Sets outAmbiguous to true if multiple elements of the same name are found,

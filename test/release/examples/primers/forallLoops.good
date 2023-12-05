@@ -40,5 +40,5 @@ After a loop with task-private variables:
 outerIntVariable is: 48
 
 After MyRecord.myMethod, myR is:
-(arrField = 2 4 6 8 10, intField = 0)
+(arrField = 2 4 6 8 10, intField = 1)
 

@@ -50,17 +50,6 @@ module BitOps {
     :returns: the number of 1 bits set in `x` as `x.type`
     :rtype: `x.type`
    */
-  @deprecated(notes="popcount is deprecated - please use :proc:`popCount` instead")
-  inline proc popcount(x: integral) {
-    return popCount(x);
-  }
-
-  /*
-    Find the population count of `x`.
-
-    :returns: the number of 1 bits set in `x` as `x.type`
-    :rtype: `x.type`
-   */
   inline proc popCount(x: integral) {
     return BitOps_internal.popCount(x);
   }

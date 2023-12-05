@@ -64,10 +64,6 @@ module ChapelBase {
   use CTypes;
   use ChplConfig;
 
-  @chpldoc.nodoc
-  @deprecated(notes="the '_file' type is deprecated; please use 'CTypes.c_FILE' instead")
-  type _file = c_FILE_internal;
-
   config param enablePostfixBangChecks = false;
 
   // These two are called by compiler-generated code.
@@ -177,6 +173,8 @@ module ChapelBase {
   inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
+  inline operator ==(a: borrowed RootClass?, b: _nilType) do return __primitive("==", a, nil);
+  inline operator ==(a: _nilType, b: borrowed RootClass?) do return __primitive("==", b, nil);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -208,6 +206,8 @@ module ChapelBase {
   inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
+  inline operator !=(a: borrowed RootClass?, b: _nilType) do return __primitive("!=", a, nil);
+  inline operator !=(a: _nilType, b: borrowed RootClass?) do return __primitive("!=", b, nil);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }

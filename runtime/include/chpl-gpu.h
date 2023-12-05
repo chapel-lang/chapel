@@ -24,6 +24,7 @@
 #include <stdbool.h>
 #include "chpl-tasks.h"
 #include "chpl-mem-desc.h"
+#include "gpu/chpl-gpu-reduce-util.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -41,6 +42,7 @@ extern bool chpl_gpu_use_stream_per_task;
 
 #ifdef HAS_GPU_LOCALE
 
+__attribute__ ((format (printf, 1, 2)))
 static inline void CHPL_GPU_DEBUG(const char *str, ...) {
   if (chpl_gpu_debug) {
     va_list args;
@@ -124,6 +126,21 @@ void chpl_gpu_comm_get(c_sublocid_t dst_subloc, void *dst,
                        c_nodeid_t src_node, c_sublocid_t src_subloc, void *src,
                        size_t size, int32_t commID, int ln, int32_t fn);
 
+void chpl_gpu_comm_get_strd(c_sublocid_t dst_subloc,
+                            void* dstaddr_arg, size_t* dststrides,
+                            c_nodeid_t srclocale, c_sublocid_t src_subloc,
+                            void* srcaddr_arg, size_t* srcstrides,
+                            size_t* count, int32_t strlevels, size_t elemSize,
+                            int32_t commID, int ln, int32_t fn);
+
+void chpl_gpu_comm_put_strd(c_sublocid_t src_subloc,
+                          void* dstaddr_arg, size_t* dststrides,
+                          c_nodeid_t dstlocale, c_sublocid_t dst_subloc,
+                          void* srcaddr_arg, size_t* srcstrides,
+                          size_t* count, int32_t stridelevels, size_t elemSize,
+                          int32_t commID, int ln, int32_t fn);
+
+
 void* chpl_gpu_memset(void* addr, const uint8_t val, size_t n);
 void chpl_gpu_copy_device_to_host(void* dst, c_sublocid_t src_dev,
                                   const void* src, size_t n, int32_t commID,
@@ -148,6 +165,21 @@ size_t chpl_gpu_get_alloc_size(void* ptr);
 
 bool chpl_gpu_can_access_peer(int dev1, int dev2);
 void chpl_gpu_set_peer_access(int dev1, int dev2, bool enable);
+
+bool chpl_gpu_can_reduce(void);
+
+#define DECL_ONE_REDUCE(chpl_kind, data_type) \
+void chpl_gpu_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                               data_type* val, int* idx);
+
+GPU_REDUCE(DECL_ONE_REDUCE, sum);
+GPU_REDUCE(DECL_ONE_REDUCE, min);
+GPU_REDUCE(DECL_ONE_REDUCE, max);
+GPU_REDUCE(DECL_ONE_REDUCE, minloc);
+GPU_REDUCE(DECL_ONE_REDUCE, maxloc);
+
+#undef DECL_ONE_REDUCE
+
 
 #endif // HAS_GPU_LOCALE
 

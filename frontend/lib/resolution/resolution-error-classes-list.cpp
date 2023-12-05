@@ -62,6 +62,10 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
   return kind == resolution::VIS_USE ? "modules or enums" : "modules";
 }
 
+static const char* nilabilityStr(const types::ClassTypeDecorator& dec) {
+  return dec.isNilable() ? "nilable" : "non-nilable";
+}
+
 // describe where a symbol came from
 // (in a way, it prints out a ResultVisibilityTrace)
 //
@@ -73,7 +77,6 @@ static const char* allowedItems(resolution::VisibilityStmtKind kind) {
 //
 // 'start' indicates where in the trace to start, since sometimes
 // the first element might have already been printed.
-// 'oneOnly' indicates that only the 1st match should be described
 //
 // 'intro' will be emitted before the first message for a trace
 // (only relevant if start==0). If it is not empty, it should probably
@@ -110,30 +113,37 @@ static void describeSymbolTrace(ErrorWriterBase& wr,
       if (start==0 && needsIntroText) {
         msg = intro;
       }
-      if (from != name) {
-        msg += "'" + from.str() + "'";
-      } else {
-        msg += "it";
-      }
-      wr.note(errId, msg,
-              " was provided by the automatically-included modules.");
+      wr.note(errId, msg, "in the automatically-included modules.");
       encounteredAutoModule = true;
       needsIntroText = false;
       break;
     } else if (elt.fromUseImport) {
       std::string errbegin;
       std::string nameSuffix;
+
       if (start==0 && needsIntroText) {
         errbegin = intro;
         errbegin += "through";
       } else {
-        errbegin = "and then through";
+        errbegin = "and then ";
+        errbegin += "through";
       }
       if (from != name) {
         nameSuffix += " providing '" + from.str() + "'";
       }
 
-      wr.note(locationOnly(elt.visibilityClauseId), errbegin, " the '", elt.visibilityStmtKind, "' statement", nameSuffix, " here:");
+      std::string of;
+      if (!elt.usedImportedThingName.isEmpty()) {
+        of += " of '";
+        of += elt.usedImportedThingName.str();
+        of += "'";
+      } else {
+        of = " statement";
+      }
+
+      wr.note(locationOnly(elt.visibilityClauseId), errbegin,
+              " the '", elt.visibilityStmtKind, "'", of,
+              nameSuffix, " here:");
       wr.code<ID,ID>(elt.visibilityClauseId, { elt.visibilityClauseId });
       from = elt.renameFrom;
       needsIntroText = false;
@@ -264,6 +274,29 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.code(use, { as });
 }
 
+void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info);
+
+  auto formalName = c.fn()->formalName(c.constRefCoercionFormal());
+
+  wr.heading(kind_, type_, ast, "function call requires coercion of actual ",
+             (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
+             formalName, "'.");
+  if (auto call = ast->toCall()) {
+    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+  } else {
+    wr.code(ast);
+  }
+  wr.message("Formals with the 'const ref' intent do not currently support coercions.");
+
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.constRefCoercionFormal());
+  if (fmlDecl) {
+    wr.message("The formal was declared 'const ref' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto msg = std::get<std::string>(info);
   auto mention = std::get<const uast::AstNode*>(info);
@@ -303,53 +336,6 @@ void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
              (errors.size() > 0 ? " -- clang errors follow" : ""));
   for (const auto& error : errors) {
     wr.note(error.first, error.second);
-  }
-}
-
-void ErrorHiddenFormal::write(ErrorWriterBase& wr) const {
-  auto formal = std::get<const uast::Formal*>(info);
-  const auto& match = std::get<resolution::BorrowedIdsWithName>(info);
-  const auto& trace = std::get<resolution::ResultVisibilityTrace>(info);
-  CHPL_ASSERT(formal && !trace.visibleThrough.empty());
-
-  // find the first visibility clause ID
-  ID firstVisibilityClauseId;
-  resolution::VisibilityStmtKind firstUseOrImport = resolution::VIS_USE;
-
-  int start = 0;
-
-  int i = 0;
-  for (const auto& elt : trace.visibleThrough) {
-    if (elt.fromUseImport) {
-      firstVisibilityClauseId = elt.visibilityClauseId;
-      firstUseOrImport = elt.visibilityStmtKind;
-      start = i+1; // skip this one in describeSymbolTrace
-      break;
-    }
-    i++;
-  }
-
-  wr.heading(kind_, type_, firstVisibilityClauseId,
-             "module-level symbol is hiding function argument '",
-             formal->name(), "'");
-
-  wr.message("The formal argument:");
-  wr.code(formal, { formal });
-  wr.message("is shadowed by a symbol provided by the following '",
-             firstUseOrImport, "' statement:");
-  wr.code<ID, ID>(firstVisibilityClauseId, { firstVisibilityClauseId });
-
-  // print where it came from
-  bool encounteredAutoModule = false;
-  UniqueString from;
-  bool needsIntroText = true;
-  describeSymbolTrace(wr, formal->id(), formal->name(), trace, start, "",
-                      encounteredAutoModule, from, needsIntroText);
-
-  if (!encounteredAutoModule) {
-    ID firstId = match.firstId();
-    wr.note(locationOnly(firstId), "found '", from, "' defined here:");
-    wr.code<ID,ID>(firstId, { firstId });
   }
 }
 
@@ -495,6 +481,43 @@ void ErrorIncompatibleTypeAndInit::write(ErrorWriterBase& wr) const {
   wr.code(decl, { type, init });
   wr.message("the type specifier has type '", typeExprType, "', while the "
              "initial value has type '", initExprType, "'.");
+}
+
+void ErrorInvalidClassCast::write(ErrorWriterBase& wr) const {
+  auto primCall = std::get<const uast::PrimCall*>(info);
+  auto& type = std::get<types::QualifiedType>(info);
+  auto prim = primCall->prim();
+
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED && !type.isType()) {
+    wr.heading(kind_, type_, primCall, "cannot apply '?' operator to a non-type argument.");
+    wr.code(primCall, { primCall->actual(0) });
+    wr.message("The argument is ", type, ", but only types are allowed.");
+    return;
+  } else if (!type.isType()) {
+    auto decoratorType = prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED ?
+      "unmanaged" : "borrowed";
+    wr.heading(kind_, type_, primCall, "cannot use the '", decoratorType,
+                "' decorator on values.");
+    wr.message("The argument is ", type);
+    return;
+  }
+
+  const char* primitiveConversion = nullptr;
+  if (prim == uast::primtags::PRIM_TO_NILABLE_CLASS_CHECKED) {
+    primitiveConversion = "to a nilable class";
+  } else if (prim == uast::primtags::PRIM_TO_UNMANAGED_CLASS_CHECKED) {
+    primitiveConversion = "to an unmanaged class";
+  } else if (prim == uast::primtags::PRIM_TO_BORROWED_CLASS_CHECKED) {
+    primitiveConversion = "to a borrowed class";
+  }
+
+  if (primitiveConversion) {
+    wr.heading(kind_, type_, primCall, "unable to convert type '", type.type(),
+               "' ", primitiveConversion, ".");
+    wr.message("Only classes or class-like types are supported by this conversion.");
+  } else {
+    wr.heading(kind_, type_, primCall, "invalid use of class cast primitive.");
+  }
 }
 
 void ErrorInvalidIndexCall::write(ErrorWriterBase& wr) const {
@@ -696,6 +719,109 @@ void ErrorNestedClassFieldRef::write(ErrorWriterBase& wr) const {
   wr.codeForDef(id);
 }
 
+void ErrorNoMatchingCandidates::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::AstNode*>(info);
+  auto call = node->toCall();
+  auto& ci = std::get<resolution::CallInfo>(info);
+  auto& rejected = std::get<std::vector<resolution::ApplicabilityResult>>(info);
+
+  wr.heading(kind_, type_, node, "unable to resolve call to '", ci.name(), "': no matching candidates.");
+  wr.code(node);
+
+  unsigned int printCount = 0;
+  static const unsigned int maxPrintCount = 2;
+  for (auto& candidate : rejected) {
+    if (printCount == maxPrintCount) break;
+    printCount++;
+
+    auto reason = candidate.reason();
+    wr.message("");
+    if (reason == resolution::FAIL_CANNOT_PASS &&
+        /* skip printing detailed info here because computing the formal-actual
+           map will go poorly with an unknown formal. */
+        candidate.formalReason() != resolution::FAIL_UNKNOWN_FORMAL_TYPE) {
+      auto fn = candidate.initialForErr();
+      resolution::FormalActualMap fa(fn, ci);
+      auto badPass = fa.byFormalIdx(candidate.formalIdx());
+      auto formalDecl = badPass.formal()->toNamedDecl();
+      const uast::AstNode* actualExpr = nullptr;
+      if (call && 0 <= badPass.actualIdx() && badPass.actualIdx() < call->numActuals()) {
+        actualExpr = call->actual(badPass.actualIdx());
+      }
+
+      wr.note(fn->id(), "the following candidate didn't match because an actual couldn't be passed to a formal:");
+      wr.code(fn->id(), { formalDecl });
+
+      wr.message("The formal '", formalDecl->name(), "' expects ", badPass.formalType(), ", but the actual was ", badPass.actualType(), ".");
+      if (actualExpr) {
+        wr.code(actualExpr, { actualExpr });
+      }
+
+      auto formalReason = candidate.formalReason();
+      if (formalReason == resolution::FAIL_INCOMPATIBLE_NILABILITY) {
+        auto formalDec = badPass.formalType().type()->toClassType()->decorator();
+        auto actualDec = badPass.actualType().type()->toClassType()->decorator();
+
+        wr.message("The formal expects a ", nilabilityStr(formalDec), " class, "
+                   "but the actual is ", nilabilityStr(actualDec), ".");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_MGR) {
+        auto formalMgr = badPass.formalType().type()->toClassType()->manager();
+        auto actualMgr = badPass.actualType().type()->toClassType()->manager();
+
+        wr.message("A class with '", actualMgr, "' management cannot be passed to a formal with '", formalMgr, "' management.");
+      } else if (formalReason == resolution::FAIL_EXPECTED_SUBTYPE) {
+        wr.message("Formals with kind '", badPass.formalType().kind(),
+                   "' expect the actual to be a subtype, but '", badPass.actualType().type(),
+                   "' is not a subtype of '", badPass.formalType().type(), "'.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_SIZE) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        wr.message("A tuple with ", actualTup->numElements(),
+                   " elements cannot be passed to a tuple formal with ",
+                   formalTup->numElements(), " elements.");
+      } else if (formalReason == resolution::FAIL_INCOMPATIBLE_TUPLE_STAR) {
+        auto formalTup = badPass.formalType().type()->toTupleType();
+        auto actualTup = badPass.actualType().type()->toTupleType();
+
+        const char* formalStr = formalTup->isStarTuple() ? "is" : "is not";
+        const char* actualStr = actualTup->isStarTuple() ? "is" : "is not";
+
+        wr.message("A formal that ", formalStr, " a star tuple cannot accept an actual actual that ", actualStr, ".");
+      } else if (formalReason == resolution::FAIL_NOT_EXACT_MATCH) {
+        wr.message("The 'ref' intent requires the formal and actual types to match exactly.");
+      }
+    } else {
+      const char* reasonStr = nullptr;
+      if (reason == resolution::FAIL_FORMAL_ACTUAL_MISMATCH) {
+        reasonStr = "the provided actuals could not be mapped to its formals:";
+      } else if (reason == resolution::FAIL_VARARG_MISMATCH) {
+        reasonStr = "the number of varargs was incorrect:";
+      } else if (reason == resolution::FAIL_WHERE_CLAUSE) {
+        reasonStr = "the 'where' clause evaluated to 'false':";
+      } else if (reason == resolution::FAIL_PARENLESS_MISMATCH) {
+        if (ci.isParenless()) {
+          reasonStr = "it is parenful, but the call was parenless:";
+        } else {
+          reasonStr = "it is parenless, but the call was parenful:";
+        }
+      }
+      if (!reasonStr) {
+        wr.note(candidate.idForErr(), "the following candidate didn't match:");
+      } else {
+        wr.note(candidate.idForErr(), "the following candidate didn't match ",
+                "because ", reasonStr);
+      }
+      wr.code(candidate.idForErr());
+    }
+  }
+
+  if (printCount < rejected.size()) {
+    wr.message("");
+    wr.note(locationOnly(node), "omitting ", rejected.size() - printCount, " more candidates that didn't match.");
+  }
+}
+
 void ErrorNonIterable::write(ErrorWriterBase &wr) const {
   auto loop = std::get<0>(info);
   auto iterand = std::get<1>(info);
@@ -758,6 +884,52 @@ void ErrorPhaseTwoInitMarker::write(ErrorWriterBase& wr) const {
   auto previousMarker = others.at(0);
   wr.note(previousMarker, "the type was previously marked as initialized here:");
   wr.code<ID>(previousMarker, { previousMarker });
+}
+
+void ErrorPotentiallySurprisingShadowing::write(ErrorWriterBase& wr) const {
+  auto id = std::get<0>(info);
+  auto name = std::get<1>(info);
+  auto& result = std::get<2>(info);
+  auto& traceResult = std::get<3>(info);
+  auto& shadowed = std::get<4>(info);
+  auto& traceShadowed = std::get<5>(info);
+
+  wr.heading(kind_, type_, id,
+             "potentially surprising shadowing for '", name.c_str(), "'");
+  wr.code<ID,ID>(id, { id });
+  // only print out two matches
+  if (result.size() > 0 && shadowed.size() > 0) {
+    const char* intro = "it refers to a symbol found ";
+    bool encounteredAutoModule = false;
+    UniqueString from;
+    bool needsIntroText = true;
+
+    ID firstId = result[0].firstId();
+
+    describeSymbolTrace(wr, id, name,
+                        traceResult[0], /* start */ 0, intro,
+                        encounteredAutoModule, from, needsIntroText);
+
+    if (needsIntroText) {
+      wr.note(locationOnly(firstId), "it refers to the symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(firstId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(firstId, { firstId });
+
+    const char* intro2 = "but, there is a shadowed symbol found ";
+    describeSymbolTrace(wr, id, name,
+                        traceShadowed[0], /* start */ 0, intro2,
+                        encounteredAutoModule, from, needsIntroText);
+
+    ID otherId = shadowed[0].firstId();
+    if (needsIntroText) {
+      wr.note(locationOnly(otherId), "but, there is a shadowed symbol '", from, "' defined here:");
+    } else {
+      wr.note(locationOnly(otherId), "leading to '", from, "' defined here:");
+    }
+    wr.code<ID,ID>(otherId, { otherId });
+  }
 }
 
 void ErrorPrivateToPublicInclude::write(ErrorWriterBase& wr) const {

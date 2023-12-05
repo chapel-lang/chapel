@@ -22,6 +22,8 @@
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/framework/ErrorBase.h"
+#include "chpl/resolution/can-pass.h"
 
 namespace chpl {
 namespace resolution {
@@ -70,10 +72,11 @@ static bool toParamIntActual(const QualifiedType& type, int64_t& into) {
   return false;
 }
 
-static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
+static bool paramStringBytesHelper(const QualifiedType& type, UniqueString& into, bool isString) {
   if (type.kind() == QualifiedType::PARAM) {
     if (auto t = type.type()) {
-      if (t->isStringType()) {
+      if ((t->isBytesType() && !isString) ||
+          (t->isStringType() && isString)) {
         if (auto p = type.param()) {
           if (auto sp = p->toStringParam()) {
             into = sp->value();
@@ -84,6 +87,14 @@ static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
     }
   }
   return false;
+}
+
+static bool toParamBytesActual(const QualifiedType& type, UniqueString& into) {
+ return paramStringBytesHelper(type, into, false);
+}
+
+static bool toParamStringActual(const QualifiedType& type, UniqueString& into) {
+  return paramStringBytesHelper(type, into, true);
 }
 
 static QualifiedType primIsBound(Context* context, const CallInfo& ci) {
@@ -231,8 +242,8 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
   });
   const TypedFnSignature* bestCandidate = nullptr;
   for (auto candidate : callResult.result().mostSpecific()) {
-    if (candidate != nullptr) {
-      bestCandidate = candidate;
+    if (candidate) {
+      bestCandidate = candidate.fn();
       break;
     }
   }
@@ -273,6 +284,233 @@ static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   return QualifiedType();
 }
 
+static QualifiedType primIsTuple(Context* context,
+                                 const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto& actualType = ci.actual(0).type();
+  if (actualType.kind() != QualifiedType::TYPE) return QualifiedType();
+
+  bool isTupleType = actualType.type() && actualType.type()->isTupleType();
+  return QualifiedType(QualifiedType::PARAM,
+                       BoolType::get(context),
+                       BoolParam::get(context, isTupleType));
+}
+
+static QualifiedType primCast(Context* context,
+                              const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto& castTo = ci.actual(0).type();
+  auto& castFrom = ci.actual(1).type();
+
+  if (!castTo.isType()) return QualifiedType();
+
+  // Note: the production compiler also handles wide classes here (if
+  // cast-from is a wide class, turn cast-to into a wide class). We don't
+  // currently track wide classs in Dyno so this logic is omitted here.
+
+  return QualifiedType(castFrom.kind(), castTo.type(), castFrom.param());
+}
+
+static QualifiedType convertClassToDecorator(Context* context,
+                                             const PrimCall* call,
+                                             const CallInfo& ci,
+                                             ClassTypeDecorator::ClassTypeDecoratorEnum cde,
+                                             bool checked) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto& actualType = ci.actual(0).type();
+  auto typePtr = actualType.type();
+  if (!typePtr) return QualifiedType();
+
+  // The checked primitives only allow a 'type' as the actual.
+  if (!actualType.isType() && checked) {
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
+
+  const ManageableType* manageableType = nullptr;
+  auto decorator = ClassTypeDecorator(cde);
+
+  if (auto ct = typePtr->toClassType()) {
+    manageableType = ct->manageableType();
+    decorator = decorator.copyNilabilityFrom(ct->decorator());
+  } else if (auto mt = typePtr->toManageableType()) {
+    manageableType = mt;
+  } else if (typePtr->isAnySharedType() || typePtr->isAnyOwnedType()) {
+    // 'shared' and 'owned' are just thrown out if we convert to a decorator.
+    manageableType = AnyClassType::get(context);
+  }
+
+
+  if (manageableType) {
+    return QualifiedType(actualType.kind(),
+                         ClassType::get(context, manageableType, nullptr, decorator));
+  } else if (checked) {
+    // It wasn't a class-like type, which is also not allowed by the checked
+    // primitives.
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
+  return actualType;
+}
+
+static QualifiedType primToUnmanagedClass(Context* context,
+                                          const PrimCall* call,
+                                          const CallInfo& ci,
+                                          bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::UNMANAGED, checked);
+}
+
+static QualifiedType primToUndecoratedClass(Context* context,
+                                            const PrimCall* call,
+                                            const CallInfo& ci,
+                                            bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::GENERIC, checked);
+}
+
+static QualifiedType primToBorrowedClass(Context* context,
+                                         const PrimCall* call,
+                                         const CallInfo& ci,
+                                         bool checked) {
+  return convertClassToDecorator(context, call, ci,
+                                 ClassTypeDecorator::BORROWED, checked);
+}
+
+static QualifiedType setClassNilability(Context* context,
+                                        const PrimCall* call,
+                                        const CallInfo& ci,
+                                        bool nilability,
+                                        bool checked) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto& actualType = ci.actual(0).type();
+  auto typePtr = actualType.type();
+  if (!typePtr) return QualifiedType();
+
+  // The checked primitives only allow a 'type' as the actual.
+  if (!actualType.isType() && checked) {
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
+
+  const ManageableType* manageableType = nullptr;
+  const Type* manager = nullptr;
+  optional<ClassTypeDecorator::ClassTypeDecoratorEnum> cde;
+
+  if (auto ct = typePtr->toClassType()) {
+    cde = ct->decorator().val();
+    manager = ct->manager();
+    manageableType = ct->manageableType();
+  } else if (auto mt = typePtr->toManageableType()) {
+    cde = ClassTypeDecorator::BORROWED;
+    manageableType = mt;
+  } else if (typePtr->isAnySharedType() || typePtr->isAnyOwnedType()) {
+    // convert 'shared' into 'shared class?', which has the desired semantics.
+    cde = ClassTypeDecorator::MANAGED;
+    manager = typePtr;
+    manageableType = AnyClassType::get(context);
+  }
+
+  if (cde) {
+    auto decorator = ClassTypeDecorator(*cde);
+    auto newDecorator = nilability ? decorator.addNilable() : decorator.addNonNil();
+    const Type* newType = ClassType::get(context, manageableType, manager, newDecorator);
+    return QualifiedType(actualType.kind(), newType);
+  } else if (checked) {
+    // It wasn't a class-like type, which is also not allowed by the checked
+    // primitives.
+    return CHPL_TYPE_ERROR(context, InvalidClassCast, call, actualType);
+  }
+
+  return actualType;
+}
+
+static QualifiedType primFamilyIsSubtype(Context* context,
+                                         const PrimCall* call,
+                                         const CallInfo& ci) {
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto prim = call->prim();
+  auto& parentQT = ci.actual(0).type();
+  auto& subQT = ci.actual(1).type();
+
+  bool parentIsType = parentQT.isType();
+  bool subIsType = subQT.isType();
+
+  // TODO: more specific error reporting
+  if (prim == PRIM_IS_INSTANTIATION_ALLOW_VALUES) {
+    // At least one type needed for PRIM_IS_INSTANTIATION_ALLOW_VALUES.
+    if (!parentIsType && !subIsType) return QualifiedType();
+  } else {
+    // Both need to be types for other primitives in this family.
+    if (!parentIsType || !subIsType) return QualifiedType();
+  }
+
+  // Note: omitted here is the special logic for distributions
+  // (if parent is a distribution class, retrieve the child distribution's
+  // _instance). It's unclear if we need this logic in Dyno.
+
+  auto newParentQT = QualifiedType(QualifiedType::TYPE, parentQT.type());
+  auto newSubQT = QualifiedType(QualifiedType::TYPE, subQT.type());
+
+  auto cpr = canPass(context, newSubQT, newParentQT);
+  bool result = false;
+  if (prim == PRIM_IS_INSTANTIATION_ALLOW_VALUES) {
+    // We allow the type to be the same OR require instantiation; thus,
+    // it's sufficient to check if no conversion occurs (both instantiates()
+    // and !instantiates() are allowed).
+    result = cpr.passes() && !cpr.converts() && !cpr.promotes();
+  } else if (prim == PRIM_IS_SUBTYPE) {
+    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
+                              cpr.conversionKind() == CanPassResult::SUBTYPE);
+  } else {
+    CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
+    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
+                              cpr.conversionKind() == CanPassResult::SUBTYPE) &&
+             newSubQT != newParentQT;
+  }
+
+  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                       BoolParam::get(context, result));
+}
+
+static QualifiedType primToNilableClass(Context* context,
+                                        const PrimCall* call,
+                                        const CallInfo& ci,
+                                        bool checked) {
+  return setClassNilability(context, call, ci, /* nilability */ true, checked);
+}
+
+static QualifiedType primToNonNilableClass(Context* context,
+                                           const PrimCall* call,
+                                           const CallInfo& ci,
+                                           bool checked) {
+  return setClassNilability(context, call, ci, /* nilability */ false, checked);
+}
+
+static QualifiedType primRealToInt(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto argType = ci.actual(0).type();
+  auto argTypePtr = argType.type();
+
+  if (!argTypePtr->isRealType()) return QualifiedType();
+
+  return QualifiedType(argType.kind(), IntType::get(context, 64));
+}
+
+static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto argType = ci.actual(0).type();
+  auto argTypePtr = argType.type();
+
+  if (!argTypePtr->isClassType() && !argTypePtr->isBasicClassType())
+    return QualifiedType();
+
+  return QualifiedType(argType.kind(), IntType::get(context, 64));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -310,7 +548,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_SUBTYPE:
     case PRIM_IS_INSTANTIATION_ALLOW_VALUES:
     case PRIM_IS_PROPER_SUBTYPE:
-      CHPL_ASSERT(false && "not implemented yet");
+      type = primFamilyIsSubtype(context, call, ci);
       break;
 
     case PRIM_IS_BOUND:
@@ -320,12 +558,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_COERCIBLE:
     case PRIM_TYPE_TO_STRING:
     case PRIM_HAS_LEADER:
-    case PRIM_IS_TUPLE_TYPE:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("misc primitives");
       break;
-
+    case PRIM_IS_TUPLE_TYPE:
+      type = primIsTuple(context, ci);
+      break;
     case PRIM_SIMPLE_TYPE_NAME:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("misc primitives");
       break;
 
     case PRIM_NUM_FIELDS:
@@ -366,7 +605,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:
     case PRIM_NEEDS_AUTO_DESTROY:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_CALL_RESOLVES:
@@ -385,7 +624,7 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_RESOLVES:
     case PRIM_IMPLEMENTS_INTERFACE:
-      CHPL_ASSERT(false && "not implemented yet");
+      CHPL_UNIMPL("various primitives");
       break;
 
     case PRIM_IS_STAR_TUPLE_TYPE:
@@ -404,27 +643,70 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* cast-like things */
     case PRIM_CAST:
     case PRIM_DYNAMIC_CAST:
+      type = primCast(context, ci);
+      break;
+
     case PRIM_TO_LEADER:
     case PRIM_TO_FOLLOWER:
     case PRIM_TO_STANDALONE:
+      CHPL_UNIMPL("iterator casting  primitives");
+      break;
+
     case PRIM_CAST_TO_VOID_STAR:
+      if (ci.numActuals() == 1) {
+        type = QualifiedType(ci.actual(0).type().kind(),
+                             CPtrType::getCVoidPtrType(context));
+      }
+      break;
+
     case PRIM_CAST_TO_TYPE:
+      // Note: the implementation isn't the same in production, but seems to
+      // match what we do in Dyno for primCast.
+      type = primCast(context, ci);
+      break;
+
     case PRIM_REAL_TO_INT:
+      type = primRealToInt(context, ci);
+      break;
+
     case PRIM_OBJECT_TO_INT:
+      type = primObjectToInt(context, ci);
+
     case PRIM_COERCE:
+      CHPL_UNIMPL("coerce primitive");
+      break;
+
     case PRIM_TO_UNMANAGED_CLASS_CHECKED:
-    case PRIM_TO_BORROWED_CLASS_CHECKED:
-    case PRIM_TO_NILABLE_CLASS_CHECKED:
     case PRIM_TO_UNMANAGED_CLASS:
+      type = primToUnmanagedClass(context, call, ci,
+                                  /* checked */ prim == PRIM_TO_UNMANAGED_CLASS_CHECKED);
+      break;
+
+    case PRIM_TO_BORROWED_CLASS_CHECKED:
     case PRIM_TO_BORROWED_CLASS:
+      type = primToBorrowedClass(context, call, ci,
+                                 /* checked */ prim == PRIM_TO_BORROWED_CLASS_CHECKED);
+      break;
+
     case PRIM_TO_UNDECORATED_CLASS:
+      type = primToUndecoratedClass(context, call, ci, /* checked */ false);
+      break;
+
+    case PRIM_TO_NILABLE_CLASS_CHECKED:
     case PRIM_TO_NILABLE_CLASS:
+      type = primToNilableClass(context, call, ci,
+                                /* checked */ prim == PRIM_TO_NILABLE_CLASS_CHECKED);
+      break;
+
     case PRIM_TO_NON_NILABLE_CLASS:
+      type = primToNonNilableClass(context, call, ci, /* checked */ false);
+      break;
+
     case PRIM_UINT32_AS_REAL32:
     case PRIM_UINT64_AS_REAL64:
     case PRIM_REAL32_AS_UINT32:
     case PRIM_REAL64_AS_UINT64:
-      assert(false && "not implemented yet");
+      CHPL_UNIMPL("uint <-> real primitives");
       break;
 
     /* string operations */
@@ -432,6 +714,23 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_STRING_CONTAINS:
     case PRIM_STRING_CONCAT:
     case PRIM_STRING_LENGTH_BYTES:
+    {
+      UniqueString sParam;
+      auto& actualType = ci.actual(0).type();
+      if (toParamStringActual(actualType, sParam)||
+          toParamBytesActual(actualType, sParam)) {
+        const size_t s = sParam.length();
+        type = QualifiedType(QualifiedType::PARAM,
+                      IntType::get(context, 0),
+                      IntParam::get(context, s));
+        break;
+      } else if (type.kind() != QualifiedType::PARAM) {
+        // error - cannot call PRIM_STRING_LENGTH_BYTES on something that isn't
+        // a param
+        type = CHPL_TYPE_ERROR(context, IncompatibleKinds, QualifiedType::Kind::PARAM,
+                               call, actualType);
+      }
+    }
     case PRIM_STRING_LENGTH_CODEPOINTS:
     case PRIM_ASCII:
     case PRIM_STRING_ITEM:
@@ -484,6 +783,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MULT:
     case PRIM_DIV:
     case PRIM_MOD:
+    case PRIM_FMA:
     case PRIM_LSH:
     case PRIM_RSH:
     case PRIM_AND:
@@ -507,6 +807,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_INIT_VAR:
     case PRIM_INIT_VAR_SPLIT_DECL:
     case PRIM_INIT_VAR_SPLIT_INIT:
+    case PRIM_INIT_REF_DECL:
     case PRIM_INIT_DONE:
     case PRIM_REDUCE:
     case PRIM_ASSIGN:
@@ -561,6 +862,17 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = computeDomainType(context, ci);
       break;
 
+    case PRIM_GET_COMPILER_VAR: {
+        auto chplenv = context->getChplEnv();
+        auto varName = ci.actual(0).type().param()->toStringParam()->value().str();
+        auto it = chplenv->find(varName);
+        auto ret = (it != chplenv->end()) ? it->second : "";
+
+        auto st = CompositeType::getStringType(context);
+        auto sp = StringParam::get(context, UniqueString::get(context, ret));
+        type = QualifiedType(QualifiedType::PARAM, st, sp);
+      }
+      break;
 
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
@@ -665,7 +977,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_GET_RUNTIME_TYPE_FIELD:
     case PRIM_LOOKUP_FILENAME:
-    case PRIM_GET_COMPILER_VAR:
     case PRIM_GET_VISIBLE_SYMBOLS:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_ZIP:
@@ -680,12 +991,15 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
     case NUM_KNOWN_PRIMS:
-      CHPL_ASSERT(false && "not implemented yet");
+    case PRIM_BREAKPOINT:
+    case PRIM_CONST_ARG_HASH:
+    case PRIM_CHECK_CONST_ARG_HASH:
+      CHPL_UNIMPL("misc primitives");
 
     // no default to get a warning when new primitives are added
   }
 
-  if (type.kind() == QualifiedType::UNKNOWN) {
+  if (type.kind() == QualifiedType::UNKNOWN && !type.isErroneousType()) {
     context->error(call, "bad call to primitive \"%s\"", primTagToName(prim));
     type = QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(context));
   }

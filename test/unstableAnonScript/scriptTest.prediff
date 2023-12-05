@@ -1,0 +1,39 @@
+#!/bin/bash
+outfile=$2
+execargs=$5
+# Search for --testType= in compargs and store the value next to it in test_type variable
+test_type=$(echo "$execargs" | grep -oE '(--testType=)[^ ]+' | cut -d= -f2)
+
+if [ "$test_type" == "help" ]; then
+  ./unstableAnonScript -nl 1 -h > $outfile.tmp
+  sed -i 's/unstableAnonScript_real/unstableAnonScript/g' $outfile.tmp
+elif [ "$test_type" == "defaultFlags" ]; then
+  ./unstableAnonScript -nl 1 < $outfile > $outfile.tmp
+elif [ "$test_type" == "IOFlags1" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp # This should have the same behavior as defaultFlags
+elif [ "$test_type" == "IOFlags2" ]; then
+  ./unstableAnonScript -nl 1 --outputFile $outfile.tmp --inputFiles $outfile $outfile
+elif [ "$test_type" == "csv" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --csv
+elif [ "$test_type" == "numFiles" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --numFiles
+elif [ "$test_type" == "sort" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted
+elif [ "$test_type" == "top5" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --topX 5
+elif [ "$test_type" == "sortNumFiles" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted --numFiles
+elif [ "$test_type" == "sortTop5" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted --topX 5
+elif [ "$test_type" == "all1" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted --numFiles --topX=1
+elif [ "$test_type" == "all2" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted --sorted --numFiles -x 10 -d
+elif [ "$test_type" == "all3" ]; then
+  ./unstableAnonScript -nl 1 -i $outfile -o $outfile.tmp --sorted -c --numFiles --topX 10 --inputFiles $outfile $outfile
+else
+  echo "Unknown test type: $test_type"
+  exit 1
+fi
+
+mv $outfile.tmp $outfile

@@ -234,6 +234,9 @@ returnInfoVal(CallExpr* call) {
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+  if(t->symbol->hasFlag(FLAG_GENERIC))
+    // this will result in an error later on
+    return QualifiedType(t, QUAL_REF);
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
@@ -719,6 +722,8 @@ initPrimitive() {
   // if the optional type is provided, it should match PRIM_INIT_VAR_SPLIT_DECL.
   prim_def(PRIM_INIT_VAR_SPLIT_INIT, "init var split init",   returnInfoVoid);
 
+  prim_def(PRIM_INIT_REF_DECL, "init ref decl", returnInfoVoid);
+
   // indicates the body of the initializer is now in Phase 2
   prim_def(PRIM_INIT_DONE, "init done", returnInfoVoid);
 
@@ -743,6 +748,7 @@ initPrimitive() {
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);
   prim_def(PRIM_DIV, "/", returnInfoNumericUp, true); // div by zero is visible
   prim_def(PRIM_MOD, "%", returnInfoFirstDeref); // mod by zero?
+  prim_def(PRIM_FMA, "fma", returnInfoFirstDeref);
   prim_def(PRIM_LSH, "<<", returnInfoFirstDeref);
   prim_def(PRIM_RSH, ">>", returnInfoFirstDeref);
   prim_def(PRIM_EQUAL, "==", returnInfoBool);
@@ -1265,6 +1271,23 @@ initPrimitive() {
   prim_def(PRIM_UINT64_AS_REAL64, "uint64 as real64", returnInfoReal64);
   prim_def(PRIM_REAL32_AS_UINT32, "real32 as uint32", returnInfoUInt32);
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
+
+  prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+
+  // Expects a single argument, which will be passed by pointer to an underlying
+  // runtime function, so that the memory can be hashed.
+  prim_def(PRIM_CONST_ARG_HASH, "hash const arguments", returnInfoUInt64, true);
+  // Expects five arguments:
+  // 1. hash of the const argument at the start of the function
+  // 2. hash of the const argument at the end of the function
+  // 3. the name of the const argument
+  // 4. and 5. the line number and file name where the argument was defined.
+  //
+  // The latter two will be inserted by the compiler before code generation
+  //
+  // 1 and 2 are used to determine if the argument has been indirectly modified,
+  // 3-5 are used to generate a warning message if it was.
+  prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

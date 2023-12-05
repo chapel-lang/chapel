@@ -31,12 +31,18 @@ namespace uast {
   This class represents an imaginary floating point literal, e.g. ``10.4i``.
  */
 class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
+ friend class AstNode;
+
  private:
   ImagLiteral(const types::RealParam* value, UniqueString text)
     : NumericLiteral(asttags::ImagLiteral, value, text)
   { }
 
-  ImagLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    numericLiteralSerializeInner(ser);
+  }
+
+  explicit ImagLiteral(Deserializer& des)
     : NumericLiteral(asttags::ImagLiteral, des)
   { }
 
@@ -48,12 +54,6 @@ class ImagLiteral final : public NumericLiteral<double, types::RealParam> {
 
   static owned<ImagLiteral> build(Builder* builder, Location loc,
                                   double value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(ImagLiteral);
 };
 
 

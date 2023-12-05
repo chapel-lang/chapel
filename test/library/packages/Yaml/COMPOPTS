@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 
-normal_args="-scPtrToLogicalValue=true -scFileTypeHasPointer=false"
+normal_args=""
 
 ccflags=$(pkg-config --cflags yaml-0.1)
 ldflags=$(pkg-config --libs yaml-0.1)

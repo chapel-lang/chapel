@@ -19,165 +19,229 @@
  */
 
 /*
-   Support for pseudorandom number generation.
+    Support for pseudorandom number generation.
 
-   This module defines an abstraction for a stream of pseudorandom numbers,
-   :class:`~RandomStreamInterface`. Use :proc:`createRandomStream` to
-   create such an stream. Each stream supports methods to get the next
-   random number in the stream (:proc:`~RandomStreamInterface.getNext`),
-   to fast-forward to a specific value in the stream
-   (:proc:`~RandomStreamInterface.skipToNth` and
-   :proc:`~RandomStreamInterface.getNth`), to iterate over random values
-   possibly in parallel (:proc:`~RandomStreamInterface.iterate`), or to
-   fill an array with random numbers in parallel
-   (:proc:`~RandomStreamInterface.fillRandom`).
+    This module defines a :record:`randomStream` type (based upon the PCG
+    algorithm) that can be used to generate pseudorandom numbers in parallel.
+    The ``randomStream`` type can be used to generate individual random numbers
+    via :proc:`randomStream.getNext` or to fill an array with random numbers via
+    :proc:`randomStream.fill`. There are also several other methods available
+    for manipulating arrays, parallel iteration, or adjusting the stream's
+    position.
 
-   The module also provides several standalone convenience functions that can be
-   used without manually creating a :class:`RandomStreamInterface` object.
+    This module contains a few top-level procedures that can be used for
+    manipulating arrays:
 
-     * :proc:`fillRandom` fills an array with random numbers in parallel
-     * :proc:`shuffle` randomly re-arranges the elements of an array
-     * :proc:`permutation` creates a random permutation and stores it in an
-       array.
+    * :proc:`fillRandom` fills an array with random numbers in parallel
+    * :proc:`shuffle` randomly re-arranges the elements of an array
+    * :proc:`permutation` creates a random permutation of an array's domain (*unstable*).
 
-   In these and other methods, generated integer values are uniformly
-   distributed from `min(T)` to `max(T)`, where `T` is the integral type and the
-   boundaries are included. Generated floating point values are uniformly
-   distributed in [0.0, 1.0] with the caveat that it currently depends on the
-   RNG whether the boundary values 0.0 and 1.0 can be produced.
+    Seed Generation
+    ---------------
 
-   Use :proc:`createRandomStream` or the constructor for a specific RNG
-   implementation to get a RandomStream. See the documentation for
-   each RNG implementation for more information:
+    The :record:`randomStream` type can be initialized with a seed value.
+    When not provided explicitly, a seed will be generated in an
+    implementation specific manner based on the current time. This behavior
+    is currently unstable and may change in the future.
 
-     * :mod:`PCGRandom`
-     * :mod:`NPBRandom`
+    Additionally, the standalone methods in this module that generate their
+    own seed values are currently unstable.
 
-   .. note::
+    Prior to Chapel 1.33, seed values could be generated with the now
+    deprecated ``RandomSupport.SeedGenerator`` type. For a non-deprecated
+    replacement, see :proc:`~NPBRandom.oddTimeSeed`. Note that the
+    ``NPBRandom`` module is not stable.
 
-       The RandomStream API (:class:`RandomStreamInterface`) is expected to
-       change.
+
+    Note About Deprecations and Future Work
+    ---------------------------------------
+
+    Before Chapel 1.33, this module was unstable. It defined an abstract
+    random stream interface (:class:`RandomStreamInterface`) and two
+    implementations of that interface (based on the PCG and NPB algorithms).
+
+    As of Chapel 1.33, this module is partially stable and defines a single
+    :record:`randomStream` type that is based on the PCG algorithm. The
+    NPB algorithm is still available via the :mod:`NPBRandom` package module.
+    The ``RandomStreamInterface`` is now deprecated.
+
+    Various symbols used to switch between the two algorithms have also been
+    deprecated. These include:
+
+    * :proc:`createRandomStream`
+    * :type:`RNG`
+    * :param:`defaultRNG`
+    * :type:`RandomStream`
+    * overloads of the top-level methods that accept an ``algorithm`` argument
+
+    In a future release, we intend to use Chapel's interface features to
+    define one or more interfaces for random streams. At that point, the
+    :record:`randomStream` type will be an implementation of the interface(s)
+    for generating a seedable stream of random numbers.
 
 */
-@unstable("The Random module is unstable and may change in the future")
 module Random {
 
   public use RandomSupport;
-  public use NPBRandom;
   public use PCGRandom;
-  import Set.set;
   private use IO;
   private use Math;
 
+  public import NPBRandom;
+
+  @chpldoc.nodoc
+  record _RNG {
+    proc type PCG param do return 1;
+    proc type NPB param do return 2;
+  }
 
   /* Select between different supported RNG algorithms.
      See :mod:`PCGRandom` and :mod:`NPBRandom` for details on
      these algorithms.
    */
-  enum RNG {
-    PCG = 1,
-    NPB = 2
-  }
+  @deprecated("'RNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`NPBRandom` package module")
+  type RNG = _RNG;
+
+  @chpldoc.nodoc
+  param _defaultRNG = _RNG.PCG;
 
   /* The default RNG. The current default is PCG - see :mod:`PCGRandom`. */
-  param defaultRNG = RNG.PCG;
+  @deprecated("'defaultRNG' is deprecated; please use the PCG algorithm via the :record:`randomStream` type or the NPB algorithm via the :mod:`NPBRandom` package module")
+  param defaultRNG = _defaultRNG;
 
-  type RandomStream = if defaultRNG == RNG.PCG then PCGRandomStream
-                                               else NPBRandomStream;
-
-  // CHPLDOC FEEDBACK: If easy, I'd suggest either deprecating the
-  // :arg <type> <name>: form or else switching the order to
-  // :arg <name> <type>: as it's an easy trap to simply type the same
-  // argument as in the function's signature.
+  @deprecated("the RandomStream class is deprecated; please use the :record:`randomStream` record instead")
+  type RandomStream = if _defaultRNG == _RNG.PCG then PCGRandomStreamInternal
+                                                 else NPBRandom.NPBRandomStream;
 
 
-  // CHPLDOC FIXME: if the first line below is shifted one character to the
-  // left, it ends up being rendered like a method
-
-  // CHPLDOC FIXME: if the first line below is shifted one character to the
-  // right, it ends up causing a warning (promoted to error) in the .rst
-  // file.  It'd be preferable to have it declare the issue in terms of
-  // the .chpl line numbers.
-  //
-
-  private
-  proc isSupportedNumericType(type t) param do
+  private proc isNumericOrBoolType(type t) param do
     return isNumericType(t) || isBoolType(t);
 
-  /*
+  private proc is1DRectangularDomain(d) param do
+    return d.isRectangular() && d.rank == 1;
 
-    Fills a rectangular array of numeric elements with pseudorandom values in parallel using
-    a new stream implementing :class:`RandomStreamInterface` created
-    specifically for this call.  The first `arr.size` values from the stream
-    will be assigned to the array's elements in row-major order. The
-    parallelization strategy is determined by the array.
 
-    .. note::
-      :mod:`NPBRandom` only supports `real(64)`, `imag(64)`, and `complex(128)`
-      numeric types. :mod:`PCGRandom` supports all primitive numeric types.
+  private proc oddTimeSeed(): int(64) {
+    use Time;
+    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
+    return oddseed;
+  }
 
-    :arg arr: The array to be filled, where T is a primitive numeric type. Only
-      rectangular arrays are supported currently.
-    :type arr: `[] T`
-
-    :arg seed: The seed to use for the PRNG.  Defaults to
-     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-    :type seed: `int(64)`
-
-    :arg algorithm: A param indicating which algorithm to use. Defaults to :param:`defaultRNG`.
-    :type algorithm: :type:`RNG`
-  */
-  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
-      algorithm=defaultRNG)
-    where isSupportedNumericType(arr.eltType) {
-    var randNums = createRandomStream(seed=seed,
-                                      eltType=arr.eltType,
-                                      parSafe=false,
-                                      algorithm=algorithm);
+  pragma "last resort"
+  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc fillRandom(ref arr: [], seed: int(64)=_SeedGenerator.oddCurrentTime, param algorithm=_defaultRNG)
+    where isNumericOrBoolType(arr.eltType)
+  {
+    var randNums = _createRandomStream(seed=seed,
+                                       eltType=arr.eltType,
+                                       parSafe=false,
+                                       algorithm=algorithm);
     randNums.fillRandom(arr);
   }
 
-  @chpldoc.nodoc
-  proc fillRandom(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param
-      algorithm=defaultRNG) {
-    compilerError("Random.fillRandom is only defined for numeric arrays");
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    parallel using a new :record:`randomStream`. The first `arr.size` values
+    from the stream will be assigned to the array's elements in row-major
+    order. The parallelization strategy is determined by the array.
+
+    :arg arr: An array of numeric values
+    :arg seed: The seed to use to create the ``randomStream``
+
+  */
+  proc fillRandom(ref arr: [] ?t, seed: int)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(t, seed);
+    rs.fill(arr);
   }
 
   /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    parallel using a new :record:`randomStream`. The first `arr.size` values
+    from the stream will be assigned to the array's elements in row-major
+    order. The parallelization strategy is determined by the array.
 
-    Fills a rectangular array of numeric elements with pseudorandom values
-    in the range [`min`, `max`] (inclusive) in parallel using
-    a new :class:`PCGRandom.PCGRandomStream`  created
-    specifically for this call.  The first `arr.size` values from the stream
-    will be assigned to the array's elements in row-major order. The
-    parallelization strategy is determined by the array.
+    .. note:: a seed will be generated in an implementation specific manner
+              that depends on the current time.
 
-    :arg arr: The array to be filled, where T is a primitive numeric type. Only
-      rectangular arrays are supported currently.
-    :type arr: `[] T`
-
-    :arg min: The (inclusive) lower bound for the random values used.
-
-    :arg max: The (inclusive) upper bound for the random values used.
-
-    :arg seed: The seed to use for the PRNG.  Defaults to
-     `oddCurrentTime` from :type:`RandomSupport.SeedGenerator`.
-    :type seed: `int(64)`
-
+    :arg arr: An array of numeric values
   */
-  proc fillRandom(ref arr: [], min: arr.eltType, max: arr.eltType,
-      seed: int(64) = SeedGenerator.oddCurrentTime)
-    where isSupportedNumericType(arr.eltType) {
-    var randNums = createRandomStream(seed=seed,
-                                      eltType=arr.eltType,
-                                      parSafe=false,
-                                      algorithm=RNG.PCG);
-    randNums.fillRandom(arr, min, max);
+  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  proc fillRandom(ref arr: [] ?t)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(t);
+    rs.fill(arr);
   }
 
   @chpldoc.nodoc
-  proc fillRandom(ref arr: [], min, max, seed: int(64) = SeedGenerator.oddCurrentTime) {
-    compileError("Random.fillRandom is only defined for numeric arrays");
+  proc fillRandom(ref arr: [], seed: int) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: []) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
+  }
+
+  pragma "last resort"
+  @chpldoc.nodoc
+  @deprecated("The overload of `fillRandom` that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc fillRandom(ref arr: [], seed: int(64), param algorithm=_defaultRNG) {
+    compilerError("Random.fillRandom is only defined for rectangular numeric arrays");
+  }
+
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    the range [``min``, ``max``] (inclusive) in parallel using a new
+    :record:`randomStream`. The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    :arg arr: An array of numeric values
+    :arg min: The (inclusive) lower bound for the random values
+    :arg max: The (inclusive) upper bound for the random values
+    :arg seed: The seed to use to create the ``randomStream``
+  */
+  proc fillRandom(ref arr: [] ?t, min: t, max: t, seed: int)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(t, seed);
+    rs.fill(arr, min, max);
+  }
+
+  /*
+    Fill a rectangular array of numeric values with pseudorandom values in
+    the range [``min``, ``max``] (inclusive) in parallel using a new
+    :record:`randomStream`. The first `arr.size` values from the stream
+    will be assigned to the array's elements in row-major order. The
+    parallelization strategy is determined by the array.
+
+    .. note:: a seed will be generated in an implementation specific manner
+              that depends on the current time.
+
+    :arg arr: An array of numeric values
+    :arg min: The (inclusive) lower bound for the random values
+    :arg max: The (inclusive) upper bound for the random values
+  */
+  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  proc fillRandom(ref arr: [] ?t, min: t, max: t)
+    where isNumericOrBoolType(t) && arr.isRectangular()
+  {
+    var rs = new randomStream(t);
+    rs.fill(arr, min, max);
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: [], min, max, seed: int) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
+  }
+
+  @chpldoc.nodoc
+  proc fillRandom(ref arr: [], min, max) {
+    compilerError("'fillRandom' does not support non-rectangular arrays");
   }
 
   /* Shuffle the elements of a rectangular array into a random order.
@@ -188,18 +252,53 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc shuffle(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
-
-    if(algorithm==RNG.NPB) then
+  pragma "last resort"
+  @deprecated("The overload of 'shuffle' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc shuffle(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
+    if(algorithm==_RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array shuffling");
 
-    var randNums = createRandomStream(seed=seed,
+    var randNums = _createRandomStream(seed=seed,
                                       eltType=arr.domain.idxType,
                                       parSafe=false,
                                       algorithm=algorithm);
     randNums.shuffle(arr);
   }
 
+  /*
+    Use a new :record:`randomStream` to shuffle an array in place.
+
+    :arg arr: A non-strided default rectangular 1D array
+    :arg seed: The seed to initialize a ``randomStream`` with
+  */
+  proc shuffle(ref arr: [?d], seed: int) where is1DRectangularDomain(d) {
+    var rs = new randomStream(d.idxType, seed);
+    rs.shuffle(arr);
+  }
+
+  /*
+    Use a new :record:`randomStream` to shuffle an array in place.
+
+    .. note:: a seed will be generated in an implementation specific manner
+              that depends on the current time.
+
+    :arg arr: A non-strided default rectangular 1D array
+  */
+  @unstable("the overload of shuffle that generates its own seed is unstable")
+  proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
+    var rs = new randomStream(d.idxType);
+    rs.shuffle(arr);
+  }
+
+  @chpldoc.nodoc
+  proc shuffle(ref arr: [], seed: int) {
+    compilerError("'shuffle' only supports 1D rectangular arrays");
+  }
+
+  @chpldoc.nodoc
+  proc shuffle(ref arr: []) {
+    compilerError("'shuffle' only supports 1D rectangular arrays");
+  }
 
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
@@ -211,8 +310,10 @@ module Random {
      :arg algorithm: A param indicating which algorithm to use. Defaults to PCG.
      :type algorithm: :type:`RNG`
    */
-  proc permutation(ref arr: [], seed: int(64) = SeedGenerator.oddCurrentTime, param algorithm=RNG.PCG) {
-    if(algorithm==RNG.NPB) then
+  pragma "last resort"
+  @deprecated("The overload of 'permutation' that accepts an 'algorithm' argument is deprecated; please remove the 'algorithm' argument")
+  proc permutation(ref arr: [], seed: int(64) = _SeedGenerator.oddCurrentTime, param algorithm=_RNG.PCG) {
+    if(algorithm==_RNG.NPB) then
       compilerError("Cannot use NPB Random number generator for array permutation");
 
     var randNums = createRandomStream(seed=seed,
@@ -222,14 +323,464 @@ module Random {
     randNums.permutation(arr);
   }
 
+  /*
+    Use a new :record:`randomStream` to produce a random permutation of an
+    array's domain. The values ``d.dim(0).low..d.dim(0).high`` will appear
+    exactly once in the array in a pseudo-random order.
+
+    :arg arr: The array to store the permutation in
+    :arg seed: The seed to use when creating the ``randomStream``
+  */
+  @unstable("'permutation' is unstable and subject to change")
+  proc permutation(ref arr: [?d] ?t, seed: int)
+    where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+  {
+    var rs = new randomStream(d.idxType, seed);
+    rs.permutation(arr);
+  }
+
+  /*
+    Use a new :record:`randomStream` to produce a random permutation of an
+    array's domain. The values ``d.dim(0).low..d.dim(0).high`` will appear
+    exactly once in the array in a pseudo-random order.
+
+    .. note:: a seed will be generated in an implementation specific manner
+              that depends on the current time.
+
+    :arg arr: The array to store the permutation in
+  */
+  @unstable("'permutation' is unstable and subject to change")
+  proc permutation(ref arr: [?d] ?t)
+    where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+  {
+    var rs = new randomStream(d.idxType);
+    rs.permutation(arr);
+  }
+
   @chpldoc.nodoc
-  proc makeRandomStream(type eltType,
-                        seed: int(64) = SeedGenerator.oddCurrentTime,
-                        param parSafe: bool = true,
-                        param algorithm = defaultRNG) {
-    compilerWarning("makeRandomStream is deprecated - " +
-                    "please use createRandomStream instead");
-    return createRandomStream(eltType, seed, parSafe, algorithm);
+  proc permutation(ref arr: [], seed: int) {
+    compilerError("'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType");
+  }
+
+  @chpldoc.nodoc
+  proc permutation(ref arr: []) {
+        compilerError("'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType");
+  }
+
+  /*
+    A :record:`randomStream` represents a stream of pseudorandom numbers of a
+    particular type. Numeric and bool types are supported.
+
+    Conceptually it can be thought of as an indexed sequence of numbers ranging
+    from 0 to infinity. Each index in the sequence corresponds to a random
+    number of the specified type. This allows for the generation of random
+    numbers in parallel, where each task involved in the parallel iteration can
+    request random numbers within a particular range and traverse that range of
+    the sequence independently of other tasks (see :proc:`randomStream.iterate`
+    (*unstable*)).
+
+    Although parallel iteration is supported via the ``iterate`` method, the
+    type itself is not thread-safe. In particular, it is not safe to call
+    methods such as ``getNext`` or ``fill`` on a ``randomStream`` from multiple
+    tasks concurrently.
+
+    Several high-level methods are provided to generate random numbers or
+    to manipulate arrays using random numbers:
+
+        * :proc:`randomStream.fill` to fill an array with random numbers
+        * :proc:`randomStream.shuffle` to randomly re-arrange the elements of an
+          array
+        * :proc:`randomStream.permutation` to create a random permutation of
+          an arrays domain, and store it in the array (*unstable*)
+        * :proc:`randomStream.choice` to randomly sample from an array or
+          range (*unstable*)
+
+    Note that these methods have top-level counterparts that will internally
+    create a ``randomStream`` and then call the corresponding method on it. These
+    can be convenient for one-off uses, but if you are generating many random
+    numbers, it is generally more efficient to create a ``randomStream`` and use
+    it repeatedly.
+
+    An individual random number can be requested using :proc:`randomStream.getNext`
+    which will advance the stream to the next position and return the value at
+    that position. The position of the stream can also be manipulated using:
+
+      * :proc:`randomStream.skipToNth` to skip to a particular position in the
+        stream
+      * :proc:`randomStream.getNth` to skip to a particular position in the
+        stream and return the value at that position (*unstable*)
+
+    A ``randomStream`` can be initialized with a seed value. When not provided
+    explicitly, a seed will be generated in an implementation specific manner
+    that depends upon the current time (*this behavior is currently unstable*).
+
+    When copied, the ``randomStream``'s seed, state, and position will also be
+    copied. This means that the copy will produce the same sequence of random
+    numbers as the original without affecting the original.
+
+    .. note:: **Implementation Details:**
+
+      This stream is implemented using the PCG random number generator algorithm.
+      See http://www.pcg-random.org/ and the paper, `PCG: A Family
+      of Simple Fast Space-Efficient Statistically Good Algorithms for Random
+      Number Generation` by M.E. O'Neill.
+
+      This record builds upon the :record:`~PCGRandomLib.pcg_setseq_64_xsh_rr_32_rng`
+      PCG RNG which has 64 bits of state and 32 bits of output.
+
+      While the PCG RNG used here is believed to have good statistical
+      properties, it is not suitable for generating key material for encryption
+      since the output of this RNG may be predictable.
+      Additionally, if statistical properties of the random numbers are very
+      important, another strategy may be required.
+
+      We have good confidence that the random numbers generated by this record
+      match the C PCG reference implementation and have specifically verified
+      equal output given the same seed. However, this implementation differs
+      from the C PCG reference implementation in how it produces random integers
+      within particular bounds (with :proc:`randomStream.getNext` using ``min``
+      and ``max`` arguments). In addition, this implementation directly supports
+      the generation of random ``real`` values, unlike the C PCG implementation.
+
+      Smaller numbers, such as ``uint(8)`` or ``uint(16)``, are generated from
+      the high-order bits of the 32-bit output.
+
+      To generate larger numbers, several 32-bit-output RNGs are composed
+      together. Each of these 32-bit RNGs has a different sequence constant and
+      so will be independent and uncorrelated. For example, to generate 128-bit
+      complex numbers, this RNG will use four 32-bit PCG RNGs with different
+      sequence constants. One impact of this approach is that this implementation
+      will only generate 2**64 different complex numbers with a given seed
+      (for example).
+
+      This record also supports generating integers within particular bounds.
+      When that is required, it uses a strategy different from the PCG
+      reference implementation to support efficient parallel iteration. In
+      particular, when more than 1 random value is required as part of
+      generating a value in a range, conceptually it uses more composed
+      RNGs (as with the 32x2 strategy). Each new value beyond the first that
+      is computed will be computed with a different RNG. This strategy is meant
+      to avoid statistical bias. While we have tested this strategy to our
+      satisfaction, it has not been subject to rigorous analysis and may
+      have undesirable statistical properties.
+
+      When generating a real, imaginary, or complex number, this implementation
+      uses the strategy of generating a 64-bit unsigned integer and then
+      multiplying it by 2.0**-64 in order to convert it to a floating point
+      number. While this does construct a uniform distribution on rounded
+      floating point values, it leaves out many possible real values (for
+      example, 2**-128). We believe that this strategy has reasonable
+      statistical properties. One side effect of this strategy is that the real
+      number 1.0 can be generated because of rounding. The real number 0.0 can
+      be generated because PCG can produce the value 0 as a random integer.
+
+      We have tested this implementation with TestU01 (available at
+      http://simul.iro.umontreal.ca/testu01/tu01.html ).  We measured our
+      implementation with TestU01 1.2.3 and the Crush suite, which consists of
+      144 statistical tests. The results were:
+
+       * no failures for generating uniform reals
+       * 1 failure for generating 32-bit values (which is also true for the
+         reference version of PCG with the same configuration)
+       * 0 failures for generating 64-bit values (which we provided to TestU01
+         as 2 different 32-bit values since it only accepts 32 bits at a time)
+       * 0 failures for generating bounded integers (which we provided to
+         TestU01 by requesting values in [0..,2**31+2**30+1) until we
+         had two values < 2**31, removing the top 0 bit, and then combining
+         the top 16 bits into the value provided to TestU01).
+
+
+  */
+  record randomStream: writeSerializable {
+    /*
+      Specifies the type of value generated by the random stream. Currently,
+      numeric and bool types are supported.
+    */
+    type eltType;
+
+    /*
+      The seed value for the PCG random number generator.
+
+      When not provided explicitly, a seed will be generated in an implementation
+      specific manner that depends upon the current time.
+    */
+    const seed: int;
+
+    @chpldoc.nodoc
+    var pcg: PCGImpl(eltType);
+
+    /*
+      Create a new ``randomStream`` using the specified seed.
+    */
+    proc init(type eltType, seed: int) where isNumericOrBoolType(eltType) {
+      this.eltType = eltType;
+      this.seed = seed;
+      this.pcg = new PCGImpl(eltType, seed);
+    }
+
+    /*
+      Create a new ``randomStream``.
+
+      A seed value will be generated in an implementation specific manner
+      that depends on the current time.
+    */
+    @unstable("The :record:`randomStream` initializer that generates a seed is unstable and subject to change")
+    proc init(type eltType) where isNumericOrBoolType(eltType) {
+      this.eltType = eltType;
+      this.seed = oddTimeSeed();
+      this.pcg = new PCGImpl(eltType, this.seed);
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType, seed: int) {
+      this.eltType = eltType;
+      compilerError("'randomStream' only supports numeric or bool types");
+    }
+
+    @chpldoc.nodoc
+    proc init(type eltType) {
+      this.eltType = eltType;
+      compilerError("'randomStream' only supports numeric or bool types");
+    }
+
+    /*
+      Fill the array with pseudorandom values sampled from this stream.
+
+      :arg arr: The rectangular array to be filled
+    */
+    proc ref fill(ref arr: []) where arr.isRectangular() do
+      this.pcg.fillRandom(arr);
+
+    /*
+      Fill the array with pseudorandom values within a particular range. Each
+      array element is set to a number in [``min``, ``max``] (inclusive)
+      sampled from this stream.
+
+      :arg arr: The rectangular array to be filled
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
+    */
+    proc ref fill(ref arr: [] ?t, min: t, max: t) where arr.isRectangular() do
+      this.pcg.fillRandom(arr, min, max);
+
+    @deprecated("'randomStream.fillRandom' is deprecated; please use 'fill' instead")
+    proc ref fillRandom(ref arr: []) do
+      this.fill(arr);
+
+    @deprecated("'randomStream.fillRandom' is deprecated; please use 'fill' instead")
+    proc ref fillRandom(ref arr: [], min, max) do
+      this.fill(arr, min, max);
+
+    /*
+      Randomly rearrange a 1D array using values from this random stream.
+
+      :arg arr: The array to shuffle. Its domain's ``idxType`` should be
+                coercible to this stream's :type:`eltType`.
+    */
+    proc ref shuffle(ref arr: [?d]) where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+      do this.pcg.shuffle(arr);
+
+    /*
+      Produce a random permutation of an array's domain. The values
+      ``d.dim(0).low..d.dim(0).high`` will appear exactly once in the array in
+      a pseudo-random order.
+
+      :arg arr: The array to store the permutation in
+    */
+    @unstable("'permutation' is unstable and subject to change")
+    proc ref permutation(ref arr: [?d] ?t)
+      where isCoercible(this.eltType, d.idxType) && isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
+        this.pcg.permutation(arr);
+
+    /*
+      Return a random sample from a given 1D array, ``x``.
+
+      :arg x: The array to take a sample from.
+      :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                   replacement, i.e. elements will only be chosen up to one
+                   time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x.domain``.
+
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              elements chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                   if ``x.size != prob.size``,
+                                   if ``prob`` contains a negative value,
+                                   if ``prob`` has no non-zero values,
+                                   if ``size < 1 || size.size < 1``,
+                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
+    */
+    @unstable("'choice' is unstable and subject to change")
+    proc ref choice(const x: [?d], size:?sizeType=none, replace=true, prob:?probType=none) throws
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      const idx = _choice(this, d, size, replace, prob);
+      return x[idx];
+    }
+
+    /*
+      Return a random sample from a given bounded range, ``x``.
+
+      :arg x: a bounded range with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
+    */
+    @unstable("'choice' is unstable and subject to change")
+    proc ref choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+      where isCoercible(this.eltType, x.idxType)
+        do return _choice(this, {x}, size, replace, prob);
+
+    /*
+      Return a random sample from a given 1D domain, ``x``.
+
+      :arg x: a 1D domain with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                choose, or a domain specifying the dimensions of the
+                sampled array to be filled, otherwise a single element will be
+                chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1D array that contains probabilities of choosing
+                each element of ``x``, otherwise elements will be chosen over
+                a uniform distribution. ``prob`` must have integral or real
+                element type, with no negative values and at least one non-zero
+                value. The size must be equal to that of ``x``.
+
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+              element chosen from ``x`` if ``size > 1`` or ``size`` is a
+              domain.
+
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
+    */
+    @unstable("'choice' is unstable and subject to change")
+    proc ref choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+      where is1DRectangularDomain(x) && isCoercible(this.eltType, x.idxType)
+        do return _choice(this, x, size, replace, prob);
+
+    /*
+      Get the next value in the random stream and advance its position by one.
+    */
+    proc ref getNext(): eltType do
+      return this.pcg.getNext();
+
+    /*
+      Get the next random value from the stream within a given range. Returns
+      a number in [``min``, ``max``] (inclusive).
+
+      This method will halt if checks are enabled and ``min > max``.
+
+      .. note::
+
+        For integers, this type uses a strategy for generating a value
+        in a particular range that has not been subject to rigorous
+        study and may have statistical problems.
+
+        For real numbers, this type generates a random value in [max, min]
+        by computing a random value in [0,1] and scaling and shifting that
+        value. Note that not all possible floating point values in
+        the interval [`min`, `max`] can be constructed in this way.
+
+      :arg min: The minimum value to sample
+      :arg max: The maximum value to sample
+    */
+    proc ref getNext(min: eltType, max: eltType): eltType do
+      return this.pcg.getNext(min, max);
+
+    /*
+      Advance or rewind the random stream to the ``n``-th position in the
+      pseudorandom sequence (where ``n=0`` is the starting position)
+
+      :arg n: The position to skip to
+
+      :throws IllegalArgumentError: Thrown if ``n`` is negative
+    */
+    @unstable("'skipToNth' is unstable and subject to change")
+    proc ref skipToNth(n: integral) throws do
+      this.pcg.skipToNth(n);
+
+    /*
+      Advance or rewind the random stream to the ``n``-th position in the
+      pseudorandom sequence and return the value. This is equivalent to
+      :proc:`skipToNth` followed by :proc:`getNext`.
+
+      :arg n: The position to skip to and retrieve (must be greater than zero)
+
+      :throws IllegalArgumentError: Thrown if ``n`` is negative
+    */
+    @unstable("'getNth' is unstable and subject to change")
+    proc ref getNth(n: integral): eltType throws do
+      return this.pcg.getNth(n);
+
+    pragma "fn returns iterator"
+    @unstable("'iterate' is unstable and subject to change")
+    proc ref iterate(D: domain) do
+      return this.pcg.iterate(D, eltType);
+
+    pragma "fn returns iterator"
+    @unstable("'iterate' is unstable and subject to change")
+    proc ref iterate(D: domain, min: eltType, max: eltType) do
+      return this.pcg.iterate(D, eltType, min, max);
+
+    pragma "fn returns iterator"
+    @chpldoc.nodoc
+    @unstable("'iterate' is unstable and subject to change")
+    proc iterate(D: domain, param tag: iterKind)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(D, eltType, tag);
+
+    pragma "fn returns iterator"
+    @chpldoc.nodoc
+    @unstable("'iterate' is unstable and subject to change")
+    proc iterate(D: domain, min: eltType, max: eltType, param tag: iterKind)
+      where tag == iterKind.leader
+        do return this.pcg.iterate(D, eltType, min, max);
+
+    /*
+      serialize the ``randomStream`` as a record with two fields: ``eltType`` and ``seed``.
+    */
+    proc serialize(writer, ref serializer) throws {
+      var ser = serializer.startRecord(writer, "randomStream", 2);
+      ser.writeField("eltType", this.eltType:string);
+      ser.writeField("seed", this.seed);
+      ser.endRecord();
+    }
   }
 
   /*
@@ -257,16 +808,24 @@ module Random {
 
     :returns: an owned RandomStream
   */
+  @deprecated("'createRandomStream' is deprecated; please use 'new randomStream' instead")
   proc createRandomStream(type eltType,
-                          seed: int(64) = SeedGenerator.oddCurrentTime,
+                          seed: int(64) = _SeedGenerator.oddCurrentTime,
                           param parSafe: bool = true,
-                          param algorithm = defaultRNG) {
-    if algorithm == RNG.PCG then
-      return new owned PCGRandomStream(seed=seed,
+                          param algorithm = _defaultRNG) do
+    return _createRandomStream(eltType, seed, parSafe, algorithm);
+
+  @chpldoc.nodoc
+  proc _createRandomStream(type eltType,
+                          seed: int(64) = _SeedGenerator.oddCurrentTime,
+                          param parSafe: bool = true,
+                          param algorithm = _defaultRNG) {
+    if algorithm == _RNG.PCG then
+      return new owned PCGRandomStreamInternal(seed=seed,
                                        parSafe=parSafe,
                                        eltType=eltType);
-    else if algorithm == RNG.NPB then
-      return new owned NPBRandomStream(seed=seed,
+    else if algorithm == _RNG.NPB then
+      return new owned NPBRandom.NPBRandomStream(seed=seed,
                                        parSafe=parSafe,
                                        eltType=eltType);
     else
@@ -276,7 +835,7 @@ module Random {
 
   @chpldoc.nodoc
   /* Actual implementation of choice() */
-  proc _choice(stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
+  proc _choice(ref stream, X: domain, size: ?sizeType, replace: bool, prob: ?probType)
     throws
   {
     if X.rank != 1 {
@@ -319,21 +878,27 @@ module Random {
     if isNothingType(probType) {
       return _choiceUniform(stream, X, size, replace);
     } else {
-      return _choiceProbabilities(stream, X, size, replace, prob);
+      var realStream = new randomStream(real, seed=stream.seed);
+      return _choiceProbabilities(realStream, X, size, replace, prob);
     }
   }
 
   @chpldoc.nodoc
   /* _choice branch for uniform distribution */
-  proc _choiceUniform(stream, X: domain, size: ?sizeType, replace: bool) throws
+  proc _choiceUniform(ref stream, X: domain, size: ?sizeType, replace: bool) throws
   {
-
     const low = X.low,
           stride = abs(X.stride);
 
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+      var randVal;
+      // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
+      if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
+        randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+      } else {
+        randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+      }
       var randIdx = X.dim(0).orderToIndex(randVal);
       return randIdx;
     } else {
@@ -352,16 +917,28 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+          var randVal;
+          // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
+          if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
+            randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+          } else {
+            randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+          }
           var randIdx = X.dim(0).orderToIndex(randVal);
           sample = randIdx;
         }
       } else {
         if numElements < log2(X.sizeAs(X.idxType)) {
-          var indices: set(int);
+          var indices: domain(int, parSafe=false);
           var i: int = 0;
           while i < numElements {
-            var randVal = stream.getNext(resultType=int, 0, X.sizeAs(X.idxType)-1);
+            var randVal;
+            // TODO: removed first branch of this conditional after PCG/NPBRandomStream deprecations
+            if __primitive("method call and fn resolves", stream, "getNext", X.idxType) {
+              randVal = stream.getNext(resultType=X.idxType, 0, X.sizeAs(X.idxType)-1);
+            } else {
+              randVal = stream.getNext(0, X.sizeAs(X.idxType)-1);
+            }
             if !indices.contains(randVal) {
               var randIdx = X.dim(0).orderToIndex(randVal);
               samples[i] = randIdx;
@@ -387,7 +964,7 @@ module Random {
 
   @chpldoc.nodoc
   /* _choice branch for distribution defined by probabilities array */
-  proc _choiceProbabilities(stream, X:domain, size:?sizeType, replace, prob:?probType) throws
+  proc _choiceProbabilities(ref stream, X:domain, size:?sizeType, replace, prob:?probType) throws
   {
     import Search;
     import Sort;
@@ -420,7 +997,7 @@ module Random {
     // Begin sampling
     if isNothingType(sizeType) {
       // Return 1 sample
-      var randNum = stream.getNext(resultType=real);
+      var randNum = stream.getNext();
       var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
       return X.dim(0).orderToIndex(idx);
     } else {
@@ -439,7 +1016,7 @@ module Random {
 
       if replace {
         for sample in samples {
-          var randNum = stream.getNext(resultType=real);
+          var randNum = stream.getNext();
           var (found, idx) = Search.binarySearch(cumulativeArr, randNum);
           sample = X.dim(0).orderToIndex(idx);
         }
@@ -456,7 +1033,7 @@ module Random {
           }
 
           var remainingSamples = samples.sizeAs(int) - indicesChosen.sizeAs(int);
-          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}, resultType=real) {
+          for randNum in stream.iterate({1..(samples.sizeAs(int) - indicesChosen.sizeAs(int))}) {
             // A potential optimization: Generate rand nums ahead of time
             // and do a multi-target binary search to find all of their positions
             var (found, indexChosen) = Search.binarySearch(cumulativeArr, randNum);
@@ -486,10 +1063,6 @@ module Random {
 
     .. note::
 
-      This RandomStreamInterface is expected to change`.
-
-    .. note::
-
       At present, different implementations of this interface can vary in
       whether or not they can generate 0.0 and/or 1.0.  (e.g. They can be
       generated by :mod:`PCGRandom` but not by :mod:`NPBRandom`).
@@ -515,6 +1088,7 @@ module Random {
      turn it into an interface.
 
   */
+  @deprecated("'RandomStreamInterface' is deprecated")
   class RandomStreamInterface : writeSerializable {
     /*
       Specifies the type of value generated by the RandomStream.
@@ -730,13 +1304,13 @@ module Random {
     }
   }
 
-  // An apparent bug prevents this from working.
-  //type RandomStream = PCGRandomStream;
-
 
   /*
      Seed generation for pseudorandom number generation.
 
+     .. warning:
+
+       The ``RandomSupport`` sub-module and its contents are deprecated
 
      .. note::
 
@@ -751,13 +1325,16 @@ module Random {
 
   */
   module RandomSupport {
-
     /*
       Provides methods to help generate seeds when the user doesn't want
       to create one.  It currently supports two type methods. Both start
       with the current time.
     */
-    record SeedGenerator {
+    @deprecated("'SeedGenerator' is deprecated")
+    type SeedGenerator = _SeedGenerator;
+
+    @chpldoc.nodoc
+    record _SeedGenerator {
       /*
         Generate a seed based on the current time in microseconds as
         reported by :proc:`Time.timeSinceEpoch`. This seed is not
@@ -781,12 +1358,7 @@ module Random {
         return oddseed;
       }
     }
-
-
   } // close module RandomSupport
-
-
-
 
   /*
      Permuted Linear Congruential Random Number Generator.
@@ -808,9 +1380,9 @@ module Random {
        The interface provided by this module is expected to change.
 
   */
+  @unstable("the 'PCGRandom' module is unstable and may be removed in the future")
   module PCGRandom {
 
-    use super.RandomSupport;
     private use Random, IO;
     private use Math only ldExp;
     private use PCGRandomLib;
@@ -843,8 +1415,8 @@ module Random {
       match the C PCG reference implementation and have specifically verified
       equal output given the same seed. However, this implementation differs
       from the C PCG reference implementation in how it produces random integers
-      within particular bounds (with :proc:`PCGRandomStream.getNext` using `min`
-      and `max` arguments). In addition, this implementation directly supports
+      within particular bounds (with ``PCGRandomStream.getNext`` using ``min``
+      and ``max`` arguments). In addition, this implementation directly supports
       the generation of random `real` values, unlike the C PCG implementation.
 
       Smaller numbers, such as `uint(8)` or `uint(16)`, are generated from
@@ -897,66 +1469,181 @@ module Random {
          the top 16 bits into the value provided to TestU01).
 
     */
-    class PCGRandomStream : writeSerializable {
-      /*
-        Specifies the type of value generated by the PCGRandomStream.
-        All numeric types are supported: `int`, `uint`, `real`, `imag`,
-        `complex`, and `bool` types of all sizes.
-      */
+    @deprecated("'PCGRandomStream' is deprecated; please use :record:`~Random.randomStream` instead")
+    type PCGRandomStream = PCGRandomStreamInternal(?);
+
+    @chpldoc.nodoc
+    class PCGRandomStreamInternal : writeSerializable {
       type eltType;
-
-      /*
-        The seed value for the PRNG.
-      */
       const seed: int(64);
-
-      /*
-        Indicates whether or not the PCGRandomStream needs to be
-        parallel-safe by default.  If multiple tasks interact with it in
-        an uncoordinated fashion, this must be set to `true`.  If it will
-        only be called from a single task, or if only one task will call
-        into it at a time, setting to `false` will reduce overhead related
-        to ensuring mutual exclusion.
-      */
       param parSafe: bool = true;
 
-      /*
-        Creates a new stream of random numbers using the specified seed
-        and parallel safety.
+      var pcg: PCGImpl(eltType);
 
-        :arg eltType: The element type to be generated.
-        :type eltType: `type`
+      // locking
+      var _l: if parSafe then chpl_LocalSpinlock else nothing;
+      inline proc _lock() do if parSafe then _l.lock();
+      inline proc _unlock() do if parSafe then _l.unlock();
 
-        :arg seed: The seed to use for the PRNG.  Defaults to
-          `currentTime` from :type:`RandomSupport.SeedGenerator`.
-          Can be any int(64) value.
-        :type seed: `int(64)`
-
-        :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: `bool`
-
-      */
       proc init(type eltType,
-                seed: int(64) = SeedGenerator.currentTime,
+                seed: int(64) = _SeedGenerator.currentTime,
                 param parSafe: bool = true) {
         this.eltType = eltType;
         this.seed = seed;
         this.parSafe = parSafe;
         init this;
-        for param i in 0..numGenerators(eltType)-1 {
+        this.pcg = new PCGImpl(eltType, seed);
+      }
+
+      proc getNext(type resultType=eltType): resultType {
+        _lock();
+        const result = this.pcg.getNext(resultType);
+        _unlock();
+        return result;
+      }
+
+      proc getNext(min: eltType, max:eltType): eltType {
+        _lock();
+        const result = this.pcg.getNext(min, max);
+        _unlock();
+        return result;
+      }
+
+      proc getNext(type resultType,
+                   min: resultType, max:resultType): resultType {
+        _lock();
+        const result = this.pcg.getNext(resultType, min, max);
+        _unlock();
+        return result;
+      }
+
+      proc skipToNth(n: integral) throws {
+        _lock(); defer _unlock();
+        this.pcg.skipToNth(n);
+      }
+
+      proc getNth(n: integral): eltType throws {
+        _lock(); defer _unlock();
+        return this.pcg.getNth(n);
+      }
+
+      proc fillRandom(ref arr: []) {
+        if(!arr.isRectangular()) then
+          compilerError("fillRandom does not support non-rectangular arrays");
+
+        // call this.iterate instead of pcg.iterate to use locking
+        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType)) do
+          x = r;
+      }
+
+      proc fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
+        if(!arr.isRectangular()) then
+          compilerError("fillRandom does not support non-rectangular arrays");
+
+        // call this.iterate instead of pcg.iterate to use locking
+        forall (x, r) in zip(arr, this.iterate(arr.domain, arr.eltType,
+                                          min, max)) do
+          x = r;
+      }
+
+      proc choice(const x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none) throws
+      {
+        _lock(); defer _unlock();
+        return this.pcg.choice(x, size=size, replace=replace, prob=prob);
+      }
+
+      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none) throws
+      {
+        _lock(); defer _unlock();
+        return this.pcg.choice(x, size=size, replace=replace, prob=prob);
+      }
+
+      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none) throws
+      {
+        _lock(); defer _unlock();
+        return this.pcg.choice(x, size=size, replace=replace, prob=prob);
+      }
+
+      proc shuffle(ref arr: [?D] ?eltType) {
+        _lock();
+        this.pcg.shuffle(arr);
+        _unlock();
+      }
+
+      proc permutation(ref arr: [] eltType) {
+        _lock();
+        this.pcg.permutation(arr);
+        _unlock();
+      }
+
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType) {
+        _lock();
+        const start = this.pcg._iterateStart(D);
+        _unlock();
+        return this.pcg._iterate(D, resultType, start);
+      }
+
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType) {
+        _lock();
+        const start = this.pcg._iterateStart(D);
+        _unlock();
+        return this.pcg._iterate(D, resultType, min, max, start);
+      }
+
+      // Forward the leader iterator as well.
+      pragma "fn returns iterator"
+      proc iterate(D: domain, type resultType=eltType, param tag)
+        where tag == iterKind.leader
+      {
+        return this.pcg.iterate(D, resultType, tag);
+      }
+      pragma "fn returns iterator"
+      @chpldoc.nodoc
+      proc iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType, param tag)
+        where tag == iterKind.leader
+      {
+        return this.pcg.iterate(D, resultType, min, max, tag);
+      }
+
+      override proc serialize(writer, ref serializer) throws {
+        var ser = serializer.startRecord(writer, "PCGRandomStream", 3);
+        ser.writeField("eltType", eltType:string);
+        ser.writeField("parSafe", parSafe);
+        ser.writeField("seed", seed);
+        ser.endRecord();
+      }
+    }
+
+    @chpldoc.nodoc
+    record PCGImpl: writeSerializable {
+      type eltType;
+      var seed: int(64);
+
+      // state
+      var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
+      var PCGRandomStreamPrivate_count: int(64) = 1;
+
+      proc init(type eltType,
+                seed: int(64) = _SeedGenerator.currentTime) {
+        this.eltType = eltType;
+        this.seed = seed;
+        init this;
+        for param i in 0..<numGenerators(eltType) {
           param inc = pcg_getvalid_inc(i+1);
           PCGRandomStreamPrivate_rngs[i].srandom(seed:uint(64), inc);
         }
         PCGRandomStreamPrivate_count = 1;
       }
 
-      @chpldoc.nodoc
-      proc PCGRandomStreamPrivate_getNext_noLock(type resultType) {
+      proc ref PCGRandomStreamPrivate_getNext_noLock(type resultType) {
         PCGRandomStreamPrivate_count += 1;
         return randlc(resultType, PCGRandomStreamPrivate_rngs);
       }
-      @chpldoc.nodoc
-      proc PCGRandomStreamPrivate_getNext_noLock(type resultType,
+      proc ref PCGRandomStreamPrivate_getNext_noLock(type resultType,
                                                  min:resultType,
                                                  max:resultType) {
 
@@ -966,9 +1653,7 @@ module Random {
                               seed, PCGRandomStreamPrivate_count-1, min, max);
       }
 
-
-      @chpldoc.nodoc
-      proc PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
+      proc ref PCGRandomStreamPrivate_skipToNth_noLock(in n: integral) {
         PCGRandomStreamPrivate_count = n+1;
         PCGRandomStreamPrivate_rngs = randlc_skipto(eltType, seed, n+1);
       }
@@ -987,11 +1672,8 @@ module Random {
           `resultType` must be the same or a smaller size number.
         :returns: The next value in the random stream as type `resultType`.
        */
-      proc getNext(type resultType=eltType): resultType {
-        _lock();
-        const result = PCGRandomStreamPrivate_getNext_noLock(resultType);
-        _unlock();
-        return result;
+      proc ref getNext(type resultType=eltType): resultType {
+        return PCGRandomStreamPrivate_getNext_noLock(resultType);
       }
       /*
         Return the next random value but within a particular range.
@@ -1009,32 +1691,24 @@ module Random {
            the interval [`min`, `max`] can be constructed in this way.
 
        */
-      proc getNext(min: eltType, max:eltType): eltType {
+      proc ref getNext(min: eltType, max:eltType): eltType {
         use HaltWrappers;
-
-        _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string +  "]");
 
-        const result = PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
-        _unlock();
-        return result;
+        return PCGRandomStreamPrivate_getNext_noLock(eltType,min,max);
       }
 
       /*
         As with getNext(min, max) but allows specifying the result type.
        */
-      proc getNext(type resultType,
+      proc ref getNext(type resultType,
                    min: resultType, max:resultType): resultType {
         use HaltWrappers;
-
-        _lock();
         if boundsChecking && min > max then
           HaltWrappers.boundsCheckHalt("Cannot generate random numbers within empty range: [" + min:string + ", " + max:string + "]");
 
-        const result = PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
-        _unlock();
-        return result;
+        return PCGRandomStreamPrivate_getNext_noLock(resultType,min,max);
       }
 
       /*
@@ -1047,12 +1721,10 @@ module Random {
 
         :throws IllegalArgumentError: When called with negative `n` value.
        */
-      proc skipToNth(n: integral) throws {
+      proc ref skipToNth(n: integral) throws {
         if n < 0 then
           throw new owned IllegalArgumentError("PCGRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
-        _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
-        _unlock();
       }
 
       /*
@@ -1067,14 +1739,11 @@ module Random {
         :returns: The `n`-th value in the random stream as type :type:`eltType`.
         :throws IllegalArgumentError: When called with negative `n` value.
        */
-      proc getNth(n: integral): eltType throws {
+      proc ref getNth(n: integral): eltType throws {
         if (n < 0) then
           throw new owned IllegalArgumentError("PCGRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock();
         PCGRandomStreamPrivate_skipToNth_noLock(n);
-        const result = PCGRandomStreamPrivate_getNext_noLock(eltType);
-        _unlock();
-        return result;
+        return PCGRandomStreamPrivate_getNext_noLock(eltType);
       }
 
       /*
@@ -1087,7 +1756,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(ref arr: []) {
+      proc ref fillRandom(ref arr: []) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1105,7 +1774,7 @@ module Random {
         :arg arr: The array to be filled
         :type arr: `[] T`
       */
-      proc fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
+      proc ref fillRandom(ref arr: [], min: arr.eltType, max:arr.eltType) {
         if(!arr.isRectangular()) then
           compilerError("fillRandom does not support non-rectangular arrays");
 
@@ -1114,36 +1783,35 @@ module Random {
           x = r;
       }
 
-
       /*
-     Returns a random sample from a given 1-D array, ``x``.
+      Returns a random sample from a given 1-D array, ``x``.
 
-     :arg x: a 1-D array with values that will be sampled from.
-     :arg size: An optional integral value specifying the number of elements to
-                choose, or a domain specifying the dimensions of the
-                sampled array to be filled, otherwise a single element will be
-                chosen.
-     :arg replace: an optional ``bool`` specifying whether or not to sample with
-                   replacement, i.e. elements will only be chosen up to one
-                   time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``x``, otherwise elements will be chosen over
-                a uniform distribution. ``prob`` must have integral or real
-                element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``x.domain``.
+      :arg x: a 1-D array with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                  choose, or a domain specifying the dimensions of the
+                  sampled array to be filled, otherwise a single element will be
+                  chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1-D array that contains probabilities of choosing
+                  each element of ``x``, otherwise elements will be chosen over
+                  a uniform distribution. ``prob`` must have integral or real
+                  element type, with no negative values and at least one non-zero
+                  value. The size must be equal to that of ``x.domain``.
 
-     :return: An element chosen from ``x`` if ``size == 1``, or an array of
-              element chosen from ``x`` if ``size > 1`` or ``size`` is a
-              domain.
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+                element chosen from ``x`` if ``size > 1`` or ``size`` is a
+                domain.
 
-     :throws IllegalArgumentError: if ``x.size == 0``,
-                                   if ``x.size != prob.size``,
-                                   if ``prob`` contains a negative value,
-                                   if ``prob`` has no non-zero values,
-                                   if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > x.size || size.size > x.size``
-     */
-      proc choice(const x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``
+      */
+      proc ref choice(const x: [?dom], size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         var idx = _choice(this, dom, size=size, replace=replace, prob=prob);
@@ -1151,34 +1819,34 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given bounded range, ``x``.
+      Returns a random sample from a given bounded range, ``x``.
 
-     :arg x: a bounded range with values that will be sampled from.
-     :arg size: An optional integral value specifying the number of elements to
-                choose, or a domain specifying the dimensions of the
-                sampled array to be filled, otherwise a single element will be
-                chosen.
-     :arg replace: an optional ``bool`` specifying whether or not to sample with
-                   replacement, i.e. elements will only be chosen up to one
-                   time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``x``, otherwise elements will be chosen over
-                a uniform distribution. ``prob`` must have integral or real
-                element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``x``.
+      :arg x: a bounded range with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                  choose, or a domain specifying the dimensions of the
+                  sampled array to be filled, otherwise a single element will be
+                  chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1-D array that contains probabilities of choosing
+                  each element of ``x``, otherwise elements will be chosen over
+                  a uniform distribution. ``prob`` must have integral or real
+                  element type, with no negative values and at least one non-zero
+                  value. The size must be equal to that of ``x``.
 
-     :return: An element chosen from ``x`` if ``size == 1``, or an array of
-              element chosen from ``x`` if ``size > 1`` or ``size`` is a
-              domain.
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+                element chosen from ``x`` if ``size > 1`` or ``size`` is a
+                domain.
 
-     :throws IllegalArgumentError: if ``x.size == 0``,
-                                   if ``x.size != prob.size``,
-                                   if ``prob`` contains a negative value,
-                                   if ``prob`` has no non-zero values,
-                                   if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
-     */
-      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
+      */
+      proc ref choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         if x.bounds != boundKind.both {
@@ -1189,41 +1857,41 @@ module Random {
       }
 
       /*
-     Returns a random sample from a given 1-D domain, ``x``.
+      Returns a random sample from a given 1-D domain, ``x``.
 
-     :arg x: a 1-D dom with values that will be sampled from.
-     :arg size: An optional integral value specifying the number of elements to
-                choose, or a domain specifying the dimensions of the
-                sampled array to be filled, otherwise a single element will be
-                chosen.
-     :arg replace: an optional ``bool`` specifying whether or not to sample with
-                   replacement, i.e. elements will only be chosen up to one
-                   time when ``replace=false``.
-     :arg prob: an optional 1-D array that contains probabilities of choosing
-                each element of ``x``, otherwise elements will be chosen over
-                a uniform distribution. ``prob`` must have integral or real
-                element type, with no negative values and at least one non-zero
-                value. The size must be equal to that of ``x``.
+      :arg x: a 1-D dom with values that will be sampled from.
+      :arg size: An optional integral value specifying the number of elements to
+                  choose, or a domain specifying the dimensions of the
+                  sampled array to be filled, otherwise a single element will be
+                  chosen.
+      :arg replace: an optional ``bool`` specifying whether or not to sample with
+                    replacement, i.e. elements will only be chosen up to one
+                    time when ``replace=false``.
+      :arg prob: an optional 1-D array that contains probabilities of choosing
+                  each element of ``x``, otherwise elements will be chosen over
+                  a uniform distribution. ``prob`` must have integral or real
+                  element type, with no negative values and at least one non-zero
+                  value. The size must be equal to that of ``x``.
 
-     :return: An element chosen from ``x`` if ``size == 1``, or an array of
-              element chosen from ``x`` if ``size > 1`` or ``size`` is a
-              domain.
+      :return: An element chosen from ``x`` if ``size == 1``, or an array of
+                element chosen from ``x`` if ``size > 1`` or ``size`` is a
+                domain.
 
-     :throws IllegalArgumentError: if ``x.size == 0``,
-                                   if ``x.size != prob.size``,
-                                   if ``prob`` contains a negative value,
-                                   if ``prob`` has no non-zero values,
-                                   if ``size < 1 || size.size < 1``,
-                                   if ``replace=false`` and ``size > x.size || size.size > x.size``.
-     */
-      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
+      :throws IllegalArgumentError: if ``x.size == 0``,
+                                    if ``x.size != prob.size``,
+                                    if ``prob`` contains a negative value,
+                                    if ``prob`` has no non-zero values,
+                                    if ``size < 1 || size.size < 1``,
+                                    if ``replace=false`` and ``size > x.size || size.size > x.size``.
+      */
+      proc ref choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
         throws
       {
         return _choice(this, x, size=size, replace=replace, prob=prob);
       }
 
       /* Randomly shuffle a 1-D array. */
-      proc shuffle(ref arr: [?D] ?eltType ) {
+      proc ref shuffle(ref arr: [?D] ?eltType ) {
 
         if(!arr.isRectangular()) then
           compilerError("shuffle does not support non-rectangular arrays");
@@ -1233,8 +1901,6 @@ module Random {
 
         const low = D.low,
               stride = abs(D.stride);
-
-        _lock();
 
         // Fisher-Yates shuffle
         for i in 0..#D.sizeAs(D.idxType) by -1 {
@@ -1253,15 +1919,13 @@ module Random {
 
           arr[k] <=> arr[j];
         }
-
-        _unlock();
       }
 
       /* Produce a random permutation, storing it in a 1-D array.
          The resulting array will include each value from low..high
          exactly once, where low and high refer to the array's domain.
          */
-      proc permutation(ref arr: [] eltType) {
+      proc ref permutation(ref arr: [] eltType) {
 
         if(!arr.isRectangular()) then
           compilerError("permutation does not support non-rectangular arrays");
@@ -1274,42 +1938,57 @@ module Random {
         //if arr.domain.dim(0).stridable then
         //  compilerError("Permutation requires non-stridable 1-D array");
 
-        _lock();
-
         for i in low..high {
           var j = PCGRandomStreamPrivate_getNext_noLock(arr.domain.idxType,
                                                         low, i);
           arr[i] = arr[j];
           arr[j] = i;
         }
-
-        _unlock();
       }
 
       /*
+        Returns an iterable expression for generating `D.size` random
+        numbers. The RNG state will be immediately advanced by `D.size`
+        before the iterable expression yields any values.
 
-         Returns an iterable expression for generating `D.size` random
-         numbers. The RNG state will be immediately advanced by `D.size`
-         before the iterable expression yields any values.
+        The returned iterable expression is useful in parallel contexts,
+        including standalone and zippered iteration. The domain will determine
+        the parallelization strategy.
 
-         The returned iterable expression is useful in parallel contexts,
-         including standalone and zippered iteration. The domain will determine
-         the parallelization strategy.
-
-         :arg D: a domain
-         :arg resultType: the type of number to yield
-         :return: an iterable expression yielding random `resultType` values
-
-       */
+        :arg D: a domain
+        :arg resultType: the type of number to yield
+        :return: an iterable expression yielding random `resultType` values
+      */
       pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=eltType) {
-        // TODO: why does this return an iterator? Couldn't it
-        // just be the iterator?
-        _lock();
+      proc ref iterate(D: domain, type resultType=eltType) {
+        const start = this._iterateStart(D);
+        return this._iterate(D, resultType, start);
+      }
+
+      // Deprecation Note: iterate is split into two methods here so the
+      // 'PCGRandomStreamInternal' class can lock around '_iterateStart'
+      // and call '_iterate' separately.
+      // When 'PCGRandomStreamInternal' is removed, these two methods
+      // can be combined back into a single 'iterate' proc:
+      //
+      //  pragma "fn returns iterator"
+      //  proc ref iterate(D: domain, type resultType=eltType) {
+      //    const start = PCGRandomStreamPrivate_count;
+      //    PCGRandomStreamPrivate_count += D.sizeAs(int);
+      //    PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
+      //    return PCGRandomPrivate_iterate(resultType, d, seed, start);
+      //  }
+      //
+      // The same is true for the bounded version of iterate.
+
+      proc ref _iterateStart(D: domain): int {
         const start = PCGRandomStreamPrivate_count;
         PCGRandomStreamPrivate_count += D.sizeAs(int);
         PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
-        _unlock();
+        return start;
+      }
+      pragma "fn returns iterator"
+      proc ref _iterate(D: domain, type resultType=eltType, start: int) {
         return PCGRandomPrivate_iterate(resultType, D, seed, start);
       }
 
@@ -1334,17 +2013,18 @@ module Random {
 
        */
       pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=eltType,
+      proc ref iterate(D: domain, type resultType=eltType,
                    min: resultType, max: resultType) {
-        _lock();
-        const start = PCGRandomStreamPrivate_count;
-        PCGRandomStreamPrivate_count += D.sizeAs(int);
-        PCGRandomStreamPrivate_skipToNth_noLock(PCGRandomStreamPrivate_count-1);
-        _unlock();
+        const start = this._iterateStart(D);
+        return this._iterate(D, resultType, min, max, start);
+      }
+
+      pragma "fn returns iterator"
+      proc ref _iterate(D: domain, type resultType=eltType,
+                   min: resultType, max: resultType, start: int) {
         return PCGRandomPrivate_iterate_bounded(resultType, D, seed, start,
                                                 min, max);
       }
-
 
       // Forward the leader iterator as well.
       pragma "fn returns iterator"
@@ -1372,44 +2052,14 @@ module Random {
                                                 min, max, tag);
       }
 
-
       @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("PCGRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
+      proc serialize(writer, ref serializer) throws {
+        var ser = serializer.startRecord(writer, "PCGRandomStream", 2);
+        ser.writeField("eltType", eltType:string);
+        ser.writeField("seed", seed);
+        ser.endRecord();
       }
-
-      @chpldoc.nodoc
-      override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
-      }
-
-      ///////////////////////////////////////////////////////// CLASS PRIVATE //
-      //
-      // It is the intent that once Chapel supports the notion of
-      // 'private', everything in this class declared below this line will
-      // be made private to this class.
-      //
-
-
-      @chpldoc.nodoc
-      var _l: if parSafe then chpl_LocalSpinlock else nothing;
-      @chpldoc.nodoc
-      inline proc _lock() {
-        if parSafe then _l.lock();
-      }
-      @chpldoc.nodoc
-      inline proc _unlock() {
-        if parSafe then _l.unlock();
-      }
-      // up to 4 RNGs
-      @chpldoc.nodoc
-      var PCGRandomStreamPrivate_rngs: numGenerators(eltType) * pcg_setseq_64_xsh_rr_32_rng;
-      @chpldoc.nodoc
-      var PCGRandomStreamPrivate_count: int(64) = 1;
     }
-
 
     ////////////////////////////////////////////////////////// MODULE PRIVATE //
     //
@@ -1549,7 +2199,7 @@ module Random {
 
 
     // Wrapper that takes a result type
-    private inline
+    inline
     proc randlc(type resultType, ref states) {
 
       checkSufficientBitsAndAdvanceOthers(resultType, states);
@@ -1811,6 +2461,7 @@ module Random {
      * `advance` to skip ahead some number of steps in RNG generation
 
    */
+  @unstable("the 'PCGRandomLib' module is unstable and may be removed or moved in the future")
   module PCGRandomLib {
 
     // Translated from PCG-C-basic-0.9
@@ -2573,474 +3224,5 @@ module Random {
     }
 
   } // end PCGRandomLib
-
-  /*
-     NAS Parallel Benchmark Random Number Generator.
-
-     The pseudorandom number generator (PRNG) implemented by
-     this module uses the algorithm from the NAS Parallel Benchmarks
-     (NPB, available at: https://www.nas.nasa.gov/publications/npb.html
-     which can be used to generate random values of type `real(64)`,
-     `imag(64)`, and `complex(128)`.
-
-     Paraphrasing the comments from the NPB reference implementation:
-
-       This generator returns uniform pseudorandom real values in the
-       range (0, 1) by using the linear congruential generator
-
-         `x_{k+1} = a x_k  (mod 2**46)`
-
-       where 0 < x_k < 2**46 and 0 < a < 2**46.  This scheme
-       generates 2**44 numbers before repeating.  The generated values
-       are normalized to be between 0 and 1, i.e., 2**(-46) * x_k.
-
-       This generator should produce the same results on any computer
-       with at least 48 mantissa bits for `real(64)` data.
-
-     To generate `complex` elements, consecutive pairs of random numbers are
-     assigned to the real and imaginary components, respectively.
-
-     The values generated by this NPB RNG do not include 0.0 and 1.0.
-
-     We have tested this implementation with TestU01 (available at
-     http://simul.iro.umontreal.ca/testu01/tu01.html ). In our experiments with
-     TestU01 1.2.3 and the Crush suite (which consists of 144 statistical
-     tests), this NPB RNG failed 41/144 tests. As a linear congruential
-     generator, this RNG has known statistical problems that TestU01
-     was able to detect.
-
-     .. note::
-
-       This module is currently restricted to generating `real(64)`,
-       `imag(64)`, and `complex(128)` complex values.
-
-  */
-  module NPBRandom {
-
-    use super.RandomSupport;
-    use ChapelLocks;
-    private use IO;
-
-    /*
-      Models a stream of pseudorandom numbers.  See the module-level
-      notes for :mod:`NPBRandom` for details on the PRNG used.
-    */
-    class NPBRandomStream : writeSerializable {
-      /*
-        Specifies the type of value generated by the NPBRandomStream.
-        Currently, only `real(64)`, `imag(64)`, and `complex(128)` are
-        supported.
-      */
-      type eltType = real(64);
-
-      /*
-        The seed value for the PRNG.  It must be an odd integer in the
-        interval [1, 2**46).
-      */
-      const seed: int(64);
-
-      /*
-        Indicates whether or not the NPBRandomStream needs to be
-        parallel-safe by default.  If multiple tasks interact with it in
-        an uncoordinated fashion, this must be set to `true`.  If it will
-        only be called from a single task, or if only one task will call
-        into it at a time, setting to `false` will reduce overhead related
-        to ensuring mutual exclusion.
-      */
-      param parSafe: bool = true;
-
-
-      /*
-        Creates a new stream of random numbers using the specified seed
-        and parallel safety.
-
-        .. note::
-
-          The NPB generator requires an odd seed value. Constructing
-          an NPBRandomStream with an even seed value will cause a call to
-          halt(). Only the lower 46 bits of the seed will be used.
-
-        :arg eltType: The element type to be generated.
-        :type eltType: `type`
-
-        :arg seed: The seed to use for the PRNG.  Defaults to
-          `oddCurrentTime` from :type:`~RandomSupport.SeedGenerator`.
-        :type seed: `int(64)`
-
-        :arg parSafe: The parallel safety setting.  Defaults to `true`.
-        :type parSafe: `bool`
-
-      */
-      proc init(type eltType = real(64),
-                seed: int(64) = SeedGenerator.oddCurrentTime,
-                param parSafe: bool = true) {
-        use HaltWrappers;
-
-        this.eltType = eltType;
-
-        // The mod operation is written in these steps in order
-        // to work around an apparent PGI compiler bug.
-        // See test/portability/bigmod.test.c
-        var one:uint(64) = 1;
-        var two_46:uint(64) = one << 46;
-        var two_46_mask:uint(64) = two_46 - 1;
-        var useed = seed:uint(64);
-        var mod:uint(64);
-        if useed % 2 == 0 then
-          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer");
-        // Adjust seed to be between 0 and 2**46.
-        mod = useed & two_46_mask;
-        this.seed = mod:int(64);
-        this.parSafe = parSafe;
-        init this;
-
-        if this.seed % 2 == 0 || this.seed < 1 || this.seed > two_46:int(64) then
-          HaltWrappers.initHalt("NPBRandomStream seed must be an odd integer between 0 and 2**46");
-
-        NPBRandomStreamPrivate_cursor = seed;
-        NPBRandomStreamPrivate_count = 1;
-        if eltType == real || eltType == imag || eltType == complex {
-          // OK, supported element type
-        } else {
-          compilerError("NPBRandomStream only supports eltType=real(64), imag(64), or complex(128)");
-        }
-      }
-
-      @chpldoc.nodoc
-      proc NPBRandomStreamPrivate_getNext_noLock() {
-        if (eltType == complex) {
-          NPBRandomStreamPrivate_count += 2;
-        } else {
-          NPBRandomStreamPrivate_count += 1;
-        }
-        return randlc(eltType, NPBRandomStreamPrivate_cursor);
-      }
-
-      @chpldoc.nodoc
-      proc NPBRandomStreamPrivate_skipToNth_noLock(in n: integral) {
-        n += 1;
-        if eltType == complex then n = n*2 - 1;
-        NPBRandomStreamPrivate_count = n;
-        NPBRandomStreamPrivate_cursor = randlc_skipto(seed, n);
-      }
-
-      /*
-        Returns the next value in the random stream.
-
-        Real numbers generated by the NPB RNG are in (0,1). It is not
-        possible for this particular RNG to generate 0.0 or 1.0.
-
-        :returns: The next value in the random stream as type :type:`eltType`.
-       */
-      proc getNext(): eltType {
-        _lock();
-        const result = NPBRandomStreamPrivate_getNext_noLock();
-        _unlock();
-        return result;
-      }
-
-      /*
-        Advances/rewinds the stream to the `n`-th value in the sequence.
-        The first value corresponds to n=0.  n must be >= 0, otherwise an
-        IllegalArgumentError is thrown.
-
-        :arg n: The position in the stream to skip to.  Must be >= 0.
-        :type n: `integral`
-
-        :throws IllegalArgumentError: When called with negative `n` value.
-       */
-      proc skipToNth(n: integral) throws {
-        if n < 0 then
-          throw new owned IllegalArgumentError("NPBRandomStream.skipToNth(n) called with negative 'n' value " + n:string);
-        _lock();
-        NPBRandomStreamPrivate_skipToNth_noLock(n);
-        _unlock();
-      }
-
-      /*
-        Advance/rewind the stream to the `n`-th value and return it
-        (advancing the stream by one).  n must be >= 0, otherwise an
-        IllegalArgumentError is thrown.  This is equivalent to
-        :proc:`skipToNth()` followed by :proc:`getNext()`.
-
-        :arg n: The position in the stream to skip to.  Must be >= 0.
-        :type n: `integral`
-
-        :returns: The `n`-th value in the random stream as type :type:`eltType`.
-        :throws IllegalArgumentError: When called with negative `n` value.
-       */
-      proc getNth(n: integral): eltType throws {
-        if (n < 0) then
-          throw new owned IllegalArgumentError("NPBRandomStream.getNth(n) called with negative 'n' value " + n:string);
-        _lock();
-        NPBRandomStreamPrivate_skipToNth_noLock(n);
-        const result = NPBRandomStreamPrivate_getNext_noLock();
-        _unlock();
-        return result;
-      }
-
-      /*
-        Fill the argument array with pseudorandom values.  This method is
-        identical to the standalone :proc:`~Random.fillRandom` procedure,
-        except that it consumes random values from the
-        :class:`NPBRandomStream` object on which it's invoked rather
-        than creating a new stream for the purpose of the call.
-
-        :arg arr: The array to be filled
-        :type arr: [] :type:`eltType`
-      */
-      proc fillRandom(ref arr: [] eltType) {
-        if(!arr.isRectangular()) then
-          compilerError("fillRandom does not support non-rectangular arrays");
-
-        forall (x, r) in zip(arr, iterate(arr.domain, arr.eltType)) do
-          x = r;
-      }
-
-      @chpldoc.nodoc
-      proc fillRandom(ref arr: []) {
-        compilerError("NPBRandomStream(eltType=", eltType:string,
-                      ") can only be used to fill arrays of ", eltType:string);
-      }
-
-      @chpldoc.nodoc
-      proc choice(const x: [], size:?sizeType=none, replace=true, prob:?probType=none)
-        throws
-      {
-        compilerError("NPBRandomStream.choice() is not supported.");
-      }
-
-      @chpldoc.nodoc
-      proc choice(x: range(?), size:?sizeType=none, replace=true, prob:?probType=none)
-        throws
-      {
-        compilerError("NPBRandomStream.choice() is not supported.");
-      }
-
-      @chpldoc.nodoc
-      proc choice(x: domain, size:?sizeType=none, replace=true, prob:?probType=none)
-        throws
-      {
-        compilerError("NPBRandomStream.choice() is not supported.");
-      }
-
-      /*
-
-         Returns an iterable expression for generating `D.size` random
-         numbers. The RNG state will be immediately advanced by `D.size`
-         before the iterable expression yields any values.
-
-         The returned iterable expression is useful in parallel contexts,
-         including standalone and zippered iteration. The domain will determine
-         the parallelization strategy.
-
-         :arg D: a domain
-         :arg resultType: the type of number to yield
-         :return: an iterable expression yielding random `resultType` values
-
-       */
-      pragma "fn returns iterator"
-      proc iterate(D: domain, type resultType=real) {
-        _lock();
-        const start = NPBRandomStreamPrivate_count;
-        NPBRandomStreamPrivate_count += D.sizeAs(int);
-        NPBRandomStreamPrivate_skipToNth_noLock(NPBRandomStreamPrivate_count-1);
-        _unlock();
-        return NPBRandomPrivate_iterate(resultType, D, seed, start);
-      }
-
-      // Forward the leader iterator as well.
-      pragma "fn returns iterator"
-      @chpldoc.nodoc
-      proc iterate(D: domain, type resultType=real, param tag)
-        where tag == iterKind.leader
-      {
-        // Note that proc iterate() for the serial case (i.e. the one above)
-        // is going to be invoked as well, so we should not be taking
-        // any actions here other than the forwarding.
-        const start = NPBRandomStreamPrivate_count;
-        return NPBRandomPrivate_iterate(resultType, D, seed, start, tag);
-      }
-
-      @chpldoc.nodoc
-      override proc writeThis(f) throws {
-        f.write("NPBRandomStream(eltType=", eltType:string);
-        f.write(", parSafe=", parSafe);
-        f.write(", seed=", seed, ")");
-      }
-
-      @chpldoc.nodoc
-      override proc serialize(writer, ref serializer) throws {
-        writeThis(writer);
-      }
-
-      ///////////////////////////////////////////////////////// CLASS PRIVATE //
-      //
-      // It is the intent that once Chapel supports the notion of
-      // 'private', everything in this class declared below this line will
-      // be made private to this class.
-      //
-
-      @chpldoc.nodoc
-      var _l: if parSafe then chpl_LocalSpinlock else nothing;
-      @chpldoc.nodoc
-      inline proc _lock() {
-        if parSafe then _l.lock();
-      }
-      @chpldoc.nodoc
-      inline proc _unlock() {
-        if parSafe then _l.unlock();
-      }
-      @chpldoc.nodoc
-      var NPBRandomStreamPrivate_cursor: real = seed;
-      @chpldoc.nodoc
-      var NPBRandomStreamPrivate_count: int(64) = 1;
-    }
-
-
-    ////////////////////////////////////////////////////////// MODULE PRIVATE //
-    //
-    // It is the intent that once Chapel supports the notion of 'private',
-    // everything declared below this line will be made private to this
-    // module.
-    //
-
-    //
-    // NPB-defined constants for linear congruential generator
-    //
-    @chpldoc.nodoc
-    private const r23   = 0.5**23,
-                  t23   = 2.0**23,
-                  r46   = 0.5**46,
-                  t46   = 2.0**46,
-                  arand = 1220703125.0; // TODO: Is arand something that a
-                                        // user might want to set on a
-                                        // case-by-case basis?
-
-    //
-    // NPB-defined randlc routine
-    //
-    private proc randlc(inout x: real, a: real = arand) {
-      var t1 = r23 * a;
-      const a1 = floor(t1),
-        a2 = a - t23 * a1;
-      t1 = r23 * x;
-      const x1 = floor(t1),
-        x2 = x - t23 * x1;
-      t1 = a1 * x2 + a2 * x1;
-      const t2 = floor(r23 * t1),
-        z  = t1 - t23 * t2,
-        t3 = t23 * z + a2 * x2,
-        t4 = floor(r46 * t3),
-        x3 = t3 - t46 * t4;
-      x = x3;
-      return r46 * x3;
-    }
-
-    // Wrapper that takes a result type (two calls for complex types)
-    private proc randlc(type resultType, inout x: real) {
-      if resultType == complex then
-        return (randlc(x), randlc(x)):complex;
-      else
-        if resultType == imag then
-          //
-          // BLC: I thought that casting real to imag did this automatically?
-          //
-          return _r2i(randlc(x));
-        else
-          return randlc(x);
-     }
-
-    //
-    // Return a value for the cursor so that the next call to randlc will
-    // return the same value as the nth call to randlc
-    //
-    private proc randlc_skipto(seed: int(64), in n: integral): real {
-      var cursor = seed:real;
-      n -= 1;
-      var t = arand;
-      arand;
-      while (n != 0) {
-        const i = n / 2;
-        if (2 * i != n) then
-          randlc(cursor, t);
-        if i == 0 then
-          break;
-        else
-          n = i;
-        randlc(t, t);
-        n = i;
-      }
-      return cursor;
-    }
-
-    //
-    // iterate over outer ranges in tuple of ranges
-    //
-    private iter outer(ranges, param dim: int = 0) {
-      if dim + 2 == ranges.size {
-        foreach i in ranges(dim) do
-          yield (i,);
-      } else if dim + 2 < ranges.size {
-        foreach i in ranges(dim) do
-          foreach j in outer(ranges, dim+1) do
-            yield (i, (...j));
-      } else {
-        yield 0; // 1D case is a noop
-      }
-    }
-
-    //
-    // RandomStream iterator implementation
-    //
-    @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                         start: int(64)) {
-      var cursor = randlc_skipto(seed, start);
-      for i in D do
-        yield randlc(resultType, cursor);
-    }
-
-    @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                         start: int(64), param tag: iterKind)
-          where tag == iterKind.leader {
-      // forward to the domain D's iterator
-      for block in D.these(tag=iterKind.leader) do
-        yield block;
-    }
-
-    @chpldoc.nodoc
-    iter NPBRandomPrivate_iterate(type resultType, D: domain, seed: int(64),
-                 start: int(64), param tag: iterKind, followThis)
-          where tag == iterKind.follower {
-      use DSIUtil;
-      param multiplier = if resultType == complex then 2 else 1;
-      const ZD = computeZeroBasedDomain(D);
-      const innerRange = followThis(ZD.rank-1);
-      var cursor: real;
-      for outer in outer(followThis) {
-        var myStart = start;
-        if ZD.rank > 1 then
-          myStart += multiplier * ZD.indexOrder(((...outer), innerRange.lowBound)).safeCast(int(64));
-        else
-          myStart += multiplier * ZD.indexOrder(innerRange.lowBound).safeCast(int(64));
-        if innerRange.hasUnitStride() {
-          cursor = randlc_skipto(seed, myStart);
-          for i in innerRange do
-            yield randlc(resultType, cursor);
-        } else {
-          myStart -= innerRange.lowBound.safeCast(int(64));
-          for i in innerRange {
-            cursor = randlc_skipto(seed, myStart + i.safeCast(int(64)) * multiplier);
-            yield randlc(resultType, cursor);
-          }
-        }
-      }
-    }
-
-  } // close module NPBRandom
-
-
 
 } // close module Random

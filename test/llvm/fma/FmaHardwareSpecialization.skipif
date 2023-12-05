@@ -1,0 +1,49 @@
+#!/usr/bin/env python3
+
+import os
+import subprocess
+
+CHPL_HOME = os.getenv('CHPL_HOME')
+CHPL_LLVM_CONFIG=None
+CHPL_TARGET_ARCH=None
+CHPL_TARGET_CPU=None
+CHPL_TARGET_PLATFORM=None
+CHPL_TARGET_COMPILER=None
+CHPL_LAUNCHER=None
+chplenv = subprocess.check_output([CHPL_HOME + "/util/printchplenv",
+                                   "--all", "--internal", "--simple"])
+
+# Get some 'printchplenv' values.
+for line in chplenv.splitlines():
+  line_str = str(line, encoding='utf-8', errors='surrogateescape')
+  if not line_str.count('=') == 1: continue
+  (k, v) = line_str.split('=', 2)
+  if k == 'CHPL_LLVM_CONFIG': CHPL_LLVM_CONFIG=v
+  if k == 'CHPL_TARGET_ARCH': CHPL_TARGET_ARCH=v
+  if k == 'CHPL_TARGET_CPU': CHPL_TARGET_CPU=v
+  if k == 'CHPL_TARGET_PLATFORM': CHPL_TARGET_PLATFORM=v
+  if k == 'CHPL_TARGET_COMPILER': CHPL_TARGET_COMPILER=v
+  if k == 'CHPL_LAUNCHER': CHPL_LAUNCHER=v
+
+# Confirm we're compiling with LLVM and are on x64.
+Ok = CHPL_TARGET_COMPILER == 'llvm'
+Ok = Ok and CHPL_TARGET_ARCH == 'x86_64'
+Ok = Ok and (CHPL_TARGET_CPU != 'none' and CHPL_TARGET_CPU != 'unknown')
+Ok = Ok and (CHPL_TARGET_PLATFORM == 'linux64' or
+             CHPL_TARGET_PLATFORM == 'darwin')
+Ok = Ok and CHPL_LAUNCHER == 'none'
+
+# Make sure that our x64 CPU reports the 'fma' extension (or else don't
+# bother testing, as LLVM probably won't generate a hardware instruction).
+if Ok:
+  if CHPL_TARGET_PLATFORM == 'linux64':
+    out = subprocess.check_output(['lscpu'])
+    Ok = 'fma' in out.decode()
+  elif CHPL_TARGET_PLATFORM == 'darwin':
+    out = subprocess.check_output(['cpuinfo'])
+    Ok = 'fma' in out.decode()
+  else:
+    Ok = False
+
+# Print 'True' if we should skip this test.
+print(not Ok)

@@ -52,6 +52,8 @@ namespace uast {
 
  */
 class TupleDecl final : public Decl {
+ friend class AstNode;
+
  public:
   enum IntentOrKind {
     DEFAULT_INTENT = (int) Qualifier::DEFAULT_INTENT,
@@ -93,13 +95,21 @@ class TupleDecl final : public Decl {
     CHPL_ASSERT(assertAcceptableTupleDecl());
   }
 
-  TupleDecl(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    declSerializeInner(ser);
+    ser.write(intentOrKind_);
+    ser.writeVInt(numElements_);
+    ser.writeVInt(typeExpressionChildNum_);
+    ser.writeVInt(initExpressionChildNum_);
+  }
+
+  explicit TupleDecl(Deserializer& des)
     : Decl(asttags::TupleDecl, des) {
-      intentOrKind_ = des.read<IntentOrKind>();
-      numElements_ = des.read<int>();
-      typeExpressionChildNum_ = des.read<int>();
-      initExpressionChildNum_ = des.read<int>();
-    }
+    intentOrKind_ = des.read<IntentOrKind>();
+    numElements_ = des.readVInt();
+    typeExpressionChildNum_ = des.readVInt();
+    initExpressionChildNum_ = des.readVInt();
+  }
 
   bool assertAcceptableTupleDecl();
 
@@ -200,17 +210,6 @@ class TupleDecl final : public Decl {
     Returns a string describing the passed intentOrKind.
    */
   static const char* intentOrKindToString(IntentOrKind kind);
-
-  void serialize(Serializer& ser) const override {
-    Decl::serialize(ser);
-    ser.write(intentOrKind_);
-    ser.write(numElements_);
-    ser.write(typeExpressionChildNum_);
-    ser.write(initExpressionChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(TupleDecl);
-
 };
 
 

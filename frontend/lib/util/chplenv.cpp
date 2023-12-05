@@ -59,41 +59,58 @@ static void parseChplEnv(std::string& output, ChplEnvMap& into) {
   }
 }
 
+// Get results of printchplenv script, passing currently known CHPL_vars as well
 template <typename InputMap>
-llvm::ErrorOr<ChplEnvMap>
-getChplEnvImpl(const InputMap& varMap,
-           const char* chplHome) {
-  // Run printchplenv script, passing currently known CHPL_vars as well
-  std::string command;
-
-  // Pass known variables in varMap into printchplenv by prepending to command
-  for (auto& ii : varMap)
-    command += ii.first + "=" + ii.second + " ";
-
-  command += "CHPLENV_SKIP_HOST=true ";
-  command += "CHPLENV_SUPPRESS_WARNINGS=true ";
-  command += std::string(chplHome) + "/util/printchplenv --all --internal --no-tidy --simple";
-
-  auto commandOutput = getCommandOutput(command);
-  if (!commandOutput) {
-    // forward error code
-    return commandOutput.getError();
-  }
+llvm::ErrorOr<ChplEnvMap> getChplEnvImpl(const InputMap& varMap,
+                                         const char* chplHome,
+                                         std::string* printchplenvOutput) {
   ChplEnvMap result;
-  parseChplEnv(commandOutput.get(), result);
+
+  if (printchplenvOutput && !printchplenvOutput->empty()) {
+    // Just re-use passed-in command output
+    parseChplEnv(*printchplenvOutput, result);
+  } else {
+    // Construct and run printchplenv command
+    std::string command;
+    // Pass known variables in varMap into printchplenv by prepending to command
+    for (auto& ii : varMap) {
+      command += ii.first + "=" + ii.second + " ";
+    }
+    command += "CHPLENV_SKIP_HOST=true ";
+    command += "CHPLENV_SUPPRESS_WARNINGS=true ";
+    command += std::string(chplHome) +
+               "/util/printchplenv --all --internal --no-tidy --simple";
+
+    // Run command
+    auto commandOutput = getCommandOutput(command);
+    if (!commandOutput) {
+      // forward error code
+      return commandOutput.getError();
+    }
+
+    // Save copy of command output if out-parameter was supplied
+    if (printchplenvOutput) {
+      assert(printchplenvOutput->empty());
+      // This is intentionally copied since parseChplEnv destroys the input
+      *printchplenvOutput = commandOutput.get();
+    }
+
+    parseChplEnv(commandOutput.get(), result);
+  }
+
   return result;
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::map<std::string, const char*>& varMap,
-           const char* chplHome) {
-  return getChplEnvImpl(varMap, chplHome);
+           const char* chplHome, std::string* printchplenvOutput) {
+  return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 llvm::ErrorOr<ChplEnvMap>
 getChplEnv(const std::unordered_map<std::string, std::string>& varMap,
-           const char* chplHome) {
-  return getChplEnvImpl(varMap, chplHome);
+           const char* chplHome, std::string* printchplenvOutput) {
+  return getChplEnvImpl(varMap, chplHome, printchplenvOutput);
 }
 
 bool isMaybeChplHome(std::string path) {

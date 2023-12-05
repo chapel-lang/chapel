@@ -30,6 +30,7 @@ void Comment::dumpFieldsInner(const DumpSettings& s) const {
 }
 
 owned<Comment> Comment::build(Builder* builder, Location loc, std::string c) {
+  CHPL_ASSERT(builder->context()->configuration().includeComments);
   Comment* ret = new Comment(std::move(c));
   builder->noteLocation(ret, loc);
   return toOwned(ret);

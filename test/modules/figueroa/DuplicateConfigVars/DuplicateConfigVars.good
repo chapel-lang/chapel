@@ -1,4 +1,24 @@
-DuplicateConfigVars.chpl:5: warning: imported symbol 'RandomNumber.arraySize' shadows symbol at outer scope
+DuplicateConfigVars.chpl:4: In function 'main':
+DuplicateConfigVars.chpl:6: warning: potentially surprising shadowing for 'arraySize'
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
+RandomNumber.chpl:18: note: leading to 'arraySize' defined here
+DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
+DuplicateConfigVars.chpl:9: warning: potentially surprising shadowing for 'arraySize'
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
+RandomNumber.chpl:18: note: leading to 'arraySize' defined here
+DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
+DuplicateConfigVars.chpl:12: warning: potentially surprising shadowing for 'arraySize'
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
+RandomNumber.chpl:18: note: leading to 'arraySize' defined here
+DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
+DuplicateConfigVars.chpl:16: warning: potentially surprising shadowing for 'arraySize'
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
+RandomNumber.chpl:18: note: leading to 'arraySize' defined here
+DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
+DuplicateConfigVars.chpl:19: warning: potentially surprising shadowing for 'arraySize'
+DuplicateConfigVars.chpl:5: note: it refers to a symbol found through the 'use' of 'RandomNumber' here
+RandomNumber.chpl:18: note: leading to 'arraySize' defined here
+DuplicateConfigVars.chpl:2: note: but, there is a shadowed symbol 'arraySize' defined here
 Generated points:
 7.8259e-06 0.131538 0.755605 0.45865 0.532767 0.218959 0.0470446 0.678865 0.679296 0.934693
 Number of points: 5

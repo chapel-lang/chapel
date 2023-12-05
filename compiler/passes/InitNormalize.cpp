@@ -26,6 +26,7 @@
 #include "IfExpr.h"
 #include "initializerRules.h"
 #include "LoopExpr.h"
+#include "TryStmt.h"
 #include "stmt.h"
 #include "astutil.h"
 
@@ -758,6 +759,14 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
       INT_ASSERT(forall->fRecIterIRdef == NULL);
 
       InitPhase phase = startPhase(forall->loopBody());
+
+      if (phase != defaultPhase) {
+        retval = phase;
+      } else {
+        stmt   = stmt->next;
+      }
+    } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
+      InitPhase phase = startPhase(tryStmt->body());
 
       if (phase != defaultPhase) {
         retval = phase;

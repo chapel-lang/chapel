@@ -33,7 +33,12 @@ namespace uast {
   This abstract class represents some sort of loop.
  */
 class Loop: public AstNode {
+ friend class AstNode;
+
  protected:
+  BlockStyle blockStyle_;
+  int loopBodyChildNum_;
+
   Loop(asttags::AstTag tag, AstList children, BlockStyle blockStyle,
        int loopBodyChildNum, int attributeGroupChildNum)
     : AstNode(tag, std::move(children), attributeGroupChildNum),
@@ -45,10 +50,15 @@ class Loop: public AstNode {
     CHPL_ASSERT(children_[loopBodyChildNum_]->isBlock());
   }
 
+  void loopSerializeInner(Serializer& ser) const {
+    ser.write(blockStyle_);
+    ser.writeVInt(loopBodyChildNum_);
+  }
+
   Loop(AstTag tag, Deserializer& des)
     : AstNode(tag, des) {
     blockStyle_ = des.read<BlockStyle>();
-    loopBodyChildNum_ = des.read<int>();
+    loopBodyChildNum_ = des.readVInt();
   }
 
   bool loopContentsMatchInner(const Loop* other) const {
@@ -68,9 +78,6 @@ class Loop: public AstNode {
   }
 
   virtual std::string dumpChildLabelInner(int i) const override;
-
-  BlockStyle blockStyle_;
-  int loopBodyChildNum_;
 
  public:
   virtual ~Loop() override = 0; // this is an abstract base class
@@ -109,12 +116,6 @@ class Loop: public AstNode {
   */
   BlockStyle blockStyle() const {
     return blockStyle_;
-  }
-
-  void serialize(Serializer& ser) const override {
-    AstNode::serialize(ser);
-    ser.write(blockStyle_);
-    ser.write(loopBodyChildNum_);
   }
 };
 

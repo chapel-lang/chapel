@@ -20,7 +20,7 @@
 
 /*
 
-This module provides less frequently used mathematical constants and functions.
+This module provides frequently used mathematical constants and functions.
 
 It includes wrappers for many of the constants and functions in
 the C Math library, which is part of the C Language Standard (ISO/IEC 9899)
@@ -41,107 +41,138 @@ handling in the Math module.  The default behavior is as if the macro
 all math functions will return an implementation-defined value; no
 exception will be generated.
 
+Automatically Available Symbols
+-------------------------------
+
+.. note::
+
+   These symbols can also be accessed using ``Math.`` as their qualified access
+   prefix.
+
+.. include:: AutoMath.rst
+  :start-line: 7
+  :start-after: Automatically included Math symbols
+  :end-before: .. function::
+
+Non-Automatically Available Symbols
+-----------------------------------
+
 .. _math-constants:
 
 Constants
----------
-:param:`e`
-:param:`log2E`
-:param:`log10E`
-:param:`ln2`
-:param:`ln10`
-:param:`pi`
-:param:`halfPi`
-:param:`quarterPi`
-:param:`reciprPi`
-:param:`twiceReciprPi`
-:param:`twiceReciprSqrtPi`
-:param:`sqrt2`
-:param:`reciprSqrt2`
+^^^^^^^^^
+:param:`~Math.e`
+:param:`~Math.log2E`
+:param:`~Math.log10E`
+:param:`~Math.ln2`
+:param:`~Math.ln10`
+:param:`~Math.pi`
+:param:`~Math.halfPi`
+:param:`~Math.quarterPi`
+:param:`~Math.reciprPi`
+:param:`~Math.twiceReciprPi`
+:param:`~Math.twiceReciprSqrtPi`
+:param:`~Math.sqrt2`
+:param:`~Math.reciprSqrt2`
 
 .. _math-trigonometry:
 
 Trigonometric Functions
------------------------
-:proc:`acos`
-:proc:`acosh`
-:proc:`asin`
-:proc:`asinh`
-:proc:`atan`
-:proc:`atan2`
-:proc:`atanh`
-:proc:`cos`
-:proc:`cosh`
-:proc:`sin`
-:proc:`sinh`
-:proc:`tan`
-:proc:`tanh`
+^^^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.acos`
+:proc:`~Math.acosh`
+:proc:`~Math.asin`
+:proc:`~Math.asinh`
+:proc:`~Math.atan`
+:proc:`~Math.atan2`
+:proc:`~Math.atanh`
+:proc:`~Math.cos`
+:proc:`~Math.cosh`
+:proc:`~Math.sin`
+:proc:`~Math.sinh`
+:proc:`~Math.tan`
+:proc:`~Math.tanh`
 
 .. _math-log:
 
 Log Functions
--------------
-:proc:`ln`
-:proc:`log`
-:proc:`log10`
-:proc:`log1p`
-:proc:`logBasePow2`
-:proc:`log2`
+^^^^^^^^^^^^^
+:proc:`~Math.ln`
+:proc:`~Math.log`
+:proc:`~Math.log10`
+:proc:`~Math.log1p`
+:proc:`~Math.logBasePow2`
+:proc:`~Math.log2`
 
 .. _math-exponential:
 
 Exponential Functions
----------------------
-:proc:`exp`
-:proc:`exp2`
-:proc:`expm1`
-:proc:`ldExp`
+^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.exp`
+:proc:`~Math.exp2`
+:proc:`~Math.expm1`
+:proc:`~Math.ldExp`
 
 .. _math-rounding:
 
 Rounding
---------
-:proc:`divCeil`
-:proc:`divCeilPos`
-:proc:`divFloor`
-:proc:`divFloorPos`
-:proc:`nearbyint`
-:proc:`rint`
+^^^^^^^^
+:proc:`~Math.divCeil`
+:proc:`~Math.divCeilPos`
+:proc:`~Math.divFloor`
+:proc:`~Math.divFloorPos`
+:proc:`~Math.nearbyint`
+:proc:`~Math.rint`
 
 .. _math-gamma:
 
 Gamma Functions
----------------
-:proc:`gamma`
-:proc:`lnGamma`
+^^^^^^^^^^^^^^^
+:proc:`~Math.gamma`
+:proc:`~Math.lnGamma`
 
 .. _math-error:
 
 Error Functions
----------------
-:proc:`erf`
-:proc:`erfc`
+^^^^^^^^^^^^^^^
+:proc:`~Math.erf`
+:proc:`~Math.erfc`
 
 .. _math-algorithms:
 
 Algorithms
-----------
-:proc:`gcd`
+^^^^^^^^^^
+:proc:`~Math.gcd`
 
 .. _math-bessel:
 
 Bessel Functions
-----------------
-:proc:`j0`
-:proc:`j1`
-:proc:`jn`
-:proc:`y0`
-:proc:`y1`
-:proc:`yn`
+^^^^^^^^^^^^^^^^
+:proc:`~Math.j0`
+:proc:`~Math.j1`
+:proc:`~Math.jn`
+:proc:`~Math.y0`
+:proc:`~Math.y1`
+:proc:`~Math.yn`
 
+.. _math-optimization:
 
-Constant and Function Definitions
----------------------------------
+Optimization Functions
+^^^^^^^^^^^^^^^^^^^^^^
+:proc:`~Math.fma`
+
+.. _automath-constant-and-function-definitions:
+
+Automatically Included Constant and Function Definitions
+--------------------------------------------------------
+
+.. include:: AutoMath.rst
+  :start-after: :proc:`~Math.mod`
+
+.. _math-constant-and-function-definitions:
+
+Constant and Function Definitions for Math
+------------------------------------------
 
 */
 module Math {
@@ -420,7 +451,7 @@ module Math {
     return chpl_cosh(x);
   }
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -429,7 +460,7 @@ module Math {
   proc divCeil(param x: integral, param y: integral) param do
     return chpl_divceil(x, y);
 
-  /* Returns :proc:`~AutoMath.ceil`\(`x`/`y`),
+  /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -447,7 +478,7 @@ module Math {
     return chpl_divceilpos(x, y);
   }
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -456,7 +487,7 @@ module Math {
   proc divFloor(param x: integral, param y: integral) param do return
     chpl_divfloor(x, y);
 
-  /* Returns :proc:`~AutoMath.floor`\(`x`/`y`),
+  /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
 
      If the arguments are of unsigned type, then
@@ -1225,5 +1256,81 @@ module Math {
     pragma "codegen for CPU and GPU"
     extern proc yn(n: c_int, x: real(64)): real(64);
     return yn(n.safeCast(c_int), x);
+  }
+
+  @chpldoc.nodoc
+  private inline proc fmaImplExternCall(x: real(?w), y: real(w), z: real(w)) {
+    extern proc fmaf(x: real(32), y: real(32), z: real(32)): real(32);
+    extern proc fma(x: real(64), y: real(64), z: real(64)): real(64);
+    var ret: x.type;
+    select x.type {
+      when real(32) do ret = fmaf(x, y, z);
+      when real(64) do ret = fma(x, y, z);
+      otherwise do compilerError('Unhandled type in fma() impl!');
+    }
+    return ret;
+  }
+
+  @chpldoc.nodoc
+  private inline
+  proc fmaSelectPrimitiveOrExternCall(x: real(?w), y: real(w), z: real(w)) {
+    param targetCompiler = __primitive("get compiler variable",
+                                       "CHPL_TARGET_COMPILER");
+    param isLlvmCompile = targetCompiler == "llvm";
+
+    // The backend will emit a 'llvm.fma.*' instruction, which should be
+    // optimized into a hardware instruction if the architecture is
+    // specified and `--specialize` is thrown.
+    if isLlvmCompile {
+      return __primitive("fma", x, y, z);
+
+    // Call C 'fma()' here rather than have the backend do it. It's up to
+    // the C compiler if any optimization occurs here at all. We have
+    // to call 'fma()' for correctness, as (x*y+z) will introduce more error.
+    // TODO: Is there a path for the builtin Clang to reliably emit a
+    // hardware instruction, e.g., through a Clang intrinsic call?
+    } else {
+      return fmaImplExternCall(x, y, z);
+    }
+  }
+
+  /*  Performs a fused multiply-add operation that multiplies ``x`` and ``y``
+      and adds ``z`` to the result. The advantage of ``fma()`` over the
+      expression ``(x*y)+z`` is that it avoids the additional error
+      introduced by performing two separate floating point operations.
+      It can also be faster on machines that implement the operation as a
+      single instruction.
+
+      .. note::
+
+        When compiling with ``CHPL_TARGET_COMPILER=llvm``, this procedure
+        should reliably generate a single hardware instruction on ``x86``
+        if ``--specialize`` is thrown and ``CHPL_TARGET_CPU`` is set
+        (provided that the ``x86`` CPU supports hardware FMA).
+
+        When compiling with C, this procedure will call out to the ``fma()``
+        routines defined in the C header `math.h`. Any optimization performed
+        is decided by the C compiler.
+  */
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: real(64), y: real(64), z: real(64)): real(64) {
+    return fmaSelectPrimitiveOrExternCall(x, y, z);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: real(32), y: real(32), z: real(32)): real(32) {
+    return fmaSelectPrimitiveOrExternCall(x, y, z);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(64), y: imag(64), z: imag(64)): imag(64) {
+    type t = real(64);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(64);
+  }
+
+  @unstable("The 'fma()' procedure was recently added, and may change based on feedback")
+  inline proc fma(x: imag(32), y: imag(32), z: imag(32)): imag(32) {
+    type t = real(32);
+    return fmaSelectPrimitiveOrExternCall(x:t, y:t, z:t):imag(32);
   }
 }

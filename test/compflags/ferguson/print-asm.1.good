@@ -1,0 +1,5 @@
+2 symbol names to disassemble
+# Disassembling symbol bar_chpl
+ADDR <bar_chpl>:
+# Disassembling symbol foo_chpl
+ADDR <foo_chpl>:

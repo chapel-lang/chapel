@@ -1,2 +1,0 @@
--sReadBinaryArrayReturnInt=false                  # readWriteMultidimArray-old-dr.good
--sReadBinaryArrayReturnInt=false -suseBlock=true  # readWriteMultidimArray-old-block.good

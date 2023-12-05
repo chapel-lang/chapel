@@ -98,7 +98,6 @@ or
 
    Commenting exportRecordComment 
 
-
    .. attribute:: var field: int
 
       Commenting a field 
@@ -108,7 +107,6 @@ or
 .. record:: exportRecordRenamedComment
 
    Commenting exportRecordRenamedComment 
-
 
    .. attribute:: var field: int
 

@@ -53,7 +53,7 @@ class BuiltinType : public Type {
   }
 
   Genericity genericity() const override {
-    if ((int) tag() >= (int) typetags::AnyBorrowedNilableType)
+    if ((int) tag() >= (int) typetags::AnyComplexType)
       return GENERIC;
     else
       return CONCRETE;
@@ -69,6 +69,8 @@ class BuiltinType : public Type {
     Returns a C string for the name of this BuiltinType.
    */
   const char* c_str() const;
+
+  virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const override;
 };
 
 // define the subclasses using macros and BuiltinTypeList.h

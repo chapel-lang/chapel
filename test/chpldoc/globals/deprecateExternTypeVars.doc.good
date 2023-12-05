@@ -33,19 +33,19 @@ or
 
 .. type:: type Blah4
 
-   There was documentation of this symbol 
-
    .. warning::
 
       Blah4 is deprecated
 
-.. type:: type Blah5
+   There was documentation of this symbol 
 
-   This symbol also was documented 
+.. type:: type Blah5
 
    .. warning::
 
       Blah5 is deprecated, use Blah6 instead
+
+   This symbol also was documented 
 
 .. type:: type Blah6
 

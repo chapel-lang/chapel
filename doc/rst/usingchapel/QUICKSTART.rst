@@ -10,18 +10,18 @@ understand Chapel's configuration options, build process, and
 installation more thoroughly, please refer to :ref:`readme-chplenv`
 and :ref:`readme-building` instead.
 
-These instructions first have you build a minimal, stripped-down
-version of Chapel to reduce build times and the potential for
-third-party portability issues.  Once you are interested in a
-full-featured version of Chapel, refer to
-:ref:`using-a-more-full-featured-chapel` below.
+These instructions first have you build a minimal, low-performance
+configuration of Chapel to reduce build times and the potential for
+third-party portability issues.  Once you are interested in getting
+better performance or using a full-featured version of Chapel, refer
+to :ref:`using-a-more-full-featured-chapel` below.
 
 
 0) See :ref:`readme-prereqs` for information about system tools and
    packages you should have available to build and run Chapel.
 
 
-1) If you don't already have the Chapel 1.31 source release, see
+1) If you don't already have the Chapel 1.32 source release, see
    https://chapel-lang.org/download.html.
 
 
@@ -31,14 +31,14 @@ full-featured version of Chapel, refer to
 
       .. code-block:: bash
 
-         tar xzf chapel-1.31.0.tar.gz
+         tar xzf chapel-1.32.0.tar.gz
 
    b. Make sure that you are in the directory that was created when
       unpacking the source release, for example:
 
       .. code-block:: bash
 
-         cd chapel-1.31.0
+         cd chapel-1.32.0
 
    c. Set up your environment for Chapel's Quickstart mode.
       If you are using a shell other than ``bash`` or ``zsh``,

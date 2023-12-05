@@ -1,0 +1,7 @@
+#!/bin/sh
+
+testname=$1
+outfile=$2
+
+sed -e 's;Histogram computed in .* seconds;elapsed time;' $outfile > $outfile.2
+mv $outfile.2 $outfile

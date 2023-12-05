@@ -860,14 +860,6 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
     newCall->insertAtTail(new SymExpr(mapTo));
   }
 
-  // If the new call throws and it was in a 'try'/'try!' before
-  // we moved it, put it into a new 'try'/'try!'
-  if (throws && call->tryTag == TRY_TAG_IN_TRYBANG)
-    newCall = new CallExpr(PRIM_TRYBANG_EXPR, newCall);
-
-  if (throws && call->tryTag == TRY_TAG_IN_TRY)
-    newCall = new CallExpr(PRIM_TRY_EXPR, newCall);
-
   size_t nUsedFormals = entry->usedFormals.size();
   for (size_t i = 0; i < nUsedFormals; i++) {
     Symbol* usedFormal = entry->usedFormals[i].first;
@@ -875,6 +867,14 @@ static Symbol* createDefaultedActual(FnSymbol*  fn,
     INT_ASSERT(mapTo); // Should have another actual!
     newCall->insertAtTail(new SymExpr(mapTo));
   }
+
+  // If the new call throws and it was in a 'try'/'try!' before
+  // we moved it, put it into a new 'try'/'try!'
+  if (throws && call->tryTag == TRY_TAG_IN_TRYBANG)
+    newCall = new CallExpr(PRIM_TRYBANG_EXPR, newCall);
+
+  if (throws && call->tryTag == TRY_TAG_IN_TRY)
+    newCall = new CallExpr(PRIM_TRY_EXPR, newCall);
 
   body->insertAtTail(new CallExpr(PRIM_MOVE, temp, newCall));
 

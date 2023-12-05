@@ -336,6 +336,11 @@ OPTIONS
     Enable [disable] run-time checks in safeCast calls for casts that
     wouldn't preserve the logical value being cast.
 
+**\--[no-]const-arg-checks**
+
+    Enable [disable] const argument checks (only when --warn-unstable is also
+    used)
+
 **\--[no-]div-by-zero-checks**
 
     Enable [disable] run-time checks in integer division and modulus operations
@@ -523,6 +528,13 @@ OPTIONS
     opened but no recovery attempt is made.
 
 *Miscellaneous Options*
+
+**\--[no-]detailed-errors**
+
+    Enables [disables] the compiler's detailed error message mode. In this
+    mode, the compiler will print additional information about errors when
+    it is available. This could include printing and underlining relevant
+    segments of code, or providing suggestions for how to fix the error.
 
 **\--[no-]devel**
 

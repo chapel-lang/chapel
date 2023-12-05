@@ -30,6 +30,7 @@
 #include "driver.h"
 #include "externCResolve.h"
 #include "ForallStmt.h"
+#include "ForLoop.h"
 #include "IfExpr.h"
 #include "ImportStmt.h"
 #include "initializerRules.h"
@@ -1414,7 +1415,7 @@ static bool isField(Symbol* sym) {
   return isTypeSymbol(sym->defPoint->parentSymbol);
 }
 
-static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
+static void setupOuterVar(LoopWithShadowVarsInterface *fs, ShadowVarSymbol* svar) {
   // We pull in the relevant pieces of resolveUnresolvedSymExpr().
   // This is hopefully clearer than generating an UnresolvedSymExpr
   // and calling resolveUnresolvedSymExpr() on it.
@@ -1427,7 +1428,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
     return;
   }
 
-  if (Symbol* ovar = lookup(svar->name, fs->parentExpr)) {
+  if (Symbol* ovar = lookup(svar->name, fs->asExpr()->parentExpr)) {
     if (isFnSymbol(ovar) || isField(ovar)) {
       // Create a stand-in to use pre-existing code.
       UnresolvedSymExpr* standIn = new UnresolvedSymExpr(svar->name);
@@ -1446,7 +1447,7 @@ static void setupOuterVar(ForallStmt* fs, ShadowVarSymbol* svar) {
 }
 
 // Issue an error if 'tpv' is one of fs's induction variables.
-static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
+static void checkRefsToIdxVars(LoopWithShadowVarsInterface* fs, DefExpr* def,
                                ShadowVarSymbol* tpv)
 {
   std::vector<SymExpr*> symExprs;
@@ -1458,23 +1459,33 @@ static void checkRefsToIdxVars(ForallStmt* fs, DefExpr* def,
   INT_ASSERT(tpv->deinitBlock()->body.empty());
 
   for_vector(SymExpr, se, symExprs)
-    if (se->symbol()->defPoint->list == &fs->inductionVariables())
+    if(fs->isInductionVar(se->symbol()))
       USR_FATAL_CONT(se, "the initialization or type expression"
                      " of the task-private variable '%s'"
                      " references the forall loop induction variable '%s'",
                      tpv->name, se->symbol()->name);
 }
 
+template<class T>
+static void setupShadowVarsOnLoop(T *loop) {
+  INT_ASSERT(isForallStmt(loop) || isForLoop(loop));
+  for_shadow_vars_and_defs(svar, def, temp, loop) {
+    if (hasOuterVariable(svar))
+      setupOuterVar(loop, svar);
+     if (svar->isTaskPrivate())
+      checkRefsToIdxVars(loop, def, svar);
+  }
+}
+
 static void setupShadowVars() {
   forv_Vec(ForallStmt, fs, gForallStmts)
-    for_shadow_vars_and_defs(svar, def, temp, fs) {
-      if (hasOuterVariable(svar))
-        setupOuterVar(fs, svar);
-      if (svar->isTaskPrivate())
-        checkRefsToIdxVars(fs, def, svar);
-    }
+    setupShadowVarsOnLoop(fs);
 
-  // Instead of the two nested loops above, we could march through
+  forv_Vec(BlockStmt, bs, gBlockStmts)
+    if(ForLoop *fl = toForLoop(bs))
+      setupShadowVarsOnLoop(fl);
+
+  // Instead of the nested loops above, we could march through
   // gShadowVarSymbols and invoke setupOuterVar(svar->parentExpr, svar).
   // The nested loops group together all shadow variables of a given
   // ForallStmt, so hopefully have better cache behavior.
@@ -1691,7 +1702,19 @@ static void resolveEnumeratedTypes() {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {
-        if (EnumType* type = toEnumType(first->symbol()->type)) {
+        // Go through chains like:
+        // enum color = { ... }
+        // type col = color;
+        // which is needed to support e.g. 'col.red'
+        SymExpr* firstDeAliased = first;
+        while (auto varSym = toVarSymbol(firstDeAliased->symbol())) {
+          if (!varSym->hasFlag(FLAG_TYPE_VARIABLE)) break;
+          if (!toSymExpr(varSym->defPoint->init)) break;
+
+          firstDeAliased = toSymExpr(varSym->defPoint->init);
+        }
+
+        if (EnumType* type = toEnumType(firstDeAliased->symbol()->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
 

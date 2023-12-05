@@ -1,3 +1,2 @@
---arrSize=10_000_000 --scanType=serial  --bitsAtATime=16
---arrSize=10_000_000 --scanType=hillisSteele  --bitsAtATime=16
---arrSize=10_000_000 --scanType=blelloch  --bitsAtATime=16
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=16 --atomicSort=true
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=8

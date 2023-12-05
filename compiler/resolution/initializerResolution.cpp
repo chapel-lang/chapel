@@ -365,13 +365,13 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
   bool nilable = isNilableClassType(manager);
   if (isManagedPtrType(manager))
     manager = getManagedPtrManagerType(manager);
-  else if (manager == dtBorrowedNilable)
-    manager = dtBorrowed;
   else if (manager == dtUnmanagedNilable)
     manager = dtUnmanaged;
 
-  if (manager == dtBorrowed) {
-    USR_WARN(newExpr, "creating a 'new borrowed' type is deprecated");
+  // there is also a post-parse check for this, but it can only catch `new borrowed C()`
+  // this also catches `type T = borrowed C; new T()`
+  if (manager == dtBorrowed || manager == dtBorrowedNilable) {
+    USR_FATAL_CONT(newExpr, "cannot create a 'borrowed' object using 'new'");
   }
 
   INT_ASSERT(newExpr->isPrimitive(PRIM_NEW));
@@ -474,10 +474,6 @@ void resolveNewInitializer(CallExpr* newExpr, Type* manager) {
     block->insertAfter(newExpr);
     resolveBlockStmt(block);
     newExpr->convertToNoop();
-
-    // If not flattened, the hidden owned temporary for 'new borrowed' might
-    // be auto-destroyed at the end of the block.
-    block->flattenAndRemove();
 
     if (inArgSymbol) {
       // Need to insert an initCopy for promoted new-expressions in order to

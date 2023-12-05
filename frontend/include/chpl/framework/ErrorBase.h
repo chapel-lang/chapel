@@ -23,7 +23,7 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/types/all-types.h"
 #include "chpl/resolution/scope-types.h"
-#include "llvm/ADT/Optional.h"
+#include "chpl/resolution/resolution-types.h"
 
 namespace chpl {
 
@@ -101,6 +101,7 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getKindName(Kind kind);
   static const char* getTypeName(ErrorType type);
 
   template <typename T>
@@ -275,6 +276,16 @@ class GeneralError : public BasicError {
   CONTEXT__->report(CHPL_GET_ERROR(NAME__, EINFO__))
 #define CHPL_GET_ERROR(NAME__, EINFO__...) \
   Error##NAME__::get(std::make_tuple(EINFO__))
+
+/**
+  Helper macro to report an error to the context, and produce an
+  erroneous QualifiedType. Accepts the pointer to the context,
+  the name of the error to report, and additional error information arguments,
+  the exact types of which depend on the type of error (see error-classes-list.h)
+ */
+#define CHPL_TYPE_ERROR(CONTEXT, NAME, EINFO...)\
+  (CHPL_REPORT(CONTEXT, NAME, EINFO),\
+   QualifiedType(QualifiedType::UNKNOWN, ErroneousType::get(CONTEXT)))
 
 template <>
 struct stringify<chpl::ErrorBase::Kind> {

@@ -1,10 +1,8 @@
 use Random;
 
 proc main() throws {
+  var stream = new randomStream(int);
 
-  var pcgStream = createRandomStream(int, algorithm=RNG.PCG);
-  // Note: getNext(min, max) is not available for NPB
-
-  var x = pcgStream.getNext(2, 1);
+  var x = stream.getNext(2, 1);
   writeln('Empty range of values did not halt');
 }

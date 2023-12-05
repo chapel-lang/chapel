@@ -15,7 +15,7 @@ def llvm_versions():
     # Which major release - only need one number for that with current
     # llvm (since LLVM 4.0).
     # These will be tried in order.
-    return ('15','14','13','12','11',)
+    return ('15','14','13','12','11','16',)
 
 @memoize
 def get_uniq_cfg_path_for(llvm_val, llvm_support_val):
@@ -859,7 +859,8 @@ def filter_llvm_config_flags(flags):
             flag == '-pedantic' or
             flag == '-Wno-class-memaccess' or
             (darwin and gnu and flag.startswith('-stdlib=')) or
-            (cygwin and flag == '-std=c++14')):
+            (cygwin and flag == '-std=c++17') or
+            flag == '-std=c++14'):
             continue # filter out these flags
 
         if flag.startswith('-W'):
@@ -996,6 +997,9 @@ def compute_host_link_settings():
         if llvm_version not in ('11', '12', '13', '14'):
             clang_static_libs.append('-lclangSupport')
             llvm_components.append('windowsdriver')
+        # Starting with clang 16, clang needs additional libraries
+        if llvm_version not in ('11', '12', '13', '14', '15'):
+            llvm_components.append('frontendhlsl')
 
     # quit early if the llvm value is unset
     if llvm_val == 'unset':

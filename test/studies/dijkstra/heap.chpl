@@ -1,5 +1,5 @@
 
-module Heap {
+module heap {
 
   use NodesEdges;
 

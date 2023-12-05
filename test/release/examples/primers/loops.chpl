@@ -69,12 +69,12 @@ use IO;  // enable access to the readln() call that we use below
   performance mistake <common-loop-mistake>`.
       
   Serial Loops
-  ============
+  ------------
 
   .. _While Loops:
   
   While Loops
-  -----------
+  ~~~~~~~~~~~
 
   We'll start with Chapel's *while-loops*, which execute as long as a
   boolean condition remains true.  While loops come in two forms, the
@@ -139,7 +139,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _For Loops:
 
   For Loops
-  ---------
+  ~~~~~~~~~
 
   Chapel's other serial loop form is the *for-loop*.  Here is a simple
   for-loop that iterates over the integers 1 through 3, inclusive:
@@ -214,7 +214,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _loops-arrs-doms:
 
   Loops over Arrays and Domains
-  -----------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   In addition to looping over ranges and explicit iterators, loops in
   Chapel are commonly used to iterate over arrays or domains (see the
@@ -278,7 +278,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _zip-iter:
 
   Zippered For-Loops
-  ------------------
+  ~~~~~~~~~~~~~~~~~~
 
   For-loops also support *zippered* iteration, in which multiple
   iterand expressions are invoked in a coordinated manner, yielding
@@ -320,7 +320,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _param-for-loops:
   
   Statically Varying (Unrolled) For-Loops
-  ---------------------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   One last case to know about is that Chapel has a few for-loop forms
   that support the ability to have distinct static types or values per
@@ -356,7 +356,7 @@ use IO;  // enable access to the readln() call that we use below
   This concludes this primer's introduction to Chapel's serial loop forms.
 
   Parallel Loops
-  ==============
+  --------------
 
   Next, let's look at Chapel's parallel loop forms, all of which are
   written very similarly to the serial for-loops shown above, simply
@@ -381,7 +381,7 @@ use IO;  // enable access to the readln() call that we use below
 
 
   Data-Parallel Loops
-  ===================
+  -------------------
 
   Data-parallel loops in Chapel can be thought of as indicating "the
   iterations of this loop can, and should, be performed in parallel."
@@ -404,7 +404,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _Foreach Loops:
 
   Foreach Loops
-  -------------
+  ~~~~~~~~~~~~~
 
   The first, and simplest, data-parallel loop is the ``foreach`` loop.
   This loop form asserts that the loop meets the order-independent and
@@ -465,7 +465,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _Forall Loops:
 
   Forall Loops
-  ------------
+  ~~~~~~~~~~~~
 
   Forall-loops are similar to foreach-loops, except that they have the
   potential to be implemented using multiple Chapel tasks.  This
@@ -593,7 +593,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _Square-Bracket Loops:
   
   Square-Bracket Loops
-  --------------------
+  ~~~~~~~~~~~~~~~~~~~~
 
   A third data-parallel loop form uses square brackets to define the
   loop instead of the ``foreach`` or ``forall`` keywords.  For
@@ -621,7 +621,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _loops-promotion:
   
   Promotion and Data-Parallel Loops
-  ---------------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   In Chapel, an operator or procedure accepting a formal argument of
   type ``t`` can be *promoted* by invoking the procedure with:
@@ -671,7 +671,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _race-conditions:
 
   A final note on data-parallel loops and legality / races
-  --------------------------------------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   As mentioned previously, the Chapel compiler and language are not
   responsible for making sure that a data-parallel loop is safe to
@@ -757,14 +757,14 @@ use IO;  // enable access to the readln() call that we use below
 
 
   Task-Parallel Loops
-  ===================
+  -------------------
 
   Chapel has a single task-parallel loop form, the ``coforall`` loop:
 
   .. _Coforall Loops:
 
   Coforall Loops
-  --------------
+  ~~~~~~~~~~~~~~
 
   In most respects, the coforall-loop is the simplest parallel loop
   form to explain in Chapel.  It literally creates a distinct Chapel
@@ -827,7 +827,7 @@ use IO;  // enable access to the readln() call that we use below
 
 
   Closing Discussions
-  ===================
+  -------------------
 
   At this point, you've learned about all of Chapel's loop forms.  The
   remaining sections cover some loop-related topics that may come up
@@ -836,7 +836,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _loop-nests:
 
   Nesting Loops
-  -------------
+  ~~~~~~~~~~~~~
 
   The loop forms discussed here can be nested arbitrarily, and their
   definitions are the same whether they are an outer or inner loop.  A
@@ -921,7 +921,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _loop-choice:
 
   When to Use Which Loop Form?
-  ----------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Given these various loop forms, which ones should you use when?
 
@@ -969,7 +969,7 @@ use IO;  // enable access to the readln() call that we use below
   .. _common-loop-mistake:
   
   A Common Performance Mistake
-  ----------------------------
+  ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
   Wrapping up, one of Chapel's most powerful features — the fact that
   forall loops can generate distributed memory parallelism in addition
@@ -1098,7 +1098,7 @@ use IO;  // enable access to the readln() call that we use below
   number of locales greater than the number of local cores.
 
   Conclusion
-  ==========
+  ----------
 
   That wraps up this primer introducing Chapel's various loop types.
   For further details, refer to the Chapel language specification

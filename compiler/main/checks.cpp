@@ -29,6 +29,8 @@
 #include "primitive.h"
 #include "resolution.h"
 #include "TryStmt.h"
+#include "ForallStmt.h"
+
 
 #include "global-ast-vecs.h"
 
@@ -200,6 +202,9 @@ void checkForInvalidPromotions() {
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
   for_alive_in_Vec(CallExpr, ce, gCallExprs) {
+
+    if (!shouldWarnUnstableFor(ce)) continue;
+
     if (FnSymbol* fn = ce->theFnSymbol()) {
       if (fn->hasFlag(FLAG_PROMOTION_WRAPPER) &&
           fn->hasFlag(FLAG_NO_PROMOTION_WHEN_BY_REF)) {
@@ -216,9 +221,8 @@ void checkForInvalidPromotions() {
             if (SymExpr* lhs = toSymExpr(parentCe->get(1))) {
               if(symbolIsUsedAsRef(lhs->symbol())) {
                 USR_WARN(ce,
-                         "modifying an array over an array of indices is "
-                         "deprecated and will be an error in a future release "
-                         "- please use an explicit loop instead");
+                         "modifying the result of a promoted index expression "
+                         "is unstable");
               }
             }
           }
@@ -228,6 +232,142 @@ void checkForInvalidPromotions() {
   }
 }
 
+static
+bool exprContainsSymbol(Symbol* sym, Expr* expr) {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(expr, symExprs);
+  for (auto se: symExprs) {
+    if (se->symbol() == sym) return true;
+  }
+  return false;
+}
+
+static
+bool callSetsSymbol(Symbol* sym, CallExpr* call)
+{
+  // this is a helper used for symExprIsUsedAsRef
+  // its a recursive lambda, so needs to be defined with this split syntax
+  std::function<bool(SymExpr*, CallExpr*)> checkForMove;
+  checkForMove = [&checkForMove](SymExpr* use, CallExpr* call) {
+    SymExpr* lhs = toSymExpr(call->get(1));
+    Symbol* lhsSymbol = lhs->symbol();
+    if (lhs != use) {
+      for_SymbolSymExprs(se, lhsSymbol) {
+        if (symExprIsUsedAsRef(se, false, checkForMove)) return true;
+      }
+    }
+    return false;
+  };
+
+
+  if (isMoveOrAssign(call)) {
+    if (SymExpr* lhs = toSymExpr(call->get(1))) {
+      Expr* rhs = call->get(2);
+      // only check if the symbol is on the rhs
+      if (exprContainsSymbol(sym, rhs)) {
+        // if lhs is a ref
+        if (lhs->isRef() &&
+            !lhs->symbol()->isConstant() &&
+            lhs->symbol()->qualType().getQual() != QUAL_CONST_REF)
+          return true;
+
+        // in some cases, like `localAccess`, the lhs is incorrectly not marked
+        // as a ref so we need to do some more checks
+        for_SymbolSymExprs(se, lhs->symbol()) {
+          if (se != lhs && symExprIsUsedAsRef(se, false, checkForMove))
+            return true;
+        }
+      }
+
+    }
+  }
+  // some calls, like array slicing, will modify the result without an explicit ref
+  // so we need to check for that
+  if (auto fn = call->theFnSymbol()) {
+    if(fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS)) {
+      // if the parent is a move, we need to check to see if that parents
+      // symbol is used like a ref. If it is, return true.
+      if (auto parent = toCallExpr(call->parentExpr)) {
+        if (callSetsSymbol(sym, parent)) return true;
+      }
+    }
+  }
+  if(!call->isPrimitive()) {
+    if(FnSymbol* fn = call->theFnSymbol()) {
+      for(int i = 1; i <= call->numActuals(); i++) {
+        // if actual at index uses the sym we are checking for
+        if(exprContainsSymbol(sym, call->get(i))) {
+          // if the corresponding formal is `ref` or `[in]out`, return true
+          auto formal = fn->getFormal(i);
+          if(formal->intent == INTENT_REF ||
+             formal->intent == INTENT_OUT ||
+             formal->intent == INTENT_INOUT)
+            return true;
+        }
+      }
+    }
+
+  }
+  return false;
+}
+
+static
+void maybeIssueRefMaybeConstWarning(ForallStmt* fs, Symbol* sym, std::vector<CallExpr*> allCalls, std::vector<SymExpr*> allIterandSymExprs) {
+  // need to do some heuristics to determine if arg gets modified
+
+  // check if sym used in iterand
+  bool symInIterand = std::find_if(allIterandSymExprs.begin(),
+                                  allIterandSymExprs.end(), [sym](auto se) {
+                                    return sym == se->symbol();
+                                  }) != allIterandSymExprs.end();
+  if (symInIterand) return;
+
+  for (auto ce: allCalls) {
+    // if a call sets the symbol, warn
+    if (callSetsSymbol(sym, ce)) {
+      // checking for --warn-unstable done in checkForallRefMaybeConst
+
+      const char* argName = sym->name;
+      if (fs->getFunction() && fs->getFunction()->isMethodOnRecord())
+        argName = "this";
+
+      USR_WARN(fs,
+                "inferring a 'ref' intent on an array in a forall is unstable"
+                " - in the future this may require an explicit 'ref' forall intent for '%s'",
+                argName);
+      break;
+    }
+  }
+}
+
+
+static void checkForallRefMaybeConst(ForallStmt* fs, std::set<Symbol*> syms) {
+  // bail out here if we shouldn't be warning for this forall
+  if (!shouldWarnUnstableFor(fs)) return;
+
+  // collect all SymExpr used in the iterand of the forall so we dont warn for them
+  std::vector<SymExpr*> allIterandSymExprs;
+  for_alist(expr, fs->iteratedExpressions()) {
+    collectSymExprs(expr, allIterandSymExprs);
+  }
+  if (CallExpr* zipCall = fs->zipCall()) {
+    collectSymExprs(zipCall, allIterandSymExprs);
+  }
+
+  // should I be checking loopBodies?
+  std::vector<CallExpr*> allCallsInForall;
+  collectCallExprs(fs->loopBody(), allCallsInForall);
+
+  for (auto s: syms) {
+    maybeIssueRefMaybeConstWarning(fs, s, allCallsInForall, allIterandSymExprs);
+  }
+}
+
+static void checkForallRefMaybeConst() {
+  for (auto fsSyms: refMaybeConstForallPairs) {
+    checkForallRefMaybeConst(fsSyms.first, fsSyms.second);
+  }
+}
 
 void check_cullOverReferences()
 {
@@ -241,6 +381,7 @@ void check_cullOverReferences()
     INT_FATAL("ContextCallExpr should no longer be in AST");
   }
 
+  checkForallRefMaybeConst();
   checkForInvalidPromotions();
 }
 

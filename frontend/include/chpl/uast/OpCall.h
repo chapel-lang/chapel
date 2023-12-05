@@ -36,6 +36,8 @@ namespace uast {
 
  */
 class OpCall final : public Call {
+ friend class AstNode;
+
  private:
   // which operator
   UniqueString op_;
@@ -45,7 +47,13 @@ class OpCall final : public Call {
            /* hasCalledExpression */ false),
       op_(op) {
   }
-  OpCall(Deserializer& des)
+
+  void serializeInner(Serializer& ser) const override {
+    callSerializeInner(ser);
+    ser.write(op_);
+  }
+
+  explicit OpCall(Deserializer& des)
     : Call(asttags::OpCall, des) {
     op_ = des.read<UniqueString>();
   }
@@ -87,13 +95,6 @@ class OpCall final : public Call {
   bool isBinaryOp() const { return children_.size() == 2; }
   /** Returns true if this is a unary operator */
   bool isUnaryOp() const { return children_.size() == 1; }
-
-  void serialize(Serializer& ser) const override {
-    Call::serialize(ser);
-    ser.write(op_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(OpCall);
 };
 
 // Returns true if the given string is an operator name

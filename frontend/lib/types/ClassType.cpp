@@ -28,7 +28,7 @@ void ClassType::stringify(std::ostream& ss,
                           chpl::StringifyKind stringKind) const {
 
   // compute the prefix to use
-  const char* prefix = "";
+  std::string prefix = "";
   switch (decorator_.val()) {
     case ClassTypeDecorator::BORROWED:
     case ClassTypeDecorator::BORROWED_NONNIL:
@@ -48,7 +48,7 @@ void ClassType::stringify(std::ostream& ss,
     case ClassTypeDecorator::GENERIC:
     case ClassTypeDecorator::GENERIC_NONNIL:
     case ClassTypeDecorator::GENERIC_NILABLE:
-      prefix = "<any-management>";
+      prefix = stringKind == StringifyKind::CHPL_SYNTAX ? "" : "<any-management>";
       break;
   }
 
@@ -73,7 +73,9 @@ void ClassType::stringify(std::ostream& ss,
   // emit manager
   ss << manager;
   // emit a space
-  ss << " ";
+  if (!prefix.empty() || !manager.empty()) {
+    ss << " ";
+  }
 
   // emit manageable type name
   CHPL_ASSERT(manageableType_);

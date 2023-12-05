@@ -340,6 +340,10 @@ class CallInfoActual {
   bool operator!=(const CallInfoActual& other) const {
     return !(*this == other);
   }
+  void mark(Context* context) const {
+    type_.mark(context);
+    byName_.mark(context);
+  }
   size_t hash() const {
     return chpl::hash(type_, byName_);
   }
@@ -427,6 +431,9 @@ class CallInfo {
                                      types::QualifiedType receiverType,
                                      UniqueString rename=UniqueString());
 
+  /** Copy and rename a CallInfo. */
+  static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
+
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
       useful to call separately.
@@ -488,6 +495,13 @@ class CallInfo {
   }
   bool operator!=(const CallInfo& other) const {
     return !(*this == other);
+  }
+  void mark(Context* context) const {
+    name_.mark(context);
+    calledType_.mark(context);
+    for (auto& actual : actuals_) {
+      actual.mark(context);
+    }
   }
   size_t hash() const {
     return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
@@ -867,6 +881,263 @@ class TypedFnSignature {
 };
 
 /**
+  An enum that represents the reason why a function candidate was filtered out
+  during call resolution.
+ */
+enum CandidateFailureReason {
+  /* Cannot pass an actual to one of the candidate's formals. */
+  FAIL_CANNOT_PASS,
+  /* Not a valid formal-actual mapping for this candidate. */
+  FAIL_FORMAL_ACTUAL_MISMATCH,
+  /* The wrong number of varargs were given to the function. */
+  FAIL_VARARG_MISMATCH,
+  /* The where clause returned 'false'. */
+  FAIL_WHERE_CLAUSE,
+  /* A parenful call to a parenless function or vice versa. */
+  FAIL_PARENLESS_MISMATCH,
+  /* Some other, generic reason. */
+  FAIL_CANDIDATE_OTHER,
+};
+
+/**
+  An enum that represents the reason why an actual couldn't be passed
+  to a formal.
+ */
+enum PassingFailureReason {
+  /* Incompatible nilability (e.g. nilable to non-nilable formal) */
+  FAIL_INCOMPATIBLE_NILABILITY,
+  /* Incompatible management (e.g. borrowed to owned formal) */
+  FAIL_INCOMPATIBLE_MGMT,
+  /* Incompatible manager (e.g. owned to shared formal) */
+  FAIL_INCOMPATIBLE_MGR,
+  /* The actual is not a subtype of the formal, but had to be. */
+  FAIL_EXPECTED_SUBTYPE,
+  /* Tuple size doesn't match */
+  FAIL_INCOMPATIBLE_TUPLE_SIZE,
+  /* Tuple star-ness doesn't match */
+  FAIL_INCOMPATIBLE_TUPLE_STAR,
+  /* A conversion was needed but is not possible. */
+  FAIL_CANNOT_CONVERT,
+  /* An instantiation was needed but is not possible. */
+  FAIL_CANNOT_INSTANTIATE,
+  /* A type was used as an argument to a value, or the other way around. */
+  FAIL_TYPE_VS_NONTYPE,
+  /* A param value was expected, but a non-param value was given. */
+  FAIL_NOT_PARAM,
+  /* One param value was expected, another was given. */
+  FAIL_MISMATCHED_PARAM,
+  /* An unestablished actual type was given to the function. */
+  FAIL_UNKNOWN_ACTUAL_TYPE,
+  /* An unestablished formal type in the function. */
+  FAIL_UNKNOWN_FORMAL_TYPE,
+  /* A generic type was given as an argument to a non-type formal. */
+  FAIL_GENERIC_TO_NONTYPE,
+  /* A type was expected to be the exact match of the formal, but wasn't. */
+  FAIL_NOT_EXACT_MATCH,
+  /* Some other, generic reason. */
+  FAIL_FORMAL_OTHER,
+};
+
+/**
+  Represents either a function that was accepted during call resolution, or
+  the reason why that function was rejected.
+ */
+class ApplicabilityResult {
+ private:
+  /**
+    Set unless the result was a success; empty otherwise. The ID to use to
+    refer to the function candidate that didn't match during call resolution.
+   */
+  ID idForErr_;
+  /**
+    When available, the typed function signature of the candidate that
+    didn't match during call resolution. Set to nullptr if the candidate
+    was accepted / the ApplicationResult was a success.
+   */
+  const TypedFnSignature* initialForErr_;
+  /**
+    If the ApplicabilityResult is a success, the function candidate that
+    was accepted by call resolution.
+   */
+  const TypedFnSignature* candidate_;
+  /**
+    If the ApplicabilityResult is a failure, the reason why the candidate
+    was rejected. Set to FAIL_CANDIDATE_OTHER on success as a placeholder.
+   */
+  CandidateFailureReason candidateReason_;
+  /**
+    If the ApplicabilityResult is a failure because we couldn't pass an actual
+    to a formal, the reason why passing didn't work. Set to FAIL_FORMAL_OTHER
+    on success as a placeholder.
+   */
+  PassingFailureReason formalReason_;
+  /**
+    If the ApplicabilityResult is a failure because we couldn't pass an actual
+    to a formal, the index of the formal that we couldn't pass to. Set to -1
+    on success as a placeholder.
+   */
+  int formalIdx_;
+
+  ApplicabilityResult(ID idForErr,
+                      const TypedFnSignature* initialForErr,
+                      const TypedFnSignature* candidate,
+                      CandidateFailureReason candidateReason,
+                      PassingFailureReason formalReason,
+                      int formalIdx) :
+    idForErr_(std::move(idForErr)), initialForErr_(initialForErr), candidate_(candidate),
+    candidateReason_(candidateReason), formalReason_(formalReason),
+    formalIdx_(formalIdx) {
+    CHPL_ASSERT(!candidate_ || (formalIdx_ == -1 &&
+                                candidateReason_ == FAIL_CANDIDATE_OTHER &&
+                                formalReason_ == FAIL_FORMAL_OTHER));
+  }
+
+ public:
+  ApplicabilityResult()
+    : ApplicabilityResult(ID(), nullptr, nullptr, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1) {}
+
+  static ApplicabilityResult success(const TypedFnSignature* candidate) {
+    return ApplicabilityResult(ID(), nullptr, candidate, FAIL_CANDIDATE_OTHER, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static ApplicabilityResult failure(const TypedFnSignature* initialForErr,
+                                     PassingFailureReason reason,
+                                     int formalIdx) {
+    return ApplicabilityResult(initialForErr->id(), initialForErr, nullptr, FAIL_CANNOT_PASS, reason, formalIdx);
+  }
+
+  static ApplicabilityResult failure(ID idForErr, CandidateFailureReason reason) {
+    return ApplicabilityResult(std::move(idForErr), nullptr, nullptr, reason, FAIL_FORMAL_OTHER, -1);
+  }
+
+  static bool update(ApplicabilityResult& keep, ApplicabilityResult& addin) {
+    bool update = false;
+    update |= defaultUpdateBasic(keep.idForErr_, addin.idForErr_);
+    update |= defaultUpdateBasic(keep.initialForErr_, addin.initialForErr_);
+    update |= defaultUpdateBasic(keep.candidate_, addin.candidate_);
+    update |= defaultUpdateBasic(keep.candidateReason_, addin.candidateReason_);
+    update |= defaultUpdateBasic(keep.formalReason_, addin.formalReason_);
+    update |= defaultUpdateBasic(keep.formalIdx_, addin.formalIdx_);
+    return update;
+  }
+
+  bool operator ==(const ApplicabilityResult& other) const {
+    return idForErr_ == other.idForErr_ &&
+           initialForErr_ == other.initialForErr_ &&
+           candidate_ == other.candidate_ &&
+           candidateReason_ == other.candidateReason_ &&
+           formalReason_ == other.formalReason_ &&
+           formalIdx_ == other.formalIdx_;
+  }
+
+  bool operator !=(const ApplicabilityResult& other) const {
+    return !(*this==other);
+  }
+
+  void mark(Context* context) const {
+    idForErr_.mark(context);
+    context->markPointer(initialForErr_);
+    context->markPointer(candidate_);
+    (void) candidateReason_; // nothing to mark
+    (void) formalReason_; // nothing to mark
+    (void) formalIdx_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(idForErr_, initialForErr_, candidate_, candidateReason_, formalReason_, formalIdx_);
+  }
+
+  inline const ID& idForErr() const { return idForErr_; }
+
+  inline const TypedFnSignature* initialForErr() const { return initialForErr_; }
+
+  inline const TypedFnSignature* candidate() const { return candidate_; }
+
+  inline bool success() const { return candidate_ != nullptr; }
+
+  inline CandidateFailureReason reason() const { return candidateReason_; }
+
+  inline PassingFailureReason formalReason() const { return formalReason_; }
+
+  inline int formalIdx() const { return formalIdx_; }
+};
+
+class FormalActualMap;
+class MostSpecificCandidates;
+
+/**
+  Stores a function candidate. This information includes both the
+  TypedFnSignature* representing the candidate, as well as information
+  about this candidate's applicability. In particular, we store whether or
+  not this candidate requires a const ref coercion, which is allowed by
+  the spec, but is not allowed in practice due to the aliasing rules of C.
+  */
+class MostSpecificCandidate {
+ private:
+  friend class MostSpecificCandidates;
+
+  const TypedFnSignature* fn_;
+  int constRefCoercionFormal_;
+  int constRefCoercionActual_;
+
+  MostSpecificCandidate(const TypedFnSignature* fn,
+                        int constRefCoercionFormal,
+                        int constRefCoercionActual)
+    : fn_(fn),
+      constRefCoercionFormal_(constRefCoercionFormal),
+      constRefCoercionActual_(constRefCoercionActual) {}
+
+ public:
+  MostSpecificCandidate()
+    : fn_(nullptr),
+      constRefCoercionFormal_(-1),
+      constRefCoercionActual_(-1) {}
+
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const FormalActualMap& faMap);
+
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const CallInfo& info);
+
+  const TypedFnSignature* fn() const { return fn_; }
+
+  int constRefCoercionFormal() const { return constRefCoercionFormal_; }
+
+  int constRefCoercionActual() const { return constRefCoercionActual_; }
+
+  bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
+
+  operator bool() const {
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1));
+    return fn_ != nullptr;
+  }
+
+  bool operator==(const MostSpecificCandidate& other) const {
+    return fn_ == other.fn_ &&
+           constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
+           constRefCoercionActual_ == other.constRefCoercionActual_;
+  }
+
+  bool operator!=(const MostSpecificCandidate& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    context->markPointer(fn_);
+    (void) constRefCoercionFormal_; // nothing to mark
+    (void) constRefCoercionActual_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(fn_, constRefCoercionFormal_, constRefCoercionActual_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
+
+/**
   Stores the most specific candidates when resolving a function call.
 */
 class MostSpecificCandidates {
@@ -883,7 +1154,7 @@ class MostSpecificCandidates {
   } Intent;
 
  private:
-  const TypedFnSignature* candidates[NUM_INTENTS] = {nullptr};
+  MostSpecificCandidate candidates[NUM_INTENTS] = {MostSpecificCandidate()};
   bool emptyDueToAmbiguity = false;
 
  public:
@@ -898,10 +1169,10 @@ class MostSpecificCandidates {
     Otherwise, default-initializes a MostSpecificCandidates with no candidates
     that is not empty due to ambiguity.
    */
-  static MostSpecificCandidates getOnly(const TypedFnSignature* fn) {
+  static MostSpecificCandidates getOnly(MostSpecificCandidate c) {
     MostSpecificCandidates ret;
-    if (fn != nullptr)
-      ret.setBestOnly(fn);
+    if (c.fn() != nullptr)
+      ret.setBestOnly(std::move(c));
     return ret;
   }
 
@@ -929,57 +1200,57 @@ class MostSpecificCandidates {
    */
   void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
-  const TypedFnSignature* const* begin() const {
+  MostSpecificCandidate const* begin() const {
     return &candidates[0];
   }
-  const TypedFnSignature* const* end() const {
+  MostSpecificCandidate const* end() const {
     return &candidates[NUM_INTENTS];
   }
 
-  void setBestRef(const TypedFnSignature* sig) {
-    candidates[REF] = sig;
+  void setBestRef(MostSpecificCandidate c) {
+    candidates[REF] = std::move(c);
   }
-  void setBestConstRef(const TypedFnSignature* sig) {
-    candidates[CONST_REF] = sig;
+  void setBestConstRef(MostSpecificCandidate c) {
+    candidates[CONST_REF] = std::move(c);
   }
-  void setBestValue(const TypedFnSignature* sig) {
-    candidates[VALUE] = sig;
-  }
-
-  void setBestOnly(const TypedFnSignature* sig) {
-    candidates[ONLY] = sig;
+  void setBestValue(MostSpecificCandidate c) {
+    candidates[VALUE] = std::move(c);
   }
 
-  const TypedFnSignature* bestRef() const {
+  void setBestOnly(MostSpecificCandidate c) {
+    candidates[ONLY] = std::move(c);
+  }
+
+  const MostSpecificCandidate& bestRef() const {
     return candidates[REF];
   }
-  const TypedFnSignature* bestConstRef() const {
+  const MostSpecificCandidate& bestConstRef() const {
     return candidates[CONST_REF];
   }
-  const TypedFnSignature* bestValue() const {
+  const MostSpecificCandidate& bestValue() const {
     return candidates[VALUE];
   }
 
   /**
     If there is exactly one candidate, return that candidate.
-    Otherwise, return nullptr.
+    Otherwise, return an empty candiate.
    */
-  const TypedFnSignature* only() const {
-    const TypedFnSignature* ret = nullptr;
+  MostSpecificCandidate only() const {
+    const MostSpecificCandidate* ret = nullptr;
     int nPresent = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
-        ret = sig;
+    for (const MostSpecificCandidate& sig : *this) {
+      if (sig.fn() != nullptr) {
+        ret = &sig;
         nPresent++;
       }
     }
     if (nPresent != 1) {
-      return nullptr;
+      return MostSpecificCandidate();
     }
 
     // if there is only one candidate, it should be in slot ONLY
-    CHPL_ASSERT(candidates[ONLY] == ret);
-    return ret;
+    CHPL_ASSERT(candidates[ONLY] == *ret);
+    return *ret;
   }
 
   /**
@@ -987,8 +1258,8 @@ class MostSpecificCandidates {
    */
   int numBest() const {
     int ret = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
+    for (const MostSpecificCandidate& sig : *this) {
+      if (sig.fn() != nullptr) {
         ret++;
       }
     }
@@ -1045,8 +1316,8 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : candidates) {
-      context->markPointer(sig);
+    for (const MostSpecificCandidate& sig : candidates) {
+      sig.mark(context);
     }
   }
 
@@ -1481,9 +1752,6 @@ class ResolvedFunction {
   }
 };
 
-class FormalActualMap;
-
-
 /** FormalActual holds information on a function formal and its binding (if any) */
 class FormalActual {
  friend class FormalActualMap;
@@ -1887,6 +2155,19 @@ template<> struct hash<chpl::resolution::TypedFnSignature::WhereClauseResult>
   }
 };
 
+template<> struct hash<chpl::resolution::CandidateFailureReason>
+{
+  size_t operator()(const chpl::resolution::CandidateFailureReason& key) const {
+    return (size_t) key;
+  }
+};
+
+template<> struct hash<chpl::resolution::PassingFailureReason>
+{
+  size_t operator()(const chpl::resolution::PassingFailureReason& key) const {
+    return (size_t) key;
+  }
+};
 
 
 } // end namespace std

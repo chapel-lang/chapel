@@ -19,13 +19,13 @@
 
 #include "chpl/parsing/parsing-queries.h"
 
-#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/ErrorMessage.h"
+#include "chpl/framework/compiler-configuration.h"
 #include "chpl/framework/query-impl.h"
+#include "chpl/libraries/LibraryFile.h"
 #include "chpl/parsing/Parser.h"
 #include "chpl/types/RecordType.h"
-#include "chpl/uast/post-parse-checks.h"
 #include "chpl/uast/AggregateDecl.h"
 #include "chpl/uast/AstNode.h"
 #include "chpl/uast/Function.h"
@@ -34,8 +34,9 @@
 #include "chpl/uast/Module.h"
 #include "chpl/uast/MultiDecl.h"
 #include "chpl/uast/TupleDecl.h"
-#include "chpl/util/version-info.h"
+#include "chpl/uast/post-parse-checks.h"
 #include "chpl/util/filtering.h"
+#include "chpl/util/version-info.h"
 
 #include "../util/filesystem_help.h"
 
@@ -62,7 +63,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readfile(path.c_str(), text, error)) {
+  if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }
@@ -103,11 +104,6 @@ static Parser helpMakeParser(Context* context,
   }
 }
 
-// <7F>HPECHPL
-#define LIBRARY_MAGIC (uint64_t)0x4C5048434550487F
-#define LIBRARY_VERSION_MAJOR 0
-#define LIBRARY_VERSION_MINOR 1
-
 static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   if (path.startsWith("/") ||
       path.startsWith("./") == false) {
@@ -122,227 +118,41 @@ static UniqueString cleanLocalPath(Context* context, UniqueString path) {
   return chpl::UniqueString::get(context, str);
 }
 
-//
-// The library file format (whitespace not significant):
-// <magic number, uint64_t>
-// <library version, major, int>
-// <library version, minor, int>
-// <chpl version, major, int>
-// <chpl version, minor, int>
-// <chpl version, update, int>
-//
-// <user/std module descriptor, std::string>
-//
-// N:<number of BuilderResult entries, uint64_t>
-//   0..N-1: <file path i, std::string><library file offset i, uint64_t>
-//
-// M:<string cache size, uint64_t>
-//   0..M-1: <id i, int><string length, uint32_t><string, const char*>
-//
-// 0..N-1: <BuilderResult for file path i, BuilderResult>
-//
-void LibraryFile::generate(Context* context,
-                           std::vector<UniqueString> paths,
-                           std::string outFileName,
-                           bool isUser) {
-  std::ofstream myFile;
-  myFile.open(outFileName, std::ios::out | std::ios::trunc | std::ios::binary);
-  chpl::Serializer ser(myFile);
+static const BuilderResult&
+parseFileToBuilderResultQuery(Context* context, UniqueString path,
+                              UniqueString parentSymbolPath) {
+  QUERY_BEGIN(parseFileToBuilderResultQuery, context, path, parentSymbolPath);
 
-  ser.write(LIBRARY_MAGIC);
-  ser.write(LIBRARY_VERSION_MAJOR);
-  ser.write(LIBRARY_VERSION_MINOR);
+  BuilderResult result(path);
 
-  // Write out the version of the 'chpl' compiler generating this file
-  ser.write(getMajorVersion());
-  ser.write(getMinorVersion());
-  ser.write(getUpdateVersion());
+  // Run the fileText query to get the file contents
+  const FileContents& contents = fileText(context, path);
+  const std::string& text = contents.text();
+  const ErrorBase* error = contents.error();
 
-  // TODO: Currently a boolean, but might be useful to represent internal
-  // or package modules separately someday.
-  if (isUser) {
-    ser.write(std::string("USER"));
-  } else {
-    // Currently assuming that this is the mode where we generate the entire
-    // standard library.
-    ser.write(std::string("STANDARD"));
+  if (error == nullptr) {
+    // if there was no error reading the file, proceed to parse
+    auto parser = helpMakeParser(context, parentSymbolPath);
+    const char* pathc = path.c_str();
+    const char* textc = text.c_str();
+    BuilderResult tmpResult = parser.parseString(pathc, textc);
+    result.swap(tmpResult);
+    BuilderResult::updateFilePaths(context, result);
   }
-
-  // Number of files we expect to serialize in this library
-  ser.write((uint64_t)paths.size());
-
-  std::vector<std::pair<std::string, std::string>> data;
-  uint64_t offset = 0;
-
-  // Use the same serializer so that we can build up a unified cache of
-  // UniqueStrings for this library file.
-  //
-  // Store all the text in a stringstream to be written out after the cache
-  // is written.
-  std::stringstream ss;
-  chpl::Serializer builderSer(ss);
-  for (auto path : paths) {
-    path = cleanLocalPath(context, path);
-    UniqueString empty;
-    auto& result = parseFileToBuilderResult(context, path, empty);
-    ss.str(std::string()); // clear for this iteration
-    result.serialize(builderSer);
-
-    const auto& str = ss.str();
-    data.push_back({path.str(), str});
-
-    // write the filename and the offset for the header
-    ser.write(path.str());
-    ser.write(offset);
-    offset += str.size();
-  }
-
-  const auto& stringCache = builderSer.stringCache();
-
-  // TODO: Can we avoid serializing the ID here if we sort the cache and
-  // write it in order, allowing the deserialization process to infer the ID?
-  ser.write((uint32_t)stringCache.size());
-  for (const auto& kv : stringCache) {
-    const auto& pair = kv.second;
-    ser.write(pair.first); // unique ID in this table
-    ser.write((uint32_t)pair.second); // string size
-    if (pair.second > 0) {
-      // string data
-      ser.os().write(kv.first, pair.second);
-    }
-  }
-
-  // Finally, write the saved strings from serializing a BuilderResult
-  for (const auto& pair : data) {
-    ser.os().write(pair.second.c_str(), pair.second.size());
-  }
-}
-
-LibraryFile::LibraryFile(Context* context, UniqueString libPath)
-: path_(libPath) {
-  std::ifstream myFile;
-  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
-  chpl::Deserializer des(context, myFile);
-
-  // Some basic validation
-  CHPL_ASSERT(LIBRARY_MAGIC == des.read<uint64_t>());
-  CHPL_ASSERT(LIBRARY_VERSION_MAJOR == des.read<int>());
-  CHPL_ASSERT(LIBRARY_VERSION_MINOR == des.read<int>());
-
-  // Currently no checking is done for 'chpl' version
-  std::ignore = des.read<int>(); // major version
-  std::ignore = des.read<int>(); // minor version
-  std::ignore = des.read<int>(); // update version
-
-  // Is this a user module, or a standard module?
-  const auto kind = des.read<std::string>();
-  CHPL_ASSERT(kind == "USER" || kind == "STANDARD");
-  isUser_ = (kind == "USER");
-
-  // Number of builder result entries
-  const auto num = des.read<uint64_t>();
-
-  // Read in the table of '.chpl' filenames and their offsets in the file
-  std::vector<std::pair<std::string, uint64_t>> offsetsTable;
-  for (uint64_t i = 0; i < num; i++) {
-    auto path = des.read<std::string>();
-    auto offset = des.read<uint64_t>();
-    offsetsTable.push_back({path, offset});
-  }
-
-  // Read unique strings
-  {
-    const uint64_t size = des.read<uint32_t>();
-    cache_.resize(size);
-    for (uint64_t i = 0; i < size; i++) {
-      int id = des.read<int>();
-      auto len = des.read<uint32_t>();
-      if (len > 0) {
-        // TODO: Can we save some memory allocations by doing this read while
-        // we're trying to create the unique c-string?
-        auto buf = (char*)malloc(len+1);
-        des.is().read(buf, len);
-        buf[len] = '\0';
-
-        auto unique = des.context()->uniqueCString(buf, len);
-        cache_[id] = {(size_t)len, unique};
-
-        free(buf);
-      }
-    }
-  }
-
-  // Offsets are relative to the start of the actual data, so the first entry
-  // should have an offset of 0.
-  const auto dataStart = myFile.tellg();
-
-  for (const auto& pair : offsetsTable) {
-    std::streamoff off = pair.second;
-    auto ustr = UniqueString::get(context, pair.first);
-    offsets_[ustr] = dataStart + off;
-  }
-}
-
-const LibraryFile&
-loadLibraryFile(Context* context, UniqueString libPath) {
-  QUERY_BEGIN(loadLibraryFile, context, libPath);
-
-  LibraryFile result(context, libPath);
 
   return QUERY_END(result);
-}
-
-void registerFilePathsInLibrary(Context* context, UniqueString& libPath) {
-  const auto& lib = loadLibraryFile(context, libPath);
-  for (const auto& entry : lib.offsets()) {
-    context->setLibraryForFilePath(entry.first, libPath);
-  }
-}
-
-static BuilderResult
-loadBuilderResultFromFile(Context* context, UniqueString path,
-                          UniqueString libPath) {
-
-  const auto& lib = loadLibraryFile(context, libPath);
-
-  std::ifstream myFile;
-  myFile.open(libPath.str(), std::ios::in | std::ios::binary);
-  myFile.seekg(lib.offsets().at(path));
-
-  Deserializer des(context, myFile, lib.stringCache());
-  auto result = BuilderResult::deserialize(des);
-
-  return result;
 }
 
 const BuilderResult&
 parseFileToBuilderResult(Context* context, UniqueString path,
                          UniqueString parentSymbolPath) {
-  QUERY_BEGIN(parseFileToBuilderResult, context, path, parentSymbolPath);
-
-  BuilderResult result(path);
   UniqueString libPath;
   if (context->pathHasLibrary(path, libPath)) {
-    auto tmpResult = loadBuilderResultFromFile(context, path ,libPath);
-    result.swap(tmpResult);
+    auto lib = libraries::LibraryFile::load(context, libPath);
+    return lib->loadSourceAst(context, path);
   } else {
-    // Run the fileText query to get the file contents
-    const FileContents& contents = fileText(context, path);
-    const std::string& text = contents.text();
-    const ErrorBase* error = contents.error();
-
-    if (error == nullptr) {
-      // if there was no error reading the file, proceed to parse
-      auto parser = helpMakeParser(context, parentSymbolPath);
-      const char* pathc = path.c_str();
-      const char* textc = text.c_str();
-      BuilderResult tmpResult = parser.parseString(pathc, textc);
-      result.swap(tmpResult);
-      BuilderResult::updateFilePaths(context, result);
-    }
+    return parseFileToBuilderResultQuery(context, path, parentSymbolPath);
   }
-
-  return QUERY_END(result);
 }
 
 // TODO: can't make this a query because can't store the uast::BuilderResult&
@@ -388,21 +198,30 @@ void countTokens(Context* context, UniqueString path, ParserStats* parseStats) {
   }
 }
 
-const Location& locateId(Context* context, ID id) {
-  QUERY_BEGIN(locateId, context, id);
-
-  Location result;
-
-  // Ask the context for the filename from the ID
-  UniqueString path;
+static const BuilderResult*
+builderResultOrNull(Context* context, ID id, UniqueString& pathOut) {
   UniqueString parentSymbolPath;
 
-  bool found = context->filePathForId(id, path, parentSymbolPath);
+  // Ask the context for the filename from the ID
+  bool found = context->filePathForId(id, pathOut, parentSymbolPath);
+
   if (found) {
     // Get the result of parsing
-    const BuilderResult& p = parseFileToBuilderResult(context, path,
-                                                      parentSymbolPath);
-    result = p.idToLocation(id, path);
+    const BuilderResult& br = parseFileToBuilderResult(context, pathOut,
+                                                       parentSymbolPath);
+    return &br;
+  }
+
+  return nullptr;
+}
+
+const Location& locateId(Context* context, ID id) {
+  QUERY_BEGIN(locateId, context, id);
+  Location result;
+
+  UniqueString path;
+  if (auto br = builderResultOrNull(context, id, path)) {
+    result = br->idToLocation(context, id, path);
   }
 
   return QUERY_END(result);
@@ -410,9 +229,37 @@ const Location& locateId(Context* context, ID id) {
 
 // this is just a convenient wrapper around locating with the id
 const Location& locateAst(Context* context, const AstNode* ast) {
-  CHPL_ASSERT(!ast->isComment() && "cant locate comment like this");
+  CHPL_ASSERT(ast && !ast->isComment() && "cant locate comment like this");
   return locateId(context, ast->id());
 }
+
+// Generate queries to fetch additional locations.
+#define LOCATION_MAP(ast__, location__) \
+  static const Location& \
+  locate##location__##WithIdQuery(Context* context, ID id) { \
+    QUERY_BEGIN(locate##location__##WithIdQuery, context, id); \
+    Location ret; \
+    UniqueString path; \
+    if (!id) return QUERY_END(ret); \
+    if (auto br = builderResultOrNull(context, id, path)) { \
+      ret = br->idTo##location__##Location(context, id, path); \
+    } \
+    return QUERY_END(ret); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
+
+// Generate user facing functions which are wrappers around the query.
+#define LOCATION_MAP(ast__, location__) \
+  Location locate##location__##WithId(Context* context, ID id) { \
+    return locate##location__##WithIdQuery(context, id); \
+  } \
+  Location locate##location__##WithAst(Context* context, const ast__* ast) { \
+    if (!ast) return Location(); \
+    return locate##location__##WithIdQuery(context, ast->id()); \
+  }
+#include "chpl/uast/all-location-maps.h"
+#undef LOCATION_MAP
 
 const ModuleVec& parse(Context* context, UniqueString path,
                        UniqueString parentSymbolPath) {
@@ -909,8 +756,8 @@ const Module* getIncludedSubmodule(Context* context,
   return getIncludedSubmoduleQuery(context, includeModuleId);
 }
 
-static const AstNode* const& astForIDQuery(Context* context, ID id) {
-  QUERY_BEGIN(astForIDQuery, context, id);
+static const AstNode* const& astForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(astForIdQuery, context, id);
 
   const AstNode* result = nullptr;
   const BuilderResult* r = parseFileContainingIdToBuilderResult(context, id);
@@ -927,7 +774,7 @@ const AstNode* idToAst(Context* context, ID id) {
     return nullptr;
   }
 
-  return astForIDQuery(context, id);
+  return astForIdQuery(context, id);
 }
 
 // TODO: could many of these get-property-of-ID queries
@@ -939,7 +786,7 @@ static const AstTag& idToTagQuery(Context* context, ID id) {
   AstTag result = asttags::AST_TAG_UNKNOWN;
 
   if (!id.isFabricatedId()) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       result = ast->tag();
     } else if (types::CompositeType::isMissingBundledRecordType(context, id)) {
@@ -963,7 +810,7 @@ static const bool& idIsParenlessFunctionQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isParenless();
@@ -1026,7 +873,7 @@ static const bool& idIsMethodQuery(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   if (asttags::isFunction(tag)) {
-    const AstNode* ast = astForIDQuery(context, id);
+    const AstNode* ast = astForIdQuery(context, id);
     if (ast != nullptr) {
       if (auto fn = ast->toFunction()) {
         result = fn->isMethod();
@@ -1045,7 +892,7 @@ static const UniqueString& fieldIdToNameQuery(Context* context, ID id) {
   QUERY_BEGIN(fieldIdToNameQuery, context, id);
 
   UniqueString result;
-  if (auto ast = astForIDQuery(context, id)) {
+  if (auto ast = astForIdQuery(context, id)) {
     if (auto var = ast->toVariable()) {
       if (var->isField()) {
         result = var->name();
@@ -1463,13 +1310,19 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
+static bool hasIgnorePragma(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
 static bool
 shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
   return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast);
+         isAstDeprecated(context, ast) ||
+         hasIgnorePragma(context, ast);
 }
 
 // Skip if any parent is marked deprecated or unstable. We don't want to
@@ -1627,7 +1480,7 @@ isMentionOfWarnedTypeInReceiver(Context* context, ID idMention,
 
 void
 reportDeprecationWarningForId(Context* context, ID idMention, ID idTarget) {
-  // skip checks if we have a harcoded deprecation for this symbol
+  // skip checks if we have a hardcoded deprecation for this symbol
   if (hardcodedDeprecationForId(context, idMention, idTarget).empty()) {
     auto attr = parsing::idToAttributeGroup(context, idTarget);
 
@@ -1663,7 +1516,7 @@ reportUnstableWarningForId(Context* context, ID idMention, ID idTarget) {
 static const Module::Kind& getModuleKindQuery(Context* context, ID moduleId) {
   Module::Kind ret = Module::Kind::DEFAULT_MODULE_KIND;
   QUERY_BEGIN(getModuleKindQuery, context, moduleId);
-  const AstNode* ast = astForIDQuery(context, moduleId);
+  const AstNode* ast = astForIdQuery(context, moduleId);
   CHPL_ASSERT(ast && "could not find AST for module ID");
   if (auto mod = ast->toModule()) {
     ret = mod->kind();

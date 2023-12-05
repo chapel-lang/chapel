@@ -502,7 +502,7 @@ module Channel {
 
     /* Retrieve the address of the involved channel */
     override proc getAddr() : c_uintptr {
-      return (c_ptrTo_helper(selectChannel.channelObj) : c_uintptr);
+      return (c_ptrTo(selectChannel.channelObj) : c_uintptr);
     }
 
     override proc enqueueWaiter(ref process : sync bool, ref isDone : atomic int) {

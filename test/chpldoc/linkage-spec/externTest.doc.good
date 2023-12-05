@@ -74,7 +74,6 @@ or
 
    Commenting externRecordComment 
 
-
    .. attribute:: var field: int
 
       Commenting a field 
@@ -84,7 +83,6 @@ or
 .. record:: externRecordRenamedComment
 
    Commenting externRecordRenamedComment 
-
 
    .. attribute:: var field: int
 

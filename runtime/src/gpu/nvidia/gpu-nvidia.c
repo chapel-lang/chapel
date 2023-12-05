@@ -189,8 +189,9 @@ static void chpl_gpu_launch_kernel_help(int ln,
   CHPL_GPU_STOP_TIMER(load_time);
   CHPL_GPU_START_TIMER(prep_time);
 
-  // TODO: this should use chpl_mem_alloc
-  void*** kernel_params = chpl_malloc(nargs*sizeof(void**));
+  void ***kernel_params = chpl_mem_alloc(
+      (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  //         ^ +2 for the ln and fn arguments that we add to the end of the array
 
   assert(function);
   assert(kernel_params);
@@ -202,8 +203,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
 
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
-  bool* was_memory_dynamically_allocated_for_kernel_param =
-    chpl_malloc(nargs*sizeof(bool));
+  bool *was_memory_dynamically_allocated_for_kernel_param = chpl_mem_alloc(
+      nargs * sizeof(bool), CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
   for (int i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
@@ -212,8 +213,8 @@ static void chpl_gpu_launch_kernel_help(int ln,
     if (cur_arg_size > 0) {
       was_memory_dynamically_allocated_for_kernel_param[i] = true;
 
-      // TODO this allocation needs to use `chpl_mem_alloc` with a proper desc
-      kernel_params[i] = chpl_malloc(1*sizeof(CUdeviceptr));
+      kernel_params[i] = chpl_mem_alloc(1 * sizeof(CUdeviceptr),
+                                        CHPL_RT_MD_GPU_KERNEL_PARAM, ln, fn);
 
       // TODO this doesn't work on EX, why?
       // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
@@ -234,6 +235,14 @@ static void chpl_gpu_launch_kernel_help(int ln,
                    i, kernel_params[i]);
     }
   }
+
+  // add the ln and fn arguments to the end of the array
+  // These arguments only make sense when the kernel lives inside of standard
+  // module code and CHPL_DEVELOPER is not set since the generated kernel function
+  // will have two extra formals to account for the line and file num.
+  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
+  kernel_params[nargs] = (void**)(&ln);
+  kernel_params[nargs+1] = (void**)(&fn);
 
   CHPL_GPU_STOP_TIMER(prep_time);
   CHPL_GPU_START_TIMER(kernel_time);
@@ -261,11 +270,12 @@ static void chpl_gpu_launch_kernel_help(int ln,
   for (int i=0 ; i<nargs ; i++) {
     if (was_memory_dynamically_allocated_for_kernel_param[i]) {
       chpl_gpu_mem_free(*kernel_params[i], ln, fn);
+      chpl_mem_free(kernel_params[i], ln, fn);
     }
   }
 
-  // TODO: this should use chpl_mem_free
-  chpl_free(kernel_params);
+  chpl_mem_free(kernel_params, ln, fn);
+  chpl_mem_free(was_memory_dynamically_allocated_for_kernel_param, ln, fn);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
   CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
@@ -468,6 +478,10 @@ void chpl_gpu_impl_stream_synchronize(void* stream) {
   if (stream) {
     CUDA_CALL(cuStreamSynchronize(stream));
   }
+}
+
+bool chpl_gpu_impl_can_reduce(void) {
+  return true;
 }
 
 #endif // HAS_GPU_LOCALE

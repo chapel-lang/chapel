@@ -194,16 +194,6 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
-void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto ret = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, loc, "Single-statement 'return' routines are "
-             "deprecated; please insert 'do' before the 'return' or wrap the "
-             "statement in curly brackets.");
-  wr.message("For this return statement:");
-  wr.code(loc, { ret });
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
@@ -494,14 +484,6 @@ void ErrorMultipleManagementStrategies::write(ErrorWriterBase& wr) const {
   } else {
     wr.message("These strategies are incompatible; one should be removed.");
   }
-}
-
-void ErrorParenlessAttributeArgDeprecated::write(ErrorWriterBase& wr) const {
-  auto attr = std::get<const uast::Attribute*>(info);
-  wr.heading(kind_, type_, attr, "Attribute arguments without parentheses are "
-             "deprecated; please wrap the argument in parentheses '()'.");
-  wr.message("For this attribute:");
-  wr.code(attr, { attr->actual(0)});
 }
 
 void ErrorPostParseErr::write(ErrorWriterBase& wr) const {

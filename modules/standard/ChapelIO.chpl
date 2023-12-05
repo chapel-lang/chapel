@@ -387,10 +387,10 @@ module ChapelIO {
         for param i in 1..num_fields {
           if isIoField(x, i) {
             if !isBinary {
-              if !first then writer._writeLiteral(", ");
+              if !first then writer.writeLiteral(", ");
 
               const eq = ioFieldNameEqLiteral(writer, t, i);
-              writer._writeLiteral(eq);
+              writer.writeLiteral(eq);
             }
 
             writer.write(__primitive("field by num", x, i));
@@ -409,7 +409,7 @@ module ChapelIO {
               write(id);
             } else {
               const eq = ioFieldNameEqLiteral(writer, t, i);
-              writer._writeLiteral(eq);
+              writer.writeLiteral(eq);
             }
             writer.write(__primitive("field by num", x, i));
           }
@@ -438,7 +438,7 @@ module ChapelIO {
                       then "new " + t:string + "("
                       else if isClassType(t) then "{"
                       else "(";
-        writer._writeLiteral(start);
+        writer.writeLiteral(start);
       }
 
       var first = true;
@@ -450,7 +450,7 @@ module ChapelIO {
                     else if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else if isClassType(t) then "}"
                     else ")";
-        writer._writeLiteral(end);
+        writer.writeLiteral(end);
       }
     }
 
@@ -558,7 +558,7 @@ module ChapelIO {
 
           // Try reading a comma. If we don't, break out of the loop.
           try {
-            reader._readLiteral(",", true);
+            reader.readLiteral(",", true);
             needsComma = false;
           } catch err: BadFormatError {
             break;
@@ -628,7 +628,7 @@ module ChapelIO {
           // Try reading a comma. If we don't, then break.
           if needsComma then
             try {
-              reader._readLiteral(",", true);
+              reader.readLiteral(",", true);
               needsComma = false;
             } catch err: BadFormatError {
               // Break out of the loop if we didn't read a comma.
@@ -659,7 +659,7 @@ module ChapelIO {
 
             try {
               const fieldName = ioFieldNameLiteral(reader, t, i);
-              reader._readLiteral(fieldName);
+              reader.readLiteral(fieldName);
             } catch e : BadFormatError {
               // Try reading again with a different union element.
               continue;
@@ -673,7 +673,7 @@ module ChapelIO {
             const equalSign = if isJson then ":"
                               else "=";
 
-            try reader._readLiteral(equalSign, true);
+            try reader.readLiteral(equalSign, true);
 
             try reader.readIt(__primitive("field by num", x, i));
             readField[i-1] = true;
@@ -732,7 +732,7 @@ module ChapelIO {
 
           try {
             const fieldName = ioFieldNameLiteral(reader, t, i);
-            reader._readLiteral(fieldName);
+            reader.readLiteral(fieldName);
           } catch e : BadFormatError {
             // Try reading again with a different union element.
             continue;
@@ -747,7 +747,7 @@ module ChapelIO {
           const eq = if isJson then ":"
                      else "=";
 
-          try reader._readLiteral(eq, true);
+          try reader.readLiteral(eq, true);
 
           // We read the 'name = ', so now read the value!
           __primitive("set_union_id", x, i);
@@ -773,7 +773,7 @@ module ChapelIO {
                       then "new " + t:string + "("
                       else "{";
 
-        try reader._readLiteral(start);
+        try reader.readLiteral(start);
       }
 
       var needsComma = false;
@@ -788,7 +788,7 @@ module ChapelIO {
         const end = if st == QIO_AGGREGATE_FORMAT_CHPL then ")"
                     else "}";
 
-        try reader._readLiteral(end);
+        try reader.readLiteral(end);
       }
     }
 
@@ -803,7 +803,7 @@ module ChapelIO {
                       else if isJson then "{"
                       else "(";
 
-        try reader._readLiteral(start);
+        try reader.readLiteral(start);
       }
 
       var needsComma = false;
@@ -815,7 +815,7 @@ module ChapelIO {
         const end = if isJson then "}"
                     else ")";
 
-        try reader._readLiteral(end);
+        try reader.readLiteral(end);
       }
     }
 
@@ -902,7 +902,7 @@ module ChapelIO {
     proc helper(ref arg) throws where !f._writing { arg = f.read(arg.type); }
 
     proc rwLiteral(lit:string) throws {
-      if f._writing then f._writeLiteral(lit); else f._readLiteral(lit);
+      if f._writing then f.writeLiteral(lit); else f.readLiteral(lit);
     }
 
     if !binary {
@@ -993,11 +993,11 @@ module ChapelIO {
     if hasLowBound() then
       f.write(lowBound);
 
-    f._writeLiteral("..");
+    f.writeLiteral("..");
 
     if hasHighBound() {
       if (chpl__singleValIdxType(this.idxType) && this._low != this._high) {
-        f._writeLiteral("<");
+        f.writeLiteral("<");
         f.write(lowBound);
       } else {
         f.write(highBound);
@@ -1005,13 +1005,13 @@ module ChapelIO {
     }
 
     if stride != 1 {
-      f._writeLiteral(" by ");
+      f.writeLiteral(" by ");
       f.write(stride);
 
       if stride != -1 && isAligned() && ! chpl_isNaturallyAligned() {
     // Write out the alignment only if it differs from natural alignment.
     // We take alignment modulo the stride for consistency.
-      f._writeLiteral(" align ");
+      f.writeLiteral(" align ");
       f.write(alignment);
       }
     }
@@ -1024,7 +1024,11 @@ module ChapelIO {
     } else {
       if chpl_warnUnstable then
         compilerWarning("Serialization of ranges with non-default Serializer is unstable, and may change in the future");
-      writer.write(this:string);
+      if serializer.type == binarySerializer {
+        writer.write((this.low, this.high, this.stride, this.alignment));
+      } else {
+        writer.write(this:string);
+      }
     }
   }
   implements writeSerializable(range);
@@ -1033,7 +1037,7 @@ module ChapelIO {
   proc ref range.readThis(f) throws {
     if hasLowBound() then _low = f.read(_low.type);
 
-    f._readLiteral("..");
+    f.readLiteral("..");
 
     if hasHighBound() then _high = f.read(_high.type);
 
@@ -1075,10 +1079,15 @@ module ChapelIO {
     } else {
       if chpl_warnUnstable then
         compilerWarning("Deserialization of ranges with non-default Deserializer is unstable, and may change in the future");
-      const data = reader.read(string);
-      var f = openMemFile();
-      f.writer().write(data);
-      readThis(f.reader());
+      if deserializer.type == binaryDeserializer {
+        var (lo, hi, str, al) = reader.read((idxType, idxType, strType, idxType));
+        this = (lo..hi by str align al):this.type;
+      } else {
+        const data = reader.read(string);
+        var f = openMemFile();
+        f.writer().write(data);
+        readThis(f.reader());
+      }
     }
   }
   implements readDeserializable(range);
@@ -1096,7 +1105,7 @@ module ChapelIO {
 
   @chpldoc.nodoc
   override proc LocaleModel.writeThis(f) throws {
-    f._writeLiteral("LOCALE");
+    f.writeLiteral("LOCALE");
     f.write(chpl_id());
   }
 

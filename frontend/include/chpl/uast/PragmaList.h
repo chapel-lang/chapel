@@ -196,7 +196,7 @@ PRAGMA(DEPRECATED, npr,
        "deprecated",
        "applied to symbols that are deprecated")
 PRAGMA(DEPRECATED_IMPLICIT_CONVERSION, npr,
-       "deprecated impliict conversions",
+       "deprecated implicit conversions",
        "implicit conversions when passing to this formal are deprecated")
 PRAGMA(DEPRECATED_PARENFUL, npr,
        "deprecated parenful",
@@ -286,6 +286,7 @@ PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function 
 PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
+PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
@@ -377,7 +378,7 @@ PRAGMA(MANAGED_POINTER, ypr, "managed pointer", "e.g. Owned and Shared")
 PRAGMA(MANAGED_POINTER_NONNILABLE, npr, "managed pointer nonnilable", "e.g. non-nilable Owned and Shared")
 PRAGMA(MARKED_GENERIC, npr, "marked generic", "marked generic using the type query syntax")
 PRAGMA(RET_TYPE_MARKED_GENERIC, npr, "ret type marked generic", "ret type marked generic with (?)")
-PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "supreclass marked generic", "superclass is marked generic")
+PRAGMA(SUPERCLASS_MARKED_GENERIC, npr, "superclass marked generic", "superclass is marked generic")
 PRAGMA(MAYBE_ARRAY_TYPE, npr, "maybe array type", "function may be computing array type")
 PRAGMA(MAYBE_COPY_ELIDED, npr, "maybe copy elided", "symbol might be dead early due to copy elision")
 PRAGMA(MAYBE_PARAM, npr, "maybe param", "symbol can resolve to a param")
@@ -414,7 +415,6 @@ PRAGMA(ERROR_ON_COPY, ypr, "error on copy", "error if actual is copied at callsi
 PRAGMA(NO_COPY_RETURN, ypr, "no copy return", ncm)
 PRAGMA(NO_COPY_RETURNS_OWNED, ypr, "no copy returns owned", ncm)
 PRAGMA(NO_DEFAULT_FUNCTIONS, ypr, "no default functions", ncm)
-PRAGMA(NO_DOC, ypr, "no doc", "do not generate chpldoc documentation for this symbol")
 PRAGMA(NO_WHERE_DOC, ypr, "no where doc", "do not include the where clause in chpldoc documentation for this symbol")
 PRAGMA(NO_IMPLICIT_COPY, ypr, "no implicit copy", "function does not require autoCopy/autoDestroy")
 

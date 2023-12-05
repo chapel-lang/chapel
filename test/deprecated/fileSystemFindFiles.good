@@ -1,2 +1,0 @@
-fileSystemFindFiles.chpl:5: warning: 'findfiles' is deprecated, please use 'findFiles' instead
-fileSystemFindFiles.chpl:9: warning: 'findfiles' is deprecated, please use 'findFiles' instead

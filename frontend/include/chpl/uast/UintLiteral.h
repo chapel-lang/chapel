@@ -33,12 +33,18 @@ namespace uast {
   Such integer literals have type `uint`.
  */
 class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
+ friend class AstNode;
+
  private:
   UintLiteral(const types::UintParam* value, UniqueString text)
     : NumericLiteral(asttags::UintLiteral, value, text)
   { }
 
-  UintLiteral(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    numericLiteralSerializeInner(ser);
+  }
+
+  explicit UintLiteral(Deserializer& des)
     : NumericLiteral(asttags::UintLiteral, des)
   { }
 
@@ -50,12 +56,6 @@ class UintLiteral final : public NumericLiteral<uint64_t, types::UintParam> {
 
   static owned<UintLiteral> build(Builder* builder, Location loc,
                                   uint64_t value, UniqueString text);
-
-  void serialize(Serializer& ser) const override {
-    NumericLiteral::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(UintLiteral);
 };
 
 

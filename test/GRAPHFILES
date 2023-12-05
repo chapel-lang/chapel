@@ -1,15 +1,8 @@
 # suite: Release examples
-release/examples/benchmarks/lcals/LCALS-raw-short.graph
-release/examples/benchmarks/lcals/LCALS-raw-medium.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 release/examples/benchmarks/lulesh/lulesh.graph
 release/examples/benchmarks/hpcc/stream.graph
 release/examples/benchmarks/hpcc/ra.graph
 release/examples/benchmarks/hpcc/stream-ep.graph
-release/examples/benchmarks/hpcc/ptrans.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -34,10 +27,6 @@ release/examples/benchmarks/isx/isx-release.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_fragmented.graph
 release/examples/benchmarks/hpcc/ra.graph
-release/examples/benchmarks/hpcc/ptrans.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph
 studies/shootout/fannkuch-redux/fannkuch-redux.graph
@@ -95,14 +84,15 @@ studies/hpcc/STREAM_study_fragmented.graph
 studies/hpcc/STREAM_study.graph
 studies/hpcc/STREAM_study_promote.graph
 studies/hpcc/FFT/fft.graph
+studies/hpcc/PTRANS/ptrans.graph
 # suite: Performance Graphs (TEPS, GB/s, etc.)
 release/examples/benchmarks/hpcc/stream_performance.graph
 release/examples/benchmarks/hpcc/ra_performance.graph
 release/examples/benchmarks/hpcc/stream-ep_performance.graph
-release/examples/benchmarks/hpcc/ptrans_performance.graph
 studies/hpcc/STREAM_study_performance.graph
 studies/hpcc/FFT/fft_performance.graph
 studies/hpcc/HPL/hpl_performance.graph
+studies/hpcc/PTRANS/ptrans_performance.graph
 studies/ssca2/main/performance.graph
 # suite: Proxy apps
 studies/ssca2/main/SSCA2_main.graph
@@ -112,12 +102,12 @@ studies/lulesh/bradc/lulesh-dense.graph
 release/examples/benchmarks/miniMD/miniMD.graph
 studies/comd/llnl/CoMD.graph
 studies/comd/elegant/arrayOfStructs/CoMD-elegant-aos.graph
-release/examples/benchmarks/lcals/LCALS-raw-short.graph
-release/examples/benchmarks/lcals/LCALS-raw-medium.graph
-release/examples/benchmarks/lcals/LCALS-raw-long.graph
-release/examples/benchmarks/lcals/LCALS-parallel-short.graph
-release/examples/benchmarks/lcals/LCALS-parallel-medium.graph
-release/examples/benchmarks/lcals/LCALS-parallel-long.graph
+studies/lcals/LCALS-raw-short.graph
+studies/lcals/LCALS-raw-medium.graph
+studies/lcals/LCALS-raw-long.graph
+studies/lcals/LCALS-parallel-short.graph
+studies/lcals/LCALS-parallel-medium.graph
+studies/lcals/LCALS-parallel-long.graph
 # suite: Shootout benchmarks
 studies/shootout/binary-trees/binary-trees.graph
 studies/shootout/chameneos-redux/chameneos-redux.graph

@@ -49,7 +49,11 @@ namespace uast {
 
  */
 class Serial final : public SimpleBlockLike {
+ friend class AstNode;
+
  private:
+  int8_t condChildNum_;
+
   Serial(AstList children, int8_t condChildNum, BlockStyle blockStyle,
          int bodyChildNum,
          int numBodyStmts)
@@ -59,10 +63,15 @@ class Serial final : public SimpleBlockLike {
       condChildNum_(condChildNum) {
   }
 
-  Serial(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    simpleBlockLikeSerializeInner(ser);
+    ser.write(condChildNum_);
+  }
+
+  explicit Serial(Deserializer& des)
     : SimpleBlockLike(asttags::Serial, des) {
-      condChildNum_ = des.read<int8_t>();
-    }
+    condChildNum_ = des.read<int8_t>();
+  }
 
   bool contentsMatchInner(const AstNode* other) const override {
     const Serial* lhs = this;
@@ -82,8 +91,6 @@ class Serial final : public SimpleBlockLike {
   }
 
   std::string dumpChildLabelInner(int i) const override;
-
-  int8_t condChildNum_;
 
  public:
 
@@ -111,14 +118,6 @@ class Serial final : public SimpleBlockLike {
   const AstNode* condition() const {
     return condChildNum_ < 0 ? nullptr : child(condChildNum_);
   }
-
-  void serialize(Serializer& ser) const override {
-    SimpleBlockLike::serialize(ser);
-    ser.write(condChildNum_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(Serial);
-
 };
 
 

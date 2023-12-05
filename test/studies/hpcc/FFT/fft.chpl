@@ -11,7 +11,7 @@
 // Use standard modules for less common Math functions, Bit operations, Random
 // numbers, Timing, and blockDist and Cyclic distributions
 //
-use Math, BitOps, Random, Time, BlockDist, CyclicDist;
+use Math, BitOps, NPBRandom, Time, BlockDist, CyclicDist;
 
 //
 // Use shared user module for computing HPCC problem sizes
@@ -42,8 +42,7 @@ config const epsilon = 2.0 ** -51.0,
 // pseudo-random seed (based on the clock) or a fixed seed; and to
 // specify the fixed seed explicitly
 //
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 //
 // Configuration constants to control what's printed -- benchmark
@@ -205,7 +204,7 @@ proc dfft(ref A: [?ADom], W, cyclicPhase) {
 
 //
 // this is the radix-4 butterfly routine that takes multipliers wk1,
-// wk2, and wk3 and a 4-element array (slice) A.
+// wk2, and wk3 and a 4-element array (slice) X.
 //
 proc butterfly(wk1, wk2, wk3, ref X:[?D]) {
   const i0 = D.low,
@@ -260,7 +259,9 @@ proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed, algorithm=RNG.NPB);
+  if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

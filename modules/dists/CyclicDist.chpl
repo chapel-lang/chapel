@@ -1613,29 +1613,6 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
   }
 }
 
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
-proc newCyclicDom(dom: domain) {
-  return dom dmapped Cyclic(startIdx=dom.lowBound);
-}
-
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
-proc newCyclicArr(dom: domain, type eltType) {
-  var D = newCyclicDom(dom);
-  var A: [D] eltType;
-  return A;
-}
-
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
-proc newCyclicDom(rng: range...) {
-  return newCyclicDom({(...rng)});
-}
-
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
-proc newCyclicArr(rng: range..., type eltType) {
-  return newCyclicArr({(...rng)}, eltType);
-}
-
-
 proc CyclicArr.canDoOptimizedSwap(other) {
   var domsMatch = true;
 

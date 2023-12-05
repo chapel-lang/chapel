@@ -3,6 +3,7 @@
 // --gen-ids is specified.
 
 config const n = 1;
+config const fac = 4;
 
 // CHECK: i64 @factorial
 // CHECK-SAME: !chpl.ast.id
@@ -18,7 +19,7 @@ proc call_factorial()  {
   // CHECK: i64 @call_factorial
   // CHECK: @factorial
   // CHECK-SAME: !chpl.ast.id
-  var x = factorial(4);
+  var x = factorial(fac);
   return x;
 }
 

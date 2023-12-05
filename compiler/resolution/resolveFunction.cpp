@@ -597,6 +597,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     popInstantiationLimit(fn);
     clearCacheInfoIfEmpty(fn);
   }
+  if(fn && forCall) {
+    fn->maybeGenerateDeprecationWarning(forCall);
+    fn->maybeGenerateUnstableWarning(forCall);
+  }
 }
 
 static void markTypesWithDefaultInitEqOrAssign(FnSymbol* fn) {
@@ -2742,6 +2746,9 @@ static void insertInitConversion(Symbol* to, Symbol* toType, Symbol* from,
       INT_ASSERT(!toValType->symbol->hasFlag(FLAG_GENERIC));
       toType = toValType->symbol;
     }
+
+    // If there is a mismatch and we already have errors, leave it alone.
+    if (toValType != toType->type && fatalErrorsEncountered()) return;
     // Remainder of this code assumes that to and toType match.
     INT_ASSERT(toValType == toType->type);
 
@@ -3005,6 +3012,7 @@ static void insertCasts(BaseAST* ast, FnSymbol* fn,
               from = rhsSe->symbol();
             } else {
               // Store the RHS into a temporary
+              SET_LINENO(rhs);
               Symbol* tmp = NULL;
               tmp = newTemp("_cast_tmp_", rhs->typeInfo());
               call->insertBefore(new DefExpr(tmp));

@@ -2,24 +2,15 @@
 # Active the virtual environment and run the command supplied
 # usage: ./run-in-venv prog [args]
 
-if [ -z "$CHPL_HOME" ]; then
-  # compute the chpl home directory
-  export CHPL_HOME=$(cd $(dirname $0) ; cd ..; cd ..; pwd)
-fi
+CWD=$(cd $(dirname $0) ; pwd)
 
-python=$($CHPL_HOME/util/config/find-python.sh)
-chpldeps=$("$python" "$CHPL_HOME/util/chplenv/chpl_home_utils.py" --chpldeps)
+# Perform checks and set up environment variables for virtual env.
+source $CWD/run-in-venv-common.bash
 
-if [ ! -e "$chpldeps" ]; then
-  echo "chpl dependencies are missing - try make test-venv" 1>&2
-  exit 1
-fi
-
+# Make sure that chpldeps (via its __main__.py) is installed.
 if [ ! -f "$chpldeps/__main__.py" ]; then
   echo "chpl dependencies are missing - try make test-venv" 1>&2
   exit 1
 fi
 
-# include the dependencies
-export PYTHONPATH="$chpldeps":$PYTHONPATH
 exec "$1" "${@:2}"

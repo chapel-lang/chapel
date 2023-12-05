@@ -57,31 +57,31 @@ class CanPassResult {
   };
 
  private:
-  bool passes_ = false;
+  optional<PassingFailureReason> failReason_ = {};
   bool instantiates_ = false;
   bool promotes_ = false;
   ConversionKind conversionKind_ = NONE;
 
-  CanPassResult(bool passes, bool instantiates, bool promotes,
-                ConversionKind kind)
-    : passes_(passes), instantiates_(instantiates), promotes_(promotes),
+  CanPassResult(optional<PassingFailureReason> failReason, bool instantiates,
+                bool promotes, ConversionKind kind)
+    : failReason_(failReason), instantiates_(instantiates), promotes_(promotes),
       conversionKind_(kind) { }
 
   // these builders make it easier to implement canPass
-  static CanPassResult fail() {
-    return CanPassResult(false, false, false, NONE);
+  static CanPassResult fail(PassingFailureReason reason) {
+    return CanPassResult(reason, false, false, NONE);
   }
   static CanPassResult passAsIs() {
-    return CanPassResult(true, false, false, NONE);
+    return CanPassResult({}, false, false, NONE);
   }
   static CanPassResult convert(ConversionKind e) {
-    return CanPassResult(true, false, false, e);
+    return CanPassResult({}, false, false, e);
   }
   static CanPassResult instantiate() {
-    return CanPassResult(true, true, false, NONE);
+    return CanPassResult({}, true, false, NONE);
   }
   static CanPassResult convertAndInstantiate(ConversionKind e) {
-    return CanPassResult(true, true, false, e);
+    return CanPassResult({}, true, false, e);
   }
   static CanPassResult promote(CanPassResult r) {
     CanPassResult ret = r;
@@ -139,7 +139,12 @@ class CanPassResult {
   ~CanPassResult() = default;
 
   /** Returns true if the argument is passable */
-  bool passes() { return passes_; }
+  bool passes() { return !failReason_; }
+
+  PassingFailureReason reason() {
+    CHPL_ASSERT((bool) failReason_);
+    return *failReason_;
+  }
 
   /** Returns true if passing the argument will require instantiation */
   bool instantiates() { return instantiates_; }

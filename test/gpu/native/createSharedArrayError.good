@@ -1,3 +1,2 @@
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 createSharedArrayError.chpl:9: In function 'main':
 createSharedArrayError.chpl:12: error: attempting to allocate a shared array of 'myRecord', which does not have a known size. Is 'numBits(myRecord)' supported?

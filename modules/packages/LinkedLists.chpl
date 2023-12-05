@@ -303,22 +303,22 @@ record LinkedList : serializable {
       f.write(size);
     }
     if isjson || ischpl {
-      f._writeLiteral("[");
+      f.writeLiteral("[");
     }
 
     var first = true;
     for e in this {
       if first then first = false;
       else {
-        if isspace then f._writeLiteral(" ");
-        else if isjson || ischpl then f._writeLiteral(", ");
+        if isspace then f.writeLiteral(" ");
+        else if isjson || ischpl then f.writeLiteral(", ");
       }
 
       f.write(e);
     }
 
     if isjson || ischpl {
-      f._writeLiteral("]");
+      f.writeLiteral("]");
     }
 
   }
@@ -351,7 +351,7 @@ record LinkedList : serializable {
     // How many elements should we read (for binary mode)?
     const num : int = if isBinary then f.read(int) else 0;
 
-    if isJson || isChpl then f._readLiteral("[");
+    if isJson || isChpl then f.readLiteral("[");
 
     // Clear out existing elements in the list.
     destroy();
@@ -372,7 +372,7 @@ record LinkedList : serializable {
         // Try reading an end bracket. If we don't, then continue on.
         try {
           if isJson || isChpl {
-            f._readLiteral("]");
+            f.readLiteral("]");
           } else if isSpace {
             f._readNewline();
           }
@@ -387,9 +387,9 @@ record LinkedList : serializable {
         // Try to read a space or a comma. Break if we don't.
         try {
           if isSpace {
-            f._readLiteral(" ");
+            f.readLiteral(" ");
           } else if isJson || isChpl {
-            f._readLiteral(",");
+            f.readLiteral(",");
           }
         } catch err: BadFormatError {
           break;
@@ -401,7 +401,7 @@ record LinkedList : serializable {
     }
 
     if !hasReadEnd then
-      if isJson || isChpl then f._readLiteral("]");
+      if isJson || isChpl then f.readLiteral("]");
   }
 
   proc ref deserialize(reader: fileReader, ref deserializer) throws

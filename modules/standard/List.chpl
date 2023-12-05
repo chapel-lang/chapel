@@ -363,6 +363,7 @@ module List {
 
       :arg other: The iterator expression to initialize from.
     */
+    @chpldoc.nodoc
     proc init(other: _iteratorRecord) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -388,6 +389,7 @@ module List {
     */
     pragma "last resort"
     @unstable("'list.parSafe' is unstable and is expected to be replaced by a separate list type in the future")
+    @chpldoc.nodoc
     proc init(other: _iteratorRecord, param parSafe=false) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -495,6 +497,7 @@ module List {
 
       :arg other: The iterator expression to initialize from.
     */
+    @chpldoc.nodoc
     proc init=(other: _iteratorRecord) {
       // get the type yielded by the iterator
       type t = __primitive("scalar promotion type", other.type);
@@ -828,11 +831,6 @@ module List {
       return result;
     }
 
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(in x: this.eltType) : int {
-      return this.pushBack(x);
-    }
-
     @chpldoc.nodoc
     inline proc ref _appendGeneric(collection) {
       var startSize: int;
@@ -878,11 +876,6 @@ module List {
       return ret;
     }
 
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: list(eltType, ?p)) lifetime this < other {
-      return this.pushBack(other);
-    }
-
     /*
       Push a copy of each element contained in an array to the end of this
       list.
@@ -902,11 +895,6 @@ module List {
         _leave();
       }
       return ret;
-    }
-
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: [?d] eltType) lifetime this < other {
-      return this.pushBack(other);
     }
 
     /*
@@ -937,11 +925,6 @@ module List {
         _leave();
       }
       return ret;
-    }
-
-    @deprecated(notes=":proc:`list.append` is deprecated; please use :proc:`list.pushBack` instead")
-    proc ref append(other: range(eltType, ?b, ?d)) lifetime this < other {
-      return this.pushBack(other);
     }
 
     /*
@@ -1332,16 +1315,6 @@ module List {
       return result;
     }
 
-    @deprecated(notes=":proc:`list.pop` is deprecated; please use :proc:`list.popBack` instead.")
-    proc ref pop(): eltType {
-      return this.popBack();
-    }
-
-    @deprecated(notes="list.pop(idx) is deprecated; please use :proc:`list.getAndRemove` instead.")
-    proc ref pop(idx: int): eltType {
-      return this.getAndRemove(idx);
-    }
-
     /*
       Remove the element at the index `idx` from this list and return it. The
       elements at indices after `idx` are shifted one to the left in memory,
@@ -1625,11 +1598,6 @@ module List {
       return slot.borrow();
     }
 
-    @deprecated(notes=":proc:`list.set` is deprecated; please use :proc:`list.replace` instead.")
-    proc ref set(i: int, in x: eltType): bool {
-      return this.replace(i, x);
-    }
-
     /*
       Replaces the value at a given index with a new value. This method returns
       `false` if the index is out of bounds.
@@ -1854,13 +1822,13 @@ module List {
         // Write the number of elements
         ch.write(_size);
       } else {
-        ch._writeLiteral("[");
+        ch.writeLiteral("[");
       }
 
       for i in 0..(_size - 2) {
         ch.write(_getRef(i));
         if !isBinary {
-          ch._writeLiteral(", ");
+          ch.writeLiteral(", ");
         }
       }
 
@@ -1868,7 +1836,7 @@ module List {
         ch.write(_getRef(_size-1));
 
       if !isBinary {
-        ch._writeLiteral("]");
+        ch.writeLiteral("]");
       }
 
       _leave();
@@ -1878,17 +1846,17 @@ module List {
     proc _writeJson(ch: fileWriter) throws {
       _enter();
 
-      ch._writeLiteral("[");
+      ch.writeLiteral("[");
 
       for i in 0..(_size - 2) {
         ch.writef("%jt", _getRef(i));
-        ch._writeLiteral(", ");
+        ch.writeLiteral(", ");
       }
 
       if _size > 0 then
         ch.writef("%jt", _getRef(_size-1));
 
-      ch._writeLiteral("]");
+      ch.writeLiteral("]");
 
       _leave();
     }
@@ -1938,7 +1906,7 @@ module List {
         var isFirst = true;
         var hasReadEnd = false;
 
-        ch._readLiteral("[");
+        ch.readLiteral("[");
 
         while !hasReadEnd {
           if isFirst {
@@ -1946,7 +1914,7 @@ module List {
 
             // Try reading an end bracket. If we don't, then continue on.
             try {
-              ch._readLiteral("]");
+              ch.readLiteral("]");
               hasReadEnd = true;
               break;
             } catch err: BadFormatError {
@@ -1956,7 +1924,7 @@ module List {
 
             // Try to read a comma. Break if we don't.
             try {
-              ch._readLiteral(",");
+              ch.readLiteral(",");
             } catch err: BadFormatError {
               break;
             }
@@ -1969,7 +1937,7 @@ module List {
         }
 
         if !hasReadEnd {
-          ch._readLiteral("]");
+          ch.readLiteral("]");
         }
       }
 
@@ -1984,13 +1952,13 @@ module List {
       _enter();
       _clearLocked();
 
-      ch._readLiteral("[");
+      ch.readLiteral("[");
 
       while !ch.matchLiteral("]") {
         if isFirst {
           isFirst = false;
         } else {
-          ch._readLiteral(",");
+          ch.readLiteral(",");
         }
 
         // read an element
@@ -2171,18 +2139,46 @@ module List {
     return !(a == b);
   }
 
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in another list.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:list, type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements contained in an array.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:[], type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by a range.
+
+    See :proc:`~list.init=`
+  */
   operator :(rhs:range(?), type t:list) {
     var lst: list = rhs; // use init=
     return lst;
   }
+
+  /*
+    Initializes a list containing elements that are copy initialized from
+    the elements yielded by an iterator expression.
+
+    See :proc:`~list.init=`
+  */
+  @chpldoc.nodoc
   operator :(rhs:_iteratorRecord, type t:list) {
     var lst: list = rhs; // use init=
     return lst;

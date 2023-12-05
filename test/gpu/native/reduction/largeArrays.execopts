@@ -1,0 +1,11 @@
+--n=2_000_000_000
+--n=2_000_000_001
+--n=2_147_483_647
+--n=4_000_000_000
+--n=4_000_000_001
+
+# Engin: I want to test the following too, but hit unrelated issues on AMD
+# https://github.com/chapel-lang/chapel/issues/23934
+# -n=4_294_967_293
+# -n=4_294_967_294
+# -n=4_294_967_295

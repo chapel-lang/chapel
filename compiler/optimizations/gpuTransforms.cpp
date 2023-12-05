@@ -438,6 +438,7 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
+  bool symsInBodyAreGpuizable();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
@@ -536,6 +537,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
+         !symsInBodyAreGpuizable() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -568,6 +570,27 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
     }
   }
   return true;
+}
+
+
+bool GpuizableLoop::symsInBodyAreGpuizable() {
+  std::vector<SymExpr*> symExprs;
+  collectSymExprs(this->loop_, symExprs);
+  for(auto *symExpr : symExprs) {
+    // forall loops that contain a reduction intent introduce a temporary
+    // variable with a special flag that we'll look for (for the time being we
+    // want to not gpuize these loops).
+    if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
+      return true;
+    }
+    // gotos that jump outside the loop cannot be gpuized
+    if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
+      if (auto label = toSymExpr(gotostmt->label)) {
+        if (!isDefinedInTheLoops(label->symbol(), {this->loop_})) return true;
+      }
+    }
+  }
+  return false;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {

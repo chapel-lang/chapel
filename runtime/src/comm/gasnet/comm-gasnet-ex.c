@@ -23,7 +23,6 @@
 #include "gasnet.h"
 #include "gasnet_vis.h"
 #include "gasnet_coll.h"
-#include "gasnet_tools.h"
 #include "chpl-comm.h"
 #include "chpl-comm-diags.h"
 #include "chpl-comm-callbacks.h"
@@ -53,7 +52,13 @@
 #include <assert.h>
 #include <time.h>
 
+#define GEX_NO_FLAGS 0
+
 static gasnet_seginfo_t* seginfo_table = NULL;
+static gex_Client_t      myclient;
+static gex_EP_t          myep;
+static gex_TM_t          myteam;
+static gex_Segment_t     mysegment;
 
 // Gasnet AM handler arguments are only 32 bits, so here we have
 // functions to get the 2 arguments for a 64-bit pointer,
@@ -252,7 +257,6 @@ typedef enum {
   PRIV_BCAST_LARGE,     // put data at addr (used for private broadcast)
   FREE,                 // free data at addr
   SHUTDOWN,             // tell nodes to get ready for shutdown
-  BCAST_SEGINFO,        // broadcast for segment info table
   DO_REPLY_PUT,         // do a PUT here from another locale
   DO_COPY_PAYLOAD       // copy AM payload to another address
 } AM_handler_function_idx_t;
@@ -536,20 +540,6 @@ static void AM_shutdown(gasnet_token_t token) {
   chpl_signal_shutdown();
 }
 
-//
-// This global and routine are used to broadcast the seginfo_table at the outset
-// of the program's execution.  It is designed to only be used once.  This code
-// was modeled after the _test_segbcast() routine in
-// third-party/gasnet/gasnet-src/tests/test.h
-//
-static int bcast_seginfo_done = 0;
-static void AM_bcast_seginfo(gasnet_token_t token, void *buf, size_t nbytes) {
-  assert(nbytes == sizeof(gasnet_seginfo_t)*gasnet_nodes());
-  chpl_memcpy(seginfo_table, buf, nbytes);
-  gasnett_local_wmb();
-  bcast_seginfo_done = 1;
-}
-
 // Put from arg->src (which is local to the AM handler) back to
 // arg->dst (which is local to the caller of this AM).
 // nbytes is < gasnet_AMMaxLongReply here (see chpl_comm_get).
@@ -576,24 +566,23 @@ void AM_copy_payload(gasnet_token_t token, void* buf, size_t nbytes,
   GASNET_Safe(gasnet_AMReplyShort2(token, SIGNAL, ack0, ack1));
 }
 
-static gasnet_handlerentry_t ftable[] = {
-  {FORK,          AM_fork},
-  {FORK_SMALL,    AM_fork_small},
-  {FORK_LARGE,    AM_fork_large},
-  {FORK_NB,       AM_fork_nb},
-  {FORK_NB_SMALL, AM_fork_nb_small},
-  {FORK_NB_LARGE, AM_fork_nb_large},
-  {FORK_FAST,     AM_fork_fast},
-  {FORK_FAST_SMALL, AM_fork_fast_small},
-  {SIGNAL,        AM_signal},
-  {SIGNAL_LONG,   AM_signal_long},
-  {PRIV_BCAST,    AM_priv_bcast},
-  {PRIV_BCAST_LARGE, AM_priv_bcast_large},
-  {FREE,          AM_free},
-  {SHUTDOWN,      AM_shutdown},
-  {BCAST_SEGINFO, AM_bcast_seginfo},
-  {DO_REPLY_PUT,  AM_reply_put},
-  {DO_COPY_PAYLOAD, AM_copy_payload}
+static gex_AM_Entry_t ftable[] = {
+  {FORK,             AM_fork,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork"             },
+  {FORK_SMALL,       AM_fork_small,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_small"       },
+  {FORK_LARGE,       AM_fork_large,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_large"       },
+  {FORK_NB,          AM_fork_nb,          GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb"          },
+  {FORK_NB_SMALL,    AM_fork_nb_small,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_small"    },
+  {FORK_NB_LARGE,    AM_fork_nb_large,    GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_nb_large"    },
+  {FORK_FAST,        AM_fork_fast,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast"        },
+  {FORK_FAST_SMALL,  AM_fork_fast_small,  GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_fork_fast_small"  },
+  {SIGNAL,           AM_signal,           GEX_FLAG_AM_REQREP  | GEX_FLAG_AM_SHORT,  2, NULL, "AM_signal"           },
+  {SIGNAL_LONG,      AM_signal_long,      GEX_FLAG_AM_REPLY   | GEX_FLAG_AM_LONG,   2, NULL, "AM_signal_long"      },
+  {PRIV_BCAST,       AM_priv_bcast,       GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast"       },
+  {PRIV_BCAST_LARGE, AM_priv_bcast_large, GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_priv_bcast_large" },
+  {FREE,             AM_free,             GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  2, NULL, "AM_free"             },
+  {SHUTDOWN,         AM_shutdown,         GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_SHORT,  0, NULL, "AM_shutdown"         },
+  {DO_REPLY_PUT,     AM_reply_put,        GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 0, NULL, "AM_reply_put"        },
+  {DO_COPY_PAYLOAD,  AM_copy_payload,     GEX_FLAG_AM_REQUEST | GEX_FLAG_AM_MEDIUM, 4, NULL, "AM_copy_payload"     }
 };
 
 //
@@ -603,7 +592,7 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
                                        int ln, int32_t fn)
 {
-  gasnet_handle_t ret;
+  gex_Event_t ret;
   int remote_in_segment;
 
   // Communication callbacks
@@ -622,14 +611,17 @@ chpl_comm_nb_handle_t chpl_comm_put_nb(void *addr, c_nodeid_t node, void* raddr,
 
   if(!remote_in_segment) {
     chpl_comm_put(addr, node, raddr, size, commID, ln, fn);
-    ret = NULL;
+    ret = GEX_EVENT_INVALID;
     return (chpl_comm_nb_handle_t) ret;
   }
 
   chpl_comm_diags_verbose_rdma("put_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(put_nb);
 
-  ret = gasnet_put_nb_bulk(node, raddr, addr, size);
+  // TODO GEX consider cases where we could benefit from early re-use of source
+  // buffer GEX_EVENT_DEFER means source memory will not change until PUT is
+  // complete (options are DEFER, NOW, or pass in a gex_Event_t)
+  ret = gex_RMA_PutNB(myteam, node, raddr, addr, size, GEX_EVENT_DEFER, GEX_NO_FLAGS);
 
   return (chpl_comm_nb_handle_t) ret;
 }
@@ -638,7 +630,7 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
                                        size_t size, int32_t commID,
                                        int ln, int32_t fn)
 {
-  gasnet_handle_t ret;
+  gex_Event_t ret;
   int remote_in_segment;
 
   // Communications callback support
@@ -657,35 +649,39 @@ chpl_comm_nb_handle_t chpl_comm_get_nb(void* addr, c_nodeid_t node, void* raddr,
 
   if(!remote_in_segment) {
     chpl_comm_get(addr, node, raddr, size, commID, ln, fn);
-    ret = NULL;
+    ret = GEX_EVENT_INVALID;
     return (chpl_comm_nb_handle_t) ret;
   }
 
   chpl_comm_diags_verbose_rdma("get_nb", node, size, ln, fn, commID);
   chpl_comm_diags_incr(get_nb);
 
-  ret = gasnet_get_nb_bulk(addr, node, raddr, size);
+  ret = gex_RMA_GetNB(myteam, addr, node, raddr, size, GEX_NO_FLAGS);
 
   return (chpl_comm_nb_handle_t) ret;
 }
 
 int chpl_comm_test_nb_complete(chpl_comm_nb_handle_t h)
 {
-  return ((void*)h) == NULL;
+  return ((void*)h) == GEX_EVENT_INVALID;
+  // TODO GEX Note that this just checks if the op was blocking, if we want
+  // this to check if a non-blocking op is complete it should be:
+  // return gex_Event_Test((gex_Event_t) h) == GASNET_OK;
 }
 
 void chpl_comm_wait_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
-  gasnet_wait_syncnb_some((gasnet_handle_t*) h, nhandles);
+  // TODO GEX this still polls internally -- do we want that with our progress
+  // thread running or should we just task yield while doing a gex_Event_TestSome?
+  gex_Event_WaitSome((gex_Event_t*) h, nhandles, GEX_NO_FLAGS);
 }
 
 int chpl_comm_try_nb_some(chpl_comm_nb_handle_t* h, size_t nhandles)
 {
-  assert(NULL == GASNET_INVALID_HANDLE);  // serious confusion if not so
-  return gasnet_try_syncnb_some((gasnet_handle_t*) h, nhandles) == GASNET_OK;
+  return gex_Event_TestSome((gex_Event_t*) h, nhandles, GEX_NO_FLAGS) == GASNET_OK;
 }
 
+// TODO GEX could be scalable query to gasnet itself
 int chpl_comm_addr_gettable(c_nodeid_t node, void* start, size_t len)
 {
 #ifdef GASNET_SEGMENT_EVERYTHING
@@ -848,7 +844,7 @@ static void set_num_comm_domains() {
 void chpl_comm_init(int *argc_p, char ***argv_p) {
   // Initialize gasnet so that we can call gex_System_QueryHostInfo and
   // set the number of locales on our node which allows the rest of the
-  // runtime to determine which cores this locale will use. gasnet_attach
+  // runtime to determine which cores this locale will use. gex_Segment_Attach
   // is called in chpl_comm_init which is called after the cores have been
   // determined.
   gex_Rank_t      infoCount;
@@ -868,9 +864,8 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   setup_ibv();
   setup_polling();
 
-  assert(sizeof(gasnet_handlerarg_t)==sizeof(uint32_t));
+  GASNET_Safe(gex_Client_Init(&myclient, &myep, &myteam, "chapel", argc_p, argv_p, GEX_FLAG_USES_GASNET1));
 
-  gasnet_init(argc_p, argv_p);
   chpl_nodeID = gasnet_mynode();
   chpl_numNodes = gasnet_nodes();
 
@@ -881,14 +876,9 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
 }
 
 void chpl_comm_pre_mem_init(void) {
-  //  int status; // Some compilers complain about unused variable 'status'.
+  GASNET_Safe(gex_Segment_Attach(&mysegment, myteam, gasnet_getMaxLocalSegmentSize()));
+  GASNET_Safe(gex_EP_RegisterHandlers(myep, ftable, sizeof(ftable)/sizeof(gex_AM_Entry_t)));
 
-  GASNET_Safe(gasnet_attach(ftable,
-                            sizeof(ftable)/sizeof(gasnet_handlerentry_t),
-                            gasnet_getMaxLocalSegmentSize(),
-                            0));
-  // TODO (EJR: 03/03/16): we currently "leak" seginfo_table. We should
-  // probably free it on exit (but only for "clean" exits.)
   seginfo_table = (gasnet_seginfo_t*)sys_malloc(chpl_numNodes*sizeof(gasnet_seginfo_t));
   //
   // The following call has no real effect on the .addr and .size
@@ -900,18 +890,13 @@ void chpl_comm_pre_mem_init(void) {
   GASNET_Safe(gasnet_getSegmentInfo(seginfo_table, chpl_numNodes));
 #ifdef GASNET_SEGMENT_EVERYTHING
   //
-  // For SEGMENT_EVERYTHING, there is no GASNet-provided memory
-  // segment, so instead we're going to create our own fake segment
-  // in order to share the code that refers to it and avoid any
-  // assumptions that global variables in the generated C code will
-  // be stored at the same address in all instances of the executable
-  // (something that is typically true, but turns out not to be on,
-  // for example, OS X Lion).  This technique was modeled after the
-  // _test_attach() routine from third-party/gasnet/gasnet-src/tests/test.h
-  // but is significantly simplified for our purposes.
+  // For SEGMENT_EVERYTHING, there is no GASNet-provided memory segment, so
+  // instead we're going to create our own fake segment in order to share the
+  // code that refers to it and avoid any assumptions that global variables in
+  // the generated C code will be stored at the same address in all instances
+  // of the executable (something that is not true with ASLR)
   //
   if (chpl_nodeID == 0) {
-    int i;
     //
     // Only locale #0 really needs the seginfo_table to store anything since it owns all
     // of the global variable locations; everyone else will just peek at its copy.  So
@@ -923,34 +908,20 @@ void chpl_comm_pre_mem_init(void) {
                                       (((((uintptr_t)global_table)%GASNETT_PAGESIZE) == 0)? 0 :
                                        (GASNETT_PAGESIZE-(((uintptr_t)global_table)%GASNETT_PAGESIZE)))));
     seginfo_table[0].size = global_table_size;
-    //
-    // ...and then zeroes out everyone else's
-    //
-    for (i=1; i<chpl_numNodes; i++) {
-      seginfo_table[i].addr = NULL;
-      seginfo_table[i].size = 0;
-    }
   }
+  // Zero out non-locale 0 values
+  for (int i=1; i<chpl_numNodes; i++) {
+    seginfo_table[i].addr = NULL;
+    seginfo_table[i].size = 0;
+  }
+
   //
   // Then we're going to broadcast the seginfo_table to everyone so that each locale
   // has its own copy of it and knows where everyone else's segment lives (or, really,
   // where locale #0's lives since we're not using anyone else's at this point).
   //
   chpl_comm_barrier("getting ready to broadcast addresses");
-  //
-  // This is a naive O(numLocales) broadcast; we could do something
-  // more scalable with more effort
-  //
-  if (chpl_nodeID == 0) {
-    int i;
-    // Skip loc 0, since that would end up memcpy'ing seginfo_table to itself
-    for (i=1; i < chpl_numNodes; i++) {
-      GASNET_Safe(gasnet_AMRequestMedium0(i, BCAST_SEGINFO, seginfo_table,
-                                          chpl_numNodes*sizeof(gasnet_seginfo_t)));
-    }
-  } else {
-    GASNET_BLOCKUNTIL(bcast_seginfo_done);
-  }
+  gex_Event_Wait(gex_Coll_BroadcastNB(myteam, 0, seginfo_table, seginfo_table, sizeof(gasnet_seginfo_t), GEX_NO_FLAGS));
   chpl_comm_barrier("making sure everyone's done with the broadcast");
 #endif
 
@@ -1154,9 +1125,10 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
 #endif
 
     if( remote_in_segment ) {
-      // If it's in the remote segment, great, do a normal gasnet_put.
+      // If it's in the remote segment, great, do a normal RMA Put.
       // GASNet will handle the local portion not being in the segment.
-      gasnet_put(node, raddr, addr, size); // node, dest, src, size
+      // TODO GEX convert to gex_RMA_PutNB with task-yield
+      gex_RMA_PutBlocking(myteam, node, raddr, addr, size, GEX_NO_FLAGS);
     } else {
       // If it's not in the remote segment, we need to send an
       // active message so that the other node will copy the data
@@ -1200,7 +1172,7 @@ void  chpl_comm_put(void* addr, c_nodeid_t node, void* raddr,
   }
 }
 
-////GASNET - pass trace info to gasnet_get
+////GASNET - pass trace info to GET
 ////GASNET - define GASNET_E_ PUTGET always REMOTE
 ////GASNET - look at GASNET tools at top of README.tools has atomic counters
 void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
@@ -1226,8 +1198,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
     // The GASNet Spec says:
     //   The source memory address for all gets and the target memory address
     //   for all puts must fall within the memory area registered for remote
-    //   access by the remote node (see gasnet_attach()), or the results are
-    //   undefined
+    //   access by the remote node, or the results are undefined
 
     // In other words, it is OK if the local side of a GET or PUT
     // is not in the registered memory region.
@@ -1239,9 +1210,10 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 #endif
 
     if( remote_in_segment ) {
-      // If it's in the remote segment, great, do a normal gasnet_get.
+      // If it's in the remote segment, great, do a normal RMA Get.
       // GASNet will handle the local portion not being in the segment.
-      gasnet_get(addr, node, raddr, size); // dest, node, src, size
+      // TODO GEX convert to gex_RMA_GetNB with task-yield
+      gex_RMA_GetBlocking(myteam, addr, node, raddr, size, GEX_NO_FLAGS);
     } else {
       // If it's not in the remote segment, we need to send an
       // active message so that the other node will PUT back to us.
@@ -1320,7 +1292,7 @@ void  chpl_comm_get(void* addr, c_nodeid_t node, void* raddr,
 }
 
 //
-// This is an adapter from Chapel code to GASNet's gasnet_gets_bulk. It does:
+// This is an adapter from Chapel code to GASNet's VIS interface. It does:
 // * convert count[0] and all of 'srcstr' and 'dststr' from counts of element
 //   to counts of bytes,
 //
@@ -1330,24 +1302,20 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // will ignore arrays in this case
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
-  size_t cnt[strlvls+1];
+  ptrdiff_t dststr[strlvls_nz];
+  ptrdiff_t srcstr[strlvls_nz];
+  size_t cnt[strlvls_nz];
+  size_t elemsz = count[0] * elemSize;
 
-  // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = count[0] * elemSize;
-
-  if (strlvls>0) {
-    srcstr[0] = srcstrides[0] * elemSize;
-    dststr[0] = dststrides[0] * elemSize;
-    for (i=1; i<strlvls; i++) {
-      srcstr[i] = srcstrides[i] * elemSize;
-      dststr[i] = dststrides[i] * elemSize;
-      cnt[i] = count[i];
-    }
-    cnt[strlvls] = count[strlvls];
+  for (i=0; i<strlvls; i++) {
+    srcstr[i] = srcstrides[i] * elemSize;
+    dststr[i] = dststrides[i] * elemSize;
+    cnt[i] = count[i+1];
   }
 
   // Communications callback support
@@ -1366,33 +1334,31 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
   }
 
   // TODO -- handle strided get for non-registered memory
-  gasnet_gets_bulk(dstaddr, dststr, srcnode, srcaddr, srcstr, cnt, strlvls);
+  // TODO GEX convert to NB with task-yield
+  gex_VIS_StridedGetBlocking(myteam, dstaddr, dststr, srcnode, srcaddr, srcstr, elemsz, cnt, strlvls, GEX_NO_FLAGS);
 }
 
-// See the comment for chpl_comm_gets().
+// See the comment for chpl_comm_get_strd().
 void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_id,
                          void* srcaddr, size_t* srcstrides, size_t* count,
                          int32_t stridelevels, size_t elemSize, int32_t commID,
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
+  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // will ignore arrays in this case
+  const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;
 
-  size_t dststr[strlvls];
-  size_t srcstr[strlvls];
-  size_t cnt[strlvls+1];
+  ptrdiff_t dststr[strlvls_nz];
+  ptrdiff_t srcstr[strlvls_nz];
+  size_t cnt[strlvls_nz];
+  size_t elemsz = count[0] * elemSize;
 
-  // Only count[0] and strides are measured in number of bytes.
-  cnt[0] = count[0] * elemSize;
-  if (strlvls>0) {
-    srcstr[0] = srcstrides[0] * elemSize;
-    dststr[0] = dststrides[0] * elemSize;
-    for (i=1; i<strlvls; i++) {
-      srcstr[i] = srcstrides[i] * elemSize;
-      dststr[i] = dststrides[i] * elemSize;
-      cnt[i] = count[i];
-    }
-    cnt[strlvls] = count[strlvls];
+  for (i=0; i<strlvls; i++) {
+    srcstr[i] = srcstrides[i] * elemSize;
+    dststr[i] = dststrides[i] * elemSize;
+    cnt[i] = count[i+1];
   }
 
   // Communications callback support
@@ -1411,7 +1377,8 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
   }
 
   // TODO -- handle strided put for non-registered memory
-  gasnet_puts_bulk(dstnode, dstaddr, dststr, srcaddr, srcstr, cnt, strlvls);
+  // TODO GEX convert to NB with task-yield
+  gex_VIS_StridedPutBlocking(myteam, dstnode, dstaddr, dststr, srcaddr, srcstr, elemsz, cnt, strlvls, GEX_NO_FLAGS);
 }
 
 #define MAX_UNORDERED_TRANS_SZ 1024

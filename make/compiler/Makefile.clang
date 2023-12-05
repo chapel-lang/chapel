@@ -177,6 +177,11 @@ RUNTIME_CXXFLAGS += $(WARN_CXXFLAGS)
 # aren't strict.
 #
 CHPL_GASNET_MORE_CFLAGS = -Wno-strict-prototypes -Wno-missing-prototypes -Wno-unused-variable -Wno-unused-function
+
+# only use -Wno-cast-function-type-strict when clang version is 16 or greater
+CLANG_VER := $(shell echo __clang_major__ | $(CXX) -E -x c++ - | sed -e '/^\#/d' -e 's/L$$//')
+CHPL_GASNET_MORE_CFLAGS += $(shell test $(DEF_CXX_VER) -gt 15 && echo -Wno-cast-function-type-strict)
+
 endif
 
 ifdef CHPL_COMM_DEBUG

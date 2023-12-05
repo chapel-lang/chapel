@@ -25,6 +25,7 @@
 #include <map>
 #include <string>
 #include <vector>
+#include <functional>
 #include "vec.h"
 
 extern char executableFilename[FILENAME_MAX+1];
@@ -38,10 +39,6 @@ extern bool ccwarnings;
 extern std::vector<const char*> incDirs;
 extern std::vector<const char*> libDirs;
 extern std::vector<const char*> libFiles;
-
-// directory for intermediates; tmpdir or saveCDir
-// TODO: remove this as redundant with the Dyno Context's tmpdir
-extern const char* intDirName;
 
 struct fileinfo {
   FILE* fptr;
@@ -58,7 +55,6 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname=NULL,
 void ensureDirExists(const char* dirname, const char* explanation,
                      bool checkWriteable = true);
 const char* getCwd();
-void ensureTmpDirExists();
 void deleteDir(const char* dirname);
 const char* objectFileForCFile(const char* cfile);
 
@@ -93,9 +89,33 @@ void addSourceFiles(int numFilenames, const char* filename[]);
 void addSourceFile(const char* filename, const char* modFilename);
 void assertSourceFilesFound();
 const char* nthFilename(int i);
-void addLibPath(const char* filename);
-void addLibFile(const char* filename);
-void addIncInfo(const char* incDir);
+// Functions to add C library or include dir information.
+// If running in driver compilation phase and the information is not from
+// parsing the command line, these will also save to a tmp dir for later use.
+void addLibPath(const char* filename, bool fromCmdLine = false);
+void addLibFile(const char* filename, bool fromCmdLine = false);
+void addIncInfo(const char* incDir, bool fromCmdLine = false);
+
+// Save (append) provided string into the given tmp file.
+// For storing information that needs to be saved between driver phases.
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+                   bool appendNewline = true);
+// Like saveDriverTmp, but accepts a vector of strings to save in one go without
+// repeatedly opening/closing file. Newline separated by default unless
+// noNewlines is true.
+void saveDriverTmpMultiple(const char* tmpFilePath,
+                           std::vector<const char*> stringsToSave,
+                           bool noNewlines = false);
+// Feed strings from the specified tmp file (one per line) into the given
+// restoring function, which should copy any it needs to keep.
+// For accessing information saved between driver phases with saveDriverTmp.
+void restoreDriverTmp(const char* tmpFilePath,
+                      std::function<void(const char*)> restoreSavedString);
+// Like restoreDriverTmp, but just saves the entire contents of the file into
+// the given string including newlines.
+void restoreDriverTmpMultiline(
+    const char* tmpFilePath,
+    std::function<void(const char*)> restoreSavedString);
 
 // Restore lib dir, lib name, and inc dir info that was saved to disk, for
 // compiler-driver use.

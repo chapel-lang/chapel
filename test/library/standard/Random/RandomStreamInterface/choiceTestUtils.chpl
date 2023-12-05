@@ -2,7 +2,7 @@ use Random, Map;
 
 config const debug = false;
 
-proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, trials=1000) throws {
+proc test(ref stream, X, size:?sizeType=none, replace=true, prob:?probType=none, trials=1000) throws {
   var counts;
   if isArrayValue(X) {
     counts = new map(X.eltType, int);
@@ -40,7 +40,7 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
 
   if debug {
     writeln('Counts for X: ', X);
-    for value in counts {
+    for value in counts.keys() {
       writeln(value, ' : ', counts[value]/trials:real);
     }
   }
@@ -50,7 +50,7 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
   else if isIntegralType(sizeType) then m = size;
   
   var actualRatios = new map(int, real);
-  for (k,v) in actualRatios.items() {
+  for (k,v) in zip(actualRatios.keys(), actualRatios.values()) {
     if isNothingType(sizeType) then
       actualRatios[k] = v / trials:real;
     else
@@ -75,7 +75,7 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
   // Confirm that resulting ratios are within 0.05 of expected ratios
   var success = true;
   if replace {
-    for value in actualRatios {
+    for value in actualRatios.keys() {
       if !isClose(actualRatios[value], expectedRatios[value]) {
         success = false;
       }
@@ -87,7 +87,7 @@ proc test(stream, X, size:?sizeType=none, replace=true, prob:?probType=none, tri
       if !isNothingType(prob.type) then write('prob = ', prob, ', ');
       if !isNothingType(size.type) then writeln('size = ', size, ', ');
       writeln('replace = ', replace, ');');
-      for value in actualRatios {
+      for value in actualRatios.keys() {
         writeln('value   expected   actual');
         writeln(value, '       ', expectedRatios[value:int],'        ', actualRatios[value]);
       }

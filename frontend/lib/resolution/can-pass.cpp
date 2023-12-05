@@ -217,10 +217,8 @@ static bool fitsInMantissaExponent(int mantissaWidth,
 static bool isConsideredGeneric(Type::Genericity g) {
   switch (g) {
     case Type::CONCRETE:
-    case Type::GENERIC_WITH_DEFAULTS:
-      // argument passing calculations think of generic with defaults
-      // as the same as concrete.
       return false;
+    case Type::GENERIC_WITH_DEFAULTS:
     case Type::GENERIC:
       return true;
     case Type::MAYBE_GENERIC:
@@ -276,34 +274,27 @@ bool CanPassResult::canConvertNumeric(Context* context,
     if (auto actualUintT = actualT->toUintType())
       if (actualUintT->bitwidth() < formalUintT->bitwidth())
         return true;
+
+    if (auto actualIntT = actualT->toIntType()) {
+      if (actualIntT->bitwidth() <= formalUintT->bitwidth()) {
+        // int can coerce to uint
+        return true;
+      }
+    }
   }
 
   if (auto formalRealT = formalT->toRealType()) {
     // don't convert bools to reals (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width real
+    if (actualT->isNumericType())
+      return true;
 
     // convert real from smaller size
     if (auto actualRealT = actualT->toRealType())
       if (actualRealT->bitwidth() < formalRealT->bitwidth())
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width real
-      if (formalRealT->bitwidth() == 64)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalRealT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   if (auto formalImagT = formalT->toImagType()) {
@@ -315,6 +306,10 @@ bool CanPassResult::canConvertNumeric(Context* context,
 
   if (auto formalComplexT = formalT->toComplexType()) {
     // don't convert bools to complexes (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width complex
+    if (actualT->isNumericType())
+      return true;
 
     // convert smaller complex types
     if (auto actualComplexT = actualT->toComplexType())
@@ -329,23 +324,6 @@ bool CanPassResult::canConvertNumeric(Context* context,
       if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width complex
-      if (formalComplexT->bitwidth() == 128)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalComplexT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   return false;
@@ -385,18 +363,15 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
   if (auto formalIntT = formalT->toIntType()) {
     //
-    // For smaller integer types, if the argument is a param, does it
+    // If the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
     //
-    if (formalIntT->bitwidth() < 64)
-      if (paramFitsInInt(formalIntT->bitwidth(), actualP))
-        return true;
+    return paramFitsInInt(formalIntT->bitwidth(), actualP);
   }
 
   if (auto formalUintT = formalT->toUintType()) {
-    if (paramFitsInUint(formalUintT->bitwidth(), actualP))
-      return true;
+    return paramFitsInUint(formalUintT->bitwidth(), actualP);
   }
 
   // param strings can convert between string and c_string
@@ -466,7 +441,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
 
   bool instantiates = false;
   bool converts = false;
-  bool fails = false;
+  optional<PassingFailureReason> fails = {};
 
   ClassTypeDecorator actualNily = actual.toBorrowed();
   ClassTypeDecorator formalNily = formal.toBorrowed();
@@ -481,7 +456,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     else if (actualNily.isNonNilable() && formalNily.isNilable())
       converts = true; // non-nil to nil conversion
     else
-      fails = true; // all other nilability cases
+      fails = FAIL_INCOMPATIBLE_NILABILITY; // all other nilability cases
   }
 
   // consider management.
@@ -491,16 +466,16 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     else if (formalMgmt.isBorrowed())
       converts = true; // management can convert to borrowed
     else
-      fails = true;
+      fails = FAIL_INCOMPATIBLE_MGMT;
   }
 
   if (fails)
-    return fail();
+    return fail(*fails);
 
   // all class conversions are subtype conversions
   ConversionKind conversion = converts ? SUBTYPE : NONE;
 
-  return CanPassResult(/*passes*/ true,
+  return CanPassResult(/* no fail reason, passes */ {},
                        instantiates,
                        /*promotes*/ false,
                        conversion);
@@ -519,20 +494,20 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
                                               formalCt->decorator());
 
   if (!decResult.passes())
-    return fail();
+    return decResult;
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
       actualCt->manager() != formalCt->manager()) {
     // disallow e.g. owned C -> shared C
-    return fail();
+    return fail(FAIL_INCOMPATIBLE_MGR);
   }
 
   auto actualBct = actualCt->basicClassType();
   auto formalBct = formalCt->basicClassType();
 
   // code below assumes this
-  CHPL_ASSERT(decResult.passes_);
+  CHPL_ASSERT(decResult.passes());
   CHPL_ASSERT(decResult.conversionKind_ == NONE ||
          decResult.conversionKind_ == SUBTYPE);
   CHPL_ASSERT(!decResult.promotes_);
@@ -542,8 +517,16 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (formalCt->manageableType()->isAnyClassType()) {
     // Formal is the generic `class`. This is an instantiation since
-    // that's always generic.
-    return instantiate();
+    // that's always generic, but it might also be a conversion if nilability
+    // is involved.
+
+    // all class conversions are subtype conversions
+    ConversionKind conversion = converts ? SUBTYPE : NONE;
+
+    return CanPassResult(/* no fail reason */ {},
+                         /* instantiates */ true,
+                         /*promotes*/ false,
+                         conversion);
   } else if (actualCt->manageableType()->isAnyClassType()) {
     CHPL_ASSERT(false && "probably shouldn't happen");
   } else if (actualBct->isSubtypeOf(formalBct, converts, instantiates)) {
@@ -554,13 +537,13 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
     // all class conversions are subtype conversions
     ConversionKind conversion = converts ? SUBTYPE : NONE;
 
-    return CanPassResult(/*passes*/ true,
+    return CanPassResult(/* no fail reason */ {},
                          instantiates,
                          /*promotes*/ false,
                          conversion);
   }
 
-  return fail();
+  return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
 
@@ -588,17 +571,20 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       CanPassResult result = canPassClassTypes(context, actualCt, formalCt);
-      if (result.passes_ && (result.conversionKind_ == NONE ||
-                             result.conversionKind_ == SUBTYPE)) {
-        return result;
+      if (result.passes() && !(result.conversionKind_ == NONE ||
+                               result.conversionKind_ == SUBTYPE)) {
+        // It could've been "passable", but not as a subtype -- if that's the
+        // case, cause failure.
+        return fail(FAIL_EXPECTED_SUBTYPE);
       }
+      return result;
     }
   }
 
   // TODO: c_ptr(t) -> c_ptr(void)
   // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
 
-  return fail();
+  return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
 CanPassResult CanPassResult::canConvertTuples(Context* context,
@@ -612,12 +598,12 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
 
   if (aT->numElements() != fT->numElements()) {
     // Number of fields differs, so not convertible.
-    return fail();
+    return fail(FAIL_INCOMPATIBLE_TUPLE_SIZE);
   }
 
   if (aT->isStarTuple() != fT->isStarTuple()) {
     // Star-tuple-ness differs, so not convertible.
-    return fail();
+    return fail(FAIL_INCOMPATIBLE_TUPLE_STAR);
   }
 
   int n = aT->numElements();
@@ -634,8 +620,11 @@ CanPassResult CanPassResult::canConvertTuples(Context* context,
 
     if (aElt != fElt) {
       auto got = canPass(context, aElt, fElt);
-      if (!got.passes() || got.promotes()) {
-        return fail();
+      if (!got.passes()){
+        // TODO: figure out how to propagate this information.
+        return fail(FAIL_FORMAL_OTHER);
+      } else if (got.promotes()) {
+        return fail(FAIL_FORMAL_OTHER);
       } else {
         instantiates = instantiates || got.instantiates();
         converts = converts || got.converts();
@@ -686,17 +675,18 @@ CanPassResult CanPassResult::canConvert(Context* context,
   if (actualQT.type()->isTupleType() && formalQT.type()->isTupleType()) {
     auto aT = actualQT.type()->toTupleType();
     auto fT = formalQT.type()->toTupleType();
-    auto got = canConvertTuples(context, aT, fT);
-    if (got.passes()) {
-      return got;
-    }
+
+    // TODO: for now, return the result from the tuple conversion no matter
+    // what it is. This is better than falling through to the catch-all
+    // fail(...) below because it propagates the error.
+    return canConvertTuples(context, aT, fT);
   }
 
   // TODO: check for conversion to copy type
   // (relevant for array slices and iterator records)
   // TODO: port canCoerceToCopyType
 
-  return fail();
+  return fail(FAIL_CANNOT_CONVERT);
 }
 
 // handles formalT being a builtin generic type like integral
@@ -705,21 +695,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
                                           const Type* formalT) {
   if (formalT->isAnyType())
     return true;
-
-  if (formalT->isAnyBorrowedNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NILABLE)
-        return true;
-
-  if (formalT->isAnyBorrowedNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::BORROWED_NONNIL)
-        return true;
-
-  if (formalT->isAnyBorrowedType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isBorrowed())
-        return true;
 
   if (formalT->isAnyComplexType() && actualT->isComplexType())
     return true;
@@ -736,20 +711,15 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyIntegralType() && actualT->isIntegralType())
     return true;
 
-  if (formalT->isAnyIteratorClassType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
+  if (formalT->isAnyIteratorClassType()) {
+    CHPL_UNIMPL("iterator classes"); // TODO: represent iterators
+    return false;
+  }
 
-  if (formalT->isAnyIteratorRecordType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
-
-  if (formalT->isAnyManagementAnyNilableType())
-    if (actualT->isClassType())
-      return true;
-
-  if (formalT->isAnyManagementNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isNilable())
-        return true;
+  if (formalT->isAnyIteratorRecordType()) {
+    CHPL_UNIMPL("iterator records"); // TODO: represent iterators
+    return false;
+  }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
@@ -761,8 +731,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
           if (manager->isAnyOwnedType())
             return true;
 
-  if (formalT->isAnyPodType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: compute POD-ness
+  if (formalT->isAnyPodType()) {
+    CHPL_UNIMPL("POD types"); // TODO: compute POD-ness
+    return false;
+  }
 
   if (formalT->isAnyRealType() && actualT->isRealType())
     return true;
@@ -788,21 +760,6 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
 
   if (formalT->isAnyUnionType() && actualT->isUnionType())
     return true;
-
-  if (formalT->isAnyUnmanagedNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NILABLE)
-        return true;
-
-  if (formalT->isAnyUnmanagedNonNilableType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().val() == ClassTypeDecorator::UNMANAGED_NONNIL)
-        return true;
-
-  if (formalT->isAnyUnmanagedType())
-    if (auto ct = actualT->toClassType())
-      if (ct->decorator().isUnmanaged())
-        return true;
 
   return false;
 }
@@ -848,7 +805,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
         auto ft = formalCt->toTupleType();
         if (at->isKnownSize() && ft->isKnownSize() &&
             at->numElements() != ft->numElements()) {
-          return fail();
+          return fail(FAIL_INCOMPATIBLE_TUPLE_SIZE);
         }
       }
 
@@ -864,7 +821,7 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     }
   }
 
-  return fail();
+  return fail(FAIL_CANNOT_INSTANTIATE);
 }
 
 CanPassResult CanPassResult::canPass(Context* context,
@@ -896,11 +853,11 @@ CanPassResult CanPassResult::canPass(Context* context,
   // type formal, non-type actual -> error, can't pass value to type
   // non-type formal, type actual -> error, can't pass type to value
   if (formalQT.isType() != actualQT.isType() && !typeQueryActual)
-    return fail();
+    return fail(FAIL_TYPE_VS_NONTYPE);
 
   // param actuals can pass to non-param formals
   if (formalQT.isParam() && !actualQT.isParam() && !typeQueryActual)
-    return fail();
+    return fail(FAIL_NOT_PARAM);
 
   // check params
   const Param* actualParam = actualQT.param();
@@ -908,12 +865,12 @@ CanPassResult CanPassResult::canPass(Context* context,
   if (actualParam && formalParam) {
     if (actualParam != formalParam) {
       // passing different param values won't do
-      return fail();
+      return fail(FAIL_MISMATCHED_PARAM);
     } // otherwise continue with type information
   } else if (formalParam && !actualParam) {
     // this case doesn't make sense
     CHPL_ASSERT(false && "case not expected");
-    return fail();
+    return fail(FAIL_FORMAL_OTHER);
   }
 
   // Type-query Kinds should always pass
@@ -948,11 +905,11 @@ CanPassResult CanPassResult::canPass(Context* context,
   }
 
   if (actualQT.isUnknown() && !typeQueryActual) {
-    return fail(); // actual type not established
+    return fail(FAIL_UNKNOWN_ACTUAL_TYPE); // actual type not established
   }
 
   if (formalQT.isUnknownKindOrType()) {
-    return fail(); // unknown formal type, can't resolve
+    return fail(FAIL_UNKNOWN_FORMAL_TYPE); // unknown formal type, can't resolve
   }
 
   if (isTypeGeneric(context, formalQT)) {
@@ -962,72 +919,76 @@ CanPassResult CanPassResult::canPass(Context* context,
 
     if (formalQT.kind() != QualifiedType::TYPE &&
         isTypeGeneric(context, actualQT))
-      return fail(); // generic types can only be passed to type actuals
+      return fail(FAIL_GENERIC_TO_NONTYPE); // generic types can only be passed to type actuals
 
-    return canInstantiate(context, actualQT, formalQT);
-
-  } else {
-    // if the formal type is concrete, do additional checking
-    // (if it is generic, we will do this checking after instantiation)
-    switch (formalQT.kind()) {
-      case QualifiedType::UNKNOWN:
-      case QualifiedType::FUNCTION:
-      case QualifiedType::PARENLESS_FUNCTION:
-      case QualifiedType::MODULE:
-      case QualifiedType::TYPE_QUERY:
-      case QualifiedType::INDEX:
-      case QualifiedType::DEFAULT_INTENT:
-      case QualifiedType::CONST_INTENT:
-      case QualifiedType::OUT: // handled above
-        // no additional checking for these
-        break;
-
-      case QualifiedType::REF:
-        return fail(); // ref type requires same time which is ruled out above
-
-      case QualifiedType::CONST_REF:
-      case QualifiedType::REF_MAYBE_CONST:
-      case QualifiedType::TYPE:
-        {
-          auto got = canPassSubtype(context, actualT, formalT);
-          if (got.passes()) {
-            return got;
-          }
-          break;
-        }
-
-      case QualifiedType::PARAM:
-        {
-          auto got = canConvert(context, actualQT, formalQT);
-          if (got.passes()) {
-            // if the formal parameter value is unknown, we need
-            // to instantiate as well.
-            if (formalQT.param() == nullptr) {
-              got.instantiates_ = true;
-            }
-            return got;
-          }
-          break;
-        }
-
-      case QualifiedType::IN:
-      case QualifiedType::CONST_IN:
-      case QualifiedType::INOUT:
-      case QualifiedType::VAR:       // var/const var don't really make sense
-      case QualifiedType::CONST_VAR: // as formals but we allow it for testing
-        {
-          auto got = canConvert(context, actualQT, formalQT);
-          if (got.passes())
-            return got;
-          break;
-        }
+    auto got = canInstantiate(context, actualQT, formalQT);
+    if (!got.passes() && formalQT.kind() == QualifiedType::TYPE) {
+      // Instantiation may not be necessary for generic type formals: we
+      // could be passing a (subtype) generic type actual.
+      // Fall through to the checks below.
+    } else {
+      return got;
     }
+  }
+
+  // if the formal type doesn't need instantiation, do additional checking
+  // (if it is generic, we will do this checking after instantiation)
+  switch (formalQT.kind()) {
+    case QualifiedType::UNKNOWN:
+    case QualifiedType::FUNCTION:
+    case QualifiedType::PARENLESS_FUNCTION:
+    case QualifiedType::MODULE:
+    case QualifiedType::TYPE_QUERY:
+    case QualifiedType::INDEX:
+    case QualifiedType::DEFAULT_INTENT:
+    case QualifiedType::CONST_INTENT:
+    case QualifiedType::OUT: // handled above
+      // no additional checking for these
+      break;
+
+    case QualifiedType::REF:
+      // ref type requires same type which is ruled out above
+      return fail(FAIL_NOT_EXACT_MATCH);
+
+    case QualifiedType::CONST_REF:
+    case QualifiedType::REF_MAYBE_CONST:
+    case QualifiedType::TYPE:
+      {
+        // TODO: promotion
+        return canPassSubtype(context, actualT, formalT);
+      }
+
+    case QualifiedType::PARAM:
+      {
+        auto got = canConvert(context, actualQT, formalQT);
+        if (got.passes()) {
+          // if the formal parameter value is unknown, we need
+          // to instantiate as well.
+          if (formalQT.param() == nullptr) {
+            got.instantiates_ = true;
+          }
+        }
+        // TODO: promotion
+        return got;
+      }
+
+    case QualifiedType::IN:
+    case QualifiedType::CONST_IN:
+    case QualifiedType::INOUT:
+    case QualifiedType::VAR:       // var/const var don't really make sense
+    case QualifiedType::CONST_VAR: // as formals but we allow it for testing
+      {
+        // TODO: promotion
+        return canConvert(context, actualQT, formalQT);
+      }
   }
 
   // can we promote?
   // TODO: implement promotion check
+  // When promotion is implemented, the failing cases marked "TODO: promotion"
+  // above will need to fall through to here.
 
-  return fail();
+  return fail(FAIL_FORMAL_OTHER);
 }
 
 // When trying to combine two kinds, you can't just pick one.

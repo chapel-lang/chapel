@@ -18,10 +18,10 @@ on here.gpus[0] {
     B(i,j) = i + j;
   }
   writeln(B);
-  // @assertOnGpu
-  // foreach (i,j) in {1..-1, 1..-1} {}
-  // @assertOnGpu
-  // foreach (i,j) in {low..high, low..high} {}
+  @assertOnGpu
+  foreach (i,j) in {1..-1, 1..-1} {}
+  @assertOnGpu
+  foreach (i,j) in {low..high, low..high} {}
 }
 stopGpuDiagnostics();
 assertGpuDiags(kernel_launch_um=2, kernel_launch_aod=4);

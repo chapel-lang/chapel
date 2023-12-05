@@ -1,3 +1,3 @@
-use BitOps;
+use Map;
 
 writeln("In foo");

@@ -509,9 +509,8 @@ static void argHelper(std::string formal, std::string actual,
     t->stringify(str, chpl::StringifyKind::CHPL_SYNTAX);
     printf("  success: passing %s to %s\n", str.str().c_str(), formal.c_str());
   } else {
-    std::string msg = "Cannot resolve call to 'foo': no matching candidates";
     assert(guard.numErrors() == 1);
-    assert(guard.error(0)->message() == msg);
+    assert(guard.error(0)->type() == chpl::NoMatchingCandidates);
     guard.clearErrors();
     printf("  success: cannot pass %s to %s\n", actual.c_str(), formal.c_str());
   }

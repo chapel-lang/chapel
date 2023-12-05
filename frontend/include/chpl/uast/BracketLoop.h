@@ -42,6 +42,8 @@ namespace uast {
 
  */
 class BracketLoop final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   BracketLoop(AstList children, int8_t indexChildNum,
               int8_t iterandChildNum,
@@ -60,7 +62,11 @@ class BracketLoop final : public IndexableLoop {
                     attributeGroupChildNum) {
   }
 
-  BracketLoop(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
+  }
+
+  explicit BracketLoop(Deserializer& des)
     : IndexableLoop(asttags::BracketLoop, des) { }
 
   bool contentsMatchInner(const AstNode* other) const override {
@@ -90,13 +96,6 @@ class BracketLoop final : public IndexableLoop {
    * Check if this bracket loop is actually an array type
    */
   bool isMaybeArrayType() const;
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(BracketLoop);
-
 };
 
 

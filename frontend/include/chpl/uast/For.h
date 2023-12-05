@@ -43,6 +43,8 @@ namespace uast {
 
  */
 class For final : public IndexableLoop {
+ friend class AstNode;
+
  private:
   For(AstList children,  int8_t indexChildNum,
       int8_t iterandChildNum,
@@ -64,7 +66,12 @@ class For final : public IndexableLoop {
     CHPL_ASSERT(withClause() == nullptr);
   }
 
-  For(Deserializer& des)
+  void serializeInner(Serializer& ser) const override {
+    indexableLoopSerializeInner(ser);
+    ser.write(isParam_);
+  }
+
+  explicit For(Deserializer& des)
     : IndexableLoop(asttags::For, des) {
     isParam_ = des.read<bool>();
   }
@@ -111,14 +118,6 @@ class For final : public IndexableLoop {
   bool isParam() const {
     return isParam_;
   }
-
-  void serialize(Serializer& ser) const override {
-    IndexableLoop::serialize(ser);
-    ser.write(isParam_);
-  }
-
-  DECLARE_STATIC_DESERIALIZE(For);
-
 };
 
 

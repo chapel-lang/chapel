@@ -1,2 +1,2 @@
-pragma "no doc"
+pragma "do not RVF"
 writeln("test");
