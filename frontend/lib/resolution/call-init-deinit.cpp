@@ -1029,8 +1029,20 @@ void CallInitDeinit::handleTry(const Try* t, RV& rv) {
   processDeinitsAndPropagate(frame, parent, rv);
 }
 
-void CallInitDeinit::handleSelect(const Select* s, RV& rv) {
-  
+void CallInitDeinit::handleSelect(const Select* sel, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* parent = currentParentFrame();
+
+  //propagate out of each when block 
+  for(int i = 0; i < currentNumWhenFrames(); i++) {
+    VarFrame* whenFrame = currentWhenFrame(i);
+    if (whenFrame && !whenFrame->returnsOrThrows) {
+      processDeinitsAndPropagate(whenFrame, frame, rv);
+    }
+  }
+
+  //propogate out of the select itself
+  processDeinitsAndPropagate(frame, parent, rv);
 }
 
 void CallInitDeinit::handleScope(const AstNode* ast, RV& rv) {

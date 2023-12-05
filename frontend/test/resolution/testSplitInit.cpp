@@ -1675,9 +1675,9 @@ static void test66() {
 }
 
 
-/*
-static void test63a() {
-  testSplitInit("test63a",
+
+static void testParamTrueWhen() {
+  testSplitInit("testFirstParamTrueWhenNoOtherwise",
     R""""(
       module M {
         // this would be in the standard library...
@@ -1686,23 +1686,22 @@ static void test63a() {
         }
 
         proc test() {
-          type T = real;
+          type T = int;
           var x;
           select T {
             when int {
               x = 11;
             }
             when real {
-              return;
+
             }
           }
+          
         }
       }
     )"""",
-    {});
-}
-static void test64a() {
-  testSplitInit("test64a",
+    {"x"});
+    testSplitInit("testSecondParamTrueWhenNoOtherwise",
     R""""(
       module M {
         // this would be in the standard library...
@@ -1712,6 +1711,85 @@ static void test64a() {
 
         proc test() {
           type T = real;
+          var x: int;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+              
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+    testSplitInit("testNoParamTrueWhenNoOtherwise",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = string;
+          var x: int;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+              
+            }
+          }
+          x = 3;
+        }
+      }
+    )"""",
+    {"x"});
+    testSplitInit("testNoParamTrueWhenYesOtherwise",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          type T = string;
+          var x: int;
+          select T {
+            when int {
+              
+            }
+            when real {
+              
+            }
+            otherwise {
+              x = 2;
+            }
+          }
+          x = 3;
+        }
+      }
+    )"""",
+    {"x"});
+}
+static void test64a() {
+  testSplitInit("test64a_passing",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          type T = int;
           var x;
           select T {
             when int {
@@ -1719,6 +1797,33 @@ static void test64a() {
             }
             when real {
               writeln("");
+            }
+          }
+          x = 12;
+        }
+      }
+    )"""",
+    {"x"});
+    testSplitInit("test64a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          type T = real;
+          var x;
+          select T {
+            when int {
+              x = 11;
+            }
+            when real {
+
             }
           }
           x = 12;
@@ -1754,7 +1859,7 @@ static void test65a() {
     )"""",
     {"x"});
 }
-*/
+
 int main() {
   test1();
   test2();
@@ -1824,5 +1929,8 @@ int main() {
   test64();
   test65();
   test66();
+  test64a();
+  test65a();
+  testParamTrueWhen();
   return 0;
 }

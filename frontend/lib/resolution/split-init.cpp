@@ -292,8 +292,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
                (thenReturnsThrows && elseInits)) {
       // one branch returns or throws and the other inits
       locSplitInitedVars.insert(id);
-    } else if ((thenInits && thenFrame && thenFrame->isParamTrue) ||
-               (elseInits && elseFrame && elseFrame->isParamTrue)) {
+    } else if ((thenInits && thenFrame && thenFrame->paramTrue) ||
+               (elseInits && elseFrame && elseFrame->paramTrue)) {
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
@@ -538,37 +538,43 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   }
 
   std::set<ID> locSplitInitedVars;
+  std::set<ID> splitInitedInAll;
   // now consider the initializer 'vars' and propogate them
   // split init is OK if:
-  //    all when/otherwise blocks initalize var before mentioning it
-  //    at least one block initializes it and the others return
-  //    TODO: blocks initialize it or are known to be param false 
+  //  if otherwise block, all present frames init, return, or throw
+  //  if no otherwise block, all present frames init, return, or throw, 
+  //    and at least one path is param true
   for (const auto& id : locInitedVars) {
-    bool allInitOrReturnThrow = true;
-    for(size_t i = 0; i < currentNumWhenFrames(); i++) {
+
+    bool allInitReturnOrThrow = true;
+    bool allInit = true;
+    bool anyParamTrue = false;
+    for(size_t i = 0; i < sel->numWhenStmts(); i++) {
       auto whenFrame = currentWhenFrame(i);
-      bool thisInits = whenFrame && whenFrame->initedVars.count(id) > 0;
-      bool thisReturnsThrows = whenFrame && whenFrame->returnsOrThrows;
-      allInitOrReturnThrow = allInitOrReturnThrow && (thisInits || thisReturnsThrows);
+      if (!whenFrame) continue;
+      
+
+      bool thisInits = whenFrame->initedVars.count(id) > 0;
+      bool thisReturnsThrows = whenFrame->returnsOrThrows;
+      bool thisParamTrue = whenFrame->paramTrue;
+
+      allInitReturnOrThrow = allInitReturnOrThrow && (thisInits || thisReturnsThrows);
+      allInit = allInit && thisInits;
+      anyParamTrue = anyParamTrue || thisParamTrue;
+    
     }
-    if (allInitOrReturnThrow) {
+    
+    if (sel->hasOtherwise() && allInitReturnOrThrow) {
+      locSplitInitedVars.insert(id);
+    } else if (!sel->hasOtherwise() && allInitReturnOrThrow && anyParamTrue) {
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
     }
-  }
 
-  // compute set of variables initialized in all branches
-  // (different from locSplitInitedVars bc early return )
-  std::set<ID> splitInitedInAll;
-  for(const auto & id : locInitedVars) {
-    bool initedInAll = true;
-    for(size_t i = 0; i < currentNumWhenFrames(); i++) {
-      auto whenFrame = currentWhenFrame(i);
-      bool thisInits = whenFrame && whenFrame->initedVars.count(id) > 0;
-      initedInAll = initedInAll && thisInits;
-    }
-    if (initedInAll) {
+    if (sel->hasOtherwise() && allInit) {
+      splitInitedInAll.insert(id);
+    } else if (!sel->hasOtherwise() && allInit && anyParamTrue) {
       splitInitedInAll.insert(id);
     }
   }
@@ -601,10 +607,11 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   //do error checking
   // * split-init variables are initialized in the same order in all blocks
   // * split init variables are initialized with the same type in all blocks
-  size_t size = splitInitedAllIds.at(0).size();
-  for(int i = 0; i < splitInitedAllIds.size(); i++) {
-    CHPL_ASSERT(splitInitedAllIds.at(i).size() == size);
-    CHPL_ASSERT(splitInitedAllTypes.at(i).size() == size);
+  for(int i = 1; i < splitInitedAllIds.size(); i++) {
+    CHPL_ASSERT(splitInitedAllIds.at(i).size() == 
+                splitInitedAllIds.at(i-1).size());
+    CHPL_ASSERT(splitInitedAllTypes.at(i).size()  ==
+                splitInitedAllTypes.at(i-i).size());
   }
   bool orderOk;
   for(int i = 0; i < splitInitedAllIds.size(); i++) {

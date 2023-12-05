@@ -235,12 +235,10 @@ void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
     }
   } else if (auto s = ast->toSelect()) {
     VarFrame* selFrame = scopeStack.back().get();
-    bool hasOtherwise = false;
     for (auto when : s->whenStmts()) {
-      hasOtherwise = hasOtherwise || when->isOtherwise();
       selFrame->subBlocks.push_back(ControlFlowSubBlock(when));
     }
-    if (!hasOtherwise) {
+    if (s->hasOtherwise()) {
       selFrame->subBlocks.push_back(ControlFlowSubBlock(nullptr));
     }
   }
@@ -281,10 +279,10 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
             thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
           parentFrame->returnsOrThrows = true;
         }
-        if (thenFrame && thenFrame->returnsOrThrows && thenFrame->isParamTrue) {
+        if (thenFrame && thenFrame->returnsOrThrows && thenFrame->paramTrue) {
           parentFrame->returnsOrThrows = true;
         }
-        if (elseFrame && elseFrame->returnsOrThrows && elseFrame->isParamTrue) {
+        if (elseFrame && elseFrame->returnsOrThrows && thenFrame->paramTrue) {
           parentFrame->returnsOrThrows = true;
         }
       }
@@ -311,7 +309,28 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
       }
     } else if (auto s = ast->toSelect()) {
       handleSelect(s, rv);
-      //TODO: update parent frame with returnsOrThrows information
+      if (parentFrame != nullptr) {
+        VarFrame* selFrame = currentFrame();
+        //if no otherwise block, returnsOrThrows only if all present blocks 
+        // returnsOrThrows and one of them is paramTrue
+        //if otherwise block, returnsOrThrows only if all present blocks 
+        // returnsOrThrows
+        bool allReturnOrThrow = true;
+        bool anyParamTrue = false;
+        for(int i = 0; i < s->numWhenStmts(); i++) {
+          auto whenFrame = currentWhenFrame(i);
+          if (!whenFrame) continue;
+          allReturnOrThrow = allReturnOrThrow && whenFrame->returnsOrThrows;
+          anyParamTrue = anyParamTrue || whenFrame->paramTrue;
+        }
+        bool hasOtherwise = s->hasOtherwise();
+
+        if (hasOtherwise) {
+          parentFrame->returnsOrThrows = allReturnOrThrow;
+        } else {
+          parentFrame->returnsOrThrows = allReturnOrThrow && anyParamTrue;
+        }
+      }
     } else {
       handleScope(ast, rv);
       // update the parent frame with the returns/throws status
@@ -539,12 +558,13 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   if (condRE.type().isParamTrue()) {
     // Don't need to process the false branch.
     cond->thenBlock()->traverse(rv);
-    currentThenFrame()->isParamTrue = true;
+    currentThenFrame()->paramTrue = true;
     return false;
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = cond->elseBlock()) {
       elseBlock->traverse(rv);
-      currentElseFrame()->isParamTrue = true;
+      
+      currentElseFrame()->paramTrue = true;
     }
     return false;
   }
@@ -558,19 +578,54 @@ void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
   exitAst(cond);
 }
 
-bool VarScopeVisitor::enter(const Select* ast, RV& rv) {
-  enterAst(ast);
-  enterScope(ast, rv);
+bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
+  enterAst(sel);
+  enterScope(sel, rv);
+  
+  //traverse the not paramFalse children
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
+    auto whenAst = sel->whenStmt(i);
+    bool anyParamTrue = false;
+    bool allParamFalse = !whenAst->isOtherwise();
+    for(auto caseExpr : whenAst->caseExprs()) {
+      auto res = rv.byAst(caseExpr);
+      anyParamTrue = anyParamTrue || res.type().isParamTrue();
+      allParamFalse = allParamFalse && res.type().isParamFalse();
+    }
+    if (!allParamFalse) {
+      whenAst->traverse(rv);
+      currentWhenFrame(i)->paramTrue = anyParamTrue;
+    } else {
+      CHPL_ASSERT(currentWhenFrame(i) == nullptr);
+    }
+    if (anyParamTrue) {
+      break;
+    }
+  }
 
-  //TODO: check the conditions for param true and fales stuff
+  //if all branches are param false, the otherwise branch is param true
+  if (sel->hasOtherwise()) {
+    bool allParamFalse = true;
+    for(int i = 0; i < sel->numWhenStmts(); i++) {
+      auto whenFrame = currentWhenFrame(i);
+      if (!whenFrame || sel->whenStmt(i)->isOtherwise()) continue;
+      allParamFalse = false;
+    }
+    if (allParamFalse) {
+      auto otherwiseFrame = currentWhenFrame(sel->numWhenStmts() - 1);
+      otherwiseFrame->paramTrue = true;
+    }
+  }
 
-  return true;
+  // if a when frame is a nullptr, it represents 
+  // a paramFalse branch if the index is < sel->numWhenStmts() or
+  // a placeholder for the nonexistent otherwise block if ==sel->numWhenStmts()
+  return false;
 }
 
 void VarScopeVisitor::exit(const Select* ast, RV& rv) {
   exitScope(ast, rv);
   exitAst(ast);
-  
 }
 
 
