@@ -37,6 +37,7 @@ Standard Library Modules
 
 Package Modules
 ---------------
+* updated 'UnitTest' to report the filename & line number of failed assertions
 
 Standard Domain Maps (Layouts and Distributions)
 ------------------------------------------------
@@ -82,6 +83,8 @@ Other Documentation Improvements
 * improved the documentation with respect to profiling  
   (see https://chapel-lang.org/docs/1.33/usingchapel/building.html#makefile-options  
    and https://chapel-lang.org/docs/1.33/developer/bestPractices/GeneratedCode.html#profiling-the-generated-code)
+* updated 'mason' docs and example to show required use of `--` before `-M`  
+  (see https://chapel-lang.org/docs/1.33/tools/mason/guide/buildinglargerpackages.html)
 
 Example Codes
 -------------
@@ -116,6 +119,7 @@ Bug Fixes
 
 Bug Fixes for Build Issues
 --------------------------
+* fixed a bug where Python dependencies for 'chpldoc' might not get installed
 
 Bug Fixes for GPU Computing
 ---------------------------
@@ -126,6 +130,7 @@ Bug Fixes for Libraries
 * fixed `readBinary()` on arrays to return #elements rather than #bytes
 * fixed a bug when calling `[read|write]Binary()` on `stdin`/`stdout`/`stderr`
 * fixed a bug when calling `[read|write]Binary()` on a 0-length array
+* fixed a bug in 'UnitTest' that caused a segfault with certain codes
 
 Bug Fixes for Tools
 -------------------
@@ -141,6 +146,9 @@ Developer-oriented changes: Documentation
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
+* removed the deprecated `pragma "no doc"` 
+* removed unstable paren-less `@attribute` syntax when arguments are present  
+  (e.g., `@attribute "foo"` must now be written `@attribute("foo")`)
 
 Developer-oriented changes: Module changes
 ------------------------------------------
@@ -151,6 +159,7 @@ Developer-oriented changes: Performance improvements
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
 * removed duplicate link arguments for `chpl` and compiled executables
+* started parsing and stripping redundant `-std=c++14` from 'CMake' build flags
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
@@ -163,6 +172,8 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* updated resolver's disambiguation rules to more closely match production's
+* implemented primitive `string_length_bytes`
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
