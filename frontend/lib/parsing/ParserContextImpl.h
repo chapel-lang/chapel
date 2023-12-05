@@ -478,10 +478,6 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // Clean up the attribute parts.
     resetAttributeGroupPartsState();
   } else {
-    // CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt)
-      CHPL_ASSERT(hasAttributeGroupParts);
-
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
