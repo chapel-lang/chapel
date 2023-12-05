@@ -735,6 +735,57 @@ static void test33() {
     {});
 }
 
+static void test34() {
+  testCopyElision("test34",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        config const cond = true;
+
+        proc test() {
+          var a: int;
+          var c: int;
+          var z;
+          if true {
+            z = a;
+          } else {
+            z = a;
+          }
+          z = c;
+        }
+      }
+    )"""",
+    {"M.test@8", "M.test@12"});
+}
+
+static void test35() {
+  testCopyElision("test35",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          if T == int {
+            y;
+          } else {
+            x;
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
 
 int main() {
   test1();
@@ -770,6 +821,7 @@ int main() {
   test31();
   test32();
   test33();
-
+  test34();
+  test35();
   return 0;
 }
