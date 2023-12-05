@@ -30,6 +30,7 @@
 #include "chpl-env-gen.h"
 #include "chpl-linefile-support.h"
 #include "../common/rocm-utils.h"
+#include "../common/rocm-version.h"
 
 
 #include <assert.h>
