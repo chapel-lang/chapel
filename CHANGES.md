@@ -27,6 +27,7 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* removed support for single-statement `return` procedures without `do`
 
 Namespace Changes
 -----------------
@@ -54,6 +55,7 @@ GPU Computing
 
 Performance Optimizations / Improvements
 ----------------------------------------
+* optimized `[read|write]Binary()` when big/little endianness matches system
 
 Platform-specific Performance Optimizations / Improvements
 ----------------------------------------------------------
@@ -72,6 +74,9 @@ Language Specification Improvements
 
 Other Documentation Improvements
 --------------------------------
+* improved the documentation with respect to profiling  
+  (see https://chapel-lang.org/docs/1.33/usingchapel/building.html#makefile-options  
+   and https://chapel-lang.org/docs/1.33/developer/bestPractices/GeneratedCode.html#profiling-the-generated-code)
 
 Example Codes
 -------------
@@ -99,6 +104,7 @@ Launchers
 
 Error Messages / Semantic Checks
 --------------------------------
+* added an error when two files define a top-level module with the same name
 
 Bug Fixes
 ---------
@@ -111,6 +117,10 @@ Bug Fixes for GPU Computing
 
 Bug Fixes for Libraries
 -----------------------
+* fixed a bug in which `LinearAlgebra.dot()` did not work on 2D array views
+* fixed `readBinary()` on arrays to return #elements rather than #bytes
+* fixed a bug when calling `[read|write]Binary()` on `stdin`/`stdout`/`stderr`
+* fixed a bug when calling `[read|write]Binary()` on a 0-length array
 
 Bug Fixes for Tools
 -------------------
@@ -153,9 +163,11 @@ Developer-oriented changes: Platform-specific bug fixes
 
 Developer-oriented changes: Testing System
 ------------------------------------------
+* made test system not run custom 'sub_test' scripts for '-performance' runs
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
+* quieted a gdb warning when using the `--gdb` flag on the compiler
 
 Developer-oriented changes: Utilities
 -------------------------------------
