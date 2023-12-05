@@ -1,9 +1,7 @@
-gpu/native/studies/shoc/shoc-triad-bw-sm.graph
-gpu/native/studies/shoc/triad.graph
-gpu/native/studies/shoc/kernel.graph
-gpu/native/studies/shoc/shoc-triad-bw-lg.graph
-gpu/native/studies/shoc/triad2.graph
-gpu/native/studies/shoc/kernel2.graph
+gpu/native/studies/shoc/shoc-triad-all-sm.graph
+gpu/native/studies/shoc/shoc-triad-kernel-sm.graph
+gpu/native/studies/shoc/shoc-triad-all-lg.graph
+gpu/native/studies/shoc/shoc-triad-kernel-lg.graph
 
 gpu/native/studies/shoc/shoc-sort.graph
 
