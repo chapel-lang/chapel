@@ -13,7 +13,6 @@ gpu/native/studies/tightLoopNotOnGpu/tightLoopNotOnGpu.graph
 gpu/native/studies/tightLoopNotOnGpu/tightLoopOnGpu.graph
 gpu/native/studies/gpuArrayOps/gpuArrayOps.graph
 
-gpu/native/studies/transpose/transpose-throughput.graph
 gpu/native/studies/transpose/transpose-time.graph
 
 gpu/native/studies/chop/chplGPU.graph
