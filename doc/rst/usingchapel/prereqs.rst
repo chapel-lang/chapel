@@ -88,13 +88,13 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.17 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+  * Alpine 3.17::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Alpine 3.18 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+  * Alpine 3.18::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
@@ -212,12 +212,6 @@ We have used the following commands to install the above prerequisites:
 
 Compatability Notes
 -------------------
-
-Alpine CHPL_TASKS=qthreads incompatability
-++++++++++++++++++++++++++++++++++++++++++
-
-Qthreads does not currently build on Alpine, although Chapel does
-work on Alpine with the quickstart configuration or ``CHPL_TASKS=fifo``.
 
 CentOS 7 CHPL_LLVM=system incompatability
 +++++++++++++++++++++++++++++++++++++++++
