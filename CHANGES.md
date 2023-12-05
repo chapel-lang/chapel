@@ -31,6 +31,8 @@ Deprecated / Unstable / Removed Language Features
 
 Namespace Changes
 -----------------
+* moved 'NPBRandom' from a submodule of 'Random' to a standalone package  
+  (see https://chapel-lang.org/docs/1.33/modules/packages/NPBRandom.html#module-NPBRandom)
 
 Standard Library Modules
 ------------------------
@@ -44,17 +46,39 @@ Standard Domain Maps (Layouts and Distributions)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* added a flag to control whether large I/O operations bypass buffering  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
+* deprecated the `RandomStream` class in favor of a new `randomStream` record  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.RandomStream)
 
 Name Changes in Libraries
 -------------------------
+* replaced `PCGRandomStream` with `randomStream`
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* marked implicit seed creation in the 'Random' module as unstable  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
+* marked `permutation()` as unstable in the 'Random' package module
+* deprecated 'algorithm' args from `fillRandom()`, `shuffle()`, `permutation()`
+* deprecated the symbols used to select RNG algorithms: `RNG`, `defaultRNG`  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
+* deprecated `createRandomStream()`
+* deprecated `randomStreamInterface`  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
+* deprecated the 'RandomSupport' module
 * deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
 * removed the deprecated old-behavior overloads for `c_ptrTo[Const]()`
 * removed the deprecated `c_nil` type as well as `is_c_nil()` and `isAnyCPtr()`
+* removed `c_FILE`'s deprecated behavior, where `c_FILE` meant `FILE*`
 * removed the deprecated `c_[malloc|calloc|aligned_alloc|free]()` routines
 * removed the deprecated `c_[memmove|memcpy|memcmp|memset]()` routines
+* removed the deprecated `file.lines()` method
+* removed the deprecated bool-returning overloads of `fileReader.readBinary()`
+* removed the deprecated `[read|write]Bytes()` methods accepting pointers
+* removed the deprecated `fileReader.readstring()` method
+* removed the deprecated `file[Reader|Writer].advancePastByte()` methods
+* removed a few deprecated `list` methods: `append()`, `pop()`, `set()`
 
 GPU Computing
 -------------
@@ -133,7 +157,8 @@ Bug Fixes for Libraries
 -----------------------
 * fixed a bug in which `LinearAlgebra.dot()` did not work on 2D array views
 * fixed `readBinary()` on arrays to return #elements rather than #bytes
-* fixed a bug when calling `[read|write]Binary()` on `stdin`/`stdout`/`stderr`
+* fixed an I/O bug in which file reads could occur from an incorrect offset
+* fixed calls to `[read|write]Binary()` on `stdin`/`stdout`/`stderr`
 * fixed a bug when calling `[read|write]Binary()` on a 0-length array
 * fixed a bug in 'UnitTest' that caused a segfault with certain codes
 
@@ -189,6 +214,7 @@ Developer-oriented changes: Platform-specific bug fixes
 Developer-oriented changes: Testing System
 ------------------------------------------
 * made test system not run custom 'sub_test' scripts for '-performance' runs
+* fixed a bug in which 'sub_test' could emit duplicate error messages
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
