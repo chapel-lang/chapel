@@ -58,6 +58,10 @@ Deprecated / Unstable / Removed Library Features
 
 GPU Computing
 -------------
+* added standalone procedures to support whole-array reductions  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSumReduce)
+* resolved deprecation warnings occurring with ROCm 5.2, 5.3 and 5.4
+
 
 Performance Optimizations / Improvements
 ----------------------------------------
@@ -123,6 +127,7 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* fixed a bug preventing passing `int(32)` values to `GPU.setBlockSize()`
 
 Bug Fixes for Libraries
 -----------------------
