@@ -49,6 +49,11 @@ Name Changes in Libraries
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
+* removed the deprecated old-behavior overloads for `c_ptrTo[Const]()`
+* removed the deprecated `c_nil` type as well as `is_c_nil()` and `isAnyCPtr()`
+* removed the deprecated `c_[malloc|calloc|aligned_alloc|free]()` routines
+* removed the deprecated `c_[memmove|memcpy|memcmp|memset]()` routines
 
 GPU Computing
 -------------
@@ -145,12 +150,16 @@ Developer-oriented changes: Performance improvements
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
+* removed duplicate link arguments for `chpl` and compiled executables
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* added a warning for names passed to `--llvm-print-ir` that couldn't be found
+* improved `--print-passes` output for the experimental driver mode
 
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
+* made bug fixes and performance improvements to the experimental driver mode
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
