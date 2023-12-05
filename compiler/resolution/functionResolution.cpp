@@ -10000,6 +10000,23 @@ static Type* resolveGenericActual(SymExpr* se, Type* type) {
   }
 
   if (AggregateType* at = toAggregateType(type)) {
+    if (at->symbol->hasFlag(FLAG_GENERIC) &&
+        !se->symbol()->hasFlag(FLAG_MARKED_GENERIC)) {
+      bool isMethodReceiver = false;
+      if (SymExpr* prevSe = toSymExpr(se->prev)) {
+        if (prevSe->symbol() == gMethodToken) {
+          isMethodReceiver = true;
+        }
+      }
+      bool genericWithDefaults = at->isGenericWithDefaults();
+
+      if (!isMethodReceiver && !genericWithDefaults) {
+        gdbShouldBreakHere();
+        checkSurprisingGenericDecls(se->symbol(), se, nullptr);
+        USR_WARN(se, "foo foo foo");
+      }
+    }
+
     if (at->symbol->hasFlag(FLAG_GENERIC) && at->isGenericWithDefaults()) {
       CallExpr*   cc    = new CallExpr(at->symbol);
 
