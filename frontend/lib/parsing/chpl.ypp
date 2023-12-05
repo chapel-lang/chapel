@@ -2812,7 +2812,7 @@ var_decl_stmt:
   }
 | var_decl_type error TSEMI
   {
-    $$ = { .comments=nullptr, .stmt=context->syntax(@2, "invalid variable declaration") };
+    $$ = { .comments=nullptr, .stmt=ErroneousExpression::build(BUILDER, LOC(@2)).release() };
     context->resetDeclStateOnError();
   }
 ;
