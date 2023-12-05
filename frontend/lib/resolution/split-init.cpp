@@ -508,6 +508,10 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
 
 void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   VarFrame* frame = currentFrame();
+
+  
+
+
   //save results for vars declared in when blocks
   //gather the set of variables to consider
   std::set<ID> locInitedVars;

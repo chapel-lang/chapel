@@ -1554,8 +1554,7 @@ static void test63() {
           __primitive("==", lhs, rhs);
         }
 
-        config const i: int;
-        proc test(i) {
+        proc test(i: int) {
           
           var x;
           select i {
@@ -1585,8 +1584,7 @@ static void test64() {
           __primitive("==", lhs, rhs);
         }
 
-        config const i: int;
-        proc test(i) {
+        proc test(i: int) {
           
           var x;
           select i {
@@ -1621,7 +1619,7 @@ static void test65() {
         }
 
         config const i: int;
-        proc test(i) {
+        proc test(i: int) {
           
           var x;
           select i {
@@ -1654,7 +1652,7 @@ static void test66() {
         }
 
         config const i: int;
-        proc test(i) {
+        proc test(i: int) {
           
           var x;
           select i {
