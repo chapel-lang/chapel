@@ -248,6 +248,13 @@ void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
   wr.code(node);
 }
 
+void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
+  auto node = std::get<const uast::Select*>(info);
+  wr.heading(kind_, type_, node, "otherwise clause must follow all when clauses.");
+  wr.message("The following select statement has improperly ordered blocks:");
+  wr.code(node);
+}
+
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto invalidAst = std::get<0>(info);
   auto blockingAst = std::get<1>(info);

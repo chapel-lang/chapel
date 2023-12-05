@@ -146,6 +146,7 @@ struct Visitor {
   void checkLambdaDeprecated(const Function* node);
   void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
+  void checkOtherwiseAfterWhens(const Select* sel);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -189,6 +190,7 @@ struct Visitor {
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
+  void visit(const Select* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
@@ -1535,6 +1537,21 @@ void Visitor::visit(const Return* node) {
   const AstNode* allowingNode;
   if (!checkParentsForControlFlow(parents_, nodeAllowsReturn, node, blockingNode, allowingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+
+void Visitor::visit(const Select* node) {
+  checkOtherwiseAfterWhens(node);
+}
+
+void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
+  bool seenOtherwise = false;
+  for(size_t i = 0; i < sel->numWhenStmts(); i++) {
+    auto when = sel->whenStmt(i);
+    if (seenOtherwise && !when->isOtherwise()) {
+      CHPL_REPORT(context_, WhenAfterOtherwise, sel, sel);
+    } 
+    seenOtherwise |= when->isOtherwise();
   }
 }
 
