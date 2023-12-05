@@ -1,3 +1,8 @@
 type-alias-generic.chpl:5: warning: please use '?' when declaring a type alias with generic type
 type-alias-generic.chpl:5: note: for example with 'RG(?)'
-type-alias-generic.chpl:9: error: cannot use a generic type as the default for a type field, 'badField'
+type-alias-generic.chpl:20: warning: please use '?' when declaring a type alias with generic type
+type-alias-generic.chpl:20: note: for example with 'CG(?)'
+type-alias-generic.chpl:26: warning: please use '?' when declaring a type alias with generic type
+type-alias-generic.chpl:26: note: for example with 'RG(?)'
+type-alias-generic.chpl:27: warning: please use '?' when declaring a type alias with generic type
+type-alias-generic.chpl:27: note: for example with 'RG(?)'

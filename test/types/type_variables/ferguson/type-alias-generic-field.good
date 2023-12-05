@@ -1,0 +1,1 @@
+type-alias-generic-field.chpl:6: error: cannot use a generic type as the default for a type field, 'badField'
