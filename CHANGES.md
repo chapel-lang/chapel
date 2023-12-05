@@ -141,6 +141,8 @@ Launchers
 Error Messages / Semantic Checks
 --------------------------------
 * added an error when two files define a top-level module with the same name
+* added a warning for cases where symbol shadowing might be surprising  
+  (e.g., if 'M' and 'N' both define 'x', `use M; public use N; f(x);` warns)
 
 Bug Fixes
 ---------
@@ -199,11 +201,17 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * made bug fixes and performance improvements to the experimental driver mode
+* fixed an issue where `--llvm-print-ir` printed the wrong function linkage
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
 * updated resolver's disambiguation rules to more closely match production's
 * implemented primitive `string_length_bytes`
+* significantly improved the prototype support for library files:
+  - reduced library file size
+  - added the ability for library files to include LLVM IR
+  - documented the library file format  
+    (see https://chapel-lang.org/docs/1.33/developer/compiler-internals/file-format.html)
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
