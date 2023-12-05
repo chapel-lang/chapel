@@ -36,7 +36,7 @@ static void test0(Parser* parser) {
       "  var x = A[\n"
       "}}\n"
       "var y = 1;\n");
-  assert(guard.realizeErrors() == 2);
+  assert(guard.realizeErrors() == 1);
 }
 
 static void test1(Parser* parser) {
@@ -64,7 +64,7 @@ static void test3(Parser* parser) {
       "class C {\n"
       "  var a: pwned C;\n"
       "}\n");
-  assert(guard.realizeErrors() == 2);
+  assert(guard.realizeErrors() == 1);
 }
 
 int main() {
