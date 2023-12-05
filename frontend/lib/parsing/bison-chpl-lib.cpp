@@ -9788,7 +9788,7 @@ yyreduce:
   case 508: /* var_decl_stmt: var_decl_type error TSEMI  */
 #line 2814 "chpl.ypp"
   {
-    (yyval.commentsAndStmt) = { .comments=nullptr, .stmt=context->syntax((yylsp[-1]), "invalid variable declaration") };
+    (yyval.commentsAndStmt) = { .comments=nullptr, .stmt=ErroneousExpression::build(BUILDER, LOC((yylsp[-1]))).release() };
     context->resetDeclStateOnError();
   }
 #line 9795 "bison-chpl-lib.cpp"
