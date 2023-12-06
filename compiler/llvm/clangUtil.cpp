@@ -4936,23 +4936,42 @@ void makeBinaryLLVM(void) {
       cargs += clangInfo->clangCCArgs[i];
     }
 
+    // if we are using rocm, we'll have to adjust the path so that clang can
+    // find rocm's lld. We ideally want to include lld in our bundled llvm
+    std::string curPath = "";
+
     std::string gpuArgs = "";
     if (usingGpuLocaleModel()) {
-      gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
+      gpuArgs = generateClangGpuLangArgs();
+      if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+        gpuArgs += " -Wno-unknown-cuda-version";
+      }
+      else if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+        curPath = std::getenv("PATH");
+        std::string adjPath = curPath + std::string(":") + gGpuSdkPath +
+                              std::string("/llvm/bin");
+
+        setenv("PATH", adjPath.c_str(), /*override*/ 1);
+      }
     }
 
     int filenum = 0;
     while (const char* inputFilename = nthFilename(filenum++)) {
       if (isCSource(inputFilename)) {
         const char* objFilename = objectFileForCFile(inputFilename);
-        std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
-                          inputFilename + " " + cargs;
+        std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename +
+                          " " + inputFilename + " " + cargs;
 
         mysystem(cmd.c_str(), "Compile C File");
         dotOFiles.push_back(objFilename);
       } else if( isObjFile(inputFilename) ) {
         dotOFiles.push_back(inputFilename);
       }
+    }
+
+    if (usingGpuLocaleModel() &&
+        getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+      setenv("PATH", curPath.c_str(), /*override*/ 1);
     }
 
     // Note: we used to start 'options' with 'cargs' so that
