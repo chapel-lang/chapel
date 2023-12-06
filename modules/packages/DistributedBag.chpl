@@ -105,8 +105,10 @@
     var bag = new distBag(int, targetLocales=ourTargetLocales);
 
   The basic methods that distBag supports require a ``taskId`` argument. This
-  ``taskId`` will serve as an index to the segment to be updated and it should be
-  in ``0..<here.maskTaskPar``. This guarantees the local DFS ordering.
+  ``taskId`` will serve as an index to the segment to be updated and it must be
+  in ``0..<here.maskTaskPar``. More precisely, it is used to map each task to a
+  segment, which ensures the parallel-safety of the data structure, as well as the
+  local DFS ordering.
 
   .. code-block:: chapel
 
