@@ -303,7 +303,7 @@ static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
 #if HAVE_LLVM_VER >= 170
   optOffset = Ptr1->getPointerOffsetFrom(Ptr2, DL);
 #elif HAVE_LLVM_VER >= 100
-  optOffset = isPointerOffset(Pt1, Ptr2, DL);
+  optOffset = isPointerOffset(Ptr1, Ptr2, DL);
 #else
   int64_t Offset;
   if (IsPointerOffset(Ptr1, Ptr2, Offset, DL))
