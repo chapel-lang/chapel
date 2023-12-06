@@ -393,7 +393,7 @@ If you want to use use default arguments for the test but specify a different
 
 
 Using precomp, preexec, and prediff files
-++++++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++++++++
 
 When creating a ``.precomp``, ``.preexec``, or ``.prediff`` file, the file
 must be an executable. You can turn your script into an executable by running:
