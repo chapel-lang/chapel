@@ -33,6 +33,7 @@ Deprecated / Unstable / Removed Language Features
 * marked `range.strType` unstable
 * removed support for single-statement `return` procedures without `do`
 * removed support for allocating a class with `borrowed` memory management
+* removed support for deprecated subtype comparison operators
 * removed the deprecated `create[Bytes|String]WithBorrowedBuffer()` routines
 * removed the deprecated `create[Bytes|String]WithOwnedBuffer()` routines
 * removed the deprecated `create[Bytes|String]WithNewBuffer()` routines
@@ -79,6 +80,8 @@ Standard Domain Maps (Layouts and Distributions)
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
+* removed deprecated `sorted()`, `head()`, `tail()`, and `reverse()` on arrays
+* removed deprecated `newBlock*()`, and `newCyclic*()` routines
 * marked implicit seed creation in the 'Random' module as unstable  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
 * marked `permutation()` as unstable in the 'Random' package module
@@ -190,6 +193,8 @@ Compiler Flags
 --------------
 * added a `--[no-]const-arg-checks` flag to check for potential `const` errors  
   (see TODO)
+* renamed `CHPL_NO_*` env vars to make their behavior more predictable  
+  (e.g. `CHPL_NO_CHECKS` is deprecated in favor of `CHPL_CHECKS`)
 
 Generated Executable Flags
 --------------------------
@@ -237,12 +242,14 @@ Bug Fixes for Build Issues
 
 Bug Fixes for GPU Computing
 ---------------------------
+* made `forall` loops with reduce intents run on CPU to avoid incorrect results
 * fixed a bug preventing passing `int(32)` values to `GPU.setBlockSize()`
 * added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
 * fixed crashes with `.localSubdomain()` on a multidimensional array
   (TODO: Is this merged now?)
 * fixed a bug in the "strided bulk transfer" optimization for array assignment
 * fixed kernels within standard modules causing segfaults
+* fixed a memory leak in gpu runtime
 
 Bug Fixes for Libraries
 -----------------------
