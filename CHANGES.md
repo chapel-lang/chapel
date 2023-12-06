@@ -158,11 +158,9 @@ Tool Improvements
   (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
    and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
 * added a new script for anonymized unstable warnings
-  (see TODO)
-  (TODO: Is this in the release tarball?)
+  (see https://chapel-lang.org/docs/1.33/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 * added a script to report symbols that are missing documentation
   (see `tools/chpldoc/findUndocumentedSymbols`)
-  (TODO: Is this in the release tarball?)
 * added new linter rules for method/field ordering and subroutine naming
 * generaled the linter rule for variable names to support additional casings
 
@@ -203,10 +201,12 @@ Compiler Improvements
 Compiler Flags
 --------------
 * added a new `--detailed-errors` flag supporting more verbose error output
+  (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
 * added a `--[no-]const-arg-checks` flag to check for potential `const` errors  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
 * renamed `CHPL_NO_*` env vars to make their behavior more predictable  
   (e.g. `CHPL_NO_CHECKS` is deprecated in favor of `CHPL_CHECKS`)
+  (see `chpl --help-env` for new environment variable names)
 
 Generated Executable Flags
 --------------------------
