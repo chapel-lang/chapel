@@ -359,6 +359,14 @@ For more examples see the tests under |multi_locale_dir|_ available from our
 .. |multi_locale_dir| replace:: ``test/gpu/native/multiLocale``
 .. _multi_locale_dir: https://github.com/chapel-lang/chapel/tree/main/test/gpu/native/multiLocale
 
+Reductions and Scans
+~~~~~~~~~~~~~~~~~~~~
+``reduce`` and ``scan`` expressions are not supported on GPU-allocated data,
+yet. However, as an interim solution, the :mod:`GPU` module has standalone
+functions for basic reductions (e.g. :proc:`~GPU.gpuSumReduce`) and scans (e.g.
+:proc:`~GPU.gpuScan`). We expect these functions to be deprecated in favor of
+``reduce`` and ``scan`` expressions in a future release.
+
 Device-to-Device Communication Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Chapel supports direct communication between interconnected GPUs. The supported
