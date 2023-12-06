@@ -790,7 +790,7 @@ module OS {
     //
     // stdlib.h
     //
-    /* Get the value of an enviroment variable. */
+    /* Get the value of an environment variable. */
     extern proc getenv(name:c_ptrConst(c_char)):c_ptr(c_char);
 
     //
@@ -836,7 +836,7 @@ module OS {
 
     // No way around this -- 'select' is a keyword in Chapel.
     /*
-      Indicates which of the specificed file descriptors is ready for reading
+      Indicates which of the specified file descriptors is ready for reading
       or writing, or has an error condition pending. If no file descriptors are
       ready, the procedure blocks until the ``timeout``.
     */
@@ -929,7 +929,7 @@ module OS {
     }
 
     /* A Chapel version of the POSIX structure ``stat``, which contains common
-    fields. This should be useed with :proc:`stat`.
+    fields. This should be used with :proc:`stat`.
     */
     extern 'struct chpl_os_posix_struct_stat' record struct_stat {
       /* Device. */
@@ -1240,7 +1240,7 @@ module OS {
 
     /*
       Construct a :class:`SystemError` with a specific error code and optional
-      extra detais.
+      extra details.
     */
     proc init(err: errorCode, details: string = "") {
       this.err     = err;

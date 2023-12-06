@@ -758,7 +758,7 @@ module GPU
     // Not a power of two, so we pad it out
     // To the next nearest power of two
     const log_2_x = numBytes(uint)*8 - BitOps.clz(x); // get quick log for uint
-    // Next highest nerest power of two is
+    // Next highest power of two is
     return 1 << log_2_x;
   }
 
