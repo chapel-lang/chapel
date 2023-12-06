@@ -294,19 +294,17 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* updated developer `--dyno` flag to utilize dyno's type/call resolution
 * made numerous improvements to the 'dyno' resolver for types and calls:
   - added basic support for `atomic` types
   - improved resolution of methods on generic types
-* updated developer `--dyno` flag to utilize dyno's type resolution
-* updated resolver's disambiguation rules to more closely match production's
-* implemented primitive `string_length_bytes`
+  - updated resolver's disambiguation rules to more closely match production's
+  - implemented primitive `string_length_bytes`
 * significantly improved the prototype support for library files:
   - reduced library file size
   - added the ability for library files to include LLVM IR
   - documented the library file format  
     (see https://chapel-lang.org/docs/1.33/developer/compiler-internals/file-format.html)
-
-
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
