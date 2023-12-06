@@ -229,7 +229,7 @@ typedef struct kernel_cfg_s {
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg,int n_params, int ln, int32_t fn) {
+static void cfg_init(kernel_cfg* cfg, int n_params, int ln, int32_t fn) {
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
 
@@ -246,14 +246,15 @@ static void cfg_init(kernel_cfg* cfg,int n_params, int ln, int32_t fn) {
 
 
   cfg->param_dyn_allocated = chpl_mem_alloc(cfg->n_params * sizeof(bool),
-                                            CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+                                            CHPL_RT_MD_GPU_KERNEL_PARAM_META,
+                                            ln, fn);
   assert(cfg->param_dyn_allocated);
 
-  // add the ln and fn arguments to the end of the array
-  // These arguments only make sense when the kernel lives inside of standard
-  // module code and CHPL_DEVELOPER is not set since the generated kernel function
-  // will have two extra formals to account for the line and file num.
-  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
+  // add the ln and fn arguments to the end of the array These arguments only
+  // make sense when the kernel lives inside of standard module code and
+  // CHPL_DEVELOPER is not set since the generated kernel function will have two
+  // extra formals to account for the line and file num.  If CHPL_DEVELOPER is
+  // set, these arguments are dropped on the floor
   cfg->kernel_params[cfg->n_params-2] = (void**)(&ln);
   cfg->kernel_params[cfg->n_params-1] = (void**)(&fn);
 
@@ -304,10 +305,10 @@ static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
 }
 
 static void launch_kernel(int ln, int32_t fn,
-                                   const char* name,
-                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
-                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                   int nargs, va_list args) {
+                          const char* name,
+                          int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                          int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                          int nargs, va_list args) {
   kernel_cfg cfg;
   cfg_init(&cfg, nargs, ln, fn);
 
