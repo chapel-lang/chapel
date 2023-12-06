@@ -73,7 +73,8 @@ static bool toParamIntActual(const QualifiedType& type, int64_t& into) {
   return false;
 }
 
-static bool paramStringBytesHelper(const QualifiedType& type, UniqueString& into, bool isString) {
+static bool paramStringBytesHelper(const QualifiedType& type,
+                                   UniqueString& into, bool isString) {
   if (type.kind() == QualifiedType::PARAM) {
     if (auto t = type.type()) {
       if ((t->isBytesType() && !isString) ||
@@ -830,20 +831,23 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_STRING_CONCAT:
     case PRIM_STRING_LENGTH_BYTES:
     {
-      UniqueString sParam;
-      auto& actualType = ci.actual(0).type();
-      if (toParamStringActual(actualType, sParam)||
-          toParamBytesActual(actualType, sParam)) {
-        const size_t s = sParam.length();
-        type = QualifiedType(QualifiedType::PARAM,
-                      IntType::get(context, 0),
-                      IntParam::get(context, s));
-        break;
-      } else if (type.kind() != QualifiedType::PARAM) {
-        // error - cannot call PRIM_STRING_LENGTH_BYTES on something that isn't
-        // a param
-        type = CHPL_TYPE_ERROR(context, IncompatibleKinds, QualifiedType::Kind::PARAM,
-                               call, actualType);
+      if (ci.numActuals() > 0) {
+        UniqueString sParam;
+        auto& actualType = ci.actual(0).type();
+        if (toParamStringActual(actualType, sParam)||
+            toParamBytesActual(actualType, sParam)) {
+          const size_t s = sParam.length();
+          type = QualifiedType(QualifiedType::PARAM,
+                               IntType::get(context, 0),
+                               IntParam::get(context, s));
+          break;
+        } else if (actualType.type()->isStringType() ||
+                   actualType.type()->isBytesType()) {
+          // for non-param string/bytes, the return type is just a default int
+          type = QualifiedType(QualifiedType::CONST_VAR,
+                               IntType::get(context, 0));
+          break;
+        }
       }
     }
     case PRIM_STRING_LENGTH_CODEPOINTS:
