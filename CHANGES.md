@@ -44,15 +44,13 @@ Standard Library Modules
 * added an experimental user-facing breakpoint function
   (see TODO)
 
-Package Modules
----------------
-* updated 'UnitTest' to report the filename & line number of failed assertions
-
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
-
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* changed `binary(De)Serializer` to "unstructured" format for strings/classes  
+  (i.e., no longer encodes/decodes string lengths or `nil` pointers)  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.binarySerializer)
+* changed `binaryDeserializer` to throw an error when reading strings, bytes  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.binaryDeserializer)
 * added a flag to control whether large I/O operations bypass buffering  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
 * deprecated the `RandomStream` class in favor of a new `randomStream` record  
@@ -64,6 +62,15 @@ Name Changes in Libraries
 -------------------------
 * renamed the `IO.ioendian` enum to `IO.endianness`
 * replaced `PCGRandomStream` with `randomStream`
+
+Package Modules
+---------------
+* moved structured `binarySerializer` to a new 'ObjectSerialization' module  
+  (see https://chapel-lang.org/docs/1.33/modules/packages/ObjectSerialization.html)
+* updated 'UnitTest' to report the filename & line number of failed assertions
+
+Standard Domain Maps (Layouts and Distributions)
+------------------------------------------------
 
 Deprecated / Unstable / Removed Library Features
 ------------------------------------------------
@@ -199,6 +206,8 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a bug when initializing fields inside `try!` statements
+* fixed a bug involving `try!` statements and arguments with default values
 * added missing warnings for deprecated implicit conversions
 * added missing warnings for deprecations in routines with default arguments
 * added missing 'ref if modified' warnings for arrays modified with a slice
@@ -220,12 +229,14 @@ Bug Fixes for GPU Computing
 * added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
 * fixed crashes with `.localSubdomain()` on a multidimensional array
   (TODO: Is this merged now?)
+* fixed a bug in the "strided bulk transfer" optimization for array assignment
 * fixed kernels within standard modules causing segfaults
 
 Bug Fixes for Libraries
 -----------------------
 * fixed a bug in which `LinearAlgebra.dot()` did not work on 2D array views
 * fixed `readBinary()` on arrays to return #elements rather than #bytes
+* fixed `fileReader.readBinary(numeric)` to properly throw `UnexpectedEofError`
 * fixed an I/O bug in which file reads could occur from an incorrect offset
 * fixed calls to `[read|write]Binary()` on `stdin`/`stdout`/`stderr`
 * fixed a bug when calling `[read|write]Binary()` on a 0-length array
@@ -233,6 +244,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed a bug in 'chpldoc' where use of 'code-block' would overflow
 * fixed wrong method being called in `postorder` for `chapel-py`
   (TODO: Are these user facing?  New since last release?)
 * fixed broken `inherit_expressions` method in `chapel-py`
@@ -271,6 +283,7 @@ Developer-oriented changes: Makefile / Build-time changes
 
 Developer-oriented changes: Compiler Flags
 ------------------------------------------
+* updated developer `--dyno` flag to utilize dyno's type resolution
 * added a warning for names passed to `--llvm-print-ir` that couldn't be found
 * improved `--print-passes` output for the experimental driver mode
 
@@ -281,6 +294,10 @@ Developer-oriented changes: Compiler improvements / changes
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
+* made numerous improvements to the 'dyno' resolver for types and calls:
+  - added basic support for `atomic` types
+  - improved resolution of methods on generic types
+* updated developer `--dyno` flag to utilize dyno's type resolution
 * updated resolver's disambiguation rules to more closely match production's
 * implemented primitive `string_length_bytes`
 * significantly improved the prototype support for library files:
@@ -288,6 +305,8 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added the ability for library files to include LLVM IR
   - documented the library file format  
     (see https://chapel-lang.org/docs/1.33/developer/compiler-internals/file-format.html)
+
+
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
