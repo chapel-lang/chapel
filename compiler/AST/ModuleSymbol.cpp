@@ -118,6 +118,16 @@ ModuleSymbol* ModuleSymbol::mainModule() {
 ModuleSymbol* ModuleSymbol::findMainModuleByName() {
   ModuleSymbol* retval = NULL;
 
+  if (fDynoGenStdLib) {
+    // use ChapelStandard as the main module
+    const char* searchAstr = astr("ChapelStandard");
+    forv_Vec(ModuleSymbol, mod, gModuleSymbols) {
+      if (mod->name == searchAstr) {
+        return mod;
+      }
+    }
+  }
+
   if (sMainModuleName != "") {
     forv_Vec(ModuleSymbol, mod, userModules) {
       if (sMainModuleName == mod->path()) {

@@ -37,6 +37,8 @@
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 
+#include "llvm/Support/FileSystem.h"
+
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
@@ -83,8 +85,6 @@ static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
-
-std::vector<UniqueString> parsedPaths;
 
 // TODO: Remove me.
 struct YYLTYPE {
@@ -320,7 +320,9 @@ static void addDynoLibFiles() {
     if (isDynoLib(inputFileName)) {
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
       auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
-      lib->registerLibrary(gContext);
+      if (lib != nullptr) {
+        lib->registerLibrary(gContext);
+      }
     }
   }
 }
@@ -413,6 +415,71 @@ static UniqueString cleanLocalPath(UniqueString path) {
   return chpl::UniqueString::get(gContext, str);
 }
 
+static void gatherStdModuleNamesInDir(std::string dir,
+                                      std::set<UniqueString>& modNames) {
+  std::error_code EC;
+  llvm::sys::fs::recursive_directory_iterator I(dir, EC);
+  llvm::sys::fs::recursive_directory_iterator E;
+
+  while (true) {
+    if (I == E || EC) {
+      break;
+    }
+    // consider the file
+    std::string p = I->path();
+    const char* cp = p.c_str();
+    const char* slash = strrchr(cp, '/');
+    const char* dot = strrchr(cp, '.');
+    if (dot && slash && dot > slash && strcmp(dot, ".chpl") == 0) {
+      // compute the module name
+      auto modName = UniqueString::get(gContext, slash+1, dot-slash-1);
+      modNames.insert(modName);
+    }
+    I.increment(EC);
+  }
+
+  if (EC) {
+    USR_FATAL("error in directory traversal of %s", dir.c_str());
+  }
+}
+
+static std::set<UniqueString> gatherStdModuleNames() {
+  // compute $CHPL_HOME/modules
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  std::string modulesDir = bundledPath.str();
+
+  std::set<UniqueString> modNames;
+  gatherStdModuleNamesInDir(modulesDir + "/dists", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
+  // skip minimal and packages
+  gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
+
+  return modNames;
+}
+
+static std::vector<UniqueString> gatherStdModulePaths() {
+  std::vector<UniqueString> genLibPaths;
+
+  auto modulesToLoad = gatherStdModuleNames();
+
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  for (auto modName : modulesToLoad) {
+    auto mod = chpl::parsing::getToplevelModule(gContext, modName);
+    UniqueString parsedPath;
+    if (!mod) {
+      USR_FATAL("cannot find bundled %s", modName.c_str());
+    }
+    if (mod && gContext->filePathForId(mod->id(), parsedPath)) {
+      if (parsedPath.startsWith(bundledPath)) {
+        genLibPaths.push_back(parsedPath);
+      }
+    }
+  }
+
+  return genLibPaths;
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -481,14 +548,13 @@ static void parseCommandLineFiles() {
   if (!gDynoGenLibOutput.empty()) {
     std::vector<UniqueString> genLibPaths;
 
-    if (gDynoGenLibOutput == "chpl_standard.dyno") {
-      // gather the paths to the standard libraries
-      for (auto& path : parsedPaths) {
-        const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
-        if (path.startsWith(modulePrefix)) {
-          genLibPaths.push_back(path);
-        }
-      }
+    if (fDynoGenStdLib) {
+      // gather the standard/internal module names with directory
+      // listing within $CHPL_HOME/modules, and compute paths from loading
+      // those. (The purpose of this is to handle things like
+      // modules/internal/comm/*/NetworkAtomicTypes.chpl where the module
+      // search path determines what should be loaded)
+      genLibPaths = gatherStdModulePaths();
     } else {
       // gather the files named on the command line
       fileNum = 0;
@@ -729,7 +795,7 @@ static void addModuleToDoneList(ModuleSymbol* module);
 // defining its modules twice.
 //
 static bool haveAlreadyParsed(const char* path) {
-  static std::set<std::string> parsedPaths;
+  static std::set<std::string> alreadyParsedPaths;
 
   // normalize the path if possible via realpath() and use 'path' otherwise
   const char* normpath = chplRealPath(path);
@@ -737,13 +803,15 @@ static bool haveAlreadyParsed(const char* path) {
     normpath = path;
   }
 
+  std::string npath(normpath);
+
   // check whether we've seen this path before
-  if (parsedPaths.count(normpath) > 0) {
+  if (alreadyParsedPaths.count(npath) > 0) {
     // if so, indicate it
     return true;
   } else {
     // otherwise, add it to our set and list of paths
-    parsedPaths.insert(normpath);
+    alreadyParsedPaths.insert(npath);
     return false;
   }
 }
@@ -1064,8 +1132,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   gFilenameLookup.push_back(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
-
-  parsedPaths.push_back(path);
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;

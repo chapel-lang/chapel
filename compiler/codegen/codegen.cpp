@@ -2975,7 +2975,7 @@ static void codegenPartTwo() {
                                  std::move(genMap));
     }
 
-    // compute the cnamesfunction names
+    // write the library file
     libWriter.writeAllSections();
 #endif
   }
