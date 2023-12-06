@@ -4376,14 +4376,26 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::ModuleOptimizerEarly:
       dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
       return true;
+    case llvmStageNum::LateLoopOptimizer:
+      dumpIrPoint = PassManagerBuilder::EP_LateLoopOptimizer;
+      return true;
     case llvmStageNum::LoopOptimizerEnd:
       dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
       return true;
     case llvmStageNum::ScalarOptimizerLate:
       dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
       return true;
+    case llvmStageNum::EarlySimplification:
+      dumpIrPoint = PassManagerBuilder::EP_EarlySimplification;
+      return true;,
+    case llvmStageNum::OptimizerEarly:
+      dumpIrPoint = PassManagerBuilder::EP_OptimizerEarly;
+      return true;,
     case llvmStageNum::OptimizerLast:
       dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
+      return true;
+    case llvmStageNum::CGSCCOptimizerLate:
+      dumpIrPoint = PassManagerBuilder::EP_CGSCCOptimizerLate;
       return true;
     case llvmStageNum::VectorizerStart:
       dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
