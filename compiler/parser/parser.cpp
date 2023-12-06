@@ -452,8 +452,12 @@ static std::set<UniqueString> gatherStdModuleNames() {
   gatherStdModuleNamesInDir(modulesDir + "/dists", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
-  // skip minimal and packages
+  // skip minimal
+  gatherStdModuleNamesInDir(modulesDir + "/packages", modNames);
   gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
+
+  // leave out Treap since it is an 'include module' for SortedSet
+  modNames.erase(UniqueString::get(gContext, "Treap"));
 
   return modNames;
 }
@@ -468,7 +472,7 @@ static std::vector<UniqueString> gatherStdModulePaths() {
     auto mod = chpl::parsing::getToplevelModule(gContext, modName);
     UniqueString parsedPath;
     if (!mod) {
-      USR_FATAL("cannot find bundled %s", modName.c_str());
+      USR_FATAL("cannot find bundled module %s", modName.c_str());
     }
     if (mod && gContext->filePathForId(mod->id(), parsedPath)) {
       if (parsedPath.startsWith(bundledPath)) {
