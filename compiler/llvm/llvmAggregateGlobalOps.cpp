@@ -296,7 +296,7 @@ static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
 
 #endif
 
-static std::optional<int64_t> getPointerOffset(Value *Ptr1,
+static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
                                                Value *Ptr2,
                                                const DataLayout &DL) {
   chpl::optional<int64_t> optOffset;
