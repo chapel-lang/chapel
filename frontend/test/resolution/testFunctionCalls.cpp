@@ -256,6 +256,189 @@ static void test11() {
   assert(typePtr->isBoolType());
 }
 
+// test for primitive "_wide_get_addr", which should return a void ptr
+static void test12() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("_wide_get_addr");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  auto cPtrType = typePtr->toCPtrType();
+  assert(cPtrType);
+  assert(cPtrType->isVoidPtr());
+}
+
+// test for primitive "steal", which should return the type of the argument
+static void test13() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var a = 1;
+                           var x = __primitive("steal", a);
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+}
+
+// test for primitive "is wide pointer", which should return a bool
+static void test14() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("is wide pointer");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isBoolType());
+}
+
+// test for primitive "type has default value", which should return a bool
+static void test15() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("type has default value");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isBoolType());
+}
+
+// test for primitive "needs auto destroy", which should return a bool
+static void test16() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("needs auto destroy");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isBoolType());
+}
+
+// test for primitive "getcid", which should return an int32
+static void test17() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("getcid");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 32);
+}
+
+// test for primitive "gather tests", which should return a default int
+static void test18() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("gather tests");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// test for primitive "get_union_id", which should return a default int
+static void test19() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var x = __primitive("get_union_id");
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+static void voidTypeTestHelper(std::string program) {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context, program);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isVoidType());
+}
+
+// test for primitive "chpl_init_record", which should return void
+static void test20() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_init_record");)""");
+}
+
+// test for primitive "chpl_comm_get", which should return void
+static void test21() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get");)""");
+}
+
+// test for primitive "chpl_comm_put", which should return void
+static void test22() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put");)""");
+}
+
+// test for primitive "chpl_comm_array_get", which should return void
+static void test23() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_get");)""");
+}
+
+// test for primitive "chpl_comm_array_put", which should return void
+static void test24() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_put");)""");
+}
+
+// test for primitive "chpl_comm_remote_prefetch", which should return void
+static void test25() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_remote_prefetch");)""");
+}
+
+// test for primitive "chpl_comm_get_strd", which should return void
+static void test26() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get_strd");)""");
+}
+
+
+// test for primitive "chpl_comm_put_strd", which should return void
+static void test27() {
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put_strd");)""");
+}
+
+// test for primitive "shift_base_pointer", which should return void
+static void test28() {
+  voidTypeTestHelper(R"""(var x = __primitive("shift_base_pointer");)""");
+}
+
+// test for primitive "array_set", which should return void
+static void test29() {
+  voidTypeTestHelper(R"""(var x = __primitive("array_set");)""");
+}
+
+// test for primitive "array_set_first", which should return void
+static void test30() {
+  voidTypeTestHelper(R"""(var x = __primitive("array_set_first");)""");
+}
 
 int main() {
   test1();
@@ -270,6 +453,25 @@ int main() {
   test9();
   test10();
   test11();
+  test12();
+  test13();
+  test14();
+  test15();
+  test16();
+  test17();
+  test18();
+  test19();
+  test20();
+  test21();
+  test22();
+  test23();
+  test24();
+  test25();
+  test26();
+  test27();
+  test28();
+  test29();
+  test30();
 
   return 0;
 }
