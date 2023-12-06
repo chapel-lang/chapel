@@ -12,6 +12,7 @@ Highlights (see subsequent sections for further details)
 
 Configuration / Build / Packaging Changes
 -----------------------------------------
+* made `make install` create the installation directory rather than `configure`
 
 New Language Features
 ---------------------
@@ -61,6 +62,7 @@ Changes / Feature Improvements in Libraries
 
 Name Changes in Libraries
 -------------------------
+* renamed the `IO.ioendian` enum to `IO.endianness`
 * replaced `PCGRandomStream` with `randomStream`
 
 Deprecated / Unstable / Removed Library Features
@@ -106,6 +108,11 @@ GPU Computing
 -------------
 * added standalone procedures to support whole-array reductions  
   (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSumReduce)
+* added a standalone procedure for computing exclusive sum scans  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuScan)
+* added a procedure for sorting `uint`s on GPUs
+  (https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSort)
+* squashed kernel launches when the number of threads is 0
 * resolved deprecation warnings occurring with ROCm 5.2, 5.3 and 5.4
 
 
@@ -127,6 +134,9 @@ Tool Improvements
 * updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
   (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
    and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
+* added a new script for anonymized unstable warnings
+  (see TODO)
+  (TODO: Is this in the release tarball?)
 * added a script to report symbols that are missing documentation
   (see `tools/chpldoc/findUndocumentedSymbols`)
   (TODO: Is this in the release tarball?)
@@ -210,6 +220,7 @@ Bug Fixes for GPU Computing
 * added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
 * fixed crashes with `.localSubdomain()` on a multidimensional array
   (TODO: Is this merged now?)
+* fixed kernels within standard modules causing segfaults
 
 Bug Fixes for Libraries
 -----------------------
@@ -237,6 +248,9 @@ Developer-oriented changes: Documentation
 -----------------------------------------
 * added docs for undocumented features of the testing system
   (TODO: Is this user facing?  URL?)
+* document test-system-specific files like `PRETEST`, `.comm-*.good`, etc.
+  (see TODO)
+  (TODO: same as above?  Combine?)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
