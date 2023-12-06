@@ -29,6 +29,8 @@ Semantic Changes / Changes to the Chapel Language
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
+* marked `!=` between bounded and unbounded ranges of bool or enum as unstable
+* marked `range.strType` unstable
 * removed support for single-statement `return` procedures without `do`
 * removed support for allocating a class with `borrowed` memory management
 * removed the deprecated `create[Bytes|String]WithBorrowedBuffer()` routines
@@ -203,6 +205,7 @@ Error Messages / Semantic Checks
 * added an error when two files define a top-level module with the same name
 * added a warning for cases where symbol shadowing might be surprising  
   (e.g., if 'M' and 'N' both define 'x', `use M; public use N; f(x);` warns)
+* added an error for `ref` declarations with incorrect declared types
 * added an unstable warning when 'const' arguments are indirectly modified
   (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
 * added a compiler error when casting to a generic subclass in unsupported ways
@@ -210,6 +213,7 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* fixed a bug with throwing within `forall` loops that span locales
 * fixed a bug when initializing fields inside `try!` statements
 * fixed a bug involving `try!` statements and arguments with default values
 * added missing warnings for deprecated implicit conversions
