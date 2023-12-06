@@ -87,7 +87,8 @@
 #    executable>, <log>, <compiler executable>)
 # PRECOMP: Script to execute before running the compiler (arguments: <test
 #    executable>, <log>, <compiler executable>).
-# PRETEST: Script to execute before running the test.
+# PRETEST: Script to execute before running the test. (arguments: <compiler
+#    executable>).
 # PERFNUMTRIALS: Number of trials to run for performance testing
 #
 #

@@ -43,7 +43,7 @@ Outline
        - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
-     - `Using precomp, preexec and prediff files`_
+     - `Using precomp, preexec, and prediff files`_
      - `Using PRETEST`_
 
    - `A Performance Test`_
@@ -392,18 +392,19 @@ If you want to use use default arguments for the test but specify a different
        # foo.true.good
 
 
-Using precomp, preexec and prediff files
+Using precomp, preexec, and prediff files
 ++++++++++++++++++++++++++++++++++++++++
 
-When creating a ``.precomp``, ``.preexec`` or ``.prediff`` file, the file
+When creating a ``.precomp``, ``.preexec``, or ``.prediff`` file, the file
 must be an executable. You can turn your script into an executable by running:
-``chmod +x foo.precomp``. For specifying these files for entire directories,
+``chmod +x foo.precomp``. To specify these files for entire directories,
 the files should be named ``PRECOMP``, ``PREXEC``, and ``PREDIFF``,
 respectively.
 
 If you wish to have a system wide ``.prediff`` file, you can use the
 ``CHPL_SYSTEM_PREDIFF`` environment variable that takes a comma-separated
-list of prediffs to run before every test.
+list of prediffs to run after every test before comparing to the ``.good``
+file.
 
 Using PRETEST
 +++++++++++++
@@ -414,10 +415,10 @@ directory. This can be used to set up a test, for example, by generating
 The file must be an executable. You can turn your script into an executable by
 running: ``chmod +x PRETEST``.
 
-Note that if running tests, in parallel, the ``PRETEST`` script will not be run
-for any subdirectories and must be either duplicated or have a symbolic link to
-the parent directory. You can add a symlink to a file in a parent directory by
-running:  ``ln -s ../PRETEST PRETEST``
+Note that the ``PRETEST`` script will not be run for any subdirectories and
+must be either duplicated or have a symbolic link to the parent directory.
+You can add a symlink to a file in a parent directory by running:
+``ln -s ../PRETEST PRETEST``
 
 A Performance Test
 ------------------
