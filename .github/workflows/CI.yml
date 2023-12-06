@@ -113,6 +113,9 @@ jobs:
     - name: find bad runtime calls
       run: |
         ./util/devel/lookForBadRTCalls
+    - name: find bad compiler calls
+      run: |
+        ./util/devel/lookForBadCompCalls
     - name: check annotations
       run: |
         CHPL_LLVM=none make test-venv

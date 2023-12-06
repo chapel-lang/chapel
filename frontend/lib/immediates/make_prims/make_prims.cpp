@@ -181,7 +181,7 @@ main(int argc, char *argv[]) {
 
   if (argc < 1 || buf_read(argv[1], &buf, &len) < 0) {
     printf("unable to read file '%s'", argv[i]);
-    exit(-1);
+    return -1;
   }
   get_lines(buf, lines);
 
