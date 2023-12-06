@@ -173,6 +173,13 @@ CLASS_BEGIN(Identifier)
                const AstNode*, return nodeOrNullFromToId(context, node))
 CLASS_END(Identifier)
 
+CLASS_BEGIN(Import)
+  PLAIN_GETTER(Import, name, "Get the visibility of this Import node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Import, visibility_clauses, "Get the visibility clauses of this Import node",
+               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+CLASS_END(Import)
+
 CLASS_BEGIN(Init)
   PLAIN_GETTER(Init, target, "Get the target of this Init node",
                const AstNode*, return node->target())
