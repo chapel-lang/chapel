@@ -118,9 +118,10 @@ void LibraryFileWriter::writeHeader() {
     fail("Too many modules to create library file");
   }
 
-  // write the placeholder module section table
+  // write the placeholder module section table,
+  // including the offset just after the last module
   size_t n = modules.size();
-  for (size_t i = 0; i < n; i++) {
+  for (size_t i = 0; i <= n; i++) {
     uint64_t zero = 0;
     fileStream.write((const char*) &zero, sizeof(zero));
   }
@@ -765,6 +766,7 @@ bool LibraryFileWriter::writeAllSections() {
   }
   // and the offset just after the last module
   moduleSectionOffsets.push_back(moduleRegion.end);
+  CHPL_ASSERT(moduleSectionOffsets.size() == modules.size()+1);
 
   // update the module section table
   // seek just after the fixed portion of the file header
