@@ -42,7 +42,10 @@ for using Chapel:
     are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
-    :ref:`readme-chplenv.CHPL_LLVM`).
+    :ref:`readme-chplenv.CHPL_LLVM`). LLVM 16 support is avaible with certain
+    configurations. If LLVM 16 is the only system-wide install of LLVM, it will
+    be used by default. Otherwise you can opt-in to it explicitly by setting
+    :ref:`readme-chplenv.CHPL_LLVM_CONFIG`.
 
 In addition, several optional components have additional requirements:
 
