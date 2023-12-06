@@ -41,9 +41,9 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   Debugger <standard/Debugger>
    GpuDiagnostics <standard/GpuDiagnostics>
    MemDiagnostics <standard/MemDiagnostics>
-   Debugger <standard/Debugger>
 
 
 Files/IO
