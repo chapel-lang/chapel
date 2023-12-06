@@ -199,6 +199,8 @@ Runtime Library Changes
 
 Launchers
 ---------
+* added co-locale support to the `slurm-gasnetrun_*` launchers
+* added co-locale support to the `gasnetrun_*` launchers
 
 Error Messages / Semantic Checks
 --------------------------------
