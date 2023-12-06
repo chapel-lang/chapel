@@ -24,7 +24,7 @@ for using Chapel:
   * You have access to standard C and C++ compilers.
 
     * Building the Chapel compiler and bundled components requires
-      C++14 and one of the following:
+      C++17 and one of the following:
 
       * GCC 7.1 or newer
 
