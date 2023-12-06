@@ -16,6 +16,8 @@ Configuration / Build / Packaging Changes
 
 New Language Features
 ---------------------
+* added support for declaring that unions fulfill a given interface
+  (e.g., `union u: i { ... }` says that `u` implements the `i` interface)
 
 Language Feature Improvements
 -----------------------------
@@ -117,10 +119,14 @@ Deprecated / Unstable / Removed Library Features
 * removed the previously deprecated `BitOps.popcount()` routine
 * removed the previously deprecated `Barriers` module
 * removed the previously deprecated `Collectives.BarrierType` enum
-* removed the previously deprecated reusable `barrier`
+* removed the previously deprecated reusable `barrier` type
+* removed the previously deprecated `FileSystem.copyFile()` routine
+* removed the previously deprecated `FileSystem.isLink()` routine
+* removed the deprecated non-camel-case functions from `FileSystem`
 
 GPU Computing
 -------------
+* enabled GPU execution of promoted expressions in variable initializers
 * added standalone procedures to support whole-array reductions  
   (see https://chapel-lang.org/docs/1.33/modules/standard/GPU.html#GPU.gpuSumReduce)
 * added a standalone procedure for computing exclusive sum scans  
@@ -146,6 +152,8 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* developed a prototype linter for Chapel code, `chplcheck`  
+  (see https://github.com/chapel-lang/chapel/tree/main/tools/chplcheck#readme)
 * updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
   (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
    and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
@@ -194,6 +202,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a new `--detailed-errors` flag supporting more verbose error output
 * added a `--[no-]const-arg-checks` flag to check for potential `const` errors  
   (see TODO)
 * renamed `CHPL_NO_*` env vars to make their behavior more predictable  
@@ -220,6 +229,7 @@ Error Messages / Semantic Checks
   (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
 * added a compiler error when casting to a generic subclass in unsupported ways
 * fixed the unstable warning for 'gpuUseStreamPerTask' to use the correct name
+* improved the output format of `--detailed-errors` since its dev-only form
 
 Bug Fixes
 ---------
@@ -236,6 +246,7 @@ Bug Fixes
 * fixed a bug that caused certain nested functions to crash the compiler
 * fixed a bug where type queries with the same name did not trigger an error
 * fixed an internal error with attempting to optimize an undefined variable
+* fixed an internal error in certain incorrectly-typed assignments
 * fixed text locations of `extern record` to be consistent with `record`
   (TODO: ???)
 
@@ -322,7 +333,9 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added basic support for `atomic` types
   - improved resolution of methods on generic types
   - updated resolver's disambiguation rules to more closely match production's
-  - implemented primitive `string_length_bytes`
+  - implemented numerous compiler primitives
+  - improved errors reporting why a call is a bad match
+  - disallowed subtype coercions for `const ref` formals to match past behavior
 * significantly improved the prototype support for library files:
   - reduced library file size
   - added the ability for library files to include LLVM IR
@@ -351,6 +364,8 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
+* added Python bindings to the 'dyno' frontend library, `chapel-py`
+  (see https://github.com/chapel-lang/chapel/tree/main/tools/chapel-py#readme)
 
 
 version 1.32.0
