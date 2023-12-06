@@ -28,6 +28,10 @@ Semantic Changes / Changes to the Chapel Language
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
 * removed support for single-statement `return` procedures without `do`
+* removed support for allocating a class with `borrowed` memory management
+* removed the deprecated `create[Bytes|String]WithBorrowedBuffer()` routines
+* removed the deprecated `create[Bytes|String]WithOwnedBuffer()` routines
+* removed the deprecated `create[Bytes|String]WithNewBuffer()` routines
 
 Namespace Changes
 -----------------
@@ -36,6 +40,8 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
+* added an experimental user-facing breakpoint function
+  (see TODO)
 
 Package Modules
 ---------------
@@ -70,6 +76,7 @@ Deprecated / Unstable / Removed Library Features
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
 * deprecated the 'RandomSupport' module
 * deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
+* deprecated and hid the transitional `fileOffsetWithoutLocking` config param
 * removed the deprecated old-behavior overloads for `c_ptrTo[Const]()`
 * removed the deprecated `c_nil` type as well as `is_c_nil()` and `isAnyCPtr()`
 * removed `c_FILE`'s deprecated behavior, where `c_FILE` meant `FILE*`
@@ -80,7 +87,20 @@ Deprecated / Unstable / Removed Library Features
 * removed the deprecated `[read|write]Bytes()` methods accepting pointers
 * removed the deprecated `fileReader.readstring()` method
 * removed the deprecated `file[Reader|Writer].advancePastByte()` methods
+* removed the deprecated `IO.[_mark|_revert|_commit|_offset]()` routines
+* removed the previously deprecated locking behavior of `IO.offset()`
+* removed the previously deprecated `Memory` module and its sub-modules
+* removed the previously deprecated `BigInteger` methods  
+  (i.e., `divexact()`, `pow[Mod]()`, `root[rem]()`, `sqrt[rem]()`,  
+  `nextprime()`, `gcd()`, `lcm()`, `invert()`, `removeFactor()`, `fac()`,  
+  `bin()`, `fib[2]()`, `lucnum[2]()`, `add[mul]()`, `sub[mul]()`,  
+  `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,  
+  `[i|x]or()`, `com()`)
 * removed a few deprecated `list` methods: `append()`, `pop()`, `set()`
+* removed the previously deprecated `BitOps.popcount()` routine
+* removed the previously deprecated `Barriers` module
+* removed the previously deprecated `Collectives.BarrierType` enum
+* removed the previously deprecated reusable `barrier`
 
 GPU Computing
 -------------
@@ -107,17 +127,26 @@ Tool Improvements
 * updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
   (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
    and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
+* added a script to report symbols that are missing documentation
+  (see `tools/chpldoc/findUndocumentedSymbols`)
+  (TODO: Is this in the release tarball?)
+* added more features to bring `chapel-py` to parity with the frontend library
+  (TODO: Is this in the release tarball?)
+  (TODO: Documented anywhere?)
 
 Language Specification Improvements
 -----------------------------------
 
 Other Documentation Improvements
 --------------------------------
+* merged the docs for the automatically-included math symbols into 'Math'
+  (see TODO)
 * improved the documentation with respect to profiling  
   (see https://chapel-lang.org/docs/1.33/usingchapel/building.html#makefile-options  
    and https://chapel-lang.org/docs/1.33/developer/bestPractices/GeneratedCode.html#profiling-the-generated-code)
 * updated 'mason' docs and example to show required use of `--` before `-M`  
   (see https://chapel-lang.org/docs/1.33/tools/mason/guide/buildinglargerpackages.html)
+* added missing documentation for stable standard modules
 
 Example Codes
 -------------
@@ -125,9 +154,12 @@ Example Codes
 
 Syntax Highlighting
 -------------------
+* added missing keywords to the syntax highlighter for 'vim'
 
 Portability / Platform-specific Improvements
 --------------------------------------------
+* added support for LLVM 16  
+  (see TODO)
 
 Compiler Improvements
 ---------------------
@@ -157,6 +189,16 @@ Error Messages / Semantic Checks
 
 Bug Fixes
 ---------
+* added missing warnings for deprecated implicit conversions
+* added missing warnings for deprecations in routines with default arguments
+* added missing 'ref if modified' warnings for arrays modified with a slice
+* fixed segmentation faults caused by incorrect uses of an empty `regex`  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Regex.html#Regex.regex.init)
+  (TODO: Is this right?)
+* fixed an internal error when returning a generic type by `ref`
+* fixed an internal error with attempting to optimize an undefined variable
+* fixed text locations of `extern record` to be consistent with `record`
+  (TODO: ???)
 
 Bug Fixes for Build Issues
 --------------------------
@@ -165,6 +207,9 @@ Bug Fixes for Build Issues
 Bug Fixes for GPU Computing
 ---------------------------
 * fixed a bug preventing passing `int(32)` values to `GPU.setBlockSize()`
+* added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
+* fixed crashes with `.localSubdomain()` on a multidimensional array
+  (TODO: Is this merged now?)
 
 Bug Fixes for Libraries
 -----------------------
@@ -177,6 +222,10 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
+* fixed wrong method being called in `postorder` for `chapel-py`
+  (TODO: Are these user facing?  New since last release?)
+* fixed broken `inherit_expressions` method in `chapel-py`
+  (TODO: Are these user facing?  New since last release?)
 
 Third-Party Software Changes
 ----------------------------
@@ -186,6 +235,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
+* added docs for undocumented features of the testing system
+  (TODO: Is this user facing?  URL?)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -229,6 +280,8 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
+* fixed incorrectly-specified `AstTag` for `TypeQuery AstNode`
+* fixed `--devel`  causing the parser to crash in the face of syntax errors
 
 Developer-oriented changes: Testing System
 ------------------------------------------
@@ -238,6 +291,7 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * quieted a gdb warning when using the `--gdb` flag on the compiler
+* refactored `chapel-py` to make it easier to maintain
 
 Developer-oriented changes: Utilities
 -------------------------------------
