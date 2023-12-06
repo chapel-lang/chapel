@@ -1,4 +1,4 @@
-perfkeys: Triad Time BlckSz: 16384KB Median:, Triad Time BlckSz: 16384KB Median:, Triad Time BlckSz: 16384KB Median:
+perfkeys: Kernel Time BlckSz: 16384KB Median:, Kernel Time BlckSz: 16384KB Median:, Kernel Time BlckSz: 16384KB Median:
 files: triad.dat, triadalt1.dat, triadalt2.dat
 graphkeys: Transliteration, NoSliceLHS, NoSlice
 ylabel: Time (s)
