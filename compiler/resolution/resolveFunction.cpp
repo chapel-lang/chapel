@@ -571,6 +571,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       insertUnrefForArrayOrTupleReturn(fn);
 
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+      }
+
       Type* yieldedType = NULL;
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
