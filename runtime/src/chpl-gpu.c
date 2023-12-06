@@ -210,16 +210,110 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
+typedef struct kernel_cfg_s {
+  int dev;
+
+  int ln;
+  int32_t fn;
+
+  int n_params;
+  int cur_param;
+  void*** kernel_params;
+
+  // Keep track of kernel parameters we dynamically allocate memory for so
+  // later on we know what we need to free.
+  bool* param_dyn_allocated;
+
+  // we need this in the config so that we can offload data using this stream,
+  // and in the future allocate/deallocate on this stream, too
+  void* stream;
+} kernel_cfg;
+
+static void cfg_init(kernel_cfg* cfg,int n_params, int ln, int32_t fn) {
+  cfg->dev = chpl_task_getRequestedSubloc();
+  cfg->stream = get_stream(cfg->dev);
+
+  cfg->ln = ln;
+  cfg->fn = fn;
+
+  //+2 for the ln and fn arguments that we add to the end of the array
+  cfg->n_params = n_params+2;
+  cfg->cur_param = 0;
+
+  cfg->kernel_params = chpl_mem_alloc(cfg->n_params * sizeof(void **),
+                                      CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  assert(cfg->kernel_params);
+
+
+  cfg->param_dyn_allocated = chpl_mem_alloc(cfg->n_params * sizeof(bool),
+                                            CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+  assert(cfg->param_dyn_allocated);
+
+  // add the ln and fn arguments to the end of the array
+  // These arguments only make sense when the kernel lives inside of standard
+  // module code and CHPL_DEVELOPER is not set since the generated kernel function
+  // will have two extra formals to account for the line and file num.
+  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
+  cfg->kernel_params[cfg->n_params-2] = (void**)(&ln);
+  cfg->kernel_params[cfg->n_params-1] = (void**)(&fn);
+
+  cfg->param_dyn_allocated[cfg->n_params-2] = false;
+  cfg->param_dyn_allocated[cfg->n_params-1] = false;
+}
+
+static void cfg_deinit_params(kernel_cfg* cfg) {
+  // free GPU memory allocated for kernel parameters
+  for (int i=0 ; i<cfg->n_params ; i++) {
+    if (cfg->param_dyn_allocated[i]) {
+      chpl_gpu_mem_free(*cfg->kernel_params[i], cfg->ln, cfg->fn);
+      chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);
+    }
+  }
+
+  chpl_mem_free(cfg->kernel_params, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->param_dyn_allocated, cfg->ln, cfg->fn);
+}
+
+static void cfg_add_offloaded_param(kernel_cfg* cfg, void* arg, size_t size) {
+  const int i = cfg->cur_param;
+
+  cfg->param_dyn_allocated[i] = true;
+
+  (cfg->kernel_params)[i] = chpl_mem_alloc(sizeof(void*),
+                                           CHPL_RT_MD_GPU_KERNEL_PARAM, cfg->ln,
+                                           cfg->fn);
+  //
+  // TODO this doesn't work on EX, why?
+  // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
+  *(cfg->kernel_params)[i] = chpl_gpu_mem_alloc(size, CHPL_RT_MD_GPU_KERNEL_ARG,
+                                                cfg->ln, cfg->fn);
+
+  chpl_gpu_impl_copy_host_to_device(*(cfg->kernel_params)[i], arg, size,
+                                    cfg->stream);
+
+  cfg->cur_param++;
+}
+
+static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
+  const int i = cfg->cur_param;
+
+  cfg->param_dyn_allocated[i] = false;
+  cfg->kernel_params[i] = arg;
+
+  cfg->cur_param++;
+}
+
 static void launch_kernel(int ln, int32_t fn,
                                    const char* name,
                                    int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, va_list args) {
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-  void* stream = get_stream(dev);
+  kernel_cfg cfg;
+  cfg_init(&cfg, nargs, ln, fn);
 
-  chpl_gpu_diags_verbose_launch(ln, fn, dev, blk_dim_x, blk_dim_y, blk_dim_z);
+  chpl_gpu_impl_use_device(cfg.dev);
+
+  chpl_gpu_diags_verbose_launch(ln, fn, cfg.dev, blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
@@ -229,53 +323,23 @@ static void launch_kernel(int ln, int32_t fn,
 
   CHPL_GPU_START_TIMER(prep_time);
 
-  void ***kernel_params = chpl_mem_alloc(
-      (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  //         ^ +2 for the ln and fn arguments that we add to the end of the array
-  assert(kernel_params);
-
-  // Keep track of kernel parameters we dynamically allocate memory for so
-  // later on we know what we need to free.
-  bool *was_memory_dynamically_allocated_for_kernel_param = chpl_mem_alloc(
-      nargs * sizeof(bool), CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
 
   for (int i=0 ; i<nargs ; i++) {
     void* cur_arg = va_arg(args, void*);
     size_t cur_arg_size = va_arg(args, size_t);
 
     if (cur_arg_size > 0) {
-      was_memory_dynamically_allocated_for_kernel_param[i] = true;
-
-      kernel_params[i] = chpl_mem_alloc(1 * sizeof(void*),
-          CHPL_RT_MD_GPU_KERNEL_PARAM, ln, fn);
-
-      // TODO this doesn't work on EX, why?
-      // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
-      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
-          CHPL_RT_MD_GPU_KERNEL_ARG,
-          ln, fn);
-
-      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
-          cur_arg_size, stream);
+      cfg_add_offloaded_param(&cfg, cur_arg, cur_arg_size);
 
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
-          i, *kernel_params[i]);
+          i, *(cfg.kernel_params)[i]);
     }
     else {
-      was_memory_dynamically_allocated_for_kernel_param[i] = false;
-      kernel_params[i] = cur_arg;
+      cfg_add_direct_param(&cfg, cur_arg);
       CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
-          i, kernel_params[i]);
+          i, cfg.kernel_params[i]);
     }
   }
-
-  // add the ln and fn arguments to the end of the array
-  // These arguments only make sense when the kernel lives inside of standard
-  // module code and CHPL_DEVELOPER is not set since the generated kernel function
-  // will have two extra formals to account for the line and file num.
-  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
-  kernel_params[nargs] = (void**)(&ln);
-  kernel_params[nargs+1] = (void**)(&fn);
 
   CHPL_GPU_STOP_TIMER(prep_time);
   CHPL_GPU_START_TIMER(kernel_time);
@@ -283,11 +347,11 @@ static void launch_kernel(int ln, int32_t fn,
   chpl_gpu_impl_launch_kernel(ln, fn, name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
-                              stream,
-                              (void**)kernel_params);
+                              cfg.stream,
+                              (void**)cfg.kernel_params);
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
-  chpl_gpu_impl_stream_synchronize(stream);
+  chpl_gpu_impl_stream_synchronize(cfg.stream);
 #endif
   CHPL_GPU_STOP_TIMER(kernel_time);
 
@@ -295,16 +359,7 @@ static void launch_kernel(int ln, int32_t fn,
 
   CHPL_GPU_START_TIMER(teardown_time);
 
-  // free GPU memory allocated for kernel parameters
-  for (int i=0 ; i<nargs ; i++) {
-    if (was_memory_dynamically_allocated_for_kernel_param[i]) {
-      chpl_gpu_mem_free(*kernel_params[i], ln, fn);
-      chpl_mem_free(kernel_params[i], ln, fn);
-    }
-  }
-
-  chpl_mem_free(kernel_params, ln, fn);
-  chpl_mem_free(was_memory_dynamically_allocated_for_kernel_param, ln, fn);
+  cfg_deinit_params(&cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
   CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
@@ -315,8 +370,8 @@ static void launch_kernel(int ln, int32_t fn,
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    wait_stream(stream);
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg.stream);
+    wait_stream(cfg.stream);
   }
 #else
   chpl_gpu_impl_synchronize();
