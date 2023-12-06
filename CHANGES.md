@@ -182,6 +182,8 @@ Other Documentation Improvements
 * updated 'mason' docs and example to show required use of `--` before `-M`  
   (see https://chapel-lang.org/docs/1.33/tools/mason/guide/buildinglargerpackages.html)
 * added missing documentation for stable standard modules
+* refreshed the sample installation commands in the prerequisites docs  
+  (see https://chapel-lang.org/docs/1.33/usingchapel/prereqs.html#installation)
 
 Example Codes
 -------------
@@ -195,6 +197,7 @@ Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for LLVM 16  
   (see TODO)
+* addressed a problem building the compiler on recent versions of FreeBSD
 
 Compiler Improvements
 ---------------------
