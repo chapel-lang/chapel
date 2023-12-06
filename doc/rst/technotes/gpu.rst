@@ -130,10 +130,8 @@ Requirements
 * Either the CUDA toolkit (for NVIDIA), or ROCm (for AMD) must be installed
   (unless using `CPU-as-Device mode`_)
 
-  * For targeting NVIDIA GPUs, we support CUDA versions from 10.x to 12.x
+  * For targeting NVIDIA GPUs, we support CUDA versions from 11.x to 12.x
     (inclusive).
-
-    * If using version 10.x you must set ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
 
     * If using version 12.x you must use the bundled LLVM
       (``CHPL_LLVM=bundled``).
@@ -141,16 +139,14 @@ Requirements
   * If targeting AMD GPUs, we require ROCm version 4.x or <5.5. ROCm versions
     greater than 5.4 are not supported, yet.
 
-    * In versions >5.1, you might see deprecation warnings from
-      ``clang-offload-bundler``. They are safe to ignore. You can check the
-      current status of ROCm 5.x support `here
+    * You can check the current status of ROCm 5.x support `here
       <https://github.com/chapel-lang/chapel/issues/23480>`_.
 
 
 GPU-Related Environment Variables
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-To enable GPU support set the environment variable ``CHPL_LOCALE_MODEL=gpu``
+To enable GPU support, set the environment variable ``CHPL_LOCALE_MODEL=gpu``
 before building Chapel. Several other variables affect how Chapel generates
 code for and interacts with GPUs. These variables include:
 
@@ -232,7 +228,7 @@ may set ``CHPL_CUDA_PATH`` and/or ``CHPL_ROCM_PATH`` explicitly.
 
 The ``CHPL_GPU_ARCH`` environment variable can be set to control the desired GPU
 architecture to compile for. The default value is ``sm_60`` for
-``CHPL_GPU_CODEGEN=cuda``. You may also use the ``--gpu-arch`` compiler flag to
+``CHPL_GPU=nvidia``. You may also use the ``--gpu-arch`` compiler flag to
 set GPU architecture.  If using AMD, this variable must be set. `This table in
 the ROCm documentation
 <https://rocm.docs.amd.com/en/latest/release/gpu_os_support.html#linux-supported-gpus>`_
@@ -285,7 +281,7 @@ tests where access to GPUs may be limited. In this mode:
 
 * Inner loops in loop nests that consist of GPU-eligible loops will be reported
   as kernel launch whereas in regular GPU modes, such loops will not be launched
-  as a kernel as the execution will already be on the GPU. This may cause in
+  as a kernel as the execution will already be on the GPU. This may cause
   increased kernel launches reported by the :mod:`GpuDiagnostics` utilities with
   loop nests and multidimensional loops.
 
@@ -310,7 +306,7 @@ counts of launches on a per-locale basis.
 
 To get verbose output (indicating the location of each kernel launch) surround
 the code with calls to :proc:`~GpuDiagnostics.startVerboseGpu` and
-:proc:`~GpuDiagnostics.stopVerboseGpu`. This output will directed to
+:proc:`~GpuDiagnostics.stopVerboseGpu`. This output will be directed to
 ``stdout``.
 
 To get a list of all GPU eligible loops at compile-time (regardless of if they
@@ -366,8 +362,11 @@ For more examples see the tests under |multi_locale_dir|_ available from our
 Device-to-Device Communication Support
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 Chapel supports direct communication between interconnected GPUs. The supported
-connection types are dictated by the GPU vendor; PCIe and NVLink (on NVIDIA
-GPUs) are known to work.
+connection types are dictated by the GPU vendor.
+
+For NVIDIA
+^^^^^^^^^^
+PCIe and NVLink (on NVIDIA GPUs) are known to work.
 
 This feature is disabled by default; it can be enabled by setting the
 ``enableGpuP2P`` configuration constant using the compiler flag
@@ -391,6 +390,19 @@ Notice that in this example, the GPU locales were stored into variables
 ``dev1`` and ``dev2``. Writing ``on here.gpus[1]`` in the second ``on`` statement
 directly would not be correct, since neither GPU locale has GPU sublocales of
 its own.
+
+For AMD
+^^^^^^^
+The ROCm versions we currently support (<=5.4) do not support enabling
+peer-to-peer communication in the way above. However, for optimum bandwidth
+between two devices ``export HSA_ENABLE_SDMA=0`` can be used. This will enable
+using multiple Infinity Fabric links between GPUs/GCDs. However, note that it
+will do that by using kernels to move data. These kernel launches will be
+internal to ROCm and will not be captured by Chapel's GPU diagnostic utilities.
+However, the impacts can be observable when an application needs to overlap
+computation and communication, as what the user thinks as "communication" will
+also involve kernel execution. More information about this can be found in `in
+this article <https://gpuopen.com/learn/amd-lab-notes/amd-lab-notes-gpu-aware-mpi-readme/#gpu-to-gpu-communication-options>`_.
 
 Memory Strategies
 ~~~~~~~~~~~~~~~~~
@@ -494,9 +506,6 @@ improvements in the future.
 
 * Associative arrays cannot be used on GPU sublocales with
   ``CHPL_GPU_MEM_STRATEGY=array_on_device``.
-
-* If using CUDA 10, single thread per locale can be used. i.e., you have to set
-  ``CHPL_RT_NUM_THREADS_PER_LOCALE=1``.
 
 * ``CHPL_TASKS=fifo`` is not supported. Note that `fifo tasking layer
   <../usingchapel/tasks.html#chpl-tasks-fifo>`_ is the
