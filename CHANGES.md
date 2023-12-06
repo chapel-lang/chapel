@@ -47,8 +47,8 @@ Namespace Changes
 
 Standard Library Modules
 ------------------------
-* added an experimental user-facing breakpoint function
-  (see TODO)
+* added an experimental user-facing breakpoint function  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Debugger.html)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -165,17 +165,14 @@ Tool Improvements
   (TODO: Is this in the release tarball?)
 * added new linter rules for method/field ordering and subroutine naming
 * generaled the linter rule for variable names to support additional casings
-* added more features to bring `chapel-py` to parity with the frontend library
-  (TODO: Is this in the release tarball?)
-  (TODO: Documented anywhere?)
 
 Language Specification Improvements
 -----------------------------------
 
 Other Documentation Improvements
 --------------------------------
-* merged the docs for the automatically-included math symbols into 'Math'
-  (see TODO)
+* merged the docs for the automatically-included math symbols into 'Math'  
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Math.html#automatically-available-symbols)
 * improved the documentation with respect to profiling  
   (see https://chapel-lang.org/docs/1.33/usingchapel/building.html#makefile-options  
    and https://chapel-lang.org/docs/1.33/developer/bestPractices/GeneratedCode.html#profiling-the-generated-code)
@@ -196,7 +193,7 @@ Syntax Highlighting
 Portability / Platform-specific Improvements
 --------------------------------------------
 * added support for LLVM 16  
-  (see TODO)
+  (see https://chapel-lang.org/docs/1.33/usingchapel/prereqs.html)
 * addressed a problem building the compiler on recent versions of FreeBSD
 
 Compiler Improvements
@@ -244,14 +241,12 @@ Bug Fixes
 * added missing 'ref if modified' warnings for arrays modified with a slice
 * fixed segmentation faults caused by incorrect uses of an empty `regex`  
   (see https://chapel-lang.org/docs/1.33/modules/standard/Regex.html#Regex.regex.init)
-  (TODO: Is this right?)
 * fixed an internal error when returning a generic type by `ref`
 * fixed a bug that caused certain nested functions to crash the compiler
 * fixed a bug where type queries with the same name did not trigger an error
 * fixed an internal error with attempting to optimize an undefined variable
 * fixed an internal error in certain incorrectly-typed assignments
-* fixed text locations of `extern record` to be consistent with `record`
-  (TODO: ???)
+* made code locations of `extern record` consistent with `record` in errors
 
 Bug Fixes for Build Issues
 --------------------------
@@ -263,7 +258,6 @@ Bug Fixes for GPU Computing
 * fixed a bug preventing passing `int(32)` values to `GPU.setBlockSize()`
 * added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
 * fixed crashes with `.localSubdomain()` on a multidimensional array
-  (TODO: Is this merged now?)
 * fixed a bug in the "strided bulk transfer" optimization for array assignment
 * fixed kernels within standard modules causing segfaults
 * fixed a memory leak in gpu runtime
@@ -282,10 +276,6 @@ Bug Fixes for Tools
 -------------------
 * fixed a bug in 'chpldoc' where use of 'code-block' would overflow
 * improved the accuracy of the language server's 'go to declaration' message
-* fixed wrong method being called in `postorder` for `chapel-py`
-  (TODO: Are these user facing?  New since last release?)
-* fixed broken `inherit_expressions` method in `chapel-py`
-  (TODO: Are these user facing?  New since last release?)
 
 Third-Party Software Changes
 ----------------------------
@@ -295,11 +285,8 @@ Developer-oriented changes: Process
 
 Developer-oriented changes: Documentation
 -----------------------------------------
-* added docs for undocumented features of the testing system
-  (TODO: Is this user facing?  URL?)
-* document test-system-specific files like `PRETEST`, `.comm-*.good`, etc.
-  (see TODO)
-  (TODO: same as above?  Combine?)
+* added docs for undocumented features of the testing system  
+  (see https://chapel-lang.org/docs/1.33/developer/bestPractices/TestSystem.html#readme-testsystem)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
@@ -363,7 +350,6 @@ Developer-oriented changes: Testing System
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
 * quieted a gdb warning when using the `--gdb` flag on the compiler
-* refactored `chapel-py` to make it easier to maintain
 
 Developer-oriented changes: Utilities
 -------------------------------------
