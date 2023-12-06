@@ -50,6 +50,8 @@ Changes / Feature Improvements in Libraries
   (see: https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
 * deprecated the `RandomStream` class in favor of a new `randomStream` record  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.RandomStream)
+* replaced 'start'/'end' arguments in the 'URL' module with 'region' args  
+  (see https://chapel-lang.org/docs/1.33/modules/packages/URL.html#URL.openUrlReader)
 
 Name Changes in Libraries
 -------------------------
@@ -102,6 +104,9 @@ Memory Improvements
 
 Tool Improvements
 -----------------
+* updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
+  (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
+   and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
 
 Language Specification Improvements
 -----------------------------------
@@ -116,6 +121,7 @@ Other Documentation Improvements
 
 Example Codes
 -------------
+* removed LCALS and PTRANS from the benchmarks directory due to lack of focus
 
 Syntax Highlighting
 -------------------
@@ -128,6 +134,8 @@ Compiler Improvements
 
 Compiler Flags
 --------------
+* added a `--[no-]const-arg-checks` flag to check for potential `const` errors  
+  (see TODO)
 
 Generated Executable Flags
 --------------------------
@@ -143,6 +151,9 @@ Error Messages / Semantic Checks
 * added an error when two files define a top-level module with the same name
 * added a warning for cases where symbol shadowing might be surprising  
   (e.g., if 'M' and 'N' both define 'x', `use M; public use N; f(x);` warns)
+* added an unstable warning when 'const' arguments are indirectly modified
+  (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
+* fixed the unstable warning for 'gpuUseStreamPerTask' to use the correct name
 
 Bug Fixes
 ---------
