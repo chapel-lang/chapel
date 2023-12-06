@@ -14,6 +14,7 @@ export CHPL_LOCALE_MODEL=gpu
 export CHPL_LAUNCHER_PARTITION=bardpeak  # bardpeak is the default queue
 
 export CHPL_GPU=amd  # also detected by default
+export CHPL_GPU_ARCH=gfx90a
 
 export CHPL_NIGHTLY_TEST_DIRS="gpu/native"
 
