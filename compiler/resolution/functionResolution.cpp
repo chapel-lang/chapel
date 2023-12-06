@@ -11633,11 +11633,18 @@ static bool hasVariableArgs(FnSymbol* fn) {
   return false;
 }
 
+static bool isGenericFn(FnSymbol* fn) {
+  if (!fn->isGenericIsValid()) {
+    fn->tagIfGeneric();
+  }
+  return fn->isGeneric();
+}
+
 static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
 
   // try to resolve concrete functions when using --dyno-gen-lib
-  bool alsoConcrete = !gDynoGenLibOutput.empty() &&
+  bool alsoConcrete = (fResolveConcreteFns || !gDynoGenLibOutput.empty()) &&
                       !fMinimalModules;
 
   // We need to resolve any additional functions that will be exported.
@@ -11664,6 +11671,7 @@ static void resolveExportsEtc() {
       }
 
       if (!fn->hasFlag(FLAG_GENERIC) &&
+          !fn->hasFlag(FLAG_LAST_RESORT) &&
           !hasVariableArgs(fn) &&
           !fn->hasFlag(FLAG_RESOLVED) &&
           !fn->hasFlag(FLAG_INVISIBLE_FN) &&
@@ -11686,16 +11694,18 @@ static void resolveExportsEtc() {
           // concrete functions which could be resolved from those that can't?
           !isFnSymbol(fn->defPoint->parentSymbol) && // fn is not nested
           fn->defPoint->getModule() &&
-          fn->defPoint->getModule()->modTag == MOD_USER) {
+          !isGenericFn(fn)
+          /* && fn->defPoint->getModule()->modTag == MOD_USER*/
+         ) {
         SET_LINENO(fn);
 
-        if (developer) {
+        /*if (developer) {
           printf("---\n");
           printf("%s (%s:%d)\n", fn->name, fn->astloc.filename(), fn->astloc.lineno());
           printf("---\n");
           viewFlags(fn->id);
           printf("---\n\n");
-        }
+        }*/
 
         // disable resolveExprMaybeIssueError
         //squashCompilerMessages = true;

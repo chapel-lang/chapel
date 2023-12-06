@@ -313,6 +313,8 @@ extern bool fDynoVerifySerialization;
 
 extern size_t fDynoBreakOnHash;
 
+extern bool fResolveConcreteFns;
+
 extern bool fNoIOGenSerialization;
 extern bool fNoIOSerializeWriteThis;
 extern bool fNoIODeserializeReadThis;
