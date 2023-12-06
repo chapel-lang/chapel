@@ -201,10 +201,10 @@ code for and interacts with GPUs. These variables include:
 
 * ``CHPL_GPU_NO_CPU_MODE_WARNING`` - this variable is relevant when using the
   `CPU-as-Device mode`_ and if set, uses of
-  :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute do not generate
-  warnings at execution time. Alternatively, this behavior can be enabled by
-  passing ``--gpuNoCpuModeWarning`` to your application. For more information,
-  see the `CPU-as-Device mode`_ section.
+  the ``@assertOnGpu`` attribute do not generate warnings at execution time.
+  Alternatively, this behavior can be enabled by passing
+  ``--gpuNoCpuModeWarning`` to your application. For more information, see the
+  `CPU-as-Device mode`_ section.
 
 Features
 --------------------
@@ -254,12 +254,12 @@ tests where access to GPUs may be limited. In this mode:
 * It will call the internal runtime API for GPU operations, so that features
   outlined under `Diagnostics and Utilities`_ will work as expected.
 
-  * For example, :proc:`~GPU.assertOnGpu` and the ``@assertOnGpu`` attribute
-    will fail at compile time for ineligible loops normally.
-    This can allow testing if a loop is GPU-eligible. It will generate a warning
-    per-iteration at execution time. The ``CHPL_GPU_NO_CPU_MODE_WARNING``
-    environment can be set to suppress these warnings. Alternatively, you can
-    pass ``--gpuNoCpuModeWarning`` to your application to the same effect.
+  * For example, the ``@assertOnGpu`` attribute will fail at compile time for
+    ineligible loops normally.  This can allow testing if a loop is
+    GPU-eligible. It will generate a warning per-iteration at execution time.
+    The ``CHPL_GPU_NO_CPU_MODE_WARNING`` environment can be set to suppress
+    these warnings. Alternatively, you can pass ``--gpuNoCpuModeWarning`` to
+    your application to the same effect.
 
   * Note that data movements between device and host will not be captured by the
     :mod:`GpuDiagnostics` module in this mode.
