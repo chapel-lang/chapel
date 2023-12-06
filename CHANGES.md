@@ -19,6 +19,7 @@ New Language Features
 
 Language Feature Improvements
 -----------------------------
+* improved support for primitive type queries in formal array type expressions
 
 Syntactic / Naming Changes
 --------------------------
@@ -46,6 +47,8 @@ Standard Library Modules
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
+* added an `fma()` routine to the 'Math' module for fused multiply-adds  
+  (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.fma)
 * changed `binary(De)Serializer` to "unstructured" format for strings/classes  
   (i.e., no longer encodes/decodes string lengths or `nil` pointers)  
   (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.binarySerializer)
@@ -202,6 +205,7 @@ Error Messages / Semantic Checks
   (e.g., if 'M' and 'N' both define 'x', `use M; public use N; f(x);` warns)
 * added an unstable warning when 'const' arguments are indirectly modified
   (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
+* added a compiler error when casting to a generic subclass in unsupported ways
 * fixed the unstable warning for 'gpuUseStreamPerTask' to use the correct name
 
 Bug Fixes
@@ -215,6 +219,8 @@ Bug Fixes
   (see https://chapel-lang.org/docs/1.33/modules/standard/Regex.html#Regex.regex.init)
   (TODO: Is this right?)
 * fixed an internal error when returning a generic type by `ref`
+* fixed a bug that caused certain nested functions to crash the compiler
+* fixed a bug where type queries with the same name did not trigger an error
 * fixed an internal error with attempting to optimize an undefined variable
 * fixed text locations of `extern record` to be consistent with `record`
   (TODO: ???)
@@ -245,6 +251,7 @@ Bug Fixes for Libraries
 Bug Fixes for Tools
 -------------------
 * fixed a bug in 'chpldoc' where use of 'code-block' would overflow
+* improved the accuracy of the language server's 'go to declaration' message
 * fixed wrong method being called in `postorder` for `chapel-py`
   (TODO: Are these user facing?  New since last release?)
 * fixed broken `inherit_expressions` method in `chapel-py`
@@ -305,6 +312,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added the ability for library files to include LLVM IR
   - documented the library file format  
     (see https://chapel-lang.org/docs/1.33/developer/compiler-internals/file-format.html)
+* added a mechanism for associating additional locations with an AST node
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
