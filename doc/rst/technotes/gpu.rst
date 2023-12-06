@@ -527,6 +527,17 @@ files passed via the command line and/or ``require`` statements with ``clang -x
 [cuda|hip]``. This implies that some C features may fail to compile if they are
 not supported by the above ``clang`` compilation.
 
+Performance Tips
+----------------
+* If measuring performance, and using an NVIDIA GPU, please be aware that GPU
+  initialization may incur a 1-3 second startup cost per GPU due to ECC
+  scrubbing.  This initialization occurs when starting a gpu-enabled Chapel
+  program when NVIDIA's kernel mode driver is not already loaded and running.
+  If you are using Linux and not running an X server on the target GPU, then
+  you may wish to install `NVIDIA's `driver persistence daemon
+  <https://docs.nvidia.com/deploy/driver-persistence/index.html#persistence-daemon>`_
+  to alleviate this issue.
+  
 Tested Configurations
 ---------------------
 
