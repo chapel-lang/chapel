@@ -219,8 +219,7 @@ static void launch_kernel(int ln, int32_t fn,
   chpl_gpu_impl_use_device(dev);
   void* stream = get_stream(dev);
 
-  chpl_gpu_diags_verbose_launch(ln, fn, dev,
-                                blk_dim_x, blk_dim_y, blk_dim_z);
+  chpl_gpu_diags_verbose_launch(ln, fn, dev, blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
