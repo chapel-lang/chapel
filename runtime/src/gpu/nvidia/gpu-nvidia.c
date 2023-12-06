@@ -212,41 +212,6 @@ void chpl_gpu_impl_launch_kernel(int ln,
   CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 }
 
-/*inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,*/
-                                        /*const char* name,*/
-                                        /*int grd_dim_x,*/
-                                        /*int grd_dim_y,*/
-                                        /*int grd_dim_z,*/
-                                        /*int blk_dim_x,*/
-                                        /*int blk_dim_y,*/
-                                        /*int blk_dim_z,*/
-                                        /*void* stream,*/
-                                        /*int nargs, va_list args) {*/
-  /*chpl_gpu_launch_kernel_help(ln, fn,*/
-                              /*name,*/
-                              /*grd_dim_x, grd_dim_y, grd_dim_z,*/
-                              /*blk_dim_x, blk_dim_y, blk_dim_z,*/
-                              /*stream,*/
-                              /*nargs, args);*/
-/*}*/
-
-/*inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,*/
-                                             /*const char* name,*/
-                                             /*int64_t num_threads,*/
-                                             /*int blk_dim,*/
-                                             /*void* stream,*/
-                                             /*int nargs,*/
-                                             /*va_list args) {*/
-  /*int grd_dim = (num_threads+blk_dim-1)/blk_dim;*/
-
-  /*chpl_gpu_launch_kernel_help(ln, fn,*/
-                              /*name,*/
-                              /*grd_dim, 1, 1,*/
-                              /*blk_dim, 1, 1,*/
-                              /*stream,*/
-                              /*nargs, args);*/
-/*}*/
-
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
                            void* stream) {
   assert(chpl_gpu_is_device_ptr(addr));
