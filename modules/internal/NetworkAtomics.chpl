@@ -142,6 +142,7 @@ module NetworkAtomics {
 
   }
 
+  pragma "last resort"
   operator :(rhs: bool, type t:RAtomicBool) {
     var lhs: RAtomicBool = rhs; // use init=
     return lhs;

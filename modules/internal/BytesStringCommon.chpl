@@ -999,7 +999,7 @@ module BytesStringCommon {
 
         if curMargin == '':t {
           // An unindented non-empty line means no margin exists, return early
-          margin = '';
+          margin = '':t;
           break;
         } else if margin == '':t {
           // Initialize margin

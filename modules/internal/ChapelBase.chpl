@@ -45,11 +45,13 @@ module ChapelBase {
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
+  pragma "last resort"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "last resort"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this(args...) {

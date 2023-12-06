@@ -148,6 +148,7 @@ module Time {
   /* Specifies the day of the week */
   @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+  pragma "last resort"
   @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
@@ -163,6 +164,7 @@ module Time {
     Saturday =  6,
     Sunday =    7
   }
+  pragma "last resort"
   @chpldoc.nodoc
   proc ISODayOfWeek {
     compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
@@ -2105,7 +2107,7 @@ module Time {
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : timeDelta {
+  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : bool {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -2152,6 +2154,7 @@ module Time {
 
   @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) : string {
+    import Math;
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";
@@ -2167,13 +2170,13 @@ module Time {
     str += hours: string + ":";
     if minutes < 10 then
       str += "0";
-    str += minutes + ":";
+    str += minutes:string + ":";
     if seconds < 10 then
       str += "0";
-    str += seconds;
+    str += seconds:string;
     if microseconds != 0 {
       str += ".";
-      const usLog10 = log10(microseconds): int;
+      const usLog10 = Math.log10(microseconds): int;
       for i in 1..(5-usLog10) {
         str += "0";
       }
@@ -2425,7 +2428,7 @@ record Timer {
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.
   */
-  proc clear() : void {
+  proc ref clear() : void {
     accumulated = 0.0;
 
     if running {
