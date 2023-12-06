@@ -31,6 +31,7 @@ Contributors to the Chapel 1.33.0 release
 * Andy Stone, [HPE] (former [Cray Inc.] intern from [Colorado State University])
 * Michelle Mills Strout, [HPE]
 * Karlon West, [HPE]
+* Vanessa Zambrano, [HPE]
 * Tim Zinsky, [HPE]
 
 Contributors to previous releases
@@ -203,7 +204,6 @@ Contributors to previous releases
 * Joe Yan, [University of Maryland]
 * Sahil Yerawar, [GSoC 2018] student from [Indian Institute of Technology, Hyderabad]
 * Tim Zakian, [Cray Inc.] intern from [Indiana University]
-* Vanessa Zambrano, [HPE]
 * Hui Zhang, [University of Maryland]
 
 [Logo Design](https://chapel-lang.org/logo.html)
