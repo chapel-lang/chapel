@@ -66,13 +66,17 @@ Outline
      - `Tracking Current Failure Mode`_
      - `Resolving a Future`_
 
-* `Invoking start_test`_
+ * `Invoking start_test`_
 
-  - `Correctness Testing`_
-  - `Performance Testing`_
-  - `Sample Output`_
+   - `Correctness Testing`_
 
-* `Summary of Testing Files`_
+     - `Parallel Testing`_
+     - `GPU Testing`_
+
+   - `Performance Testing`_
+   - `Sample Output`_
+
+ * `Summary of Testing Files`_
 
 .. _With Outside Arguments: `Outside Arguments or Settings`_
 .. _With Varying Output: `Tests With Varying Output`_
@@ -813,6 +817,26 @@ program and execute it with ``valgrind``. The ``--valgrind`` flag does the
 same, plus it also runs the compiler under ``valgrind``, which increases
 testing time compared to ``--valgrindexe``. To learn about best practices
 with ``valgrind``, see ``Valgrind.rst``.
+
+Parallel Testing
+++++++++++++++++
+
+To run correctness tests in parallel, ``paratest.local`` can be invoked directly.
+For example:
+
+  ``(cd $CHPL_HOME/test && $CHPL_HOME/util/test/paratest.local -dirs deprecated -dirs unstable)``
+
+This command will run all tests in ``$CHPL_HOME/test/deprecated`` and
+``$CHPL_HOME/test/deprecated`` using 10 processes. Note that the parallelism is
+at the directory level granularity, so if a directory is flat (containing only
+files) it will still run serially with this command.
+
+GPU Testing
++++++++++++
+
+To run tests with the GPU locale model, the environment variable
+``CHPL_TEST_GPU`` needs to be set. For more information on running tests with
+GPUs, see the :ref:`GPU tech note <readme-gpu>`.
 
 Performance Testing
 -------------------
