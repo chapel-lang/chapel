@@ -43,7 +43,8 @@ Outline
        - `Test Not Applicable In All Settings`_
        - `Testing Different Behavior in Different Settings`_
 
-     - `Using precomp and prediff files`_
+     - `Using precomp, preexec and prediff files`_
+     - `Using PRETEST`_
 
    - `A Performance Test`_
 
@@ -346,11 +347,14 @@ explicitly in the ``.compopts`` or ``.execopts`` file for the test.
 ``start_test`` automatically recognizes ``.good`` files with prefixes for
 ``--no-local``, communication layer, locale model, and ``chpldoc``.  For example:
 
-- ``.comm-none.good``: used with CHPL_COMM=none (the unqualified ``.good`` file
+- ``.comm-none.good``: used with ``CHPL_COMM=none`` (the unqualified ``.good`` file
   will then apply for CHPL_COMM != none)
+- ``.comm-gasnet.good``: used with ``CHPL_COMM=gasnet``
+- ``.comm-ofi.good``: used with ``CHPL_COMM=ofi``
+- ``.comm-ugni.good``: used with ``CHPL_COMM=ugni``
 - ``.no-local.good``: used with ``--no-local`` testing
-- ``.na-none.good``: used with CHPL_NETWORK_ATOMICS=none
-- ``.tasks-fifo.good``: used with CHPL_TASKS=fifo
+- ``.na-none.good``: used with ``CHPL_NETWORK_ATOMICS=none``
+- ``.tasks-fifo.good``: used with ``CHPL_TASKS=fifo``
 - ``.doc.good``: used when testing ``chpldoc`` instead of ``chpl``
 
 Note that ``.comm-``, ``.na-``, and ``lm-`` can be combined, in that order.
@@ -370,6 +374,7 @@ instance:
      --x=true # foo.true.good
      --x=false # foo.false.good
 
+
 will compare test output to ``foo.true.good`` for the first execution and
 ``foo.false.good`` for the second.
 
@@ -377,13 +382,42 @@ Any line that is unlabeled will use the default ``.good`` for that test.
 Undefined behavior will occur when both the ``.compopts`` and ``.execopts``
 files specify a ``.good`` file in this way.
 
-Using precomp and prediff files
-+++++++++++++++++++++++++++++++
+If you want to use use default arguments for the test but specify a different
+``.good`` file, you can add a line in your compopts/execopts file as follows
+(note the space before the #):
 
-When creating a ``.precomp`` or ``.prediff`` file, the file must be an
-executable. You can turn your script into an executable by running:
-``chmod +x foo.precomp``. 
+  .. code-block:: bash
 
+      # foo.execopts
+       # foo.true.good
+
+
+Using precomp, preexec and prediff files
+++++++++++++++++++++++++++++++++++++++++
+
+When creating a ``.precomp``, ``.preexec`` or ``.prediff`` file, the file
+must be an executable. You can turn your script into an executable by running:
+``chmod +x foo.precomp``. For specifying these files for entire directories,
+the files should be named ``PRECOMP``, ``PREXEC``, and ``PREDIFF``,
+respectively.
+
+If you wish to have a system wide ``.prediff`` file, you can use the
+``CHPL_SYSTEM_PREDIFF`` environment variable that takes a comma-separated
+list of prediffs to run before every test.
+
+Using PRETEST
++++++++++++++
+
+``PRETEST`` allows you to run a script once before any test is run in a
+directory. This can be used to set up a test, for example, by generating
+``.good`` files, or create/build other programs that are used by the test.
+The file must be an executable. You can turn your script into an executable by
+running: ``chmod +x PRETEST``.
+
+Note that if running tests, in parallel, the ``PRETEST`` script will not be run
+for any subdirectories and must be either duplicated or have a symbolic link to
+the parent directory. You can add a symlink to a file in a parent directory by
+running:  ``ln -s ../PRETEST PRETEST``
 
 A Performance Test
 ------------------
@@ -938,6 +972,8 @@ foo.precomp         script that is run prior to compilation of the test program
 PRECOMP             directory-wide script that is run prior to compilation
 foo.preexec         script that is run prior to execution of the test program
 PREEXEC             directory-wide script that is run prior to execution
+PRETEST             script that is run once per directory prior to any test being
+                    run
 ..
 -------------------------------------------------------------------------------
 **Testing System Settings**
@@ -947,6 +983,8 @@ CLEANFILES          directory-wide list of files to remove before test runs
 foo.noexec          empty file. Indicates .chpl file should only be compiled,
                     not executed.  See `Controlling How It Runs`_ for more
                     information.
+NOEXEC              Indicates all .chpl files in this directory should only be
+                    compiled, not executed.
 foo.notest          empty file. Indicates the file should not be run explicitly
                     See `Controlling How It Runs`_ for more information.
 NOTEST              empty file. Indicates the directory should not be run
