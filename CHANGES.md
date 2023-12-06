@@ -155,6 +155,8 @@ Tool Improvements
 * added a script to report symbols that are missing documentation
   (see `tools/chpldoc/findUndocumentedSymbols`)
   (TODO: Is this in the release tarball?)
+* added new linter rules for method/field ordering and subroutine naming
+* generaled the linter rule for variable names to support additional casings
 * added more features to bring `chapel-py` to parity with the frontend library
   (TODO: Is this in the release tarball?)
   (TODO: Documented anywhere?)
@@ -188,6 +190,7 @@ Portability / Platform-specific Improvements
 
 Compiler Improvements
 ---------------------
+* when inferring return types, known-false `when` blocks are now ignored
 
 Compiler Flags
 --------------
