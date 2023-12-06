@@ -169,7 +169,9 @@ if (exists($ENV{"CHPL_GEN_RELEASE_NO_CLONE"})) {
     "tools/c2chapel",
     "tools/mason",
     "tools/protoc-gen-chpl",
-    "tools/unstableWarningAnonymizer/"
+    "tools/unstableWarningAnonymizer/",
+    "tools/chapel-py",
+    "tools/chplcheck"
 );
 
 
