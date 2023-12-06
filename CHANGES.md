@@ -332,6 +332,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
 
 Developer-oriented changes: Runtime improvements
 ------------------------------------------------
+* added a prototype GASNet-EX comm option (enabled w/ `CHPL_GASNET_VERSION=ex`)
 
 Developer-oriented changes: Platform-specific bug fixes
 -------------------------------------------------------
