@@ -32,12 +32,7 @@ void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,
-                                 int nargs, va_list args);
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 void* stream,
-                                 int nargs, va_list args);
+                                 void** kernel_params);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
 void* chpl_gpu_impl_mem_array_alloc(size_t size);

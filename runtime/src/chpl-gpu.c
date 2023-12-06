@@ -210,6 +210,122 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
+static void launch_kernel(int ln, int32_t fn,
+                                   const char* name,
+                                   int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                   int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                   int nargs, va_list args) {
+  int dev = chpl_task_getRequestedSubloc();
+  chpl_gpu_impl_use_device(dev);
+  void* stream = get_stream(dev);
+
+  chpl_gpu_diags_verbose_launch(ln, fn, dev,
+                                blk_dim_x, blk_dim_y, blk_dim_z);
+  chpl_gpu_diags_incr(kernel_launch);
+
+  CHPL_GPU_DEBUG("Creating kernel parameters\n");
+  CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
+      grd_dim_x, grd_dim_y, grd_dim_z,
+      blk_dim_x, blk_dim_y, blk_dim_z);
+
+  CHPL_GPU_START_TIMER(prep_time);
+
+  void ***kernel_params = chpl_mem_alloc(
+      (nargs+2) * sizeof(void **), CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  //         ^ +2 for the ln and fn arguments that we add to the end of the array
+  assert(kernel_params);
+
+  // Keep track of kernel parameters we dynamically allocate memory for so
+  // later on we know what we need to free.
+  bool *was_memory_dynamically_allocated_for_kernel_param = chpl_mem_alloc(
+      nargs * sizeof(bool), CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+
+  for (int i=0 ; i<nargs ; i++) {
+    void* cur_arg = va_arg(args, void*);
+    size_t cur_arg_size = va_arg(args, size_t);
+
+    if (cur_arg_size > 0) {
+      was_memory_dynamically_allocated_for_kernel_param[i] = true;
+
+      kernel_params[i] = chpl_mem_alloc(1 * sizeof(void*),
+          CHPL_RT_MD_GPU_KERNEL_PARAM, ln, fn);
+
+      // TODO this doesn't work on EX, why?
+      // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
+      *kernel_params[i] = chpl_gpu_mem_alloc(cur_arg_size,
+          CHPL_RT_MD_GPU_KERNEL_ARG,
+          ln, fn);
+
+      chpl_gpu_impl_copy_host_to_device(*kernel_params[i], cur_arg,
+          cur_arg_size, stream);
+
+      CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
+          i, *kernel_params[i]);
+    }
+    else {
+      was_memory_dynamically_allocated_for_kernel_param[i] = false;
+      kernel_params[i] = cur_arg;
+      CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
+          i, kernel_params[i]);
+    }
+  }
+
+  // add the ln and fn arguments to the end of the array
+  // These arguments only make sense when the kernel lives inside of standard
+  // module code and CHPL_DEVELOPER is not set since the generated kernel function
+  // will have two extra formals to account for the line and file num.
+  // If CHPL_DEVELOPER is set, these arguments are dropped on the floor
+  kernel_params[nargs] = (void**)(&ln);
+  kernel_params[nargs+1] = (void**)(&fn);
+
+  CHPL_GPU_STOP_TIMER(prep_time);
+  CHPL_GPU_START_TIMER(kernel_time);
+
+  chpl_gpu_impl_launch_kernel(ln, fn, name,
+                              grd_dim_x, grd_dim_y, grd_dim_z,
+                              blk_dim_x, blk_dim_y, blk_dim_z,
+                              stream,
+                              (void**)kernel_params);
+
+#ifdef CHPL_GPU_ENABLE_PROFILE
+  chpl_gpu_impl_stream_synchronize(stream);
+#endif
+  CHPL_GPU_STOP_TIMER(kernel_time);
+
+  chpl_task_yield();
+
+  CHPL_GPU_START_TIMER(teardown_time);
+
+  // free GPU memory allocated for kernel parameters
+  for (int i=0 ; i<nargs ; i++) {
+    if (was_memory_dynamically_allocated_for_kernel_param[i]) {
+      chpl_gpu_mem_free(*kernel_params[i], ln, fn);
+      chpl_mem_free(kernel_params[i], ln, fn);
+    }
+  }
+
+  chpl_mem_free(kernel_params, ln, fn);
+  chpl_mem_free(was_memory_dynamically_allocated_for_kernel_param, ln, fn);
+
+  CHPL_GPU_STOP_TIMER(teardown_time);
+  CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
+      "Prep: %Lf, "
+      "Kernel: %Lf, "
+      "Teardown: %Lf\n",
+      name, load_time, prep_time, kernel_time, teardown_time);
+
+#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
+  if (chpl_gpu_sync_with_host) {
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
+    wait_stream(stream);
+  }
+#else
+  chpl_gpu_impl_synchronize();
+#endif
+
+}
+
+
 inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    const char* name,
                                    int grd_dim_x, int grd_dim_y, int grd_dim_z,
@@ -235,16 +351,10 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
 
   chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
 
-  chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-                                blk_dim_x, blk_dim_y, blk_dim_z);
-  chpl_gpu_diags_incr(kernel_launch);
-
-  chpl_gpu_impl_launch_kernel(ln, fn,
-                              name,
-                              grd_dim_x, grd_dim_y, grd_dim_z,
-                              blk_dim_x, blk_dim_y, blk_dim_z,
-                              stream,
-                              nargs, args);
+  launch_kernel(ln, fn, name,
+                grd_dim_x, grd_dim_y, grd_dim_z,
+                blk_dim_x, blk_dim_y, blk_dim_z,
+                nargs, args);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
@@ -278,7 +388,7 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %"PRId64"\n",
-                 chpl_task_getRequestedSubloc(),
+                 dev,
                  chpl_lookupFilename(fn),
                  ln,
                  name,
@@ -290,33 +400,25 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
   va_start(args, nargs);
 
   if (num_threads > 0){
-    chpl_gpu_diags_verbose_launch(ln, fn, chpl_task_getRequestedSubloc(),
-        blk_dim, 1, 1);
-    chpl_gpu_diags_incr(kernel_launch);
+    int grd_dim_x = (num_threads+blk_dim-1)/blk_dim;
+    int grd_dim_y = 1;
+    int grd_dim_z = 1;
+    int blk_dim_x = blk_dim;
+    int blk_dim_y = 1;
+    int blk_dim_z = 1;
 
-    chpl_gpu_impl_launch_kernel_flat(ln, fn,
-                                     name,
-                                     num_threads, blk_dim,
-                                     stream,
-                                     nargs, args);
+    launch_kernel(ln, fn, name,
+                  grd_dim_x, grd_dim_y, grd_dim_z,
+                  blk_dim_x, blk_dim_y, blk_dim_z,
+                  nargs, args);
 
-#ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
-    if (chpl_gpu_sync_with_host) {
-      CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-      wait_stream(stream);
-    }
-#else
-    chpl_gpu_impl_synchronize();
-#endif
   } else {
-  CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
+    CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(),
-                 name);
+                 "\tKernel: %s\n", dev, name);
 }
 
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
