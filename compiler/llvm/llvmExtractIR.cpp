@@ -84,7 +84,7 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   }
 
   // cleanup a-la llvm-extract
-  #if HAVE_LLVM_VER >= 170
+#if HAVE_LLVM_VER >= 170
   LoopAnalysisManager LAM;
   FunctionAnalysisManager FAM;
   CGSCCAnalysisManager CGAM;
@@ -102,7 +102,7 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   PM.addPass(GlobalDCEPass());           // Delete unreachable globals
   PM.addPass(StripDeadDebugInfoPass());  // Remove dead debug info
   PM.addPass(StripDeadPrototypesPass()); // Remove dead func decls
-  #else
+#else
   legacy::PassManager Passes;
 
   Passes.add(createGlobalDCEPass());           // Delete unreachable globals
@@ -110,7 +110,7 @@ std::unique_ptr<Module> extractLLVM(const llvm::Module* fromModule,
   Passes.add(createStripDeadPrototypesPass()); // Remove dead func decls
 
   Passes.run(M);
-  #endif
+#endif
 
   // Put the linkage for functions back
   for (const auto& pair: saveLinkage) {
