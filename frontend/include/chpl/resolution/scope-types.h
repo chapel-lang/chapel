@@ -29,7 +29,6 @@
 #include <unordered_map>
 #include <utility>
 
-// #include "llvm/ADT/None.h"
 #include "llvm/ADT/SmallPtrSet.h"
 #include "llvm/ADT/SmallSet.h"
 
