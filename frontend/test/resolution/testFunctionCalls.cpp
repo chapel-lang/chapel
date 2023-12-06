@@ -229,7 +229,7 @@ static void test9() {
 }
 
 static void test10() {
-  // check that prim_gather_tests returns an int
+  // check that primitive "gather tests" returns an int
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
@@ -243,7 +243,7 @@ static void test10() {
 }
 
 static void test11() {
-  // check that prim_is_wide_pointer returns a bool
+  // check that primitive "is wide pointer" returns a bool
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
