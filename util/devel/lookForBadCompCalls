@@ -16,12 +16,12 @@ from chpl_home_utils import get_chpl_home
 
 
 def main():
-    """Check compiler for "bad function calls"""
+    """Check compiler for bad function calls"""
     chpl_home = get_chpl_home()
     compiler_dir = os.path.join(chpl_home, 'compiler')
     frontend_dir = os.path.join(chpl_home, 'frontend')
 
-    # Check runtime for exit calls
+    # Check compiler for exit calls
     exit_exclude_paths = ['compiler/util/misc.cpp',
                           'frontend/include/chpl/resolution/ResolvedVisitor.h',
                           'frontend/include/chpl/uast/AstNode.h',
