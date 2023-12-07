@@ -26,10 +26,8 @@ def main():
                           'frontend/include/chpl/resolution/ResolvedVisitor.h',
                           'frontend/include/chpl/uast/AstNode.h',
                           'frontend/lib/parsing/flex-chpl-lib.cpp',
-                          'frontend/test/framework/testUniqueString.cpp',
-                          'frontend/test/resolution/testErrors.cpp',
-                          'frontend/test/resolution/testExternBlocks.cpp',
-                          'frontend/test/resolution/testInteractive.cpp'
+                          # and frontend/test can use exit
+                          'frontend/test/',
                          ]
     exit_funcs = look_for_calls.get_exit_funcs()
     found1 = look_for_calls.check_for_calls(exit_funcs,
