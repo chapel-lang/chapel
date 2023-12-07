@@ -299,6 +299,10 @@ static void insertModuleInit() {
     SET_LINENO(mod);
 
     mod->initFn          = new FnSymbol(astr("chpl__init_", mod->name));
+    if (fIdBasedMunging && !mod->astloc.id().isEmpty()) {
+      // use ModuleName.init as the cname for ID-based munging
+      mod->initFn->cname = astr(mod->astloc.id().symbolPath().c_str(), ".init");
+    }
     mod->initFn->retType = dtVoid;
 
     mod->initFn->addFlag(FLAG_MODULE_INIT);
