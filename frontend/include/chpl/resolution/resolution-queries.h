@@ -394,7 +394,7 @@ bool isTypeDefaultInitializable(Context* context, const types::Type* t);
   result in the respective out-parameter
 */
 void getCopyabilityInfo(Context* context,
-                        const types::Type* t,
+                        const types::CompositeType* t,
                         bool* initEqualFromConst,
                         bool* initEqualFromRef);
 

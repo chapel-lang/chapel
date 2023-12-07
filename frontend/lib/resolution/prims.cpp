@@ -643,10 +643,10 @@ static QualifiedType primFamilyIsCopyable(Context* context, const CallInfo& ci,
 
   bool initEqualFromConst = false;
   bool initEqualFromRef = false;
-  if (!t->isRecordType()) {
-    initEqualFromConst = true;
+  if (auto ct = t->toCompositeType()) {
+    getCopyabilityInfo(context, ct, &initEqualFromConst, &initEqualFromRef);
   } else {
-    getCopyabilityInfo(context, t, &initEqualFromConst, &initEqualFromRef);
+    initEqualFromConst = true;
   }
 
   bool isCopyable =

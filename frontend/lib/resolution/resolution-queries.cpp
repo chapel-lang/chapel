@@ -3956,20 +3956,90 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
-static const std::pair<bool, bool>
-getCopyabilityInfoImpl(const Type* t) {
-  // TODO implement
-  return {false, false};
+// First is from const, second is from ref.
+static const std::pair<bool, bool> getCopyabilityInfoImpl(
+    Context* context, const CompositeType* ct) {
+  std::pair<bool, bool> result = {false, false};
+
+  // Get initial values directly from copyability flags, if present.
+  auto attrs = parsing::idToAst(context, ct->id())->attributeGroup();
+  if (attrs) {
+    result.first = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_CONST);
+    result.second = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_REF);
+    // Short-circuit if we have both given already
+    if (result.first && result.second) {
+      return result;
+    }
+  }
+
+  // Inspect type for either kind of copyability.
+  bool foundFromConst = false;
+  bool foundFromRef = false;
+  if (auto classTy = ct->toClassType()) {
+    auto dec = classTy->decorator();
+    if (dec.isNonNilable() && dec.isManaged() &&
+        classTy->manager()->isAnyOwnedType()) {
+      // do nothing for non-nilable owned
+    }
+  } else if (auto at = ct->toArrayType()) {
+    if (auto eltType = at->eltType().type()) {
+      if (auto eltTypeCt = eltType->toCompositeType()) {
+        auto eltTypeCopyability = getCopyabilityInfoImpl(context, eltTypeCt);
+        foundFromConst = eltTypeCopyability.first;
+        foundFromRef = eltTypeCopyability.second;
+      } else {
+        foundFromConst = true;
+      }
+    }
+  } else {
+    if (attrs &&
+        (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
+      // Special case to preserve deprecated behavior before sync/single
+      // implicit reads are removed. 12/8/23
+      foundFromConst = true;
+    } else {
+      TypedFnSignature* initEq = nullptr;
+      // TODO: try to resolve an init= and port the below prod logic
+      if (initEq) {
+        /* if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) { */
+        /*   if (recordContainsNonNilableOwned(at)) */
+        /*     ; // do nothing for this case */
+        /*   else if (recordContainsOwned(at)) */
+        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
+        /*   else */
+        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
+        /* } else { */
+        /*   // formals are mt, this, other */
+        /*   ArgSymbol* other = initEq->getFormal(3); */
+        /*   IntentTag intent = concreteIntentForArg(other); */
+        /*   if (intent == INTENT_IN || */
+        /*       intent == INTENT_CONST_IN || */
+        /*       intent == INTENT_CONST_REF) { */
+        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
+        /*   } else { */
+        /*     // this case includes INTENT_REF_MAYBE_CONST */
+        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
+        /*   } */
+        /* } */
+      }
+    }
+  }
+
+  // Don't override a true initial value from flags if present.
+  result.first |= foundFromConst;
+  result.second |= foundFromRef;
+  return result;
 }
 
+// First is from const, second is from ref.
 static const std::pair<bool, bool>&
-getCopyabilityInfoQuery(Context* context, const Type* t) {
+getCopyabilityInfoQuery(Context* context, const CompositeType* t) {
   QUERY_BEGIN(getCopyabilityInfoQuery, context, t);
-  auto ret = getCopyabilityInfoImpl(t);
+  auto ret = getCopyabilityInfoImpl(context, t);
   return QUERY_END(ret);
 }
 
-void getCopyabilityInfo(Context* context, const Type* t,
+void getCopyabilityInfo(Context* context, const CompositeType* t,
                         bool* initEqualFromConst, bool* initEqualFromRef) {
   auto info = getCopyabilityInfoQuery(context, t);
   *initEqualFromConst = info.first;
