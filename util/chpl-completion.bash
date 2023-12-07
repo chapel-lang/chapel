@@ -271,6 +271,7 @@ _chpl ()
 --no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
+--no-resolve-concrete-fns \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -352,6 +353,7 @@ _chpl ()
 --report-promotion \
 --report-scalar-replace \
 --report-vectorized-loops \
+--resolve-concrete-fns \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
