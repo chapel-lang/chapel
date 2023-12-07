@@ -3956,6 +3956,25 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+static const std::pair<bool, bool>
+getCopyabilityInfoImpl(const Type* t) {
+  // TODO implement
+  return {false, false};
+}
+
+static const std::pair<bool, bool>&
+getCopyabilityInfoQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(getCopyabilityInfoQuery, context, t);
+  auto ret = getCopyabilityInfoImpl(t);
+  return QUERY_END(ret);
+}
+
+void getCopyabilityInfo(Context* context, const Type* t,
+                        bool* initEqualFromConst, bool* initEqualFromRef) {
+  auto info = getCopyabilityInfoQuery(context, t);
+  *initEqualFromConst = info.first;
+  *initEqualFromRef = info.second;
+}
 
 template <typename T>
 QualifiedType paramTypeFromValue(Context* context, T value);

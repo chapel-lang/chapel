@@ -633,6 +633,28 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
   return ret;
 }
 
+static QualifiedType primFamilyIsCopyable(Context* context, const CallInfo& ci,
+                                          const PrimitiveTag prim) {
+  CHPL_ASSERT((prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE) &&
+              "incorrect primitive for this handler");
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto t = ci.actual(0).type().type();
+
+  bool initEqualFromConst = false;
+  bool initEqualFromRef = false;
+  if (!t->isRecordType()) {
+    initEqualFromConst = true;
+  } else {
+    getCopyabilityInfo(context, t, &initEqualFromConst, &initEqualFromRef);
+  }
+
+  bool isCopyable =
+      (initEqualFromRef && prim == PRIM_IS_COPYABLE) || initEqualFromConst;
+  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                       BoolParam::get(context, isCopyable));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -705,6 +727,11 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primFieldByNum(context, ci);
       break;
 
+    case PRIM_IS_COPYABLE:
+    case PRIM_IS_CONST_COPYABLE:
+      type = primFamilyIsCopyable(context, ci, prim);
+      break;
+
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
     case PRIM_IS_GENERIC_TYPE:
     case PRIM_IS_CLASS_TYPE:
@@ -720,8 +747,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_BORROWED_CLASS_TYPE:
     case PRIM_IS_ABS_ENUM_TYPE:
     case PRIM_IS_POD:
-    case PRIM_IS_COPYABLE:
-    case PRIM_IS_CONST_COPYABLE:
     case PRIM_IS_ASSIGNABLE:
     case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:  // param uses in module code

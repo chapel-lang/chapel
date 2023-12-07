@@ -390,6 +390,15 @@ resolveGeneratedCallInMethod(Context* context,
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 /**
+  Determine whether type 't' has init= from const or from ref, storing the
+  result in the respective out-parameter
+*/
+void getCopyabilityInfo(Context* context,
+                        const types::Type* t,
+                        bool* initEqualFromConst,
+                        bool* initEqualFromRef);
+
+/**
   Determine the types of various compiler-generated globals, which depend
   on the settings the compiler / Dyno was started with.
  */
