@@ -282,7 +282,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
         if (thenFrame && thenFrame->returnsOrThrows && thenFrame->paramTrue) {
           parentFrame->returnsOrThrows = true;
         }
-        if (elseFrame && elseFrame->returnsOrThrows && thenFrame->paramTrue) {
+        if (elseFrame && elseFrame->returnsOrThrows && elseFrame->paramTrue) {
           parentFrame->returnsOrThrows = true;
         }
       }
