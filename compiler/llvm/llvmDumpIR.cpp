@@ -37,9 +37,7 @@ using namespace llvm;
 
 void DumpIR::run(Function &F) {
   std::string str = F.getName().str();
-  if (shouldLlvmPrintIrName(str.c_str())) {
-    printLlvmIr(str.c_str(), &F, stage);
-  } else if (shouldLlvmPrintIrCName(str.c_str())) {
+  if (shouldLlvmPrintIrCName(str.c_str())) {
     printLlvmIr(str.c_str(), &F, stage);
   }
 }

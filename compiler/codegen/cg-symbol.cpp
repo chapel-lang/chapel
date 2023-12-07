@@ -88,7 +88,7 @@
 // these are sets of astrs
 // Chapel function names requested to be disassembled, and whether they've been
 // matched to C symbol names.
-static std::unordered_map<const char*, bool> llvmPrintIrNames;
+static std::unordered_map<const char*, bool> llvmPrintIrRequestedNames;
 // Corresponding C function names to disassemble
 static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
@@ -126,29 +126,47 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
   return llvmStageNum::NOPRINT;
 }
 
-void addNameToPrintLlvmIr(const char* name) {
-  llvmPrintIrNames.emplace(astr(name), false);
+void addNameToPrintLlvmIrRequestedNames(const char* name) {
+  llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
-void addCNameToPrintLlvmIr(const char* name) {
+
+static void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
-bool shouldLlvmPrintIrName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
-
-  return llvmPrintIrNames.count(astr(name));
+static bool shouldLlvmPrintIrName(const char* name) {
+  return llvmPrintIrRequestedNames.count(astr(name)) > 0;
 }
 
-bool shouldLlvmPrintIrCName(const char* name) {
-  if (llvmPrintIrCNames.empty())
-    return false;
-
-  return llvmPrintIrCNames.count(astr(name));
+bool shouldLlvmPrintIrCName(const char* cname) {
+  return llvmPrintIrCNames.count(astr(cname)) > 0;
 }
 
-bool shouldLlvmPrintIrFn(FnSymbol* fn) {
-  return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
+static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
+  if (shouldLlvmPrintIrName(fn->name)) {
+    foundName = fn->name;
+    return true;
+  }
+
+  if (shouldLlvmPrintIrName(fn->cname)) {
+    foundName = fn->cname;
+    return true;
+  }
+
+  if (!fn->astloc.id().isEmpty()) {
+    const char* idstr = astr(fn->astloc.id().symbolPath());
+    if (shouldLlvmPrintIrName(idstr)) {
+      foundName = idstr;
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool shouldLlvmPrintIrFn(FnSymbol* fn) {
+  const char* foundName = nullptr;
+  return shouldLlvmPrintIrFnFindName(fn, foundName);
 }
 
 // Collect the cnames to print into a vector with (lex) ordering.
@@ -208,23 +226,24 @@ void restorePrintIrCNames() {
 }
 
 void preparePrintLlvmIrForCodegen() {
-  if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
+  if (llvmPrintIrRequestedNames.empty() && llvmPrintIrCNames.empty())
     return;
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     return;
 
   // Gather the cnames for the functions in names
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (shouldLlvmPrintIrFn(fn)) {
+    const char* foundName = nullptr;
+    if (shouldLlvmPrintIrFnFindName(fn, foundName) && foundName) {
       addCNameToPrintLlvmIr(fn->cname);
       // mark Chapel symbol as found
-      llvmPrintIrNames[astr(fn->name)] = true;
+      llvmPrintIrRequestedNames[astr(foundName)] = true;
     }
   }
 
   // Ensure cnames were found for all Chapel function names
   std::vector<std::string> namesNotFound;
-  for (const auto& nameInfo : llvmPrintIrNames) {
+  for (const auto& nameInfo : llvmPrintIrRequestedNames) {
     if (nameInfo.second == false) {
       namesNotFound.emplace_back(nameInfo.first);
     }
@@ -249,7 +268,7 @@ void preparePrintLlvmIrForCodegen() {
   do {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (shouldLlvmPrintIrCName(fn->cname)) {
+      if (shouldLlvmPrintIrFn(fn)) {
         std::vector<CallExpr*> calls;
         collectFnCalls(fn, calls);
 
