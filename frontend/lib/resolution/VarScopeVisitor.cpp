@@ -310,7 +310,6 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
     } else if (auto s = ast->toSelect()) {
       handleSelect(s, rv);
       if (parentFrame != nullptr) {
-        VarFrame* selFrame = currentFrame();
         //if no otherwise block, returnsOrThrows only if all present blocks 
         // returnsOrThrows and one of them is paramTrue
         //if otherwise block, returnsOrThrows only if all present blocks 
@@ -568,7 +567,6 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
     }
     return false;
   }
-
   // Not param-known condition; visit both branches as normal.
   return true;
 }
