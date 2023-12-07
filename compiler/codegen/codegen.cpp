@@ -160,6 +160,9 @@ const char* legalizeName(const char* name) {
 }
 
 static void legalizeSymbolName(Symbol* sym) {
+  if (fIdBasedMunging)
+    return;
+
   if (!fLibraryCompile && !sym->isRenameable())
     return;
 
@@ -1315,6 +1318,9 @@ static void codegen_header_compilation_config() {
 }
 
 static void protectNameFromC(Symbol* sym) {
+  if (fIdBasedMunging)
+    return;
+
   //
   // Symbols that start with 'chpl_' were presumably named by the
   // implementation (compiler, internal modules, runtime) and

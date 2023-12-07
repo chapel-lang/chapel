@@ -315,6 +315,7 @@ extern bool fDynoGenStdLib;
 extern size_t fDynoBreakOnHash;
 
 extern bool fResolveConcreteFns;
+extern bool fIdBasedMunging;
 
 extern bool fNoIOGenSerialization;
 extern bool fNoIOSerializeWriteThis;
