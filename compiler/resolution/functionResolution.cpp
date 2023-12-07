@@ -11671,7 +11671,8 @@ static void resolveExportsEtc() {
       }
 
       if (!fn->hasFlag(FLAG_GENERIC) &&
-          !fn->hasFlag(FLAG_LAST_RESORT) &&
+          !fn->hasFlag(FLAG_LAST_RESORT) /* often a compilerError overload*/ &&
+          !fn->hasFlag(FLAG_DO_NOT_RESOLVE_UNLESS_CALLED) &&
           !hasVariableArgs(fn) &&
           !fn->hasFlag(FLAG_RESOLVED) &&
           !fn->hasFlag(FLAG_INVISIBLE_FN) &&

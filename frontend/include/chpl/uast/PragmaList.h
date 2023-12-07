@@ -634,6 +634,7 @@ PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compil
 
 PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
 
+PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
 #undef ypr
 #undef npr
 #undef ncm

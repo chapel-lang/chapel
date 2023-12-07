@@ -142,7 +142,7 @@ module NetworkAtomics {
 
   }
 
-  pragma "last resort"
+  pragma "do not resolve unless called"
   operator :(rhs: bool, type t:RAtomicBool) {
     var lhs: RAtomicBool = rhs; // use init=
     return lhs;

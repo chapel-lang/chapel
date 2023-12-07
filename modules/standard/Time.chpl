@@ -148,7 +148,7 @@ module Time {
   /* Specifies the day of the week */
   @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  pragma "last resort"
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
@@ -164,7 +164,7 @@ module Time {
     Saturday =  6,
     Sunday =    7
   }
-  pragma "last resort"
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   proc ISODayOfWeek {
     compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
