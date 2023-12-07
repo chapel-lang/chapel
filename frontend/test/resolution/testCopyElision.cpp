@@ -1054,6 +1054,135 @@ static void test38() {
     {"M.test@4"});
 }
 
+static void test39() {
+  testCopyElision("test39a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = int;
+          select T {
+            when int {
+              var x;
+              x;
+            }
+            when real do y;
+          }
+        }
+      }
+    )"""",
+    {"M.test@4"});
+  testCopyElision("test39b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          select T {
+            when int {
+              var x;
+              x;
+            }
+            when real do y;
+          }
+        }
+      }
+    )"""",
+    {"M.test@4"});
+  testCopyElision("test39c",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        config const cond = true;
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          select T {
+            when int {
+              var x;
+              x;
+            }
+            when real {
+              if cond {
+                x;
+              } else {
+                y;
+              }
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test39d",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        config const cond = true;
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          select T {
+            when int {
+              var x;
+              x;
+            }
+            when real {
+              if false {
+                x;
+              } else {
+                y;
+              }
+            }
+          }
+        }
+      }
+    )"""",
+    {"M.test@4"});
+}
+
+static void test40() {
+  testCopyElision("test40a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          try {
+            y;
+          } catch {
+            x;
+          }
+        }
+      }
+    )"""",
+    {});
+}
 int main() {
   test1();
   test2();
@@ -1093,5 +1222,7 @@ int main() {
   test36();
   test37();
   test38();
+  test39();
+  test40();
   return 0;
 }
