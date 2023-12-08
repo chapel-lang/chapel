@@ -13092,7 +13092,7 @@ Newly Implemented Features
 --------------------------
 - forall loops over ranges & arithmetic domains/arrays are now parallelized
 - improved support for and correctness of record and class destructors
-- array declaration+initialization syntax now results in parallel evaluation
+- array declaration+initialization syntax now results in parallel evaluation  
   e.g., var A: [i in D] real = foo(i);  will be evaluated in parallel
 - added == and != for imag and complex types; added >, >=, <, <= for imag types
 
@@ -13123,14 +13123,14 @@ Semantic Changes
 - made module initialization occur at program startup rather than use statements
 - only modules specified on the command-line are candidates for the main module
 - added support for returning locally scoped arrays from variable functions
-- changed interpretation of method definitions on scalar types
+- changed interpretation of method definitions on scalar types  
   e.g., 'def int.foo()' now defines foo() for default-sized ints, not all ints
 
 Syntactic/Naming Changes
 ------------------------
 - renamed MultiBlockDist.chpl to BlockDist.chpl
 - removed the Block1D distribution since Block subsumed it
-- added placeholder notation for creating new distribution values
+- added placeholder notation for creating new distribution values  
   e.g., new Block(...) => distributionValue(new Block(...))
 - renamed the pbs launcher for Cray XT to pbs-aprun since it wraps both packages
 
@@ -13196,7 +13196,7 @@ Compiler Flags
 
 Generated Code Flags
 --------------------
-- added support for specifying configuration variables/constants without =
+- added support for specifying configuration variables/constants without =  
   e.g., you can now use './a.out --n 4' in addition to ./a.out --n=4'
 - improved flags for tracking memory utilization (see README.executing)
 - improved error messages to indicate the argument number
@@ -13450,22 +13450,22 @@ Changes to Chapel Language
 - changed operator precedence for : vs. **, bitwise ops, reduce, !, unary +/-
 - added destructors and a 'delete' keyword for destroying class instances
 - removed open interval syntax in which [0..n) == 0..n-1
-- added range operator # that counts a number of elements
+- added range operator # that counts a number of elements  
   e.g., 0..#n == 0..n-1;  0.. by 2 #5 == 0, 2, 4, 6, 8
 - added support for locale.name to query a locale's node name
 - added support for overriding iterators within a class hierarchy
-- added the capability to declare generic formals for gen. classes with defaults
+- added the capability to declare generic formals for gen. classes with defaults  
   e.g., "x: range" expects a default range; "x: range(?)" expects a generic one
-- added the ability to query argument types without naming the queried type
+- added the ability to query argument types without naming the queried type  
   e.g., "x: ?" rather than "x:?t"
 - added support for +/- on (arith. domain, index) and + on (index, arith. domain)
 - removed support for * and / on (range, integer) and - on (integer, range)
 - added support for .clear() on arithmetic domain vars to reset to degenerate
-- added .order() and .position() methods to ranges and domains
+- added .order() and .position() methods to ranges and domains  
   e.g., (1..3).order(3) == 2;  ([1..3, 1..3]).position((2,1)) = (1,0)
 - added support for variable-width boolean types
 - added support for ~ on bool types
-- initial support for a local block that asserts code requiring no communications
+- initial support for a local block that asserts code requiring no communications  
   e.g., on Locale(1) { const x: int;  local { x = x + 1 } }
 - added initial support for leader/follower iterators supporting zippered foralls
 - added initial support for distributed domains and arrays using a Block1d class
@@ -13473,12 +13473,12 @@ Changes to Chapel Language
 
 Newly Implemented Features
 --------------------------
-- added support for tuples of lvalues
+- added support for tuples of lvalues  
   e.g., "for (a,b) in (A,B)" where A and B are arrays
 - array initializer expressions can now be used for array class members
 - added support for user-defined constructors for generic classes
 - added support for overriding methods using subtype return types
-- added support for querying the eltType of an array
+- added support for querying the eltType of an array  
   e.g., def foo(A: [D] ?t) { ... }
 - added support for .remove() on opaque domains
 - added support for explicitly naming a function's module at the callsite
@@ -13494,7 +13494,7 @@ Semantic Changes
 ----------------
 - disallowed calling a method on a nil reference as previously permitted
 - changed the instantiation point for dynamically-dispatched methods
-- permitted partially-bounded out-of-bounds degenerate ranges to be legal, empty
+- permitted partially-bounded out-of-bounds degenerate ranges to be legal, empty  
   e.g., var A: [1..10] real;  A[11..] == A[11..10] == a legal, empty slice of A
 - on clauses are now evaluated for side effects when using the --local flag
 - made single-statement sync statements create a new scope
@@ -13506,7 +13506,7 @@ Syntactic/Naming Changes
 ------------------------
 - all non-compound single-statement conditionals/loops now require then/do
 - functions now require a block statement unless they only contain a return stmt
-- added support for a single-statement serial statement
+- added support for a single-statement serial statement  
   e.g., "serial test { foo(); }"  =>  "serial test do foo();"
 - removed "opaque" from the list of reserved words--it is now a type like "int"
 - 'distributed' clauses no longer require parentheses
@@ -13555,7 +13555,7 @@ Standard Modules
 
 Compiler Flags
 --------------
-- improved the parsing of single-dash compiler flags to avoid common errors
+- improved the parsing of single-dash compiler flags to avoid common errors  
   e.g., -abcd != -a -b -c -d; -hepl != -h -e -p -l
 - renamed --no-expand-iterators-inline-opt to --[no-]inline-iterators
 - renamed --no-single-loop-iterator-opt to --[no-]optimize-loop-iterators
@@ -13685,25 +13685,25 @@ High-Level Themes
 
 Changes to Chapel Language
 --------------------------
-- added "new" keyword to invoke class/record constructors
+- added "new" keyword to invoke class/record constructors  
   e.g., "class C { ... }  var myC = C(...);" => "... var myC = new C(...);"
-- enumerated types now require the type to be named before a component symbol
+- enumerated types now require the type to be named before a component symbol  
   e.g., "enum myEnum {A, B, C}; var x = B;" => "... var x = myEnum.B;"
-- changed a file's mode from a string to an enumeration
+- changed a file's mode from a string to an enumeration  
   e.g., file(..., "r") => file(..., FileAccessMode.read)
-- added "sync" statement to join dynamic parallelism
+- added "sync" statement to join dynamic parallelism  
   e.g., sync { /* create parallelism */ }  // waits here for parallelism to end
 - added "here" constant to refer to the locale on which a task is executing
 - added support for readXX and isFull on single variables
-- added support for functions with type varargs
+- added support for functions with type varargs  
   e.g., def foo(type t ...?numTypes) { ... }
-- added support for vararg read()/readln() functions that return a tuple value
+- added support for vararg read()/readln() functions that return a tuple value  
   e.g., "read(int, float, string);" returns an (int, float, string) value
-- added a sorted() iterator to associative domains/arrays and opaque arrays
+- added a sorted() iterator to associative domains/arrays and opaque arrays  
   e.g., var table: domain(string); ...  for entry in table.sorted() do ...
-- added support for a compilerWarning() call similar to compilerError()
+- added support for a compilerWarning() call similar to compilerError()  
   e.g., compilerWarning("I didn't expect this function to be called");
-- added string relational operators
+- added string relational operators  
   e.g., ..."hi" >= "bye"...
 - removed the "of" keyword
 - removed the "ordered" keyword and concept
@@ -13711,9 +13711,9 @@ Changes to Chapel Language
 Newly Implemented Features
 --------------------------
 - execution using multiple locales (see doc/README.multilocale)
-- use of on clauses taking locale/lvalue expressions to generate remote tasks
+- use of on clauses taking locale/lvalue expressions to generate remote tasks  
   e.g., "on Locales(i) do ...",  "var x = ...;  ...  on x do ..."
-- use of <expression>.locale to query the locale on which an lvalue lives
+- use of <expression>.locale to query the locale on which an lvalue lives  
   e.g., "var x = ...;  ... x.locale ..."
 - task pool to support the creation of more tasks than executing threads
   (see doc/README.threads for more details)
@@ -13799,7 +13799,7 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - added a runtime warning when using distributions on more than 1 locale
 - removed incorrect copies that were inserted for certain default argument types
 - fixed ability to specify C source files with paths
-- fixed a bug in which standalone reads of sync vars did not consume full/empty
+- fixed a bug in which standalone reads of sync vars did not consume full/empty  
   e.g., "myflag$;" is now equivalent to "myflag$.readFE();"
 - fixed a bug in the implementation of .length for degenerate ranges
 - ensured user cannot create new locales
@@ -13870,42 +13870,42 @@ High-Level Themes
 
 Changes to Chapel Language
 --------------------------
-- added support for defining type functions
+- added support for defining type functions  
   e.g., def myint(param x: bool) type { return if x then int(32) else int(64);}
-- changed routines supported on sync/single variables and made them methods
+- changed routines supported on sync/single variables and made them methods  
   e.g., var x: sync int;  x.writeXF(2);  if (x.isFull) { ... }
-- added support for expression-level for and forall loops using keyword syntax
+- added support for expression-level for and forall loops using keyword syntax  
   e.g., var A: [D] int = for i in D do foo(i);
 - added support for readln() function which skips to EOL after reading its args
 - added support for a main() function per module, resolvable via --main-module
 - added support for translate, interior, exterior, and expand methods on ranges
-- added support for membership test on ranges
+- added support for membership test on ranges  
   e.g., var r: range = ...;  if (r.member(3)) { ... }
-- added support for range/scalar arithmetic using +, -, *, /
+- added support for range/scalar arithmetic using +, -, *, /  
   e.g., (1..10) + 1 == 2..11; (1..10) * 2 == 2..20 by 2
-- removed support for operations between scalars and tuples
+- removed support for operations between scalars and tuples  
   e.g., (1, 2) + 3 is no longer supported; (1, 2) + (3, 4) still is
-- added support for bitwise operators on int/uint pairs of the same size
+- added support for bitwise operators on int/uint pairs of the same size  
   e.g., int(32) & uint(32) => uint(32)
 
 Newly Implemented Features
 --------------------------
 - added support for arrays of arrays whose inner arrays are of uniform size
 - added support for arrays of domains
-- added support for instantiating types/functions using array types
+- added support for instantiating types/functions using array types  
   e.g., class C { type t; ... }   type vect = [1..n] int;   var myC: C(vect);
 - implemented a reshape function for arrays
 - initial implementation of opaque domains and arrays
-- added support for slicing using unbounded and degenerate ranges
+- added support for slicing using unbounded and degenerate ranges  
   e.g., for A: [1..n, 1..n] real, A[2.., ..] is equivalent to A[2..n, 1..n]
-- added support for rank change slicing of domains and arrays
+- added support for rank change slicing of domains and arrays  
   e.g., var V: [1..n] int;  V = A[n/2 + 1, 1..n];
 - relaxed requirements that slicer and slicee objects use the same integer type
 - added support for | and & reductions over boolean aggregates
 - added support for a clear() method on associative domains
 - preliminary support for "on" statements with restricted functionality
 - improved support for user-defined class constructors
-- added support for runtime checks against nil class references
+- added support for runtime checks against nil class references  
   e.g., class C { ... }  var myC: C;   C.foo();  generates a nice error
 - improved support for nested modules
 - improved symbol resolution for external modules
@@ -13913,7 +13913,7 @@ Newly Implemented Features
 - initial support for controlling type-to-string formatting (doc/README.format)
 - initial support for prototyping and calling extern C functions from Chapel
   (see doc/README.extern for more details)
-- added support for generic function arguments of sync types
+- added support for generic function arguments of sync types  
   e.g., def foo(x: sync) { ... }
 - improved support for garbage collection in single-threaded codes (see STATUS)
 - improved tuple type orthogonality; they can now be used in most type contexts
@@ -13944,7 +13944,7 @@ Semantic Changes
 Syntactic/Naming Changes
 ------------------------
 - added support for $ in identifier names; used by convention to identify syncs
-- allow floating point literals with an exponent to use an integral base
+- allow floating point literals with an exponent to use an integral base  
   e.g., can now write 1e4 rather than 1.0e4
 - changed locale array name from Locale to Locales (as described in spec)
 - added ability to tag a function as returning a const value for documentation
@@ -14011,14 +14011,14 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - bounds checking for string.substring() arguments
 - improved legality checks for string-to-value conversions
 - added legal-value checking for casts from integers to enumerated types
-- improved robustness of tensor function promotion
+- improved robustness of tensor function promotion  
   e.g., exp[A, B] where A and B are arrays
 - improved checks preventing against assignment to const variables
 - added check that actual arguments to inout or out formals are valid lvalues
 - added check against returning constants from var functions
 - added checks against assigning to consts and params
 - fixed use of inout and out intents with variable-length argument lists
-- default argument values specified using a function call now work properly
+- default argument values specified using a function call now work properly  
   e.g., def foo(x = bar()) ...
 - improved handling of unifying multiple returns from a single function
 - improved checking that a function returns a value along all control paths
@@ -14095,48 +14095,48 @@ Changes to Chapel Language
   - removed support for casting sequences to tuples and tuples to sequences
   - iterators in an expression context now result in a 1D, 1-based array  
     e.g., "iterator foo() {...}  var A = foo();" creates a 1D array over [1..]
-- added "range" type to language to replace old "arithmetic sequence" concept
+- added "range" type to language to replace old "arithmetic sequence" concept  
   e.g., "lo..hi" or "lo..hi by str" are ranges
   - open interval syntax supported for ranges  
     e.g., "[lo..hi)" is equivalent to lo..hi-1
   - +, -, *, / operators supported for range/scalar combinations
-- added coforall loop construct for expressing explicit task parallelism
+- added coforall loop construct for expressing explicit task parallelism  
   e.g., "coforall 1..4 do ..." will create four explicit tasks
 - removed "iterator" keyword -- iterators are now functions that contain yields
 - added support for defining a default ("these") iterator for classes/records
-- added support for creating array aliases
+- added support for creating array aliases  
   e.g., "var Amid => A[2..n-1, 2..n-1];" creates an alias, Amid, to the slice
-- support for standard math, bitwise, and comparison operators for tuples
+- support for standard math, bitwise, and comparison operators for tuples  
   e.g., "(i,j) + (1,-1)" yields "(i+1, j-1)"
-- added a swap operator: <=>
+- added a swap operator: <=>  
   e.g., "a <=> b" is semantically equivalent to "const t = b; b = a; a = t;"
 - better support for writing output
   - enabled support for writing to strings using a write() method  
     e.g., var s: string;  s.write("x is: ", x);
   - added a Writer class that enables user classes to be written to
   - added writeThis() method to specify how a type should be output to a Writer
-- added minloc and maxloc reductions that return min/max value and index
+- added minloc and maxloc reductions that return min/max value and index  
   e.g., var (minVal, minInd) = minloc reduce (A, A.domain);
-- changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)
+- changed arithmetic domain range access from D(<dim#>) to D.dim(<dim#>)  
   e.g., var rows = D.dim(1);
-- arithmetic domains and arrays support low and high methods that return bounds
+- arithmetic domains and arrays support low and high methods that return bounds  
   e.g., var loInd = A.low;
-- support for range, domain, and array slicing via bounded or unbounded ranges
+- support for range, domain, and array slicing via bounded or unbounded ranges  
   e.g., "A[2.., ..n]" is equivalent to "A[2..A.dim(1).high, A.dim(2).low..n]"
-- support for promoting casts across array elements
+- support for promoting casts across array elements  
   e.g., var x: [1..4] real, y: [1..4] int;  y = x:int;
-- added support for param functions that support compile-time evaluation
+- added support for param functions that support compile-time evaluation  
   e.g., "def square(param x) param { return x**2; }  param n2 = square(14);"
-- support for default values for param members of classes
+- support for default values for param members of classes  
   e.g., class C { param bitWidth = 32; ... }
-- support for top-level 0-argument functions without parentheses
+- support for top-level 0-argument functions without parentheses  
   e.g., def f { writeln("In function f"); }
   - allow "main" function to be declared with or without parentheses  
     e.g., def main { writeln("Program will start here"); ... }
-- allow "<index> in" to be elided in for/forall loops/expressions
+- allow "<index> in" to be elided in for/forall loops/expressions  
   e.g., "for 1..n { ... }", "var A = [1..n] 0.0;"
 - support for multiple modules to be listed within a single "use" statement
-- added support for reading a value of a specified type from a file
+- added support for reading a value of a specified type from a file  
   e.g., "var myint = infile.read(int);"
 
 Newly Implemented Features
@@ -14153,7 +14153,7 @@ Newly Implemented Features
 - subBlocks iterator on domains now generates a sub-block per processor core
 - support for nested classes, records, and iterators
 - serial statement
-- added support for using "_" to ignore elements during tuple destructuring
+- added support for using "_" to ignore elements during tuple destructuring  
   e.g., var t: (int, real) = ...;   (t1, _) = t;
 - added support for nested tuple destructuring in variable decls/formal args
 - support for config params of primitive and enumerated types
@@ -14176,9 +14176,9 @@ Syntactic/Naming Changes
 
 Semantic Changes
 ----------------
-- changed relative precedence of casts and unary +/- (unary +/- is now tighter)
+- changed relative precedence of casts and unary +/- (unary +/- is now tighter)  
   e.g., -2:uint(32) is equivalent to (-2):uint(32) rather than -(2:uint(32))
-- for/forall loops over arrays now result in references to elements, not copies
+- for/forall loops over arrays now result in references to elements, not copies  
   e.g., "for e in A do e = 0;" could be used to zero out an array
 - enumerated types now start counting at "1" rather than "0" by default
 - conditional expressions are no longer valid l-values
@@ -14316,7 +14316,7 @@ Compiler Performance and Cleanup
 Generated Code
 --------------
 - now generating structured loops rather than gotos and labels
-- large reduction in lines of generated code
+- large reduction in lines of generated code  
   e.g., ~40% reduction in lines of code for jacobi example (13275 -> 7753)
 - module functions generated in order, with comments to identify source line #
 - _chpl_header.h file is generated in a cleaner manner
