@@ -3780,6 +3780,37 @@ struct Converter {
     auto varSym = new VarSymbol(sanitizeVarName(node->name().c_str()));
     const bool isTypeVar = node->kind() == uast::Variable::TYPE;
 
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE) {
+      // is it a module-scope variable?
+      bool moduleScopeVar = false;
+      const uast::Module* mod = nullptr;
+      if (symStack.size() > 0 && modStack.size() > 0) {
+        const uast::AstNode* sym = symStack.back().ast;
+        mod = modStack.back().mod;
+        if (mod == sym) {
+          // it's not in a function/type/etc.
+          // is it within a block or within the module directly?
+          moduleScopeVar = true;
+          // TODO: make this a parsing query
+          for (auto ast = parsing::parentAst(context, node);
+               ast != nullptr && ast != mod;
+               ast = parsing::parentAst(context, ast)) {
+            if (ast->isTupleDecl() || ast->isMultiDecl()) {
+              // these are OK and still declare a top-level variable
+            } else {
+              moduleScopeVar = false;
+            }
+          }
+        }
+      }
+      // adjust the cname for module-scope variables
+      if (moduleScopeVar && mod) {
+        varSym->cname = astr(mod->id().symbolPath().c_str(),
+                             ".",
+                             varSym->name);
+      }
+    }
+
     // Adjust the variable according to its kind, e.g. 'const'/'type'.
     attachSymbolStorage(node->kind(), varSym);
 
