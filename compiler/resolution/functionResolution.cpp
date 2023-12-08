@@ -11726,7 +11726,7 @@ static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
 
   // try to resolve concrete functions when using --dyno-gen-lib
-  bool alsoConcrete = (fResolveConcreteFns || !gDynoGenLibOutput.empty()) &&
+  bool alsoConcrete = (fResolveConcreteFns || fDynoGenLib) &&
                       !fMinimalModules;
 
   // We need to resolve any additional functions that will be exported.

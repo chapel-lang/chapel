@@ -364,7 +364,7 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
-static bool fDynoGenLibProvided = false;
+bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
 
@@ -1242,19 +1242,34 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
 
+  // turn on .dyno lib generation
+  fDynoGenLib = true;
+
   // turn on ID-based munging
   fIdBasedMunging = true;
 
   // note that --dyno-gen-lib was provided
-  fDynoGenLibProvided = true;
+  fDynoGenLib = true;
+
+  // turn on resolution of concrete functions
+  fResolveConcreteFns = true;
 }
 
 static
 void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
   gDynoGenLibOutput = "chpl_standard.dyno";
 
+  // turn on .dyno lib generation
+  fDynoGenLib = true;
+
   // turn on ID-based munging
   fIdBasedMunging = true;
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
+
+  // turn on resolution of concrete functions
+  fResolveConcreteFns = true;
 }
 
 /*
@@ -2570,7 +2585,7 @@ int main(int argc, char* argv[]) {
       assertSourceFilesFound();
     } else {
       // --dyno-gen-std should not be used with --dyno-gen-lib
-      if (fDynoGenLibProvided) {
+      if (fDynoGenLib) {
         USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
       }
       // there should be no input files for --dyno-gen-std

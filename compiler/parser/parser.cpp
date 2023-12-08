@@ -582,7 +582,7 @@ static void parseCommandLineFiles() {
     mod->addDefaultUses();
   }
 
-  if (!gDynoGenLibOutput.empty()) {
+  if (fDynoGenLib) {
     std::vector<UniqueString> genLibPaths;
 
     if (fDynoGenStdLib) {

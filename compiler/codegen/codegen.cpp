@@ -2914,7 +2914,7 @@ static void codegenPartTwo() {
   }
 
 
-  if (!gDynoGenLibOutput.empty() && fLlvmCodegen) {
+  if (fDynoGenLib && fLlvmCodegen) {
 #ifdef HAVE_LLVM
     llvm::Module* llvmModule = gGenInfo->module;
 
