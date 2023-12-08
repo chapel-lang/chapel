@@ -7,15 +7,15 @@ TODOs:
 * check sorting of categories
 * check for ' vs `
 * fulfill TODOs
-o check man page
-o check test/release/examples
-o check for docs/1.33/ links
-o check forced linebreaks
+* check man page
+* check test/release/examples
+* check for docs/1.33/ links
+* check forced linebreaks
+* check initial '*'
+* check initial 'A-Z'
+* check 'see:'
+* check for changes put too far down in file
 o check links
-o check initial '*'
-o check initial 'A-Z'
-o check 'see:'
-o check for changes put too far down in file
 o add highlights
 o spellcheck
 
@@ -35,7 +35,7 @@ Syntactic / Naming Changes
 Language Feature Improvements
 -----------------------------
 * improved support for primitive type queries in formal array type expressions
-* added support for declaring that unions fulfill a given interface
+* added support for declaring that unions fulfill a given interface  
   (e.g., `union u: i { ... }` says that `u` implements the `i` interface)
 
 Deprecated / Unstable / Removed Language Features
@@ -57,7 +57,7 @@ Standard Library Modules
 * added a new 'Debugger' module with an experimental `breakpoint` procedure  
   (see https://chapel-lang.org/docs/1.33/modules/standard/Debugger.html)
 * added a new `fma()` routine to the 'Math' module for fused multiply-adds  
-  (see https://chapel-lang.org/docs/main/modules/standard/Math.html#Math.fma)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Math.html#Math.fma)
 
 Changes / Feature Improvements in Libraries
 -------------------------------------------
@@ -66,9 +66,9 @@ Changes / Feature Improvements in Libraries
 * changed `binaryDeserializer` to throw an error when reading strings/bytes  
   (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.binaryDeserializer)
 * added a flag to control whether large I/O operations bypass buffering  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
 * deprecated the `RandomStream` class in favor of a new `randomStream` record  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.RandomStream)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.RandomStream)
 
 Name Changes in Libraries
 -------------------------
@@ -88,14 +88,14 @@ Deprecated / Unstable Library Features
 * deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
 * deprecated and hid the transitional `IO.fileOffsetWithoutLocking` config
 * deprecated the symbols used to select RNG algorithms: `RNG`, `defaultRNG`  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
 * deprecated `algorithm` args from `fillRandom()`, `shuffle()`, `permutation()`
 * deprecated `createRandomStream()`
 * deprecated `randomStreamInterface`  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
 * deprecated the 'RandomSupport' module
 * marked implicit seed creation in the 'Random' module as unstable  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
 * marked `permutation()` in the 'Random' package module as unstable
 
 Removed Library Features
@@ -176,6 +176,7 @@ Documentation Improvements
 Example Codes
 -------------
 * removed LCALS & PTRANS from the benchmarks directory due to lack of attention
+* updated example codes with respect to changes in the language and libraries
 
 Syntax Highlighting
 -------------------
@@ -199,7 +200,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
-* added a new `--detailed-errors` flag supporting more verbose error output
+* added `--[no-]detailed-errors` for error messages with more detail  
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
 * added `--[no-]const-arg-checks` to check for potential `const` violations  
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
@@ -326,7 +327,7 @@ Developer-oriented changes: Tool Improvements
 
 Developer-oriented changes: Utilities
 -------------------------------------
-* added new Python bindings to the 'dyno' frontend library, `chapel-py`
+* added new Python bindings to the 'dyno' frontend library, `chapel-py`  
   (see https://github.com/chapel-lang/chapel/tree/main/tools/chapel-py#readme)
 
 
