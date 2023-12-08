@@ -1,24 +1,6 @@
 Release Changes List
 ====================
 
-TODOs:
-* sort items within categories
-* check placement of items into categories
-* check sorting of categories
-* check for ' vs `
-* fulfill TODOs
-* check man page
-* check test/release/examples
-* check for docs/1.33/ links
-* check forced linebreaks
-* check initial '*'
-* check initial 'A-Z'
-* check 'see:'
-* check for changes put too far down in file
-* check links
-* add highlights
-* spellcheck
-
 version 1.33.0
 ==============
 
