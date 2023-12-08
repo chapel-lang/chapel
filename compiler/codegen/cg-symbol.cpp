@@ -2346,6 +2346,9 @@ void FnSymbol::codegenPrototype() {
     bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
+    if (fDynoGenLib) {
+      linkage = llvm::Function::WeakODRLinkage;
+    }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
       linkage = llvm::Function::ExternalLinkage;
     }
