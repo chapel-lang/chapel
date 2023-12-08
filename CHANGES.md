@@ -2,8 +2,9 @@ Release Changes List
 ====================
 
 TODOs:
-o check placement of items into categories
-o check sorting of categories
+* sort items within categories
+* check placement of items into categories
+* check sorting of categories
 o check for ' vs `
 o fulfill TODOs
 o check man page
@@ -26,24 +27,16 @@ released December 14, 2023
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
 
-Configuration / Build / Packaging Changes
------------------------------------------
-* made `make install` create the installation directory rather than `configure`
-
-New Language Features
----------------------
+Syntactic / Naming Changes
+--------------------------
+* removed unstable paren-less `@attribute` syntax when arguments are present  
+  (e.g., `@attribute "foo"` must now be written `@attribute("foo")`)
 
 Language Feature Improvements
 -----------------------------
 * improved support for primitive type queries in formal array type expressions
 * added support for declaring that unions fulfill a given interface
   (e.g., `union u: i { ... }` says that `u` implements the `i` interface)
-
-Syntactic / Naming Changes
---------------------------
-
-Semantic Changes / Changes to the Chapel Language
--------------------------------------------------
 
 Deprecated / Unstable / Removed Language Features
 -------------------------------------------------
@@ -90,14 +83,10 @@ Package Modules
   (see https://chapel-lang.org/docs/1.33/modules/packages/URL.html#URL.openUrlReader)
 * updated 'UnitTest' to report the filename & line number of failed assertions
 
-Standard Domain Maps (Layouts and Distributions)
-------------------------------------------------
-
-Deprecated / Unstable / Removed Library Features
-------------------------------------------------
-* marked implicit seed creation in the 'Random' module as unstable  
-  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
-* marked `permutation()` in the 'Random' package module as unstable
+Deprecated / Unstable Library Features
+--------------------------------------
+* deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
+* deprecated and hid the transitional `IO.fileOffsetWithoutLocking` config
 * deprecated the symbols used to select RNG algorithms: `RNG`, `defaultRNG`  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
 * deprecated 'algorithm' args from `fillRandom()`, `shuffle()`, `permutation()`
@@ -105,8 +94,12 @@ Deprecated / Unstable / Removed Library Features
 * deprecated `randomStreamInterface`  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
 * deprecated the 'RandomSupport' module
-* deprecated and hid the transitional `CTypes.cPtrToLogicalValue` config param
-* deprecated and hid the transitional `IO.fileOffsetWithoutLocking` config
+* marked implicit seed creation in the 'Random' module as unstable  
+  (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#seed-generation)
+* marked `permutation()` in the 'Random' package module as unstable
+
+Removed Library Features
+------------------------
 * removed deprecated `sorted()`, `head()`, `tail()`, and `reverse()` on arrays
 * removed deprecated `newBlock*()`, and `newCyclic*()` routines
 * removed the deprecated old-behavior overloads for `c_ptrTo[Const]()`
@@ -153,32 +146,24 @@ Performance Optimizations / Improvements
 ----------------------------------------
 * optimized `[read|write]Binary()` when big/little endianness matches system's
 
-Platform-specific Performance Optimizations / Improvements
-----------------------------------------------------------
-
-Compilation-Time / Generated Code Improvements
-----------------------------------------------
-
 Memory Improvements
 -------------------
+* fixed a memory leak in the GPU runtime
 
 Tool Improvements
 -----------------
 * developed a prototype linter for Chapel code, `chplcheck`  
   (see https://github.com/chapel-lang/chapel/tree/main/tools/chplcheck#readme)
-* added a new script for anonymized unstable warnings
+* added a new script for summarizing a program's anonymized unstable warnings  
   (see https://chapel-lang.org/docs/1.33/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
-* added a script to report symbols that are missing documentation
+* added a script to report symbols that are missing documentation  
   (see `tools/chpldoc/findUndocumentedSymbols`)
 * updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
   (e.g., compare https://chapel-lang.org/docs/1.32/modules/standard/IO.html#IO.ioMode.a  
    and https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.ioMode.a)
 
-Language Specification Improvements
------------------------------------
-
-Other Documentation Improvements
---------------------------------
+Documentation Improvements
+--------------------------
 * merged the docs for the automatically-included math symbols into 'Math'  
   (see https://chapel-lang.org/docs/1.33/modules/standard/Math.html#automatically-available-symbols)
 * improved the documentation with respect to profiling  
@@ -187,16 +172,20 @@ Other Documentation Improvements
 * updated 'mason' docs and example to show required use of `--` before `-M`  
   (see https://chapel-lang.org/docs/1.33/tools/mason/guide/buildinglargerpackages.html)
 * added missing documentation for symbols in stable standard modules
-* refreshed the sample installation commands in the prerequisites docs  
-  (see https://chapel-lang.org/docs/1.33/usingchapel/prereqs.html#installation)
 
 Example Codes
 -------------
-* removed LCALS, PTRANS from the benchmarks directory due to lack of attention
+* removed LCALS & PTRANS from the benchmarks directory due to lack of attention
 
 Syntax Highlighting
 -------------------
 * added missing keywords to the syntax highlighter for 'vim'
+
+Configuration / Build / Packaging Changes
+-----------------------------------------
+* made `make install` create the installation directory rather than `configure`
+* refreshed the sample installation commands in the prerequisites docs  
+  (see https://chapel-lang.org/docs/1.33/usingchapel/prereqs.html#installation)
 
 Portability / Platform-specific Improvements
 --------------------------------------------
@@ -212,17 +201,11 @@ Compiler Flags
 --------------
 * added a new `--detailed-errors` flag supporting more verbose error output
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
-* added a `--[no-]const-arg-checks` flag to check for potential `const` errors  
+* added `--[no-]const-arg-checks` to check for potential `const` violations  
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
 * renamed the `CHPL_NO_*` env vars to make their behavior more predictable  
   (e.g. `CHPL_NO_CHECKS` is deprecated in favor of `CHPL_CHECKS`)  
-  (see `chpl --help-env` for new environment variable names)
-
-Generated Executable Flags
---------------------------
-
-Runtime Library Changes
------------------------
+  (see `chpl --help-env` for environment variable names)
 
 Launchers
 ---------
@@ -264,11 +247,10 @@ Bug Fixes for GPU Computing
 ---------------------------
 * made `forall` loops with reduce intents run on CPU to avoid incorrect results
 * fixed a bug preventing passing `int(32)` values to `GPU.setBlockSize()`
-* added warnings for misuse of `CommDiagnostics` and `GpuDiagnostics`
+* added warnings for some misuses of `CommDiagnostics` and `GpuDiagnostics`
 * fixed crashes with `.localSubdomain()` on a multidimensional array
 * fixed a bug in the "strided bulk transfer" optimization for array assignment
 * fixed kernels within standard modules causing segfaults
-* fixed a memory leak in the GPU runtime
 
 Bug Fixes for Libraries
 -----------------------
@@ -285,28 +267,14 @@ Bug Fixes for Tools
 * fixed a bug in 'chpldoc' where uses of 'code-block' would overflow
 * improved the accuracy of the language server's 'go to declaration' message
 
-Third-Party Software Changes
-----------------------------
-
-Developer-oriented changes: Process
------------------------------------
-
 Developer-oriented changes: Documentation
 -----------------------------------------
 * updated docs to describe additional features of the testing system  
-  (see https://chapel-lang.org/docs/1.33/developer/bestPractices/TestSystem.html#readme-testsystem)
+  (see https://chapel-lang.org/docs/1.33/developer/bestPractices/TestSystem.html)
 
 Developer-oriented changes: Syntactic / Naming Changes
 ------------------------------------------------------
 * removed the deprecated `pragma "no doc"` 
-* removed unstable paren-less `@attribute` syntax when arguments are present  
-  (e.g., `@attribute "foo"` must now be written `@attribute("foo")`)
-
-Developer-oriented changes: Module changes
-------------------------------------------
-
-Developer-oriented changes: Performance improvements
-----------------------------------------------------
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
@@ -322,7 +290,9 @@ Developer-oriented changes: Compiler Flags
 Developer-oriented changes: Compiler improvements / changes
 -----------------------------------------------------------
 * made bug fixes and performance improvements to the experimental driver mode
+* fixed `--devel`  causing the parser to crash in the face of syntax errors
 * fixed an issue where `--llvm-print-ir` printed the wrong function linkage
+* fixed incorrectly-specified `AstTag` for `TypeQuery AstNode`
 
 Developer-oriented changes: 'dyno' Compiler improvements / changes
 ------------------------------------------------------------------
@@ -345,11 +315,6 @@ Developer-oriented changes: Runtime improvements
 ------------------------------------------------
 * added a prototype GASNet-EX comm option (enabled w/ `CHPL_GASNET_VERSION=ex`)
 
-Developer-oriented changes: Platform-specific bug fixes
--------------------------------------------------------
-* fixed incorrectly-specified `AstTag` for `TypeQuery AstNode`
-* fixed `--devel`  causing the parser to crash in the face of syntax errors
-
 Developer-oriented changes: Testing System
 ------------------------------------------
 * made test system not run custom 'sub_test' scripts for '-performance' runs
@@ -357,7 +322,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* quieted a gdb warning when using the `--gdb` flag on the compiler
+* quieted a 'gdb' warning when using the `--gdb` flag on the compiler
 
 Developer-oriented changes: Utilities
 -------------------------------------
