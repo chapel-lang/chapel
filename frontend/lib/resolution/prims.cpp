@@ -705,7 +705,6 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primFieldByNum(context, ci);
       break;
 
-    case PRIM_CLASS_NAME_BY_ID:
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
     case PRIM_IS_GENERIC_TYPE:
     case PRIM_IS_CLASS_TYPE:
@@ -939,11 +938,15 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return default int */
     case PRIM_GATHER_TESTS:
     case PRIM_GET_UNION_ID:
+    case PRIM_GET_REQUESTED_SUBLOC:
+    case PRIM_SIZEOF_BUNDLE: // TODO: this should be sizeType
+    case PRIM_SIZEOF_DDATA_ELEMENT: // TODO: this should be sizeType
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 0));
       break;
     /* primitives that return an int32 */
     case PRIM_GETCID:
+    case PRIM_WIDE_GET_NODE: // TODO: should be nodeIdType
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
@@ -1014,6 +1017,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_CHPL_COMM_GET_STRD:
     case PRIM_CHPL_COMM_PUT_STRD:
     case PRIM_ARRAY_SHIFT_BASE_POINTER:
+    case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
+    case PRIM_CREATE_FN_TYPE:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1042,9 +1047,16 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = QualifiedType(QualifiedType::CONST_VAR,
                            CPtrType::getCVoidPtrType(context));
       break;
+    /* primitives that return a c_string*/
+    case PRIM_LOOKUP_FILENAME:
+    case PRIM_CLASS_NAME_BY_ID:
+    case PRIM_REF_TO_STRING:{
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           CStringType::get(context));
+      break;
+    }
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
-    case PRIM_REF_TO_STRING:
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
@@ -1081,8 +1093,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_SET_BLOCKSIZE:
     case PRIM_ASSERT_ON_GPU:
     case PRIM_GPU_ELIGIBLE:
-    case PRIM_SIZEOF_BUNDLE:
-    case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_LIFETIME_OF:
       CHPL_UNIMPL("misc primitives");
       break;
@@ -1123,15 +1133,12 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
-    case PRIM_WIDE_GET_NODE:
     case PRIM_ON_LOCALE_NUM:
-    case PRIM_GET_REQUESTED_SUBLOC:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
     case PRIM_PRIVATE_BROADCAST:
     case PRIM_CAPTURE_FN:
     case PRIM_CAPTURE_FN_TO_CLASS:
-    case PRIM_CREATE_FN_TYPE:
     case PRIM_GET_USER_LINE:
     case PRIM_GET_USER_FILE:
     case PRIM_RESOLUTION_POINT:
@@ -1141,9 +1148,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_VIRTUAL_METHOD_CALL:
     case PRIM_END_OF_STATEMENT:
     case PRIM_CURRENT_ERROR:
-    case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_GET_RUNTIME_TYPE_FIELD:
-    case PRIM_LOOKUP_FILENAME:
     case PRIM_GET_VISIBLE_SYMBOLS:
     case PRIM_STACK_ALLOCATE_CLASS:
     case PRIM_ZIP:

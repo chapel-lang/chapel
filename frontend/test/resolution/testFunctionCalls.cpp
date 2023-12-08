@@ -440,6 +440,176 @@ static void test30() {
   voidTypeTestHelper(R"""(var x = __primitive("array_set_first");)""");
 }
 
+// test for primitive "auto destroy runtime type", which should return void
+static void test31() {
+  voidTypeTestHelper(R"""(var x = __primitive("auto destroy runtime type");)""");
+}
+
+// test for primitive "create fn type", which should return void
+static void test32() {
+  voidTypeTestHelper(R"""(var x = __primitive("create fn type");)""");
+}
+
+// "chpl_task_getRequestedSubloc", which should return int 64
+static void test33() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("chpl_task_getRequestedSubloc");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// "sizeof_ddata_element", which should return int 64 (actually sizeType)
+static void test34() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("sizeof_ddata_element");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// "_wide_get_node", which should return int 32 (actually nodeIdType)
+static void test35() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("_wide_get_node");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 32);
+}
+
+// "class name by id", which should return a cString
+static void test36() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("class name by id");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
+// "ref to string", which should return a cString
+static void test37() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("ref to string");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
+// "chpl_lookupFilename", which should return a cString
+static void test38() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("chpl_lookupFilename");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
+// test for primitive "auto destroy runtime type", which should return void
+static void test39() {
+  voidTypeTestHelper(R"""(var x = __primitive("auto destroy runtime type");)""");
+}
+
+// test for primitive "create fn type", which should return void
+static void test40() {
+  voidTypeTestHelper(R"""(var x = __primitive("create fn type");)""");
+}
+
+// "chpl_task_getRequestedSubloc", which should return int 64
+static void test41() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("chpl_task_getRequestedSubloc");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// "sizeof_ddata_element", which should return int 64 (actually sizeType)
+static void test42() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("sizeof_ddata_element");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// "_wide_get_node", which should return int 32 (actually nodeIdType)
+static void test43() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("_wide_get_node");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 32);
+}
+
+// "class name by id", which should return a cString
+static void test44() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("class name by id");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
+// "ref to string", which should return a cString
+static void test45() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("ref to string");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
+// "chpl_lookupFilename", which should return a cString
+static void test46() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("chpl_lookupFilename");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isCStringType());
+}
+
 int main() {
   test1();
   test2();
@@ -472,6 +642,22 @@ int main() {
   test28();
   test29();
   test30();
+  test31();
+  test32();
+  test33();
+  test34();
+  test35();
+  test36();
+  test37();
+  test38();
+  test39();
+  test40();
+  test41();
+  test42();
+  test43();
+  test44();
+  test45();
+  test46();
 
   return 0;
 }
