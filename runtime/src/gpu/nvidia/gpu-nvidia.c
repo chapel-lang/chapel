@@ -194,7 +194,7 @@ void chpl_gpu_impl_launch_kernel(int ln,
                                  int blk_dim_z,
                                  void* stream,
                                  void** kernel_params) {
-  assert(fn);
+  assert(kernel);
 
   CUDA_CALL(cuLaunchKernel((CUfunction)kernel,
                            grd_dim_x, grd_dim_y, grd_dim_z,

@@ -186,7 +186,7 @@ void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,
                                  void** kernel_params) {
-  assert(fn);
+  assert(kernel);
 
   ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)kernel,
                                   grd_dim_x, grd_dim_y, grd_dim_z,

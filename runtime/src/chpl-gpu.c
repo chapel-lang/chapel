@@ -342,8 +342,12 @@ static void launch_kernel(const char* name,
 
   CHPL_GPU_START_TIMER(load_time);
 
+  CHPL_GPU_DEBUG("Kernel configuration %p\n", cfg);
+
+  CHPL_GPU_DEBUG("Loading function named %s\n", name);
   void* function = chpl_gpu_impl_load_function(name);
   assert(function);
+  CHPL_GPU_DEBUG("\tFunction Address: %p\n", function);
 
   CHPL_GPU_STOP_TIMER(load_time);
 
@@ -358,14 +362,15 @@ static void launch_kernel(const char* name,
 
   CHPL_GPU_START_TIMER(kernel_time);
 
+  CHPL_GPU_DEBUG("Calling impl's launcher %s\n", name);
   chpl_gpu_impl_launch_kernel(cfg->ln, cfg->fn,
                               function,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               cfg->stream,
                               (void**)(cfg->kernel_params));
+  CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
-  CHPL_GPU_DEBUG("Impl launched the kernel %s\n", name);
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
   chpl_gpu_impl_stream_synchronize(cfg->stream);
