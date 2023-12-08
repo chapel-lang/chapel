@@ -807,7 +807,7 @@ Deprecated / Removed Library Features
 * removed the deprecated `bigint.sizeinbase()` and `.size()` methods
 * removed the deprecated `bigint.get_d_2exp()` method
 * removed several deprecated procedures from 'BigInteger'  
-  (i.e., `scan0())`, `scan1()`, `divexact()`, qcdext()`, `probab_prime_p()`,
+  (i.e., `scan0())`, `scan1()`, `divexact()`, `qcdext()`, `probab_prime_p()`,
    `divisible_[2xp_]p()`, `congruent_[2exp_]p()`, `div_r()`, `div_qr()`,
    `div_[q|r]_2exp()`)
 * removed deprecated `c_sizeof()` signature with formal name `x`
@@ -7226,7 +7226,7 @@ Semantic Changes / Changes to Chapel Language
   (see 'The Default Intent' in the 'Procedures' chapter of the specification)
 * disallowed implicit coercions for type arguments with a formal type specifier
   (see 'Implicit Conversions' in the specification's 'Conversions' chapter)
-* changed the alignment of a non-stridable range from 0 to its low bound
+* changed the alignment of a non-stridable range from 0 to its low bound  
   (i.e., `(3..5).alignment` is now 3 where it used to be 0)
 
 New Features
@@ -10734,7 +10734,7 @@ Semantic Changes / Changes to Chapel Language
 * added a 'noinit' capability to squash default initialization for basic types
   (see 'Variables' chapter in the language specification)
 * for a domain D, previously {D} == D; now it interprets it as 'domain(D.type)'
-* added support for an expression-less 'serial' statement
+* added support for an expression-less 'serial' statement  
   (i.e., 'serial do' == 'serial true do')
 * added support for dynamic casts of the 'nil' value, producing 'nil'
   (see 'Conversions' chapter of the language specification)
@@ -11290,9 +11290,9 @@ Newly Implemented Features
 
 Deprecated Features
 -------------------
-- removed the tuple() function
+- removed the tuple() function  
   (i.e., instead of tuple(x) or tuple(x,y,z), use (x,) or (x,y,z) instead)
-- deprecated warning for old-style domain literals by default
+- deprecated warning for old-style domain literals by default  
   (i.e., [1..m, 1..n] is an array of ranges; re-enable w/ --warn-domain-literal)
 
 Standard Modules
@@ -12083,7 +12083,7 @@ Internal
 - added a --library flag for creation of a standalone Chapel library
 - made normalize_returns() able to be called multiple times
 - fixed a bug related to internal module dependencies of depth > 2
-- added capabilities to help debug deleted AST nodes
+- added capabilities to help debug deleted AST nodes  
   (see --break-on-delete-id and --log-deleted-ids-to)
 - removed --runtime flag from compiler
 - added a compilerAssert() capability
@@ -12097,36 +12097,36 @@ Sixth public release of Chapel, April 21, 2011
 
 Highlights (see below for details)
 ----------------------------------
-- split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)
+- split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)  
   (see '$CHPL_HOME/util/convert-defs --help' for help updating existing codes)
-- added 'Replicated' distribution and improved 'Block-Cyclic' distribution
+- added 'Replicated' distribution and improved 'Block-Cyclic' distribution  
   (see "Standard Distributions" in spec and examples/primers/distributions.chpl)
-- added single-locale task layers for Nanos++ (BSC) and Qthreads (Sandia)
+- added single-locale task layers for Nanos++ (BSC) and Qthreads (Sandia)  
   (see doc/README.tasks)
-- major reworking of range semantics and implementation
+- major reworking of range semantics and implementation  
   (see "Semantic Changes / Changes to Chapel Language" below for detail)
-- initial support for volatile types: bool, int, uint, real, imag
+- initial support for volatile types: bool, int, uint, real, imag  
   (see doc/technotes/README.volatile)
-- support for extern consts and classes (pointers-to-structs)
+- support for extern consts and classes (pointers-to-structs)  
   (see doc/technotes/README.extern)
 - improved support for data parallelism on the Cray XMT
-- extensive improvements to the sample codes in the examples/ directory
+- extensive improvements to the sample codes in the examples/ directory  
   (see 'Example Codes' below and examples/README)
-- added most code examples from the spec to a new examples/ directory
+- added most code examples from the spec to a new examples/ directory  
   (see examples/spec/*)
-- added a technical note describing the user-defined domain map interface
+- added a technical note describing the user-defined domain map interface  
   (see doc/technotes/README.dsi)
-- extensive updates to the language specification
+- extensive updates to the language specification  
   (see 'Documentation' below)
-- several improvements to the runtime tasking and communications layers
+- several improvements to the runtime tasking and communications layers  
   (see "Runtime Library Changes" below)
 
 Syntactic/Naming Changes
 ------------------------
-- split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)
+- split 'def' keyword into 'proc' (for procedures) and 'iter' (for iterators)  
   (see '$CHPL_HOME/util/convert-defs --help' for help updating existing codes)
 - renamed 'arithmetic' domains/arrays to 'rectangular' domains/arrays
-- added support for floating point literals of the form '1.e...'
+- added support for floating point literals of the form '1.e...'  
   (previously, only '1e...' and '1.0e...' were supported)
 
 Semantic Changes / Changes to Chapel Language
@@ -12142,19 +12142,19 @@ Semantic Changes / Changes to Chapel Language
     (e.g., '1..10 by -2' => first==10, last==2, alignedLow=2, alignedHigh=10)
   - added support for a variety of new range query functions
     (e.g., alignLow(), hasFirst(), hasLowBound(), isAligned(), boundsCheck()...)
-- added support for volatile bool, int, uint, real, and imag types
+- added support for volatile bool, int, uint, real, and imag types  
   (see doc/technotes/README.volatile)
-- added an end-of-file check to the file type
+- added an end-of-file check to the file type  
   (e.g., 'while !infile.eof ...')
-- removed support for treating 'return' in iterator as a 'yield'
+- removed support for treating 'return' in iterator as a 'yield'  
   (e.g., change 'iter foo() { return x; }' to 'iter foo() { yield x; return; }')
-- added support to referencing modules without first 'use'-ing them
+- added support to referencing modules without first 'use'-ing them  
   (e.g., module M1 { var x...} module M2 { ...M1.x... } is now legal)
-- added a callStackSize query to the locale type
+- added a callStackSize query to the locale type  
   (e.g., 'here.callStackSize' returns the call stack size on the current locale)
-- removed the previously-required semicolon from the end of enum declarations
+- removed the previously-required semicolon from the end of enum declarations  
   (e.g., 'enum colors {red, blue, green}' is now legal; previously needed ';')
-- added support for a single trailing comma at the end of enum lists
+- added support for a single trailing comma at the end of enum lists  
   (e.g., 'enum colors {red, blue, green, }' is now legal)
 - removed support for +/- operators on rectangular domains; use translate()
 
@@ -12164,23 +12164,23 @@ Newly Implemented Features
 
 Standard Distributions
 ----------------------
-- added a first-draft 'Replicated' distribution for storing data redundantly
+- added a first-draft 'Replicated' distribution for storing data redundantly  
   (see examples/primers/distributions.chpl)
-- improved 'Block-Cyclic', sufficient to correctly implement HPCC PTRANS and HPL
+- improved 'Block-Cyclic', sufficient to correctly implement HPCC PTRANS and HPL  
   (see examples/hpcc/ptrans.chpl, hpl.chpl; examples/primers/distributions.chpl)
 - removed redundancy in specification of leader iterators between domains/arrays
 
 Standard Modules
 ----------------
-- added INFINITY and NAN constants to the Math.chpl module
+- added INFINITY and NAN constants to the Math.chpl module  
   (see 'Math' under "Standard Modules" in language spec)
-- added isinf() and isfinite() test routines to the Math.chpl module
+- added isinf() and isfinite() test routines to the Math.chpl module  
   (see 'Math' under "Standard Modules" in language spec)
 - added a half dozen more routines to the GMP.chpl module
 
 Documentation
 -------------
-- added a new technical note describing the user-defined domain map interface
+- added a new technical note describing the user-defined domain map interface  
   (see doc/technotes/README.dsi)
 - made many improvements to the language specification
   - major revisions to the Domains chapter to improve clarity/accuracy
@@ -12234,11 +12234,11 @@ Example Codes
 
 Platform-specific Notes
 -----------------------
-- for Cray XT/Cray XE, improved the aprun and pbs-aprun launchers
+- for Cray XT/Cray XE, improved the aprun and pbs-aprun launchers  
   (see "Launcher-specific notes" below)
 - for Cray XMT, added support for parallel loops over ranges
 - for Cray XMT, added generation of noalias pragmas to forall loop variables
-- added support for BSC's MareNostrum including docs and a special launcher
+- added support for BSC's MareNostrum including docs and a special launcher  
   (see doc/platforms/README.marenostrum)
 
 Launcher-specific notes
@@ -12277,7 +12277,7 @@ Interoperability Changes
 
 Error Message Improvements
 --------------------------
-- added a warning orphaned 'use' statements outside of declared modules
+- added a warning orphaned 'use' statements outside of declared modules  
   (e.g., 'use M1; module M2 { }' should typically be 'module M2 { use M1; }')
 - made parse-time error message use the standard 'filename:lineno:' format
 - generated an error message for referring to a class name in a primary method
@@ -12303,20 +12303,20 @@ Bug Fixes / New Semantic Checks (for old semantics)
 
 Packaging Changes
 -----------------
-- added syntax highlighter code for GNU source-highlight
+- added syntax highlighter code for GNU source-highlight  
   (see etc/source-highlight/README)
-- improved emacs coloring support for version 22.x
+- improved emacs coloring support for version 22.x  
   (see etc/emacs/README)
-- updates to vim syntax coloring to reflect new 'proc'/'iter' keywords
+- updates to vim syntax coloring to reflect new 'proc'/'iter' keywords  
   (see etc/vim/README)
-- added a script for converting existing codes' use of 'def' to 'iter'/'proc'
+- added a script for converting existing codes' use of 'def' to 'iter'/'proc'  
   (see $CHPL_HOME/util/convert-defs)
 - removed multirealm examples & documentation for the time being
 
 Third-Party Software Changes
 ----------------------------
 - updated GASNet to version 1.16.1
-- added copies of BSC's Nanos++ and Sandia's Qthreads
+- added copies of BSC's Nanos++ and Sandia's Qthreads  
   (see third-party/README)
 - made a post-install step for GASNet that changes absolute paths to relative
 - removed PVM for the time being due to instability
@@ -12343,7 +12343,7 @@ Runtime Library Changes
 
 Testing System
 --------------
-- vastly improved the performance testing and graphing capabilities
+- vastly improved the performance testing and graphing capabilities  
   (see comments at the front of start_test for documentation)
 - improved the testing system's support for cleaning up after itself
 - added ability to avoid using any indirection of stdin
@@ -12403,22 +12403,22 @@ Environment Changes
 Syntactic/Naming Changes
 ------------------------
 - renamed the range's index type from 'eltType' to 'idxType'
-- made string length a parentheses-less method rather than a standalone function
+- made string length a parentheses-less method rather than a standalone function  
   (i.e., 'length(mystring)' should now be written 'mystring.length')
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
-- added initial support for first-class and anonymous functions
+- added initial support for first-class and anonymous functions  
   (see doc/technotes/README.firstClassFns)
 - added support for config types
 - enabled config params to support very general command-line expressions
 - added support for param 'this' arguments to methods
 - added support for assigning tuples of ranges to arithmetic domains
 - added support for .stridable and .stride queries on domains
-- changed the range's stride type from an int to a signed int of the index type
+- changed the range's stride type from an int to a signed int of the index type  
   (e.g., range(uint(64)) and range(int(64)) now store an int(64) stride value)
 - made the by operator for a range accept the range's idxType or its stride type
-- added min()/max() functions for tuples that fill the tuple with min/max vals
+- added min()/max() functions for tuples that fill the tuple with min/max vals  
   (see 'Tuples' chapter of language spec)
 - added isTupleType(type t) param function that tells whether t is a tuple
 - made a dataParTasksPerLocale value of '0' evaluate to here.numCores
@@ -12443,14 +12443,14 @@ Standard Domain Maps
 
 Standard Modules
 ----------------
-- added a prototype GMP (GNU Multiple Precision Arithmetic) module
+- added a prototype GMP (GNU Multiple Precision Arithmetic) module  
   (see doc/technotes/README.gmp)
 
 Platform-specific notes
 -----------------------
-- added support for the Cray XE6 (TM) via a new platform variable xe-cle
+- added support for the Cray XE6 (TM) via a new platform variable xe-cle  
   (see doc/platforms/README.xe-cle)
-- added support for the Cray CX1000 (TM) as part of the cx-linux platform
+- added support for the Cray CX1000 (TM) as part of the cx-linux platform  
   (see doc/platforms/README.cx-linux)
 - added support for using LSF as a launcher for cx-linux via lsf-gasnetrun_ibv
 - for xt-cle/xe-cle:
@@ -12504,7 +12504,7 @@ Compiler Flags
 
 Execution Flags
 ---------------
---callStackSize : specify the task call stack size
+--callStackSize : specify the task call stack size  
   (see doc/README.executing and doc/README.tasks)
 
 Interoperability Changes
@@ -12512,20 +12512,20 @@ Interoperability Changes
 - improved ability to express external C functions, types, and variables:
   - added support for external type and variable declarations
   - added support for expressing and passing external C array types
-  - added support for type arguments to an external function
+  - added support for type arguments to an external function  
   (see doc/technotes/README.extern)
 
 Bug Fixes/New Semantic Checks (for old semantics)
 -------------------------------------------------
 - fixed a bug in multiplying two imag values
-- added a check to prevent comparisons between types and values using == or !=
+- added a check to prevent comparisons between types and values using == or !=  
   (e.g., 'var x = ...;  type t = ...; ...(x == t)...' is now illegal)
-- added a check to ensure tuple-style decls match the size of their initializer
+- added a check to ensure tuple-style decls match the size of their initializer  
   (e.g., 'var (x, y) = (1, 2, 3);' will now generate an error)
 - fixed a pair of nil pointer dereference bugs in the Cyclic distribution
 - made string.length return an 'int' as documented rather than an 'int(64)'
 - fixed a bug in which the compiler seg faulted if no .chpl files were given
-- generate a compiler error when applying '#' to a completely unbounded range
+- generate a compiler error when applying '#' to a completely unbounded range  
   (i.e., ".. # 10" is now a compiler error)
 - fixed a bug in which queried argument types sometimes became void incorrectly
 - made values of dataParTasksPerLocale and dataParMinGranularity < 0 an error
@@ -12549,7 +12549,7 @@ Compiler Analysis and Optimizations/Performance of Generated Code
 
 Testing system
 --------------
-- added ability for testing system to generate graphs in performance mode
+- added ability for testing system to generate graphs in performance mode  
   (see comments in start_test for details)
 
 Internal
@@ -12582,7 +12582,7 @@ Update to fourth public release of Chapel, September, 2010
 
 Platform-specific notes
 -----------------------
-- added an xe-cle PLATFORM to support the XE6 (currently using GASNet over MPI)
+- added an xe-cle PLATFORM to support the XE6 (currently using GASNet over MPI)  
   (see doc/platforms/README.xe-cle for details)
 
 
@@ -12621,15 +12621,15 @@ High-Level Themes
 
 Environment Changes
 -------------------
-- added CHPL_TASKS to select the tasking layer to use (was CHPL_THREADS)
+- added CHPL_TASKS to select the tasking layer to use (was CHPL_THREADS)  
   (see doc/README.chplenv and doc/README.tasks for details)
-- CHPL_THREADS now describes lower-level threading and is typically inferred
+- CHPL_THREADS now describes lower-level threading and is typically inferred  
   (see doc/README.tasks)
-- changed the name of the default tasking layer from 'default' to 'fifo'
+- changed the name of the default tasking layer from 'default' to 'fifo'  
   (see doc/README.chplenv and doc/README.tasks)
-- added CHPL_TIMERS to select between timer implementations
+- added CHPL_TIMERS to select between timer implementations  
   (see doc/README.chplenv)
-- changed the CHPL_*_PLATFORM string for 32-bit linux from 'linux' to 'linux32'
+- changed the CHPL_*_PLATFORM string for 32-bit linux from 'linux' to 'linux32'  
   (see doc/README.chplenv)
 
 Syntactic/Naming Changes
@@ -12642,68 +12642,68 @@ Syntactic/Naming Changes
     (e.g., 'const D = distributionValue(...)' => 'const D = new dmap(...)'
   - changed the 'distributed' keyword to 'dmapped'
   - added a syntactic sugar to drop 'new dmap(new' for anonymous domain maps
-    (e.g., '...dmapped new dmap(new Block(...))...' => '...dmapped Block(...)')
+    (e.g., '...dmapped new dmap(new Block(...))...' => '...dmapped Block(...)')  
   (see 'Domain Maps' chapter of language specification for more information)
 - renamed maxThreads to maxThreadsPerLocale (see README.tasks)
 - renamed the 'ind2loc' method on domain maps to 'idxToLocale'
-- renamed the Cyclic constructor 'low' argument to 'startIdx'
+- renamed the Cyclic constructor 'low' argument to 'startIdx'  
   (see 'Standard Distributions' chapter of the specification)
-- replaced the use of underscore (_) to ignore things to leaving the space blank
+- replaced the use of underscore (_) to ignore things to leaving the space blank  
   (e.g., '(_, x) = getTuple()' => '( , x) = getTuple()')
 - made underscore (_) a legal identifier
-- changed name of the Random module's SeedGenerator from clockMS to currentTime
+- changed name of the Random module's SeedGenerator from clockMS to currentTime  
   (see 'Standard Modules' chapter of the specification)
 - added support for empty (no-op) statements within a class declaration
-- added ability to elide the # of arguments specification/query from varargs fns
+- added ability to elide the # of arguments specification/query from varargs fns  
   (e.g., can now do 'def f(x...)' in addition to 'def f(x...?n)'/'def f(x...n)')
 
 Semantic Changes/Changes to Chapel Language
 -------------------------------------------
-- added config consts to control the number of tasks used for data parallelism
+- added config consts to control the number of tasks used for data parallelism  
   (see README.executing and 'Data Parallelism' chapter of specification)
 - redefined enumerated domains to be a special case of associative domains
   (see 'Domains' chapter of specification)
-- made iteration over enumerated domains/arrays use the enum's declaration order
+- made iteration over enumerated domains/arrays use the enum's declaration order  
   (see 'Domains' chapter of the specification)
-- removed the ability to assign array aliases to normal array variables
+- removed the ability to assign array aliases to normal array variables  
   (e.g., 'var A => B;' is legal but 'var A: [1..n] real;  A => B;' is not)
-- added initial support for passing array aliases to default class constructors
+- added initial support for passing array aliases to default class constructors  
   (e.g., 'class C {var X: [1..n] int;} var A: [1..n] int; var c = new C(X=>A);')
-- removed the sugar for declaring array types with forall expressions:
+- removed the sugar for declaring array types with forall expressions:  
   (e.g., 'var A:[i in 1..n] real =...' => 'var A:[1..n] real = [i in 1..n] ...')
 - defined reindexing to ignore the domain map of the indexing domain
-- specified that minloc/maxloc reductions return the lowest matching index
+- specified that minloc/maxloc reductions return the lowest matching index  
   (e.g., 'minloc (A, 1..3)' for A = '5 0 0' would return (0, 2))
-- type aliases may now only be used after they are defined
+- type aliases may now only be used after they are defined  
   (e.g., 'var x: t; type t = int;' is now illegal)
-- changed resolution to favor functions with where clauses over those without
-  (e.g., for 'foo(3)', 'foo(x)' is not as good a match as 'foo(x) where x:int')
+- changed resolution to favor functions with where clauses over those without  
+  (e.g., for 'foo(3)', 'foo(x)' is not as good a match as 'foo(x) where x:int')  
   (see 'Function Resolution' section of the specification)
-- added the ability to index into 1-dimensional arithmetic arrays using 1-tuples
+- added the ability to index into 1-dimensional arithmetic arrays using 1-tuples  
   (e.g., 'var i: 1*int;  ...  A(i)' where A is a 1D arithmetic array)
-- added the ability to query the component types of formal tuple arguments
+- added the ability to query the component types of formal tuple arguments  
   (e.g., 'def f(t: (real, ?t)) { ... }')
-- redefined order-of-evaluation of tuple assignments to avoid array temps
+- redefined order-of-evaluation of tuple assignments to avoid array temps  
   (see 'Tuples' chapter of specification)
-- added support for indexing into tuples using any integral type, not just 'int'
+- added support for indexing into tuples using any integral type, not just 'int'  
   (e.g., given a tuple variable t, 'var i = 1:uint; ...t(i)...' is now legal)
-- added support for 1-tuple detupled variable declarations for completeness
+- added support for 1-tuple detupled variable declarations for completeness  
   (e.g., in 'var (x): 1*int;', x is of type 'int')
-- redefined assignments to evaluate the left-hand side before the right
+- redefined assignments to evaluate the left-hand side before the right  
   (e.g., in 'x = y;', x is evaluated first and then y)
 
 Newly Implemented Features
 --------------------------
-- whole-array assignment now results in parallel execution for arithmetic arrays
-  (e.g., 'A = B; and 'A = B + alpha * C' now result in parallel execution)
+- whole-array assignment now results in parallel execution for arithmetic arrays  
+  (e.g., 'A = B; and 'A = B + alpha * C' now result in parallel execution)  
   (see 'Data Parallelism' chapter for details)
-- added support for assigning to a variable of dmap type if it has no domains
+- added support for assigning to a variable of dmap type if it has no domains  
   (e.g., 'var myMap: dmap(Block(2)); myMap = new dmap(new Block([1..10]));')
-- can now apply domain maps to domain values rather than simply domain types
+- can now apply domain maps to domain values rather than simply domain types  
   (e.g., 'const Dom1 = [1..10] dmapped ...')
 - added support for sparse domain assignment (executed serially with a warning)
 - added support for removing indices from a sparse domain (not thread-safe)
-- added support for declaring formal tuple arguments of explicit tuple types
+- added support for declaring formal tuple arguments of explicit tuple types  
   (e.g., 'def f((x, y): (int, real)) { ... }')
 - improved support for zippering domains/arrays with distinct domain maps
 
@@ -12711,12 +12711,12 @@ Standard Domain Maps
 --------------------
 - the Block and Cyclic distributed domain maps are now feature-complete
 - added reindexing and rank change operations to the Block distribution
-- reordered Block's constructor args so that rank and idxType can be inferred
+- reordered Block's constructor args so that rank and idxType can be inferred  
   (e.g., 'new Block(rank=1, idxType=int(64), [1..n])' => 'new Block([1..n])')
 - similarly reordered Cyclic's constructor args and renamed 'low' to 'startIdx'
 - made int(32) the default idxType for standard distributions like Block
 - moved all standard domain maps into modules/layouts/ and .../distributions/
-- factored common routines for arithmetic domains into ChapelArray.chpl
+- factored common routines for arithmetic domains into ChapelArray.chpl  
   (e.g., nothing about exterior() is specific to a domain map's implementation)
 - refactored helper functions for distributions into a new file: DSIUtil.chpl
 
@@ -12803,7 +12803,8 @@ Example Codes
 
 Packaging Changes
 -----------------
-- pushed tarball directory structure down one level (i.e., chapel-1.1/chapel)
+- pushed tarball directory structure down one level  
+  (i.e., chapel-1.1/chapel)
 - moved non-user scripts from $CHPL_HOME/util/ to $CHPL_HOME/util/chplenv/
 
 Compiler Changes
@@ -12816,7 +12817,7 @@ Compiler Changes
 
 Runtime Library Changes
 -----------------------
-- reorganized the runtime directories to use better hierarchies
+- reorganized the runtime directories to use better hierarchies  
   (e.g., 'runtime/foo-bar' => 'runtime/src/foo/bar'
 - broke the threading layer of the runtime into tasking and threading layers
 - renamed most external tasking/threading routines in the runtime interface
@@ -12846,9 +12847,9 @@ Bug Fixes/New Semantic Checks (for old semantics)
 - added a check that iterators are not defined to yield types or params
 - added a check to ensure zippered sparse domains/arrays share the same domain
 - added an error message for param for loops that iterate over non-param ranges
-- fixed a bug in which a shared initializer was evaluated multiple times
+- fixed a bug in which a shared initializer was evaluated multiple times  
   (e.g., 'var x, y, z = foo()' called foo() three times rather than one)
-- fixed a bug in which yield statements could omit the expression to yield
+- fixed a bug in which yield statements could omit the expression to yield  
   (i.e., 'yield;' is not a legal statement in Chapel)
 - fixed a bug in which applying .locale to a global variable always returned #0
 - fixed a few race conditions in the runtime tasking layer
