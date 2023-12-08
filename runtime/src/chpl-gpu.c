@@ -339,6 +339,13 @@ static void launch_kernel(const char* name,
                                 blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
+  CHPL_GPU_START_TIMER(load_time);
+
+  void* function = chpl_gpu_impl_load_function(name);
+  assert(function);
+
+  CHPL_GPU_STOP_TIMER(load_time);
+
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
   CHPL_GPU_DEBUG("\tgridDims=(%d, %d, %d), blockDims(%d, %d, %d)\n",
       grd_dim_x, grd_dim_y, grd_dim_z,
@@ -348,12 +355,16 @@ static void launch_kernel(const char* name,
     CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
   }
 
+  CHPL_GPU_START_TIMER(kernel_time);
+
   chpl_gpu_impl_launch_kernel(cfg->ln, cfg->fn,
-                              name,
+                              function,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
                               cfg->stream,
                               (void**)(cfg->kernel_params));
+
+  CHPL_GPU_DEBUG("Impl launched the kernel %s\n", name);
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
   chpl_gpu_impl_stream_synchronize(cfg->stream);
@@ -368,6 +379,7 @@ static void launch_kernel(const char* name,
   cfg_deinit_params(cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
+
   CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
       "Prep: %Lf, "
       "Kernel: %Lf, "

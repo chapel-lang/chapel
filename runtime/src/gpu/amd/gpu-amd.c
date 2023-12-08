@@ -181,26 +181,20 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
 }
 
 void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* name,
+                                 void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,
                                  void** kernel_params) {
-  CHPL_GPU_START_TIMER(load_time);
+  assert(fn);
 
-  void* function = chpl_gpu_load_function( name);
-
-  CHPL_GPU_STOP_TIMER(load_time);
-
-  ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)function,
+  ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)kernel,
                                   grd_dim_x, grd_dim_y, grd_dim_z,
                                   blk_dim_x, blk_dim_y, blk_dim_z,
                                   0,  // shared memory in bytes
                                   stream,  // stream ID
                                   (void**)kernel_params,
                                   NULL));  // extra options
-
-  CHPL_GPU_DEBUG("hipLaunchKernel returned %s\n", name);
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,

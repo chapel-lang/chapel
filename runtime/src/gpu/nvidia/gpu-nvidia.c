@@ -50,22 +50,6 @@ static CUmodule *chpl_gpu_cuda_modules;
 
 static int *deviceClockRates;
 
-static
-void* chpl_gpu_load_function(const char* kernel_name) {
-  CUfunction function;
-  CUdevice device;
-  CUmodule module;
-
-  CUDA_CALL(cuCtxGetDevice(&device));
-
-  module = chpl_gpu_cuda_modules[(int)device];
-
-  CUDA_CALL(cuModuleGetFunction(&function, module, kernel_name));
-  assert(function);
-
-  return (void*)function;
-}
-
 static bool chpl_gpu_has_context(void) {
   CUcontext cuda_context = NULL;
 
@@ -111,6 +95,22 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
+
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
+  CUfunction function;
+  CUdevice device;
+  CUmodule module;
+
+  CUDA_CALL(cuCtxGetDevice(&device));
+
+  module = chpl_gpu_cuda_modules[(int)device];
+
+  CUDA_CALL(cuModuleGetFunction(&function, module, kernel_name));
+  assert(function);
+
+  return (void*)function;
+}
+
 
 void chpl_gpu_impl_use_device(c_sublocid_t dev_id) {
   switch_context(dev_id);
@@ -185,7 +185,7 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
 
 void chpl_gpu_impl_launch_kernel(int ln,
                                  int32_t fn,
-                                 const char* name,
+                                 void* kernel,
                                  int grd_dim_x,
                                  int grd_dim_y,
                                  int grd_dim_z,
@@ -194,22 +194,15 @@ void chpl_gpu_impl_launch_kernel(int ln,
                                  int blk_dim_z,
                                  void* stream,
                                  void** kernel_params) {
-  CHPL_GPU_START_TIMER(load_time);
+  assert(fn);
 
-  void* function = chpl_gpu_load_function(name);
-  assert(function);
-
-  CHPL_GPU_STOP_TIMER(load_time);
-
-  CUDA_CALL(cuLaunchKernel((CUfunction)function,
+  CUDA_CALL(cuLaunchKernel((CUfunction)kernel,
                            grd_dim_x, grd_dim_y, grd_dim_z,
                            blk_dim_x, blk_dim_y, blk_dim_z,
                            0,       // shared memory in bytes
                            (CUstream)stream,  // stream ID
                            kernel_params,
                            NULL));  // extra options
-
-  CHPL_GPU_DEBUG("cuLaunchKernel returned %s\n", name);
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
