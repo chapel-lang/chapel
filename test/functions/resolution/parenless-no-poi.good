@@ -1,0 +1,2 @@
+parenless-no-poi.chpl:2: In function 'callFoo':
+parenless-no-poi.chpl:3: error: 'foo' undeclared (first use this function)

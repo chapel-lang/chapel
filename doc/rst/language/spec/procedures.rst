@@ -279,6 +279,10 @@ be called without parentheses.
    to use parentheses when calling ``foo`` or omit them when calling
    ``bar``.
 
+Note that functions called without parentheses cannot resolve to a
+function defined in a generic function's point of instantiation (see
+:ref:`Function_Visibility_in_Generic_Functions`).
+
 .. _Formal_Arguments:
 
 Formal Arguments
