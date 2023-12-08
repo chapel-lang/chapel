@@ -317,7 +317,7 @@ Developer-oriented changes: Testing System
 
 Developer-oriented changes: Tool Improvements
 ---------------------------------------------
-* quieted a 'gdb' warning when using the `--gdb` flag on the compiler
+* silenced a 'gdb' warning when using the `--gdb` flag on the compiler
 
 Developer-oriented changes: Utilities
 -------------------------------------
