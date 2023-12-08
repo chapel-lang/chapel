@@ -18,164 +18,148 @@
  * limitations under the License.
  */
 
-/* Helper procedures for doing parallel I/O */
+/*
+  Helper procedures for doing parallel I/O
+
+  This module provides the following procedures, each intended for a slightly
+  different use case (but all focused on cases where a large file containing
+  only a header, and then a continuous stream of deserializeable values of the
+  same type).
+
+  There are distributed and local versions of each procedure. The distributed
+  procedures return a block distributed array over the provided locales, while
+  the local procedures return a default rectangular array.
+
+  * :proc:`readParallelLines`: read each of the lines of a file as a ``string``
+                               or ``bytes`` value
+  * :proc:`readParallelDelimited`: read a file where each value is strictly
+                                   separated by a delimiter (e.g., CSV)
+  * :proc:`readParallelLossyDelimited`: read a file where each value is
+                                        separated by delimiter, and the
+                                        delimiter can be found in the value
+  * :proc:`readParallel`: read a file where no reliable delimiter is used to
+                          separate values
+
+  There are also some helper procedures that can be used to implement other
+  parallel I/O procedures:
+
+  * :proc:`findDelimChunks`: find a set of byte offsets that divide a file into
+                             roughly equal chunks where each chunk begins with
+                             a delimiter
+  * :proc:`findItemOffsets`: find a prefix sum of the number of items in each
+                             chunk of a file, where the chunks are defined by
+                             the ``byteOffsets`` array, and each item is
+                             separated by the given delimiter
+  * :proc:`findDeserChunks`: find a set of byte offsets that divide a file into
+                             roughly equal chunks where each chunk begins with
+                             a deserializable value of type ``t``
+*/
 @unstable("the 'parallelIO' module is unstable and subject to change in a future release")
 module ParallelIO {
   private use IO, BlockDist, List, CTypes, OS;
 
   private extern const qbytes_iobuf_size: c_ssize_t;
-  private extern proc qio_channel_seek_unsafe(ch: qio_channel_ptr_t, nbytes:int(64)): errorCode;
 
   /*
-    Read a file in parallel into a block-distributed array.
+    Read a file's lines in parallel into a block-distributed array.
 
-    This routine assumes that the file is composed of a series of deserializable
-    values of type ``t`` (optionally with a header at the beginning of the file).
-    It is intended for use in situations where a ``t``'s serialized form is of
-    variable length, such as when it contains a string field. If the file contains a
-    reliable delimiter between each ``t``, consider using :proc:`readParallelDelimited`
-    instead for better performance.
-
-    This procedure uses :proc:`findDeserChunks` to split the file into ``d.size``
-    chunks of roughly equal size where each chunk is read concurrently across the
-    target locales. If multiple tasks are used per locale, each will further decompose
-    its chunk into smaller chunks and read each of those in parallel.
-
-    .. note:: ``t`` must:
-
-          * have a 'deserialize method' that throws when a ``t`` cannot be read
-          * have a default (zero argument) initializer
+    This routine is similar to :proc:`readParallelDelimited`, except that it
+    reads each line as a :type:`~String.string` or :type:`~Bytes.bytes` value.
 
     :arg filePath: a path to the file to read from
-    :arg t: the type of value to read from the file
+    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
     :arg tasksPerLoc: the number of tasks to use per locale
         (if ``-1``, query ``here.maxTaskPar`` on each locale)
-    :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
-        (if ``-1``, search for the first ``t`` value in the file and start there)
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
     :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
-    :returns: a block-distributed array of ``t`` values
+    :returns: a block-distributed array of ``lineType`` values
 
-    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-    to open the file
   */
-  proc readParallel(filePath: string, type t, tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
-                    type deserializerType = defaultDeserializer,
-                    targetLocales: [?d] locale = Locales
-  ): [] t throws
-    where d.rank == 1
+  proc readParallelLines(filePath: string, type lineType = string, tasksPerLoc: int = -1,
+                         skipHeaderLines: int = 0, type deserializerType = defaultDeserializer,
+                         targetLocales: [?d] locale = Locales
+  ): [] lineType throws
+    where lineType == string || lineType == bytes
   {
-    const OnePerLoc = blockDist.createDomain({0..<d.size}, targetLocales=targetLocales);
-    var results: [OnePerLoc] list(t),
-        findStart = false,
-        globalStartOffset = 0;
+    param delim = b"\n";
 
-    if skipHeaderBytes < 0
-      then findStart = true;
-      else globalStartOffset = skipHeaderBytes;
-
-    // find the starting offsets for each locale
     const fMeta = open(filePath, ioMode.r),
-          fileBounds = globalStartOffset..<fMeta.size,
-          byteOffsets = findDeserChunks(fMeta, d.size, fileBounds, t, findStart, deserializerType);
+          fileBounds = 0..<fMeta.size,
+          byteOffsets = findDelimChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
+          itemOffsets = findItemOffsets(fMeta, delim, byteOffsets);
+
+    var results = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
 
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
-            locBounds = byteOffsets[id]..<byteOffsets[id+1],
+            locBounds = byteOffsets[id]..byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
-            tByteOffsets = findDeserChunks(locFile, nTasks, locBounds, t, false, deserializerType);
+            tByteOffsets = findDelimChunks(locFile, delim, nTasks, locBounds, 0),
+            tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
 
-      var tResults: [0..nTasks] list(t);
-      coforall tid in 0..<nTasks with (ref tResults) {
-        const taskBounds = tByteOffsets[tid]..<tByteOffsets[tid+1];
-        var des: deserializerType,
-            r = locFile.reader(locking=false, region=taskBounds, deserializer=des),
-            s = new t();
+      coforall tid in 0..<nTasks with (ref results) {
+        var des: deserializerType;
+        const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1],
+              r = locFile.reader(locking=false, region=taskBounds, deserializer=des);
 
-        // read all the 't' values in the chunk into a list
-        while r.read(s) do
-          tResults[tid].pushBack(s);
+        for i in tItemOffsets[tid]..<tItemOffsets[tid+1] do
+          results[i] = r.readLine(lineType);
       }
-
-      // gather the results from each task into a single list
-      for tid in 0..<nTasks do
-        results[id].pushBack(tResults[tid]);
     }
 
-    // gather results from each locale into an array
-    const nPerLoc = [i in 0..d.size] if i > d.high then 0 else results[i].size,
-          itemOffsets = (+ scan nPerLoc) - nPerLoc;
-
-    var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
-    coforall (loc, id) in zip(targetLocales, 0..) do on loc do
-      // TODO: maybe add some aggregation here for the few items that will end up on adjacent locales?
-      result[itemOffsets[id]..<itemOffsets[id+1]] = results[id].toArray();
-
-    return result;
+    return results;
   }
 
   /*
-    Read a file in parallel into an array.
+    Read a file's lines in parallel into an array.
 
-    This routine is essentially the same as :proc:`readParallel`, except that
-    it only executes on the calling locale. As such, it does not accept a
+    This routine is essentially the same as :proc:`readParallelLines`, except
+    that it only executes on the calling locale. As such, it does not accept a
     ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
-    :arg t: the type of value to read from the file
+    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
     :arg nTasks: the number of tasks to use
-    :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
-        (if ``-1``, search for the first ``t`` value in the file and start there)
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
     :arg deserializerType: the type of deserializer to use
 
-    :returns: a default rectangular array of ``t`` values
+    :returns: a default rectangular array of ``lineType`` values
 
-    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
-    to open the file
   */
-  proc readParallelLocal(filePath: string, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
-                         type deserializerType = defaultDeserializer
-  ): [] t throws {
-    var findStart = false,
-        globalStartOffset = 0;
+  proc readParallelLinesLocal(filePath: string, type lineType = string, nTasks: int = here.maxTaskPar,
+                              skipHeaderLines: int = 0, type deserializerType = defaultDeserializer
+  ): [] lineType throws
+    where lineType == string || lineType == bytes
+  {
+    param delim = b"\n";
 
-    if skipHeaderBytes < 0 {
-      findStart = true;
-    } else {
-      globalStartOffset = skipHeaderBytes;
-    }
-
-    var results: [0..nTasks] list(t);
     const f = open(filePath, ioMode.r),
-          fileBounds = globalStartOffset..<f.size,
-          byteOffsets = findDeserChunks(f, nTasks, fileBounds, t, findStart, deserializerType);
+          fileBounds = 0..<f.size,
+          byteOffsets = findDelimChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
+          itemOffsets = findItemOffsets(f, delim, byteOffsets);
+
+    var results: [0..<itemOffsets.last] lineType;
 
     coforall tid in 0..<nTasks with (ref results) {
-      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1];
-      var des: deserializerType,
-          r = f.reader(locking=false, region=taskBounds, deserializer=des),
-          s = new t();
+      var des: deserializerType;
+      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
+            r = f.reader(locking=false, region=taskBounds, deserializer=des);
 
-      // read all the 't' values in the chunk into a list
-      while r.read(s) do
-        results[tid].pushBack(s);
+      for i in itemOffsets[tid]..<itemOffsets[tid+1] do
+        results[i] = r.readLine(lineType);
     }
 
-    const nPerTask = [r in results] r.size,
-          itemOffsets = (+ scan nPerTask) - nPerTask;
-
-    var result: [0..<itemOffsets.last] t;
-    coforall tid in 0..<nTasks do
-      result[itemOffsets[tid]..<itemOffsets[tid+1]] = results[tid].toArray();
-
-    return result;
+    return results;
   }
 
   /*
@@ -333,105 +317,240 @@ module ParallelIO {
   }
 
   /*
-    Read a file's lines in parallel into a block-distributed array.
+    Read a file in parallel into a block-distributed array.
 
-    This routine is similar to :proc:`readParallelDelimited`, except that it
-    reads each line as a :type:`~String.string` or :type:`~Bytes.bytes` value.
+    This routine assumes that the file is composed of a series of deserializable
+    values of type ``t`` (optionally with a header at the beginning of the file).
+    It is intended for use in situations where a ``t``'s serialized form is of
+    variable length, such as when it contains a string field. If the file contains a
+    reliable delimiter between each ``t``, consider using :proc:`readParallelDelimited`
+    instead for better performance.
+
+    This procedure uses :proc:`findDeserChunks` to split the file into ``d.size``
+    chunks of roughly equal size where each chunk is read concurrently across the
+    target locales. If multiple tasks are used per locale, each will further decompose
+    its chunk into smaller chunks and read each of those in parallel.
+
+    .. note:: ``t`` must:
+
+          * have a 'deserialize method' that throws when a ``t`` cannot be read
+          * have a default (zero argument) initializer
 
     :arg filePath: a path to the file to read from
-    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
+    :arg t: the type of value to read from the file
     :arg tasksPerLoc: the number of tasks to use per locale
         (if ``-1``, query ``here.maxTaskPar`` on each locale)
-    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
+    :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
+        (if ``-1``, search for the first ``t`` value in the file and start there)
     :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
-    :returns: a block-distributed array of ``lineType`` values
+    :returns: a block-distributed array of ``t`` values
 
-    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
+    to open the file
   */
-  proc readParallelLines(filePath: string, type lineType = string, tasksPerLoc: int = -1,
-                         skipHeaderLines: int = 0, type deserializerType = defaultDeserializer,
-                         targetLocales: [?d] locale = Locales
-  ): [] lineType throws
-    where lineType == string || lineType == bytes
+  proc readParallel(filePath: string, type t, tasksPerLoc: int = -1, skipHeaderBytes: int = 0,
+                    type deserializerType = defaultDeserializer,
+                    targetLocales: [?d] locale = Locales
+  ): [] t throws
+    where d.rank == 1
   {
-    param delim = b"\n";
+    const OnePerLoc = blockDist.createDomain({0..<d.size}, targetLocales=targetLocales);
+    var results: [OnePerLoc] list(t),
+        findStart = false,
+        globalStartOffset = 0;
 
+    if skipHeaderBytes < 0
+      then findStart = true;
+      else globalStartOffset = skipHeaderBytes;
+
+    // find the starting offsets for each locale
     const fMeta = open(filePath, ioMode.r),
-          fileBounds = 0..<fMeta.size,
-          byteOffsets = findDelimChunks(fMeta, delim, d.size, fileBounds, skipHeaderLines),
-          itemOffsets = findItemOffsets(fMeta, delim, byteOffsets);
-
-    var results = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
+          fileBounds = globalStartOffset..<fMeta.size,
+          byteOffsets = findDeserChunks(fMeta, d.size, fileBounds, t, findStart, deserializerType);
 
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
-            locBounds = byteOffsets[id]..byteOffsets[id+1],
+            locBounds = byteOffsets[id]..<byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
-            tByteOffsets = findDelimChunks(locFile, delim, nTasks, locBounds, 0),
-            tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
+            tByteOffsets = findDeserChunks(locFile, nTasks, locBounds, t, false, deserializerType);
 
-      coforall tid in 0..<nTasks with (ref results) {
-        var des: deserializerType;
-        const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1],
-              r = locFile.reader(locking=false, region=taskBounds, deserializer=des);
+      var tResults: [0..nTasks] list(t);
+      coforall tid in 0..<nTasks with (ref tResults) {
+        const taskBounds = tByteOffsets[tid]..<tByteOffsets[tid+1];
+        var des: deserializerType,
+            r = locFile.reader(locking=false, region=taskBounds, deserializer=des),
+            s = new t();
 
-        for i in tItemOffsets[tid]..<tItemOffsets[tid+1] do
-          results[i] = r.readLine(lineType);
+        // read all the 't' values in the chunk into a list
+        while r.read(s) do
+          tResults[tid].pushBack(s);
       }
+
+      // gather the results from each task into a single list
+      for tid in 0..<nTasks do
+        results[id].pushBack(tResults[tid]);
     }
 
-    return results;
+    // gather results from each locale into an array
+    const nPerLoc = [i in 0..d.size] if i > d.high then 0 else results[i].size,
+          itemOffsets = (+ scan nPerLoc) - nPerLoc;
+
+    var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
+    coforall (loc, id) in zip(targetLocales, 0..) do on loc do
+      // TODO: maybe add some aggregation here for the few items that will end up on adjacent locales?
+      result[itemOffsets[id]..<itemOffsets[id+1]] = results[id].toArray();
+
+    return result;
   }
 
   /*
-    Read a file's lines in parallel into an array.
+    Read a file in parallel into an array.
 
-    This routine is essentially the same as :proc:`readParallelLines`, except
-    that it only executes on the calling locale. As such, it does not accept a
+    This routine is essentially the same as :proc:`readParallel`, except that
+    it only executes on the calling locale. As such, it does not accept a
     ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
-    :arg lineType: which type to represent a line: either ``string`` or ``bytes``
+    :arg t: the type of value to read from the file
     :arg nTasks: the number of tasks to use
-    :arg skipHeaderLines: the number of lines to skip at the beginning of the file
+    :arg skipHeaderBytes: the number of bytes to skip at the beginning of the file
+        (if ``-1``, search for the first ``t`` value in the file and start there)
     :arg deserializerType: the type of deserializer to use
 
-    :returns: a default rectangular array of ``lineType`` values
+    :returns: a default rectangular array of ``t`` values
 
-    :throws: :class:`OffsetNotFoundError` if a starting offset cannot be found
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
+    to open the file
   */
-  proc readParallelLinesLocal(filePath: string, type lineType = string, nTasks: int = here.maxTaskPar,
-                              skipHeaderLines: int = 0, type deserializerType = defaultDeserializer
-  ): [] lineType throws
-    where lineType == string || lineType == bytes
-  {
-    param delim = b"\n";
+  proc readParallelLocal(filePath: string, type t, nTasks: int = here.maxTaskPar, skipHeaderBytes: int = 0,
+                         type deserializerType = defaultDeserializer
+  ): [] t throws {
+    var findStart = false,
+        globalStartOffset = 0;
 
-    const f = open(filePath, ioMode.r),
-          fileBounds = 0..<f.size,
-          byteOffsets = findDelimChunks(f, delim, nTasks, fileBounds, skipHeaderLines),
-          itemOffsets = findItemOffsets(f, delim, byteOffsets);
-
-    var results: [0..<itemOffsets.last] lineType;
-
-    coforall tid in 0..<nTasks with (ref results) {
-      var des: deserializerType;
-      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
-            r = f.reader(locking=false, region=taskBounds, deserializer=des);
-
-      for i in itemOffsets[tid]..<itemOffsets[tid+1] do
-        results[i] = r.readLine(lineType);
+    if skipHeaderBytes < 0 {
+      findStart = true;
+    } else {
+      globalStartOffset = skipHeaderBytes;
     }
 
-    return results;
+    var results: [0..nTasks] list(t);
+    const f = open(filePath, ioMode.r),
+          fileBounds = globalStartOffset..<f.size,
+          byteOffsets = findDeserChunks(f, nTasks, fileBounds, t, findStart, deserializerType);
+
+    coforall tid in 0..<nTasks with (ref results) {
+      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1];
+      var des: deserializerType,
+          r = f.reader(locking=false, region=taskBounds, deserializer=des),
+          s = new t();
+
+      // read all the 't' values in the chunk into a list
+      while r.read(s) do
+        results[tid].pushBack(s);
+    }
+
+    const nPerTask = [r in results] r.size,
+          itemOffsets = (+ scan nPerTask) - nPerTask;
+
+    var result: [0..<itemOffsets.last] t;
+    coforall tid in 0..<nTasks do
+      result[itemOffsets[tid]..<itemOffsets[tid+1]] = results[tid].toArray();
+
+    return result;
+  }
+
+    /*
+    Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
+    roughly equally sized chunks, where each byte offset lines up with a
+    delimiter.
+
+    :arg f: the file to search
+    :arg delim: the delimiter to use to separate the file into chunks
+    :arg n: the number of chunks to find
+    :arg bounds: a range of byte offsets to break into chunks
+    :arg skipHeaderLines: the number of lines to skip at the beginning of the range
+
+    :returns: a length ``n+1`` array of byte offsets (the last offset is
+              ``bounds.high``)
+
+    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
+              in any of the chunks
+  */
+  proc findDelimChunks(const ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
+    where dt == bytes || dt == string
+  {
+    const r = f.reader(locking=false, region=bounds);
+    for 0..<skipHeaderLines do r.readLine();
+
+    const nDataBytes = bounds.high - r.offset(),
+          approxBytesPerChunk = nDataBytes / n;
+
+    var chunkOffsets: [0..n] int;
+    chunkOffsets[0] = r.offset();
+    chunkOffsets[n] = bounds.high;
+
+    for i in 1..<n {
+      const estOffset = chunkOffsets[i-1] + approxBytesPerChunk;
+      r.seek(estOffset..);              // seek to the estimated offset
+      try {
+        r.advanceThrough(delim);        // advance past the next delimiter
+      } catch {
+        // there wasn't an offset in this chunk
+        throw new OffsetNotFoundError(
+          "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
+          ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
+        );
+      }
+      chunkOffsets[i] = r.offset();     // record the offset for this chunk
+    }
+
+    return chunkOffsets;
+  }
+
+  /*
+    Get a prefix sum of the number of items in each chunk of the file ``f``,
+    where the chunks are defined by the ``byteOffsets`` array, and each item
+    is separated by the given delimiter.
+
+    :arg f: the file to search
+    :arg delim: the delimiter used to separate items in the file
+    :arg byteOffsets: an array of byte offsets that divide the file into chunks
+
+    :returns: an array of length ``byteOffsets.size`` containing the number of
+              items in the file before the start of each chunk. The last entry
+              contains the total number of items in the file.
+  */
+  proc findItemOffsets(const ref f: file, in delim: ?dt, const ref byteOffsets: [?d] int): [d] int throws
+    where dt == bytes || dt == string
+  {
+    var nPerChunk: [d] int;
+
+    coforall c in 0..<d.high with (ref nPerChunk) {
+      const r = f.reader(locking=false, region=byteOffsets[c]..byteOffsets[c+1]);
+
+      // count the number of items in the chunk
+      var n = 0;
+      while true {
+        try {
+          r.advanceThrough(delim); // throws if we advance to the end of the region
+          n += 1;
+        } catch {
+          break;
+        }
+      }
+      nPerChunk[c+1] = n; // (c+1) because we want an exclusive prefix-sum below
+    }
+
+    return (+ scan nPerChunk); // compute the number of items leading up to each chunk
   }
 
   /*
@@ -613,91 +732,6 @@ module ParallelIO {
   //     }
   //   }
   // }
-
-  /*
-    Get an array of ``n+1`` byte offsets that divide the file ``f`` into ``n``
-    roughly equally sized chunks, where each byte offset lines up with a
-    delimiter.
-
-    :arg f: the file to search
-    :arg delim: the delimiter to use to separate the file into chunks
-    :arg n: the number of chunks to find
-    :arg bounds: a range of byte offsets to break into chunks
-    :arg skipHeaderLines: the number of lines to skip at the beginning of the range
-
-    :returns: a length ``n+1`` array of byte offsets (the last offset is
-              ``bounds.high``)
-
-    :throws: :class:`OffsetNotFoundError` if a valid byte offset cannot be found
-              in any of the chunks
-  */
-  proc findDelimChunks(const ref f: file, in delim: ?dt, n: int, bounds: range, skipHeaderLines: int): [] int throws
-    where dt == bytes || dt == string
-  {
-    const r = f.reader(locking=false, region=bounds);
-    for 0..<skipHeaderLines do r.readLine();
-
-    const nDataBytes = bounds.high - r.offset(),
-          approxBytesPerChunk = nDataBytes / n;
-
-    var chunkOffsets: [0..n] int;
-    chunkOffsets[0] = r.offset();
-    chunkOffsets[n] = bounds.high;
-
-    for i in 1..<n {
-      const estOffset = chunkOffsets[i-1] + approxBytesPerChunk;
-      r.seek(estOffset..);              // seek to the estimated offset
-      try {
-        r.advanceThrough(delim);        // advance past the next delimiter
-      } catch {
-        // there wasn't an offset in this chunk
-        throw new OffsetNotFoundError(
-          "Failed to find byte offset in the range (" + bounds.low:string + ".." + bounds.high:string +
-          ") for chunk " + i:string + " of " + n:string + ". Try using fewer tasks."
-        );
-      }
-      chunkOffsets[i] = r.offset();     // record the offset for this chunk
-    }
-
-    return chunkOffsets;
-  }
-
-  /*
-    Get a prefix sum of the number of items in each chunk of the file ``f``,
-    where the chunks are defined by the ``byteOffsets`` array, and each item
-    is separated by the given delimiter.
-
-    :arg f: the file to search
-    :arg delim: the delimiter used to separate items in the file
-    :arg byteOffsets: an array of byte offsets that divide the file into chunks
-
-    :returns: an array of length ``byteOffsets.size`` containing the number of
-              items in the file before the start of each chunk. The last entry
-              contains the total number of items in the file.
-  */
-  proc findItemOffsets(const ref f: file, in delim: ?dt, const ref byteOffsets: [?d] int): [d] int throws
-    where dt == bytes || dt == string
-  {
-    var nPerChunk: [d] int;
-
-    coforall c in 0..<d.high with (ref nPerChunk) {
-      const r = f.reader(locking=false, region=byteOffsets[c]..byteOffsets[c+1]);
-
-      // count the number of items in the chunk
-      var n = 0;
-      while true {
-        try {
-          r.advanceThrough(delim); // throws if we advance to the end of the region
-          n += 1;
-        } catch {
-          break;
-        }
-      }
-      nPerChunk[c+1] = n; // (c+1) because we want an exclusive prefix-sum below
-    }
-
-    return (+ scan nPerChunk); // compute the number of items leading up to each chunk
-  }
 
   /*
     An error thrown when a starting offset cannot be found in a chunk of a file.

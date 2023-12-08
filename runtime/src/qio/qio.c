@@ -4094,16 +4094,6 @@ qioerr qio_channel_advance(const int threadsafe, qio_channel_t* ch, int64_t nbyt
   return err;
 }
 
-// seek to a relative offset within the buffered region
-qioerr qio_channel_seek_unsafe(qio_channel_t* ch, int64_t nbytes)
-{
-  if( qio_space_in_ptr_diff(nbytes, ch->cached_end, ch->cached_cur) ) {
-    ch->cached_cur = qio_ptr_add(ch->cached_cur, nbytes);
-    return 0;
-  }
-  QIO_RETURN_CONSTANT_ERROR(EINVAL, "attempt to seek outside buffered range");
-}
-
 qioerr qio_channel_seek(qio_channel_t* ch, int64_t start, int64_t end)
 {
   qioerr err;
