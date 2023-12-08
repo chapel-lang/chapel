@@ -91,17 +91,17 @@ void chpl_gpu_support_module_finished_initializing(void);
 
 void* chpl_gpu_init_kernel_cfg(int n_params, int ln, int32_t fn);
 void chpl_gpu_deinit_kernel_cfg(void* cfg);
-void chpl_gpu_arg_by_val(void* cfg, void* arg);
-void chpl_gpu_arg_by_ref(void* cfg, void* arg);
-void chpl_gpu_arg_by_offload(void* cfg, void* arg, size_t size);
+void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
+void chpl_gpu_arg_pass(void* cfg, void* arg);
+void chpl_gpu_launch_kernel_flat(const char* name,
+                                 int64_t num_threads, int blk_dim,
+                                 void* cfg);
+
 void chpl_gpu_launch_kernel(int ln, int32_t fn,
                             const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
                             int nargs, ...);
-void chpl_gpu_launch_kernel_flat(const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                    int32_t lineno, int32_t filename);

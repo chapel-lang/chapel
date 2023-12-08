@@ -319,21 +319,15 @@ void chpl_gpu_deinit_kernel_cfg(void* cfg) {
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
 }
 
-void chpl_gpu_arg_by_val(void* cfg, void* arg) {
-  cfg_add_direct_param((kernel_cfg*)cfg, arg);
-  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
-}
-
-void chpl_gpu_arg_by_ref(void* cfg, void* arg) {
-  cfg_add_direct_param((kernel_cfg*)cfg, arg);
-  CHPL_GPU_DEBUG("\tAdded by-ref param: %p\n", arg);
-}
-
-void chpl_gpu_arg_by_offload(void* cfg, void* arg, size_t size) {
+void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
   cfg_add_offload_param((kernel_cfg*)cfg, arg, size);
   CHPL_GPU_DEBUG("\tAdded by-offload param: %p\n", arg);
 }
 
+void chpl_gpu_arg_pass(void* cfg, void* arg) {
+  cfg_add_direct_param((kernel_cfg*)cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+}
 
 static void launch_kernel(const char* name,
                           int grd_dim_x, int grd_dim_y, int grd_dim_z,

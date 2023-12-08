@@ -1280,14 +1280,24 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
     if (isClass(actualValType) || (!actualSym->isRef() &&
           !isAggregateType(actualValType))) {
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG_BY_REF, cfg, actualSym));
+      // class: must be on GPU memory
+      // scalar: can be passed as an argument directly
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF)));
     }
     else if (actualSym->isRef()) {
-      // TODO this one should actually offload
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG_BY_VAL, cfg, actualSym));
+      // ref: we assume that it is not on GPU memory to be safe, so offload it,
+      // but while doing so, we don't need to get the address of it. Because we
+      // just copy the value pointed by it.
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::DIRECT |
+                                                        GpuArgKind::OFFLOAD)));
     }
     else {
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG_BY_OFFLOAD, cfg, actualSym));
+      // we don't know what this is: offload
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF |
+                                                        GpuArgKind::OFFLOAD)));
     }
   }
 

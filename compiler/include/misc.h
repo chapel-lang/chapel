@@ -89,6 +89,13 @@ enum class GpuCodegenType {
   GPU_CG_CPU,
 };
 
+enum GpuArgKind {
+  DIRECT = 0b00,
+  ADDROF = 0b01,
+  OFFLOAD = 0b10
+};
+
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();

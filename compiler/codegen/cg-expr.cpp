@@ -5339,21 +5339,38 @@ DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
   ret = codegenCallExpr("chpl_gpu_deinit_kernel_cfg", call->get(1)->codegen());
 }
 
-DEFINE_PRIM(GPU_ARG_BY_REF) {
-  ret = codegenCallExpr("chpl_gpu_arg_by_ref", call->get(1)->codegen(),
-                  codegenAddrOf(codegenValuePtr(call->get(2))));
+DEFINE_PRIM(GPU_ARG) {
+  std::vector<GenRet> args;
 
-}
+  // the config
+  args.push_back(call->get(1)->codegen());
 
-DEFINE_PRIM(GPU_ARG_BY_VAL) {
-  ret = codegenCallExpr("chpl_gpu_arg_by_val", call->get(1)->codegen(),
-                  call->get(2)->codegen());
-}
+  SymExpr* kindSE = toSymExpr(call->get(3));
+  INT_ASSERT(kindSE);
 
-DEFINE_PRIM(GPU_ARG_BY_OFFLOAD) {
-  ret = codegenCallExpr("chpl_gpu_arg_by_offload", call->get(1)->codegen(),
-                  codegenValuePtr(call->get(2)),
-                  codegenSizeof(call->get(2)->typeInfo()->getValType()));
+  Immediate* imm = getSymbolImmediate(kindSE->symbol());
+  int8_t kind = imm->v_int8;
+
+  if ((kind & 1<<0) == GpuArgKind::ADDROF) {
+    args.push_back(codegenAddrOf(codegenValuePtr(call->get(2))));
+  }
+  else if ((kind & 1<<0) == GpuArgKind::DIRECT) {
+    args.push_back(call->get(2)->codegen());
+  }
+  else {
+    INT_FATAL("Unknown case");
+  }
+
+  const char* fnName;
+  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+    fnName = "chpl_gpu_arg_offload";
+    args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
+  }
+  else {
+    fnName = "chpl_gpu_arg_pass";
+  }
+
+  ret = codegenCallExprWithArgs(fnName, args);
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }

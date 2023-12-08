@@ -1091,9 +1091,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_INIT_KERNEL_CFG:
     case PRIM_GPU_DEINIT_KERNEL_CFG:
-    case PRIM_GPU_ARG_BY_REF:
-    case PRIM_GPU_ARG_BY_VAL:
-    case PRIM_GPU_ARG_BY_OFFLOAD:
+    case PRIM_GPU_ARG:
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_LIFETIME_OF:
