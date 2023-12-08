@@ -15,9 +15,9 @@ TODOs:
 * check initial 'A-Z'
 * check 'see:'
 * check for changes put too far down in file
-o check links
-o add highlights
-o spellcheck
+* check links
+* add highlights
+* spellcheck
 
 version 1.33.0
 ==============
@@ -26,6 +26,18 @@ released December 14, 2023
 
 Highlights (see subsequent sections for further details)
 --------------------------------------------------------
+* added a new `--detailed-errors` flag to opt-in to better compiler errors
+* added support for co-locales to the `[slurm-]gasnetrun_*` launchers
+* added a number of new command-line tools, including:
+  - a prototype linter, 'chplcheck'
+  - a script for summarizing unstable warnings
+  - a script for reporting symbols that are missing documentation
+* continued improving GPU support in terms of generality and library routines
+* added a new prototype `breakpoint` procedure in support of debugging
+* added support for system installations of LLVM 16 as the compiler backend
+* refactored the features in the standard 'Random' module for stability
+* generally refactored and improved support for binary I/O
+* removed many deprecated language/library features to prep for Chapel 2.0
 
 Syntactic / Naming Changes
 --------------------------
@@ -200,7 +212,7 @@ Compiler Improvements
 
 Compiler Flags
 --------------
-* added `--[no-]detailed-errors` for error messages with more detail  
+* added `--[no-]detailed-errors` to request error messages with more detail  
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
 * added `--[no-]const-arg-checks` to check for potential `const` violations  
   (see https://chapel-lang.org/docs/1.33/usingchapel/man.html)
@@ -389,7 +401,8 @@ Language Feature Improvements
 
 Syntactic / Naming Changes
 --------------------------
-* deprecated support for `$` in identifiers (e.g., `foo$` is deprecated)
+* deprecated support for `$` in identifiers  
+  (e.g., `foo$` is deprecated)
 * `these` is now reserved as a keyword for use as the default iterator method  
   (see https://chapel-lang.org/docs/1.32/language/spec/methods.html#the-these-method)
 * reserved `init`, `postinit`, `deinit`, `super`, and `range` as keywords
