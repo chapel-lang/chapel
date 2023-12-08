@@ -68,7 +68,7 @@ Changes / Feature Improvements in Libraries
 * added a flag to control whether large I/O operations bypass buffering  
   (see https://chapel-lang.org/docs/1.33/modules/standard/IO.html#IO.IOSkipBufferingForLargeOps)
 * deprecated the `RandomStream` class in favor of a new `randomStream` record  
-  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.RandomStream)
+  (see https://chapel-lang.org/docs/1.33/modules/standard/Random.html#Random.randomStream)
 
 Name Changes in Libraries
 -------------------------
@@ -155,7 +155,7 @@ Tool Improvements
 * developed a prototype linter for Chapel code, 'chplcheck'  
   (see https://github.com/chapel-lang/chapel/tree/main/tools/chplcheck#readme)
 * added a new script for summarizing a program's anonymized unstable warnings  
-  (see https://chapel-lang.org/docs/1.33/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
+  (see https://chapel-lang.org/docs/1.33/tools/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
 * added a script to report symbols that are missing documentation  
   (see `tools/chpldoc/findUndocumentedSymbols`)
 * updated 'chpldoc' to put unstable/deprecation warnings in clearer locations  
