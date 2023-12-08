@@ -497,8 +497,13 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
   {
     if (se->isRef()) continue;
 
+    // We want to carry information about `in` intent variables lowered from
+    // iterators on `foreach` loops to gpuTransforms so we wrap a variable
+    // representing the "captured" version of the `in` intent variable in a
+    // special primitive. We don't want copy propagation modifying this
+    // variable.
     if (CallExpr *call = toCallExpr(se->parentExpr)) {
-      if(call->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) {
+      if (call->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) {
         continue;
       }
     }

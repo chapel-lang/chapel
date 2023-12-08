@@ -1560,14 +1560,16 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
 
         SET_LINENO(forLoop);
 
-        VarSymbol* capturedSvar = new VarSymbol(svar->name, svar->type);
+        VarSymbol* capturedSvar = new VarSymbol(astr("cap_", svar->name), svar->type);
         forLoop->insertBefore(new DefExpr(capturedSvar));
         forLoop->insertBefore(new CallExpr(PRIM_MOVE, capturedSvar, svar->outerVarSE->symbol()));
 
-        VarSymbol* taskIndVar = new VarSymbol(svar->name, svar->type);
+        VarSymbol* taskIndVar = new VarSymbol(astr("taskInd_", svar->name), svar->type);
         taskIndVar->addFlag(FLAG_TASK_PRIVATE_VARIABLE);
         forLoop->insertBefore(new DefExpr(taskIndVar));
-        forLoop->insertBefore(new CallExpr(PRIM_ASSIGN, taskIndVar, new CallExpr(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, capturedSvar)));
+        forLoop->insertBefore(new CallExpr(
+            PRIM_MOVE, taskIndVar,
+            new CallExpr(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, capturedSvar)));
 
         map->put(svar, taskIndVar);
         }
@@ -1577,6 +1579,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
       case TFI_REF:
       case TFI_CONST_REF:
       case TFI_REDUCE_OP:
+        // to be implemented
         INT_ASSERT(false);
 
       case TFI_IN_PARENT:
@@ -1586,6 +1589,7 @@ static void processShadowVariables(ForLoop* forLoop, SymbolMap *map) {
       case TFI_REDUCE_PARENT_AS:
       case TFI_REDUCE_PARENT_OP:
       case TFI_TASK_PRIVATE:
+        // to be implemented
         INT_ASSERT(false);
     }
   }
@@ -2168,12 +2172,12 @@ static void addIteratorBreakBlocksJumptable(Expr* loopRef, Symbol* IC,
 
 
 static void
-expandBodyForIteratorInline(ForLoop*       forLoop,
-                            BlockStmt*     ibody,
-                            Symbol*        index,
-                            bool           inTaskFn,
-                            TaskFnCopyMap& taskFnCopies,
-                            bool&          addErrorArgToCall,
+expandBodyForIteratorInline(ForLoop*         forLoop,
+                            BlockStmt*       ibody,
+                            Symbol*          index,
+                            bool             inTaskFn,
+                            TaskFnCopyMap&   taskFnCopies,
+                            bool&            addErrorArgToCall,
                             const SymbolMap& svarMap) {
   bool removeReturn = !inTaskFn;
   std::vector<CallExpr*> bodyCalls;

@@ -27,6 +27,50 @@
 #include "chpl-comm.h"
 
 static inline void chpl_gpu_write(const char *str) { printf("%s", str); }
+static inline void chpl_gpu_writef0(const char *fmt) {
+  printf("%s", fmt);
+}
+static inline void chpl_gpu_writef1(const char *fmt,
+ void *x1)
+{
+  printf(fmt, x1);
+}
+static inline void chpl_gpu_writef2(const char *fmt,
+  void *x1, void *x2)
+{
+  printf(fmt, x1, x2);
+}
+static inline void chpl_gpu_writef3(const char *fmt,
+  void *x1, void *x2, void *x3)
+{
+  printf(fmt, x1, x2, x3);
+}
+static inline void chpl_gpu_writef4(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4)
+{
+  printf(fmt, x1, x2, x3, x4);
+}
+static inline void chpl_gpu_writef5(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5)
+{
+  printf(fmt, x1, x2, x3, x4, x5);
+}
+static inline void chpl_gpu_writef6(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6);
+}
+static inline void chpl_gpu_writef7(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6, x7);
+}
+static inline void chpl_gpu_writef8(const char *fmt,
+  void *x1, void *x2, void *x3, void *x4, void *x5, void *x6, void *x7,
+  void *x8)
+{
+  printf(fmt, x1, x2, x3, x4, x5, x6, x7, x8);
+}
 
 static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
   if (!chpl_gpu_no_cpu_mode_warning) {
