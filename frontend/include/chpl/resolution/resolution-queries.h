@@ -381,6 +381,11 @@ resolveGeneratedCallInMethod(Context* context,
                              const PoiScope* inPoiScope,
                              types::QualifiedType implicitReceiver);
 
+// helper for getTypeForDecl
+// tries to resolve an init= that initializes one type from another
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const uast::AstNode* ast,
+                                         types::QualifiedType qt);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.

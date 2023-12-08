@@ -3802,6 +3802,35 @@ resolveGeneratedCallInMethod(Context* context,
   return resolveGeneratedCall(context, astForErr, ci, inScope, inPoiScope);
 }
 
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const uast::AstNode* ast,
+                                         types::QualifiedType qt) {
+  auto lhsType = qt;
+  auto rhsType = qt;
+  const Type* t = lhsType.type();
+  if (t->isRecordType() || t->isUnionType()) {
+    // use the regular VAR kind for this query
+    // (don't want a type-expr lhsType to be considered a TYPE here)
+    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
+    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
+
+    std::vector<CallInfoActual> actuals;
+    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    auto ci = CallInfo(/* name */ USTR("init="),
+                       /* calledType */ lhsType,
+                       /* isMethodCall */ true,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false, actuals);
+    const Scope* scope = scopeForId(context, ast->id());
+    auto c =
+        resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
+    return c.mostSpecific().only().fn();
+  } else {
+    return nullptr;
+  }
+}
+
 static bool helpFieldNameCheck(const AstNode* ast,
                                UniqueString name) {
   if (auto var = ast->toVarLikeDecl()) {
@@ -3962,7 +3991,8 @@ static const std::pair<bool, bool> getCopyabilityInfoImpl(
   std::pair<bool, bool> result = {false, false};
 
   // Get initial values directly from copyability flags, if present.
-  auto attrs = parsing::idToAst(context, ct->id())->attributeGroup();
+  auto ast = parsing::idToAst(context, ct->id());
+  auto attrs = ast->attributeGroup();
   if (attrs) {
     result.first = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_CONST);
     result.second = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_REF);
@@ -3998,8 +4028,8 @@ static const std::pair<bool, bool> getCopyabilityInfoImpl(
       // implicit reads are removed. 12/8/23
       foundFromConst = true;
     } else {
-      TypedFnSignature* initEq = nullptr;
-      // TODO: try to resolve an init= and port the below prod logic
+      const TypedFnSignature* initEq =
+          tryResolveInitEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
       if (initEq) {
         /* if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) { */
         /*   if (recordContainsNonNilableOwned(at)) */
