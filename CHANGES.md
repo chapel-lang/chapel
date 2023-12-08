@@ -5,8 +5,8 @@ TODOs:
 * sort items within categories
 * check placement of items into categories
 * check sorting of categories
-o check for ' vs `
-o fulfill TODOs
+* check for ' vs `
+* fulfill TODOs
 o check man page
 o check test/release/examples
 o check for docs/1.33/ links
@@ -79,7 +79,7 @@ Package Modules
 ---------------
 * added a new 'ObjectSerialization' package supporting more structured I/O  
   (see https://chapel-lang.org/docs/1.33/modules/packages/ObjectSerialization.html)
-* replaced 'start'/'end' arguments in the 'URL' module with 'region' args  
+* replaced `start`/`end` arguments in the 'URL' module with `region` args  
   (see https://chapel-lang.org/docs/1.33/modules/packages/URL.html#URL.openUrlReader)
 * updated 'UnitTest' to report the filename & line number of failed assertions
 
@@ -89,7 +89,7 @@ Deprecated / Unstable Library Features
 * deprecated and hid the transitional `IO.fileOffsetWithoutLocking` config
 * deprecated the symbols used to select RNG algorithms: `RNG`, `defaultRNG`  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
-* deprecated 'algorithm' args from `fillRandom()`, `shuffle()`, `permutation()`
+* deprecated `algorithm` args from `fillRandom()`, `shuffle()`, `permutation()`
 * deprecated `createRandomStream()`
 * deprecated `randomStreamInterface`  
   (see: https://chapel-lang.org/docs/1.33/modules/standard/Random.html#note-about-deprecations-and-future-work)
@@ -121,14 +121,14 @@ Removed Library Features
   `mul[_2exp]()`, `neg()`, `abs()`, `div[Q][R][2Exp]()`, `mod()`, `and()`,  
   `[i|x]or()`, `com()`)
 * removed a few deprecated `list` methods: `append()`, `pop()`, `set()`
-* removed the previously deprecated `Memory` module and its sub-modules
+* removed the previously deprecated 'Memory' module and its sub-modules
 * removed the previously deprecated `BitOps.popcount()` routine
-* removed the previously deprecated `Barriers` module
+* removed the previously deprecated 'Barriers' module
 * removed the previously deprecated `Collectives.BarrierType` enum
 * removed the previously deprecated reusable `barrier` type
 * removed the previously deprecated `FileSystem.copyFile()` routine
 * removed the previously deprecated `FileSystem.isLink()` routine
-* removed the deprecated non-camel-case functions from `FileSystem`
+* removed the deprecated non-camel-case functions from 'FileSystem'
 
 GPU Computing
 -------------
@@ -152,7 +152,7 @@ Memory Improvements
 
 Tool Improvements
 -----------------
-* developed a prototype linter for Chapel code, `chplcheck`  
+* developed a prototype linter for Chapel code, 'chplcheck'  
   (see https://github.com/chapel-lang/chapel/tree/main/tools/chplcheck#readme)
 * added a new script for summarizing a program's anonymized unstable warnings  
   (see https://chapel-lang.org/docs/1.33/unstableWarningAnonymizer/unstableWarningAnonymizer.html)
@@ -216,11 +216,11 @@ Error Messages / Semantic Checks
 * added an error when two files define a top-level module with the same name
 * added an error for `ref` declarations with incorrect declared types
 * added a warning for cases where symbol shadowing might be surprising  
-  (e.g., if 'M' and 'N' both define 'x', `use M; public use N; f(x);` warns)
+  (e.g., if `M` and `N` both define `x`, `use M; public use N; f(x);` warns)
 * added a compiler error when casting to a generic subclass in unsupported ways
 * added an unstable warning when `const` arguments are indirectly modified  
   (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
-* fixed the unstable warning for 'gpuUseStreamPerTask' to use the correct name
+* fixed the unstable warning for `gpuUseStreamPerTask` to use the correct name
 * improved the output format of `--detailed-errors` since its dev-only form
 * made code locations of `extern record` consistent with `record` in errors
 
@@ -264,7 +264,7 @@ Bug Fixes for Libraries
 
 Bug Fixes for Tools
 -------------------
-* fixed a bug in 'chpldoc' where uses of 'code-block' would overflow
+* fixed a bug in 'chpldoc' where uses of `code-block` would overflow
 * improved the accuracy of the language server's 'go to declaration' message
 
 Developer-oriented changes: Documentation
@@ -278,7 +278,7 @@ Developer-oriented changes: Syntactic / Naming Changes
 
 Developer-oriented changes: Makefile / Build-time changes
 ---------------------------------------------------------
-* removed duplicate link arguments for `chpl` and compiled executables
+* removed duplicate link arguments for 'chpl' and compiled executables
 * started parsing and stripping redundant `-std=c++14` from 'CMake' build flags
 
 Developer-oriented changes: Compiler Flags
@@ -317,7 +317,7 @@ Developer-oriented changes: Runtime improvements
 
 Developer-oriented changes: Testing System
 ------------------------------------------
-* made test system not run custom 'sub_test' scripts for '-performance' runs
+* made test system not run custom 'sub_test' scripts for `-performance` runs
 * fixed a bug in which 'sub_test' could emit duplicate error messages
 
 Developer-oriented changes: Tool Improvements
