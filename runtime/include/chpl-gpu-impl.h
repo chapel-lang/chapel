@@ -28,8 +28,7 @@ extern "C" {
 void chpl_gpu_impl_init(int* num_devices);
 
 void* chpl_gpu_impl_load_function(const char* kernel_name);
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 void* kernel,
+void chpl_gpu_impl_launch_kernel(void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,

@@ -180,12 +180,10 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   return true;
 }
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 void* kernel,
+void chpl_gpu_impl_launch_kernel(void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                 void* stream,
-                                 void** kernel_params) {
+                                 void* stream, void** kernel_params) {
   assert(kernel);
 
   ROCM_CALL(hipModuleLaunchKernel((hipFunction_t)kernel,

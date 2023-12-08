@@ -363,12 +363,10 @@ static void launch_kernel(const char* name,
   CHPL_GPU_START_TIMER(kernel_time);
 
   CHPL_GPU_DEBUG("Calling impl's launcher %s\n", name);
-  chpl_gpu_impl_launch_kernel(cfg->ln, cfg->fn,
-                              function,
+  chpl_gpu_impl_launch_kernel(function,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
-                              cfg->stream,
-                              (void**)(cfg->kernel_params));
+                              cfg->stream, (void**)(cfg->kernel_params));
   CHPL_GPU_DEBUG("\tLauncher returned %s\n", name);
 
 
