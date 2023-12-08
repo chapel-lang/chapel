@@ -5287,13 +5287,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
 
   // number of arguments that are not kernel params
   int nNonKernelParamArgs = is3d ? 7:3;
-  int nKernelParamArgs = call->numActuals() - nNonKernelParamArgs;
 
   const char* fn = is3d ? "chpl_gpu_launch_kernel":"chpl_gpu_launch_kernel_flat";
 
   std::vector<GenRet> args;
-  args.push_back(new_IntSymbol(call->astloc.lineno()));
-  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
   // "Copy" arguments from primitive call to runtime library function call.
   int curArg = 1;
@@ -5313,30 +5310,10 @@ static GenRet codegenGPUKernelLaunch(CallExpr* call, bool is3d) {
     else if (curArg <= nNonKernelParamArgs) {  // grid and block size args
       args.push_back(actual->codegen());
 
-      // if we finished adding non-kernel parameters, add number of kernel
-      // parameters first before the parameters themselves.
-      if (curArg == nNonKernelParamArgs) {
-        GenRet numParams = new_IntSymbol(nKernelParamArgs);
-        args.push_back(numParams);
-      }
     }
     else { // kernel args
-      Type* actualValType = actual->typeInfo()->getValType();
-
-      // TODO can we use codegenArgForFormal instead of this logic?
-      if (isClass(actualValType) || (!actualSym->isRef() &&
-                                     !isAggregateType(actualValType))) {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(new_IntSymbol(0));
-      }
-      else if (actualSym->isRef()) {
-        args.push_back(actual->codegen());
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
-      else {
-        args.push_back(codegenAddrOf(codegenValuePtr(actual)));
-        args.push_back(codegenSizeof(actual->typeInfo()->getValType()));
-      }
+      // must be the cfg arg
+      args.push_back(actual->codegen());
     }
     curArg++;
   }
@@ -5350,6 +5327,33 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH_FLAT) {
 
 DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
   ret = codegenGPUKernelLaunch(call, /* is3d= */ true);
+}
+
+DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
+  ret = codegenCallExpr("chpl_gpu_init_kernel_cfg", call->get(1)->codegen(),
+                  new_IntSymbol(call->astloc.lineno()),
+                  new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+}
+
+DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
+  ret = codegenCallExpr("chpl_gpu_deinit_kernel_cfg", call->get(1)->codegen());
+}
+
+DEFINE_PRIM(GPU_ARG_BY_REF) {
+  ret = codegenCallExpr("chpl_gpu_arg_by_ref", call->get(1)->codegen(),
+                  codegenAddrOf(codegenValuePtr(call->get(2))));
+
+}
+
+DEFINE_PRIM(GPU_ARG_BY_VAL) {
+  ret = codegenCallExpr("chpl_gpu_arg_by_val", call->get(1)->codegen(),
+                  call->get(2)->codegen());
+}
+
+DEFINE_PRIM(GPU_ARG_BY_OFFLOAD) {
+  ret = codegenCallExpr("chpl_gpu_arg_by_offload", call->get(1)->codegen(),
+                  codegenValuePtr(call->get(2)),
+                  codegenSizeof(call->get(2)->typeInfo()->getValType()));
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }

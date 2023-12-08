@@ -275,7 +275,7 @@ static void cfg_deinit_params(kernel_cfg* cfg) {
   chpl_mem_free(cfg->param_dyn_allocated, cfg->ln, cfg->fn);
 }
 
-static void cfg_add_offloaded_param(kernel_cfg* cfg, void* arg, size_t size) {
+static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
   const int i = cfg->cur_param;
 
   cfg->param_dyn_allocated[i] = true;
@@ -304,17 +304,45 @@ static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
   cfg->cur_param++;
 }
 
-static void launch_kernel(int ln, int32_t fn,
-                          const char* name,
+void* chpl_gpu_init_kernel_cfg(int n_params, int ln, int32_t fn) {
+  void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
+  cfg_init((kernel_cfg*)ret, n_params, ln, fn);
+
+  CHPL_GPU_DEBUG("Initialized kernel config for %d params\n", n_params);
+
+  return ret;
+}
+
+void chpl_gpu_deinit_kernel_cfg(void* cfg) {
+  chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
+  CHPL_GPU_DEBUG("Deinitialized kernel config\n");
+}
+
+void chpl_gpu_arg_by_val(void* cfg, void* arg) {
+  cfg_add_direct_param((kernel_cfg*)cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+}
+
+void chpl_gpu_arg_by_ref(void* cfg, void* arg) {
+  cfg_add_direct_param((kernel_cfg*)cfg, arg);
+  CHPL_GPU_DEBUG("\tAdded by-ref param: %p\n", arg);
+}
+
+void chpl_gpu_arg_by_offload(void* cfg, void* arg, size_t size) {
+  cfg_add_offload_param((kernel_cfg*)cfg, arg, size);
+  CHPL_GPU_DEBUG("\tAdded by-offload param: %p\n", arg);
+}
+
+
+static void launch_kernel(const char* name,
                           int grd_dim_x, int grd_dim_y, int grd_dim_z,
                           int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                          int nargs, va_list args) {
-  kernel_cfg cfg;
-  cfg_init(&cfg, nargs, ln, fn);
+                          kernel_cfg* cfg) {
+  chpl_gpu_impl_use_device(cfg->dev);
 
-  chpl_gpu_impl_use_device(cfg.dev);
-
-  chpl_gpu_diags_verbose_launch(ln, fn, cfg.dev, blk_dim_x, blk_dim_y, blk_dim_z);
+  chpl_gpu_diags_verbose_launch(cfg->ln, cfg->fn, cfg->dev,
+                                blk_dim_x, blk_dim_y, blk_dim_z);
   chpl_gpu_diags_incr(kernel_launch);
 
   CHPL_GPU_DEBUG("Creating kernel parameters\n");
@@ -322,37 +350,19 @@ static void launch_kernel(int ln, int32_t fn,
       grd_dim_x, grd_dim_y, grd_dim_z,
       blk_dim_x, blk_dim_y, blk_dim_z);
 
-  CHPL_GPU_START_TIMER(prep_time);
-
-
-  for (int i=0 ; i<nargs ; i++) {
-    void* cur_arg = va_arg(args, void*);
-    size_t cur_arg_size = va_arg(args, size_t);
-
-    if (cur_arg_size > 0) {
-      cfg_add_offloaded_param(&cfg, cur_arg, cur_arg_size);
-
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p (device ptr)\n",
-          i, *(cfg.kernel_params)[i]);
-    }
-    else {
-      cfg_add_direct_param(&cfg, cur_arg);
-      CHPL_GPU_DEBUG("\tKernel parameter %d: %p\n",
-          i, cfg.kernel_params[i]);
-    }
+  for (int i = 0; i < cfg->n_params ; i++) {
+    CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
   }
 
-  CHPL_GPU_STOP_TIMER(prep_time);
-  CHPL_GPU_START_TIMER(kernel_time);
-
-  chpl_gpu_impl_launch_kernel(ln, fn, name,
+  chpl_gpu_impl_launch_kernel(cfg->ln, cfg->fn,
+                              name,
                               grd_dim_x, grd_dim_y, grd_dim_z,
                               blk_dim_x, blk_dim_y, blk_dim_z,
-                              cfg.stream,
-                              (void**)cfg.kernel_params);
+                              cfg->stream,
+                              (void**)(cfg->kernel_params));
 
 #ifdef CHPL_GPU_ENABLE_PROFILE
-  chpl_gpu_impl_stream_synchronize(cfg.stream);
+  chpl_gpu_impl_stream_synchronize(cfg->stream);
 #endif
   CHPL_GPU_STOP_TIMER(kernel_time);
 
@@ -360,7 +370,8 @@ static void launch_kernel(int ln, int32_t fn,
 
   CHPL_GPU_START_TIMER(teardown_time);
 
-  cfg_deinit_params(&cfg);
+  // deinit them before synch as a (premature?) optimization
+  cfg_deinit_params(cfg);
 
   CHPL_GPU_STOP_TIMER(teardown_time);
   CHPL_GPU_PRINT_TIMERS("<%20s> Load: %Lf, "
@@ -371,8 +382,8 @@ static void launch_kernel(int ln, int32_t fn,
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg.stream);
-    wait_stream(cfg.stream);
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
+    wait_stream(cfg->stream);
   }
 #else
   chpl_gpu_impl_synchronize();
@@ -387,15 +398,16 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                    int nargs, ...) {
 
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-  void* stream = get_stream(dev);
+  kernel_cfg cfg;
+  cfg_init(&cfg, nargs, ln, fn);
+
+  chpl_gpu_impl_use_device(cfg.dev);
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
-                 chpl_task_getRequestedSubloc(),
+                 cfg.dev,
                  chpl_lookupFilename(fn),
                  ln,
                  name,
@@ -404,17 +416,27 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
   va_list args;
   va_start(args, nargs);
 
-  chpl_gpu_impl_use_device(chpl_task_getRequestedSubloc());
+  for (int i=0 ; i<nargs ; i++) {
+    void* cur_arg = va_arg(args, void*);
+    size_t cur_arg_size = va_arg(args, size_t);
 
-  launch_kernel(ln, fn, name,
+    if (cur_arg_size>0) {
+      cfg_add_offload_param(&cfg, cur_arg, cur_arg_size);
+    }
+    else {
+      cfg_add_direct_param(&cfg, cur_arg);
+    }
+  }
+
+  launch_kernel(name,
                 grd_dim_x, grd_dim_y, grd_dim_z,
                 blk_dim_x, blk_dim_y, blk_dim_z,
-                nargs, args);
+                (void*)&cfg);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", stream);
-    wait_stream(stream);
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg.stream);
+    wait_stream(cfg.stream);
   }
 #else
   chpl_gpu_impl_synchronize();
@@ -423,19 +445,15 @@ inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
   va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n",
-                 chpl_task_getRequestedSubloc(),
-                 name);
+                 "\tKernel: %s\n", cfg.dev, name);
 }
 
-inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
-                                        const char* name,
-                                        int64_t num_threads, int blk_dim, int nargs,
-                                        ...) {
+inline void chpl_gpu_launch_kernel_flat(const char* name,
+                                        int64_t num_threads, int blk_dim,
+                                        void* _cfg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
 
-  int dev = chpl_task_getRequestedSubloc();
-  chpl_gpu_impl_use_device(dev);
-  void* stream = get_stream(dev);
+  chpl_gpu_impl_use_device(cfg->dev);
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
@@ -443,16 +461,13 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
                  "\tStream: %p\n"
                  "\tNumArgs: %d\n"
                  "\tNumThreads: %"PRId64"\n",
-                 dev,
-                 chpl_lookupFilename(fn),
-                 ln,
+                 cfg->dev,
+                 chpl_lookupFilename(cfg->fn),
+                 cfg->ln,
                  name,
-                 stream,
-                 nargs,
+                 cfg->stream,
+                 cfg->n_params,
                  num_threads);
-
-  va_list args;
-  va_start(args, nargs);
 
   if (num_threads > 0){
     int grd_dim_x = (num_threads+blk_dim-1)/blk_dim;
@@ -462,18 +477,17 @@ inline void chpl_gpu_launch_kernel_flat(int ln, int32_t fn,
     int blk_dim_y = 1;
     int blk_dim_z = 1;
 
-    launch_kernel(ln, fn, name,
+    launch_kernel(name,
                   grd_dim_x, grd_dim_y, grd_dim_z,
                   blk_dim_x, blk_dim_y, blk_dim_z,
-                  nargs, args);
+                  cfg);
 
   } else {
     CHPL_GPU_DEBUG("No kernel launched since num_threads is <=0\n");
   }
-  va_end(args);
 
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", dev, name);
+                 "\tKernel: %s\n", cfg->dev, name);
 }
 
 extern void chpl_gpu_comm_on_put(c_sublocid_t dst_subloc, void *addr,
