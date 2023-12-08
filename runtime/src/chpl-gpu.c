@@ -271,8 +271,9 @@ static void cfg_deinit_params(kernel_cfg* cfg) {
     }
   }
 
-  chpl_mem_free(cfg->kernel_params, cfg->ln, cfg->fn);
+  // deallocate these two in reverse order for ease of verbose mem debugging
   chpl_mem_free(cfg->param_dyn_allocated, cfg->ln, cfg->fn);
+  chpl_mem_free(cfg->kernel_params, cfg->ln, cfg->fn);
 }
 
 static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
