@@ -5354,11 +5354,8 @@ DEFINE_PRIM(GPU_ARG) {
   if ((kind & 1<<0) == GpuArgKind::ADDROF) {
     args.push_back(codegenAddrOf(codegenValuePtr(call->get(2))));
   }
-  else if ((kind & 1<<0) == GpuArgKind::DIRECT) {
-    args.push_back(call->get(2)->codegen());
-  }
   else {
-    INT_FATAL("Unknown case");
+    args.push_back(call->get(2)->codegen());
   }
 
   const char* fnName;

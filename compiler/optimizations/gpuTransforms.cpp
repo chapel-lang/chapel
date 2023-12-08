@@ -1290,8 +1290,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
       // but while doing so, we don't need to get the address of it. Because we
       // just copy the value pointed by it.
       gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::DIRECT |
-                                                        GpuArgKind::OFFLOAD)));
+                                          new_IntSymbol(GpuArgKind::OFFLOAD)));
     }
     else {
       // we don't know what this is: offload
