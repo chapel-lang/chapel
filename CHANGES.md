@@ -216,7 +216,6 @@ Error Messages / Semantic Checks
 * added an unstable warning when `const` arguments are indirectly modified  
   (see https://chapel-lang.org/docs/1.33/language/spec/procedures.html#the-const-intent)
 * fixed the unstable warning for `gpuUseStreamPerTask` to use the correct name
-* improved the output format of `--detailed-errors` since its dev-only form
 * made code locations of `extern record` consistent with `record` in errors
 
 Bug Fixes
@@ -304,6 +303,7 @@ Developer-oriented changes: 'dyno' Compiler improvements / changes
   - added the ability for library files to include LLVM IR
   - documented the library file format  
     (see https://chapel-lang.org/docs/1.33/developer/compiler-internals/file-format.html)
+* improved the output format of `--detailed-errors`
 * added a mechanism for associating additional locations with an AST node
 
 Developer-oriented changes: Runtime improvements
