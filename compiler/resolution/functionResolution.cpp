@@ -11680,44 +11680,26 @@ static void resolveExportsEtc() {
           !fn->hasFlag(FLAG_EXTERN) &&
           !fn->hasFlag(FLAG_ON) &&
           !fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) &&
-          //         !fn->hasFlag(FLAG_COMPILER_NESTED_FUNCTION)
           !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
           // either this is not a method, or at least it's not a method
           // on a generic type
           (fn->_this == NULL || !at || !at->isGeneric()) &&
-          // TODO: What chpl_ functions are not marked compiler-generated?
+          // for now, ignore chpl_ functions
           (strncmp(fn->name, "chpl_", 5) != 0) &&
           fn->defPoint &&
           // Nested functions are tricky because their resolution may depend
           // on the resolution of the outer function in which they are located;
           // i.e., they may be generic w.r.t. outer-scoped variables, yet not
-          // marked with FLAG_GENERIC.  How to distinguish simple nested
-          // concrete functions which could be resolved from those that can't?
+          // marked with FLAG_GENERIC.  For now, rule out all nested functions.
           !isFnSymbol(fn->defPoint->parentSymbol) && // fn is not nested
           fn->defPoint->getModule() &&
           !isGenericFn(fn)
-          /* && fn->defPoint->getModule()->modTag == MOD_USER*/
          ) {
         SET_LINENO(fn);
 
-        /*if (developer) {
-          printf("---\n");
-          printf("%s (%s:%d)\n", fn->name, fn->astloc.filename(), fn->astloc.lineno());
-          printf("---\n");
-          viewFlags(fn->id);
-          printf("---\n\n");
-        }*/
-
-        // disable resolveExprMaybeIssueError
-        //squashCompilerMessages = true;
         if (evaluateWhereClause(fn)) {
           resolveSignatureAndFunction(fn);
-          /*
-          fn->removeFlag(FLAG_RESOLVED);  // though we resolved it, pretend we
-          // didn't so it'll be dead-code eliminated
-          */
         }
-        //squashCompilerMessages = false;
       }
     }
   }
