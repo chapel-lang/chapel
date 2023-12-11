@@ -395,13 +395,11 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 /**
-  Determine whether type 't' has init= from const or from ref, storing the
+  Determine whether type 't' is copyable from const or/and from ref, storing the
   result in the respective out-parameter
 */
-void getCopyabilityInfo(Context* context,
-                        const types::CompositeType* t,
-                        bool* initEqualFromConst,
-                        bool* initEqualFromRef);
+void getCopyabilityInfo(Context* context, const types::Type* t,
+                        bool* copyableFromConst, bool* copyableFromRef);
 
 /**
   Determine the types of various compiler-generated globals, which depend

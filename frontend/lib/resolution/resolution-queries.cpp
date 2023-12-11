@@ -3986,25 +3986,14 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
 }
 
 // First is from const, second is from ref.
-static const std::pair<bool, bool> getCopyabilityInfoImpl(
-    Context* context, const CompositeType* ct) {
+static const std::pair<bool, bool>&
+getCopyabilityInfoQuery(Context* context, const CompositeType* ct) {
+  QUERY_BEGIN(getCopyabilityInfoQuery, context, ct);
   std::pair<bool, bool> result = {false, false};
 
-  // Get initial values directly from copyability flags, if present.
-  auto ast = parsing::idToAst(context, ct->id());
-  auto attrs = ast->attributeGroup();
-  if (attrs) {
-    result.first = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_CONST);
-    result.second = attrs->hasPragma(PRAGMA_TYPE_INIT_EQUAL_FROM_REF);
-    // Short-circuit if we have both given already
-    if (result.first && result.second) {
-      return result;
-    }
-  }
-
   // Inspect type for either kind of copyability.
-  bool foundFromConst = false;
-  bool foundFromRef = false;
+  bool fromConst = false;
+  bool fromRef = false;
   if (auto classTy = ct->toClassType()) {
     auto dec = classTy->decorator();
     if (dec.isNonNilable() && dec.isManaged() &&
@@ -4013,20 +4002,17 @@ static const std::pair<bool, bool> getCopyabilityInfoImpl(
     }
   } else if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
-      if (auto eltTypeCt = eltType->toCompositeType()) {
-        auto eltTypeCopyability = getCopyabilityInfoImpl(context, eltTypeCt);
-        foundFromConst = eltTypeCopyability.first;
-        foundFromRef = eltTypeCopyability.second;
-      } else {
-        foundFromConst = true;
-      }
+      // for an array, copyability depends on copyability of element type
+      getCopyabilityInfo(context, eltType, &fromConst, &fromRef);
     }
   } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    auto attrs = ast->attributeGroup();
     if (attrs &&
         (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
       // Special case to preserve deprecated behavior before sync/single
       // implicit reads are removed. 12/8/23
-      foundFromConst = true;
+      fromConst = true;
     } else {
       const TypedFnSignature* initEq =
           tryResolveInitEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
@@ -4055,25 +4041,20 @@ static const std::pair<bool, bool> getCopyabilityInfoImpl(
     }
   }
 
-  // Don't override a true initial value from flags if present.
-  result.first |= foundFromConst;
-  result.second |= foundFromRef;
-  return result;
+  return QUERY_END(result);
 }
 
-// First is from const, second is from ref.
-static const std::pair<bool, bool>&
-getCopyabilityInfoQuery(Context* context, const CompositeType* t) {
-  QUERY_BEGIN(getCopyabilityInfoQuery, context, t);
-  auto ret = getCopyabilityInfoImpl(context, t);
-  return QUERY_END(ret);
-}
-
-void getCopyabilityInfo(Context* context, const CompositeType* t,
-                        bool* initEqualFromConst, bool* initEqualFromRef) {
-  auto info = getCopyabilityInfoQuery(context, t);
-  *initEqualFromConst = info.first;
-  *initEqualFromRef = info.second;
+void getCopyabilityInfo(Context* context, const Type* t,
+                        bool* copyableFromConst, bool* copyableFromRef) {
+  if (auto ct = t->toCompositeType()) {
+    // Use query to cache results only for composite types.
+    auto info = getCopyabilityInfoQuery(context, ct);
+    *copyableFromConst = info.first;
+    *copyableFromRef = info.second;
+  } else {
+    // non-record types are always copyable from const
+    *copyableFromConst = true;
+  }
 }
 
 template <typename T>

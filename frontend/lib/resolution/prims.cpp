@@ -641,16 +641,12 @@ static QualifiedType primFamilyIsCopyable(Context* context, const CallInfo& ci,
 
   auto t = ci.actual(0).type().type();
 
-  bool initEqualFromConst = false;
-  bool initEqualFromRef = false;
-  if (auto ct = t->toCompositeType()) {
-    getCopyabilityInfo(context, ct, &initEqualFromConst, &initEqualFromRef);
-  } else {
-    initEqualFromConst = true;
-  }
+  bool copyableFromConst = false;
+  bool copyableFromRef = false;
+  getCopyabilityInfo(context, t, &copyableFromConst, &copyableFromRef);
 
   bool isCopyable =
-      (initEqualFromRef && prim == PRIM_IS_COPYABLE) || initEqualFromConst;
+      (copyableFromRef && prim == PRIM_IS_COPYABLE) || copyableFromConst;
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                        BoolParam::get(context, isCopyable));
 }
