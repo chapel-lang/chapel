@@ -210,7 +210,6 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #define ENSURE_ALL_CLASSES(NODE) \
     if(generated.find(tagToUserFacingStringTable[asttags::NODE]) == generated.end()) { \
       ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
-      generated.insert(tagToUserFacingStringTable[asttags::NODE]); \
       ss << parentTypeFor(asttags::NODE)->tp_name; \
       ss << "):" << std::endl; \
       ss << "    pass" << std::endl; \
@@ -220,7 +219,6 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #define AST_LEAF(NAME) ENSURE_ALL_CLASSES(NAME)
   #define AST_BEGIN_SUBCLASSES(NAME) ENSURE_ALL_CLASSES(START_##NAME)
   #define AST_END_SUBCLASSES(NAME)
-  #include "chpl/uast/uast-classes-list.h"
   #include "chpl/uast/uast-classes-list.h"
   #undef AST_NODE
   #undef AST_LEAF
