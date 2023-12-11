@@ -3995,8 +3995,8 @@ static const std::pair<bool, bool>& getCopyabilityInfoQuery(
   auto attrs = ast->attributeGroup();
 
   // Inspect type for either kind of copyability.
-  bool fromConst = false;
-  bool fromRef = false;
+  bool copyableFromConst = false;
+  bool copyableFromRef = false;
   if (auto classTy = ct->toClassType()) {
     if (classTy->decorator().isNonNilable() &&
         classTy->decorator().isManaged() &&
@@ -4006,39 +4006,52 @@ static const std::pair<bool, bool>& getCopyabilityInfoQuery(
   } else if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
       // Arrays are copyable if their elements are
-      getCopyabilityInfo(context, eltType, &fromConst, &fromRef);
+      getCopyabilityInfo(context, eltType, &copyableFromConst,
+                         &copyableFromRef);
     }
   } else if (attrs && (attrs->hasPragma(PRAGMA_SYNC) ||
                        attrs->hasPragma(PRAGMA_SINGLE))) {
     // Syncs and singles are copyable
     // This is a special case to preserve deprecated behavior before sync/single
     // implicit reads are removed. 12/8/23
-    fromConst = true;
+    copyableFromConst = true;
   } else {
     // In general, determine copyability by examining the type's init= method
     const TypedFnSignature* initEq =
         tryResolveInitEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
     if (initEq) {
-      /* if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) { */
-      /*   if (recordContainsNonNilableOwned(at)) */
-      /*     ; // do nothing for this case */
-      /*   else if (recordContainsOwned(at)) */
-      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
-      /*   else */
-      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
-      /* } else { */
-      /*   // formals are mt, this, other */
-      /*   ArgSymbol* other = initEq->getFormal(3); */
-      /*   IntentTag intent = concreteIntentForArg(other); */
-      /*   if (intent == INTENT_IN || */
-      /*       intent == INTENT_CONST_IN || */
-      /*       intent == INTENT_CONST_REF) { */
-      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
-      /*   } else { */
-      /*     // this case includes INTENT_REF_MAYBE_CONST */
-      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
-      /*   } */
-      /* } */
+      if (initEq->untyped()->isCompilerGenerated()) {
+        bool containsNonNilableOwned = false;
+        bool containsNilableOwned = false;
+        auto resolvedFields =
+            fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+        for (int i = 0; i < resolvedFields.numFields(); i++) {
+          auto fieldType = resolvedFields.fieldType(i).type();
+          if (auto classTy = fieldType->toClassType()) {
+            if (classTy->decorator().isManaged() &&
+                classTy->manager()->isAnyOwnedType()) {
+              if (classTy->decorator().isNonNilable()) {
+                containsNonNilableOwned = true;
+              } else {
+                containsNilableOwned = true;
+              }
+            }
+          }
+        }
+
+        copyableFromRef = !containsNonNilableOwned && containsNilableOwned;
+        copyableFromConst = !containsNonNilableOwned && !containsNilableOwned;
+      } else {
+        // formals are this, other
+        CHPL_ASSERT(initEq->numFormals() == 2);
+        auto otherIntent = initEq->formalType(1).kind();
+        // TODO: what to do with non concrete intent?
+
+        copyableFromConst = (otherIntent == QualifiedType::IN ||
+                             otherIntent == QualifiedType::CONST_IN ||
+                             otherIntent == QualifiedType::CONST_REF);
+        copyableFromRef = !copyableFromConst;
+      }
     }
   }
 
