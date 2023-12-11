@@ -415,6 +415,10 @@ struct Resolver {
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
 
+  // resolve a special primitive call such as 'resolves', which has its
+  // own logic for traversing actuals etc.
+  bool resolveSpecialPrimitiveCall(const uast::Call* call);
+
   // resolve a keyword call like index(D)
   bool resolveSpecialKeywordCall(const uast::Call* call);
 

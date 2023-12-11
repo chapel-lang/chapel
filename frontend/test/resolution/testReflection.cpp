@@ -310,6 +310,40 @@ static void test8() {
   ensureParamBool(variables.at("r8"), false);
 }
 
+static void test9() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      record R {
+          proc f() {}
+          proc g(x: int) {}
+      }
+
+      proc h(x: string) {}
+
+      operator +(lhs: int, rhs: int) do return __primitive("+", lhs, rhs);
+
+      var r: R;
+
+      param r1 = __primitive("resolves", r.f());
+      param r2 = __primitive("resolves", r.g(42));
+      param r3 = __primitive("resolves", r.g("hello"));
+      param r4 = __primitive("resolves", h(42));
+      param r5 = __primitive("resolves", h("hello"));
+      param r6 = __primitive("resolves", 1+1);
+      param r7 = __primitive("resolves", 1+"hello");
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
+  ensureParamBool(variables.at("r1"), true);
+  ensureParamBool(variables.at("r2"), true);
+  ensureParamBool(variables.at("r3"), false);
+  ensureParamBool(variables.at("r4"), false);
+  ensureParamBool(variables.at("r5"), true);
+  ensureParamBool(variables.at("r6"), true);
+  ensureParamBool(variables.at("r7"), false);
+}
+
 int main() {
   test1();
   test2();
@@ -319,5 +353,6 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
   return 0;
 }
