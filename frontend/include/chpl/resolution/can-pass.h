@@ -185,6 +185,63 @@ CanPassResult canPass(Context* context,
   return CanPassResult::canPass(context, actualType, formalType);
 }
 
+/* When trying to combine two kinds, you can't just pick one.
+   For instance, if any type in the list is a value, the result
+   should be a value, and if any type in the list is const, the
+   result should be const. Thus, combining `const ref` and `var`
+   should result in `const var`.
+
+   This class is used to describe the "mixing rules" of various kinds.
+   To this end, it breaks them down into their properties (const-ness,
+   ref-ness, etc) each of which are processed independently from
+   the others. */
+class KindProperties {
+ private:
+  bool isConst = false;
+  bool isRef = false;
+  bool isType = false;
+  bool isParam = false;
+  bool isValid = false;
+
+  KindProperties() {}
+
+  KindProperties(bool isConst, bool isRef, bool isType,
+                 bool isParam)
+    : isConst(isConst), isRef(isRef), isType(isType),
+      isParam(isParam), isValid(true) {}
+
+ private:
+  void invalidate();
+
+ public:
+  /* Decompose a qualified type kind into its properties. */
+  static KindProperties fromKind(types::QualifiedType::Kind kind);
+
+  /* Set the refness property to the given one. */
+  void setRef(bool isRef);
+
+  /* Set the paramness property to the given one. */
+  void setParam(bool isParam);
+
+  /* Combine two sets of kind properties into this one. The resulting
+     set of properties is compatible with both arguments (e.g. ref + val = val,
+     since values can't be made into references). */
+  void combineWith(const KindProperties& other);
+
+  /* Combine two sets of kind properties, strictly enforcing properties of
+     the receiver (e.g. (receiver) param + (other) value = invalid, because
+     param-ness is requird).
+
+     const-ness and ref-ness mismatch doesn't raise issues here since const/ref
+     checking is a separate pass. */
+  void strictCombineWith(const KindProperties& other);
+
+  /* Convert the set of kind properties back into a kind. */
+  types::QualifiedType::Kind toKind() const;
+
+  bool valid() const { return isValid; }
+};
+
 /**
   An optional additional constraint on the kind of a type. Used in
   commonType to serve the case of functions that enforce param, type,

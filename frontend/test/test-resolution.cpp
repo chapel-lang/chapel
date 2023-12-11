@@ -218,3 +218,20 @@ resolveTypesOfVariables(Context* context,
   }
   return toReturn;
 }
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariablesInit(Context* context,
+                        std::string program,
+                        const std::vector<std::string>& variables) {
+  auto m = parseModule(context, std::move(program));
+  auto& rr = resolveModule(context, m->id());
+
+  std::unordered_map<std::string, QualifiedType> toReturn;
+  for (auto& variable : variables) {
+    auto varAst = findVariable(m, variable.c_str());
+    assert(varAst != nullptr);
+    assert(varAst->initExpression());
+    toReturn[variable] = rr.byAst(varAst->initExpression()).type();
+  }
+  return toReturn;
+}

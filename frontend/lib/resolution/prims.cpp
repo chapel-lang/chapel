@@ -284,6 +284,79 @@ static QualifiedType computeDomainType(Context* context, const CallInfo& ci) {
   return QualifiedType();
 }
 
+static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto actualQt = ci.actual(0).type();
+  auto kp = KindProperties::fromKind(actualQt.kind());
+
+  // Combine the properties of the argument's kind with those of the 'REF'
+  // kind. This should inherit const-ness, throw off param-ness, and result in
+  // errors if the argument is a TYPE.
+  kp.combineWith(KindProperties::fromKind(QualifiedType::REF));
+  if (!kp.valid()) return QualifiedType();
+
+  // 'combineWith' actually disables ref-ness if either argument is non-ref.
+  // Insist that we do really want a reference.
+  kp.setRef(true);
+  return QualifiedType(kp.toKind(), actualQt.type());
+}
+
+static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto actualQt = ci.actual(0).type();
+
+  if ((actualQt.isType() && prim == PRIM_TYPEOF)) {
+    // PRIM_TYPEOF (intended to behave like .type) is only allowed on types.
+    // On the other hand, PRIM_STATIC_TYPEOF is applied to types on many occasions
+    // in the compiler code, so it does not cause an error here.
+    return QualifiedType();
+  }
+
+  auto typePtr = actualQt.type();
+  if (!typePtr) return QualifiedType();
+
+  if (auto tupleType = typePtr->toTupleType()) {
+    typePtr = tupleType->toValueTuple(context);
+  }
+
+  return QualifiedType(QualifiedType::TYPE, typePtr);
+}
+
+static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
+  // Note: this is slightly different semantically from the primitive in
+  // production. In production owned(X) is a type of its own (aliasing _owned(X)),
+  // so it would have the fields of _owned accessed by the primitive. Meanwhile,
+  // in Dyno, an owned(X) will have the fields of X accessed by this primitive.
+
+  if (ci.numActuals() != 2) return QualifiedType();
+
+  auto typeActualQt = ci.actual(0).type();
+  auto fieldActualQt = ci.actual(1).type();
+
+  if (!typeActualQt.type() ||
+      !fieldActualQt.isParam() || !fieldActualQt.type() || !fieldActualQt.param()) {
+    return QualifiedType();
+  }
+
+  auto compositeType = typeActualQt.type()->getCompositeType();
+  auto fieldNameParam = fieldActualQt.param()->toStringParam();
+
+  if (!compositeType || !fieldNameParam) {
+    return QualifiedType();
+  }
+
+  auto& fields = fieldsForTypeDecl(context, compositeType, DefaultsPolicy::IGNORE_DEFAULTS);
+  for (int i = 0; fields.numFields(); i++) {
+    if (fields.fieldName(i) == fieldNameParam->value()) {
+      auto returnType = fields.fieldType(i).type();
+      return QualifiedType(QualifiedType::TYPE, returnType);
+    }
+  }
+  return QualifiedType();
+}
+
 static QualifiedType primIsTuple(Context* context,
                                  const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
@@ -928,7 +1001,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_ADDR_OF:
+      type = primAddrOf(context, ci);
+      break;
+
     case PRIM_DEREF:
     case PRIM_SET_REFERENCE:
     case PRIM_GET_END_COUNT:
@@ -956,10 +1035,21 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_INIT_FIELDS:
     case PRIM_LIFETIME_OF:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_TYPEOF:
     case PRIM_STATIC_TYPEOF:
+      type = primTypeof(context, prim, ci);
+      break;
+
     case PRIM_SCALAR_PROMOTION_TYPE:
+      CHPL_UNIMPL("misc primitives");
+      break;
     case PRIM_STATIC_FIELD_TYPE:
+      type = staticFieldType(context, ci);
+      break;
+
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:
     case PRIM_TUPLE_EXPAND:

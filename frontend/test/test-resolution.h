@@ -67,4 +67,7 @@ const Variable* findVariable(const ModuleVec& vec, const char* name);
 std::unordered_map<std::string, QualifiedType>
 resolveTypesOfVariables(Context* context, std::string program, const std::vector<std::string>& variables);
 
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariablesInit(Context* context, std::string program, const std::vector<std::string>& variables);
+
 #endif
