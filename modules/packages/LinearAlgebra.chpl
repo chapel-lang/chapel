@@ -1646,36 +1646,26 @@ proc lu(A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-/* Return a new array as the permuted form of `A` according to
-    permutation array `ipiv`.*/
+/*
+  Return a new array as the permuted form of `A` according to
+  permutation array `ipiv`. Only 1D input arrays are supported, since there is
+  no need for multi-dimensional arrays for now.
+*/
 private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
-  const dim = Adom;
-  var B: [dim] eltType;
+  const dim = Adom.dim(0);
+  var B: [Adom] eltType;
 
-  if Adom.rank == 1 {
-    if transpose {
-      forall (i,pi) in zip(dim, ipiv) with (ref B) {
-        B[i] = A[pi];
-      }
-    }
-    else {
-      forall (i,pi) in zip(dim, ipiv) with (ref B) {
-        B[pi] = A[i];
-      }
+  if transpose {
+    forall (i,pi) in zip(dim, ipiv) with (ref B) {
+      B[i] = A[pi];
     }
   }
-  else if Adom.rank == 2 {
-    if transpose {
-      forall (i,pi) in zip(dim, ipiv) {
-        B[i, ..] = A[pi, ..];
-      }
-    }
-    else {
-      forall (i,pi) in zip(dim, ipiv) {
-        B[pi, ..] = A[i, ..];
-      }
+  else {
+    forall (i,pi) in zip(dim, ipiv) with (ref B) {
+      B[pi] = A[i];
     }
   }
+
   return B;
 }
 
