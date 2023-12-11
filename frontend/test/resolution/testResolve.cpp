@@ -29,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/util/version-info.h"
 
 // test resolving a very simple module
 static void test1() {
@@ -571,6 +572,23 @@ static void test12() {
   assert(type.param()->toUintParam()->value() == 4607182418800017408);
 }
 
+static void test13() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      param r1 = __primitive("version major");
+      param r2 = __primitive("version minor");
+      param r3 = __primitive("version update");
+      param r4 = __primitive("version sha");
+      )""", { "r1", "r2", "r3", "r4" });
+  ensureParamInt(variables.at("r1"), getMajorVersion());
+  ensureParamInt(variables.at("r2"), getMinorVersion());
+  ensureParamInt(variables.at("r3"), getUpdateVersion());
+  ensureParamString(variables.at("r4"), getIsOfficialRelease() ? "" : getCommitHash());
+}
+
 static void test14() {
   Context context;
   // Make sure no errors make it to the user, even though we will get errors.
@@ -703,7 +721,6 @@ static void test16() {
   for (auto& pair : variables) {
     pair.second.isParamTrue();
   }
-
 }
 
 int main() {
@@ -719,6 +736,7 @@ int main() {
   test10();
   test11();
   test12();
+  test13();
   test14();
   test15();
   test16();

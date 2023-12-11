@@ -24,6 +24,7 @@
 #include "chpl/uast/all-uast.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/resolution/can-pass.h"
+#include "chpl/util/version-info.h"
 
 namespace chpl {
 namespace resolution {
@@ -1115,10 +1116,35 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
     case PRIM_GATHER_TESTS:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_VERSION_MAJOR:
+      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, getMajorVersion()));
+      break;
+
     case PRIM_VERSION_MINOR:
+      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, getMinorVersion()));
+      break;
+
     case PRIM_VERSION_UPDATE:
-    case PRIM_VERSION_SHA:
+      type = QualifiedType(QualifiedType::PARAM, IntType::get(context, 0),
+                           IntParam::get(context, getUpdateVersion()));
+      break;
+
+    case PRIM_VERSION_SHA: {
+      UniqueString versionHash;
+      if (!getIsOfficialRelease()) {
+        versionHash = UniqueString::get(context, getCommitHash());
+      }
+
+      type = QualifiedType(QualifiedType::PARAM, RecordType::getStringType(context),
+                           StringParam::get(context, versionHash));
+      break;
+    }
+
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
     case NUM_KNOWN_PRIMS:

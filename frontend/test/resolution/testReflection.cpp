@@ -28,38 +28,6 @@
 #include "chpl/uast/Record.h"
 #include "chpl/uast/Variable.h"
 
-static void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isIntType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isIntParam());
-  assert(type.param()->toIntParam()->value() == expectedValue);
-}
-
-static void ensureParamBool(const QualifiedType& type, bool expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isBoolType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isBoolParam());
-  assert(type.param()->toBoolParam()->value() == expectedValue);
-}
-
-static void ensureParamString(const QualifiedType& type, const std::string& expectedValue) {
-  assert(type.kind() == QualifiedType::PARAM);
-  assert(type.type() != nullptr);
-  assert(type.type()->isStringType());
-  assert(type.param() != nullptr);
-  assert(type.param()->isStringParam());
-  assert(type.param()->toStringParam()->value() == expectedValue);
-}
-
-static void ensureErroneousType(const QualifiedType& type) {
-  assert(type.type() != nullptr);
-  assert(type.type()->isErroneousType());
-}
-
 // test num fields and field num to name
 static void test1() {
   Context context;
