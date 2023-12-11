@@ -9,3 +9,13 @@ convenience and was obtained from:
 
 Any Chapel issues that seem to be related to Qthreads should be directed
 to the Chapel team at https://chapel-lang.org/bugs.html.
+
+
+Chapel modifications to Qthreads
+================================
+
+The modifications that we have made to the official Qthreads release are
+as follows:
+
+* Pulled in an upstream fix for build issues on Alpine linux
+  https://github.com/sandialabs/qthreads/pull/179
