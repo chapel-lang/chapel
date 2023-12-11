@@ -1584,8 +1584,8 @@ proc trace(A: [?D] ?eltType) {
 
 /* LU helper function */
 private proc _lu(in A: [?Adom] ?eltType) {
-  const n = Adom.shape(0);
-  const dim = 0..<n;
+  const dim = Adom.dim(0);
+  const last = dim.last;
   const LUDom = {dim, dim};
 
   // TODO: Reduce memory usage
@@ -1597,7 +1597,7 @@ private proc _lu(in A: [?Adom] ?eltType) {
 
   for i in dim {
     var max = A[i,i], swaprow = i;
-    for row in (i+1)..<n {
+    for row in (i+1)..last {
       if (abs(A[row,i]) > abs(max)) {
         max = A[row,i];
         swaprow = row;
@@ -1610,14 +1610,14 @@ private proc _lu(in A: [?Adom] ?eltType) {
       numSwap += 1;
     }
 
-    forall k in i..<n with (ref U) {
+    forall k in i..last with (ref U) {
       const sum = + reduce (L[i,..] * U[..,k]);
       U[i,k] = A[i,k] - sum;
     }
 
     L[i,i] = 1;
 
-    forall k in (i+1)..<n with (ref L) {
+    forall k in (i+1)..last with (ref L) {
       const sum = + reduce (L[k,..] * U[..,i]);
       L[k,i] = (A[k,i] - sum) / U[i,i];
     }
@@ -1641,6 +1641,10 @@ private proc _lu(in A: [?Adom] ?eltType) {
 
   `ipiv` contains the pivot indices such that row i of `A`
   was interchanged with row `ipiv(i)`.
+
+  .. note::
+
+    Arrays with any offset are supported, and `LU` and `ipiv` inherit the indexing.
 */
 proc lu(A: [?Adom] ?eltType) {
   if Adom.rank != 2 then
@@ -1653,37 +1657,26 @@ proc lu(A: [?Adom] ?eltType) {
   return (LU,ipiv);
 }
 
-/* Return a new array as the permuted form of `A` according to
-    permutation array `ipiv`.*/
+/*
+  Return a new array as the permuted form of `A` according to
+  permutation array `ipiv`. Only 1D input arrays are supported, since there is
+  no need for multi-dimensional arrays for now.
+*/
 private proc permute(ipiv: [] int, A: [?Adom] ?eltType, transpose=false) {
-  const n = Adom.shape(0);
-  const dim = 0..<n;
+  const dim = Adom.dim(0);
   var B: [Adom] eltType;
 
-  if Adom.rank == 1 {
-    if transpose {
-      forall (i,pi) in zip(dim, ipiv) with (ref B) {
-        B[i] = A[pi];
-      }
-    }
-    else {
-      forall (i,pi) in zip(dim, ipiv) with (ref B) {
-        B[pi] = A[i];
-      }
+  if transpose {
+    forall (i,pi) in zip(dim, ipiv) with (ref B) {
+      B[i] = A[pi];
     }
   }
-  else if Adom.rank == 2 {
-    if transpose {
-      forall (i,pi) in zip(dim, ipiv) {
-        B[i, ..] = A[pi, ..];
-      }
-    }
-    else {
-      forall (i,pi) in zip(dim, ipiv) {
-        B[pi, ..] = A[i, ..];
-      }
+  else {
+    forall (i,pi) in zip(dim, ipiv) with (ref B) {
+      B[pi] = A[i];
     }
   }
+
   return B;
 }
 
@@ -1798,19 +1791,24 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
     where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
     will assume the diagonal elements as `1` and will not be referenced
     within this procedure.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
                   unit_diag = true)
 {
-  const n = Ldom.shape(0);
+  const first = Ldom.dim(0).first;
+  const last = Ldom.dim(0).last;
   var y = b;
 
-  for i in 0..<n {
+  for i in first..last {
     const sol = if unit_diag then y(i) else y(i) / L(i,i);
     y(i) = sol;
 
-    if (i < n - 1) {
-      forall j in (i+1)..<n with (ref y) {
+    if (i < last) {
+      forall j in (i+1)..last with (ref y) {
         y(j) -= L(j,i) * sol;
       }
     }
@@ -1821,17 +1819,22 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
 
 /* Return the solution ``x`` to the linear system `` U * x = b ``
     where ``U`` is an upper triangular matrix.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
-  const n = Udom.shape(0);
+  const first = Udom.dim(0).first;
+  const last = Udom.dim(0).last;
   var y = b;
 
-  for i in 0..<n by -1 {
+  for i in first..last by -1 {
     const sol = y(i) / U(i,i);
     y(i) = sol;
 
-    if (i > 0) {
-      forall j in 0..<i by -1 with (ref y) {
+    if (i > first) {
+      forall j in first..<i by -1 with (ref y) {
         y(j) -= U(j,i) * sol;
       }
     }
@@ -1841,10 +1844,14 @@ proc solve_triu(const ref U: [?Udom] ?eltType, const ref b: [?bdom] eltType) {
 }
 
 /* Return the solution ``x`` to the linear system ``A * x = b``.
+
+   .. note::
+
+     Arrays with any offset are supported, and ``x`` inherits the indexing.
 */
 proc solve(A: [?Adom] ?eltType, ref b: [?bdom] eltType) {
   var (LU, ipiv) = lu(A);
-  b = permute (ipiv, b, true);
+  b = permute(ipiv, b, true);
   var z = solve_tril(LU, b);
   var x = solve_triu(LU, z);
   return x;
