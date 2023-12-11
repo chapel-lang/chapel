@@ -3986,58 +3986,59 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
 }
 
 // First is from const, second is from ref.
-static const std::pair<bool, bool>&
-getCopyabilityInfoQuery(Context* context, const CompositeType* ct) {
+static const std::pair<bool, bool>& getCopyabilityInfoQuery(
+    Context* context, const CompositeType* ct) {
   QUERY_BEGIN(getCopyabilityInfoQuery, context, ct);
-  std::pair<bool, bool> result = {false, false};
+  std::pair<bool, bool> result;
+
+  auto ast = parsing::idToAst(context, ct->id());
+  auto attrs = ast->attributeGroup();
 
   // Inspect type for either kind of copyability.
   bool fromConst = false;
   bool fromRef = false;
   if (auto classTy = ct->toClassType()) {
-    auto dec = classTy->decorator();
-    if (dec.isNonNilable() && dec.isManaged() &&
+    if (classTy->decorator().isNonNilable() &&
+        classTy->decorator().isManaged() &&
         classTy->manager()->isAnyOwnedType()) {
-      // do nothing for non-nilable owned
+      // Non-nilable owned class types are not copyable
     }
   } else if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
-      // for an array, copyability depends on copyability of element type
+      // Arrays are copyable if their elements are
       getCopyabilityInfo(context, eltType, &fromConst, &fromRef);
     }
+  } else if (attrs && (attrs->hasPragma(PRAGMA_SYNC) ||
+                       attrs->hasPragma(PRAGMA_SINGLE))) {
+    // Syncs and singles are copyable
+    // This is a special case to preserve deprecated behavior before sync/single
+    // implicit reads are removed. 12/8/23
+    fromConst = true;
   } else {
-    auto ast = parsing::idToAst(context, ct->id());
-    auto attrs = ast->attributeGroup();
-    if (attrs &&
-        (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
-      // Special case to preserve deprecated behavior before sync/single
-      // implicit reads are removed. 12/8/23
-      fromConst = true;
-    } else {
-      const TypedFnSignature* initEq =
-          tryResolveInitEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
-      if (initEq) {
-        /* if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) { */
-        /*   if (recordContainsNonNilableOwned(at)) */
-        /*     ; // do nothing for this case */
-        /*   else if (recordContainsOwned(at)) */
-        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
-        /*   else */
-        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
-        /* } else { */
-        /*   // formals are mt, this, other */
-        /*   ArgSymbol* other = initEq->getFormal(3); */
-        /*   IntentTag intent = concreteIntentForArg(other); */
-        /*   if (intent == INTENT_IN || */
-        /*       intent == INTENT_CONST_IN || */
-        /*       intent == INTENT_CONST_REF) { */
-        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
-        /*   } else { */
-        /*     // this case includes INTENT_REF_MAYBE_CONST */
-        /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
-        /*   } */
-        /* } */
-      }
+    // In general, determine copyability by examining the type's init= method
+    const TypedFnSignature* initEq =
+        tryResolveInitEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
+    if (initEq) {
+      /* if (initEq->hasFlag(FLAG_COMPILER_GENERATED)) { */
+      /*   if (recordContainsNonNilableOwned(at)) */
+      /*     ; // do nothing for this case */
+      /*   else if (recordContainsOwned(at)) */
+      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
+      /*   else */
+      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
+      /* } else { */
+      /*   // formals are mt, this, other */
+      /*   ArgSymbol* other = initEq->getFormal(3); */
+      /*   IntentTag intent = concreteIntentForArg(other); */
+      /*   if (intent == INTENT_IN || */
+      /*       intent == INTENT_CONST_IN || */
+      /*       intent == INTENT_CONST_REF) { */
+      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST); */
+      /*   } else { */
+      /*     // this case includes INTENT_REF_MAYBE_CONST */
+      /*     ts->addFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF); */
+      /*   } */
+      /* } */
     }
   }
 
