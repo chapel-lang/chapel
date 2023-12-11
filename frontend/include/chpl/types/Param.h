@@ -214,6 +214,8 @@ class Param {
 /// \cond DO_NOT_DOCUMENT
 #define PARAM_NODE(NAME, VALTYPE) \
   class NAME : public Param { \
+   public: \
+    using ValueType = VALTYPE; \
    private: \
     VALTYPE value_; \
     explicit NAME(VALTYPE value) : Param(paramtags::NAME), value_(value) { } \

@@ -522,6 +522,55 @@ static void test10() {
   guard.realizeErrors();
 }
 
+// Test transmutation primitives (for params, currently only real(64) -> uint(64)
+// is possible since there's no way to get other params of these types.
+
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents = R""""(
+                          module M {
+                            var real32v: real(32);
+                            var real64v: real(64);
+                            var uint32v: uint(32);
+                            var uint64v: uint(64);
+
+                            param x =
+                              __primitive("real32 as uint32", real32v).type == uint(32) &&
+                              __primitive("real64 as uint64", real64v).type == uint(64) &&
+                              __primitive("uint32 as real32", uint32v).type == real(32) &&
+                              __primitive("uint64 as real64", uint64v).type == real(64);
+                          }
+                        )"""";
+
+  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+  assert(guard.realizeErrors() == 0);
+  assert(type.isParamTrue());
+}
+
+static void test12() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents = R""""(
+                          module M {
+                            param real64p = 1.0;
+                            param x = __primitive("real64 as uint64", real64p);
+                          }
+                        )"""";
+
+  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+  assert(guard.realizeErrors() == 0);
+  assert(type.isParam() && type.type()->isUintType());
+  assert(type.param() && type.param()->isUintParam());
+  assert(type.param()->toUintParam()->value() == 4607182418800017408);
+}
+
 
 int main() {
   test1();
@@ -534,6 +583,8 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
 
   return 0;
 }
