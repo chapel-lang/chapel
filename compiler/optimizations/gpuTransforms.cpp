@@ -1293,7 +1293,6 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
     // the conditional.
     gpuLoop.fixupNonGpuPath();
   }
-
 }
 
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
@@ -1441,6 +1440,26 @@ static void logGpuizableLoops() {
   }
 }
 
+static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
+  Expr* snippedChild = call->get(1)->remove();
+  call->replace(snippedChild);
+}
+
+// iterator lowering inserts AST like this in order to carry information about 'in'
+// intent variables to gpu lowering.
+//
+//   (given an 'in' intent for a variable 'x'):
+//     const capturedX = copy-of(x);
+//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(capturedX));
+//
+// Once we're done with gpu lowering we no longer need this primitive and so we
+// remove it.
+static void cleanupTaskIndependentCapturePrimitives() {
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs) 
+    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) 
+      cleanupTaskIndependentCapturePrimitive(callExpr);
+}
+
 // ----------------------------------------------------------------------------
 
 void lateGpuTransforms() {
@@ -1461,6 +1480,8 @@ void lateGpuTransforms() {
                    gpuTransformTimer.elapsedSecs() << std::endl;
     }
   }
+
+  cleanupTaskIndependentCapturePrimitives();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {

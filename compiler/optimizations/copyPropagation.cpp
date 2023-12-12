@@ -497,6 +497,12 @@ static void propagateCopies(std::vector<SymExpr*>& symExprs,
   {
     if (se->isRef()) continue;
 
+    if (CallExpr *call = toCallExpr(se->parentExpr)) {
+      if(call->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) {
+        continue;
+      }
+    }
+
     // Replace an alias with its definition, using the current set of
     // available pairs.
     if (isUse(se))

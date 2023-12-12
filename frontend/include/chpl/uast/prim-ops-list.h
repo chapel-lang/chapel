@@ -401,3 +401,4 @@ PRIMITIVE_G(BREAKPOINT, "breakpoint")
 
 PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
 PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")
+PRIMITIVE_R(TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture")

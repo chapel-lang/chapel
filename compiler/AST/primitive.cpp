@@ -1288,6 +1288,7 @@ initPrimitive() {
   // 1 and 2 are used to determine if the argument has been indirectly modified,
   // 3-5 are used to generate a warning message if it was.
   prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
+  prim_def(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture", returnInfoVoid);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;
