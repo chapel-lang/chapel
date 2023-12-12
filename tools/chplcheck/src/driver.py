@@ -52,11 +52,12 @@ class LintDriver:
     for registering new rules.
     """
 
-    def __init__(self, skip_unstable):
+    def __init__(self, skip_unstable, internal_prefixes):
         self.SilencedRules = []
         self.BasicRules = []
         self.AdvancedRules = []
         self.skip_unstable = skip_unstable
+        self.internal_prefixes = internal_prefixes
 
     def disable_rules(self, *rules):
         """
@@ -81,6 +82,10 @@ class LintDriver:
             return False
 
         return True
+
+    def _has_internal_name(self, node):
+        if not hasattr(node, "name"): return False
+        return any(node.name().startswith(p) for p in self.internal_prefixes)
 
     def _is_unstable_module(node):
         if isinstance(node, chapel.core.Module):
@@ -200,7 +205,15 @@ class LintDriver:
 
         for ast in asts:
             for rule in self.BasicRules:
-                yield from self._check_basic_rule(context, ast, rule)
+                for toreport in self._check_basic_rule(context, ast, rule):
+                    if self._has_internal_name(toreport[0]):
+                        continue
+
+                    yield toreport
 
             for rule in self.AdvancedRules:
-                yield from self._check_advanced_rule(context, ast, rule)
+                for toreport in self._check_advanced_rule(context, ast, rule):
+                    if self._has_internal_name(toreport[0]):
+                        continue
+
+                    yield toreport
