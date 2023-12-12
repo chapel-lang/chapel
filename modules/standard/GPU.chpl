@@ -41,6 +41,25 @@ module GPU
   extern proc chpl_gpu_write(const str : c_ptrConst(c_char)) : void;
 
   pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf0(fmt) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf1(fmt, x1) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf2(fmt, x1, x2) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf3(fmt, x1, x2, x3) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf4(fmt, x1, x2, x3, x4) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf5(fmt, x1, x2, x3, x4, x5) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf6(fmt, x1, x2, x3, x4, x5, x6) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf7(fmt, x1, x2, x3, x4, x5, x6, x7) : void;
+  pragma "codegen for CPU and GPU"
+  extern proc chpl_gpu_printf8(fmt, x1, x2, x3, x4, x5, x6, x7, x8) : void;
+
+  pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_clock() : uint;
 
   pragma "codegen for CPU and GPU"
@@ -49,6 +68,25 @@ module GPU
 
   pragma "codegen for CPU and GPU"
   extern proc chpl_gpu_device_clock_rate(devNum : int(32)) : uint;
+
+  @chpldoc.nodoc
+  proc gpuWritef(fmt) do  chpl_gpu_printf0(fmt);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1) do chpl_gpu_printf1(fmt,x1);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2) do chpl_gpu_printf2(fmt.c_str(),x1,x2);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3) do chpl_gpu_printf3(fmt.c_str(),x1,x2,x3);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4) do chpl_gpu_printf4(fmt.c_str(),x1,x2,x3,x4);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5) do chpl_gpu_printf5(fmt.c_str(),x1,x2,x3,x4,x5);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6) do chpl_gpu_printf6(fmt.c_str(),x1,x2,x3,x4,x5,x6);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6, x7) do chpl_gpu_printf7(fmt.c_str(),x1,x2,x3,x4,x5,x6,x7);
+  @chpldoc.nodoc
+  proc gpuWritef(fmt, x1, x2, x3, x4, x5, x6, x7, x8) do chpl_gpu_printf8(fmt.c_str(),x1,x2,x3,x4,x5,x6,x7,x8);
 
   /*
      This function is intended to be called from within a GPU kernel and is
