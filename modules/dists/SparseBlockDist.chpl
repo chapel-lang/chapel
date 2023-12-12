@@ -165,12 +165,12 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       var retval = 0;
       on addOn {
         if inds.locale == here {
-          retval = bulkAddHere_help(inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(inds, dataSorted, isUnique);
         }
         else {
           var _local_inds: [indsDom] index(rank, idxType);
           _local_inds = inds;
-          retval = bulkAddHere_help(_local_inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(_local_inds, dataSorted, isUnique);
         }
       }
       return retval;
@@ -217,7 +217,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     return _retval;
   }
 
-  proc bulkAddHere_help(inds: [] index(rank,idxType),
+  proc _bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
     const _retval = myLocDom!.mySparseBlock.bulkAdd(inds, dataSorted=true,
