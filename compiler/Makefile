@@ -192,7 +192,11 @@ frontend-linters: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 
 run-frontend-linters: frontend-linters
 	@echo "Running the frontend linters"
-	@env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
+	@if [ "$(CHPL_MAKE_HOST_COMPILER)" != "clang" ]; then \
+	  echo error: run-frontend-linters requires CHPL_HOST_COMPILER=clang ; \
+	  exit 1 ; \
+	fi
+	env PATH=$(COMPILER_BUILD)/frontend/util/linters:$(PATH) $(CHPL_MAKE_HOME)/frontend/util/lint --compile-commands $(COMPILER_BUILD) --jobs=-1
 
 parser: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS) && $(MAKE) parser
