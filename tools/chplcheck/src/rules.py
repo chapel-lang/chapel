@@ -72,7 +72,7 @@ def register_rules(driver):
     def DoKeywordAndBlock(context, node):
         return node.block_style() != "unnecessary"
 
-    @driver.basic_rule(Coforall)
+    @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
         parent = node.parent()
         while parent is not None:
