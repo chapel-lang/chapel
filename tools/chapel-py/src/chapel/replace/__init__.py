@@ -122,28 +122,16 @@ def rename_named_actuals(rc: ReplacementContext, call: chapel.core.Call, renames
             # yield (actual, actual_text.replace(name, renames[name]))
             yield from []
 
-def _init_content(rc: ReplacementContext) -> str:
-    return rc.content
-
-def _update_content(content: str, replace_from: int, replace_to: int, replace_with: str) -> str:
-    return content[:replace_from] + replace_with + content[replace_to:]
-
 
 def replace(finder: typing.Generator,
             ctx: chapel.core.Context,
-            filename: str,
-            init_content: typing.Callable[[ReplacementContext], typing.Any] = _init_content,
-            update_content: typing.Callable[[typing.Any, int, int, typing.Any], typing.Any] = _update_content) -> typing.Any:
+            filename: str) -> str:
     """
     Drives replacement of text based on matches found in `finder`.
-    By default the content to be replaced is represented by a string, however this can be changed by providing values for `init_content` and `do_update`.
-
-    `init_content` provides the initial value for the new text based on the ReplacementContext
-    `do_update` updates the new text, given the given the current content and what and where to replace
     """
     asts = ctx.parse(filename)
     rc = ReplacementContext(filename)
-    new_content = init_content(rc)
+    new_content = rc.content
 
     # First, store all the replacements in a map; then, walk the tree in a
     # reverse-postorder traversal (child nodes in reverse order, then parent)
@@ -210,7 +198,7 @@ def replace(finder: typing.Generator,
 
     for ast in reversed(asts):
         for (replace_from, replace_to, replace_with) in recurse(ast):
-            new_content = update_content(new_content, replace_from, replace_to, replace_with)
+            new_content = new_content[:replace_from] + replace_with + new_content[replace_to:]
 
     return new_content
 
