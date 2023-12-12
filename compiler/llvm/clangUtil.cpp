@@ -61,13 +61,23 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/SubtargetFeature.h"
+#else
 #include "llvm/MC/SubtargetFeature.h"
+#endif
+
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/Host.h"
+#else
 #include "llvm/Support/Host.h"
+#endif
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -76,7 +86,9 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Internalize.h"
+#if HAVE_LLVM_VER < 170
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#endif
 #include "llvm/Transforms/Utils/Cloning.h"
 
 #if HAVE_LLVM_VER >= 140
@@ -1944,11 +1956,14 @@ static llvm::TargetOptions getTargetOptions(
   Options.UniqueBasicBlockSectionNames =
       CodeGenOpts.UniqueBasicBlockSectionNames;
   Options.TLSSize = CodeGenOpts.TLSSize;
-  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
-#if HAVE_LLVM_VER >= 160
+#if HAVE_LLVM_VER >= 170
+  Options.EmulatedTLS = true;
+#elif HAVE_LLVM_VER >= 160
   Options.ExplicitEmulatedTLS = true;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #else
   Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
@@ -1966,7 +1981,11 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
 #endif
+#if HAVE_LLVM_VER >= 170
+  Options.XRayFunctionIndex = CodeGenOpts.XRayFunctionIndex;
+#else
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
+#endif
 #if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
@@ -2361,6 +2380,7 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 }
 #endif
 
+#ifdef LLVM_USE_OLD_PASSES
 // This has code based on clang's EmitAssemblyHelper::CreatePasses
 // in BackendUtil.cpp.
 static
@@ -2427,6 +2447,7 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
+#endif
 
 #ifndef LLVM_USE_OLD_PASSES
 
@@ -2446,7 +2467,11 @@ static void runModuleOptPipeline(bool addWideOpts) {
                               info->llvmContext,
 #endif
                               /* DebugLogging */ false);
+#if HAVE_LLVM_VER >= 170
+  SI.registerCallbacks(PIC, &MAM);
+#else
   SI.registerCallbacks(PIC, &FAM);
+#endif
 
   chpl::optional<PGOOptions> PGOOpt;
   PassBuilder PB(info->targetMachine, createPipelineOptions(false),
@@ -2509,12 +2534,11 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
+#ifdef LLVM_USE_OLD_PASSES
   llvm::legacy::FunctionPassManager *fpm = new llvm::legacy::FunctionPassManager(info->module);
 
   PassManagerBuilder PMBuilder;
-
   // Set up the optimizer pipeline.
-
   // Add the TransformInfo pass
   fpm->add(createTargetTransformInfoWrapperPass(
            info->targetMachine->getTargetIRAnalysis()));
@@ -2527,11 +2551,10 @@ void prepareCodegenLLVM()
   configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
-  // Even when using the new pass manager,
-  // we run doInitialization with the legacy passes to make sure to
-  // update the module's DataLayout based on the target information.
-  // TODO: there is probably a nicer way to do this using the new pass manager
+  // run doInitialization to make sure to update the module's DataLayout
+  // based on the target information.
   fpm->doInitialization();
+#endif
 
   // Set the floating point optimization level
   // see also code setting targetOptions.UnsafeFPMath etc
@@ -2558,9 +2581,6 @@ void prepareCodegenLLVM()
 #ifdef LLVM_USE_OLD_PASSES
   info->FPM_postgen = fpm;
 #else
-  // if not using the old optimization pipeline, we didn't save
-  // fpm in info, so need to delete it now.
-  delete fpm;
 
   // if using the new optimization pipeline, set up the various
   // AnalysisManagers
@@ -2569,7 +2589,12 @@ void prepareCodegenLLVM()
   info->CGAM = new CGSCCAnalysisManager();
   info->MAM = new ModuleAnalysisManager();
 
-  info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
+  info->FAM->registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
+
+  // Add the TargetLibraryInfo pass
+  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+  info->FAM->registerPass([&TLII] { return TargetLibraryAnalysis(TLII); });
 
   // Construct a function simplification pass manager
   PassBuilder PB(info->targetMachine, createPipelineOptions(true));

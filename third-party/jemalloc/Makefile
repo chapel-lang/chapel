@@ -39,6 +39,8 @@ endif
 
 CHPL_JEMALLOC_CFG_OPTIONS += $(CHPL_JEMALLOC_MORE_CFG_OPTIONS)
 
+CFLAGS += -Wno-switch-outside-range
+
 ifeq ($(strip $(CHPL_MAKE_HOST_TARGET)),--host)
 default: $(CHPL_MAKE_HOST_JEMALLOC)
 all: $(CHPL_MAKE_HOST_JEMALLOC)

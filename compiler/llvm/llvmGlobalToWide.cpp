@@ -46,6 +46,9 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/Attributes.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/IR/AttributeMask.h"
+#endif
 
 #if HAVE_LLVM_VER < 90
 #include "llvm/IR/CallSite.h"
