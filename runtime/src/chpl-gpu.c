@@ -278,6 +278,7 @@ static void cfg_deinit_params(kernel_cfg* cfg) {
 
 static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
   const int i = cfg->cur_param;
+  assert(i < cfg->n_params-2); // -2 because last two params are always ln and fn
 
   cfg->param_dyn_allocated[i] = true;
 
@@ -298,6 +299,7 @@ static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
 
 static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
   const int i = cfg->cur_param;
+  assert(i < cfg->n_params-2); // -2 because last two params are always ln and fn
 
   cfg->param_dyn_allocated[i] = false;
   cfg->kernel_params[i] = arg;
