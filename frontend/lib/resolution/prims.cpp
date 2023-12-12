@@ -633,22 +633,36 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
   return ret;
 }
 
-static QualifiedType primFamilyIsCopyable(Context* context, const CallInfo& ci,
-                                          const PrimitiveTag prim) {
-  CHPL_ASSERT((prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE) &&
+static QualifiedType primFamilyCopyableAssignable(Context* context,
+                                                  const CallInfo& ci,
+                                                  const PrimitiveTag prim) {
+  const bool checkCopyability =
+      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE);
+  const bool checkAssignability =
+      (prim == PRIM_IS_ASSIGNABLE || prim == PRIM_IS_CONST_ASSIGNABLE);
+  CHPL_ASSERT((checkCopyability || checkAssignability) &&
               "incorrect primitive for this handler");
-  if (ci.numActuals() != 1) return QualifiedType();
 
+  if (ci.numActuals() != 1) return QualifiedType();
   auto t = ci.actual(0).type().type();
 
-  bool copyableFromConst = false;
-  bool copyableFromRef = false;
-  getCopyabilityInfo(context, t, &copyableFromConst, &copyableFromRef);
+  bool fromConst = false;
+  bool fromRef = false;
+  if (checkCopyability) {
+    getCopyableInfo(context, t, &fromConst, &fromRef);
+  } else if (checkAssignability) {
+    getAssignableInfo(context, t, &fromConst, &fromRef);
+  } else {
+    CHPL_ASSERT(false && "unreachable");
+  }
 
-  bool isCopyable =
-      (copyableFromRef && prim == PRIM_IS_COPYABLE) || copyableFromConst;
+  // copyable/assignable from const is stricter than from ref
+  const bool isFromRefOk =
+      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_ASSIGNABLE);
+  const bool isCopyableOrAssignable = fromConst || (fromRef && isFromRefOk);
+
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
-                       BoolParam::get(context, isCopyable));
+                       BoolParam::get(context, isCopyableOrAssignable));
 }
 
 CallResolutionResult resolvePrimCall(Context* context,
@@ -725,7 +739,9 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_IS_COPYABLE:
     case PRIM_IS_CONST_COPYABLE:
-      type = primFamilyIsCopyable(context, ci, prim);
+    case PRIM_IS_ASSIGNABLE:
+    case PRIM_IS_CONST_ASSIGNABLE:
+      type = primFamilyCopyableAssignable(context, ci, prim);
       break;
 
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
@@ -743,8 +759,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_BORROWED_CLASS_TYPE:
     case PRIM_IS_ABS_ENUM_TYPE:
     case PRIM_IS_POD:
-    case PRIM_IS_ASSIGNABLE:
-    case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:  // param uses in module code
     case PRIM_NEEDS_AUTO_DESTROY: // param uses in module code
       CHPL_UNIMPL("various primitives");

@@ -381,12 +381,6 @@ resolveGeneratedCallInMethod(Context* context,
                              const PoiScope* inPoiScope,
                              types::QualifiedType implicitReceiver);
 
-// helper for getTypeForDecl
-// tries to resolve an init= that initializes one type from another
-const TypedFnSignature* tryResolveInitEq(Context* context,
-                                         const uast::AstNode* ast,
-                                         types::QualifiedType qt);
-
 /**
   Given a type 't', compute whether or not 't' is default initializable.
   If 't' is a generic type, it is considered non-default-initializable.
@@ -398,8 +392,14 @@ bool isTypeDefaultInitializable(Context* context, const types::Type* t);
   Determine whether type 't' is copyable from const or/and from ref, storing the
   result in the respective out-parameter
 */
-void getCopyabilityInfo(Context* context, const types::Type* t,
-                        bool* copyableFromConst, bool* copyableFromRef);
+void getCopyableInfo(Context* context, const types::Type* t,
+                     bool* copyableFromConst, bool* copyableFromRef);
+/**
+  Determine whether type 't' is assignable from const or/and from ref, storing
+  the result in the respective out-parameter
+*/
+void getAssignableInfo(Context* context, const types::Type* t,
+                       bool* assignableFromConst, bool* assignableFromRef);
 
 /**
   Determine the types of various compiler-generated globals, which depend
