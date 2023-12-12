@@ -2468,6 +2468,19 @@ static void registerDumpIrExtensions(PassBuilder& PB);
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
+static PassBuilder constructPassBuilder(llvm::TargetMachine* targetMachine, PassInstrumentationCallbacks* PIC, bool forFunction) {
+  // this is required to be set, or LLVM will not properly populate the pass
+  // names. technically this flag enables extra printing to the dbg() output,
+  // but we only keep the flag long enough to populate the pass names.
+  // this must always be set so that `--print-before` (and similar commands) will
+  // still work with their nice pass name
+  llvm::PrintPipelinePasses = true;
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+  llvm::PrintPipelinePasses = false;
+  return PB;
+}
+
 
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
@@ -2489,15 +2502,7 @@ static void runModuleOptPipeline(bool addWideOpts) {
   SI.registerCallbacks(PIC, &FAM);
 #endif
 
-  // this is required to be set, or LLVM will not properly populate the pass
-  // names technically this flag enables extra printing to the dbg() output,
-  // but we only keep the flag long enough to populate the pass names
-  llvm::PrintPipelinePasses = fLlvmPrintPasses;
-  chpl::optional<PGOOptions> PGOOpt;
-  PassBuilder PB(info->targetMachine, createPipelineOptions(false),
-                 PGOOpt, &PIC);
-  llvm::PrintPipelinePasses = false;
-
+  PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
 
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
@@ -2637,15 +2642,8 @@ void prepareCodegenLLVM()
                               /* DebugLogging */ false);
   info->SI->registerCallbacks(*info->PIC, info->FAM);
 
-  // this is required to be set, or LLVM will not properly populate the pass
-  // names technically this flag enables extra printing to the dbg() output,
-  // but we only keep the flag long enough to populate the pass names
-  llvm::PrintPipelinePasses = fLlvmPrintPasses;
   // Construct a function simplification pass manager
-  chpl::optional<PGOOptions> PGOOpt;
-  PassBuilder PB(info->targetMachine, createPipelineOptions(true),
-                 PGOOpt, info->PIC);
-  llvm::PrintPipelinePasses = false;
+  PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(*info->MAM);
