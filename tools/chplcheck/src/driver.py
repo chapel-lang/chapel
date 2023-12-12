@@ -98,6 +98,7 @@ class LintDriver:
     def _preorder_skip_unstable_modules(self, node):
         if not self.skip_unstable:
             yield from chapel.preorder(node)
+            return
 
         def recurse(node):
             if LintDriver._is_unstable_module(node):return
