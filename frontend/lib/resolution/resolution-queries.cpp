@@ -4043,9 +4043,11 @@ static const std::pair<bool, bool>& getCopyabilityInfoQuery(
         copyableFromConst = !containsNonNilableOwned && !containsNilableOwned;
       } else {
         // formals are this, other
-        CHPL_ASSERT(initEq->numFormals() == 2);
-        auto otherIntent = initEq->formalType(1).kind();
-        // TODO: what to do with non concrete intent?
+        CHPL_ASSERT(initEq->numFormals() == 2 && "unexpected formals");
+        auto otherTy = initEq->formalType(1);
+        CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
+                    "should have resolved concrete intent by now");
+        auto otherIntent = otherTy.kind();
 
         copyableFromConst = (otherIntent == QualifiedType::IN ||
                              otherIntent == QualifiedType::CONST_IN ||
