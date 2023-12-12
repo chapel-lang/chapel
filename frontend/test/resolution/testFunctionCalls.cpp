@@ -132,11 +132,46 @@ static void test3b() {
   helpTest3(theFunction);
 }
 
+// test that we can handle non-param string for string_length_bytes
+static void test4() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var s:string;
+                           var x = __primitive("string_length_bytes", s);
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
+// test that we can handle non-param bytes for string_length_bytes
+static void test5() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R""""(
+                           var b:bytes;
+                           var x = __primitive("string_length_bytes", b);
+                         )"""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType());
+  assert(typePtr->toIntType()->bitwidth() == 64);
+}
+
 
 int main() {
   test1();
   test2();
   test3a();
   test3b();
+  test4();
+  test5();
+
   return 0;
 }
