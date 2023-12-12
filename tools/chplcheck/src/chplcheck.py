@@ -40,9 +40,10 @@ def main():
     parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
     parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
     parser.add_argument('--lsp', action='store_true', default=False)
+    parser.add_argument('--skip-unstable', action='store_true', default=False)
     args = parser.parse_args()
 
-    driver = LintDriver()
+    driver = LintDriver(skip_unstable = args.skip_unstable)
     # register rules before enabling/disabling
     register_rules(driver)
     driver.disable_rules(*args.disabled_rules)

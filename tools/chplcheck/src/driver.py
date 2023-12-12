@@ -52,10 +52,11 @@ class LintDriver:
     for registering new rules.
     """
 
-    def __init__(self):
+    def __init__(self, skip_unstable):
         self.SilencedRules = []
         self.BasicRules = []
         self.AdvancedRules = []
+        self.skip_unstable = skip_unstable
 
     def disable_rules(self, *rules):
         """
@@ -81,6 +82,31 @@ class LintDriver:
 
         return True
 
+    def _is_unstable_module(node):
+        if isinstance(node, chapel.core.Module):
+            if attrs := node.attribute_group():
+                if attrs.is_unstable():
+                    return True
+        return False
+
+    def _in_unstable_module(node):
+        while node is not None:
+            if LintDriver._is_unstable_module(node): return True
+            node = node.parent()
+        return False
+
+    def _preorder_skip_unstable_modules(self, node):
+        if not self.skip_unstable:
+            yield from chapel.preorder(node)
+
+        def recurse(node):
+            if LintDriver._is_unstable_module(node):return
+
+            yield node
+            for child in node:
+                yield from recurse(child)
+        yield from recurse(node)
+
     def _check_basic_rule(self, context, root, rule):
         (name, nodetype, func) = rule
 
@@ -89,7 +115,7 @@ class LintDriver:
         if not self._should_check_rule(name):
             return
 
-        for (node, _) in chapel.each_matching(root, nodetype):
+        for (node, _) in chapel.each_matching(root, nodetype, iterator=self._preorder_skip_unstable_modules):
             if not self._should_check_rule(name, node):
                 continue
 
@@ -108,6 +134,13 @@ class LintDriver:
             # It's not clear how, if it all, advanced rules should be silenced
             # by attributes (i.e., where do you put the @chplcheck.ignore
             # attribute?). For now, do not silence them on a per-node basis.
+
+            # For advanced rules, the traversal of the AST is out of our hands,
+            # so we can't stop it from going into unstable modules. Instead,
+            # once the rule emits a warning, check by traversing the AST
+            # if the warning target should be skipped.
+            if self.skip_unstable and LintDriver._in_unstable_module(node):
+                continue
 
             yield (node, name)
 
