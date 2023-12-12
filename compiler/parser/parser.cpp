@@ -38,6 +38,7 @@
 #include "chpl/parsing/parsing-queries.h"
 
 #include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
 
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
@@ -418,28 +419,53 @@ static UniqueString cleanLocalPath(UniqueString path) {
 static void gatherStdModuleNamesInDir(std::string dir,
                                       std::set<UniqueString>& modNames) {
   std::error_code EC;
-  llvm::sys::fs::recursive_directory_iterator I(dir, EC);
-  llvm::sys::fs::recursive_directory_iterator E;
+  llvm::sys::fs::directory_iterator I(dir, EC);
+  llvm::sys::fs::directory_iterator E;
 
+  std::set<std::string> moduleNamesHere;
+  std::set<std::string> subDirsHere;
   while (true) {
     if (I == E || EC) {
       break;
     }
     // consider the file
-    std::string p = I->path();
-    const char* cp = p.c_str();
-    const char* slash = strrchr(cp, '/');
-    const char* dot = strrchr(cp, '.');
-    if (dot && slash && dot > slash && strcmp(dot, ".chpl") == 0) {
-      // compute the module name
-      auto modName = UniqueString::get(gContext, slash+1, dot-slash-1);
-      modNames.insert(modName);
+    llvm::StringRef fileName = llvm::sys::path::filename(I->path());
+    bool isdir = I->type() == llvm::sys::fs::file_type::directory_file;
+    if (isdir) {
+      subDirsHere.insert(fileName.str());
+    } else {
+      llvm::StringRef fileExt = llvm::sys::path::extension(fileName);
+      llvm::StringRef fileStem = llvm::sys::path::stem(fileName);
+      if (fileExt.equals(".chpl")) {
+        moduleNamesHere.insert(fileStem.str());
+      }
     }
+
     I.increment(EC);
   }
 
   if (EC) {
     USR_FATAL("error in directory traversal of %s", dir.c_str());
+  }
+
+  // Consider the gathered module names & add them to the returned set.
+  for (const auto& name : moduleNamesHere) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Consider the subdirs. Visit any subdir that does not have
+  // the same name as a module here. This is meant to exclude submodules
+  // stored in different files. For example, if we have
+  //   SortedSet/
+  //   SortedSet.chpl
+  // then we should not traverse into SortedSet/ under the assumption
+  // that it is storing only submodules.
+  for (const auto& subdir : subDirsHere) {
+    if (moduleNamesHere.count(subdir) == 0) {
+      std::string subPath = dir + "/" + subdir;
+      gatherStdModuleNamesInDir(subPath, modNames);
+    } else {
+    }
   }
 }
 
