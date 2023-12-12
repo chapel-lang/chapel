@@ -1,6 +1,6 @@
 module CGMakeA {
 
-  use NPBRandom, Sort;
+  use Random, Sort;
 
   config const rcond = 0.1;
 
@@ -11,7 +11,7 @@ module CGMakeA {
     var size = 1.0;
     const ratio = rcond ** (1.0 / n);
 
-    var randStr = new NPBRandomStream(eltType=real, seed=314159265);
+    var randStr = new randomStream(eltType=real, seed=314159265);
     randStr.getNext();   // drop a value on floor to match NPB version
 
     for iouter in 1..n {
@@ -76,7 +76,7 @@ module CGMakeA {
   }
 
 
-  proc sprnvc(type elemType, n, nz, ref v, ref iv, randStr) {
+  proc sprnvc(type elemType, n, nz, ref v, ref iv, ref randStr) {
     var nn1 = 1;
     while (nn1 < n) do nn1 *= 2;
 
