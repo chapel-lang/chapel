@@ -59,4 +59,8 @@ module CaseRules {
     var temp1 = a,
         temp2 = b;
   }
+
+  record testRecord {
+    proc init=(other: testRecord) {}
+  }
 }
