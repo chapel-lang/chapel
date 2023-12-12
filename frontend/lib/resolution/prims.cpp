@@ -724,6 +724,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_CONST_COPYABLE:
     case PRIM_IS_ASSIGNABLE:
     case PRIM_IS_CONST_ASSIGNABLE:
+    case PRIM_HAS_DEFAULT_VALUE:  // param uses in module code
+    case PRIM_NEEDS_AUTO_DESTROY: // param uses in module code
       CHPL_UNIMPL("various primitives");
       break;
     case PRIM_CALL_RESOLVES:
@@ -883,8 +885,6 @@ CallResolutionResult resolvePrimCall(Context* context,
         break;
       }
     case PRIM_IS_WIDE_PTR:
-    case PRIM_HAS_DEFAULT_VALUE:
-    case PRIM_NEEDS_AUTO_DESTROY:
     case PRIM_NOTEQUAL:
     case PRIM_LESSOREQUAL:
     case PRIM_GREATEROREQUAL:
@@ -936,17 +936,13 @@ CallResolutionResult resolvePrimCall(Context* context,
       }
       break;
     /* primitives that return default int */
-    case PRIM_GATHER_TESTS:
     case PRIM_GET_UNION_ID:
     case PRIM_GET_REQUESTED_SUBLOC:
-    case PRIM_SIZEOF_BUNDLE: // TODO: this should be sizeType
-    case PRIM_SIZEOF_DDATA_ELEMENT: // TODO: this should be sizeType
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 0));
       break;
     /* primitives that return an int32 */
     case PRIM_GETCID:
-    case PRIM_WIDE_GET_NODE: // TODO: should be nodeIdType
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
@@ -1093,6 +1089,8 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GPU_SET_BLOCKSIZE:
     case PRIM_ASSERT_ON_GPU:
     case PRIM_GPU_ELIGIBLE:
+    case PRIM_SIZEOF_BUNDLE: // TODO: this should be sizeType
+    case PRIM_SIZEOF_DDATA_ELEMENT: // TODO: this should be sizeType
     case PRIM_LIFETIME_OF:
       CHPL_UNIMPL("misc primitives");
       break;
@@ -1133,6 +1131,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_LOGICAL_FOLDER:
     case PRIM_WIDE_MAKE:
     case PRIM_WIDE_GET_LOCALE:
+    case PRIM_WIDE_GET_NODE: // TODO: this should be nodeIdType (int32)
     case PRIM_ON_LOCALE_NUM:
     case PRIM_REGISTER_GLOBAL_VAR:
     case PRIM_BROADCAST_GLOBAL_VARS:
@@ -1155,6 +1154,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
+    case PRIM_GATHER_TESTS:       // param uses in module code
       CHPL_UNIMPL("misc primitives");
       break;
 
