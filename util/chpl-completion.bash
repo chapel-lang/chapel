@@ -142,6 +142,7 @@ _chpl ()
 --llvm \
 --llvm-print-ir \
 --llvm-print-ir-stage \
+--llvm-print-passes \
 --llvm-remarks \
 --llvm-remarks-function \
 --llvm-wide-opt \
