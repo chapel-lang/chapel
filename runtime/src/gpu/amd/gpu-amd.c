@@ -62,8 +62,7 @@ void* chpl_gpu_load_module(const char* fatbin_data) {
   return (void*)rocm_module;
 }
 
-static inline
-void* chpl_gpu_load_function(const char* kernel_name) {
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
   hipFunction_t function;
   hipDevice_t device;
   hipModule_t module;
