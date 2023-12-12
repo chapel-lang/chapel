@@ -1,5 +1,8 @@
 use Types;
 
+// Common testing utilities for copyability, assignability, and
+// default-initability.
+
 proc checkit(type t,
              param expectCopyable,
              param expectConstCopyable,
@@ -12,7 +15,7 @@ proc checkit(type t,
 
   if isConstCopyable(t) != expectConstCopyable then
     compilerError("isConstCopyable " + t:string + " did not match");
-  
+
   if isAssignable(t) != expectAssignable then
     compilerError("isAssignable " + t:string + " did not match");
 
@@ -35,7 +38,7 @@ proc checkit(e,
 
   if isConstCopyable(e) != expectConstCopyable then
     compilerError("isConstCopyable " + e.type:string + " did not match");
-  
+
   if isAssignable(e) != expectAssignable then
     compilerError("isAssignable " + e.type:string + " did not match");
 
@@ -70,13 +73,4 @@ proc checkNo(type t, e) {
   if t != e.type then
     compilerError("types do not match");
   checkit(e, false, false, false, false, false);
-}
-
-class C { var x: int; }
-record ContainingNonNilableOwned { var z: owned C; }
-
-proc main() {
-
-  checkNo(ContainingNonNilableOwned,
-          new ContainingNonNilableOwned(new owned C()));
 }
