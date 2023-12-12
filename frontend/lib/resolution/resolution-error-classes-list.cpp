@@ -328,6 +328,14 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
       "'use' or 'import'.");
 }
 
+void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  auto dottedType = dot->receiver();
+  wr.heading(kind_, type_, dot, "can't apply '.type' to a type (",
+             dottedType, ").");
+  wr.code(dottedType, {dot});
+}
+
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
   auto externBlockId = std::get<ID>(info);
   auto errors = std::get<std::vector<std::pair<Location, std::string>>>(info);

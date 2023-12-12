@@ -3493,7 +3493,7 @@ void Resolver::exit(const Dot* dot) {
 
   if (dot->field() == USTR("type")) {
     if (receiver.type().isType()) {
-      context->error(dot, "can't apply '.type' to a type");
+      CHPL_REPORT(context, DotTypeOnType, dot);
     }
 
     const Type* receiverType;
