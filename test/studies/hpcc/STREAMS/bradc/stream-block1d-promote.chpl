@@ -1,4 +1,4 @@
-use Time, Types, NPBRandom;
+use Time, Types, Random;
 use BlockDist;
 
 use HPCCProblemSize;
@@ -13,8 +13,7 @@ config const m = computeProblemSize(elemType, numVectors),
 config const numTrials = 10,
              epsilon = 0.0;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then oddTimeSeed() else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -52,10 +51,12 @@ proc printConfiguration() {
 
 
 proc initVectors(ref B, ref C) {
-  var randlist = new NPBRandomStream(eltType=real, seed=seed);
+  var randlist = if useRandomSeed
+    then new randomStream(eltType=real);
+    else new randomStream(eltType=real, seed=314159265);
 
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  randlist.fill(B);
+  randlist.fill(C);
 
   if (printArrays) {
     writeln("B is: ", B, "\n");
