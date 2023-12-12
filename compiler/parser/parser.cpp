@@ -464,7 +464,6 @@ static void gatherStdModuleNamesInDir(std::string dir,
     if (moduleNamesHere.count(subdir) == 0) {
       std::string subPath = dir + "/" + subdir;
       gatherStdModuleNamesInDir(subPath, modNames);
-    } else {
     }
   }
 }
