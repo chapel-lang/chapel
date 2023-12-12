@@ -68,6 +68,7 @@ _chpl ()
 --dyno-break-on-hash \
 --dyno-debug-trace \
 --dyno-gen-lib \
+--dyno-gen-std \
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
