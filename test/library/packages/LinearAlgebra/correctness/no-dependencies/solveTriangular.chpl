@@ -5,7 +5,7 @@ use LinearAlgebra, Random, TestUtils;
   Different offsets and array initializations/sizes are considered for robustness.
 */
 
-const offsets = [0, 11, -7]; // tested offsets
+const offsets = [0, 1, 11, -7]; // tested offsets
 const eps = 1e-7; // error tolerance
 
 var res = true;
@@ -45,7 +45,7 @@ var res = true;
     // check result
     if !almostEquals(dot(Ao, xl), bo) || !almostEquals(dot(Ato, xu), bo) {
       res = false;
-      writeln("test with offset ", offset, " in serie 1 failed");
+      writeln("test with offset ", offset, " in series 1 failed");
     }
   }
 }
@@ -87,7 +87,7 @@ var res = true;
     // check result
     if !almostEquals(dot(Ao, xl), bo) || !almostEquals(dot(Ato, xu), bo) {
       res = false;
-      writeln("test with offset ", offset, " in serie 2 failed");
+      writeln("test with offset ", offset, " in series 2 failed");
     }
   }
 }
@@ -102,14 +102,14 @@ var res = true;
   var At: [0..#n, 0..#n] real;
   var b:  [0..#n] real;
 
-  fillRandom(A, min=-100.0, max=100.0);
+  fillRandom(A, min=-100.0, max=100.0, seed=314159);
   for i in 0..#n {
     for j in i+1..<n {
       A(i,j) = 0.0;
     }
   }
   At = transpose(A);
-  fillRandom(b, min=-100.0, max=100.0);
+  fillRandom(b, min=-100.0, max=100.0, seed=2718281);
 
   for offset in offsets {
     // reindex
@@ -124,7 +124,7 @@ var res = true;
     // check result
     if !almostEquals(dot(Ao, xl), bo) || !almostEquals(dot(Ato, xu), bo) {
       res = false;
-      writeln("test with offset ", offset, " in serie 3 failed");
+      writeln("test with offset ", offset, " in series 3 failed");
     }
   }
 }
