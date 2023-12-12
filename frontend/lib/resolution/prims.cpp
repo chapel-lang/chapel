@@ -1012,8 +1012,6 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
     /* primitives that return real parts from a complex */
     case PRIM_GET_REAL:
-      type = primComplexGetReal(context, ci);
-      break;
     case PRIM_GET_IMAG:
       type = primComplexGetReal(context, ci);
       break;
