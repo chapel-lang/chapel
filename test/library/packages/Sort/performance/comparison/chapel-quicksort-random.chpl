@@ -1,6 +1,7 @@
 // chpl --fast chapel-quicksort-random.chpl
 
 use Sort;
+use QuickSort;
 use Time;
 use Random;
 
