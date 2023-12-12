@@ -61,6 +61,8 @@ module CaseRules {
   }
 
   record testRecord {
-    proc init=(other: testRecord) {}
+    proc init=(other: testRecord) {
+      var temp = other;
+    }
   }
 }
