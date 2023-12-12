@@ -236,7 +236,7 @@ def register_rules(driver):
 
         def variables(node):
             if isinstance(node, Variable):
-                yield node
+                if node.name() != "_": yield node
             elif isinstance(node, TupleDecl):
                 for child in node:
                     yield from variables(child)
