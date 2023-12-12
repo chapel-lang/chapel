@@ -797,7 +797,7 @@ proc BlockImpl.dsiClone() {
 }
 
 override proc BlockImpl.dsiDestroyDist() {
-  coforall ld in locDist do {
+  coforall ld in locDist {
     on ld do
       delete ld;
   }

@@ -97,7 +97,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     //    writeln("In setup");
     var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.lowBound) == nil {
-      coforall localeIdx in dist.targetLocDom do {
+      coforall localeIdx in dist.targetLocDom {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
@@ -122,7 +122,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   }
 
   override proc dsiDestroyDom() {
-    coforall localeIdx in dist.targetLocDom do {
+    coforall localeIdx in dist.targetLocDom {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
     }
