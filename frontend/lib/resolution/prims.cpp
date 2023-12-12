@@ -617,7 +617,8 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
 /*
   for get real/imag primitives
 */
-static QualifiedType primComplexGetReal(Context* context, const CallInfo& ci) {
+static QualifiedType
+primComplexGetComponent(Context* context, const CallInfo& ci) {
   QualifiedType ret = QualifiedType();
 
   if (ci.numActuals() != 1) return ret;
@@ -1013,7 +1014,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return real parts from a complex */
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
-      type = primComplexGetReal(context, ci);
+      type = primComplexGetComponent(context, ci);
       break;
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
