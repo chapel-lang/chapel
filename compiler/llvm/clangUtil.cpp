@@ -2739,11 +2739,6 @@ static void helpComputeClangArgs(std::string& clangCC,
     "-Wno-strict-aliasing",
     NULL};
 
-  const char* clang_debug = "-g";
-  const char* clang_opt = "-O3";
-  const char* clang_fast_float = "-ffast-math";
-  const char* clang_ieee_float = "-fno-fast-math";
-
   BumpPtrAllocator A;
   StringSaver Saver(A);
 
@@ -2807,13 +2802,13 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Add debug flags
   if (debugCCode) {
-    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-g");
     clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
   // Add optimize flags
   if (optimizeCCode) {
-    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-O3");
     clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
@@ -2848,11 +2843,16 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
-  if (ffloatOpt > 0) // --no-ieee-float
-    clangCCArgs.push_back(clang_fast_float); // --ffast-math
-
-  if (ffloatOpt < 0) // --ieee-float
-    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
+  if (ffloatOpt > 0) { // --no-ieee-float
+    clangCCArgs.push_back("-ffast-math");
+  } else {
+    if (ffloatOpt < 0) { // --ieee-float
+      clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
+    }
+    // always disable math functions setting errno since
+    // this does not make sense in a Chapel context
+    clangCCArgs.push_back("-fno-math-errno");
+  }
 
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
