@@ -840,7 +840,7 @@ class GraphClass:
         for i in range(nperfkeys):
             for j in range(nperfkeys):
                 if (i != j) and (self.graphkeys[i]==self.graphkeys[j]):
-                    sys.stdout.write('WARNING: Duplicate graph keys (%s)\n'%(self.graphkeys[i]))
+                    sys.stdout.write('WARNING: Duplicate graph keys (%s) in %s\n'%(self.graphkeys[i], self.name))
 
         defaultFilename = self.srcdatfname
         if nperfkeys != len(self.datfilenames):
