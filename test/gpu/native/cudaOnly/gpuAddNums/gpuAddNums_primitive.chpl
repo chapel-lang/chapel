@@ -58,7 +58,8 @@ on here.gpus[0] {
   var cfg = __primitive("gpu init kernel cfg", 1, 0, 0);
 
   // 1 is an enum value that says: "pass the address of this to the
-  //   kernel_params, while not offloading anything"
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
   __primitive("gpu arg", cfg, deviceBuffer, 1);
 
   // arguments are: fatbin path, function name, grid size, block size, arguments

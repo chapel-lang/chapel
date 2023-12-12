@@ -55,7 +55,8 @@ proc runExample(gdimX, gdimY, gdimZ, bdimX, bdimY, bdimZ) {
   var cfg = __primitive("gpu init kernel cfg", 1, 0, 0);
 
   // 1 is an enum value that says: "pass the address of this to the
-  //   kernel_params, while not offloading anything"
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
   __primitive("gpu arg", cfg, c_ptrTo(X), 1);
 
   __primitive("gpu kernel launch", "add_nums":chpl_c_string,
