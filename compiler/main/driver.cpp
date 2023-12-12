@@ -1630,7 +1630,7 @@ static void printStuff(const char* argv0) {
   // except with --dyno-gen-std, no files need to be provided
   if (fDynoGenStdLib) missingAnyFile = false;
 
-  if (fPrintHelp || missingAnyFile) {
+  if (fPrintHelp || (!printedSomething && missingAnyFile)) {
     if (printedSomething) printf("\n");
 
     usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
