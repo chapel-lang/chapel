@@ -439,6 +439,7 @@ record regexMatch {
   var numBytes:int;
 }
 
+pragma "do not resolve unless called"
 @chpldoc.nodoc
 proc reMatch type
 {

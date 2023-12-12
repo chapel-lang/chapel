@@ -92,6 +92,8 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupRootLocaleNUMA(dst:borrowed RootLocale) {
+    extern proc chpl_task_setSubloc(subloc: int(32));
+
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
@@ -105,6 +107,8 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupRootLocaleAPU(dst:borrowed RootLocale) {
+    extern proc chpl_task_setSubloc(subloc: int(32));
+
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {
@@ -119,6 +123,8 @@ module LocaleModelHelpSetup {
   }
 
   proc helpSetupRootLocaleGPU(dst:borrowed RootLocale) {
+    extern proc chpl_task_setSubloc(subloc: int(32));
+
     var root_accum:chpl_root_locale_accum;
 
     forall locIdx in dst.chpl_initOnLocales() with (ref root_accum) {

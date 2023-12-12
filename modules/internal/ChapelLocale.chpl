@@ -558,12 +558,12 @@ module ChapelLocale {
     // LocaleSpace -- an array of locales and its corresponding domain
     // which are used as the default set of targetLocales in many
     // distributions.
-    proc getDefaultLocaleSpace() const ref {
+    proc getDefaultLocaleSpace() const ref : chpl_emptyLocaleSpace.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocaleSpace;
     }
 
-    proc getDefaultLocaleArray() const ref {
+    proc getDefaultLocaleArray() const ref : chpl_emptyLocales.type {
       HaltWrappers.pureVirtualMethodHalt();
       return chpl_emptyLocales;
     }

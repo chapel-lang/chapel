@@ -183,7 +183,7 @@ static Expr* foldTryCond(Expr* expr);
 static void unmarkDefaultedGenerics();
 static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
-static void resolveExports();
+static void resolveExportsEtc();
 static void resolveEnumTypes();
 static void populateRuntimeTypeMap();
 static void resolveAutoCopies();
@@ -11436,7 +11436,7 @@ void resolve() {
 
   finishInterfaceChecking();  // should happen before resolveAutoCopies
 
-  resolveExports();
+  resolveExportsEtc();
 
   resolveEnumTypes();
 
@@ -11623,8 +11623,29 @@ static void resolveSupportForModuleDeinits() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveExports() {
+static bool hasVariableArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->variableExpr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isGenericFn(FnSymbol* fn) {
+  if (!fn->isGenericIsValid()) {
+    fn->tagIfGeneric();
+  }
+  return fn->isGeneric();
+}
+
+static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
+
+  // try to resolve concrete functions when using --dyno-gen-lib
+  bool alsoConcrete = (fResolveConcreteFns || !gDynoGenLibOutput.empty()) &&
+                      !fMinimalModules;
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -11642,6 +11663,44 @@ static void resolveExports() {
 
       if (fn->hasFlag(FLAG_EXPORT))
         exps.push_back(fn);
+    } else if (alsoConcrete) {
+      // gather the receiver type if there is one
+      AggregateType* at = NULL;
+      if (fn->_this) {
+        at = toAggregateType(fn->_this->type);
+      }
+
+      if (!fn->hasFlag(FLAG_GENERIC) &&
+          !fn->hasFlag(FLAG_LAST_RESORT) /* often a compilerError overload*/ &&
+          !fn->hasFlag(FLAG_DO_NOT_RESOLVE_UNLESS_CALLED) &&
+          !hasVariableArgs(fn) &&
+          !fn->hasFlag(FLAG_RESOLVED) &&
+          !fn->hasFlag(FLAG_INVISIBLE_FN) &&
+          !fn->hasFlag(FLAG_INLINE) &&
+          !fn->hasFlag(FLAG_EXTERN) &&
+          !fn->hasFlag(FLAG_ON) &&
+          !fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) &&
+          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          // either this is not a method, or at least it's not a method
+          // on a generic type
+          (fn->_this == NULL || !at || !at->isGeneric()) &&
+          // for now, ignore chpl_ functions
+          (strncmp(fn->name, "chpl_", 5) != 0) &&
+          fn->defPoint &&
+          // Nested functions are tricky because their resolution may depend
+          // on the resolution of the outer function in which they are located;
+          // i.e., they may be generic w.r.t. outer-scoped variables, yet not
+          // marked with FLAG_GENERIC.  For now, rule out all nested functions.
+          !isFnSymbol(fn->defPoint->parentSymbol) && // fn is not nested
+          fn->defPoint->getModule() &&
+          !isGenericFn(fn)
+         ) {
+        SET_LINENO(fn);
+
+        if (evaluateWhereClause(fn)) {
+          resolveSignatureAndFunction(fn);
+        }
+      }
     }
   }
 

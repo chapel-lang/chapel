@@ -1,0 +1,2 @@
+resolve-concrete-fns.chpl:1: In function 'foo':
+resolve-concrete-fns.chpl:2: error: cannot initialize 'x' of type 'int(64)' from '"hello"'
