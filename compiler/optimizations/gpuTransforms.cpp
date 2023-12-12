@@ -1455,8 +1455,8 @@ static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
 // Once we're done with gpu lowering we no longer need this primitive and so we
 // remove it.
 static void cleanupTaskIndependentCapturePrimitives() {
-  for_alive_in_Vec(CallExpr, callExpr, gCallExprs) 
-    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE)) 
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
+    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE))
       cleanupTaskIndependentCapturePrimitive(callExpr);
 }
 
