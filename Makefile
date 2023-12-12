@@ -60,6 +60,7 @@ comprt: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
+	@$(MAKE) always-build-chplcheck
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -153,6 +154,11 @@ always-build-test-venv: FORCE
 always-build-chpldoc: FORCE
 	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLDOC" ]; then \
 	$(MAKE) chpldoc; \
+	fi
+
+always-build-chplcheck: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLCHECK" ]; then \
+	$(MAKE) chplcheck; \
 	fi
 
 chplvis: compiler third-party-fltk FORCE
