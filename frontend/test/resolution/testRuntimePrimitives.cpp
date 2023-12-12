@@ -21,6 +21,59 @@
 
 #include "chpl/types/all-types.h"
 
+
+static void voidTypeTestHelper(std::string program) {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context, program);
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isVoidType());
+}
+
+// tests for primitives that should return void
+static void testVoidPrims() {
+  // test for primitive "chpl_init_record"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_init_record");)""");
+
+  // test for primitive "chpl_comm_get"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get");)""");
+
+  // test for primitive "chpl_comm_put"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put");)""");
+
+  // test for primitive "chpl_comm_array_get"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_get");)""");
+
+  // test for primitive "chpl_comm_array_put"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_put");)""");
+
+  // test for primitive "chpl_comm_remote_prefetch"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_remote_prefetch");)""");
+
+  // test for primitive "chpl_comm_get_strd"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get_strd");)""");
+
+  // test for primitive "chpl_comm_put_strd"
+  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put_strd");)""");
+
+  // test for primitive "shift_base_pointer"
+  voidTypeTestHelper(R"""(var x = __primitive("shift_base_pointer");)""");
+
+  // test for primitive "array_set"
+  voidTypeTestHelper(R"""(var x = __primitive("array_set");)""");
+
+  // test for primitive "array_set_first"
+  voidTypeTestHelper(R"""(var x = __primitive("array_set_first");)""");
+
+  // test for primitive "auto destroy runtime type"
+  voidTypeTestHelper(R"""(var x = __primitive("auto destroy runtime type");)""");
+
+  // test for primitive "create fn type"
+  voidTypeTestHelper(R"""(var x = __primitive("create fn type");)""");
+}
+
 // test that we can handle non-param string for string_length_bytes
 static void test1() {
   Context ctx;
@@ -192,84 +245,9 @@ static void test11() {
   assert(typePtr->toIntType()->bitwidth() == 64);
 }
 
-static void voidTypeTestHelper(std::string program) {
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context, program);
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  assert(typePtr->isVoidType());
-}
-
-// test for primitive "chpl_init_record", which should return void
-static void test12() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_init_record");)""");
-}
-
-// test for primitive "chpl_comm_get", which should return void
-static void test13() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get");)""");
-}
-
-// test for primitive "chpl_comm_put", which should return void
-static void test14() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put");)""");
-}
-
-// test for primitive "chpl_comm_array_get", which should return void
-static void test15() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_get");)""");
-}
-
-// test for primitive "chpl_comm_array_put", which should return void
-static void test16() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_array_put");)""");
-}
-
-// test for primitive "chpl_comm_remote_prefetch", which should return void
-static void test17() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_remote_prefetch");)""");
-}
-
-// test for primitive "chpl_comm_get_strd", which should return void
-static void test18() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_get_strd");)""");
-}
-
-
-// test for primitive "chpl_comm_put_strd", which should return void
-static void test19() {
-  voidTypeTestHelper(R"""(var x = __primitive("chpl_comm_put_strd");)""");
-}
-
-// test for primitive "shift_base_pointer", which should return void
-static void test20() {
-  voidTypeTestHelper(R"""(var x = __primitive("shift_base_pointer");)""");
-}
-
-// test for primitive "array_set", which should return void
-static void test21() {
-  voidTypeTestHelper(R"""(var x = __primitive("array_set");)""");
-}
-
-// test for primitive "array_set_first", which should return void
-static void test22() {
-  voidTypeTestHelper(R"""(var x = __primitive("array_set_first");)""");
-}
-
-// test for primitive "auto destroy runtime type", which should return void
-static void test23() {
-  voidTypeTestHelper(R"""(var x = __primitive("auto destroy runtime type");)""");
-}
-
-// test for primitive "create fn type", which should return void
-static void test24() {
-  voidTypeTestHelper(R"""(var x = __primitive("create fn type");)""");
-}
 
 // "chpl_task_getRequestedSubloc", which should return int 64
-static void test25() {
+static void test12() {
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
@@ -282,7 +260,7 @@ static void test25() {
 }
 
 // "class name by id", which should return a cString
-static void test26() {
+static void test13() {
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
@@ -294,7 +272,7 @@ static void test26() {
 }
 
 // "ref to string", which should return a cString
-static void test27() {
+static void test14() {
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
@@ -306,7 +284,7 @@ static void test27() {
 }
 
 // "chpl_lookupFilename", which should return a cString
-static void test28() {
+static void test15() {
   Context ctx;
   auto context = &ctx;
   QualifiedType qt =  resolveTypeOfXInit(context,
@@ -319,6 +297,7 @@ static void test28() {
 
 
 int main() {
+  testVoidPrims();
   test1();
   test2();
   test3();
@@ -334,19 +313,6 @@ int main() {
   test13();
   test14();
   test15();
-  test16();
-  test17();
-  test18();
-  test19();
-  test20();
-  test21();
-  test22();
-  test23();
-  test24();
-  test25();
-  test26();
-  test27();
-  test28();
 
   return 0;
 }
