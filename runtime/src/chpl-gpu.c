@@ -402,60 +402,41 @@ static void launch_kernel(const char* name,
 }
 
 
-inline void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                                   const char* name,
+inline void chpl_gpu_launch_kernel(const char* name,
                                    int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                    int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                                   int nargs, ...) {
+                                   void* _cfg) {
 
-  kernel_cfg cfg;
-  cfg_init(&cfg, nargs, ln, fn);
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
 
-  chpl_gpu_impl_use_device(cfg.dev);
+  chpl_gpu_impl_use_device(cfg->dev);
 
   CHPL_GPU_DEBUG("Kernel launcher called. (subloc %d)\n"
                  "\tLocation: %s:%d\n"
                  "\tKernel: %s\n"
                  "\tNumArgs: %d\n",
-                 cfg.dev,
-                 chpl_lookupFilename(fn),
-                 ln,
+                 cfg->dev,
+                 chpl_lookupFilename(cfg->fn),
+                 cfg->ln,
                  name,
-                 nargs);
-
-  va_list args;
-  va_start(args, nargs);
-
-  for (int i=0 ; i<nargs ; i++) {
-    void* cur_arg = va_arg(args, void*);
-    size_t cur_arg_size = va_arg(args, size_t);
-
-    if (cur_arg_size>0) {
-      cfg_add_offload_param(&cfg, cur_arg, cur_arg_size);
-    }
-    else {
-      cfg_add_direct_param(&cfg, cur_arg);
-    }
-  }
+                 cfg->n_params);
 
   launch_kernel(name,
                 grd_dim_x, grd_dim_y, grd_dim_z,
                 blk_dim_x, blk_dim_y, blk_dim_z,
-                (void*)&cfg);
+                cfg);
 
 #ifdef CHPL_GPU_MEM_STRATEGY_ARRAY_ON_DEVICE
   if (chpl_gpu_sync_with_host) {
-    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg.stream);
-    wait_stream(cfg.stream);
+    CHPL_GPU_DEBUG("Eagerly synchronizing stream %p\n", cfg->stream);
+    wait_stream(cfg->stream);
   }
 #else
   chpl_gpu_impl_synchronize();
 #endif
 
-  va_end(args);
-
   CHPL_GPU_DEBUG("Kernel launcher returning. (subloc %d)\n"
-                 "\tKernel: %s\n", cfg.dev, name);
+                 "\tKernel: %s\n", cfg->dev, name);
 }
 
 inline void chpl_gpu_launch_kernel_flat(const char* name,

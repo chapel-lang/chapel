@@ -97,11 +97,10 @@ void chpl_gpu_launch_kernel_flat(const char* name,
                                  int64_t num_threads, int blk_dim,
                                  void* cfg);
 
-void chpl_gpu_launch_kernel(int ln, int32_t fn,
-                            const char* name,
+void chpl_gpu_launch_kernel(const char* name,
                             int grd_dim_x, int grd_dim_y, int grd_dim_z,
                             int blk_dim_x, int blk_dim_y, int blk_dim_z,
-                            int nargs, ...);
+                            void* cfg);
 
 void* chpl_gpu_mem_array_alloc(size_t size, chpl_mem_descInt_t description,
                                    int32_t lineno, int32_t filename);
