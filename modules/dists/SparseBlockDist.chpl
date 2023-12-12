@@ -52,7 +52,7 @@ config param debugSparseBlockDistBulkTransfer = false;
 // just use Block.
 
 // Helper type for sorting locales
-record TargetLocaleComparator {
+record targetLocaleComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
@@ -177,7 +177,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     }
 
     // without _new_, record functions throw null deref
-    var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
+    var comp = new targetLocaleComparator(rank=rank, idxType=idxType,
                                           sparseLayoutType=sparseLayoutType,
                                           dist=dist);
 
