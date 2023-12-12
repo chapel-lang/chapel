@@ -361,6 +361,7 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
+static bool fDynoGenLibProvided = false;
 bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
 
@@ -1192,6 +1193,9 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
+
+  // note that --dyno-gen-lib was provided
+  fDynoGenLibProvided = true;
 }
 
 static
@@ -2487,6 +2491,17 @@ int main(int argc, char* argv[]) {
 
     if (!fDynoGenStdLib) {
       assertSourceFilesFound();
+    } else {
+      // --dyno-gen-std should not be used with --dyno-gen-lib
+      if (fDynoGenLibProvided) {
+        USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
+      }
+      // there should be no input files for --dyno-gen-std
+      int fileNum = 0;
+      const char* inputFileName = 0;
+      while ((inputFileName = nthFilename(fileNum++))) {
+        USR_FATAL("file arguments not allowed with --dyno-gen-std");
+      }
     }
 
     runPasses(tracker);
