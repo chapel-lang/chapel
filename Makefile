@@ -125,9 +125,9 @@ third-party-c2chapel-venv: FORCE
 third-party-chapel-py-venv: FORCE
 	cd third-party && $(MAKE) chapel-py-venv;
 	@+CHPL_HOME=$(CHPL_MAKE_HOME) bash \
-	  $(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
-    $(CHPL_MAKE_HOME)/tools/chapel-py/scripts/generate-pyi.py \
-    >$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi
+		$(CHPL_MAKE_HOME)/util/config/run-in-venv-with-python-bindings.bash \
+		$(CHPL_MAKE_HOME)/tools/chapel-py/scripts/generate-pyi.py \
+		>$(CHPL_MAKE_HOME)/tools/chapel-py/src/chapel/core/__init__.pyi
 
 test-venv: third-party-test-venv
 
