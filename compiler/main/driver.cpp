@@ -361,6 +361,8 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
+static bool fDynoGenLibProvided = false;
+bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
 
 bool fResolveConcreteFns = false;
@@ -1191,6 +1193,14 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
+
+  // note that --dyno-gen-lib was provided
+  fDynoGenLibProvided = true;
+}
+
+static
+void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibOutput = "chpl_standard.dyno";
 }
 
 /*
@@ -1489,6 +1499,7 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
  {"resolve-concrete-fns", ' ', NULL, "Enable [disable] resolving concrete functions",  "N", &fResolveConcreteFns, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
@@ -1618,7 +1629,12 @@ static void printStuff(const char* argv0) {
     clean_exit(status);
   }
 
-  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  // show usage if no files were provided
+  bool missingAnyFile = sArgState.nfile_arguments < 1;
+  // except with --dyno-gen-std, no files need to be provided
+  if (fDynoGenStdLib) missingAnyFile = false;
+
+  if (fPrintHelp || (!printedSomething && missingAnyFile)) {
     if (printedSomething) printf("\n");
 
     usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
@@ -1627,7 +1643,7 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printedSomething && sArgState.nfile_arguments < 1) {
+  if (printedSomething && missingAnyFile) {
     shouldExit       = true;
   }
 
@@ -2473,7 +2489,18 @@ int main(int argc, char* argv[]) {
       if (fRunlldb) runCompilerInLLDB(argc, argv);
     }
 
-    assertSourceFilesFound();
+    if (!fDynoGenStdLib) {
+      assertSourceFilesFound();
+    } else {
+      // --dyno-gen-std should not be used with --dyno-gen-lib
+      if (fDynoGenLibProvided) {
+        USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
+      }
+      // there should be no input files for --dyno-gen-std
+      if (nthFilename(0) != nullptr) {
+        USR_FATAL("file arguments not allowed with --dyno-gen-std");
+      }
+    }
 
     runPasses(tracker);
   }

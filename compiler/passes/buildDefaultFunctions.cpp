@@ -848,7 +848,7 @@ static void buildChplEntryPoints() {
 
   bool main_ret_set = false;
 
-  if (fLibraryCompile == false) {
+  if (!fLibraryCompile && !fDynoGenStdLib) {
     SET_LINENO(chpl_gen_main);
 
     if (mainHasArgs == true) {

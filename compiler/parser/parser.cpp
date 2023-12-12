@@ -37,6 +37,9 @@
 #include "chpl/libraries/LibraryFileWriter.h"
 #include "chpl/parsing/parsing-queries.h"
 
+#include "llvm/Support/FileSystem.h"
+#include "llvm/Support/Path.h"
+
 // Turn this on to dump AST/uAST when using --dyno.
 #define DUMP_WHEN_CONVERTING_UAST_TO_AST 0
 
@@ -83,8 +86,6 @@ static void          parseDependentModules(bool isInternal);
 
 static ModuleSymbol* parseMod(const char* modName,
                               bool        isInternal);
-
-std::vector<UniqueString> parsedPaths;
 
 // TODO: Remove me.
 struct YYLTYPE {
@@ -320,7 +321,9 @@ static void addDynoLibFiles() {
     if (isDynoLib(inputFileName)) {
       auto libPath = chpl::UniqueString::get(gContext, inputFileName);
       auto lib = chpl::libraries::LibraryFile::load(gContext, libPath);
-      lib->registerLibrary(gContext);
+      if (lib != nullptr) {
+        lib->registerLibrary(gContext);
+      }
     }
   }
 }
@@ -413,6 +416,107 @@ static UniqueString cleanLocalPath(UniqueString path) {
   return chpl::UniqueString::get(gContext, str);
 }
 
+static void gatherStdModuleNamesInDir(std::string dir,
+                                      std::set<UniqueString>& modNames) {
+  std::error_code EC;
+  llvm::sys::fs::directory_iterator I(dir, EC);
+  llvm::sys::fs::directory_iterator E;
+
+  std::set<std::string> moduleNamesHere;
+  std::set<std::string> subDirsHere;
+  while (true) {
+    if (I == E || EC) {
+      break;
+    }
+    // consider the file
+    llvm::StringRef fileName = llvm::sys::path::filename(I->path());
+    bool isdir = I->type() == llvm::sys::fs::file_type::directory_file;
+    if (isdir) {
+      subDirsHere.insert(fileName.str());
+    } else {
+      llvm::StringRef fileExt = llvm::sys::path::extension(fileName);
+      llvm::StringRef fileStem = llvm::sys::path::stem(fileName);
+      if (fileExt.equals(".chpl")) {
+        moduleNamesHere.insert(fileStem.str());
+      }
+    }
+
+    I.increment(EC);
+  }
+
+  if (EC) {
+    USR_FATAL("error in directory traversal of %s", dir.c_str());
+  }
+
+  // Consider the gathered module names & add them to the returned set.
+  for (const auto& name : moduleNamesHere) {
+    modNames.insert(UniqueString::get(gContext, name));
+  }
+
+  // Consider the subdirs. Visit any subdir that does not have
+  // the same name as a module here. This is meant to exclude submodules
+  // stored in different files. For example, if we have
+  //   SortedSet/
+  //   SortedSet.chpl
+  // then we should not traverse into SortedSet/ under the assumption
+  // that it is storing only submodules.
+  for (const auto& subdir : subDirsHere) {
+    if (moduleNamesHere.count(subdir) == 0) {
+      std::string subPath = dir + "/" + subdir;
+      gatherStdModuleNamesInDir(subPath, modNames);
+    }
+  }
+}
+
+static std::set<UniqueString> gatherStdModuleNames() {
+  // compute $CHPL_HOME/modules
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  std::string modulesDir = bundledPath.str();
+
+  std::set<UniqueString> modNames;
+  gatherStdModuleNamesInDir(modulesDir + "/dists", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/internal", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/layouts", modNames);
+  // skip minimal
+  gatherStdModuleNamesInDir(modulesDir + "/packages", modNames);
+  gatherStdModuleNamesInDir(modulesDir + "/standard", modNames);
+
+  // leave out Treap since it is an 'include module' for SortedSet
+  modNames.erase(UniqueString::get(gContext, "Treap"));
+
+  return modNames;
+}
+
+static std::vector<UniqueString> gatherStdModulePaths() {
+  std::vector<UniqueString> genLibPaths;
+
+  // Gather the standard module names in the passed directory.
+  // This gathers module names rather than paths in order to
+  // support different implementations of the same module in different
+  // directories, e.g.
+  // modules/internal/comm/{ugni,ofi,...}/NetworkAtomicTypes.chpl
+  // In such a case, we just gather the name NetworkAtomicTypes,
+  // and let the usual module loading process select the appropriate
+  // one from the module search path.
+  auto modulesToLoad = gatherStdModuleNames();
+
+  const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
+  for (auto modName : modulesToLoad) {
+    auto mod = chpl::parsing::getToplevelModule(gContext, modName);
+    UniqueString parsedPath;
+    if (!mod) {
+      USR_FATAL("cannot find bundled module %s", modName.c_str());
+    }
+    if (mod && gContext->filePathForId(mod->id(), parsedPath)) {
+      if (parsedPath.startsWith(bundledPath)) {
+        genLibPaths.push_back(parsedPath);
+      }
+    }
+  }
+
+  return genLibPaths;
+}
+
 static void parseCommandLineFiles() {
   int         fileNum       =    0;
   const char* inputFileName = NULL;
@@ -481,14 +585,13 @@ static void parseCommandLineFiles() {
   if (!gDynoGenLibOutput.empty()) {
     std::vector<UniqueString> genLibPaths;
 
-    if (gDynoGenLibOutput == "chpl_standard.dyno") {
-      // gather the paths to the standard libraries
-      for (auto& path : parsedPaths) {
-        const auto& modulePrefix = chpl::parsing::bundledModulePath(gContext);
-        if (path.startsWith(modulePrefix)) {
-          genLibPaths.push_back(path);
-        }
-      }
+    if (fDynoGenStdLib) {
+      // gather the standard/internal module names with directory
+      // listing within $CHPL_HOME/modules, and compute paths from loading
+      // those. (The purpose of this is to handle things like
+      // modules/internal/comm/*/NetworkAtomicTypes.chpl where the module
+      // search path determines what should be loaded)
+      genLibPaths = gatherStdModulePaths();
     } else {
       // gather the files named on the command line
       fileNum = 0;
@@ -729,7 +832,7 @@ static void addModuleToDoneList(ModuleSymbol* module);
 // defining its modules twice.
 //
 static bool haveAlreadyParsed(const char* path) {
-  static std::set<std::string> parsedPaths;
+  static std::set<std::string> alreadyParsedPaths;
 
   // normalize the path if possible via realpath() and use 'path' otherwise
   const char* normpath = chplRealPath(path);
@@ -737,13 +840,15 @@ static bool haveAlreadyParsed(const char* path) {
     normpath = path;
   }
 
+  std::string npath(normpath);
+
   // check whether we've seen this path before
-  if (parsedPaths.count(normpath) > 0) {
+  if (alreadyParsedPaths.count(npath) > 0) {
     // if so, indicate it
     return true;
   } else {
     // otherwise, add it to our set and list of paths
-    parsedPaths.insert(normpath);
+    alreadyParsedPaths.insert(npath);
     return false;
   }
 }
@@ -1064,8 +1169,6 @@ static ModuleSymbol* dynoParseFile(const char* fileName,
   gFilenameLookup.push_back(path.c_str());
 
   if (dynoRealizeErrors()) USR_STOP();
-
-  parsedPaths.push_back(path);
 
   ModuleSymbol* lastModSym = nullptr;
   int numModSyms = 0;
