@@ -490,6 +490,14 @@ static std::set<UniqueString> gatherStdModuleNames() {
 static std::vector<UniqueString> gatherStdModulePaths() {
   std::vector<UniqueString> genLibPaths;
 
+  // Gather the standard module names in the passed directory.
+  // This gathers module names rather than paths in order to
+  // support different implementations of the same module in different
+  // directories, e.g.
+  // modules/internal/comm/{ugni,ofi,...}/NetworkAtomicTypes.chpl
+  // In such a case, we just gather the name NetworkAtomicTypes,
+  // and let the usual module loading process select the appropriate
+  // one from the module search path.
   auto modulesToLoad = gatherStdModuleNames();
 
   const auto& bundledPath = chpl::parsing::bundledModulePath(gContext);
