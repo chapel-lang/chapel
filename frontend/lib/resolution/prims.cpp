@@ -614,6 +614,25 @@ static QualifiedType primObjectToInt(Context* context, const CallInfo& ci) {
   return QualifiedType(argType.kind(), IntType::get(context, 64));
 }
 
+/*
+  for get real/imag primitives
+*/
+static QualifiedType
+primComplexGetComponent(Context* context, const CallInfo& ci) {
+  QualifiedType ret = QualifiedType();
+
+  if (ci.numActuals() != 1) return ret;
+
+  if (auto comp = ci.actual(0).type().type()->toComplexType()) {
+    if (comp->bitwidth() == 64) {
+      ret = QualifiedType(QualifiedType::REF, RealType::get(context, 32));
+    } else if (comp->bitwidth() == 128) {
+      ret = QualifiedType(QualifiedType::REF, RealType::get(context, 64));
+    }
+  }
+  return ret;
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -992,7 +1011,11 @@ CallResolutionResult resolvePrimCall(Context* context,
         type = QualifiedType(QualifiedType::PARAM, st, sp);
       }
       break;
-
+    /* primitives that return real parts from a complex */
+    case PRIM_GET_REAL:
+    case PRIM_GET_IMAG:
+      type = primComplexGetComponent(context, ci);
+      break;
     /* primitives that are not yet handled in dyno */
     case PRIM_ACTUALS_LIST:
     case PRIM_REF_TO_STRING:
@@ -1001,8 +1024,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_MEMBER:
     case PRIM_GET_MEMBER_VALUE:
     case PRIM_NEW:
-    case PRIM_GET_REAL:
-    case PRIM_GET_IMAG:
     case PRIM_QUERY:
     case PRIM_QUERY_PARAM_FIELD:
     case PRIM_QUERY_TYPE_FIELD:
