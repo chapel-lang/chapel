@@ -1069,7 +1069,7 @@ static void test39() {
           type T = int;
           select T {
             when int {
-              var x;
+              var x: int;
               x;
             }
             when real do y;
@@ -1178,6 +1178,72 @@ static void test40() {
           } catch {
             x;
           }
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test40b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          try {
+            y;
+          } catch {
+            var x: int;
+          }
+
+
+        }
+      }
+    )"""",
+    {"M.test@4"});
+  testCopyElision("test40c",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          try {
+            var y = x;
+            y;
+          } catch {
+            var x: int;
+          }
+
+          
+        }
+      }
+    )"""",
+    {"M.test@4"});
+  testCopyElision("test40d",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          try {
+            var y = x;
+            y;
+          } catch {
+            var x: int;
+          }
+          x;
+          
         }
       }
     )"""",
