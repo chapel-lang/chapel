@@ -94,10 +94,11 @@ We have used the following commands to install the above prerequisites:
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Alpine 3.18::
+  * Alpine 3.18, 3.19 (but note `Alpine 3.19 LLVM build issue`_)::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
+
 
   * Amazon Linux 2::
 
@@ -210,8 +211,16 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
+
 Compatability Notes
 -------------------
+
+Alpine 3.19 LLVM build issue
+++++++++++++++++++++++++++++
+
+We have observed problems building the bundled LLVM support library on
+Alpine 3.19. These problems can be resolved by installing a compatible
+LLVM package.
 
 CentOS 7 CHPL_LLVM=system incompatability
 +++++++++++++++++++++++++++++++++++++++++
