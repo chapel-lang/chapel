@@ -2497,9 +2497,7 @@ int main(int argc, char* argv[]) {
         USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
       }
       // there should be no input files for --dyno-gen-std
-      int fileNum = 0;
-      const char* inputFileName = 0;
-      while ((inputFileName = nthFilename(fileNum++))) {
+      if (nthFilename(0) != nullptr) {
         USR_FATAL("file arguments not allowed with --dyno-gen-std");
       }
     }
