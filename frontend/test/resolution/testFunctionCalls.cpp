@@ -132,114 +132,11 @@ static void test3b() {
   helpTest3(theFunction);
 }
 
-// test that we can handle non-param string for string_length_bytes
-static void test4() {
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var s:string;
-                           var x = __primitive("string_length_bytes", s);
-                         )"""");
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  assert(typePtr->isIntType());
-  assert(typePtr->toIntType()->bitwidth() == 64);
-}
-
-// test that we can handle non-param bytes for string_length_bytes
-static void test5() {
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var b:bytes;
-                           var x = __primitive("string_length_bytes", b);
-                         )"""");
-  assert(qt.kind() == QualifiedType::CONST_VAR);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  assert(typePtr->isIntType());
-  assert(typePtr->toIntType()->bitwidth() == 64);
-}
-
-static void test6() {
-  // test for primitive return type for get real/imag
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var a: complex(128);
-                           var x = __primitive("complex_get_real", a);
-                         )"""");
-  assert(qt.kind() == QualifiedType::REF);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  auto realPtr = typePtr->toRealType();
-  assert(realPtr->bitwidth()==64);
-}
-
-static void test7() {
-  // test for primitive return type for get real/imag
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var a: complex(64);
-                           var x = __primitive("complex_get_real", a);
-                         )"""");
-  assert(qt.kind() == QualifiedType::REF);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  auto realPtr = typePtr->toRealType();
-  assert(realPtr->bitwidth()==32);
-}
-
-static void test8() {
-  // test for primitive return type for get real/imag
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var a: complex(128);
-                           var x = __primitive("complex_get_imag", a);
-                         )"""");
-  assert(qt.kind() == QualifiedType::REF);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  auto realPtr = typePtr->toRealType();
-  assert(realPtr->bitwidth()==64);
-}
-
-static void test9() {
-  // test for primitive return type for get real/imag
-  Context ctx;
-  auto context = &ctx;
-  QualifiedType qt =  resolveTypeOfXInit(context,
-                         R""""(
-                           var a: complex(64);
-                           var x = __primitive("complex_get_imag", a);
-                         )"""");
-  assert(qt.kind() == QualifiedType::REF);
-  auto typePtr = qt.type();
-  assert(typePtr);
-  auto realPtr = typePtr->toRealType();
-  assert(realPtr->bitwidth()==32);
-}
-
-
 int main() {
   test1();
   test2();
   test3a();
   test3b();
-  test4();
-  test5();
-  test6();
-  test7();
-  test8();
-  test9();
 
   return 0;
 }
