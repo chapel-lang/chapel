@@ -1788,14 +1788,14 @@ proc type BlockDom.chpl__deserialize(data) {
 
 override proc BlockDom.dsiSupportsPrivatization() param do return true;
 
-record BlockDomPrvData {
+record blockDomPrvData {
   var distpid;
   var dims;
   var locdoms;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockDom.dsiGetPrivatizeData() {
-  return new BlockDomPrvData(dist.pid, whole.dims(), locDoms);
+  return new blockDomPrvData(dist.pid, whole.dims(), locDoms);
 }
 
 proc BlockDom.dsiPrivatize(privatizeData) {
@@ -1836,13 +1836,13 @@ proc type BlockArr.chpl__deserialize(data) {
 
 override proc BlockArr.dsiSupportsPrivatization() param do return true;
 
-record BlockArrPrvData {
+record blockArrPrvData {
   var dompid;
   var locarr;  //todo rvf its elements along with the rest of the record
 }
 
 proc BlockArr.dsiGetPrivatizeData() {
-  return new BlockArrPrvData(dom.pid, locArr);
+  return new blockArrPrvData(dom.pid, locArr);
 }
 
 proc BlockArr.dsiPrivatize(privatizeData) {
