@@ -23,7 +23,7 @@ import chapel.core
 from typing import List, Tuple
 
 
-def get_base_header() -> str:
+def _get_base_header() -> str:
     c = chapel.core.Context()
     return c._get_pyi_file()
 
@@ -188,7 +188,7 @@ replacements = {
 
 
 def main():
-    pyi = get_base_header()
+    pyi = _get_base_header()
 
     for k, text_func in replacements.items():
         pyi = pyi.replace(k, text_func())
