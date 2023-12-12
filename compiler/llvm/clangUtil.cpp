@@ -2496,11 +2496,11 @@ static void runModuleOptPipeline(bool addWideOpts) {
                               info->llvmContext,
 #endif
                               /* DebugLogging */ false);
-#if HAVE_LLVM_VER >= 170
+  #if HAVE_LLVM_VER >= 170
   SI.registerCallbacks(PIC, &MAM);
-#else
+  #else
   SI.registerCallbacks(PIC, &FAM);
-#endif
+  #endif
 
   PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
 
@@ -2640,7 +2640,11 @@ void prepareCodegenLLVM()
                               info->llvmContext,
   #endif
                               /* DebugLogging */ false);
+  #if HAVE_LLVM_VER >= 170
+  info->SI->registerCallbacks(*info->PIC, info->MAM);
+  #else
   info->SI->registerCallbacks(*info->PIC, info->FAM);
+  #endif
 
   // Construct a function simplification pass manager
   PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
