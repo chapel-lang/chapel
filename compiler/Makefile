@@ -176,6 +176,12 @@ test-frontend: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
 	  cd $(COMPILER_BUILD)/frontend/test && ctest $$JOBSFLAG . ;
 	@echo "frontend tests are available in build/frontend-test"
 
+frontend-tests: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
+	@echo "Making the frontend tests..."
+	@cd $(COMPILER_BUILD) && $(CMAKE) $(CHPL_MAKE_HOME) $(CMAKE_FLAGS_NO_NDEBUG) && $(MAKE) tests
+	@echo "Making symbolic link to frontend tests in build/frontend-test"
+	@cd ../build && rm -f frontend-test && ln -s $(COMPILER_BUILD)/frontend/test frontend-test
+
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --quiet --copy
 
 frontend-docs: FORCE $(CHPL_CONFIG_CHECK) $(COMPILER_BUILD)
