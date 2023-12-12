@@ -54,6 +54,8 @@ def main():
         run_lsp(driver)
         return
 
+    printed_warning = False
+
     for (filename, context) in chapel.files_with_contexts(args.filenames):
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as errors:
@@ -63,6 +65,10 @@ def main():
             violations.sort(key=lambda f : f[0].location().start()[0])
             for (node, rule) in violations:
                 print_violation(node, rule)
+                printed_warning = True
+
+    if printed_warning:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()
