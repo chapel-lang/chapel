@@ -3492,6 +3492,10 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (dot->field() == USTR("type")) {
+    if (receiver.type().isType()) {
+      context->error(dot, "can't apply '.type' to a type");
+    }
+
     const Type* receiverType;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
