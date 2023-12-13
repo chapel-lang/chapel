@@ -409,6 +409,18 @@ void FindElidedCopies::handleYield(const uast::Yield* ast, RV& rv) {
 
 }
 
+static void propogateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFrame) {
+  parentFrame->initedVars.insert(childFrame->initedVars.begin(),
+                                 childFrame->initedVars.end());
+  for(auto pair : childFrame->copyElisionState) {
+    auto id = pair.first;
+    //if there's a non-copy use, update the parent frame
+    if(!pair.second.lastIsCopy) {
+      CopyElisionState& parentState = parentFrame->copyElisionState[id];
+      parentState.lastIsCopy = false;
+    }
+  }
+}
 void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* thenFrame = currentThenFrame();
@@ -519,28 +531,10 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
 
   // propagate inited variables from the then/else scopes
   if (thenFrame) {
-    frame->initedVars.insert(thenFrame->initedVars.begin(),
-                             thenFrame->initedVars.end());
-    for(auto pair : thenFrame->copyElisionState) {
-      auto id = pair.first;
-      //if there's a non-copy use, update the parent frame
-      if(!pair.second.lastIsCopy) {
-        CopyElisionState& parentState = frame->copyElisionState[id];
-        parentState.lastIsCopy = false;
-      }
-    }
+    propogateMentionsAndInits(frame, thenFrame);
   }
   if (elseFrame) {
-    frame->initedVars.insert(elseFrame->initedVars.begin(),
-                             elseFrame->initedVars.end());
-    for(auto pair : elseFrame->copyElisionState) {
-      auto id = pair.first;
-      //if there's a non-copy use, update the parent frame
-      if(!pair.second.lastIsCopy) {
-        CopyElisionState& parentState = frame->copyElisionState[id];
-        parentState.lastIsCopy = false;
-      }
-    }
+    propogateMentionsAndInits(frame, elseFrame);
   }
 
   // now that the current frame is updated, propagate to the parent
@@ -603,16 +597,9 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
   //propogate mentions in the catch clauses
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
-    if (!catchFrame->returnsOrThrows) {
-      allThrowOrReturn = false;
-    }
-    for (const auto& pair : catchFrame->copyElisionState) {
-      auto id = pair.first;
-      if(!pair.second.lastIsCopy) {
-        CopyElisionState& parentState = tryFrame->copyElisionState[id];
-        parentState.lastIsCopy = false;
-      }
-    }
+    if (catchFrame) {
+      propogateMentionsAndInits(tryFrame, catchFrame);
+    };
   }
   handleScope(t, rv);
 }
@@ -666,16 +653,7 @@ void FindElidedCopies::handleSelect(const Select* sel, RV& rv) {
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     VarFrame * whenFrame = currentWhenFrame(i);
     if(!whenFrame) continue;
-    frame->initedVars.insert(whenFrame->initedVars.begin(),
-                             whenFrame->initedVars.end());
-    for(auto pair : whenFrame->copyElisionState) {
-      auto id = pair.first;
-      //if there's a non-copy use, update the parent frame
-      if(!pair.second.lastIsCopy) {
-        CopyElisionState& parentState = frame->copyElisionState[id];
-        parentState.lastIsCopy = false;
-      }
-    }
+    propogateMentionsAndInits(frame, whenFrame);
   }
   handleScope(sel, rv);
 }
