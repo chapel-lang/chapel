@@ -3829,7 +3829,8 @@ static const TypedFnSignature* tryResolveEq(Context* context,
                        /* isMethodCall */ asMethod,
                        /* hasQuestionArg */ false,
                        /* isParenless */ false, actuals);
-    const Scope* scope = scopeForId(context, ast->id());
+    const Scope* scope = nullptr;
+    if (ast) scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
     /* assert(!c.mostSpecific().isEmpty()); */
@@ -3861,7 +3862,8 @@ static const TypedFnSignature* tryResolveEqFunc(Context* context,
                        /* isMethodCall */ asMethod,
                        /* hasQuestionArg */ false,
                        /* isParenless */ false, actuals);
-    const Scope* scope = scopeForId(context, ast->id());
+    const Scope* scope = nullptr;
+    if (ast) scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
     /* assert(!c.mostSpecific().isEmpty()); */
@@ -3892,7 +3894,8 @@ static const TypedFnSignature* tryResolveInitEq(Context* context,
                        /* isMethodCall */ true,
                        /* hasQuestionArg */ false,
                        /* isParenless */ false, actuals);
-    const Scope* scope = scopeForId(context, ast->id());
+    const Scope* scope = nullptr;
+    if (ast) scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
     return c.mostSpecific().only().fn();
@@ -4055,6 +4058,10 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+static void getCopyOrAssignableInfo(Context* context, const Type* t,
+                                    bool* fromConst, bool* fromRef,
+                                    bool checkCopyable);
+
 // checkCopyable is true for copyable, false for assignable.
 // Return: First is from const, second is from ref.
 static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
@@ -4075,83 +4082,106 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
       fromConst = true;
     }
   } else if (auto ct = t->toCompositeType()) {
-    auto ast = parsing::idToAst(context, ct->id());
-    auto attrs = ast->attributeGroup();
     if (auto at = t->toArrayType()) {
       if (auto eltType = at->eltType().type()) {
         // Arrays are copyable/assignable if their elements are
-        getCopyableInfo(context, eltType, &fromConst, &fromRef);
+        getCopyOrAssignableInfo(context, eltType, &fromConst, &fromRef,
+                                checkCopyable);
       }
-    } else if (checkCopyable && attrs &&
-               (attrs->hasPragma(PRAGMA_SYNC) ||
-                attrs->hasPragma(PRAGMA_SINGLE))) {
-      // Syncs and singles are copyable
-      // This is a special case to preserve deprecated behavior before
-      // sync/single implicit reads are removed. 12/8/23
-      fromConst = true;
-    } else {
-      // In general, try to resolve the type's 'init='/'=', and examine it to
-      // determine copy/assignability, respectively.
-      const TypedFnSignature* testResolvedSig;
-      if (checkCopyable) {
-        testResolvedSig = tryResolveInitEq(
-            context, ast, QualifiedType(QualifiedType::VAR, ct));
+    } else if (auto tt = t->toTupleType()) {
+      // Tuples have the minimum copyable/assignable-ness of their elements
+      if (tt->isStarTuple()) {
+        getCopyOrAssignableInfo(context, tt->elementType(0).type(), &fromConst,
+                                &fromRef, checkCopyable);
       } else {
-        testResolvedSig =
-            tryResolveEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
-        if (!testResolvedSig) {
-          testResolvedSig = tryResolveEqFunc(
-              context, ast, QualifiedType(QualifiedType::VAR, ct));
+        bool allEltsFromConst = true;
+        bool allEltsFromRef = true;
+        for (int i = 0; i < tt->numElements(); i++) {
+          bool thisEltFromConst = false;
+          bool thisEltFromRef = false;
+          getCopyOrAssignableInfo(context, tt->elementType(i).type(),
+                                  &thisEltFromConst, &thisEltFromRef,
+                                  checkCopyable);
+          allEltsFromConst &= thisEltFromConst;
+          allEltsFromRef &= thisEltFromRef;
         }
+        fromConst = allEltsFromConst;
+        fromRef = allEltsFromRef;
       }
-      if (testResolvedSig) {
-        if (testResolvedSig->untyped()->isCompilerGenerated()) {
-          // Check for owned class fields.
+    } else {
+      auto ast = parsing::idToAst(context, ct->id());
+      const AttributeGroup* attrs = nullptr;
+      if (ast) attrs = ast->attributeGroup();
+      if (checkCopyable && attrs &&
+          (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
+        // Syncs and singles are copyable
+        // This is a special case to preserve deprecated behavior before
+        // sync/single implicit reads are removed. 12/8/23
+        fromConst = true;
+      } else {
+        // In general, try to resolve the type's 'init='/'=', and examine it to
+        // determine copy/assignability, respectively.
+        const TypedFnSignature* testResolvedSig;
+        if (checkCopyable) {
+          testResolvedSig = tryResolveInitEq(
+              context, ast, QualifiedType(QualifiedType::VAR, ct));
+        } else {
+          testResolvedSig =
+              tryResolveEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
+          if (!testResolvedSig) {
+            testResolvedSig = tryResolveEqFunc(
+                context, ast, QualifiedType(QualifiedType::VAR, ct));
+          }
+        }
+        if (testResolvedSig) {
+          if (testResolvedSig->untyped()->isCompilerGenerated()) {
+            // Check for owned class fields.
 
-          bool containsNonNilableOwned = false;
-          bool containsNilableOwned = false;
-          auto resolvedFields =
-              fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
-          for (int i = 0; i < resolvedFields.numFields(); i++) {
-            auto fieldType = resolvedFields.fieldType(i).type();
-            if (auto classTy = fieldType->toClassType()) {
-              if (classTy->decorator().isManaged() &&
-                  classTy->manager()->isAnyOwnedType()) {
-                if (classTy->decorator().isNonNilable()) {
-                  containsNonNilableOwned = true;
-                } else {
-                  containsNilableOwned = true;
+            bool containsNonNilableOwned = false;
+            bool containsNilableOwned = false;
+            auto resolvedFields =
+                fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+            for (int i = 0; i < resolvedFields.numFields(); i++) {
+              auto fieldType = resolvedFields.fieldType(i).type();
+              if (auto classTy = fieldType->toClassType()) {
+                if (classTy->decorator().isManaged() &&
+                    classTy->manager()->isAnyOwnedType()) {
+                  if (classTy->decorator().isNonNilable()) {
+                    containsNonNilableOwned = true;
+                  } else {
+                    containsNilableOwned = true;
+                  }
                 }
               }
             }
-          }
 
-          fromRef = !containsNonNilableOwned && containsNilableOwned;
-          fromConst = !containsNonNilableOwned && !containsNilableOwned;
+            fromRef = !containsNonNilableOwned && containsNilableOwned;
+            fromConst = !containsNonNilableOwned && !containsNilableOwned;
+          } else {
+            // Check intent of formal to copy/assign from.
+
+            // For init=, formals are (this, other). For =, formals are (lhs,
+            // rhs), unless it is a method in which case they are (this, lhs,
+            // rhs). Get the index of the 'other' or 'rhs' formal.
+            int otherFormalNum = 1;
+            if (!checkCopyable && testResolvedSig->untyped()->isMethod()) {
+              otherFormalNum = 2;
+            }
+            CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
+                        "unexpected formals");
+            auto otherTy = testResolvedSig->formalType(otherFormalNum);
+            CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
+                        "should have resolved concrete intent by now");
+            auto otherIntent = otherTy.kind();
+
+            fromConst = (otherIntent == QualifiedType::IN ||
+                         otherIntent == QualifiedType::CONST_IN ||
+                         otherIntent == QualifiedType::CONST_REF);
+            fromRef = !fromConst;
+          }
         } else {
-          // Check intent of formal to copy/assign from.
-
-          // For init=, formals are (this, other). For =, formals are (lhs,
-          // rhs), unless it is a method in which case they are (this, lhs,
-          // rhs). Get the index of the 'other' or 'rhs' formal.
-          int otherFormalNum = 1;
-          if (!checkCopyable && testResolvedSig->untyped()->isMethod()) {
-            otherFormalNum = 2;
-          }
-          CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
-                      "unexpected formals");
-          auto otherTy = testResolvedSig->formalType(otherFormalNum);
-          CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
-                      "should have resolved concrete intent by now");
-          auto otherIntent = otherTy.kind();
-
-          fromConst = (otherIntent == QualifiedType::IN ||
-                       otherIntent == QualifiedType::CONST_IN ||
-                       otherIntent == QualifiedType::CONST_REF);
-          fromRef = !fromConst;
+          printf("couldn't resolve proc\n");
         }
-      } else {
-        printf("couldn't resolve proc\n");
       }
     }
   } else {
@@ -4175,6 +4205,8 @@ static void getCopyOrAssignableInfo(Context* context, const Type* t,
     // non-record/class/array types are always copyable/assignable from const
     *fromConst = true;
   }
+  // copyable/assignable from const implies from ref as well
+  *fromRef |= *fromConst;
 }
 
 void getCopyableInfo(Context* context, const Type* t, bool* copyableFromConst,

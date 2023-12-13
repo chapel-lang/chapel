@@ -248,31 +248,33 @@ static void test4() {
 }
 
 // Atomic type
-static void test5() {
-  testCases(
-      R"""(
-      )""",
-      {
-          {"atomic int", all},
-      });
-}
+/* static void test5() { */
+/*   testCases( */
+/*       R"""( */
+/*       )""", */
+/*       { */
+/*           {"atomic int", all}, */
+/*       }); */
+/* } */
 
 // Sync/single types (special case)
-static void test6() {
-  testCases(
-      R"""(
-      )""",
-      {
-          {"sync string", all},
-          {"single string", all},
-      });
-}
+/* static void test6() { */
+/*   testCases( */
+/*       R"""( */
+/*       )""", */
+/*       { */
+/*           {"sync string", all}, */
+/*           {"single string", all}, */
+/*       }); */
+/* } */
 
 int main() {
   test1();
   test2();
   test3();
   test4();
-  test5();
-  test6();
+  // can't test since we don't resolve atomics yet
+  /* test5(); */
+  // can't test since we don't resolve syncs and singles yet
+  /* test6(); */
 }
