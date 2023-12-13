@@ -47,6 +47,9 @@
 #
 MAKEFLAGS = --no-print-directory
 
+MODULES_TO_LINT = \
+	$(shell find $(CHPL_MAKE_HOME)/modules/dists -name '*.chpl')
+
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
@@ -180,6 +183,12 @@ chplcheck: frontend-shared FORCE
 	@# Best not to depend on chapel-py-venv here, because at the time of
 	@# writing this target is always FORCEd (so we'd end up building it twice).
 	cd tools/chplcheck && $(MAKE) all install
+
+lint-standard-modules: chplcheck FORCE
+	chplcheck --skip-unstable \
+		--internal-prefix "_" \
+		--internal-prefix "chpl_" \
+		$(MODULES_TO_LINT)
 
 compile-util-python: FORCE
 	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \

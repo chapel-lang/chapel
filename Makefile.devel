@@ -16,9 +16,6 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-MODULES_TO_LINT = \
-	$(shell find $(CHPL_MAKE_HOME)/modules/dists -name '*.chpl')
-
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
 develall:
@@ -76,12 +73,6 @@ run-frontend-linters: FORCE
 	@cd compiler && $(MAKE) run-frontend-linters
 
 run-dyno-linters: run-frontend-linters FORCE
-
-lint-standard-modules: FORCE
-	chplcheck --skip-unstable \
-		--internal-prefix "_" \
-		--internal-prefix "chpl_" \
-		$(MODULES_TO_LINT)
 
 test-chpldef: FORCE
 	@cd compiler && $(MAKE) test-chpldef
