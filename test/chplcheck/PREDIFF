@@ -5,6 +5,8 @@ $CHPL_HOME/tools/chplcheck/chplcheck --enable-rule ConsecutiveDecls \
   --enable-rule UnusedFormal \
   --enable-rule CamelOrPascalCaseVariables \
   --enable-rule NestedCoforalls \
+  --internal-prefix "myprefix_" \
+  --skip-unstable \
   $1.chpl >> $2
 if sed "s#$(pwd)/##" $2 >$2.tmp; then
     mv $2.tmp $2
