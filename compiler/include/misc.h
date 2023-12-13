@@ -89,6 +89,22 @@ enum class GpuCodegenType {
   GPU_CG_CPU,
 };
 
+// this enum controls the behavior of argument passing to the generated GPU
+// kernels. See the inline comments for what each bit means.
+enum GpuArgKind {
+  ADDROF = 0b01, // if this bit is set, we pass the address of the argument
+                 // otherwise, we pass it directly
+  OFFLOAD = 0b10 // if this bit is set, we call a different runtime function
+                 // that also takes a size (that we generate with sizeof). That
+                 // runtime function offloads given number of bytes to the GPU
+                 // memory, and passes the new GPU pointer instead of what we
+                 // pass. Note that we can either pass the variable directly
+                 // (say, if it was already an address, or add an address-of
+                 // using the previous bit)
+                 // otherwise, the variable is passed directly
+};
+
+
 bool        forceWidePtrsForLocal();
 bool        requireWideReferences();
 bool        requireOutlinedOn();

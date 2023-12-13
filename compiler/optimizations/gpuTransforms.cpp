@@ -1262,10 +1262,6 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
     call->insertAtTail(new_IntSymbol(blockSize));
   }
 
-  for_vector (Symbol, actual, info.kernelActuals()) {
-    call->insertAtTail(new SymExpr(actual));
-  }
-
   return call;
 }
 
@@ -1273,10 +1269,43 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                   GpuKernel &kernel) {
   BlockStmt* gpuBlock = new BlockStmt();
 
+  VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
+
+  CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
+                    new_IntSymbol(kernel.kernelActuals().size()));
+  gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
+
+  for_vector (Symbol, actualSym, kernel.kernelActuals()) {
+    Type* actualValType = actualSym->typeInfo()->getValType();
+
+    if (isClass(actualValType) || (!actualSym->isRef() &&
+          !isAggregateType(actualValType))) {
+      // class: must be on GPU memory
+      // scalar: can be passed as an argument directly
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF)));
+    }
+    else if (actualSym->isRef()) {
+      // ref: we assume that it is not on GPU memory to be safe, so offload it,
+      // but while doing so, we don't need to get the address of it. Because we
+      // just copy the value pointed by it.
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::OFFLOAD)));
+    }
+    else {
+      // we don't know what this is: offload
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF |
+                                                        GpuArgKind::OFFLOAD)));
+    }
+  }
+
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  gpuCall->insertAtTail(new SymExpr(cfg));
   gpuBlock->insertAtTail(gpuCall);
+  gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
   gpuLoop.gpuLoop()->replace(gpuBlock);
 
   FnSymbol *fnContainingLoop = gpuBlock->getFunction();

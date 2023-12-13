@@ -302,6 +302,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_SYNC_THREADS:
   case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
+  case PRIM_GPU_INIT_KERNEL_CFG:
+  case PRIM_GPU_DEINIT_KERNEL_CFG:
+  case PRIM_GPU_ARG:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.

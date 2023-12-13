@@ -109,11 +109,23 @@ export proc transposeMatrix(odata: c_ptr(dataType), idata: c_ptr(dataType), widt
 }
 
 inline proc transposeLowLevel(original, ref output) {
+  // arguments are: number of parameters, line no, file no
+  var cfg = __primitive("gpu init kernel cfg", 4, 0, 0);
+
+  // 0 is an enum value that says: "pass this directly"
+  // 1 is an enum value that says: "pass the address of this to the
+  //   kernel_params, while not offloading anything". I am not entirely sure why
+  //   we need to do that for C pointers
+  __primitive("gpu arg", cfg, c_ptrTo(output), 1);
+  __primitive("gpu arg", cfg, c_ptrToConst(original), 1);
+  __primitive("gpu arg", cfg, sizeX, 0);
+  __primitive("gpu arg", cfg, sizeY, 0);
+
   __primitive("gpu kernel launch",
           "transposeMatrix":chpl_c_string,
           /* grid size */  sizeX / blockSize, sizeY / blockSize, 1,
           /* block size */ blockSize, blockSize, 1,
-          /* kernel args */ c_ptrTo(output), c_ptrToConst(original), sizeX, sizeY);
+          /* kernel config */ cfg);
 }
 
 var originalHost: [0..#sizeX, 0..#sizeY] dataType;
