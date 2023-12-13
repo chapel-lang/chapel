@@ -25,11 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test compiler performance with driver adjustments (but in monolithic mode)
-GITHUB_USER=riftember
-GITHUB_BRANCH=driver-print-passes
-SHORT_NAME=monolithic-comp
-START_DATE=11/15/23
+# Test perf using llvm fastcc
+GITHUB_USER=jabraham17
+GITHUB_BRANCH=use-fast-call
+SHORT_NAME=fastcall
+START_DATE=12/13/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
