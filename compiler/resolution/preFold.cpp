@@ -1966,7 +1966,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Type* type = se->getValType();
 
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+      USR_FATAL_CONT(call, "can't apply '.type' to a type ('%s')",
                      toString(se->typeInfo()));
     } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",

@@ -332,14 +332,15 @@ void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
   auto dottedType = std::get<const types::Type*>(info);
   auto typeDeclId = std::get<ID>(info);
-  if (!dottedType->isErroneousType()) {
-    wr.heading(kind_, type_, dot, "can't apply '.type' to a type (", dottedType,
-               ").");
+  const bool haveType = dottedType && !dottedType->isErroneousType();
+  if (haveType) {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type ('",
+               dottedType, "').");
   } else {
     wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
   }
   wr.code(dot, {dot});
-  if (!dottedType->isErroneousType()) {
+  if (haveType) {
     wr.message(
         "The '.type' accessor can only be applied to values, but the receiver "
         "of the above expression is the type '",
