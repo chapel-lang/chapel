@@ -1,0 +1,1 @@
+-f /home/br-apoenaru/workspace-arm/bude-1.2.10-release/BUDE-1.2.10/inputData/heavy_by-atom_2016-v1.bhff -p /home/br-apoenaru/workspace-arm/bude-1.2.10-release/example/virtual_screen/1GCZ/inputs/bude_1gcz_proA.mol2 -l /home/br-apoenaru/workspace-arm/bude-1.2.10-release/example/virtual_screen/1GCZ/inputs/bude_1gcz_proA.mol2 -o output --force 
