@@ -141,8 +141,7 @@ int VarScopeVisitor::currentNumWhenFrames() {
   CHPL_ASSERT(frame->scopeAst->isSelect());
   int ret = frame->subBlocks.size();
   //allowance for otherwise placeholder
-  CHPL_ASSERT(frame->scopeAst->toSelect()->numWhenStmts() == ret || 
-              frame->scopeAst->toSelect()->numWhenStmts() == ret - 1);
+  CHPL_ASSERT(frame->scopeAst->toSelect()->numWhenStmts() == ret);
   return ret;
 }
 VarFrame* VarScopeVisitor::currentWhenFrame(int i) {
@@ -237,9 +236,6 @@ void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
     VarFrame* selFrame = scopeStack.back().get();
     for (auto when : s->whenStmts()) {
       selFrame->subBlocks.push_back(ControlFlowSubBlock(when));
-    }
-    if (!s->hasOtherwise()) {
-      selFrame->subBlocks.push_back(ControlFlowSubBlock(nullptr));
     }
   }
 }
