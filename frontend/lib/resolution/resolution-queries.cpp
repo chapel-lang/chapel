@@ -4020,90 +4020,99 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
 // checkCopyable is true for copyable, false for assignable.
 // Return: First is from const, second is from ref.
 static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
-    Context* context, const CompositeType* ct, bool checkCopyable) {
-  QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
+    Context* context, const Type* t, bool checkCopyable) {
+  QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, t, checkCopyable);
   std::pair<bool, bool> result;
-
-  auto ast = parsing::idToAst(context, ct->id());
-  auto attrs = ast->attributeGroup();
 
   // Inspect type for either kind of copyability/assignability.
   bool fromConst = false;
   bool fromRef = false;
-  if (auto classTy = ct->toClassType()) {
-    if (classTy->decorator().isNonNilable() &&
-        classTy->decorator().isManaged() &&
+  if (auto classTy = t->toClassType()) {
+    if (classTy->decorator().isManaged() &&
         classTy->manager()->isAnyOwnedType()) {
-      // Non-nilable owned class types are not copyable/assignable
+      // Owned class types are copyable from ref iff they are nilable.
+      fromRef = classTy->decorator().isNilable();
+    } else {
+      // Class types of other management are copyable from const.
+      fromConst = true;
     }
-  } else if (auto at = ct->toArrayType()) {
-    if (auto eltType = at->eltType().type()) {
-      // Arrays are copyable/assignable if their elements are
-      getCopyableInfo(context, eltType, &fromConst, &fromRef);
-    }
-  } else if (checkCopyable && attrs && (attrs->hasPragma(PRAGMA_SYNC) ||
-                       attrs->hasPragma(PRAGMA_SINGLE))) {
-    // Syncs and singles are copyable
-    // This is a special case to preserve deprecated behavior before sync/single
-    // implicit reads are removed. 12/8/23
-    fromConst = true;
-  } else {
-    // In general, try to resolve the type's 'init='/'=', and examine it to
-    // determine copy/assignability, respectively.
-    const TypedFnSignature* testResolvedSig =
-        (checkCopyable ? tryResolveInitEq(context, ast,
-                                          QualifiedType(QualifiedType::VAR, ct))
-                       : tryResolveEq(context, ast,
-                                      QualifiedType(QualifiedType::VAR, ct)));
-    if (testResolvedSig) {
-      if (testResolvedSig->untyped()->isCompilerGenerated()) {
-        // Check for owned class fields.
+  } else if (auto ct = t->toCompositeType()) {
+    auto ast = parsing::idToAst(context, ct->id());
+    auto attrs = ast->attributeGroup();
+    if (auto at = t->toArrayType()) {
+      if (auto eltType = at->eltType().type()) {
+        // Arrays are copyable/assignable if their elements are
+        getCopyableInfo(context, eltType, &fromConst, &fromRef);
+      }
+    } else if (checkCopyable && attrs &&
+               (attrs->hasPragma(PRAGMA_SYNC) ||
+                attrs->hasPragma(PRAGMA_SINGLE))) {
+      // Syncs and singles are copyable
+      // This is a special case to preserve deprecated behavior before
+      // sync/single implicit reads are removed. 12/8/23
+      fromConst = true;
+    } else {
+      // In general, try to resolve the type's 'init='/'=', and examine it to
+      // determine copy/assignability, respectively.
+      const TypedFnSignature* testResolvedSig =
+          (checkCopyable
+               ? tryResolveInitEq(context, ast,
+                                  QualifiedType(QualifiedType::VAR, ct))
+               : tryResolveEq(context, ast,
+                              QualifiedType(QualifiedType::VAR, ct)));
+      if (testResolvedSig) {
+        if (testResolvedSig->untyped()->isCompilerGenerated()) {
+          // Check for owned class fields.
 
-        bool containsNonNilableOwned = false;
-        bool containsNilableOwned = false;
-        auto resolvedFields =
-            fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
-        for (int i = 0; i < resolvedFields.numFields(); i++) {
-          auto fieldType = resolvedFields.fieldType(i).type();
-          if (auto classTy = fieldType->toClassType()) {
-            if (classTy->decorator().isManaged() &&
-                classTy->manager()->isAnyOwnedType()) {
-              if (classTy->decorator().isNonNilable()) {
-                containsNonNilableOwned = true;
-              } else {
-                containsNilableOwned = true;
+          bool containsNonNilableOwned = false;
+          bool containsNilableOwned = false;
+          auto resolvedFields =
+              fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+          for (int i = 0; i < resolvedFields.numFields(); i++) {
+            auto fieldType = resolvedFields.fieldType(i).type();
+            if (auto classTy = fieldType->toClassType()) {
+              if (classTy->decorator().isManaged() &&
+                  classTy->manager()->isAnyOwnedType()) {
+                if (classTy->decorator().isNonNilable()) {
+                  containsNonNilableOwned = true;
+                } else {
+                  containsNilableOwned = true;
+                }
               }
             }
           }
+
+          fromRef = !containsNonNilableOwned && containsNilableOwned;
+          fromConst = !containsNonNilableOwned && !containsNilableOwned;
+        } else {
+          // Check intent of formal to copy/assign from.
+
+          // For init=, formals are (this, other). For =, formals are (lhs,
+          // rhs), unless it is a method in which case they are (this, lhs,
+          // rhs). Get the index of the 'other' or 'rhs' formal.
+          int otherFormalNum = 1;
+          if (!checkCopyable && testResolvedSig->untyped()->isMethod()) {
+            otherFormalNum = 2;
+          }
+          CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
+                      "unexpected formals");
+          auto otherTy = testResolvedSig->formalType(1);
+          CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
+                      "should have resolved concrete intent by now");
+          auto otherIntent = otherTy.kind();
+
+          fromConst = (otherIntent == QualifiedType::IN ||
+                       otherIntent == QualifiedType::CONST_IN ||
+                       otherIntent == QualifiedType::CONST_REF);
+          fromRef = !fromConst;
         }
-
-        fromRef = !containsNonNilableOwned && containsNilableOwned;
-        fromConst = !containsNonNilableOwned && !containsNilableOwned;
-      } else {
-        // Check intent of formal to copy/assign from.
-
-        // For init=, formals are (this, other). For =, formals are (lhs, rhs),
-        // unless it is a method in which case they are (this, lhs, rhs). Get
-        // the index of the 'other' or 'rhs' formal.
-        int otherFormalNum = 1;
-        if (!checkCopyable && testResolvedSig->untyped()->isMethod()) {
-          otherFormalNum = 2;
-        }
-        CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
-                    "unexpected formals");
-        auto otherTy = testResolvedSig->formalType(1);
-        CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
-                    "should have resolved concrete intent by now");
-        auto otherIntent = otherTy.kind();
-
-        fromConst = (otherIntent == QualifiedType::IN ||
-                     otherIntent == QualifiedType::CONST_IN ||
-                     otherIntent == QualifiedType::CONST_REF);
-        fromRef = !fromConst;
       }
     }
+  } else {
+    CHPL_ASSERT(false && "unreachable case");
   }
 
+  result = {fromConst, fromRef};
   return QUERY_END(result);
 }
 
@@ -4111,13 +4120,13 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
 static void getCopyOrAssignableInfo(Context* context, const Type* t,
                                     bool* fromConst, bool* fromRef,
                                     bool checkCopyable) {
-  if (auto ct = t->toCompositeType()) {
-    // Use query to cache results only for composite types
-    auto info = getCopyOrAssignableInfoQuery(context, ct, checkCopyable);
+  if (t->isCompositeType() || t->isClassType()) {
+    // Use query to cache results only for complicated types
+    auto info = getCopyOrAssignableInfoQuery(context, t, checkCopyable);
     *fromConst = info.first;
     *fromRef = info.second;
   } else {
-    // non-record types are always copyable/assignable from const
+    // non-record/class/array types are always copyable/assignable from const
     *fromConst = true;
   }
 }
