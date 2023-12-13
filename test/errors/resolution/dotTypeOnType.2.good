@@ -1,0 +1,7 @@
+─── error in dotTypeOnType.chpl:4 [DotTypeOnType] ───
+  Can't apply '.type' to a type (t).
+      |
+    4 | type tType = t.type;
+      |              ⎺⎺⎺⎺⎺⎺
+      |
+
