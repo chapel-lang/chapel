@@ -510,7 +510,7 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   //save results for vars declared in when blocks
   //gather the set of variables to consider
   std::set<ID> locInitedVars;
-  for(size_t i = 0; i < currentNumWhenFrames(); i++) {
+  for(int i = 0; i < currentNumWhenFrames(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (whenFrame == nullptr) continue;
     for (const auto& id : whenFrame->initedVars) {
@@ -576,7 +576,7 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   std::vector<std::vector<ID>> splitInitedAllIds;
   std::vector<std::vector<QualifiedType>> splitInitedAllTypes;
 
-  for(size_t i = 0; i < currentNumWhenFrames(); i++) {
+  for(int i = 0; i < currentNumWhenFrames(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
     std::vector<ID> currIds;
@@ -599,17 +599,17 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   //do error checking
   // * split-init variables are initialized in the same order in all blocks
   // * split init variables are initialized with the same type in all blocks
-  for(int i = 1; i < splitInitedAllIds.size(); i++) {
+  for(size_t i = 1; i < splitInitedAllIds.size(); i++) {
     CHPL_ASSERT(splitInitedAllIds.at(i).size() == 
                 splitInitedAllIds.at(i-1).size());
     CHPL_ASSERT(splitInitedAllTypes.at(i).size()  ==
                 splitInitedAllTypes.at(i-i).size());
   }
   bool orderOk;
-  for(int i = 0; i < splitInitedAllIds.size(); i++) {
+  for(size_t i = 0; i < splitInitedAllIds.size(); i++) {
     std::vector<ID> reference = splitInitedAllIds.at(0);
     std::vector<ID> compared = splitInitedAllIds.at(i);
-    for(int j = 0; j < reference.size(); j++) {
+    for(size_t j = 0; j < reference.size(); j++) {
       ID referenceId = reference[j];
       ID comparedId = compared[j];
       if(referenceId != comparedId) {
@@ -621,10 +621,10 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
     }
   }
   if (orderOk) {
-    for(int i = 0; i < splitInitedAllTypes.size(); i++) {
+    for(size_t i = 0; i < splitInitedAllTypes.size(); i++) {
       std::vector<QualifiedType> reference = splitInitedAllTypes.at(0);
       std::vector<QualifiedType> compared = splitInitedAllTypes.at(i);
-      for(int j = 0; j < reference.size(); j++) {
+      for(size_t j = 0; j < reference.size(); j++) {
         QualifiedType referenceType = reference[j];
         QualifiedType comparedType = compared[j];
         if(referenceType != comparedType) {
@@ -637,7 +637,7 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   }
 
   //propogate the mentioned variables
-  for(size_t i = 0; i < currentNumWhenFrames(); i++) {
+  for(int i = 0; i < currentNumWhenFrames(); i++) {
     auto whenFrame = currentWhenFrame(i);
     if (whenFrame != nullptr) {
       for (const auto& id : whenFrame->mentionedVars) {
