@@ -155,29 +155,3 @@ init 1 1
 init= 1 1
 deinit 1 1
 deinit 1 1
-test17a
-init 1 1
-deinit 1 1
-test17b
-init 1 1
-deinit 1 1
-test17c
-init 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
-test17d
-init 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
-test17e
-init 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
-test17f
-init 1 1
-init= 1 1
-deinit 1 1
-deinit 1 1
