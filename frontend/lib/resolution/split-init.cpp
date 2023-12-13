@@ -543,7 +543,7 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
     bool allInitReturnOrThrow = true;
     bool allInit = true;
     bool anyParamTrue = false;
-    for(size_t i = 0; i < sel->numWhenStmts(); i++) {
+    for(int i = 0; i < sel->numWhenStmts(); i++) {
       auto whenFrame = currentWhenFrame(i);
       if (!whenFrame) continue;
       
