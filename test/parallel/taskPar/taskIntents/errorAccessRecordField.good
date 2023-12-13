@@ -1,0 +1,2 @@
+errorAccessRecordField.chpl:9: error: cannot assign to const variable
+errorAccessRecordField.chpl:1: note: The shadow variable 'r' is constant due to task intents in this parallel statement
