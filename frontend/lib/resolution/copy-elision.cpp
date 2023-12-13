@@ -600,6 +600,20 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   tryFrame->copyElisionState.swap(updatedState);
 
+  //propogate mentions in the catch clauses
+  for (int i = 0; i < nCatchFrames; i++) {
+    VarFrame* catchFrame = currentCatchFrame(i);
+    if (!catchFrame->returnsOrThrows) {
+      allThrowOrReturn = false;
+    }
+    for (const auto& pair : catchFrame->copyElisionState) {
+      auto id = pair.first;
+      if(!pair.second.lastIsCopy) {
+        CopyElisionState& parentState = tryFrame->copyElisionState[id];
+        parentState.lastIsCopy = false;
+      }
+    }
+  }
   handleScope(t, rv);
 }
 void FindElidedCopies::handleSelect(const Select* sel, RV& rv) {

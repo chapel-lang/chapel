@@ -1219,6 +1219,8 @@ static void test40() {
             y;
           } catch {
             var x: int;
+            x;
+            return;
           }
 
           
@@ -1240,7 +1242,74 @@ static void test40() {
             var y = x;
             y;
           } catch {
-            var x: int;
+            x;
+            return;
+          }
+
+          
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test40e",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          try {
+            var y = x;
+            y;
+          } catch {
+            x;
+          }
+
+          
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test40e",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          try {
+            var y = x;
+            y;
+          } catch {
+            return;
+          }
+
+          
+        }
+      }
+    )"""",
+    {"M.test@4"});
+  testCopyElision("test40f",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+
+        proc test() {
+          var x: int = 0;
+          try {
+            var y = x;
+            y;
+          } catch {
+            return;
           }
           x;
           
