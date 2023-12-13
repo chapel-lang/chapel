@@ -238,7 +238,7 @@ void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
     for (auto when : s->whenStmts()) {
       selFrame->subBlocks.push_back(ControlFlowSubBlock(when));
     }
-    if (s->hasOtherwise()) {
+    if (!s->hasOtherwise()) {
       selFrame->subBlocks.push_back(ControlFlowSubBlock(nullptr));
     }
   }
@@ -562,7 +562,6 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = cond->elseBlock()) {
       elseBlock->traverse(rv);
-      
       currentElseFrame()->paramTrue = true;
     }
     return false;
@@ -615,9 +614,6 @@ bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
     }
   }
 
-  // if a when frame is a nullptr, it represents 
-  // a paramFalse branch if the index is < sel->numWhenStmts() or
-  // a placeholder for the nonexistent otherwise block if ==sel->numWhenStmts()
   return false;
 }
 
@@ -625,7 +621,6 @@ void VarScopeVisitor::exit(const Select* ast, RV& rv) {
   exitScope(ast, rv);
   exitAst(ast);
 }
-
 
 bool VarScopeVisitor::enter(const AstNode* ast, RV& rv) {
   enterAst(ast);

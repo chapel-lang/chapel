@@ -421,6 +421,7 @@ static void propogateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
     }
   }
 }
+
 void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* frame = currentFrame();
   VarFrame* thenFrame = currentThenFrame();
@@ -529,7 +530,7 @@ void FindElidedCopies::handleConditional(const Conditional* cond, RV& rv) {
     }
   }
 
-  // propagate inited variables from the then/else scopes
+  // propagate inited and mentioned variables from the then/else scopes
   if (thenFrame) {
     propogateMentionsAndInits(frame, thenFrame);
   }
@@ -599,10 +600,11 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
     VarFrame* catchFrame = currentCatchFrame(i);
     if (catchFrame) {
       propogateMentionsAndInits(tryFrame, catchFrame);
-    };
+    }
   }
   handleScope(t, rv);
 }
+
 void FindElidedCopies::handleSelect(const Select* sel, RV& rv) {
   VarFrame * frame = currentFrame();
   //process the copy elisions local to each branch and 
@@ -649,7 +651,7 @@ void FindElidedCopies::handleSelect(const Select* sel, RV& rv) {
     }
   }
 
-  //update the inited vars and the unused vars
+  //update the inited and mentioned vars
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     VarFrame * whenFrame = currentWhenFrame(i);
     if(!whenFrame) continue;
@@ -657,6 +659,7 @@ void FindElidedCopies::handleSelect(const Select* sel, RV& rv) {
   }
   handleScope(sel, rv);
 }
+
 static bool allowsCopyElision(const AstNode* ast) {
   return ast->isBlock() ||
          ast->isConditional() ||

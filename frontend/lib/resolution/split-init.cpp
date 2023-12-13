@@ -281,10 +281,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
   //   one initializes and its statically known to be the only path
   for (const auto& id : locInitedVars) {
     
-    bool thenInits = false;
-    thenInits = thenFrame && thenFrame->initedVars.count(id) > 0;
-    bool elseInits = false;
-    elseInits = elseFrame && elseFrame->initedVars.count(id) > 0;
+    bool thenInits = thenFrame && thenFrame->initedVars.count(id) > 0;
+    bool elseInits = elseFrame && elseFrame->initedVars.count(id) > 0;
 
     if (thenInits && elseInits) {
       locSplitInitedVars.insert(id);
@@ -292,8 +290,8 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
                (thenReturnsThrows && elseInits)) {
       // one branch returns or throws and the other inits
       locSplitInitedVars.insert(id);
-    } else if ((thenInits && thenFrame && thenFrame->paramTrue) ||
-               (elseInits && elseFrame && elseFrame->paramTrue)) {
+    } else if ((thenInits && thenFrame->paramTrue) ||
+               (elseInits && elseFrame->paramTrue)) {
       locSplitInitedVars.insert(id);
     } else {
       frame->mentionedVars.insert(id);
@@ -509,9 +507,6 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
 void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   VarFrame* frame = currentFrame();
 
-  
-
-
   //save results for vars declared in when blocks
   //gather the set of variables to consider
   std::set<ID> locInitedVars;
@@ -545,7 +540,6 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
   //  if no otherwise block, all present frames init, return, or throw, 
   //    and at least one path is param true
   for (const auto& id : locInitedVars) {
-
     bool allInitReturnOrThrow = true;
     bool allInit = true;
     bool anyParamTrue = false;
@@ -553,7 +547,6 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
       auto whenFrame = currentWhenFrame(i);
       if (!whenFrame) continue;
       
-
       bool thisInits = whenFrame->initedVars.count(id) > 0;
       bool thisReturnsThrows = whenFrame->returnsOrThrows;
       bool thisParamTrue = whenFrame->paramTrue;
@@ -561,7 +554,6 @@ void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
       allInitReturnOrThrow = allInitReturnOrThrow && (thisInits || thisReturnsThrows);
       allInit = allInit && thisInits;
       anyParamTrue = anyParamTrue || thisParamTrue;
-    
     }
     
     if (sel->hasOtherwise() && allInitReturnOrThrow) {
