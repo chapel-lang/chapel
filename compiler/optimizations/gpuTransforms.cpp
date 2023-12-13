@@ -1289,6 +1289,11 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
       // ref: we assume that it is not on GPU memory to be safe, so offload it,
       // but while doing so, we don't need to get the address of it. Because we
       // just copy the value pointed by it.
+      // ENGIN: it is questionable whether we want to do this. This is creating
+      // a copy of something that was referred to by this `ref`. Accessing a
+      // `ref` shouldn't trigger a copy, unless... it was put to a "task
+      // private" variable:
+      // ref x = y; foreach ... with (var inBody = x)
       gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
                                           new_IntSymbol(GpuArgKind::OFFLOAD)));
     }
