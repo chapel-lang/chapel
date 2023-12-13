@@ -7626,6 +7626,22 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
   }
 }
 
+static Symbol* maybeGetBaseSymFromMethodCallTemp(SymExpr* def) {
+  if (auto parentCall = toCallExpr(def->parentExpr)) {
+    if (isMoveOrAssign(parentCall) && isCallExpr(parentCall->get(2))) {
+      if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
+        if (maybeMethodCall->resolvedFunction() &&
+            maybeMethodCall->resolvedFunction()->isMethod()) {
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(2))) {
+            return baseExpr->symbol();
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
@@ -7633,6 +7649,14 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
     varname += 15;
   else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
+  else if (strncmp(varname, "call_tmp", 8) == 0) {
+    for_SymbolDefs(def, aVar) {
+      if (auto sym = maybeGetBaseSymFromMethodCallTemp(def)) {
+        varname = sym->name;
+        break;
+      }
+    }
+  }
 
   if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
     Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
