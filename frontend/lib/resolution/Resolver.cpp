@@ -3500,7 +3500,13 @@ void Resolver::exit(const Dot* dot) {
     } else {
       receiverType = ErroneousType::get(context);
     }
-    r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+
+    if (!receiver.type().isType()) {
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    } else {
+      r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
+                                receiver.toId()));
+    }
     return;
   }
 
