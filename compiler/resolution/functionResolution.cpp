@@ -9203,7 +9203,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   } else if (rhsSym->hasFlag(FLAG_REF_TO_CONST)) {
     lhsSym->addFlag(FLAG_REF_TO_CONST);
-
+    if (rhsSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+    }
   }
 
   if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
@@ -9329,6 +9331,9 @@ static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
           rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
         toSymExpr(call->get(1))->symbol()->addFlag(FLAG_REF_TO_CONST);
       }
+      if (rhsBase->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        toSymExpr(call->get(1))->symbol()->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      }
 
     } else {
       INT_ASSERT(false);
@@ -9384,6 +9389,8 @@ static void moveSetFlagsForConstAccess(Symbol*   lhsSym,
 
     if (isReferenceType(lhsSym->type) == true) {
       lhsSym->addFlag(FLAG_REF_TO_CONST);
+      if (baseSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
     } else {
       lhsSym->addFlag(FLAG_CONST);
     }
