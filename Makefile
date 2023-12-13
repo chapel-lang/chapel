@@ -185,7 +185,7 @@ chplcheck: frontend-shared FORCE
 	cd tools/chplcheck && $(MAKE) all install
 
 lint-standard-modules: chplcheck FORCE
-	chplcheck --skip-unstable \
+	tools/chplcheck/chplcheck --skip-unstable \
 		--internal-prefix "_" \
 		--internal-prefix "chpl_" \
 		$(MODULES_TO_LINT)
