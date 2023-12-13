@@ -1,0 +1,4 @@
+ # associativeDomain.default.good
+-snoParSafeWarning # associativeDomain.noParSafe.good
+-sparSafeDefault # associativeDomain.parSafeDefault.good
+-snoParSafeWarning -sparSafeDefault # associativeDomain.both.good # effectively the same as passing just -sparSafeDefault

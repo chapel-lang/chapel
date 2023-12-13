@@ -45,6 +45,19 @@ module ChapelDomain {
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
+
+  /* Compile with ``-sparSafeDefault`` to use ``parSafe=true``
+     by default for associative domains and arrays */
+  @chpldoc.nodoc
+  config param parSafeDefault = false;
+
+
+  /* Compile with ``-snoParSafeWarning`` to suppress the warning
+     about the default parSafe-ty mode for associative domains
+     and arrays changing from ``true`` to ``false``. */
+  @chpldoc.nodoc
+  config param noParSafeWarning = false;
+
   pragma "no copy return"
   pragma "return not owned"
   proc _getDomain(value) {
@@ -78,11 +91,16 @@ module ChapelDomain {
   }
 
   pragma "runtime type init fn"
-  @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainRuntimeType(dist, type idxType,
-                                    param parSafe: bool = true) type {
+                                    param parSafe: bool = parSafeDefault) type {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
+    if parSafe && chpl_warnUnstable then
+      compilerWarning("parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future");
+    else if !parSafeDefault && !noParSafeWarning {
+      /* User didn't compile with any additional flags, so we generate the standard warning*/
+      compilerWarning("The default parSafe-ty mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+    }
     return new _domain(dist, idxType, parSafe);
   }
 
@@ -204,7 +222,6 @@ module ChapelDomain {
   }
 
   // definedConst is added only for interface consistency
-  @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainExpr(const keys..., definedConst) {
     param count = keys.size;
     // keyType of string literals is assumed to be type string
