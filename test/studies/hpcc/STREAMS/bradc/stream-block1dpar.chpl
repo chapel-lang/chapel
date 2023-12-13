@@ -88,7 +88,7 @@ proc initVectors(B, C) {
   coforall loc in B.dom.dist.targetLocDom {
     on B.dom.dist.targetLocs(loc) {
       var randlist = if useRandomSeed
-        then new randomStream(eltType=real);
+        then new randomStream(eltType=real)
         else new randomStream(eltType=real, seed=314159265);
       // TODO: Need to clean this up to use more normal method names
       randlist.skipToNth(B.locArr(loc)!.locDom.low-1);

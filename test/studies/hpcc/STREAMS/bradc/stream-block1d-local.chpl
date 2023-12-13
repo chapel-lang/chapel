@@ -61,7 +61,7 @@ proc printConfiguration() {
 
 proc initVectors(ref B, ref C) {
   var randlist = if useRandomSeed
-    then new randomStream(eltType=real);
+    then new randomStream(eltType=real)
     else new randomStream(eltType=real, seed=314159265);
 
   randlist.fill(B);

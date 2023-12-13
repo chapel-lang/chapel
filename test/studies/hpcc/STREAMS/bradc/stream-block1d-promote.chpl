@@ -11,7 +11,7 @@ config const m = computeProblemSize(elemType, numVectors),
              alpha = 3.0;
 
 config const numTrials = 10,
-             epsilon = 0.0;
+             epsilon = 1e-15;
 
 config const useRandomSeed = true;
 
@@ -52,7 +52,7 @@ proc printConfiguration() {
 
 proc initVectors(ref B, ref C) {
   var randlist = if useRandomSeed
-    then new randomStream(eltType=real);
+    then new randomStream(eltType=real)
     else new randomStream(eltType=real, seed=314159265);
 
   randlist.fill(B);

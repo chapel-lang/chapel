@@ -102,7 +102,7 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-  { use NPBRandom;
+  { use Random;
     writeln("generating RMAT graph");
 
     const vertex_range = 1..N_VERTICES,
@@ -112,9 +112,9 @@ proc Gen_RMAT_graph ( a : real,
     // Random Numbers return in the range [0.0, 1.0)
 
     var Rand_Gen = if REPRODUCIBLE_PROBLEMS then
-                     new owned randomStream (real, seed = 0556707007)
+                     new randomStream (real, seed = 0556707007)
                    else
-                     new owned randomStream (real);
+                     new randomStream (real);
 
     var   Noisy_a     : [edge_range] real,
           Noisy_b     : [edge_range] real,

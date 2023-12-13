@@ -3,6 +3,9 @@
 public use Random;
 public use Time;
 
+// random seed for arrays
+config const randSeed = NPBRandom.oddTimeSeed();
+
 // Control output.
 config const printC = true,
   printElapsed = true;
@@ -11,7 +14,7 @@ config const printC = true,
 // matrices.
 config const scalingFactor = 1;
 
-var randStream = new randomStream(eltType=real),
+var randStream = new randomStream(eltType=real, seed=randSeed),
     timer: stopwatch;
 
 const inner = 1..5 * scalingFactor,
