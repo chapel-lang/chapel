@@ -332,7 +332,11 @@ static std::string buildProgram(Qualifier formalIntent,
   }
   stream << "..." << count;
   stream << ") {\n";
-  stream << "  var varArgRet : args.type;\n";
+
+  stream << "  var varArgRet : args";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
+
   stream << "  return varArgRet;\n";
   stream << "}\n\n";
 
@@ -358,7 +362,9 @@ static std::string buildProgram(Qualifier formalIntent,
     if (i > 0) stream << ", ";
     stream << "formal_" << std::to_string(i);
   }
-  stream << ").type;\n";
+  stream << ")";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
   stream << "  return ret;\n";
   stream << "}\n\n";
 
