@@ -94,7 +94,7 @@ static void testExprCopyAndAssignability(const char* preamble, const char* expr,
        {"is const assignable type", expr, expectConstAssignable, testExact}});
 }
 
-static constexpr int normal = 0;
+static constexpr int all = 0;
 static constexpr int refOnly = 1;
 static constexpr int none = 2;
 
@@ -104,7 +104,7 @@ static void testCases(const char* preamble,
     const char* expr = std::get<0>(testCase);
     int kind = std::get<1>(testCase);
     switch (kind) {
-      case normal:
+      case all:
         testExprCopyAndAssignability(preamble, expr, true, true, true, true);
         break;
       case refOnly:
@@ -121,15 +121,157 @@ static void testCases(const char* preamble,
   }
 }
 
+// Class types with different management
 static void test1() {
-  testCases("class C {}", {
-      {"owned C", none},
-      {"owned C?", refOnly},
-      {"shared C", normal},
-      {"shared C?", normal},
-  });
+  testCases(
+      R"""(
+      class C { }
+      )""",
+      {
+          {"owned C", none},
+          {"owned C?", refOnly},
+          {"shared C", all},
+          {"shared C?", all},
+          {"borrowed C", all},
+          {"borrowed C?", all},
+          {"unmanaged C", all},
+          {"unmanaged C?", all},
+      });
+}
+
+// Record types with different contents
+static void test2() {
+  testCases(
+      R"""(
+      class C { }
+
+      record PlainRecord { }
+
+      record GenericRecord {
+        var x;
+      }
+
+      record RecordWithNilableOwned {
+        var x: owned C?;
+      }
+
+      record RecordWithNonNilableOwned {
+        var x: owned C?;
+      }
+
+      record CustomRecordWithNilableOwned {
+        var x: owned C?;
+        proc init=(other) {
+          this.x = new owned C();
+        }
+      }
+      operator =(ref lhs: CustomRecordWithNilableOwned,
+              const ref rhs: CustomRecordWithNilableOwned) {
+        lhz.x = new owned C();
+      }
+      record CustomRecordWithNonNilableOwned {
+        var x: owned C;
+        proc init=(other) {
+          this.x = new owned C();
+        }
+      }
+      operator =(ref lhs: CustomRecordWithNonNilableOwned,
+              const ref rhs: CustomRecordWithNonNilableOwned) {
+        lhz.x = new owned C();
+      }
+
+      record CustomRecordWithNilableOwnedOp {
+        var x: owned C?;
+        proc init=(other) {
+          this.x = new owned C();
+        }
+      }
+      operator CustomRecordWithNilableOwnedOp.=(
+              ref lhs: CustomRecordWithNilableOwnedOp,
+              const ref rhs: CustomRecordWithNilableOwnedOp) {
+        lhz.x = new owned C();
+      }
+
+      record CustomRecordWithNonNilableOwnedOp {
+        var x: owned C;
+        proc init=(other) {
+          this.x = new owned C();
+        }
+      }
+      operator CustomRecordWithNilableOwnedOp.=(
+              ref lhs: CustomRecordWithNonNilableOwnedOp,
+              const ref rhs: CustomRecordWithNonNilableOwnedOp) {
+        lhz.x = new owned C();
+      }
+      )""",
+      {
+          {"PlainRecord", all},
+          {"GenericRecord", all},
+          {"RecordWithNilableOwned", refOnly},
+          {"RecordWithNonNilableOwned", none},
+          {"CustomRecordWithNilableOwned", all},
+          {"CustomRecordWithNonNilableOwned", all},
+          {"CustomRecordWithNilableOwnedOp", all},
+          {"CustomRecordWithNonNilableOwnedOp", all},
+      });
+}
+
+// Tuple and enum types
+static void test3() {
+  testCases(
+      R"""(
+      class C { }
+      enum E { x }
+      )""",
+      {
+          {"E", all},
+          {"(int, string)", all},
+          {"(int, owned C)", none},
+          {"(int, owned C?)", refOnly},
+      });
+}
+
+// Plain old primitive types
+static void test4() {
+  testCases(
+      R"""(
+      )""",
+      {
+          {"int", all},
+          {"int(32)", all},
+          {"string", all},
+          {"real", all},
+          {"bool", all},
+          {"complex", all},
+      });
+}
+
+// Atomic type
+static void test5() {
+  testCases(
+      R"""(
+      )""",
+      {
+          {"atomic int", all},
+      });
+}
+
+// Sync/single types (special case)
+static void test6() {
+  testCases(
+      R"""(
+      )""",
+      {
+          {"sync string", all},
+          {"single string", all},
+      });
 }
 
 int main() {
   test1();
+  test2();
+  test3();
+  test4();
+  test5();
+  test6();
 }
