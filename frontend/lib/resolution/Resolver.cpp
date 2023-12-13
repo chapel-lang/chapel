@@ -3492,10 +3492,6 @@ void Resolver::exit(const Dot* dot) {
   }
 
   if (dot->field() == USTR("type")) {
-    if (receiver.type().isType()) {
-      CHPL_REPORT(context, DotTypeOnType, dot);
-    }
-
     const Type* receiverType;
     ResolvedExpression& r = byPostorder.byAst(dot);
 
@@ -3504,7 +3500,13 @@ void Resolver::exit(const Dot* dot) {
     } else {
       receiverType = ErroneousType::get(context);
     }
-    r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+
+    if (!receiver.type().isType()) {
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    } else {
+      r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
+                                receiver.toId()));
+    }
     return;
   }
 

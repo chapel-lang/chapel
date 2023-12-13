@@ -330,10 +330,24 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
 
 void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
   auto dot = std::get<const uast::Dot*>(info);
-  auto dottedType = dot->receiver();
-  wr.heading(kind_, type_, dot, "can't apply '.type' to a type (",
-             dottedType, ").");
-  wr.code(dottedType, {dot});
+  auto dottedType = std::get<const types::Type*>(info);
+  auto typeDeclId = std::get<ID>(info);
+  wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
+  wr.code(dot, {dot});
+  if (!dottedType->isErroneousType()) {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is the type '",
+        dottedType, "'.");
+  } else {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is a type.");
+  }
+  if (typeDeclId) {
+    wr.message("The receiver is declared as a 'type' variable here:");
+    wr.code(typeDeclId);
+  }
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
