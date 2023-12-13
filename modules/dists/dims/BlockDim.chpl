@@ -18,9 +18,13 @@
  * limitations under the License.
  */
 
+
 //
 // Block dimension specifier - for use with DimensionalDist2D.
 //
+
+@unstable("BlockDim is intended for use with DimensionalDist2D, which is unstable")
+prototype module BlockDim {
 
 private use DimensionalDist2D;
 
@@ -325,4 +329,6 @@ iter Block1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
       }
     }
   }
+}
+
 }

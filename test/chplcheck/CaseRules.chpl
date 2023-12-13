@@ -65,4 +65,14 @@ module CaseRules {
       var temp = other;
     }
   }
+
+  class ParentClassWithBadMethod {
+    proc badly_capitalized() {}
+  }
+
+  class ChildThatOverridesBadMethod : ParentClassWithBadMethod {
+    // shouldn't warn: override procs are exempt from capitalization rules,
+    // because the parent controls the name.
+    override proc badly_capitalized() {}
+  }
 }

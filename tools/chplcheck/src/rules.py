@@ -24,8 +24,6 @@ import re
 
 def name_for_linting(node):
     name = node.name()
-    if name.startswith("chpl_"):
-        name = name.removeprefix("chpl_")
 
     # Strip dollar signs.
     name = name.replace("$", "")
@@ -33,10 +31,10 @@ def name_for_linting(node):
     return name
 
 def check_camel_case(node):
-    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
 
 def check_pascal_case(node):
-    return re.fullmatch(r'_?(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
@@ -51,9 +49,14 @@ def register_rules(driver):
 
     @driver.basic_rule(Function)
     def CamelCaseFunctions(context, node):
+        # Override functions / methods can't control the name, that's up
+        # to the parent.
+        if node.is_override(): return True
+
         if node.linkage() == 'extern': return True
         if node.kind() == 'operator': return True
         if node.name() == 'init=': return True
+
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
@@ -72,7 +75,7 @@ def register_rules(driver):
     def DoKeywordAndBlock(context, node):
         return node.block_style() != "unnecessary"
 
-    @driver.basic_rule(Coforall)
+    @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
         parent = node.parent()
         while parent is not None:
@@ -236,7 +239,7 @@ def register_rules(driver):
 
         def variables(node):
             if isinstance(node, Variable):
-                yield node
+                if node.name() != "_": yield node
             elif isinstance(node, TupleDecl):
                 for child in node:
                     yield from variables(child)

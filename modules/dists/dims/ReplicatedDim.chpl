@@ -25,6 +25,9 @@
 // The required methods are marked with 'REQ' followed by a brief description.
 //
 
+@unstable("ReplicatedDim is intended for use with DimensionalDist2D, which is unstable")
+prototype module ReplicatedDim {
+
 private use DimensionalDist2D;
 import RangeChunk;
 
@@ -337,4 +340,6 @@ iter Replicated1dom.dsiFollowerArrayIterator1d(undensRange): (locIdT, idxType) {
   assert(localLocIDlegit);
   foreach i in undensRange do
     yield (localLocID, i);
+}
+
 }
