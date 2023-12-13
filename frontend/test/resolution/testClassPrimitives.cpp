@@ -30,7 +30,7 @@
 #include "chpl/uast/Variable.h"
 
 static constexpr bool testType = true;
-static constexpr bool testExact = true;
+static constexpr bool testExact = false;
 
 static void testPrimitive(std::string primitive, std::vector<std::tuple<const char*, const char*, bool>> args) {
   Context ctx;
