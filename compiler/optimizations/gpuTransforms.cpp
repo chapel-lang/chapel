@@ -1291,8 +1291,8 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
       // just copy the value pointed by it.
       // ENGIN: it is questionable whether we want to do this. This is creating
       // a copy of something that was referred to by this `ref`. Accessing a
-      // `ref` shouldn't trigger a copy, unles... it was put to a "task private"
-      // variable:
+      // `ref` shouldn't trigger a copy, unless... it was put to a "task
+      // private" variable:
       // ref x = y; foreach ... with (var inBody = x)
       gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
                                           new_IntSymbol(GpuArgKind::OFFLOAD)));
