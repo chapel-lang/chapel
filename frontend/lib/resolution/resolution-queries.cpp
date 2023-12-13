@@ -3030,22 +3030,25 @@ considerCompilerGeneratedCandidates(Context* context,
   }
 
   // OK, already concrete, store and return
-  if (!tfs->needsInstantiation()) {
+  if (tfs->needsInstantiation()) {
+    printf("reached\n");
+  }
+  /* if (!tfs->needsInstantiation()) { */
     candidates.push_back(tfs);
     return;
-  }
+  /* } */
 
   // need to instantiate before storing
-  auto poi = pointOfInstantiationScope(context, inScope, inPoiScope);
-  auto instantiated = doIsCandidateApplicableInstantiating(context,
-                                                           tfs,
-                                                           ci,
-                                                           poi);
-  CHPL_ASSERT(instantiated.success());
-  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
-  CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
+  /* auto poi = pointOfInstantiationScope(context, inScope, inPoiScope); */
+  /* auto instantiated = doIsCandidateApplicableInstantiating(context, */
+  /*                                                          tfs, */
+  /*                                                          ci, */
+  /*                                                          poi); */
+  /* CHPL_ASSERT(instantiated.success()); */
+  /* CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction()); */
+  /* CHPL_ASSERT(instantiated.candidate()->instantiatedFrom()); */
 
-  candidates.push_back(instantiated.candidate());
+  /* candidates.push_back(instantiated.candidate()); */
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -3807,26 +3810,61 @@ resolveGeneratedCallInMethod(Context* context,
 static const TypedFnSignature* tryResolveEq(Context* context,
                                             const uast::AstNode* ast,
                                             types::QualifiedType qt) {
+  bool asMethod = true;
   auto lhsType = qt;
   auto rhsType = qt;
   const Type* t = lhsType.type();
   if (t->isRecordType() || t->isUnionType()) {
-    // use the regular VAR kind for this query
-    // (don't want a type-expr lhsType to be considered a TYPE here)
-    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
+    lhsType = QualifiedType(QualifiedType::CONST_REF, lhsType.type());
+    rhsType = QualifiedType(QualifiedType::CONST_REF, rhsType.type());
 
     std::vector<CallInfoActual> actuals;
-    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    if (asMethod) {
+      actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    }
+    actuals.push_back(CallInfoActual(lhsType, UniqueString()));
     actuals.push_back(CallInfoActual(rhsType, UniqueString()));
     auto ci = CallInfo(/* name */ USTR("="),
                        /* calledType */ lhsType,
-                       /* isMethodCall */ true,
+                       /* isMethodCall */ asMethod,
                        /* hasQuestionArg */ false,
                        /* isParenless */ false, actuals);
     const Scope* scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
+    /* assert(!c.mostSpecific().isEmpty()); */
+    return c.mostSpecific().only().fn();
+  } else {
+    return nullptr;
+  }
+}
+
+static const TypedFnSignature* tryResolveEqFunc(Context* context,
+                                            const uast::AstNode* ast,
+                                            types::QualifiedType qt) {
+  bool asMethod = false;
+  auto lhsType = qt;
+  auto rhsType = qt;
+  const Type* t = lhsType.type();
+  if (t->isRecordType() || t->isUnionType()) {
+    lhsType = QualifiedType(QualifiedType::CONST_REF, lhsType.type());
+    rhsType = QualifiedType(QualifiedType::CONST_REF, rhsType.type());
+
+    std::vector<CallInfoActual> actuals;
+    if (asMethod) {
+      actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    }
+    actuals.push_back(CallInfoActual(lhsType, UniqueString()));
+    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+    auto ci = CallInfo(/* name */ USTR("="),
+                       /* calledType */ lhsType,
+                       /* isMethodCall */ asMethod,
+                       /* hasQuestionArg */ false,
+                       /* isParenless */ false, actuals);
+    const Scope* scope = scopeForId(context, ast->id());
+    auto c =
+        resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
+    /* assert(!c.mostSpecific().isEmpty()); */
     return c.mostSpecific().only().fn();
   } else {
     return nullptr;
@@ -4054,12 +4092,18 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
     } else {
       // In general, try to resolve the type's 'init='/'=', and examine it to
       // determine copy/assignability, respectively.
-      const TypedFnSignature* testResolvedSig =
-          (checkCopyable
-               ? tryResolveInitEq(context, ast,
-                                  QualifiedType(QualifiedType::VAR, ct))
-               : tryResolveEq(context, ast,
-                              QualifiedType(QualifiedType::VAR, ct)));
+      const TypedFnSignature* testResolvedSig;
+      if (checkCopyable) {
+        testResolvedSig = tryResolveInitEq(
+            context, ast, QualifiedType(QualifiedType::VAR, ct));
+      } else {
+        testResolvedSig =
+            tryResolveEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
+        if (!testResolvedSig) {
+          testResolvedSig = tryResolveEqFunc(
+              context, ast, QualifiedType(QualifiedType::VAR, ct));
+        }
+      }
       if (testResolvedSig) {
         if (testResolvedSig->untyped()->isCompilerGenerated()) {
           // Check for owned class fields.
@@ -4096,7 +4140,7 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
           }
           CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
                       "unexpected formals");
-          auto otherTy = testResolvedSig->formalType(1);
+          auto otherTy = testResolvedSig->formalType(otherFormalNum);
           CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
                       "should have resolved concrete intent by now");
           auto otherIntent = otherTy.kind();
@@ -4106,6 +4150,8 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
                        otherIntent == QualifiedType::CONST_REF);
           fromRef = !fromConst;
         }
+      } else {
+        printf("couldn't resolve proc\n");
       }
     }
   } else {

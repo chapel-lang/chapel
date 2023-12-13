@@ -83,24 +83,24 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
       CHPL_ASSERT(node);
 
       if (auto fn = node->toFunction()) {
-        if (fn->isMethod()) {
+        if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
           ResolutionResultByPostorderID r;
           auto vis = Resolver::createForInitialSignature(context, fn, r);
-          fn->thisFormal()->traverse(vis);
-          auto receiverQualType = vis.byPostorder.byAst(fn->thisFormal()).type();
+          // receiver is 'this' for method, first formal for standalone operator
+          auto receiverFormal =
+              (!fn->isMethod() && fn->kind() == Function::Kind::OPERATOR
+                   ? fn->formal(0)
+                   : fn->thisFormal());
+          receiverFormal->traverse(vis);
+          auto receiverQualType = vis.byPostorder.byAst(receiverFormal).type();
 
           // return true if the receiver type matches or
           // if the receiver type is a generic type and we have
           // an instantiation.
           auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes()) {
+          if (result.passes() && !result.converts() && !result.promotes() /*&& !result.instantiates()*/) {
             return true;
           }
-        } else if (fn->kind()==Function::Kind::OPERATOR) {
-          // TODO: There should probably be some more checks happening in here,
-          // but unsure of what they should be currently and this seems to work
-          // in basic testing.
-          return true;
         }
       }
     }
