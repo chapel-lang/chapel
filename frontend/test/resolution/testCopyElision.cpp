@@ -1318,6 +1318,67 @@ static void test40() {
     )"""",
     {});
 }
+
+static void test41() {
+  testCopyElision("test41a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+        config const cond = 2;
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          select cond {
+            when 1 {
+              x;
+            }
+            when 2 {
+              y;
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test41b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+        config const cond = 2;
+        proc test() {
+          var x: int = 0;
+          var y = x;
+          type T = real;
+          select cond {
+            when 1 {
+              y;
+            }
+            when 2 {
+              y;
+            }
+            otherwise {
+              x;
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+}
+
 int main() {
   test1();
   test2();
@@ -1359,5 +1420,6 @@ int main() {
   test38();
   test39();
   test40();
+  test41();
   return 0;
 }
