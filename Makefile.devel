@@ -67,7 +67,7 @@ frontend-docs: FORCE
 test-frontend: FORCE
 	@cd compiler && $(MAKE) test-frontend
 
-frontend-tests: FORCE
+frontend-tests:
 	@cd compiler && $(MAKE) frontend-tests
 
 test-dyno: FORCE test-frontend
