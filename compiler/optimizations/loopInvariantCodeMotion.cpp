@@ -130,7 +130,7 @@ public:
 
     bool isGpuBound() const {
       auto cLoop = toCForLoop(loopAST);
-      return cLoop && isLoopGpuBound(cLoop);
+      return usingGpuLocaleModel() && cLoop && cLoop->isOrderIndependent();
     }
 
     //Set the header, insert the header into the loop blocks, and build up the
