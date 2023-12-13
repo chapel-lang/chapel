@@ -900,6 +900,7 @@ static void markIteratorAndLoops(FnSymbol* fn) {
           bool justYield = isLoopBodyJustYield(loop);
           if (justYield || markAllYieldingLoops) {
             loop->orderIndependentSet(true);
+            loop->exemptFromImplicitIntents();
           } else {
             if (fReportVectorizedLoops && fExplainVerbose) {
               if (!isLeaderIterator(fn)) {

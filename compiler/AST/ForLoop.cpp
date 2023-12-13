@@ -200,6 +200,10 @@ BlockStmt* ForLoop::doBuildForLoop(Expr*      indices,
     loop->orderIndependentSet(true);
   }
 
+  if (!isForeach || isLoweredForall || isForExpr) {
+    loop->exemptFromImplicitIntents();
+  }
+
   // Unzippered loop, treat all objects (including tuples) the same
   if (zippered == false) {
     iterInit = new CallExpr(PRIM_MOVE, iterator, new CallExpr("_getIterator",    iteratorExpr));
@@ -406,6 +410,7 @@ ForLoop::ForLoop() : LoopStmt(0)
   mZippered = false;
   mLoweredForall = false;
   mIsForExpr = false;
+  fShadowVars.parent = this;
 }
 
 ForLoop::ForLoop(VarSymbol* index,
@@ -427,12 +432,16 @@ ForLoop* ForLoop::copyInner(SymbolMap* map)
 {
   ForLoop*   retval         = new ForLoop();
 
+  for_alist(expr, fShadowVars)
+    retval->fShadowVars.insertAtTail(COPY_INT(expr));
+
   retval->astloc            = astloc;
   retval->blockTag          = blockTag;
 
   retval->mBreakLabel       = mBreakLabel;
   retval->mContinueLabel    = mContinueLabel;
   retval->mOrderIndependent = mOrderIndependent;
+  retval->mExemptFromImplicitIntents = mExemptFromImplicitIntents;
   retval->mLLVMMetadataList = mLLVMMetadataList;
 
   retval->mIndex            = mIndex->copy(map, true),

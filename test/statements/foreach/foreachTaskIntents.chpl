@@ -1,6 +1,3 @@
-// check that 'foreach' works with forall intents since forall intents are
-// currently implemented by using varargs
-
 var x = 0;
 foreach i in 1..10 with (ref x) {
   x = i;

@@ -2430,7 +2430,7 @@ module TwoArrayPartitioning {
         counts[bin] += 1;
       }
       // Now store the counts into the global counts array
-      foreach bin in 0..#nBuckets {
+      foreach bin in 0..#nBuckets with (ref state) {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
       }
     }

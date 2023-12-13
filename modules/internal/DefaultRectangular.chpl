@@ -1196,7 +1196,7 @@ module DefaultRectangular {
         chpl_debug_writeln("*** In defRectArr simple-dd standalone iterator");
       }
       foreach i in dom.these(tag, tasksPerLocale,
-                         ignoreRunning, minIndicesPerTask) {
+                         ignoreRunning, minIndicesPerTask) with (ref this) {
         yield dsiAccess(i);
       }
     }
@@ -1646,7 +1646,7 @@ module DefaultRectangular {
         const second = info.getDataIndex(chpl__intToIdx(viewDom.idxType, chpl__idxToInt(viewDom.dsiLow)+1));
         const step   = (second-first);
         const last   = first + (viewDom.dsiNumIndices:step.type-1) * step;
-        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) {
+        foreach i in chpl_direct_pos_stride_range_iter(first, last, step) with (ref info) {
           yield info.theData(i);
         }
       } else {

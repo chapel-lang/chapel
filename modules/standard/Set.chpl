@@ -516,8 +516,9 @@ module Set {
       :yields: A constant reference to an element in this set.
     */
     iter const these() const ref {
-      foreach idx in 0..#_htb.tableSize do
+      foreach idx in 0..#_htb.tableSize with (const ref this) {
         if _htb.isSlotFull(idx) then yield _htb.table[idx].key;
+      }
     }
 
     @chpldoc.nodoc

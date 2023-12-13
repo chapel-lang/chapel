@@ -425,6 +425,23 @@ static void scopeResolve(ForallStmt*         forall,
   scopeResolve(loopBody->body, bodyScope);
 }
 
+static void scopeResolveForeachLoop(ForLoop* foreach,
+                                    const ResolveScope* parent)
+{
+  INT_ASSERT(foreach->isOrderIndependent());
+
+  BlockStmt*    loopBody     = foreach->loopBody();
+  ResolveScope* bodyScope = new ResolveScope(loopBody, parent);
+
+  for_shadow_vars_and_defs(svar, sdef, temp, foreach) {
+    bodyScope->extend(svar);
+    if (sdef->init != NULL)
+      scopeResolveExpr(sdef->init, bodyScope);
+  }
+
+  scopeResolve(loopBody->body, bodyScope);
+}
+
 static void scopeResolve(FnSymbol*           fn,
                          const ResolveScope* parent) {
   ResolveScope* scope = new ResolveScope(fn, parent);
@@ -635,6 +652,13 @@ static void scopeResolve(const AList& alist, ResolveScope* scope) {
 
       if (def->init != NULL) {
         scopeResolveExpr(def->init, scope);
+      }
+
+    } else if (ForLoop* forLoop = toForLoop(stmt)) {
+      if(forLoop->isOrderIndependent()) {
+        scopeResolveForeachLoop(forLoop, scope);
+      } else {
+        scopeResolveExpr(stmt, scope);
       }
 
     } else if (BlockStmt* block = toBlockStmt(stmt)) {

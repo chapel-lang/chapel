@@ -13,7 +13,7 @@
 proc loop (A, B, C, D) {
   // CHECK: <4 x i32>
   var sum : int(32) = 0;
-  foreach i in 0..511 {
+  foreach i in 0..511 with (ref sum) {
      if(C[i] < D[i]) {
        sum += C[i]+5;
      }

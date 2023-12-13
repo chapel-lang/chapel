@@ -1412,7 +1412,6 @@ struct Converter {
       } else if (const uast::ReduceIntent* rd = expr->toReduceIntent()) {
         astlocMarker markAstLoc(rd->id());
 
-        //if(fForeachIntents && parent->toForeach()) {
         if(parent->toForeach()) {
           USR_FATAL(node->id(), "reduce intents can not be used in foreach loops");
         }
@@ -1980,11 +1979,6 @@ struct Converter {
 
   Expr* visit(const uast::Foreach* node) {
     Expr* ret = nullptr;
-
-    if (!fForeachIntents && node->withClause()) {
-      USR_FATAL_CONT(node->withClause()->id(), "foreach loops do not yet "
-                                               "support task intents");
-    }
 
     // The pieces that we need for 'buildForallLoopExpr'.
     Expr* indices = convertLoopIndexDecl(node->index());

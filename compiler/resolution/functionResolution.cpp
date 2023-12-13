@@ -10609,15 +10609,8 @@ static LoopWithShadowVarsInterface*
   isForeachWhoseShadowVarsShouldBeResolved(SymExpr *se)
 {
   ForLoop* pfl = toForLoop(se->parentExpr);
-
-  // The pfl->shadowVariables().length > 0 part of the above condition is a
-  // bit of a hack to ensure we don't apply implicit intents on a loop where
-  // we haven't added an explicit intent (via a 'with' clause). Getting
-  // intents to work for 'foreach' loops is a bit of a work in progress and
-  // for the time being I would like to keep the behavior of loops that
-  // don't have a 'with' clause unchanged.
   if(pfl && pfl->isOrderIndependent() && se == pfl->indexGet() &&
-     (pfl->shadowVariables().length > 0))
+     !pfl->shouldExemptFromImplicitIntents())
   {
     return pfl;
   }
@@ -10668,7 +10661,12 @@ Expr* resolveExpr(Expr* expr) {
     else if(LoopWithShadowVarsInterface *loop =
       isForeachWhoseShadowVarsShouldBeResolved(se))
     {
-      setupAndResolveShadowVars(loop);
+      // If this is a loop that we'll convert into a forall
+      // then ignore this for the time being (we'll process
+      // implicit shadow variables for the forall later)
+      if(!shouldReplaceForLoopWithForall(toForLoop(loop->asExpr()))) { //*AIS* to see fail: arrays/bradc/workarounds/arrayOfArray-workaround.chpl
+        setupAndResolveShadowVars(loop);
+      }
       retval = resolveExprPhase2(expr, fn, expr);
     } else if (isMentionOfFnTriggeringCapture(se)) {
       auto fn = toFnSymbol(se->symbol());

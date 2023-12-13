@@ -376,6 +376,7 @@ buildFollowLoop(VarSymbol* iter,
                                        /*isLoweredForall*/ false,
                                        forallExpr);
   followBody->orderIndependentSet(true);
+  followBody->exemptFromImplicitIntents();
 
   // not needed:
   //destructureIndices(followBody, indices, new SymExpr(followIdx), false);
@@ -1599,6 +1600,10 @@ static ForallStmt* doReplaceWithForall(ForLoop* src)
   return dest;
 }
 
+bool shouldReplaceForLoopWithForall(ForLoop *forLoop) {
+  return invokesParallelIterator(forLoop);
+}
+
 //
 // Replace a parallel ForLoop over a parallel iterator with a ForallStmt.
 // Otherwise we may get data races, ex. on shadow variable(s) 'sum' here:
@@ -1608,9 +1613,10 @@ static ForallStmt* doReplaceWithForall(ForLoop* src)
 //   }
 //
 Expr* replaceForWithForallIfNeeded(ForLoop* forLoop) {
-  if (!invokesParallelIterator(forLoop))
+  if (!shouldReplaceForLoopWithForall(forLoop)) {
     // Not a parallel for-loop. Leave it unchanged.
     return forLoop;
+  }
 
   // Yes, it is a parallel for-loop. Replace it.
   ForallStmt* fs = doReplaceWithForall(forLoop);
