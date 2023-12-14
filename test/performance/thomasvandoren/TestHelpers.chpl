@@ -2,6 +2,7 @@
 
 public use Random;
 public use Time;
+import NPBRandom;
 
 // random seed for arrays
 config const randSeed = NPBRandom.oddTimeSeed();
