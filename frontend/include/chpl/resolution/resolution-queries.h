@@ -381,6 +381,12 @@ resolveGeneratedCallInMethod(Context* context,
                              const PoiScope* inPoiScope,
                              types::QualifiedType implicitReceiver);
 
+// tries to resolve an (unambiguous) init=
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const uast::AstNode* ast,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope = nullptr);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.
@@ -405,10 +411,13 @@ void getCopyOrAssignableInfo(Context* context, const types::Type* t,
 const std::unordered_map<UniqueString, types::QualifiedType>&
 getCompilerGeneratedGlobals(Context* context);
 
-void reportInvalidMultipleInheritance(Context* context, const uast::Class* node,
-                                      const uast::AstNode* firstParent,
-                                      const uast::AstNode* secondParent);
+void
+reportInvalidMultipleInheritance(Context* context,
+                                 const uast::Class* node,
+                                 const uast::AstNode* firstParent,
+                                 const uast::AstNode* secondParent);
 
-}  // end namespace resolution
+
+} // end namespace resolution
 } // end namespace chpl
 #endif

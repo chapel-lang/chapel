@@ -3790,102 +3790,71 @@ resolveGeneratedCallInMethod(Context* context,
   // otherwise, resolve a regular function call
   return resolveGeneratedCall(context, astForErr, ci, inScope, inPoiScope);
 }
-// tries to resolve an = that assigns a type from itself
-// TODO: try resolving either standalone or method form, and refactor out
-// common code with tryResolveInitEq and tryResolveCrossTypeInitEq
+
+const TypedFnSignature* tryResolveInitEq(Context* context, const AstNode* ast,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope) {
+  CHPL_ASSERT(lhsType->isRecordType() || lhsType->isUnionType());
+
+  // use the regular VAR kind for this query
+  // (don't want a type-expr lhsType to be considered a TYPE here)
+  QualifiedType lhsQt(QualifiedType::VAR, lhsType);
+  QualifiedType rhsQt(QualifiedType::VAR, rhsType);
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsQt, USTR("this")));
+  actuals.push_back(CallInfoActual(rhsQt, UniqueString()));
+  auto ci = CallInfo(/* name */ USTR("init="),
+                     /* calledType */ lhsQt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+
+  const Scope* scope = nullptr;
+  if (ast) scope = scopeForId(context, ast->id());
+
+  auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+  return c.mostSpecific().only().fn();
+}
+
+static const TypedFnSignature* tryResolveEqHelper(Context* context,
+                                                  const uast::AstNode* ast,
+                                                  const types::Type* t,
+                                                  bool asMethod) {
+  auto lhsType = QualifiedType(QualifiedType::CONST_REF, t);
+  auto rhsType = QualifiedType(QualifiedType::CONST_REF, t);
+
+  std::vector<CallInfoActual> actuals;
+  if (asMethod) {
+    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+  }
+  actuals.push_back(CallInfoActual(lhsType, UniqueString()));
+  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  auto ci = CallInfo(/* name */ USTR("="),
+                     /* calledType */ lhsType,
+                     /* isMethodCall */ asMethod,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+  const Scope* scope = nullptr;
+  if (ast) scope = scopeForId(context, ast->id());
+  auto c =
+      resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
+  return c.mostSpecific().only().fn();
+}
+
+// Tries to resolve an = that assigns a type from itself, first as a method and
+// then as a standalone operator.
 static const TypedFnSignature* tryResolveEq(Context* context,
                                             const uast::AstNode* ast,
-                                            types::QualifiedType qt) {
-  bool asMethod = true;
-  auto lhsType = qt;
-  auto rhsType = qt;
-  const Type* t = lhsType.type();
-  if (t->isRecordType() || t->isUnionType()) {
-    lhsType = QualifiedType(QualifiedType::CONST_REF, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::CONST_REF, rhsType.type());
+                                            const types::Type* t) {
+  CHPL_ASSERT(t->isRecordType() || t->isUnionType());
 
-    std::vector<CallInfoActual> actuals;
-    if (asMethod) {
-      actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-    }
-    actuals.push_back(CallInfoActual(lhsType, UniqueString()));
-    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-    auto ci = CallInfo(/* name */ USTR("="),
-                       /* calledType */ lhsType,
-                       /* isMethodCall */ asMethod,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ false, actuals);
-    const Scope* scope = nullptr;
-    if (ast) scope = scopeForId(context, ast->id());
-    auto c =
-        resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
-    return c.mostSpecific().only().fn();
-  } else {
-    return nullptr;
-  }
-}
+  const TypedFnSignature* res =
+      tryResolveEqHelper(context, ast, t, /* asMethod */ true);
+  if (!res) res = tryResolveEqHelper(context, ast, t, /* asMethod */ false);
 
-static const TypedFnSignature* tryResolveEqFunc(Context* context,
-                                            const uast::AstNode* ast,
-                                            types::QualifiedType qt) {
-  bool asMethod = false;
-  auto lhsType = qt;
-  auto rhsType = qt;
-  const Type* t = lhsType.type();
-  if (t->isRecordType() || t->isUnionType()) {
-    lhsType = QualifiedType(QualifiedType::CONST_REF, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::CONST_REF, rhsType.type());
-
-    std::vector<CallInfoActual> actuals;
-    if (asMethod) {
-      actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-    }
-    actuals.push_back(CallInfoActual(lhsType, UniqueString()));
-    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-    auto ci = CallInfo(/* name */ USTR("="),
-                       /* calledType */ lhsType,
-                       /* isMethodCall */ asMethod,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ false, actuals);
-    const Scope* scope = nullptr;
-    if (ast) scope = scopeForId(context, ast->id());
-    auto c =
-        resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
-    return c.mostSpecific().only().fn();
-  } else {
-    return nullptr;
-  }
-}
-
-// tries to resolve an init= that initializes a type from itself
-static const TypedFnSignature* tryResolveInitEq(Context* context,
-                                         const uast::AstNode* ast,
-                                         types::QualifiedType qt) {
-  auto lhsType = qt;
-  auto rhsType = qt;
-  const Type* t = lhsType.type();
-  if (t->isRecordType() || t->isUnionType()) {
-    // use the regular VAR kind for this query
-    // (don't want a type-expr lhsType to be considered a TYPE here)
-    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
-
-    std::vector<CallInfoActual> actuals;
-    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-    auto ci = CallInfo(/* name */ USTR("init="),
-                       /* calledType */ lhsType,
-                       /* isMethodCall */ true,
-                       /* hasQuestionArg */ false,
-                       /* isParenless */ false, actuals);
-    const Scope* scope = nullptr;
-    if (ast) scope = scopeForId(context, ast->id());
-    auto c =
-        resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
-    return c.mostSpecific().only().fn();
-  } else {
-    return nullptr;
-  }
+  return res;
 }
 
 static bool helpFieldNameCheck(const AstNode* ast,
@@ -4107,18 +4076,9 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
       } else {
         // In general, try to resolve the type's 'init='/'=', and examine it to
         // determine copy/assignability, respectively.
-        const TypedFnSignature* testResolvedSig;
-        if (checkCopyable) {
-          testResolvedSig = tryResolveInitEq(
-              context, ast, QualifiedType(QualifiedType::VAR, ct));
-        } else {
-          testResolvedSig =
-              tryResolveEq(context, ast, QualifiedType(QualifiedType::VAR, ct));
-          if (!testResolvedSig) {
-            testResolvedSig = tryResolveEqFunc(
-                context, ast, QualifiedType(QualifiedType::VAR, ct));
-          }
-        }
+        const TypedFnSignature* testResolvedSig =
+            (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
+                           : tryResolveEq(context, ast, ct));
         if (testResolvedSig) {
           if (testResolvedSig->untyped()->isCompilerGenerated()) {
             // Check for owned class fields.
