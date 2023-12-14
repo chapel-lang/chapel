@@ -3029,26 +3029,12 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  // OK, already concrete, store and return
-  if (tfs->needsInstantiation()) {
-    printf("reached\n");
-  }
-  /* if (!tfs->needsInstantiation()) { */
-    candidates.push_back(tfs);
-    return;
-  /* } */
-
-  // need to instantiate before storing
-  /* auto poi = pointOfInstantiationScope(context, inScope, inPoiScope); */
-  /* auto instantiated = doIsCandidateApplicableInstantiating(context, */
-  /*                                                          tfs, */
-  /*                                                          ci, */
-  /*                                                          poi); */
-  /* CHPL_ASSERT(instantiated.success()); */
-  /* CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction()); */
-  /* CHPL_ASSERT(instantiated.candidate()->instantiatedFrom()); */
-
-  /* candidates.push_back(instantiated.candidate()); */
+  // It seems we don't need to instantiate compiler-generated candidates before
+  // storing. Indeed at time of writing, attempting to do so fails as
+  // it relies on the formalDecl's in UntypedFnSignature which are null for
+  // compiler-generated. Anna, 12/14/2023
+  candidates.push_back(tfs);
+  return;
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -3833,7 +3819,6 @@ static const TypedFnSignature* tryResolveEq(Context* context,
     if (ast) scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
-    /* assert(!c.mostSpecific().isEmpty()); */
     return c.mostSpecific().only().fn();
   } else {
     return nullptr;
@@ -3866,7 +3851,6 @@ static const TypedFnSignature* tryResolveEqFunc(Context* context,
     if (ast) scope = scopeForId(context, ast->id());
     auto c =
         resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
-    /* assert(!c.mostSpecific().isEmpty()); */
     return c.mostSpecific().only().fn();
   } else {
     return nullptr;
@@ -4058,7 +4042,7 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
-static void getCopyOrAssignableInfo(Context* context, const Type* t,
+void getCopyOrAssignableInfo(Context* context, const Type* t,
                                     bool* fromConst, bool* fromRef,
                                     bool checkCopyable);
 
@@ -4067,7 +4051,9 @@ static void getCopyOrAssignableInfo(Context* context, const Type* t,
 static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
     Context* context, const Type* t, bool checkCopyable) {
   QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, t, checkCopyable);
-  std::pair<bool, bool> result;
+
+  CHPL_ASSERT((t->isClassType() || t->isCompositeType()) &&
+              "should only be getting called for class or composite types");
 
   // Inspect type for either kind of copyability/assignability.
   bool fromConst = false;
@@ -4179,21 +4165,16 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
                          otherIntent == QualifiedType::CONST_REF);
             fromRef = !fromConst;
           }
-        } else {
-          printf("couldn't resolve proc\n");
         }
       }
     }
-  } else {
-    CHPL_ASSERT(false && "unreachable case");
   }
 
-  result = {fromConst, fromRef};
+  std::pair<bool, bool> result = {fromConst, fromRef};
   return QUERY_END(result);
 }
 
-// checkCopyable is true for copyable, false for assignable
-static void getCopyOrAssignableInfo(Context* context, const Type* t,
+void getCopyOrAssignableInfo(Context* context, const Type* t,
                                     bool* fromConst, bool* fromRef,
                                     bool checkCopyable) {
   if (t->isCompositeType() || t->isClassType()) {
@@ -4202,23 +4183,12 @@ static void getCopyOrAssignableInfo(Context* context, const Type* t,
     *fromConst = info.first;
     *fromRef = info.second;
   } else {
-    // non-record/class/array types are always copyable/assignable from const
+    // Non-record/class/array types are always copyable/assignable from const
     *fromConst = true;
   }
-  // copyable/assignable from const implies from ref as well
+
+  // Copyable/assignable from const implies from ref as well
   *fromRef |= *fromConst;
-}
-
-void getCopyableInfo(Context* context, const Type* t, bool* copyableFromConst,
-                     bool* copyableFromRef) {
-  getCopyOrAssignableInfo(context, t, copyableFromConst, copyableFromRef,
-                          /* checkCopyable */ true);
-}
-
-void getAssignableInfo(Context* context, const Type* t,
-                       bool* assignableFromConst, bool* assignableFromRef) {
-  getCopyOrAssignableInfo(context, t, assignableFromConst, assignableFromRef,
-                          /* checkCopyable */ false);
 }
 
 template <typename T>

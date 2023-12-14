@@ -76,7 +76,8 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
 
   auto haveQt = QualifiedType(QualifiedType::VAR, type);
 
-  // loop through IDs and see if any are methods on the same type
+  // loop through IDs and see if any are methods or operators (method or
+  // standalone) on the same type
   for (auto& ids : vec) {
     for (const auto& id : ids) {
       auto node = parsing::idToAst(context, id);
@@ -88,9 +89,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           auto vis = Resolver::createForInitialSignature(context, fn, r);
           // receiver is 'this' for method, first formal for standalone operator
           auto receiverFormal =
-              (!fn->isMethod() && fn->kind() == Function::Kind::OPERATOR
-                   ? fn->formal(0)
-                   : fn->thisFormal());
+              (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
           receiverFormal->traverse(vis);
           auto receiverQualType = vis.byPostorder.byAst(receiverFormal).type();
 
@@ -98,7 +97,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           // if the receiver type is a generic type and we have
           // an instantiation.
           auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes() /*&& !result.instantiates()*/) {
+          if (result.passes() && !result.converts() && !result.promotes()) {
             return true;
           }
         }

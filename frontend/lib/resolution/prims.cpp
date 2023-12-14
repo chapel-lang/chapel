@@ -636,11 +636,11 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
 static QualifiedType primFamilyCopyableAssignable(Context* context,
                                                   const CallInfo& ci,
                                                   const PrimitiveTag prim) {
-  const bool checkCopyability =
+  const bool checkCopyable =
       (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE);
-  const bool checkAssignability =
+  const bool checkAssignable =
       (prim == PRIM_IS_ASSIGNABLE || prim == PRIM_IS_CONST_ASSIGNABLE);
-  CHPL_ASSERT((checkCopyability || checkAssignability) &&
+  CHPL_ASSERT((checkCopyable || checkAssignable) &&
               "incorrect primitive for this handler");
 
   if (ci.numActuals() != 1) return QualifiedType();
@@ -648,13 +648,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
 
   bool fromConst = false;
   bool fromRef = false;
-  if (checkCopyability) {
-    getCopyableInfo(context, t, &fromConst, &fromRef);
-  } else if (checkAssignability) {
-    getAssignableInfo(context, t, &fromConst, &fromRef);
-  } else {
-    CHPL_ASSERT(false && "unreachable");
-  }
+  getCopyOrAssignableInfo(context, t, &fromConst, &fromRef, checkCopyable);
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =

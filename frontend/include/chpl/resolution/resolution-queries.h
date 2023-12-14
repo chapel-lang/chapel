@@ -381,6 +381,7 @@ resolveGeneratedCallInMethod(Context* context,
                              const PoiScope* inPoiScope,
                              types::QualifiedType implicitReceiver);
 
+
 /**
   Given a type 't', compute whether or not 't' is default initializable.
   If 't' is a generic type, it is considered non-default-initializable.
@@ -389,18 +390,14 @@ resolveGeneratedCallInMethod(Context* context,
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 /**
-  Determine whether type 't' is copyable from const or/and from ref, storing the
-  result in the respective out-parameter
+  Determine whether type 't' is copyable/assignable from const or/and from ref,
+  storing the results in the respective out-parameters.
+  When checkCopyable is
+  true, this checks copyability, and for false checks assignability.
 */
-void getCopyableInfo(Context* context, const types::Type* t,
-                     bool* copyableFromConst, bool* copyableFromRef);
-/**
-  Determine whether type 't' is assignable from const or/and from ref, storing
-  the result in the respective out-parameter
-*/
-void getAssignableInfo(Context* context, const types::Type* t,
-                       bool* assignableFromConst, bool* assignableFromRef);
-
+void getCopyOrAssignableInfo(Context* context, const types::Type* t,
+                             bool* fromConst, bool* fromRef,
+                             bool checkCopyable);
 /**
   Determine the types of various compiler-generated globals, which depend
   on the settings the compiler / Dyno was started with.
@@ -408,13 +405,10 @@ void getAssignableInfo(Context* context, const types::Type* t,
 const std::unordered_map<UniqueString, types::QualifiedType>&
 getCompilerGeneratedGlobals(Context* context);
 
-void
-reportInvalidMultipleInheritance(Context* context,
-                                 const uast::Class* node,
-                                 const uast::AstNode* firstParent,
-                                 const uast::AstNode* secondParent);
+void reportInvalidMultipleInheritance(Context* context, const uast::Class* node,
+                                      const uast::AstNode* firstParent,
+                                      const uast::AstNode* secondParent);
 
-
-} // end namespace resolution
+}  // end namespace resolution
 } // end namespace chpl
 #endif
