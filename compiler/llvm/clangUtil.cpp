@@ -4585,7 +4585,7 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 static std::string findSiblingClangToolPath(const std::string &toolName) {
   // Find path to a tool that is a sibling to clang
   // note that if we have /path/to/clang-14, this logic
-  // will loop for /path/to/${toolName}-14.
+  // will look for /path/to/${toolName}-14.
   //
   // If such suffixes do not turn out to matter in practice, it would
   // be nice to update this code to use sys::path::parent_path().
@@ -5369,6 +5369,8 @@ static void handlePrintAsm(std::string dotOFile) {
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
+      // use this flag to get human-readable labels
+      cmd.push_back("--symbolize-operands");
       std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);
