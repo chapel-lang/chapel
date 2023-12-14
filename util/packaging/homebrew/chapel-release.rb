@@ -44,6 +44,8 @@ class Chapel < Formula
     (libexec/"chplconfig").write <<~EOS
       CHPL_RE2=bundled
       CHPL_GMP=system
+    # These lines are added as part of this PR: https://github.com/chapel-lang/chapel/pull/23415.
+    # This is a workaround for an issue where the 
       CHPL_MEM=cstdlib
       CHPL_TASKS=fifo
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config

@@ -49,6 +49,11 @@ class Chapel < Formula
       CHPL_LLVM_CONFIG=#{llvm.opt_bin}/llvm-config
       CHPL_LLVM_GCC_PREFIX=none
     EOS
+    # CHPL_MEM and CHPL_TASKS are currently being set this way due
+    # to this PR: https://github.com/chapel-lang/chapel/pull/23415.
+    # This is a workaround for an issue where the bundled jemalloc
+    # makefile is being run and failing when we are supposed to use
+    # the system jemalloc.
 
     # Must be built from within CHPL_HOME to prevent build bugs.
     # https://github.com/Homebrew/legacy-homebrew/pull/35166
