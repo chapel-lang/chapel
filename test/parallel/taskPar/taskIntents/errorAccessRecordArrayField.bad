@@ -1,0 +1,2 @@
+errorAccessRecordArrayField.chpl:8: error: cannot assign to const variable
+errorAccessRecordArrayField.chpl:1: note: The shadow variable '_this_tmp_' is constant due to task intents in this parallel statement
