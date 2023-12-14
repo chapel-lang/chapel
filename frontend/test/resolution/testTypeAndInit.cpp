@@ -40,7 +40,20 @@ static void test1() {
   assert(qt.type()->isBoolType());
 }
 
+static void test2() {
+  Context ctx;
+  auto context = &ctx;
+  auto qt = resolveQualifiedTypeOfX(context,
+                                    R""""(
+                                      proc foo(arg: uint = 0) do return arg;
+                                      var x = foo();
+                                    )"""");
+  assert(qt.kind() == QualifiedType::VAR);
+  assert(qt.type()->isUintType());
+}
+
 int main() {
     test1();
+    test2();
     return 0;
 }

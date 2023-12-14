@@ -317,6 +317,13 @@ struct Resolver {
   void resolveNamedDecl(const uast::NamedDecl* decl,
                         const types::Type* useType);
 
+  // helper to compute the intent for formals
+  // (including type constructor formals)
+  void computeFormalIntent(const uast::NamedDecl* decl,
+                                 types::QualifiedType::Kind& qtKind,
+                           const types::Type* typePtr,
+                           const types::Param* paramPtr);
+
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
                                          const CallInfo& ci,

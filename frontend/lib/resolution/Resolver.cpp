@@ -1352,6 +1352,15 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         }
       }
 
+      // for an initializer expression that is the default value of a formal,
+      // check if we have the formal type already and then use that to
+      // compute the QTkind now rather than trying to getTypeForDecl first,
+      // which will fail in cases where an implicit conversion is needed
+      if (!isVarArgs && typeExprT.hasTypePtr() &&
+          (isFormal || (signatureOnly && isField))) {
+        // update qtKind with the result of resolving the intent
+        computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
+      }
       // Check that the initExpr type is compatible with declared type
       // Check kinds are OK
       // Handle any implicit conversions / instantiations
@@ -1381,19 +1390,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (isVarArgs) {
     typePtr = computeVarArgTuple(*this, decl->toVarArgFormal(),
                                  qtKind, typePtr);
-  } else if (isFormal || (signatureOnly && isField)) {
-    // compute the intent for formals (including type constructor formals)
-    bool isThis = decl->name() == USTR("this");
-    bool isInit = false;
-    if (symbol) {
-      if (auto named = symbol->toNamedDecl()) {
-        isInit = named->name() == USTR("init") ||
-                 named->name() == USTR("init=");
-      }
-    }
-    auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
-    // update qtKind with the result of resolving the intent
-    qtKind = resolveIntent(formalQt, isThis, isInit);
   }
 
   // adjust tuple declarations for value / referential tuples
@@ -1418,6 +1414,24 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
   ResolvedExpression& result = byPostorder.byAst(decl);
   result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+}
+
+void Resolver::computeFormalIntent(const uast::NamedDecl *decl,
+                                   types::QualifiedType::Kind &qtKind,
+                                   const types::Type *typePtr,
+                                   const types::Param *paramPtr) {
+  // compute the intent for formals (including type constructor formals)
+  bool isThis = decl->name() == USTR("this");
+  bool isInit = false;
+  if (symbol) {
+    if (auto named = symbol->toNamedDecl()) {
+      isInit = named->name() == USTR("init") ||
+               named->name() == USTR("init=");
+    }
+  }
+  auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+  // update qtKind with the result of resolving the intent
+  qtKind = resolveIntent(formalQt, isThis, isInit);
 }
 
 void
