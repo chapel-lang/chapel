@@ -186,6 +186,15 @@ CLASS_BEGIN(Import)
                IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
 CLASS_END(Import)
 
+CLASS_BEGIN(Include)
+  PLAIN_GETTER(Include, name, "Get the visibility of this Include node",
+               const char*, return node->name())
+  PLAIN_GETTER(Include, is_prototype, "Check if this Include node is for a prototype module",
+               bool, return node->isPrototype())
+  PLAIN_GETTER(Include, visibility, "Get the visibility of this Include node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+CLASS_END(Include)
+
 CLASS_BEGIN(Init)
   PLAIN_GETTER(Init, target, "Get the target of this Init node",
                const AstNode*, return node->target())
