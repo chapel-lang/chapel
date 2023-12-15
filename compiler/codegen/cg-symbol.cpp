@@ -277,8 +277,9 @@ void preparePrintLlvmIrForCodegen() {
           if (FnSymbol* calledFn = call->resolvedFunction()) {
             if (isTaskFun(calledFn) ||
                 calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-              if (!shouldLlvmPrintIrCName(calledFn->cname)) {
-                addCNameToPrintLlvmIr(calledFn->cname);
+              auto pair = llvmPrintIrCNames.insert(calledFn->cname);
+              if (pair.second) {
+                // it was inserted
                 changed = true;
               }
             }
