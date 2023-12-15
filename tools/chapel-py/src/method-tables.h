@@ -117,16 +117,16 @@ CLASS_END(Break)
 
 CLASS_BEGIN(Catch)
   PLAIN_GETTER(Catch, target, "Get the error from this Catch node",
-               const Variable*, return node->error())
+               const AstNode*, return node->error())
   PLAIN_GETTER(Catch, body, "Get the body from this Catch node",
-               const Block*, return node->body())
+               const AstNode*, return node->body())
   PLAIN_GETTER(Catch, has_parens_around_error, "Check if this Catch uses parentheses",
                bool, return node->hasParensAroundError())
 CLASS_END(Catch)
 
 CLASS_BEGIN(Cobegin)
   PLAIN_GETTER(Cobegin, with_clause, "Get the error from this Cobegin node",
-               const WithClause*, return node->withClause())
+               const AstNode*, return node->withClause())
   PLAIN_GETTER(Cobegin, task_bodies, "Get the error from this Cobegin node",
                IterAdapterBase*, return mkIterPair(node->taskBodies()))
 CLASS_END(Cobegin)
@@ -192,7 +192,7 @@ CLASS_BEGIN(Implements)
   PLAIN_GETTER(Implements, interface_name, "Get the interface name of this Implements node",
                UniqueString, return node->interfaceName())
   PLAIN_GETTER(Implements, type_ident, "Get the type identifier from this Implements node",
-               const Identifier*, return node->typeIdent())
+               const AstNode*, return node->typeIdent())
   PLAIN_GETTER(Implements, interface_expr, "Get the interface expression from this Implements node",
                const AstNode*, return node->interfaceExpr())
   PLAIN_GETTER(Implements, is_expression_level, "Check if this Implements node is expression level",
@@ -267,7 +267,7 @@ CLASS_END(Throw)
 
 CLASS_BEGIN(Try)
   PLAIN_GETTER(Try, body, "Get the body of this Try node",
-               const Block*, return node->body())
+               const AstNode*, return node->body())
   PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
                IterAdapterBase*, return mkIterPair(node->handlers()))
   PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
