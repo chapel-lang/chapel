@@ -396,14 +396,14 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
 
 /**
-  Determine whether type 't' is copyable/assignable from const or/and from ref,
-  storing the results in the respective out-parameters.
-  When checkCopyable is
-  true, this checks copyability, and for false checks assignability.
+  Determine whether type 't' is copyable/assignable from const or/and from ref.
+  When checkCopyable is true, this checks copyability, and for false checks
+  assignability.
 */
-void getCopyOrAssignableInfo(Context* context, const types::Type* t,
-                             bool& fromConst, bool& fromRef,
-                             bool checkCopyable);
+CopyableAssignableInfo getCopyOrAssignableInfo(Context* context,
+                                               const types::Type* t,
+                                               bool checkCopyable);
+
 /**
   Determine the types of various compiler-generated globals, which depend
   on the settings the compiler / Dyno was started with.

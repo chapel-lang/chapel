@@ -646,14 +646,13 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
   if (ci.numActuals() != 1) return QualifiedType();
   auto t = ci.actual(0).type().type();
 
-  bool fromConst = false;
-  bool fromRef = false;
-  getCopyOrAssignableInfo(context, t, fromConst, fromRef, checkCopyable);
+  auto info = getCopyOrAssignableInfo(context, t, checkCopyable);
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =
       (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_ASSIGNABLE);
-  const bool isCopyableOrAssignable = fromConst || (fromRef && isFromRefOk);
+  const bool isCopyableOrAssignable =
+      info.fromConst() || (info.fromRef() && isFromRefOk);
 
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
                        BoolParam::get(context, isCopyableOrAssignable));

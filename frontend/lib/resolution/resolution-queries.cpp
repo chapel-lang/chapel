@@ -4031,27 +4031,26 @@ void getCopyOrAssignableInfo(Context* context, const Type* t,
 // Determine whether a class type is copyable or assignable, from ref and/or
 // from const.
 // Return: First is from const, second is from ref.
-static const std::pair<bool, bool> getClassTypeCopyOrAssignable(
+static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
     const ClassType* ct) {
-  bool fromConst = false;
-  bool fromRef = false;
+  CopyableAssignableInfo result;
 
-  if (ct->decorator().isManaged() &&
-      ct->manager()->isAnyOwnedType()) {
+  if (ct->decorator().isManaged() && ct->manager()->isAnyOwnedType()) {
     // Owned class types are copyable/assignable from ref iff they are nilable.
     // TODO: update if/when user-defined memory management styles are added
-    fromRef = ct->decorator().isNilable();
+    if (ct->decorator().isNilable()) {
+      result.setFromRef();
+    }
   } else {
     // Class types of other management are copyable/assignable from const.
-    fromConst = true;
+    result.setFromConst();
   }
 
-  return {fromConst, fromRef};
+  return result;
 }
 
-// checkCopyable is true for copyable, false for assignable.
-// Return: First is from const, second is from ref.
-static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
+// Set checkCopyable true for copyable, false for assignable.
+static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     Context* context, const CompositeType* ct, bool checkCopyable) {
   QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
 
@@ -4062,34 +4061,32 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
         "cannot compute copy/assignability of generic composite types");
   }
 
+  CopyableAssignableInfo result;
+
   // Inspect type for either kind of copyability/assignability.
-  bool fromConst = false;
-  bool fromRef = false;
   if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
       // Arrays are copyable/assignable if their elements are
-      getCopyOrAssignableInfo(context, eltType, fromConst, fromRef,
-                              checkCopyable);
+      result = getCopyOrAssignableInfo(context, eltType, checkCopyable);
     }
   } else if (auto tt = ct->toTupleType()) {
     // Tuples have the minimum copyable/assignable-ness of their elements
     if (tt->isStarTuple()) {
-      getCopyOrAssignableInfo(context, tt->elementType(0).type(), fromConst,
-                              fromRef, checkCopyable);
+      result = getCopyOrAssignableInfo(context, tt->elementType(0).type(),
+                                       checkCopyable);
     } else {
       bool allEltsFromConst = true;
       bool allEltsFromRef = true;
       for (int i = 0; i < tt->numElements(); i++) {
-        bool thisEltFromConst = false;
-        bool thisEltFromRef = false;
-        getCopyOrAssignableInfo(context, tt->elementType(i).type(),
-                                thisEltFromConst, thisEltFromRef,
-                                checkCopyable);
-        allEltsFromConst &= thisEltFromConst;
-        allEltsFromRef &= thisEltFromRef;
+        CopyableAssignableInfo thisEltInfo = getCopyOrAssignableInfo(
+            context, tt->elementType(i).type(), checkCopyable);
+        allEltsFromConst &= thisEltInfo.fromConst();
+        allEltsFromRef &= thisEltInfo.fromRef();
       }
-      fromConst = allEltsFromConst;
-      fromRef = allEltsFromRef;
+      if (allEltsFromConst)
+        result.setFromConst();
+      else if (allEltsFromRef)
+        result.setFromRef();
     }
   } else {
     auto ast = parsing::idToAst(context, ct->id());
@@ -4100,7 +4097,7 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
       // Syncs and singles are copyable
       // This is a special case to preserve deprecated behavior before
       // sync/single implicit reads are removed. 12/8/23
-      fromConst = true;
+      result.setFromConst();
     } else {
       // In general, try to resolve the type's 'init='/'=', and examine it to
       // determine copy/assignability, respectively.
@@ -4118,21 +4115,26 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
               fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
           for (int i = 0; i < resolvedFields.numFields(); i++) {
             auto fieldType = resolvedFields.fieldType(i).type();
-            // set true initially, so results aren't affected if we don't
-            // overwrite with info for this field type
-            std::pair<bool, bool> info = {true, true};
+            CopyableAssignableInfo thisFieldInfo;
+            bool checkedField = false;
             if (auto classTy = fieldType->toClassType()) {
-              info = getClassTypeCopyOrAssignable(classTy);
+              thisFieldInfo = getClassTypeCopyOrAssignable(classTy);
+              checkedField = true;
             } else if (auto rt = fieldType->toRecordType()) {
               // check record fields recursively
-              getCopyOrAssignableInfo(context, rt, info.first, info.second,
-                                      checkCopyable);
+              thisFieldInfo =
+                  getCopyOrAssignableInfo(context, rt, checkCopyable);
+              checkedField = true;
             }
-            allFieldsFromConst &= info.first;
-            allFieldsFromRef &= info.second;
+            if (checkedField) {
+              allFieldsFromConst &= thisFieldInfo.fromConst();
+              allFieldsFromRef &= thisFieldInfo.fromRef();
+            }
           }
-          fromConst = allFieldsFromConst;
-          fromRef = allFieldsFromRef;
+          if (allFieldsFromConst)
+            result.setFromConst();
+          else if (allFieldsFromRef)
+            result.setFromRef();
         } else {
           // Check intent of formal to copy/assign from.
 
@@ -4150,10 +4152,10 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
                       "should have resolved concrete intent by now");
 
           if (other.isIn() || other.isConst()) {
-            fromConst = true;
+            result.setFromConst();
           } else if (other.isRef() || other.kind() == QualifiedType::TYPE ||
                      other.kind() == QualifiedType::PARAM) {
-            fromRef = true;
+            result.setFromRef();
           } else {
             context->error(
                 testResolvedSig->untyped()->formalDecl(otherFormalNum),
@@ -4164,28 +4166,24 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
     }
   }
 
-  std::pair<bool, bool> result = {fromConst, fromRef};
   return QUERY_END(result);
 }
 
-void getCopyOrAssignableInfo(Context* context, const Type* t, bool& fromConst,
-                             bool& fromRef, bool checkCopyable) {
+CopyableAssignableInfo getCopyOrAssignableInfo(Context* context, const Type* t,
+                                               bool checkCopyable) {
+  CopyableAssignableInfo result;
+
   if (auto ct = t->toCompositeType()) {
     // Use query to cache results only for composite types, others are trivial
-    auto info = getCopyOrAssignableInfoQuery(context, ct, checkCopyable);
-    fromConst = info.first;
-    fromRef = info.second;
+    result = getCopyOrAssignableInfoQuery(context, ct, checkCopyable);
   } else if (auto classTy = t->toClassType()) {
-    auto info = getClassTypeCopyOrAssignable(classTy);
-    fromConst = info.first;
-    fromRef = info.second;
+    result = getClassTypeCopyOrAssignable(classTy);
   } else {
     // Non-composite/class types are always copyable/assignable from const
-    fromConst = true;
+    result.setFromConst();
   }
 
-  // Copyable/assignable from const implies from ref as well
-  fromRef |= fromConst;
+  return result;
 }
 
 template <typename T>
