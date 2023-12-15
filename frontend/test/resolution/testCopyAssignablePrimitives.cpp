@@ -148,10 +148,6 @@ static void test2() {
 
       record PlainRecord { }
 
-      record GenericRecord {
-        var x;
-      }
-
       record RecordWithNilableOwned {
         var x: owned C?;
       }
@@ -215,7 +211,6 @@ static void test2() {
       )""",
       {
           {"PlainRecord", all},
-          {"GenericRecord", all},
           {"RecordWithNilableOwned", refOnly},
           {"RecordWithNonNilableOwned", none},
           {"RecordWithNilableOwnedIndirect", refOnly},
@@ -278,6 +273,29 @@ static void test4() {
 /*       }); */
 /* } */
 
+// Generic types
+static void test7() {
+  testCases(
+      R"""(
+      record GenericRecord {
+        type t;
+        var x : t;
+      }
+
+      record GenericRecordWithDefault {
+        type t = int;
+        var x : t;
+      }
+      )""",
+      {
+          /* {"GenericRecord", all}, // not allowed */
+          {"GenericRecord(int)", all},
+          {"GenericRecordWithDefault", all},
+          {"GenericRecordWithDefault(real)", all},
+          {"integral", all}, // generic but not composite is ok
+      });
+}
+
 int main() {
   test1();
   test2();
@@ -287,4 +305,5 @@ int main() {
   /* test5(); */
   // can't test since we don't resolve syncs and singles yet
   /* test6(); */
+  test7();
 }

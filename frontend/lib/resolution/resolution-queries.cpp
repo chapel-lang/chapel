@@ -3029,12 +3029,23 @@ considerCompilerGeneratedCandidates(Context* context,
     return;
   }
 
-  // It seems we don't need to instantiate compiler-generated candidates before
-  // storing. Indeed at time of writing, attempting to do so fails as
-  // it relies on the formalDecl's in UntypedFnSignature which are null for
-  // compiler-generated. Anna, 12/14/2023
-  candidates.push_back(tfs);
-  return;
+  // OK, already concrete, store and return
+  if (!tfs->needsInstantiation()) {
+    candidates.push_back(tfs);
+    return;
+  }
+
+  // need to instantiate before storing
+  auto poi = pointOfInstantiationScope(context, inScope, inPoiScope);
+  auto instantiated = doIsCandidateApplicableInstantiating(context,
+                                                           tfs,
+                                                           ci,
+                                                           poi);
+  CHPL_ASSERT(instantiated.success());
+  CHPL_ASSERT(instantiated.candidate()->untyped()->idIsFunction());
+  CHPL_ASSERT(instantiated.candidate()->instantiatedFrom());
+
+  candidates.push_back(instantiated.candidate());
 }
 
 static std::vector<BorrowedIdsWithName>
@@ -4043,6 +4054,13 @@ static const std::pair<bool, bool> getClassTypeCopyOrAssignable(
 static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
     Context* context, const CompositeType* ct, bool checkCopyable) {
   QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
+
+  auto genericity = getTypeGenericity(context, ct);
+  if (genericity == Type::GENERIC || genericity == Type::MAYBE_GENERIC) {
+    context->error(
+        ct->id(),
+        "cannot compute copy/assignability of generic composite types");
+  }
 
   // Inspect type for either kind of copyability/assignability.
   bool fromConst = false;
