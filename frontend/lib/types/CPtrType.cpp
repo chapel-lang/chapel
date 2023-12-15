@@ -36,6 +36,14 @@ const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
   return QUERY_END(result);
 }
 
+const owned<CPtrType>& CPtrType::getCPtrConstType(Context* context,
+                                                  const CPtrType* instantiatedFrom,
+                                                  const Type* eltType) {
+  QUERY_BEGIN(getCPtrConstType, context, instantiatedFrom, eltType);
+  auto result = toOwned(new CPtrType(instantiatedFrom, eltType, /*isConst*/ true));
+  return QUERY_END(result);
+}
+
 bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other) const {
   auto r = resolution::canPass(context,
                                QualifiedType(QualifiedType::TYPE, eltType_),
@@ -56,6 +64,18 @@ const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
                                eltType).get();
 }
 
+const CPtrType* CPtrType::getConstPtr(Context* context) {
+  return CPtrType::getCPtrConstType(context,
+                                    /* instantiatedFrom */ nullptr,
+                                    /* eltType */ nullptr).get();
+}
+
+const CPtrType* CPtrType::getConstPtr(Context* context, const Type* eltType) {
+  return CPtrType::getCPtrConstType(context,
+                                    /* instantiatedFrom */ CPtrType::getConstPtr(context),
+                                    eltType).get();
+}
+
 const CPtrType* CPtrType::getCVoidPtrType(Context* context) {
   return CPtrType::get(context, VoidType::get(context));
 }
@@ -67,9 +87,20 @@ const ID& CPtrType::getId(Context* context) {
   return QUERY_END(result);
 }
 
+const ID& CPtrType::getConstId(Context* context) {
+  QUERY_BEGIN(getConstId, context);
+  UniqueString path = UniqueString::get(context, "CTypes.c_ptrConst");
+  ID result { path, -1, 0 };
+  return QUERY_END(result);
+}
+
 void CPtrType::stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const {
-  USTR("c_ptr").stringify(ss, stringKind);
+  if (isConst_) {
+    USTR("c_ptrConst").stringify(ss, stringKind);
+  } else {
+    USTR("c_ptr").stringify(ss, stringKind);
+  }
 
   if (eltType_) {
     ss << "(";

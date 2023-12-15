@@ -129,6 +129,8 @@ void Type::gatherBuiltins(Context* context,
 
   gatherType(context, map, "c_ptr", CPtrType::get(context));
 
+  gatherType(context, map, "c_ptrConst", CPtrType::getConstPtr(context));
+
   BuiltinType::gatherBuiltins(context, map);
 }
 

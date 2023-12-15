@@ -708,7 +708,7 @@ static bool isCallToCPtr(const AstNode* formalTypeExpr) {
     if (auto calledAst = call->calledExpression()) {
       if (auto calledIdent = calledAst->toIdentifier()) {
         UniqueString n = calledIdent->name();
-        if (n == USTR("c_ptr")) {
+        if (n == USTR("c_ptr") || n == USTR("c_ptrConst")) {
           return true;
         }
       }
@@ -2064,9 +2064,12 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
-  // Intercept the standard library `c_ptr` and turn it into the builtin type.
+  // Intercept the standard library `c_ptr` and `c_ptrConst` and turn them into
+  // the builtin type.
   if (id == CPtrType::getId(context)) {
     return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
+  } else if (id == CPtrType::getConstId(context)) {
+    return QualifiedType(QualifiedType::TYPE, CPtrType::getConstPtr(context));
   }
 
   // if the id is contained within this symbol,

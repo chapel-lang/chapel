@@ -2635,65 +2635,82 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
-static const Type* getCPtrType(Context* context,
-                               const AstNode* astForErr,
-                               const CallInfo& ci) {
+static const Type* getCPtrTypesHelper(Context* context,
+                                      const AstNode* astForErr,
+                                      const CallInfo& ci) {
   UniqueString name = ci.name();
+  bool isConst;
 
   if (name == USTR("c_ptr")) {
-    // Should we compute the generic version of the type (e.g. c_ptr(?))
-    bool useGenericType = false;
+    isConst = false;
+  } else if (name == USTR("c_ptrConst")) {
+    isConst = true;
+  } else {
+    return nullptr;
+  }
+  // Should we compute the generic version of the type (e.g. c_ptr(?)/c_ptrConst(?)
+  bool useGenericType = false;
 
-    // There should be 0 or 1 actuals depending on if it is ?
-    if (ci.hasQuestionArg()) {
-      // handle c_ptr(?)
-      if (ci.numActuals() != 0) {
-        context->error(astForErr, "invalid c_ptr type construction");
-        return ErroneousType::get(context);
-      }
-      useGenericType = true;
-    } else {
-      // handle c_ptr(?t) or c_ptr(eltT)
-      if (ci.numActuals() != 1) {
-        context->error(astForErr, "invalid c_ptr type construction");
-        return ErroneousType::get(context);
-      }
-
-      QualifiedType qt = ci.actual(0).type();
-      if (qt.type() && qt.type()->isAnyType()) {
-        useGenericType = true;
-      }
+  // There should be 0 or 1 actuals depending on if it is ?
+  if (ci.hasQuestionArg()) {
+    // handle c_ptr(?)/c_ptrConst(?)
+    if (ci.numActuals() != 0) {
+      context->error(astForErr, "invalid %s type construction", name.c_str());
+      return ErroneousType::get(context);
     }
-
-    if (useGenericType) {
-      return CPtrType::get(context);
-    }
-
-    QualifiedType qt;
-    if (ci.numActuals() > 0)
-      qt = ci.actual(0).type();
-
-    const Type* t = qt.type();
-    if (t == nullptr) {
-      // Details not yet known so return UnknownType
-      return UnknownType::get(context);
-    }
-    if (t->isUnknownType() || t->isErroneousType()) {
-      // Just propagate the Unknown / Erroneous type
-      // without raising any errors
-      return t;
-    }
-
-    if (!qt.isType()) {
-      // raise an error b/c of type mismatch
-      context->error(astForErr, "invalid c_ptr type construction");
+    useGenericType = true;
+  } else {
+    // handle c_ptr(?t) or c_ptr(eltT)/c_ptrConst(?t) or c_ptrConst(eltT)
+    if (ci.numActuals() != 1) {
+      context->error(astForErr,"invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
 
-    return CPtrType::get(context, qt.type());
+    QualifiedType qt = ci.actual(0).type();
+    if (qt.type() && qt.type()->isAnyType()) {
+      useGenericType = true;
+    }
   }
 
-  return nullptr;
+  if (useGenericType) {
+    return isConst ? CPtrType::getConstPtr(context) : CPtrType::get(context);
+  }
+
+  QualifiedType qt;
+  if (ci.numActuals() > 0)
+    qt = ci.actual(0).type();
+
+  const Type* t = qt.type();
+  if (t == nullptr) {
+    // Details not yet known so return UnknownType
+    return UnknownType::get(context);
+  }
+  if (t->isUnknownType() || t->isErroneousType()) {
+    // Just propagate the Unknown / Erroneous type
+    // without raising any errors
+    return t;
+  }
+
+  if (!qt.isType()) {
+    // raise an error b/c of type mismatch
+    context->error(astForErr,"invalid %s type construction", name.c_str());
+    return ErroneousType::get(context);
+  }
+
+  return isConst ? CPtrType::getConstPtr(context, qt.type()) :
+                   CPtrType::get(context, qt.type());
+}
+
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
+  return getCPtrTypesHelper(context, astForErr, ci);
+}
+
+static const Type* getCPtrConstType(Context* context,
+                                    const AstNode* astForErr,
+                                    const CallInfo& ci) {
+  return getCPtrTypesHelper(context, astForErr, ci);
 }
 
 static const Type*
@@ -2753,6 +2770,10 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
   }
 
   if (auto t = getCPtrType(context, astForErr, ci)) {
+    return t;
+  }
+
+  if (auto t = getCPtrConstType(context, astForErr, ci)) {
     return t;
   }
 
