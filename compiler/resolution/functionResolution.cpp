@@ -7626,22 +7626,32 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
   }
 }
 
-static Symbol* maybeGetBaseSymFromMethodCallTemp(SymExpr* def) {
+// heuristic to walk up a series of temps to find the base object of a method call
+static Symbol* maybeGetBaseSym_helper(SymExpr* def);
+static Symbol* maybeGetBaseSym(Symbol* sym) {
+  for_SymbolDefs(def, sym) {
+    if (auto baseSym = maybeGetBaseSym_helper(def)) {
+      return baseSym;
+    }
+  }
+  return nullptr;
+}
+static Symbol* maybeGetBaseSym_helper(SymExpr* def) {
   if (auto parentCall = toCallExpr(def->parentExpr)) {
     if (isMoveOrAssign(parentCall)) {
       if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
         if (maybeMethodCall->resolvedFunction() &&
             maybeMethodCall->resolvedFunction()->isMethod()) {
           if (auto baseExpr = toSymExpr(maybeMethodCall->get(2))) {
-            auto sym = baseExpr->symbol();
-            if (sym->hasFlag(FLAG_TEMP)) {
-              for_SymbolDefs(def, sym) {
-               if (auto base = maybeGetBaseSymFromMethodCallTemp(def)) {
-                return base;
-               }
+            auto baseSym = baseExpr->symbol();
+            // if the baseSym is still a temp, try and for a nested method call.
+            // typically happens in the `r.A[i]` field access case (`A` is an array).
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
               }
             }
-            return sym;
+            return baseSym;
           }
         }
       }
@@ -7659,12 +7669,12 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
   else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
   else if (strncmp(varname, "call_tmp", 8) == 0) {
-    for_SymbolDefs(def, aVar) {
-      if (auto sym = maybeGetBaseSymFromMethodCallTemp(def)) {
-        varname = sym->name;
-        baseSym = sym;
-        break;
-      }
+    // if the temp is named `call_tmp`, theres a good chance its the result of
+    // a field access (represented as a method call). try and find the base object
+    // of the aggregate type
+    if(auto sym = maybeGetBaseSym(aVar)) {
+      varname = sym->name;
+      baseSym = sym;
     }
   }
 
