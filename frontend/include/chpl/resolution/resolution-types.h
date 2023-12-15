@@ -2083,6 +2083,10 @@ struct CopyableAssignableInfo {
     return CopyableAssignableInfo(false, true);
   }
 
+  static CopyableAssignableInfo fromNone() {
+    return CopyableAssignableInfo(false, false);
+  }
+
   // Set this to the "minimum" copyability between this and other.
   void intersectWith(const CopyableAssignableInfo& other) {
     fromConst_ &= other.fromConst_;

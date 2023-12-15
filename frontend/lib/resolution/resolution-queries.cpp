@@ -4054,17 +4054,15 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     Context* context, const CompositeType* ct, bool checkCopyable) {
   QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
 
-  auto genericity = getTypeGenericity(context, ct);
-  if (genericity == Type::GENERIC || genericity == Type::MAYBE_GENERIC) {
-    context->error(
-        ct->id(),
-        "cannot compute copy/assignability of generic composite types");
-  }
 
-  CopyableAssignableInfo result;
+  CopyableAssignableInfo result = CopyableAssignableInfo::fromNone();
 
   // Inspect type for either kind of copyability/assignability.
-  if (auto at = ct->toArrayType()) {
+  auto genericity = getTypeGenericity(context, ct);
+  if (genericity == Type::GENERIC || genericity == Type::MAYBE_GENERIC) {
+    // generic composite types cannot be copied or assigned
+    result = CopyableAssignableInfo::fromNone();
+  } else if (auto at = ct->toArrayType()) {
     if (auto eltType = at->eltType().type()) {
       // Arrays are copyable/assignable if their elements are
       result = getCopyOrAssignableInfo(context, eltType, checkCopyable);

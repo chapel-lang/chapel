@@ -3,6 +3,11 @@ use Types;
 // Common testing utilities for copyability, assignability, and
 // default-initability.
 
+// enable skipping test of default initializability, which can't be called
+// on generic types at time of writing, so we can check the other properties on
+// them
+config param checkDefaultInitializable = true;
+
 proc checkit(type t,
              param expectCopyable,
              param expectConstCopyable,
@@ -22,8 +27,9 @@ proc checkit(type t,
   if isConstAssignable(t) != expectConstAssignable then
     compilerError("isConstAssignable " + t:string + " did not match");
 
-  if isDefaultInitializable(t) != expectDefaultInitable then
-    compilerError("isDefaultInitializable " + t:string + " did not match");
+  if checkDefaultInitializable then
+    if isDefaultInitializable(t) != expectDefaultInitable then
+      compilerError("isDefaultInitializable " + t:string + " did not match");
 }
 
 proc checkit(e,
@@ -45,32 +51,41 @@ proc checkit(e,
   if isConstAssignable(e) != expectConstAssignable then
     compilerError("isConstAssignable " + e.type:string + " did not match");
 
-  if isDefaultInitializable(e) != expectDefaultInitable then
-    compilerError("isDefaultInitializable " + e.type:string + " did not match");
+  if checkDefaultInitializable then
+    if isDefaultInitializable(e) != expectDefaultInitable then
+      compilerError("isDefaultInitializable " + e.type:string + " did not match");
 }
 
 
-proc checkNormal(type t, e) {
+proc checkNormal(type t, e, param onlyType:bool = false) {
   checkit(t, true, true, true, true, true);
-  if t != e.type then
-    compilerError("types do not match");
-  checkit(e, true, true, true, true, true);
+  if !onlyType {
+    if t != e.type then
+      compilerError("types do not match");
+    checkit(e, true, true, true, true, true);
+  }
 }
-proc checkNormalNoDefault(type t, e) {
+proc checkNormalNoDefault(type t, e, param onlyType:bool = false) {
   checkit(t, true, true, true, true, false);
-  if t != e.type then
-    compilerError("types do not match");
-  checkit(e, true, true, true, true, false);
+  if !onlyType {
+    if t != e.type then
+      compilerError("types do not match");
+    checkit(e, true, true, true, true, false);
+  }
 }
-proc checkMutable(type t, e) {
+proc checkMutable(type t, e, param onlyType:bool = false) {
   checkit(t, true, false, true, false, true);
-  if t != e.type then
-    compilerError("types do not match");
-  checkit(e, true, false, true, false, true);
+  if !onlyType {
+    if t != e.type then
+      compilerError("types do not match");
+    checkit(e, true, false, true, false, true);
+  }
 }
-proc checkNo(type t, e) {
+proc checkNo(type t, e, param onlyType:bool = false) {
   checkit(t, false, false, false, false, false);
-  if t != e.type then
-    compilerError("types do not match");
-  checkit(e, false, false, false, false, false);
+  if !onlyType {
+    if t != e.type then
+      compilerError("types do not match");
+    checkit(e, false, false, false, false, false);
+  }
 }

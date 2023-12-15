@@ -288,11 +288,11 @@ static void test7() {
       }
       )""",
       {
-          /* {"GenericRecord", all}, // not allowed */
+          {"GenericRecord", none},
           {"GenericRecord(int)", all},
           {"GenericRecordWithDefault", all},
           {"GenericRecordWithDefault(real)", all},
-          {"integral", all}, // generic but not composite is ok
+          {"integral", all}, // generic but not composite
       });
 }
 
