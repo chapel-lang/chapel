@@ -266,7 +266,7 @@ void preparePrintLlvmIrForCodegen() {
   do {
     changed = false;
     forv_Vec(FnSymbol, fn, gFnSymbols) {
-      if (shouldLlvmPrintIrFn(fn)) {
+      if (shouldLlvmPrintIrCName(fn->cname)) {
         std::vector<CallExpr*> calls;
         collectFnCalls(fn, calls);
 
@@ -274,7 +274,7 @@ void preparePrintLlvmIrForCodegen() {
           if (FnSymbol* calledFn = call->resolvedFunction()) {
             if (isTaskFun(calledFn) ||
                 calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-              if (!shouldLlvmPrintIrFn(calledFn)) {
+              if (!shouldLlvmPrintIrCName(calledFn->cname)) {
                 addCNameToPrintLlvmIr(calledFn->cname);
                 changed = true;
               }
