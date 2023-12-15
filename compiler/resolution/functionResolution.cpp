@@ -1728,7 +1728,8 @@ bool doCanDispatch(Type*     actualType,
                   isAtomicType(formalValType))) ||
                (formalSym->intent == INTENT_REF &&
                 formalSym == fn->_this &&
-                fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))) {
+                (fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS) ||
+                 fn->isInitializer() || fn->isCopyInit()))) {
       // these will turn into 'const ref'
       // uncomment this line to allow implicit conversion
       //formalType = formalType->getValType();
