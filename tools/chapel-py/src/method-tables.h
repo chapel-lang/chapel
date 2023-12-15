@@ -180,7 +180,7 @@ CLASS_BEGIN(Identifier)
 CLASS_END(Identifier)
 
 CLASS_BEGIN(Import)
-  PLAIN_GETTER(Import, name, "Get the visibility of this Import node",
+  PLAIN_GETTER(Import, visibility, "Get the visibility of this Import node",
                const char*, return Decl::visibilityToString(node->visibility()))
   PLAIN_GETTER(Import, visibility_clauses, "Get the visibility clauses of this Import node",
                IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
@@ -235,7 +235,7 @@ CLASS_END(Throw)
 
 
 CLASS_BEGIN(Use)
-  PLAIN_GETTER(Use, name, "Get the visibility of this Use node",
+  PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
                const char*, return Decl::visibilityToString(node->visibility()))
   PLAIN_GETTER(Use, visibility_clauses, "Get the visibility clauses of this Use node",
                IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
