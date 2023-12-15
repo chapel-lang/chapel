@@ -1715,6 +1715,31 @@ bool doCanDispatch(Type*     actualType,
       isGenericInstantiation(formalType, actualType))
     return true;
 
+  if (formalSym != NULL && formalType->symbol->hasFlag(FLAG_REF)) {
+    Type* formalValType = formalType->getValType();
+    if (formalSym->originalIntent == INTENT_INOUT) {
+      actualType = actualType->getValType();
+      formalType = formalValType;
+    } else if (formalSym->intent == INTENT_CONST_REF ||
+               formalSym->intent == INTENT_CONST ||
+               (formalSym->intent == INTENT_BLANK &&
+                !(isSyncType(formalValType) ||
+                  isSingleType(formalValType) ||
+                  isAtomicType(formalValType))) ||
+               (formalSym->intent == INTENT_REF &&
+                formalSym == fn->_this &&
+                fn->hasFlag(FLAG_REF_TO_CONST_WHEN_CONST_THIS))) {
+      // these will turn into 'const ref'
+      // uncomment this line to allow implicit conversion
+      //formalType = formalType->getValType();
+    } else if (actualSym && actualSym->hasFlag(FLAG_CONST)) {
+      // can't pass 'const ref' or 'const' to 'out'/'inout'/'ref'
+      return false;
+    }
+    if (actualType == formalType)
+      return true;
+  }
+
   if (actualType->refType == formalType &&
       // This is a workaround for type problems with tuples
       // in implement forall intents...
@@ -1722,13 +1747,6 @@ bool doCanDispatch(Type*     actualType,
         fn->hasFlag(FLAG_BUILD_TUPLE) &&
         fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
-
-  if (formalSym != NULL &&
-      formalSym->originalIntent == INTENT_INOUT &&
-      formalType->symbol->hasFlag(FLAG_REF)) {
-    actualType = actualType->getValType();
-    formalType = formalType->getValType();
-  }
 
   if (paramCoerce == false &&
       canCoerce(actualType, actualSym,
