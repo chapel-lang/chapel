@@ -1,9 +1,15 @@
 module AtomicAggregation {
+  use ChplConfig;
   use CTypes;
   use AggregationPrimitives;
 
+  private param defaultBuffSize =
+    if CHPL_TARGET_PLATFORM == "hpe-cray-ex" then 1024
+    else if CHPL_COMM == "ugni" then 4096
+    else 8192;
+
   private config const yieldFrequency = getEnvInt("AGGREGATION_YIELD_FREQUENCY", 1024);
-  private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", 8096);
+  private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", defaultBuffSize*2);
 
   proc AggregatedAtomic(type T) type {
     return chpl__processorAtomicType(T);
@@ -18,24 +24,35 @@ module AtomicAggregation {
     type elemType;
     type aggType = c_ptr(AggregatedAtomic(elemType));
     const bufferSize = amoBuffSize;
-    const myLocaleSpace = LocaleSpace;
+    const myLocaleSpace = 0..<numLocales;
+    var lastLocale: int;
     var opsUntilYield = yieldFrequency;
-    var lBuffers: [myLocaleSpace] [0..#bufferSize] aggType;
+    var lBuffers:  c_ptr(c_ptr(aggType));
     var rBuffers: [myLocaleSpace] remoteBuffer(aggType);
-    var bufferIdxs: [myLocaleSpace] int;
+    var bufferIdxs: c_ptr(int);
 
     proc ref postinit() {
+      lBuffers = allocate(c_ptr(aggType), numLocales);
+      bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
+        lBuffers[loc] = allocate(aggType, bufferSize);
+        bufferIdxs[loc] = 0;
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
     }
 
     proc ref deinit() {
       flush();
+      for loc in myLocaleSpace {
+        deallocate(lBuffers[loc]);
+      }
+      deallocate(lBuffers);
+      deallocate(bufferIdxs);
     }
 
     proc ref flush() {
-      for loc in myLocaleSpace {
+      for offsetLoc in myLocaleSpace + lastLocale {
+        const loc = offsetLoc % numLocales;
         _flushBuffer(loc, bufferIdxs[loc], freeData=true);
       }
     }
@@ -43,6 +60,7 @@ module AtomicAggregation {
     inline proc ref inc(ref dst: AggregatedAtomic(elemType)) {
       // Get the locale of dst and the local address on that locale
       const loc = dst.locale.id;
+      lastLocale = loc;
       const dstAddr = getAddr(dst);
 
       // Get our current index into the buffer for dst's locale
