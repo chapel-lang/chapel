@@ -1034,6 +1034,9 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                     initForErr, declaredType.type(), initExprType.type());
         typePtr = ErroneousType::get(context);
       } else {
+        // TODO: this might need to be an instantiation
+        // when we init= to create a type on a generic declared type, we want
+        // the type produced by the init= call
         typePtr = declaredType.type();
       }
     } else if (!got.instantiates()) {

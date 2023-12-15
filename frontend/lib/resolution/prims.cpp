@@ -648,7 +648,7 @@ static QualifiedType primFamilyCopyableAssignable(Context* context,
 
   bool fromConst = false;
   bool fromRef = false;
-  getCopyOrAssignableInfo(context, t, &fromConst, &fromRef, checkCopyable);
+  getCopyOrAssignableInfo(context, t, fromConst, fromRef, checkCopyable);
 
   // copyable/assignable from const is stricter than from ref
   const bool isFromRefOk =

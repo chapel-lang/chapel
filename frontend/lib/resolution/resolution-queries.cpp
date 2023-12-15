@@ -3791,7 +3791,8 @@ resolveGeneratedCallInMethod(Context* context,
   return resolveGeneratedCall(context, astForErr, ci, inScope, inPoiScope);
 }
 
-const TypedFnSignature* tryResolveInitEq(Context* context, const AstNode* ast,
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const AstNode* astForScopeOrErr,
                                          const types::Type* lhsType,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope) {
@@ -3812,16 +3813,15 @@ const TypedFnSignature* tryResolveInitEq(Context* context, const AstNode* ast,
                      /* isParenless */ false, actuals);
 
   const Scope* scope = nullptr;
-  if (ast) scope = scopeForId(context, ast->id());
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
 
-  auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope, poiScope);
   return c.mostSpecific().only().fn();
 }
 
-static const TypedFnSignature* tryResolveEqHelper(Context* context,
-                                                  const uast::AstNode* ast,
-                                                  const types::Type* t,
-                                                  bool asMethod) {
+static const TypedFnSignature* tryResolveAssignHelper(
+    Context* context, const uast::AstNode* astForScopeOrErr,
+    const types::Type* t, bool asMethod) {
   auto lhsType = QualifiedType(QualifiedType::CONST_REF, t);
   auto rhsType = QualifiedType(QualifiedType::CONST_REF, t);
 
@@ -3837,22 +3837,24 @@ static const TypedFnSignature* tryResolveEqHelper(Context* context,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false, actuals);
   const Scope* scope = nullptr;
-  if (ast) scope = scopeForId(context, ast->id());
-  auto c =
-      resolveGeneratedCall(context, ast, ci, scope, /* poiScope */ nullptr);
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope,
+                                /* poiScope */ nullptr);
   return c.mostSpecific().only().fn();
 }
 
 // Tries to resolve an = that assigns a type from itself, first as a method and
 // then as a standalone operator.
-static const TypedFnSignature* tryResolveEq(Context* context,
-                                            const uast::AstNode* ast,
-                                            const types::Type* t) {
+static const TypedFnSignature* tryResolveAssign(
+    Context* context, const uast::AstNode* astForScopeOrErr,
+    const types::Type* t) {
   CHPL_ASSERT(t->isRecordType() || t->isUnionType());
 
   const TypedFnSignature* res =
-      tryResolveEqHelper(context, ast, t, /* asMethod */ true);
-  if (!res) res = tryResolveEqHelper(context, ast, t, /* asMethod */ false);
+      tryResolveAssignHelper(context, astForScopeOrErr, t, /* asMethod */ true);
+  if (!res)
+    res =
+        tryResolveAssignHelper(context, astForScopeOrErr, t, /* asMethod */ false);
 
   return res;
 }
@@ -4012,7 +4014,7 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
 }
 
 void getCopyOrAssignableInfo(Context* context, const Type* t,
-                                    bool* fromConst, bool* fromRef,
+                                    bool& fromConst, bool& fromRef,
                                     bool checkCopyable);
 
 // checkCopyable is true for copyable, false for assignable.
@@ -4040,14 +4042,14 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
     if (auto at = t->toArrayType()) {
       if (auto eltType = at->eltType().type()) {
         // Arrays are copyable/assignable if their elements are
-        getCopyOrAssignableInfo(context, eltType, &fromConst, &fromRef,
+        getCopyOrAssignableInfo(context, eltType, fromConst, fromRef,
                                 checkCopyable);
       }
     } else if (auto tt = t->toTupleType()) {
       // Tuples have the minimum copyable/assignable-ness of their elements
       if (tt->isStarTuple()) {
-        getCopyOrAssignableInfo(context, tt->elementType(0).type(), &fromConst,
-                                &fromRef, checkCopyable);
+        getCopyOrAssignableInfo(context, tt->elementType(0).type(), fromConst,
+                                fromRef, checkCopyable);
       } else {
         bool allEltsFromConst = true;
         bool allEltsFromRef = true;
@@ -4055,7 +4057,7 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
           bool thisEltFromConst = false;
           bool thisEltFromRef = false;
           getCopyOrAssignableInfo(context, tt->elementType(i).type(),
-                                  &thisEltFromConst, &thisEltFromRef,
+                                  thisEltFromConst, thisEltFromRef,
                                   checkCopyable);
           allEltsFromConst &= thisEltFromConst;
           allEltsFromRef &= thisEltFromRef;
@@ -4078,7 +4080,7 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
         // determine copy/assignability, respectively.
         const TypedFnSignature* testResolvedSig =
             (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
-                           : tryResolveEq(context, ast, ct));
+                           : tryResolveAssign(context, ast, ct));
         if (testResolvedSig) {
           if (testResolvedSig->untyped()->isCompilerGenerated()) {
             // Check for owned class fields.
@@ -4135,20 +4137,20 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
 }
 
 void getCopyOrAssignableInfo(Context* context, const Type* t,
-                                    bool* fromConst, bool* fromRef,
+                                    bool& fromConst, bool& fromRef,
                                     bool checkCopyable) {
   if (t->isCompositeType() || t->isClassType()) {
     // Use query to cache results only for complicated types
     auto info = getCopyOrAssignableInfoQuery(context, t, checkCopyable);
-    *fromConst = info.first;
-    *fromRef = info.second;
+    fromConst = info.first;
+    fromRef = info.second;
   } else {
     // Non-record/class/array types are always copyable/assignable from const
-    *fromConst = true;
+    fromConst = true;
   }
 
   // Copyable/assignable from const implies from ref as well
-  *fromRef |= *fromConst;
+  fromRef |= fromConst;
 }
 
 template <typename T>

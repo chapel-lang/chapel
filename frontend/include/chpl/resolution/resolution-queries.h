@@ -383,7 +383,7 @@ resolveGeneratedCallInMethod(Context* context,
 
 // tries to resolve an (unambiguous) init=
 const TypedFnSignature* tryResolveInitEq(Context* context,
-                                         const uast::AstNode* ast,
+                                         const uast::AstNode* astForScopeOrErr,
                                          const types::Type* lhsType,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope = nullptr);
@@ -402,7 +402,7 @@ bool isTypeDefaultInitializable(Context* context, const types::Type* t);
   true, this checks copyability, and for false checks assignability.
 */
 void getCopyOrAssignableInfo(Context* context, const types::Type* t,
-                             bool* fromConst, bool* fromRef,
+                             bool& fromConst, bool& fromRef,
                              bool checkCopyable);
 /**
   Determine the types of various compiler-generated globals, which depend

@@ -87,11 +87,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
         if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
           ResolutionResultByPostorderID r;
           auto vis = Resolver::createForInitialSignature(context, fn, r);
-          // receiver is 'this' for method, first formal for standalone operator
-          auto receiverFormal =
+          // use receiver for method, first formal for standalone operator
+          auto checkFormal =
               (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
-          receiverFormal->traverse(vis);
-          auto receiverQualType = vis.byPostorder.byAst(receiverFormal).type();
+          checkFormal->traverse(vis);
+          auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
           // return true if the receiver type matches or
           // if the receiver type is a generic type and we have
