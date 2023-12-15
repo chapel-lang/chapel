@@ -134,28 +134,26 @@ static void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
-static bool shouldLlvmPrintIrName(const char* name) {
-  return llvmPrintIrRequestedNames.count(astr(name)) > 0;
-}
-
 bool shouldLlvmPrintIrCName(const char* cname) {
   return llvmPrintIrCNames.count(astr(cname)) > 0;
 }
 
+// finds if fn's name, cname, or ID is present in the requested names
+// to print for --llvm-print-ir
 static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
-  if (shouldLlvmPrintIrName(fn->name)) {
+  if (llvmPrintIrRequestedNames.count(fn->name)) {
     foundName = fn->name;
     return true;
   }
 
-  if (shouldLlvmPrintIrName(fn->cname)) {
+  if (llvmPrintIrRequestedNames.count(fn->cname)) {
     foundName = fn->cname;
     return true;
   }
 
   if (!fn->astloc.id().isEmpty()) {
     const char* idstr = astr(fn->astloc.id().symbolPath());
-    if (shouldLlvmPrintIrName(idstr)) {
+    if (llvmPrintIrRequestedNames.count(idstr)) {
       foundName = idstr;
       return true;
     }
