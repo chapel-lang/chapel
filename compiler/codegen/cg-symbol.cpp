@@ -162,7 +162,10 @@ static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
   return false;
 }
 
-static bool shouldLlvmPrintIrFn(FnSymbol* fn) {
+// this is not declared as 'static' to avoid an unused function
+// error for CHPL_LLVM=none builds.
+bool shouldLlvmPrintIrFn(FnSymbol* fn);
+bool shouldLlvmPrintIrFn(FnSymbol* fn) {
   const char* foundName = nullptr;
   return shouldLlvmPrintIrFnFindName(fn, foundName);
 }
