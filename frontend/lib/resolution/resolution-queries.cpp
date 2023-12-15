@@ -4071,15 +4071,12 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
     }
   } else if (auto tt = ct->toTupleType()) {
     // Tuples have the minimum copyable/assignable-ness of their elements
-    if (tt->isStarTuple()) {
-      result = getCopyOrAssignableInfo(context, tt->elementType(0).type(),
-                                       checkCopyable);
-    } else {
-      result = CopyableAssignableInfo::fromConst();
-      for (int i = 0; i < tt->numElements(); i++) {
-        result.intersectWith(getCopyOrAssignableInfo(
-            context, tt->elementType(i).type(), checkCopyable));
-      }
+    result = CopyableAssignableInfo::fromConst();
+    // TODO: add iterator for TupleType element types and use a range-based for
+    for (int i = 0; i < tt->numElements(); i++) {
+      result.intersectWith(getCopyOrAssignableInfo(
+          context, tt->elementType(i).type(), checkCopyable));
+      if (tt->isStarTuple()) break;
     }
   } else {
     auto ast = parsing::idToAst(context, ct->id());
