@@ -167,6 +167,7 @@ _chpl ()
 --mllvm \
 --module-dir \
 --munge-user-idents \
+--munge-with-ids \
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
@@ -239,6 +240,7 @@ _chpl ()
 --no-memory-frees \
 --no-minimal-modules \
 --no-munge-user-idents \
+--no-munge-with-ids \
 --no-nil-checks \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
