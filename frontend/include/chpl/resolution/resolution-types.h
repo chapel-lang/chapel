@@ -2064,20 +2064,29 @@ struct CopyableAssignableInfo {
   bool fromConst_ = false;
   bool fromRef_ = false;
 
+  CopyableAssignableInfo(bool fromConst, bool fromRef)
+      : fromConst_(fromConst), fromRef_(fromRef) {
+    assert(!fromConst || fromRef);
+  }
+
  public:
   CopyableAssignableInfo() {}
 
-  bool fromConst() const { return fromConst_; }
-  bool fromRef() const { return fromRef_; }
+  bool isFromConst() const { return fromConst_; }
+  bool isFromRef() const { return fromRef_; }
 
-  void setFromConst() {
-    fromConst_ = true;
-    // Copyable/assignable from const implies from ref as well
-    setFromRef();
+  static CopyableAssignableInfo fromConst() {
+    return CopyableAssignableInfo(true, true);
   }
 
-  void setFromRef() {
-    fromRef_ = true;
+  static CopyableAssignableInfo fromRef() {
+    return CopyableAssignableInfo(false, true);
+  }
+
+  // Set this to the "minimum" copyability between this and other.
+  void intersectWith(const CopyableAssignableInfo& other) {
+    fromConst_ &= other.fromConst_;
+    fromRef_ &= other.fromRef_;
   }
 
   bool operator==(const CopyableAssignableInfo& other) const {

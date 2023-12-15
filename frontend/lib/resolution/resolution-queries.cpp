@@ -4039,11 +4039,11 @@ static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
     // Owned class types are copyable/assignable from ref iff they are nilable.
     // TODO: update if/when user-defined memory management styles are added
     if (ct->decorator().isNilable()) {
-      result.setFromRef();
+      result = CopyableAssignableInfo::fromRef();
     }
   } else {
     // Class types of other management are copyable/assignable from const.
-    result.setFromConst();
+    result = CopyableAssignableInfo::fromConst();
   }
 
   return result;
@@ -4075,18 +4075,11 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
       result = getCopyOrAssignableInfo(context, tt->elementType(0).type(),
                                        checkCopyable);
     } else {
-      bool allEltsFromConst = true;
-      bool allEltsFromRef = true;
+      result = CopyableAssignableInfo::fromConst();
       for (int i = 0; i < tt->numElements(); i++) {
-        CopyableAssignableInfo thisEltInfo = getCopyOrAssignableInfo(
-            context, tt->elementType(i).type(), checkCopyable);
-        allEltsFromConst &= thisEltInfo.fromConst();
-        allEltsFromRef &= thisEltInfo.fromRef();
+        result.intersectWith(getCopyOrAssignableInfo(
+            context, tt->elementType(i).type(), checkCopyable));
       }
-      if (allEltsFromConst)
-        result.setFromConst();
-      else if (allEltsFromRef)
-        result.setFromRef();
     }
   } else {
     auto ast = parsing::idToAst(context, ct->id());
@@ -4097,7 +4090,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
       // Syncs and singles are copyable
       // This is a special case to preserve deprecated behavior before
       // sync/single implicit reads are removed. 12/8/23
-      result.setFromConst();
+      result = CopyableAssignableInfo::fromConst();
     } else {
       // In general, try to resolve the type's 'init='/'=', and examine it to
       // determine copy/assignability, respectively.
@@ -4109,32 +4102,19 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
           // Check for class fields reducing copy/assignability; otherwise it
           // is from const.
 
-          bool allFieldsFromConst = true;
-          bool allFieldsFromRef = true;
+          result = CopyableAssignableInfo::fromConst();
           auto resolvedFields =
               fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
           for (int i = 0; i < resolvedFields.numFields(); i++) {
             auto fieldType = resolvedFields.fieldType(i).type();
-            CopyableAssignableInfo thisFieldInfo;
-            bool checkedField = false;
             if (auto classTy = fieldType->toClassType()) {
-              thisFieldInfo = getClassTypeCopyOrAssignable(classTy);
-              checkedField = true;
+              result.intersectWith(getClassTypeCopyOrAssignable(classTy));
             } else if (auto rt = fieldType->toRecordType()) {
               // check record fields recursively
-              thisFieldInfo =
-                  getCopyOrAssignableInfo(context, rt, checkCopyable);
-              checkedField = true;
-            }
-            if (checkedField) {
-              allFieldsFromConst &= thisFieldInfo.fromConst();
-              allFieldsFromRef &= thisFieldInfo.fromRef();
+              result.intersectWith(
+                  getCopyOrAssignableInfo(context, rt, checkCopyable));
             }
           }
-          if (allFieldsFromConst)
-            result.setFromConst();
-          else if (allFieldsFromRef)
-            result.setFromRef();
         } else {
           // Check intent of formal to copy/assign from.
 
@@ -4152,10 +4132,10 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
                       "should have resolved concrete intent by now");
 
           if (other.isIn() || other.isConst()) {
-            result.setFromConst();
+            result = CopyableAssignableInfo::fromConst();
           } else if (other.isRef() || other.kind() == QualifiedType::TYPE ||
                      other.kind() == QualifiedType::PARAM) {
-            result.setFromRef();
+            result = CopyableAssignableInfo::fromRef();
           } else {
             context->error(
                 testResolvedSig->untyped()->formalDecl(otherFormalNum),
@@ -4180,7 +4160,7 @@ CopyableAssignableInfo getCopyOrAssignableInfo(Context* context, const Type* t,
     result = getClassTypeCopyOrAssignable(classTy);
   } else {
     // Non-composite/class types are always copyable/assignable from const
-    result.setFromConst();
+    result = CopyableAssignableInfo::fromConst();
   }
 
   return result;
