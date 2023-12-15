@@ -378,16 +378,18 @@ module ParallelIO {
           byteOffsets = findDelimChunksChecked(fMeta, delim, d.size, t, fileBounds,
                                                skipHeaderLines, deserializerType, delimInclusive);
 
+    // writeln(byteOffsets);
+
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
-            locBounds = byteOffsets[id]..<byteOffsets[id+1],
+            locBounds = byteOffsets[id]..byteOffsets[id+1],
             locFile = open(filePath, ioMode.r),
             tByteOffsets = findDelimChunksChecked(locFile, delim, nTasks, t, locBounds,
                                                   0, deserializerType, delimInclusive);
 
       var tResults: [0..nTasks] list(t);
       coforall tid in 0..<nTasks with (ref tResults) {
-        const taskBounds = tByteOffsets[tid]..<tByteOffsets[tid+1];
+        const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1];
         var des: deserializerType,
             r = locFile.reader(locking=false, region=taskBounds, deserializer=des),
             s = new t();
@@ -407,7 +409,7 @@ module ParallelIO {
           itemOffsets = (+ scan nPerLoc) - nPerLoc;
 
     var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
-    coforall (loc, id) in zip(targetLocales, 0..) do on loc {
+    coforall (loc, id) in zip(targetLocales, 0..) with (ref result) do on loc {
       forall i in itemOffsets[id]..<itemOffsets[id+1] with (var agg = new DstAggregator(t)) do
         agg.copy(result[i], results[id][i-itemOffsets[id]]);
     }
@@ -455,7 +457,7 @@ module ParallelIO {
                                                deserializerType, delimInclusive);
 
     coforall tid in 0..<nTasks with (ref results) {
-      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1];
+      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1];
       var des: deserializerType,
           r = f.reader(locking=false, region=taskBounds, deserializer=des),
           s = new t();
@@ -539,7 +541,7 @@ module ParallelIO {
             locFile = open(filePath, ioMode.r),
             tByteOffsets = findDeserChunks(locFile, nTasks, locBounds, t, false, deserializerType);
 
-      var tResults: [0..nTasks] list(t);
+      var tResults: [0..<nTasks] list(t);
       coforall tid in 0..<nTasks with (ref tResults) {
         const taskBounds = tByteOffsets[tid]..<tByteOffsets[tid+1];
         var des: deserializerType,
@@ -561,7 +563,7 @@ module ParallelIO {
           itemOffsets = (+ scan nPerLoc) - nPerLoc;
 
     var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
-    coforall (loc, id) in zip(targetLocales, 0..) do on loc do
+    coforall (loc, id) in zip(targetLocales, 0..) with (ref result) do on loc do
       forall i in itemOffsets[id]..<itemOffsets[id+1] with (var agg = new DstAggregator(t)) do
         agg.copy(result[i], results[id][i-itemOffsets[id]]);
 
@@ -830,16 +832,16 @@ module ParallelIO {
 
     var startOffsets: [0..n] int;
     startOffsets[0] = bounds.low;
-    startOffsets[n] = bounds.high;
+    startOffsets[n] = bounds.high+1;
 
     for i in offsetIndices {
       const estOffset = bounds.low + i * approxBytesPerChunk,
-            maxOffset = min(estOffset + (i+1)*approxBytesPerChunk, bounds.high);
+            maxOffset = bounds.high;
 
       var r = f.reader(locking=false, region=estOffset..),
           tTest: t;
 
-      for byteOffset in estOffset..<maxOffset {
+      for byteOffset in estOffset..maxOffset {
         r.mark();
         try {
           r.withDeserializer(deserializerType).read(tTest);
