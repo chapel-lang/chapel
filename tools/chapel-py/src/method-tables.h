@@ -188,6 +188,17 @@ CLASS_BEGIN(FunctionSignature)
                bool, return node->throws())
 CLASS_END(FunctionSignature)
 
+CLASS_BEGIN(Implements)
+  PLAIN_GETTER(Implements, interface_name, "Get the interface name of this Implements node",
+               UniqueString, return node->interfaceName())
+  PLAIN_GETTER(Implements, type_ident, "Get the type identifier from this Implements node",
+               const Identifier*, return node->typeIdent())
+  PLAIN_GETTER(Implements, interface_expr, "Get the interface expression from this Implements node",
+               const AstNode*, return node->interfaceExpr())
+  PLAIN_GETTER(Implements, is_expression_level, "Check if this Implements node is expression level",
+               bool, return node->isExpressionLevel())
+CLASS_END(Implements)
+
 CLASS_BEGIN(Identifier)
   PLAIN_GETTER(Identifier, name, "Get the name of this Identifier node",
                UniqueString, return node->name())
@@ -460,6 +471,15 @@ CLASS_BEGIN(Function)
   PLAIN_GETTER(Function, where_clause, "Get the where clause for this Function node",
                const AstNode*, return node->whereClause())
 CLASS_END(Function)
+
+CLASS_BEGIN(Interface)
+  PLAIN_GETTER(Interface, stmts, "Get the statements for this Interface node",
+               IterAdapterBase*, return mkIterPair(node->stmts()))
+  PLAIN_GETTER(Interface, formals, "Get the formals for this Interface node",
+               IterAdapterBase*, return mkIterPair(node->formals()))
+  PLAIN_GETTER(Interface, is_formal_list_explicit, "Check if this Interface node has an explicit formal list",
+               bool, return node->isFormalListExplicit())
+CLASS_END(Interface)
 
 CLASS_BEGIN(Module)
   PLAIN_GETTER(Module, kind, "Get the kind of this Module node",
