@@ -4100,11 +4100,18 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
               fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
           for (int i = 0; i < resolvedFields.numFields(); i++) {
             auto fieldType = resolvedFields.fieldType(i).type();
+            // set true initially, so results aren't affected if we don't
+            // overwrite with info for this field type
+            std::pair<bool, bool> info = {true, true};
             if (auto classTy = fieldType->toClassType()) {
-              auto classTypeInfo = getClassTypeCopyOrAssignable(classTy);
-              allFieldsFromConst &= classTypeInfo.first;
-              allFieldsFromRef &= classTypeInfo.second;
+              info = getClassTypeCopyOrAssignable(classTy);
+            } else if (auto rt = fieldType->toRecordType()) {
+              // check record fields recursively
+              getCopyOrAssignableInfo(context, rt, info.first, info.second,
+                                      checkCopyable);
             }
+            allFieldsFromConst &= info.first;
+            allFieldsFromRef &= info.second;
           }
           fromConst = allFieldsFromConst;
           fromRef = allFieldsFromRef;

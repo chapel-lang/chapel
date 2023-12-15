@@ -160,6 +160,14 @@ static void test2() {
         var x: owned C;
       }
 
+      record RecordWithNilableOwnedIndirect {
+        var x: RecordWithNilableOwned;
+      }
+
+      record RecordWithNonNilableOwnedIndirect {
+        var x: RecordWithNonNilableOwned;
+      }
+
       record CustomRecordWithNilableOwned {
         var x: owned C?;
         proc init=(other) {
@@ -210,6 +218,8 @@ static void test2() {
           {"GenericRecord", all},
           {"RecordWithNilableOwned", refOnly},
           {"RecordWithNonNilableOwned", none},
+          {"RecordWithNilableOwnedIndirect", refOnly},
+          {"RecordWithNonNilableOwnedIndirect", none},
           {"CustomRecordWithNilableOwned", all},
           {"CustomRecordWithNonNilableOwned", all},
           {"CustomRecordWithNilableOwnedOp", all},
