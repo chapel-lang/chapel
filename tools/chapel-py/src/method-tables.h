@@ -115,6 +115,22 @@ CLASS_BEGIN(Break)
                const AstNode*, return node->target())
 CLASS_END(Break)
 
+CLASS_BEGIN(Catch)
+  PLAIN_GETTER(Catch, target, "Get the error from this Catch node",
+               const Variable*, return node->error())
+  PLAIN_GETTER(Catch, body, "Get the body from this Catch node",
+               const Block*, return node->body())
+  PLAIN_GETTER(Catch, has_parens_around_error, "Check if this Catch uses parentheses",
+               bool, return node->hasParensAroundError())
+CLASS_END(Catch)
+
+CLASS_BEGIN(Cobegin)
+  PLAIN_GETTER(Cobegin, with_clause, "Get the error from this Cobegin node",
+               const WithClause*, return node->withClause())
+  PLAIN_GETTER(Cobegin, task_bodies, "Get the error from this Cobegin node",
+               IterAdapterBase*, return mkIterPair(node->taskBodies()))
+CLASS_END(Cobegin)
+
 CLASS_BEGIN(Conditional)
   PLAIN_GETTER(Conditional, condition, "Get the condition of this Conditional node",
                const AstNode*, return node->condition())
