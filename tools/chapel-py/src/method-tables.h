@@ -83,6 +83,12 @@ CLASS_BEGIN(AnonFormal)
                const AstNode*, return node->typeExpression())
 CLASS_END(AnonFormal)
 
+CLASS_BEGIN(As)
+  PLAIN_GETTER(As, symbol, "Get the symbol for this As node",
+               const AstNode*, return node->symbol())
+  PLAIN_GETTER(As, rename, "Get the rename for this As node",
+               const AstNode*, return node->rename())
+CLASS_END(As)
 
 CLASS_BEGIN(Array)
   PLAIN_GETTER(Array, exprs, "Get the expressions from this Array node",
@@ -217,6 +223,14 @@ CLASS_BEGIN(Throw)
   PLAIN_GETTER(Throw, error_expression, "Get the expression thrown by this Throw node",
                const AstNode*, return node->errorExpression())
 CLASS_END(Throw)
+
+
+CLASS_BEGIN(Use)
+  PLAIN_GETTER(Use, name, "Get the visibility of this Use node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Use, visibility_clauses, "Get the visibility clauses of this Use node",
+               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+CLASS_END(Use)
 
 CLASS_BEGIN(VisibilityClause)
   PLAIN_GETTER(VisibilityClause, symbol, "Get the symbol referenced by this VisibilityClause node",
