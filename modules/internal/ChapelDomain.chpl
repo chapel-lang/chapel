@@ -90,16 +90,28 @@ module ChapelDomain {
 
   pragma "runtime type init fn"
   proc chpl__buildDomainRuntimeType(dist, type idxType,
-                                    param parSafe: bool = parSafeDefault) type {
+                                    param parSafe: bool = warnParSafetyDefaultChange()) type {
+    checkDomainType(idxType);
+    warnParSafeUnstable(parSafe);
+    return new _domain(dist, idxType, parSafe);
+  }
+
+  private proc checkDomainType(type idxType) {
     if isDomainType(idxType) then
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
+  }
+
+  private proc warnParSafetyDefaultChange() param {
+    if !parSafeDefault && !noParSafeWarning {
+        /* User didn't compile with any additional flags, so we generate the standard warning*/
+        compilerWarning("The default parSafe-ty mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+      }
+    return parSafeDefault;
+  }
+
+  private proc warnParSafeUnstable(param parSafe : bool) param {
     if parSafe && chpl_warnUnstable then
       compilerWarning("parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future");
-    else if !parSafeDefault && !noParSafeWarning {
-      /* User didn't compile with any additional flags, so we generate the standard warning*/
-      compilerWarning("The default parSafe-ty mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
-    }
-    return new _domain(dist, idxType, parSafe);
   }
 
   private proc isUltimatelyRectangularParent(parentDom: domain) param {
@@ -221,6 +233,7 @@ module ChapelDomain {
 
   // definedConst is added only for interface consistency
   proc chpl__buildDomainExpr(const keys..., definedConst) {
+    warnParSafetyDefaultChange();
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;

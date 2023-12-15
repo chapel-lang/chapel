@@ -1,6 +1,5 @@
-associativeDomain.chpl:23: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
-associativeDomain.chpl:24: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
-associativeDomain.chpl:25: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
-associativeDomain.chpl:26: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
-associativeDomain.chpl:27: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
-associativeDomain.chpl:28: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
+associativeDomain.chpl:36: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
+associativeDomain.chpl:37: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
+associativeDomain.chpl:38: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
+associativeDomain.chpl:39: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
+associativeDomain.chpl:40: warning: parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future
