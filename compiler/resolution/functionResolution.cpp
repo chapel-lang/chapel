@@ -1722,6 +1722,8 @@ bool doCanDispatch(Type*     actualType,
       formalType = formalValType;
     } else if (formalSym->intent == INTENT_CONST_REF ||
                formalSym->intent == INTENT_CONST ||
+               formalSym->intent == INTENT_IN || // TODO: is it possible?
+               formalSym->intent == INTENT_CONST_IN ||
                (formalSym->intent == INTENT_BLANK &&
                 !(isSyncType(formalValType) ||
                   isSingleType(formalValType) ||
