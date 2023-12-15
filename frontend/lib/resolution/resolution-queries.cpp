@@ -4117,15 +4117,21 @@ static const std::pair<bool, bool>& getCopyOrAssignableInfoQuery(
             }
             CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
                         "unexpected formals");
-            auto otherTy = testResolvedSig->formalType(otherFormalNum);
-            CHPL_ASSERT(!otherTy.isNonConcreteIntent() &&
+            auto other = testResolvedSig->formalType(otherFormalNum);
+            CHPL_ASSERT(!other.isNonConcreteIntent() &&
                         "should have resolved concrete intent by now");
-            auto otherIntent = otherTy.kind();
 
-            fromConst = (otherIntent == QualifiedType::IN ||
-                         otherIntent == QualifiedType::CONST_IN ||
-                         otherIntent == QualifiedType::CONST_REF);
-            fromRef = !fromConst;
+            if (other.isIn() || other.isConst()) {
+              fromConst = true;
+            } else if (other.isRef() ||
+                       other.kind() == QualifiedType::TYPE ||
+                       other.kind() == QualifiedType::PARAM) {
+              fromRef = true;
+            } else {
+              context->error(
+                  testResolvedSig->untyped()->formalDecl(otherFormalNum),
+                  "unexpected formal intent for special proc");
+            }
           }
         }
       }
