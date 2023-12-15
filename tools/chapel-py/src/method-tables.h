@@ -187,7 +187,7 @@ CLASS_BEGIN(Import)
 CLASS_END(Import)
 
 CLASS_BEGIN(Include)
-  PLAIN_GETTER(Include, name, "Get the visibility of this Include node",
+  PLAIN_GETTER(Include, name, "Get the name of this Include node",
                const char*, return node->name())
   PLAIN_GETTER(Include, is_prototype, "Check if this Include node is for a prototype module",
                bool, return node->isPrototype())
