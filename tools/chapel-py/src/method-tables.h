@@ -250,6 +250,11 @@ CLASS_BEGIN(Range)
                const AstNode*, return node->upperBound())
 CLASS_END(Range)
 
+CLASS_BEGIN(Require)
+  PLAIN_GETTER(Require, exprs, "Get the expressions of this Require node",
+               IterAdapterBase*, return mkIterPair(node->exprs()))
+CLASS_END(Require)
+
 CLASS_BEGIN(Return)
   PLAIN_GETTER(Return, value, "Get the expression returned by this Return node",
                const AstNode*, return node->value())
@@ -260,6 +265,16 @@ CLASS_BEGIN(Throw)
                const AstNode*, return node->errorExpression())
 CLASS_END(Throw)
 
+CLASS_BEGIN(Try)
+  PLAIN_GETTER(Try, body, "Get the body of this Try node",
+               const Block*, return node->body())
+  PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
+               IterAdapterBase*, return mkIterPair(node->handlers()))
+  PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
+               bool, return node->isExpressionLevel())
+  PLAIN_GETTER(Try, is_try_bang, "Check if this Try node is a 'try!'",
+               bool, return node->isTryBang())
+CLASS_END(Try)
 
 CLASS_BEGIN(Use)
   PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
