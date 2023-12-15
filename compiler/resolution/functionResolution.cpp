@@ -7628,12 +7628,20 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 
 static Symbol* maybeGetBaseSymFromMethodCallTemp(SymExpr* def) {
   if (auto parentCall = toCallExpr(def->parentExpr)) {
-    if (isMoveOrAssign(parentCall) && isCallExpr(parentCall->get(2))) {
+    if (isMoveOrAssign(parentCall)) {
       if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
         if (maybeMethodCall->resolvedFunction() &&
             maybeMethodCall->resolvedFunction()->isMethod()) {
           if (auto baseExpr = toSymExpr(maybeMethodCall->get(2))) {
-            return baseExpr->symbol();
+            auto sym = baseExpr->symbol();
+            if (sym->hasFlag(FLAG_TEMP)) {
+              for_SymbolDefs(def, sym) {
+               if (auto base = maybeGetBaseSymFromMethodCallTemp(def)) {
+                return base;
+               }
+              }
+            }
+            return sym;
           }
         }
       }
@@ -7645,6 +7653,7 @@ static Symbol* maybeGetBaseSymFromMethodCallTemp(SymExpr* def) {
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
+  Symbol* baseSym = aVar;
   if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
     varname += 15;
   else if (strncmp(varname, "_formal_tmp_", 12) == 0)
@@ -7653,13 +7662,14 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
     for_SymbolDefs(def, aVar) {
       if (auto sym = maybeGetBaseSymFromMethodCallTemp(def)) {
         varname = sym->name;
+        baseSym = sym;
         break;
       }
     }
   }
 
-  if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
-    Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
+  if (isArgSymbol(baseSym) || baseSym->hasFlag(FLAG_TEMP)) {
+    Symbol*     enclTaskFn    = baseSym->defPoint->parentSymbol;
     BaseAST*    marker        = NULL;
     const char* constructName = NULL;
 
@@ -7680,7 +7690,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
               constructName);
 
   } else {
-    Expr* enclLoop = aVar->defPoint->parentExpr;
+    Expr* enclLoop = baseSym->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
               "The shadow variable '%s' is constant due to task intents "
