@@ -162,14 +162,6 @@ static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
   return false;
 }
 
-// this is not declared as 'static' to avoid an unused function
-// error for CHPL_LLVM=none builds.
-bool shouldLlvmPrintIrFn(FnSymbol* fn);
-bool shouldLlvmPrintIrFn(FnSymbol* fn) {
-  const char* foundName = nullptr;
-  return shouldLlvmPrintIrFnFindName(fn, foundName);
-}
-
 // Collect the cnames to print into a vector with (lex) ordering.
 // Order of the list is non-deterministic otherwise, because it stores astrs
 // for performance.
@@ -2567,7 +2559,7 @@ void FnSymbol::codegenDef() {
     // Mark functions to dump as no-inline so they actually exist
     // after optimization
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
-       shouldLlvmPrintIrFn(this)) {
+       shouldLlvmPrintIrCName(this->cname)) {
         func->addFnAttr(llvm::Attribute::NoInline);
     }
     // Also mark no-inline if the flag was set
@@ -2876,7 +2868,7 @@ void FnSymbol::codegenDef() {
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
         llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       shouldLlvmPrintIrFn(this))
+       shouldLlvmPrintIrCName(this->cname))
         printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.
