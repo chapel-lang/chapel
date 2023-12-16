@@ -237,9 +237,9 @@ typedef struct kernel_cfg_s {
   int64_t max_pid;
   priv_inst* priv_insts;
 
-  chpl_privateObject_t* priv_table; // actual privatization table for the
+  chpl_privateObject_t* priv_table_dev; // actual privatization table for the
                                     // device
-  chpl_privateObject_t* host_mirror; //used for initial staging
+  chpl_privateObject_t* priv_table_host; //used for initial staging
 
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
@@ -284,8 +284,8 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->max_pid = -1;
   cfg->priv_insts = chpl_mem_alloc(cfg->n_pids * sizeof(priv_inst),
                                    CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  cfg->priv_table = NULL;
-  cfg->host_mirror = NULL;
+  cfg->priv_table_dev = NULL;
+  cfg->priv_table_host = NULL;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -364,32 +364,33 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
 static void cfg_finalize_priv_table(kernel_cfg *cfg,
                                     chpl_privateObject_t* host_table) {
   // TODO why host_table doesn't work?
+  // We can probably drop that argument for now
   if (cfg->cur_pid != cfg->n_pids) {
     chpl_internal_error("All pids must have been added by now");
   }
 
-  if (cfg->priv_table == NULL) {
-    const size_t priv_table_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
+  if (cfg->priv_table_dev == NULL) {
+    const size_t priv_table_dev_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
 
-    cfg->host_mirror = chpl_mem_alloc(priv_table_size,
+    cfg->priv_table_host = chpl_mem_alloc(priv_table_dev_size,
                                       CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                       cfg->ln, cfg->fn);
 
-    cfg->priv_table = chpl_gpu_mem_array_alloc((cfg->max_pid+1)*sizeof(chpl_privateObject_t),
+    cfg->priv_table_dev = chpl_gpu_mem_array_alloc((cfg->max_pid+1)*sizeof(chpl_privateObject_t),
                                                CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                                cfg->ln, cfg->fn);
 
-    CHPL_GPU_DEBUG("Allocated privatization table %p\n", cfg->priv_table);
+    CHPL_GPU_DEBUG("Allocated privatization table %p\n", cfg->priv_table_dev);
 
     for (int i=0 ; i<cfg->n_pids ; i++) {
       int64_t pid = cfg->priv_insts[i].pid;
       void* dev_instance = cfg->priv_insts[i].dev_instance;
 
-      cfg->host_mirror[pid].obj = dev_instance;
+      cfg->priv_table_host[pid].obj = dev_instance;
     }
 
-    chpl_gpu_impl_copy_host_to_device(cfg->priv_table, cfg->host_mirror,
-                                      priv_table_size, cfg->stream);
+    chpl_gpu_impl_copy_host_to_device(cfg->priv_table_dev, cfg->priv_table_host,
+                                      priv_table_dev_size, cfg->stream);
 
     CHPL_GPU_DEBUG("Offloaded the new privatization table");
   }
@@ -416,14 +417,14 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
     chpl_gpu_mem_free(cfg->priv_insts[i].dev_instance, cfg->ln, cfg->fn);
   }
 
-  if (cfg->host_mirror) {
-    CHPL_GPU_DEBUG("Freeing host_mirror %p\n", cfg->host_mirror);
-    chpl_mem_free(cfg->host_mirror, cfg->ln, cfg->fn);
+  if (cfg->priv_table_host) {
+    CHPL_GPU_DEBUG("Freeing priv_table_host %p\n", cfg->priv_table_host);
+    chpl_mem_free(cfg->priv_table_host, cfg->ln, cfg->fn);
   }
 
-  if (cfg->priv_table) {
-    CHPL_GPU_DEBUG("Freeing priv_table %p\n", cfg->priv_table);
-    chpl_gpu_mem_free(cfg->priv_table, cfg->ln, cfg->fn);
+  if (cfg->priv_table_dev) {
+    CHPL_GPU_DEBUG("Freeing priv_table_dev %p\n", cfg->priv_table_dev);
+    chpl_gpu_mem_free(cfg->priv_table_dev, cfg->ln, cfg->fn);
   }
 
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
@@ -448,7 +449,7 @@ void chpl_gpu_arg_pass(void* cfg, void* arg) {
 
 void chpl_gpu_arg_privtable(void* cfg, void* arg) {
   cfg_finalize_priv_table((kernel_cfg*)cfg, arg);
-  cfg_add_direct_param((kernel_cfg*)cfg, &(((kernel_cfg*)cfg)->priv_table));
+  cfg_add_direct_param((kernel_cfg*)cfg, &(((kernel_cfg*)cfg)->priv_table_dev));
 }
 
 static void launch_kernel(const char* name,
