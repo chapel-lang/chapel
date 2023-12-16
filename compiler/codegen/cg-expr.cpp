@@ -36,6 +36,7 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
+#include "view.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
 #include "wellknown.h"
@@ -5336,9 +5337,18 @@ DEFINE_PRIM(GPU_KERNEL_LAUNCH) {
 }
 
 DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
-  ret = codegenCallExpr("chpl_gpu_init_kernel_cfg", call->get(1)->codegen(),
-                  new_IntSymbol(call->astloc.lineno()),
-                  new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+  std::vector<GenRet> args;
+  args.push_back(call->get(1)->codegen());
+  args.push_back(call->get(2)->codegen());
+  args.push_back(new_IntSymbol(call->astloc.lineno()));
+  args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
+
+  ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
+
+  //ret = codegenCallExpr("chpl_gpu_init_kernel_cfg", call->get(1)->codegen(),
+                  //call->get(2)->codegen(),
+                  //new_IntSymbol(call->astloc.lineno()),
+                  //new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 }
 
 DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
@@ -5365,7 +5375,10 @@ DEFINE_PRIM(GPU_ARG) {
   }
 
   const char* fnName;
-  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+  if ((kind & 1<<2) == GpuArgKind::PRIVTABLE) {
+    fnName = "chpl_gpu_arg_privtable";
+  }
+  else if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
     fnName = "chpl_gpu_arg_offload";
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
   }
@@ -5374,6 +5387,13 @@ DEFINE_PRIM(GPU_ARG) {
   }
 
   ret = codegenCallExprWithArgs(fnName, args);
+}
+
+DEFINE_PRIM(GPU_PID_OFFLOAD) {
+  nprint_view(call);
+  ret = codegenCallExpr("chpl_gpu_pid_offload", call->get(1)->codegen(),
+                        call->get(2)->codegen(),
+                        call->get(3)->codegen());
 }
 
 DEFINE_PRIM(GPU_THREADIDX_X) { ret = codegenCallExpr("chpl_gpu_getThreadIdxX"); }

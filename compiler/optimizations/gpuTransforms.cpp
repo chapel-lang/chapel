@@ -863,6 +863,11 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
+struct KernelActual {
+  Symbol* sym;
+  int8_t kind;
+};
+
 // ----------------------------------------------------------------------------
 // GpuKernel
 // ----------------------------------------------------------------------------
@@ -879,7 +884,8 @@ class GpuKernel {
   const GpuizableLoop &gpuLoop;
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
-  std::vector<Symbol*> kernelActuals_;
+  std::vector<KernelActual> kernelActuals_;
+  std::vector<CallExpr*> pidGets_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
   SymExpr* blockSize_;
@@ -888,7 +894,8 @@ class GpuKernel {
   GpuKernel(const GpuizableLoop &gpuLoop, DefExpr* insertionPoint);
 
   FnSymbol* fn() const { return fn_; }
-  const std::vector<Symbol*>& kernelActuals() { return kernelActuals_; }
+  const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
+  const std::vector<CallExpr*>& pidGets() { return pidGets_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   SymExpr* blockSize() const {return blockSize_; }
 
@@ -945,11 +952,43 @@ void GpuKernel::buildStubOutlinedFunction(DefExpr* insertionPoint) {
 
 Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   Type* symType = symInLoop->typeInfo();
+  Type* symValType = symType->getValType();
+
   IntentTag intent = symInLoop->isRef() ? INTENT_REF : INTENT_IN;
   ArgSymbol* newFormal = new ArgSymbol(intent, symInLoop->name, symType);
   fn_->insertFormalAtTail(newFormal);
 
-  kernelActuals_.push_back(symInLoop);
+
+  KernelActual actual;
+  actual.sym = symInLoop;
+
+  if (isClass(symValType) ||
+      (!symInLoop->isRef() && !isAggregateType(symValType))) {
+    // class: must be on GPU memory
+    // scalar: can be passed as an argument directly
+    actual.kind = GpuArgKind::ADDROF;
+  }
+  else if (symInLoop->isRef()) {
+    // ref: we assume that it is not on GPU memory to be safe, so offload it,
+    // but while doing so, we don't need to get the address of it. Because we
+    // just copy the value pointed by it.
+    // ENGIN: it is questionable whether we want to do this. This is creating
+    // a copy of something that was referred to by this `ref`. Accessing a
+    // `ref` shouldn't trigger a copy, unless... it was put to a "task
+    // private" variable:
+    // ref x = y; foreach ... with (var inBody = x)
+    actual.kind = GpuArgKind::OFFLOAD;
+  }
+  else {
+    // we don't know what this is: offload
+    actual.kind = GpuArgKind::ADDROF | GpuArgKind::OFFLOAD;
+  }
+
+  if (symInLoop->name == astr("chpl_privateObjects")) {
+    actual.kind |= GpuArgKind::PRIVTABLE;
+  }
+
+  kernelActuals_.push_back(actual);
   copyMap_.put(symInLoop, newFormal);
 
   return newFormal;
@@ -1117,6 +1156,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
         }
         handledSymbols.insert(sym);
 
+
         if (isDefinedInTheLoops(sym, {loopForBody})) {
           // looks like this symbol was declared within the loop body,
           // so do nothing. TODO: I am hoping that we don't need to
@@ -1135,6 +1175,18 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
         }
         else if (gpuLoop.isIndexVariable(sym)) {
           // These are handled already, nothing to do
+        }
+        else if (sym->name == astr("chpl_privateObjects")) {
+          CallExpr* parent = toCallExpr(symExpr->parentExpr);
+          INT_ASSERT(parent && parent->isPrimitive(PRIM_ARRAY_GET));
+
+          addKernelArgument(sym);
+
+          Symbol* pidSym = toSymExpr(parent->get(2))->symbol();
+          CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
+          CallExpr* pidGet = toCallExpr(pidMove->get(2));
+
+          pidGets_.push_back(pidGet);
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -1393,37 +1445,38 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
   VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
-                    new_IntSymbol(kernel.kernelActuals().size()));
+                    new_IntSymbol(kernel.kernelActuals().size()),
+                    new_IntSymbol(kernel.pidGets().size()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
-  for_vector (Symbol, actualSym, kernel.kernelActuals()) {
-    Type* actualValType = actualSym->typeInfo()->getValType();
+  // first, we have to add pids, so that we can allocate the privatization table
+  for (auto pidGet: kernel.pidGets()) {
+    Type* pidType = pidGet->get(2)->typeInfo();
+    Symbol* pid = new VarSymbol("pid_tmp", pidType);
+    gpuBlock->insertAtTail(new DefExpr(pid));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, pid, pidGet->copy()));
 
-    if (isClass(actualValType) || (!actualSym->isRef() &&
-          !isAggregateType(actualValType))) {
-      // class: must be on GPU memory
-      // scalar: can be passed as an argument directly
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::ADDROF)));
-    }
-    else if (actualSym->isRef()) {
-      // ref: we assume that it is not on GPU memory to be safe, so offload it,
-      // but while doing so, we don't need to get the address of it. Because we
-      // just copy the value pointed by it.
-      // ENGIN: it is questionable whether we want to do this. This is creating
-      // a copy of something that was referred to by this `ref`. Accessing a
-      // `ref` shouldn't trigger a copy, unless... it was put to a "task
-      // private" variable:
-      // ref x = y; foreach ... with (var inBody = x)
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::OFFLOAD)));
-    }
-    else {
-      // we don't know what this is: offload
-      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
-                                          new_IntSymbol(GpuArgKind::ADDROF |
-                                                        GpuArgKind::OFFLOAD)));
-    }
+    AggregateType* privUserType = toAggregateType(pidGet->get(1)->typeInfo());
+    Symbol* instanceSym = privUserType->getField("_instance");
+    Symbol* instanceSize = new VarSymbol("instance_size", dtInt[INT_SIZE_64]);
+
+    gpuBlock->insertAtTail(new DefExpr(instanceSize));
+    gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
+                                        new CallExpr(PRIM_SIZEOF_BUNDLE,
+                                                     instanceSym)));
+    //AggregateType* instanceType = toAggregateType(instanceSym->typeInfo());
+    //nprint_view(instanceType);
+
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
+                                        //instanceType->symbol));
+                                        instanceSize));
+  }
+
+  // at this point, privatization table must be allocated if we had to, so when
+  // the time comes to pass it as an argument, we have its value ready
+  for (auto actual: kernel.kernelActuals()) {
+    gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
+                                        new_IntSymbol(actual.kind)));
   }
 
   // populate the gpu block

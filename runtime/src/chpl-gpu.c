@@ -42,10 +42,14 @@ bool chpl_gpu_use_stream_per_task = true;
 #include "chpl-env-gen.h"
 #include "chpl-env.h"
 #include "chpl-comm-compiler-macros.h"
+#include "chpl-privatization.h"
 
 #include "gpu/chpl-gpu-reduce-util.h"
 
 #include <inttypes.h>
+
+// this is an array of arrays, because we need a privatization table per-device
+void* chpl_gpu_privateObjects;
 
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
@@ -84,6 +88,29 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
+
+  chpl_gpu_privateObjects = chpl_mem_alloc(chpl_gpu_num_devices * sizeof(void*),
+                                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
+
+  /*int prev_subloc = chpl_task_getRequestedSubloc();*/
+
+  /*chpl_task_setRequestedSubloc(0);*/
+
+  /*size_t glob_size;*/
+  /*void* chpl_gpu_privateObjects =*/
+      /*chpl_gpu_impl_get_global("chpl_gpu_privateObjects", &glob_size);*/
+
+  /*printf("Priv table: %p\n", chpl_gpu_privateObjects);*/
+  /*// 10 should be num devices*/
+  /*void* new_table = chpl_gpu_mem_array_alloc(10, 0, 0, 0);*/
+  /*printf("new_table: %p\n", new_table);*/
+  /*assert(sizeof(void*) == glob_size);*/
+
+  /*chpl_gpu_copy_host_to_device(0, &chpl_gpu_privateObjects, new_table,*/
+                               /*sizeof(void*), 0, 0, 0);*/
+  /*printf("Priv table: %p\n", chpl_gpu_privateObjects);*/
+
+  /*chpl_task_setRequestedSubloc(prev_subloc);*/
 }
 
 // With very limited and artificial benchmarking, we observed that yielding
@@ -220,6 +247,15 @@ typedef struct kernel_cfg_s {
   int cur_param;
   void*** kernel_params;
 
+  int n_pids;
+  int cur_pid;
+  int64_t max_pid;
+  int64_t* pids;
+  size_t* instance_sizes;
+
+  chpl_privateObject_t* priv_table;
+  chpl_privateObject_t* host_mirror; //used for initial staging
+
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
   bool* param_dyn_allocated;
@@ -229,7 +265,8 @@ typedef struct kernel_cfg_s {
   void* stream;
 } kernel_cfg;
 
-static void cfg_init(kernel_cfg* cfg, int n_params, int ln, int32_t fn) {
+static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
+                     int32_t fn) {
   cfg->dev = chpl_task_getRequestedSubloc();
   cfg->stream = get_stream(cfg->dev);
 
@@ -260,6 +297,15 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int ln, int32_t fn) {
 
   cfg->param_dyn_allocated[cfg->n_params-2] = false;
   cfg->param_dyn_allocated[cfg->n_params-1] = false;
+
+  cfg->n_pids = n_pids;
+  cfg->cur_pid = 0;
+  cfg->max_pid = -1;
+  cfg->pids = chpl_mem_alloc(cfg->n_pids * sizeof(int64_t),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  cfg->instance_sizes = chpl_mem_alloc(cfg->n_pids * sizeof(size_t),
+                             CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  cfg->priv_table = NULL;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -307,12 +353,81 @@ static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
   cfg->cur_param++;
 }
 
-void* chpl_gpu_init_kernel_cfg(int n_params, int ln, int32_t fn) {
+static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
+  const int i = cfg->cur_pid;
+  assert(i < cfg->n_pids);
+
+  cfg->pids[i] = pid;
+  if (pid > cfg->max_pid) {
+    cfg->max_pid = pid;
+  }
+
+  cfg->instance_sizes[i] = size;
+
+  cfg->cur_pid++;
+}
+
+static void cfg_finalize_priv_table(kernel_cfg *cfg,
+                                    chpl_privateObject_t* host_table) {
+  // TODO why host_table doesn't work?
+  if (cfg->cur_pid != cfg->n_pids) {
+    chpl_internal_error("All pids must have been added by now");
+  }
+
+  if (cfg->priv_table == NULL) {
+    const size_t priv_table_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
+
+    // TODO free this
+    cfg->host_mirror = chpl_mem_alloc(priv_table_size,
+                                      CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
+                                      cfg->ln, cfg->fn);
+
+    // TODO free this
+    cfg->priv_table = chpl_gpu_mem_array_alloc((cfg->max_pid+1)*sizeof(chpl_privateObject_t),
+                                               CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
+                                               cfg->ln, cfg->fn);
+
+    CHPL_GPU_DEBUG("Allocated privatization table %p\n", cfg->priv_table);
+
+    for (int i=0 ; i<cfg->n_pids ; i++) {
+      const int64_t pid_to_copy = cfg->pids[i];
+      const size_t instance_size = cfg->instance_sizes[i];
+
+      CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid_to_copy);
+
+      void* gpu_instance = chpl_gpu_mem_alloc(instance_size,
+                                                   CHPL_RT_MD_GPU_KERNEL_ARG,
+                                                   cfg->ln, cfg->fn);
+
+      CHPL_GPU_DEBUG("\t gpu instance %p\n", gpu_instance);
+
+      /*CHPL_GPU_DEBUG("\t starting h2d %p %p\n", host_table[pid_to_copy].obj,*/
+      CHPL_GPU_DEBUG("\t starting h2d %p %p\n", chpl_privateObjects[pid_to_copy].obj,
+                                       gpu_instance);
+      chpl_gpu_impl_copy_host_to_device(gpu_instance,
+                                        chpl_privateObjects[pid_to_copy].obj,
+                                        instance_size,
+                                        cfg->stream);
+
+      CHPL_GPU_DEBUG("\t h2d ended %p %p\n", chpl_privateObjects[pid_to_copy].obj,
+                                       gpu_instance);
+      cfg->host_mirror[pid_to_copy].obj = gpu_instance;
+    }
+
+    chpl_gpu_impl_copy_host_to_device(cfg->priv_table, cfg->host_mirror,
+                                      priv_table_size, cfg->stream);
+
+    CHPL_GPU_DEBUG("Offloaded the new privatization table");
+  }
+}
+
+void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
   void* ret = chpl_mem_alloc(sizeof(kernel_cfg),
                              CHPL_RT_MD_GPU_KERNEL_PARAM_META, ln, fn);
-  cfg_init((kernel_cfg*)ret, n_params, ln, fn);
+  cfg_init((kernel_cfg*)ret, n_params, n_pids, ln, fn);
 
-  CHPL_GPU_DEBUG("Initialized kernel config for %d params\n", n_params);
+  CHPL_GPU_DEBUG("Initialized kernel config for %d params and %d pids\n",
+                 n_params, n_pids);
 
   return ret;
 }
@@ -320,6 +435,12 @@ void* chpl_gpu_init_kernel_cfg(int n_params, int ln, int32_t fn) {
 void chpl_gpu_deinit_kernel_cfg(void* cfg) {
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
+}
+
+void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size) {
+  CHPL_GPU_DEBUG("\tAdding pid: %ld with size %zu\n", pid, size);
+  cfg_add_pid((kernel_cfg*)cfg, pid, size);
+  CHPL_GPU_DEBUG("\tAdded pid: %ld with size %zu\n", pid, size);
 }
 
 void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
@@ -330,6 +451,11 @@ void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size) {
 void chpl_gpu_arg_pass(void* cfg, void* arg) {
   cfg_add_direct_param((kernel_cfg*)cfg, arg);
   CHPL_GPU_DEBUG("\tAdded by-val param: %p\n", arg);
+}
+
+void chpl_gpu_arg_privtable(void* cfg, void* arg) {
+  cfg_finalize_priv_table((kernel_cfg*)cfg, arg);
+  cfg_add_direct_param((kernel_cfg*)cfg, &(((kernel_cfg*)cfg)->priv_table));
 }
 
 static void launch_kernel(const char* name,

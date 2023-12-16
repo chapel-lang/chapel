@@ -6,12 +6,13 @@ config const n = 10;
 
 startGpuDiagnostics();
 on here.gpus[0] {
-  var space = {1..n};
-  var dom = space dmapped blockDist(space, targetLocales=[here,]);
-  var arr: [dom] int;
+  var Space = {1..n};
+  var Dom = Space dmapped blockDist(Space, targetLocales=[here,]);
+  var Arr: [Dom] int;
 
-  forall i in dom with (ref arr) do
-    arr[i] = 1;
+  @assertOnGpu
+  foreach i in Dom do
+    Arr[i] = 1;
 
   /* The following does not work yet:
 
@@ -20,7 +21,7 @@ on here.gpus[0] {
 
   */
 
-  writeln(arr);
+  writeln(Arr);
 }
 
 stopGpuDiagnostics();
