@@ -313,26 +313,6 @@ genGlobalInt(const char* cname, int value, bool isHeader,
   }
 }
 
-//static void
-//genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
-  //GenInfo* info = gGenInfo;
-  //if( info->cfile ) {
-    //if(isHeader)
-      //fprintf(info->cfile, "extern const void* %s;\n", cname);
-    //else
-    //fprintf(info->cfile, "const void* %s = %d;\n", cname, 0);
-  //} else {
-//#ifdef HAVE_LLVM
-    //llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
-        //info->module->getOrInsertGlobal(
-          //cname, llvm::IntegerType::getInt8PtrTy(info->module->getContext())));
-    ////global->setInitializer(info->irBuilder->getInt64(0));
-    //global->setConstant(isConstant);
-    //info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
-//#endif
-  //}
-//}
-
 static void genGlobalInt32(const char *cname, int value) {
   GenInfo *info = gGenInfo;
   if (info->cfile) {
@@ -2604,7 +2584,6 @@ static void embedGpuCode() {
 
 static void codegenGpuGlobals() {
   genGlobalInt("chpl_nodeID", -1, false, false);
-  //genGlobalVoidPtr("chpl_gpu_privateObjects", false, false);
 }
 #endif
 

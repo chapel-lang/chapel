@@ -36,7 +36,6 @@
 #include "stmt.h"
 #include "stringutil.h"
 #include "type.h"
-#include "view.h"
 #include "virtualDispatch.h"
 #include "WhileStmt.h"
 #include "wellknown.h"
@@ -5344,11 +5343,6 @@ DEFINE_PRIM(GPU_INIT_KERNEL_CFG) {
   args.push_back(new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 
   ret = codegenCallExprWithArgs("chpl_gpu_init_kernel_cfg", args);
-
-  //ret = codegenCallExpr("chpl_gpu_init_kernel_cfg", call->get(1)->codegen(),
-                  //call->get(2)->codegen(),
-                  //new_IntSymbol(call->astloc.lineno()),
-                  //new_IntSymbol(gFilenameLookupCache[call->astloc.filename()]));
 }
 
 DEFINE_PRIM(GPU_DEINIT_KERNEL_CFG) {
@@ -5390,7 +5384,6 @@ DEFINE_PRIM(GPU_ARG) {
 }
 
 DEFINE_PRIM(GPU_PID_OFFLOAD) {
-  nprint_view(call);
   ret = codegenCallExpr("chpl_gpu_pid_offload", call->get(1)->codegen(),
                         call->get(2)->codegen(),
                         call->get(3)->codegen());

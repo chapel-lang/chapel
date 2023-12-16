@@ -96,19 +96,6 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
 
-void* chpl_gpu_impl_get_global(const char* name, size_t* size) {
-  CUdevice device;
-  CUmodule module;
-
-  CUDA_CALL(cuCtxGetDevice(&device));
-
-  module = chpl_gpu_cuda_modules[(int)device];
-
-  CUdeviceptr ptr;
-  CUDA_CALL(cuModuleGetGlobal(&ptr, size, module, "chpl_nodeID"));
-  return (void*)ptr;
-}
-
 void* chpl_gpu_impl_load_function(const char* kernel_name) {
   CUfunction function;
   CUdevice device;

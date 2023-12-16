@@ -48,9 +48,6 @@ bool chpl_gpu_use_stream_per_task = true;
 
 #include <inttypes.h>
 
-// this is an array of arrays, because we need a privatization table per-device
-void* chpl_gpu_privateObjects;
-
 void chpl_gpu_init(void) {
   chpl_gpu_impl_init(&chpl_gpu_num_devices);
 
@@ -88,29 +85,6 @@ void chpl_gpu_init(void) {
     }
 #endif
   }
-
-  chpl_gpu_privateObjects = chpl_mem_alloc(chpl_gpu_num_devices * sizeof(void*),
-                                           CHPL_RT_MD_COMM_PRV_OBJ_ARRAY, 0, 0);
-
-  /*int prev_subloc = chpl_task_getRequestedSubloc();*/
-
-  /*chpl_task_setRequestedSubloc(0);*/
-
-  /*size_t glob_size;*/
-  /*void* chpl_gpu_privateObjects =*/
-      /*chpl_gpu_impl_get_global("chpl_gpu_privateObjects", &glob_size);*/
-
-  /*printf("Priv table: %p\n", chpl_gpu_privateObjects);*/
-  /*// 10 should be num devices*/
-  /*void* new_table = chpl_gpu_mem_array_alloc(10, 0, 0, 0);*/
-  /*printf("new_table: %p\n", new_table);*/
-  /*assert(sizeof(void*) == glob_size);*/
-
-  /*chpl_gpu_copy_host_to_device(0, &chpl_gpu_privateObjects, new_table,*/
-                               /*sizeof(void*), 0, 0, 0);*/
-  /*printf("Priv table: %p\n", chpl_gpu_privateObjects);*/
-
-  /*chpl_task_setRequestedSubloc(prev_subloc);*/
 }
 
 // With very limited and artificial benchmarking, we observed that yielding
