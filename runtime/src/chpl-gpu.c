@@ -237,8 +237,7 @@ typedef struct kernel_cfg_s {
   int64_t max_pid;
   priv_inst* priv_insts;
 
-  chpl_privateObject_t* priv_table_dev; // actual privatization table for the
-                                    // device
+  chpl_privateObject_t* priv_table_dev;  // privatization table for the device
   chpl_privateObject_t* priv_table_host; //used for initial staging
 
   // we need this in the config so that we can offload data using this stream,
