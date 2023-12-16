@@ -285,6 +285,7 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->priv_insts = chpl_mem_alloc(cfg->n_pids * sizeof(priv_inst),
                                    CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
   cfg->priv_table = NULL;
+  cfg->host_mirror = NULL;
 }
 
 static void cfg_deinit_params(kernel_cfg* cfg) {
@@ -370,12 +371,10 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg,
   if (cfg->priv_table == NULL) {
     const size_t priv_table_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
 
-    // TODO free this
     cfg->host_mirror = chpl_mem_alloc(priv_table_size,
                                       CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                       cfg->ln, cfg->fn);
 
-    // TODO free this
     cfg->priv_table = chpl_gpu_mem_array_alloc((cfg->max_pid+1)*sizeof(chpl_privateObject_t),
                                                CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                                cfg->ln, cfg->fn);
@@ -407,7 +406,26 @@ void* chpl_gpu_init_kernel_cfg(int n_params, int n_pids, int ln, int32_t fn) {
   return ret;
 }
 
-void chpl_gpu_deinit_kernel_cfg(void* cfg) {
+void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
+  kernel_cfg* cfg = (kernel_cfg*)_cfg;
+  // free GPU memory allocated for privatization
+  for (int i=0 ; i<cfg->n_pids ; i++) {
+    CHPL_GPU_DEBUG("Freeing privatized instance pid: %ld, ptr: %p\n",
+                   cfg->priv_insts[i].pid,
+                   cfg->priv_insts[i].dev_instance);
+    chpl_gpu_mem_free(cfg->priv_insts[i].dev_instance, cfg->ln, cfg->fn);
+  }
+
+  if (cfg->host_mirror) {
+    CHPL_GPU_DEBUG("Freeing host_mirror %p\n", cfg->host_mirror);
+    chpl_mem_free(cfg->host_mirror, cfg->ln, cfg->fn);
+  }
+
+  if (cfg->priv_table) {
+    CHPL_GPU_DEBUG("Freeing priv_table %p\n", cfg->priv_table);
+    chpl_gpu_mem_free(cfg->priv_table, cfg->ln, cfg->fn);
+  }
+
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
   CHPL_GPU_DEBUG("Deinitialized kernel config\n");
 }
