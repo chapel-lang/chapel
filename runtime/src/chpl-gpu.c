@@ -211,6 +211,11 @@ void chpl_gpu_support_module_finished_initializing(void) {
                  chpl_gpu_sync_with_host ? "enabled" : "disabled");
 }
 
+typedef struct priv_inst {
+  int64_t pid;
+  void* dev_instance;
+} priv_inst;
+
 typedef struct kernel_cfg_s {
   int dev;
 
@@ -220,19 +225,21 @@ typedef struct kernel_cfg_s {
   int n_params;
   int cur_param;
   void*** kernel_params;
-
-  int n_pids;
-  int cur_pid;
-  int64_t max_pid;
-  int64_t* pids;
-  size_t* instance_sizes;
-
-  chpl_privateObject_t* priv_table;
-  chpl_privateObject_t* host_mirror; //used for initial staging
-
+  //
   // Keep track of kernel parameters we dynamically allocate memory for so
   // later on we know what we need to free.
   bool* param_dyn_allocated;
+
+
+  // these are used while still collecting pids during kernel launch prologue
+  int n_pids;
+  int cur_pid;
+  int64_t max_pid;
+  priv_inst* priv_insts;
+
+  chpl_privateObject_t* priv_table; // actual privatization table for the
+                                    // device
+  chpl_privateObject_t* host_mirror; //used for initial staging
 
   // we need this in the config so that we can offload data using this stream,
   // and in the future allocate/deallocate on this stream, too
@@ -275,10 +282,8 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->n_pids = n_pids;
   cfg->cur_pid = 0;
   cfg->max_pid = -1;
-  cfg->pids = chpl_mem_alloc(cfg->n_pids * sizeof(int64_t),
-                             CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  cfg->instance_sizes = chpl_mem_alloc(cfg->n_pids * sizeof(size_t),
-                             CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
+  cfg->priv_insts = chpl_mem_alloc(cfg->n_pids * sizeof(priv_inst),
+                                   CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
   cfg->priv_table = NULL;
 }
 
@@ -331,12 +336,26 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   const int i = cfg->cur_pid;
   assert(i < cfg->n_pids);
 
-  cfg->pids[i] = pid;
+  CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid);
+
+  cfg->priv_insts[i].pid = pid;
   if (pid > cfg->max_pid) {
     cfg->max_pid = pid;
   }
 
-  cfg->instance_sizes[i] = size;
+  void* dev_instance = chpl_gpu_mem_alloc(size,
+                                          CHPL_RT_MD_GPU_KERNEL_ARG,
+                                          cfg->ln, cfg->fn);
+
+  CHPL_GPU_DEBUG("\t device instance %p\n", dev_instance);
+
+  chpl_gpu_impl_copy_host_to_device(dev_instance,
+                                    chpl_privateObjects[pid].obj,
+                                    size,
+                                    cfg->stream);
+  cfg->priv_insts[i].dev_instance = dev_instance;
+
+  CHPL_GPU_DEBUG("\t offloaded pid %ld\n", pid);
 
   cfg->cur_pid++;
 }
@@ -364,28 +383,10 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg,
     CHPL_GPU_DEBUG("Allocated privatization table %p\n", cfg->priv_table);
 
     for (int i=0 ; i<cfg->n_pids ; i++) {
-      const int64_t pid_to_copy = cfg->pids[i];
-      const size_t instance_size = cfg->instance_sizes[i];
+      int64_t pid = cfg->priv_insts[i].pid;
+      void* dev_instance = cfg->priv_insts[i].dev_instance;
 
-      CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid_to_copy);
-
-      void* gpu_instance = chpl_gpu_mem_alloc(instance_size,
-                                                   CHPL_RT_MD_GPU_KERNEL_ARG,
-                                                   cfg->ln, cfg->fn);
-
-      CHPL_GPU_DEBUG("\t gpu instance %p\n", gpu_instance);
-
-      /*CHPL_GPU_DEBUG("\t starting h2d %p %p\n", host_table[pid_to_copy].obj,*/
-      CHPL_GPU_DEBUG("\t starting h2d %p %p\n", chpl_privateObjects[pid_to_copy].obj,
-                                       gpu_instance);
-      chpl_gpu_impl_copy_host_to_device(gpu_instance,
-                                        chpl_privateObjects[pid_to_copy].obj,
-                                        instance_size,
-                                        cfg->stream);
-
-      CHPL_GPU_DEBUG("\t h2d ended %p %p\n", chpl_privateObjects[pid_to_copy].obj,
-                                       gpu_instance);
-      cfg->host_mirror[pid_to_copy].obj = gpu_instance;
+      cfg->host_mirror[pid].obj = dev_instance;
     }
 
     chpl_gpu_impl_copy_host_to_device(cfg->priv_table, cfg->host_mirror,
