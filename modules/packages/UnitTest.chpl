@@ -269,7 +269,7 @@ module UnitTest {
     var numMaxLocales = max(int),
         numMinLocales = min(int);
     @chpldoc.nodoc
-    var dictDomain: domain(int);
+    var dictDomain: domain(int, parSafe=true);
     @chpldoc.nodoc
     var testDependsOn: list(argType);
 

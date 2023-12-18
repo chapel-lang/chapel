@@ -103,7 +103,7 @@ proc parseToml(input: fileReader) : shared Toml {
 
  /* Receives a string of TOML format as a parameter and outputs a Toml object */
 proc parseToml(input: string) : shared Toml {
-  var D: domain(string);
+  var D: domain(string, parSafe=true);
   var table: [D] shared Toml?;
   var rootTable = new shared Toml(table);
   const source = new shared Source(input);
@@ -214,7 +214,7 @@ module TomlParser {
     proc parseTable() {
       var toke = getToken(source);
       var tablename = toke.replace(brackets, '');
-      var tblD: domain(string);
+      var tblD: domain(string, parSafe=true);
       var tbl: [tblD] shared Toml?;
       if !rootTable.pathExists(tablename) {
         rootTable.set(tablename, tbl);
@@ -226,7 +226,7 @@ module TomlParser {
       skipNext(source);
       var tblname = getToken(source);
       skipNext(source);
-      var tblD: domain(string);
+      var tblD: domain(string, parSafe=true);
       var tbl: [tblD] shared Toml?;
       var (tblPath, tblLeaf) = splitTblPath(tblname);
       if !rootTable.pathExists(tblPath) then makePath(tblPath);
@@ -242,13 +242,13 @@ module TomlParser {
       var i: int = 0;
       for parent in path {
         if first {
-          var tblD: domain(string);
+          var tblD: domain(string, parSafe=true);
           var tbl: [tblD] shared Toml?;
           rootTable.set(parent, tbl);
           first = false;
         }
         else {
-          var tblD: domain(string);
+          var tblD: domain(string, parSafe=true);
           var tbl: [tblD] shared Toml?;
           var grandParent = '.'.join(path[..firstIn+i]);
           rootTable[grandParent]!.set(parent, tbl);
@@ -259,7 +259,7 @@ module TomlParser {
 
     proc parseInlineTbl(key: string) {
       var tblname: string;
-      var tblD: domain(string);
+      var tblD: domain(string, parSafe=true);
       var tbl: [tblD] shared Toml?;
       if curTable.isEmpty() {
         tblname = key;

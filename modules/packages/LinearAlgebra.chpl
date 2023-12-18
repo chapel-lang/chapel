@@ -251,10 +251,16 @@ class ExpmPadeHelper {
   var useExactOneNorm : bool;
   // Boolean arrays to know if A, Exactd, Approxd
   // have been computed.
-  var isAComputed : [{"A2", "A4", "A6", "A8", "A10"}] bool;
-  var isExactdComputed : [{"A4", "A6", "A8", "A10"}] bool;
-  var isApproxdComputed : [{"A4", "A6", "A8", "A10"}] bool;
+  var isAComputedDom, isExactdComputedDom, isApproxdComputedDom : domain(string, parSafe=true);
+  var isAComputed : [isAComputedDom] bool;
+  var isExactdComputed : [isExactdComputedDom] bool;
+  var isApproxdComputed : [isApproxdComputedDom] bool;
 
+  proc initBooleanArrayDoms(){
+    this.isAComputedDom += ["A2", "A4", "A6", "A8", "A10"];
+    this.isExactdComputedDom += ["A4", "A6", "A8", "A10"];
+    this.isApproxdComputedDom += ["A4", "A6", "A8", "A10"];
+  }
   /*
     :arg A: Expects a square matrix.
     :type A: `A`
@@ -267,6 +273,8 @@ class ExpmPadeHelper {
     this.A = A;
     this.ident = eye(A.domain);
     this.useExactOneNorm = useExactOneNorm;
+    init this;
+    this.initBooleanArrayDoms();
   }
 
   proc comp_A2(){
