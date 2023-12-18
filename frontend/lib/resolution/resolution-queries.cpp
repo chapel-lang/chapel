@@ -4030,7 +4030,6 @@ void getCopyOrAssignableInfo(Context* context, const Type* t,
 
 // Determine whether a class type is copyable or assignable, from ref and/or
 // from const.
-// Return: First is from const, second is from ref.
 static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
     const ClassType* ct) {
   CopyableAssignableInfo result;
@@ -4126,10 +4125,11 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
           CHPL_ASSERT(!other.isNonConcreteIntent() &&
                       "should have resolved concrete intent by now");
 
-          if (other.isIn() || other.isConst()) {
+          if (other.isIn() || other.isConst() ||
+              other.kind() == QualifiedType::TYPE ||
+              other.kind() == QualifiedType::PARAM) {
             result = CopyableAssignableInfo::fromConst();
-          } else if (other.isRef() || other.kind() == QualifiedType::TYPE ||
-                     other.kind() == QualifiedType::PARAM) {
+          } else if (other.isRef()) {
             result = CopyableAssignableInfo::fromRef();
           } else {
             context->error(

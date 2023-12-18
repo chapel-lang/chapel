@@ -64,6 +64,9 @@ static void testPrimitive(
     ps << "param " << variableName << " = " << "__primitive(\"" << prim << "\", (" << expr << ")";
     if (callDotType) ps << ".type ";
     ps << ");" << std::endl;
+
+    // TODO: test the implementation of the primitives
+    // (getCopyOrAssignableInfo) directly
   }
 
   std::cout << "--- program ---" << std::endl;
