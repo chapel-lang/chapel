@@ -1,0 +1,20 @@
+#!/bin/bash
+
+TEST=$1
+LOG=$2
+# PREDIFF: Script to execute before diff'ing output (arguments: <test
+#    executable>, <log>, <compiler executable>)
+
+# Purpose of this script is to detect if a call instruction is present
+# in the generated code. Note that because the math library might
+# be dynamically linked, we might not see the target of the call.
+cp $LOG $LOG.prediff.tmp
+grep --quiet callq $LOG.prediff.tmp
+greprc=$?
+rm $LOG.prediff.tmp
+if [ "$greprc" -eq 0 ]
+then
+  echo "found unexpected call" >> $LOG
+else
+  echo OK > $LOG
+fi
