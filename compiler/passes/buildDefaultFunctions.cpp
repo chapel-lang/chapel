@@ -767,6 +767,11 @@ static void buildChplEntryPoints() {
   SET_LINENO(chplUserMain);
 
   chplUserMain->cname = astr("chpl_user_main");
+  if (fIdBasedMunging && !mainModule->astloc.id().isEmpty()) {
+    const char* cname = astr(mainModule->astloc.id().symbolPath().c_str(),
+                             ".main");
+    chplUserMain->cname = cname;
+  }
 
   //
   // chpl_gen_main is the entry point for the compiler-generated code.

@@ -366,6 +366,7 @@ bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
 
 bool fResolveConcreteFns = false;
+bool fIdBasedMunging = false;
 
 bool fNoIOGenSerialization = false;
 bool fNoIOSerializeWriteThis = false;
@@ -680,7 +681,7 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   std::vector<std::string> fNames;
   splitString(std::string(arg), fNames, ",");
   for (std::size_t i = 0; i < fNames.size(); ++i) {
-    addNameToPrintLlvmIr(fNames[i].c_str());
+    addNameToPrintLlvmIrRequestedNames(fNames[i].c_str());
   }
 }
 
@@ -1194,6 +1195,9 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
 
+  // turn on ID-based munging
+  fIdBasedMunging = true;
+
   // note that --dyno-gen-lib was provided
   fDynoGenLibProvided = true;
 }
@@ -1201,6 +1205,9 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 static
 void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
   gDynoGenLibOutput = "chpl_standard.dyno";
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
 }
 
 /*
@@ -1461,6 +1468,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
  {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
+ {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
@@ -2070,6 +2078,9 @@ static void checkIncrementalAndOptimized() {
 static void checkGenLibNotLLVM() {
   if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
     USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
+  }
+  if (fIdBasedMunging && !fLlvmCodegen) {
+    USR_FATAL("--munge-with-ids only works with the LLVM backend");
   }
 }
 
