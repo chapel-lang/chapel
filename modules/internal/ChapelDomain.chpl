@@ -101,10 +101,13 @@ module ChapelDomain {
       compilerError("Values of 'domain' type do not support hash functions yet, so cannot be used as an associative domain's index type");
   }
 
-  private proc warnParSafetyDefaultChange() param {
+  private proc warnParSafetyDefaultChange(param domainLiteralCall:bool=false) param {
     if !parSafeDefault && !noParSafeWarning {
         /* User didn't compile with any additional flags, so we generate the standard warning*/
-        compilerWarning("The default parSafe-ty mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+        if domainLiteralCall then
+          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+        else
+          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
       }
     return parSafeDefault;
   }
@@ -233,7 +236,7 @@ module ChapelDomain {
 
   // definedConst is added only for interface consistency
   proc chpl__buildDomainExpr(const keys..., definedConst) {
-    warnParSafetyDefaultChange();
+    warnParSafetyDefaultChange(domainLiteralCall=true);
     param count = keys.size;
     // keyType of string literals is assumed to be type string
     type keyType = keys(0).type;
