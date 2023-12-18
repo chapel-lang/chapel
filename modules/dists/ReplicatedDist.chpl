@@ -186,7 +186,7 @@ type Replicated = replicatedDist;
 
 @chpldoc.nodoc
 class ReplicatedImpl : BaseDist {
-  var targetLocDom : domain(here.id.type);
+  var targetLocDom : domain(here.id.type, parSafe=false);
 
   // the desired locales (an array of locales)
   const targetLocales : [targetLocDom] locale;
