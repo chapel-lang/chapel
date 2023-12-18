@@ -125,7 +125,27 @@ module ChapelDomain {
     else
       return false;
   }
+  // We created two version of this function
+  // to differentiate the case where user specifies
+  // parSafe=false (no warning should be issued) with the case where
+  // user does not specify parSafe and it defaults to false (warning issued
+  // in this case unless silenced by -snoParSafeWarning)
 
+  // pragma "runtime type init fn"
+  // proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type {
+  //   checkDomainType(idxType);
+  //   warnParSafetyDefaultChange();
+  //   return new _domain(dist, idxType, parSafeDefault);
+  // }
+
+  // pragma "runtime type init fn"
+  // proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
+  //                                   param parSafe: bool) type {
+  //   checkDomainType(idxType);
+  //   warnParSafeUnstable(parSafe);
+  //   // warnParSafetyDefaultChange();
+  //   return new _domain(dist, idxType, parSafe);
+  // }
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist,
                                           parentDom: domain) type {

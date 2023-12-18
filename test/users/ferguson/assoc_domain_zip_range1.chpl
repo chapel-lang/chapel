@@ -1,4 +1,4 @@
-var ids:domain(int);
+var ids:domain(int, parSafe=false); // Should be fine with parSafe=false
 
 ids += 1;
 /*ids += 2;
@@ -14,4 +14,3 @@ var sz = ids.size;
 forall (i, id) in zip(1..sz, ids) {
   writeln( "id ", id, " i ", i);
 }
-

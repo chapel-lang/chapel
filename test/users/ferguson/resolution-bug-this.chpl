@@ -1,10 +1,10 @@
-var watDom: domain(string);
+var watDom: domain(string, parSafe=false);
 var wat: [watDom] unmanaged WAT?;
 
 class WAT { }
 
 class R {
-  var dom: domain(string); // <-- unable to resolve this type
+  var dom: domain(string, parSafe=false); // <-- unable to resolve this type
 }
 
 class C {

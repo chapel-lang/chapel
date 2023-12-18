@@ -1,4 +1,4 @@
-var D: domain(string) = ("a", "b", "c", "d");
+var D: domain(string, parSafe=false) = ("a", "b", "c", "d");
 
 var A:[D] int;
 
@@ -12,4 +12,3 @@ writeln(+ reduce A);
 // The below results in a compiler error.
 var B = A[D];
 writeln(+ reduce B);
-
