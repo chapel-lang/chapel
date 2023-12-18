@@ -1169,7 +1169,7 @@ module Random {
           sample = X.dim(0).orderToIndex(idx);
         }
       } else {
-        var indicesChosen: domain(int);
+        var indicesChosen: domain(int, parSafe=true);
         var i = 0;
         while indicesChosen.sizeAs(int) < samples.sizeAs(int) {
 
