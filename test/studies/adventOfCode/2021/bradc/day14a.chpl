@@ -9,7 +9,7 @@ var polyTemplStr: string;
 readLine(polyTemplStr);  
 polyTemplStr = polyTemplStr.strip();
 
-var allChars: domain(string);
+var allChars: domain(string, parSafe=true);
 var prodMap: map(string, string);
 
 try {
@@ -25,7 +25,7 @@ try {
 } catch {
 }
 
-var allPairs: domain(string);
+var allPairs: domain(string, parSafe=true);
 forall ch in allChars with (ref allPairs) do
   forall ch2 in allChars with (ref allPairs) do
     allPairs.add(ch + ch2);

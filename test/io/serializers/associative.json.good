@@ -11,4 +11,4 @@
   "3": 9
 }
 ====================
-SUCCESS: [DefaultAssociativeDom(int(64),true)] int(64)
+SUCCESS: [DefaultAssociativeDom(int(64),false)] int(64)

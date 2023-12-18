@@ -25,7 +25,7 @@ var baseDom = {1..10};
 }
 
 {
-  var assocDom: domain(string);
+  var assocDom: domain(string, parSafe=true);
   assocDom += ["foo", "bar"];
   test(assocDom);
 }

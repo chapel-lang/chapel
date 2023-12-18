@@ -11,7 +11,7 @@ var Prev: [D] 2*int;
 readRisk();
 writeln(Risk);
 
-var Q: domain(2*int);
+var Q: domain(2*int, parSafe=true);
 Dist = max(int);
 Prev = (0,0);
 forall ij in D with (ref Q) do
