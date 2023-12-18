@@ -633,6 +633,31 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
   return ret;
 }
 
+static QualifiedType primFamilyCopyableAssignable(Context* context,
+                                                  const CallInfo& ci,
+                                                  const PrimitiveTag prim) {
+  const bool checkCopyable =
+      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_CONST_COPYABLE);
+  const bool checkAssignable =
+      (prim == PRIM_IS_ASSIGNABLE || prim == PRIM_IS_CONST_ASSIGNABLE);
+  CHPL_ASSERT((checkCopyable || checkAssignable) &&
+              "incorrect primitive for this handler");
+
+  if (ci.numActuals() != 1) return QualifiedType();
+  auto t = ci.actual(0).type().type();
+
+  auto info = getCopyOrAssignableInfo(context, t, checkCopyable);
+
+  // copyable/assignable from const is stricter than from ref
+  const bool isFromRefOk =
+      (prim == PRIM_IS_COPYABLE || prim == PRIM_IS_ASSIGNABLE);
+  const bool isCopyableOrAssignable =
+      info.isFromConst() || (info.isFromRef() && isFromRefOk);
+
+  return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                       BoolParam::get(context, isCopyableOrAssignable));
+}
+
 CallResolutionResult resolvePrimCall(Context* context,
                                      const PrimCall* call,
                                      const CallInfo& ci,
@@ -705,6 +730,13 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primFieldByNum(context, ci);
       break;
 
+    case PRIM_IS_COPYABLE:
+    case PRIM_IS_CONST_COPYABLE:
+    case PRIM_IS_ASSIGNABLE:
+    case PRIM_IS_CONST_ASSIGNABLE:
+      type = primFamilyCopyableAssignable(context, ci, prim);
+      break;
+
     case PRIM_ITERATOR_RECORD_FIELD_VALUE_BY_FORMAL:
     case PRIM_IS_GENERIC_TYPE:
     case PRIM_IS_CLASS_TYPE:
@@ -720,10 +752,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_IS_BORROWED_CLASS_TYPE:
     case PRIM_IS_ABS_ENUM_TYPE:
     case PRIM_IS_POD:
-    case PRIM_IS_COPYABLE:
-    case PRIM_IS_CONST_COPYABLE:
-    case PRIM_IS_ASSIGNABLE:
-    case PRIM_IS_CONST_ASSIGNABLE:
     case PRIM_HAS_DEFAULT_VALUE:  // param uses in module code
     case PRIM_NEEDS_AUTO_DESTROY: // param uses in module code
       CHPL_UNIMPL("various primitives");

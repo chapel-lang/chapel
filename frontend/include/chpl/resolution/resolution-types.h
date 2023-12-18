@@ -2057,6 +2057,60 @@ class ResolvedParamLoop {
 /** See the documentation for types::CompositeType::SubstitutionsMap. */
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
+// Represents result info on either a type's copyability or assignability, from
+// ref and/or from const.
+struct CopyableAssignableInfo {
+ private:
+  bool fromConst_ = false;
+  bool fromRef_ = false;
+
+  CopyableAssignableInfo(bool fromConst, bool fromRef)
+      : fromConst_(fromConst), fromRef_(fromRef) {
+    assert(!fromConst || fromRef);
+  }
+
+ public:
+  CopyableAssignableInfo() {}
+
+  bool isFromConst() const { return fromConst_; }
+  bool isFromRef() const { return fromRef_; }
+
+  static CopyableAssignableInfo fromConst() {
+    return CopyableAssignableInfo(true, true);
+  }
+
+  static CopyableAssignableInfo fromRef() {
+    return CopyableAssignableInfo(false, true);
+  }
+
+  static CopyableAssignableInfo fromNone() {
+    return CopyableAssignableInfo(false, false);
+  }
+
+  // Set this to the "minimum" copyability between this and other.
+  void intersectWith(const CopyableAssignableInfo& other) {
+    fromConst_ &= other.fromConst_;
+    fromRef_ &= other.fromRef_;
+  }
+
+  bool operator==(const CopyableAssignableInfo& other) const {
+    return fromConst_ == other.fromConst_ &&
+           fromRef_ == other.fromRef_;
+  }
+  bool operator!=(const CopyableAssignableInfo& other) const {
+    return !(*this == other);
+  }
+  void swap(CopyableAssignableInfo& other) {
+    std::swap(fromConst_, other.fromConst_);
+    std::swap(fromRef_, other.fromRef_);
+  }
+  static bool update(CopyableAssignableInfo& keep,
+                     CopyableAssignableInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+  }
+};
 
 } // end namespace resolution
 

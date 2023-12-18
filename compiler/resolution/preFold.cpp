@@ -249,7 +249,9 @@ static void setRecordCopyableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -308,7 +310,9 @@ static void setRecordAssignableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 

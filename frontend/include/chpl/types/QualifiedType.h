@@ -187,6 +187,19 @@ class QualifiedType final {
   bool isImmutable() const {
     return uast::isImmutableQualifier(kind_);
   }
+  /**
+    Returns true if the value is a reference, whether constant or mutable.
+   */
+  bool isRef() const {
+    return uast::isRefQualifier(kind_);
+  }
+  /**
+    Returns true if the value is an in-intent formal, whether constant or
+    mutable.
+   */
+  bool isIn() const {
+    return uast::isInQualifier(kind_);
+  }
 
   /**
     Returns true if the kind is one of the non-concrete intents

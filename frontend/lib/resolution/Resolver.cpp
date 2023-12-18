@@ -930,38 +930,6 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
 }
 
 
-const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
-                                                QualifiedType lhsType,
-                                                QualifiedType rhsType) {
-
-  const Type* t = lhsType.type();
-  if (t->isRecordType() || t->isUnionType()) {
-    // use the regular VAR kind for this query
-    // (don't want a type-expr lhsType to be considered a TYPE here)
-    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
-
-    std::vector<CallInfoActual> actuals;
-    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-    auto ci = CallInfo (/* name */ USTR("init="),
-                        /* calledType */ lhsType,
-                        /* isMethodCall */ true,
-                        /* hasQuestionArg */ false,
-                        /* isParenless */ false,
-                        actuals);
-    const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
-    if (c.mostSpecific().isEmpty()) {
-      return nullptr;
-    } else {
-      return lhsType.type(); // TODO: this might need to be an instantiation
-    }
-  }
-
-  return nullptr;
-}
-
 static const CompositeType*
 getTypeWithCustomInfer(Context* context, const Type* type) {
   if (auto rec = type->getCompositeType()) {
@@ -1057,15 +1025,19 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
       // For a record/union, check for an init= from the provided type
-      const Type* foundInitEqResultType =
-        tryResolveCrossTypeInitEq(declForErr, declaredType, initExprType);
-
-      if (!foundInitEqResultType) {
+      const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
+                                    declaredType.type()->isUnionType());
+      if (!(isRecordOrUnion &&
+            tryResolveInitEq(context, declForErr, declaredType.type(),
+                             initExprType.type(), poiScope))) {
         CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
                     initForErr, declaredType.type(), initExprType.type());
         typePtr = ErroneousType::get(context);
       } else {
-        typePtr = foundInitEqResultType;
+        // TODO: this might need to be an instantiation
+        // when we init= to create a type on a generic declared type, we want
+        // the type produced by the init= call
+        typePtr = declaredType.type();
       }
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
