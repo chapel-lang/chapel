@@ -1,3 +1,3 @@
--M .. -smultilocale=false
--M .. -smultilocale=true -sblockdist=true
--M .. -smultilocale=true -sblockdist=false
+-snoParSafeWarning -M .. -smultilocale=false
+-snoParSafeWarning -M .. -smultilocale=true -sblockdist=true
+-snoParSafeWarning -M .. -smultilocale=true -sblockdist=false

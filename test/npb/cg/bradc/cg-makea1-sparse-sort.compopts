@@ -1,1 +1,1 @@
-cg-makea.chpl -O
+-snoParSafeWarning cg-makea.chpl -O

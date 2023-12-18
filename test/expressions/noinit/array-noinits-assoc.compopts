@@ -1,1 +1,1 @@
---allow-noinit-array-not-pod
+-snoParSafeWarning --allow-noinit-array-not-pod

@@ -1,2 +1,2 @@
---no-optimize    
---optimize    
+-snoParSafeWarning --no-optimize    
+-snoParSafeWarning --optimize    
