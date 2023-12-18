@@ -3070,7 +3070,7 @@ void makeBinary(void) {
     return;
 
   // don't run makeBinary when using --dyno-gen-lib
-  if (gDynoGenLibSourcePaths.size() > 0)
+  if (fDynoGenLib)
     return;
 
   // makeBinary shouldn't run in a compilation phase invocation.
