@@ -43,7 +43,7 @@ if case == "CSC" {
 }
 
 if case == "associative domain with string keys" {
-  var assocDom: domain(string);
+  var assocDom: domain(string, parSafe=true);
   assocDom += ["foo", "bar"];
   test(assocDom, "associative domain with string keys");
 }

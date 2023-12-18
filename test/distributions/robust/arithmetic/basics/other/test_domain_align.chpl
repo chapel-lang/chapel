@@ -13,7 +13,7 @@ proc compare(D, R, a, s=2) {
   const rr = R[(...ranges)];
 
   type yieldType = if rr.rank == 1 then rr.idxType else rr.rank*rr.idxType;
-  var tracker : domain(yieldType);
+  var tracker : domain(yieldType, parSafe=true);
 
   forall i in rr with(ref tracker) do tracker.add(i);
   assert(tracker.size == rr.size);

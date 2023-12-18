@@ -1,1 +1,1 @@
--snoParSafeWarning defs.chpl constructGraph.chpl BFS.chpl scalableDataGenerator.chpl verify.chpl
+defs.chpl constructGraph.chpl BFS.chpl scalableDataGenerator.chpl verify.chpl
