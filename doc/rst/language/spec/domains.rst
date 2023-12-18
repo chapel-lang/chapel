@@ -407,6 +407,10 @@ the indices does not match a compiler error will be issued.
       var D : domain(string) = {"bar", "foo"};
       writeln(D);
 
+   .. BLOCK-test-chapelcompopts
+
+      -snoParSafeWarning
+
    produces the output
 
    .. code-block:: printoutput

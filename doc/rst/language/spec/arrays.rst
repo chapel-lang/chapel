@@ -279,7 +279,7 @@ of values in the listing also match. A trailing comma is allowed.
 
    The following example declares a 5-element associative array literal
    which maps integers to their corresponding string representation. The
-   indices and their corresponding values are then printed. 
+   indices and their corresponding values are then printed.
 
    .. code-block:: chapel
 
@@ -288,7 +288,7 @@ of values in the listing also match. A trailing comma is allowed.
       for da in zip(A.domain, A) do
         writeln(da);
 
-   
+
 
    .. BLOCK-test-chapelprediff
 
@@ -298,7 +298,11 @@ of values in the listing also match. A trailing comma is allowed.
       sort $outfile > $outfile.2
       mv $outfile.2 $outfile
 
-   
+
+   .. BLOCK-test-chapelcompopts
+
+      -snoParSafeWarning
+
 
    .. BLOCK-test-chapeloutput
 
@@ -463,7 +467,7 @@ Indices can be added to associative arrays through the array’s domain.
 
    .. code-block:: chapel
 
-      var D : domain(string);
+      var D : domain(string, parSafe=false);
       var A : [D] int;
 
    the array A initially contains no elements. We can change that by
