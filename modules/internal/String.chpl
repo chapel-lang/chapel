@@ -2263,6 +2263,37 @@ module String {
     doAppend(lhs, rhs);
   }
 
+  /*
+     Appends the codepoints stored in the `rhs` tuple to
+     the :type:`string` `this`.
+   */
+  proc ref string.appendCodepoints(codepoints) : void throws
+    where isHomogeneousTupleType(codepoints.type) &&
+          codepoints(0).type == int(32) {
+
+    var nbytesTotal = 0;
+    var buf: c_array(uint(8), 4*codepoints.size);
+    // TODO: make c_ptrTo(myCArray) work
+    for param i in 0..<codepoints.size {
+      var nbytes = qio_nbytes_char(codepoints(i));
+      if nbytes == 0 || nbytes > 4 {
+        throw new IllegalArgumentError();
+      }
+      qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), codepoints(i));
+      nbytesTotal += nbytes;
+    }
+    doAppendSomeBytes(this, nbytesTotal, buf);
+    this.cachedNumCodepoints += codepoints.size;
+  }
+
+  /*
+     Appends the codepoint stored in `rhs` to
+     the :type:`string` `this`.
+   */
+  proc ref string.appendCodepoint(codepoint: int(32)) : void throws {
+    this.appendCodepoints((codepoint,));
+  }
+
   //
   // Relational operators
   // TODO: all relational ops other than == and != are broken for unicode

@@ -1072,6 +1072,43 @@ module BytesStringCommon {
     }
   }
 
+  proc doAppendSomeBytes(ref lhs: ?t, n: int, byteCArr: c_array)
+    where byteCArr.eltType == uint(8) {
+
+    assertArgType(t, "doAppendSomeBytes");
+
+    on __primitive("chpl_on_locale_num",
+                   chpl_buildLocaleID(lhs.locale_id, c_sublocid_any)) {
+      if !safeAdd(lhs.buffLen,n) then
+        halt("Buffer overflow allocating string copy data");
+      const newLength = lhs.buffLen + n;
+      //resize the buffer if needed
+      if lhs.buffSize <= newLength {
+        const requestedSize = max(newLength+1,
+                                  (lhs.buffLen*chpl_stringGrowthFactor):int);
+        if lhs.isOwned {
+          var (newBuff, allocSize) = bufferRealloc(lhs.buff, requestedSize);
+          lhs.buff = newBuff;
+          lhs.buffSize = allocSize;
+        } else {
+          var (newBuff, allocSize) = bufferAlloc(requestedSize);
+          bufferMemcpyLocal(dst=newBuff, src=lhs.buff, lhs.buffLen);
+          lhs.buff = newBuff;
+          lhs.buffSize = allocSize;
+          lhs.isOwned = true;
+        }
+      }
+      // copy the data from rhs
+      for param i in 0..<byteCArr.size {
+        if i < n {
+          lhs.buff[lhs.buffLen+i] = byteCArr(i);
+        }
+      }
+      lhs.buffLen = newLength;
+      lhs.buff[newLength] = 0;
+    }
+  }
+
   // reallocates the string/bytes in lhs so that it has room to store
   // buffLen elements in its buffer, and also an additional null byte.
   proc resizeBuffer(ref lhs: ?t, buffLen: int) {

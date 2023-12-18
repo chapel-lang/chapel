@@ -1129,6 +1129,28 @@ module Bytes {
   }
 
   /*
+     Appends the bytes stored in the `rhs` tuple to the :type:`bytes` `this`.
+   */
+  proc ref bytes.appendBytes(bytesTup) : void
+    where isHomogeneousTupleType(bytesTup.type) && bytesTup(0).type == uint(8) {
+
+    var buf: c_array(uint(8), bytesTup.size);
+    for param i in 0..<bytesTup.size {
+      buf(i) = bytesTup(i);
+    }
+    doAppendSomeBytes(this, bytesTup.size, buf);
+  }
+
+  /*
+     Appends the single byte stored in `rhs` to the :type:`bytes` `this`.
+   */
+  proc ref bytes.appendByte(rhs: uint(8)) : void {
+    var buf: c_array(uint(8), 1);
+    buf(0) = rhs;
+    doAppendSomeBytes(this, 1, buf);
+  }
+
+  /*
      Copies the :type:`bytes` `rhs` into the :type:`bytes` `lhs`.
   */
   operator bytes.=(ref lhs: bytes, rhs: bytes) : void {
