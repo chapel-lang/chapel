@@ -2,12 +2,6 @@
 
 # Runs all *.py files in the current directory.
 
-# start_test removes directories under $CHPL_HOME from the path.
-# Put them back so the Python scripts can compile the test program.
-pushd $CHPL_HOME
-source util/setchplenv.bash
-popd
-
 dirs=$CHPL_HOME/util/chplenv:$CHPL_HOME/util/test
 export PYTHONPATH=${PYTHONPATH:+${PYTHONPATH}:}$dirs
 
