@@ -1,4 +1,4 @@
-use NPBRandom, BlockDist;  // Add a use for the standard block distribution
+use Random, BlockDist;  // Add a use for the standard block distribution
 
 config const n = 100000,
              seed = 589494289;
@@ -8,7 +8,7 @@ writeln("Number of points      = ", n);
 writeln("Random number seed    = ", seed);
 writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new randomStream(real, seed);
 
 //
 // Distribute the domain representing the random points in a 
