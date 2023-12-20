@@ -723,6 +723,37 @@ static void test16() {
   }
 }
 
+// module-level split-init variables
+static void test17() {
+  Context context;
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var foo;
+      foo = 5;
+      var bar;
+      bar = "bar";
+
+      param foo_param;
+      foo_param = 5;
+      param bar_param;
+      bar_param = "bar_param";
+      )""", { "foo", "bar", "foo_param", "bar_param"});
+
+  auto foo = variables.at("foo");
+  assert(foo.kind() == QualifiedType::VAR);
+  assert(foo.type());
+  assert(foo.type()->isIntType());
+
+  auto bar = variables.at("bar");
+  assert(bar.kind() == QualifiedType::VAR);
+  assert(bar.type());
+  assert(bar.type()->isStringType());
+
+  ensureParamInt(variables.at("foo_param"), 5);
+  ensureParamString(variables.at("bar_param"), "bar_param");
+}
+
 int main() {
   test1();
   test2();
@@ -740,6 +771,7 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
 
   return 0;
 }
