@@ -133,8 +133,6 @@ struct GenInfo {
   std::vector<std::pair<llvm::AllocaInst*, llvm::Type*> > currentStackVariables;
   const clang::CodeGen::CGFunctionInfo* currentFunctionABI;
 
-  llvm::LLVMContext llvmContext;
-
   // tbaa information
   llvm::MDNode* tbaaRootNode;
   llvm::MDNode* tbaaUnionsNode;

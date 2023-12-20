@@ -1365,7 +1365,7 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->clangInfo->Clang->getHeaderSearchOpts(),
           info->clangInfo->Clang->getPreprocessorOpts(),
           info->clangInfo->codegenOptions,
-          info->llvmContext);
+          gContext->llvmContext());
 
         INT_ASSERT(Builder);
         INT_ASSERT(!info->module);
@@ -2045,7 +2045,8 @@ static void loadModuleFromBitcode() {
   INT_ASSERT(fileResult && "could not load bitcode file into memory");
   std::unique_ptr<llvm::MemoryBuffer> bitcodeFile = std::move(fileResult.get());
   auto bitcodeResult =
-      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(), info->llvmContext);
+      llvm::parseBitcodeFile(bitcodeFile->getMemBufferRef(),
+                             gContext->llvmContext());
   INT_ASSERT(bitcodeResult &&
              "could not deserialize module from loaded bitcode");
   info->module = bitcodeResult.get().release();
@@ -3327,7 +3328,8 @@ llvm::Type* getTypeLLVM(const char* name)
 {
   GenInfo* info = gGenInfo;
 #if HAVE_LLVM_VER >= 120
-  llvm::Type* t = llvm::StructType::getTypeByName(info->llvmContext, name);
+  llvm::Type* t = llvm::StructType::getTypeByName(gContext->llvmContext(),
+                                                  name);
 #else
   llvm::Type* t = info->module->getTypeByName(name);
 #endif
@@ -4449,7 +4451,7 @@ static void linkBitCodeFile(const char *bitCodeFilePath) {
   // load into new module
   llvm::SMDiagnostic err;
   auto bcLib = llvm::parseIRFile(bitCodeFilePath, err,
-                                 info->llvmContext);
+                                 gContext->llvmContext());
 
   // adjust it
   const llvm::Triple &Triple = info->clangInfo->Clang->getTarget().getTriple();

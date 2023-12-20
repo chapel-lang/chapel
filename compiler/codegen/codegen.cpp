@@ -2726,7 +2726,8 @@ static void codegenPartTwo() {
 #ifdef HAVE_LLVM
   if (fLlvmCodegen) {
     if(shouldShowLLVMRemarks()) {
-      auto err = setupRemarks(gGenInfo->llvmContext, llvm::outs(), llvmRemarksFilters);
+      auto err = setupRemarks(gContext->llvmContext(),
+                              llvm::outs(), llvmRemarksFilters);
       if (err) {
         USR_FATAL("failed to add optimization remarks reporting");
       }
@@ -3124,7 +3125,6 @@ GenInfo::GenInfo()
              lvt(nullptr), module(nullptr), irBuilder(nullptr), mdBuilder(nullptr),
              loopStack(), currentStackVariables(),
              currentFunctionABI(nullptr),
-             llvmContext(),
              tbaaRootNode(nullptr),
              tbaaUnionsNode(nullptr),
              noAliasDomain(nullptr),

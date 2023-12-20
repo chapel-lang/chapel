@@ -62,6 +62,9 @@
 
 #include "global-ast-vecs.h"
 
+#include "chpl/libraries/LibraryFile.h"
+#include "chpl/parsing/parsing-queries.h"
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -1984,7 +1987,7 @@ codegenFunctionTypeLLVM(FnSymbol* fn, llvm::AttributeList& attrs,
   // This function is inspired by clang's CodeGenTypes::GetFunctionType
   // and CodeGenModule::ConstructAttributeList
 
-  llvm::LLVMContext& ctx = gGenInfo->llvmContext;
+  llvm::LLVMContext& ctx = gContext->llvmContext();
   const llvm::DataLayout& layout = gGenInfo->module->getDataLayout();
   const clang::CodeGen::CGFunctionInfo* CGI = nullptr;
 
@@ -2554,6 +2557,27 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
+
+    if (hasFlag(FLAG_PRECOMPILED) && !astloc.id().isEmpty()) {
+      printf("%s was precompiled!\n", name);
+      chpl::ID modId = chpl::parsing::idToParentModule(gContext, astloc.id());
+      CHPL_ASSERT(!modId.isEmpty());
+
+      // get the LibraryFile
+      chpl::UniqueString libPath;
+      bool inLib = gContext->moduleIsInLibrary(modId, libPath);
+      CHPL_ASSERT(inLib && "or should not be marked with FLAG_PRECOMPILED");
+      CHPL_ASSERT(!libPath.isEmpty());
+
+      const chpl::libraries::LibraryFile* lf =
+        chpl::libraries::LibraryFile::load(gContext, libPath);
+
+      // check to see if the library's LLVM IR contains the symbol
+      const llvm::Module* mod =
+        lf->loadGenCodeModule(gContext, modId.symbolPath());
+      printf("Found module %p\n", mod);
+    }
+
     // Mark local reference/ptr variables that must refer to
     // memory outside of all order-independent loops.
     // (This is necessary for llvm.loop.parallel_accesses metadata).
@@ -2828,7 +2852,7 @@ void FnSymbol::codegenDef() {
     // if --gen-ids is enabled, add metadata mapping the
     // function back to Chapel AST id
     if (fGenIDS) {
-      llvm::LLVMContext& ctx = info->llvmContext;
+      llvm::LLVMContext& ctx = gContext->llvmContext();
 
       llvm::Type *int64Ty = llvm::Type::getInt64Ty(ctx);
       llvm::Constant* c = llvm::ConstantInt::get(int64Ty, this->id);
