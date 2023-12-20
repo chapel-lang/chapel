@@ -14,4 +14,4 @@
 import os
 
 machine=os.uname()[1].split('.', 1)[0]
-print (machine.startswith('chapcs'))
+print (machine.startswith('chapcs') or machine.startswith('chapvm'))
