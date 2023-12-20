@@ -1,0 +1,2 @@
+# errors in --baseline (see integral-alias-baseline.future)
+COMPOPTS <= --baseline
