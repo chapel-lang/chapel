@@ -2489,6 +2489,14 @@ void gatherTypesForCodegen(void) {
   // map types like c_int to Clang types and query Clang for their sizes.
   // See for example addMinMax in clangUtil.cpp.
 
+  // There appear to be a limited number of types that
+  // rely on this functionality. Here is an incomplete list:
+  //   c_fn_ptr_rehook
+  //   chpl_comm_on_bundle_p
+  //   chpl_task_bundle_p
+  //   ptr_wide_ptr_t
+  //   c_intptr_t
+
   // Gather type cnames for use in code generation
   // must be run before clang parses macros
   forv_Vec(VarSymbol, var, gVarSymbols) {
