@@ -40,6 +40,14 @@
 
 #include "llvm/ADT/DenseMap.h"
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/LLVMContext.h"
+#endif
+
+namespace llvm {
+  class LLVMContext;
+}
+
 namespace chpl {
   class Context;
 
@@ -323,6 +331,10 @@ class Context {
   // The following are only used for UniqueString garbage collection
   querydetail::RevisionNumber lastPrepareToGCRevisionNumber = 0;
   querydetail::RevisionNumber gcCounter = 1;
+
+#ifdef HAVE_LLVM
+  owned<llvm::LLVMContext> llvmContext_ = nullptr;
+#endif
 
   // --------- end all Context fields ---------
 
@@ -724,7 +736,14 @@ class Context {
 
     Returns the library's path by setting 'pathOut'.
    */
-  bool pathHasLibrary(UniqueString filePath, UniqueString& pathOut);
+  bool pathIsInLibrary(UniqueString filePath, UniqueString& pathOut);
+
+  /**
+    Return 'true' if the given module ID is supported by a library file.
+
+    Returns the library's path by setting 'pathOut'.
+   */
+  bool moduleIsInLibrary(ID moduleId, UniqueString& pathOut);
 
   /**
     Register a module ID and file path to be supported by a library file.
@@ -732,6 +751,8 @@ class Context {
   void registerLibraryForModule(ID moduleId,
                                 UniqueString filePath,
                                 UniqueString libPath);
+
+  llvm::LLVMContext& llvmContext();
 
   /**
     This function increments the current revision number stored

@@ -285,6 +285,16 @@ void Context::defaultReportError(Context* context, const ErrorBase* err) {
 #define UNIQUED_STRING_METADATA_LEN 4
 
 Context::~Context() {
+  // free all of the queries to make sure that the query results
+  // are destroyed before things that they might depend on
+  // (e.g. LLVMContext).
+  queryDB.clear();
+
+  // free other structures
+  modNameToFilepath.clear();
+  queryStack.clear();
+  errorCollectionStack.clear();
+
   // free all the unique'd strings
   for (auto& item: uniqueStringsTable) {
     char* buf = (char*) item.str;
@@ -726,8 +736,8 @@ const UniqueString& pathHasLibraryQuery(Context* context,
   return QUERY_END(result);
 }
 
-bool Context::pathHasLibrary(UniqueString filePath,
-                             UniqueString& pathOut) {
+bool Context::pathIsInLibrary(UniqueString filePath,
+                              UniqueString& pathOut) {
   auto tupleOfArgs = std::make_tuple(filePath);
 
   bool got = hasCurrentResultForQuery(pathHasLibraryQuery,
@@ -739,6 +749,19 @@ bool Context::pathHasLibrary(UniqueString filePath,
   }
 
   pathOut = UniqueString::get(this, "<unknown library path>");
+  return false;
+}
+
+bool Context::moduleIsInLibrary(ID moduleId, UniqueString& pathOut) {
+  UniqueString filePath;
+  if (filePathForId(moduleId, filePath)) {
+    UniqueString libraryPath;
+    if (pathIsInLibrary(filePath, libraryPath)) {
+      pathOut = libraryPath;
+      return true;
+    }
+  }
+
   return false;
 }
 
@@ -755,6 +778,14 @@ void Context::registerLibraryForModule(ID moduleId,
 
   // also update the lookup by module ID
   setFilePathForModuleId(moduleId, filePath);
+}
+
+llvm::LLVMContext& Context::llvmContext() {
+  if (llvmContext_.get() == nullptr) {
+    llvmContext_ = toOwned(new llvm::LLVMContext());
+  }
+
+  return *llvmContext_;
 }
 
 void Context::advanceToNextRevision(bool prepareToGC) {

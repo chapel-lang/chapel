@@ -29,8 +29,14 @@
 #include <system_error>
 #include <unordered_map>
 
+#ifdef HAVE_LLVM
+#include "llvm/IR/Module.h"
+#endif
+
 // forward declare LLVM Support Library dependencies
 namespace llvm {
+  class Module;
+
   namespace sys {
     namespace fs {
       class mapped_file_region;
@@ -140,9 +146,16 @@ class LibraryFile {
     const unsigned char* locationSectionData = nullptr;
     size_t locationSectionLen = 0;
 
+    const unsigned char* genCodeSectionData = nullptr;
+    size_t genCodeSectionLen = 0;
+
     // To support deserializing UniqueStrings
     int nStrings = 0;
     const uint32_t* stringOffsetsTable = nullptr;
+
+    // To support reading LLVM IR
+    const unsigned char* llvmIrData = nullptr;
+    size_t llvmIrDataLen = 0;
 
     ModuleSection() { }
    public:
@@ -191,6 +204,32 @@ class LibraryFile {
     void mark(Context* context) const;
   };
 
+  struct ModuleIr {
+    owned<llvm::Module> llvmModule;
+
+    ModuleIr(owned<llvm::Module> llvmModule)
+      : llvmModule(std::move(llvmModule)) {
+    }
+
+    bool operator==(const ModuleIr& other) const {
+      // just check for null vs not null
+      // everything else should be handled by the LibraryFile hash
+      return (this->llvmModule.get() != nullptr) ==
+             (other.llvmModule.get() != nullptr);
+    }
+    bool operator!=(const ModuleIr& other) const {
+      return !(*this == other);
+    }
+    static bool update(owned<ModuleIr>& keep,
+                       owned<ModuleIr>& addin) {
+      return defaultUpdateOwned(keep, addin);
+    }
+    void mark(Context* context) const {
+      // nothing to mark
+    }
+  };
+
+
  private:
   struct ModuleInfo {
     UniqueString moduleSymPath;
@@ -210,6 +249,9 @@ class LibraryFile {
 
   // stores module symbol IDs and the file paths they came from
   std::vector<ModuleInfo> modules;
+
+  // maps from the moduleSymPath to the index in 'modules' above
+  std::map<UniqueString, size_t> moduleSymPathToIdx;
 
   LibraryFile() { }
 
@@ -313,6 +355,10 @@ class LibraryFile {
                      int symbolTableEntryIndex,
                      const uast::AstNode* symbolTableEntryAst);
 
+  static const owned<ModuleIr>&
+  loadLlvmModuleQuery(Context* context,
+                      const LibraryFile* f,
+                      int moduleIndex);
  public:
   ~LibraryFile();
 
@@ -371,7 +417,16 @@ class LibraryFile {
                 int symbolTableEntryIndex,
                 const uast::AstNode* symbolTableEntryAst) const;
 
-  // TODO: reading LLVM IR, getLazyIRModule con work with a MemoryBuffer
+  /**
+    Load LLVM IR from a this LibraryFile for a particular module path.
+    For a toplevel module, the module path is just the module name.
+    For a submodule M of a parent module P, it would be P.M.
+
+    Returns nullptr if no such module is found in this LibraryFile
+    or if an error occurred.
+   */
+  const llvm::Module* loadGenCodeModule(Context* context,
+                                        UniqueString moduleSymPath) const;
 };
 
 
