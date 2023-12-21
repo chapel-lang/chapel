@@ -378,8 +378,6 @@ module ParallelIO {
           byteOffsets = findDelimChunksChecked(fMeta, delim, d.size, t, fileBounds,
                                                skipHeaderLines, deserializerType, delimInclusive);
 
-    // writeln(byteOffsets);
-
     coforall (loc, id) in zip(targetLocales, 0..) with (ref results) do on loc {
       const nTasks = if tasksPerLoc < 0 then here.maxTaskPar else tasksPerLoc,
             locBounds = byteOffsets[id]..byteOffsets[id+1],
@@ -410,8 +408,9 @@ module ParallelIO {
 
     var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
     coforall (loc, id) in zip(targetLocales, 0..) with (ref result) do on loc {
-      forall i in itemOffsets[id]..<itemOffsets[id+1] with (var agg = new DstAggregator(t)) do
-        agg.copy(result[i], results[id][i-itemOffsets[id]]);
+      // TODO: aggregation
+      forall i in itemOffsets[id]..<itemOffsets[id+1] do
+        result[i] = results[id][i-itemOffsets[id]];
     }
 
     return result;
@@ -564,8 +563,9 @@ module ParallelIO {
 
     var result = blockDist.createArray({0..<itemOffsets.last}, t, targetLocales=targetLocales);
     coforall (loc, id) in zip(targetLocales, 0..) with (ref result) do on loc do
-      forall i in itemOffsets[id]..<itemOffsets[id+1] with (var agg = new DstAggregator(t)) do
-        agg.copy(result[i], results[id][i-itemOffsets[id]]);
+      // TODO: aggregation
+      forall i in itemOffsets[id]..<itemOffsets[id+1] do
+        result[i] = results[id][i-itemOffsets[id]];
 
     return result;
   }
@@ -713,23 +713,25 @@ module ParallelIO {
   ): [] int throws
     where dt == bytes || dt == string
   {
-    const r = f.reader(locking=false, region=bounds);
-    for 0..<skipHeaderLines do r.readLine();
+    const rStart = f.reader(locking=false, region=bounds);
+    for 0..<skipHeaderLines do rStart.readLine();
 
-    const nDataBytes = bounds.high - r.offset(),
+    const nDataBytes = bounds.high - rStart.offset(),
           approxBytesPerChunk = nDataBytes / n,
-          max_deser_trials = qbytes_iobuf_size; // could be something smarter?
+          maxAdvanceTrials = 100,
+          maxDeserTrials = delim.size + 1;
 
     var chunkOffsets: [0..n] int;
-    chunkOffsets[0] = r.offset();
+    chunkOffsets[0] = rStart.offset();
     chunkOffsets[n] = bounds.high;
+    rStart.close();
 
-    for i in 1..<n {
-      const estOffset = i * approxBytesPerChunk;
-      var r = f.reader(locking=false, region=estOffset..),
-          tTest: t;
+    coforall i in 1..<n with (ref chunkOffsets) {
+      const estOffset = bounds.low + i * approxBytesPerChunk,
+            r = f.reader(locking=false, region=estOffset..);
+      var tTest: t;
 
-      for 1..max_deser_trials {
+      label advancing for 1..maxAdvanceTrials {
         try {
           if delimInclusive
             then r.advanceTo(delim);      // advance to the next delimiter
@@ -741,18 +743,25 @@ module ParallelIO {
           );
         }
 
-        // try to deserialize a 't' at the offset
-        r.mark();
-        try {
-          r.withDeserializer(deserializerType).read(tTest);
-        } catch {
-          r.revert();   // move back to the marked position
-          r.readByte(); // advance to the next byte
-          continue;     // try again
+        // try to deserialize a 't' at the offset (and the next few offsets)
+        label deserializing for 1..maxDeserTrials {
+          r.mark();
+          try {
+            const didRead = r.withDeserializer(deserializerType).read(tTest);
+            if !didRead then throw new Error();
+          } catch {
+            // couldn't deserialize a 't' at the offset
+            r.revert();   // move back to the marked position
+            r.readByte(); // advance to the next byte
+            continue deserializing; // try again
+          }
+
+          // deserialized successfully
+          r.revert();
+          chunkOffsets[i] = r.offset(); // record the starting offset
+          break advancing;
         }
-        r.revert();
-        chunkOffsets[i] = r.offset();
-        break;
+        continue advancing;
       }
     }
 
@@ -834,7 +843,7 @@ module ParallelIO {
     startOffsets[0] = bounds.low;
     startOffsets[n] = bounds.high+1;
 
-    for i in offsetIndices {
+    coforall i in offsetIndices with (ref startOffsets) {
       const estOffset = bounds.low + i * approxBytesPerChunk,
             maxOffset = bounds.high;
 
@@ -844,7 +853,8 @@ module ParallelIO {
       for byteOffset in estOffset..maxOffset {
         r.mark();
         try {
-          r.withDeserializer(deserializerType).read(tTest);
+          const didRead = r.withDeserializer(deserializerType).read(tTest);
+          if !didRead then throw new Error();
         } catch {
           r.revert();   // move back to the marked position
           r.readByte(); // advance to the next byte
