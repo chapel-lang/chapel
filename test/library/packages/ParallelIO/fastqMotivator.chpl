@@ -3,55 +3,31 @@ use ParallelIO, IO, Time;
 config const nTasks = 1,
              fileName = "data.fastq";
 
-config param collectPerfData = false;
+config param CollectPerfData = false;
 
 proc main() {
+  var sw = new stopwatch();
+
+  if CollectPerfData {
+    // warmup
+    serialReadFastQ(fileName);
+    sw.start();
+  }
   const seqTruth = serialReadFastQ(fileName);
-  var t = new stopwatch();
+  if CollectPerfData then writeln("serial: ", sw.elapsed());
 
-  if collectPerfData then t.start();
-  const s1 = readParallelLocal(fileName, fastQSequence, nTasks);
-  if collectPerfData {
-    t.stop();
-    writeln("parallel_local: ", t.elapsed());
-  }
+  if CollectPerfData then sw.restart();
+  const s1 = readParallel(fileName, fastQSequence, b"\n@", nTasks=nTasks);
+  if CollectPerfData then writeln("parallel: ", sw.elapsed());
 
-  if collectPerfData then t.restart();
-  const s2 = readParallelDelimitedLocal(fileName, delim=b"@", fastQSequence, delimInclusive=true, nTasks);
-  if collectPerfData {
-    t.stop();
-    writeln("parallel_delimited_local: ", t.elapsed());
-  }
+  if CollectPerfData then sw.restart();
+  const s2 = readParallelLocal(fileName, fastQSequence, b"\n@", nTasks=nTasks);
+  if CollectPerfData then writeln("parallel local: ", sw.elapsed());
 
-  if collectPerfData then t.restart();
-  const s3 = readParallel(fileName, fastQSequence, nTasks);
-  if collectPerfData {
-    t.stop();
-    writeln("parallel: ", t.elapsed());
-  }
-
-  if collectPerfData then t.restart();
-  const s4 = readParallelDelimited(fileName, delim=b"@", fastQSequence, delimInclusive=true, nTasks);
-  // const s4 = serialReadFastQ(fileName);
-  if collectPerfData {
-    t.stop();
-    writeln("parallel_delimited: ", t.elapsed());
-  }
-
-  var q = 0;
-  for s in (s1, s2, s3, s4) {
+  for s in (s1, s2) {
     assert(s.size == seqTruth.size, "size mismatch");
-    for i in s.domain {
-      // assert(s[i] == seqTruth[i], "sequence mismatch at: " + i:string);
-      assert(s[i].seqID == seqTruth[i].seqID, "seqID mismatch at: " + i:string);
-      assert(s[i].seq == seqTruth[i].seq, "seq mismatch at: " + i:string);
-      assert(s[i].desc == seqTruth[i].desc, "desc mismatch at: " + i:string);
-      if s[i].qualities != seqTruth[i].qualities then
-        writeln("qualities mismatch at: ", i:string, "\t", q, "\na: ", s[i].qualities, "\nb: ", seqTruth[i].qualities);
-
-      assert(s[i].qualities == seqTruth[i].qualities, "qualities mismatch at: " + i:string);
-    }
-    q += 1;
+    for i in s.domain do
+      assert(s[i] == seqTruth[i], "sequence mismatch at: " + i:string);
   }
 }
 

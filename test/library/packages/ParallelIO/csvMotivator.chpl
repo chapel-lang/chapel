@@ -2,34 +2,41 @@ use ParallelIO, IO, Random, Time;
 
 const fileName = "colors.csv";
 
-config const n = 1000,
-             tpl = 4;
+config const nItems = 1000,
+             nTasks = 4;
 
-config param comparePerf = false;
+config param CollectPerfData = false;
 
 proc main() {
-  const c1 = makeRandomCSVFile(fileName, n);
+  const cTruth = makeRandomCSVFile(fileName, nItems);
 
   var s = new stopwatch();
 
-  if comparePerf then s.start();
-  const c2 = readParallelDelimited(fileName, t=color, tasksPerLoc=tpl, skipHeaderLines=1);
-
-  if comparePerf {
-    s.stop();
-    writeln("parallel time: ", s.elapsed(), " (sec)");
-
-    s.restart();
-    const c3 = serialReadCSV(fileName, 1);
-    s.stop();
-    writeln("serial time: ", s.elapsed(), " (sec)");
+  if CollectPerfData {
+    // warmup
+    serialReadCSV(fileName, 1);
+    s.start();
+    serialReadCSV(fileName, 1);
+    writeln(s.elapsed());
   }
 
+  if CollectPerfData then s.restart();
+  const c1 = readParallelDelimited(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
+  if CollectPerfData then writeln(s.elapsed());
+
+  if CollectPerfData then s.restart();
+  const c2 = readParallelDelimitedLocal(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
+  if CollectPerfData then writeln(s.elapsed());
+
   // test correctness
-  assert(c2.size == n);
-  for (j1, j2, i) in zip(c1, c2, 0..) {
-    if j1 != j2 {
-      writeln("mismatch at ", i, ": [", j1, "] != [", j2, "]");
+  assert(c1.size == nItems);
+  assert(c2.size == nItems);
+  for c in (c1, c2) {
+    for (j1, j2, i) in zip(cTruth, c, 0..) {
+      if j1 != j2 {
+        writeln("mismatch at ", i, ": [", j1, "] != [", j2, "]");
+        break;
+      }
     }
   }
 }
