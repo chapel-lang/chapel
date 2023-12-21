@@ -31,26 +31,23 @@
   the local procedures return a default rectangular array.
 
   * :proc:`readParallelLines`: read each of the lines of a file as a ``string``
-                               or ``bytes`` value
+    or ``bytes`` value
   * :proc:`readParallelDelimited`: read a file where each value is strictly
-                                   separated by a delimiter, and the delimiter
-                                   cannot be found in the value (e.g., CSV)
+    separated by a delimiter, and the delimiter cannot be found in the
+    value (e.g., CSV)
   * :proc:`readParallel`: read a file where each value is separated by delimiter
 
   There are also some helper procedures that can be used to implement other
   parallel I/O procedures:
 
   * :proc:`findDelimChunks`: find a set of byte offsets that divide a file into
-                             roughly equal chunks where each chunk begins with
-                             a delimiter
+    roughly equal chunks where each chunk begins with a delimiter
   * :proc:`findDelimChunksChecked`: find a set of byte offsets that divide a file
-                                    into roughly equal chunks where each chunk
-                                    begins with a delimiter and each chunk
-                                    starts with a deserializable value
+    into roughly equal chunks where each chunk begins with a delimiter and each
+    chunk starts with a deserializable value
   * :proc:`findItemOffsets`: get a prefix sum of the number of items in each
-                             chunk of a file, where the chunks are defined by
-                             the ``byteOffsets`` array, and each item is
-                             separated by the given delimiter
+    chunk of a file, where the chunks are defined by the ``byteOffsets`` array,
+    and each item is separated by the given delimiter
 */
 @unstable("the 'parallelIO' module is unstable and subject to change in a future release")
 module ParallelIO {
@@ -270,7 +267,7 @@ module ParallelIO {
     :arg delim: the delimiter to use to separate ``t`` values in the file
     :arg t: the type of value to read from the file
     :arg nTasks: the number of tasks to use
-    ::arg header: how to handle the file header (see :record:`headerPolicy`)
+    :arg header: how to handle the file header (see :record:`headerPolicy`)
     :arg deserializerType: the type of deserializer to use
 
     :returns: a default rectangular array of ``t`` values
