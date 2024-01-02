@@ -248,6 +248,20 @@ void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
   wr.code(node);
 }
 
+void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info);
+  auto otherwise = std::get<1>(info);
+  auto when = std::get<2>(info);
+  wr.heading(kind_, type_, node, "'otherwise' clause must follow all 'when' clauses.");
+  wr.message("In the following 'select' statment:");
+  wr.code(node);
+  wr.note(otherwise, "the 'otherwise' clause occurs here:");
+  wr.code(otherwise);
+  wr.note(when, "however, the following 'when' clause is found below it:");
+  wr.code(when);
+  wr.message("Chapel requires 'otherwise' clauses to occur last within 'select' statements.");
+}
+
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {
   auto invalidAst = std::get<0>(info);
   auto blockingAst = std::get<1>(info);
