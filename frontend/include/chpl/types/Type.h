@@ -146,10 +146,20 @@ class Type {
 
   virtual void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
+  /** Check if this type is particular subclass. The call someType->is<IntType>()
+      returns whether or not someType is an IntType.
+   */
+  template <typename TargetType>
+  bool is() const = delete;
+
   // define is__ methods for the various Type subclasses
   // using macros and type-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_IS(NAME) \
+    template <> \
+    bool is<NAME>() const { \
+      return this->is##NAME(); \
+    } \
     bool is##NAME() const { \
       return typetags::is##NAME(this->tag_); \
     }
@@ -229,11 +239,29 @@ class Type {
    */
   const CompositeType* getCompositeType() const;
 
+  /** Try cast to a type known at compile-time. The call someType->to<IntType>()
+      returns nullptr if someType is not an IntType, and cast to IntType
+      if it is.
+   */
+  template <typename TargetType>
+  const TargetType* to() const = delete;
+
+  template <typename TargetType>
+  TargetType* to() = delete;
+
   // define to__ methods for the various Type subclasses
   // using macros and type-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_TO(NAME) \
+    template <> \
+    const NAME * to<NAME>() const { \
+      return this->to##NAME(); \
+    } \
+    template <> \
+    NAME * to<NAME>() { \
+      return this->to##NAME(); \
+    } \
     const NAME * to##NAME() const { \
       return this->is##NAME() ? (const NAME *)this : nullptr; \
     } \
