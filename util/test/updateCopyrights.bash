@@ -50,25 +50,29 @@ function tryReplacementForPattern {
   SEARCH_PATTERN=$1
   SED_PATTERN=$2
 
+  echo -n "Attempting replacements for grep pattern '$SEARCH_PATTERN' with sed command '$SED_PATTERN'... "
+
   # Error if a pattern has no matches (and therefore wouldn't result in any updates).
+  # It's still possible to have a pattern give no updates if the sed pattern is wrong.
   cmd="PAGER=cat git grep -l \""$SEARCH_PATTERN"\" -- $EXCLUDE_PATHS"
-  search_output=$(eval "$cmd")
+  # Ignore errors from the git grep command
+  search_output=$(eval "$cmd" || true)
   if [[ -z "$search_output" ]]; then
-    echo "No matches found for pattern '$SEARCH_PATTERN', stopping with no further replacement. Script may need to be updated"
+    echo "ERROR" # to end the unfinished status line emitted above
+    echo "No matches found for pattern '$SEARCH_PATTERN', stopping with no further replacement; script may need to be updated if we aren't using this pattern anymore."
     exit 1
   fi
 
   # Perform replacement
-  eval $cmd | xargs sed -i '' -e "$SED_PATTERN"
-  # git grep -l "$SEARCH_PATTERN" -- $EXCLUDE_PATHS | xargs sed -i '' -e "$SED_PATTERN"
+  echo "$search_output" | xargs sed -i '' -e "$SED_PATTERN"
 
-  echo "Did replacements for pattern '$SEARCH_PATTERN' with sed set input '$SED_PATTERN'"
+  echo "done"
 }
 
 # Replace different cases for the variations of copyright notice we have.
 # These patterns will need to be updated if how we write copyright notices does.
+
 # Case: "Copyright 202x-[previous year]"->"Copyright 202x-[current year]"
-echo "about to do replacements"
 tryReplacementForPattern "Copyright 202[0-9]-$PREVIOUS_YEAR" "s/Copyright \(202[0-9]\)-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
 tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR/g"
