@@ -5,7 +5,9 @@
 
 set -e
 
+# Paths to be ignored for update by 'git grep'
 EXCLUDE_PATHS="':!third-party/' ':!test/'"
+
 
 # Read in and validate input years
 if [[ $# -ne 1 ]]; then
@@ -23,6 +25,7 @@ if [ $(PREVIOUS_YEAR + 1) != $(CURRENT_YEAR)]; then
   exit 1
 fi
 
+
 # Work from $CHPL_HOME for exclude dir paths
 if [[ ! -v $CHPL_HOME]]; then
   echo "CHPL_HOME not set"
@@ -31,10 +34,16 @@ fi
 echo "Using CHPL_HOME of $CHPL_HOME"
 cd $CHPL_HOME
 
+
+# Require working from clean repo for safety.
+if [ ! -z `git status -u --porcelain` ]; then
+  echo "Refusing to run from unclean working directory for safety"
+  exit 1
+fi
+
+# Do actual update.
 echo "Updating latest copyright year from $PREVIOUS_YEAR to $CURRENT_YEAR..."
-
 # Make the update for each variation of how our copyright notice is written.
-
 # Case: "Copyright 202x-[previous year]"->"Copyright 202x-[current year]"
 git grep -l "Copyright 202[0-9]-$PREVIOUS_YEAR" -- $EXCLUDE_PATHS | xargs sed -i '' -e "s/Copyright (202[0-9])-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
