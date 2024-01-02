@@ -1379,6 +1379,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_ARRAY_SHIFT_BASE_POINTER:
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_CREATE_FN_TYPE:
+    case PRIM_GPU_SYNC_THREADS:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1443,7 +1444,6 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primGpuAllocShared(context, ci);
       break;
 
-    case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_SET_BLOCKSIZE:
     case PRIM_ASSERT_ON_GPU:
     case PRIM_GPU_ELIGIBLE:

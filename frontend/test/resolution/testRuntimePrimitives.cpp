@@ -221,6 +221,10 @@ static void test19() {
   primTypeHelper<ErroneousType>("gpu allocShared", {"v"}, "var v = 1024;", QualifiedType::UNKNOWN);
 }
 
+static void test20() {
+  primTypeHelper<VoidType>("gpu syncThreads", {});
+}
+
 int main() {
   testVoidPrims();
   test1();
@@ -242,6 +246,7 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
 
   return 0;
 }
