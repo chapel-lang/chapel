@@ -328,6 +328,29 @@ static QualifiedType primGpuAllocShared(Context* context, const CallInfo& ci) {
   return QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
 }
 
+static QualifiedType primGpuSetBlockSize(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isIntegralType()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+}
+
+static QualifiedType primAssertOnGpu(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isBoolType() ||
+      firstActualType.kind() != QualifiedType::PARAM || !firstActualType.param()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+}
+
 static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -1445,7 +1468,13 @@ CallResolutionResult resolvePrimCall(Context* context,
       break;
 
     case PRIM_GPU_SET_BLOCKSIZE:
+      type = primGpuSetBlockSize(context, ci);
+      break;
+
     case PRIM_ASSERT_ON_GPU:
+      type = primAssertOnGpu(context, ci);
+      break;
+
     case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_INIT_KERNEL_CFG:
     case PRIM_GPU_DEINIT_KERNEL_CFG:

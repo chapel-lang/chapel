@@ -225,6 +225,18 @@ static void test20() {
   primTypeHelper<VoidType>("gpu syncThreads", {});
 }
 
+static void test21() {
+  primTypeHelper<VoidType>("chpl_assert_on_gpu", {"true"});
+  primTypeHelper<VoidType>("chpl_assert_on_gpu", {"false"});
+  primTypeHelper<ErroneousType>("chpl_assert_on_gpu", {"v"}, "var v: bool;", QualifiedType::UNKNOWN);
+}
+
+static void test22() {
+  primTypeHelper<VoidType>("gpu set blockSize", {"128"});
+  primTypeHelper<VoidType>("gpu set blockSize", {"v"}, "var v = 128;");
+  primTypeHelper<ErroneousType>("gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
+}
+
 int main() {
   testVoidPrims();
   test1();
@@ -247,6 +259,8 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
+  test22();
 
   return 0;
 }
