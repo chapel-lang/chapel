@@ -1,7 +1,8 @@
 #!/usr/bin/env bash
 #
-# Update copyright year in source file header comments.
+# Update current copyright year in source file header comments.
 # Excludes third-party and test directories.
+# Needs to be updated if how we write copyright notices is.
 
 set -e
 
@@ -72,8 +73,8 @@ function tryReplacementForPattern {
 # Replace different cases for the variations of copyright notice we have.
 # These patterns will need to be updated if how we write copyright notices does.
 
-# Case: "Copyright 202x-[previous year]"->"Copyright 202x-[current year]"
-tryReplacementForPattern "Copyright 202[0-9]-$PREVIOUS_YEAR" "s/Copyright \(202[0-9]\)-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
+# Case: "Copyright 20xy-[previous year]"->"Copyright 20xy-[current year]"
+tryReplacementForPattern "Copyright 20[0-9][0-9]-$PREVIOUS_YEAR" "s/Copyright \(20[0-9][0-9]\)-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
 tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR/g"
 # Case: "copyright_year = [previous year]"->"copyright_year = [current year]"
