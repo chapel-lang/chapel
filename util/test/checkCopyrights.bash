@@ -21,9 +21,9 @@
 set -e
 
 todate=`date "+%m%d"`
-# This hardcoding is intentional. Date accepts a full date like this,
-# but %m%d cuts off the year so it only compares 0107 to the current date
-cond=`date -d 2024-01-07 "+%m%d"`
+# The hardcoded year is just a placeholder. Date accepts a full date like this,
+# but %m%d cuts off the year so it only compares 0107 to the current date.
+cond=`date -d 1970-01-07 "+%m%d"`
 
 if [ $todate -le $cond ];
 then
