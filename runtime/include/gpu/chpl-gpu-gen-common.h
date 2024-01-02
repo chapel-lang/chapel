@@ -157,9 +157,10 @@ void chpl_gen_comm_put_to_subloc(void* addr,
 
 }
 
-
-
-
+__device__ static inline
+void chpl_internal_error(const char* message) {
+  printf("%s\n", message);
+}
 
 #endif // HAS_GPU_LOCALE
 

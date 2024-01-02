@@ -760,6 +760,41 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
       FnSymbol *fn = call->resolvedFunction();
 
+      // nonLocalAccess calls are really complicated, on a quick look it has:
+      // - allocation (RAD cache)
+      // - atomics
+      // - communication
+      // I tried adding stubs for these to just to get it to compile, but it
+      // sprawled too fast
+      if (fn->name == astr("nonLocalAccess")) {
+        SET_LINENO(fn);
+
+        // set up the new function
+        FnSymbol* gpuCopy = fn->copy();
+        gpuCopy->addFlag(FLAG_GPU_CODEGEN);
+        fn->defPoint->insertBefore(new DefExpr(gpuCopy));
+        call->setResolvedFunction(gpuCopy);
+
+        // modify its body
+        BlockStmt* gpuCopyBody = new BlockStmt();
+        //CallExpr* errCall = new CallExpr(PRIM_RT_ERROR,
+                                         //new_CStringSymbol(
+                                            //"nonLocalAccess called in kernel"));
+        CallExpr* errCall = new CallExpr(PRIM_INT_ERROR);
+        VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
+
+        gpuCopyBody->insertAtTail(errCall);
+        gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
+        gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
+
+        gpuCopy->body->replace(gpuCopyBody);
+
+        //normalize(gpuCopy);
+
+        // now, this call is safe
+        continue;
+      }
+
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
         assertionReporter_.pushCall(call);
         assertionReporter_.reportNotGpuizable(loop_, fn, "function is marked as not eligible for GPU execution");
