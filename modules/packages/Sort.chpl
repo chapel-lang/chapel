@@ -459,9 +459,12 @@ algorithm used is made by the implementation.
 :type Data: [] `eltType`
 :arg comparator: :ref:`Comparator <comparators>` record that defines how the
   data is sorted.
-
+:arg mimimizeMemory: Defaults to ``false``. If it is ``false``, the
+implementation can make a copy of ``Data`` for scratch storage during the sort.
+If it is ``true``, it will use an implementation that uses less memory.
  */
-proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
+          minimizeMemory=false) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
@@ -469,7 +472,11 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
     return;
 
   if radixSortOk(Data, comparator) {
-    MSBRadixSort.msbRadixSort(Data, comparator=comparator);
+    if minimizeMemory {
+      MSBRadixSort.msbRadixSort(Data, comparator=comparator);
+    } else {
+      TwoArrayRadixSort.twoArrayRadixSort(Data, comparator=comparator);
+    }
   } else {
     QuickSort.quickSort(Data, comparator=comparator);
   }
