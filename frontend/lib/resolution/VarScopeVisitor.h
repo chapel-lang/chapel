@@ -108,7 +108,6 @@ class VarScopeVisitor {
       should update currentFrame() which is the frame for the Select.
       The when frames are sitting in currentFrame().subBlocks. */
   virtual void handleSelect(const uast::Select* cond, RV& rv) = 0;
-
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
       Not called for Conditional or Try. */
@@ -265,6 +264,7 @@ struct VarFrame {
   // has the block already encountered a return or a throw?
   bool returnsOrThrows = false;
 
+  // for conditionals/selects, is the block's condition param true? 
   bool paramTrue = false;
   // When processing a conditional or catch blocks,
   // instead of popping the SplitInitFrame for the then/else/catch blocks,

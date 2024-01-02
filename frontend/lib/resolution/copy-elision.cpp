@@ -702,7 +702,6 @@ void FindElidedCopies::handleScope(const AstNode* ast, RV& rv) {
     // propagate inited vars
     parent->initedVars.insert(frame->initedVars.begin(),
                               frame->initedVars.end());
-
   }
 }
 
@@ -738,7 +737,6 @@ computeElidedCopies(Context* context,
 
   return elidedCopyFromIds;
 }
-
 
 } // end namespace resolution
 } // end namespace chpl
