@@ -65,7 +65,12 @@ function tryReplacementForPattern {
   fi
 
   # Perform replacement
-  echo "$search_output" | xargs sed -i '' -e "$SED_PATTERN"
+  # Sed '-i' argument for in-place differs between GNU sed (on Linux) and BSD sed (on macOS).
+  if [[ "$OSTYPE" == "darwin"* ]]; then
+    echo "$search_output" | xargs sed -i '' -e "$SED_PATTERN"
+  else
+    echo "$search_output" | xargs sed -i -e "$SED_PATTERN"
+  fi
 
   echo "done"
 }
