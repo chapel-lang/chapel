@@ -460,8 +460,8 @@ algorithm used is made by the implementation.
 :arg comparator: :ref:`Comparator <comparators>` record that defines how the
   data is sorted.
 :arg mimimizeMemory: Defaults to ``false``. If it is ``false``, the
-implementation can make a copy of ``Data`` for scratch storage during the sort.
-If it is ``true``, it will use an implementation that uses less memory.
+  implementation can make a copy of ``Data`` for scratch storage during the
+  sort. If it is ``true``, it will use an implementation that uses less memory.
  */
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
           minimizeMemory=false) {
