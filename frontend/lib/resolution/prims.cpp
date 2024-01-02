@@ -1283,6 +1283,18 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return an int32 */
     case PRIM_GETCID:
     case PRIM_GET_USER_FILE:
+    case PRIM_GPU_THREADIDX_X:
+    case PRIM_GPU_THREADIDX_Y:
+    case PRIM_GPU_THREADIDX_Z:
+    case PRIM_GPU_BLOCKIDX_X:
+    case PRIM_GPU_BLOCKIDX_Y:
+    case PRIM_GPU_BLOCKIDX_Z:
+    case PRIM_GPU_BLOCKDIM_X:
+    case PRIM_GPU_BLOCKDIM_Y:
+    case PRIM_GPU_BLOCKDIM_Z:
+    case PRIM_GPU_GRIDDIM_X:
+    case PRIM_GPU_GRIDDIM_Y:
+    case PRIM_GPU_GRIDDIM_Z:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
@@ -1412,18 +1424,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_DYNAMIC_END_COUNT:
     case PRIM_GPU_KERNEL_LAUNCH:
     case PRIM_GPU_KERNEL_LAUNCH_FLAT:
-    case PRIM_GPU_THREADIDX_X:
-    case PRIM_GPU_THREADIDX_Y:
-    case PRIM_GPU_THREADIDX_Z:
-    case PRIM_GPU_BLOCKIDX_X:
-    case PRIM_GPU_BLOCKIDX_Y:
-    case PRIM_GPU_BLOCKIDX_Z:
-    case PRIM_GPU_BLOCKDIM_X:
-    case PRIM_GPU_BLOCKDIM_Y:
-    case PRIM_GPU_BLOCKDIM_Z:
-    case PRIM_GPU_GRIDDIM_X:
-    case PRIM_GPU_GRIDDIM_Y:
-    case PRIM_GPU_GRIDDIM_Z:
     case PRIM_GPU_ALLOC_SHARED:
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_SET_BLOCKSIZE:
