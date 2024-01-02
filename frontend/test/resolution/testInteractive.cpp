@@ -360,7 +360,7 @@ int main(int argc, char** argv) {
     int ch = 0;
     do {
       ch = getc(stdin);
-    } while (ch != 0 && (ch == ' ' || ch == '\n'));
+    } while (ch != 0 && (ch == ' '));
 
     if (ch == 'g' || ch == 'G') {
       gc = true;
