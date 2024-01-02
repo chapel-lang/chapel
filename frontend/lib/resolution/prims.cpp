@@ -966,11 +966,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return default int */
     case PRIM_GET_UNION_ID:
     case PRIM_GET_REQUESTED_SUBLOC:
+    case PRIM_GET_USER_LINE:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 0));
       break;
     /* primitives that return an int32 */
     case PRIM_GETCID:
+    case PRIM_GET_USER_FILE:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            IntType::get(context, 32));
       break;
@@ -1169,8 +1171,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_PRIVATE_BROADCAST:
     case PRIM_CAPTURE_FN:
     case PRIM_CAPTURE_FN_TO_CLASS:
-    case PRIM_GET_USER_LINE:
-    case PRIM_GET_USER_FILE:
     case PRIM_RESOLUTION_POINT:
     case PRIM_FTABLE_CALL:
     case PRIM_GET_SVEC_MEMBER:
