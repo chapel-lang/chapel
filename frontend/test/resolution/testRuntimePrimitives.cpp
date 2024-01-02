@@ -185,7 +185,6 @@ static void test15() {
   primTypeHelper<CStringType>("chpl_lookupFilename", {});
 }
 
-
 // "_get_user_line", which should return a default int.
 static void test16() {
   intPrimTypeHelper(IntType::defaultBitwidth(), "_get_user_line", {});
@@ -194,6 +193,22 @@ static void test16() {
 // "_get_user_file", which should return an int32
 static void test17() {
   intPrimTypeHelper(32, "_get_user_file", {});
+}
+
+// various GPU x/y/z primitives, which all return int(32).
+static void test18() {
+  intPrimTypeHelper(32, "gpu threadIdx x", {});
+  intPrimTypeHelper(32, "gpu threadIdx y", {});
+  intPrimTypeHelper(32, "gpu threadIdx z", {});
+  intPrimTypeHelper(32, "gpu blockIdx x", {});
+  intPrimTypeHelper(32, "gpu blockIdx y", {});
+  intPrimTypeHelper(32, "gpu blockIdx z", {});
+  intPrimTypeHelper(32, "gpu blockDim x", {});
+  intPrimTypeHelper(32, "gpu blockDim y", {});
+  intPrimTypeHelper(32, "gpu blockDim z", {});
+  intPrimTypeHelper(32, "gpu gridDim x", {});
+  intPrimTypeHelper(32, "gpu gridDim y", {});
+  intPrimTypeHelper(32, "gpu gridDim z", {});
 }
 
 int main() {
@@ -215,6 +230,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   return 0;
 }
