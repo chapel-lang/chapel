@@ -52,6 +52,20 @@ namespace types {
 #undef TYPE_END_SUBCLASSES
 #undef TYPE_DECL
 
+class Type;
+
+namespace detail {
+
+template <typename T>
+const T* typeToConst(const Type* type) = delete;
+
+template <typename T>
+T* typeTo(Type* type) = delete;
+
+template <typename T>
+bool typeIs(const Type* type) = delete;
+
+} // end namespace detail
 
 /**
   This is the base class for classes that represent a type.
@@ -150,16 +164,14 @@ class Type {
       returns whether or not someType is an IntType.
    */
   template <typename TargetType>
-  bool is() const = delete;
+  bool is() const {
+    return detail::typeIs<TargetType>(this);
+  }
 
   // define is__ methods for the various Type subclasses
   // using macros and type-classes-list.h
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_IS(NAME) \
-    template <> \
-    bool is<NAME>() const { \
-      return this->is##NAME(); \
-    } \
     bool is##NAME() const { \
       return typetags::is##NAME(this->tag_); \
     }
@@ -244,24 +256,20 @@ class Type {
       if it is.
    */
   template <typename TargetType>
-  const TargetType* to() const = delete;
+  const TargetType* to() const {
+    return detail::typeToConst<TargetType>(this);
+  }
 
   template <typename TargetType>
-  TargetType* to() = delete;
+  TargetType* to() {
+    return detail::typeTo<TargetType>(this);
+  }
 
   // define to__ methods for the various Type subclasses
   // using macros and type-classes-list.h
   // Note: these offer equivalent functionality to C++ dynamic_cast<DstType*>
   /// \cond DO_NOT_DOCUMENT
   #define TYPE_TO(NAME) \
-    template <> \
-    const NAME * to<NAME>() const { \
-      return this->to##NAME(); \
-    } \
-    template <> \
-    NAME * to<NAME>() { \
-      return this->to##NAME(); \
-    } \
     const NAME * to##NAME() const { \
       return this->is##NAME() ? (const NAME *)this : nullptr; \
     } \
@@ -286,6 +294,54 @@ class Type {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
+
+namespace detail {
+
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_IS(NAME) \
+  template <> \
+  inline bool typeIs<NAME>(const Type* type) { \
+    return type->is##NAME(); \
+  }
+#define TYPE_NODE(NAME) TYPE_IS(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_IS(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_IS(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_IS
+
+/// \cond DO_NOT_DOCUMENT
+#define TYPE_TO(NAME) \
+  template <> \
+  inline const NAME * typeToConst<NAME>(const Type* type) { \
+    return type->to##NAME(); \
+  } \
+  template <> \
+  inline NAME * typeTo<NAME>(Type* type) { \
+    return type->to##NAME(); \
+  }
+#define TYPE_NODE(NAME) TYPE_TO(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME_STR) TYPE_TO(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) TYPE_TO(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+/// \endcond
+// Apply the above macros to type-classes-list.h
+#include "chpl/types/type-classes-list.h"
+// clear the macros
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef TYPE_TO
+
+} // end namespace detail
 
 
 } // end namespace types
