@@ -136,10 +136,46 @@ the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
 purpose.  It will search only within block statements ``{ }``,
 ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, and
-conditionals.  These assignment statements and calls to functions with
+``try`` blocks, ``try!`` blocks, `select` blocks, and
+conditionals.  For ```select`` blocks and conditionals, the compiler will 
+ignore blocks that are statically known to be unreachable.
+These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
 initialization, not assignment, of that variable.
+
+Split initialization does not apply:
+
+ * when the variable is a field, config variable, or ``extern`` variable.
+ * when an applicable assignment statement setting the variable could not
+   be identified
+ * when an applicable assignment statement is in at least one branch of a 
+   conditional or ``select`` block but not in another, unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * every branch without an applicable assignment statement always 
+       returns or throws.
+
+   This rule prevents split-initialization when the applicable assignment
+   statement is in a conditional that has no ``else`` branch and the
+   ``if`` branch does not return or throw.
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   block which has ``catch`` clauses that mention the variable
+
+ * when an applicable assignment statement is in a ``try`` or ``try!``
+   with ``catch`` clauses unless:
+
+     * the variable is not an ``out`` intent formal, and
+     * all catch clauses return or throw
+
+In the case that the variable is declared with no ``type-part`` or with a
+generic declared type, and where multiple applicable assignment
+statements are identified, all of the assignment statements need to
+contain an initialization expression of the same type.
+
+Any variables declared in a particular scope that are initialized with
+split init in multiple branches of a conditional or ``select``
+must be initialized in the same order in all branches.
 
    *Example (simple-split-init.chpl)*
 
@@ -228,40 +264,6 @@ initialization, not assignment, of that variable.
 
       5
 
-
-Split initialization does not apply:
-
- * when the variable is a field, config variable, or ``extern`` variable.
- * when an applicable assignment statement setting the variable could not
-   be identified
- * when an applicable assignment statement is in one branch of a
-   conditional but not in the other, unless:
-
-     * the variable is not an ``out`` intent formal, and
-     * the other branch always returns or throws.
-
-   This rule prevents split-initialization when the applicable assignment
-   statement is in a conditional that has no ``else`` branch and the
-   ``if`` branch does not return or throw.
-
- * when an applicable assignment statement is in a ``try`` or ``try!``
-   block which has ``catch`` clauses that mention the variable
-
- * when an applicable assignment statement is in a ``try`` or ``try!``
-   with ``catch`` clauses unless:
-
-     * the variable is not an ``out`` intent formal, and
-     * all catch clauses return or throw
-
-In the case that the variable is declared with no ``type-part`` or with a
-generic declared type, and where multiple applicable assignment
-statements are identified, all of the assignment statements need to
-contain an initialization expression of the same type.
-
-Any variables declared in a particular scope that are initialized with
-split init in both the ``then`` and ``else`` branches of a conditional
-must be initialized in the same order in the ``then`` and ``else``
-branches.
 
 .. _Default_Values_For_Types:
 
