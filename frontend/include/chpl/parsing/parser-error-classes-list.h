@@ -59,7 +59,7 @@ PARSER_SYNTAX_CLASS(ParseSyntax, std::string)
 
 /* begin post-parse-checks errors */
 POSTPARSE_ERROR_CLASS(CantApplyPrivate, std::string)
-POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::Select*)
+POSTPARSE_ERROR_CLASS(WhenAfterOtherwise, const uast::When*, const uast::When*)
 ERROR_CLASS(DisallowedControlFlow, const uast::AstNode*, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(IllegalUseImport, const uast::AstNode*, const uast::AstNode*)
 ERROR_CLASS(InvalidGpuAssertion, const uast::AstNode*, const uast::Attribute*)

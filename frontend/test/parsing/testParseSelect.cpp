@@ -197,7 +197,7 @@ static void test4(Parser* parser) {
   assert(mod->stmt(1)->isSelect());
   assert(mod->stmt(2)->isComment());
   auto& error = guard.error(0);
-  const char* expected = "otherwise clause must follow all when clauses";
+  const char* expected = "'otherwise' clause must follow all 'when' clauses";
   auto actual = error->message();
   assert(actual == expected);
   guard.clearErrors();
