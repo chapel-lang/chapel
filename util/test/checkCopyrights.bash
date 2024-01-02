@@ -18,6 +18,8 @@
 #  Make*
 #
 
+set -e
+
 todate=`date "+%m%d"`
 # This hardcoding is intentional. Date accepts a full date like this,
 # but %m%d cuts off the year so it only compares 0107 to the current date
