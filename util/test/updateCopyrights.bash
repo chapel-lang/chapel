@@ -41,10 +41,30 @@ if [ ! -z `git status -u --porcelain` ]; then
   exit 1
 fi
 
-# Do actual update.
+# Make updates.
 echo "Updating latest copyright year from $PREVIOUS_YEAR to $CURRENT_YEAR..."
-# Make the update for each variation of how our copyright notice is written.
+
+# Do replacement for a pattern.
+# First arg is 'git grep' search pattern, second arg is 'sed' find/replace pattern.
+function tryReplacementForPattern {
+  SEARCH_PATTERN=$1
+  SED_PATTERN=$2
+
+  # Error if a pattern has no matches (and therefore wouldn't result in any updates).
+  if ! `git grep -l $SEARCH_PATTERN -- $EXCLUDE_PATHS`; then
+    echo "No matches found for pattern $SEARCH_PATTERN, stopping with no further replacement. Script may need to be updated"
+    exit 1
+  fi
+
+  # Perform replacement
+  git grep -l $SEARCH_PATTERN -- $EXCLUDE_PATHS | xargs sed -i '' -e $SED_PATTERN
+
+  echo "Did replacements for pattern $SEARCH_PATTERN"
+}
+
+# Replace different cases for the variations of copyright notice we have.
+# These patterns will need to be updated if how we write copyright notices does.
 # Case: "Copyright 202x-[previous year]"->"Copyright 202x-[current year]"
-git grep -l "Copyright 202[0-9]-$PREVIOUS_YEAR" -- $EXCLUDE_PATHS | xargs sed -i '' -e "s/Copyright (202[0-9])-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
+tryReplacementForPattern "Copyright 202[0-9]-$PREVIOUS_YEAR" "s/Copyright (202[0-9])-$PREVIOUS_YEAR/Copyright \1-$CURRENT_YEAR/g"
 # Case: "Copyright [previous year]"->"Copyright [previous year]-[current year]"
-git grep -l "Copyright $PREVIOUS_YEAR" -- $EXCLUDE_PATHS | xargs sed -i '' -e "s/Copyright $PREVIOUS_YEAR/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR/g"
+tryReplacementForPattern "Copyright $PREVIOUS_YEAR" "s/Copyright $PREVIOUS_YEAR/Copyright $PREVIOUS_YEAR-$CURRENT_YEAR/g"
