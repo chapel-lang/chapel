@@ -136,8 +136,8 @@ the variable is otherwise mentioned. It will consider the variable passed
 to an ``out`` intent argument as an assignment statement for this
 purpose.  It will search only within block statements ``{ }``,
 ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, `select` blocks, and
-conditionals.  For ```select`` blocks and conditionals, the compiler will 
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and
+conditionals.  For ``select`` blocks and conditionals, the compiler will 
 ignore blocks that are statically known to be unreachable.
 These assignment statements and calls to functions with
 ``out`` intent are called applicable assignment statements.  They perform
@@ -157,7 +157,8 @@ Split initialization does not apply:
 
    This rule prevents split-initialization when the applicable assignment
    statement is in a conditional that has no ``else`` branch and the
-   ``if`` branch does not return or throw.
+   ``if`` branch does not return or throw. The same applies for a ``select`` 
+   without an ``otherwise``.
 
  * when an applicable assignment statement is in a ``try`` or ``try!``
    block which has ``catch`` clauses that mention the variable
@@ -264,6 +265,98 @@ must be initialized in the same order in all branches.
 
       5
 
+
+   *Example (split-init-select-dce.chpl)*
+
+   When the condition for a ``select`` or conditional statement
+   can be evaluated at compile-time, the compiler only considers
+   the path that will be taken:
+    
+   .. code-block:: chapel
+      
+      proc splitInitsBecauseDCE(type T) {
+        var x: int;
+        select T {
+          when int {
+            // split initialization occurs here when T==int
+            x = 1; 
+          }
+          when string {
+            writeln("compiler ignores this block when T==int");
+          }
+        }
+        writeln(x);
+      }
+      proc noSplitInitBecausePathUnknown(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+          // no split init, not all paths return, throw, or initialize
+            x = 1; 
+          }
+          when 1 {
+            writeln("this block not ignored by compiler.");
+            writeln("arg value unknown at compile-time.");
+          } 
+        }
+        writeln(x);
+      }
+      proc main() {
+        splitInitsBecauseDCE(int);
+        noSplitInitBecausePathUnknown(0);
+      }
+    
+   .. BLOCK-test-chapeloutput
+
+      1
+      1
+
+   *Example (split-init-select-otherwise.chpl)*
+
+   Remember to consider the path taken by select statements where
+   none of the cases match:
+      
+   .. code-block:: chapel
+
+      proc noSplitInitMissingOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+          // no split init, not all paths return, throw, or initialize
+            x = 1; 
+          }
+          when 1 {
+          // hint: consider the path taken when arg=2
+            x = 2; 
+          } 
+        }
+        writeln(x);
+      }
+      proc splitInitHasOtherwise(arg: int) {
+        var x: int;
+        select arg {
+          when 0 {
+            //split init will occur here
+            x = 1;
+          }
+          when 1 {
+            x = 2;
+          } 
+          otherwise {
+            //now all paths initialize, return, or throw.
+            return; 
+          }
+        }
+        writeln(x);
+      }
+      proc main() {
+        noSplitInitMissingOtherwise(1);
+        splitInitHasOtherwise(2);
+      }
+
+  .. BLOCK-test-chapeloutput
+
+      2
 
 .. _Default_Values_For_Types:
 
@@ -943,7 +1036,21 @@ is not mentioned again, the copy will be elided.  Since a ``return`` or
 immediately by a ``return`` or ``throw``. When searching forward from
 variable declarations, copy elision considers eliding copies only within
 block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
-``try`` blocks, ``try!`` blocks, and conditionals.
+``try`` blocks, ``try!`` blocks, ``select`` blocks, and conditionals. Like 
+split initialization, the compiler ignores blocks that are statically known to
+be unreachable.
+
+
+Copy elision does not apply:
+
+ * when the source variable is a reference, field, or module-level
+   variable
+ * when the copy statement is in a conditional or ``select`` branch and
+   at least one branch does not contain the copy, a ``return``, or a ``throw``
+ * when the copy statement is in a ``try`` or ``try!`` block which has
+   ``catch`` clauses that mention the variable or which has ``catch``
+   clauses that do not always ``throw`` or ``return``.
+
 
    *Example (copy-elision.chpl)*
 
@@ -1040,15 +1147,4 @@ block statements ``{ }``, ``local`` blocks, ``serial`` blocks, ``sync`` blocks,
       block ending
       deinit 0
 
-
-Copy elision does not apply:
-
- * when the source variable is a reference, field, or module-level
-   variable
- * when the copy statement is in one branch of a conditional but not in
-   the other, or when the other branch does not always ``return`` or
-   ``throw``.
- * when the copy statement is in a ``try`` or ``try!`` block which has
-   ``catch`` clauses that mention the variable or which has ``catch``
-   clauses that do not always ``throw`` or ``return``.
 
