@@ -1402,7 +1402,12 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_ARRAY_SHIFT_BASE_POINTER:
     case PRIM_AUTO_DESTROY_RUNTIME_TYPE:
     case PRIM_CREATE_FN_TYPE:
+    case PRIM_GPU_KERNEL_LAUNCH:
+    case PRIM_GPU_KERNEL_LAUNCH_FLAT:
     case PRIM_GPU_SYNC_THREADS:
+    case PRIM_GPU_ELIGIBLE:
+    case PRIM_GPU_DEINIT_KERNEL_CFG:
+    case PRIM_GPU_ARG:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            VoidType::get(context));
       break;
@@ -1458,8 +1463,6 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_SET_REFERENCE:
     case PRIM_GET_END_COUNT:
     case PRIM_GET_DYNAMIC_END_COUNT:
-    case PRIM_GPU_KERNEL_LAUNCH:
-    case PRIM_GPU_KERNEL_LAUNCH_FLAT:
       CHPL_UNIMPL("misc primitives");
       break;
 
@@ -1475,10 +1478,10 @@ CallResolutionResult resolvePrimCall(Context* context,
       type = primAssertOnGpu(context, ci);
       break;
 
-    case PRIM_GPU_ELIGIBLE:
     case PRIM_GPU_INIT_KERNEL_CFG:
-    case PRIM_GPU_DEINIT_KERNEL_CFG:
-    case PRIM_GPU_ARG:
+      type = QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
+      break;
+
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
     case PRIM_LIFETIME_OF:

@@ -237,6 +237,20 @@ static void test22() {
   primTypeHelper<ErroneousType>("gpu set blockSize", {"v"}, "var v: string;", QualifiedType::UNKNOWN);
 }
 
+static void test23() {
+  // Much like the primitives Ahmad added earlier, these will not be checked
+  // for proper arguments etc. since they are added late during compilation
+  // (after LICM at the time of writing) and thus would not be typechecked
+  // by Dyno anyway.
+
+  primTypeHelper<VoidType>("gpu kernel launch", {});
+  primTypeHelper<VoidType>("gpu kernel launch flat", {});
+  primTypeHelper<VoidType>("gpu eligible", {});
+  voidPtrPrimTypeHelper("gpu init kernel cfg", {});
+  primTypeHelper<VoidType>("gpu deinit kernel cfg", {});
+  primTypeHelper<VoidType>("gpu arg", {});
+}
+
 int main() {
   testVoidPrims();
   test1();
@@ -261,6 +275,7 @@ int main() {
   test20();
   test21();
   test22();
+  test23();
 
   return 0;
 }
