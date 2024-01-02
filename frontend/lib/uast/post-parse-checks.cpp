@@ -1546,7 +1546,7 @@ void Visitor::visit(const Select* node) {
 
 void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
   bool seenOtherwise = false;
-  for(size_t i = 0; i < sel->numWhenStmts(); i++) {
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
     auto when = sel->whenStmt(i);
     if (seenOtherwise && !when->isOtherwise()) {
       CHPL_REPORT(context_, WhenAfterOtherwise, sel, sel);
