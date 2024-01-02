@@ -316,6 +316,18 @@ static QualifiedType primAddrOf(Context* context, const CallInfo& ci) {
   return QualifiedType(kp.toKind(), actualQt.type());
 }
 
+static QualifiedType primGpuAllocShared(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto firstActualType = ci.actual(0).type();
+  if (!firstActualType.type() || !firstActualType.type()->isIntType() ||
+      firstActualType.kind() != QualifiedType::PARAM || !firstActualType.param()) {
+    return QualifiedType();
+  }
+
+  return QualifiedType(QualifiedType::CONST_VAR, CPtrType::getCVoidPtrType(context));
+}
+
 static QualifiedType primTypeof(Context* context, PrimitiveTag prim, const CallInfo& ci) {
   if (ci.numActuals() != 1) return QualifiedType();
 
@@ -1424,7 +1436,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_GET_DYNAMIC_END_COUNT:
     case PRIM_GPU_KERNEL_LAUNCH:
     case PRIM_GPU_KERNEL_LAUNCH_FLAT:
+      CHPL_UNIMPL("misc primitives");
+      break;
+
     case PRIM_GPU_ALLOC_SHARED:
+      type = primGpuAllocShared(context, ci);
+      break;
+
     case PRIM_GPU_SYNC_THREADS:
     case PRIM_GPU_SET_BLOCKSIZE:
     case PRIM_ASSERT_ON_GPU:

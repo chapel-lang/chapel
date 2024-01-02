@@ -63,6 +63,12 @@ static void realPrimTypeHelper(int width, const char* primName, std::vector<cons
   }, prelude, expectedKind);
 }
 
+static void voidPtrPrimTypeHelper(const char* primName, std::vector<const char*> args, const char* prelude = "", QualifiedType::Kind expectedKind = QualifiedType::CONST_VAR) {
+  predicatePrimTypeHelper(primName, args, [](const Type* typePtr, const Param* param) {
+    return typePtr->isCPtrType() && typePtr->toCPtrType()->isVoidPtr();
+  }, prelude, expectedKind);
+}
+
 // tests for primitives that should return void
 static void testVoidPrims() {
   // test for primitive "chpl_init_record"
@@ -142,9 +148,7 @@ static void test7() {
 
 // test for primitive "_wide_get_addr", which should return a void ptr
 static void test8() {
-  predicatePrimTypeHelper("_wide_get_addr", {}, [](const Type* typePtr, const Param* param) {
-    return typePtr->isCPtrType() && typePtr->toCPtrType()->isVoidPtr();
-  });
+  voidPtrPrimTypeHelper("_wide_get_addr", {});
 }
 
 // test for primitive "steal", which should return the type of the argument
@@ -211,6 +215,12 @@ static void test18() {
   intPrimTypeHelper(32, "gpu gridDim z", {});
 }
 
+static void test19() {
+  voidPtrPrimTypeHelper("gpu allocShared", {"512"});
+  voidPtrPrimTypeHelper("gpu allocShared", {"1024"});
+  primTypeHelper<ErroneousType>("gpu allocShared", {"v"}, "var v = 1024;", QualifiedType::UNKNOWN);
+}
+
 int main() {
   testVoidPrims();
   test1();
@@ -231,6 +241,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   return 0;
 }
