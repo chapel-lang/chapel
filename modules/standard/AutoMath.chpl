@@ -209,6 +209,11 @@ module AutoMath {
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(64)):real(64) do return fabs(x);
 
+  /* Return the absolute value of a param real(64) as a param */
+  proc abs(param x: real(64)) param :real(64) {
+    return if x < 0 then -x else x;
+  }
+
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
     pragma "fn synchronization free"
@@ -217,8 +222,19 @@ module AutoMath {
     return fabsf(x);
   }
 
+  /* Return the absolute value of a param real(32) as a param */
+  proc abs(param x: real(32)) param : real(32) {
+    return if x < 0 then -x else x;
+  }
+
   /* Returns the real magnitude of the imaginary argument `x`. */
   inline proc abs(x : imag(64)): real(64) do return fabs(_i2r(x));
+
+  /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
+  */
+  proc abs(param x: imag(64)) param :real(64) {
+    return abs(x:real(64));
+  }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
   inline proc abs(x: imag(32)): real(32) {
@@ -226,6 +242,12 @@ module AutoMath {
     pragma "codegen for CPU and GPU"
     extern proc fabsf(x: real(32)): real(32);
     return fabsf(_i2r(x));
+  }
+
+  /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
+  */
+  proc abs(param x: imag(32)) param :real(32) {
+    return abs(x:real(32));
   }
 
   /* Returns the magnitude (often called modulus) of complex `x`.
