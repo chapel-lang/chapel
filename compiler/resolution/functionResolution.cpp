@@ -7627,16 +7627,16 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
 }
 
 // heuristic to walk up a series of temps to find the base object of a method call
-static Symbol* maybeGetBaseSym_helper(SymExpr* def);
+static Symbol* maybeGetBaseSymHelper(SymExpr* def);
 static Symbol* maybeGetBaseSym(Symbol* sym) {
   for_SymbolDefs(def, sym) {
-    if (auto baseSym = maybeGetBaseSym_helper(def)) {
+    if (auto baseSym = maybeGetBaseSymHelper(def)) {
       return baseSym;
     }
   }
   return nullptr;
 }
-static Symbol* maybeGetBaseSym_helper(SymExpr* def) {
+static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
   if (auto parentCall = toCallExpr(def->parentExpr)) {
     if (isMoveOrAssign(parentCall)) {
       if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
