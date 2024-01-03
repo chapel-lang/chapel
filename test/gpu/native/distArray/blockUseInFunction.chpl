@@ -1,6 +1,9 @@
 use BlockDist;
 use GpuDiagnostics;
+use CTypes;
 
+/*pragma "codegen for GPU"*/
+/*extern const chpl_privateObjects: c_ptr(void);*/
 
 config const n = here.maxTaskPar*2;
 

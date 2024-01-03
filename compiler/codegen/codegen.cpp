@@ -293,6 +293,26 @@ static void genGlobalRawString(const char *cname, std::string &value, size_t len
 #endif
 
 static void
+genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
+  GenInfo* info = gGenInfo;
+  if( info->cfile ) {
+    if(isHeader)
+      fprintf(info->cfile, "extern const void* %s;\n", cname);
+    else
+      fprintf(info->cfile, "const void* %s = %d;\n", cname, 0);
+  } else {
+#ifdef HAVE_LLVM
+    llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(info->module->getContext()), 4);
+    llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
+        info->module->getOrInsertGlobal(cname, voidPtrTy));
+    global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
+    global->setConstant(isConstant);
+    info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
+#endif
+  }
+}
+
+static void
 genGlobalInt(const char* cname, int value, bool isHeader,
              bool isConstant=true) {
   GenInfo* info = gGenInfo;
@@ -2584,6 +2604,7 @@ static void embedGpuCode() {
 
 static void codegenGpuGlobals() {
   genGlobalInt("chpl_nodeID", -1, false, false);
+  genGlobalVoidPtr("chpl_privateObjects", false, false);
 }
 #endif
 

@@ -237,7 +237,7 @@ typedef struct kernel_cfg_s {
   int64_t max_pid;
   priv_inst* priv_insts;
 
-  chpl_privateObject_t* priv_table_dev;  // privatization table for the device
+  chpl_privateObject_t** priv_table_dev_addr;  // privatization table for the device
   chpl_privateObject_t* priv_table_host; //used for initial staging
 
   // we need this in the config so that we can offload data using this stream,
@@ -283,7 +283,17 @@ static void cfg_init(kernel_cfg* cfg, int n_params, int n_pids, int ln,
   cfg->max_pid = -1;
   cfg->priv_insts = chpl_mem_alloc(cfg->n_pids * sizeof(priv_inst),
                                    CHPL_RT_MD_GPU_KERNEL_PARAM_BUFF, ln, fn);
-  cfg->priv_table_dev = NULL;
+
+  size_t priv_table_ptr_size;
+  chpl_gpu_impl_load_global("chpl_privateObjects",
+                            (void**)cfg->priv_table_dev_addr,
+                            &priv_table_ptr_size);
+
+  *(cfg->priv_table_dev_addr) = NULL;
+
+  printf("init %d: %p %p\n", cfg->dev, cfg->priv_table_dev_addr,
+         *(cfg->priv_table_dev_addr));
+
   cfg->priv_table_host = NULL;
 }
 
@@ -291,8 +301,9 @@ static void cfg_deinit_params(kernel_cfg* cfg) {
   // free GPU memory allocated for kernel parameters
   for (int i=0 ; i<cfg->n_params ; i++) {
     if (cfg->param_dyn_allocated[i]) {
-      chpl_gpu_mem_free(*cfg->kernel_params[i], cfg->ln, cfg->fn);
-      chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);
+      // offload arguments don't seem to work
+      /*chpl_gpu_mem_free(*(cfg->kernel_params[i]), cfg->ln, cfg->fn);*/
+      /*chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);*/
     }
   }
 
@@ -307,16 +318,20 @@ static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
 
   cfg->param_dyn_allocated[i] = true;
 
-  (cfg->kernel_params)[i] = chpl_mem_alloc(sizeof(void*),
+  cfg->kernel_params[i] = chpl_mem_alloc(sizeof(void*),
                                            CHPL_RT_MD_GPU_KERNEL_PARAM, cfg->ln,
                                            cfg->fn);
-  //
+
   // TODO this doesn't work on EX, why?
   // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
-  *(cfg->kernel_params)[i] = chpl_gpu_mem_alloc(size, CHPL_RT_MD_GPU_KERNEL_ARG,
+  *(cfg->kernel_params[i]) = chpl_gpu_mem_alloc(size, CHPL_RT_MD_GPU_KERNEL_ARG,
                                                 cfg->ln, cfg->fn);
 
-  chpl_gpu_impl_copy_host_to_device(*(cfg->kernel_params)[i], arg, size,
+  printf("host ptr: %p\n", cfg->kernel_params[i]);
+  printf("dev ptr: %p\n", *(cfg->kernel_params[i]));
+  //
+
+  chpl_gpu_impl_copy_host_to_device(*(cfg->kernel_params[i]), arg, size,
                                     cfg->stream);
 
   cfg->cur_param++;
@@ -368,18 +383,19 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg,
     chpl_internal_error("All pids must have been added by now");
   }
 
-  if (cfg->priv_table_dev == NULL) {
+  if (*(cfg->priv_table_dev_addr) == NULL) {
     const size_t priv_table_dev_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
 
     cfg->priv_table_host = chpl_mem_alloc(priv_table_dev_size,
                                       CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                       cfg->ln, cfg->fn);
 
-    cfg->priv_table_dev = chpl_gpu_mem_array_alloc((cfg->max_pid+1)*sizeof(chpl_privateObject_t),
-                                               CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
-                                               cfg->ln, cfg->fn);
+    *(cfg->priv_table_dev_addr) = chpl_gpu_mem_array_alloc(priv_table_dev_size,
+                                                          CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
+                                                          cfg->ln, cfg->fn);
 
-    CHPL_GPU_DEBUG("Allocated privatization table %p\n", cfg->priv_table_dev);
+    CHPL_GPU_DEBUG("Allocated privatization table %p\n",
+                   *(cfg->priv_table_dev_addr));
 
     for (int i=0 ; i<cfg->n_pids ; i++) {
       int64_t pid = cfg->priv_insts[i].pid;
@@ -388,8 +404,10 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg,
       cfg->priv_table_host[pid].obj = dev_instance;
     }
 
-    chpl_gpu_impl_copy_host_to_device(cfg->priv_table_dev, cfg->priv_table_host,
-                                      priv_table_dev_size, cfg->stream);
+    chpl_gpu_impl_copy_host_to_device(*(cfg->priv_table_dev_addr),
+                                      cfg->priv_table_host,
+                                      priv_table_dev_size,
+                                      cfg->stream);
 
     CHPL_GPU_DEBUG("Offloaded the new privatization table");
   }
@@ -421,9 +439,9 @@ void chpl_gpu_deinit_kernel_cfg(void* _cfg) {
     chpl_mem_free(cfg->priv_table_host, cfg->ln, cfg->fn);
   }
 
-  if (cfg->priv_table_dev) {
-    CHPL_GPU_DEBUG("Freeing priv_table_dev %p\n", cfg->priv_table_dev);
-    chpl_gpu_mem_free(cfg->priv_table_dev, cfg->ln, cfg->fn);
+  if (*(cfg->priv_table_dev_addr)) {
+    CHPL_GPU_DEBUG("Freeing priv_table_dev %p\n", *(cfg->priv_table_dev_addr));
+    chpl_gpu_mem_free(*(cfg->priv_table_dev_addr), cfg->ln, cfg->fn);
   }
 
   chpl_mem_free(cfg, ((kernel_cfg*)cfg)->ln, ((kernel_cfg*)cfg)->fn);
@@ -448,7 +466,7 @@ void chpl_gpu_arg_pass(void* cfg, void* arg) {
 
 void chpl_gpu_arg_privtable(void* cfg, void* arg) {
   cfg_finalize_priv_table((kernel_cfg*)cfg, arg);
-  cfg_add_direct_param((kernel_cfg*)cfg, &(((kernel_cfg*)cfg)->priv_table_dev));
+  cfg_add_direct_param((kernel_cfg*)cfg, ((kernel_cfg*)cfg)->priv_table_dev_addr);
 }
 
 static void launch_kernel(const char* name,

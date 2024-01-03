@@ -25,6 +25,7 @@
 
 #include "chpltypes.h"
 #include "chpl-comm.h"
+#include "chpl-privatization.h"
 #include <string.h>
 
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)

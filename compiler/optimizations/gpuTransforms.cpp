@@ -71,6 +71,18 @@ extern bool inLocalBlock(CallExpr *call);
 // Utilities
 // ----------------------------------------------------------------------------
 
+static CallExpr* getPidCall(CallExpr* privTableAcc) {
+  INT_ASSERT(privTableAcc && privTableAcc->isPrimitive(PRIM_ARRAY_GET));
+
+  //addKernelArgument(sym);
+
+  Symbol* pidSym = toSymExpr(privTableAcc->get(2))->symbol();
+  CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
+  CallExpr* pidGet = toCallExpr(pidMove->get(2));
+
+  return pidGet;
+}
+
 static bool isFnGpuSpecialized(FnSymbol *fn) {
   return fn->hasFlag(FLAG_GPU_SPECIALIZATION);
 }
@@ -92,12 +104,21 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
   for_vector(SymExpr, se, ses) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
+        if (var->name == astr("chpl_privateObjects")) {
+          // we're covering this
+          continue;
+        }
         if (!var->isParameter() && var != gVoid && var != gNil) {
           if (CallExpr* parent = toCallExpr(se->parentExpr)) {
             if (isFieldAccessPrimitive(parent)) {
               continue;
             }
           }
+
+          //if (se) {
+            //std::cout << fn->stringLoc() << std::endl;
+            //nprint_view(se);
+          //}
           return se;
         }
       }
@@ -522,6 +543,8 @@ class GpuizableLoop {
   BlockStmt* gpuBlock_ = nullptr;
   CForLoop* gpuLoop_ = nullptr;
 
+  std::vector<CallExpr*> pidGets_;
+
   // To allow move constructor
   GpuizableLoop() {}
 public:
@@ -569,6 +592,8 @@ public:
   void makeCpuOnly() const;
   void makeGpuOnly() const;
   void fixupNonGpuPath() const;
+
+  const std::vector<CallExpr*>& pidGets() const { return pidGets_; }
 
 private:
   CallExpr* findCompileTimeGpuAssertions();
@@ -747,6 +772,15 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // leave it.
       if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
 
+      if (call->primitive->tag == PRIM_ARRAY_GET) {
+        SymExpr* firstArg = toSymExpr(call->get(1));
+        if (firstArg->symbol()->name == astr("chpl_privateObjects")) {
+          std::cout << call->stringLoc();
+          nprint_view(call);
+          pidGets_.push_back(getPidCall(call));
+        }
+      }
+
       // only primitives that are fast and local are allowed for now
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
@@ -920,7 +954,6 @@ class GpuKernel {
   FnSymbol* fn_;
   std::vector<Symbol*> kernelIndices_;
   std::vector<KernelActual> kernelActuals_;
-  std::vector<CallExpr*> pidGets_;
   SymbolMap copyMap_;
   bool lateGpuizationFailure_;
   SymExpr* blockSize_;
@@ -930,7 +963,6 @@ class GpuKernel {
 
   FnSymbol* fn() const { return fn_; }
   const std::vector<KernelActual>& kernelActuals() { return kernelActuals_; }
-  const std::vector<CallExpr*>& pidGets() { return pidGets_; }
   bool lateGpuizationFailure() const { return lateGpuizationFailure_; }
   SymExpr* blockSize() const {return blockSize_; }
 
@@ -1012,6 +1044,7 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
     // `ref` shouldn't trigger a copy, unless... it was put to a "task
     // private" variable:
     // ref x = y; foreach ... with (var inBody = x)
+    // Consider [const] ref array formals
     actual.kind = GpuArgKind::OFFLOAD;
   }
   else {
@@ -1020,6 +1053,7 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
   }
 
   if (symInLoop->name == astr("chpl_privateObjects")) {
+    INT_FATAL("remove this");
     actual.kind |= GpuArgKind::PRIVTABLE;
   }
 
@@ -1212,16 +1246,8 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
           // These are handled already, nothing to do
         }
         else if (sym->name == astr("chpl_privateObjects")) {
-          CallExpr* parent = toCallExpr(symExpr->parentExpr);
-          INT_ASSERT(parent && parent->isPrimitive(PRIM_ARRAY_GET));
-
-          addKernelArgument(sym);
-
-          Symbol* pidSym = toSymExpr(parent->get(2))->symbol();
-          CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
-          CallExpr* pidGet = toCallExpr(pidMove->get(2));
-
-          pidGets_.push_back(pidGet);
+          //CallExpr* parent = toCallExpr(symExpr->parentExpr);
+          //this->gpuLoop.pidGets().push_back(getPidCall(parent));
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -1481,11 +1507,11 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
 
   CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
                     new_IntSymbol(kernel.kernelActuals().size()),
-                    new_IntSymbol(kernel.pidGets().size()));
+                    new_IntSymbol(gpuLoop.pidGets().size()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
   // first, we have to add pids, so that we can allocate the privatization table
-  for (auto pidGet: kernel.pidGets()) {
+  for (auto pidGet: gpuLoop.pidGets()) {
     Type* pidType = pidGet->get(2)->typeInfo();
     Symbol* pid = new VarSymbol("pid_tmp", pidType);
     gpuBlock->insertAtTail(new DefExpr(pid));

@@ -30,6 +30,7 @@
 
 // this variable is added by the compiler. See codegenGpuGlobals.
 extern __device__ c_nodeid_t chpl_nodeID;
+extern __device__ chpl_privateObject_t* chpl_privateObjects;
 
 // General TODO
 // This file is included in the application executable only. It mirrors
