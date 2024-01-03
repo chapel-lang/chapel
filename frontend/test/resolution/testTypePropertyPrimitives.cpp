@@ -33,21 +33,43 @@ struct Test {
   enum Output {
     TRUE,
     FALSE,
+    STRING,
     ERROR 
   };
+
   struct PrimitiveCalls {
     std::vector<const char*> actuals;
     Output expected;
+    std::string str;
+
+    PrimitiveCalls(std::vector<const char*> actuals, Output expected,
+                   std::string str="")
+      : actuals(std::move(actuals)),
+        expected(expected),
+        str(std::move(str)) {
+      if (expected != STRING) assert(this->str.empty());
+    }
   };
+
   std::string testName;
+  bool isChplHomeRequired = false;
   std::string prelude;
   chpl::uast::primtags::PrimitiveTag primitive;
   std::vector<PrimitiveCalls> calls;
 };
 
 static void testPrimitive(Test tpg) {
-  Context ctx;
-  auto context = &ctx;
+  Context::Configuration config;
+  if (tpg.isChplHomeRequired) {
+    if (const char* chplHomeEnv = getenv("CHPL_HOME")) {
+      config.chplHome = chplHomeEnv;
+    } else {
+      std::cout << "CHPL_HOME must be set!" << std::endl;
+      exit(1);
+    }
+  }
+  Context ctx(config);
+  Context* context = &ctx;
   ErrorGuard guard(context);
 
   std::stringstream ps;
@@ -62,7 +84,7 @@ static void testPrimitive(Test tpg) {
   for (auto& call : tpg.calls) {
     if (call.expected == Test::ERROR) expectedErrorCount += 1;
 
-    auto var = std::string("x") + std::to_string(counter++);
+    auto var = std::string("x_") + std::to_string(counter++);
     variables.push_back(var);
     expected.push_back(call.expected);
 
@@ -179,6 +201,7 @@ static void test0() {
 static void test1() {
   Test tpg {
     .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
     .prelude = R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -198,14 +221,14 @@ static void test1() {
 static void test2() {
   Test tpg {
     .testName = __FUNCTION__,
-    .prelude =R"""(
+    .isChplHomeRequired = false,
+    .prelude = R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
              )""",
     .primitive = chpl::uast::primtags::PRIM_IS_NILABLE_CLASS_TYPE,
     .calls = {
       { {"r1"}, Test::FALSE },
-      { {"c1"}, Test::FALSE },
       { {"owned c1"}, Test::FALSE },
       { {"int"}, Test::FALSE },
       { {"integral"}, Test::FALSE },
@@ -219,6 +242,7 @@ static void test2() {
 static void test3() {
   Test tpg {
     .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
     .prelude = R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -240,6 +264,7 @@ static void test3() {
 static void test4() {
   Test tpg {
     .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
     .prelude = R"""(
              record r1 { var x: int; }
              class c1 { var x: int; }
@@ -258,10 +283,160 @@ static void test4() {
   testPrimitive(tpg);
 }
 
+static void test5() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+               record r1 { var x: int; }
+               class c1 { var x: int; }
+               union u1 { var x: int; }
+               )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_UNION_TYPE,
+    .calls = {
+      { {"r1"}, Test::FALSE },
+      { {"c1"}, Test::FALSE },
+      { {"u1"}, Test::TRUE },
+      { {"owned c1"}, Test::FALSE },
+      { {"int"}, Test::FALSE },
+      { {"integral"}, Test::FALSE },
+      { {"owned c1?"}, Test::FALSE },
+      { {"c1?"}, Test::FALSE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
+/**
+static void test6() {
+  Test tpg {
+    .testName=__FUNCTION__,
+    .isChplHomeRequired = true,
+    .prelude=R"""(
+             record r1 { var x: int; }
+             )""",
+    .primitive=chpl::uast::primtags::PRIM_IS_ATOMIC_TYPE,
+    .calls={
+      { {"r1"}, Test::FALSE },
+      { {"int"}, Test::FALSE },
+      { {"integral"}, Test::FALSE },
+      { {"atomic int"}, Test::TRUE },
+      { {"atomic r1"}, Test::TRUE },
+     },
+  };
+  testPrimitive(tpg);
+}
+*/
+
+static void test7() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+               record r1 { var x: int; }
+               class c1 { var x: int; }
+               )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_BORROWED_CLASS_TYPE,
+    .calls = {
+      { {"r1"}, Test::FALSE },
+      { {"c1"}, Test::FALSE },
+      { {"c1?"}, Test::FALSE },
+      { {"owned c1"}, Test::FALSE },
+      { {"owned c1?"}, Test::FALSE },
+      { {"borrowed c1"}, Test::TRUE },
+      { {"borrowed c1?"}, Test::TRUE },
+      { {"int"}, Test::FALSE },
+      { {"integral"}, Test::FALSE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
+static void test8() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+             record r1 { var x: int; }
+             class c1 { var x: int; }
+             enum e1 { foo=1, bar=2 }       // concrete
+             enum e2 { foo=1, bar  }        // concrete
+             enum e3 { foo, bar }           // abs
+             enum e4 { foo }                // abs
+             enum e5 { foo, bar=2, baz }    // semi
+             enum e6 { foo, bar, baz=2 }    // semi
+             var x1: e1;
+             var x2: e2;
+             var x3: e3;
+             var x4: e4;
+             var x5: e5;
+             var x6: e6;
+             )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_ABS_ENUM_TYPE,
+    .calls = {
+      { {"r1"}, Test::FALSE },
+      { {"c1"}, Test::FALSE },
+      { {"c1?"}, Test::FALSE },
+      { {"owned c1"}, Test::FALSE },
+      { {"owned c1?"}, Test::FALSE },
+      { {"int"}, Test::FALSE },
+      { {"integral"}, Test::FALSE },
+      { {"e1"}, Test::FALSE },
+      { {"x1"}, Test::FALSE },
+      { {"e2"}, Test::FALSE },
+      { {"x2"}, Test::FALSE },
+      { {"e3"}, Test::TRUE },
+      { {"x3"}, Test::TRUE },
+      { {"e4"}, Test::TRUE },
+      { {"x4"}, Test::TRUE },
+      { {"e5"}, Test::FALSE },
+      { {"x5"}, Test::FALSE },
+      { {"e6"}, Test::FALSE },
+      { {"x6"}, Test::FALSE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
+static void test9() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+               record r1 { var x: int; }
+               class c1 { var x: int; }
+               class d1 : c1 {}
+               )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_COERCIBLE,
+    .calls = {
+      { {"int", "bool"}, Test::FALSE },
+      { {"int(8)", "bool"}, Test::FALSE },
+      { {"int(16)", "bool"}, Test::FALSE },
+      { {"int(32)", "bool"}, Test::FALSE },
+      { {"int(64)", "bool"}, Test::FALSE },
+      { {"r1", "bool"}, Test::FALSE },
+      { {"c1", "bool"}, Test::FALSE },
+      { {"c1?", "bool"}, Test::FALSE },
+      { {"owned c1", "bool"}, Test::FALSE },
+      { {"owned c1?", "bool"}, Test::FALSE },
+      { {"c1", "RootClass?"}, Test::TRUE },
+      { {"c1", "RootClass"}, Test::TRUE },
+      { {"c1?", "RootClass?"}, Test::TRUE },
+      { {"c1?", "RootClass"}, Test::FALSE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
 int main() {
   test0();
   test1();
   test2();
   test3();
   test4();
+  test5();
+  // test6();
+  test7();
+  test8();
+  test9();
 }
