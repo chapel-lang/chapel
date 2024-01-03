@@ -2654,24 +2654,29 @@ module TwoArrayPartitioning {
         const binEnd = binStart + binSize - 1;
         const binStartBit = state.bucketizer.getNextStartBit(task.startbit);
 
-        const sortit = state.bucketizer.getBinsToRecursivelySort().contains(bin);
+        const sortit =
+          state.bucketizer.getBinsToRecursivelySort().contains(bin) &&
+          binStartBit <= state.endbit && // have bits to sort
+          binSize > 1;
 
         if binSize == 0 {
           // Do nothing
+        } else if nowInA && !sortit {
+          // no need to copy it or to sort it
         } else if !nowInA && !sortit {
-          // Enqueue a small task to do the copy.
-          // TODO: handle large copies in big tasks, or enqueue several tasks here
+          // Enqueue a small task to do the copy but not sort it
+          // TODO: handle large copies in big tasks,
+          // or enqueue several tasks here
           state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
-
-        } else if binStartBit > state.endbit ||
-                  binStart >= binEnd ||
+        } else if //binStartBit > state.endbit ||
+                  //binStart >= binEnd ||
                   binSize <= maxSequentialSize {
           if debug && binSize > 0 {
             writeln("handling bin ", bin, " ", binStart..binEnd, " as small");
           }
 
-          // Enqueue a small task to sort and possibly copy.
+          // Enqueue a small subproblem to sort and possibly copy.
           state.smallTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
 
@@ -2680,7 +2685,7 @@ module TwoArrayPartitioning {
             writeln("handling bin ", bin, " ", binStart..binEnd, " as big");
           }
 
-          // Enqueue a big task
+          // Enqueue a big subproblem to sort
           state.bigTasks.pushBack(
             new TwoArraySortTask(binStart, binSize, binStartBit, nowInA, sortit));
         }
@@ -2694,28 +2699,26 @@ module TwoArrayPartitioning {
     forall task in state.smallTasks with (ref A) {
       const size = task.size;
       const taskEnd = task.start + size - 1;
-      if size > 0 {
-        if !task.inA {
-          ShallowCopy.shallowCopy(A, task.start, Scratch, task.start, size);
-        }
+      if debug {
+        writef("doing small task %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
+      }
 
-        if debug {
-          writef("doing small task %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
-        }
+      if !task.inA {
+        ShallowCopy.shallowCopy(A, task.start, Scratch, task.start, size);
+      }
 
-        if task.doSort {
-          // Sort it serially.
-          // Note that the subproblems here are on the order of 500,000 elements
-          // because the two-array method will create small subproblems as soon
-          // as it does not seem useful to use parallelism to sort.
-          // Because of this, it matters to use a radix sort here.
-          // It also seems to matter to use an in-place algorithm here,
-          // but I am not completely confident of that.
-          msbRadixSort(A, task.start, taskEnd,
-                       criterion,
-                       task.startbit, state.endbit,
-                       settings=new MSBRadixSortSettings(alwaysSerial=true));
-        }
+      if task.doSort {
+        // Sort it serially.
+        // Note that the subproblems here are on the order of 500,000 elements
+        // because the two-array method will create small subproblems as soon
+        // as it does not seem useful to use parallelism to sort.
+        // Because of this, it matters to use a radix sort here.
+        // It also seems to matter to use an in-place algorithm here,
+        // but I am not completely confident of that.
+        msbRadixSort(A, task.start, taskEnd,
+                     criterion,
+                     task.startbit, state.endbit,
+                     settings=new MSBRadixSortSettings(alwaysSerial=true));
       }
     }
 
