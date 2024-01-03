@@ -685,7 +685,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
-         !symsInBodyAreGpuizable() &&
+         symsInBodyAreGpuizable() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -729,16 +729,17 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
     // variable with a special flag that we'll look for (for the time being we
     // want to not gpuize these loops).
     if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
-      return true;
+      return false;
     }
     // gotos that jump outside the loop cannot be gpuized
     if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
       if (auto label = toSymExpr(gotostmt->label)) {
-        if (!isDefinedInTheLoops(label->symbol(), {this->loop_})) return true;
+        if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
+          return false;
       }
     }
   }
-  return false;
+  return true;
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizable() {
