@@ -60,12 +60,12 @@ struct Test {
 
 static bool
 isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
-                   std::string* out) {
+                   std::string& out) {
   if (qt.kind() == QualifiedType::PARAM) {
     if (auto t = qt.type()) {
       if (auto p = qt.param()) {
         if (auto sp = p->toStringParam()) {
-          if (out) *out = sp->value().c_str();
+          out = sp->value().c_str();
           return sp->value() == str;
         }
       }
@@ -76,15 +76,15 @@ isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
 
 static void
 assertParamStringMatch(chpl::types::QualifiedType qt, std::string str,
-                       std::string* out) {
+                       std::string& out) {
   bool match = isParamStringMatch(qt, str, out);
   if (!match) {
-    std::cout << "Expected " << str << ", but got -> " << *out << std::endl;
+    std::cout << "Expected " << str << ", but got -> " << out << std::endl;
     std::abort();
   }
 }
 
-static void testPrimitive(Test tpg) {
+static void testPrimitive(const Test& tpg) {
   Context::Configuration config;
   if (tpg.isChplHomeRequired) {
     if (const char* chplHomeEnv = getenv("CHPL_HOME")) {
@@ -102,7 +102,6 @@ static void testPrimitive(Test tpg) {
   int counter = 0;
   int expectedErrorCount = 0;
   std::vector<std::string> variables;
-  std::vector<Test::Output> expected;
   const auto tagStr = chpl::uast::primtags::primTagToName(tpg.primitive);
 
   ps << tpg.prelude << std::endl;
@@ -112,7 +111,6 @@ static void testPrimitive(Test tpg) {
 
     auto var = std::string("x_") + std::to_string(counter++);
     variables.push_back(var);
-    expected.push_back(call.expected);
 
     ps << "param " << var << " = " << "__primitive(\"";
     ps << tagStr << "\", ";
@@ -136,7 +134,7 @@ static void testPrimitive(Test tpg) {
     auto& type = varTypes.at(var);
     std::cout << "Checking " << var << " -> ";
 
-    switch (expected[i]) {
+    switch (call.expected) {
       case Test::TRUE: {
         assert(type.isParamTrue());
         std::cout << "true";
@@ -147,7 +145,7 @@ static void testPrimitive(Test tpg) {
       } break;
       case Test::STRING: {
         std::string str;
-        assertParamStringMatch(type, call.str, &str);
+        assertParamStringMatch(type, call.str, str);
         std::cout << str;
       } break;
       case Test::ERROR: {
@@ -243,6 +241,8 @@ static void test1() {
       { {"r1"}, Test::FALSE },
       { {"c1"}, Test::TRUE },
       { {"owned c1"}, Test::TRUE },
+      { {"owned class"}, Test::TRUE },
+      { {"class"}, Test::TRUE },
       { {"int"}, Test::FALSE },
       { {"integral"}, Test::FALSE },
      },
