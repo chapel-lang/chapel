@@ -92,6 +92,7 @@ static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
   CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+  CHPL_GPU_DEBUG("chpl_nodeID global %p\n", (void*)ptr);
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
@@ -104,7 +105,8 @@ void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
   CUDA_CALL(cuCtxGetDevice(&device));
   module = chpl_gpu_cuda_modules[(int)device];
 
-  CUDA_CALL(cuModuleGetGlobal((CUdeviceptr*)ptr, size, module, "chpl_nodeID"));
+  CUDA_CALL(cuModuleGetGlobal((CUdeviceptr*)ptr, size, module, global_name));
+  CHPL_GPU_DEBUG("other global %p %p. module %p\n", ptr, *ptr, (void*)module);
 }
 
 void* chpl_gpu_impl_load_function(const char* kernel_name) {
@@ -159,6 +161,7 @@ void chpl_gpu_impl_init(int* num_devices) {
 
     // TODO can we refactor some of this to chpl-gpu to avoid duplication
     // between runtime layers?
+    printf("setting globals\n");
     chpl_gpu_impl_set_globals(i, module);
   }
 }

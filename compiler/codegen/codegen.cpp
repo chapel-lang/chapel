@@ -302,11 +302,11 @@ genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
       fprintf(info->cfile, "const void* %s = %d;\n", cname, 0);
   } else {
 #ifdef HAVE_LLVM
-    llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(info->module->getContext()), 4);
+    llvm::Type* voidPtrTy = llvm::PointerType::get(llvm::Type::getVoidTy(info->module->getContext()), 1);
     llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(cname, voidPtrTy));
     global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
-    global->setConstant(isConstant);
+    global->setConstant(false);
     info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
 #endif
   }

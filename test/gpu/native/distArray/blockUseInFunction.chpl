@@ -13,15 +13,16 @@ var space = {1..n};
 var dom = space dmapped blockDist(space, targetLocales=[here.gpus[0],]);
 var arr: [dom] int;
 
-proc setOne(A, i) {
-  local {
-    A[i] = 1;
-  }
-}
+/*proc setOne(A, i) {*/
+  /*local {*/
+    /*A[i] = 1;*/
+  /*}*/
+/*}*/
 
 @assertOnGpu
 forall i in dom do
-  setOne(arr, i);
+  arr[i] = 1;
+  /*setOne(arr, i);*/
 
 stopGpuDiagnostics();
 

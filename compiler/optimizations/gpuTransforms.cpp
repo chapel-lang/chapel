@@ -720,6 +720,16 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   return true;
 }
 
+static bool symbolIsAField(SymExpr* expr) {
+  if (CallExpr* parent = toCallExpr(expr->parentExpr)) {
+    if (isFieldAccessPrimitive(parent)) {
+      if (expr == parent->get(2)) {  // this is a field
+        return true;
+      }
+    }
+  }
+  return false;
+}
 
 bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
@@ -740,7 +750,10 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
       }
     }
 
-    if (isRecordWrappedType(sym->type)) {
+    if (!isDefinedInTheLoops(sym, {this->loop_}) &&
+        !symbolIsAField(symExpr) &&
+        isRecordWrappedType(sym->type)) {
+
       AggregateType* aggType = toAggregateType(sym->type);
       if (Symbol* pidField = aggType->getField("_pid", /*fatal=*/ false)) {
         SET_LINENO(symExpr);
