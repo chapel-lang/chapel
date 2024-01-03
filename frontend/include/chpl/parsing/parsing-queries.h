@@ -97,6 +97,9 @@ const uast::BuilderResult&
 parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
                                  UniqueString parentSymbolPath);
 
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context);
+
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
