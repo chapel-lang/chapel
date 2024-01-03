@@ -134,7 +134,7 @@ static void updateTypeForSplitInit(Context* context, ID id,
   if (lhsType.kind() != QualifiedType::PARAM) {
     p = nullptr;
   }
-  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
 
   // set the type for the 1st split init only
   // a later traversal will check the type of subsequent split inits

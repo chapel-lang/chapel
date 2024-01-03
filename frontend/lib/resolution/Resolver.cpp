@@ -1607,10 +1607,8 @@ void Resolver::adjustTypesForSplitInit(ID id,
   }
 
   const Param* p = rhsType.param();
-  if (lhsType.kind() != QualifiedType::PARAM) {
-    p = nullptr;
-  }
-  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+  const auto useKind = (p ? QualifiedType::PARAM : lhsType.kind());
+  const auto useType = QualifiedType(useKind, rhsType.type(), p);
 
   // set the type for the 1st split init only
   // a later traversal will check the type of subsequent split inits
