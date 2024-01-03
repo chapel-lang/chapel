@@ -3293,7 +3293,7 @@ module TwoArrayRadixSort {
 
     // Allocate the Scratch array.
     pragma "no auto destroy"
-    var Scratch: Data.type;
+    var Scratch: Data.type = noinit;
 
     if Data._instance.isDefaultRectangular() {
       var state = new TwoArrayBucketizerSharedState(
