@@ -107,9 +107,8 @@ scopeResolveModuleStmt(Context* context, ID id) {
 
 static void updateTypeForSplitInit(Context* context, ID id,
                                    ResolvedExpression& lhs,
-                                   const ResolvedExpression& rhs) {
-  static std::set<ID> splitInitTypeInferredVariables;
-
+                                   const ResolvedExpression& rhs,
+                                   std::set<ID>& alreadyUpdated) {
   gdbShouldBreakHere();
 
   const QualifiedType lhsType = lhs.type();
@@ -140,7 +139,7 @@ static void updateTypeForSplitInit(Context* context, ID id,
   // set the type for the 1st split init only
   // a later traversal will check the type of subsequent split inits
   // (in the other branch of a conditional, say)
-  auto pair = splitInitTypeInferredVariables.insert(id);
+  auto pair = alreadyUpdated.insert(id);
   if (pair.second) {
     // insertion took place, so update the type
     lhs.setType(useType);
@@ -170,6 +169,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       // check for multiply-defined symbols within the module
       auto modScope = scopeForId(context, mod->id());
       emitMultipleDefinedSymbolErrors(context, modScope);
+
+      std::set<ID> splitInitTypeInferredVariables;
 
       result.setupForSymbol(mod);
       for (auto child: mod->children()) {
@@ -204,9 +205,9 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
           for (int i = 0; i < firstId; i++) {
             ID exprId(stmtId.symbolPath(), i, 0);
             ResolvedExpression& re = result.byId(exprId);
-            gdbShouldBreakHere();
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
-              updateTypeForSplitInit(context, exprId, re, *reToCopy);
+              updateTypeForSplitInit(context, exprId, re, *reToCopy,
+                                     splitInitTypeInferredVariables);
             }
           }
         }
