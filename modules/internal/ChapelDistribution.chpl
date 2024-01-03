@@ -111,27 +111,11 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
-/* These methods are commented out so that __primitive("resolves")
-   in proc newRectangularDom() fails.
-   Also, the compiler is currently adjusted to forego the 'override'
-   checking so that user-defined domain maps can continue specifying
-   'override' on their implementations of dsiNewRectangularDom().
-   The second overload below needs to be restored when 'stridable'
-   is removed entirely.
-
-    // this overload supports deprecation by Vass in 1.31 to implement #17131
-    pragma "last resort" @chpldoc.nodoc
-    proc dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool, inds) {
-      compilerError("rectangular domains not supported by this distribution");
-    }
-
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param strides: strideKind, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
-*/
 
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
