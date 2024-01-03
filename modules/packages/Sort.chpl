@@ -422,13 +422,14 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in a 1D rectangular array.  The choice of sorting
-algorithm used is made by the implementation.
+Sort the elements in a 1D rectangular array. After the call, the ``Data`` array
+will store elements n sorted order.
+
+The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  This function does not run a stable sort. Elements that compare
-  the same can be rearranged by this call.
+  Elements will be moved, swapped, or assigned in to place.
 
 .. note::
 
@@ -589,7 +590,9 @@ iter sorted(x, comparator:?rec=defaultComparator) {
   }
 }
 
-@chpldoc.nodoc
+
+// bubble sort is generally too slow to be useful in practice
+// but, it is stable and in-place
 module BubbleSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
@@ -627,6 +630,8 @@ module BubbleSort {
   }
 }
 
+// heap sort has good nlogn worst case performance
+// it is in-place but not stable.
 @chpldoc.nodoc
 module HeapSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
@@ -693,6 +698,8 @@ module HeapSort {
   }
 }
 
+// insertion sort is stable and in-place but has
+// poor time complexity (O(n**2)) for large problem sizes
 @chpldoc.nodoc
 module InsertionSort {
   private use Sort;
@@ -767,6 +774,8 @@ module InsertionSort {
   }
 }
 
+// binary insertion sort is similar to insertion sort (stable, in-place)
+// and still O(n**2) but it can reduce the number of comparisons
 @chpldoc.nodoc
 module BinaryInsertionSort {
   private use Sort;
@@ -837,6 +846,7 @@ module BinaryInsertionSort {
   }
 }
 
+// TimSort is stable, nlogn, but not in-place
 @chpldoc.nodoc
 module TimSort {
   private use Sort;
@@ -952,6 +962,11 @@ module TimSort {
 }
 
 
+// merge sort has in-place and not in-place variants
+// this implements a version using scratch space (not in place)
+// also, this version uses partial parallelism (for recursive subproblems)
+// could be faster using a parallel merge algorithm or with a k-way merge.
+// merge sort is a stable sort
 @chpldoc.nodoc
 module MergeSort {
   private use Sort;
@@ -1085,6 +1100,8 @@ module MergeSort {
   }
 }
 
+// this quick sort is not stable
+// it is in-place however
 @chpldoc.nodoc
 module QuickSort {
   private use Sort;
@@ -1334,6 +1351,7 @@ module QuickSort {
     }
 }
 
+// this selection sort is in-place but not stable
 @chpldoc.nodoc
 module SelectionSort {
   private use Sort;
@@ -1348,6 +1366,7 @@ module SelectionSort {
 
    */
   proc selectionSort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator) {
+    // note: selection sort is not a stable sort
 
     if Dom.rank != 1 {
       compilerError("selectionSort() requires 1-D array");
@@ -1369,6 +1388,7 @@ module SelectionSort {
   }
 }
 
+// shell sort is in-place but not stable
 @chpldoc.nodoc
 module ShellSort {
   private use Sort;
@@ -1678,6 +1698,8 @@ module RadixSortHelp {
   // That would need to change if it were to increase.
   //
   // At the same time, using a value less than 8 will probably perform poorly.
+  // TODO: parameterize functions using this so that different
+  // algorithms can use a different number of radix bits
   param RADIX_BITS = 8;
 
   param classifyUnrollFactor = 7;
@@ -3308,6 +3330,8 @@ module InPlacePartitioning {
 }
 
 
+// the algorithm here is also called "American Flag Sort"
+// it is not stable and not fully parallel
 @chpldoc.nodoc
 module MSBRadixSort {
   import Sort.{defaultComparator, ShellSort};
