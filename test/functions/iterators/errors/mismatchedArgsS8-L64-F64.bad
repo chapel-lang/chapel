@@ -1,0 +1,10 @@
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:634: In function '_toFollower':
+$CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:635: internal error: AST-CHE-AST-0072 chpl version 1.30.0 pre-release (b'ae52de5bbc')
+
+Internal errors indicate a bug in the Chapel compiler ("It's us, not you"),
+and we're sorry for the hassle.  We would appreciate your reporting this bug --
+please see https://chapel-lang.org/bugs.html for instructions.  In the meantime,
+the filename + line number above may be useful in working around the issue.
+
+  $CHPL_HOME/modules/internal/ChapelIteratorSupport.chpl:641: called as _toFollower(iterator: borrowed _ic_foo, leaderIndex: int(64))
+  within internal functions (use --print-callstack-on-error to see)
