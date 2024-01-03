@@ -788,49 +788,6 @@ module ChapelRange {
   @chpldoc.nodoc proc param strideKind.defaultStride() param
     do return if isNegative() then -1 else 1;
 
-  // these support deprecation by Vass in 1.31 to implement #17131
-
-  proc chpl_strideKind(param stridable: bool) param
-    do return if stridable then strideKind.any else strideKind.one;
-
-  proc chpl_stridable(param strides: strideKind) param
-    do return strides.toStridable();
-
-  proc chpl_stridable(strides: strideKind)
-    do return strides != strideKind.one;
-
-  @chpldoc.nodoc proc param strideKind.toStridable() param
-    do return this != strideKind.one;
-
-  // Supports deprecation by Vass in 1.31 to implement #17131,
-  // when stridable-based code unwittingly creates ranges with
-  // the overly-general strideKind=any.
-  // It simply changes 'from' ranges from strideKind.* to strideKind.any.
-  proc chpl_convertRangeTuple(from: _tuple, param stridable: bool) {
-    if from(0).strides == chpl_strideKind(stridable) then
-      return from;
-
-    param rank = from.size;
-    type idxType = from(0).idxType;
-    param bounds = from(0).bounds;
-    param strides = strideKind.any;
-
-    var result: rank * range(idxType, bounds, strides);
-    for param i in 0..rank-1 do transfer(result(i), from(i));
-    return result;
-
-    inline proc transfer(ref dest, src) {
-      // It would be simpler to use a cast: dest = src: dest.type
-      // however the cast can throw, creating more code and execution cost.
-      dest._low  = src._low;
-      dest._high = src._high;
-      if ! dest.hasParamStrideAltvalAld() {
-        dest._stride    = src._stride;
-        dest._alignment = src._alignment;
-      }
-    }
-  }
-
   // Counterparts to hasPositiveStride() and hasNegativeStride()
   // for use when there is no range.
   // Do we want to add assertions of consistency betw. 'strides' and 'stride'?

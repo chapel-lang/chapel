@@ -411,12 +411,6 @@ module ChapelDistribution {
     type idxType;
     param strides: strideKind;
 
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc stridable param do return strides.toStridable();
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc type stridable param do return strides.toStridable();
-
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
 
@@ -951,12 +945,6 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param strides: strideKind;
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("[array].stridable is deprecated; use [array].strides instead")
-    proc stridable param do return strides.toStridable();
-    @deprecated("[array].stridable is deprecated; use [array].strides instead")
-    proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
