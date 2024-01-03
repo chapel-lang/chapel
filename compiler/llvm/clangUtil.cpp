@@ -1336,7 +1336,7 @@ class CCodeGenConsumer final : public ASTConsumer {
         // __device__ on some math functions in the C stdlib that really aren't
         // supposed to have them and this causes linker issues later on).
         return d->hasAttr<CUDADeviceAttr>() &&
-               !d->getAttr<CUDADeviceAttr>()->isImplicit();
+          !d->getAttr<CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a

@@ -99,7 +99,6 @@ enum GpuArgKind {
                   // (say, if it was already an address, or add an address-of
                   // using the previous bit)
                   // otherwise, the variable is passed directly
-  PRIVTABLE = 1<<2, // This is the privatization table.
 };
 
 

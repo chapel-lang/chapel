@@ -94,7 +94,6 @@ void chpl_gpu_deinit_kernel_cfg(void* cfg);
 void chpl_gpu_arg_offload(void* cfg, void* arg, size_t size);
 void chpl_gpu_pid_offload(void* cfg, int64_t pid, size_t size);
 void chpl_gpu_arg_pass(void* cfg, void* arg);
-void chpl_gpu_arg_privtable(void* cfg, void* arg);
 void chpl_gpu_launch_kernel_flat(const char* name,
                                  int64_t num_threads, int blk_dim,
                                  void* cfg);

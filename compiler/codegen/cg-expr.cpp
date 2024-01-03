@@ -5369,10 +5369,7 @@ DEFINE_PRIM(GPU_ARG) {
   }
 
   const char* fnName;
-  if ((kind & 1<<2) == GpuArgKind::PRIVTABLE) {
-    fnName = "chpl_gpu_arg_privtable";
-  }
-  else if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
+  if ((kind & 1<<1) == GpuArgKind::OFFLOAD) {
     fnName = "chpl_gpu_arg_offload";
     args.push_back(codegenSizeof(call->get(2)->typeInfo()->getValType()));
   }

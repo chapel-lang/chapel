@@ -105,7 +105,6 @@ void chpl_gpu_impl_load_global(const char* global_name, void** ptr,
   module = chpl_gpu_cuda_modules[(int)device];
 
   CUDA_CALL(cuModuleGetGlobal((CUdeviceptr*)ptr, size, module, global_name));
-  CHPL_GPU_DEBUG("other global %p %p. module %p\n", ptr, *ptr, (void*)module);
 }
 
 void* chpl_gpu_impl_load_function(const char* kernel_name) {

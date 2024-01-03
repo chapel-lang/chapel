@@ -25,7 +25,6 @@
 
 #include "chpltypes.h"
 #include "chpl-comm.h"
-#include "chpl-privatization.h"
 #include <string.h>
 
 __device__ static inline c_sublocid_t chpl_task_getRequestedSubloc(void)
@@ -161,6 +160,7 @@ void chpl_gen_comm_put_to_subloc(void* addr,
 __device__ static inline
 void chpl_internal_error(const char* message) {
   printf("%s\n", message);
+  // TODO actually error
 }
 
 #endif // HAS_GPU_LOCALE

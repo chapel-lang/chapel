@@ -71,18 +71,6 @@ extern bool inLocalBlock(CallExpr *call);
 // Utilities
 // ----------------------------------------------------------------------------
 
-//static CallExpr* getPidCall(CallExpr* privTableAcc) {
-  //INT_ASSERT(privTableAcc && privTableAcc->isPrimitive(PRIM_ARRAY_GET));
-
-  ////addKernelArgument(sym);
-
-  //Symbol* pidSym = toSymExpr(privTableAcc->get(2))->symbol();
-  //CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
-  //CallExpr* pidGet = toCallExpr(pidMove->get(2));
-
-  //return pidGet;
-//}
-
 static bool isFnGpuSpecialized(FnSymbol *fn) {
   return fn->hasFlag(FLAG_GPU_SPECIALIZATION);
 }
@@ -105,7 +93,7 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
     if (VarSymbol* var = toVarSymbol(se->symbol())) {
       if (var->defPoint->parentSymbol != fn) {
         if (var->name == astr("chpl_privateObjects")) {
-          // we're covering this
+          // we're covering this elsewhere
           continue;
         }
         if (!var->isParameter() && var != gVoid && var != gNil) {
@@ -114,11 +102,6 @@ static SymExpr* hasOuterVarAccesses(FnSymbol* fn) {
               continue;
             }
           }
-
-          //if (se) {
-            //std::cout << fn->stringLoc() << std::endl;
-            //nprint_view(se);
-          //}
           return se;
         }
       }
@@ -796,15 +779,6 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       // leave it.
       if (call->primitive->tag == PRIM_GPU_ELIGIBLE) continue;
 
-      if (call->primitive->tag == PRIM_ARRAY_GET) {
-        SymExpr* firstArg = toSymExpr(call->get(1));
-        if (firstArg->symbol()->name == astr("chpl_privateObjects")) {
-          //std::cout << call->stringLoc();
-          //nprint_view(call);
-          //pidGets_.push_back(getPidCall(call));
-        }
-      }
-
       // only primitives that are fast and local are allowed for now
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
@@ -818,12 +792,14 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
       FnSymbol *fn = call->resolvedFunction();
 
-      // nonLocalAccess calls are really complicated, on a quick look it has:
+      // nonLocalAccess function is really complicated, on a quick look it has:
       // - allocation (RAD cache)
       // - atomics
       // - communication
       // I tried adding stubs for these to just to get it to compile, but it
-      // sprawled too fast
+      // spiraled out too fast. So, we'll just make a new copy for GPU here that
+      // just errors. We don't expect this function to be called until we have
+      // GPU-driven communication.
       if (fn->name == astr("nonLocalAccess")) {
         SET_LINENO(fn);
 
@@ -835,19 +811,13 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
 
         // modify its body
         BlockStmt* gpuCopyBody = new BlockStmt();
-        //CallExpr* errCall = new CallExpr(PRIM_RT_ERROR,
-                                         //new_CStringSymbol(
-                                            //"nonLocalAccess called in kernel"));
-        CallExpr* errCall = new CallExpr(PRIM_INT_ERROR);
         VarSymbol* dummyRet = new VarSymbol("dummyRet", fn->retType);
 
-        gpuCopyBody->insertAtTail(errCall);
+        gpuCopyBody->insertAtTail(new CallExpr(PRIM_INT_ERROR));
         gpuCopyBody->insertAtTail(new DefExpr(dummyRet));
         gpuCopyBody->insertAtTail(new CallExpr(PRIM_RETURN, dummyRet));
 
         gpuCopy->body->replace(gpuCopyBody);
-
-        //normalize(gpuCopy);
 
         // now, this call is safe
         continue;
@@ -1076,11 +1046,6 @@ Symbol* GpuKernel::addKernelArgument(Symbol* symInLoop) {
     actual.kind = GpuArgKind::ADDROF | GpuArgKind::OFFLOAD;
   }
 
-  if (symInLoop->name == astr("chpl_privateObjects")) {
-    INT_FATAL("remove this");
-    actual.kind |= GpuArgKind::PRIVTABLE;
-  }
-
   kernelActuals_.push_back(actual);
   copyMap_.put(symInLoop, newFormal);
 
@@ -1249,7 +1214,6 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
         }
         handledSymbols.insert(sym);
 
-
         if (isDefinedInTheLoops(sym, {loopForBody})) {
           // looks like this symbol was declared within the loop body,
           // so do nothing. TODO: I am hoping that we don't need to
@@ -1270,8 +1234,7 @@ void GpuKernel::populateBody(FnSymbol *outlinedFunction) {
           // These are handled already, nothing to do
         }
         else if (sym->name == astr("chpl_privateObjects")) {
-          //CallExpr* parent = toCallExpr(symExpr->parentExpr);
-          //this->gpuLoop.pidGets().push_back(getPidCall(parent));
+          // we are covering this elsewhere
         }
         else {
           if (CallExpr* parent = toCallExpr(symExpr->parentExpr)) {
@@ -1549,16 +1512,12 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
     gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, instanceSize,
                                         new CallExpr(PRIM_SIZEOF_BUNDLE,
                                                      instanceSym)));
-    //AggregateType* instanceType = toAggregateType(instanceSym->typeInfo());
-    //nprint_view(instanceType);
 
     gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_PID_OFFLOAD, cfg, pid,
                                         //instanceType->symbol));
                                         instanceSize));
   }
 
-  // at this point, privatization table must be allocated if we had to, so when
-  // the time comes to pass it as an argument, we have its value ready
   for (auto actual: kernel.kernelActuals()) {
     gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
                                         new_IntSymbol(actual.kind)));
