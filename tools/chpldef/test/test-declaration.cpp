@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -32,23 +32,38 @@ static void testDeclaration(const std::string& uri, const std::string& text) {
   auto lineLengths = TestClient::collectLineLengthsInSource(text);
   auto mentions = TestClient::collectMentions(uri, text);
 
+  /** Loop through each mention and convert the location range into a series
+      of mouse clicks spanning the entire range. A mouse click is represented
+      as a 'Position' in a range. Send that position to the server as the
+      argument for a 'Declaration' request. */
   for (auto& m : mentions) {
+    if (!m.isValid) continue;
+
     auto& range = m.source.range;
     auto& start = range.start;
     auto& end = range.end;
 
-    // TODO: Fuzz characters to the left and the right of the identifier.
-    if (m.tag == chpl::uast::asttags::Identifier) {
-      CHPL_ASSERT(start.line == end.line);
-      const auto line = start.line;
-      for (uint64_t c = start.character; c <= end.character; c++) {
-        Position cursor(line, c);
-        client.dbg() << m.toString();
-        client.dbg() << " w/ cursor (" << cursor.line << ":";
-        client.dbg() << cursor.character << ")" << std::endl;
+    if (m.tag == chpl::uast::asttags::Identifier ||
+        m.tag == chpl::uast::asttags::Dot) {
 
-        auto targetLoc = client.sendDeclaration(uri, cursor);
-        CHPL_ASSERT(targetLoc == m.target);
+      for (auto line = start.line; line <= end.line; line++) {
+        CHPL_ASSERT(line >= 0 && line < lineLengths.size());
+
+        auto lineLength = lineLengths[line];
+        auto startChar = line == start.line ? start.character : 0;
+        auto endChar = line == end.line ? end.character : lineLength;
+
+        for (auto c = startChar; c <= endChar; c++) {
+          Position cursor(line, c);
+
+          client.dbg() << m.toString();
+          client.dbg() << " w/ cursor (" << cursor.line << ":";
+          client.dbg() << cursor.character << ")" << std::endl;
+
+          auto targetLoc = client.sendDeclaration(uri, cursor);
+          assert(targetLoc);
+          assert(targetLoc == m.target);
+        }
       }
     } else {
       CHPLDEF_TODO();
@@ -69,12 +84,16 @@ static void test0(void) {
 
   x1;
   x2;
-  // x3.f; TODO: Dot targets. // BUG: Dot hugs right.
+  x3.f;
+  x3.
+     f;
 
   x1 = 8;
-  x2 = x1 * 2; // BUG: Assigned expression not considered.
+  x2 = x1 * 2;
 
   proc foo() {}
+
+  // TODO: 'C' does not have an entry in the ResolutionResult for 'bar'.
   proc bar(a: owned C?, b: int=0) { a; b; }
 
   foo();

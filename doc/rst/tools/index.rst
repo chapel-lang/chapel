@@ -17,3 +17,4 @@ Contents:
    chplvis/chplvis
    mason/mason
    protoc-gen-chpl/protoc-gen-chpl
+   unstableWarningAnonymizer/unstableWarningAnonymizer

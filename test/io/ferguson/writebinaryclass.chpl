@@ -17,14 +17,14 @@ var ownA = new owned R(1,2,3,4,5);
 var A = ownA.borrow();
 
 {
-  var w = f.writer(serializer=new binarySerializer(ioendian.big));
+  var w = f.writer(serializer=new binarySerializer(endianness.big));
   writeln("Writing ", A);
   w.write(A);
   w.close();
 }
 
 {
-  var r = f.reader(deserializer=new binaryDeserializer(ioendian.big));
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big));
   var ownB = new owned R(0,0,0,0,0);
   var B = ownB.borrow();
 
@@ -36,11 +36,10 @@ var A = ownA.borrow();
 
 
 {
-  var r = f.reader(deserializer=new binaryDeserializer(ioendian.big));
+  var r = f.reader(deserializer=new binaryDeserializer(endianness.big));
   var ownB = new owned R(0,0,0,0,0);
   var B = ownB.borrow();
 
-  assert(r.readByte() == 1);
   assert(r.read(B.a));
   assert(r.read(B.b));
   assert(r.read(B.c));

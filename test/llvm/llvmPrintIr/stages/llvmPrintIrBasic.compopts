@@ -1,1 +1,2 @@
 --llvm-print-ir-stage=basic --llvm-print-ir mainTest
+--llvm-print-ir-stage=basic --llvm-print-ir llvmPrintIrBasic.mainTest

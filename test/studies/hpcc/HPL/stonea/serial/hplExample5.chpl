@@ -323,4 +323,3 @@ proc main() {
     writeln("computation time: ", timer.elapsed(), " seconds.");
     writeln("performance: ", performance, " Gflops/s.");
 }
-

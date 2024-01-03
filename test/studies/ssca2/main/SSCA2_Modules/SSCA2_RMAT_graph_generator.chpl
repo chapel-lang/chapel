@@ -112,7 +112,7 @@ proc Gen_RMAT_graph ( a : real,
                      MAX_EDGE_WEIGHT :int,
                      G )
 
-{ use Random, IO;
+{ use NPBRandom, IO;
     use analyze_RMAT_graph_associative_array;
 
     if PRINT_TIMING_STATISTICS then sw.start ();
@@ -167,7 +167,7 @@ proc Gen_RMAT_graph ( a : real,
 
     var rndPos = 1;
     const seed = if REPRODUCIBLE_PROBLEMS then 0556707007
-                                          else SeedGenerator.oddCurrentTime;
+                                          else (timeSinceEpoch().totalSeconds()*1_000_000+1):int;
 
     const delta = n_raw_edges + 1; // 1 corresponds to 'skip' in "old" code
     rndPos += 1;                   // start with a skip

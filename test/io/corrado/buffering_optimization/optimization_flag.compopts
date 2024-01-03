@@ -1,0 +1,2 @@
+ # optimization_flag.opt-on.good
+--warn-unstable -sIOSkipBufferingForLargeOps=false # optimization_flag.opt-off.good

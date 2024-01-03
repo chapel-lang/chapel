@@ -1,0 +1,1 @@
+scanTest.chpl:24: error: gpuScan only supports 1D arrays

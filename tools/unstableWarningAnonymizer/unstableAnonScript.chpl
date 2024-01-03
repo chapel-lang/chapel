@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,6 +126,10 @@ proc anonymizeWarning(warning: string) : string {
   const pragmas = "uses pragmas, which are considered unstable and may change in the future";
   if warning.find(pragmas) != -1 then
     return "warning: <proc> " + pragmas;
+
+  const constArgs = "was modified indirectly during this function, this behavior is unstable and may change in the future.";
+  if warning.find(constArgs) != -1 then
+    return "warning: The argument " + constArgs;
 
   return warning;
 }

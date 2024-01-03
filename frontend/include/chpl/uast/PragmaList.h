@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -286,6 +286,7 @@ PRAGMA(GPU_CODEGEN, ypr, "codegen for GPU", "generate GPU code and set function 
 PRAGMA(GPU_AND_CPU_CODEGEN, ypr, "codegen for CPU and GPU", "generate both GPU and CPU code")
 PRAGMA(ASSERT_ON_GPU, ypr, "assert on gpu", "triggers runtime assertion if not running on device")
 PRAGMA(GPU_SPECIALIZATION, npr, "gpu specialization", ncm)
+PRAGMA(REDUCTION_TEMP, npr, "reduction temp variable", ncm)
 
 PRAGMA(HAS_POSTINIT, ypr, "has postinit", "type that has a postinit method")
 PRAGMA(HAS_RUNTIME_TYPE, ypr, "has runtime type", "type that has an associated runtime type")
@@ -632,6 +633,8 @@ PRAGMA(DESERIALIZATION_BLOCK_MARKER, npr, "marks deserialization options", "then
 PRAGMA(EXEMPT_INSTANTIATION_LIMIT, ypr, "fn exempt instantiation limit", "compiler will not limit the number of instantiations of this function")
 
 PRAGMA(COMPUTE_UNIFIED_TYPE_HELP, ypr, "compute unified type helper", "identify the internal chpl_computeUnifiedTypeHelp() routine")
+PRAGMA(DO_NOT_RESOLVE_UNLESS_CALLED, npr, "do not resolve unless called", "do not resolve this function unless it is called (e.g. if it contains only compilerError)")
+PRAGMA(TASK_PRIVATE_VARIABLE, npr, "task private variable", ncm)
 
 #undef ypr
 #undef npr

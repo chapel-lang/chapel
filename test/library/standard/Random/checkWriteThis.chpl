@@ -5,7 +5,6 @@
 // other generic function.
 module Foo {
   use Random;
-  use Random.PCGRandom only PCGRandomStream;
 
   proc generateToken(len: int=32) : string {
     var alphanum = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9",
@@ -20,7 +19,7 @@ module Foo {
       indices[i] = i;
 
     var ret : [0..len-1] string;
-    var r = new owned PCGRandomStream(int);
+    var r = new randomStream(int);
     var rindices = try! r.choice(indices, len);
 
     for i in 1..len-1 do

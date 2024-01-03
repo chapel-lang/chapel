@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,9 +15,10 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+comp_unit_test(testAssertions)
 comp_unit_test(testIteratorAdapters)
 comp_unit_test(testLLVMsupport)
 comp_unit_test(testQueryTimingAndTrace)
 comp_unit_test(testQuoteStrings)
+comp_unit_test(testShaFile)
 comp_unit_test(testSubprocess)
-comp_unit_test(testAssertions)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -274,34 +274,27 @@ bool CanPassResult::canConvertNumeric(Context* context,
     if (auto actualUintT = actualT->toUintType())
       if (actualUintT->bitwidth() < formalUintT->bitwidth())
         return true;
+
+    if (auto actualIntT = actualT->toIntType()) {
+      if (actualIntT->bitwidth() <= formalUintT->bitwidth()) {
+        // int can coerce to uint
+        return true;
+      }
+    }
   }
 
   if (auto formalRealT = formalT->toRealType()) {
     // don't convert bools to reals (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width real
+    if (actualT->isNumericType())
+      return true;
 
     // convert real from smaller size
     if (auto actualRealT = actualT->toRealType())
       if (actualRealT->bitwidth() < formalRealT->bitwidth())
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width real
-      if (formalRealT->bitwidth() == 64)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalRealT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   if (auto formalImagT = formalT->toImagType()) {
@@ -313,6 +306,10 @@ bool CanPassResult::canConvertNumeric(Context* context,
 
   if (auto formalComplexT = formalT->toComplexType()) {
     // don't convert bools to complexes (per spec: "unintended by programmer")
+
+    // coerce any integer type to any width complex
+    if (actualT->isNumericType())
+      return true;
 
     // convert smaller complex types
     if (auto actualComplexT = actualT->toComplexType())
@@ -327,23 +324,6 @@ bool CanPassResult::canConvertNumeric(Context* context,
       if (actualImagT->bitwidth() <= formalComplexT->bitwidth()/2)
         return true;
 
-    if (actualT->isIntegralType()) {
-      // convert any integer type to maximum width complex
-      if (formalComplexT->bitwidth() == 128)
-        return true;
-
-      int mantissaW = 0;
-      int exponentW = 0;
-      getMantissaExponentWidth(formalComplexT, mantissaW, exponentW);
-
-      // convert integer types that are exactly representable
-      if (auto actualIntT = actualT->toIntType())
-        if (actualIntT->bitwidth() < mantissaW)
-          return true;
-      if (auto actualUintT = actualT->toUintType())
-        if (actualUintT->bitwidth() < mantissaW)
-          return true;
-    }
   }
 
   return false;
@@ -383,18 +363,15 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
   if (auto formalIntT = formalT->toIntType()) {
     //
-    // For smaller integer types, if the argument is a param, does it
+    // If the argument is a param, does it
     // store a value that's small enough that it could dispatch to
     // this argument?
     //
-    if (formalIntT->bitwidth() < 64)
-      if (paramFitsInInt(formalIntT->bitwidth(), actualP))
-        return true;
+    return paramFitsInInt(formalIntT->bitwidth(), actualP);
   }
 
   if (auto formalUintT = formalT->toUintType()) {
-    if (paramFitsInUint(formalUintT->bitwidth(), actualP))
-      return true;
+    return paramFitsInUint(formalUintT->bitwidth(), actualP);
   }
 
   // param strings can convert between string and c_string
@@ -734,11 +711,15 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
   if (formalT->isAnyIntegralType() && actualT->isIntegralType())
     return true;
 
-  if (formalT->isAnyIteratorClassType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
+  if (formalT->isAnyIteratorClassType()) {
+    CHPL_UNIMPL("iterator classes"); // TODO: represent iterators
+    return false;
+  }
 
-  if (formalT->isAnyIteratorRecordType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: represent iterators
+  if (formalT->isAnyIteratorRecordType()) {
+    CHPL_UNIMPL("iterator records"); // TODO: represent iterators
+    return false;
+  }
 
   if (formalT->isAnyNumericType() && actualT->isNumericType())
     return true;
@@ -750,8 +731,10 @@ bool CanPassResult::canInstantiateBuiltin(Context* context,
           if (manager->isAnyOwnedType())
             return true;
 
-  if (formalT->isAnyPodType())
-    CHPL_ASSERT(false && "Not implemented yet"); // TODO: compute POD-ness
+  if (formalT->isAnyPodType()) {
+    CHPL_UNIMPL("POD types"); // TODO: compute POD-ness
+    return false;
+  }
 
   if (formalT->isAnyRealType() && actualT->isRealType())
     return true;
@@ -1008,95 +991,70 @@ CanPassResult CanPassResult::canPass(Context* context,
   return fail(FAIL_FORMAL_OTHER);
 }
 
-// When trying to combine two kinds, you can't just pick one.
-// For instance, if any type in the list is a value, the result
-// should be a value, and if any type in the list is const, the
-// result should be const. Thus, combining `const ref` and `var`
-// should result in `const var`.
-//
-// This class is used to describe the "mixing rules" of various kinds.
-// To this end, it breaks them down into their properties (const-ness,
-// ref-ness, etc) each of which are processed independently from
-// the others.
-class KindProperties {
- private:
-  bool isConst = false;
-  bool isRef = false;
-  bool isType = false;
-  bool isParam = false;
-  bool isValid = false;
+void KindProperties::invalidate() {
+  isRef = isConst = isType = isParam = isValid = false;
+}
 
-  KindProperties() {}
+KindProperties KindProperties::fromKind(QualifiedType::Kind kind) {
+  if (kind == QualifiedType::TYPE)
+    return KindProperties(false, false, true, false);
+  if (kind == QualifiedType::PARAM)
+    // Mark params as const to cover the case in which a
+    // param decays to a const var.
+    return KindProperties(true, false, false, true);
+  auto isConst = isConstQualifier(kind);
+  auto isRef = isRefQualifier(kind);
+  return KindProperties(isConst, isRef, false, false);
+}
 
-  KindProperties(bool isConst, bool isRef, bool isType,
-                 bool isParam)
-    : isConst(isConst), isRef(isRef), isType(isType),
-      isParam(isParam), isValid(true) {}
+void KindProperties::setRef(bool isRef) {
+  this->isRef = isRef;
+}
 
- public:
-  static KindProperties fromKind(QualifiedType::Kind kind) {
-    if (kind == QualifiedType::TYPE)
-      return KindProperties(false, false, true, false);
-    if (kind == QualifiedType::PARAM)
-      // Mark params as const to cover the case in which a
-      // param decays to a const var.
-      return KindProperties(true, false, false, true);
-    auto isConst = isConstQualifier(kind);
-    auto isRef = isRefQualifier(kind);
-    return KindProperties(isConst, isRef, false, false);
+void KindProperties::setParam(bool isParam) {
+  this->isParam = isParam;
+}
+
+void KindProperties::combineWith(const KindProperties& other) {
+  if (!isValid) return;
+  if (!other.isValid || isType != other.isType) {
+    // Can't mix types and non-types.
+    invalidate();
+    return;
   }
+  isConst = isConst || other.isConst;
+  isRef = isRef && other.isRef;
+  isParam = isParam && other.isParam;
+}
 
-  void invalidate() {
-    isRef = isConst = isType = isParam = isValid = false;
+void KindProperties::strictCombineWith(const KindProperties& other) {
+  if (!isValid) return;
+  if (!other.isValid || isType != other.isType) {
+    // Can't mix types and non-types.
+    invalidate();
+    return;
   }
-
-  void setParam(bool isParam) {
-    this->isParam = isParam;
+  if (isParam && !other.isParam) {
+    // If a param is required, can't return a non-param.
+    invalidate();
+    return;
   }
+  // Ensuring that everything can actually be made
+  // into a reference and const will happen later.
+  // leave isRef and isConst as specified.
+  // We could do some checking now, but that might be a bit premature.
+}
 
-  void combineWith(const KindProperties& other) {
-    if (!isValid) return;
-    if (!other.isValid || isType != other.isType) {
-      // Can't mix types and non-types.
-      invalidate();
-      return;
-    }
-    isConst = isConst || other.isConst;
-    isRef = isRef && other.isRef;
-    isParam = isParam && other.isParam;
+QualifiedType::Kind KindProperties::toKind() const {
+  if (!isValid) return QualifiedType::UNKNOWN;
+  if (isType) return QualifiedType::TYPE;
+  if (isParam) return QualifiedType::PARAM;
+  if (isConst) {
+    return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
+  } else {
+    return isRef ? QualifiedType::REF : QualifiedType::VAR ;
   }
-
-  void strictCombineWith(const KindProperties& other) {
-    if (!isValid) return;
-    if (!other.isValid || isType != other.isType) {
-      // Can't mix types and non-types.
-      invalidate();
-      return;
-    }
-    if (isParam && !other.isParam) {
-      // If a param is required, can't return a non-param.
-      invalidate();
-      return;
-    }
-    // Ensuring that everything can actually be made
-    // into a reference and const will happen later.
-    // leave isRef and isConst as specified.
-    // We could do some checking now, but that might be a bit premature.
-  }
-
-  QualifiedType::Kind toKind() const {
-    if (!isValid) return QualifiedType::UNKNOWN;
-    if (isType) return QualifiedType::TYPE;
-    if (isParam) return QualifiedType::PARAM;
-    if (isConst) {
-      return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
-    } else {
-      return isRef ? QualifiedType::REF : QualifiedType::VAR ;
-    }
-  }
-
-  bool valid() const { return isValid; }
-};
+}
 
 static optional<QualifiedType>
 findByPassing(Context* context,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -545,13 +545,13 @@ void AstNode::stringify(std::ostream& ss,
 }
 
 void AstNode::serialize(Serializer& ser) const {
-  ser.beginAst();
+  ser.beginAst(this);
   ser.write(tag_);
   ser.writeVInt(attributeGroupChildNum_);
   // id_ not serialized; it is recomputed after reading
   serializeInner(ser);
   serializeChildren(ser);
-  ser.endAst();
+  ser.endAst(this);
 }
 
 AstNode::AstNode(AstTag tag, Deserializer& des)
@@ -584,19 +584,26 @@ void AstNode::serializeChildren(Serializer& ser) const {
 
 void AstNode::deserializeChildren(Deserializer& des) {
   uint64_t len = des.readVU64();
-  children_.resize(len);
-  for (uint64_t i = 0; i < len; i++) {
-    children_[i] = deserializeWithoutIds(des);
+  // note: this check assumes 1 byte per child node, and it's
+  // true that each child node will be at least one byte.
+  if (des.checkStringLengthAvailable(len)) {
+    children_.resize(len);
+    for (uint64_t i = 0; i < len; i++) {
+      children_[i] = deserializeWithoutIds(des);
+    }
   }
 }
 
 owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
+  uint64_t pos = des.position();
+
   AstTag tag = des.read<AstTag>();
 
-  // deserialize using the constructor
+  // Deserialize using the specific type constructor
   // which will call AstNode::AstNode(AstTag tag, Deserializer& des) above
   // to deserialize AstNode's fields (but not the children)
-  // and then deserialize the subclass fields.
+  // and then deserialize the subclass fields through its constructor.
+  // Then, register the deserialized Ast with the Deserializer
   // Finally, deserialize the children with deserializeChildren.
 
   switch (tag) {
@@ -604,6 +611,7 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }
@@ -612,6 +620,7 @@ owned<AstNode> AstNode::deserializeWithoutIds(Deserializer& des) {
       case asttags::NAME: \
       { \
         auto ret = toOwned(new NAME(des)); \
+        des.registerAst(ret.get(), pos); \
         ret->deserializeChildren(des); \
         return ret; \
       }

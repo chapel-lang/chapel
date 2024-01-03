@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -31,6 +31,11 @@ namespace chpl {
 void assertion(bool expr, const char* filename, const char* func, int lineno,
                const char* exprText);
 
+/// \cond DO_NOT_DOCUMENT
+void chpl_unimpl(const char* filename, const char* func, int lineno,
+                 const char* msg);
+/// \endcond DO_NOT_DOCUMENT
+
 /*
   Macro for our custom assertion mechanism - folded out if NDEBUG is defined
 */
@@ -41,13 +46,24 @@ void assertion(bool expr, const char* filename, const char* func, int lineno,
     bool ignore = expr__; \
     (void) ignore; \
    } while (0)
+
 #else
 // debug mode
 #define CHPL_ASSERT(expr__) \
   do { \
     chpl::assertion(expr__, __FILE__, __FUNCTION__, __LINE__, #expr__); \
   } while (0)
+
 #endif
+
+/// \cond DO_NOT_DOCUMENT
+
+#define CHPL_UNIMPL(msg__) \
+  do { \
+    chpl::chpl_unimpl(__FILE__, __FUNCTION__, __LINE__, msg__); \
+  } while (0)
+
+/// \endcond DO_NOT_DOCUMENT
 
 /*
   Set whether or not assertions in dyno are enabled

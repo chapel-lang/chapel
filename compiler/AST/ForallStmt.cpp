@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -757,4 +757,8 @@ std::vector<BlockStmt*> ForallStmt::loopBodies() const {
     bodies.push_back(fLoopBody);
   }
   return bodies;
+}
+
+bool ForallStmt::isInductionVar(Symbol* sym) {
+  return sym->defPoint->list == &inductionVariables();
 }

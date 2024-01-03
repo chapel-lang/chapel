@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -223,9 +223,16 @@ const TupleType* TupleType::toValueTuple(Context* context) const {
   bool allValue = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
-    auto kind = elementType(i).kind();
+    const auto& eltType = elementType(i);
+    auto kind = eltType.kind();
     if (kind != QualifiedType::VAR)
       allValue = false;
+
+    if (eltType.type() && eltType.type()->isTupleType()) {
+      // Conservatively throw off 'allValue' because the nested tuple might
+      // have a reference inside it.
+      allValue = false;
+    }
   }
 
   if (numElements() == 0 || allValue)
@@ -234,7 +241,11 @@ const TupleType* TupleType::toValueTuple(Context* context) const {
   // Otherwise, compute a new value tuple
   std::vector<const Type*> eltTypes;
   for (int i = 0; i < n; i++) {
-    eltTypes.push_back(elementType(i).type());
+    auto eltType = elementType(i).type();
+    if (auto eltTup = eltType->toTupleType()) {
+      eltType = eltTup->toValueTuple(context);
+    }
+    eltTypes.push_back(eltType);
   }
 
   return getValueTuple(context, std::move(eltTypes));
@@ -246,10 +257,17 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
   bool allRef = true;
   int n = numElements();
   for (int i = 0; i < n; i++) {
-    auto kind = elementType(i).kind();
+    const auto& eltType = elementType(i);
+    auto kind = eltType.kind();
     if (kind != QualifiedType::CONST_REF &&
         kind != QualifiedType::REF)
       allRef = false;
+
+    if (eltType.type() && eltType.type()->isTupleType()) {
+      // Conservatively throw off 'allRef' because the nested tuple might
+      // have a reference inside it.
+      allRef = false;
+    }
   }
 
   if (numElements() == 0 || allRef)
@@ -258,7 +276,11 @@ const TupleType* TupleType::toReferentialTuple(Context* context) const {
   // Otherwise, compute a new referential tuple
   std::vector<const Type*> eltTypes;
   for (int i = 0; i < n; i++) {
-    eltTypes.push_back(elementType(i).type());
+    auto eltType = elementType(i).type();
+    if (auto eltTup = eltType->toTupleType()) {
+      eltType = eltTup->toReferentialTuple(context);
+    }
+    eltTypes.push_back(eltType);
   }
 
   return getReferentialTuple(context, std::move(eltTypes));

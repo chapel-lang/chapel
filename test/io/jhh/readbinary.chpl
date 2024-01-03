@@ -20,9 +20,9 @@ var x64:complex(64) = 3.14159 + 2.718i;
 var x128:complex(128) = 3.14159 + 2.718i;
 
 
-var endians = [ioendian.native, ioendian.little, ioendian.big];
- 
-proc readone(expected:numeric, endian:ioendian=ioendian.native) {
+var endians = [endianness.native, endianness.little, endianness.big];
+
+proc readone(expected:numeric, endian:endianness=endianness.native) {
     var inp: expected.type;
     stdin.readBinary(inp, endian);
     assert(inp == expected, inp.type:string, inp, expected);

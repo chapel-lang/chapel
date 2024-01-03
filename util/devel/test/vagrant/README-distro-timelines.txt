@@ -2,27 +2,33 @@ x means reached end of life
 - means end of life soon
   (last updated: 2019-01-11)
 
+Alma Linux -- see https://wiki.almalinux.org/release-notes/
+           -- EOL dates probably match Rocky linux
+  8.x EOL 2029
+  9.x EOL 2032
+x 9.0 released May 2022
+x 9.1 released Nov 2022
+x 9.2 released May 2023
+  9.3 released Nov 2023
+
 Alpine Linux -- see https://www.alpinelinux.org/releases/
-  3.14  EOL 2023-05-01
-  3.15  EOL 2023-11-01
+x 3.14  EOL 2023-05-01
+x 3.15  EOL 2023-11-01
   3.16  EOL 2024-05-23
   3.17  EOL 2024-11-22
   3.18  EOL 2025-05-09
-
-Alma Linux -- see https://en.wikipedia.org/wiki/AlmaLinux
-           -- EOL dates probably match Rocky linux
-  8   - EOL May 2029
-  9   - EOL 2032?
-  9.0 - EOL May 2032
-  9.1 - EOL ?
-  9.2 - EOL ?
+  3.19  EOL 2025-11-01
 
 Amazon Linux
        -- see https://docs.aws.amazon.com/linux/al2022/ug/release-cadence.html
        -- which has 2 years of standard support, 3 of maintenance
-  2    EOL June 30, 2025
-  2022 was renamed to 2023 in March 2023
-  2023 released March 2023
+x 2    EOL June 30, 2025
+x 2022 was renamed to 2023 in March 2023
+  2023 EOL 2028
+  2025 to be released
+
+Arch
+* currently just testing the current release
 
 CentOS -- see https://wiki.centos.org/About/Product
 x 5 full updates until Jan 2014, maintenance until Mar 2017
@@ -75,10 +81,11 @@ x 32 EOL May 2021
 x 33 EOL Nov 2021
 x 34 EOL Jun 2022
 x 35 EOL Dec 2022
-  36 EOL May 2023
-  37 EOL Nov 2023
+x 36 EOL May 2023
+x 37 EOL Nov 2023
   38 EOL May 2024
-  39 to be released Oct 2023 -- EOL Nov 2024
+  39 EOL Nov 2024
+  40 EOL May 2025
 
 FreeBSD -- see https://www.freebsd.org/security/unsupported.html
         -- and https://app.vagrantup.com/freebsd
@@ -98,9 +105,9 @@ x 12.2 EOL Mar 2022
 x 12.3 EOL Mar 2023
   12.4 EOL Dec 2023
 x 13.0 EOL Aug 2022
-  13.1
+x 13.1 EOL Jul 2023
   13.2
-  14.0 estimated release October 2023
+  14.0 released Nov 2023
 
 OpenSuse -- see https://en.opensuse.org/Lifetime
          -- and https://app.vagrantup.com/opensuse
@@ -113,25 +120,29 @@ x 15.0 EOL Nov 2019
 x 15.1 EOL Nov 2020
 x 15.2 EOL Dec 2021
 x 15.3 EOL Nov 2022
-  15.4 EOL Nov 2023
-  15.5 EOL Nov 2024
+x 15.4 EOL Nov 2023
+  15.5 EOL Dec 2024
 
 Rocky Linux -- see https://wiki.rockylinux.org/rocky/version/
-  8   - EOL May 2029
-  9   - EOL May 2032
-  9.0 - EOL Nov 2022
-  9.1 - EOL May 2023
-  9.2 - EOL Nov 2023
+  8.x EOL May 2029
+x 8.8 EOL Nov 2023
+  8.9 EOL May 2024
+
+  9.x EOL May 2032
+x 9.0 EOL Nov 2022
+x 9.1 EOL May 2023
+x 9.2 EOL Nov 2023
+  9.3 EOL May 2024
 
 Ubuntu -- see https://wiki.ubuntu.com/Releases
        -- and https://app.vagrantup.com/ubuntu
 LTS:
-x 12.04 "Precise Pangolin"  LTS until Apr 2017
-x 14.04 "Trusty Tahir"      LTS until Apr 2019
-x 16.04 "Xenial Xerus"      LTS until Apr 2021
-  18.04 "Bionic Beaver"     LTS until April 2023
-  20.04 "Focal Fossa"       LTS until April 2030
-  22.04 "Jammy Jellyfish"   LTS until April 2032
+x 12.04 "Precise Pangolin"  LTS until Apr 2017, EOL Apr 2017
+x 14.04 "Trusty Tahir"      LTS until Apr 2019, EOL Apr 2024
+x 16.04 "Xenial Xerus"      LTS until Apr 2021, EOL Apr 2026
+  18.04 "Bionic Beaver"     LTS until Jun 2023, EOL Apr 2028
+  20.04 "Focal Fossa"       LTS until Apr 2025, EOL Apr 2030
+  22.04 "Jammy Jellyfish"   LTS until Jun 2027, EOL Apr 2032
 
 non-LTS:
 x 14.10 "Utopic Unicorn"    EOL July 2015
@@ -148,3 +159,4 @@ x 21.04 "Hirsute Hippo"     EOL Jan 2022
 x 21.10 "Impish Indri"      EOL July 2022
 x 22.10 "Kinetic Kudu"      EOL July 2023
   23.04 "Lunar Lobster"     EOL Jan 2024
+  23.10 "Mantic Minotaur"   EOL Jul 2024

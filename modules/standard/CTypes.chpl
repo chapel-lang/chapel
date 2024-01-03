@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -241,6 +241,9 @@ module CTypes {
     */
     param size;
 
+    /*
+      Default-initializes a :type:`c_array`, where each element gets the default value of ``eltType``.
+    */
     proc init(type eltType, param size) {
       this.eltType = eltType;
       this.size = size;
@@ -258,6 +261,7 @@ module CTypes {
       }
     }
 
+    @chpldoc.nodoc
     proc deinit() {
       var i = 0;
       while i < size {
@@ -327,6 +331,9 @@ module CTypes {
       writeThis(writer);
     }
 
+    /*
+      Moves the elements from ``other`` to ``this``.
+    */
     proc init=(other: c_array) {
       this.eltType = other.eltType;
       this.size = other.size;
@@ -353,6 +360,10 @@ module CTypes {
       lhs[i] = rhs[i];
     }
   }
+
+  /*
+    Get a pointer to the first element in ``rhs``, essentially decaying the :type:`c_array` to a :type:`c_ptr`.
+  */
   operator =(ref lhs:c_ptr, ref rhs:c_array) {
     if lhs.eltType != rhs.eltType && lhs.eltType != void then
       compilerError("element type mismatch in c_array assignment");

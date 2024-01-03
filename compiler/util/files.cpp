@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -47,10 +47,14 @@
 #include <unistd.h>
 
 #include <cstring>
+#include <sstream>
+#include <iostream>
 #include <cstdlib>
 #include <cerrno>
 #include <string>
 #include <map>
+#include <unordered_set>
+#include <utility>
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -99,7 +103,7 @@ static void addPath(const char* pathVar, std::vector<const char*>* pathvec) {
 void addLibPath(const char* libString, bool fromCmdLine) {
   addPath(libString, &libDirs);
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(libDirsFilename, libString);
   }
 }
@@ -108,7 +112,7 @@ void addLibFile(const char* libFile, bool fromCmdLine) {
   // use astr() to get a copy of the string that this vector can own
   libFiles.push_back(astr(libFile));
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(libFilesFilename, libFile);
   }
 }
@@ -116,12 +120,14 @@ void addLibFile(const char* libFile, bool fromCmdLine) {
 void addIncInfo(const char* incDir, bool fromCmdLine) {
   addPath(incDir, &incDirs);
 
-  if (fDriverPhaseOne && !fromCmdLine) {
+  if (fDriverCompilationPhase && !fromCmdLine) {
     saveDriverTmp(incDirsFilename, incDir);
   }
 }
 
-void checkDriverTmp() {
+// Ensure the tmp dir is set up for use by the driver (i.e., isn't about to be
+// replaced).
+static void checkDriverTmp() {
   assert(!fDriverDoMonolithic && "meant for use in driver mode only");
 
   bool valid = false;
@@ -142,21 +148,38 @@ void checkDriverTmp() {
       "attempted to save info to tmp dir before it is set up for driver use");
 }
 
-void saveDriverTmp(const char* tmpFilePath, const char* stringToSave) {
-  checkDriverTmp();
-
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
-  fprintf(file->fptr, "%s\n", stringToSave);
-  closefile(file);
+void saveDriverTmp(const char* tmpFilePath, const char* stringToSave,
+                   bool appendNewline) {
+  saveDriverTmpMultiple(tmpFilePath, {stringToSave}, !appendNewline);
 }
 
 void saveDriverTmpMultiple(const char* tmpFilePath,
-                           std::vector<const char*> stringsToSave) {
+                           std::vector<const char*> stringsToSave,
+                           bool noNewlines) {
   checkDriverTmp();
 
-  fileinfo* file = openTmpFile(tmpFilePath, "a");
+  const char* pathAsAstr = astr(tmpFilePath);
+
+  // Driver tmp files that have been written into so far in this run.
+  // Used to make sure info remaining from previous runs (i.e., due to savec) is
+  // discarded on first write.
+  // Contents expected to be astrs so it's safe to use a set.
+  static std::unordered_set<const char*> seen;
+
+  // Overwrite on first use in driver compilation phase or init process, append
+  // after.
+  const char* fileOpenMode;
+  if (seen.emplace(pathAsAstr).second && !fDriverMakeBinaryPhase) {
+    fileOpenMode = "w";
+  } else {
+    // Already seen
+    fileOpenMode = "a";
+  }
+
+  // Write into tmp file
+  fileinfo* file = openTmpFile(pathAsAstr, fileOpenMode);
   for (const auto stringToSave : stringsToSave) {
-    fprintf(file->fptr, "%s\n", stringToSave);
+    fprintf(file->fptr, "%s%s", stringToSave, (noNewlines ? "" : "\n"));
   }
   closefile(file);
 }
@@ -188,10 +211,23 @@ void restoreDriverTmp(const char* tmpFilePath,
   closefile(tmpFile);
 }
 
+void restoreDriverTmpMultiline(
+    const char* tmpFilePath,
+    std::function<void(const char*)> restoreSavedString) {
+  std::ostringstream os;
+
+  // Just call line-by-line restore for simplicity, adding newlines back in.
+  restoreDriverTmp(tmpFilePath,
+                   [&os](const char* line) { os << line << "\n"; });
+
+  std::string restoredString = os.str();
+  restoreSavedString(restoredString.c_str());
+}
+
 void restoreLibraryAndIncludeInfo() {
-  INT_ASSERT(
-      fDriverPhaseTwo &&
-      "should only be restoring library and include info in driver phase two");
+  INT_ASSERT(fDriverMakeBinaryPhase &&
+             "should only be restoring library and include info in driver "
+             "makeBinary phase");
 
   restoreDriverTmp(libDirsFilename, [](const char* filename) {
     addLibPath(filename, /* fromCmdLine */ false);
@@ -205,8 +241,8 @@ void restoreLibraryAndIncludeInfo() {
 }
 
 void restoreAdditionalSourceFiles() {
-  INT_ASSERT(fDriverPhaseTwo &&
-             "should only be restoring filenames in driver phase two");
+  INT_ASSERT(fDriverMakeBinaryPhase &&
+             "should only be restoring filenames in driver makeBinary phase");
 
   std::vector<const char*> additionalFilenames;
   restoreDriverTmp(additionalFilenamesListFilename,
@@ -466,14 +502,23 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
   inputFilenames[cursor] = NULL;
 
   // If in driver mode, and filenames were added, also save added filenames for
-  // driver phase two.
+  // makeBinary phase.
   // Note: Need to check both driver mode and phase here. The two could conflict
   // since files can be added before driver flags are validated.
-  if (!fDriverDoMonolithic && fDriverPhaseOne && firstAddedIdx >= 0) {
+  if (!fDriverDoMonolithic && fDriverCompilationPhase && firstAddedIdx >= 0) {
     saveDriverTmpMultiple(
         additionalFilenamesListFilename,
         std::vector<const char*>(inputFilenames + firstAddedIdx,
                                  inputFilenames + cursor));
+  }
+
+
+  // turn on ID-based munging if any .dyno files are present
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isDynoLib(fname)) {
+      fIdBasedMunging = true;
+    }
   }
 }
 

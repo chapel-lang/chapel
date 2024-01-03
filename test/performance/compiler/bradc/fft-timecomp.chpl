@@ -15,8 +15,7 @@ const m = 2**n;
 config const epsilon = 2.0 ** -51.0,
              threshold = 16.0;
 
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 314159265;
+config const useRandomSeed = true;
 
 config const printParams = true,
              printArrays = false,
@@ -56,7 +55,9 @@ proc initVectors(ref Twiddles, ref z) {
   computeTwiddles(Twiddles);
   bitReverseShuffle(Twiddles);
 
-  fillRandom(z, seed, algorithm=RNG.NPB);
+  if useRandomSeed
+    then fillRandom(z);
+    else fillRandom(z, 314159265);
 
   if (printArrays) {
     writeln("After initialization, Twiddles is: ", Twiddles, "\n");

@@ -3,24 +3,24 @@ use IO;
 testBinaryWrite("U8", makeUnsignedArray(8));
 testBinaryWrite("I8", makeSignedArray(8));
 
-testBinaryWrite("U16_BE", makeUnsignedArray(16), ioendian.big);
-testBinaryWrite("U32_BE", makeUnsignedArray(32), ioendian.big);
-testBinaryWrite("U64_BE", makeUnsignedArray(64), ioendian.big);
+testBinaryWrite("U16_BE", makeUnsignedArray(16), endianness.big);
+testBinaryWrite("U32_BE", makeUnsignedArray(32), endianness.big);
+testBinaryWrite("U64_BE", makeUnsignedArray(64), endianness.big);
 
-testBinaryWrite("U16_LE", makeUnsignedArray(16), ioendian.little);
-testBinaryWrite("U32_LE", makeUnsignedArray(32), ioendian.little);
-testBinaryWrite("U64_LE", makeUnsignedArray(64), ioendian.little);
+testBinaryWrite("U16_LE", makeUnsignedArray(16), endianness.little);
+testBinaryWrite("U32_LE", makeUnsignedArray(32), endianness.little);
+testBinaryWrite("U64_LE", makeUnsignedArray(64), endianness.little);
 
-testBinaryWrite("I16_BE", makeSignedArray(16), ioendian.big);
-testBinaryWrite("I32_BE", makeSignedArray(32), ioendian.big);
-testBinaryWrite("I64_BE", makeSignedArray(64), ioendian.big);
+testBinaryWrite("I16_BE", makeSignedArray(16), endianness.big);
+testBinaryWrite("I32_BE", makeSignedArray(32), endianness.big);
+testBinaryWrite("I64_BE", makeSignedArray(64), endianness.big);
 
-testBinaryWrite("I16_LE", makeSignedArray(16), ioendian.little);
-testBinaryWrite("I32_LE", makeSignedArray(32), ioendian.little);
-testBinaryWrite("I64_LE", makeSignedArray(64), ioendian.little);
+testBinaryWrite("I16_LE", makeSignedArray(16), endianness.little);
+testBinaryWrite("I32_LE", makeSignedArray(32), endianness.little);
+testBinaryWrite("I64_LE", makeSignedArray(64), endianness.little);
 
 
-proc testBinaryWrite(testName, values, endian: ioendian = ioendian.native) {
+proc testBinaryWrite(testName, values, endian: endianness = endianness.native) {
     var w = openWriter(testName + ".bin");
     w.writeBinary(values, endian);
 }

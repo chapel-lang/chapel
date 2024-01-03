@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,8 +64,9 @@ computeAndPrintStuff(Context* context,
   const ResolvedExpression* r =
     resolvedExpressionForAst(context, ast, inFn, scopeResolveOnly);
   if (r != nullptr) {
-    for (const TypedFnSignature* sig : r->mostSpecific()) {
-      if (sig != nullptr) {
+    for (const MostSpecificCandidate& candidate : r->mostSpecific()) {
+      if (candidate) {
+        auto sig = candidate.fn();
         if (sig->untyped()->idIsFunction()) {
           auto fn = resolveFunction(context, sig, r->poiScope());
           calledFns.insert(fn);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -302,6 +302,9 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_GPU_SYNC_THREADS:
   case PRIM_ASSERT_ON_GPU:
   case PRIM_GET_REQUESTED_SUBLOC:
+  case PRIM_GPU_INIT_KERNEL_CFG:
+  case PRIM_GPU_DEINIT_KERNEL_CFG:
+  case PRIM_GPU_ARG:
     return FAST_AND_LOCAL;
 
     // Temporarily unclassified (legacy) cases.
@@ -322,6 +325,10 @@ classifyPrimitive(CallExpr *call) {
    return LOCAL_NOT_FAST;
 
   case PRIM_BREAKPOINT:
+    return FAST_AND_LOCAL;
+
+  case PRIM_CONST_ARG_HASH:
+  case PRIM_CHECK_CONST_ARG_HASH:
     return FAST_AND_LOCAL;
 
   // no default, so that it is usually a C compilation

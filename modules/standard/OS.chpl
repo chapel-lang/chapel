@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -199,9 +199,12 @@ module OS {
     //
     // time.h (pre-decl for struct_timespec, needed in sys/stat.h)
     //
+    /* The structure ``timespec`` from ``time.h``. */
     extern "struct timespec" record struct_timespec {
-      var tv_sec:time_t;  // seconds since Jan. 1, 1970
-      var tv_nsec:c_long; // and nanoseconds
+      /* Seconds since the epoch, Jan. 1, 1970 */
+      var tv_sec:time_t;
+      /* Nanoseconds */
+      var tv_nsec:c_long;
     }
 
     //
@@ -521,6 +524,7 @@ module OS {
      */
     extern const ENOTEMPTY:c_int;
 
+    /* State not recoverable. */
     extern const ENOTRECOVERABLE:c_int;
 
     /* Socket operation on non-socket. */
@@ -560,6 +564,7 @@ module OS {
      */
     extern const EOVERFLOW:c_int;
 
+    /* Owner died. */
     extern const EOWNERDEAD:c_int;
 
     /* Operation not permitted. An attempt was made to perform an operation
@@ -734,27 +739,47 @@ module OS {
     //
     // fcntl.h
     //
+    /* Mask for file access modes. */
     extern const O_ACCMODE:c_int;
+    /* Set append mode. */
     extern const O_APPEND:c_int;
+    /*
+      Sets the ``FD_CLOEXEC`` flag of new descriptor to close it after
+      execution of an ``exec`` function.
+    */
     extern const O_CLOEXEC:c_int;
+    /* Create file if it does not exist. */
     extern const O_CREAT:c_int;
+    /* Fail if file is a non-directory file. */
     extern const O_DIRECTORY:c_int;
+    /* Write according to synchronized I/O data integrity completion. */
     extern const O_DSYNC:c_int;
+    /* Exclusive use flag. */
     extern const O_EXCL:c_int;
+    /* Do not assign controlling terminal. */
     extern const O_NOCTTY:c_int;
+    /* Do not follow symbolic links. */
     extern const O_NOFOLLOW:c_int;
+    /* Non-blocking mode. */
     extern const O_NONBLOCK:c_int;
+    /* Open for reading only. */
     extern const O_RDONLY:c_int;
+    /* Open for reading and writing */
     extern const O_RDWR:c_int;
+    /* Write according to synchronized I/O file integrity completion. */
     extern const O_SYNC:c_int;
+    /* Truncate flag. */
     extern const O_TRUNC:c_int;
+    /* Open for writing only. */
     extern const O_WRONLY:c_int;
     // Note: O_EXEC, O_SEARCH, O_TTY_INIT
     // are documented in POSIX but don't seem to exist on linux
     // Note: O_RSYNC
     // is documented in POSIX but doesn't seem to exist on Mac OS
 
+    /* Create a new file or rewrite an existing file. */
     extern proc creat(path:c_ptrConst(c_char), mode:mode_t = 0):c_int;
+    /* Open a file. */
     inline proc open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t = 0:mode_t)
                   :c_int {
       extern proc chpl_os_posix_open(path:c_ptrConst(c_char), oflag:c_int, mode:mode_t)
@@ -765,42 +790,56 @@ module OS {
     //
     // stdlib.h
     //
+    /* Get the value of an environment variable. */
     extern proc getenv(name:c_ptrConst(c_char)):c_ptr(c_char);
 
     //
     // string.h
     //
+    /* Get the error message string for ``errnum`` */
     extern proc strerror(errnum:c_int):c_ptrConst(c_char);
+    /* Get the length of the null-terminated string. */
     extern proc strlen(s:c_ptrConst(c_char)):c_size_t;
 
     //
     // sys/select.h
     //
+    /* Maximum number of file descriptors that :type:`fd_set` can hold. */
     extern const FD_SETSIZE:c_int;
 
+    /* Contains a fixed amount of file descriptors. */
     extern record fd_set {};
 
+    /* Clears the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_CLR(fd:c_int, fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_CLR(fd:c_int, fdset:c_ptr(fd_set));
       chpl_os_posix_FD_CLR(fd, fdset);
     }
 
+    /* Checks if the bit for the file descriptor ``fd`` is set in ``fdset``. */
     proc FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int {
       extern proc chpl_os_posix_FD_ISSET(fd:c_int, fdset:c_ptr(fd_set)):c_int;
       return chpl_os_posix_FD_ISSET(fd, fdset);
     }
 
+    /* Sets the bit for the file descriptor ``fd`` in ``fdset``. */
     proc FD_SET(fd:c_int, fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_SET(fd:c_int, fdset:c_ptr(fd_set));
       chpl_os_posix_FD_SET(fd, fdset);
     }
 
+    /* Initializes all file descriptors in ``fdset`` to zero. */
     proc FD_ZERO(fdset:c_ptr(fd_set)) {
       extern proc chpl_os_posix_FD_ZERO(fdset:c_ptr(fd_set));
       chpl_os_posix_FD_ZERO(fdset);
     }
 
     // No way around this -- 'select' is a keyword in Chapel.
+    /*
+      Indicates which of the specified file descriptors is ready for reading
+      or writing, or has an error condition pending. If no file descriptors are
+      ready, the procedure blocks until the ``timeout``.
+    */
     extern 'select' proc select_posix(nfds:c_int,
                                       readfds:c_ptr(fd_set),
                                       writefds:c_ptr(fd_set),
@@ -810,147 +849,220 @@ module OS {
     //
     // sys/stat.h
     //
+    /* Shorthand for (:proc:`S_IRUSR` | :proc:`S_IWUSR` | :proc:`S_IXUSR`). */
     inline proc S_IRWXU:mode_t {
       extern proc chpl_os_posix_S_IRWXU():mode_t;
       return chpl_os_posix_S_IRWXU();
     }
+    /* Read permission bit for the file's owner. */
     inline proc S_IRUSR:mode_t {
       extern proc chpl_os_posix_S_IRUSR():mode_t;
       return chpl_os_posix_S_IRUSR();
     }
+    /* Write permission bit for the file's owner. */
     inline proc S_IWUSR:mode_t {
       extern proc chpl_os_posix_S_IWUSR():mode_t;
       return chpl_os_posix_S_IWUSR();
     }
+    /* Execute permission bit for the file's owner. */
     inline proc S_IXUSR:mode_t {
       extern proc chpl_os_posix_S_IXUSR():mode_t;
       return chpl_os_posix_S_IXUSR();
     }
 
+    /* Shorthand for (:proc:`S_IRGRP` | :proc:`S_IWGRP` | :proc:`S_IXGRP`). */
     inline proc S_IRWXG:mode_t {
       extern proc chpl_os_posix_S_IRWXG():mode_t;
       return chpl_os_posix_S_IRWXG();
     }
+    /* Read permission bit for the file's group. */
     inline proc S_IRGRP:mode_t {
       extern proc chpl_os_posix_S_IRGRP():mode_t;
       return chpl_os_posix_S_IRGRP();
     }
+    /* Write permission bit for the file's group. */
     inline proc S_IWGRP:mode_t {
       extern proc chpl_os_posix_S_IWGRP():mode_t;
       return chpl_os_posix_S_IWGRP();
     }
+    /* Execute permission bit for the file's group. */
     inline proc S_IXGRP:mode_t {
       extern proc chpl_os_posix_S_IXGRP():mode_t;
       return chpl_os_posix_S_IXGRP();
     }
 
+     /* Shorthand for (:proc:`S_IROTH` | :proc:`S_IWOTH` | :proc:`S_IXOTH`). */
     inline proc S_IRWXO:mode_t {
       extern proc chpl_os_posix_S_IRWXO():mode_t;
       return chpl_os_posix_S_IRWXO();
     }
+    /* Read permission bit for others. */
     inline proc S_IROTH:mode_t {
       extern proc chpl_os_posix_S_IROTH():mode_t;
       return chpl_os_posix_S_IROTH();
     }
+    /* Write permission bit for others. */
     inline proc S_IWOTH:mode_t {
       extern proc chpl_os_posix_S_IWOTH():mode_t;
       return chpl_os_posix_S_IWOTH();
     }
+    /* Execute permission bit for others. */
     inline proc S_IXOTH:mode_t {
       extern proc chpl_os_posix_S_IXOTH():mode_t;
       return chpl_os_posix_S_IXOTH();
     }
 
+    /* Set user ID on execute bit. */
     inline proc S_ISUID:mode_t {
       extern proc chpl_os_posix_S_ISUID():mode_t;
       return chpl_os_posix_S_ISUID();
     }
+    /* Set group ID on execute bit. */
     inline proc S_ISGID:mode_t {
       extern proc chpl_os_posix_S_ISGID():mode_t;
       return chpl_os_posix_S_ISGID();
     }
+    /* Sticky bit */
     inline proc S_ISVTX:mode_t {
       extern proc chpl_os_posix_S_ISVTX():mode_t;
       return chpl_os_posix_S_ISVTX();
     }
 
+    /* A Chapel version of the POSIX structure ``stat``, which contains common
+    fields. This should be used with :proc:`stat`.
+    */
     extern 'struct chpl_os_posix_struct_stat' record struct_stat {
-      var st_dev:dev_t;            // Device.
-      var st_ino:ino_t;            // File serial number.
-      var st_mode:mode_t;          // File mode.
-      var st_nlink:nlink_t;        // Link count.
-      var st_uid:uid_t;            // User ID of the file's owner.
-      var st_gid:gid_t;            // Group ID of the file's group.
-      var st_rdev:dev_t;           // Device number, if device.
-      var st_size:off_t;           // Size of file, in bytes.
-      var st_atim:struct_timespec; // Last data access timestamp.
-      var st_mtim:struct_timespec; // Last data modification timestamp.
-      var st_ctim:struct_timespec; // Last file status change timestamp.
-      var st_blksize:blksize_t;    // Optimal block size for I/O.
-      var st_blocks:blkcnt_t;      // Number 512-byte blocks allocated.
+      /* Device. */
+      var st_dev:dev_t;
+      /* File serial number. */
+      var st_ino:ino_t;
+      /* File mode. */
+      var st_mode:mode_t;
+      /* Link count. */
+      var st_nlink:nlink_t;
+      /* User ID of the file's owner. */
+      var st_uid:uid_t;
+      /* Group ID of the file's group. */
+      var st_gid:gid_t;
+      /* Device number, if device. */
+      var st_rdev:dev_t;
+      /* Size of file, in bytes. */
+      var st_size:off_t;
+      /* Last data access timestamp. */
+      var st_atim:struct_timespec;
+      /* Last data modification timestamp. */
+      var st_mtim:struct_timespec;
+      /* Last file status change timestamp. */
+      var st_ctim:struct_timespec;
+      /* Optimal block size for I/O. */
+      var st_blksize:blksize_t;
+      /* Number 512-byte blocks allocated. */
+      var st_blocks:blkcnt_t;
     }
 
+    /* Changes the mode of a file. */
     extern proc chmod(path:c_ptrConst(c_char), mode:mode_t):c_int;
+    /* Get the status of a file, should be used with :record:`struct_stat`. */
     extern 'chpl_os_posix_stat' proc stat(path:c_ptrConst(c_char),
                                           buf:c_ptr(struct_stat)):c_int;
 
     //
     // sys/time.h
     //
+    /* The structure ``timeval`` from ``sys/time.h``. */
     extern "struct timeval" record struct_timeval {
-      var tv_sec:time_t;       // seconds since Jan. 1, 1970
-      var tv_usec:suseconds_t; // and microseconds
+      /* Seconds since the epoch, Jan. 1, 1970 */
+      var tv_sec:time_t;
+      /* Nanoseconds */
+      var tv_usec:suseconds_t;
     }
 
+    @chpldoc.nodoc
     proc struct_timeval.init() {}
 
+    @chpldoc.nodoc
     proc struct_timeval.init(tv_sec: integral, tv_usec: integral) {
       this.tv_sec = tv_sec:time_t;
       this.tv_usec = tv_usec:suseconds_t;
     }
 
+    @chpldoc.nodoc
     proc struct_timeval.init(tv_sec: time_t, tv_usec: suseconds_t) {
       this.tv_sec = tv_sec;
       this.tv_usec = tv_usec;
     }
 
+    /* The structure ``timezone`` from ``time.h``. */
     extern "struct timezone" record struct_timezone {
-      var tz_minuteswest:c_int; // of Greenwich
-      var tz_dsttime:c_int;     // type of dst correction to apply
+      /* Minutes west of Greenwich */
+      var tz_minuteswest:c_int;
+      /* Type of DST correction */
+      var tz_dsttime:c_int;
     };
 
+    /*
+      Get the date and time, based on the timezone in ``tzp``.
+      The result is stored in ``tp``.
+    */
     extern proc gettimeofday(tp:c_ptr(struct_timeval),
                              tzp:c_ptr(struct_timezone)):c_int;
 
     //
     // time.h
     //
+    /* The structure ``tm`` from ``time.h``. */
     extern "struct tm" record struct_tm {
-      var tm_sec:c_int;   // Seconds [0,60] (60 allows for leap seconds)
-      var tm_min:c_int;   // Minutes [0,59]
-      var tm_hour:c_int;  // Hour [0,23]
-      var tm_mday:c_int;  // Day of month [1,31]
-      var tm_mon:c_int;   // Month of year [0,11]
-      var tm_year:c_int;  // Years since 1900
-      var tm_wday:c_int;  // Day of week [0,6] (Sunday =0)
-      var tm_yday:c_int;  // Day of year [0,365]
-      var tm_isdst:c_int; // Daylight Savings flag
+      /* Seconds [0,60] (60 allows for leap seconds) */
+      var tm_sec:c_int;
+      /* Minutes [0,59] */
+      var tm_min:c_int;
+      /* Hour [0,23] */
+      var tm_hour:c_int;
+      /* Day of month [1,31] */
+      var tm_mday:c_int;
+      /* Month of year [0,11] */
+      var tm_mon:c_int;
+      /* Years since 1900 */
+      var tm_year:c_int;
+      /* Day of week [0,6] (Sunday =0) */
+      var tm_wday:c_int;
+      /* Day of year [0,365] */
+      var tm_yday:c_int;
+      /* Daylight Savings flag */
+      var tm_isdst:c_int;
     };
 
+    /* Get the date and time as a string. */
     extern proc asctime(timeptr:c_ptr(struct_tm)):c_ptr(c_char);
+    /*
+      Get the date and time as a string, using the given buffer.
+
+      :returns: ``buf``
+    */
     extern proc asctime_r(timeptr:c_ptr(struct_tm), buf:c_ptr(c_char))
                   :c_ptr(c_char);
+    /* Convert the time to a local time. */
     extern proc localtime(timer:c_ptr(time_t)):c_ptr(struct_tm);
+    /*
+      Convert the time to a local time, storing the result in the given struct.
+
+      :returns: ``result``
+    */
     extern proc localtime_r(timer:c_ptr(time_t), result:c_ptr(struct_tm))
                   :c_ptr(struct_tm);
+    /* Get the time. */
     extern proc time(tloc:c_ptr(time_t)):time_t;
 
     //
     // unistd.h
     //
+    /* Close a file descriptor. */
     extern proc close(fildes:c_int):c_int;
+    /* Create a pipe. */
     extern proc pipe(fildes:c_ptr(c_array(c_int, 2))):c_int;
+    /* Read ``size`` bytes from a file descriptor into ``buf``. */
     extern proc read(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
+    /* Write ``size`` bytes to file descriptor from ``buf``. */
     extern proc write(fildes:c_int, buf:c_ptr(void), size:c_size_t):c_ssize_t;
 
     /*
@@ -1012,7 +1124,7 @@ module OS {
       :arg c: the byte value to use
       :arg n: the number of bytes of s to fill
 
-      :returns: s
+      :returns: ``s``
     */
     pragma "fn synchronization free"
     inline proc memset(s:c_ptr(void), c:integral, n: c_size_t) {
@@ -1119,12 +1231,17 @@ module OS {
      :class:`SystemError` is a base class for :class:`Errors.Error` s
      generated from ``errorCode``. It provides factory methods to create
      different subtypes based on the ``errorCode`` that is passed.
-
   */
   class SystemError : Error {
+    @chpldoc.nodoc
     var err:     errorCode;
+    @chpldoc.nodoc
     var details: string;
 
+    /*
+      Construct a :class:`SystemError` with a specific error code and optional
+      extra details.
+    */
     proc init(err: errorCode, details: string = "") {
       this.err     = err;
       this.details = details;
@@ -1250,6 +1367,7 @@ module OS {
      :const:`~POSIX.EWOULDBLOCK`, and :const:`~POSIX.EINPROGRESS`.
   */
   class BlockingIoError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EWOULDBLOCK:errorCode) {
       super.init(err, details);
     }
@@ -1260,6 +1378,7 @@ module OS {
      corresponding to :const:`~POSIX.ECHILD`.
   */
   class ChildProcessError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECHILD:errorCode) {
       super.init(err, details);
     }
@@ -1270,6 +1389,7 @@ module OS {
      serves as the base class for all system errors regarding connections.
   */
   class ConnectionError : SystemError {
+    @chpldoc.nodoc
     proc init(err: errorCode, details: string = "") {
       super.init(err, details);
     }
@@ -1280,6 +1400,7 @@ module OS {
      corresponding to :const:`~POSIX.EPIPE`
   */
   class BrokenPipeError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EPIPE:errorCode) {
       super.init(err, details);
     }
@@ -1290,6 +1411,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNABORTED`.
   */
   class ConnectionAbortedError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNABORTED:errorCode) {
       super.init(err, details);
     }
@@ -1300,6 +1422,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNREFUSED`.
   */
   class ConnectionRefusedError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNREFUSED:errorCode) {
       super.init(err, details);
     }
@@ -1310,6 +1433,7 @@ module OS {
      corresponding to :const:`~POSIX.ECONNRESET`.
   */
   class ConnectionResetError : ConnectionError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ECONNRESET:errorCode) {
       super.init(err, details);
     }
@@ -1320,6 +1444,7 @@ module OS {
      corresponding to :const:`~POSIX.EEXIST`.
   */
   class FileExistsError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EEXIST:errorCode) {
       super.init(err, details);
     }
@@ -1330,6 +1455,7 @@ module OS {
      corresponding to :const:`~POSIX.ENOENT`.
   */
   class FileNotFoundError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ENOENT:errorCode) {
       super.init(err, details);
     }
@@ -1340,6 +1466,7 @@ module OS {
      corresponding to :const:`~POSIX.EINTR`.
   */
   class InterruptedError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EINTR:errorCode) {
       super.init(err, details);
     }
@@ -1350,6 +1477,7 @@ module OS {
      corresponding to :const:`~POSIX.EISDIR`.
   */
   class IsADirectoryError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EISDIR:errorCode) {
       super.init(err, details);
     }
@@ -1360,6 +1488,7 @@ module OS {
      corresponding to :const:`~POSIX.ENOTDIR`.
   */
   class NotADirectoryError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ENOTDIR:errorCode) {
       super.init(err, details);
     }
@@ -1370,6 +1499,7 @@ module OS {
      corresponding to :const:`~POSIX.EACCES` and :const:`~POSIX.EPERM`.
   */
   class PermissionError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = EPERM:errorCode) {
       super.init(err, details);
     }
@@ -1380,6 +1510,7 @@ module OS {
      corresponding to :const:`~POSIX.ESRCH`.
   */
   class ProcessLookupError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ESRCH:errorCode) {
       super.init(err, details);
     }
@@ -1390,6 +1521,7 @@ module OS {
      to :const:`~POSIX.ETIMEDOUT`.
   */
   class TimeoutError : SystemError {
+    @chpldoc.nodoc
     proc init(details: string = "", err: errorCode = ETIMEDOUT:errorCode) {
       super.init(err, details);
     }
@@ -1400,6 +1532,7 @@ module OS {
      EIO.
   */
   class IoError : SystemError {
+    @chpldoc.nodoc
     proc init(err: errorCode = EIO, details: string = "") {
       super.init(err, details);
     }
@@ -1410,13 +1543,16 @@ module OS {
      encountering end-of-file.
   */
   class EofError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1448,17 +1584,20 @@ module OS {
      input could be read.
 
      This error can also occur on some writing operations when a
-     :record:~IO.fileWriter's range has been specified, and the write exceeds
+     :record:`~IO.fileWriter`'s range has been specified, and the write exceeds
      the valid range.
   */
   class UnexpectedEofError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1489,13 +1628,16 @@ module OS {
      to incorrectly-formatted input.
   */
   class BadFormatError : Error {
+    @chpldoc.nodoc
     var details: string;
 
+    @chpldoc.nodoc
     proc init(details: string = "", err_msg: string = "") {
       this.details = details;
       this._msg = err_msg;
     }
 
+    @chpldoc.nodoc
     override proc message() {
       var generatedMsg: string;
 
@@ -1526,10 +1668,12 @@ module OS {
     indicating that an IO operation required more storage than was provided
   */
   class InsufficientCapacityError : IoError {
+    @chpldoc.nodoc
     proc init(details: string = "") {
       super.init(ERANGE: errorCode, details);
     }
 
+    @chpldoc.nodoc
     override proc message() {
       return
         if details.isEmpty() then

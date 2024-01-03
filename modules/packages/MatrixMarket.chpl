@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -218,7 +218,7 @@ class MMReader {
      var pctflag = false;
      while !pctflag {
        var percentfound:string;
-       var offset = fin.chpl_offset();
+       var offset = fin.offset();
        fin.readLine(percentfound);
 
        // didn't find a percentage, rewind channel by length of read string...

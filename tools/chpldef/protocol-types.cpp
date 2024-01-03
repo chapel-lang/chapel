@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -236,6 +236,26 @@ bool Position::operator==(const Position& rhs) const {
   return line == rhs.line && character == rhs.character;
 }
 
+bool Position::operator!=(const Position& rhs) const {
+  return !(*this == rhs);
+}
+
+bool Position::operator<(const Position& rhs) const {
+  return line < rhs.line || (line == rhs.line && character < rhs.character);
+}
+
+bool Position::operator<=(const Position& rhs) const {
+  return (*this < rhs) || (*this == rhs);
+}
+
+bool Position::operator>(const Position& rhs) const {
+  return !(*this <= rhs);
+}
+
+bool Position::operator>=(const Position& rhs) const {
+  return (*this > rhs) || (*this == rhs);
+}
+
 bool TextDocumentPositionParams::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
   return m && MAP_(m, textDocument) && MAP_(m, position);
@@ -311,6 +331,42 @@ JsonValue Range::toJson() const {
 
 bool Range::operator==(const Range& rhs) const {
   return start == rhs.start && end == rhs.end;
+}
+
+bool Range::operator!=(const Range& rhs) const {
+  return !(*this == rhs);
+}
+
+bool Range::operator<(const Range& rhs) const {
+  return start < rhs.start;
+}
+
+bool Range::operator<=(const Range& rhs) const {
+  return (*this < rhs) || (*this == rhs);
+}
+
+bool Range::operator>(const Range& rhs) const {
+  return end > rhs.end;
+}
+
+bool Range::operator>=(const Range& rhs) const {
+  return (*this > rhs) || (*this == rhs);
+}
+
+bool Range::contains(const Range& r) const {
+  return start <= r.start && end >= r.end;
+}
+
+bool Range::contains(const Position& p) const {
+  return start <= p && end >= p;
+}
+
+bool Range::overlaps(const Range& r) const {
+  return contains(r.start) || contains(r.end);
+}
+
+bool Range::isNegative() const {
+  return end < start;
 }
 
 JsonValue DeclarationResult::toJson() const {

@@ -1,0 +1,2 @@
+constIntent.chpl:4: error: cannot assign to const variable
+constIntent.chpl:4: note: The shadow variable 'c' is constant due to task intents in this loop

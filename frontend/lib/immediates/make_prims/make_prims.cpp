@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -181,7 +181,7 @@ main(int argc, char *argv[]) {
 
   if (argc < 1 || buf_read(argv[1], &buf, &len) < 0) {
     printf("unable to read file '%s'", argv[i]);
-    exit(-1);
+    return -1;
   }
   get_lines(buf, lines);
 

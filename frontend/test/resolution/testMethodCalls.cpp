@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -79,8 +79,9 @@ static void test1() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());
@@ -92,8 +93,9 @@ static void test1() {
   auto& reCallSecondary = rr.byAst(callSecondary);
   auto& qtCallSecondary = reCallSecondary.type();
   assert(qtCallSecondary.type()->isVoidType());
-  auto tfsCallSecondary = reCallSecondary.mostSpecific().only();
-  assert(tfsCallSecondary);
+  auto mscCallSecondary = reCallSecondary.mostSpecific().only();
+  assert(mscCallSecondary);
+  auto tfsCallSecondary = mscCallSecondary.fn();
 
   // Check the secondary call receiver.
   assert(tfsCallSecondary->id() == fnSecondary->id());
@@ -153,8 +155,9 @@ static void test2() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());
@@ -166,8 +169,9 @@ static void test2() {
   auto& reCallSecondary = rr.byAst(callSecondary);
   auto& qtCallSecondary = reCallSecondary.type();
   assert(qtCallSecondary.type()->isVoidType());
-  auto tfsCallSecondary = reCallSecondary.mostSpecific().only();
-  assert(tfsCallSecondary);
+  auto mscCallSecondary = reCallSecondary.mostSpecific().only();
+  assert(mscCallSecondary);
+  auto tfsCallSecondary = mscCallSecondary.fn();
 
   // Check the secondary call receiver.
   assert(tfsCallSecondary->id() == fnSecondary->id());
@@ -306,8 +310,9 @@ static void test5() {
   auto& reCallPrimary = rr.byAst(callPrimary);
   auto& qtCallPrimary = reCallPrimary.type();
   assert(qtCallPrimary.type()->isVoidType());
-  auto tfsCallPrimary = reCallPrimary.mostSpecific().only();
-  assert(tfsCallPrimary);
+  auto mscCallPrimary = reCallPrimary.mostSpecific().only();
+  assert(mscCallPrimary);
+  auto tfsCallPrimary = mscCallPrimary.fn();
 
   // Check the primary call receiver.
   assert(tfsCallPrimary->id() == fnPrimary->id());

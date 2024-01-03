@@ -1,0 +1,3 @@
+$CHPL_HOME/modules/standard/GPU.chpl:prediffed: In function 'gpuSumReduce':
+$CHPL_HOME/modules/standard/GPU.chpl:prediffed: error: Arrays with string elements cannot be reduced with gpu*Reduce functions
+  stringError.chpl:prediffed: called as gpuSumReduce(A: [domain(1,int(64),one)] string)

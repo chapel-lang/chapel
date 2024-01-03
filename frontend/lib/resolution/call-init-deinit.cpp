@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -543,7 +543,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
   actuals.push_back(CallInfoActual(lhsType, USTR("this")));
   actuals.push_back(CallInfoActual(rhsType, UniqueString()));
   auto ci = CallInfo (/* name */ USTR("init="),
-                      /* calledType */ QualifiedType(),
+                      /* calledType */ lhsType,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
@@ -626,7 +626,7 @@ void CallInitDeinit::resolveMoveInit(const AstNode* ast,
       }
     }
   } else {
-    CHPL_ASSERT(false && "TODO"); // e.g. value = copy init from ref
+    CHPL_UNIMPL("value = copy init from ref");
   }
 }
 

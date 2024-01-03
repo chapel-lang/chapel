@@ -8,7 +8,7 @@ on Locales[0] {
         var a : [0..<8] uint(8);
 
         on Locales[2] {
-            const numRead = reader.readBinary(a, ioendian.native),
+            const numRead = reader.readBinary(a, endianness.native),
                   correct = && reduce (a == a_expected);
             writeln(numRead, " ", correct);
         }

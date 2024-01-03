@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -947,6 +947,52 @@ static void testSelectTypes() {
                       {"real", "real(64)"},
                       {"string", "string"},
                       {"uint", "uint(64)"}};
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements without otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+      }
+
+      var y : T;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      //{"string", "string"} //future test for init resolution DCE
+                      };
+
+    testSelectCases(fooFunc, vals, /*isType=*/false);
+  }
+  {
+    // demonstrate that when blocks can have multiple 
+    // statements with otherwise
+    std::string fooFunc = ops + R"""(
+    proc foo(type T) {
+      var x : int;
+      select T {
+        when int {
+          var x: int;
+          return x;
+        }
+        otherwise {}
+      }
+      var y : real;
+      return y;
+    }
+    )""";
+    stringMap vals = {{"int", "int(64)"},
+                      //{"string", "real(64)"} //future test for init resolution DCE
+                      };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
   }

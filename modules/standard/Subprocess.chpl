@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -755,7 +755,7 @@ module Subprocess {
     return spawnshellHelper(command, env, stdin, stdout, stderr, executable, shellarg, _iokind.dynamic, locking);
   }
 
-  proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
+  private proc spawnshellHelper(command:string, env:[] string=Subprocess.empty_env,
                   stdin:?t = pipeStyle.forward, stdout:?u = pipeStyle.forward,
                   stderr:?v = pipeStyle.forward,
                   executable="/bin/sh", shellarg="-c",

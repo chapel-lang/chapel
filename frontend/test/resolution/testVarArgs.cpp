@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -120,7 +120,7 @@ struct Collector {
     if (rv.hasAst(call)) {
       const ResolvedExpression& result = rv.byAst(call);
       if (result.mostSpecific().isEmpty() == false) {
-        const TypedFnSignature* sig = result.mostSpecific().only();
+        const TypedFnSignature* sig = result.mostSpecific().only().fn();
         auto fn = resolveFunction(rv.context(), sig, result.poiScope());
 
         ResolvedVisitor<Collector> newRV(rv.context(), nullptr, *this, fn->resolutionById());
@@ -332,7 +332,11 @@ static std::string buildProgram(Qualifier formalIntent,
   }
   stream << "..." << count;
   stream << ") {\n";
-  stream << "  var varArgRet : args.type;\n";
+
+  stream << "  var varArgRet : args";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
+
   stream << "  return varArgRet;\n";
   stream << "}\n\n";
 
@@ -358,7 +362,9 @@ static std::string buildProgram(Qualifier formalIntent,
     if (i > 0) stream << ", ";
     stream << "formal_" << std::to_string(i);
   }
-  stream << ").type;\n";
+  stream << ")";
+  if (formalIntent != Qualifier::TYPE) stream << ".type";
+  stream << ";\n";
   stream << "  return ret;\n";
   stream << "}\n\n";
 

@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -47,6 +47,9 @@
 #
 MAKEFLAGS = --no-print-directory
 
+MODULES_TO_LINT = \
+	$(shell find $(CHPL_MAKE_HOME)/modules/dists -name '*.chpl')
+
 export CHPL_MAKE_HOME=$(shell pwd)
 export CHPL_MAKE_PYTHON := $(shell $(CHPL_MAKE_HOME)/util/config/find-python.sh)
 
@@ -60,6 +63,7 @@ comprt: FORCE
 	@$(MAKE) third-party-try-opt
 	@$(MAKE) always-build-test-venv
 	@$(MAKE) always-build-chpldoc
+	@$(MAKE) always-build-chplcheck
 	@$(MAKE) runtime
 	@$(MAKE) modules
 
@@ -74,6 +78,12 @@ frontend: FORCE
 	@cd third-party && $(MAKE) llvm
 	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
 	@cd compiler && $(MAKE) frontend
+
+frontend-shared: FORCE
+	@echo "Making the frontend compiler library (always shared)..."
+	@cd third-party && $(MAKE) llvm
+	@cd third-party && $(MAKE) CHPL_MAKE_HOST_TARGET=--host jemalloc
+	@cd compiler && $(MAKE) frontend-shared
 
 compiler: FORCE
 	@echo "Making the compiler..."
@@ -116,12 +126,13 @@ third-party-c2chapel-venv: FORCE
 	cd third-party && $(MAKE) c2chapel-venv; \
 	fi
 
-third-party-chapel-py-venv: frontend FORCE
+third-party-chapel-py-venv: FORCE
 	cd third-party && $(MAKE) chapel-py-venv;
 
 test-venv: third-party-test-venv
 
-chapel-py-venv: third-party-chapel-py-venv
+chapel-py-venv: frontend-shared
+	$(MAKE) third-party-chapel-py-venv
 
 chpldoc: third-party-chpldoc-venv
 	@cd third-party && $(MAKE) llvm
@@ -148,6 +159,11 @@ always-build-chpldoc: FORCE
 	$(MAKE) chpldoc; \
 	fi
 
+always-build-chplcheck: FORCE
+	-@if [ -n "$$CHPL_ALWAYS_BUILD_CHPLCHECK" ]; then \
+	$(MAKE) chplcheck; \
+	fi
+
 chplvis: compiler third-party-fltk FORCE
 	cd tools/chplvis && $(MAKE)
 	cd tools/chplvis && $(MAKE) install
@@ -161,6 +177,18 @@ protoc-gen-chpl: chpldoc notcompiler FORCE
 c2chapel: third-party-c2chapel-venv FORCE
 	cd tools/c2chapel && $(MAKE)
 	cd tools/c2chapel && $(MAKE) install
+
+chplcheck: frontend-shared FORCE
+	@# chplcheck's build files take care of ensuring the virtual env is built.
+	@# Best not to depend on chapel-py-venv here, because at the time of
+	@# writing this target is always FORCEd (so we'd end up building it twice).
+	cd tools/chplcheck && $(MAKE) all install
+
+lint-standard-modules: chplcheck FORCE
+	tools/chplcheck/chplcheck --skip-unstable \
+		--internal-prefix "_" \
+		--internal-prefix "chpl_" \
+		$(MODULES_TO_LINT)
 
 compile-util-python: FORCE
 	@if $(CHPL_MAKE_PYTHON) -m compileall -h > /dev/null 2>&1 ; then \

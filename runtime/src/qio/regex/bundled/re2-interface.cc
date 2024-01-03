@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -241,23 +241,27 @@ void qio_regex_release(qio_regex_t* compiled)
 
 void qio_regex_get_options(const qio_regex_t* regex, qio_regex_options_t* options)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  const RE2::Options& opts = re2->options();
-  re2_options_to_qio_re_options(&opts, options);
+  if (RE2* re2 = (RE2*) regex->regex) {
+    const RE2::Options& opts = re2->options();
+    re2_options_to_qio_re_options(&opts, options);
+  }
 }
 
 void qio_regex_borrow_pattern(const qio_regex_t* regex, const char** pattern, int64_t* len_out)
 {
-  RE2* re2 = (RE2*) regex->regex;
-  const std::string &s = re2->pattern();
-  *pattern = s.c_str();
-  *len_out = s.length();
+  if (RE2* re2 = (RE2*) regex->regex) {
+    const std::string &s = re2->pattern();
+    *pattern = s.c_str();
+    *len_out = s.length();
+  } else {
+    *len_out = 0;
+  }
 }
 
 int64_t qio_regex_get_ncaptures(const qio_regex_t* regex)
 {
   RE2* re2 = (RE2*) regex->regex;
-  return re2->NumberOfCapturingGroups();
+  return re2 ? re2->NumberOfCapturingGroups() : 0;
 }
 
 qio_bool qio_regex_ok(const qio_regex_t* regex)
@@ -280,6 +284,7 @@ qio_bool qio_regex_match(qio_regex_t* regex, const char* text, int64_t text_len,
   MAYBE_STACK_SPACE(StringPiece, onstack);
   StringPiece* spPtr;
   RE2* re = (RE2*) regex->regex;
+  if (!re) return false;
 
   // RE2 uses int for ncaptures
   if( nsubmatch > INT_MAX || nsubmatch < 0 )
@@ -322,23 +327,24 @@ int64_t qio_regex_replace(qio_regex_t* regex, const char* repl, int64_t repl_len
   //     expedient way.
   StringPiece rewrite(repl, repl_len);
   std::string s(str, str_len);
-  RE2* re = (RE2*) regex->regex;
   int64_t ret = 0;
-  char* output = NULL;
-  if( global ) {
-    ret = RE2::GlobalReplace(&s, *re, rewrite);
-  } else {
-    if( RE2::Replace(&s, *re, rewrite) ) {
-      ret = 1;
+  if (RE2* re = (RE2*) regex->regex) {
+    char* output = NULL;
+    if( global ) {
+      ret = RE2::GlobalReplace(&s, *re, rewrite);
     } else {
-      ret = 0;
+      if( RE2::Replace(&s, *re, rewrite) ) {
+        ret = 1;
+      } else {
+        ret = 0;
+      }
     }
+    output = (char*) qio_malloc(s.length()+1);
+    memcpy(output, s.data(), s.length());
+    output[s.length()] = '\0';
+    *str_out = output;
+    *len_out = s.length();
   }
-  output = (char*) qio_malloc(s.length()+1);
-  memcpy(output, s.data(), s.length());
-  output[s.length()] = '\0';
-  *str_out = output;
-  *len_out = s.length();
   return ret;
 }
 
@@ -388,7 +394,7 @@ void qio_regex_channel_discard(qio_channel_s* ch, int64_t cur, int64_t min)
 qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, struct qio_channel_s* ch, int64_t maxlen, int anchor, qio_bool can_discard, qio_bool keep_unmatched, qio_bool keep_whole_pattern, qio_regex_string_piece_t* captures, int64_t ncaptures)
 {
   RE2* re = (RE2*) regex->regex;
-  qioerr err;
+  qioerr err = NULL;
   void* bufstart = NULL;
   void* bufend = NULL;
   RE2::Anchor ranchor = RE2::UNANCHORED;
@@ -408,11 +414,16 @@ qioerr qio_regex_channel_match(const qio_regex_t* regex, const int threadsafe, s
   int old_gFileStringAllowBufferSearch;
   MAYBE_STACK_SPACE(FilePiece, caps_onstack);
 
+  if (!re)
+    QIO_GET_CONSTANT_ERROR(err, EINVAL, "invalid regex");
+
   if( ncaptures > INT_MAX || ncaptures < 0 )
     QIO_GET_CONSTANT_ERROR(err, EINVAL, "invalid number of captures");
 
   start_offset = offset = qio_channel_offset_unlocked(ch);
   end_offset = qio_channel_end_offset_unlocked(ch);
+
+  if (err) goto error;
 
   end = end_offset;
   if( maxlen != std::numeric_limits<int64_t>::max() ) {

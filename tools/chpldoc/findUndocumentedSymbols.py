@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -126,6 +126,19 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     if (
         hasattr(node, "name")
         and node.name().startswith("chpl_")
+        and "chpldoc ignore chpl prefix" not in node.pragmas()
+    ):
+        return True
+
+    # MultiDecl apparently supports comments inside of it
+    # so it requires the extra `hasattr` check
+    #
+    # Note that this check will skip a multi_decl like `var chpl_x = a, y = b;`,
+    # even though arguably `y` is documentable. This is an uncommon scenario
+    # and one `chpldoc` also doesn't handle currently
+    if (
+        isinstance(node, dyno.MultiDecl)
+        and any(n.name().startswith("chpl_") for n in node if hasattr(n, "name"))
         and "chpldoc ignore chpl prefix" not in node.pragmas()
     ):
         return True
@@ -332,12 +345,33 @@ def get_files(files: List[str]) -> Generator:
 
 def main(raw_args: List[str]) -> int:
     a = ap.ArgumentParser()
-    a.add_argument("files", nargs="*")
-    a.add_argument("--ignore-deprecated", action="store_true", default=False)
-    a.add_argument("--ignore-unstable", action="store_true", default=False)
+    a.add_argument(
+        "files",
+        nargs="*",
+        help="a list of Chapel files and/or directories to be searched",
+    )
+    a.add_argument(
+        "--ignore-deprecated",
+        action="store_true",
+        default=False,
+        help="don't report warnings for deprecated symbols",
+    )
+    a.add_argument(
+        "--ignore-unstable",
+        action="store_true",
+        default=False,
+        help="don't report warnings for unstable symbols",
+    )
+    # hidden option, converts warnings to errors to be used in a ci
+    a.add_argument("--ci", action="store_true", default=False, help=ap.SUPPRESS)
+
     args = a.parse_args(raw_args)
     flags = vars(args)
     files = flags.pop("files")
+    ci = flags.pop("ci")
+
+    report_kind = "warning" if not ci else "error"
+    ret_code = 0
 
     curdir = os.path.abspath(os.path.curdir)
 
@@ -352,9 +386,10 @@ def main(raw_args: List[str]) -> int:
             path = os.path.relpath(loc.path(), curdir)
             names = get_node_name(sym)
             for name in names:
-                print(f"warning: '{name}' at {path}:{line} is undocumented")
+                print(f"{report_kind}: '{name}' at {path}:{line} is undocumented")
+                ret_code = 1 if ci else 0
 
-    return 0
+    return ret_code
 
 
 if __name__ == "__main__":

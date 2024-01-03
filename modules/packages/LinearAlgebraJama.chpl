@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2245,8 +2245,7 @@ class Matrix {
 
    proc random (m, n:int) {
       var A = new unmanaged Matrix(m,n);
-      var randlist = new owned RandomStream(real, seed);
-      randlist.fillRandom(A.A);
+      fillRandom(A.A, seed);
       return A;
    }
 
@@ -2262,8 +2261,7 @@ class Matrix {
 
 proc random (m, n:int) {
    var A = new unmanaged Matrix(m,n);
-   var randlist = new owned RandomStream(real, seed);
-   randlist.fillRandom(A.A);
+   fillRandom(A.A, seed);
    return A;
 }
 

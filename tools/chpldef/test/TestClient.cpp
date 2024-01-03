@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -70,12 +70,12 @@ void TestClient::sendShutdown() {
 void TestClient::advanceServerToReady() {
   if (ctx_->state() == Server::UNINITIALIZED) {
     std::ignore = sendInitialize();
-    CHPL_ASSERT(ctx_->state() == Server::SETUP);
+    assert(ctx_->state() == Server::SETUP);
   }
 
   if (ctx_->state() == Server::SETUP) {
     sendInitialized();
-    CHPL_ASSERT(ctx_->state() == Server::READY);
+    assert(ctx_->state() == Server::READY);
   }
 }
 
@@ -96,8 +96,24 @@ static std::string mentionSymbol(const chpl::uast::AstNode* ast) {
 }
 
 static Location
-locationFromAst(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
-  CHPL_ASSERT(ast);
+mentionSourceLocation(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
+  assert(ast);
+  if (auto ident = ast->toIdentifier()) {
+    auto loc = chpl::parsing::locateAst(chapel, ident);
+    return Location(std::move(loc));
+  } else if (auto dot = ast->toDot()) {
+    auto loc = chpl::parsing::locateDotFieldWithAst(chapel, dot);
+    assert(loc);
+    return Location(std::move(loc));
+  } else {
+    CHPLDEF_TODO();
+  }
+  return {};
+}
+
+static Location
+mentionTargetLocation(chpl::Context* chapel, const chpl::uast::AstNode* ast) {
+  assert(ast);
   auto loc = chpl::parsing::locateAst(chapel, ast);
   return Location(std::move(loc));
 }
@@ -115,12 +131,9 @@ doCollectMentions(chpl::Context* chapel,
     m.symbol = mentionSymbol(ast);
     bool isBaseExpr = parentCallIfBaseExpression(chapel, ast) != nullptr;
     m.isCallBaseExpression = isBaseExpr;
-    m.source = locationFromAst(chapel, ast);
+    m.source = mentionSourceLocation(chapel, ast);
     mentions.push_back(std::move(m));
   }
-
-  const bool canRecurse = !ast->isFunction();
-  if (!canRecurse) return;
 
   for (auto child : ast->children()) {
     doCollectMentions(chapel, child, decls, mentions);
@@ -138,7 +151,7 @@ doFixupMentionTargets(chpl::Context* chapel,
     auto name = nd->name().c_str();
     auto& v = nameToDecls[name];
     v.push_back(nd);
-    if (!nd->isFunction()) CHPL_ASSERT(v.size() == 1);
+    if (!nd->isFunction()) assert(v.size() == 1);
   }
 
   for (size_t i = 0; i < mentions.size(); i++) {
@@ -147,26 +160,29 @@ doFixupMentionTargets(chpl::Context* chapel,
 
     // Get the declaration(s) with the name 'name'.
     auto it = nameToDecls.find(name);
-    CHPL_ASSERT(it != nameToDecls.end());
-    auto& v = it->second;
+    if (it == nameToDecls.end()) {
+      m.isValid = false;
+      continue;
+    }
 
+    auto& v = it->second;
     const chpl::uast::NamedDecl* nd = nullptr;
 
     // Calls map linearly in order to simulate overloading.
     if (m.isCallBaseExpression) {
       auto& idx = functionMentionIdx[name];
-      CHPL_ASSERT(v.size() >= 1);
-      CHPL_ASSERT(idx < v.size());
+      assert(v.size() >= 1);
+      assert(idx < v.size());
       nd = v[idx++];
 
     // Everything else just maps by name.
     } else {
-      CHPL_ASSERT(v.size() == 1);
+      assert(v.size() == 1);
       nd = v[0];
     }
 
-    CHPL_ASSERT(nd);
-    m.target = locationFromAst(chapel, nd);
+    assert(nd);
+    m.target = mentionTargetLocation(chapel, nd);
   }
 }
 
@@ -225,7 +241,7 @@ TestClient::sendDeclaration(const std::string& uri, Position cursor) {
     if (auto& res = r->result) {
       if (auto p = std::get_if<LocationArray>(&(*res))) {
         auto& arr = *p;
-        CHPL_ASSERT(arr.size() <= 1);
+        assert(arr.size() <= 1);
         if (arr.size() == 1) return arr[0];
         return {};
       }

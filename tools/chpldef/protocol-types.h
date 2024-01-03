@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -276,8 +276,8 @@ struct Position : ProtocolType {
   bool operator==(const Position& rhs) const;
   bool operator!=(const Position& rhs) const;
   bool operator<(const Position& rhs) const;
-  bool operator>(const Position& rhs) const;
   bool operator<=(const Position& rhs) const;
+  bool operator>(const Position& rhs) const;
   bool operator>=(const Position& rhs) const;
 };
 
@@ -293,6 +293,27 @@ struct Range : ProtocolType {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
   virtual JsonValue toJson() const override;
   bool operator==(const Range& rhs) const;
+  bool operator!=(const Range& rhs) const;
+
+  /** Determine if the start position of this is less than that of 'rhs'. */
+  bool operator<(const Range& rhs) const;
+  bool operator<=(const Range& rhs) const;
+
+  /** Determine if the end position of this is greater than that of 'rhs'. */
+  bool operator>(const Range& rhs) const;
+  bool operator>=(const Range& rhs) const;
+
+  /** Determine if this contains 'r'. Equal ranges contain each other. */
+  bool contains(const Range& r) const;
+
+  /** Determine if this contains the position 'p'. */
+  bool contains(const Position& p) const;
+
+  /** Determine if one range overlaps another. */
+  bool overlaps(const Range& r) const;
+
+  /** Determine if the end position is less than the start position. */
+  bool isNegative() const;
 };
 
 struct TextDocumentPositionParams : ProtocolTypeRecv {

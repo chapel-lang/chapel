@@ -313,7 +313,7 @@ proc test_permuteMatrix(rprt = true) : bool {
     // little too meta here?)
 
     param n = 10;
-    var rand = new owned RandomStream(real);
+    var rand = new randomStream(real);
 
     // this n by n array is filled so each element is assigned to its
     // row number. This test will permute these elements, keeping a pivot
@@ -347,11 +347,11 @@ proc test_permuteMatrix(rprt = true) : bool {
 }
 
 proc test_panelSolve(rprt = true) : bool {
-    var rand = new owned RandomStream(real);
+    var rand = new randomStream(real);
 
     var piv : [1..8] int = [i in 1..8] i;
-    var A : [1..8, 1..9] real =
-        [(i,j) in {1..8, 1..9}] (rand.getNext() * 10000):int % 100 + 1;
+    var A : [1..8, 1..9] real;
+    for (i, j) in A.domain do A[i,j] = (rand.getNext() * 10000):int % 100 + 1;
     var AOrig = A;
 
     var AOrig2 = A;
@@ -387,7 +387,7 @@ proc test_panelSolve(rprt = true) : bool {
 }
 
 proc test_updateBlockRow(rprt = true) : bool {
-    var rand = new owned RandomStream(real);
+    var rand = new randomStream(real);
 
     // construct a matrix A = [X | Y], where X is an already LU-factorized
     // submatrix and Y is the block row we wish to update and test
@@ -396,7 +396,7 @@ proc test_updateBlockRow(rprt = true) : bool {
     var randomWidth  : int = (rand.getNext() * 100):int + randomHeight;
     var A : [randomOffset..randomOffset+randomHeight-1,
              randomOffset..randomOffset+randomWidth-1] real;
-    rand.fillRandom(A);
+    rand.fill(A);
 
     var OrigA = A;
     
@@ -467,7 +467,7 @@ proc test_LUFactorizeNorms(
 
 proc test_LUFactorize(rprt = true, seed = -1) : bool {
     // construct a matrix of random size with random values 
-    var rand = new owned RandomStream(real, seed);
+    var rand = new randomStream(real, seed);
 
     var randomN : int = (rand.getNext() * 10):int + 1;
     var A : [1..randomN, 1..randomN+1] real;
@@ -537,4 +537,3 @@ proc main() {
         numPassed += test_LUFactorize(rprt=false, i * 1000 + 1);
     writeln(numPassed, " PASSED, ", 1000-numPassed, " FAILED");
 }
-

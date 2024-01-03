@@ -1,4 +1,4 @@
-use Random;
+use NPBRandom;
 use Time;
 
 enum classVals {S, W, A, B, C};
@@ -251,4 +251,3 @@ proc fullVerify() {
   else
     passedVerifications += 1;
 }
-

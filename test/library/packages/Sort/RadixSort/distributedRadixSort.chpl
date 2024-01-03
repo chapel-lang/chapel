@@ -9,10 +9,9 @@ config const timing = true;
 config const comms = true;
 
 proc simpletestcore(input:[]) {
-  var seed = SeedGenerator.oddCurrentTime;
-
   var localCopy = input;
-  shuffle(localCopy, seed);
+  var rs = new randomStream(int);
+  rs.shuffle(localCopy);
 
   const blockDom = blockDist.createDomain(input.domain);
   var A: [blockDom] uint = localCopy;
@@ -29,7 +28,7 @@ proc simpletestcore(input:[]) {
 
   forall i in input.domain {
     if input[i] != A[i] {
-      writeln("Sorting error in simpletest seed=", seed,
+      writeln("Sorting error in simpletest seed=", rs.seed,
               " element ", i, " in incorrect order");
       writef("input was %xt\n", input);
       halt("failure");
@@ -67,8 +66,8 @@ simpletest([0x01:uint,
 proc randomtest(n:int) {
   const blockDom = blockDist.createDomain({0..#n});
   var A: [blockDom] uint;
-  var seed = SeedGenerator.oddCurrentTime;
-  fillRandom(A, seed);
+  var rs = new randomStream(uint);
+  rs.fill(A);
   var localCopy:[0..#n] uint = A;
 
   writeln("Sorting ", n, " elements");
@@ -100,7 +99,7 @@ proc randomtest(n:int) {
   assert(Sort.isSorted(localCopy));
   forall i in 0..#n {
     if localCopy[i] != A[i] {
-      writeln("Sorting error in randomtest seed=", seed, " n=", n,
+      writeln("Sorting error in randomtest seed=", rs.seed, " n=", n,
               " element ", i, " in incorrect order");
       halt("failure");
     }

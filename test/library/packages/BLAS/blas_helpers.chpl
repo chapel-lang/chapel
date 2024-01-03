@@ -236,8 +236,7 @@ proc adjoint(A: [?D] ?t) where A.rank == 2 {
 
 /* Pseudo-random nonsingular matrix ((1/n**2)*A**2 + I) */
 proc makeRandomInvertible (ref A: [?Adom] ?t) {
-  var rng = createRandomStream(eltType=t,algorithm=RNG.PCG);
-  rng.fillRandom(A);
+  fillRandom(A);
 
   var I: [Adom] t;
   makeUnit(I);

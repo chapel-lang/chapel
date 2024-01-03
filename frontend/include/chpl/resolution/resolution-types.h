@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -430,6 +430,9 @@ class CallInfo {
   static CallInfo createWithReceiver(const CallInfo& ci,
                                      types::QualifiedType receiverType,
                                      UniqueString rename=UniqueString());
+
+  /** Copy and rename a CallInfo. */
+  static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
 
   /** Prepare actuals for a call for later use in creating a CallInfo.
       This is a helper function for CallInfo::create that is sometimes
@@ -1059,6 +1062,81 @@ class ApplicabilityResult {
   inline int formalIdx() const { return formalIdx_; }
 };
 
+class FormalActualMap;
+class MostSpecificCandidates;
+
+/**
+  Stores a function candidate. This information includes both the
+  TypedFnSignature* representing the candidate, as well as information
+  about this candidate's applicability. In particular, we store whether or
+  not this candidate requires a const ref coercion, which is allowed by
+  the spec, but is not allowed in practice due to the aliasing rules of C.
+  */
+class MostSpecificCandidate {
+ private:
+  friend class MostSpecificCandidates;
+
+  const TypedFnSignature* fn_;
+  int constRefCoercionFormal_;
+  int constRefCoercionActual_;
+
+  MostSpecificCandidate(const TypedFnSignature* fn,
+                        int constRefCoercionFormal,
+                        int constRefCoercionActual)
+    : fn_(fn),
+      constRefCoercionFormal_(constRefCoercionFormal),
+      constRefCoercionActual_(constRefCoercionActual) {}
+
+ public:
+  MostSpecificCandidate()
+    : fn_(nullptr),
+      constRefCoercionFormal_(-1),
+      constRefCoercionActual_(-1) {}
+
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const FormalActualMap& faMap);
+
+  static MostSpecificCandidate fromTypedFnSignature(Context* context,
+                                        const TypedFnSignature* fn,
+                                        const CallInfo& info);
+
+  const TypedFnSignature* fn() const { return fn_; }
+
+  int constRefCoercionFormal() const { return constRefCoercionFormal_; }
+
+  int constRefCoercionActual() const { return constRefCoercionActual_; }
+
+  bool hasConstRefCoercion() const { return constRefCoercionFormal_ != -1; }
+
+  operator bool() const {
+    CHPL_ASSERT(fn_ || (constRefCoercionFormal_ == -1 && constRefCoercionActual_ == -1));
+    return fn_ != nullptr;
+  }
+
+  bool operator==(const MostSpecificCandidate& other) const {
+    return fn_ == other.fn_ &&
+           constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
+           constRefCoercionActual_ == other.constRefCoercionActual_;
+  }
+
+  bool operator!=(const MostSpecificCandidate& other) const {
+    return !(*this == other);
+  }
+
+  void mark(Context* context) const {
+    context->markPointer(fn_);
+    (void) constRefCoercionFormal_; // nothing to mark
+    (void) constRefCoercionActual_; // nothing to mark
+  }
+
+  size_t hash() const {
+    return chpl::hash(fn_, constRefCoercionFormal_, constRefCoercionActual_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
+};
+
 /**
   Stores the most specific candidates when resolving a function call.
 */
@@ -1076,7 +1154,7 @@ class MostSpecificCandidates {
   } Intent;
 
  private:
-  const TypedFnSignature* candidates[NUM_INTENTS] = {nullptr};
+  MostSpecificCandidate candidates[NUM_INTENTS] = {MostSpecificCandidate()};
   bool emptyDueToAmbiguity = false;
 
  public:
@@ -1091,10 +1169,10 @@ class MostSpecificCandidates {
     Otherwise, default-initializes a MostSpecificCandidates with no candidates
     that is not empty due to ambiguity.
    */
-  static MostSpecificCandidates getOnly(const TypedFnSignature* fn) {
+  static MostSpecificCandidates getOnly(MostSpecificCandidate c) {
     MostSpecificCandidates ret;
-    if (fn != nullptr)
-      ret.setBestOnly(fn);
+    if (c.fn() != nullptr)
+      ret.setBestOnly(std::move(c));
     return ret;
   }
 
@@ -1122,57 +1200,57 @@ class MostSpecificCandidates {
    */
   void inferOutFormals(Context* context, const PoiScope* instantiationPoiScope);
 
-  const TypedFnSignature* const* begin() const {
+  MostSpecificCandidate const* begin() const {
     return &candidates[0];
   }
-  const TypedFnSignature* const* end() const {
+  MostSpecificCandidate const* end() const {
     return &candidates[NUM_INTENTS];
   }
 
-  void setBestRef(const TypedFnSignature* sig) {
-    candidates[REF] = sig;
+  void setBestRef(MostSpecificCandidate c) {
+    candidates[REF] = std::move(c);
   }
-  void setBestConstRef(const TypedFnSignature* sig) {
-    candidates[CONST_REF] = sig;
+  void setBestConstRef(MostSpecificCandidate c) {
+    candidates[CONST_REF] = std::move(c);
   }
-  void setBestValue(const TypedFnSignature* sig) {
-    candidates[VALUE] = sig;
-  }
-
-  void setBestOnly(const TypedFnSignature* sig) {
-    candidates[ONLY] = sig;
+  void setBestValue(MostSpecificCandidate c) {
+    candidates[VALUE] = std::move(c);
   }
 
-  const TypedFnSignature* bestRef() const {
+  void setBestOnly(MostSpecificCandidate c) {
+    candidates[ONLY] = std::move(c);
+  }
+
+  const MostSpecificCandidate& bestRef() const {
     return candidates[REF];
   }
-  const TypedFnSignature* bestConstRef() const {
+  const MostSpecificCandidate& bestConstRef() const {
     return candidates[CONST_REF];
   }
-  const TypedFnSignature* bestValue() const {
+  const MostSpecificCandidate& bestValue() const {
     return candidates[VALUE];
   }
 
   /**
     If there is exactly one candidate, return that candidate.
-    Otherwise, return nullptr.
+    Otherwise, return an empty candidate.
    */
-  const TypedFnSignature* only() const {
-    const TypedFnSignature* ret = nullptr;
+  MostSpecificCandidate only() const {
+    const MostSpecificCandidate* ret = nullptr;
     int nPresent = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
-        ret = sig;
+    for (const MostSpecificCandidate& sig : *this) {
+      if (sig.fn() != nullptr) {
+        ret = &sig;
         nPresent++;
       }
     }
     if (nPresent != 1) {
-      return nullptr;
+      return MostSpecificCandidate();
     }
 
     // if there is only one candidate, it should be in slot ONLY
-    CHPL_ASSERT(candidates[ONLY] == ret);
-    return ret;
+    CHPL_ASSERT(candidates[ONLY] == *ret);
+    return *ret;
   }
 
   /**
@@ -1180,8 +1258,8 @@ class MostSpecificCandidates {
    */
   int numBest() const {
     int ret = 0;
-    for (const TypedFnSignature* sig : *this) {
-      if (sig != nullptr) {
+    for (const MostSpecificCandidate& sig : *this) {
+      if (sig.fn() != nullptr) {
         ret++;
       }
     }
@@ -1238,8 +1316,8 @@ class MostSpecificCandidates {
     return defaultUpdate(keep, addin);
   }
   void mark(Context* context) const {
-    for (const TypedFnSignature* sig : candidates) {
-      context->markPointer(sig);
+    for (const MostSpecificCandidate& sig : candidates) {
+      sig.mark(context);
     }
   }
 
@@ -1674,9 +1752,6 @@ class ResolvedFunction {
   }
 };
 
-class FormalActualMap;
-
-
 /** FormalActual holds information on a function formal and its binding (if any) */
 class FormalActual {
  friend class FormalActualMap;
@@ -1982,6 +2057,60 @@ class ResolvedParamLoop {
 /** See the documentation for types::CompositeType::SubstitutionsMap. */
 using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
 
+// Represents result info on either a type's copyability or assignability, from
+// ref and/or from const.
+struct CopyableAssignableInfo {
+ private:
+  bool fromConst_ = false;
+  bool fromRef_ = false;
+
+  CopyableAssignableInfo(bool fromConst, bool fromRef)
+      : fromConst_(fromConst), fromRef_(fromRef) {
+    assert(!fromConst || fromRef);
+  }
+
+ public:
+  CopyableAssignableInfo() {}
+
+  bool isFromConst() const { return fromConst_; }
+  bool isFromRef() const { return fromRef_; }
+
+  static CopyableAssignableInfo fromConst() {
+    return CopyableAssignableInfo(true, true);
+  }
+
+  static CopyableAssignableInfo fromRef() {
+    return CopyableAssignableInfo(false, true);
+  }
+
+  static CopyableAssignableInfo fromNone() {
+    return CopyableAssignableInfo(false, false);
+  }
+
+  // Set this to the "minimum" copyability between this and other.
+  void intersectWith(const CopyableAssignableInfo& other) {
+    fromConst_ &= other.fromConst_;
+    fromRef_ &= other.fromRef_;
+  }
+
+  bool operator==(const CopyableAssignableInfo& other) const {
+    return fromConst_ == other.fromConst_ &&
+           fromRef_ == other.fromRef_;
+  }
+  bool operator!=(const CopyableAssignableInfo& other) const {
+    return !(*this == other);
+  }
+  void swap(CopyableAssignableInfo& other) {
+    std::swap(fromConst_, other.fromConst_);
+    std::swap(fromRef_, other.fromRef_);
+  }
+  static bool update(CopyableAssignableInfo& keep,
+                     CopyableAssignableInfo& addin) {
+    return defaultUpdate(keep, addin);
+  }
+  void mark(Context* context) const {
+  }
+};
 
 } // end namespace resolution
 

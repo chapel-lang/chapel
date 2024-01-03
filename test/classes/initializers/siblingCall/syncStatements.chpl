@@ -19,4 +19,3 @@ class Foo {
 
 var foo = new Foo();
 writeln(foo);
-delete foo;

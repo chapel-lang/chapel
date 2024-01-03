@@ -35,7 +35,15 @@ INSTALL_DATA=$(INSTALL) -m 644
 
 # Work around the weirdness of sed(1) on Darwin. :/
 ifeq ($(shell uname),Darwin)
+# The BSD version of sed doesn't support --version and wants a space before
+# the suffix, the GNU version supports --version and doesn't want a space.
+ifeq ($(shell sed --version >/dev/null 2>&1; echo "$$?"),0)
+# GNU
+SED_INPLACE=sed -i''
+else
+# BSD
 SED_INPLACE=sed -i ''
+endif
 else ifeq ($(shell uname),SunOS)
 SED_INPLACE=sed -i
 else

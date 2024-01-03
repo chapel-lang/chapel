@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -81,23 +81,27 @@ public:
   /** Send a 'DidOpen' notification. */
   void sendDidOpen(const std::string& uri, const std::string& text);
 
-  /** A mention represents a text range the client is interested in. */
+  /** A mention represents a text range the client is interested in.
+      Mentions cannot actually store AST because they were computed
+      with a separate instance of the Chapel compiler that has a short
+      lifetime. */
   struct Mention {
     using AstTag = chpl::uast::asttags::AstTag;
     AstTag tag;
     bool isCallBaseExpression = false;
     std::string symbol;
-    Location source;
-    Location target;
+    Location source;        /** This is a LSP location, not Chapel's! */
+    Location target;        /** Which means it is 0-based! */
+    bool isValid = true;    /** If there is no target, this is false. */
 
     std::string toString() const;
   };
 
-  /** Collect locations the client is interested in using a separate
-      instance of the Chapel compiler. The way mentions are mapped to
-      target locations depends on the target. Calls are mapped linearly
-      (where call N of 'foo' maps to overload N of 'foo') in order to
-      simulate overloading. Every other declaration is mapped by name.
+  /** Collect mention the client is interested in using a separate instance
+      of the Chapel compiler. The way mentions are mapped to target
+      locations depends on the target. Calls are mapped linearly (where call
+      N of 'foo' maps to overload N of 'foo') in order to simulate
+      overloading. Every other declaration is mapped by name.
   */
   static std::vector<Mention>
   collectMentions(const std::string& uri, const std::string& text);

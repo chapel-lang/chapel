@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -113,8 +113,8 @@ static void test4(Context* context) {
                            inline proc combine(x) {
                              value = value || x.value;
                            }
-                           inline proc generate() return value;
-                           inline proc clone() return new unmanaged AnyEvenReduceScanOp(eltType=eltType);
+                           inline proc generate() do return value;
+                           inline proc clone() do return new unmanaged AnyEvenReduceScanOp(eltType=eltType);
                          }
                          var x = AnyEvenReduceScanOp reduce f();
                          )"""");

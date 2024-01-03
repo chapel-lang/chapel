@@ -13,4 +13,3 @@ class Foo {
 
 var foo = new Foo(13);
 writeln(foo);
-delete foo;

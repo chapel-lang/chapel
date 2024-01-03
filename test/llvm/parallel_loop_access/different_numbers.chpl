@@ -14,8 +14,14 @@ proc loop (A, B, n) {
     //CHECK-LABEL: start_loop1
     start_loop1();
 
-    //CHECK: !llvm.access.group ![[GROUP1:[0-9]+]]
+    //CHECK: %[[LOAD_DEST1:[0-9]+]] = load i32,
+    //CHECK-SAME: !llvm.access.group ![[GROUP1:[0-9]+]]
+
+    //CHECK: %[[MUL_DEST1:[0-9]+]] = mul
+    //CHECK-SAME: %[[LOAD_DEST1]]
     A[i] = 3*B[i];
+    //CHECK: store i32 %[[MUL_DEST1]]
+    //CHECK-SAME: !llvm.access.group ![[GROUP1]]
 
     //CHECK-LABEL: end_loop1
     end_loop1();
@@ -25,20 +31,34 @@ proc loop (A, B, n) {
   }
 
   foreach i in 1..n {
-    //CHECK-LABEL: loop2
+    //CHECK-LABEL: start_loop2
     start_loop2();
 
-    //CHECK: !llvm.access.group ![[GROUP2:[0-9]+]]
+    //CHECK: %[[LOAD_DEST2:[0-9]+]] = load i32,
+    //CHECK-SAME: !llvm.access.group ![[GROUP2:[0-9]+]]
     //CHECK-NOT: !llvm.access.group ![[GROUP1]]
+
+    //CHECK: %[[MUL_DEST2:[0-9]+]] = mul
+    //CHECK-SAME: %[[LOAD_DEST2]]
     A[i] = 5*B[i];
+    //CHECK: store i32 %[[MUL_DEST2]]
+    //CHECK-SAME: !llvm.access.group ![[GROUP2]]
+
+
     foreach j in 1..n {
       //CHECK-LABEL: start_loop3
       start_loop3();
 
-      //CHECK: !llvm.access.group ![[GROUP3:[0-9]+]]
+      //CHECK: %[[LOAD_DEST3:[0-9]+]] = load i32,
+      //CHECK-SAME: !llvm.access.group ![[GROUP3:[0-9]+]]
       //CHECK-NOT: !llvm.access.group ![[GROUP2]]
       //CHECK-NOT: !llvm.access.group ![[GROUP1]]
+
+      //CHECK: %[[MUL_DEST3:[0-9]+]] = mul
+      //CHECK-SAME: %[[LOAD_DEST3]]
       A[j] = 7*B[j];
+      //CHECK: store i32 %[[MUL_DEST3]]
+      //CHECK-SAME: !llvm.access.group ![[GROUP3]]
 
       //CHECK-LABEL: end_loop3
       end_loop3();

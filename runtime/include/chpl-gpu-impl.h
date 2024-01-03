@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -27,17 +27,12 @@ extern "C" {
 
 void chpl_gpu_impl_init(int* num_devices);
 
-void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                 const char* name,
+void* chpl_gpu_impl_load_function(const char* kernel_name);
+void chpl_gpu_impl_launch_kernel(void* kernel,
                                  int grd_dim_x, int grd_dim_y, int grd_dim_z,
                                  int blk_dim_x, int blk_dim_y, int blk_dim_z,
                                  void* stream,
-                                 int nargs, va_list args);
-void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                 const char* name,
-                                 int64_t num_threads, int blk_dim,
-                                 void* stream,
-                                 int nargs, va_list args);
+                                 void** kernel_params);
 
 void* chpl_gpu_impl_mem_alloc(size_t size);
 void* chpl_gpu_impl_mem_array_alloc(size_t size);
@@ -75,6 +70,20 @@ void* chpl_gpu_impl_stream_create(void);
 void chpl_gpu_impl_stream_destroy(void* stream);
 bool chpl_gpu_impl_stream_ready(void* stream);
 void chpl_gpu_impl_stream_synchronize(void* stream);
+
+bool chpl_gpu_impl_can_reduce(void);
+
+#define DECL_ONE_REDUCE_IMPL(chpl_kind, data_type) \
+void chpl_gpu_impl_##chpl_kind##_reduce_##data_type(data_type* data, int n,\
+                                                    data_type* val, int* idx,\
+                                                    void* stream);
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL, sum)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL, min)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL, max)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL, minloc)
+GPU_REDUCE(DECL_ONE_REDUCE_IMPL, maxloc)
+
+#undef DECL_ONE_REDUCE_IMPL
 
 #ifdef __cplusplus
 }

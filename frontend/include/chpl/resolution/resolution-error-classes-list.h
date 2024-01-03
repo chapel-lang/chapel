@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -37,8 +37,10 @@ ERROR_CLASS(AmbiguousConfigSet, const uast::Variable*, std::string, std::string)
 ERROR_CLASS(AmbiguousIdentifier, const uast::Identifier*, bool, std::vector<resolution::BorrowedIdsWithName>, std::vector<resolution::ResultVisibilityTrace>)
 ERROR_CLASS(AmbiguousVisibilityIdentifier, UniqueString, ID, std::vector<ID>)
 ERROR_CLASS(AsWithUseExcept, const uast::Use*, const uast::As*)
+ERROR_CLASS(ConstRefCoercion, const uast::AstNode*, resolution::MostSpecificCandidate)
 WARNING_CLASS(Deprecation, std::string, const uast::AstNode*, const uast::NamedDecl*)
 ERROR_CLASS(DotExprInUseImport, const uast::VisibilityClause*, const uast::VisibilityClause::LimitationKind, const uast::Dot*)
+ERROR_CLASS(DotTypeOnType, const uast::Dot*, const types::Type*, ID)
 ERROR_CLASS(ExternCCompilation, ID, std::vector<std::pair<Location, std::string>>)
 ERROR_CLASS(IfVarNonClassType, const uast::Conditional*, types::QualifiedType)
 WARNING_CLASS(ImplicitFileModule, const uast::AstNode*, const uast::Module*, const uast::Module*)

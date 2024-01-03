@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -24,7 +24,6 @@
 #include "chpl/types/all-types.h"
 #include "chpl/resolution/scope-types.h"
 #include "chpl/resolution/resolution-types.h"
-#include "llvm/ADT/Optional.h"
 
 namespace chpl {
 
@@ -102,6 +101,7 @@ class ErrorBase {
  public:
   virtual ~ErrorBase() = default;
 
+  static const char* getKindName(Kind kind);
   static const char* getTypeName(ErrorType type);
 
   template <typename T>

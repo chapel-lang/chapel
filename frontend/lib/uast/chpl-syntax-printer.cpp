@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1335,7 +1335,7 @@ struct ChplSyntaxVisitor {
       interpose(node->caseExprs(), ", ");
       ss_ << " ";
     }
-    printBlockWithStyle(node->blockStyle(), node->stmts(), "do ", ";", true);
+    printBlockWithStyle(node->blockStyle(), node->body()->stmts(), "do ", ";", true);
   }
 
   void visit(const While* node) {

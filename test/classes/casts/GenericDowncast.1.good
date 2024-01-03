@@ -1,0 +1,2 @@
+GenericDowncast.chpl:6: In function 'main':
+GenericDowncast.chpl:10: error: illegal downcast to generic subclass type 'owned D'

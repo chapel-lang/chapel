@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -33,7 +33,7 @@ static void test1() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return t;
+                         proc id(type t) type do return t;
 
                          record r {
                            type typeWithDefault = int;
@@ -70,7 +70,7 @@ static void test2() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return t;
+                         proc id(type t) type do return t;
 
                          record r {
                            type typeWithDefault;
@@ -103,7 +103,7 @@ static void test3() {
   auto context = &ctx;
   QualifiedType qt =  resolveQualifiedTypeOfX(context,
                          R""""(
-                         proc id(type t) type return enum;
+                         proc id(type t) type do return enum;
 
                          record r {
                            type typeWithDefault = int;

@@ -6,9 +6,9 @@ knucleotide4.chpl:24: warning: fileReader.readline is deprecated. Use fileReader
 knucleotide4.chpl:24: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 knucleotide4.chpl:32: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
 knucleotide4.chpl:32: warning: fileReader.readline is deprecated. Use fileReader.readLine instead
-$CHPL_HOME/modules/standard/Map.chpl:409: In method 'this':
-$CHPL_HOME/modules/standard/Map.chpl:413: warning: 'hashVal' has a hash function that is being used by the standard library. However, 'hashVal' does not implement hashable. In the future, this will result in an error.
-$CHPL_HOME/modules/standard/Map.chpl:413: warning: to make 'hashVal' implement hashable, add the interface to its declaration: 'record hashVal : hashable'
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: In method 'this':
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: 'hashVal' has a hash function that is being used by the standard library. However, 'hashVal' does not implement hashable. In the future, this will result in an error.
+$CHPL_HOME/modules/standard/Map.chpl:nnnn: warning: to make 'hashVal' implement hashable, add the interface to its declaration: 'record hashVal : hashable'
   knucleotide4.chpl:84: called as (map(hashVal,int(64),false)).this(k: hashVal) from function 'calculate'
   knucleotide4.chpl:53: called as calculate(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'writeFreqs'
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
@@ -18,7 +18,6 @@ knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:52: In function 'writeFreqs':
 knucleotide4.chpl:56: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
   knucleotide4.chpl:42: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 1) from function 'main'
 knucleotide4.chpl:75: In function 'calculate':
 knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
@@ -26,7 +25,6 @@ knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to
   knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
 knucleotide4.chpl:52: In function 'writeFreqs':
 knucleotide4.chpl:56: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.
-knucleotide4.chpl:59: warning: 'Array.sorted' is deprecated - use Sort.sort instead
   knucleotide4.chpl:43: called as writeFreqs(data: [domain(1,int(64),one)] uint(8), param nclSize = 2) from function 'main'
 knucleotide4.chpl:75: In function 'calculate':
 knucleotide4.chpl:87: warning: 'map.items' is deprecated. Consider 'map.keys' to iterate over keys or 'map.values' to iterate over values.

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -123,4 +123,4 @@ add_subdirectory(passes)
 add_subdirectory(resolution)
 add_subdirectory(util)
 target_compile_options(chpl PRIVATE SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
-target_link_libraries(chpl PRIVATE ChplFrontend)
+target_link_libraries(chpl PRIVATE ChplFrontend ${CHPL_LLVM_LINK_ARGS})

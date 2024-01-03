@@ -5,6 +5,7 @@ CyclicStridable.chpl:465: warning: domain.stridable is deprecated; use domain.st
 CyclicTest.chpl:8: warning: the domain map 'unmanaged Cyclic(1,int(64))' needs to be updated from 'stridable: bool' to 'strides: strideKind' because 'stridable' is deprecated
 $CHPL_HOME/modules/dists/DSIUtil.chpl:560: warning: domain.stridable is deprecated; use domain.strides instead
 CyclicStridable.chpl:729: warning: domain.stridable is deprecated; use domain.strides instead
+CyclicStridable.chpl:729: warning: domain.stridable is deprecated; use domain.strides instead
 CyclicStridable.chpl:375: warning: casting from a managed class to an 'unmanaged' is deprecated
 CyclicStridable.chpl:500: warning: domain.stridable is deprecated; use domain.strides instead
 CyclicTest.chpl:9: warning: the domain map 'unmanaged Cyclic(1,int(64))' needs to be updated from 'stridable: bool' to 'strides: strideKind' because 'stridable' is deprecated

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -63,7 +63,7 @@ const FileContents& fileTextQuery(Context* context, std::string path) {
   std::string text;
   std::string error;
   const ErrorBase* parseError = nullptr;
-  if (!readfile(path.c_str(), text, error)) {
+  if (!readFile(path.c_str(), text, error)) {
     // TODO does this need to be stored in FileContents?
     context->error(Location(), "error reading file: %s\n", error.c_str());
   }
@@ -221,7 +221,7 @@ const Location& locateId(Context* context, ID id) {
 
   UniqueString path;
   if (auto br = builderResultOrNull(context, id, path)) {
-    result = br->idToLocation(id, path);
+    result = br->idToLocation(context, id, path);
   }
 
   return QUERY_END(result);
@@ -242,7 +242,7 @@ const Location& locateAst(Context* context, const AstNode* ast) {
     UniqueString path; \
     if (!id) return QUERY_END(ret); \
     if (auto br = builderResultOrNull(context, id, path)) { \
-      ret = br->idTo##location__##Location(id, path); \
+      ret = br->idTo##location__##Location(context, id, path); \
     } \
     return QUERY_END(ret); \
   }
@@ -1310,13 +1310,19 @@ static bool isAstFormal(Context* context, const AstNode* ast) {
   return ast->isFormal();
 }
 
+static bool hasIgnorePragma(Context* context, const AstNode* ast) {
+  auto attr = parsing::idToAttributeGroup(context, ast->id());
+  return attr && attr->hasPragma(PRAGMA_IGNORE_DEPRECATED_USE);
+}
+
 // Skip if any parent is deprecated (we want to show deprecation messages
 // in unstable symbols, since they'll likely live a long time). Also skip
 // if we are in a compiler-generated thing.
 static bool
 shouldSkipDeprecationWarning(Context* context, const AstNode* ast) {
   return isAstCompilerGenerated(context, ast) ||
-         isAstDeprecated(context, ast);
+         isAstDeprecated(context, ast) ||
+         hasIgnorePragma(context, ast);
 }
 
 // Skip if any parent is marked deprecated or unstable. We don't want to

@@ -1,5 +1,0 @@
-perfkeys: Triad Time BlckSz: 16384KB Median:, Triad Time BlckSz: 16384KB Median:, Triad Time BlckSz: 16384KB Median:
-files: triad.dat, triadalt1.dat, triadalt2.dat
-graphkeys: Transliteration, NoSliceLHS, NoSlice
-ylabel: Time (s)
-graphtitle: SHOC Triad - Kernel Time - 16384KB

@@ -1,2 +1,0 @@
-filesystem-isLink.chpl:3: warning: 'isLink' is deprecated. Please use 'isSymlink' instead
-false

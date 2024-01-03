@@ -14,7 +14,7 @@ const pi = 3.14159265358979323846;
 writef("Epsilon             = %{#.#################}\n", epsilon);
 writeln("Random number seed  = ", seed);
 
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new randomStream(real, seed);
 
 //
 // keep track of the number of points we generate before converging

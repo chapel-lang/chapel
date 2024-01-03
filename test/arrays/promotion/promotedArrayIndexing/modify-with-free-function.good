@@ -1,0 +1,1 @@
+modify-with-free-function.chpl:4: warning: modifying the result of a promoted index expression is unstable

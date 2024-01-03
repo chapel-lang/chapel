@@ -22,9 +22,9 @@ invoking separate processes for the different stages of compilation required.
 With release 1.32, the Chapel compiler provides an opt-in compiler driver mode
 that can be used via the ``--compiler-driver`` flag. This mode will become the
 default at some point in the future. The driver currently splits work into two
-phases: phase one, which is responsible for everything through code generation
-(C code or LLVM bitcode), and phase two, which is responsible for binary
-generation (including linking).
+phases: `compilation`, which is responsible for everything through code
+generation (C code or LLVM bitcode), and `makeBinary`, which is responsible for
+binary generation (including linking).
 
 ---------------------
 Motivation for Driver
@@ -56,12 +56,13 @@ to be useful to compiler developers. Both are documented here.
   to set any other driver flags. Without this flag, the compiler will run
   monolithically as usual.
 - ``--driver-debug-phase``: Set which phase of compilation to run in the
-  debugger: '1', '2', or 'all'. If debugging just phase one, phase two will be
-  skipped entirely as it is unlikely to be useful.
-- ``--driver-phase-one``: Internal flag. Causes the execution of phase one.
-  The driver re-invokes itself with this flag to run phase one.
-- ``--driver-phase-two``: Internal flag. Causes the execution of phase two.
-  The driver re-invokes itself with this flag to run phase two.
+  debugger: 'compilation', 'makeBinary', or 'all'. If debugging just
+  compilation, makeBinary will be skipped entirely as it is unlikely to be
+  useful.
+- ``--driver-compilation-phase``: Internal flag. The driver re-invokes itself
+  with this flag to to trigger execution of the compilation phase.
+- ``--driver-makebinary-phase``: Internal flag. The driver re-invokes itself
+  with this flag to to trigger execution of the makeBinary phase.
 - ``--driver-tmp-dir``: Internal flag, specifying where the current phase will
   look for temporary files that must be carried between phases. The driver sets
   this flag during re-invocations for the different phases, and will provide the
@@ -71,11 +72,5 @@ to be useful to compiler developers. Both are documented here.
 Future Work
 -----------
 
-- Fix driver behavior for GPU compilation, which currently performs all work
-  in phase one and skips phase two.
-- Reduce work re-done between driver and phase invocations.
-- Enable our usual performance and correctness testing for driver mode, and
-  reach parity with monolithic mode.
-- Measure performance of compiler itself in driver mode, including change in
-  memory pressure.
-- Eventually, make compiler driver mode the default, with an opt-out flag.
+- Fix driver mode bugs encountered in testing.
+- Make compiler driver mode the default, with an opt-out flag.

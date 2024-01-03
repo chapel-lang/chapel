@@ -1,4 +1,2 @@
---arrSize=10_000_000 --gpuDiags=true --bitsAtATime=16 --scanType=serial
---arrSize=10_000_000 --gpuDiags=true --bitsAtATime=16 --scanType=hillisSteele
---arrSize=10_000_000 --gpuDiags=true --bitsAtATime=16 --scanType=blelloch
---arrSize=10_000_000 --gpuDiags=true --bitsAtATime=8  --scanType=blelloch --parallel=true --chunkSize=6250
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=16 --atomicSort=true
+--arrSize=10_000 --gpuDiags=true --bitsAtATime=8

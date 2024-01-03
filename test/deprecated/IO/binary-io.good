@@ -2,5 +2,6 @@ binary-io.chpl:2: warning: BinaryIO module is deprecated; please use the IO modu
 binary-io.chpl:5: In function 'main':
 binary-io.chpl:8: warning: 'BinarySerializer' is deprecated; please use 'binarySerializer' instead
 binary-io.chpl:11: warning: 'BinaryDeserializer' is deprecated; please use 'binaryDeserializer' instead
-hello, world
-hello, world
+uncaught IllegalArgumentError: binaryDeserializer does not support reading 'string' or 'bytes'. Please use a method like 'fileReader.readBinary' instead.
+  binary-io.chpl:11: thrown here
+  binary-io.chpl:11: uncaught here
