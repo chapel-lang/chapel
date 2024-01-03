@@ -79,8 +79,8 @@ class CPtrType final : public Type {
   static const CPtrType* get(Context* context);
   static const CPtrType* get(Context* context, const Type* eltType);
   static const CPtrType* getCVoidPtrType(Context* context);
-  static const CPtrType* getConstPtr(Context* context);
-  static const CPtrType* getConstPtr(Context* context, const Type* eltType);
+  static const CPtrType* getConst(Context* context);
+  static const CPtrType* getConst(Context* context, const Type* eltType);
 
   static const ID& getId(Context* context);
   static const ID& getConstId(Context* context);

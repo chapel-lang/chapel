@@ -64,15 +64,17 @@ const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
                                eltType).get();
 }
 
-const CPtrType* CPtrType::getConstPtr(Context* context) {
+// TODO: need to treat the elttype kind as const
+const CPtrType* CPtrType::getConst(Context* context) {
   return CPtrType::getCPtrConstType(context,
                                     /* instantiatedFrom */ nullptr,
                                     /* eltType */ nullptr).get();
 }
 
-const CPtrType* CPtrType::getConstPtr(Context* context, const Type* eltType) {
+// TODO: need to treat the elt type kind as const
+const CPtrType* CPtrType::getConst(Context* context, const Type* eltType) {
   return CPtrType::getCPtrConstType(context,
-                                    /* instantiatedFrom */ CPtrType::getConstPtr(context),
+                                    /* instantiatedFrom */ CPtrType::getConst(context),
                                     eltType).get();
 }
 
@@ -97,9 +99,9 @@ const ID& CPtrType::getConstId(Context* context) {
 void CPtrType::stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const {
   if (isConst_) {
-    USTR("c_ptrConst").stringify(ss, stringKind);
+    ss << "c_ptrConst";
   } else {
-    USTR("c_ptr").stringify(ss, stringKind);
+    ss << "c_ptr";
   }
 
   if (eltType_) {

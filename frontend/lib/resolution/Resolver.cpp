@@ -2069,7 +2069,7 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
   if (id == CPtrType::getId(context)) {
     return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
   } else if (id == CPtrType::getConstId(context)) {
-    return QualifiedType(QualifiedType::TYPE, CPtrType::getConstPtr(context));
+    return QualifiedType(QualifiedType::TYPE, CPtrType::getConst(context));
   }
 
   // if the id is contained within this symbol,

@@ -2635,9 +2635,12 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
-static const Type* getCPtrTypesHelper(Context* context,
-                                      const AstNode* astForErr,
-                                      const CallInfo& ci) {
+/*
+  gets either a c_ptr or c_ptrConst type depending on the name in the CallInfo
+*/
+static const Type* getCPtrType(Context* context,
+                               const AstNode* astForErr,
+                               const CallInfo& ci) {
   UniqueString name = ci.name();
   bool isConst;
 
@@ -2673,7 +2676,7 @@ static const Type* getCPtrTypesHelper(Context* context,
   }
 
   if (useGenericType) {
-    return isConst ? CPtrType::getConstPtr(context) : CPtrType::get(context);
+    return isConst ? CPtrType::getConst(context) : CPtrType::get(context);
   }
 
   QualifiedType qt;
@@ -2697,21 +2700,21 @@ static const Type* getCPtrTypesHelper(Context* context,
     return ErroneousType::get(context);
   }
 
-  return isConst ? CPtrType::getConstPtr(context, qt.type()) :
+  return isConst ? CPtrType::getConst(context, qt.type()) :
                    CPtrType::get(context, qt.type());
 }
 
-static const Type* getCPtrType(Context* context,
-                               const AstNode* astForErr,
-                               const CallInfo& ci) {
-  return getCPtrTypesHelper(context, astForErr, ci);
-}
+// static const Type* getCPtrType(Context* context,
+//                                const AstNode* astForErr,
+//                                const CallInfo& ci) {
+//   return getCPtrType(context, astForErr, ci);
+// }
 
-static const Type* getCPtrConstType(Context* context,
-                                    const AstNode* astForErr,
-                                    const CallInfo& ci) {
-  return getCPtrTypesHelper(context, astForErr, ci);
-}
+// static const Type* getCPtrConstType(Context* context,
+//                                     const AstNode* astForErr,
+//                                     const CallInfo& ci) {
+//   return getCPtrType(context, astForErr, ci);
+// }
 
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
@@ -2773,9 +2776,9 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
     return t;
   }
 
-  if (auto t = getCPtrConstType(context, astForErr, ci)) {
-    return t;
-  }
+  // if (auto t = getCPtrConstType(context, astForErr, ci)) {
+  //   return t;
+  // }
 
   return nullptr;
 }
