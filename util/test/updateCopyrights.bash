@@ -17,23 +17,23 @@ if [[ $# -ne 2 ]]; then
 fi
 PREVIOUS_YEAR=$1
 CURRENT_YEAR=$2
-if [ "$CURRENT_YEAR" != `date '+%Y'` ]; then
+if [ "$CURRENT_YEAR" != "$(date '+%Y')" ]; then
   echo "Specified current year $CURRENT_YEAR does not appear to be the actual current year"
   exit 1
 fi
-if [[ $(($PREVIOUS_YEAR + 1)) != $CURRENT_YEAR ]]; then
+if [[ $((PREVIOUS_YEAR + 1)) != "$CURRENT_YEAR" ]]; then
   echo "Current year $CURRENT_YEAR is not exactly 1 greater than previous year $PREVIOUS_YEAR"
   exit 1
 fi
 
 
 # Work from $CHPL_HOME for exclude dir paths
-if [ -z $CHPL_HOME ]; then
+if [ -z "$CHPL_HOME" ]; then
   echo "CHPL_HOME not set"
   exit 1
 fi
 echo "Using CHPL_HOME of $CHPL_HOME"
-cd $CHPL_HOME
+cd "$CHPL_HOME"
 
 
 # Require working from clean repo for safety.
@@ -55,7 +55,7 @@ function tryReplacementForPattern {
 
   # Error if a pattern has no matches (and therefore wouldn't result in any updates).
   # It's still possible to have a pattern give no updates if the sed pattern is wrong.
-  cmd="PAGER=cat git grep -l \""$SEARCH_PATTERN"\" -- $EXCLUDE_PATHS"
+  cmd="PAGER=cat git grep -l \"$SEARCH_PATTERN\" -- $EXCLUDE_PATHS"
   # Ignore errors from the git grep command
   search_output=$(eval "$cmd" || true)
   if [[ -z "$search_output" ]]; then
