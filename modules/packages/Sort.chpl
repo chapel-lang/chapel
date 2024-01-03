@@ -2705,6 +2705,12 @@ module TwoArrayPartitioning {
 
         if task.doSort {
           // Sort it serially.
+          // Note that the subproblems here are on the order of 500,000 elements
+          // because the two-array method will create small subproblems as soon
+          // as it does not seem useful to use parallelism to sort.
+          // Because of this, it matters to use a radix sort here.
+          // It also seems to matter to use an in-place algorithm here,
+          // but I am not completely confident of that.
           msbRadixSort(A, task.start, taskEnd,
                        criterion,
                        task.startbit, state.endbit,
