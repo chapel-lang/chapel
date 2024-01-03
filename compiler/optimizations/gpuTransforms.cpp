@@ -71,17 +71,17 @@ extern bool inLocalBlock(CallExpr *call);
 // Utilities
 // ----------------------------------------------------------------------------
 
-static CallExpr* getPidCall(CallExpr* privTableAcc) {
-  INT_ASSERT(privTableAcc && privTableAcc->isPrimitive(PRIM_ARRAY_GET));
+//static CallExpr* getPidCall(CallExpr* privTableAcc) {
+  //INT_ASSERT(privTableAcc && privTableAcc->isPrimitive(PRIM_ARRAY_GET));
 
-  //addKernelArgument(sym);
+  ////addKernelArgument(sym);
 
-  Symbol* pidSym = toSymExpr(privTableAcc->get(2))->symbol();
-  CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
-  CallExpr* pidGet = toCallExpr(pidMove->get(2));
+  //Symbol* pidSym = toSymExpr(privTableAcc->get(2))->symbol();
+  //CallExpr* pidMove = toCallExpr(pidSym->getSingleDef()->parentExpr);
+  //CallExpr* pidGet = toCallExpr(pidMove->get(2));
 
-  return pidGet;
-}
+  //return pidGet;
+//}
 
 static bool isFnGpuSpecialized(FnSymbol *fn) {
   return fn->hasFlag(FLAG_GPU_SPECIALIZATION);
@@ -725,10 +725,11 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
   for(auto *symExpr : symExprs) {
+    Symbol* sym = symExpr->symbol();
     // forall loops that contain a reduction intent introduce a temporary
     // variable with a special flag that we'll look for (for the time being we
     // want to not gpuize these loops).
-    if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
+    if(sym->hasFlag(FLAG_REDUCTION_TEMP)) {
       return false;
     }
     // gotos that jump outside the loop cannot be gpuized
@@ -736,6 +737,15 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
       if (auto label = toSymExpr(gotostmt->label)) {
         if (!isDefinedInTheLoops(label->symbol(), {this->loop_}))
           return false;
+      }
+    }
+
+    if (isRecordWrappedType(sym->type)) {
+      AggregateType* aggType = toAggregateType(sym->type);
+      if (Symbol* pidField = aggType->getField("_pid", /*fatal=*/ false)) {
+        SET_LINENO(symExpr);
+        CallExpr* pidGet = new CallExpr(PRIM_GET_MEMBER_VALUE, sym, pidField);
+        pidGets_.push_back(pidGet);
       }
     }
   }
@@ -776,9 +786,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       if (call->primitive->tag == PRIM_ARRAY_GET) {
         SymExpr* firstArg = toSymExpr(call->get(1));
         if (firstArg->symbol()->name == astr("chpl_privateObjects")) {
-          std::cout << call->stringLoc();
-          nprint_view(call);
-          pidGets_.push_back(getPidCall(call));
+          //std::cout << call->stringLoc();
+          //nprint_view(call);
+          //pidGets_.push_back(getPidCall(call));
         }
       }
 

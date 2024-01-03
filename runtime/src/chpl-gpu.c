@@ -358,7 +358,7 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
     cfg->max_pid = pid;
   }
 
-  void* dev_instance = chpl_gpu_mem_alloc(size,
+  void* dev_instance = chpl_gpu_mem_array_alloc(size,
                                           CHPL_RT_MD_GPU_KERNEL_ARG,
                                           cfg->ln, cfg->fn);
 
@@ -375,10 +375,11 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   cfg->cur_pid++;
 }
 
-static void cfg_finalize_priv_table(kernel_cfg *cfg,
-                                    chpl_privateObject_t* host_table) {
-  // TODO why host_table doesn't work?
-  // We can probably drop that argument for now
+static void cfg_finalize_priv_table(kernel_cfg *cfg) {
+  if (cfg->n_pids == 0) {
+    return;
+  }
+
   if (cfg->cur_pid != cfg->n_pids) {
     chpl_internal_error("All pids must have been added by now");
   }
@@ -409,7 +410,12 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg,
                                       priv_table_dev_size,
                                       cfg->stream);
 
-    CHPL_GPU_DEBUG("Offloaded the new privatization table");
+    
+    /*void* gpu_priv = *(cfg->priv_table_dev_addr);*/
+    for (int i=0 ; i<cfg->max_pid+1 ; i++) {
+      printf("\tpriv_table[%d] = %p\n", i, cfg->priv_table_host[i].obj);
+    }
+    CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
   }
 }
 
@@ -465,8 +471,9 @@ void chpl_gpu_arg_pass(void* cfg, void* arg) {
 }
 
 void chpl_gpu_arg_privtable(void* cfg, void* arg) {
-  cfg_finalize_priv_table((kernel_cfg*)cfg, arg);
-  cfg_add_direct_param((kernel_cfg*)cfg, ((kernel_cfg*)cfg)->priv_table_dev_addr);
+  chpl_internal_error("This shouldn't have been called anymore");
+  /*cfg_finalize_priv_table((kernel_cfg*)cfg, arg);*/
+  /*cfg_add_direct_param((kernel_cfg*)cfg, ((kernel_cfg*)cfg)->priv_table_dev_addr);*/
 }
 
 static void launch_kernel(const char* name,
@@ -474,6 +481,7 @@ static void launch_kernel(const char* name,
                           int blk_dim_x, int blk_dim_y, int blk_dim_z,
                           kernel_cfg* cfg) {
   chpl_gpu_impl_use_device(cfg->dev);
+  cfg_finalize_priv_table(cfg);
 
   chpl_gpu_diags_verbose_launch(cfg->ln, cfg->fn, cfg->dev,
                                 blk_dim_x, blk_dim_y, blk_dim_z);

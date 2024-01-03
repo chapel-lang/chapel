@@ -14,7 +14,9 @@ var dom = space dmapped blockDist(space, targetLocales=[here.gpus[0],]);
 var arr: [dom] int;
 
 proc setOne(A, i) {
-  A[i] = 1;
+  local {
+    A[i] = 1;
+  }
 }
 
 @assertOnGpu
