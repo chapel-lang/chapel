@@ -105,14 +105,12 @@ scopeResolveModuleStmt(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-static void updateTypeForSplitInit(Context* context, ResolvedExpression& lhs,
+static void updateTypeForSplitInit(Context* context, ID id,
+                                   ResolvedExpression& lhs,
                                    const ResolvedExpression& rhs) {
   static std::set<ID> splitInitTypeInferredVariables;
 
   gdbShouldBreakHere();
-
-  assert(lhs.toId() == rhs.toId());
-  ID id = lhs.toId();
 
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
@@ -208,7 +206,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             ResolvedExpression& re = result.byId(exprId);
             gdbShouldBreakHere();
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
-              updateTypeForSplitInit(context, re, *reToCopy);
+              updateTypeForSplitInit(context, exprId, re, *reToCopy);
             }
           }
         }
