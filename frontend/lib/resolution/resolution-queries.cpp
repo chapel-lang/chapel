@@ -105,7 +105,59 @@ scopeResolveModuleStmt(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+static void updateTypeForSplitInit(Context* context, ResolvedExpression& lhs,
+                                   const ResolvedExpression& rhs) {
+  static std::set<ID> splitInitTypeInferredVariables;
 
+  gdbShouldBreakHere();
+
+  assert(lhs.toId() == rhs.toId());
+  ID id = lhs.toId();
+
+  const QualifiedType lhsType = lhs.type();
+  const QualifiedType rhsType = rhs.type();
+
+  // check to see if it is generic/unknown
+  // (otherwise we do not need to infer anything)
+  auto g = Type::MAYBE_GENERIC;
+  if (lhsType.isUnknownKindOrType()) {
+     // includes nullptr type, UnknownType, and param with unknown value
+     g = Type::GENERIC;
+  } else {
+    CHPL_ASSERT(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
+    g = getTypeGenericity(context, lhsType.type());
+  }
+
+  // return if there's nothing to do
+  if (g != Type::GENERIC) {
+    return;
+  }
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  // set the type for the 1st split init only
+  // a later traversal will check the type of subsequent split inits
+  // (in the other branch of a conditional, say)
+  auto pair = splitInitTypeInferredVariables.insert(id);
+  if (pair.second) {
+    // insertion took place, so update the type
+    lhs.setType(useType);
+  } else {
+    // insertion did not take place, so check that the type matches exactly,
+    // and issue an error if not.
+    // (we cannot unify the types for split init without causing resolution
+    //  to either go out of order or to produce results that change within
+    //  a function even when there are no errors).
+
+    if (lhsType != useType) {
+      context->error(id, "split-init type does not match");
+    }
+  }
+}
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -148,6 +200,15 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             ResolvedExpression& re = result.byId(exprId);
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
               re = *reToCopy;
+            }
+          }
+          // copy results for split-inited vars
+          for (int i = 0; i < firstId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            ResolvedExpression& re = result.byId(exprId);
+            gdbShouldBreakHere();
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              updateTypeForSplitInit(context, re, *reToCopy);
             }
           }
         }
