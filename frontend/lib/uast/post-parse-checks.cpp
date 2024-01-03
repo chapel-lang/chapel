@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -114,6 +114,7 @@ struct Visitor {
   bool handleNestedDecoratorsInTypeConstructors(const FnCall* node);
   void checkForNestedClassDecorators(const FnCall* node);
   void checkExplicitDeinitCalls(const FnCall* node);
+  void checkNewBorrowed(const FnCall* node);
   void checkBorrowFromNew(const FnCall* node);
   void checkSparseKeyword(const FnCall* node);
   void checkPrimCallInUserCode(const PrimCall* node);
@@ -145,6 +146,7 @@ struct Visitor {
   void checkLambdaDeprecated(const Function* node);
   void checkCStringLiteral(const CStringLiteral* node);
   void checkAllowedImplementsTypeIdent(const Implements* impl, const Identifier* node);
+  void checkOtherwiseAfterWhens(const Select* sel);
   /*
   TODO
   void checkProcedureFormalsAgainstRetType(const Function* node);
@@ -188,6 +190,7 @@ struct Visitor {
   void visit(const OpCall* node);
   void visit(const PrimCall* node);
   void visit(const Return* node);
+  void visit(const Select* node);
   void visit(const TypeQuery* node);
   void visit(const Union* node);
   void visit(const Use* node);
@@ -629,6 +632,16 @@ void Visitor::checkExplicitDeinitCalls(const FnCall* node) {
 
   if (doEmitError) {
     error(node, "direct calls to deinit() are not allowed.");
+  }
+}
+
+void Visitor::checkNewBorrowed(const FnCall* node) {
+  if(auto calledExpr = node->calledExpression()) {
+    if(auto newCalledExpr = calledExpr->toNew()) {
+      if (newCalledExpr->management() == New::Management::BORROWED) {
+        error(node, "cannot create a 'borrowed' object using 'new'");
+      }
+    }
   }
 }
 
@@ -1386,6 +1399,7 @@ void Visitor::visit(const FnCall* node) {
   checkNoDuplicateNamedArguments(node);
   checkForNestedClassDecorators(node);
   checkExplicitDeinitCalls(node);
+  checkNewBorrowed(node);
   checkBorrowFromNew(node);
   checkSparseKeyword(node);
 
@@ -1523,6 +1537,22 @@ void Visitor::visit(const Return* node) {
   const AstNode* allowingNode;
   if (!checkParentsForControlFlow(parents_, nodeAllowsReturn, node, blockingNode, allowingNode)) {
     CHPL_REPORT(context_, DisallowedControlFlow, node, blockingNode, allowingNode);
+  }
+}
+
+void Visitor::visit(const Select* node) {
+  checkOtherwiseAfterWhens(node);
+}
+
+void Visitor::checkOtherwiseAfterWhens(const Select* sel) {
+  const When* seenOtherwise = nullptr;
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
+    auto when = sel->whenStmt(i);
+    if (seenOtherwise && !when->isOtherwise()) {
+      CHPL_REPORT(context_, WhenAfterOtherwise, sel, seenOtherwise, when);
+      break;
+    } 
+    if (when->isOtherwise())  seenOtherwise = when;
   }
 }
 

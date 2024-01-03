@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -255,7 +255,7 @@ static void testTertMethodCallCrossModule() {
   // Last part just confirms the call lines up.
   auto mscCall = reCall.mostSpecific().only();
   assert(mscCall);
-  assert(mscCall->id() == tert->id());
+  assert(mscCall.fn()->id() == tert->id());
 }
 
 static void determineManagerAndDecorator(Context* ctx,
@@ -289,7 +289,7 @@ static void determineManagerAndDecorator(Context* ctx,
   return;
 }
 
-static void buildParseTestClassNewExpr(Context* ctx, const char* expr) {
+static void buildParseTestClassNewExpr(Context* ctx, const char* expr, int numErrors = 0) {
   ErrorGuard guard(ctx);
 
   static int testNumCounter = 0;
@@ -316,7 +316,7 @@ static void buildParseTestClassNewExpr(Context* ctx, const char* expr) {
 
   // Get the module.
   auto& br = parseAndReportErrors(ctx, path);
-  assert(!guard.realizeErrors());
+  assert(guard.realizeErrors() == numErrors);
 
   assert(br.numTopLevelExpressions() == 1);
   auto modA = br.topLevelExpression(0)->toModule();
@@ -382,17 +382,17 @@ static void testClassManagementNilabilityInNewExpr() {
   buildParseTestClassNewExpr(ctx, "new C()");
   buildParseTestClassNewExpr(ctx, "new owned C()");
   buildParseTestClassNewExpr(ctx, "new shared C()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()");
+  buildParseTestClassNewExpr(ctx, "new borrowed C()", 1);
   buildParseTestClassNewExpr(ctx, "new unmanaged C()");
   buildParseTestClassNewExpr(ctx, "new C?()");
   buildParseTestClassNewExpr(ctx, "new owned C?()");
   buildParseTestClassNewExpr(ctx, "new shared C?()");
-  buildParseTestClassNewExpr(ctx, "new borrowed C?()");
+  buildParseTestClassNewExpr(ctx, "new borrowed C?()", 1);
   buildParseTestClassNewExpr(ctx, "new unmanaged C?()");
   buildParseTestClassNewExpr(ctx, "new C()?");
   buildParseTestClassNewExpr(ctx, "new owned C()?");
   buildParseTestClassNewExpr(ctx, "new shared C()?");
-  buildParseTestClassNewExpr(ctx, "new borrowed C()?");
+  buildParseTestClassNewExpr(ctx, "new borrowed C()?", 1);
   buildParseTestClassNewExpr(ctx, "new unmanaged C()?");
 }
 
@@ -516,8 +516,7 @@ static void testRecordNewSegfault(void) {
     class C {}
     var r1 = new owned C();
     var r2 = new shared C();
-    var r3 = new borrowed C();
-    var r4 = new unmanaged C();
+    var r3 = new unmanaged C();
     )"""";
 
   setFileText(ctx, path, contents);

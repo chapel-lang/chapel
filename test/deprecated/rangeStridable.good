@@ -15,6 +15,7 @@ rangeStridable.chpl:25: warning: domain.stridable is deprecated; use domain.stri
 rangeStridable.chpl:26: warning: range.stridable is deprecated; please use '.strides' instead
 rangeStridable.chpl:27: warning: domain.stridable is deprecated; use domain.strides instead
 rangeStridable.chpl:28: warning: [array].stridable is deprecated; use [array].strides instead
+rangeStridable.chpl:28: warning: [array].stridable is deprecated; use [array].strides instead
 rangeStridable.chpl:29: warning: range.stridable is deprecated; please use '.strides' instead
 % pd: unit stride range(int(64),both,one)
 % pd: stridable range(int(64),both,any)

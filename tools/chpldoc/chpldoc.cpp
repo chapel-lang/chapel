@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -74,6 +74,7 @@ bool fPrintSettingsHelp = false;
 bool fPrintChplHome = false;
 bool fPrintVersion = false;
 bool fWarnUnknownAttributeToolname = true;
+std::string CHPL_THIRD_PARTY;
 
 std::vector<UniqueString> usingAttributeToolNames;
 std::vector<std::string> usingAttributeToolNamesStr;
@@ -489,9 +490,11 @@ static int myshell(std::string command,
 
 static
 std::string getChplDepsApp() {
+  std::string thirdParty =
+        CHPL_THIRD_PARTY.empty() ? "" : " CHPL_THIRD_PARTY=" + CHPL_THIRD_PARTY;
   // Runs `util/chplenv/chpl_home_utils.py --chpldeps` and removes the newline
   std::string command = "CHPLENV_SUPPRESS_WARNINGS=true CHPL_HOME=" +
-                         CHPL_HOME + " python3 ";
+                         CHPL_HOME + thirdParty + " python3 ";
   command += CHPL_HOME + "/util/chplenv/chpl_home_utils.py --chpldeps";
 
   std::string venvDir = runCommand(command);
@@ -2226,6 +2229,8 @@ void generateSphinxOutput(std::string sphinxDir, std::string outputDir,
   }
   if (myshell(cmd, "building html output from chpldoc sphinx project") == 0) {
     printf("HTML files are at: %s\n", outputDir.c_str());
+  } else {
+    clean_exit(1);
   }
 }
 
@@ -2269,7 +2274,17 @@ int main(int argc, char** argv) {
   bool installed = false;
   // if user overrides CHPL_HOME from command line, don't go looking for trouble
   if (CHPL_HOME.empty()) {
-    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME, installed, foundEnv, warningMsg);
+    std::error_code err = findChplHome(argv[0], (void*)main, CHPL_HOME,
+                                       installed, foundEnv, warningMsg);
+    if (installed) {
+      // need to determine and update third-party location before calling
+      // getChplDepsApp to make sure we get an updated path in the case
+      // chpldoc was installed using --prefix mode
+      CHPL_THIRD_PARTY = std::string(getConfiguredPrefix());
+      CHPL_THIRD_PARTY += "/lib/chapel/";
+      CHPL_THIRD_PARTY += getMajorMinorVersion();
+      CHPL_THIRD_PARTY += "/third-party";
+    }
     if (!warningMsg.empty()) {
       fprintf(stderr, "%s\n", warningMsg.c_str());
     }

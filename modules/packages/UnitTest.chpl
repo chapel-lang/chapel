@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -322,6 +322,8 @@ module UnitTest {
         throw new owned AssertionError("assertFalse failed. Given expression is True");
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*Function to call the respective method for equality checking based on the type of argument*/
     proc checkAssertEquality(first, second) throws {
@@ -371,6 +373,8 @@ module UnitTest {
       return check;
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An equality assertion for non-array sequences (like tuples, strings, range).
       Args:
@@ -418,6 +422,8 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific equality assertion.
       Args:
@@ -451,6 +457,9 @@ module UnitTest {
       }
     }
 
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific equality assertion.
@@ -470,6 +479,9 @@ module UnitTest {
       }
     }
 
+
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific equality assertion.
@@ -481,6 +493,8 @@ module UnitTest {
       __baseAssertEqual(range1,range2);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific equality assertion.
@@ -492,6 +506,8 @@ module UnitTest {
       assertSequenceEqual(string1,string2,"String");
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*The default assertEqual implementation, not type specific.*/
     proc __baseAssertEqual(first, second) throws {
@@ -514,10 +530,14 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If both the arguments are not equal.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertEqual(first, second) throws {
       checkAssertEquality(first, second);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /* Function that checks whether two arguments are unequal or not*/
     proc checkAssertInequality(first,second) throws {
@@ -547,6 +567,8 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If both the arguments are equal.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertNotEqual(first, second) throws {
       if canResolve("!=",first, second) {
         if !checkAssertInequality(first,second) {
@@ -563,6 +585,8 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If the first argument is not greater than second argument.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertGreaterThan(first, second) throws {
       if canResolve(">=",first, second) {
         checkGreater(first, second);
@@ -573,6 +597,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*checks the type of the arguments and then do greater than comparison */
     proc checkGreater(first, second) throws {
@@ -602,6 +628,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An greater assertion for sequences (like arrays, tuples, strings).
       Args:
@@ -668,6 +696,8 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific greater assertion.
       Args:
@@ -698,6 +728,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific greater assertion.
@@ -717,6 +749,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific greater assertion.
@@ -734,6 +768,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific Greater assertion.
@@ -751,6 +787,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
      @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertGreater(first, second) throws {
@@ -767,6 +805,8 @@ module UnitTest {
       :arg second: The second object to compare.
       :throws AssertionError: If the first argument is not less than the second argument.
     */
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     proc assertLessThan(first, second) throws {
       if canResolve("<=",first, second) {
         checkLessThan(first, second);
@@ -777,6 +817,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*checks the type of the arguments and then do less than comparison */
     proc checkLessThan(first, second) throws {
@@ -806,6 +848,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An less than assertion for sequences (like arrays, tuples, strings).
       Args:
@@ -872,6 +916,8 @@ module UnitTest {
       throw new owned AssertionError(tmpString);
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*An array-specific less than assertion.
       Args:
@@ -886,7 +932,7 @@ module UnitTest {
           }
           else {
             if all(array1 >= array2) {
-              const errorMsg = "assert failed - \n'%?'\n>=\n'%?'".format(array1, array2);
+              const errorMsg = "assert failed -\n'%?'\n>=\n'%?'".format(array1, array2);
               throw new owned AssertionError(errorMsg);
             }
           }
@@ -902,6 +948,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A tuple-specific less than assertion.
@@ -921,6 +969,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A range-specific Less than assertion.
@@ -938,6 +988,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*
       A string-specific Less than assertion.
@@ -955,6 +1007,8 @@ module UnitTest {
       }
     }
 
+    pragma "insert line file info"
+    pragma "always propagate line file info"
     @chpldoc.nodoc
     /*The default assertGreater implementation, not type specific.*/
     proc __baseAssertLess(first, second) throws {
@@ -1386,7 +1440,14 @@ module UnitTest {
 
       // Message function overridden here
       override proc message() {
-        return this.details;
+        use CTypes, IO.FormattedIO;
+        const thrownFileC = __primitive("chpl_lookupFilename",
+                                             this.thrownFileId);
+        var thrownFileS: string;
+        try! thrownFileS = string.createCopyingBuffer(thrownFileC:c_ptrConst(c_char));
+
+        var msg = try! "in %?:%i - %?".format(thrownFileS, this.thrownLine, this.details);
+        return msg;
       }
     }
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -204,7 +204,7 @@ proc checkRegistryPath(registryPath : string, trueIfLocal : bool) throws {
 proc publishPackage(username: string, registryPath : string, isLocal : bool) throws {
   try! {
     const packageLocation = absPath(here.cwd());
-    var stream = createRandomStream(int);
+    var stream = new randomStream(int, false);
     var uniqueDir = stream.getNext(): string;
     const name = getPackageName();
     var safeDir = '';

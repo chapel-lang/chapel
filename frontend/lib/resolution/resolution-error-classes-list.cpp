@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -274,6 +274,29 @@ void ErrorAsWithUseExcept::write(ErrorWriterBase& wr) const {
   wr.code(use, { as });
 }
 
+void ErrorConstRefCoercion::write(ErrorWriterBase& wr) const {
+  auto ast = std::get<const uast::AstNode*>(info);
+  auto& c = std::get<resolution::MostSpecificCandidate>(info);
+
+  auto formalName = c.fn()->formalName(c.constRefCoercionFormal());
+
+  wr.heading(kind_, type_, ast, "function call requires coercion of actual ",
+             (c.constRefCoercionActual() + 1) ," for 'const ref' formal '",
+             formalName, "'.");
+  if (auto call = ast->toCall()) {
+    wr.code(call, { call->actual(c.constRefCoercionActual()) });
+  } else {
+    wr.code(ast);
+  }
+  wr.message("Formals with the 'const ref' intent do not currently support coercions.");
+
+  auto fmlDecl = c.fn()->untyped()->formalDecl(c.constRefCoercionFormal());
+  if (fmlDecl) {
+    wr.message("The formal was declared 'const ref' here:");
+    wr.code(fmlDecl, { fmlDecl });
+  }
+}
+
 void ErrorDeprecation::write(ErrorWriterBase& wr) const {
   auto msg = std::get<std::string>(info);
   auto mention = std::get<const uast::AstNode*>(info);
@@ -303,6 +326,34 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   wr.message(
       "Dot expressions are not allowed in the 'except' or 'only' list of a "
       "'use' or 'import'.");
+}
+
+void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  auto dottedType = std::get<const types::Type*>(info);
+  auto typeDeclId = std::get<ID>(info);
+  const bool haveType = dottedType && !dottedType->isErroneousType();
+  if (haveType) {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type ('",
+               dottedType, "').");
+  } else {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
+  }
+  wr.code(dot, {dot});
+  if (haveType) {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is the type '",
+        dottedType, "'.");
+  } else {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is a type.");
+  }
+  if (typeDeclId) {
+    wr.message("The receiver is declared as a 'type' variable here:");
+    wr.code(typeDeclId);
+  }
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {

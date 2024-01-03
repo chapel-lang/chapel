@@ -9,8 +9,8 @@ const D = {1..n} dmapped blockDist(idxType=int(32), boundingBox={1..n});
 var A: [D] real;
 var B: [D] real;
 
-var randStr1 = new owned RandomStream(real, 314159265);
-var randStr2 = new owned RandomStream(real, 314159265);
+var randStr1 = new randomStream(real, 314159265);
+var randStr2 = new randomStream(real, 314159265);
 
 forall (i,r) in zip(A.domain, randStr1) do
   A(i) = r;
@@ -24,4 +24,3 @@ for (i,a,b) in zip(D,A,B) {
   else
     writeln("#", i, " = ", a);
 }
-

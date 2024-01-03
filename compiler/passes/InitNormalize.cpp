@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -26,6 +26,7 @@
 #include "IfExpr.h"
 #include "initializerRules.h"
 #include "LoopExpr.h"
+#include "TryStmt.h"
 #include "stmt.h"
 #include "astutil.h"
 
@@ -758,6 +759,14 @@ InitNormalize::InitPhase InitNormalize::startPhase(BlockStmt* block) const {
       INT_ASSERT(forall->fRecIterIRdef == NULL);
 
       InitPhase phase = startPhase(forall->loopBody());
+
+      if (phase != defaultPhase) {
+        retval = phase;
+      } else {
+        stmt   = stmt->next;
+      }
+    } else if (TryStmt* tryStmt = toTryStmt(stmt)) {
+      InitPhase phase = startPhase(tryStmt->body());
 
       if (phase != defaultPhase) {
         retval = phase;

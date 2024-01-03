@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -194,16 +194,6 @@ void ErrorPreIncDecOp::write(ErrorWriterBase& wr) const {
   wr.code(loc);
 }
 
-void ErrorSingleStmtReturnDeprecated::write(ErrorWriterBase& wr) const {
-  auto loc = std::get<const Location>(info);
-  auto ret = std::get<const uast::AstNode*>(info);
-  wr.heading(kind_, type_, loc, "Single-statement 'return' routines are "
-             "deprecated; please insert 'do' before the 'return' or wrap the "
-             "statement in curly brackets.");
-  wr.message("For this return statement:");
-  wr.code(loc, { ret });
-}
-
 void ErrorStringLiteralEOF::write(ErrorWriterBase& wr) const {
   auto loc = std::get<const Location>(info);
   auto startChar = std::get<char>(info);
@@ -256,6 +246,20 @@ void ErrorCantApplyPrivate::write(ErrorWriterBase& wr) const {
              " yet.");
   wr.message("The following declaration has unsupported 'private' modifier:");
   wr.code(node);
+}
+
+void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
+  auto node = std::get<0>(info);
+  auto otherwise = std::get<1>(info);
+  auto when = std::get<2>(info);
+  wr.heading(kind_, type_, node, "'otherwise' clause must follow all 'when' clauses.");
+  wr.message("In the following 'select' statment:");
+  wr.code(node);
+  wr.note(otherwise, "the 'otherwise' clause occurs here:");
+  wr.code(otherwise);
+  wr.note(when, "however, the following 'when' clause is found below it:");
+  wr.code(when);
+  wr.message("Chapel requires 'otherwise' clauses to occur last within 'select' statements.");
 }
 
 void ErrorDisallowedControlFlow::write(ErrorWriterBase& wr) const {

@@ -19,6 +19,10 @@ config.suffixes = ['.ll', '.c', '.cpp', '.test', '.txt', '.s']
 config.excludes = ['CMakeCache.txt', 'CMakeFiles', 'CMakeLists.txt']
 
 config.substitutions.append(('%bindir', "@CMAKE_BINARY_DIR@"))
+if "macOS" in platform.platform():
+  config.substitutions.append(('%soext', "dylib"))
+else:
+  config.substitutions.append(('%soext', "so"))
 
 
 # environment: Set PATH as required

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,46 +20,37 @@
 #ifndef CHPL_UTIL_MEMORY_H
 #define CHPL_UTIL_MEMORY_H
 
+#include "llvm/Config/llvm-config.h"
+
 #include <memory>
-#include "llvm/Option/Option.h"
+#if LLVM_VERSION_MAJOR >= 16
+#include <optional>
+#else
+#include "llvm/ADT/Optional.h"
+#endif
 
 namespace chpl {
 
-// Below, the underlying type of optional is selected based on the available
-// LLVM version (which implies an available C++ version, since LLVM16 requires
-// C++17). The two types (llvm::Optional and std::optional) don't have an
-// exactly equal API: the former has getValue while the latter has get_value,
-// and so on. To use either without knowing which implementation is in use, you
-// can instead use unary operator* (dereference) and operator bool (boolean
-// coercion). Thus, `o.getValue()` becomes `*o`, and `o.hasValue()` becomes
-// `(bool) o`, or even just `o` in some contexts like if conditions.
-
-template <typename T>
-#if LLVM_VERSION_MAJOR >= 16
 /**
  optional<T> is just a synonym for 'std::optional<T>'.
 
  It allows for easy migration in the event that we switch
  underlying optional types.
  */
+template<typename T>
+#if LLVM_VERSION_MAJOR >= 16
 using optional = std::optional<T>;
+#else
+using optional = llvm::Optional<T>;
+#endif
+
 
 /**
   This is the "empty" value for the above optional<T> type.
  */
+#if LLVM_VERSION_MAJOR >= 16
 static const auto empty = std::nullopt;
 #else
-/**
- optional<T> is just a synonym for 'llvm::Optional<T>'.
-
- It allows for easy migration in the event that we switch
- underlying optional types.
- */
-using optional = llvm::Optional<T>;
-
-/**
-  This is the "empty" value for the above optional<T> type.
- */
 static const auto empty = llvm::None;
 #endif
 

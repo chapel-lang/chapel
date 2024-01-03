@@ -29,13 +29,12 @@ Overall Format
 --------------
 
 Overall, the file format consists of a header followed by a number of
-modules sections. In this way, the file can store information for
-different modules. The file format is designed so that libraries for
+contiguous modules sections. In this way, the file can store information
+for different modules. The file format is designed so that libraries for
 individual modules can be concatenated together (if the file header and
 file module table is adjusted appropriately). To support that, offsets
-within a module section are relative to the start of that module section.
-Each module section contains its own sections that contain details of the
-module.
+are generally relative within the section referred to. Each module
+section contains its own sections that contain details of the module.
 
 Each section in the file is padded to start at an 8 byte alignment.
 
@@ -49,7 +48,7 @@ bytes for smaller numbers. Portions of the number are stored in a
 variable number of component bytes. Each component byte has part of the
 number stored in the bottom 7 bits and uses the top bit to indicate if
 there are more components. The components store portions of the original
-number in a little-endian way (i.e., starting with the least-siginificant
+number in a little-endian way (i.e., starting with the least-significant
 group of 7 bits).
 
 For example, the variable byte encoding of 0b110110 is just 0b00110110
@@ -113,25 +112,34 @@ The '.dyno' file format header consists of:
    * the hash is computed assuming that the hash is 0
  * a module section table, consisting of N entries, each consists of:
    * 8 bytes of module section offset (pointing to a module section header)
+ * 8 bytes storing the offset just after the last module
 
 Module Section Header
 ---------------------
 
 The module section header uses relative section offsets. These relative
-offsets store offsets relative to the module section header.
+offsets store offsets relative to the module section header. The 'end'
+offsets are the offset just after the section; so the length of a section
+is endOffset - startOffset.
 
 Each module section begins with a header that consists of:
 
  * 8 bytes of magic number 0x4d4dd01e5ec14d4d
  * 8 bytes of reserved space for future flags
- * 8 bytes module section length
- * 8 bytes of symbol table section relative offset
- * 8 bytes of uAST section relative offset
- * 8 bytes of long strings table section relative offset
- * 8 bytes of location section relative offset
- * 8 bytes of types section relative offset
- * 8 bytes of functions section relative offset
- * 8 bytes of dependencies section relative offset
+ * 8 bytes of symbol table section start offset
+ * 8 bytes of symbol table section end offset
+ * 8 bytes of uAST section start offset
+ * 8 bytes of uAST section end offset
+ * 8 bytes of long strings table start offset
+ * 8 bytes of long strings table end offset
+ * 8 bytes of location section start offset
+ * 8 bytes of location section end offset
+ * 8 bytes of types section start offset
+ * 8 bytes of types section end offset
+ * 8 bytes of functions section start offset
+ * 8 bytes of functions section end offset
+ * 8 bytes of dependencies section start offset
+ * 8 bytes of dependencies section end offset
  * a string storing the module symbol ID
    (e.g. "TopLevelModule" or "MyModule.SubModule")
    (note that this string does not use the long strings table)
@@ -141,27 +149,70 @@ Each module section begins with a header that consists of:
 Symbol Table Section
 --------------------
 
-The symbol table section has an entry for each public symbol contained in
-the file. These are sorted by symbol table ID.
+The symbol table section has an entry for each public, top-level symbol
+contained in the module, as well as the module itself. These are sorted
+by symbol table ID.
 
 For a symbol, the symbol table ID consists of:
 
+ * "" for the module itself
  * the name of the symbol, for anything top-level to a module
  * the regular ID minus the module name, for anything else
+
     - Normally, symbol IDs are stored as e.g.  'MyModule.MyClass.myMethod',
       but since this entire section of the file contains things within
       'MyModule', that part is omitted; so the symbol table ID for the example
       would just be 'MyClass.myMethod'.
 
 This section consists of:
+
  * 8 bytes of magic number 0x4d59531e5ec110e0
+
  * 4 bytes of N, the number of entries
+
+ * 4 bytes reserved for future use
+
  * entries sorted by symbol table ID.  For each entry, it stores:
-   * 8 byte relative offset to the uAST section
-   * 8 byte relative offset to the Locations section
-   * 8 byte relative offset to the type/function entry, if appropriate
+
+   * 4 byte relative offset from the uAST section start,
+     pointing to the serialized uAST for this symbol
+
+   * 4 byte relative offset from the location section start,
+     pointing to the location group for this symbol
+
    * a byte storing flags / kind information
-   * a string storing the symbol table ID
+
+   * the symbol table ID, stored in a compressed form. It is formed by
+     concatenating the first A bytes of the previous symbol table ID with
+     the B bytes of suffix:
+
+     * unsigned variable-byte encoded, prefix A to copy from the
+       previous symbol table ID
+
+     * unsigned variable-byte encoded, suffix size B stored here
+
+     * B bytes of suffix
+
+  * unsigned variable-byte encoded number, G, of code-generated versions
+
+  * for each of the G code-generated versions
+
+    * byte indicating 0 if it is concrete and nonzero for an
+      instantiation
+
+    * additional information TBD for instantiations
+
+    * the name of the symbol in the generated code, also called a "cname",
+      stored in a compressed form. It is formed by concatenating the first
+      A bytes of the previous cname with the B bytes of suffix:
+
+       * unsigned variable-byte encoded, prefix A to copy from the
+         previous symbol's cname
+
+       * unsigned variable-byte encoded, suffix size B stored here
+
+       * B bytes of suffix
+
 
 uAST Section
 ------------
@@ -176,8 +227,9 @@ IDs are not stored here. They are recomputed when the uAST is read.
 The uAST section consists of:
 
  * 8 bytes of magic number 0x5453411e5ec110e0
- * 8 bytes: the number of bytes of serialized uAST entries
+
  * 8 bytes: the total number of uAST entries
+
  * the contained entries, where each entry consists of:
 
    * 1 byte, tag indicating which uAST element it is (e.g. Variable or Forall)
@@ -224,12 +276,17 @@ order.
 The long strings table consists of the following:
 
  * 4 bytes magic number 0x52545301
+
  * 4 bytes N counting the number of long strings, including two unused ones:
+
      * offset 0 is unused
      * the last offset is also unused
      * so, valid long string indices are in 1 <= i < N
- * relative offsets of each string, from the start of the section
-   * each offset is 8 bytes
+
+ * relative offsets of each string, from the start of the long strings section
+
+   * each offset is 4 bytes
+
  * string data
 
 
@@ -245,14 +302,14 @@ read independently, but some basic compression is used within each group,
 so that the whole group might need to be read in order to compute a
 location.
 
-It consists of:
+The Location section consists of:
 
  * 8 bytes of magic number 0x434F4C075ec110e0
 
  * 4 bytes, the number of file paths used here
 
- * 4 bytes storing the number of top-level location groups. There will be
-   a top-level location group for the module under consideration and then
+ * 4 bytes storing the number of location groups. There will be
+   a location group for the module under consideration and then
    for each uAST referred to by the symbol table. However, these
    are in uAST order rather than symbol table order.
 
@@ -261,22 +318,14 @@ It consists of:
    * a string storing the file path
    * 256 bits / 32 bytes of SHA-256 hash of the input file that was parsed
 
- * information for each top-level location, consisting of the following:
+ * information for each location group, consisting of the following:
 
-   * 8 bytes storing a starting relative offset within the uAST section
+   * unsigned variable-byte encoded index into the file paths stored in the
+     location section to indicate which file this location group came from
 
-   * 4 bytes storing a starting line number
-
-   * 4 bytes storing the number of locations stored within this entry
+   * signed variable-byte encoded starting line number
 
    * a number of location entries, each consisting of:
-
-     * relative offset within the uAST section, stored as a signed
-       variable-byte encoded difference from the previous entry's uAST
-       offset, or a difference from the starting relative offset if this
-       is the first entry.
-
-     * variable-byte encoded unsigned index into file paths
 
      * the first line, stored as a signed variable-byte encoded
        difference from the previous entry's last line, or a difference
@@ -298,14 +347,30 @@ It consists of:
        * unsigned variable-byte encoded additional location tag
 
        * first line, stored as a signed variable-byte encoded difference
-         from this entry's first line
+         from the containing entry's first line
 
        * last line, stored as a signed variable-byte encoded difference
-         the additional location's first line
+         from the additional location's first line
 
        * unsigned variable-byte encoded first column
 
        * unsigned variable-byte encoded first last column
+
+
+Generated Code Section
+----------------------
+
+The generated code contains serialized LLVM IR for the result of
+compilation for the module (with the exception of generic functions that
+are not yet instantiated).
+
+The generated code section consists of:
+
+ * 8 bytes of magic number 0x4e4547075ec110e0
+
+ * 8 bytes, M, the size of the serialized LLVM IR bytecode
+
+ * M bytes of serialized LLVM IR bytecode
 
 
 Types Section

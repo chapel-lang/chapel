@@ -2,7 +2,7 @@
 
 use DimensionalDist2D, ReplicatedDim;
 use BlockCycDim; //MBC //BC
-use Time, Random;
+use Time;
 
 config const verb = false;
 
@@ -34,9 +34,6 @@ const AbD: domain(2, indexType)
 
 var Ab: [AbD] elemType;  // the matrix A and vector b
 
-// for the reference implementation
-config const useRandomSeed = true,
-             seed = if useRandomSeed then SeedGenerator.oddCurrentTime else 31415;
 config const verify = false;
 var Abref: [MatVectSpace] elemType;
 var refsuccess = true;

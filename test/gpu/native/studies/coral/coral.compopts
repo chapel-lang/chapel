@@ -1,1 +1,4 @@
--M modules
+# for some reason, this test runs extremely slowly on ROCm 5 without --fast.
+# Probably has something to do with fast/slow math. For now, just throw in
+# --fast.
+-M modules --fast

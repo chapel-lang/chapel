@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -234,6 +234,9 @@ returnInfoVal(CallExpr* call) {
 static QualifiedType
 returnInfoRef(CallExpr* call) {
   Type* t = call->get(1)->getValType();
+  if(t->symbol->hasFlag(FLAG_GENERIC))
+    // this will result in an error later on
+    return QualifiedType(t, QUAL_REF);
   if (!t->refType)
     INT_FATAL(call, "invalid attempt to get reference type");
   return QualifiedType(t->refType, QUAL_REF);
@@ -878,6 +881,10 @@ initPrimitive() {
   prim_def(PRIM_GPU_GRIDDIM_Y, "gpu gridDim y", returnInfoInt32, true);
   prim_def(PRIM_GPU_GRIDDIM_Z, "gpu gridDim z", returnInfoInt32, true);
 
+  prim_def(PRIM_GPU_INIT_KERNEL_CFG, "gpu init kernel cfg", returnInfoCVoidPtr, true);
+  prim_def(PRIM_GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg", returnInfoVoid, true);
+  prim_def(PRIM_GPU_ARG, "gpu arg", returnInfoVoid, true);
+
   // allocate data into shared memory (takes one parameter: number of bytes to allocate)
   // and returns a raw_c_void_ptr
   prim_def(PRIM_GPU_ALLOC_SHARED, "gpu allocShared", returnInfoCVoidPtr, true);
@@ -1270,6 +1277,26 @@ initPrimitive() {
   prim_def(PRIM_REAL64_AS_UINT64, "real64 as uint64", returnInfoUInt64);
 
   prim_def(PRIM_BREAKPOINT, "breakpoint", returnInfoVoid, true);
+
+  // Expects a single argument, which will be passed by pointer to an underlying
+  // runtime function, so that the memory can be hashed.
+  prim_def(PRIM_CONST_ARG_HASH, "hash const arguments", returnInfoUInt64, true);
+  // Expects five arguments:
+  // 1. hash of the const argument at the start of the function
+  // 2. hash of the const argument at the end of the function
+  // 3. the name of the const argument
+  // 4. and 5. the line number and file name where the argument was defined.
+  //
+  // The latter two will be inserted by the compiler before code generation
+  //
+  // 1 and 2 are used to determine if the argument has been indirectly modified,
+  // 3-5 are used to generate a warning message if it was.
+  prim_def(PRIM_CHECK_CONST_ARG_HASH, "check hashes of const arguments", returnInfoVoid, true, true);
+
+  // we need to carry information about 'in' intents lowered from foreach loops
+  // until gpu transforms. To do that we add an assigment
+  //   `taskIndVar = TASK_INDEPENDENT_SVAR_CAPTURE(capturedVar)` into the AST.
+  prim_def(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture", returnInfoUnknown);
 }
 
 static Map<const char*, VarSymbol*> memDescsMap;

@@ -44,6 +44,7 @@ _chpl ()
 --comm-substrate \
 --compile-time-nil-checking \
 --compiler-driver \
+--const-arg-checks \
 --copy-elision \
 --copy-propagation \
 --copyright \
@@ -57,9 +58,9 @@ _chpl ()
 --detailed-errors \
 --devel \
 --div-by-zero-checks \
+--driver-compilation-phase \
 --driver-debug-phase \
---driver-phase-one \
---driver-phase-two \
+--driver-makebinary-phase \
 --driver-tmp-dir \
 --dynamic \
 --dynamic-auto-local-access \
@@ -67,6 +68,7 @@ _chpl ()
 --dyno-break-on-hash \
 --dyno-debug-trace \
 --dyno-gen-lib \
+--dyno-gen-std \
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
@@ -151,6 +153,7 @@ _chpl ()
 --log \
 --log-deleted-ids-to \
 --log-dir \
+--log-fmt \
 --log-ids \
 --log-module \
 --log-pass \
@@ -164,6 +167,7 @@ _chpl ()
 --mllvm \
 --module-dir \
 --munge-user-idents \
+--munge-with-ids \
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
@@ -176,6 +180,7 @@ _chpl ()
 --no-checks \
 --no-codegen \
 --no-compile-time-nil-checking \
+--no-const-arg-checks \
 --no-copy-elision \
 --no-copy-propagation \
 --no-count-tokens \
@@ -235,6 +240,7 @@ _chpl ()
 --no-memory-frees \
 --no-minimal-modules \
 --no-munge-user-idents \
+--no-munge-with-ids \
 --no-nil-checks \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
@@ -268,6 +274,7 @@ _chpl ()
 --no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
+--no-resolve-concrete-fns \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -349,6 +356,7 @@ _chpl ()
 --report-promotion \
 --report-scalar-replace \
 --report-vectorized-loops \
+--resolve-concrete-fns \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \
@@ -409,6 +417,7 @@ _chpl ()
 --codegen \
 --comm \
 --comm-substrate \
+--const-arg-checks \
 --copy-propagation \
 --copyright \
 --count-tokens \
@@ -469,6 +478,7 @@ _chpl ()
 --no-cast-checks \
 --no-checks \
 --no-codegen \
+--no-const-arg-checks \
 --no-copy-propagation \
 --no-count-tokens \
 --no-cpp-lines \

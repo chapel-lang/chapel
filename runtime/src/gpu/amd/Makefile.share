@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -21,8 +21,11 @@ SRCS = $(GPU_SRCS)
 
 GPU_OBJS = $(addprefix $(GPU_OBJDIR)/,$(addsuffix .o,$(basename $(GPU_SRCS))))
 
-RUNTIME_CXXFLAGS += -x hip
+RUNTIME_CXXFLAGS += -x hip --offload-arch=$(CHPL_MAKE_GPU_ARCH)
+
+# Some ROCm headers have `foo()`, suppress warnings/errors from them
+RUNTIME_CFLAGS += -Wno-strict-prototypes
 
 $(RUNTIME_OBJ_DIR)/gpu-amd-reduce.o: gpu-amd-reduce.cc \
                                          $(RUNTIME_OBJ_DIR_STAMP)
-	$(CXX) -c -std=c++14 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<
+	PATH=$(PATH):$(CHPL_MAKE_ROCM_PATH)/llvm/bin $(CXX) -c -std=c++14 $(RUNTIME_CXXFLAGS) $(RUNTIME_INCLS) -o $@ $<

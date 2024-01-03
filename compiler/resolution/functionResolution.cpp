@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -183,7 +183,7 @@ static Expr* foldTryCond(Expr* expr);
 static void unmarkDefaultedGenerics();
 static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
-static void resolveExports();
+static void resolveExportsEtc();
 static void resolveEnumTypes();
 static void populateRuntimeTypeMap();
 static void resolveAutoCopies();
@@ -2939,20 +2939,15 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 
       bool eq  = name == astrSeq;
       bool ne  = name == astrSne;
-      bool lt  = name == astrSlt;
-      bool lte = name == astrSlte;
-      bool gt  = name == astrSgt;
-      bool gte = name == astrSgte;
 
-      if (eq || ne || lt || lte || gt || gte) {
+      if (eq || ne) {
         SymExpr* lhs = toSymExpr(call->get(1));
         SymExpr* rhs = toSymExpr(call->get(2));
 
         if (lhs && rhs &&
             lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
-            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-          if (eq || ne) {
+            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        {
             Symbol* value = gFalse;
             bool sameType = lhs->symbol()->type == rhs->symbol()->type;
             if (eq && sameType)
@@ -2964,29 +2959,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             call->replace(se);
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
-          } else {
-            USR_WARN(call, "type comparison operators are deprecated; "
-              "use isSubtype/isProperSubtype instead");
 
-            rhs->remove();
-            lhs->remove();
-            call->baseExpr->remove();
-
-            if (lte || gte)
-              call->primitive = primitives[PRIM_IS_SUBTYPE];
-            else
-              call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
-
-            if (lt || lte) {
-              call->insertAtTail(rhs);
-              call->insertAtTail(lhs);
-            } else {
-              call->insertAtTail(lhs);
-              call->insertAtTail(rhs);
-            }
-          }
-
-          return true;
+            return true;
         }
       }
     }
@@ -3128,6 +3102,22 @@ static void adjustClassCastCall(CallExpr* call)
   }
 }
 
+static bool isGenericSubclass(Type* targetType, Type* valueType) {
+  if (!isClassLikeOrManaged(targetType) ||
+      !isClassLikeOrManaged(valueType)) return false;
+
+  auto atTarget = toAggregateType(canonicalClassType(targetType));
+  auto atValue = toAggregateType(canonicalClassType(valueType));
+  INT_ASSERT(atTarget && atValue);
+
+  const bool isDowncast = isSubType(atTarget, atValue);
+  const bool isTargetTypeGeneric = atTarget->isGeneric();
+  const bool targetTypeHasDefaults = atTarget->isGenericWithDefaults();
+  bool ret = isDowncast && isTargetTypeGeneric && !targetTypeHasDefaults;
+
+  return ret;
+}
+
 static bool resolveBuiltinCastCall(CallExpr* call)
 {
   UnresolvedSymExpr* urse = toUnresolvedSymExpr(call->baseExpr);
@@ -3243,6 +3233,14 @@ static bool resolveBuiltinCastCall(CallExpr* call)
       }
 
       return true;
+    }
+
+    // Check to make sure we're not doing 'C: shared D(?)'. We have to stop
+    // here to make sure we don't emit a nonsensical error from later in the
+    // pass (e.g., in the module code for the owned manager).
+    if (isGenericSubclass(targetType, valueType)) {
+      USR_FATAL(call, "illegal downcast to generic subclass type '%s'",
+                      toString(targetType));
     }
   }
 
@@ -9488,7 +9486,6 @@ static void resolveNew(CallExpr* newExpr) {
   // The following variables allow the latter half of this function
   // to construct the AST for initializing the owned/shared if necessary.
   // Manager is:
-  //  dtBorrowed for 'new borrowed'
   //  dtUnmanaged for 'new unmanaged'
   //  owned record for 'new owned'
   //  shared record for 'new shared'
@@ -9657,17 +9654,6 @@ static void resolveNewSetupManaged(CallExpr* newExpr, Type*& manager) {
             // Set the type to initialize
             typeExpr->setSymbol(initType->symbol);
         }
-      }
-
-      if (manager == dtBorrowed && fWarnUnstable) {
-        Type* ct = canonicalClassType(type);
-        USR_WARN(newExpr, "new borrowed %s is unstable", ct->symbol->name);
-        USR_PRINT(newExpr, "use 'new unmanaged %s' "
-                           "'new owned %s' or "
-                           "'new shared %s'",
-                           ct->symbol->name,
-                           ct->symbol->name,
-                           ct->symbol->name);
       }
     }
   }
@@ -11450,7 +11436,7 @@ void resolve() {
 
   finishInterfaceChecking();  // should happen before resolveAutoCopies
 
-  resolveExports();
+  resolveExportsEtc();
 
   resolveEnumTypes();
 
@@ -11637,8 +11623,29 @@ static void resolveSupportForModuleDeinits() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveExports() {
+static bool hasVariableArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->variableExpr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isGenericFn(FnSymbol* fn) {
+  if (!fn->isGenericIsValid()) {
+    fn->tagIfGeneric();
+  }
+  return fn->isGeneric();
+}
+
+static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
+
+  // try to resolve concrete functions when using --dyno-gen-lib
+  bool alsoConcrete = (fResolveConcreteFns || !gDynoGenLibOutput.empty()) &&
+                      !fMinimalModules;
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -11656,6 +11663,44 @@ static void resolveExports() {
 
       if (fn->hasFlag(FLAG_EXPORT))
         exps.push_back(fn);
+    } else if (alsoConcrete) {
+      // gather the receiver type if there is one
+      AggregateType* at = NULL;
+      if (fn->_this) {
+        at = toAggregateType(fn->_this->type);
+      }
+
+      if (!fn->hasFlag(FLAG_GENERIC) &&
+          !fn->hasFlag(FLAG_LAST_RESORT) /* often a compilerError overload*/ &&
+          !fn->hasFlag(FLAG_DO_NOT_RESOLVE_UNLESS_CALLED) &&
+          !hasVariableArgs(fn) &&
+          !fn->hasFlag(FLAG_RESOLVED) &&
+          !fn->hasFlag(FLAG_INVISIBLE_FN) &&
+          !fn->hasFlag(FLAG_INLINE) &&
+          !fn->hasFlag(FLAG_EXTERN) &&
+          !fn->hasFlag(FLAG_ON) &&
+          !fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) &&
+          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          // either this is not a method, or at least it's not a method
+          // on a generic type
+          (fn->_this == NULL || !at || !at->isGeneric()) &&
+          // for now, ignore chpl_ functions
+          (strncmp(fn->name, "chpl_", 5) != 0) &&
+          fn->defPoint &&
+          // Nested functions are tricky because their resolution may depend
+          // on the resolution of the outer function in which they are located;
+          // i.e., they may be generic w.r.t. outer-scoped variables, yet not
+          // marked with FLAG_GENERIC.  For now, rule out all nested functions.
+          !isFnSymbol(fn->defPoint->parentSymbol) && // fn is not nested
+          fn->defPoint->getModule() &&
+          !isGenericFn(fn)
+         ) {
+        SET_LINENO(fn);
+
+        if (evaluateWhereClause(fn)) {
+          resolveSignatureAndFunction(fn);
+        }
+      }
     }
   }
 

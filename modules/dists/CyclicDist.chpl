@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -465,7 +465,7 @@ class CyclicImpl: BaseDist, writeSerializable {
   }
 
   override proc dsiDestroyDist() {
-    coforall ld in locDist do {
+    coforall ld in locDist {
       on ld do
         delete ld;
     }
@@ -831,7 +831,7 @@ iter CyclicDom.these(param tag: iterKind) where tag == iterKind.leader {
 
     // Forward to defaultRectangular to iterate over the indices we own locally
     for followThis in locDom.myBlock.these(iterKind.leader, maxTasks,
-                                           myIgnoreRunning, minSize) do {
+                                           myIgnoreRunning, minSize) {
       // translate the 0-based indices yielded back to our indexing scheme
       const newFollowThis = chpl__followThisToOrig(idxType, followThis, locDom.myBlock);
 
@@ -1063,7 +1063,7 @@ inline proc _remoteAccessData.getDataIndex(
   if ! strides.isOne() {
     compilerError("RADOpt not supported for strided cyclic arrays.");
   } else {
-    for param i in 0..rank-1 do {
+    for param i in 0..rank-1 {
       sum += (((ind(i) - off(i)):int * blk(i))-startIdx(i):int)/dimLen(i);
     }
   }
@@ -1612,29 +1612,6 @@ proc CyclicDom.dsiLocalSubdomain(loc: locale) {
     return d;
   }
 }
-
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
-proc newCyclicDom(dom: domain) {
-  return dom dmapped Cyclic(startIdx=dom.lowBound);
-}
-
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
-proc newCyclicArr(dom: domain, type eltType) {
-  var D = newCyclicDom(dom);
-  var A: [D] eltType;
-  return A;
-}
-
-@deprecated(notes="'newCyclicDom' is deprecated - please use 'cyclicDist.createDomain' instead")
-proc newCyclicDom(rng: range...) {
-  return newCyclicDom({(...rng)});
-}
-
-@deprecated(notes="'newCyclicArr' is deprecated - please use 'cyclicDist.createArray' instead")
-proc newCyclicArr(rng: range..., type eltType) {
-  return newCyclicArr({(...rng)}, eltType);
-}
-
 
 proc CyclicArr.canDoOptimizedSwap(other) {
   var domsMatch = true;

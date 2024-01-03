@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -27,7 +27,9 @@
 
 #include <cstdio>
 #include <map>
+#include <set>
 #include <string>
+#include <unordered_set>
 
 class Timer;
 
@@ -52,6 +54,7 @@ extern bool fIgnoreNilabilityErrors;
 extern bool fOverloadSetsChecks;
 extern bool fNoStackChecks;
 extern bool fNoCastChecks;
+extern bool fNoConstArgChecks;
 extern bool fNoDivZeroChecks;
 extern bool fMungeUserIdents;
 extern bool fEnableTaskTracking;
@@ -162,8 +165,8 @@ extern bool fExplainVerbose;
 extern bool fParseOnly;
 // begin compiler driver control flags
 extern bool fDriverDoMonolithic;
-extern bool fDriverPhaseOne;
-extern bool fDriverPhaseTwo;
+extern bool fDriverCompilationPhase;
+extern bool fDriverMakeBinaryPhase;
 extern char driverTmpDir[FILENAME_MAX];
 // end compiler driver control flags
 extern bool fPrintAllCandidates;
@@ -301,14 +304,18 @@ extern std::vector<std::string> llvmRemarksFunctionsToShow;
 
 extern bool fPrintAdditionalErrors;
 
-extern bool fDynoResolve;
+extern bool fDynoCompilerLibrary;
 extern bool fDynoScopeResolve;
 extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
 extern bool fDynoVerifySerialization;
+extern bool fDynoGenStdLib;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fResolveConcreteFns;
+extern bool fIdBasedMunging;
 
 extern bool fNoIOGenSerialization;
 extern bool fNoIOSerializeWriteThis;
@@ -324,6 +331,10 @@ extern std::vector<std::pair<std::string, std::string>> gDynoParams;
 
 extern std::vector<std::string> gDynoPrependInternalModulePaths;
 extern std::vector<std::string> gDynoPrependStandardModulePaths;
+
+extern std::string gDynoGenLibOutput;
+extern std::vector<UniqueString> gDynoGenLibSourcePaths;
+extern std::unordered_set<const char*> gDynoGenLibModuleNameAstrs;
 
 extern bool fForeachIntents;
 

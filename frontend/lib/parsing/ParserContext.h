@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -376,6 +376,13 @@ struct ParserContext {
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
+  ErroneousExpression* checkForFunctionErrors(FunctionParts& fp,
+                                              AstNode* retType);
+
+  void enterScopeForFunctionDecl(FunctionParts& fp,
+                                 AstNode* retType);
+  void exitScopeForFunctionDecl(FunctionParts& fp);
+
   AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
 
   AstNode* buildLetExpr(YYLTYPE location, ParserExprList* decls,
@@ -717,6 +724,5 @@ struct ParserContext {
   CommentsAndStmt buildLabelStmt(YYLTYPE location, PODUniqueString name,
                                  CommentsAndStmt cs);
 
-  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs,
-                                             YYLTYPE* warnLoc = NULL);
+  ParserExprList* buildSingleStmtRoutineBody(CommentsAndStmt cs);
 };

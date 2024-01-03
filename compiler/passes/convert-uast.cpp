@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -278,7 +278,11 @@ struct Converter {
     return false;
   }
   bool shouldResolve(ID symbolId) {
-    return shouldResolve(symbolId.symbolPath());
+    if (fDynoCompilerLibrary) {
+      return !chpl::parsing::idIsInBundledModule(context, symbolId);
+    } else {
+      return shouldResolve(symbolId.symbolPath());
+    }
   }
   bool shouldResolve(const uast::AstNode* node) {
     return shouldResolve(node->id());
@@ -951,7 +955,7 @@ struct Converter {
     }
 
     CallExpr* when = new CallExpr(PRIM_WHEN, args);
-    auto block = createBlockWithStmts(node->stmts(), node->blockStyle());
+    auto block = createBlockWithStmts(node->body()->stmts(), node->blockStyle());
 
     return new CondStmt(when, block);
   }
@@ -2965,7 +2969,6 @@ struct Converter {
 
     const resolution::ResolutionResultByPostorderID* resolved = nullptr;
     const resolution::ResolvedFunction* resolvedFn = nullptr;
-    const resolution::TypedFnSignature* initialSig = nullptr;
     const resolution::PoiScope* poiScope = nullptr;
 
     if (shouldResolveFunction || shouldScopeResolveFunction) {
@@ -3083,6 +3086,13 @@ struct Converter {
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
 
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE &&
+        // ignore things like chpl_taskAddCoStmt
+        !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
+      CHPL_ASSERT(node->id().postOrderId() == -1);
+      fn->cname = astr(node->id().symbolPath());
+    }
+
     if (convertedReceiver) {
       fn->thisTag = thisTag;
       fn->_this = convertedReceiver;
@@ -3152,8 +3162,6 @@ struct Converter {
 
     if (node->body()) {
       INT_ASSERT(node->linkage() != uast::Decl::EXTERN);
-
-      // TODO: What about 'proc foo() return 0;'?
       auto style = uast::BlockStyle::EXPLICIT;
       body = createBlockWithStmts(node->stmts(), style);
     }
@@ -3174,8 +3182,8 @@ struct Converter {
     }
 
     // Update the function symbol with any resolution results.
-    if (shouldResolveFunction) {
-      auto retType = resolution::returnType(context, initialSig, poiScope);
+    if (shouldResolveFunction && resolvedFn != nullptr) {
+      auto retType = resolution::returnType(context, resolvedFn->signature(), poiScope);
       fn->retType = convertType(retType);
     }
 
@@ -3429,9 +3437,6 @@ struct Converter {
     CHPL_ASSERT(foundPath);
     const char* path = astr(pathUstr);
 
-    // TODO (dlongnecke): For now, the tag is overridden by the caller.
-    // See 'uASTAttemptToParseMod'. Eventually, it would be great if dyno
-    // could note if a module is standard/internal/user.
     const ModTag tag = this->topLevelModTag;
     bool priv = (node->visibility() == uast::Decl::PRIVATE);
     bool prototype = (node->kind() == uast::Module::PROTOTYPE ||
@@ -4090,7 +4095,7 @@ void Converter::setResolvedCall(const uast::FnCall* call, CallExpr* expr) {
       } else if (nBest > 1) {
         INT_FATAL("return intent overloading not yet handled");
       } else if (nBest == 1) {
-        const resolution::TypedFnSignature* sig = candidates.only();
+        const resolution::TypedFnSignature* sig = candidates.only().fn();
         Symbol* fn = findConvertedFn(sig);
         if (fn == nullptr) {
           // we will fix it later

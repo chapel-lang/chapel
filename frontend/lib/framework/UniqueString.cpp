@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -210,7 +210,7 @@ void UniqueString::serialize(Serializer& ser) const {
     ser.writeData(c_str(), len);
   } else {
     // store the string through the long strings table
-    uint32_t uid = ser.cacheString(c_str(), len);
+    uint32_t uid = ser.saveLongString(c_str(), len);
     // won't work if the high bit is set
     CHPL_ASSERT((uid >> 31) == 0);
     // compute the uid in big-endian order with high bit set

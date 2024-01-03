@@ -1,3 +1,1 @@
-$CHPL_HOME/modules/standard/Random.chpl:214: In function 'permutation':
-$CHPL_HOME/modules/standard/Random.chpl:222: error: permutation does not support non-rectangular arrays
-  permutationAssociative.chpl:5: called as permutation(arr: [DefaultAssociativeDom(int(64),true)] real(64), seed: int(64), param algorithm = 1: RNG)
+permutationAssociative.chpl:5: error: 'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType

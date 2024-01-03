@@ -25,14 +25,11 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 # 4) Update START_DATE to be today, using the format mm/dd/yy
 #
 
-# Test perf of LLVM 16
+# Test perf using llvm fastcc
 GITHUB_USER=jabraham17
-GITHUB_BRANCH=use-llvm16
-SHORT_NAME=llvm-16
-START_DATE=10/05/23
-# this is just for testing LLVM 16
-export CHPL_LLVM=bundled
-unset CHPL_LLVM_CONFIG
+GITHUB_BRANCH=use-fast-call
+SHORT_NAME=fastcall
+START_DATE=12/13/23
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH

@@ -5,13 +5,12 @@ class Foo {
   var x: real;
 
   proc init(xVal) {
-    x = xVal;
     sync {
       super.init();
     }
+    x = xVal;
   }
 }
 
 var foo = new Foo(4.3);
 writeln(foo);
-delete foo;

@@ -43,7 +43,7 @@ Executing using the help (``-h``/``--help``) flag will typically print out
 any launcher-specific options in addition to the normal help message for
 the program itself.
 
-You can also execute the Chapel launcher with the ``--dry-run``) flag.
+You can also execute the Chapel launcher with the ``--dry-run`` flag.
 This will not actually run or launch the user program, but instead simply
 print the same thing as ``-v``: the command(s) that would have been used
 to launch the program, along with any environment variables the launcher

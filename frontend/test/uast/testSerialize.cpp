@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -71,7 +71,7 @@ static void testSerializeDeserialize(const char* test, const char* program) {
   Serializer::stringCacheType stringCache;
 
   {
-    auto ser = Serializer(*out);
+    auto ser = Serializer(*out, /*LibraryFileAstRegistration*/ nullptr);
     for (size_t i = 0; i < nToplevelModules; i++) {
       if (verbose) {
         printf("Serializing %s %s\n", test, vec[i]->name().c_str());
@@ -91,7 +91,7 @@ static void testSerializeDeserialize(const char* test, const char* program) {
   if (output[0] != '\0') {
     // if 'output' is set, work with that file.
     std::string error;
-    bool ok = readfile(filename.c_str(), serializedData, error);
+    bool ok = readFile(filename.c_str(), serializedData, error);
     assert(ok);
   } else {
     // get the data we write to the string stream
@@ -105,9 +105,11 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
     UniqueString parentSymbolPath;
 
-    auto builder = Builder::createForLibraryFileModule(context,
-                                                       libname,
-                                                       parentSymbolPath);
+    auto builder =
+      Builder::createForLibraryFileModule(context,
+                                          libname,
+                                          parentSymbolPath,
+                                          /*LibraryFile*/nullptr);
 
     auto des = Deserializer(context,
                             serializedData.c_str(), serializedData.size(),
@@ -120,6 +122,9 @@ static void testSerializeDeserialize(const char* test, const char* program) {
 
       builder->addToplevelExpression(AstNode::deserializeWithoutIds(des));
     }
+
+    // avoid an assertion
+    builder->noteSymbolTableSymbols(Builder::SymbolTableVec());
 
     // assign IDs
     BuilderResult r = builder->result();

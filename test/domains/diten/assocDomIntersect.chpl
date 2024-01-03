@@ -7,7 +7,7 @@ proc setupDoms(ref D1, ref D2) {
   use Random;
   D1.clear();
   D2.clear();
-  var rs = createRandomStream(real);
+  var rs = new randomStream(real, false);
   for i in 1..1000 {
     var rnd1 = (rs.getNext()*10000):int;
     var rnd2 = (rs.getNext()*10000):int;

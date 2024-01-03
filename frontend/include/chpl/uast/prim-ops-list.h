@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -158,7 +158,9 @@ PRIMITIVE_G(GPU_SYNC_THREADS, "gpu syncThreads")
 PRIMITIVE_R(GPU_SET_BLOCKSIZE, "gpu set blockSize")
 PRIMITIVE_G(ASSERT_ON_GPU, "chpl_assert_on_gpu")
 PRIMITIVE_R(GPU_ELIGIBLE, "gpu eligible")
-
+PRIMITIVE_G(GPU_INIT_KERNEL_CFG, "gpu init kernel cfg")
+PRIMITIVE_G(GPU_DEINIT_KERNEL_CFG, "gpu deinit kernel cfg")
+PRIMITIVE_G(GPU_ARG, "gpu arg")
 PRIMITIVE_G(GET_SERIAL, "task_get_serial")
 PRIMITIVE_G(SET_SERIAL, "task_set_serial")
 
@@ -398,3 +400,7 @@ PRIMITIVE_R(REAL32_AS_UINT32, "real32 as uint32")
 PRIMITIVE_R(REAL64_AS_UINT64, "real64 as uint64")
 
 PRIMITIVE_G(BREAKPOINT, "breakpoint")
+
+PRIMITIVE_G(CONST_ARG_HASH, "hash const arguments")
+PRIMITIVE_G(CHECK_CONST_ARG_HASH, "check hashes of const arguments")
+PRIMITIVE_R(TASK_INDEPENDENT_SVAR_CAPTURE, "task independent svar capture")

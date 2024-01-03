@@ -16,8 +16,8 @@ Vagrant.configure("2") do |config|
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-deps.sh"
 
-  # It comes with clang 13 and pkg install llvm installs 9,
-  # but 13 is available.  E.g. /usr/local/llvm13/bin/llvm-config
+  # it comes with clang 13 and pkg install llvm installs 15,
+  # but 13 is available.
   config.vm.provision "shell",
     path: "../../provision-scripts/freebsd-pkg-llvm13.sh"
 

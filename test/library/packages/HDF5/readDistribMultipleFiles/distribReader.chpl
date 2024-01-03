@@ -106,7 +106,7 @@ proc createDemoFiles() {
         nFiles = numLocales,
         maxVariableSize = 100;
   var elements = 0;
-  var randstream = createRandomStream(int);
+  var randstream = new randomStream(int);
 
   for i in 0..#nFiles {
     const name = filenameBase + i + filenameExt,

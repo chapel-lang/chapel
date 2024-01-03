@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1635,7 +1635,7 @@ module SampleSortHelp {
     private use Random;
     import Sort.ShallowCopy;
     var Tmp:[1..1] A.eltType;
-    var randNums = createRandomStream(seed=seed, eltType=int, parSafe=false);
+    var randNums = new randomStream(seed=seed, eltType=int);
     while numSamples > 0 {
       numSamples -= 1;
 

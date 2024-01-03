@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -138,22 +138,30 @@ module GpuDiagnostics
     assert(success, "GPU Diagnostics assertion failed");
   }
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerbose(stacktrace: bool,
                                              print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerbose();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startVerboseHere(stacktrace: bool,
                                                 print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopVerboseHere();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnostics(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnostics();
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_startDiagnosticsHere(print_unstable: bool);
 
+  pragma "insert line file info"
   private extern proc chpl_gpu_stopDiagnosticsHere();
 
   private extern proc chpl_gpu_resetDiagnosticsHere();

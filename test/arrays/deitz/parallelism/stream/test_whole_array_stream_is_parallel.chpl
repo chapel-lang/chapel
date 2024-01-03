@@ -29,12 +29,12 @@ proc main() {
 }
 
 
+
 //
-// Initialize vectors B and C using a random stream of values and
-// optionally print them to the console
+// Initialize vectors B and C using a random stream of values
 //
 proc initVectors(ref B, ref C) {
-  var randlist = new owned RandomStream(real, seed);
-  randlist.fillRandom(B);
-  randlist.fillRandom(C);
+  var randlist = new randomStream(real, seed);
+  randlist.fill(B);
+  randlist.fill(C);
 }

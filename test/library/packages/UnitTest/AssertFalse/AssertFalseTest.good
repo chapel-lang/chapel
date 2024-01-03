@@ -1,3 +1,3 @@
 Error Caught in x == true
-AssertionError: assertFalse failed. Given expression is True
+AssertionError: in AssertFalseTest.chpl:7 - assertFalse failed. Given expression is True
 ================================================================================

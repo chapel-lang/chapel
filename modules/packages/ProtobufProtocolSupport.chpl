@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -193,22 +193,22 @@ module ProtobufProtocolSupport {
     }
 
     proc fixed32AppendBase(val: uint(32), ch: writingChannel) throws {
-      ch.writeBinary(val, ioendian.little);
+      ch.writeBinary(val, endianness.little);
     }
 
     proc fixed32ConsumeBase(ch: readingChannel): uint(32) throws {
       var val: uint(32);
-      ch.readBinary(val, ioendian.little);
+      ch.readBinary(val, endianness.little);
       return val;
     }
 
     proc fixed64AppendBase(val: uint(64), ch: writingChannel) throws {
-      ch.writeBinary(val, ioendian.little);
+      ch.writeBinary(val, endianness.little);
     }
 
     proc fixed64ConsumeBase(ch: readingChannel): uint(64) throws {
       var val: uint(64);
-      ch.readBinary(val, ioendian.little);
+      ch.readBinary(val, endianness.little);
       return val;
     }
 

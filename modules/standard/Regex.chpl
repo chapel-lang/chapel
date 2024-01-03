@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -439,6 +439,7 @@ record regexMatch {
   var numBytes:int;
 }
 
+pragma "do not resolve unless called"
 @chpldoc.nodoc
 proc reMatch type
 {
@@ -518,10 +519,6 @@ record regex : serializable {
   var home: locale = here;
   @chpldoc.nodoc
   var _regex:qio_regex_t = qio_regex_null();
-
-  proc init(type exprType) {
-    this.exprType = exprType;
-  }
 
   /*
      Initializer for a compiled regular expression. ``new regex()`` throws a
@@ -628,6 +625,21 @@ record regex : serializable {
       var serialized = x._serialize();
       this._deserialize(serialized);
     }
+  }
+
+  /*
+    Default type initializer for a compiled regular expression. This does not
+    initialize any fields and the resulting :type:`regex` may produce erroneous
+    results when used. The behavior may differ based on values of
+    :param:`~ChplConfig.CHPL_COMM`.
+
+    .. note::
+       If you are looking to default initialize a :type:`regex`, you might be
+       looking for ``new regex("")``, which will create a regular expression
+       matching the empty string.
+  */
+  proc init(type exprType) {
+    this.exprType = exprType;
   }
 
   @chpldoc.nodoc

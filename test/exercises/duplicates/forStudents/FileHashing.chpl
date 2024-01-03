@@ -90,7 +90,7 @@ module FileHashing {
 
     var f = open(path, ioMode.r);
     var len = f.size;
-    var r = f.reader(deserializer=new binaryDeserializer(ioendian.big), locking=false,
+    var r = f.reader(deserializer=new binaryDeserializer(endianness.big), locking=false,
                      region=0..#len);
 
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -473,10 +473,11 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
       syntax(loc, "pragma list must come before deprecation statement.");
     }
 
+  } else if (cs.stmt && cs.stmt->isErroneousExpression()) {
+    // do nothing on an erroneous statement
+    // Clean up the attribute parts.
+    resetAttributeGroupPartsState();
   } else {
-    // CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt) CHPL_ASSERT(hasAttributeGroupParts);
-
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 
@@ -1392,6 +1393,37 @@ CommentsAndStmt ParserContext::buildFunctionDecl(YYLTYPE location,
 
   cs.stmt = f.release();
   return cs;
+}
+
+ErroneousExpression* ParserContext::checkForFunctionErrors(FunctionParts& fp,
+                                                           AstNode* retType) {
+  if (fp.errorExpr != nullptr) {
+    return fp.errorExpr;
+  }
+  if (retType != nullptr && retType->isErroneousExpression()) {
+    return retType->toErroneousExpression();
+  }
+  return nullptr;
+}
+void ParserContext::enterScopeForFunctionDecl(FunctionParts& fp,
+                                              AstNode* retType) {
+  this->clearComments();
+  this->resetDeclState();
+
+  fp.errorExpr = checkForFunctionErrors(fp, retType);
+  // May never have been built if there was a syntax error.
+  if (!fp.errorExpr) {
+    this->enterScope(asttags::Function, fp.name->name());
+  }
+}
+void ParserContext::exitScopeForFunctionDecl(FunctionParts& fp) {
+  this->clearComments();
+
+  fp.errorExpr = checkForFunctionErrors(fp, fp.returnType);
+  // May never have been built if there was a syntax error.
+  if (!fp.errorExpr) {
+    this->exitScope(asttags::Function, fp.name->name());
+  }
 }
 
 AstNode* ParserContext::buildLambda(YYLTYPE location, FunctionParts& fp) {
@@ -3145,11 +3177,7 @@ ParserContext::buildLabelStmt(YYLTYPE location, PODUniqueString name,
 
 
 ParserExprList*
-ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs,
-                                          YYLTYPE* warnLoc) {
-  if (warnLoc != NULL) {
-    CHPL_PARSER_REPORT(this, SingleStmtReturnDeprecated, *warnLoc, cs.stmt);
-  }
+ParserContext::buildSingleStmtRoutineBody(CommentsAndStmt cs) {
   this->clearComments();
   return this->makeList(cs);
 }

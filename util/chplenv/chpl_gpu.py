@@ -322,6 +322,10 @@ def validate(chplLocaleModel):
         error("The 'gpu' locale model can only be used with "
               "CHPL_TARGET_COMPILER=llvm.")
 
+    llvm_ver = chpl_llvm.get_llvm_version()
+    if llvm_ver in ('16','17',):
+        error("The 'gpu' locale model cannot be used with LLVM version {}".format(llvm_ver))
+
     if not validateLlvmBuiltForTgt(gpu.llvm_target):
         _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
                              gpu.llvm_target, allowExempt=False)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -64,7 +64,7 @@ module Treap {
   }
 
   @chpldoc.nodoc
-  var _treapRandomStream = new RandomStream(int);
+  var _treapRandomStream = new randomStream(int);
 
   /*
     Helper procedure to get one random int

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1702,7 +1702,19 @@ static void resolveEnumeratedTypes() {
       SET_LINENO(call);
 
       if (SymExpr* first = toSymExpr(call->get(1))) {
-        if (EnumType* type = toEnumType(first->symbol()->type)) {
+        // Go through chains like:
+        // enum color = { ... }
+        // type col = color;
+        // which is needed to support e.g. 'col.red'
+        SymExpr* firstDeAliased = first;
+        while (auto varSym = toVarSymbol(firstDeAliased->symbol())) {
+          if (!varSym->hasFlag(FLAG_TYPE_VARIABLE)) break;
+          if (!toSymExpr(varSym->defPoint->init)) break;
+
+          firstDeAliased = toSymExpr(varSym->defPoint->init);
+        }
+
+        if (EnumType* type = toEnumType(firstDeAliased->symbol()->type)) {
           if (SymExpr* second = toSymExpr(call->get(2))) {
             const char* name;
 

@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -90,6 +90,11 @@ else()
               $<TARGET_OBJECTS:git-sha-obj>)
 endif()
 
+add_library(ChplFrontendShared SHARED
+            $<TARGET_OBJECTS:ChplFrontend-obj>
+            $<TARGET_OBJECTS:git-sha-obj>)
+target_link_libraries(ChplFrontendShared ChplFrontend)
+
 target_include_directories(ChplFrontend PUBLIC
                            ${CHPL_MAIN_INCLUDE_DIR}
                            ${CHPL_INCLUDE_DIR})
@@ -132,7 +137,7 @@ target_compile_options(ChplFrontend PUBLIC
 
 # TODO: ADDITIONAL_CLEAN_FILES requires cmake v3.15 ...
 #       Can we find another way to mark these files for cleanup?
-set_target_properties(ChplFrontend PROPERTIES
+set_target_properties(ChplFrontend ChplFrontendShared PROPERTIES
                       ADDITIONAL_CLEAN_FILES
                       ${CMAKE_CURRENT_SOURCE_DIR}/util/git-version.cpp)
 
@@ -140,13 +145,13 @@ set_target_properties(ChplFrontend PROPERTIES
 # install ChplFrontend
 # TODO: also install headers with PUBLIC_HEADER DESTINATION <dir>
 if (INSTALLATION_MODE STREQUAL "prefix")
-  install(TARGETS ChplFrontend
+  install(TARGETS ChplFrontend ChplFrontendShared
           LIBRARY DESTINATION
           "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler"
           ARCHIVE DESTINATION
           "lib/chapel/${CHPL_MAJOR_VERSION}.${CHPL_MINOR_VERSION}/compiler")
 else()
-  install(TARGETS ChplFrontend
+  install(TARGETS ChplFrontend ChplFrontendShared
           LIBRARY DESTINATION
           "lib/compiler/${CHPL_HOST_BIN_SUBDIR}"
           ARCHIVE DESTINATION

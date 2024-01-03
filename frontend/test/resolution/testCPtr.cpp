@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -67,7 +67,7 @@ void testCPtrArg(const char* formalType, const char* actualType, F&& test) {
   auto& rr = modResResult.byAst(fCallVar->toVariable()->initExpression());
 
   debuggerBreakHere();
-  auto fn = rr.mostSpecific().only();
+  auto fn = rr.mostSpecific().only().fn();
 
   const types::CPtrType* formalTypePtr = nullptr;
   if (fn != nullptr) {

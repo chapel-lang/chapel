@@ -122,7 +122,7 @@ class BoundedBuffer {
   var buff: [0..#capacity] sync eltType,  // the sync values, empty by default
       head, tail: atomic int;             // the cursor positions, 0 by default
 
-  var rng = new owned RandomStream(real);
+  var rng = new randomStream(real, false);
 
   proc init(type eltType = real, capacity: int, sentinel: eltType = -1.0) {
     this.eltType = eltType;

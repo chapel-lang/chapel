@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,11 +45,13 @@ module ChapelBase {
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this(args...) {
@@ -173,6 +175,8 @@ module ChapelBase {
   inline operator ==(a: complex(64), b: complex(64)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: complex(128), b: complex(128)) do return a.re == b.re && a.im == b.im;
   inline operator ==(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_eq", a, b);
+  inline operator ==(a: borrowed RootClass?, b: _nilType) do return __primitive("==", a, nil);
+  inline operator ==(a: _nilType, b: borrowed RootClass?) do return __primitive("==", b, nil);
   inline operator ==(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("==", a, b);
   }
@@ -204,6 +208,8 @@ module ChapelBase {
   inline operator !=(a: complex(64), b: complex(64)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: complex(128), b: complex(128)) do return a.re != b.re || a.im != b.im;
   inline operator !=(a: borrowed RootClass?, b: borrowed RootClass?) do return __primitive("ptr_neq", a, b);
+  inline operator !=(a: borrowed RootClass?, b: _nilType) do return __primitive("!=", a, nil);
+  inline operator !=(a: _nilType, b: borrowed RootClass?) do return __primitive("!=", b, nil);
   inline operator !=(a: enum, b: enum) where (a.type == b.type) {
     return __primitive("!=", a, b);
   }

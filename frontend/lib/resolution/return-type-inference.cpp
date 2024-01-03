@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -166,6 +166,8 @@ const CompositeType* helpGetTypeForDecl(Context* context,
       // TODO: update this to call a method on ArrayType to get the id or path
     } else if (r->id().symbolPath() == "ChapelArray._array") {
       ret = ArrayType::getGenericArrayType(context);
+    } else if (r->id().symbolPath() == "ChapelLocale._locale") {
+      ret = CompositeType::getLocaleType(context);
     } else {
       const RecordType* insnFromRec = nullptr;
       if (instantiatedFrom != nullptr) {
@@ -516,26 +518,13 @@ void ReturnTypeInferrer::exit(const Conditional* cond, RV& rv) {
 bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
   enterScope(sel);
 
-  bool foundParamTrue = false;
-  int otherwise = -1;
 
+  int paramTrueIdx = -1;
   for (int i = 0; i < sel->numWhenStmts(); i++) {
-    if (foundParamTrue) {
-      // previous case was param-true, so we skip all subsequent frames
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[i].skip = true;
-      continue;
-    }
-
     auto when = sel->whenStmt(i);
-    if (when->isOtherwise()) {
-      CHPL_ASSERT(otherwise == -1);
-      otherwise = i;
-      continue;
-    }
 
     bool anyParamTrue = false;
-    bool allParamFalse = true;
+    bool allParamFalse = !when->isOtherwise(); //do not skip otherwise blocks
 
     for (auto caseExpr : when->caseExprs()) {
       auto res = rv.byAst(caseExpr);
@@ -544,26 +533,28 @@ bool ReturnTypeInferrer::enter(const Select* sel, RV& rv) {
       allParamFalse = allParamFalse && res.type().isParamFalse();
     }
 
+    //if all cases are param false, the path will never be visited.
     if (allParamFalse) {
-      // statically never resolves, so skip this case
       auto& topFrame = returnFrames.back();
       topFrame->subFrames[i].skip = true;
-    } else {
-      when->traverse(rv);
+      continue;
     }
 
+    when->traverse(rv);
+
+    //if any case is param true, none of the following whens will be visited
     if (anyParamTrue) {
-      foundParamTrue = true;
+      paramTrueIdx = i;
+      break;
     }
   }
 
-  if (otherwise != -1) {
-    if (foundParamTrue) {
-      auto& topFrame = returnFrames.back();
-      topFrame->subFrames[otherwise].skip = true;
-    } else {
-      sel->whenStmt(otherwise)->traverse(rv);
-    }
+  // if we found a param true case, mark the frames for the remaining whens
+  if (paramTrueIdx == -1) return false;
+
+  auto& topFrame = returnFrames.back();
+  for (size_t i = paramTrueIdx+1; i < topFrame->subFrames.size(); i++) {
+    topFrame->subFrames[i].skip = true;
   }
 
   return false;
@@ -848,79 +839,22 @@ static const bool& fnAstReturnsNonVoid(Context* context, ID fnId) {
   return QUERY_END(result);
 }
 
-// returns 'true' if it was a case handled here & sets 'result' in that case
-// returns 'false' if it needs to be computed with a ResolvedVisitor traversal
-static bool helpComputeReturnType(Context* context,
-                                  const TypedFnSignature* sig,
-                                  const PoiScope* poiScope,
-                                  QualifiedType& result) {
-  const UntypedFnSignature* untyped = sig->untyped();
-
-  if (untyped->idIsFunction() && sig->needsInstantiation()) {
-    // if it needs instantiation, we don't know the return type yet.
-    result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
-    return true;
-  } else if (untyped->idIsFunction()) {
-    const AstNode* ast = parsing::idToAst(context, untyped->id());
-    const Function* fn = ast->toFunction();
-    CHPL_ASSERT(fn);
-
-    if (const AstNode* retType = fn->returnType()) {
-      // Cannot return the correct "return type" for something value-less like
-      // "param : int".
-      if (fn->returnIntent() == Function::ReturnIntent::PARAM) {
-        return false;
-      }
-
-      // resolve the return type
-      ResolutionResultByPostorderID resolutionById;
-      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
-                                                 resolutionById);
-      retType->traverse(visitor);
-      result = resolutionById.byAst(retType).type();
-
-      auto g = getTypeGenericity(context, result.type());
-      if (g == Type::CONCRETE) {
-        result = adjustForReturnIntent(fn->returnIntent(), result);
-        return true;
-      }
-    }
-
-    // if there are no returns with a value, use void return type
-    if (fnAstReturnsNonVoid(context, ast->id()) == false) {
-      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
-      return true;
-    }
-
-    // otherwise, need to use visitor to get the return type
-    return false;
-
-  } else if (untyped->isTypeConstructor()) {
-    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
-
-    // for a 'class C' declaration, the above query returns a BasicClassType,
-    // but 'C' normally means a generic-management non-nil C
-    // so adjust the result.
-    if (untyped->idIsClass()) {
-      auto bct = t->toBasicClassType();
-      CHPL_ASSERT(bct);
-      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
-      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
-    }
-
-    result = QualifiedType(QualifiedType::TYPE, t);
-    return true;
-
-  // if method call and the receiver points to a composite type definition,
-  // then it's some sort of compiler-generated method
-  } else if (untyped->isCompilerGenerated()) {
-    if (untyped->name() == USTR("init") ||
-        untyped->name() == USTR("init=") ||
-        untyped->name() == USTR("deinit")) {
+static bool helpComputeCompilerGeneratedReturnType(Context* context,
+                                                   const TypedFnSignature* sig,
+                                                   const PoiScope* poiScope,
+                                                   QualifiedType& result,
+                                                   const UntypedFnSignature* untyped) {
+  if (untyped->name() == USTR("init") ||
+      untyped->name() == USTR("init=") ||
+      untyped->name() == USTR("deinit") ||
+      untyped->name() == USTR("=")) {
       result = QualifiedType(QualifiedType::CONST_VAR,
                              VoidType::get(context));
       return true;
-    } else if (untyped->idIsField() && untyped->isMethod()) {
+  } else if (untyped->name() == USTR("==")) {
+      result = QualifiedType(QualifiedType::CONST_VAR, BoolType::get(context));
+      return true;
+  } else if (untyped->idIsField() && untyped->isMethod()) {
       // method accessor - compute the type of the field
       QualifiedType ft = computeTypeOfField(context,
                                             sig->formalType(0).type(),
@@ -977,9 +911,84 @@ static bool helpComputeReturnType(Context* context,
 
       return true;
     } else {
-      CHPL_ASSERT(false && "unhandled compiler-generated method");
+      CHPL_ASSERT(false && "unhandled compiler-generated record method");
       return true;
     }
+}
+
+// returns 'true' if it was a case handled here & sets 'result' in that case
+// returns 'false' if it needs to be computed with a ResolvedVisitor traversal
+static bool helpComputeReturnType(Context* context,
+                                  const TypedFnSignature* sig,
+                                  const PoiScope* poiScope,
+                                  QualifiedType& result) {
+  const UntypedFnSignature* untyped = sig->untyped();
+
+  // TODO: Optimize the order of this case and the isCompilerGenerated case
+  // such that we don't worry about instantiating the signature if we it's
+  // compiler generated and one of the ops we know the return type for, e.g.
+  // `==`, `init`, `init=`, `deinit`, and `=`.
+  if (untyped->idIsFunction() && sig->needsInstantiation()) {
+    // if it needs instantiation, we don't know the return type yet.
+    result = QualifiedType(QualifiedType::UNKNOWN, UnknownType::get(context));
+    return true;
+  } else if (untyped->idIsFunction()) {
+    const AstNode* ast = parsing::idToAst(context, untyped->id());
+    const Function* fn = ast->toFunction();
+    CHPL_ASSERT(fn);
+
+    if (const AstNode* retType = fn->returnType()) {
+      // Cannot return the correct "return type" for something value-less like
+      // "param : int".
+      if (fn->returnIntent() == Function::ReturnIntent::PARAM) {
+        return false;
+      }
+
+      // resolve the return type
+      ResolutionResultByPostorderID resolutionById;
+      auto visitor = Resolver::createForFunction(context, fn, poiScope, sig,
+                                                 resolutionById);
+      retType->traverse(visitor);
+      result = resolutionById.byAst(retType).type();
+
+      auto g = getTypeGenericity(context, result.type());
+      if (g == Type::CONCRETE) {
+        result = adjustForReturnIntent(fn->returnIntent(), result);
+        return true;
+      }
+    }
+
+    // if there are no returns with a value, use void return type
+    if (fn->linkage() != Decl::EXTERN &&
+        fnAstReturnsNonVoid(context, ast->id()) == false) {
+      result = QualifiedType(QualifiedType::CONST_VAR, VoidType::get(context));
+      return true;
+    }
+
+    // otherwise, need to use visitor to get the return type
+    return false;
+
+  } else if (untyped->isTypeConstructor()) {
+    const Type* t = returnTypeForTypeCtorQuery(context, sig, poiScope);
+
+    // for a 'class C' declaration, the above query returns a BasicClassType,
+    // but 'C' normally means a generic-management non-nil C
+    // so adjust the result.
+    if (untyped->idIsClass()) {
+      auto bct = t->toBasicClassType();
+      CHPL_ASSERT(bct);
+      auto dec = ClassTypeDecorator(ClassTypeDecorator::GENERIC_NONNIL);
+      t = ClassType::get(context, bct, /*manager*/ nullptr, dec);
+    }
+
+    result = QualifiedType(QualifiedType::TYPE, t);
+    return true;
+
+  // if method call and the receiver points to a composite type definition,
+  // then it's some sort of compiler-generated method
+  } else if (untyped->isCompilerGenerated()) {
+    return helpComputeCompilerGeneratedReturnType(context, sig, poiScope,
+                                                  result, untyped);
   } else {
     CHPL_ASSERT(false && "case not handled");
     return true;
@@ -1094,9 +1103,11 @@ void computeReturnType(Resolver& resolver) {
     }
 
     // infer the return type
-    auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
-    v.process(fn->body(), resolver.byPostorder);
-    resolver.returnType = v.returnedType();
+    if (fn->linkage() != Decl::EXTERN) {
+      auto v = ReturnTypeInferrer(resolver.context, fn, declaredReturnType);
+      v.process(fn->body(), resolver.byPostorder);
+      resolver.returnType = v.returnedType();
+    }
   }
 }
 

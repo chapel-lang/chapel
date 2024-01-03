@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,25 +47,15 @@ bool chpl_gpu_impl_is_host_ptr(const void* ptr) {
   return true;
 }
 
-inline void chpl_gpu_impl_launch_kernel(int ln, int32_t fn,
-                                        const char* name,
-                                        int grd_dim_x,
-                                        int grd_dim_y,
-                                        int grd_dim_z,
-                                        int blk_dim_x,
-                                        int blk_dim_y,
-                                        int blk_dim_z,
-                                        void* stream,
-                                        int nargs, va_list args) {
+void* chpl_gpu_impl_load_function(const char* kernel_name) {
+  return (void*)1; // we don't want to return NULL here to avoid an assertion
 }
 
-inline void chpl_gpu_impl_launch_kernel_flat(int ln, int32_t fn,
-                                             const char* name,
-                                             int64_t num_threads,
-                                             int blk_dim,
-                                             void* stream,
-                                             int nargs,
-                                             va_list args) {
+void chpl_gpu_impl_launch_kernel(void* kernel,
+                                 int grd_dim_x, int grd_dim_y, int grd_dim_z,
+                                 int blk_dim_x, int blk_dim_y, int blk_dim_z,
+                                 void* stream,
+                                 void** kernel_params) {
 }
 
 void* chpl_gpu_impl_memset(void* addr, const uint8_t val, size_t n,
@@ -155,6 +145,10 @@ bool chpl_gpu_impl_stream_ready(void* stream) {
 }
 
 void chpl_gpu_impl_stream_synchronize(void* stream) {
+}
+
+bool chpl_gpu_impl_can_reduce(void) {
+  return false;
 }
 
 #define DEF_ONE_REDUCE_RET_VAL(impl_kind, chpl_kind, data_type) \

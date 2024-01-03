@@ -1,1 +1,2 @@
-makeNewBorrowed.chpl:3: warning: creating a 'new borrowed' type is deprecated
+makeNewBorrowed.chpl:3: error: cannot create a 'borrowed' object using 'new'
+makeNewBorrowed.chpl:4: error: cannot create a 'borrowed' object using 'new'

@@ -1,5 +1,5 @@
 /*
- * Copyright 2022-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2022-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -147,4 +147,8 @@ const char *arg_programLoc(const char *argv0, void *mainAddr) {
 
 void arg_fatalErrorCont(const char *msg) {
   std::cerr << "error: " << msg << std::endl;
+}
+
+void arg_warn(const char *msg, const char* path) {
+  std::cerr << "warning: " << msg << std::endl;
 }

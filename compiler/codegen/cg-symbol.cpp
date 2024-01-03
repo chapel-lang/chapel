@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -88,7 +88,7 @@
 // these are sets of astrs
 // Chapel function names requested to be disassembled, and whether they've been
 // matched to C symbol names.
-static std::unordered_map<const char*, bool> llvmPrintIrNames;
+static std::unordered_map<const char*, bool> llvmPrintIrRequestedNames;
 // Corresponding C function names to disassemble
 static std::set<const char*> llvmPrintIrCNames;
 static const char* cnamesToPrintFilename = "cnamesToPrint.tmp";
@@ -126,29 +126,40 @@ llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName) {
   return llvmStageNum::NOPRINT;
 }
 
-void addNameToPrintLlvmIr(const char* name) {
-  llvmPrintIrNames.emplace(astr(name), false);
+void addNameToPrintLlvmIrRequestedNames(const char* name) {
+  llvmPrintIrRequestedNames.emplace(astr(name), false);
 }
-void addCNameToPrintLlvmIr(const char* name) {
+
+static void addCNameToPrintLlvmIr(const char* name) {
   llvmPrintIrCNames.insert(astr(name));
 }
 
-bool shouldLlvmPrintIrName(const char* name) {
-  if (llvmPrintIrNames.empty())
-    return false;
-
-  return llvmPrintIrNames.count(astr(name));
+bool shouldLlvmPrintIrCName(const char* cname) {
+  return llvmPrintIrCNames.count(astr(cname)) > 0;
 }
 
-bool shouldLlvmPrintIrCName(const char* name) {
-  if (llvmPrintIrCNames.empty())
-    return false;
+// finds if fn's name, cname, or ID is present in the requested names
+// to print for --llvm-print-ir
+static bool shouldLlvmPrintIrFnFindName(FnSymbol* fn, const char*& foundName) {
+  if (llvmPrintIrRequestedNames.count(fn->name)) {
+    foundName = fn->name;
+    return true;
+  }
 
-  return llvmPrintIrCNames.count(astr(name));
-}
+  if (llvmPrintIrRequestedNames.count(fn->cname)) {
+    foundName = fn->cname;
+    return true;
+  }
 
-bool shouldLlvmPrintIrFn(FnSymbol* fn) {
-  return shouldLlvmPrintIrName(fn->name) || shouldLlvmPrintIrCName(fn->cname);
+  if (!fn->astloc.id().isEmpty()) {
+    const char* idstr = astr(fn->astloc.id().symbolPath());
+    if (llvmPrintIrRequestedNames.count(idstr)) {
+      foundName = idstr;
+      return true;
+    }
+  }
+
+  return false;
 }
 
 // Collect the cnames to print into a vector with (lex) ordering.
@@ -208,23 +219,24 @@ void restorePrintIrCNames() {
 }
 
 void preparePrintLlvmIrForCodegen() {
-  if (llvmPrintIrNames.empty() && llvmPrintIrCNames.empty())
+  if (llvmPrintIrRequestedNames.empty() && llvmPrintIrCNames.empty())
     return;
   if (llvmPrintIrStageNum == llvmStageNum::NOPRINT)
     return;
 
   // Gather the cnames for the functions in names
   forv_Vec(FnSymbol, fn, gFnSymbols) {
-    if (shouldLlvmPrintIrFn(fn)) {
+    const char* foundName = nullptr;
+    if (shouldLlvmPrintIrFnFindName(fn, foundName) && foundName) {
       addCNameToPrintLlvmIr(fn->cname);
       // mark Chapel symbol as found
-      llvmPrintIrNames[astr(fn->name)] = true;
+      llvmPrintIrRequestedNames[astr(foundName)] = true;
     }
   }
 
   // Ensure cnames were found for all Chapel function names
   std::vector<std::string> namesNotFound;
-  for (const auto& nameInfo : llvmPrintIrNames) {
+  for (const auto& nameInfo : llvmPrintIrRequestedNames) {
     if (nameInfo.second == false) {
       namesNotFound.emplace_back(nameInfo.first);
     }
@@ -257,8 +269,9 @@ void preparePrintLlvmIrForCodegen() {
           if (FnSymbol* calledFn = call->resolvedFunction()) {
             if (isTaskFun(calledFn) ||
                 calledFn->hasFlag(FLAG_COBEGIN_OR_COFORALL_BLOCK)) {
-              if (!shouldLlvmPrintIrFn(calledFn)) {
-                addCNameToPrintLlvmIr(calledFn->cname);
+              auto pair = llvmPrintIrCNames.insert(calledFn->cname);
+              if (pair.second) {
+                // it was inserted
                 changed = true;
               }
             }
@@ -269,9 +282,9 @@ void preparePrintLlvmIrForCodegen() {
   } while (changed);
 
   // If running in compiler-driver mode, save cnames to print IR for to disk.
-  // This is so that handlePrintAsm can access them later from phase two, when
-  // we don't have a way to determine name->cname correspondence.
-  if (fDriverPhaseOne) {
+  // This is so that handlePrintAsm can access them later from the makeBinary
+  // phase, when we don't have a way to determine name->cname correspondence.
+  if (fDriverCompilationPhase) {
     saveDriverTmpMultiple(cnamesToPrintFilename,
                           std::vector<const char*>(llvmPrintIrCNames.begin(),
                                                    llvmPrintIrCNames.end()));
@@ -2404,21 +2417,39 @@ namespace {
   struct MarkNonStackVisitor : public AstVisitorTraverse {
     LoopStmt* outermostOrderIndependentLoop;
     MarkNonStackVisitor() : outermostOrderIndependentLoop(NULL) { }
-    void handleLoopStmt(LoopStmt* loop);
+    bool enterLoopStmt(LoopStmt* loop);
+    void exitLoopStmt(LoopStmt* loop);
+
     bool exprPointsToNonStack(Expr* e);
     bool enterCallExpr(CallExpr* call) override;
-    bool enterWhileDoStmt(WhileDoStmt* loop) override;
-    bool enterDoWhileStmt(DoWhileStmt* loop) override;
-    bool enterCForLoop(CForLoop* loop) override;
-    bool enterForLoop(ForLoop* loop) override;
+
+    bool enterWhileDoStmt(WhileDoStmt* loop) override { return enterLoopStmt(loop); }
+    void exitWhileDoStmt(WhileDoStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterDoWhileStmt(DoWhileStmt* loop) override { return enterLoopStmt(loop); }
+    void exitDoWhileStmt(DoWhileStmt* loop) override { exitLoopStmt(loop); }
+
+    bool enterCForLoop(CForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitCForLoop(CForLoop* loop) override { exitLoopStmt(loop); }
+
+    bool enterForLoop(ForLoop* loop) override { return enterLoopStmt(loop); }
+    void exitForLoop(ForLoop* loop) override { exitLoopStmt(loop); }
   };
 }
 
-void MarkNonStackVisitor::handleLoopStmt(LoopStmt* loop) {
+bool MarkNonStackVisitor::enterLoopStmt(LoopStmt* loop) {
   if (loop->isOrderIndependent() && outermostOrderIndependentLoop == NULL) {
     outermostOrderIndependentLoop = loop;
   }
+  return true;
 }
+
+void MarkNonStackVisitor::exitLoopStmt(LoopStmt* loop) {
+  if (outermostOrderIndependentLoop == loop) {
+    outermostOrderIndependentLoop = NULL;
+  }
+}
+
 
 bool MarkNonStackVisitor::exprPointsToNonStack(Expr* e) {
   if (SymExpr* se = toSymExpr(e)) {
@@ -2475,23 +2506,6 @@ bool MarkNonStackVisitor::enterCallExpr(CallExpr* call) {
   return false;
 }
 
-bool MarkNonStackVisitor::enterWhileDoStmt(WhileDoStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterDoWhileStmt(DoWhileStmt* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterCForLoop(CForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-bool MarkNonStackVisitor::enterForLoop(ForLoop* loop) {
-  handleLoopStmt(loop);
-  return true;
-}
-
 void FnSymbol::codegenDef() {
   GenInfo *info = gGenInfo;
   FILE* outfile = info->cfile;
@@ -2545,7 +2559,7 @@ void FnSymbol::codegenDef() {
     // Mark functions to dump as no-inline so they actually exist
     // after optimization
     if(llvmPrintIrStageNum != llvmStageNum::NOPRINT &&
-       shouldLlvmPrintIrFn(this)) {
+       shouldLlvmPrintIrCName(this->cname)) {
         func->addFnAttr(llvm::Attribute::NoInline);
     }
     // Also mark no-inline if the flag was set
@@ -2854,7 +2868,7 @@ void FnSymbol::codegenDef() {
 
     if((llvmPrintIrStageNum == llvmStageNum::NONE ||
         llvmPrintIrStageNum == llvmStageNum::EVERY) &&
-       shouldLlvmPrintIrFn(this))
+       shouldLlvmPrintIrCName(this->cname))
         printLlvmIr(name, func, llvmStageNum::NONE);
 
     // Now run the optimizations on that function.

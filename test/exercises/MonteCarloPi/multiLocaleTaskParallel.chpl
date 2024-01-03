@@ -50,7 +50,7 @@ coforall loc in Locales with (ref counts) {
     // delete the RandomStream object.
     //
     coforall tid in 0..#tasksPerLocale with (ref locCounts) {
-      var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+      var rs = new randomStream(real, seed);
       const locNPerTask = locN/tasksPerLocale,
             extras = locN%tasksPerLocale;
       rs.skipToNth(2*(locFirstPt +

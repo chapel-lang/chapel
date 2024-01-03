@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -69,7 +69,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/AutoMath.chpl \
-	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
@@ -104,7 +103,8 @@ MODULES_TO_DOCUMENT = \
 	standard/Time.chpl \
 	standard/Types.chpl \
 	standard/VectorizingIterator.chpl \
-	standard/Version.chpl
+	standard/Version.chpl \
+	standard/WeakPointer.chpl \
 
 PACKAGES_TO_DOCUMENT = \
 	packages/AllLocalesBarriers.chpl \
@@ -136,6 +136,8 @@ PACKAGES_TO_DOCUMENT = \
 	packages/LockFreeStack.chpl \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
+	packages/NPBRandom.chpl \
+	packages/ObjectSerialization.chpl \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/ParallelIO.chpl \
 	packages/PeekPoke.chpl \

@@ -5,13 +5,19 @@ from pathlib import Path
 
 def genDyno(val):
     dyno = ""
+    args = [ ]
     if val == "<standard>":
         dyno = "chpl_standard.dyno"
+        args = ["--dyno-gen-std"]
     else:
         stem = Path(val).stem
         dyno = stem + ".dyno"
+        args = ["--dyno-gen-lib", dyno, val]
     if not os.path.exists(dyno):
-        subprocess.run([sys.argv[3], "testGenLib.chpl", "--dyno-gen-lib", val])
+        cmd = [sys.argv[3]] + args
+        print("Creating lib with", " ".join(cmd))
+        subprocess.run(cmd, check=True)
+
 
 def genAndMod(name):
     dotChpl = name + ".chpl"

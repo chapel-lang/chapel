@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -571,6 +571,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
 
       insertUnrefForArrayOrTupleReturn(fn);
 
+      if (fn->retExprType) {
+        resolveSpecifiedReturnType(fn);
+      }
+
       Type* yieldedType = NULL;
       resolveReturnTypeAndYieldedType(fn, &yieldedType);
 
@@ -596,6 +600,10 @@ void resolveFunction(FnSymbol* fn, CallExpr* forCall) {
     }
     popInstantiationLimit(fn);
     clearCacheInfoIfEmpty(fn);
+  }
+  if(fn && forCall) {
+    fn->maybeGenerateDeprecationWarning(forCall);
+    fn->maybeGenerateUnstableWarning(forCall);
   }
 }
 

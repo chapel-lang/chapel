@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -134,8 +134,9 @@ static void test4() {
   assert(isBlueFn);
   const auto rrIsBlueCall = rr.byAst(isBlueXCall);
   assert(rrIsBlueCall.type().kind() == QualifiedType::Kind::PARAM);
-  auto bestFn = rrIsBlueCall.mostSpecific().only();
-  assert(bestFn);
+  auto bestCandidate = rrIsBlueCall.mostSpecific().only();
+  assert(bestCandidate);
+  auto bestFn = bestCandidate.fn();
   assert(bestFn->id() == isBlueFn->id());
   assert(bestFn->formalType(0).isParam());
   assert(bestFn->formalName(0) == UniqueString::get(context, "this"));

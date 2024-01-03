@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -40,6 +40,7 @@ static const uint64_t SYMBOL_TABLE_MAGIC =     0x4d59531e5ec110e0;
 static const uint64_t UAST_SECTION_MAGIC =     0x5453411e5ec110e0;
 static const uint32_t LONG_STRINGS_TABLE_MAGIC =       0x52545301;
 static const uint64_t LOCATION_SECTION_MAGIC = 0x434F4C075ec110e0;
+static const uint64_t GEN_CODE_SECTION_MAGIC = 0x4e4547075ec110e0;
 
 // current file format version numbers
 static const uint32_t FORMAT_VERSION_MAJOR =  0;
@@ -47,6 +48,14 @@ static const uint32_t FORMAT_VERSION_MINOR =  1;
 
 // number of bytes in a file hash -- currently using SHA-256
 static const int HASH_SIZE = 256/8;
+
+// maximum number of of various elements; more than this many
+// will result in an error. Purpose is to keep the processing
+// from using too much space if the file is invalid anyway.
+static const int MAX_NUM_MODULES = 100000000;
+static const int MAX_NUM_SYMBOLS = 100000000;
+static const int MAX_NUM_FILES = 100000000;
+static const int MAX_NUM_ASTS = 100000000;
 
 struct FileHeader {
   uint64_t magic;
@@ -57,51 +66,63 @@ struct FileHeader {
   uint32_t chplVersionUpdate;
   uint32_t nModules;
   uint8_t hash[HASH_SIZE];
-  // followed by nModules 8 bytes file offsets
+  // followed by nModules 8 bytes file offsets plus one more for
+  // just after the last module
 };
+
+struct Region {
+  uint64_t start; // start offset, maybe relative
+  uint64_t end; // end offset; so length = end-start
+};
+
+static inline Region makeRegion(uint64_t startOffset, uint64_t endOffset) {
+  Region ret;
+  ret.start = startOffset;
+  ret.end = endOffset;
+  return ret;
+}
 
 struct ModuleHeader {
   uint64_t magic;
   uint64_t flags;
-  uint64_t len;
   // the following are offsets relative to the start of the module header
-  uint64_t symbolTable;
-  uint64_t uAstSection;
-  uint64_t longStringsTable;
-  uint64_t locationSection;
-  uint64_t typesSection;
-  uint64_t functionsSection;
-  uint64_t dependenciesSection;
+  Region symbolTable;
+  Region astSection;
+  Region longStringsTable;
+  Region locationSection;
+  Region genCodeSection;
+  // TODO: add other sections
+
   // followed by a variable-byte length & string storing the module ID
 };
 
 struct SymbolTableHeader {
   uint64_t magic;
   uint32_t nEntries;
+  uint32_t unused;
   // followed by nEntries SymbolTableEntrys
 };
 
 struct SymbolTableEntry {
   // relative to the start of the module header:
-  uint64_t uAstEntry;
-  uint64_t locationEntry;
-  uint64_t typeOrFnEntry;
+  uint32_t astEntry;
+  uint32_t locationEntry;
+  // TODO: type entry / function entry.
   // followed by
-  //  * a byte storing uAst tag
+  //  * a byte storing ast tag
   //  * a variable-byte length & string storing a symbol table ID
 };
 
 struct AstSectionHeader {
   uint64_t magic;
-  uint64_t nBytesAstEntries;
   uint64_t nEntries;
-  // followed by nEntries uAstEntrys
+  // followed by nEntries astEntrys
 };
 
 struct LongStringsTableHeader {
   uint32_t magic;
   uint32_t nLongStrings;
-  // followed by module-section relative offset for each long string
+  // followed by strings-section relative offset for each long string
   // followed by an extra offset (just after the last long string)
 };
 
@@ -110,16 +131,15 @@ struct LocationSectionHeader {
   uint32_t nFilePaths;
   uint32_t nGroups;
   // followed by file path strings
-  // then followed nGroups LocationGroups
+  // then followed serialized location groups
 };
 
-struct LocationGroupHeader {
-  // relative to the start of the module header:
-  uint64_t uAstEntry;
-  uint32_t startingLineNumber;
-  uint32_t nLocations;
-  // followed by location entries
+struct GenCodeSectionHeader {
+  uint64_t magic;
+  uint64_t len;
+  // followed by the LLVM IR bc data
 };
+
 
 
 } // end namespace libraries

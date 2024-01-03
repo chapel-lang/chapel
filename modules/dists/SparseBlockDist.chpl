@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -52,7 +52,7 @@ config param debugSparseBlockDistBulkTransfer = false;
 // just use Block.
 
 // Helper type for sorting locales
-record TargetLocaleComparator {
+record targetLocaleComparator {
   param rank;
   type idxType;
   type sparseLayoutType;
@@ -97,7 +97,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     //    writeln("In setup");
     var thisid = this.locale.id;
     if locDoms(dist.targetLocDom.lowBound) == nil {
-      coforall localeIdx in dist.targetLocDom do {
+      coforall localeIdx in dist.targetLocDom {
         on dist.targetLocales(localeIdx) do {
           //                    writeln("Setting up on ", here.id);
           //                    writeln("setting up on ", localeIdx, ", whole is: ", whole, ", chunk is: ", dist.getChunk(whole,localeIdx));
@@ -122,7 +122,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   }
 
   override proc dsiDestroyDom() {
-    coforall localeIdx in dist.targetLocDom do {
+    coforall localeIdx in dist.targetLocDom {
       on locDoms(localeIdx) do
         delete locDoms(localeIdx);
     }
@@ -165,19 +165,19 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
       var retval = 0;
       on addOn {
         if inds.locale == here {
-          retval = bulkAddHere_help(inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(inds, dataSorted, isUnique);
         }
         else {
           var _local_inds: [indsDom] index(rank, idxType);
           _local_inds = inds;
-          retval = bulkAddHere_help(_local_inds, dataSorted, isUnique);
+          retval = _bulkAddHere_help(_local_inds, dataSorted, isUnique);
         }
       }
       return retval;
     }
 
     // without _new_, record functions throw null deref
-    var comp = new TargetLocaleComparator(rank=rank, idxType=idxType,
+    var comp = new targetLocaleComparator(rank=rank, idxType=idxType,
                                           sparseLayoutType=sparseLayoutType,
                                           dist=dist);
 
@@ -217,7 +217,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
     return _retval;
   }
 
-  proc bulkAddHere_help(inds: [] index(rank,idxType),
+  proc _bulkAddHere_help(inds: [] index(rank,idxType),
       dataSorted=false, isUnique=false) {
 
     const _retval = myLocDom!.mySparseBlock.bulkAdd(inds, dataSorted=true,
@@ -231,7 +231,7 @@ class SparseBlockDom: BaseSparseDomImpl(?) {
   proc dsiSerialWrite(f) {
     if (rank == 1) {
       f.write("{");
-      for locdom in locDoms do {
+      for locdom in locDoms {
         // on locdom do {
         if (locdom!.dsiNumIndices) {
             f.write(" ");
@@ -803,7 +803,7 @@ proc LocSparseBlockArr.this(i) ref {
 proc SparseBlockArr.dsiSerialWrite(f) {
   if (rank == 1) {
     f.write("[");
-    for locarr in locArr do {
+    for locarr in locArr {
       // on locdom do {
       if (locarr!.locDom.dsiNumIndices) {
         f.write(" ");

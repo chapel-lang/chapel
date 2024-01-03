@@ -1,10 +1,13 @@
 use IO, CTypes, FileSystem;
 
 extern var qbytes_iobuf_size:c_size_t;
-qbytes_iobuf_size = 1024:c_size_t;
+qbytes_iobuf_size = 2048:c_size_t;
 
 extern var qio_write_unbuffered_threshold:c_ssize_t;
-qio_write_unbuffered_threshold = 2048:c_ssize_t;
+qio_write_unbuffered_threshold = 1024:c_ssize_t;
+
+extern var qio_read_unbuffered_threshold:c_ssize_t;
+qio_read_unbuffered_threshold = 1024:c_ssize_t;
 
 config const maxBufSize = 16384;
 
@@ -18,7 +21,7 @@ var i : uint(8) = 1;
 while bufSize < maxBufSize {
   buf = i;
   fw.writeBinary(buf);
-  bufSize *= 2;
+  if i > 1 then bufSize *= 2;
   bufDom = {0..<bufSize};
   i += 1;
 }
@@ -39,7 +42,7 @@ while bufSize < maxBufSize {
     writeln(buf);
   }
 
-  bufSize *= 2;
+  if i > 1 then bufSize *= 2;
   bufDom = {0..<bufSize};
   i += 1;
 }

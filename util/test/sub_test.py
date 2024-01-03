@@ -87,6 +87,8 @@
 #    executable>, <log>, <compiler executable>)
 # PRECOMP: Script to execute before running the compiler (arguments: <test
 #    executable>, <log>, <compiler executable>).
+# PRETEST: Script to execute before running the test. (arguments: <compiler
+#    executable>).
 # PERFNUMTRIALS: Number of trials to run for performance testing
 #
 #
@@ -1632,6 +1634,12 @@ def main():
             # Build the test program
             #
             args = []
+
+            # make sure to add this early so that actual compopts file can
+            # override
+            if os.getenv('CHPL_TEST_GPU'):
+                args += ['--no-checks']
+
             if test_is_chpldoc:
                 args += globalChpldocOpts + shlex.split(compopts)
             elif 'CHPL_TEST_NO_USE_O' not in os.environ or \

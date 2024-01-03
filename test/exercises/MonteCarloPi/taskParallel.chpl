@@ -20,7 +20,7 @@ writeln("Number of tasks     = ", tasks);
 //
 var counts: [0..#tasks] int;
 coforall tid in 0..#tasks with (ref counts) {
-  var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+  var rs = new randomStream(real, seed);
   const nPerTask = n/tasks,
         extras = n%tasks;
   rs.skipToNth(2*(tid*nPerTask + (if tid < extras then tid else extras)));

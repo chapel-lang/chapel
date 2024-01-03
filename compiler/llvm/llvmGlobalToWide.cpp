@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,9 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/Attributes.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/IR/AttributeMask.h"
+#endif
 
 #if HAVE_LLVM_VER < 90
 #include "llvm/IR/CallSite.h"
@@ -465,6 +468,81 @@ namespace {
       }
 
       switch(insn->getOpcode()) {
+        // Workaround: LLVM optimizations on machines with sufficiently large
+        // vector widths can generate vectors of global pointers, which cannot
+        // be directly translated to vectors of wide pointers. The workaround
+        // is to bitcast to and from i128 (the size of a wide pointer), which
+        // can be represented in a vector. This requires the cases for
+        // `InsertElement`, `ExtractElement`, and `ShuffleVector`
+        case Instruction::InsertElement: {
+          // if we are inserting a global addr to a vector of i128
+          // need a cast to i128 first, then convert back to the original vector type
+          auto vecVal = insn->getOperand(0);
+          auto insertVal = insn->getOperand(1);
+          auto insertType = insertVal->getType();
+          auto idx = insn->getOperand(2);
+
+          if (insertType->isPointerTy() && insertType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVecType = convertTypeGlobalToWide(&M, info, vecVal->getType());
+            auto newVecVal = createStoreLoadCast(vecVal, newVecType, insn);
+
+            auto newInsertVal = createStoreLoadCast(insertVal, IntegerType::getInt128Ty(M.getContext()), insn);
+
+            auto newInsn = InsertElementInst::Create(newVecVal, newInsertVal, idx, "", insn);
+            auto convertBack = createStoreLoadCast(newInsn, vecVal->getType(), insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+          break;
+        }
+        case Instruction::ExtractElement: {
+          // if we are extracting a global addr from a vector, need to cast
+
+          auto vecVal = insn->getOperand(0);
+          auto vecElmType = cast<VectorType>(vecVal->getType())->getElementType();
+          auto idx = insn->getOperand(1);
+
+          if (vecElmType->isPointerTy() && vecElmType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVecType = convertTypeGlobalToWide(&M, info, vecVal->getType());
+            auto newVecVal = createStoreLoadCast(vecVal, newVecType, insn);
+
+            auto newInsn = ExtractElementInst::Create(newVecVal, idx, "", insn);
+            auto convertBack = createStoreLoadCast(newInsn, vecElmType, insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+
+          break;
+        }
+        case Instruction::ShuffleVector: {
+          // if we are shuffling a vector of global addr, need to cast
+
+          auto resVecType = insn->getType();
+
+          auto vecVal1 = insn->getOperand(0);
+          auto vecVal2 = insn->getOperand(1);
+          auto mask = insn->getOperand(2);
+
+          auto vecElmType = cast<VectorType>(vecVal1->getType())->getElementType();
+
+          if (vecElmType->isPointerTy() && vecElmType->getPointerAddressSpace() == info->globalSpace) {
+            auto newVec1Type = convertTypeGlobalToWide(&M, info, vecVal1->getType());
+            auto newVecVal1 = createStoreLoadCast(vecVal1, newVec1Type, insn);
+
+            auto newVec2Type = convertTypeGlobalToWide(&M, info, vecVal2->getType());
+            auto newVecVal2 = createStoreLoadCast(vecVal2, newVec2Type, insn);
+
+            Value* newInsn;
+            {
+              IRBuilder<> irBuilder(insn);
+              newInsn = irBuilder.CreateShuffleVector(newVecVal1, newVecVal2, mask);
+            }
+            auto convertBack = createStoreLoadCast(newInsn, resVecType, insn);
+
+            myReplaceInstWithInst(insn, convertBack);
+          }
+          break;
+        }
         case Instruction::PHI: {
           PHINode* oldPHI = cast<PHINode>(insn);
 
@@ -2348,6 +2426,15 @@ Type* convertTypeGlobalToWide(Module* module, GlobalToWideInfo* info, Type* t)
     Type *eltType = vecTy->getElementType();
     assert(t != eltType); // detect simple recursion
     Type* wideEltType = convertTypeGlobalToWide(module, info, eltType);
+
+    // Workaround: if wideEltType is a wide ptr (ie a struct), it will no longer
+    // fit in the vector we adjust the type to be a i128, and just shove the
+    // bits around
+    if (wideEltType->isStructTy() &&
+        cast<StructType>(wideEltType)->getElementType(0) == info->localeIdType &&
+        cast<StructType>(wideEltType)->getElementType(1)->isPointerTy()) {
+      wideEltType = Type::getInt128Ty(context);
+    }
 
 #if HAVE_LLVM_VER >= 110
     return VectorType::get(wideEltType, vecTy);

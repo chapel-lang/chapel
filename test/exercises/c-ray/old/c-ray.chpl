@@ -520,9 +520,10 @@ proc initRands() {
   } else {
     use Random;
 
-    var rng = new owned RandomStream(seed=(if seed then seed
-                                                   else SeedGenerator.currentTime),
-                                     eltType=real);
+    var rng = if seed
+      then new randomStream(real, seed)
+      else new randomStream(real);
+
     for u in urand do
       u(X) = rng.getNext() - 0.5;
     for u in urand do
