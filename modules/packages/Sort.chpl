@@ -1409,7 +1409,7 @@ module ShellSort {
     // and see Marcin Ciura - Best Increments for the Average Case of Shellsort
     // for the choice of these increments.
     var js,hs:idxType;
-    var v,tmp:Data.eltType;
+    var v:Data.eltType;
     const incs = (701, 301, 132, 57, 23, 10, 4, 1);
     for hh in incs {
       // skip past cases in which the 'incs' value was too big for
