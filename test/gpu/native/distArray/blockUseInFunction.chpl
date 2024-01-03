@@ -2,10 +2,7 @@ use BlockDist;
 use GpuDiagnostics;
 use CTypes;
 
-/*pragma "codegen for GPU"*/
-/*extern const chpl_privateObjects: c_ptr(void);*/
-
-config const n = here.maxTaskPar*2;
+config const n = 20;
 
 startGpuDiagnostics();
 
@@ -13,16 +10,13 @@ var space = {1..n};
 var dom = space dmapped blockDist(space, targetLocales=[here.gpus[0],]);
 var arr: [dom] int;
 
-/*proc setOne(A, i) {*/
-  /*local {*/
-    /*A[i] = 1;*/
-  /*}*/
-/*}*/
+proc setOne(ref A, i) {
+  A[i] = 1;
+}
 
 @assertOnGpu
 forall i in dom do
-  arr[i] = 1;
-  /*setOne(arr, i);*/
+  setOne(arr, i);
 
 stopGpuDiagnostics();
 

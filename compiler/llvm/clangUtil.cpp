@@ -1335,13 +1335,8 @@ class CCodeGenConsumer final : public ASTConsumer {
         // reason odd reason, with AMD code generation we see am implicit use of
         // __device__ on some math functions in the C stdlib that really aren't
         // supposed to have them and this causes linker issues later on).
-        const bool ret = d->hasAttr<CUDADeviceAttr>() &&
-          !d->getAttr<CUDADeviceAttr>()->isImplicit();
-        print_clang(d);
-        std::cout << ret << std::endl;
-        //return d->hasAttr<CUDADeviceAttr>() &&
-          //!d->getAttr<CUDADeviceAttr>()->isImplicit();
-        return ret;
+        return d->hasAttr<CUDADeviceAttr>() &&
+               !d->getAttr<CUDADeviceAttr>()->isImplicit();
       }
       else {
         // this decl either doesn't have __device__, or if it has, it also has a
@@ -1410,9 +1405,6 @@ class CCodeGenConsumer final : public ASTConsumer {
           info->lvt->addGlobalCDecl(fd);
         }
       } else if (VarDecl *vd = dyn_cast<VarDecl>(d)) {
-        if (vd->getNameAsString() == std::string("chpl_privateObjects")) {
-          std::cout << shouldHandleDecl(d) << std::endl;
-        }
         if (shouldHandleDecl(d)) {
           info->lvt->addGlobalCDecl(vd);
         }

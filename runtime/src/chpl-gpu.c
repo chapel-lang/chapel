@@ -21,7 +21,7 @@
 // section due to the fact that GpuDiagnostics module accesses it (and this
 // module can be used despite what locale model you're using).
 #include <stdbool.h>
-bool chpl_gpu_debug = true;
+bool chpl_gpu_debug = false;
 bool chpl_gpu_no_cpu_mode_warning = false;
 int chpl_gpu_num_devices = -1;
 bool chpl_gpu_sync_with_host = true;
@@ -313,8 +313,8 @@ static void cfg_deinit_params(kernel_cfg* cfg) {
   for (int i=0 ; i<cfg->n_params ; i++) {
     if (cfg->param_dyn_allocated[i]) {
       // offload arguments don't seem to work
-      /*chpl_gpu_mem_free(*(cfg->kernel_params[i]), cfg->ln, cfg->fn);*/
-      /*chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);*/
+      chpl_gpu_mem_free(*(cfg->kernel_params[i]), cfg->ln, cfg->fn);
+      chpl_mem_free(cfg->kernel_params[i], cfg->ln, cfg->fn);
     }
   }
 
@@ -337,10 +337,6 @@ static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
   // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
   *(cfg->kernel_params[i]) = chpl_gpu_mem_alloc(size, CHPL_RT_MD_GPU_KERNEL_ARG,
                                                 cfg->ln, cfg->fn);
-
-  printf("host ptr: %p\n", cfg->kernel_params[i]);
-  printf("dev ptr: %p\n", *(cfg->kernel_params[i]));
-  //
 
   chpl_gpu_impl_copy_host_to_device(*(cfg->kernel_params[i]), arg, size,
                                     cfg->stream);
@@ -431,7 +427,7 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
                                       sizeof(void*), cfg->stream);
 
     for (int i=0 ; i<cfg->max_pid+1 ; i++) {
-      printf("\tpriv_table[%d] = %p\n", i, cfg->priv_table_host[i].obj);
+      CHPL_GPU_DEBUG("\tpriv_table[%d] = %p\n", i, cfg->priv_table_host[i].obj);
     }
     CHPL_GPU_DEBUG("Offloaded the new privatization table\n");
 
