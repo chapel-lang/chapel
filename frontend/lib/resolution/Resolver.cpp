@@ -1607,7 +1607,13 @@ void Resolver::adjustTypesForSplitInit(ID id,
   }
 
   const Param* p = rhsType.param();
-  const auto useKind = (p ? QualifiedType::PARAM : lhsType.kind());
+  auto useKind = lhsType.kind();
+  if (p && symbol->isModule()) {
+    // White lie to let us save the param value for later, since at module level
+    // we may later learn the thing being split-init'd is param and needs it.
+    useKind = QualifiedType::PARAM;
+  }
+  if (useKind != QualifiedType::PARAM) p = nullptr;
   const auto useType = QualifiedType(useKind, rhsType.type(), p);
 
   // set the type for the 1st split init only
