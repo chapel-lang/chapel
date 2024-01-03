@@ -7626,16 +7626,60 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
   }
 }
 
+// heuristic to walk up a series of temps to find the base object of a method call
+static Symbol* maybeGetBaseSymHelper(SymExpr* def);
+static Symbol* maybeGetBaseSym(Symbol* sym) {
+  for_SymbolDefs(def, sym) {
+    if (auto baseSym = maybeGetBaseSymHelper(def)) {
+      return baseSym;
+    }
+  }
+  return nullptr;
+}
+static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
+  if (auto parentCall = toCallExpr(def->parentExpr)) {
+    if (isMoveOrAssign(parentCall)) {
+      if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
+        if (maybeMethodCall->resolvedFunction() &&
+            maybeMethodCall->resolvedFunction()->isMethod()) {
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(2))) {
+            auto baseSym = baseExpr->symbol();
+            // if the baseSym is still a temp, try and for a nested method call.
+            // typically happens in the `r.A[i]` field access case (`A` is an array).
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
+              }
+            }
+            return baseSym;
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
+  Symbol* baseSym = aVar;
   if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
     varname += 15;
   else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
+  else if (strncmp(varname, "call_tmp", 8) == 0) {
+    // if the temp is named `call_tmp`, theres a good chance its the result of
+    // a field access (represented as a method call). try and find the base object
+    // of the aggregate type
+    if(auto sym = maybeGetBaseSym(aVar)) {
+      varname = sym->name;
+      baseSym = sym;
+    }
+  }
 
-  if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
-    Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
+  if (isArgSymbol(baseSym) || baseSym->hasFlag(FLAG_TEMP)) {
+    Symbol*     enclTaskFn    = baseSym->defPoint->parentSymbol;
     BaseAST*    marker        = NULL;
     const char* constructName = NULL;
 
@@ -7656,7 +7700,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
               constructName);
 
   } else {
-    Expr* enclLoop = aVar->defPoint->parentExpr;
+    Expr* enclLoop = baseSym->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
               "The shadow variable '%s' is constant due to task intents "
@@ -9203,7 +9247,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   } else if (rhsSym->hasFlag(FLAG_REF_TO_CONST)) {
     lhsSym->addFlag(FLAG_REF_TO_CONST);
-
+    if (rhsSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+    }
   }
 
   if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
@@ -9329,6 +9375,9 @@ static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
           rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
         toSymExpr(call->get(1))->symbol()->addFlag(FLAG_REF_TO_CONST);
       }
+      if (rhsBase->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        toSymExpr(call->get(1))->symbol()->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      }
 
     } else {
       INT_ASSERT(false);
@@ -9384,6 +9433,8 @@ static void moveSetFlagsForConstAccess(Symbol*   lhsSym,
 
     if (isReferenceType(lhsSym->type) == true) {
       lhsSym->addFlag(FLAG_REF_TO_CONST);
+      if (baseSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
     } else {
       lhsSym->addFlag(FLAG_CONST);
     }
