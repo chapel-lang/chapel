@@ -64,7 +64,6 @@ module ParallelIO {
     :arg nTasks: the number of tasks to use per locale
         (if ``-1``, query ``here.maxTaskPar`` on each locale)
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
     :arg targetLocales: the locales to read the file on
 
     :returns: a block-distributed array of ``lineType`` values
@@ -75,8 +74,7 @@ module ParallelIO {
     See :proc:`~IO.open` for other errors that could be thrown when attempting
   */
   proc readParallelLines(filePath: string, type lineType = string, header = headerPolicy.noHeader,
-                         nTasks: int = -1, type deserializerType = defaultDeserializer,
-                         targetLocales: [?d] locale = Locales
+                         nTasks: int = -1, targetLocales: [?d] locale = Locales
   ): [] lineType throws
     where lineType == string || lineType == bytes
   {
@@ -97,12 +95,11 @@ module ParallelIO {
             tItemOffsets = findItemOffsets(locFile, delim, tByteOffsets) + itemOffsets[id];
 
       coforall tid in 0..<tasksPerLoc with (ref results) {
-        var des: deserializerType;
         const taskBounds = tByteOffsets[tid]..tByteOffsets[tid+1],
-              r = locFile.reader(locking=false, region=taskBounds, deserializer=des);
+              r = locFile.reader(locking=false, region=taskBounds);
 
         for i in tItemOffsets[tid]..<tItemOffsets[tid+1] do
-          results[i] = r.readLine(lineType);
+          results[i] = r.readLine(lineType, stripNewline=true);
       }
     }
 
@@ -120,7 +117,6 @@ module ParallelIO {
     :arg lineType: which type to represent a line: either ``string`` or ``bytes``
     :arg nTasks: the number of tasks to use
     :arg header: how to handle the file header (see :record:`headerPolicy`)
-    :arg deserializerType: the type of deserializer to use
 
     :returns: a default rectangular array of ``lineType`` values
 
@@ -129,8 +125,8 @@ module ParallelIO {
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
   */
-  proc readParallelLinesLocal(filePath: string, type lineType = string, header = headerPolicy.noHeader,
-                              nTasks: int = here.maxTaskPar, type deserializerType = defaultDeserializer
+  proc readParallelLinesLocal(filePath: string, type lineType = string,
+                              header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
   ): [] lineType throws
     where lineType == string || lineType == bytes
   {
@@ -144,12 +140,11 @@ module ParallelIO {
     var results: [0..<itemOffsets.last] lineType;
 
     coforall tid in 0..<nTasks with (ref results) {
-      var des: deserializerType;
       const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
-            r = f.reader(locking=false, region=taskBounds, deserializer=des);
+            r = f.reader(locking=false, region=taskBounds);
 
       for i in itemOffsets[tid]..<itemOffsets[tid+1] do
-        results[i] = r.readLine(lineType);
+        results[i] = r.readLine(lineType, stripNewline=true);
     }
 
     return results;

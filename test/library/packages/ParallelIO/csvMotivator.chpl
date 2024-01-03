@@ -1,4 +1,4 @@
-use ParallelIO, IO, Random, Time;
+use ParallelIO, IO, Random, Time, FileSystem;
 
 const fileName = "colors.csv";
 
@@ -39,9 +39,11 @@ proc main() {
       }
     }
   }
+
+  remove(fileName);
 }
 
-var rng = new RandomStream(uint(8));
+var rng = new randomStream(uint(8));
 
 record color: serializable {
   var r, g, b: uint(8);
