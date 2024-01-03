@@ -297,13 +297,7 @@ private:
   bool                        mIsGenericWithSomeDefaults;
 };
 
-// support for deprecation by Vass in 1.31 to implement #17131
-AggregateType* dsiTypeBeingConstructed(CallExpr* parentCall);
-AggregateType* baseRectDsiParent(AggregateType* ag);
-Symbol* stridesFieldInDsiContext(Expr* use);
-
 extern AggregateType* dtObject;
-
 extern AggregateType* dtBytes;
 extern AggregateType* dtString;
 extern AggregateType* dtLocale;
