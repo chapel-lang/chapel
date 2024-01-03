@@ -470,7 +470,6 @@ The choice of sorting algorithm used is made by the implementation.
  */
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
           stable:bool = false, minimizeMemory:bool=false) {
-  // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
