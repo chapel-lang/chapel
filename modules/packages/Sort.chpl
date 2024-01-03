@@ -3292,6 +3292,7 @@ module TwoArrayRadixSort {
       endbit = max(int);
 
     // Allocate the Scratch array.
+    pragma "no auto destroy"
     var Scratch: Data.type;
 
     if Data._instance.isDefaultRectangular() {
@@ -3325,6 +3326,8 @@ module TwoArrayRadixSort {
                                        state1, state2,
                                        comparator, 0);
     }
+
+    _do_destroy_array(Scratch, deinitElts=false);
   }
 }
 
@@ -3349,6 +3352,7 @@ module TwoArraySampleSort {
       endbit = max(int);
 
     // Allocate the Scratch array.
+    pragma "no auto destroy"
     var Scratch: Data.type;
 
     if Data._instance.isDefaultRectangular() {
@@ -3373,6 +3377,8 @@ module TwoArraySampleSort {
                                        Data, Scratch,
                                        state, comparator, 0);
     }
+
+    _do_destroy_array(Scratch, deinitElts=false);
   }
 }
 
