@@ -2159,9 +2159,10 @@ module SequentialInPlacePartitioning {
 module TwoArrayPartitioning {
   private use BlockDist;
   private use Math;
-  private use super.MSBRadixSort;
   public use List only list;
-  import Sort.{ShellSort, RadixSortHelp, SampleSortHelp, ShallowCopy};
+  import Sort.{ShellSort, MSBRadixSort, QuickSort};
+  import Sort.{RadixSortHelp, SampleSortHelp, ShallowCopy};
+  use MSBRadixSort;
 
   private param debug = false;
   private param debugDist = false;
