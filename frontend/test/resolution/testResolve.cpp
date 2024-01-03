@@ -754,6 +754,28 @@ static void test17() {
   ensureParamString(variables.at("bar_param"), "bar_param");
 }
 
+// invalid module-level split-init
+static void test18() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var flag = true;
+      var foo;
+      if (flag) {
+        foo = 5;
+      } else {
+        foo = "asdf";
+      }
+      )""", {"foo"});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->message() ==
+         "types do not match in conditional split init");
+}
+
 int main() {
   test1();
   test2();
@@ -772,6 +794,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   return 0;
 }
