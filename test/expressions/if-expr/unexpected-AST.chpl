@@ -68,8 +68,8 @@ iter DefaultRectangularDom.myIter(param tag) {
           if debugDefaultDist {
             chpl_debug_writeln("*** DI[", chunk, "]: followMe = ", followMe);
           }
-          var block: rank*range(idxType=idxType, stridable=stridable);
-          if stridable {
+          var block: rank*range(idxType=idxType, strides=strides);
+          if ! strides.isOne() {
             type strType = chpl__signedType(idxType);
             for param i in 1..rank {
               // Note that a range.stride is signed, even if the range is not
