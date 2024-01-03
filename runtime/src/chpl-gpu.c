@@ -357,33 +357,43 @@ static void cfg_add_direct_param(kernel_cfg* cfg, void* arg) {
 static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
   const int i = cfg->cur_pid;
   assert(i < cfg->n_pids);
-
-  CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid);
-
   cfg->priv_insts[i].pid = pid;
-  if (pid > cfg->max_pid) {
-    cfg->max_pid = pid;
+
+  if (pid < 0) {
+    CHPL_GPU_DEBUG("\tIgnoring pid: %ld\n", pid);
+    cfg->priv_insts[i].dev_instance = NULL;
   }
+  else {
+    CHPL_GPU_DEBUG("\t offloading pid %ld\n", pid);
 
-  void* dev_instance = chpl_gpu_mem_array_alloc(size,
-                                          CHPL_RT_MD_GPU_KERNEL_ARG,
-                                          cfg->ln, cfg->fn);
+    if (pid > cfg->max_pid) {
+      cfg->max_pid = pid;
+    }
 
-  CHPL_GPU_DEBUG("\t device instance %p\n", dev_instance);
+    void* dev_instance = chpl_gpu_mem_array_alloc(size,
+                                            CHPL_RT_MD_GPU_KERNEL_ARG,
+                                            cfg->ln, cfg->fn);
 
-  chpl_gpu_impl_copy_host_to_device(dev_instance,
-                                    chpl_privateObjects[pid].obj,
-                                    size,
-                                    cfg->stream);
-  cfg->priv_insts[i].dev_instance = dev_instance;
+    CHPL_GPU_DEBUG("\t device instance %p\n", dev_instance);
 
-  CHPL_GPU_DEBUG("\t offloaded pid %ld\n", pid);
+    chpl_gpu_impl_copy_host_to_device(dev_instance,
+                                      chpl_privateObjects[pid].obj,
+                                      size,
+                                      cfg->stream);
+    cfg->priv_insts[i].dev_instance = dev_instance;
+
+    CHPL_GPU_DEBUG("\t offloaded pid %ld\n", pid);
+  }
 
   cfg->cur_pid++;
 }
 
 static void cfg_finalize_priv_table(kernel_cfg *cfg) {
-  if (cfg->n_pids == 0) {
+  // note that n_pids is what the compiler asks for. There can be some arrays
+  // with pid=-1 and n_pids will include those. But we don't need to offload
+  // them.
+  if (cfg->max_pid < 0) {
+    CHPL_GPU_DEBUG("No real private instances were found");
     return;
   }
 
