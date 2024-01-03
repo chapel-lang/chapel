@@ -2614,7 +2614,7 @@ module TwoArrayPartitioning {
                                 start_n, sampleSize, sampleStep, numBuckets);
       if debug {
         writeln("sample bucketizer ", state.bucketizer);
-        writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+        writef("A %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
       }
     }
 
@@ -2636,7 +2636,7 @@ module TwoArrayPartitioning {
 
     if debug {
       writeln("partitioningSortWithScratchSpace(", start_n, ",", end_n, ")");
-      writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+      writef("A %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
     }
 
 
@@ -2668,7 +2668,7 @@ module TwoArrayPartitioning {
                   criterion, task.startbit);
         // bucketized data now in Scratch
         if debug {
-          writef("pb %i %i Scratch=%xt\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
+          writef("pb %i %i Scratch=%?\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
         }
       } else {
         partitioningSortWithScratchSpaceHandleSampling(
@@ -2680,7 +2680,7 @@ module TwoArrayPartitioning {
                   criterion, task.startbit);
         // bucketized data now in A
         if debug {
-          writef("pb %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
+          writef("pb %i %i A=%?\n", task.start, taskEnd, A[task.start..taskEnd]);
         }
       }
       const nowInA = !task.inA;
@@ -2742,7 +2742,7 @@ module TwoArrayPartitioning {
       const size = task.size;
       const taskEnd = task.start + size - 1;
       if debug {
-        writef("doing small task %i %i A=%xt\n", task.start, taskEnd, A[task.start..taskEnd]);
+        writef("doing small task %i %i A=%?\n", task.start, taskEnd, A[task.start..taskEnd]);
       }
 
       if !task.inA {
@@ -2765,8 +2765,8 @@ module TwoArrayPartitioning {
     }
 
     if debug {
-      writef("ps %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
-      writef("ps %i %i Scratch=%xt\n", start_n, end_n, Scratch[start_n..end_n]);
+      writef("ps %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
+      writef("ps %i %i Scratch=%?\n", start_n, end_n, Scratch[start_n..end_n]);
       RadixSortHelp.checkSorted(start_n, end_n, A, criterion, startbit);
     }
   }
@@ -2874,7 +2874,7 @@ module TwoArrayPartitioning {
                                 start_n, sampleSize, sampleStep, numBuckets);
       if debug {
         writeln("sample bucketizer ", state.perLocale[0].compat.bucketizer);
-        writef("A %i %i A=%xt\n", start_n, end_n, A[start_n..end_n]);
+        writef("A %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
       }
 
       // Now copy the bucketizer sample to all other locales
@@ -3030,7 +3030,7 @@ module TwoArrayPartitioning {
         // Now the data is in Scratch
 
         if debugDist {
-          writef("%i after bucketize local portions, Scratch is %xt\n",
+          writef("%i after bucketize local portions, Scratch is %?\n",
               bktLocId,
               Scratch[bktTask.start..#bktTask.size]);
         }
@@ -3236,7 +3236,7 @@ module TwoArrayPartitioning {
     // Part B: Handle the "small" subproblems
 
     if debugDist then
-      writef("After big tasks, A is: %xt\n", A);
+      writef("After big tasks, A is: %?\n", A);
 
     // Always use state 1 for small subproblems...
     ref state = state1;
@@ -3262,13 +3262,13 @@ module TwoArrayPartitioning {
 
         if debugDist {
           checkSorted(task.start, taskEnd, A, criterion);
-          writef("%i after small sort, dst is %xt\n", tid, A[task.start..taskEnd]);
+          writef("%i after small sort, dst is %?\n", tid, A[task.start..taskEnd]);
         }
       }
     }
 
     if debugDist {
-      writef("After small tasks, A is: %xt\n", A);
+      writef("After small tasks, A is: %?\n", A);
       checkSorted(start_n, end_n, A, criterion);
     }
   }
