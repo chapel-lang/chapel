@@ -459,26 +459,34 @@ algorithm used is made by the implementation.
 :type Data: [] `eltType`
 :arg comparator: :ref:`Comparator <comparators>` record that defines how the
   data is sorted.
+:arg stable: Defaults to ``false``. If it is ``false``, the implementation
+  can sort in a way that reorders equal keys. If it is ``true``, it will use a
+  stable algorithm in order to preserve the order of equal keys.
 :arg mimimizeMemory: Defaults to ``false``. If it is ``false``, the
   implementation can make a copy of ``Data`` for scratch storage during the
-  sort. If it is ``true``, it will use an implementation that uses less memory.
+  sort. If it is ``true``, it will use an in-place algorithm in order to use
+  less memory.
  */
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-          minimizeMemory=false) {
+          stable:bool = false, minimizeMemory:bool=false) {
   // TODO: This should have a flag `stable` to request a stable sort
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
     return;
 
-  if radixSortOk(Data, comparator) {
-    if minimizeMemory {
-      MSBRadixSort.msbRadixSort(Data, comparator=comparator);
-    } else {
-      TwoArrayRadixSort.twoArrayRadixSort(Data, comparator=comparator);
-    }
+  if stable {
+    MergeSort.mergeSort(Data, comparator=comparator);
   } else {
-    QuickSort.quickSort(Data, comparator=comparator);
+    if radixSortOk(Data, comparator) {
+      if minimizeMemory {
+        MSBRadixSort.msbRadixSort(Data, comparator=comparator);
+      } else {
+        TwoArrayRadixSort.twoArrayRadixSort(Data, comparator=comparator);
+      }
+    } else {
+      QuickSort.quickSort(Data, comparator=comparator);
+    }
   }
 }
 
