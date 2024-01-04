@@ -469,22 +469,29 @@ The choice of sorting algorithm used is made by the implementation.
   less memory.
  */
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-          stable:bool = false, minimizeMemory:bool=false) {
+          param stable:bool = false, param minimizeMemory:bool = false) {
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
     return;
 
   if stable {
-    MergeSort.mergeSort(Data, comparator=comparator);
+    // TODO: implement a stable merge sort with parallel merge
+    // TODO: create an in-place merge sort for the stable+minimizeMemory case
+    // TODO: create a stable variant of the radix sort
+    compilerError("stable sort not yet implemented");
   } else {
     if radixSortOk(Data, comparator) {
       if minimizeMemory {
+        // use an in-place algorithm
         MSBRadixSort.msbRadixSort(Data, comparator=comparator);
       } else {
+        // use the two-array radix sort which is more parallel / faster
         TwoArrayRadixSort.twoArrayRadixSort(Data, comparator=comparator);
       }
     } else {
+      // use quick sort, which is currently in-place
+      // TODO: use a parallel sample sort instead
       QuickSort.quickSort(Data, comparator=comparator);
     }
   }
