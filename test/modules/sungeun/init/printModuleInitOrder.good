@@ -33,8 +33,10 @@ Initializing Modules:
           MSBRadixSort
            RadixSortHelp
            ShellSort
+            ShallowCopy
+          TwoArrayRadixSort
+           TwoArrayPartitioning
           QuickSort
-           ShallowCopy
            InsertionSort
         ChapelDistribution
          ChapelHashtable
