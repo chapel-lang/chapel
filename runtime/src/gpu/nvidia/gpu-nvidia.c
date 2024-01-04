@@ -91,7 +91,9 @@ extern c_nodeid_t chpl_nodeID;
 static void chpl_gpu_impl_set_globals(c_sublocid_t dev_id, CUmodule module) {
   CUdeviceptr ptr;
   size_t glob_size;
-  CUDA_CALL(cuModuleGetGlobal(&ptr, &glob_size, module, "chpl_nodeID"));
+
+  chpl_gpu_impl_load_global("chpl_nodeID", (void**)&ptr, &glob_size);
+
   assert(glob_size == sizeof(c_nodeid_t));
   chpl_gpu_impl_copy_host_to_device((void*)ptr, &chpl_nodeID, glob_size, NULL);
 }
