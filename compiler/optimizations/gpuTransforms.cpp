@@ -443,11 +443,13 @@ private:
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
-  void reportNotGpuizable(const BaseAST* ast, const char *msg);
+  void reportNotGpuizable(BaseAST* ast, const char *msg,
+                          const std::vector<CallExpr*>* callStack = nullptr);
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
-                                   std::set<FnSymbol*> visitedFns);
+                                   std::set<FnSymbol*> visitedFns,
+                                   std::vector<CallExpr*>& callStack);
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
@@ -596,12 +598,14 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
 bool GpuizableLoop::callsInBodyAreGpuizable() {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
-  return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
+  std::vector<CallExpr*> callStack;
+  return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns, callStack);
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                                 std::set<FnSymbol*>& okFns,
-                                                std::set<FnSymbol*> visitedFns) {
+                                                std::set<FnSymbol*> visitedFns,
+                                                std::vector<CallExpr*>& callStack) {
   FnSymbol* fn = blk->getFunction();
   if (debugPrintGPUChecks) {
     printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
@@ -628,7 +632,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
-        reportNotGpuizable(call, "primitive is not fast and local");
+        reportNotGpuizable(call, "call to a primitive that is not fast and local", &callStack);
         return false;
       }
     } else if (call->isResolved()) {
@@ -638,7 +642,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       FnSymbol *fn = call->resolvedFunction();
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution");
+        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution", &callStack);
         return false;
       }
 
@@ -649,18 +653,23 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         std::string msg = "function calls out to extern function (";
         msg += fn->name;
         msg += "), which is not marked as GPU eligible";
-        reportNotGpuizable(fn, msg.c_str());
+        reportNotGpuizable(fn, msg.c_str(), &callStack);
         return false;
       }
 
       if (hasOuterVarAccesses(fn)) {
-        reportNotGpuizable(call, "call has outer var access");
+        reportNotGpuizable(call, "call has outer var access", &callStack);
         return false;
       }
 
       indentGPUChecksLevel += 2;
-      if (okFns.count(fn) != 0 ||
-          callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns)) {
+      bool ok = okFns.count(fn) != 0;
+      if (!ok) {
+        callStack.push_back(call);
+        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns, callStack);
+        callStack.pop_back();
+      }
+      if (ok) {
         indentGPUChecksLevel -= 2;
         okFns.insert(fn);
       } else {
@@ -733,11 +742,36 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
-void GpuizableLoop::reportNotGpuizable(const BaseAST* ast, const char *msg) {
+void GpuizableLoop::reportNotGpuizable(BaseAST* ast, const char *msg,
+                                       const std::vector<CallExpr*>* callStack) {
   this->reason = msg;
   if(this->compileTimeGpuAssertion_) {
     printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
-    USR_PRINT(ast, "%s", msg);
+
+    if (developer || ast->getModule()->modTag != MOD_INTERNAL) {
+      USR_PRINT(ast, "%s", msg);
+    }
+
+    if (callStack) {
+      int i = callStack->size() - 1;
+      for (; i >= 0; i--) {
+        CallExpr* from = (*callStack)[i];
+
+        // Stop iterating as soon as we hit the first user-printable
+        // line of code.
+        if (developer) break;
+
+        if (from->linenum() > 0 &&
+            from->getModule()->modTag != MOD_INTERNAL &&
+            !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
+          break;
+      }
+
+      for (; i >= 0; i--) {
+        CallExpr* from = (*callStack)[i];
+        USR_PRINT(from, "  reached via this call");
+      }
+    }
     USR_STOP();
   }
 }
