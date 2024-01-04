@@ -1261,7 +1261,7 @@
     "modules/packages/Curl.chpl"
   ],
   "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
-    "modules/packages/DistributedBag.chpl"
+    "modules/packages/DistributedBagDeprecated.chpl"
   ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"

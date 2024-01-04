@@ -41,6 +41,7 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
+   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
