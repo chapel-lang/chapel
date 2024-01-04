@@ -377,8 +377,6 @@ struct TestFunctionFinder {
     // a single argument (which we will soon validate to be of the testType).
     if (!fn->throws() || fn->isMethod() || fn->numFormals() != 1) return false;
 
-    debuggerBreakHere();
-
     // The function also needs to be concrete.
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
     const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
@@ -401,6 +399,10 @@ static const std::vector<const Function*>& gatheredTestsQuery(Context* context) 
   QUERY_BEGIN_INPUT(gatheredTestsQuery, context);
   std::vector<const Function*> toReturn;
   return QUERY_END(toReturn);
+}
+
+const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context) {
+  return gatheredTestsQuery(context);
 }
 
 static QualifiedType primGatherTests(Context* context, const CallInfo& ci) {

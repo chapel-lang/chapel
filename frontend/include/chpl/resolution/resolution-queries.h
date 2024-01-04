@@ -417,6 +417,13 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
 
+/**
+  One of the compiler primitives has the side effect of collecting all
+  test functions. This helper retrieves the list of test functions that has
+  been collected.
+ */
+const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
+
 
 } // end namespace resolution
 } // end namespace chpl
