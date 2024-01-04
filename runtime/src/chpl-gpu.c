@@ -308,8 +308,8 @@ static void cfg_add_offload_param(kernel_cfg* cfg, void* arg, size_t size) {
   cfg->param_dyn_allocated[i] = true;
 
   cfg->kernel_params[i] = chpl_mem_alloc(sizeof(void*),
-                                           CHPL_RT_MD_GPU_KERNEL_PARAM, cfg->ln,
-                                           cfg->fn);
+                                         CHPL_RT_MD_GPU_KERNEL_PARAM, cfg->ln,
+                                         cfg->fn);
 
   // TODO this doesn't work on EX, why?
   // *kernel_params[i] = chpl_gpu_impl_mem_array_alloc(cur_arg_size, stream);
@@ -515,6 +515,7 @@ static void launch_kernel(const char* name,
 
   for (int i = 0; i < cfg->n_params ; i++) {
     CHPL_GPU_DEBUG("\tArg: %p\n", cfg->kernel_params[i]);
+    CHPL_GPU_DEBUG("\t\tVal: %p\n", *(cfg->kernel_params[i]));
   }
 
   cfg_finalize_priv_table(cfg);

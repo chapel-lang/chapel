@@ -2311,7 +2311,7 @@ static chpl::CompilerGlobals dynoBuildCompilerGlobals() {
     .overloadSetsChecking = fOverloadSetsChecks,
     .divByZeroChecking = !fNoDivZeroChecks,
     .cacheRemote = fCacheRemote,
-    .privatization = !(fNoPrivatization || fLocal),
+    .privatization = !(fNoPrivatization || (fLocal && !usingGpuLocaleModel())),
     .local = fLocal,
     .warnUnstable = fWarnUnstable,
   };
