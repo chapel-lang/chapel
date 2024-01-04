@@ -59,6 +59,8 @@ module ChplFormat {
         _oldWrite(writer, val);
       } else if isNumericType(t) || isBoolType(t) {
         _oldWrite(writer, val);
+      } else if (isDomainType(t) && val.isRectangular()) || isRangeType(t) {
+        writer.withSerializer(defaultSerializer).write(val);
       } else if isClassType(t) {
         if val == nil {
           writer.writeLiteral("nil");
@@ -268,6 +270,8 @@ module ChplFormat {
       } else if isEnumType(readType) {
         var ret = reader.withDeserializer(defaultDeserializer).read(readType);
         return ret;
+      } else if isDomainType(readType) || isRangeType(readType) {
+        return reader.withDeserializer(defaultDeserializer).read(readType);
       } else if canResolveTypeMethod(readType, "deserializeFrom", reader, this) ||
                 isArrayType(readType) {
         if isArrayType(readType) && chpl__domainFromArrayRuntimeType(readType).rank > 1 then
@@ -279,6 +283,12 @@ module ChplFormat {
     }
 
     proc ref deserializeValue(reader: _readerType, ref val: ?readType) : void throws {
+      // Shortcut for domains/ranges to just use the default format
+      if isDomainType(readType) || isRangeType(readType) {
+        reader.withDeserializer(defaultDeserializer).read(val);
+        return;
+      }
+
       if canResolveMethod(val, "deserialize", reader, this) {
         if isArrayType(readType) && val.rank > 1 then
           throw new IllegalArgumentError("chplSerializer does not support multidimensional arrays");
