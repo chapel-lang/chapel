@@ -109,8 +109,6 @@ static void updateTypeForSplitInit(Context* context, ID id,
                                    ResolvedExpression& lhs,
                                    const ResolvedExpression& rhs,
                                    std::set<ID>& alreadyUpdated) {
-  gdbShouldBreakHere();
-
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
 
