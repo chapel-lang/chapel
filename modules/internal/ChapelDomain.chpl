@@ -77,15 +77,6 @@ module ChapelDomain {
     return new _domain(dist, rank, idxType, strides);
   }
 
-  // deprecated by Vass in 1.31 to implement #17131
-  @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__buildDomainRuntimeType(dist, param rank: int,
-                                    type idxType = int,
-                                    param stridable: bool) type {
-    return chpl__buildDomainRuntimeType(dist, rank, idxType,
-                                        chpl_strideKind(stridable));
-  }
-
   pragma "runtime type init fn"
   @unstable("Associative domains are unstable and their behavior may change in the future")
   proc chpl__buildDomainRuntimeType(dist, type idxType,
@@ -135,18 +126,6 @@ module ChapelDomain {
                                        param isNoInit: bool,
                                        definedConst: bool) {
     return new _domain(dist, rank, idxType, strides, definedConst);
-  }
-
-  // deprecated by Vass in 1.31 to implement #17131
-  @deprecated("domain.stridable is deprecated; use domain.strides instead")
-  proc chpl__convertRuntimeTypeToValue(dist,
-                                       param rank: int,
-                                       type idxType = int,
-                                       param stridable: bool,
-                                       param isNoInit: bool,
-                                       definedConst: bool) {
-    return new _domain(dist, rank, idxType, chpl_strideKind(stridable),
-                       definedConst);
   }
 
   proc chpl__convertRuntimeTypeToValue(dist, type idxType,
@@ -1073,30 +1052,6 @@ module ChapelDomain {
                 definedConst));
     }
 
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    @chpldoc.nodoc
-    proc init(d,
-              param rank : int,
-              type idxType = int,
-              param stridable: bool,
-              definedConst: bool = false) {
-      this.init(d, rank, idxType, chpl_strideKind(stridable), definedConst);
-    }
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    @chpldoc.nodoc
-    proc init(d,
-              param rank : int,
-              type idxType = int,
-              param stridable: bool,
-              ranges: _tuple,
-              definedConst: bool = false) {
-      this.init(d, rank, idxType, chpl_strideKind(stridable),
-                chpl_convertRangeTuple(ranges, stridable), definedConst);
-    }
-
     @chpldoc.nodoc
     proc init(d,
               type idxType,
@@ -1263,27 +1218,6 @@ module ChapelDomain {
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
-
-    // deprecated by Vass in 1.31 to implement #17131
-    /* Returns true if this domain accepts some or any strides
-       other than 1. */
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc stridable param where this.isRectangular() {
-      return _value.strides.toStridable();
-    }
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    @chpldoc.nodoc
-    proc stridable param where this.isSparse() {
-      return _value.parentDom.strides.toStridable();
-    }
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @chpldoc.nodoc
-    proc stridable param where this.isAssociative() {
-      compilerError("associative domains do not support .stridable");
-    }
 
     /* Returns the stride of the indices in this domain. */
     proc stride do return _value.dsiStride;

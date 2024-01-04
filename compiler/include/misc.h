@@ -75,9 +75,6 @@
 #define iterKindFollowerTagname   "follower"
 #define iterKindStandaloneTagname "standalone"
 #define iterFollowthisArgname     "followThis"
-#define strideKindTypename        "strideKind"
-#define strideKindOneTagname      "one"
-#define strideKindAnyTagname      "any"
 
 #define tupleInitName "chpl__init_tuple"
 

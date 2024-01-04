@@ -59,32 +59,6 @@ module ChapelRange {
   @chpldoc.nodoc
   enum boundKind { both, low, high, neither };
 
-  /*
-    The ``BoundedRangeType`` enum is used to specify the types of bounds a
-    range is required to have.
-
-    * ``bounded`` - The range has finite low and high bounds.
-    * ``boundedLow`` - The range starts at a given low bound, but conceptually goes up to infinity.
-    * ``boundedHigh`` - The range conceptually starts at negative infinity and ends at a given high bound.
-    * ``boundedNone`` - The range conceptually runs from negative infinity to infinity.
-
-    This is currently documented manually in the spec because it fit into
-    the flow of the document better.
-   */
-  @chpldoc.nodoc
-  @deprecated("BoundedRangeType is deprecated; please use 'boundKind' instead")
-  proc BoundedRangeType type do return boundKind;
-//was: enum BoundedRangeType { bounded, boundedLow, boundedHigh, boundedNone };
-//deprecated by Vass in 1.31 to implement #17126
-  @deprecated("'bounded' is deprecated; please use 'boundKind.both' instead")
-  proc type boundKind.bounded param do return boundKind.both;
-  @deprecated("'boundedLow' is deprecated; please use 'boundKind.low' instead")
-  proc type boundKind.boundedLow param do return boundKind.low;
-  @deprecated("'boundedHigh' is deprecated; please use 'boundKind.high' instead")
-  proc type boundKind.boundedHigh param do return boundKind.high;
-  @deprecated("'boundedNone' is deprecated; please use 'boundKind.neither' instead")
-  proc type boundKind.boundedNone param do return boundKind.neither;
-
   // This enum is documented directly in the spec to fit the presentation flow.
   @chpldoc.nodoc
   enum strideKind {
@@ -118,22 +92,6 @@ module ChapelRange {
     type idxType = int;                            // element type
     param bounds: boundKind = boundKind.both;      // lower/upper bounds
     param strides: strideKind = strideKind.one;    // what stride(s) are legal
-
-    // deprecated by Vass in 1.31 to implement #17126
-    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
-    proc boundedType param do return bounds;
-
-    // deprecated by Vass in 1.31 to implement #17126
-    @deprecated("range.boundedType is deprecated; please use '.bounds' instead")
-    proc type boundedType param do return bounds;
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("range.stridable is deprecated; please use '.strides' instead")
-    proc stridable param do return !hasUnitStride();
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("range.stridable is deprecated; please use '.strides' instead")
-    proc type stridable param do return ! strides.isOne();
 
     var _low       : chpl__idxTypeToIntIdxType(idxType);  // lower bound
     var _high      : chpl__idxTypeToIntIdxType(idxType);  // upper bound
@@ -829,49 +787,6 @@ module ChapelRange {
 
   @chpldoc.nodoc proc param strideKind.defaultStride() param
     do return if isNegative() then -1 else 1;
-
-  // these support deprecation by Vass in 1.31 to implement #17131
-
-  proc chpl_strideKind(param stridable: bool) param
-    do return if stridable then strideKind.any else strideKind.one;
-
-  proc chpl_stridable(param strides: strideKind) param
-    do return strides.toStridable();
-
-  proc chpl_stridable(strides: strideKind)
-    do return strides != strideKind.one;
-
-  @chpldoc.nodoc proc param strideKind.toStridable() param
-    do return this != strideKind.one;
-
-  // Supports deprecation by Vass in 1.31 to implement #17131,
-  // when stridable-based code unwittingly creates ranges with
-  // the overly-general strideKind=any.
-  // It simply changes 'from' ranges from strideKind.* to strideKind.any.
-  proc chpl_convertRangeTuple(from: _tuple, param stridable: bool) {
-    if from(0).strides == chpl_strideKind(stridable) then
-      return from;
-
-    param rank = from.size;
-    type idxType = from(0).idxType;
-    param bounds = from(0).bounds;
-    param strides = strideKind.any;
-
-    var result: rank * range(idxType, bounds, strides);
-    for param i in 0..rank-1 do transfer(result(i), from(i));
-    return result;
-
-    inline proc transfer(ref dest, src) {
-      // It would be simpler to use a cast: dest = src: dest.type
-      // however the cast can throw, creating more code and execution cost.
-      dest._low  = src._low;
-      dest._high = src._high;
-      if ! dest.hasParamStrideAltvalAld() {
-        dest._stride    = src._stride;
-        dest._alignment = src._alignment;
-      }
-    }
-  }
 
   // Counterparts to hasPositiveStride() and hasNegativeStride()
   // for use when there is no range.

@@ -2973,29 +2973,6 @@ static Expr* resolveTupleIndexing(CallExpr* call, Symbol* baseVar) {
   return result;
 }
 
-// Deprecated by Vass in 1.31: redirect, with a deprecation warning,
-// from `range(boundedType=?b)` or `range(stridable=?s`)`
-// to   `range(bounds=?b)`      or `s = <arg>.stridable`
-static void checkRangeDeprecations(AggregateType* at, CallExpr* call,
-                                   VarSymbol* var, Symbol*& retval) {
-  if (retval == nullptr && at->symbol->hasFlag(FLAG_RANGE)) {
-    const char* requested = var->immediate->v_string.c_str();
-    if (!strcmp(requested, "boundedType")) {
-      USR_WARN(call,
-        "range.boundedType is deprecated; please use '.bounds' instead");
-      retval = at->getField("bounds");
-    } else if (!strcmp(requested, "stridable")) {
-      USR_WARN(call,
-        "range.stridable is deprecated; please use '.strides' instead");
-
-      // White lie: return a bogus value just so that the PRIM_QUERY case
-      // in preFoldPrimOp() generates the call 'var.stridable'.
-      retval = new VarSymbol(requested);
-      retval->addFlag(FLAG_PARAM);
-    }
-  }
-}
-
 //
 // determine field associated with query expression
 //
@@ -3008,7 +2985,6 @@ static Symbol* determineQueriedField(CallExpr* call) {
 
   if (var->immediate->const_kind == CONST_KIND_STRING) {
     retval = at->getField(var->immediate->v_string.c_str(), false);
-    checkRangeDeprecations(at, call, var, retval); // may update 'retval'
 
   } else {
     Vec<Symbol*> args;

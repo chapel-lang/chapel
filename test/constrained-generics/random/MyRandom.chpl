@@ -1116,7 +1116,7 @@ module MyRandom {
       {
         var dom: domain(1,strides=strideKind.any);
 
-        if x.boundedType != BoundedRangeType.bounded {
+        if x.bounds != boundKind.both {
           throw new owned IllegalArgumentError('input range must be bounded');
           dom = {1..2}; // this is a workaround for issue #15691
         } else {
