@@ -376,6 +376,8 @@ struct TestFunctionFinder {
     // We're looking for a non-method function that throws and accepts
     // a single argument (which we will soon validate to be of the testType).
     if (!fn->throws() || fn->isMethod() || fn->numFormals() != 1) return false;
+    // Skip non-user functions.
+    if (parsing::idIsInBundledModule(context, fn->id())) return false;
 
     // The function also needs to be concrete.
     const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
