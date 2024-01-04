@@ -2235,7 +2235,7 @@ compilerAndTestingStats: &compiler-perf-base
     - Yield tuples by value when appropriate (#21789)
   03/14/23:
     - Eliminate extra destructions when yielding tuples (#21887)
-  03/14/23:
+  12/01/23:
     - Move the GpuSort Module code into the GPU module (#23989)
 
 allTotalTime:
