@@ -11,9 +11,13 @@ module AtomicAggregation {
   private config const yieldFrequency = getEnvInt("AGGREGATION_YIELD_FREQUENCY", 1024);
   private config const amoBuffSize = getEnvInt("AGGREGATION_AMO_BUFF_SIZE", defaultBuffSize*2);
 
+  private config param aggregate = CHPL_COMM != "none";
+
   proc AggregatedAtomic(type T) type {
     return chpl__processorAtomicType(T);
   }
+
+
   /*
    * Aggregates atomic increments. e.g. atomic.add(1). This is a specialization
    * of a non-fetching atomic aggregator that does not have to buffer values.
@@ -21,6 +25,24 @@ module AtomicAggregation {
    * High memory usage since there are per-destination buffers
    */
   record AtomicIncAggregator {
+    type elemType;
+    @chpldoc.nodoc
+    var agg: if aggregate then AtomicIncAggregatorImpl(elemType) else nothing;
+    inline proc ref inc(ref dst: AggregatedAtomic(elemType)) {
+      if aggregate then agg.inc(dst);
+                   else dst.add(1, memoryOrder.relaxed);
+    }
+    inline proc copy(ref dst: elemType, const in srcVal: elemType) {
+      if aggregate then agg.copy(dst, srcVal);
+                   else dst = srcVal;
+    }
+    inline proc flush() {
+      if aggregate then agg.flush();
+    }
+  }
+
+  @chpldoc.nodoc
+  record AtomicIncAggregatorImpl {
     type elemType;
     type aggType = c_ptr(AggregatedAtomic(elemType));
     const bufferSize = amoBuffSize;
