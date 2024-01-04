@@ -54,10 +54,10 @@ module AtomicAggregation {
     var bufferIdxs: c_ptr(int);
 
     proc ref postinit() {
-      lBuffers = allocate(c_ptr(aggType), numLocales);
+      lBuffers = allocate(c_ptr(aggType), numLocales:c_size_t);
       bufferIdxs = bufferIdxAlloc();
       for loc in myLocaleSpace {
-        lBuffers[loc] = allocate(aggType, bufferSize);
+        lBuffers[loc] = allocate(aggType, bufferSize:c_size_t);
         bufferIdxs[loc] = 0;
         rBuffers[loc] = new remoteBuffer(aggType, bufferSize, loc);
       }
