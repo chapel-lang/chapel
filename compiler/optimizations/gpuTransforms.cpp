@@ -769,7 +769,12 @@ void GpuizableLoop::reportNotGpuizable(BaseAST* ast, const char *msg,
 
       for (; i >= 0; i--) {
         CallExpr* from = (*callStack)[i];
-        USR_PRINT(from, "  reached via this call");
+        const char* extra = i == 0 ? " in loop body" : "";
+        if (SymExpr* base = toSymExpr(from->baseExpr)) {
+          USR_PRINT(from, "  reached via call to '%s'%s here", base->symbol()->name, extra);
+        } else {
+          USR_PRINT(from, "  reached via this call%s", extra);
+        }
       }
     }
     USR_STOP();
