@@ -169,8 +169,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       emitMultipleDefinedSymbolErrors(context, modScope);
 
       std::set<ID> splitInitTypeInferredVariables;
+      auto r = Resolver::createForModuleStmt(context, mod, nullptr, result);
 
-      result.setupForSymbol(mod);
       for (auto child: mod->children()) {
         if (child->isComment() ||
             child->isTypeDecl() ||
@@ -211,6 +211,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
         }
       }
       checkThrows(context, result, mod);
+      callInitDeinit(r);
     }
   }
 
