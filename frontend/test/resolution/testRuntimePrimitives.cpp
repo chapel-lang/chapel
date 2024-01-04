@@ -296,6 +296,30 @@ static void test15() {
 }
 
 
+// "_get_user_line", which should return a default int.
+static void test16() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("_get_user_line");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType() && typePtr->toIntType()->isDefaultWidth());
+}
+
+// "_get_user_file", which should return an int32
+static void test17() {
+  Context ctx;
+  auto context = &ctx;
+  QualifiedType qt =  resolveTypeOfXInit(context,
+                         R"""(var x = __primitive("_get_user_file");)""");
+  assert(qt.kind() == QualifiedType::CONST_VAR);
+  auto typePtr = qt.type();
+  assert(typePtr);
+  assert(typePtr->isIntType() && typePtr->toIntType()->bitwidth() == 32);
+}
+
 int main() {
   testVoidPrims();
   test1();
@@ -313,6 +337,8 @@ int main() {
   test13();
   test14();
   test15();
+  test16();
+  test17();
 
   return 0;
 }
