@@ -1438,8 +1438,12 @@ module ShellSort {
     }
   }
 
-  proc shellSortMoveElts(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-                 start=Dom.low, end=Dom.high)
+  // Like the shell sort above, but this version uses
+  // ShallowCopy to move elements instead of assigning them.
+  proc shellSortMoveElts(ref Data: [?Dom] ?eltType,
+                         comparator:?rec = defaultComparator,
+                         start: Data.idxType = Dom.low,
+                         end: Data.idxType = Dom.high)
   {
     chpl_check_comparator(comparator, eltType);
 
@@ -1479,6 +1483,17 @@ module ShellSort {
         ShallowCopy.shallowCopy(Data[js], v);
       }
     }
+  }
+
+  // this version takes int start and end and casts to Data.idxType
+  // to make it more convenient to call from the radix sorting code
+  proc shellSortMoveEltsIntIdx(ref Data: [?Dom] ?eltType,
+                               comparator:?rec = defaultComparator,
+                               start:int = Dom.low,
+                               end:int = Dom.high)
+  {
+    type idxType = Data.idxType;
+    shellSortMoveElts(Data, comparator, start:idxType, end:idxType);
   }
 }
 
@@ -1619,6 +1634,7 @@ module SampleSortHelp {
     }
     // yields (index, bucket index) for A[start_n..end_n]
     iter classify(A, start_n, end_n, criterion, startbit) {
+      type idxType = A.idxType;
       const paramEqualBuckets = equalBuckets;
       const paramLogBuckets = logBuckets;
       const paramNumBuckets = 1 << (paramLogBuckets + paramEqualBuckets:int);
@@ -1632,13 +1648,16 @@ module SampleSortHelp {
         }
         for /*param*/ lg in 0..paramLogBuckets-1 {
           for /*param*/ i in 0..classifyUnrollFactor-1 {
-            b[i] = 2*b[i] + (chpl_compare(splitter(b[i]), A[cur+i],criterion)<0):int;
+            const cur_i_idx = (cur+i):idxType;
+            b[i] = 2*b[i] +
+                   (chpl_compare(splitter(b[i]), A[cur_i_idx],criterion)<0):int;
           }
         }
         if paramEqualBuckets {
           for /*param*/ i in 0..classifyUnrollFactor-1 {
+            const cur_i_idx = (cur+i):idxType;
             b[i] = 2*b[i] +
-                   (chpl_compare(A[cur+i],
+                   (chpl_compare(A[cur_i_idx],
                            sortedSplitter(b[i] - paramNumBuckets/2),criterion)==0):int;
           }
         }
@@ -1651,10 +1670,12 @@ module SampleSortHelp {
       while cur <= end_n {
         var bk = 1;
         for lg in 0..#paramLogBuckets {
-          bk = 2*bk + (chpl_compare(splitter(bk), A[cur], criterion)<0):int;
+          const cur_idx = cur:idxType;
+          bk = 2*bk + (chpl_compare(splitter(bk), A[cur_idx], criterion)<0):int;
         }
         if paramEqualBuckets {
-          bk = 2*bk + (chpl_compare(A[cur],
+          const cur_idx = cur:idxType;
+          bk = 2*bk + (chpl_compare(A[cur_idx],
                                sortedSplitter(bk - paramNumBuckets/2),criterion)==0):int;
         }
         yield (cur, bk - paramNumBuckets);
@@ -1673,14 +1694,15 @@ module SampleSortHelp {
                                  forceEqualBuckets:? = none) {
 
     // Create the splitters
+    type idxType = A.idxType;
     ref splitters = splitterBucketizer.sortedStorage;
     var arrayIndex = start_n + sampleStep - 1;
     var splitterIndex = 0;
-    splitters[splitterIndex] = A[arrayIndex];
+    splitters[splitterIndex] = A[arrayIndex:idxType];
     for i in 2..numBuckets-1 {
       arrayIndex += sampleStep;
       // Skip duplicates
-      if chpl_compare(splitters[splitterIndex], A[arrayIndex], criterion)!=0 {
+      if chpl_compare(splitters[splitterIndex], A[arrayIndex:idxType], criterion)!=0 {
         splitterIndex += 1;
         splitters[splitterIndex] = A[arrayIndex];
       }
@@ -1932,15 +1954,19 @@ module RadixSortHelp {
 
     // yields (index, bucket index) for A[start_n..end_n]
     iter classify(A, start_n, end_n, criterion, startbit) {
+      type idxType = A.idxType;
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {
         for /*param*/ j in 0..classifyUnrollFactor-1 {
-          yield (cur+j, bucketForRecord(A[cur+j], criterion, startbit));
+          const cur_j_idx = (cur+j):idxType;
+          yield (cur+j,
+                 bucketForRecord(A[cur_j_idx], criterion, startbit));
         }
         cur += classifyUnrollFactor;
       }
       while cur <= end_n {
-        yield (cur, bucketForRecord(A[cur], criterion, startbit));
+        const cur_idx = cur:idxType;
+        yield (cur, bucketForRecord(A[cur_idx], criterion, startbit));
         cur += 1;
       }
     }
@@ -2027,23 +2053,36 @@ module ShallowCopy {
     // Ideally this would just be
     //A[dst..#nElts] = A[src..#nElts];
 
+    type idxType = A.idxType;
+    const dst_idx = dst:idxType;
+    const src_idx = src:idxType;
+    const nElts_idx = nElts:idxType;
+
     if boundsChecking {
       assert(nElts > 0);
-      assert(A.domain.contains(dst..#nElts));
-      assert(A.domain.contains(src..#nElts));
+      // check that the bounds can be safely converted to array indices
+      dst.safeCast(idxType);
+      src.safeCast(idxType);
+      nElts.safeCast(idxType);
+      // check that the domain contains the indices
+      assert(A.domain.contains(dst_idx..#nElts_idx));
+      assert(A.domain.contains(src_idx..#nElts_idx));
     }
+
 
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(ptrTo(A[dst]), ptrTo(A[src]), size);
+      memcpy(ptrTo(A[dst_idx]), ptrTo(A[src_idx]), size);
     } else {
-      var ok = chpl__bulkTransferArray(/*dst*/ A, {dst..#nElts},
-                                       /*src*/ A, {src..#nElts});
+      var ok = chpl__bulkTransferArray(/*dst*/ A,
+                                       {dst_idx..#nElts_idx},
+                                       /*src*/ A,
+                                       {src_idx..#nElts_idx});
       if !ok {
         halt("bulk transfer failed in sorting");
         foreach i in 0..#nElts {
-          __primitive("=", A[dst+i], A[src+i]);
+          __primitive("=", A[dst_idx+i:idxType], A[src_idx+i:idxType]);
         }
       }
     }
@@ -2053,24 +2092,38 @@ module ShallowCopy {
     // Ideally this would just be
     //DstA[dst..#nElts] = SrcA[src..#nElts];
 
+    const dst_idx = dst:DstA.idxType;
+    const src_idx = src:SrcA.idxType;
+    const nElts_dst_idx = nElts:DstA.idxType;
+    const nElts_src_idx = nElts:SrcA.idxType;
+
     if boundsChecking {
       assert(nElts > 0);
-      assert(DstA.domain.contains(dst..#nElts));
-      assert(SrcA.domain.contains(src..#nElts));
+      // check that the bounds can be safely converted to array indices
+      dst.safeCast(DstA.idxType);
+      src.safeCast(SrcA.idxType);
+      nElts.safeCast(DstA.idxType);
+      nElts.safeCast(SrcA.idxType);
+      // check that the domain contains the indices
+      assert(DstA.domain.contains(dst_idx..#nElts_dst_idx));
+      assert(SrcA.domain.contains(src_idx..#nElts_src_idx));
     }
+
 
     if DstA._instance.isDefaultRectangular() &&
        SrcA._instance.isDefaultRectangular() {
       type st = __primitive("static field type", DstA._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
-      memcpy(ptrTo(DstA[dst]), ptrToConst(SrcA[src]), size);
+      memcpy(ptrTo(DstA[dst_idx]), ptrToConst(SrcA[src_idx]), size);
     } else {
-      var ok = chpl__bulkTransferArray(/*dst*/ DstA, {dst..#nElts},
-                                       /*src*/ SrcA, {src..#nElts});
+      var ok = chpl__bulkTransferArray(/*dst*/ DstA,
+                                       {dst_idx..#nElts_dst_idx},
+                                       /*src*/ SrcA,
+                                       {src_idx..#nElts_src_idx});
       if !ok {
         halt("bulk transfer failed in sorting");
-        foreach i in 0..#nElts {
-          __primitive("=", DstA[dst+i], SrcA[src+i]);
+        foreach i in 0..#nElts_dst_idx {
+          __primitive("=", DstA[dst_idx+i], SrcA[src_idx+i:SrcA.idxType]);
         }
       }
     }
@@ -2461,6 +2514,7 @@ module TwoArrayPartitioning {
     if debug then
       writeln("bucketize ", start_n..end_n, " startbit=", startbit);
 
+    type idxType = dst.idxType;
     const nBuckets = state.bucketizer.getNumBuckets();
     const n = end_n - start_n + 1;
     const nTasks = if n >= state.nTasks then state.nTasks else 1;
@@ -2545,7 +2599,7 @@ module TwoArrayPartitioning {
         if debug {
           writeln("tid ", tid, " dst[", next, "] = src[", i, "] bin ", bin);
         }
-        ShallowCopy.shallowCopy(dst, next, src, i, 1);
+        ShallowCopy.shallowCopy(dst, next, src, i:idxType, 1:idxType);
         next += 1;
       }
     }
@@ -2637,7 +2691,7 @@ module TwoArrayPartitioning {
       return;
 
     if end_n - start_n < state.baseCaseSize {
-      ShellSort.shellSortMoveElts(A, criterion, start=start_n, end=end_n);
+      ShellSort.shellSortMoveEltsIntIdx(A, criterion, start=start_n, end=end_n);
       return;
     }
 
@@ -2764,7 +2818,7 @@ module TwoArrayPartitioning {
         // Because of this, it matters to use a radix sort here.
         // It also seems to matter to use an in-place algorithm here,
         // but I am not completely confident of that.
-        msbRadixSort(A, task.start, taskEnd,
+        msbRadixSort(A, task.start:A.idxType, taskEnd:A.idxType,
                      criterion,
                      task.startbit, state.endbit,
                      settings=new MSBRadixSortSettings(alwaysSerial=true));
@@ -2801,7 +2855,7 @@ module TwoArrayPartitioning {
                        compat, criterion,
                        startbit);
         } else {
-          ShellSort.shellSortMoveElts(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
+          ShellSort.shellSortMoveEltsIntIdx(A.localSlice(curDomain), criterion, start=start_n, end=end_n);
         }
       }
     } else {
@@ -2819,7 +2873,7 @@ module TwoArrayPartitioning {
                      compat, criterion,
                      startbit);
       } else {
-        ShellSort.shellSortMoveElts(LocalA, criterion, start=start_n, end=end_n);
+        ShellSort.shellSortMoveEltsIntIdx(LocalA, criterion, start=start_n, end=end_n);
       }
       // Copy it back
       ShallowCopy.shallowCopy(A, start_n, LocalA, start_n, size);
@@ -3311,7 +3365,8 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
 
-      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+      partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
+                                       Data.domain.high.safeCast(int),
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3329,7 +3384,8 @@ module TwoArrayRadixSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low, Data.domain.high,
+                                       Data.domain.low.safeCast(int),
+                                       Data.domain.high.safeCast(int),
                                        Data, Scratch,
                                        state1, state2,
                                        comparator, 0);
@@ -3370,7 +3426,8 @@ module TwoArraySampleSort {
         baseCaseSize=baseCaseSize,
         endbit=endbit);
 
-      partitioningSortWithScratchSpace(Data.domain.low, Data.domain.high,
+      partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
+                                       Data.domain.high.safeCast(int),
                                        Data, Scratch,
                                        state, comparator, 0);
     } else {
@@ -3382,7 +3439,8 @@ module TwoArraySampleSort {
         endbit=endbit);
 
       distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low, Data.domain.high,
+                                       Data.domain.low.safeCast(int),
+                                       Data.domain.high.safeCast(int),
                                        Data, Scratch,
                                        state, comparator, 0);
     }
@@ -3443,7 +3501,8 @@ module MSBRadixSort {
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
-      ShellSort.shellSortMoveElts(A, criterion, start=start_n,
+      ShellSort.shellSortMoveElts(A, criterion,
+                                  start=start_n,
                                   end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
