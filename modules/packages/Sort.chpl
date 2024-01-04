@@ -1958,7 +1958,7 @@ module RadixSortHelp {
 
     // yields (index, bucket index) for A[start_n..end_n]
     iter classify(A, start_n, end_n, criterion, startbit) {
-      type idxType = A.idxType;
+      type idxType = if isArray(A) then A.idxType else int;
       var cur = start_n;
       while cur <= end_n-(classifyUnrollFactor-1) {
         for /*param*/ j in 0..classifyUnrollFactor-1 {
@@ -3465,30 +3465,15 @@ module TwoArraySampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    if Data._instance.isDefaultRectangular() {
-      var state = new TwoArrayBucketizerSharedState(
-        bucketizer=new SampleBucketizer(Data.eltType),
-        baseCaseSize=baseCaseSize,
-        endbit=endbit);
+    var state = new TwoArrayBucketizerSharedState(
+      bucketizer=new SampleBucketizer(Data.eltType),
+      baseCaseSize=baseCaseSize,
+      endbit=endbit);
 
-      partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
-                                       Data.domain.high.safeCast(int),
-                                       Data, Scratch,
-                                       state, comparator, 0);
-    } else {
-      var state = new TwoArrayDistributedBucketizerSharedState(
-        bucketizerType=SampleBucketizer(Data.eltType),
-        numLocales=Data.targetLocales().size,
-        baseCaseSize=baseCaseSize,
-        distributedBaseCaseSize=distributedBaseCaseSize,
-        endbit=endbit);
-
-      distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low.safeCast(int),
-                                       Data.domain.high.safeCast(int),
-                                       Data, Scratch,
-                                       state, comparator, 0);
-    }
+    partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
+                                     Data.domain.high.safeCast(int),
+                                     Data, Scratch,
+                                     state, comparator, 0);
 
     _do_destroy_array(Scratch, deinitElts=false);
   }
