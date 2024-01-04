@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -361,7 +361,12 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
+static bool fDynoGenLibProvided = false;
+bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
+
+bool fResolveConcreteFns = false;
+bool fIdBasedMunging = false;
 
 bool fNoIOGenSerialization = false;
 bool fNoIOSerializeWriteThis = false;
@@ -676,7 +681,7 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   std::vector<std::string> fNames;
   splitString(std::string(arg), fNames, ",");
   for (std::size_t i = 0; i < fNames.size(); ++i) {
-    addNameToPrintLlvmIr(fNames[i].c_str());
+    addNameToPrintLlvmIrRequestedNames(fNames[i].c_str());
   }
 }
 
@@ -1189,6 +1194,20 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
+
+  // note that --dyno-gen-lib was provided
+  fDynoGenLibProvided = true;
+}
+
+static
+void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibOutput = "chpl_standard.dyno";
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
 }
 
 /*
@@ -1449,6 +1468,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
  {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
+ {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
@@ -1487,7 +1507,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+ {"resolve-concrete-fns", ' ', NULL, "Enable [disable] resolving concrete functions",  "N", &fResolveConcreteFns, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
  {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
@@ -1615,7 +1637,12 @@ static void printStuff(const char* argv0) {
     clean_exit(status);
   }
 
-  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  // show usage if no files were provided
+  bool missingAnyFile = sArgState.nfile_arguments < 1;
+  // except with --dyno-gen-std, no files need to be provided
+  if (fDynoGenStdLib) missingAnyFile = false;
+
+  if (fPrintHelp || (!printedSomething && missingAnyFile)) {
     if (printedSomething) printf("\n");
 
     usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
@@ -1624,7 +1651,7 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printedSomething && sArgState.nfile_arguments < 1) {
+  if (printedSomething && missingAnyFile) {
     shouldExit       = true;
   }
 
@@ -2052,6 +2079,9 @@ static void checkGenLibNotLLVM() {
   if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
     USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
   }
+  if (fIdBasedMunging && !fLlvmCodegen) {
+    USR_FATAL("--munge-with-ids only works with the LLVM backend");
+  }
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -2470,7 +2500,18 @@ int main(int argc, char* argv[]) {
       if (fRunlldb) runCompilerInLLDB(argc, argv);
     }
 
-    assertSourceFilesFound();
+    if (!fDynoGenStdLib) {
+      assertSourceFilesFound();
+    } else {
+      // --dyno-gen-std should not be used with --dyno-gen-lib
+      if (fDynoGenLibProvided) {
+        USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
+      }
+      // there should be no input files for --dyno-gen-std
+      if (nthFilename(0) != nullptr) {
+        USR_FATAL("file arguments not allowed with --dyno-gen-std");
+      }
+    }
 
     runPasses(tracker);
   }

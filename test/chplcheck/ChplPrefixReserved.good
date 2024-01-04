@@ -1,3 +1,6 @@
+ChplPrefixReserved.chpl:2: node violates rule CamelOrPascalCaseVariables
 ChplPrefixReserved.chpl:2: node violates rule ChplPrefixReserved
+ChplPrefixReserved.chpl:3: node violates rule CamelCaseFunctions
 ChplPrefixReserved.chpl:3: node violates rule ChplPrefixReserved
+ChplPrefixReserved.chpl:4: node violates rule CamelCaseRecords
 ChplPrefixReserved.chpl:4: node violates rule ChplPrefixReserved

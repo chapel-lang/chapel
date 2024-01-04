@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -940,12 +940,10 @@ extern llvmStageNum_t llvmPrintIrStageNum;
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
-void addNameToPrintLlvmIr(const char* name);
-void addCNameToPrintLlvmIr(const char* name);
+void addNameToPrintLlvmIrRequestedNames(const char* name);
 
-bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
-bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM

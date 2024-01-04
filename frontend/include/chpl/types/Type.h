@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -23,6 +23,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/types/TypeTag.h"
+#include "chpl/uast/Pragma.h"
 
 #include <deque>
 
@@ -218,6 +219,9 @@ class Type {
       but the language design does not insist that they are.
    */
   bool isUserRecordType() const;
+
+  /** Returns true if the this type has the pragma 'p' attached to it. */
+  bool hasPragma(Context* context, uast::pragmatags::PragmaTag p) const;
 
   /** If 'this' is a CompositeType, return it.
       If 'this' is a ClassType, return the basicClassType.

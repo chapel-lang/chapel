@@ -1,0 +1,42 @@
+#!/usr/bin/env python3
+
+"""Check Chapel compiler for 'inappropriate' function calls
+
+Check for exit routines (should call clean_exit instead).
+"""
+
+import os
+import sys
+import look_for_calls
+
+chplenv_dir = os.path.join(os.path.dirname(__file__), '..', 'chplenv')
+sys.path.insert(0, os.path.abspath(chplenv_dir))
+
+from chpl_home_utils import get_chpl_home
+
+
+def main():
+    """Check compiler for bad function calls"""
+    chpl_home = get_chpl_home()
+    compiler_dir = os.path.join(chpl_home, 'compiler')
+    frontend_dir = os.path.join(chpl_home, 'frontend')
+
+    # Check compiler for exit calls
+    exit_exclude_paths = ['compiler/util/misc.cpp',
+                          'frontend/include/chpl/resolution/ResolvedVisitor.h',
+                          'frontend/include/chpl/uast/AstNode.h',
+                          'frontend/lib/parsing/flex-chpl-lib.cpp',
+                          # and frontend/test can use exit
+                          'frontend/test/',
+                         ]
+    exit_funcs = look_for_calls.get_exit_funcs()
+    found1 = look_for_calls.check_for_calls(exit_funcs,
+                                            compiler_dir,
+                                            exit_exclude_paths)
+    found2 = look_for_calls.check_for_calls(exit_funcs,
+                                            frontend_dir,
+                                            exit_exclude_paths)
+    return found1 or found2
+
+if __name__ == "__main__":
+    sys.exit(main())

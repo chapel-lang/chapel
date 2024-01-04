@@ -88,7 +88,9 @@ chpldoc-venv: FORCE
 	cd chpl-venv && $(MAKE) chpldoc-venv
 
 c2chapel-venv: FORCE
-	cd chpl-venv && $(MAKE) c2chapel-venv
+	@if [ -z "$$CHPL_DONT_BUILD_C2CHAPEL_VENV" ]; then \
+	cd chpl-venv && $(MAKE) c2chapel-venv; \
+	fi
 
 chapel-py-venv: FORCE
 	cd chpl-venv && $(MAKE) chapel-py-venv

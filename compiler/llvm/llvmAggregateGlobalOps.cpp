@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -296,6 +296,23 @@ static bool IsPointerOffset(Value *Ptr1, Value *Ptr2, int64_t &Offset,
 
 #endif
 
+static chpl::optional<int64_t> getPointerOffset(Value *Ptr1,
+                                               Value *Ptr2,
+                                               const DataLayout &DL) {
+  chpl::optional<int64_t> optOffset;
+#if HAVE_LLVM_VER >= 170
+  optOffset = Ptr2->getPointerOffsetFrom(Ptr1, DL);
+#elif HAVE_LLVM_VER >= 100
+  optOffset = isPointerOffset(Ptr1, Ptr2, DL);
+#else
+  int64_t Offset;
+  if (IsPointerOffset(Ptr1, Ptr2, Offset, DL))
+    optOffset = Offset;
+#endif
+  return optOffset;
+}
+
+
 struct MemOpRange { // from MemsetRange in MemCpyOptimizer
   // Start/End - A semi range that describes the span that this range covers.
   // The range is closed at the start and open at the end: [Start, End).
@@ -554,17 +571,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextStore->isSimple()) break;
 
       // Check to see if this store is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 100
+
       chpl::optional<int64_t> optOffset =
-        isPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
+        getPointerOffset(StartPtr, NextStore->getPointerOperand(), *DL);
       if (!optOffset)
         break;
       int64_t Offset = *optOffset;
-#else
-      int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextStore->getPointerOperand(), Offset, *DL))
-        break;
-#endif
 
       Ranges.addStore(Offset, NextStore);
       bbPos[NextStore] = pos;
@@ -573,17 +585,11 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
       if (!NextLoad->isSimple()) break;
 
       // Check to see if this load is to a constant offset from the start ptr.
-#if HAVE_LLVM_VER >= 100
       chpl::optional<int64_t> optOffset =
-        isPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
+        getPointerOffset(StartPtr, NextLoad->getPointerOperand(), *DL);
       if (!optOffset)
         break;
       int64_t Offset = *optOffset;
-#else
-      int64_t Offset;
-      if (!IsPointerOffset(StartPtr, NextLoad->getPointerOperand(), Offset, *DL))
-        break;
-#endif
 
       Ranges.addLoad(Offset, NextLoad);
       bbPos[NextLoad] = pos;
@@ -722,17 +728,12 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
 
         int64_t offset = 0;
 
-#if HAVE_LLVM_VER >= 100
         chpl::optional<int64_t> optOffset =
-          isPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
+          getPointerOffset(StartPtr, oldStore->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
         assert(offset >= 0);
-#else
-        bool ok = IsPointerOffset(StartPtr, oldStore->getPointerOperand(),
-                                  offset, *DL);
-        assert(ok && offset >= 0); // we used this before, didn't we?
-#endif
+
         assert(!(oldStore->isVolatile() || oldStore->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);
@@ -822,17 +823,13 @@ Instruction *AggregateGlobalOpsOpt::tryAggregating(Instruction *StartInst, Value
            SE = Range.TheStores.end(); SI != SE; ++SI) {
         LoadInst* oldLoad = cast<LoadInst>(*SI);
         int64_t offset = 0;
-#if HAVE_LLVM_VER >= 100
+
         chpl::optional<int64_t> optOffset =
-          isPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
+          getPointerOffset(StartPtr, oldLoad->getPointerOperand(), *DL);
         assert(!!optOffset);
         offset = *optOffset;
         assert(offset >= 0);
-#else
-        bool ok = IsPointerOffset(StartPtr, oldLoad->getPointerOperand(),
-                                  offset, *DL);
-        assert(ok && offset >= 0); // we used this before, didn't we?
-#endif
+
         assert(!(oldLoad->isVolatile() || oldLoad->isAtomic()));
 
         Constant* offsetC = ConstantInt::get(sizeTy, offset, true);

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -249,7 +249,9 @@ static void setRecordCopyableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_INIT_EQUAL_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
       if (AggregateType* eltTypeAt = toAggregateType(eltType)) {
@@ -308,7 +310,9 @@ static void setRecordAssignableFlags(AggregateType* at) {
   if (!ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_CONST) &&
       !ts->hasFlag(FLAG_TYPE_ASSIGN_FROM_REF)) {
 
-    if (isNonNilableOwned(at)) {
+    if (at->isGeneric() && !at->isGenericWithDefaults()) {
+      // do nothing for this case
+    } else if (isNonNilableOwned(at)) {
       // do nothing for this case
     } else if (Type* eltType = arrayElementType(at)) {
 
@@ -1966,7 +1970,7 @@ static Expr* preFoldPrimOp(CallExpr* call) {
     Type* type = se->getValType();
 
     if (se->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-      USR_FATAL_CONT(call, "can't apply '.type' to a type (%s)",
+      USR_FATAL_CONT(call, "can't apply '.type' to a type ('%s')",
                      toString(se->typeInfo()));
     } else if (type->symbol->hasFlag(FLAG_HAS_RUNTIME_TYPE)) {
       retval = new CallExpr("chpl__convertValueToRuntimeType",

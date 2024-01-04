@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -85,7 +85,7 @@ public:
   // Report out total times by pass group, with differing behavior based on the
   // provided argument:
   // - nullptr: Ignore it and report as normal.
-  // - empty list: Instead insert times into it and skip outputing.
+  // - empty list: Instead insert times into it and skip outputting.
   // - non-empty list: Take the values as already-recorded times and report
   // them out. They are assumed to represent pass group times in order, with
   // missing values meaning that pass group did not occur (early exit).

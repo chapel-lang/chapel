@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -999,7 +999,7 @@ module BytesStringCommon {
 
         if curMargin == '':t {
           // An unindented non-empty line means no margin exists, return early
-          margin = '';
+          margin = '':t;
           break;
         } else if margin == '':t {
           // Initialize margin

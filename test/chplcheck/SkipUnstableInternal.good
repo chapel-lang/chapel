@@ -1,0 +1,3 @@
+SkipUnstableInternal.chpl:14: node violates rule CamelCaseRecords
+SkipUnstableInternal.chpl:15: node violates rule CamelOrPascalCaseVariables
+SkipUnstableInternal.chpl:16: node violates rule CamelCaseFunctions

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -478,10 +478,6 @@ ParserContext::buildPragmaStmt(YYLTYPE loc, CommentsAndStmt cs) {
     // Clean up the attribute parts.
     resetAttributeGroupPartsState();
   } else {
-    // CHPL_ASSERT(numAttributesBuilt == 0);
-    if(cs.stmt)
-      CHPL_ASSERT(hasAttributeGroupParts);
-
     // TODO: The original builder also states the first pragma.
     CHPL_PARSER_REPORT(this, CannotAttachPragmas, loc, cs.stmt);
 

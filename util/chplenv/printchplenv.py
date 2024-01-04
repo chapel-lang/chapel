@@ -445,8 +445,6 @@ def printchplenv(contents, print_filters=None, print_format='pretty'):
                 value += '-debug'
             elif env.name == 'CHPL_TASKS' and chpl_tasks_debug.get() == 'debug':
                 value += '-debug'
-        if env.name == 'CHPL_LOCALE_MODEL' and value == 'numa' and print_format == 'pretty':
-                value += ' (deprecated)'
         ret.append(print_var(env.name, value, shortname=env.shortname))
 
     # Handle special formatting case for --path

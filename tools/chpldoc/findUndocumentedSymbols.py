@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -345,12 +345,33 @@ def get_files(files: List[str]) -> Generator:
 
 def main(raw_args: List[str]) -> int:
     a = ap.ArgumentParser()
-    a.add_argument("files", nargs="*")
-    a.add_argument("--ignore-deprecated", action="store_true", default=False)
-    a.add_argument("--ignore-unstable", action="store_true", default=False)
+    a.add_argument(
+        "files",
+        nargs="*",
+        help="a list of Chapel files and/or directories to be searched",
+    )
+    a.add_argument(
+        "--ignore-deprecated",
+        action="store_true",
+        default=False,
+        help="don't report warnings for deprecated symbols",
+    )
+    a.add_argument(
+        "--ignore-unstable",
+        action="store_true",
+        default=False,
+        help="don't report warnings for unstable symbols",
+    )
+    # hidden option, converts warnings to errors to be used in a ci
+    a.add_argument("--ci", action="store_true", default=False, help=ap.SUPPRESS)
+
     args = a.parse_args(raw_args)
     flags = vars(args)
     files = flags.pop("files")
+    ci = flags.pop("ci")
+
+    report_kind = "warning" if not ci else "error"
+    ret_code = 0
 
     curdir = os.path.abspath(os.path.curdir)
 
@@ -365,9 +386,10 @@ def main(raw_args: List[str]) -> int:
             path = os.path.relpath(loc.path(), curdir)
             names = get_node_name(sym)
             for name in names:
-                print(f"warning: '{name}' at {path}:{line} is undocumented")
+                print(f"{report_kind}: '{name}' at {path}:{line} is undocumented")
+                ret_code = 1 if ci else 0
 
-    return 0
+    return ret_code
 
 
 if __name__ == "__main__":

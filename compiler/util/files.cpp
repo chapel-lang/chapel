@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -510,6 +510,15 @@ void addSourceFiles(int numNewFilenames, const char* filename[]) {
         additionalFilenamesListFilename,
         std::vector<const char*>(inputFilenames + firstAddedIdx,
                                  inputFilenames + cursor));
+  }
+
+
+  // turn on ID-based munging if any .dyno files are present
+  int i = 0;
+  while (auto fname = nthFilename(i++)) {
+    if (isDynoLib(fname)) {
+      fIdBasedMunging = true;
+    }
   }
 }
 

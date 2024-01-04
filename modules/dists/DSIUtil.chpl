@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -51,7 +51,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   param rank=ranges.size;
   type EC = uint; // type for element counts
   var numElems = 1:EC;
-  for param i in 0..rank-1 do {
+  for param i in 0..rank-1 {
     numElems *= ranges(i).sizeAs(EC);
   }
 
@@ -65,7 +65,7 @@ proc _computeChunkStuff(maxTasks, ignoreRunning, minSize, ranges,
   var maxDim = -1;
   var maxElems = min(EC);
   // break/continue don't work with param loops (known future)
-  for /* param */ i in 0..rank-1 do {
+  for /* param */ i in 0..rank-1 {
     const curElems = ranges(i).sizeAs(EC);
     if curElems >= numChunks:EC {
       parDim = i;

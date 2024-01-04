@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -2051,8 +2051,9 @@ proc file.unlock() {
 */
 
 @chpldoc.nodoc
-proc file.filePlugin() : QioPluginFile? {
-  return qio_file_get_plugin(this._channel_internal);
+proc file.filePlugin() : borrowed QioPluginFile? {
+  var vptr = qio_file_get_plugin(this._file_internal);
+  return vptr:borrowed QioPluginFile?;
 }
 
 // File style cannot be modified after the file is created;
@@ -8722,12 +8723,12 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   buffering mechanism.
 
   This optimization is on by default as it can improve performance for large
-  operations where buffering doesn't segnificantly reduce the number of system
+  operations where buffering doesn't significantly reduce the number of system
   I/O calls and thus adds unnecessary overhead.
 
   To disable the optimization, compile with ``-sIOSkipBufferingForLargeOps=false``.
 
-  Note that this is flag controlls an implementation-specific feature and
+  Note that this flag controls an implementation-specific feature and
   thus is not part of the Chapel language specification.
 */
 @unstable("IOSkipBufferingForLargeOps is unstable and could change or be removed in the future")
@@ -9933,57 +9934,6 @@ proc file.fstype():int throws {
   }
   if err then try ioerror(err, "in file.fstype()");
   return t:int;
-}
-
-/*
-   Returns the 'best' locale to run something working with the region
-   of the file in start..end-1.
-
-   This *must* return the same result when called from different locales.
-   Returns a domain of locales that are "best" for the given region. If no
-   locales are "best" we return a domain containing all locales.
-
-   :arg start: the file offset (starting from 0) where the region begins
-   :arg end: the file offset just after the region
-   :returns: a set of locales that are best for working with this region
-   :rtype: domain(locale)
- */
-@deprecated(notes="file.localesForRegion is deprecated")
-proc file.localesForRegion(start:int(64), end:int(64)) {
-
-  proc findloc(loc:string, locs:c_ptr(c_ptrConst(c_char)), end:int) {
-    for i in 0..end-1 {
-      if (loc == locs[i]) then
-        return true;
-    }
-    return false;
-  }
-
-  var ret: domain(locale);
-  on this._home {
-    var err:errorCode;
-    var locs: c_ptr(c_ptrConst(c_char));
-    var num_hosts:c_int;
-    err = qio_locales_for_region(this._file_internal, start, end, c_ptrTo(locs), num_hosts);
-    // looping over Locales enforces the ordering constraint on the locales.
-    for loc in Locales {
-      if (findloc(loc.name, locs, num_hosts:int)) then
-        ret += loc;
-    }
-
-    // We allocated memory in the runtime for this, so free it now
-    if num_hosts != 0 {
-      for i in 0..num_hosts-1 do
-        deallocate(locs[i]);
-      deallocate(locs);
-    }
-
-    // We found no "good" locales. So any locale is just as good as the next
-    if ret.size == 0 then
-      for loc in Locales do
-        ret += loc;
-  }
-  return ret;
 }
 
 

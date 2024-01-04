@@ -42,7 +42,10 @@ for using Chapel:
     are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
-    :ref:`readme-chplenv.CHPL_LLVM`).
+    :ref:`readme-chplenv.CHPL_LLVM`). LLVM 16 support is avaible with certain
+    configurations. If LLVM 16 is the only system-wide install of LLVM, it will
+    be used by default. Otherwise you can opt-in to it explicitly by setting
+    :ref:`readme-chplenv.CHPL_LLVM_CONFIG`.
 
 In addition, several optional components have additional requirements:
 
@@ -85,16 +88,17 @@ We have used the following commands to install the above prerequisites:
       sudo dnf install llvm-devel clang clang-devel
 
 
-  * Alpine 3.17 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+  * Alpine 3.17::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm-dev clang-dev clang-static llvm-static
 
 
-  * Alpine 3.18 (but note `Alpine CHPL_TASKS=qthreads incompatability`_)::
+  * Alpine 3.18, 3.19 (but note `Alpine 3.19 LLVM build issue`_)::
 
       sudo apk add gcc g++ m4 perl python3 python3-dev bash make gawk git cmake
       sudo apk add llvm15-dev clang15-dev llvm15-static clang15-static
+
 
   * Amazon Linux 2::
 
@@ -207,14 +211,16 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
+
 Compatability Notes
 -------------------
 
-Alpine CHPL_TASKS=qthreads incompatability
-++++++++++++++++++++++++++++++++++++++++++
+Alpine 3.19 LLVM build issue
+++++++++++++++++++++++++++++
 
-Qthreads does not currently build on Alpine, although Chapel does
-work on Alpine with the quickstart configuration or ``CHPL_TASKS=fifo``.
+We have observed problems building the bundled LLVM support library on
+Alpine 3.19. These problems can be resolved by installing a compatible
+LLVM package.
 
 CentOS 7 CHPL_LLVM=system incompatability
 +++++++++++++++++++++++++++++++++++++++++
