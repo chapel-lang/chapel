@@ -3293,7 +3293,8 @@ module TwoArrayRadixSort {
 
     // Allocate the Scratch array.
     pragma "no auto destroy"
-    var Scratch: Data.type = noinit;
+    var Scratch: Data.type =
+      Data.domain.buildArray(Data.eltType, initElts=false);
 
     if Data._instance.isDefaultRectangular() {
       var state = new TwoArrayBucketizerSharedState(
@@ -3353,7 +3354,8 @@ module TwoArraySampleSort {
 
     // Allocate the Scratch array.
     pragma "no auto destroy"
-    var Scratch: Data.type;
+    var Scratch: Data.type =
+      Data.domain.buildArray(Data.eltType, initElts=false);
 
     if Data._instance.isDefaultRectangular() {
       var state = new TwoArrayBucketizerSharedState(
