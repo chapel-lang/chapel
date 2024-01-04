@@ -20,7 +20,7 @@ proc simpletestcore(input:[]) {
     writef("input %xt\n", input);
   }
 
-  TwoArrayRadixSort.twoArrayRadixSort(A, defaultComparator);
+ TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(A, defaultComparator);
 
   if debug {
     writef("output %xt\n", A);

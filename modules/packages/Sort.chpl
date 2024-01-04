@@ -1548,6 +1548,8 @@ module SampleSortHelp {
   record SampleBucketizer : writeSerializable {
     type eltType;
 
+    proc isSampleSort param do return true;
+
     // filled from 1 to num_buckets_
     var storage: c_array(eltType, 1<<maxLogBuckets);
     // filled from 0 to num_buckets, last one is duplicated
@@ -1934,6 +1936,8 @@ module RadixSortHelp {
   }
 
   record RadixBucketizer {
+    proc isSampleSort param do return false;
+
     proc getNumBuckets() {
       return (1 << RADIX_BITS) + 2; // +2 for end-before and end-after bins
     }
@@ -2259,15 +2263,13 @@ module SequentialInPlacePartitioning {
 
 @chpldoc.nodoc
 module TwoArrayPartitioning {
-  private use BlockDist;
   private use Math;
   public use List only list;
   import Sort.{ShellSort, MSBRadixSort, QuickSort};
-  import Sort.{RadixSortHelp, SampleSortHelp, ShallowCopy};
+  import Sort.{RadixSortHelp, ShallowCopy};
   use MSBRadixSort;
 
   private param debug = false;
-  private param debugDist = false;
   param maxBuckets = 512;
 
   record TwoArraySortTask {
@@ -2287,113 +2289,6 @@ module TwoArrayPartitioning {
       this.doSort = doSort;
     }
   }
-
-  record TwoArrayDistSortPerBucketTaskStartComparator {
-    proc key(arg: TwoArrayDistSortPerBucketTask) {
-      return arg.start;
-    }
-  }
-
-  record TwoArrayDistSortPerBucketTask {
-    var start: int;
-    var size: int;
-    var startbit: int; // could be moved to TwoArrayDistSortTask
-
-    var firstLocaleId: int;
-    var lastLocaleId: int;
-    var useSecondState: bool;
-
-    proc isEmpty() {
-      return size == 0;
-    }
-
-    // create an easy-to-identify empty task
-    proc init() {
-      this.start = -1;
-      this.size = 0;
-      this.startbit = max(int);
-      this.firstLocaleId = max(int);
-      this.lastLocaleId = -1;
-      this.useSecondState = false;
-    }
-    // To make sure all fields are specified
-    proc init(start:int, size:int, startbit:int,
-              firstLocaleId:int, lastLocaleId:int,
-              useSecondState:bool) {
-      this.start = start;
-      this.size = size;
-      this.startbit = startbit;
-      this.firstLocaleId = firstLocaleId;
-      this.lastLocaleId = lastLocaleId;
-      this.useSecondState = useSecondState;
-    }
-    proc nLocales() {
-      return lastLocaleId - firstLocaleId + 1;
-    }
-    // yields tuples of (loc, tid) for the locales involved with this bucket
-    iter localeAndIds(A) {
-      const ref tgtLocs = A.targetLocales();
-      foreach tid in firstLocaleId..lastLocaleId {
-        const loc = tgtLocs[tid];
-        yield (loc, tid);
-      }
-    }
-    // yield the other ids but do so in an order that depends on myId
-    //  myId + 1 will be the first id.
-    iter otherIds(myId) {
-      const nIds = lastLocaleId-firstLocaleId+1;
-      foreach i in 1..#nIds {
-        yield firstLocaleId + ((myId + i) % nIds);
-      }
-    }
-    iter otherIds(param tag: iterKind, myId) where tag == iterKind.standalone {
-      const nIds = lastLocaleId-firstLocaleId+1;
-      forall i in 1..#nIds {
-        yield firstLocaleId + ((myId + i) % nIds);
-      }
-    }
-  }
-
-  record TwoArrayDistSortTask : writeSerializable {
-    var tasks: list(TwoArrayDistSortPerBucketTask);
-
-    // Create an empty one
-    proc init() { }
-    // Create one with just 1 bucket
-    proc init(start:int, size:int, startbit:int,
-              firstLocaleId:int, lastLocaleId:int) {
-      var t = new TwoArrayDistSortPerBucketTask(start, size, startbit,
-                                                firstLocaleId, lastLocaleId,
-                                                false);
-      assert(!t.isEmpty());
-      init this;
-      tasks.pushBack(t);
-    }
-    proc writeThis(f) throws {
-      f.write("TwoArrayDistSortTask");
-      for t in tasks {
-        f.write(" ");
-        f.write(t);
-      }
-    }
-    proc serialize(writer, ref serializer) throws {
-      writeThis(writer);
-    }
-
-    proc isEmpty() {
-      return tasks.isEmpty();
-    }
-    // yield (loc, locId, task) for each non-empty bucket
-    // loc is the locale "owning" the bucket.
-    iter localesAndTasks(A) {
-      foreach t in tasks {
-        const locId = t.firstLocaleId;
-        const loc = A.targetLocales()[locId];
-        yield (loc, locId, t);
-      }
-    }
-  }
-
 
   record TwoArrayBucketizerPerTaskState {
     var localCounts: [0..#maxBuckets] int;
@@ -2449,57 +2344,6 @@ module TwoArrayPartitioning {
       this.baseCaseSize = baseCaseSize;
       this.sequentialSizePerTask = sequentialSizePerTask;
       this.endbit = endbit;
-    }
-  }
-
-  record TwoArrayDistributedBucketizerStatePerLocale {
-    type bucketizerType;
-
-    var compat:TwoArrayBucketizerSharedState(bucketizerType);
-
-    var countsSize:int = numLocales*maxBuckets;
-    // globalCounts stores counts like this:
-    //   count for bin 0, locale 0
-    //   count for bin 0, locale 1
-    //   ...
-    //   count for bin 1, locale 0
-    //   count for bin 1, locale 1
-    // i.e. bin*nTasks + localeId
-    var globalCounts:[0..#countsSize] int;
-    var globalEnds:[0..#countsSize] int;
-  }
-
-  record TwoArrayDistributedBucketizerSharedState {
-    type bucketizerType;
-
-    var numLocales:int;
-    var perLocale = blockDist.createArray(0..#numLocales,
-        TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
-
-    const baseCaseSize:int;
-    const distributedBaseCaseSize:int;
-    const endbit:int = max(int);
-
-    const countsSize:int = numLocales*maxBuckets;
-
-    // globalCounts stores counts like this:
-    //   count for bin 0, locale 0
-    //   count for bin 0, locale 1
-    //   ...
-    //   count for bin 1, locale 0
-    //   count for bin 1, locale 1
-    // i.e. bin*nTasks + localeId
-    var globalCounts:[0..#countsSize] int;
-    var globalEnds:[0..#countsSize] int;
-
-    proc ref postinit() {
-      // Copy some vars to the compat
-      for p in perLocale {
-        p.compat.baseCaseSize = baseCaseSize;
-        p.compat.endbit = endbit;
-        assert(p.compat.nTasks > 0);
-        assert(p.compat.countsSize > 0);
-      }
     }
   }
 
@@ -2625,18 +2469,18 @@ module TwoArrayPartitioning {
   }
 
 
-  private proc partitioningSortWithScratchSpaceHandleSampling(
+ proc partitioningSortWithScratchSpaceHandleSampling(
           start_n:int, end_n:int, ref A:[], ref Scratch:[],
           ref state: TwoArrayBucketizerSharedState,
           criterion, startbit:int):void {
     // If we are doing a sample sort, we need to gather a fresh sample.
     // (Otherwise we'll never be able to solve recursive subproblems,
     //  as if in quicksort we never chose a new pivot).
-    if isSubtype(state.bucketizer.type, SampleSortHelp.SampleBucketizer) {
+    if state.bucketizer.isSampleSort {
       var n = 1 + end_n - start_n;
-      var logNumBuckets = SampleSortHelp.computeLogBucketSize(n);
+      var logNumBuckets = computeLogBucketSize(n);
       var numBuckets = 1 << logNumBuckets;
-      var sampleStep = SampleSortHelp.chooseSampleStep(n, logNumBuckets);
+      var sampleStep = chooseSampleStep(n, logNumBuckets);
       var sampleSize = sampleStep * numBuckets - 1;
 
       if sampleSize >= n {
@@ -2646,7 +2490,7 @@ module TwoArrayPartitioning {
       }
 
       // select the sample
-      SampleSortHelp.putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
+      putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
 
       if debug then
         writeln("recursing to sort the sample");
@@ -2678,7 +2522,6 @@ module TwoArrayPartitioning {
         writef("A %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
       }
     }
-
   }
 
   // Sorts the data in A.
@@ -2831,6 +2674,176 @@ module TwoArrayPartitioning {
       RadixSortHelp.checkSorted(start_n, end_n, A, criterion, startbit);
     }
   }
+}
+
+@chpldoc.nodoc
+module TwoArrayDistributedPartitioning {
+  public use super.TwoArrayPartitioning;
+  private use BlockDist;
+  private use Math;
+  public use List only list;
+  import Sort.{ShellSort, MSBRadixSort, QuickSort};
+  import Sort.{RadixSortHelp, ShallowCopy};
+  use MSBRadixSort;
+
+  private param debugDist = false;
+
+  record TwoArrayDistSortPerBucketTaskStartComparator {
+    proc key(arg: TwoArrayDistSortPerBucketTask) {
+      return arg.start;
+    }
+  }
+
+  record TwoArrayDistSortPerBucketTask {
+    var start: int;
+    var size: int;
+    var startbit: int; // could be moved to TwoArrayDistSortTask
+
+    var firstLocaleId: int;
+    var lastLocaleId: int;
+    var useSecondState: bool;
+
+    proc isEmpty() {
+      return size == 0;
+    }
+
+    // create an easy-to-identify empty task
+    proc init() {
+      this.start = -1;
+      this.size = 0;
+      this.startbit = max(int);
+      this.firstLocaleId = max(int);
+      this.lastLocaleId = -1;
+      this.useSecondState = false;
+    }
+    // To make sure all fields are specified
+    proc init(start:int, size:int, startbit:int,
+              firstLocaleId:int, lastLocaleId:int,
+              useSecondState:bool) {
+      this.start = start;
+      this.size = size;
+      this.startbit = startbit;
+      this.firstLocaleId = firstLocaleId;
+      this.lastLocaleId = lastLocaleId;
+      this.useSecondState = useSecondState;
+    }
+    proc nLocales() {
+      return lastLocaleId - firstLocaleId + 1;
+    }
+    // yields tuples of (loc, tid) for the locales involved with this bucket
+    iter localeAndIds(A) {
+      const ref tgtLocs = A.targetLocales();
+      foreach tid in firstLocaleId..lastLocaleId {
+        const loc = tgtLocs[tid];
+        yield (loc, tid);
+      }
+    }
+    // yield the other ids but do so in an order that depends on myId
+    //  myId + 1 will be the first id.
+    iter otherIds(myId) {
+      const nIds = lastLocaleId-firstLocaleId+1;
+      foreach i in 1..#nIds {
+        yield firstLocaleId + ((myId + i) % nIds);
+      }
+    }
+    iter otherIds(param tag: iterKind, myId) where tag == iterKind.standalone {
+      const nIds = lastLocaleId-firstLocaleId+1;
+      forall i in 1..#nIds {
+        yield firstLocaleId + ((myId + i) % nIds);
+      }
+    }
+  }
+
+  record TwoArrayDistSortTask : writeSerializable {
+    var tasks: list(TwoArrayDistSortPerBucketTask);
+
+    // Create an empty one
+    proc init() { }
+    // Create one with just 1 bucket
+    proc init(start:int, size:int, startbit:int,
+              firstLocaleId:int, lastLocaleId:int) {
+      var t = new TwoArrayDistSortPerBucketTask(start, size, startbit,
+                                                firstLocaleId, lastLocaleId,
+                                                false);
+      assert(!t.isEmpty());
+      init this;
+      tasks.pushBack(t);
+    }
+    proc writeThis(f) throws {
+      f.write("TwoArrayDistSortTask");
+      for t in tasks {
+        f.write(" ");
+        f.write(t);
+      }
+    }
+    proc serialize(writer, ref serializer) throws {
+      writeThis(writer);
+    }
+
+    proc isEmpty() {
+      return tasks.isEmpty();
+    }
+    // yield (loc, locId, task) for each non-empty bucket
+    // loc is the locale "owning" the bucket.
+    iter localesAndTasks(A) {
+      foreach t in tasks {
+        const locId = t.firstLocaleId;
+        const loc = A.targetLocales()[locId];
+        yield (loc, locId, t);
+      }
+    }
+  }
+
+  record TwoArrayDistributedBucketizerStatePerLocale {
+    type bucketizerType;
+
+    var compat:TwoArrayBucketizerSharedState(bucketizerType);
+
+    var countsSize:int = numLocales*maxBuckets;
+    // globalCounts stores counts like this:
+    //   count for bin 0, locale 0
+    //   count for bin 0, locale 1
+    //   ...
+    //   count for bin 1, locale 0
+    //   count for bin 1, locale 1
+    // i.e. bin*nTasks + localeId
+    var globalCounts:[0..#countsSize] int;
+    var globalEnds:[0..#countsSize] int;
+  }
+
+  record TwoArrayDistributedBucketizerSharedState {
+    type bucketizerType;
+
+    var numLocales:int;
+    var perLocale = blockDist.createArray(0..#numLocales,
+        TwoArrayDistributedBucketizerStatePerLocale(bucketizerType));
+
+    const baseCaseSize:int;
+    const distributedBaseCaseSize:int;
+    const endbit:int = max(int);
+
+    const countsSize:int = numLocales*maxBuckets;
+
+    // globalCounts stores counts like this:
+    //   count for bin 0, locale 0
+    //   count for bin 0, locale 1
+    //   ...
+    //   count for bin 1, locale 0
+    //   count for bin 1, locale 1
+    // i.e. bin*nTasks + localeId
+    var globalCounts:[0..#countsSize] int;
+    var globalEnds:[0..#countsSize] int;
+
+    proc ref postinit() {
+      // Copy some vars to the compat
+      for p in perLocale {
+        p.compat.baseCaseSize = baseCaseSize;
+        p.compat.endbit = endbit;
+        assert(p.compat.nTasks > 0);
+        assert(p.compat.countsSize > 0);
+      }
+    }
+  }
 
   private proc distributedPartitioningSortWithScratchSpaceBaseCase(
           start_n:int, end_n:int, ref A:[], ref Scratch:[],
@@ -2879,7 +2892,7 @@ module TwoArrayPartitioning {
       ShallowCopy.shallowCopy(A, start_n, LocalA, start_n, size);
     }
 
-    if debug {
+    if debugDist {
       RadixSortHelp.checkSorted(start_n, end_n, A, criterion);
     }
     return;
@@ -2893,23 +2906,23 @@ module TwoArrayPartitioning {
     // If we are doing a sample sort, we need to gather a fresh sample.
     // (Otherwise we'll never be able to solve recursive subproblems,
     //  as if in quicksort we never chose a new pivot).
-    if isSubtype(state.perLocale[0].compat.bucketizer.type, SampleSortHelp.SampleBucketizer) {
+    if state.perLocale[0].compat.bucketizer.isSampleSort {
       var n = 1 + end_n - start_n;
-      var logNumBuckets = SampleSortHelp.computeLogBucketSize(n);
+      var logNumBuckets = computeLogBucketSize(n);
       var numBuckets = 1 << logNumBuckets;
-      var sampleStep = SampleSortHelp.chooseSampleStep(n, logNumBuckets);
+      var sampleStep = chooseSampleStep(n, logNumBuckets);
       var sampleSize = sampleStep * numBuckets - 1;
 
       if sampleSize >= n {
-        if debug then
+        if debugDist then
           writeln("Reducing sample size because it was too big");
         sampleSize = max(1, n/2);
       }
 
       // select the sample
-      SampleSortHelp.putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
+      putRandomSampleAtArrayStart(start_n, end_n, A, sampleSize);
 
-      if debug then
+      if debugDist then
         writeln("recursing to sort the sample");
 
       // sort the sample
@@ -2926,14 +2939,14 @@ module TwoArrayPartitioning {
                                                     A, Scratch,
                                                     state, criterion, startbit);
       }
-      if debug {
+      if debugDist {
         RadixSortHelp.checkSorted(start_n, start_n + sampleSize - 1, A, criterion, startbit);
       }
 
       createSplittersFromSample(A,
                                 state.perLocale[0].compat.bucketizer, criterion,
                                 start_n, sampleSize, sampleStep, numBuckets);
-      if debug {
+      if debugDist {
         writeln("sample bucketizer ", state.perLocale[0].compat.bucketizer);
         writef("A %i %i A=%?\n", start_n, end_n, A[start_n..end_n]);
       }
@@ -3335,6 +3348,7 @@ module TwoArrayPartitioning {
   }
 }
 
+
 @chpldoc.nodoc
 module TwoArrayRadixSort {
   import Sort.defaultComparator;
@@ -3357,44 +3371,75 @@ module TwoArrayRadixSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    if Data._instance.isDefaultRectangular() {
-      var state = new TwoArrayBucketizerSharedState(
-        bucketizer=new RadixBucketizer(),
-        baseCaseSize=baseCaseSize,
-        sequentialSizePerTask=sequentialSizePerTask,
-        endbit=endbit);
+    var state = new TwoArrayBucketizerSharedState(
+      bucketizer=new RadixBucketizer(),
+      baseCaseSize=baseCaseSize,
+      sequentialSizePerTask=sequentialSizePerTask,
+      endbit=endbit);
 
 
-      partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
-                                       Data.domain.high.safeCast(int),
-                                       Data, Scratch,
-                                       state, comparator, 0);
-    } else {
-      var state1 = new TwoArrayDistributedBucketizerSharedState(
-        bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales().size,
-        baseCaseSize=baseCaseSize,
-        distributedBaseCaseSize=distributedBaseCaseSize,
-        endbit=endbit);
-      var state2 = new TwoArrayDistributedBucketizerSharedState(
-        bucketizerType=RadixBucketizer,
-        numLocales=Data.targetLocales().size,
-        baseCaseSize=baseCaseSize,
-        distributedBaseCaseSize=distributedBaseCaseSize,
-        endbit=endbit);
-
-      distributedPartitioningSortWithScratchSpace(
-                                       Data.domain.low.safeCast(int),
-                                       Data.domain.high.safeCast(int),
-                                       Data, Scratch,
-                                       state1, state2,
-                                       comparator, 0);
-    }
+    partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
+                                     Data.domain.high.safeCast(int),
+                                     Data, Scratch,
+                                     state, comparator, 0);
 
     _do_destroy_array(Scratch, deinitElts=false);
   }
 }
 
+@chpldoc.nodoc
+module TwoArrayDistributedRadixSort {
+  import Sort.defaultComparator;
+  private use super.TwoArrayDistributedPartitioning;
+  private use super.RadixSortHelp;
+  private use super.TwoArrayRadixSort;
+
+  proc twoArrayDistributedRadixSort(ref Data:[],
+                                    comparator:?rec=defaultComparator) {
+
+    // just run the local version if Data isn't distributed
+    if Data._instance.isDefaultRectangular() {
+      twoArrayRadixSort(Data, comparator);
+      return;
+    }
+
+    var sequentialSizePerTask=4096;
+    var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
+
+    var endbit:int;
+    endbit = msbRadixSortParamLastStartBit(Data, comparator);
+    if endbit < 0 then
+      endbit = max(int);
+
+    // Allocate the Scratch array.
+    pragma "no auto destroy"
+    var Scratch: Data.type =
+      Data.domain.buildArray(Data.eltType, initElts=false);
+
+    var state1 = new TwoArrayDistributedBucketizerSharedState(
+      bucketizerType=RadixBucketizer,
+      numLocales=Data.targetLocales().size,
+      baseCaseSize=baseCaseSize,
+      distributedBaseCaseSize=distributedBaseCaseSize,
+      endbit=endbit);
+    var state2 = new TwoArrayDistributedBucketizerSharedState(
+      bucketizerType=RadixBucketizer,
+      numLocales=Data.targetLocales().size,
+      baseCaseSize=baseCaseSize,
+      distributedBaseCaseSize=distributedBaseCaseSize,
+      endbit=endbit);
+
+    distributedPartitioningSortWithScratchSpace(
+                                     Data.domain.low.safeCast(int),
+                                     Data.domain.high.safeCast(int),
+                                     Data, Scratch,
+                                     state1, state2,
+                                     comparator, 0);
+
+    _do_destroy_array(Scratch, deinitElts=false);
+  }
+}
 
 @chpldoc.nodoc
 module TwoArraySampleSort {
@@ -3448,6 +3493,56 @@ module TwoArraySampleSort {
     _do_destroy_array(Scratch, deinitElts=false);
   }
 }
+
+@chpldoc.nodoc
+module TwoArrayDistributedSampleSort {
+  import Sort.defaultComparator;
+  private use super.TwoArrayPartitioning;
+  private use super.SampleSortHelp;
+  private use super.RadixSortHelp;
+  private use super.TwoArraySampleSort;
+
+  private use CTypes;
+
+  proc twoArrayDistributedSampleSort(ref Data:[],
+                                     comparator:?rec=defaultComparator) {
+
+    // just run the local version if Data isn't distributed
+    if Data._instance.isDefaultRectangular() {
+      twoArraySampleSort(Data, comparator);
+      return;
+    }
+
+    var baseCaseSize=16;
+    var distributedBaseCaseSize=1024;
+
+    var endbit:int;
+    endbit = msbRadixSortParamLastStartBit(Data, comparator);
+    if endbit < 0 then
+      endbit = max(int);
+
+    // Allocate the Scratch array.
+    pragma "no auto destroy"
+    var Scratch: Data.type =
+      Data.domain.buildArray(Data.eltType, initElts=false);
+
+    var state = new TwoArrayDistributedBucketizerSharedState(
+      bucketizerType=SampleBucketizer(Data.eltType),
+      numLocales=Data.targetLocales().size,
+      baseCaseSize=baseCaseSize,
+      distributedBaseCaseSize=distributedBaseCaseSize,
+      endbit=endbit);
+
+    distributedPartitioningSortWithScratchSpace(
+                                     Data.domain.low.safeCast(int),
+                                     Data.domain.high.safeCast(int),
+                                     Data, Scratch,
+                                     state, comparator, 0);
+
+    _do_destroy_array(Scratch, deinitElts=false);
+  }
+}
+
 
 @chpldoc.nodoc
 module InPlacePartitioning {
