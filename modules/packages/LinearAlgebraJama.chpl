@@ -739,7 +739,7 @@ class EigenvalueDecomposition {
 
       var norm = 0.0;
       for i in 1..nn {
-         if (i < low | i > high) {
+         if (i < low || i > high) {
             d[i] = H[i,i];
             e[i] = 0.0;
          }
