@@ -2698,7 +2698,6 @@ static const Type* getCPtrType(Context* context,
     context->error(astForErr,"invalid %s type construction", name.c_str());
     return ErroneousType::get(context);
   } else {
-
     return isConst ? CPtrType::getConst(context, t) :
                      CPtrType::get(context, t);
   }
