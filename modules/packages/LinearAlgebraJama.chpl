@@ -1141,7 +1141,7 @@ class EigenvalueDecomposition {
       // Vectors of isolated roots
 
       for i in 1..nn {
-         if (i < low | i > high) {
+         if (i < low || i > high) {
             for j in i..nn {
                V[i,j] = H[i,j];
             }
