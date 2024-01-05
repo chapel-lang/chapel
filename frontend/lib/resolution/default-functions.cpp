@@ -86,7 +86,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
       if (auto fn = node->toFunction()) {
         if (fn->isMethod() || fn->kind() == Function::Kind::OPERATOR) {
           ResolutionResultByPostorderID r;
-          auto vis = Resolver::createForInitialSignature(context, fn, r);
+          auto vis = Resolver::createForInitialSignature(context, fn, r, {});
           // use receiver for method, first formal for standalone operator
           auto checkFormal =
               (fn->isMethod() ? fn->thisFormal() : fn->formal(0));
@@ -271,15 +271,16 @@ generateInitSignature(Context* context, const CompositeType* inCompType) {
   // now build the other pieces of the typed signature
   bool needsInstantiation = rf.isGeneric();
 
+  // TODO: Compute 'formalsInstantiated'.
   auto ret = TypedFnSignature::get(context,
                                    ufs,
                                    std::move(formalTypes),
                                    TypedFnSignature::WHERE_NONE,
                                    needsInstantiation,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ nullptr,
-                                   /* formalsInstantiated */ Bitmap());
-
+                                   /*instantiatedFrom*/ nullptr,
+                                   /*parentFn*/ nullptr,
+                                   /*outerVariableTypes*/ {},
+                                   /*formalsInstantiated*/ Bitmap());
   return ret;
 }
 
@@ -326,6 +327,7 @@ generateInitCopySignature(Context* context, const CompositeType* inCompType) {
                                    /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
+                                   /* outerVariableTypes */ {},
                                    /* formalsInstantiated */ Bitmap());
 
   return ret;
@@ -361,6 +363,7 @@ generateDeinitSignature(Context* context, const CompositeType* inCompType) {
                                    /*needsInstantiation*/ false,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
+                                   /* outerVariableTypes */ {},
                                    /* formalsInstantiated */ Bitmap());
 
   return ret;
@@ -398,6 +401,7 @@ generateDomainMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
+                                 /* outerVariableTypes */ {},
                                  /* formalsInstantiated */ Bitmap());
 
   return result;
@@ -434,6 +438,7 @@ generateArrayMethod(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
+                                 /* outerVariableTypes */ {},
                                  /* formalsInstantiated */ Bitmap());
 
   return result;
@@ -486,6 +491,7 @@ fieldAccessorQuery(Context* context,
                                  /* needsInstantiation */ false,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
+                                 /* outerVariableTypes */ {},
                                  /* formalsInstantiated */ Bitmap());
 
   return QUERY_END(result);
@@ -615,6 +621,7 @@ generateRecordBinaryOperator(Context* context, UniqueString op,
                                    needsInstantiation,
                                    /* instantiatedFrom */ nullptr,
                                    /* parentFn */ nullptr,
+                                   /* outerVariableTypes */ {},
                                    /* formalsInstantiated */ Bitmap());
 
   return ret;

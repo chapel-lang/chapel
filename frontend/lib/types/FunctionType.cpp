@@ -30,10 +30,12 @@ namespace types {
 using namespace resolution;
 
 const owned<FunctionType>&
-FunctionType::getFunctionType(Context* context, const TypedFnSignature* tfs) {
-  QUERY_BEGIN(getFunctionType, context, tfs);
+FunctionType::getFunctionType(Context* context,
+                              const TypedFnSignature* signature,
+                              QualifiedType returnTypeAndIntent) {
+  QUERY_BEGIN(getFunctionType, context, signature, returnTypeAndIntent);
 
-  auto ufs = tfs->untyped();
+  auto ufs = signature->untyped();
 
   // TODO: Not sure what this would even mean...
   CHPL_ASSERT(!ufs->isTypeConstructor());
@@ -60,26 +62,29 @@ FunctionType::getFunctionType(Context* context, const TypedFnSignature* tfs) {
                                         /*whereClause*/ nullptr);
 
   std::vector<QualifiedType> formalTypes;
-  for (int i = 0; i < tfs->numFormals(); i++) {
-    formalTypes.push_back(tfs->formalType(i));
+  for (int i = 0; i < signature->numFormals(); i++) {
+    formalTypes.push_back(signature->formalType(i));
   }
 
   auto newTfs = TypedFnSignature::get(context, newUfs,
                                       std::move(formalTypes),
                                       TypedFnSignature::WHERE_NONE,
-                                      tfs->needsInstantiation(),
+                                      signature->needsInstantiation(),
                                       /*instantiatedFrom*/ nullptr,
                                       /*parentFn*/ nullptr,
-                                      tfs->formalsInstantiatedBitmap());
+                                      /*outerVariableTypes*/ {},
+                                      signature->formalsInstantiatedBitmap());
 
-  auto ret = toOwned(new FunctionType(newTfs));
+  // TODO: Sanitize the return type.
+  auto ret = toOwned(new FunctionType(newTfs, returnTypeAndIntent));
 
   return QUERY_END(ret);
 }
 
 const FunctionType*
-FunctionType::get(Context* context, const TypedFnSignature* tfs) {
-  return getFunctionType(context, tfs).get();
+FunctionType::get(Context* context, const TypedFnSignature* signature,
+                  QualifiedType returnTypeAndIntent) {
+  return getFunctionType(context, signature, returnTypeAndIntent).get();
 }
 
 

@@ -78,6 +78,10 @@ types::QualifiedType getInstantiationType(Context* context,
   (An UntypedFnSignature can be computed with UntypedFnSignature::get()).
   The TypedFnSignature will represent generic and potentially unknown
   types if the function is generic.
+
+  If 'untypedSig' is the signature for a nested function that captures outer
+  variables, this function returns 'nullptr' and 'nestedTypedSignatureInitial'
+  should be called instead.
  */
 const TypedFnSignature*
 typedSignatureInitial(Context* context,
@@ -234,12 +238,36 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id);
  */
 const ResolvedFunction* scopeResolveFunction(Context* context, ID id);
 
+/**
+  Compute the set of outer variables referenced by this function. Will return
+  'nullptr' if there are no outer variables.
+  */
+const OuterVariables* computeOuterVariables(Context* context, ID id);
+
+/** Given a 'TypedFnSignature' for a parent function 'PF' and the ID of a
+    nested function 'NF', compute NF's initial signature. The signature
+    for NF that is produced by this function includes any required outer
+    variables that may be declared in PF or more distant parent functions.
+
+    The signature for PF must be concrete or fully instantiated. If it is
+    not, then this function will return 'nullptr'.
+
+    This function may resolve the body of PF using its signature in order
+    to compute the signature of NF.
+
+    The signature produced by this function may still be generic and can be
+    fully instantiated using 'instantiateSignature'.
+  */
+const TypedFnSignature*
+nestedTypedSignatureInitial(Context* context, ID id,
+                            const TypedFnSignature* parentSig);
+
 /*
  * Scope-resolve an AggregateDecl's fields, along with their type expressions
  * and initialization expressions.
  */
 const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
-                                                          ID id);
+                                                           ID id);
 
 /**
   Returns the ResolvedFunction called by a particular

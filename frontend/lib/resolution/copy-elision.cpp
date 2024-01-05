@@ -129,6 +129,7 @@ bool FindElidedCopies::hasCrossTypeInitAssignWithIn(
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);

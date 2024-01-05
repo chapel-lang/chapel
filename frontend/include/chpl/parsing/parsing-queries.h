@@ -360,6 +360,12 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is a nested function - that is, it is a function
+ defined within the scope of another function.
+ */
+bool idIsNestedFunction(Context* context, ID id);
+
+/**
  Returns true if the ID is a method.
  */
 bool idIsMethod(Context* context, ID id);

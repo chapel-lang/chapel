@@ -854,6 +854,14 @@ bool idIsFunction(Context* context, ID id) {
   return asttags::isFunction(tag);
 }
 
+bool idIsNestedFunction(Context* context, ID id) {
+  if (id.isEmpty() || !idIsFunction(context, id)) return false;
+  if (auto up = id.parentSymbolId(context)) {
+    return idIsFunction(context, up);
+  }
+  return false;
+}
+
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
 

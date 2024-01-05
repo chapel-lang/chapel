@@ -85,7 +85,14 @@ class ID final {
     of a symbol's nodes. When the AST node defines a new ID symbol scope,
     (as with Function or Module) this will return -1.
    */
-  int postOrderId() const { return postOrderId_; }
+  inline int postOrderId() const { return postOrderId_; }
+
+  /**
+    Returns 'true' if this symbol has a 'postOrderId()' value of <= -1,
+    which means this is an ID for something that defines a new symbol
+    scope.
+    */
+  inline bool isSymbolId() const { return postOrderId_ <= -1; }
 
   /**
     Some IDs are introduced during compilation and don't represent

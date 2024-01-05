@@ -138,6 +138,8 @@ public:
   const TypedFnSignature* finalize(void);
 
   void checkEarlyReturn(const uast::Return* ret);
+
+  static bool isTfsForInitializer(const TypedFnSignature* tfs);
 };
 
 } // end namespace resolution

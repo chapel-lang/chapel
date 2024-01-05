@@ -252,6 +252,7 @@ static QualifiedType primCallResolves(Context* context, const CallInfo &ci,
                            /* isMethodCall */ forMethod,
                            /* hasQuestionArg */ false,
                            /* isParenless */ false,
+                           /* callerSignature */ nullptr,
                            std::move(actuals));
   auto callResult = context->runAndTrackErrors([&](Context* context) {
     return resolveGeneratedCall(context, call, callInfo,

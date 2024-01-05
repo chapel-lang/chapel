@@ -489,6 +489,7 @@ void CallInitDeinit::resolveDefaultInit(const VarLikeDecl* ast, RV& rv) {
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
+                        /* callerSignature */ nullptr,
                         std::move(actuals));
     const Scope* scope = scopeForId(context, ast->id());
     auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
@@ -511,6 +512,7 @@ void CallInitDeinit::resolveAssign(const AstNode* ast,
                       /* isMethodCall */ false,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
@@ -547,6 +549,7 @@ void CallInitDeinit::resolveCopyInit(const AstNode* ast,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
@@ -720,6 +723,7 @@ void CallInitDeinit::resolveDeinit(const AstNode* ast,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       actuals);
   const Scope* scope = scopeForId(context, ast->id());
   auto c = resolveGeneratedCall(context, ast, ci, scope, resolver.poiScope);
