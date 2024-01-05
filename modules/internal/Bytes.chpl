@@ -1150,6 +1150,36 @@ module Bytes {
     doAppendSomeBytes(this, 1, buf);
   }
 
+  /* Convert a nibble into a character in its hexadecimal representation */
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
+  }
+
+  /*
+    Computes a hexadecimal representation for a ``bytes``
+    and returns it as a ``bytes``.
+   */
+  @unstable("'bytes.toHexadecimal' is unstable and may change in the future")
+  proc bytes.toHexadecimal(uppercase: bool = false) : bytes {
+    var b: bytes;
+    for byte in this {
+      const nib1 = convertNibble((byte>>4)&0xf, uppercase);
+      const nib2 = convertNibble(byte&0xf, uppercase);
+      b.appendBytes((nib1, nib2));
+    }
+    return b;
+  }
+
   /*
      Copies the :type:`bytes` `rhs` into the :type:`bytes` `lhs`.
   */
