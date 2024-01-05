@@ -40,7 +40,7 @@ proc main(args: [] string) {
 
   sync {
     // fire off a task to perform replacements
-    begin with (ref copy) {
+    begin {
       for (f, r) in subst do
         copy = copy.replace(new regex(f), r);
     }

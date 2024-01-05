@@ -25,7 +25,7 @@ proc main(args: [] string) {
 
         // spawn a task to process the previous sequence, if there was one
         if start then
-          begin with (ref data) process(data, start, idx-2);     // -2 == rewind past "\n>"
+          begin process(data, start, idx-2);     // -2 == rewind past "\n>"
 
         // capture the start of this sequence
         start = idx + numRead;
