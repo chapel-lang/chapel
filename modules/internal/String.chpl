@@ -2264,34 +2264,34 @@ module String {
   }
 
   /*
-     Appends the codepoints stored in the `rhs` tuple to
-     the :type:`string` `this`.
-   */
-  proc ref string.appendCodepoints(codepoints) : void throws
-    where isHomogeneousTupleType(codepoints.type) &&
-          codepoints(0).type == int(32) {
+     Appends the codepoint values passed to the :type:`string` `this`.
 
+     Any argument not in 0..0x10FFFF is not valid Unicode codepoint.
+     This function will append the replacement character 0xFFFD instead of
+     such invalid arguments.
+   */
+  @unstable("'string.append' is unstable and may change in the future")
+  proc ref string.append(codepoints: int ...) : void {
     var nbytesTotal = 0;
     var buf: c_array(uint(8), 4*codepoints.size);
     // TODO: make c_ptrTo(myCArray) work
     for param i in 0..<codepoints.size {
-      var nbytes = qio_nbytes_char(codepoints(i));
-      if nbytes == 0 || nbytes > 4 {
-        throw new IllegalArgumentError();
+      var cp = codepoints(i);
+      if 0 <= cp && cp <= 0x10FFFF {
+        // it is a valid Unicode codepoint
+      } else {
+        // it is invalid. Use the replacement character.
+        cp = 0xFFFD;
       }
-      qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), codepoints(i));
+      var nbytes = qio_nbytes_char(cp: int(32));
+      if boundsChecking {
+        assert(0 <= nbytes && nbytes <= 4);
+      }
+      qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), cp: int(32));
       nbytesTotal += nbytes;
     }
     doAppendSomeBytes(this, nbytesTotal, buf);
     this.cachedNumCodepoints += codepoints.size;
-  }
-
-  /*
-     Appends the codepoint stored in `rhs` to
-     the :type:`string` `this`.
-   */
-  proc ref string.appendCodepoint(codepoint: int(32)) : void throws {
-    this.appendCodepoints((codepoint,));
   }
 
   //
