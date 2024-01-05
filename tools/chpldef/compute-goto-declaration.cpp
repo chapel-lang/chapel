@@ -171,7 +171,7 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
     if (auto id = re->toId()) {
       ret.push_back(std::move(id));
     } else if (auto tfs = ms.only()) {
-      ret.push_back(tfs->id());
+      ret.push_back(tfs.fn()->id());
     } else {
       CHPLDEF_TODO();
     }

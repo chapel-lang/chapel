@@ -53,7 +53,7 @@ static void doMapLinesInModule(chpl::Context* chapel,
     // Push back the occupied lines. This is usually just one line but can
     // be up to 3 in the case of a dot expression.
     if (isSymbolOfInterest(ast)) {
-      auto loc = br.idToLocation(ast->id(), chpl::UniqueString());
+      auto loc = br.idToLocation(chapel, ast->id(), chpl::UniqueString());
       CHPL_ASSERT(!loc.isEmpty());
       for (int i = loc.firstLine(); i <= loc.lastLine(); i++) {
         auto& v = m[i];
