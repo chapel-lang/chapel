@@ -22,7 +22,7 @@ proc main() {
 
   var image : [0..#n, xdim] eltType;           // the compacted bitmap image
 
-  forall (y, xelt) in dynamic(image.domain, chunkSize) with (ref image) { // for all elements
+  forall (y, xelt) in dynamic(image.domain, chunkSize) { // for all elements
 
     var buff: eltType;                         // a single-element pixel buffer
 

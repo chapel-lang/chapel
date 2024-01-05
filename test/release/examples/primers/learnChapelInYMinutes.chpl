@@ -1080,7 +1080,7 @@ proc main() {
 
 // Parallel Experiment:
   timer.start(); // start timer
-  forall (x,y) in myBigArray.domain with (ref myBigArray) { // Parallel iteration
+  forall (x,y) in myBigArray.domain { // Parallel iteration
     myBigArray[x,y] = (x:real) / (y:real);
   }
   timer.stop(); // Stop timer
