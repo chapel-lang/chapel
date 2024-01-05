@@ -455,7 +455,7 @@
 %left TALIGN TBY THASH
 %left TOR
 %left TAND
-%left TEQUAL TNOTEQUAL
+%nonassoc TEQUAL TNOTEQUAL
 %nonassoc TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TDOTDOT TDOTDOTOPENHIGH
 // These are not currently supported, though we've discussed adding them
