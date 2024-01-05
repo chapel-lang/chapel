@@ -2235,6 +2235,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Yield tuples by value when appropriate (#21789)
   03/14/23:
     - Eliminate extra destructions when yielding tuples (#21887)
+  12/01/23:
+    - Move the GpuSort Module code into the GPU module (#23989)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2417,6 +2419,10 @@ arkouda: &arkouda-base
     - Scaffolding for multi-dimensional arrays (Bears-R-Us/arkouda#2829)
   11/21/23:
     - Update Arkouda release testing from 1.31 to 1.32 (#23900)
+  12/07/23:
+    - Array creation perf patch (Bears-R-Us/arkouda#2869)
+  12/11/23:
+    - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
 
 
 arkouda-string:
