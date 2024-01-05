@@ -488,6 +488,114 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
           break; \
       }
 
+#define DO_FOLDSQRT() \
+      switch (imm->const_kind) { \
+        case NUM_KIND_NONE: \
+          break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = im1.bool_value(); break; \
+        } \
+        case NUM_KIND_UINT: { \
+          switch (imm->num_index) { \
+            case INT_SIZE_8:  \
+              imm->v_uint8 = (uint8_t) sqrt(im1.v_uint8); break; \
+            case INT_SIZE_16: \
+              imm->v_uint16 = (uint16_t) sqrt(im1.v_uint16); break; \
+            case INT_SIZE_32: \
+              imm->v_uint32 = (uint32_t) sqrt(im1.v_uint32); break; \
+            case INT_SIZE_64: \
+              imm->v_uint64 = (uint64_t) sqrt(im1.v_uint64); break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        } \
+        case NUM_KIND_INT: { \
+          switch (imm->num_index) { \
+            case INT_SIZE_8: \
+              imm->v_int8 = (int8_t) sqrt(im1.v_int8); break; \
+            case INT_SIZE_16: \
+              imm->v_int16 = (int16_t) sqrt(im1.v_int16); break; \
+            case INT_SIZE_32: \
+              imm->v_int32 = (int32_t) sqrt(im1.v_int32); break; \
+            case INT_SIZE_64: \
+              imm->v_int64 = (int64_t) sqrt(im1.v_int64); break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        } \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
+          switch (imm->num_index) { \
+            case FLOAT_SIZE_32: \
+              imm->v_float32 = sqrtf(im1.v_float32); break; \
+            case FLOAT_SIZE_64: \
+              imm->v_float64 = sqrt(im1.v_float64); break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        case NUM_KIND_COMPLEX: \
+          CHPL_ASSERT(false && "Cannot fold sqrt on floating point values"); \
+          break; \
+      }
+
+#define DO_FOLDABS() \
+      switch (im1.const_kind) { \
+        case NUM_KIND_NONE: \
+          break; \
+        case NUM_KIND_BOOL: { \
+          imm->v_bool = im1.bool_value(); break; \
+        } \
+        case NUM_KIND_UINT: { \
+          switch (im1.num_index) { \
+            case INT_SIZE_8:  \
+              imm->v_uint8 = im1.v_uint8; break; \
+            case INT_SIZE_16: \
+              imm->v_uint16 = im1.v_uint16; break; \
+            case INT_SIZE_32: \
+              imm->v_uint32 = im1.v_uint32; break; \
+            case INT_SIZE_64: \
+              imm->v_uint64 = im1.v_uint64; break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        } \
+        case NUM_KIND_INT: { \
+          switch (im1.num_index) { \
+            case INT_SIZE_8: \
+              imm->v_int8 = (int8_t) labs(im1.v_int8); break; \
+            case INT_SIZE_16: \
+              imm->v_int16 = (int16_t) labs(im1.v_int16); break; \
+            case INT_SIZE_32: \
+              imm->v_int32 = (int32_t) labs(im1.v_int32); break; \
+            case INT_SIZE_64: \
+              imm->v_int64 = (int64_t) labs(im1.v_int64); break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        } \
+        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
+          switch (im1.num_index) { \
+            case FLOAT_SIZE_32: \
+              imm->v_float32 = fabsf(im1.v_float32); break; \
+            case FLOAT_SIZE_64: \
+              imm->v_float64 = fabs(im1.v_float64); break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+        case NUM_KIND_COMPLEX: \
+          switch (im1.num_index) { \
+            case COMPLEX_SIZE_64: \
+              imm->v_float32 = fsqrt(im1.v_complex64.r*im1.v_complex64.r + \
+                                     im1.v_complex64.i*im1.v_complex64.i); \
+              break; \
+            case COMPLEX_SIZE_128: \
+              imm->v_float64 = sqrt(im1.v_complex128.r*im1.v_complex128.r + \
+                                    im1.v_complex128.i*im1.v_complex128.i); \
+              break; \
+            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
+          } \
+          break; \
+      }
+
 #define DO_FOLDB(_op,_complex_combine) \
       switch (im1.const_kind) { \
         case NUM_KIND_NONE: \
@@ -838,9 +946,14 @@ fold_result(Immediate *im1, Immediate *im2, Immediate *imm) {
 void
 fold_constant(chpl::Context* context, int op,
               Immediate *aim1, Immediate *aim2, Immediate *imm) {
+
   Immediate im1(*aim1), im2, coerce;
   if (aim2)
     im2 = *aim2;
+
+  if (op == P_prim_abs && im1.const_kind == NUM_KIND_COMPLEX)
+    gdbShouldBreakHere();
+
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
     case P_prim_mult:
@@ -880,8 +993,26 @@ fold_constant(chpl::Context* context, int op,
     case P_prim_plus:
     case P_prim_minus:
     case P_prim_not:
+    case P_prim_sqrt:
       imm->const_kind = im1.const_kind;
       imm->num_index = im1.num_index;
+      break;
+    case P_prim_abs:
+      if (im1.const_kind == NUM_KIND_IMAG) {
+        imm->const_kind = NUM_KIND_REAL;
+        imm->num_index = im1.num_index;
+      } else if (im1.const_kind == NUM_KIND_COMPLEX) {
+        imm->const_kind = NUM_KIND_REAL;
+        if (im1.num_index == COMPLEX_SIZE_64)
+          imm->num_index = FLOAT_SIZE_32;
+        else if (im1.num_index == COMPLEX_SIZE_128)
+          imm->num_index = FLOAT_SIZE_64;
+        else
+          CHPL_ASSERT(false && "abs numeric kind not supported");
+      } else {
+        imm->const_kind = im1.const_kind;
+        imm->num_index = im1.num_index;
+      }
       break;
   }
   if (coerce.const_kind) {
@@ -918,6 +1049,14 @@ fold_constant(chpl::Context* context, int op,
     case P_prim_lnot: DO_FOLD1(!); break;
     case P_prim_pow: {
       DO_FOLDPOW();
+      break;
+    }
+    case P_prim_sqrt: {
+      DO_FOLDSQRT();
+      break;
+    }
+    case P_prim_abs: {
+      DO_FOLDABS();
       break;
     }
   }

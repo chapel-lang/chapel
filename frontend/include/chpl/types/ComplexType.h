@@ -55,8 +55,16 @@ class ComplexType final : public PrimitiveType {
 
   static const ComplexType* get(Context* context, int bitwidth);
 
+  /** Returns the bit width of this complex (64 or 128 bits,
+      including both components */
   int bitwidth() const override {
     return bitwidth_;
+  }
+
+  /** Returns the bit width of a single component of this complex
+      (which is half of bitwidth() ) */
+  int componentBitwidth() const {
+    return bitwidth_ / 2;
   }
 
   bool isDefaultWidth() const override {
