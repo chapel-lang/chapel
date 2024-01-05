@@ -1701,6 +1701,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   std::unique_ptr<clang::driver::Compilation> C(
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
+  if (diagClient->getNumErrors() > 0) {
+    USR_FATAL("error in back-end LLVM cmopilation");
+  }
+
   clang::driver::Command* job = NULL;
 
   if (usingGpuLocaleModel() == false) {
