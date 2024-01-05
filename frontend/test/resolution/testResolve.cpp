@@ -774,6 +774,55 @@ static void test18() {
   assert(guard.numErrors() == 1);
   assert(guard.error(0)->message() ==
          "types do not match in conditional split init");
+
+  guard.realizeErrors();
+}
+
+// split-init in mutually recursive modules
+static void test19() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+  R""""(
+  module M {
+    use N;
+    var x;
+    x = y;
+    var z: int;
+  }
+
+  module N {
+    use M;
+    var y = z;
+  }
+  )"""";
+
+  // parse modules and get M
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(contents));
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0];
+
+  // extract x
+  assert(m->numStmts() > 0);
+  // hardcoded stmt number
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+  // no init expr here, but should get type set from module resolution
+  /* auto initExpr = x->initExpression(); */
+  /* assert(initExpr); */
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  // check type
+  auto qt = rr.byAst(x).type();
+  assert(!qt.isUnknown());
+  assert(qt.type()->isIntType());
+
+  guard.realizeErrors();
 }
 
 int main() {
@@ -795,6 +844,7 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
 
   return 0;
 }
