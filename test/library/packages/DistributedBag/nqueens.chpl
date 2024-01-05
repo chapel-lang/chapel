@@ -129,7 +129,6 @@ inline proc allIdle(const arr: [] atomic bool): bool
 proc nqueens_search(const N: int)
 {
   // Global variables (synchronization, termination)
-  const PrivateSpace: domain(1) dmapped privateDist();
   var eachLocaleState: [PrivateSpace] atomic bool = BUSY;
   allLocalesBarrier.reset(here.maxTaskPar);
 

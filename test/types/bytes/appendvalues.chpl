@@ -3,17 +3,17 @@ config const n = 100_000;
 
 proc test1() {
   var b = b"hello ";
-  b.append(b"a"(0));
-  b.append(b"A"(0));
-  b.append(b"."(0));
-  b.append(b"9"(0));
+  b.appendByteValues(b"a"(0));
+  b.appendByteValues(b"A"(0));
+  b.appendByteValues(b"."(0));
+  b.appendByteValues(b"9"(0));
   assert(b == b"hello aA.9");
 }
 test1();
 
 proc test2() {
   var b = b"hello ";
-  b.append(b"a"(0), b"A"(0), b"."(0), b"9"(0));
+  b.appendByteValues(b"a"(0), b"A"(0), b"."(0), b"9"(0));
   assert(b == b"hello aA.9");
 }
 test2();
@@ -21,7 +21,7 @@ test2();
 proc test3() {
   var bts: bytes;
   for i in 0..<n {
-    bts.append((i & 0xff): uint(8));
+    bts.appendByteValues((i & 0xff): uint(8));
   }
 
   for (b,i) in zip(bts, 0..) {
@@ -33,7 +33,7 @@ test3();
 proc test4() {
   var bts: bytes;
   for i in 0..<n {
-    bts.append((i & 0xff): uint(8), (i & 0xff): uint(8));
+    bts.appendByteValues((i & 0xff): uint(8), (i & 0xff): uint(8));
   }
 
   for (b,i) in zip(bts, 0..) {

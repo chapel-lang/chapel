@@ -2270,8 +2270,8 @@ module String {
      This function will append the replacement character 0xFFFD instead of
      such invalid arguments.
    */
-  @unstable("'string.append' is unstable and may change in the future")
-  proc ref string.append(codepoints: int ...) : void {
+  @unstable("'string.appendCodepointValues' is unstable and may change in the future")
+  proc ref string.appendCodepointValues(codepoints: int ...) : void {
     var nbytesTotal = 0;
     var buf: c_array(uint(8), 4*codepoints.size);
     // TODO: make c_ptrTo(myCArray) work

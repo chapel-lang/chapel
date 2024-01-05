@@ -1132,8 +1132,8 @@ module Bytes {
      Appends the one or more byte values passed as arguments to
      the :type:`bytes` `this`.
    */
-  @unstable("'bytes.append' is unstable and may change in the future")
-  proc ref bytes.append(x: uint(8) ...) : void {
+  @unstable("'bytes.appendByteValues' is unstable and may change in the future")
+  proc ref bytes.appendByteValues(x: uint(8) ...) : void {
     var buf: c_array(uint(8), x.size);
     for param i in 0..<x.size {
       buf(i) = x(i);
@@ -1169,10 +1169,10 @@ module Bytes {
       const nib1 = convertNibble((byte>>4)&0xf, uppercase);
       const nib2 = convertNibble(byte&0xf, uppercase);
       if resultType == bytes {
-        result.append(nib1, nib2);
+        result.appendByteValues(nib1, nib2);
       }
       if resultType == string {
-        result.append(nib1, nib2);
+        result.appendCodepointValues(nib1, nib2);
       }
     }
     return result;

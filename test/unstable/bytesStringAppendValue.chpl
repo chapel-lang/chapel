@@ -1,4 +1,4 @@
 var str: string;
-str.append(0x40);
+str.appendCodepointValues(0x40);
 var bts: bytes;
-bts.append(0x40);
+bts.appendByteValues(0x40);
