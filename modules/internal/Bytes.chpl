@@ -1129,25 +1129,16 @@ module Bytes {
   }
 
   /*
-     Appends the bytes stored in the `rhs` tuple to the :type:`bytes` `this`.
+     Appends the one or more byte values passed as arguments to
+     the :type:`bytes` `this`.
    */
-  proc ref bytes.appendBytes(bytesTup) : void
-    where isHomogeneousTupleType(bytesTup.type) && bytesTup(0).type == uint(8) {
-
-    var buf: c_array(uint(8), bytesTup.size);
-    for param i in 0..<bytesTup.size {
-      buf(i) = bytesTup(i);
+  proc ref bytes.appendByte(x: uint(8) ...) : void {
+    var buf: c_array(uint(8), x.size);
+    for param i in 0..<x.size {
+      buf(i) = x(i);
     }
-    doAppendSomeBytes(this, bytesTup.size, buf);
-  }
 
-  /*
-     Appends the single byte stored in `rhs` to the :type:`bytes` `this`.
-   */
-  proc ref bytes.appendByte(rhs: uint(8)) : void {
-    var buf: c_array(uint(8), 1);
-    buf(0) = rhs;
-    doAppendSomeBytes(this, 1, buf);
+    doAppendSomeBytes(this, x.size, buf);
   }
 
   /* Convert a nibble into a character in its hexadecimal representation */
@@ -1175,7 +1166,7 @@ module Bytes {
     for byte in this {
       const nib1 = convertNibble((byte>>4)&0xf, uppercase);
       const nib2 = convertNibble(byte&0xf, uppercase);
-      b.appendBytes((nib1, nib2));
+      b.appendByte(nib1, nib2);
     }
     return b;
   }
