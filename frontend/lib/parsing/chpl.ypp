@@ -456,7 +456,7 @@
 %left TOR
 %left TAND
 %left TEQUAL TNOTEQUAL
-%left TLESSEQUAL TGREATEREQUAL TLESS TGREATER
+%nonassoc TLESSEQUAL TGREATEREQUAL TLESS TGREATER
 %left TDOTDOT TDOTDOTOPENHIGH
 // These are not currently supported, though we've discussed adding them
 //%left TDOTDOTOPENLOW TDOTDOTOPENBOTH
