@@ -1,14 +1,24 @@
+proc doNothing() {}
+
 proc explicitRef1(ref A) {
   forall i in A.domain /*with (ref A)*/ do A[i] = i;
+  [i in A.domain /*with (ref A)*/] A[i] = i;
+  coforall i in A.domain /*with (ref A)*/ do A[i] = i;
+  begin /*with (ref A)*/ A = A.domain;
+  cobegin /*with (ref A)*/ {
+    A = A.domain;
+    doNothing();
+  }
 }
 proc explicitRef2(ref A) {
   forall i in A.domain /*with (ref A)*/ do writeln(A[i]);
-}
-proc explicitRefBracketLoop1(ref A) {
-  [i in A.domain /*with (ref A)*/] A[i] = i;
-}
-proc explicitRefBracketLoop2(ref A) {
   [i in A.domain /*with (ref A)*/] writeln(A[i]);
+  coforall i in A.domain /*with (ref A)*/ do writeln(A[i]);
+  begin /*with (ref A)*/ writeln(A);
+  cobegin /*with (ref A)*/ {
+    writeln(A);
+    doNothing();
+  }
 }
 
 
@@ -16,21 +26,25 @@ proc explicitRefBracketLoop2(ref A) {
 // this case produces an error, in a separate file
 // proc explicitConst1(const A) {
 //   forall i in A.domain /*with (const A)*/ do A[i] = i;
+//   [i in A.domain /*with (const A)*/] A[i] = i;
+//    coforall i in A.domain /*with (const A)*/ do A[i] = i;
+//    begin /*with (const A)*/ A = A.domain;
+//    cobegin /*with (const A)*/ {
+//      A = A.domain;
+//      doNothing();
+//    }
 // }
 //
 proc explicitConst2(const A) {
   forall i in A.domain /*with (const A)*/ do writeln(A[i]);
-}
-//
-// this case produces an error, in a separate file
-// proc explicitConstBracketLoop1(const A) {
-//   [i in A.domain /*with (const A)*/] A[i] = i;
-// }
-//
-proc explicitConstBracketLoop2(const A) {
   [i in A.domain /*with (const A)*/] writeln(A[i]);
+  coforall i in A.domain /*with (const A)*/ do writeln(A[i]);
+  begin /*with (const A)*/ writeln(A);
+  cobegin /*with (const A)*/ {
+    writeln(A);
+    doNothing();
+  }
 }
-
 
 
 //
@@ -43,17 +57,24 @@ proc explicitConstBracketLoop2(const A) {
 //
 proc blankIntent1(A) {
   forall i in A.domain /*with (const A)*/ do A[i] = i;
+  [i in A.domain /*with (const A)*/] A[i] = i;
+  coforall i in A.domain /*with (const A)*/ do A[i] = i;
+  begin /*with (const A)*/ A = A.domain;
+  cobegin /*with (const A)*/ {
+    A = A.domain;
+    doNothing();
+  }
 }
 // no matter what the user does, this will always work
 proc blankIntent2(A) {
   forall i in A.domain /*with (const A)*/ do writeln(A[i]);
-}
-proc blankIntentBracketLoop1(A) {
-  [i in A.domain /*with (const A)*/] A[i] = i;
-}
-// no matter what the user does, this will always work
-proc blankIntentBracketLoop2(A) {
   [i in A.domain /*with (const A)*/] writeln(A[i]);
+  coforall i in A.domain /*with (const A)*/ do writeln(A[i]);
+  begin /*with (const A)*/ writeln(A);
+  cobegin /*with (const A)*/ {
+    writeln(A);
+    doNothing();
+  }
 }
 
 
@@ -63,9 +84,14 @@ proc blankIntentBracketLoop2(A) {
 proc update(A, i) do A[i] = i;
 proc callFunction(A) {
   forall i in A.domain /*with (const A)*/ do update(A, i);
-}
-proc callFunctionBracketLoop(A) {
   [i in A.domain /*with (const A)*/] update(A, i);
+  [i in A.domain /*with (const A)*/] update(A, i);
+  coforall i in A.domain /*with (const A)*/ do update(A, i);
+  begin /*with (const A)*/ update(A, 1);
+  cobegin /*with (const A)*/ {
+    update(A, 1);
+    doNothing();
+  }
 }
 
 
@@ -77,21 +103,14 @@ proc callFunctionBracketLoop(A) {
 
   explicitRef1(A);
   explicitRef2(A);
-  explicitRefBracketLoop1(A);
-  explicitRefBracketLoop2(A);
 
   // explicitConst1(A);
   explicitConst2(A);
-  // explicitConstBracketLoop1(A);
-  explicitConstBracketLoop2(A);
 
   blankIntent1(A);
   blankIntent2(A);
-  blankIntentBracketLoop1(A);
-  blankIntentBracketLoop2(A);
 
   callFunction(A);
-  callFunctionBracketLoop(A);
 }
 
 //
@@ -101,5 +120,11 @@ proc callFunctionBracketLoop(A) {
   var A: [1..10] int;
   forall i in 1..10 /*with (ref A)*/ do A[i] = i;
   [i in 1..10 /*with (ref A)*/] A[i] = i;
+  coforall i in A.domain /*with (ref A)*/ do A[i] = i;
+  begin /*with (ref A)*/ A = A.domain;
+  cobegin /*with (ref A)*/ {
+    A = A.domain;
+    doNothing();
+  }
 }
 

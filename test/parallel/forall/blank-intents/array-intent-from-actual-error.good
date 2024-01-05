@@ -1,8 +1,0 @@
-array-intent-from-actual-error.chpl:2: In function 'explicitConst1':
-array-intent-from-actual-error.chpl:3: error: cannot assign to const variable
-  array-intent-from-actual-error.chpl:11: called as explicitConst1(A: [domain(1,int(64),one)] int(64))
-array-intent-from-actual-error.chpl:5: In function 'explicitConstBracketLoop1':
-array-intent-from-actual-error.chpl:6: error: cannot assign to const variable
-  array-intent-from-actual-error.chpl:12: called as explicitConstBracketLoop1(A: [domain(1,int(64),one)] int(64))
-array-intent-from-actual-error.chpl:17: error: cannot assign to const variable
-array-intent-from-actual-error.chpl:18: error: cannot assign to const variable
