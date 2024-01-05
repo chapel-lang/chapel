@@ -2290,8 +2290,7 @@ module String {
       qio_encode_char_buf(c_ptrTo(buf[nbytesTotal]), cp: int(32));
       nbytesTotal += nbytes;
     }
-    doAppendSomeBytes(this, nbytesTotal, buf);
-    this.cachedNumCodepoints += codepoints.size;
+    doAppendSomeBytes(this, nbytesTotal, buf, nCodepoints=codepoints.size);
   }
 
   //

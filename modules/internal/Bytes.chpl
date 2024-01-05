@@ -1139,7 +1139,7 @@ module Bytes {
       buf(i) = x(i);
     }
 
-    doAppendSomeBytes(this, x.size, buf);
+    doAppendSomeBytes(this, x.size, buf, nCodepoints=0);
   }
 
   /* Convert a nibble into a character in its hexadecimal representation */
