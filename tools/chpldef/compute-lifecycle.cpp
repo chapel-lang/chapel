@@ -23,7 +23,6 @@
 #include "chpl/parsing/parsing-queries.h"
 
 namespace {
-  static constexpr bool UNSUPPORTED_DELIBERATELY = false;
   static constexpr bool UNSUPPORTED_TODO = false;
   static constexpr bool SUPPORTED = true;
 }
@@ -48,7 +47,7 @@ doConfigureStaticCapabilities(Server* ctx, ServerCapabilities& x) {
   x.textDocumentSync                  = configureTextDocumentSync(ctx);
   x.hoverProvider                     = UNSUPPORTED_TODO;
   x.declarationProvider               = SUPPORTED;
-  x.definitionProvider                = UNSUPPORTED_DELIBERATELY;
+  x.definitionProvider                = SUPPORTED;
   x.typeDefinitionProvider            = UNSUPPORTED_TODO;
   x.implementationProvider            = UNSUPPORTED_TODO;
   x.referencesProvider                = UNSUPPORTED_TODO;
