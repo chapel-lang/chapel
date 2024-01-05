@@ -1072,8 +1072,7 @@ module BytesStringCommon {
     }
   }
 
-  proc doAppendSomeBytes(ref lhs: ?t, n: int, byteCArr: c_array)
-    where byteCArr.eltType == uint(8) {
+  proc doAppendSomeBytes(ref lhs: ?t, n: int, byteCArr: c_array(uint(8), ?)) {
 
     assertArgType(t, "doAppendSomeBytes");
 
