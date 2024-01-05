@@ -29,6 +29,7 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/framework/UniqueString.h"
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/uast/AstNode.h"
 #include "llvm/Support/JSON.h"
 #include <chrono>
@@ -243,6 +244,9 @@ private:
     if (shouldGarbageCollect()) chapel_.collectGarbage();
     if (c & CHPL_BUMP_REVISION) {
       chapel_.advanceToNextRevision(shouldPrepareToGarbageCollect());
+      if (config_.enableStandardLibrary) {
+        chpl::parsing::setupModuleSearchPaths(&chapel_, false, false, {}, {});
+      }
       ++revision_;
     }
   }

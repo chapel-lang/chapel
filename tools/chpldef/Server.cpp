@@ -82,6 +82,10 @@ Server::Server(Server::Configuration config)
   errorHandler_ = handler.get();
   chapel_.installErrorHandler(std::move(handler));
 
+  if (config.enableStandardLibrary) {
+    chpl::parsing::setupModuleSearchPaths(&chapel_, false, false, {}, {});
+  }
+
   // Open the server log.
   Logger logger;
   if (!config_.logFile.empty()) {
