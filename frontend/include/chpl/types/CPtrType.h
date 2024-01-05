@@ -59,11 +59,8 @@ class CPtrType final : public Type {
 
   static const owned<CPtrType>& getCPtrType(Context* context,
                                             const CPtrType* instantiatedFrom,
-                                            const Type* eltType);
-
-  static const owned<CPtrType>& getCPtrConstType(Context* context,
-                                            const CPtrType* instantiatedFrom,
-                                            const Type* eltType);
+                                            const Type* eltType,
+                                            bool isConst);
 
   const CPtrType* instantiatedFromCPtrType() const {
     // at present, only expecting a single level of instantiated-from.

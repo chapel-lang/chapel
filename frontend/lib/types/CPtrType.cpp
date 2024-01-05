@@ -30,17 +30,10 @@ namespace types {
 
 const owned<CPtrType>& CPtrType::getCPtrType(Context* context,
                                              const CPtrType* instantiatedFrom,
-                                             const Type* eltType) {
-  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType);
-  auto result = toOwned(new CPtrType(instantiatedFrom, eltType));
-  return QUERY_END(result);
-}
-
-const owned<CPtrType>& CPtrType::getCPtrConstType(Context* context,
-                                                  const CPtrType* instantiatedFrom,
-                                                  const Type* eltType) {
-  QUERY_BEGIN(getCPtrConstType, context, instantiatedFrom, eltType);
-  auto result = toOwned(new CPtrType(instantiatedFrom, eltType, /*isConst*/ true));
+                                             const Type* eltType,
+                                             bool isConst) {
+  QUERY_BEGIN(getCPtrType, context, instantiatedFrom, eltType, isConst);
+  auto result = toOwned(new CPtrType(instantiatedFrom, eltType, isConst));
   return QUERY_END(result);
 }
 
@@ -55,27 +48,31 @@ bool CPtrType::isEltTypeInstantiationOf(Context* context, const CPtrType* other)
 const CPtrType* CPtrType::get(Context* context) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ nullptr,
-                               /* eltType */ nullptr).get();
+                               /* eltType */ nullptr,
+                               /* isConst */ false).get();
 }
 
 const CPtrType* CPtrType::get(Context* context, const Type* eltType) {
   return CPtrType::getCPtrType(context,
                                /* instantiatedFrom */ CPtrType::get(context),
-                               eltType).get();
+                               eltType,
+                               /* isConst */ false).get();
 }
 
 // TODO: need to treat the elttype kind as const
 const CPtrType* CPtrType::getConst(Context* context) {
-  return CPtrType::getCPtrConstType(context,
-                                    /* instantiatedFrom */ nullptr,
-                                    /* eltType */ nullptr).get();
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ nullptr,
+                               /* eltType */ nullptr,
+                               /* isConst */ true).get();
 }
 
 // TODO: need to treat the elt type kind as const
 const CPtrType* CPtrType::getConst(Context* context, const Type* eltType) {
-  return CPtrType::getCPtrConstType(context,
-                                    /* instantiatedFrom */ CPtrType::getConst(context),
-                                    eltType).get();
+  return CPtrType::getCPtrType(context,
+                               /* instantiatedFrom */ CPtrType::getConst(context),
+                               eltType,
+                               /*isConst*/ true).get();
 }
 
 const CPtrType* CPtrType::getCVoidPtrType(Context* context) {

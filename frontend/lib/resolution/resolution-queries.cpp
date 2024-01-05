@@ -2680,15 +2680,14 @@ static const Type* getCPtrType(Context* context,
   }
 
   QualifiedType qt;
-  if (ci.numActuals() > 0)
-    qt = ci.actual(0).type();
+  CHPL_ASSERT(ci.numActuals() > 0);
+  qt = ci.actual(0).type();
 
   const Type* t = qt.type();
   if (t == nullptr) {
     // Details not yet known so return UnknownType
     return UnknownType::get(context);
-  }
-  if (t->isUnknownType() || t->isErroneousType()) {
+  } else if (t->isUnknownType() || t->isErroneousType()) {
     // Just propagate the Unknown / Erroneous type
     // without raising any errors
     return t;
@@ -2698,23 +2697,12 @@ static const Type* getCPtrType(Context* context,
     // raise an error b/c of type mismatch
     context->error(astForErr,"invalid %s type construction", name.c_str());
     return ErroneousType::get(context);
+  } else {
+
+    return isConst ? CPtrType::getConst(context, t) :
+                     CPtrType::get(context, t);
   }
-
-  return isConst ? CPtrType::getConst(context, qt.type()) :
-                   CPtrType::get(context, qt.type());
 }
-
-// static const Type* getCPtrType(Context* context,
-//                                const AstNode* astForErr,
-//                                const CallInfo& ci) {
-//   return getCPtrType(context, astForErr, ci);
-// }
-
-// static const Type* getCPtrConstType(Context* context,
-//                                     const AstNode* astForErr,
-//                                     const CallInfo& ci) {
-//   return getCPtrType(context, astForErr, ci);
-// }
 
 static const Type*
 convertClassTypeToNilable(Context* context, const Type* t) {
@@ -2775,10 +2763,6 @@ static const Type* resolveBuiltinTypeCtor(Context* context,
   if (auto t = getCPtrType(context, astForErr, ci)) {
     return t;
   }
-
-  // if (auto t = getCPtrConstType(context, astForErr, ci)) {
-  //   return t;
-  // }
 
   return nullptr;
 }
