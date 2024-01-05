@@ -1072,6 +1072,8 @@ module BytesStringCommon {
     }
   }
 
+  /* Take n bytes from byteCArr and append it to the string/bytes
+     in lhs */
   proc doAppendSomeBytes(ref lhs: ?t, n: int, byteCArr: c_array(uint(8), ?)) {
 
     assertArgType(t, "doAppendSomeBytes");
@@ -1097,12 +1099,10 @@ module BytesStringCommon {
           lhs.isOwned = true;
         }
       }
-      // copy the data from rhs
-      for param i in 0..<byteCArr.size {
-        if i < n {
-          lhs.buff[lhs.buffLen+i] = byteCArr(i);
-        }
-      }
+      // copy the data into the buffer, but only the n bytes requested
+      var byteCArrCopy = byteCArr; // now it is local and mutable
+      bufferMemcpyLocal(dst=lhs.buff, src=c_ptrTo(byteCArrCopy(0)), len=n,
+                        dst_off=lhs.buffLen);
       lhs.buffLen = newLength;
       lhs.buff[newLength] = 0;
     }
