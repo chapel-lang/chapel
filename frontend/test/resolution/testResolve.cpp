@@ -731,13 +731,18 @@ static void test17() {
       R"""(
       var foo;
       foo = 5;
+
+      proc setArgToStr(out arg: string) {
+        arg = "str";
+      }
       var bar;
-      bar = "bar";
+      setArgToStr(bar);
 
       param foo_param;
       foo_param = 5;
       param bar_param;
       bar_param = "bar_param";
+
       )""", { "foo", "bar", "foo_param", "bar_param"});
 
   auto foo = variables.at("foo");
