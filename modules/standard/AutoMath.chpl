@@ -211,7 +211,7 @@ module AutoMath {
 
   /* Return the absolute value of a param real(64) as a param */
   proc abs(param x: real(64)) param :real(64) {
-    return if x < 0 then -x else x;
+    return __primitive("abs", x);
   }
 
   /* Returns the magnitude of the real argument `x`. */
@@ -224,7 +224,7 @@ module AutoMath {
 
   /* Return the absolute value of a param real(32) as a param */
   proc abs(param x: real(32)) param : real(32) {
-    return if x < 0 then -x else x;
+    return __primitive("abs", x);
   }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
