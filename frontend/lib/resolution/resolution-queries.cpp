@@ -105,7 +105,7 @@ scopeResolveModuleStmt(Context* context, ID id) {
   return QUERY_END(result);
 }
 
-static void updateTypeForSplitInit(Context* context, ID id,
+static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
                                    ResolvedExpression& lhs,
                                    const ResolvedExpression& rhs,
                                    std::set<ID>& alreadyUpdated) {
@@ -204,7 +204,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             ID exprId(stmtId.symbolPath(), i, 0);
             ResolvedExpression& re = result.byId(exprId);
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
-              updateTypeForSplitInit(context, exprId, re, *reToCopy,
+              updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy,
                                      splitInitTypeInferredVariables);
             }
           }
