@@ -480,6 +480,11 @@ CLASS_BEGIN(TupleDecl)
                const AstNode*, return node->initExpression())
 CLASS_END(TupleDecl)
 
+CLASS_BEGIN(ForwardingDecl)
+  PLAIN_GETTER(ForwardingDecl, expr, "Get the expression of this ForwardingDecl node",
+               const AstNode*, return node->expr())
+CLASS_END(ForwardingDecl)
+
 CLASS_BEGIN(START_NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                UniqueString, return node->name())
