@@ -1,2 +1,1 @@
-rangeDomainDeprecations.chpl:3: warning: domain.dist is deprecated, please use domain.distribution instead
-rangeDomainDeprecations.chpl:5: warning: domain.dist is deprecated, please use domain.distribution instead
+rangeDomainDeprecations.chpl:3: error: 'domain.dist' is no longer supported, use 'domain.distribution' instead

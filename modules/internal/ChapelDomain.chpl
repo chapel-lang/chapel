@@ -1162,9 +1162,11 @@ module ChapelDomain {
       }
     }
 
-    /* Returns the domain map that implements this domain. */
-    @deprecated("domain.dist is deprecated, please use domain.distribution instead")
-    proc dist do return this.distribution;
+    /* Prevent users from accessing internal datatypes unintentionally. It
+       used to be a public method deprecated in favor of domain.distribution. */
+    @chpldoc.nodoc
+    proc dist do compilerError("'domain.dist' is no longer supported,",
+                               " use 'domain.distribution' instead");
 
     /* Returns the number of dimensions in this domain. */
     proc rank param {
