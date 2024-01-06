@@ -311,7 +311,7 @@ module ChapelRange {
     param bounds  = if this.type.bounds  == ? then b else this.type.bounds;
     param strides = if this.type.strides == ? then s else this.type.strides;
 
-    if ! assignmentIsLegal(idxType, i, b) then
+    if ! assignmentIsLegal(idxType, i) then
       compilerError("initializing a range with idxType ", idxType:string,
                            " from a range with idxType ", i:string);
     if bounds != b then
@@ -320,11 +320,6 @@ module ChapelRange {
     if ! chpl_assignStrideIsSafe(strides, s) then
       compilerError("initializing a range with strideKind.", strides:string,
                            " from a range with strideKind.", s:string);
-
-    if isDeprecatedUnboundedAssignment(idxType, other.idxType, bounds) then
-      compilerWarning("initializing an unbounded range with idxType ",
-             idxType:string, " from an unbounded range with idxType ",
-       other.idxType:string, " is deprecated");
 
     param isEnumBool = isFiniteIdxType(idxType);
     type bt = other.chpl_integralIdxType;
@@ -959,20 +954,10 @@ module ChapelRange {
     return lhs.isPositive() && rhs.isNegative() ||
            lhs.isNegative() && rhs.isPositive();
 
-  private proc assignmentIsLegal(type to, type from, param fromBounds) param {
+  private proc assignmentIsLegal(type to, type from) param {
     if to == from then return true;
-    // can assign between `..` ranges of any idxType (deprecated)
-    if fromBounds == boundKind.neither then return true;
     var toVar: to, fromVar: from;
     return canResolve("=", toVar, fromVar);
-  }
-
-  private proc isDeprecatedUnboundedAssignment(type to, type from,
-                                               param bounds) param {
-    // an assignment may be deprecated only between unbounded ranges
-    if bounds != boundKind.neither then return false;
-    // assignment is deprecated if it would be illegal between bounded ranges
-    return !assignmentIsLegal(to, from, boundKind.both);
   }
 
   private proc verifyAppropriateStride(param strides, stride) {
@@ -1978,7 +1963,7 @@ proc chpl_castIsSafe(r: range(?), type t: range(?)) param do
 
 proc chpl_idxCastIsSafe(type to, type from) param do
   return ( !( isUint(to) && isInt(from) ) //'aUint=anInt' is unsafe yet allowed
-           && assignmentIsLegal(to, from, boundKind.both) )
+           && assignmentIsLegal(to, from) )
      ||  ( to == int && isBCPindex(from) );
      // todo: allow also to==int && 'from' is a fully-concrete enum
 
@@ -2375,7 +2360,7 @@ private proc isBCPindex(type t) param do
   @chpldoc.nodoc
   inline operator =(ref r1: range(?), r2: range(?))
   {
-    if ! assignmentIsLegal(r1.idxType, r2.idxType, r2.bounds) then
+    if ! assignmentIsLegal(r1.idxType, r2.idxType) then
       compilerError("assigning to a range with idxType ", r1.idxType:string,
                            " from a range with idxType ", r2.idxType:string,
                            " without an explicit cast");
@@ -2387,11 +2372,6 @@ private proc isBCPindex(type t) param do
       compilerError("assigning to a range with strideKind.", r1.strides:string,
                            " from a range with strideKind.", r2.strides:string,
                            " without an explicit cast");
-
-    if isDeprecatedUnboundedAssignment(r1.idxType, r2.idxType, r2.bounds) then
-      compilerWarning("assignment to an unbounded range with idxType ",
-           r1.idxType:string, " from an unbounded range with idxType ",
-           r2.idxType:string, " is deprecated");
 
     r1._low = r2._low: r1.chpl_integralIdxType;
     r1._high = r2._high: r1.chpl_integralIdxType;
