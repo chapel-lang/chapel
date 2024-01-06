@@ -6806,11 +6806,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++11 features" >&5
 printf %s "checking for $CXX option to enable C++11 features... " >&6; }
-if test ${ac_cv_prog_cxx_11+y}
+if test ${ac_cv_prog_cxx_cxx11+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_11=no
+  ac_cv_prog_cxx_cxx11=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -6852,11 +6852,11 @@ if test x$ac_prog_cxx_stdcxx = xno
 then :
   { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for $CXX option to enable C++98 features" >&5
 printf %s "checking for $CXX option to enable C++98 features... " >&6; }
-if test ${ac_cv_prog_cxx_98+y}
+if test ${ac_cv_prog_cxx_cxx98+y}
 then :
   printf %s "(cached) " >&6
 else $as_nop
-  ac_cv_prog_cxx_98=no
+  ac_cv_prog_cxx_cxx98=no
 ac_save_CXX=$CXX
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
@@ -27261,7 +27261,7 @@ else $as_nop
 	 *tile*)
 	  qthread_cv_makecontext="yes"
 	 ;;
-	 *-linux-gnu*|*-linux)
+	 *-linux-gnu*|*-linux|*-linux-musl)
 	 qthread_cv_makecontext="yes"
 	 ;;
 	 *-cygwin)
@@ -27339,7 +27339,7 @@ else $as_nop
 	 *tile*)
 	  qthread_cv_makecontext="yes"
 	 ;;
-	 *-linux-gnu*|*-linux)
+	 *-linux-gnu*|*-linux|*-linux-musl)
 	 qthread_cv_makecontext="yes"
 	 ;;
 	 *-cygwin)
@@ -27417,7 +27417,7 @@ else $as_nop
 	 *tile*)
 	  qthread_cv_makecontext="yes"
 	 ;;
-	 *-linux-gnu*|*-linux)
+	 *-linux-gnu*|*-linux|*-linux-musl)
 	 qthread_cv_makecontext="yes"
 	 ;;
 	 *-cygwin)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -930,38 +930,6 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
 }
 
 
-const Type* Resolver::tryResolveCrossTypeInitEq(const AstNode* ast,
-                                                QualifiedType lhsType,
-                                                QualifiedType rhsType) {
-
-  const Type* t = lhsType.type();
-  if (t->isRecordType() || t->isUnionType()) {
-    // use the regular VAR kind for this query
-    // (don't want a type-expr lhsType to be considered a TYPE here)
-    lhsType = QualifiedType(QualifiedType::VAR, lhsType.type());
-    rhsType = QualifiedType(QualifiedType::VAR, rhsType.type());
-
-    std::vector<CallInfoActual> actuals;
-    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
-    actuals.push_back(CallInfoActual(rhsType, UniqueString()));
-    auto ci = CallInfo (/* name */ USTR("init="),
-                        /* calledType */ lhsType,
-                        /* isMethodCall */ true,
-                        /* hasQuestionArg */ false,
-                        /* isParenless */ false,
-                        actuals);
-    const Scope* scope = scopeForId(context, ast->id());
-    auto c = resolveGeneratedCall(context, ast, ci, scope, poiScope);
-    if (c.mostSpecific().isEmpty()) {
-      return nullptr;
-    } else {
-      return lhsType.type(); // TODO: this might need to be an instantiation
-    }
-  }
-
-  return nullptr;
-}
-
 static const CompositeType*
 getTypeWithCustomInfer(Context* context, const Type* type) {
   if (auto rec = type->getCompositeType()) {
@@ -1057,15 +1025,19 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
       // For a record/union, check for an init= from the provided type
-      const Type* foundInitEqResultType =
-        tryResolveCrossTypeInitEq(declForErr, declaredType, initExprType);
-
-      if (!foundInitEqResultType) {
+      const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
+                                    declaredType.type()->isUnionType());
+      if (!(isRecordOrUnion &&
+            tryResolveInitEq(context, declForErr, declaredType.type(),
+                             initExprType.type(), poiScope))) {
         CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
                     initForErr, declaredType.type(), initExprType.type());
         typePtr = ErroneousType::get(context);
       } else {
-        typePtr = foundInitEqResultType;
+        // TODO: this might need to be an instantiation
+        // when we init= to create a type on a generic declared type, we want
+        // the type produced by the init= call
+        typePtr = declaredType.type();
       }
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
@@ -1352,6 +1324,15 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
         }
       }
 
+      // for an initializer expression that is the default value of a formal,
+      // check if we have the formal type already and then use that to
+      // compute the QTkind now rather than trying to getTypeForDecl first,
+      // which will fail in cases where an implicit conversion is needed
+      if (!isVarArgs && typeExprT.hasTypePtr() &&
+          (isFormal || (signatureOnly && isField))) {
+        // update qtKind with the result of resolving the intent
+        computeFormalIntent(decl, qtKind, typeExprT.type(), typeExprT.param());
+      }
       // Check that the initExpr type is compatible with declared type
       // Check kinds are OK
       // Handle any implicit conversions / instantiations
@@ -1381,19 +1362,6 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
   if (isVarArgs) {
     typePtr = computeVarArgTuple(*this, decl->toVarArgFormal(),
                                  qtKind, typePtr);
-  } else if (isFormal || (signatureOnly && isField)) {
-    // compute the intent for formals (including type constructor formals)
-    bool isThis = decl->name() == USTR("this");
-    bool isInit = false;
-    if (symbol) {
-      if (auto named = symbol->toNamedDecl()) {
-        isInit = named->name() == USTR("init") ||
-                 named->name() == USTR("init=");
-      }
-    }
-    auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
-    // update qtKind with the result of resolving the intent
-    qtKind = resolveIntent(formalQt, isThis, isInit);
   }
 
   // adjust tuple declarations for value / referential tuples
@@ -1418,6 +1386,24 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
   ResolvedExpression& result = byPostorder.byAst(decl);
   result.setType(QualifiedType(qtKind, typePtr, paramPtr));
+}
+
+void Resolver::computeFormalIntent(const uast::NamedDecl *decl,
+                                   types::QualifiedType::Kind &qtKind,
+                                   const types::Type *typePtr,
+                                   const types::Param *paramPtr) {
+  // compute the intent for formals (including type constructor formals)
+  bool isThis = decl->name() == USTR("this");
+  bool isInit = false;
+  if (symbol) {
+    if (auto named = symbol->toNamedDecl()) {
+      isInit = named->name() == USTR("init") ||
+               named->name() == USTR("init=");
+    }
+  }
+  auto formalQt = QualifiedType(qtKind, typePtr, paramPtr);
+  // update qtKind with the result of resolving the intent
+  qtKind = resolveIntent(formalQt, isThis, isInit);
 }
 
 void
@@ -1972,6 +1958,43 @@ bool Resolver::resolveSpecialOpCall(const Call* call) {
   return false;
 }
 
+bool Resolver::resolveSpecialPrimitiveCall(const Call* call) {
+  auto primCall = call->toPrimCall();
+  if (!primCall) return false;
+
+  if (primCall->prim() == PRIM_RESOLVES) {
+    QualifiedType result;
+
+    if (primCall->numActuals() != 1) {
+      result = typeErr(primCall, "invalid call to \"resolves\" primitive");
+    } else {
+      auto resultAndErrors = context->runAndTrackErrors([&](Context* context) {
+        primCall->actual(0)->traverse(*this);
+        return byPostorder.byAst(primCall->actual(0)).type();
+      });
+
+      bool resultBool = true;
+      if (!resultAndErrors.ranWithoutErrors()) {
+        // Errors were emitted, so even if we have a type, it doesn't
+        // "resolve".
+        resultBool = false;
+      } else if (resultAndErrors.result().isErroneousType() ||
+                 resultAndErrors.result().isUnknown()) {
+        // We got an erroneous or unknown type, so it didn't resolve.
+        resultBool = false;
+      }
+
+      result = QualifiedType(QualifiedType::PARAM, BoolType::get(context),
+                             BoolParam::get(context, resultBool));
+    }
+
+    byPostorder.byAst(primCall).setType(result);
+    return true;
+  }
+
+  return false;
+}
+
 bool Resolver::resolveSpecialKeywordCall(const Call* call) {
   if (!call->isFnCall()) return false;
 
@@ -2008,6 +2031,8 @@ bool Resolver::resolveSpecialKeywordCall(const Call* call) {
 
 bool Resolver::resolveSpecialCall(const Call* call) {
   if (resolveSpecialOpCall(call)) {
+    return true;
+  } else if (resolveSpecialPrimitiveCall(call)) {
     return true;
   } else if (resolveSpecialNewCall(call)) {
     return true;
@@ -3223,6 +3248,15 @@ bool Resolver::enter(const Call* call) {
     // Don't visit the children since we already did
     return false;
   }
+
+  // Do not descend into children for 'prim resolves' since it accepts a single
+  // _expression_ (not a value!) and checks if it resolves.
+  if (auto primCall = call->toPrimCall()) {
+    if (primCall->prim() == PRIM_RESOLVES) {
+      return false;
+    }
+  }
+
   return true;
 }
 
@@ -3452,7 +3486,13 @@ void Resolver::exit(const Dot* dot) {
     } else {
       receiverType = ErroneousType::get(context);
     }
-    r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+
+    if (!receiver.type().isType()) {
+      r.setType(QualifiedType(QualifiedType::TYPE, receiverType));
+    } else {
+      r.setType(CHPL_TYPE_ERROR(context, DotTypeOnType, dot, receiverType,
+                                receiver.toId()));
+    }
     return;
   }
 

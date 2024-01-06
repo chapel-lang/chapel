@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -375,6 +375,13 @@ struct ParserContext {
   buildRegularFunctionDecl(YYLTYPE location, FunctionParts& fp);
 
   CommentsAndStmt buildFunctionDecl(YYLTYPE location, FunctionParts& fp);
+
+  ErroneousExpression* checkForFunctionErrors(FunctionParts& fp,
+                                              AstNode* retType);
+
+  void enterScopeForFunctionDecl(FunctionParts& fp,
+                                 AstNode* retType);
+  void exitScopeForFunctionDecl(FunctionParts& fp);
 
   AstNode* buildLambda(YYLTYPE location, FunctionParts& fp);
 

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -779,9 +779,6 @@ void checkUseBeforeDefs(FnSymbol* fn) {
           if (isFnSymbol(fn->defPoint->parentSymbol) == false) {
             const char* name = use->unresolved;
 
-            if (tryReplaceStridable(call, name, use))
-              continue;
-
             // Only complain one time
             if (undeclared.find(name) == undeclared.end()) {
               USR_FATAL_CONT(use,
@@ -885,48 +882,6 @@ static Symbol* theDefinedSymbol(BaseAST* ast) {
   }
 
   return retval;
-}
-
-static bool replaceWithStridesField(Symbol* stridesField, Expr* use) {
-  SET_LINENO(use);
-  NamedExpr* ne = toNamedExpr(use->parentExpr);
-  if (ne != nullptr && !strcmp(ne->name, "stridable"))
-    ne->replace(new NamedExpr("strides", new SymExpr(stridesField)));
-  else
-    use->replace(new SymExpr(stridesField));
-  return true;
-}
-
-static bool replaceWithStridableCall(Symbol* stridesField, Expr* use) {
-  SET_LINENO(use);
-  use->replace(new CallExpr("chpl_stridable", stridesField));
-  return true;
-}
-
-// Supports deprecation by Vass in 1.31 to implement #17131.
-// chpl__buildDomainRuntimeType(..., stridable) -->
-// chpl__buildDomainRuntimeType(..., strides) if we are in a DSI class.
-bool tryReplaceStridable(CallExpr* parentCall, const char* name,
-                         UnresolvedSymExpr* use)
-{
-  if (strcmp(name, "stridable")) return false;
-
-  Symbol* stridesField = stridesFieldInDsiContext(use);
-  if (stridesField == nullptr) return false;
-
-  if (parentCall == nullptr)
-    return replaceWithStridableCall(stridesField, use);
-
-  if (UnresolvedSymExpr* callee = toUnresolvedSymExpr(parentCall->baseExpr)) {
-    if (!strcmp(callee->unresolved, "chpl__buildDomainRuntimeType"))
-      return replaceWithStridesField(stridesField, use);
-  }
-  else if (dsiTypeBeingConstructed(parentCall) != nullptr) {
-    return replaceWithStridesField(stridesField, use);
-  }
-
-  // cannot use 'strides' directly because the context may not take it
-  return replaceWithStridableCall(stridesField, use);
 }
 
 /************************************* | **************************************

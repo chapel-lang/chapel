@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -326,6 +326,34 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   wr.message(
       "Dot expressions are not allowed in the 'except' or 'only' list of a "
       "'use' or 'import'.");
+}
+
+void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  auto dottedType = std::get<const types::Type*>(info);
+  auto typeDeclId = std::get<ID>(info);
+  const bool haveType = dottedType && !dottedType->isErroneousType();
+  if (haveType) {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type ('",
+               dottedType, "').");
+  } else {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
+  }
+  wr.code(dot, {dot});
+  if (haveType) {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is the type '",
+        dottedType, "'.");
+  } else {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is a type.");
+  }
+  if (typeDeclId) {
+    wr.message("The receiver is declared as a 'type' variable here:");
+    wr.code(typeDeclId);
+  }
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {

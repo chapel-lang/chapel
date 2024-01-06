@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -40,9 +40,11 @@ def main():
     parser.add_argument('--disable-rule', action='append', dest='disabled_rules', default=[])
     parser.add_argument('--enable-rule', action='append', dest='enabled_rules', default=[])
     parser.add_argument('--lsp', action='store_true', default=False)
+    parser.add_argument('--skip-unstable', action='store_true', default=False)
+    parser.add_argument('--internal-prefix', action='append', dest='internal_prefixes', default=[])
     args = parser.parse_args()
 
-    driver = LintDriver()
+    driver = LintDriver(skip_unstable = args.skip_unstable, internal_prefixes = args.internal_prefixes)
     # register rules before enabling/disabling
     register_rules(driver)
     driver.disable_rules(*args.disabled_rules)
@@ -51,6 +53,8 @@ def main():
     if args.lsp:
         run_lsp(driver)
         return
+
+    printed_warning = False
 
     for (filename, context) in chapel.files_with_contexts(args.filenames):
         # Silence errors, warnings etc. -- we're just linting.
@@ -61,6 +65,10 @@ def main():
             violations.sort(key=lambda f : f[0].location().start()[0])
             for (node, rule) in violations:
                 print_violation(node, rule)
+                printed_warning = True
+
+    if printed_warning:
+        sys.exit(1)
 
 if __name__ == "__main__":
     main()

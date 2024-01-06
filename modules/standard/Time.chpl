@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -148,6 +148,7 @@ module Time {
   /* Specifies the day of the week */
   @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   proc DayOfWeek {
     compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
@@ -163,6 +164,7 @@ module Time {
     Saturday =  6,
     Sunday =    7
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   proc ISODayOfWeek {
     compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
@@ -191,17 +193,23 @@ module Time {
   private const DI100Y = daysBeforeYear(101);
   private const DI4Y   = daysBeforeYear(5);
 
-  private proc getTimeOfDay() {
+  private proc getTimeOfDay() : (int, int) {
+    // POSIX sys/time.h types used with gettimeofday
+    extern type time_t;
+    extern type suseconds_t;
     extern "struct timeval" record timeval {
-      var tv_sec: int;
-      var tv_usec: int;
+      var tv_sec: time_t;
+      var tv_usec: suseconds_t;
     }
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
     var ret = gettimeofday(tv, nil);
     assert(ret == 0);
-    return (tv.tv_sec, tv.tv_usec);
+
+    // These should both fit in our 64-bit int
+    return (__primitive("cast", int, tv.tv_sec),
+            __primitive("cast", int, tv.tv_usec));
   }
 
   private proc tm_zoneType type {
@@ -2099,7 +2107,7 @@ module Time {
   }
 
   @chpldoc.nodoc
-  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : timeDelta {
+  operator timeDelta.>(lhs: timeDelta, rhs: timeDelta) : bool {
     const ls = (lhs.days*(24*60*60) + lhs.seconds);
     const rs = (rhs.days*(24*60*60) + rhs.seconds);
     if ls > rs then return true;
@@ -2146,6 +2154,7 @@ module Time {
 
   @chpldoc.nodoc
   operator :(t: timeDelta, type s:string) : string {
+    import Math;
     var str: string;
     if t.days != 0 {
       str = t.days: string + " day";
@@ -2161,13 +2170,13 @@ module Time {
     str += hours: string + ":";
     if minutes < 10 then
       str += "0";
-    str += minutes + ":";
+    str += minutes:string + ":";
     if seconds < 10 then
       str += "0";
-    str += seconds;
+    str += seconds:string;
     if microseconds != 0 {
       str += ".";
-      const usLog10 = log10(microseconds): int;
+      const usLog10 = Math.log10(microseconds): int;
       for i in 1..(5-usLog10) {
         str += "0";
       }
@@ -2419,7 +2428,7 @@ record Timer {
      Clears the elapsed time. If the timer is running then it is restarted
      otherwise it remains in the stopped state.
   */
-  proc clear() : void {
+  proc ref clear() : void {
     accumulated = 0.0;
 
     if running {

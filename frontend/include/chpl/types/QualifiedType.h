@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -186,6 +186,19 @@ class QualifiedType final {
       (that cannot be modified by any task / other reference to it). */
   bool isImmutable() const {
     return uast::isImmutableQualifier(kind_);
+  }
+  /**
+    Returns true if the value is a reference, whether constant or mutable.
+   */
+  bool isRef() const {
+    return uast::isRefQualifier(kind_);
+  }
+  /**
+    Returns true if the value is an in-intent formal, whether constant or
+    mutable.
+   */
+  bool isIn() const {
+    return uast::isInQualifier(kind_);
   }
 
   /**

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -38,14 +38,6 @@ module ChplConfig {
   @unstable("'ChplConfig.CHPL_HOME' is unstable and may be replaced with a different way to access this information in the future");
   param CHPL_HOME:string;
   CHPL_HOME = __primitive("get compiler variable", "CHPL_HOME");
-
-  /* Deprecated */
-  @deprecated(notes="CHPL_AUX_FILESYS is deprecated, please let us know if this is a problem")
-  proc CHPL_AUX_FILESYS param :string {
-    // use a proc here because the split initialization caused an
-    // additional deprecation warning
-    return __primitive("get compiler variable", "CHPL_AUX_FILESYS");
-  }
 
   /* See :ref:`readme-chplenv.CHPL_TARGET_PLATFORM` for more information. */
   @unstable("'ChplConfig.CHPL_TARGET_PLATFORM' is unstable and may be replaced with a different way to access this information in the future");

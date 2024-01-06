@@ -388,8 +388,8 @@ that comparison is ``true`` will be selected and control transferred to
 the associated statement. If the comparison is always ``false``, the
 statement associated with the keyword ``otherwise``, if it exists, will
 be selected and control transferred to it. There may be at most one
-``otherwise`` statement and its location within the select statement
-does not matter.
+``otherwise`` statement and it must be the last clause of the `select`
+statement.
 
 Each statement embedded in the *when-statement* or the
 *otherwise-statement* has its own scope whether or not an explicit block

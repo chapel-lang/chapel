@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -19,47 +19,65 @@
  */
 
 /*
-   Support for pseudorandom number generation.
+    Support for pseudorandom number generation.
 
-   This module defines a :record:`randomStream` type (based upon the PCG
-   algorithm) that can be used to generate pseudorandom numbers in parallel.
-   The ``randomStream`` type can be used to generate individual random numbers
-   via :proc:`randomStream.getNext` or to fill an array with random numbers via
-   :proc:`randomStream.fill`. There are also several other methods available
-   for manipulating arrays, parallel iteration, or adjusting the stream's
-   position.
+    This module defines a :record:`randomStream` type (based upon the PCG
+    algorithm) that can be used to generate pseudorandom numbers in parallel.
+    The ``randomStream`` type can be used to generate individual random numbers
+    via :proc:`randomStream.getNext` or to fill an array with random numbers via
+    :proc:`randomStream.fill`. There are also several other methods available
+    for manipulating arrays, parallel iteration, or adjusting the stream's
+    position.
 
-   This module contains a few top-level procedures that can be used for
-   manipulating arrays:
+    This module contains a few top-level procedures that can be used for
+    manipulating arrays:
 
-   * :proc:`fillRandom` fills an array with random numbers in parallel
-   * :proc:`shuffle` randomly re-arranges the elements of an array
-   * :proc:`permutation` creates a random permutation of an array's domain (*unstable*).
+    * :proc:`fillRandom` fills an array with random numbers in parallel
+    * :proc:`shuffle` randomly re-arranges the elements of an array
+    * :proc:`permutation` creates a random permutation of an array's domain (*unstable*).
 
-    .. note:: **Note about deprecations:**
+    Seed Generation
+    ---------------
 
-      Before Chapel 1.33, this module was unstable and defined an abstract
-      random stream interface (:class:`RandomStreamInterface`) and two
-      implementations of that interface (based on the PCG and NPB algorithms).
+    The :record:`randomStream` type can be initialized with a seed value.
+    When not provided explicitly, a seed will be generated in an
+    implementation specific manner based on the current time. This behavior
+    is currently unstable and may change in the future.
 
-      As of Chapel 1.33, this module is partially stable and defines a single
-      :record:`randomStream` type that is based on the PCG algorithm. The
-      NPB algorithm is still available via the :mod:`NPBRandom` package module.
-      The ``RandomStreamInterface`` is now deprecated.
+    Additionally, the standalone methods in this module that generate their
+    own seed values are currently unstable.
 
-      Various symbols used to switch between the two algorithms have also been
-      deprecated. These include:
+    Prior to Chapel 1.33, seed values could be generated with the now
+    deprecated ``RandomSupport.SeedGenerator`` type. For a non-deprecated
+    replacement, see :proc:`~NPBRandom.oddTimeSeed`. Note that the
+    ``NPBRandom`` module is not stable.
 
-      * :proc:`createRandomStream`
-      * :type:`RNG`
-      * :param:`defaultRNG`
-      * :type:`RandomStream`
-      * overloads of the top-level methods that accept an ``algorithm`` argument
 
-      In a future release, we intend to use Chapel's interface features to
-      define one or more interfaces for random streams. At that point, the
-      :record:`randomStream` type will be an implementation of the interface(s)
-      for generating a seedable stream of random numbers.
+    Note About Deprecations and Future Work
+    ---------------------------------------
+
+    Before Chapel 1.33, this module was unstable. It defined an abstract
+    random stream interface (:class:`RandomStreamInterface`) and two
+    implementations of that interface (based on the PCG and NPB algorithms).
+
+    As of Chapel 1.33, this module is partially stable and defines a single
+    :record:`randomStream` type that is based on the PCG algorithm. The
+    NPB algorithm is still available via the :mod:`NPBRandom` package module.
+    The ``RandomStreamInterface`` is now deprecated.
+
+    Various symbols used to switch between the two algorithms have also been
+    deprecated. These include:
+
+    * :proc:`createRandomStream`
+    * :type:`RNG`
+    * :param:`defaultRNG`
+    * :type:`RandomStream`
+    * overloads of the top-level methods that accept an ``algorithm`` argument
+
+    In a future release, we intend to use Chapel's interface features to
+    define one or more interfaces for random streams. At that point, the
+    :record:`randomStream` type will be an implementation of the interface(s)
+    for generating a seedable stream of random numbers.
 
 */
 module Random {

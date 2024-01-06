@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1628,21 +1628,6 @@ private extern proc qio_format_error_arg_mismatch(arg:int):errorCode;
 extern proc qio_format_error_bad_regex():errorCode;
 private extern proc qio_format_error_write_regex():errorCode;
 
-@chpldoc.nodoc
-// flag to controll whether the dynamic buffering optimization is active
-//  * when 'true', read and write ops above a certain size can bypass the IO
-//      rutime's buffering mechanism in some cases
-//      (see `_qio_buffered_write` and `_qio_buffered_read` in `qio.c` for more)
-//  * when 'false', buffering is always used
-config param IOSkipBufferingForLargeOps = true;
-private extern var qio_write_unbuffered_threshold: c_ssize_t;
-private extern var qio_read_unbuffered_threshold: c_ssize_t;
-
-if !IOSkipBufferingForLargeOps {
-  qio_write_unbuffered_threshold = max(c_ssize_t);
-  qio_read_unbuffered_threshold = max(c_ssize_t);
-}
-
 /*
    :returns: the default I/O style. See :record:`iostyle`
              and :ref:`about-io-styles`
@@ -2071,8 +2056,9 @@ proc file.unlock() {
 */
 
 @chpldoc.nodoc
-proc file.filePlugin() : QioPluginFile? {
-  return qio_file_get_plugin(this._channel_internal);
+proc file.filePlugin() : borrowed QioPluginFile? {
+  var vptr = qio_file_get_plugin(this._file_internal);
+  return vptr:borrowed QioPluginFile?;
 }
 
 // File style cannot be modified after the file is created;
@@ -3652,6 +3638,20 @@ private proc warnBinaryRead(type t, param depth : int) throws {
 
   See :ref:`the serializers technote<ioSerializers>` for a general overview
   of Serializers and their usage.
+
+  .. warning::
+
+    In the 1.32 release this format included bytes representing the length of
+    a string. Also, classes were serialized beginning with a single byte to
+    indicate whether the class value was ``nil``. This behavior was changed
+    in the subsequent release to provide users with a more flexible
+    serializer that did not insert bytes that the user did not request. A
+    compile-time warning will be issued to indicate that this behavior has
+    changed. Users can recompile with ``-swarnBinaryStructured=false`` to
+    silence the warning.
+
+    To mimic the old behavior, please use the unstable
+    :mod:`ObjectSerialization` module.
 */
 record binarySerializer {
   /*
@@ -3713,17 +3713,6 @@ record binarySerializer {
     .. note::
 
       Serializing and deserializing enums is not stable in this format.
-
-    .. warning::
-
-      In the 1.32 release this format included bytes representing the length of
-      a string. Also, classes were serialized beginning with a single byte to
-      indicate whether the class value was ``nil``. This behavior was changed
-      in the subsequent release to provide users with a more flexible
-      serializer that did not insert bytes that the user did not request. A
-      compile-time warning will be issued to indicate that this behavior has
-      changed. Users can recompile with ``-swarnBinaryStructured=false`` to
-      silence the warning.
 
     :arg writer: The ``fileWriter`` used to write serialized output.
     :arg val: The value to be serialized.
@@ -4040,6 +4029,12 @@ type BinarySerializer = binarySerializer;
   binary format. Individual methods on this type may clarify relevant behavior
   specific to deserialization
 
+  .. note::
+
+    Deserializing ``string`` or ``bytes`` types will result in an
+    IllegalArgumentError because these types cannot currently be deserialized
+    with the raw nature of the format.
+
   .. warning::
 
     In the 1.32 release this format included bytes representing the length of
@@ -4050,6 +4045,10 @@ type BinarySerializer = binarySerializer;
     compile-time warning will be issued to indicate that this behavior has
     changed. Users can recompile with ``-swarnBinaryStructured=false`` to
     silence the warning.
+
+    To mimic the old behavior, please use the unstable
+    :mod:`ObjectSerialization` module.
+
 */
 record binaryDeserializer {
   /*
@@ -8728,6 +8727,28 @@ proc fileReader.readByte(ref byte: uint(8)): bool throws {
   return false;
 }
 
+/*
+  Controll whether large read/write operations can bypass the IO runtime's
+  buffering mechanism.
+
+  This optimization is on by default as it can improve performance for large
+  operations where buffering doesn't significantly reduce the number of system
+  I/O calls and thus adds unnecessary overhead.
+
+  To disable the optimization, compile with ``-sIOSkipBufferingForLargeOps=false``.
+
+  Note that this flag controls an implementation-specific feature and
+  thus is not part of the Chapel language specification.
+*/
+@unstable("IOSkipBufferingForLargeOps is unstable and could change or be removed in the future")
+config param IOSkipBufferingForLargeOps = true;
+private extern var qio_write_unbuffered_threshold: c_ssize_t;
+private extern var qio_read_unbuffered_threshold: c_ssize_t;
+
+if !IOSkipBufferingForLargeOps {
+  qio_write_unbuffered_threshold = max(c_ssize_t);
+  qio_read_unbuffered_threshold = max(c_ssize_t);
+}
 
 /*
   Write ``size`` codepoints from a :type:`~String.string` to a ``fileWriter``
@@ -9922,57 +9943,6 @@ proc file.fstype():int throws {
   }
   if err then try ioerror(err, "in file.fstype()");
   return t:int;
-}
-
-/*
-   Returns the 'best' locale to run something working with the region
-   of the file in start..end-1.
-
-   This *must* return the same result when called from different locales.
-   Returns a domain of locales that are "best" for the given region. If no
-   locales are "best" we return a domain containing all locales.
-
-   :arg start: the file offset (starting from 0) where the region begins
-   :arg end: the file offset just after the region
-   :returns: a set of locales that are best for working with this region
-   :rtype: domain(locale)
- */
-@deprecated(notes="file.localesForRegion is deprecated")
-proc file.localesForRegion(start:int(64), end:int(64)) {
-
-  proc findloc(loc:string, locs:c_ptr(c_ptrConst(c_char)), end:int) {
-    for i in 0..end-1 {
-      if (loc == locs[i]) then
-        return true;
-    }
-    return false;
-  }
-
-  var ret: domain(locale);
-  on this._home {
-    var err:errorCode;
-    var locs: c_ptr(c_ptrConst(c_char));
-    var num_hosts:c_int;
-    err = qio_locales_for_region(this._file_internal, start, end, c_ptrTo(locs), num_hosts);
-    // looping over Locales enforces the ordering constraint on the locales.
-    for loc in Locales {
-      if (findloc(loc.name, locs, num_hosts:int)) then
-        ret += loc;
-    }
-
-    // We allocated memory in the runtime for this, so free it now
-    if num_hosts != 0 {
-      for i in 0..num_hosts-1 do
-        deallocate(locs[i]);
-      deallocate(locs);
-    }
-
-    // We found no "good" locales. So any locale is just as good as the next
-    if ret.size == 0 then
-      for loc in Locales do
-        ret += loc;
-  }
-  return ret;
 }
 
 

@@ -220,16 +220,20 @@ proc test_tzinfo_now() {
 
 proc test_tzinfo_fromtimestamp() {
   proc getTimeOfDay() {
+    // POSIX sys/time.h types used with gettimeofday
+    extern type time_t;
+    extern type suseconds_t;
     extern "struct timeval" record timeval {
-      var tv_sec: int;
-      var tv_usec: int;
+      var tv_sec: time_t;
+      var tv_usec: suseconds_t;
     }
     extern proc gettimeofday(ref tv: timeval, tz): int;
 
     var tv: timeval;
     if gettimeofday(tv, nil) != 0 then
       halt("error in call to gettimeofday()");
-    return (tv.tv_sec, tv.tv_usec);
+    return (__primitive("cast", int, tv.tv_sec),
+            __primitive("cast", int, tv.tv_usec));
   }
 
   var ts = getTimeOfDay()(1);

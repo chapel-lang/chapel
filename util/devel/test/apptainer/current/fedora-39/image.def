@@ -6,9 +6,8 @@ From: quay.io/fedora/fedora:39
 
 %post
     /provision-scripts/dnf-deps.sh
-    # installing llvm-devel installs LLVM 16
-    # and I dont see how to install clang 15
-    #/provision-scripts/dnf-llvm.sh
+    # installs llvm / clang version 16 ?
+    /provision-scripts/dnf-llvm.sh
 
 %runscript
     ../../provision-scripts/run.sh "$@"

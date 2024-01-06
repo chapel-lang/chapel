@@ -577,21 +577,32 @@ Ref Variables
 -------------
 
 A *ref* variable is a variable declared using the ``ref`` keyword. A ref
-variable serves as an alias to another variable, field or array element.
+variable serves as an alias to another variable, field, tuple component,
+or array element.
 The declaration of a ref variable must contain ``initialization-part``,
-which specifies what is to be aliased and can be a variable or any
-lvalue expression.
+which specifies what is to be aliased.
+If the ref variable declaration contains ``type-part``,
+this type must equal the type of ``initialization-part``.
+If ``type-part`` is a generic type, the type of ``initialization-part``
+must be its instantiation.
+If the ``initialization-part`` is also a ref variable or a call to a function
+with a ``ref`` return intent, the declared ref variable is an alias
+to the variable being aliased by the ``initialization-part``.
 
 Access or update to a ref variable is equivalent to access or update to
 the variable being aliased. For example, an update to a ref variable is
 visible via the original variable, and visa versa.
 
-If the expression being aliased is a runtime constant variable, a formal
+A ref variable can also be declared using ``const ref``.
+Updates to ``const ref`` variables are disallowed.
+
+The ref variable must be declared using ``const ref`` if its
+``initialization-part`` disallows updates, for example if
+``initialization-part`` is a `const` or `const ref` variable, a formal
 argument with a ``const ref`` intent (:ref:`The_Const_Ref_Intent`), or a
-call to a function with a ``const ref`` return intent
-(:ref:`Const_Ref_Return_Intent`), the corresponding ref variable must be
-declared as ``const ref``.  Parameter constants and expressions cannot be
-aliased.
+call to a function with a ``const ref`` or ``out`` return intent
+(:ref:`Const_Ref_Return_Intent`, :ref:`Out_Return_Intent`).
+Parameter constants and expressions cannot be aliased.
 
    *Open issue*.
 
@@ -601,13 +612,19 @@ aliased.
    ``const ref`` alias, making changes visible through the alias, and
    making the behavior undefined.
 
+   *Open issue*.
+
+   The behavior of a ``ref`` alias to a domain or array variable
+   when ``type-part`` is present is an open issue.
+   In particular, should the runtime types of ``type-part`` and
+   the variable being aliased be equal, or is the compile-time
+   type equality sufficient?
+
 ..
 
    *Example (refVariables.chpl)*.
 
    For example, the following code:
-
-   
 
    .. code-block:: chapel
 
@@ -631,8 +648,6 @@ aliased.
       writeln("myConstRef = ", myConstRef);
 
    prints out:
-
-   
 
    .. code-block:: printoutput
 

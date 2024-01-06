@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -420,7 +420,7 @@ static void test3(Parser* parser) {
   TEST_USER_STRING("proc main(args: [] string) {\n}", "main(args: [] string)")
   TEST_USER_STRING("proc MYPROC(FORMAL: single int) { }",
                    "MYPROC(FORMAL: single int)")
-  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param return true;",
+  TEST_USER_STRING("inline operator ==(a: _nilType, b: _nilType) param do return true;",
                    "==(a: _nilType, b: _nilType)")
   TEST_USER_STRING("private proc param R.prm2(arg) param : string { }",
                    "private param R.prm2(arg)")

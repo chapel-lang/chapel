@@ -1,0 +1,1 @@
+--munge-with-ids --llvm-print-ir foo

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -57,7 +57,6 @@ Symbol *gDummyRef = NULL;
 Symbol *gFixupRequiredToken = NULL;
 Symbol *gTypeDefaultToken = NULL;
 Symbol *gLeaderTag = NULL, *gFollowerTag = NULL, *gStandaloneTag = NULL;
-Symbol *gStrideOne = NULL, *gStrideAny = NULL; // deprecated by Vass in 1.31
 Symbol *gModuleToken = NULL;
 Symbol *gNoInit = NULL;
 Symbol *gSplitInit = NULL;

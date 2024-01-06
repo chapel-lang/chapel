@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -24,8 +24,8 @@
 #include "stmt.h"
 
 // Both 'forall' and 'foreach' loops have shadow variables. We have code that we want to be able
-// to process either but the nearest common ancenstor to these two classes is 'Expr'.
-// In the long run it might be beneficial to rearrange our class heirarchy so these two share
+// to process either but the nearest common ancestor to these two classes is 'Expr'.
+// In the long run it might be beneficial to rearrange our class hierarchy so these two share
 // a closer ancestor but for the time being I use the following interface for the shared
 // behavior between the two that's used when processing shadow variables.
 struct LoopWithShadowVarsInterface {

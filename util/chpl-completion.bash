@@ -68,6 +68,7 @@ _chpl ()
 --dyno-break-on-hash \
 --dyno-debug-trace \
 --dyno-gen-lib \
+--dyno-gen-std \
 --dyno-scope-bundled \
 --dyno-scope-production \
 --dyno-scope-resolve \
@@ -166,6 +167,7 @@ _chpl ()
 --mllvm \
 --module-dir \
 --munge-user-idents \
+--munge-with-ids \
 --network-atomics \
 --nil-checks \
 --no-allow-noinit-array-not-pod \
@@ -238,6 +240,7 @@ _chpl ()
 --no-memory-frees \
 --no-minimal-modules \
 --no-munge-user-idents \
+--no-munge-with-ids \
 --no-nil-checks \
 --no-optimize \
 --no-optimize-forall-unordered-ops \
@@ -271,6 +274,7 @@ _chpl ()
 --no-report-auto-aggregation \
 --no-report-auto-local-access \
 --no-report-blocking \
+--no-resolve-concrete-fns \
 --no-scalar-replacement \
 --no-specialize \
 --no-split-initialization \
@@ -352,6 +356,7 @@ _chpl ()
 --report-promotion \
 --report-scalar-replace \
 --report-vectorized-loops \
+--resolve-concrete-fns \
 --savec \
 --scalar-replace-limit \
 --scalar-replacement \

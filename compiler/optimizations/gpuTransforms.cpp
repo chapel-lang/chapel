@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -438,7 +438,7 @@ private:
   void cleanupAssertGpuizable();
   bool isAlreadyInGpuKernel();
   bool parentFnAllowsGpuization();
-  bool containsReductionTemporary();
+  bool symsInBodyAreGpuizable();
   bool callsInBodyAreGpuizable();
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
@@ -537,7 +537,7 @@ bool GpuizableLoop::isAlreadyInGpuKernel() {
 bool GpuizableLoop::evaluateLoop() {
   return isReportWorthy() &&
          parentFnAllowsGpuization() &&
-         !containsReductionTemporary() &&
+         !symsInBodyAreGpuizable() &&
          callsInBodyAreGpuizable() &&
          attemptToExtractLoopInformation();
 }
@@ -572,15 +572,22 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   return true;
 }
 
-// forall loops that contain a reduction intent introduce a temporary variable
-// with a special flag that we'll look for (for the time being we want to
-// not gpuize these loops).
-bool GpuizableLoop::containsReductionTemporary() {
+
+bool GpuizableLoop::symsInBodyAreGpuizable() {
   std::vector<SymExpr*> symExprs;
   collectSymExprs(this->loop_, symExprs);
   for(auto *symExpr : symExprs) {
+    // forall loops that contain a reduction intent introduce a temporary
+    // variable with a special flag that we'll look for (for the time being we
+    // want to not gpuize these loops).
     if(symExpr->symbol()->hasFlag(FLAG_REDUCTION_TEMP)) {
       return true;
+    }
+    // gotos that jump outside the loop cannot be gpuized
+    if (GotoStmt* gotostmt = toGotoStmt(symExpr->parentExpr)) {
+      if (auto label = toSymExpr(gotostmt->label)) {
+        if (!isDefinedInTheLoops(label->symbol(), {this->loop_})) return true;
+      }
     }
   }
   return false;
@@ -1255,10 +1262,6 @@ static CallExpr* generateGPUCall(GpuKernel& info, VarSymbol* numThreads) {
     call->insertAtTail(new_IntSymbol(blockSize));
   }
 
-  for_vector (Symbol, actual, info.kernelActuals()) {
-    call->insertAtTail(new SymExpr(actual));
-  }
-
   return call;
 }
 
@@ -1266,10 +1269,48 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                   GpuKernel &kernel) {
   BlockStmt* gpuBlock = new BlockStmt();
 
+  VarSymbol* cfg = insertNewVarAndDef(gpuBlock, "kernel_cfg", dtCVoidPtr);
+
+  CallExpr* initCfgCall = new CallExpr(PRIM_GPU_INIT_KERNEL_CFG,
+                    new_IntSymbol(kernel.kernelActuals().size()));
+  gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
+
+  for_vector (Symbol, actualSym, kernel.kernelActuals()) {
+    Type* actualValType = actualSym->typeInfo()->getValType();
+
+    if (isClass(actualValType) || (!actualSym->isRef() &&
+          !isAggregateType(actualValType))) {
+      // class: must be on GPU memory
+      // scalar: can be passed as an argument directly
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF)));
+    }
+    else if (actualSym->isRef()) {
+      // ref: we assume that it is not on GPU memory to be safe, so offload it,
+      // but while doing so, we don't need to get the address of it. Because we
+      // just copy the value pointed by it.
+      // ENGIN: it is questionable whether we want to do this. This is creating
+      // a copy of something that was referred to by this `ref`. Accessing a
+      // `ref` shouldn't trigger a copy, unless... it was put to a "task
+      // private" variable:
+      // ref x = y; foreach ... with (var inBody = x)
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::OFFLOAD)));
+    }
+    else {
+      // we don't know what this is: offload
+      gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actualSym,
+                                          new_IntSymbol(GpuArgKind::ADDROF |
+                                                        GpuArgKind::OFFLOAD)));
+    }
+  }
+
   // populate the gpu block
   VarSymbol *numThreads = generateNumThreads(gpuBlock, gpuLoop);
   CallExpr* gpuCall = generateGPUCall(kernel, numThreads);
+  gpuCall->insertAtTail(new SymExpr(cfg));
   gpuBlock->insertAtTail(gpuCall);
+  gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_DEINIT_KERNEL_CFG, cfg));
   gpuLoop.gpuLoop()->replace(gpuBlock);
 
   FnSymbol *fnContainingLoop = gpuBlock->getFunction();
@@ -1286,7 +1327,6 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
     // the conditional.
     gpuLoop.fixupNonGpuPath();
   }
-
 }
 
 static CallExpr* getGpuEligibleMarker(CForLoop* loop) {
@@ -1434,6 +1474,26 @@ static void logGpuizableLoops() {
   }
 }
 
+static void cleanupTaskIndependentCapturePrimitive(CallExpr *call) {
+  Expr* snippedChild = call->get(1)->remove();
+  call->replace(snippedChild);
+}
+
+// iterator lowering inserts AST like this in order to carry information about 'in'
+// intent variables to gpu lowering.
+//
+//   (given an 'in' intent for a variable 'x'):
+//     const capturedX = copy-of(x);
+//     var taskIndX = PRIM_TASK_IND_CAPTURE_OF(copy-of(capturedX));
+//
+// Once we're done with gpu lowering we no longer need this primitive and so we
+// remove it.
+static void cleanupTaskIndependentCapturePrimitives() {
+  for_alive_in_Vec(CallExpr, callExpr, gCallExprs)
+    if(callExpr->isPrimitive(PRIM_TASK_INDEPENDENT_SVAR_CAPTURE))
+      cleanupTaskIndependentCapturePrimitive(callExpr);
+}
+
 // ----------------------------------------------------------------------------
 
 void lateGpuTransforms() {
@@ -1454,6 +1514,8 @@ void lateGpuTransforms() {
                    gpuTransformTimer.elapsedSecs() << std::endl;
     }
   }
+
+  cleanupTaskIndependentCapturePrimitives();
 }
 
 bool isLoopGpuBound(CForLoop* loop) {

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -439,6 +439,7 @@ record regexMatch {
   var numBytes:int;
 }
 
+pragma "do not resolve unless called"
 @chpldoc.nodoc
 proc reMatch type
 {
@@ -633,7 +634,7 @@ record regex : serializable {
     :param:`~ChplConfig.CHPL_COMM`.
 
     .. note::
-       If you are looking to default intialize a :type:`regex`, you might be
+       If you are looking to default initialize a :type:`regex`, you might be
        looking for ``new regex("")``, which will create a regular expression
        matching the empty string.
   */

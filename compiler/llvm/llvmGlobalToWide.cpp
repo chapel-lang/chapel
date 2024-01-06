@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -46,6 +46,9 @@
 #include "llvm/ADT/Statistic.h"
 
 #include "llvm/IR/Attributes.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/IR/AttributeMask.h"
+#endif
 
 #if HAVE_LLVM_VER < 90
 #include "llvm/IR/CallSite.h"

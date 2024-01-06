@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -15,6 +15,13 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+# request C++14 -- or C++17 if using LLVM 16
+if (CHPL_LLVM_VERSION VERSION_LESS 16.0)
+  set(CMAKE_CXX_STANDARD 14)
+else()
+  set(CMAKE_CXX_STANDARD 17)
+endif()
+set(CMAKE_CXX_STANDARD_REQUIRED True)
 
 # Write the COPYRIGHT file, or update the existing file if the
 # the $CHPL_HOME/COPYRIGHT file has been modified
@@ -28,7 +35,6 @@ add_custom_command(
   COMMENT "writing COPYRIGHT file updates..."
   VERBATIM)
 add_executable(chpldoc chpldoc.cpp arg.cpp arg-helpers.cpp COPYRIGHT)
-set_property(TARGET chpldoc PROPERTY CXX_STANDARD 17)
 target_link_libraries(chpldoc ChplFrontend)
 target_include_directories(chpldoc PRIVATE
                            ${CHPL_MAIN_INCLUDE_DIR}

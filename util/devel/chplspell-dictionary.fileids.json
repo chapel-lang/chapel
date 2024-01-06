@@ -614,6 +614,9 @@
   "712148ae-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/include/chpl/framework/stringify-functions.h"
   ],
+  "a32da940-924f-11ee-8bda-4776592287bc": [
+    "frontend/include/chpl/libraries/LibraryFileFormat.h"
+  ],
   "389486f6-ac5b-11ed-b67e-4d191cd16eac": [
     "frontend/include/chpl/parsing/parser-error-classes-list.h"
   ],
@@ -977,11 +980,20 @@
   "6e4d0562-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/framework/ErrorWriter.cpp"
   ],
+  "da9ccc58-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/framework/UniqueString.cpp"
+  ],
   "7003a24e-5a61-11ed-baec-ef9f14c5b529": [
     "frontend/lib/framework/error-classes-list.cpp"
   ],
   "360f852e-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/immediates/num.cpp"
+  ],
+  "ceb6bab6-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/libraries/LibraryFile.cpp"
+  ],
+  "c7f2b9fa-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/libraries/LibraryFileWriter.cpp"
   ],
   "95534796-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/Parser.cpp"
@@ -1006,6 +1018,9 @@
   ],
   "d4c8ff4a-e553-11ec-a8be-cd81bce0efc4": [
     "frontend/lib/parsing/parser-yylloc-default.h"
+  ],
+  "d5cb2580-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/parsing/parser-yyltype.h"
   ],
   "45947086-9f74-11ec-866d-111c8d7a1817": [
     "frontend/lib/parsing/parsing-queries.cpp"
@@ -1081,6 +1096,9 @@
   ],
   "e091e076-d463-11ed-ae82-c11fabc62016": [
     "frontend/lib/util/filtering.cpp"
+  ],
+  "d8d61abe-924f-11ee-8bda-4776592287bc": [
+    "frontend/lib/util/git-version.cpp"
   ],
   "f0807cd2-12c0-11ed-a8be-cd81bce0efc4": [
     "frontend/lib/util/subprocess.cpp"
@@ -1243,7 +1261,7 @@
     "modules/packages/Curl.chpl"
   ],
   "733029d2-8aba-11e7-b3f1-10ddb1d4c3d5": [
-    "modules/packages/DistributedBag.chpl"
+    "modules/packages/DistributedBagDeprecated.chpl"
   ],
   "838b0068-8aba-11e7-b3f1-10ddb1d4c3d5": [
     "modules/packages/DistributedDeque.chpl"
@@ -1280,6 +1298,9 @@
   ],
   "3a59da00-3376-11e6-a3a6-10ddb1d4c3d5": [
     "modules/packages/MatrixMarket.chpl"
+  ],
+  "8885f7a4-9250-11ee-8bda-4776592287bc": [
+    "modules/packages/NPBRandom.chpl"
   ],
   "10db92e8-fecb-11ea-b2e8-10ddb1d4c3d5": [
     "modules/packages/ProtobufProtocolSupport.chpl"
@@ -1393,6 +1414,9 @@
   ],
   "ca5cd802-68b8-11ea-b972-843835579daa": [
     "runtime/include/chpl-comm.h"
+  ],
+  "9d9ca5ac-9250-11ee-8bda-4776592287bc": [
+    "runtime/include/chpl-const-arg-check.h"
   ],
   "57e7dbc4-3010-11ed-b71b-d7492178b4dc": [
     "runtime/include/chpl-gpu-impl.h"

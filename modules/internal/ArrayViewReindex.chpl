@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -134,8 +134,7 @@ module ArrayViewReindex {
     //
     proc downdomtype(param rank: int, type idxType, param strides: bool) type {
       var ranges : rank*range(idxType, boundKind.both, strides);
-      var a = chpl_dsiNewRectangularDom(dist.downDist, rank,
-                                        idxType, strides, ranges);
+      var a = dist.downDist.dsiNewRectangularDom(rank,idxType,strides,ranges);
       return a.type;
     }
 
@@ -181,8 +180,8 @@ module ArrayViewReindex {
       // _domain._do_destroy().
       var ranges : rank*range(idxType, boundKind.both,
                               dist.downdomInst.strides);
-      var downdomclass = chpl_dsiNewRectangularDom(dist.downDist, rank,
-                                idxType, dist.downdomInst.strides, ranges);
+      var downdomclass = dist.downDist.dsiNewRectangularDom(rank, idxType,
+                                         dist.downdomInst.strides, ranges);
       pragma "no auto destroy"
       var downdomLoc = new _domain(downdomclass);
       downdomLoc = chpl_reindexConvertDom(inds, updom, dist.downdomInst);
