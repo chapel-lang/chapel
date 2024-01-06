@@ -1924,14 +1924,6 @@ private proc isBCPindex(type t) param do
   // Bounds checking
   //
 
-  /* Returns ``true`` if ``other`` lies entirely within this range and
-     ``false`` otherwise.  Returns ``false`` if either range is
-     ambiguously aligned.
-   */
-  @deprecated("range.boundsCheck() is deprecated, consider using range.contains() instead")
-  inline proc range.boundsCheck(other: range(?e,?b,?s))
-    do return this.chpl_boundsCheck(other);
-
   inline proc range.chpl_boundsCheck(other: range(?e,?b,?s))
     where b == boundKind.neither
   {
@@ -1984,12 +1976,6 @@ private proc isBCPindex(type t) param do
 
     return (boundedOther.sizeAs(uint) == 0) || contains(boundedOther);
   }
-
-  /* Returns ``true`` if ``other`` is contained in this range and ``false``
-     otherwise. */
-  @deprecated("range.boundsCheck() is deprecated, please use range.contains() instead")
-  inline proc range.boundsCheck(other: idxType) do
-    return contains(other);
 
   // used in checkRankChange(args) where each args(i) can be
   // either a range or an individual index

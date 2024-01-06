@@ -1,13 +1,3 @@
-const r1 = 1..4;        // deprecated by Shreyas for 1.32
-const r2 = 1..4;
-const r3 = ..;
-const idx = 3;
-
-// Testing 3 overloads of boundsCheck
-r1.boundsCheck(idx);
-r1.boundsCheck(r2);
-r1.boundsCheck(r3);
-
 // Testing .dist deprecation
 const d1 = {1..idx, 1..idx};
 d1.dist;
