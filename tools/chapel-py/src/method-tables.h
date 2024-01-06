@@ -438,6 +438,13 @@ CLASS_BEGIN(Reduce)
                const AstNode*, return node->op())
 CLASS_END(Reduce)
 
+CLASS_BEGIN(Scan)
+  PLAIN_GETTER(Scan, iterand, "Get the iterand for this Scan node",
+               const AstNode*, return node->iterand())
+  PLAIN_GETTER(Scan, op, "Get the op for this Scan node",
+               const AstNode*, return node->op())
+CLASS_END(Scan)
+
 CLASS_BEGIN(START_Decl)
   PLAIN_GETTER(Decl, linkage, "Get the linkage of this Decl node",
                const char*, return Decl::linkageToString(node->linkage()))
