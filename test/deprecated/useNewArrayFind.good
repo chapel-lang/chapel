@@ -1,3 +1,0 @@
-warning: 'useNewArrayFind' no longer has any role and is deprecated
-note: 'useNewArrayFind' was set via a compiler flag
-Finding 3 in A = 3
