@@ -559,7 +559,7 @@ CLASS_BEGIN(START_VarLikeDecl)
   PLAIN_GETTER(VarLikeDecl, type_expression, "Get the type expression of this VarLikeDecl node",
                const AstNode*, return node->typeExpression())
   PLAIN_GETTER(VarLikeDecl, intent, "Get the intent for this VarLikeDecl node",
-               const char*, return intentToString(node->intent()))
+               const char*, return intentToString(node->storageKind()))
 CLASS_END(START_VarLikeDecl)
 
 CLASS_BEGIN(VarArgFormal)
