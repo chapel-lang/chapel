@@ -441,6 +441,11 @@ CLASS_BEGIN(OpCall)
                UniqueString, return node->op())
 CLASS_END(OpCall)
 
+CLASS_BEGIN(PrimCall)
+  PLAIN_GETTER(PrimCall, prim, "Get the primitive name for this PrimCall node",
+               const char*, return chpl::uast::primtags::primTagToName(node->prim()))
+CLASS_END(PrimCall)
+
 CLASS_BEGIN(Reduce)
   PLAIN_GETTER(Reduce, iterand, "Get the iterand for this Reduce node",
                const AstNode*, return node->iterand())
