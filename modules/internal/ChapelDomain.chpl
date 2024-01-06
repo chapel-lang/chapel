@@ -2809,41 +2809,6 @@ module ChapelDomain {
       return _value.dsiIteratorYieldsLocalElements();
     }
 
-    /* Casts a rectangular domain to another rectangular domain type.
-       Ensures that the original domain's stride is acceptable
-       by the target type.
-     */
-    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
-    proc safeCast(type t:_domain)
-      where chpl__isRectangularDomType(t) && this.isRectangular() {
-      var tmpD: t;
-      if tmpD.rank != this.rank then
-        compilerError("safeCast to a domain with rank=", tmpD.rank,
-                            " from a domain with rank=", this.rank);
-      if tmpD.idxType != this.idxType then
-        // todo: relax this restriction
-        compilerError("safeCast to a domain with idxType=", tmpD.idxType,
-                            " from a domain with idxType=", this.idxType);
-      if tmpD.strides == this.strides then
-        return this;
-      else if chpl_assignStrideIsUnsafe(tmpD.strides, this.strides) then
-        compilerError("safeCast to a domain with strides=", tmpD.strides,
-                            " from a domain with strides=", this.strides);
-      else if ! chpl_assignStrideIsSafe(tmpD.strides, this.strides) {
-        const inds = this.getIndices();
-        var newInds: tmpD.getIndices().type;
-
-        for param dim in 0..inds.size-1 {
-          newInds(dim) = inds(dim).safeCast(newInds(dim).type);
-        }
-        tmpD.setIndices(newInds);
-        return tmpD;
-      } else { // cast is always safe
-        tmpD = this;
-        return tmpD;
-      }
-    }
-
     /* Casts a rectangular domain to a new rectangular domain type.
        Throws an IllegalArgumentError when the original bounds and/or stride(s)
        do not fit in the new idxType or when the original stride(s)

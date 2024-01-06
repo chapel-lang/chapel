@@ -1708,62 +1708,6 @@ module ChapelRange {
                    this.alignedLowAsInt, this.alignedHighAsInt, none, none);
 }
 
-/* Casts a range to another range type. If the old type is stridable and the
-   new type is not stridable, ensure at runtime that the old stride was 1.
- */
-@chpldoc.nodoc
-@deprecated("range.safeCast() is deprecated; instead consider using a cast ':'")
-proc range.safeCast(type t: range(?)) {
-
-  // safeCast is used in domain assignment, so we need to support enums:
-  //   var D1: domain(1, myEnum, positive);
-  //   var D2: domain(1, myEnum, any) = D1;
-
-  if (isEnumType(this.idxType) || isEnumType(t.idxType)) &&
-     (this.idxType != t.idxType) then
-    compilerError("safeCast() on ranges does not yet support enum ranges");
-
-  if t.bounds != this.bounds then
-    compilerError("safeCast() to a range with boundKind.", t.bounds:string,
-                          " from a range with boundKind.", this.bounds:string);
-
-  if chpl_assignStrideIsUnsafe(t.strides, this.strides) then
-    compilerError("safeCast() to a range with strideKind.", t.strides:string,
-                        " from a range with strideKind.", this.strides:string);
-
-  var needHalt = false;
-  select t.strides {
-    when strideKind.one      do needHalt = (this.stride != 1);
-    when strideKind.negOne   do needHalt = (this.stride != -1);
-    when strideKind.positive do needHalt = (this.stride < 0);
-    when strideKind.negative do needHalt = (this.stride > 0);
-    when strideKind.any      do; // any stride is OK
-  }
-  if needHalt then
-    HaltWrappers.safeCastCheckHalt("illegal safeCast from stride " +
-      this.stride:string + " to strideKind." + t.strides:string);
-
-  if t.idxType == this.idxType then return
-    if this.hasParamStrideAltvalAld() && ! t.hasParamStrideAltvalAld()
-    then new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this.stride, 0)
-    else new range(t.idxType, t.bounds, t.strides,
-                   this._low, this._high, this._stride, this._alignment);
-
-  var tmp: t;
-
-  if ! tmp.hasParamStrideAltvalAld() {
-    tmp._stride = this.stride.safeCast(tmp.strType);
-    tmp._alignment = if isNothingValue(this._alignment) then 0
-                     else this._alignment.safeCast(tmp.strType);
-  }
-
-  tmp._low = if this.hasLowBound() then chpl__idxToInt(this.lowBound.safeCast(tmp.idxType)) else this._low.safeCast(tmp.chpl_integralIdxType);
-  tmp._high = if this.hasHighBound() then chpl__idxToInt(this.highBound.safeCast(tmp.idxType)) else this._high.safeCast(tmp.chpl_integralIdxType);
-
-  return tmp;
-}
-
 /* Casts a range to a new range type. Throws an IllegalArgumentError when
    the original bounds and/or stride do not fit in the new idxType
    or when the original stride is not legal for the new `strides` parameter.
