@@ -1642,13 +1642,6 @@ module ChapelRange {
     return false;
   }
 
-  // If the parameters don't match, then the two ranges cannot be identical.
-  @chpldoc.nodoc
-  @deprecated(notes="ident() on ranges is deprecated; please let us know if this is problematic for you")
-  proc ident(r1: range(?), r2: range(?)) param {
-    return false;
-  }
-
   //////////////////////////////////////////////////////////////////////////////////
   // Range Casts
   //
