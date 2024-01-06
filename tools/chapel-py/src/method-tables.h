@@ -325,6 +325,11 @@ CLASS_BEGIN(Local)
                const AstNode*, return node->condition())
 CLASS_END(Local)
 
+CLASS_BEGIN(Manage)
+  PLAIN_GETTER(Manage, managers, "Get the managers of this Manage node",
+               IterAdapterBase*, return mkIterPair(node->managers()))
+CLASS_END(Manage)
+
 CLASS_BEGIN(On)
   PLAIN_GETTER(On, destination, "Get the destination of this On node",
                const AstNode*, return node->destination())
