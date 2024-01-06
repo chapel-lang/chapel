@@ -171,6 +171,11 @@ CLASS_BEGIN(Dot)
                const AstNode*, return node->receiver())
 CLASS_END(Dot)
 
+CLASS_BEGIN(ExternBlock)
+  PLAIN_GETTER(ExternBlock, code, "Get C code of this ExternBlock node",
+               std::string, return node->code())
+CLASS_END(ExternBlock)
+
 CLASS_BEGIN(FunctionSignature)
   PLAIN_GETTER(FunctionSignature, formals, "Get the formals for this FunctionSignature node",
                IterAdapterBase*, return mkIterPair(node->formals()))
