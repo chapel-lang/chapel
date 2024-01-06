@@ -260,6 +260,13 @@ CLASS_BEGIN(Return)
                const AstNode*, return node->value())
 CLASS_END(Return)
 
+CLASS_BEGIN(Select)
+  PLAIN_GETTER(Select, exprs, "Get the expression of this Select node",
+               const AstNode*, return node->expr())
+  PLAIN_GETTER(Select, when_stmts, "Get the When statements of this Select node",
+               IterAdapterBase*, return mkIterPair(node->whenStmts()))
+CLASS_END(Select)
+
 CLASS_BEGIN(Throw)
   PLAIN_GETTER(Throw, error_expression, "Get the expression thrown by this Throw node",
                const AstNode*, return node->errorExpression())
@@ -322,6 +329,17 @@ CLASS_BEGIN(Serial)
   PLAIN_GETTER(Serial, condition, "Get the condition of this Serial node",
                const AstNode*, return node->condition())
 CLASS_END(Serial)
+
+CLASS_BEGIN(When)
+  PLAIN_GETTER(When, block_style, "Get the block style of this When node",
+               const char*, return blockStyleToString(node->blockStyle()))
+  PLAIN_GETTER(When, body, "Get the body of this When node",
+               const AstNode*, return node->body())
+  PLAIN_GETTER(When, case_exprs, "Get the case expressions of this When node",
+               IterAdapterBase*, return mkIterPair(node->caseExprs()))
+  PLAIN_GETTER(When, is_otherwise, "Check if this When node uses the otherwise keyword",
+               bool, return node->isOtherwise())
+CLASS_END(When)
 
 CLASS_BEGIN(START_Loop)
   PLAIN_GETTER(Loop, block_style, "Get the block style of this Loop node",
