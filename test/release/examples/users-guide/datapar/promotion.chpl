@@ -111,7 +111,7 @@ if testError {
 
 // safe since only one mask value will modify 'r'
 Mask = [false, false, true];
-forall (b, m) in zip(B, Mask) do
+forall (b, m) in zip(B, Mask) with (ref r) do
   maybeCopy(r, b, m);
 writeln(r);
 
