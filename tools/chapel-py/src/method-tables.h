@@ -553,17 +553,14 @@ CLASS_BEGIN(START_VarLikeDecl)
                const char*, return qualifierToString(node->storageKind()))
   PLAIN_GETTER(VarLikeDecl, type_expression, "Get the type expression of this VarLikeDecl node",
                const AstNode*, return node->typeExpression())
+  PLAIN_GETTER(VarLikeDecl, intent, "Get the intent for this VarLikeDecl node",
+               const char*, return intentToString(node->intent()))
 CLASS_END(START_VarLikeDecl)
 
-CLASS_BEGIN(Formal)
-  PLAIN_GETTER(Formal, intent, "Get the intent for this Formal node",
-               const char*, return intentToString(node->intent()))
-CLASS_END(Formal)
-
-CLASS_BEGIN(TaskVar)
-  PLAIN_GETTER(TaskVar, intent, "Get the intent of this TaskVar node",
-               const char*, return intentToString(node->intent()))
-CLASS_END(TaskVar)
+CLASS_BEGIN(VarArgFormal)
+  PLAIN_GETTER(VarArgFormal, count, "Get the count expression of this VarArgFormal node",
+               const AstNode*, return node->count())
+CLASS_END(VarArgFormal)
 
 CLASS_BEGIN(Variable)
   PLAIN_GETTER(Variable, is_config, "Check if this Variable node is a config variable",
