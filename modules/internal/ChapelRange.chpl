@@ -991,18 +991,6 @@ module ChapelRange {
     return chpl_intToIdx(this.alignedLowAsInt);
   }
 
-
-  /* Return the range's aligned low bound.  Note that this is a
-     synonym for :proc:`range.low`.
-  */
-  @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
-  inline proc range.alignedLow: idxType {
-    if !hasLowBound() {
-      compilerError("can't query the low bound of a range without one");
-    }
-    return this.low;
-  }
-
   @chpldoc.nodoc
   inline proc range.alignedLowAsInt {
     if ! isAligned() then
@@ -1087,18 +1075,6 @@ module ChapelRange {
       }
     }
     return chpl_intToIdx(this.alignedHighAsInt);
-  }
-
-
-  /* Returns the range's aligned high bound.  Note that this is a
-     synonym for :proc:`range.high`.
-  */
-  @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
-  inline proc range.alignedHigh: idxType {
-    if !hasHighBound() {
-      compilerError("can't query the high bound of a range without one");
-    }
-    return this.high;
   }
 
   @chpldoc.nodoc

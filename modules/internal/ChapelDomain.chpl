@@ -1520,14 +1520,6 @@ module ChapelDomain {
       return _value.dsiHigh;
     }
 
-    /* Returns the low index in this domain factoring in alignment. */
-    @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
-    proc alignedLow do return _value.dsiAlignedLow;
-
-    /* Returns the high index in this domain factoring in alignment. */
-    @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
-    proc alignedHigh do return _value.dsiAlignedHigh;
-
     /* Returns the first index in this domain. */
     proc first do return _value.dsiFirst;
 
