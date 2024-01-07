@@ -11019,8 +11019,10 @@ static bool isStringLiteral(Symbol* sym) {
 
 // This enables printing the callstack for the error.
 static void reportPostponedError(BaseAST* ref, const char* errorMessage) {
-  if (fPrintAdditionalErrors)
+  if (fPrintAdditionalErrors) {
     USR_WARN(ref, "postponed error: %s", errorMessage);
+    printCallstackForLastError(); // this info may get lost later
+  }
 }
 
 static void resolveExprMaybeIssueError(CallExpr* call) {
