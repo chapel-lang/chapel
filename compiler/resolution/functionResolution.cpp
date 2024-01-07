@@ -11017,6 +11017,12 @@ static bool isStringLiteral(Symbol* sym) {
   return retval;
 }
 
+// This enables printing the callstack for the error.
+static void reportPostponedError(BaseAST* ref, const char* errorMessage) {
+  if (fPrintAdditionalErrors)
+    USR_WARN(ref, "postponed error: %s", errorMessage);
+}
+
 static void resolveExprMaybeIssueError(CallExpr* call) {
   //
   // Disable compiler warnings in internal modules that are triggered within
@@ -11115,6 +11121,8 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
           outerCompilerErrorMap[fn] = str;
       } else {
+        reportPostponedError(from, str);
+
         tryResolveStates.back() = CHECK_FAILED;
 
         if (tryResolveFunctions.size() > 0) {
