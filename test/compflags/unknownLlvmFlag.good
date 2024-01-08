@@ -1,2 +1,2 @@
 error: unsupported option '--fake-flag'
-error: error in back-end LLVM cmopilation
+error: error in back-end LLVM compilation

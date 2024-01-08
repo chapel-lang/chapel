@@ -1702,7 +1702,7 @@ void setupClang(GenInfo* info, std::string mainFile)
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
   if (diagClient->getNumErrors() > 0) {
-    USR_FATAL("error in back-end LLVM cmopilation");
+    USR_FATAL("error in back-end LLVM compilation");
   }
 
   clang::driver::Command* job = NULL;
