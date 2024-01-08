@@ -51,7 +51,7 @@ const chpl::uast::BuilderResult&
 parseFromUri(chpl::Context* chapel, const std::string& uri);
 
 /** A compiler query which maps source lines to AST nodes on that line. */
-const LineToIdsMap&
+const LineToIdsMap
 mapLinesToIdsInModule(chpl::Context* chapel, chpl::UniqueString uri);
 
 /** Given a cursor position and URI, create a Chapel location. */

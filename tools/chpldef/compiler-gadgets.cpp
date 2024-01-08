@@ -77,12 +77,16 @@ mapLinesToIdsInModuleImpl(chpl::Context* chapel, chpl::UniqueString uri) {
   return ret;
 }
 
-const LineToIdsMap&
+//
+// TODO: for some reason, with this written as a query this function will never run
+//
+const LineToIdsMap
 mapLinesToIdsInModule(chpl::Context* chapel, chpl::UniqueString uri) {
   using namespace chpl;
-  QUERY_BEGIN(mapLinesToIdsInModule, chapel, uri);
+  // QUERY_BEGIN(mapLinesToIdsInModule, chapel, uri);
   auto ret = mapLinesToIdsInModuleImpl(chapel, uri);
-  return QUERY_END(ret);
+  // return QUERY_END(ret);
+  return ret;
 }
 
 chpl::Location
