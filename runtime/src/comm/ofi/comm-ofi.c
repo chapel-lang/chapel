@@ -2206,33 +2206,70 @@ void heedSlingshotSettings(struct fi_info* info) {
   CHK_SYS_MALLOC(auth_key, 1);
 
   //
-  // Service ID.  If there are more than one, then we have access to
-  // more than one interface.  But we only support one anyway and our
-  // domain logic will have found the first of them, so just take the
-  // first service ID.
+  // Find the index of our device in the list of devices.
   //
+
+  int index = 0;
+  {
+    char ev[strlen(evDevs) + 1];  // non-constant, for strtok()
+    strcpy(ev, evDevs);
+
+    char* s = ev;
+    char* tok = NULL;
+    char* lasts;
+    while((tok = strtok_r(s, ",", &lasts)) != NULL) {
+      if (!strcmp(tok, ofi_info->domain_attr->name)) {
+        break;
+      }
+      index++;
+      s = NULL;
+    }
+    CHK_TRUE(tok != NULL);
+  }
+
+
+  //
+  // Service ID. If there is more than one, use the indexth one.
   {
     char ev[strlen(evSvcIds) + 1];  // non-constant, for strtok()
     strcpy(ev, evSvcIds);
 
+    char* s = ev;
     char* tok;
     char* lasts;
-    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    char *c = strchr(ev, ',');
+
+    if (c == NULL) {
+      tok = ev;
+    } else {
+      for (int i = 0; i <= index; i++, s = NULL) {
+        CHK_TRUE((tok = strtok_r(s, ",", &lasts)) != NULL);
+      }
+    }
     CHK_TRUE(sscanf(tok, "%" SCNu32, &auth_key->svc_id) == 1);
     DBG_PRINTF(DBG_SLINGSHOT, "Slingshot svc_id %" PRIu32, auth_key->svc_id);
   }
 
   //
-  // VNI.  Similarly to the service ID case, if there are more than one,
-  // just take the first.
+  // VNI.  Similarly to the service ID case, if there is more than one,
+  // use the indexth one.
   //
   {
     char ev[strlen(evVnis) + 1];  // non-constant, for strtok()
     strcpy(ev, evVnis);
 
+    char* s = ev;
     char* tok;
     char* lasts;
-    CHK_TRUE((tok = strtok_r(ev, ",", &lasts)) != NULL);
+    char *c = strchr(ev, ',');
+
+    if (c == NULL) {
+      tok = ev;
+    } else {
+      for (int i = 0; i <= index; i++, s = NULL) {
+        CHK_TRUE((tok = strtok_r(s, ",", &lasts)) != NULL);
+      }
+    }
 
     char ev2[strlen(tok) + 1];
     strcpy(ev2, tok);
