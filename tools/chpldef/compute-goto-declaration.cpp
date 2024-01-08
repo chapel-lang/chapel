@@ -93,7 +93,6 @@ astAtLocation(Server* ctx, chpl::Location loc) {
                    ctx->fmt(ret).c_str(),
                    ctx->fmt(ast).c_str());
       }
-
       ret = chooseAstClosestToLocation(chapel, ret, ast, loc);
 
       if (ctx->isLogTrace()) {
@@ -118,49 +117,77 @@ astAtLocation(Server* ctx, chpl::Location loc) {
   return ret;
 }
 
+static const chpl::resolution::ResolutionResultByPostorderID*
+scopeResolveResultsForNode(chpl::Context* context, const chpl::uast::AstNode* node) {
+  const chpl::uast::AstNode* search = node;
+  while (search) {
+    if (auto fn = search->toFunction()) {
+      return &(chpl::resolution::scopeResolveFunction(context, search->id())->resolutionById());
+    } else if (auto mod = search->toModule()) {
+      return &(chpl::resolution::scopeResolveModule(context, search->id()));
+    }
+    search = chpl::parsing::parentAst(context, search);
+  }
+  return nullptr;
+}
+
+
+//
+// TODO (Jade 1/8/23): in order to make this function work, I had to rip out
+// some of its "smarts" and change it to just walking up the parent nodes.
+// Whether this is the right way to do things or not, I don't actually know.
+// But as a temporary hack it works
+//
 static std::vector<chpl::ID>
 sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
   using namespace chpl::resolution;
 
   if (!ast) return {};
 
-  const ResolvedFunction* rf = nullptr;
+  // const ResolvedFunction* rf = nullptr;
   const ResolutionResultByPostorderID* rr = nullptr;
-  auto parentCall = ctx->withChapel(parentCallIfBaseExpression, ast);
-  const bool isCallBaseExpr = (parentCall != nullptr);
-  const chpl::uast::AstNode* sym = nullptr;
-  bool canScopeResolveFunction = false;
+  // auto parentCall = ctx->withChapel(parentCallIfBaseExpression, ast);
+  // const bool isCallBaseExpr = (parentCall != nullptr);
+  // const chpl::uast::AstNode* sym = nullptr;
+  // bool canScopeResolveFunction = false;
   std::vector<chpl::ID> ret;
 
   // We need to look at the ID in order to determine the closest entity to
   // resolve, and then we need to fetch some sort of 'ResolutionResult'.
+  // ctx->withChapel([&](auto chapel) {
+  //   if (auto idParent = ast->id().parentSymbolId(chapel)) {
+  //     auto astParent = chpl::parsing::idToAst(chapel, idParent);
+  //     CHPL_ASSERT(astParent);
+
+  //     if (chpl::parsing::idIsFunction(chapel, idParent)) {
+  //       rf = resolveConcreteFunction(chapel, idParent);
+  //       // TODO: What do we do if the symbol is a generic function?
+  //       if (rf == nullptr) CHPLDEF_TODO();
+  //       canScopeResolveFunction = true;
+  //       rr = &rf->resolutionById();
+  //       sym = astParent;
+
+  //     } else if (astParent->isModule()) {
+  //       rr = &resolveModule(chapel, idParent);
+  //       sym = astParent;
+
+  //     } else if (astParent && astParent->isAggregateDecl()) {
+  //       CHPLDEF_TODO();
+  //     }
+  //   }
+  // });
+
+  // if (!sym || sym == ast) CHPLDEF_TODO();
+
+  // // If we are a call base expression, inspect the parent call.
+  const auto node = ast;//isCallBaseExpr ? parentCall : ast;
+
   ctx->withChapel([&](auto chapel) {
-    if (auto idParent = ast->id().parentSymbolId(chapel)) {
-      auto astParent = chpl::parsing::idToAst(chapel, idParent);
-      CHPL_ASSERT(astParent);
-
-      if (chpl::parsing::idIsFunction(chapel, idParent)) {
-        rf = resolveConcreteFunction(chapel, idParent);
-        // TODO: What do we do if the symbol is a generic function?
-        if (rf == nullptr) CHPLDEF_TODO();
-        canScopeResolveFunction = true;
-        rr = &rf->resolutionById();
-        sym = astParent;
-
-      } else if (astParent->isModule()) {
-        rr = &resolveModule(chapel, idParent);
-        sym = astParent;
-
-      } else if (astParent && astParent->isAggregateDecl()) {
-        CHPLDEF_TODO();
-      }
-    }
+    rr = scopeResolveResultsForNode(ctx, chapel, node);
   });
 
-  if (!sym || sym == ast) CHPLDEF_TODO();
+  if(!rr) return ret;
 
-  // If we are a call base expression, inspect the parent call.
-  const auto node = isCallBaseExpr ? parentCall : ast;
 
   // In most cases, just inspect the resolution results we were given.
   if (auto re = rr->byAstOrNull(node)) {
@@ -173,7 +200,8 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
     } else if (auto tfs = ms.only()) {
       ret.push_back(tfs.fn()->id());
     } else {
-      CHPLDEF_TODO();
+      // CHPLDEF_TODO();
+      ret.push_back(re->toId());
     }
 
   // If we failed to find something and our symbol is a function, try again
@@ -182,13 +210,14 @@ sourceAstToIds(Server* ctx, const chpl::uast::AstNode* ast) {
   // TODO: This branch is not sufficient to cover all cases and should be
   // replaced with a new dyno query that populates the ResolutionResult
   // for formal components.
-  } else if (canScopeResolveFunction) {
-    auto rf = ctx->withChapel(scopeResolveFunction, sym->id());
-    auto& rr = rf->resolutionById();
-    if (auto re = rr.byAstOrNull(node)) {
-      if (auto id = re->toId()) ret.push_back(std::move(id));
-    }
   }
+  // else if (canScopeResolveFunction) {
+  //   auto rf = ctx->withChapel(scopeResolveFunction, sym->id());
+  //   auto& rr = rf->resolutionById();
+  //   if (auto re = rr.byAstOrNull(node)) {
+  //     if (auto id = re->toId()) ret.push_back(std::move(id));
+  //   }
+  // }
 
   return ret;
 }
@@ -202,6 +231,7 @@ computeDeclarationPoints(Server* ctx, const TextDocumentPositionParams& p) {
   ctx->verbose("Looking for AST at '%s'\n", ctx->fmt(loc).c_str());
 
   auto ast = astAtLocation(ctx, loc);
+ctx->verbose("Found '%p' \n", ast);
   auto ids = sourceAstToIds(ctx, ast);
 
   ctx->verbose("Found '%zu' target IDs\n", ids.size());
