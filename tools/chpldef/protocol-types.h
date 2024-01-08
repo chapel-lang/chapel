@@ -293,8 +293,8 @@ struct Range : ProtocolType {
 
 
 struct TextDocumentContentChangeEvent : ProtocolTypeRecv {
-	Range range;
-	std::string text;
+  Range range;
+  std::string text;
 
   TextDocumentContentChangeEvent() = default;
   TextDocumentContentChangeEvent(Range range, std::string text)
