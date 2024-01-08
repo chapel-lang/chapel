@@ -238,31 +238,6 @@ struct DidOpenParams : ProtocolTypeRecv {
   virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
-struct DidChangeParams : ProtocolTypeRecv {
-  TextDocumentItem textDocument;
-
-  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-};
-
-struct DidSaveParams : ProtocolTypeRecv {
-  TextDocumentItem textDocument;
-
-  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-};
-
-struct DidCloseParams : ProtocolTypeRecv {
-  TextDocumentItem textDocument;
-
-  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-};
-
-struct TextDocumentIdentifier : ProtocolTypeRecv {
-  std::string uri;
-
-  TextDocumentIdentifier() = default;
-  TextDocumentIdentifier(std::string uri) : uri(std::move(uri)) {}
-  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
-};
 
 struct Position : ProtocolType {
   uint64_t line = 0;            /** Zero-based position. */
@@ -314,6 +289,50 @@ struct Range : ProtocolType {
 
   /** Determine if the end position is less than the start position. */
   bool isNegative() const;
+};
+
+
+struct TextDocumentContentChangeEvent : ProtocolTypeRecv {
+	Range range;
+	std::string text;
+
+  TextDocumentContentChangeEvent() = default;
+  TextDocumentContentChangeEvent(Range range, std::string text)
+    : range(std::move(range)), text(text)  {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+
+struct TextDocumentIdentifier : ProtocolTypeRecv {
+  std::string uri;
+
+  TextDocumentIdentifier() = default;
+  TextDocumentIdentifier(std::string uri) : uri(std::move(uri)) {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+// TODO: DidChange actually takes `VersionedTextDocumentIdentifier`, but thats not implemented yet and this works well enough for now
+struct DidChangeParams : ProtocolTypeRecv {
+  TextDocumentIdentifier textDocument;
+
+  std::vector<TextDocumentContentChangeEvent> contentChanges;
+
+DidChangeParams() = default;
+  DidChangeParams(TextDocumentIdentifier textDocument, std::vector<TextDocumentContentChangeEvent> contentChanges)
+    : textDocument(std::move(textDocument)), contentChanges(std::move(contentChanges))  {}
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidSaveParams : ProtocolTypeRecv {
+  TextDocumentItem textDocument;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
+};
+
+struct DidCloseParams : ProtocolTypeRecv {
+  TextDocumentIdentifier textDocument;
+
+  virtual bool fromJson(const JsonValue& j, JsonPath p) override;
 };
 
 struct TextDocumentPositionParams : ProtocolTypeRecv {

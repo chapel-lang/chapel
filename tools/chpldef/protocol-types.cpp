@@ -42,6 +42,7 @@ static void doAddField(chpldef::JsonObject& obj, const char* name,
 
 /** Helper to make reading JSON object fields less painful. */
 #define MAP_(m__, name__) (m__.map(#name__, name__))
+#define MAP_OPTIONAL_(m__, name__) (m__.mapOptional(#name__, name__))
 
 namespace chpldef {
 
@@ -204,9 +205,18 @@ bool DidCloseParams::fromJson(const JsonValue& j, JsonPath p) {
   return m && MAP_(m, textDocument);
 }
 
+bool TextDocumentContentChangeEvent::fromJson(const JsonValue& j, JsonPath p) {
+  JsonMapper m(j, p);
+  if (m) {
+    m.mapOptional("range", range);
+    return MAP_(m, text);
+  }
+  return false;
+}
+
 bool DidChangeParams::fromJson(const JsonValue& j, JsonPath p) {
   JsonMapper m(j, p);
-  return m && MAP_(m, textDocument);
+  return m && MAP_(m, textDocument) && MAP_(m, contentChanges);
 }
 
 JsonValue SaveOptions::toJson() const {

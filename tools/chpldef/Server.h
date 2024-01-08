@@ -153,6 +153,8 @@ protected:
   friend chpldef::Initialized;
   friend chpldef::Shutdown;
   friend chpldef::DidOpen;
+  friend chpldef::DidChange;
+  friend chpldef::DidClose;
 
   inline void setState(State state) { state_ = state; }
   inline TextRegistry& mutableTextRegistry() { return textRegistry_; }
