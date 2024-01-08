@@ -3014,7 +3014,6 @@ void runClang(const char* just_parse_filename) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
-      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
       clangOtherArgs.push_back(gMultiLocaleLibServerFile);
 
       // As well as the path to extra code for the client and server.
