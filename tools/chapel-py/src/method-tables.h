@@ -125,9 +125,9 @@ CLASS_BEGIN(Catch)
 CLASS_END(Catch)
 
 CLASS_BEGIN(Cobegin)
-  PLAIN_GETTER(Cobegin, with_clause, "Get the error from this Cobegin node",
+  PLAIN_GETTER(Cobegin, with_clause, "Get the WithClause from this Cobegin node",
                const AstNode*, return node->withClause())
-  PLAIN_GETTER(Cobegin, task_bodies, "Get the error from this Cobegin node",
+  PLAIN_GETTER(Cobegin, task_bodies, "Get tasks from this Cobegin node",
                IterAdapterBase*, return mkIterPair(node->taskBodies()))
 CLASS_END(Cobegin)
 
@@ -136,7 +136,7 @@ CLASS_BEGIN(Conditional)
                const AstNode*, return node->condition())
   PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
                const AstNode*, return node->elseBlock())
-  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression level",
+  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
                bool, return node->isExpressionLevel())
   PLAIN_GETTER(Conditional, then_block, "Get the then block of this Conditional node",
                const AstNode*, return node->thenBlock())
