@@ -57,7 +57,17 @@ DidOpen::ComputeResult DidOpen::compute(Server* ctx, ComputeParams p) {
 
 template<>
 DidChange::ComputeResult DidChange::compute(Server* ctx, ComputeParams p) {
-  CHPLDEF_TODO();
+  auto& tdi = p.textDocument;
+  auto& e = ctx->mutableTextRegistry()[tdi.uri];
+
+  ctx->withChapel(Server::CHPL_BUMP_REVISION, [&](auto chapel) {
+    auto& fc = chpl::parsing::fileText(chapel, tdi.uri);
+    CHPL_ASSERT(!fc.error());
+    // TODO: should be using versions
+    // e.version = tdi.version;
+    e.lastRevisionContentsUpdated = ctx->revision();
+  });
+
   return {};
 }
 
@@ -70,7 +80,11 @@ DidSave::ComputeResult DidSave::compute(Server* ctx, ComputeParams p) {
 
 template<>
 DidClose::ComputeResult DidClose::compute(Server* ctx, ComputeParams p) {
-  CHPLDEF_TODO();
+  auto& tdi = p.textDocument;
+  // TODO: error checking
+  if(ctx->mutableTextRegistry().count(tdi.uri) > 0) {
+    ctx->mutableTextRegistry().erase(tdi.uri);
+  }
   return {};
 }
 
