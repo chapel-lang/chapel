@@ -205,7 +205,9 @@ bool Server::handle(chpl::owned<Message> msg) {
   switch (msg->behavior()) {
     case Message::INCOMING_REQUEST:
     case Message::INCOMING_NOTIFY: {
-      if (msg->status() == Message::FAILED) CHPLDEF_TODO();
+      if (msg->status() == Message::FAILED) {
+        this->message("error %s: %s\n", msg->errorToString(), msg->note().c_str());
+        CHPLDEF_TODO(); }
       msg->handle(this);
       if (msg->status() == Message::FAILED) CHPLDEF_TODO();
       if (!msg->isNotification()) sendMessage(msg.get());
