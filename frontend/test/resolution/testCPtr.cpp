@@ -236,6 +236,14 @@ static void test16() {
   });
 }
 
+static void test17() {
+  testCPtrArg("c_ptr(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(t);
+    assert(!t->isConst());
+    assert(t->isVoidPtr());
+    // expect no errors; this is the pattern of passing a const to deallocate
+  });
+}
 
 int main() {
   test1();
@@ -254,6 +262,7 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
 
   return 0;
 }
