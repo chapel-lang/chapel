@@ -39,14 +39,16 @@ Consider the following code which illustrates this.
 .. code-block:: chapel
 
    proc myFunction(ref A: []) {
-     forall i in A.domain {
-       writeln(A[i]);
+     begin {
+       A = 17;
      }
    }
 
 The default task intent for ``A`` is ``ref``, since the argument formal ``A``
-is mutable. This simplifies parallel loops, making them simpler and cleaner to
+is mutable. This simplifies parallel code, making it simpler and cleaner to
 write.
+
+In 1.32, the above ``begin`` would have resulted in a deprecation warning. In 1.34, this is valid code just like it was prior to 1.32.
 
 version 1.32, September 2023
 ----------------------------
