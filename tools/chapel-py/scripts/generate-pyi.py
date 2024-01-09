@@ -66,7 +66,7 @@ def get_Context_header() -> str:
         _wrap_method(
             "parse",
             args=[("path", "str")],
-            rettype="List[AstNode]",
+            rettype="typing.List[AstNode]",
             docstring="Parse a top-level AST node from the given file",
         ),
         _wrap_method(
@@ -77,6 +77,7 @@ def get_Context_header() -> str:
         ),
         _wrap_method(
             "advance_to_next_revision",
+            args=[("gc", "bool")],
             docstring="Advance the context to the next revision",
         ),
         _wrap_method(
@@ -98,10 +99,10 @@ def get_Location_header() -> str:
     s = _section(
         "class Location:",
         _wrap_method(
-            "start", rettype="int", docstring="Get the start of a Location object"
+            "start", rettype="typing.Tuple[int, int]", docstring="Get the start of a Location object"
         ),
         _wrap_method(
-            "end", rettype="int", docstring="Get the end of a Location object"
+            "end", rettype="typing.Tuple[int, int]", docstring="Get the end of a Location object"
         ),
         _wrap_method(
             "path", rettype="str", docstring="Get the path of a Location object"
@@ -114,7 +115,7 @@ def get_Location_header() -> str:
 def get_ErrorManager_header() -> str:
     s = _section(
         "class ErrorManager:",
-        _wrap_method("__enter__", rettype="List[Error]"),
+        _wrap_method("__enter__", rettype="typing.List[Error]"),
         _wrap_method("__exit__", args=[("*args", None)]),
         indent=0,
     )
@@ -178,7 +179,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "pragmas",
-            rettype="Set[str]",
+            rettype="typing.Set[str]",
             docstring="Get the pragmas of this AST node",
         ),
         _wrap_method(
@@ -188,7 +189,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "__iter__",
-            rettype="Iterator[AstNode]",
+            rettype="typing.Iterator[AstNode]",
             docstring="Iterate over this AST node's children",
         ),
         indent=0,
