@@ -4,6 +4,29 @@ from collections import defaultdict
 from inspect import signature
 
 def _try_call(dispatch_table, visitor, node, method_type):
+    """
+    Not every AST node in the dispatch table has an entry, unless the user
+    literally defined a method for every node type. We want to approximate
+    the behavior of inheritance when calling a method on the visitor:
+    if there's no `enter` method for a function declaration, but there
+    is an `enter` method for a named declaration (of which a function is a subclass),
+    then we want to call the parent `enter`.
+
+    To this end, search upwards from the current node's type until we hit
+    'object', at which point we have traversed the entire inheritance hierarchy.
+    For each class, starting from the node's class itself, check the
+    table for a method called `method_type`. If one exists, call it and
+    return its result, whatever it is, wrapped in a list.
+
+    Example traversal:
+      Function -> NamedDecl -> Decl -> AstNode -> object
+
+    Results are wrapped in a list to distinguish between _try_call not
+    finding a method to call at all (and thus returning `None`) from
+    the method that was called itself returning `None` (in which case,
+    the result will be `[None]`).
+    """
+
     node_type = type(node)
     while node_type is not object:
         if node_type in dispatch_table:
