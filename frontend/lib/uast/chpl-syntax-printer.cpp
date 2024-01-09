@@ -1540,17 +1540,19 @@ namespace chpl {
     if (innerIsRHS &&
         (USTR("-") == outer ||
          USTR("/") == outer ||  USTR("%") == outer ||
-         USTR("<<") == outer ||  USTR(">>") == outer ||
-         // (a==b)==true vs. a==(b==true)
-         USTR("==") == outer ||  USTR("!=") == outer ||
-         // (a<=b)<=true vs. a<=(b<=true)
-         USTR("<") == outer ||  USTR("<=") == outer ||
-         USTR(">") == outer ||  USTR(">=") == outer)
+         USTR("<<") == outer ||  USTR(">>") == outer)
         && outerprec == innerprec)
       ret = true;
 
     // ** is right-associative, and a**(b**c) != (a**b)**c.
     if (!innerIsRHS &&  USTR("**") == outer && outerprec == innerprec)
+      ret = true;
+
+    // Like the above checks for equal-precedence ops, but  ==, !=, etc. are
+    // not associative. Since they're not associative, always add parens.
+    if((USTR("==") == outer ||  USTR("!=") == outer ||
+        USTR("<") == outer ||  USTR("<=") == outer ||
+        USTR(">") == outer ||  USTR(">=") == outer) && outerprec == innerprec)
       ret = true;
 
     return ret;
