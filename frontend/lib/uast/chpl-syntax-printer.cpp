@@ -1542,7 +1542,10 @@ namespace chpl {
          USTR("/") == outer ||  USTR("%") == outer ||
          USTR("<<") == outer ||  USTR(">>") == outer ||
          // (a==b)==true vs. a==(b==true)
-          USTR("==") == outer ||  USTR("!=") == outer)
+         USTR("==") == outer ||  USTR("!=") == outer ||
+         // (a<=b)<=true vs. a<=(b<=true)
+         USTR("<") == outer ||  USTR("<=") == outer ||
+         USTR(">") == outer ||  USTR(">=") == outer)
         && outerprec == innerprec)
       ret = true;
 
