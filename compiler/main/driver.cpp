@@ -435,6 +435,35 @@ static void saveChplHomeDerivedInEnv() {
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
+static bool restoreChplHomeDerivedFromEnv() {
+  bool haveAll = true;
+
+  const char* envVar;
+
+  envVar = getenv("CHPL_RUNTIME_LIB");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_LIB, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_RUNTIME_INCL");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_INCL, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_THIRD_PARTY");
+  if (envVar) {
+    strncpy(CHPL_THIRD_PARTY, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  return haveAll;
+}
+
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -481,19 +510,17 @@ static void setupChplHome(const char* argv0) {
 
     if( guess == NULL ) {
       // Could not find exe path, but have a env var set
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     } else {
       // We have env var and found exe path.
       // Check that they match and emit a warning if not.
-
       if( ! isSameFile(chpl_home, guess) ) {
         // Not the same. Emit warning.
         USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
                  chpl_home, guess);
       }
-      // Since we have an enviro var, always use that.
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     }
+    // Since we have an enviro var, always use that.
+    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
   } else {
 
     // Check in a default location too
@@ -545,7 +572,12 @@ static void setupChplHome(const char* argv0) {
 
 
 
-  if( installed ) {
+  // Get derived-from-home vars
+  if (restoreChplHomeDerivedFromEnv()) {
+    // if these were all present in the environment, just use those values
+  } else if( installed ) {
+    // detected we are installed in a prefix, calculate values from that
+
     int rc;
     // E.g. /usr/lib/chapel/1.16/runtime/lib
     rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
@@ -568,6 +600,7 @@ static void setupChplHome(const char* argv0) {
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
   } else {
+    // set to default values based on home path
     setChplHomeDerivedVars();
   }
 
