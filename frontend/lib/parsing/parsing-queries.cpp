@@ -169,6 +169,23 @@ parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
   return result;
 }
 
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context) {
+  std::vector<const uast::AstNode*> toReturn;
+
+  if (auto parsedResults = context->querySavedResults(parsing::parseFileToBuilderResultQuery)) {
+    for (auto& result : *parsedResults) {
+      if (!context->isResultUpToDate(result)) continue;
+
+      for (auto topLevelExpr : result.result.topLevelExpressions()) {
+        toReturn.push_back(topLevelExpr);
+      }
+    }
+  }
+
+  return toReturn;
+}
+
 // parses whatever file exists that contains the passed ID and returns it
 const BuilderResult*
 parseFileContainingIdToBuilderResult(Context* context, ID id) {
