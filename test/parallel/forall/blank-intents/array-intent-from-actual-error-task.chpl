@@ -2,11 +2,11 @@ proc doNothing() {}
 
 // some error cases from array-intent-from-actual.chpl
 proc explicitConst1(const A) {
-  // forall i in A.domain /*with (const A)*/ do A[i] = i;
-  // [i in A.domain /*with (const A)*/] A[i] = i;
-  coforall i in A.domain /*with (const A)*/ do A[i] = i;
-  begin /*with (const A)*/ A = A.domain;
-  cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  // forall and [] are tested in array-intent-from-actual-error-forall.chpl
+  coforall i in A.domain do A[i] = i;
+  begin A = A.domain;
+  cobegin {
     A = A.domain;
     doNothing();
   }
@@ -18,12 +18,12 @@ proc explicitConst1(const A) {
 }
 
 {
+  // all the following statements have an implicit `with (const A)`
   const A: [1..10] int;
-  // forall i in A.domain /*with (const A)*/ do A[i] = i;
-  // [i in A.domain /*with (const A)*/] A[i] = i;
-  coforall i in A.domain /*with (const A)*/ do A[i] = i;
-  begin /*with (const A)*/ A = A.domain;
-  cobegin /*with (const A)*/ {
+  // forall and [] are tested in array-intent-from-actual-error-forall.chpl
+  coforall i in A.domain do A[i] = i;
+  begin A = A.domain;
+  cobegin {
     A = A.domain;
     doNothing();
   }

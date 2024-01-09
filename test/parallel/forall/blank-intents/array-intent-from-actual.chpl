@@ -1,40 +1,35 @@
 proc doNothing() {}
 
 proc explicitRef1(ref A) {
-  forall i in A.domain /*with (ref A)*/ do A[i] = i;
-  [i in A.domain /*with (ref A)*/] A[i] = i;
-  coforall i in A.domain /*with (ref A)*/ do A[i] = i;
-  begin /*with (ref A)*/ A = A.domain;
-  cobegin /*with (ref A)*/ {
+  // all the following statements have an implicit `with (ref A)`
+  forall i in A.domain do A[i] = i;
+  [i in A.domain] A[i] = i;
+  coforall i in A.domain do A[i] = i;
+  begin A = A.domain;
+  cobegin {
     A = A.domain;
     doNothing();
   }
 }
 proc explicitRef2(ref A) {
-  forall i in A.domain /*with (ref A)*/ do writeln(A[i]);
-  [i in A.domain /*with (ref A)*/] writeln(A[i]);
-  coforall i in A.domain /*with (ref A)*/ do writeln(A[i]);
-  begin /*with (ref A)*/ writeln(A);
-  cobegin /*with (ref A)*/ {
+  // all the following statements have an implicit `with (ref A)`
+  forall i in A.domain do writeln(A[i]);
+  [i in A.domain] writeln(A[i]);
+  coforall i in A.domain do writeln(A[i]);
+  begin writeln(A);
+  cobegin {
     writeln(A);
     doNothing();
   }
 }
 
 
-//
-// this case produces an error, in a separate file
-// proc explicitConst1(const A) {
-//   forall i in A.domain /*with (const A)*/ do A[i] = i;
-//   [i in A.domain /*with (const A)*/] A[i] = i;
-//    coforall i in A.domain /*with (const A)*/ do A[i] = i;
-//    begin /*with (const A)*/ A = A.domain;
-//    cobegin /*with (const A)*/ {
-//      A = A.domain;
-//      doNothing();
-//    }
+// modifying an explicit const is tested in another file
+// array-intent-from-actual-error-[forall|task].chpl
+// proc explicitConst2(const A) {
+//   ...
 // }
-//
+
 proc explicitConst2(const A) {
   forall i in A.domain /*with (const A)*/ do writeln(A[i]);
   [i in A.domain /*with (const A)*/] writeln(A[i]);
@@ -56,22 +51,24 @@ proc explicitConst2(const A) {
 // else to make the array modifiable)
 //
 proc blankIntent1(A) {
-  forall i in A.domain /*with (const A)*/ do A[i] = i;
-  [i in A.domain /*with (const A)*/] A[i] = i;
-  coforall i in A.domain /*with (const A)*/ do A[i] = i;
-  begin /*with (const A)*/ A = A.domain;
-  cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  forall i in A.domain do A[i] = i;
+  [i in A.domain] A[i] = i;
+  coforall i in A.domain do A[i] = i;
+  begin A = A.domain;
+  cobegin {
     A = A.domain;
     doNothing();
   }
 }
 // no matter what the user does, this will always work
 proc blankIntent2(A) {
-  forall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  [i in A.domain /*with (const A)*/] writeln(A[i]);
-  coforall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  begin /*with (const A)*/ writeln(A);
-  cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  forall i in A.domain do writeln(A[i]);
+  [i in A.domain] writeln(A[i]);
+  coforall i in A.domain do writeln(A[i]);
+  begin writeln(A);
+  cobegin {
     writeln(A);
     doNothing();
   }
@@ -83,12 +80,13 @@ proc blankIntent2(A) {
 // will do the right thing if a user tries to address the warning
 proc update(A, i) do A[i] = i;
 proc callFunction(A) {
-  forall i in A.domain /*with (const A)*/ do update(A, i);
-  [i in A.domain /*with (const A)*/] update(A, i);
-  [i in A.domain /*with (const A)*/] update(A, i);
-  coforall i in A.domain /*with (const A)*/ do update(A, i);
-  begin /*with (const A)*/ update(A, 1);
-  cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  forall i in A.domain do update(A, i);
+  [i in A.domain] update(A, i);
+  [i in A.domain] update(A, i);
+  coforall i in A.domain do update(A, i);
+  begin update(A, 1);
+  cobegin {
     update(A, 1);
     doNothing();
   }
@@ -117,12 +115,13 @@ proc callFunction(A) {
 // 'local' array cases
 //
 {
+  // all the following statements have an implicit `with (ref A)`
   var A: [1..10] int;
-  forall i in 1..10 /*with (ref A)*/ do A[i] = i;
-  [i in 1..10 /*with (ref A)*/] A[i] = i;
-  coforall i in A.domain /*with (ref A)*/ do A[i] = i;
-  begin /*with (ref A)*/ A = A.domain;
-  cobegin /*with (ref A)*/ {
+  forall i in 1..10 do A[i] = i;
+  [i in 1..10] A[i] = i;
+  coforall i in A.domain do A[i] = i;
+  begin A = A.domain;
+  cobegin {
     A = A.domain;
     doNothing();
   }

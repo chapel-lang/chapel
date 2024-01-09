@@ -1,14 +1,14 @@
-array-intent-from-actual-error-task.chpl:21: error: const actual is passed to 'ref' formal 'A' of begin_fn()
+array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of begin_fn()
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:21: note: to ref formal here
+array-intent-from-actual-error-task.chpl:22: note: to ref formal here
 array-intent-from-actual-error-task.chpl:25: note: passed as ref here
-array-intent-from-actual-error-task.chpl:21: error: const actual is passed to 'ref' formal 'A' of cobegin_fn()
+array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of cobegin_fn()
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:21: note: to ref formal here
+array-intent-from-actual-error-task.chpl:22: note: to ref formal here
 array-intent-from-actual-error-task.chpl:27: note: passed as ref here
-array-intent-from-actual-error-task.chpl:21: error: const actual is passed to 'ref' formal 'A' of coforall_fn()
+array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of coforall_fn()
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:21: note: to ref formal here
+array-intent-from-actual-error-task.chpl:22: note: to ref formal here
 array-intent-from-actual-error-task.chpl:24: note: passed as ref here
 array-intent-from-actual-error-task.chpl:24: note: passed as ref here
 array-intent-from-actual-error-task.chpl:4: In function 'explicitConst1':
