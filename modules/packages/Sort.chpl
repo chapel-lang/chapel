@@ -423,13 +423,15 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 /*
 
 Sort the elements in a 1D rectangular array. After the call, the ``Data`` array
-will store elements n sorted order.
+will store elements in sorted order.
 
 The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
-  Elements will be moved, swapped, or assigned in to place.
+  When reordering elements, the sort implementation might use assignment, memory
+  moves, or the swap operator. Additionally, the sort might create
+  copy-initialize elements, for example, to create a pivot.
 
 .. note::
 
@@ -599,6 +601,7 @@ iter sorted(x, comparator:?rec=defaultComparator) {
 
 // bubble sort is generally too slow to be useful in practice
 // but, it is stable and in-place
+@chpldoc.nodoc
 module BubbleSort {
   import Sort.{defaultComparator, chpl_check_comparator, chpl_compare};
 
@@ -636,7 +639,7 @@ module BubbleSort {
   }
 }
 
-// heap sort has good nlogn worst case performance
+// heap sort has good n*log(n) worst case performance
 // it is in-place but not stable.
 @chpldoc.nodoc
 module HeapSort {
@@ -2073,7 +2076,6 @@ module ShallowCopy {
       assert(A.domain.contains(src_idx..#nElts_idx));
     }
 
-
     if A._instance.isDefaultRectangular() {
       type st = __primitive("static field type", A._value, "eltType");
       var size = (nElts:c_size_t)*c_sizeof(st);
@@ -2601,9 +2603,9 @@ module TwoArrayPartitioning {
         const binStartBit = state.bucketizer.getNextStartBit(task.startbit);
 
         const sortit =
-          state.bucketizer.getBinsToRecursivelySort().contains(bin) &&
+          binSize > 1 && // have 2 or more elements to sort
           binStartBit <= state.endbit && // have bits to sort
-          binSize > 1;
+          state.bucketizer.getBinsToRecursivelySort().contains(bin);
 
         if binSize == 0 {
           // Do nothing
