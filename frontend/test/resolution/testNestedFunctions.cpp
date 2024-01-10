@@ -27,13 +27,16 @@
 #include "./ErrorGuard.h"
 
 //
-// TODO TODO TODO: Here I note edge cases in the language that need tests.
-//
-// -- An outer variable that is an overloaded function, that is called in
-//    the child function (i.e., it cannot be called without fully resolving
-//    the child function, because we do not know which overload to select.
-// -- Using outer variables in the child funtion signature - AND, is there
-//    any optimization we can perform for initial signatures, knowing that?
+// TODO: Cases that need tests (that the current impl may not handle)...
+//  1)  Deeply nested function referencing outer variables from multiple
+//      levels at once.
+//  2)  Mutually recursive nested functions (requires resolution at the
+//      point-of-call).
+//  3)  Utilizing outer variables in function signature.
+//  4)  Utilization of param/type outer variables.
+//  5)  Instantiation of a generic nested function at 1 level deep.
+//  6)  Instantiation of a deeply nested generic function requiring
+//      substitutions from multiple parent frames.
 //
 
 #define TEST_NAME(ctx__)\
@@ -53,10 +56,9 @@ turnOnWarnUnstable(Context* ctx) {
   return ctx;
 }
 
-// Compute outer variables and manually assert they are correct. Notice that
-// we just call 'scopeResolve'. It is legal to directly scope-resolve any
-// nested function 'NF', but it is not legal to _resolve_ NF. This is because
-// type information may flow into NF from parent function(s).
+// Compute outer variables and manually assert they are correct. This is an
+// operation that is basically just collecting a subset of results from
+// scope-resolution.
 static void test0(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
@@ -165,7 +167,7 @@ static void test0(void) {
   assert(!guard.realizeErrors());
 }
 
-// Case 1: Nested function is resolved because the parent function calls it.
+// The nested function 'bar' is resolved because the parent function calls it.
 static void test1(void) {
   Context context;
   Context* ctx = turnOnWarnUnstable(&context);
@@ -224,10 +226,129 @@ static void test1(void) {
   assert(reBarUseX.type().type() == chpl::types::IntType::get(ctx, 0));
   assert(reBarUseX.type().kind() == QualifiedType::REF);
   assert(reBarUseX.toId() == xVar->id());
+
+  assert(!guard.realizeErrors());
 }
+
+// Here is a more complicated example that incorporates deep nesting and
+// param/type variables in the signature. The nested function 'bar' should
+// be fully resolved by the call to 'bar', because its return type is
+// inferred. The nested function 'baz' should not be fully resolved, though
+// it is scope resolved in order to determine that 'n' is a dependency.
+/**
+static void test2(void) {
+  Context context;
+  Context* ctx = turnOnWarnUnstable(&context);
+  ErrorGuard guard(ctx);
+
+  auto path = TEST_NAME(ctx);
+  std::cout << path.c_str() << std::endl;
+
+  std::string contents =
+    R""""(
+    proc foo() {
+      param x = 8;
+      proc bar(param a = x) {
+        type t = x.type;
+        var n = a;
+        proc baz(b: t): int { return n; }
+        return baz();
+      }
+      var y = bar();
+    }
+    )"""";
+
+  setFileText(ctx, path, contents);
+
+  // Get the top module.
+  auto& br = parseAndReportErrors(ctx, path);
+  assert(br.numTopLevelExpressions() == 1);
+  auto mod = br.topLevelExpression(0)->toModule();
+  assert(mod && mod->numStmts() == 1);
+
+  // Get the 'foo' function and its declared variables.
+  auto fooFn = mod->stmt(0)->toFunction();
+  assert(fooFn && fooFn->numStmts() == 3);
+  auto xVar = fooFn->stmt(0)->toVariable();
+  auto yVar = fooFn->stmt(2)->toVariable();
+  assert(xVar && xVar->storageKind() == Qualifier::PARAM);
+  assert(yVar);
+
+  // Get the 'bar' function, its formal, and its body.
+  auto barFn = fooFn->stmt(1)->toFunction();
+  assert(barFn && barFn->numStmts() == 4 && barFn->numFormals() == 1);
+  auto aVar = barFn->formal(0)->toFormal();
+  assert(aVar && aVar->storageKind() == Qualifier::PARAM);
+  auto tVar = barFn->stmt(0)->toVariable();
+  assert(tVar && tVar->storageKind() == Qualifier::TYPE);
+  auto nVar = barFn->stmt(1)->toVariable();
+  assert(nVar);
+  auto barRetBaz = barFn->stmt(3)->toReturn();
+  assert(barRetBaz);
+  auto aUseX = aVar->initExpression()->toIdentifier();
+  assert(aUseX);
+  auto tUseX = tVar->initExpression()->toDot()->receiver()->toIdentifier();
+  assert(tUseX);
+
+  auto bazFn = barFn->stmt(2)->toFunction();
+  assert(bazFn && bazFn->numFormals() == 1 && bazFn->numStmts() == 1);
+  auto bVar = bazFn->formal(0)->toFormal();
+  assert(bVar);
+  auto bazRetN = bazFn->stmt(0)->toReturn();
+  assert(bazRetN);
+  auto bazUseN = bazRetN->value();
+  assert(bazUseN);
+  auto bUseT = bVar->typeExpression()->toIdentifier();
+  assert(bUseT);
+
+  // Get the resolution results for 'foo'.
+  auto rfFoo = resolveConcreteFunction(ctx, fooFn->id());
+  auto& yRe = rfFoo->byAst(yVar);
+  auto& yQt = yRe.type();
+  assert(yQt.type() == chpl::types::IntType::get(ctx, 0));
+  assert(yQt.kind() == QualifiedType::VAR);
+
+  // Get the resolution results for 'bar'.
+  auto sigBar = nestedTypedSignatureInitial(ctx, barFn->id(),
+                                            rfFoo->signature());
+  assert(sigBar);
+  assert(!sigBar->needsInstantiation());
+  assert(sigBar->parentFn() == rfFoo->signature());
+  auto rfBar = resolveFunction(ctx, sigBar, nullptr);
+
+  auto& reAUseX = rfBar->byAst(aUseX);
+  assert(reAUseX.type().type() == chpl::types::IntType::get(ctx, 0));
+  assert(reAUseX.type().kind() == QualifiedType::PARAM);
+  assert(reAUseX.toId() == xVar->id());
+
+  auto& reTUseX = rfBar->byAst(tUseX);
+  assert(reTUseX.type().type() == chpl::types::IntType::get(ctx, 0));
+  assert(reTUseX.type().kind() == QualifiedType::TYPE);
+  assert(reTUseX.toId() == xVar->id());
+
+  // Get the resolution results for 'baz'.
+  auto sigBaz = nestedTypedSignatureInitial(ctx, barFn->id(),
+                                            rfBar->signature());
+  assert(sigBaz);
+  assert(!sigBaz->needsInstantiation());
+  assert(sigBaz->parentFn() == rfBar->signature());
+  auto rfBaz = resolveFunction(ctx, sigBaz, nullptr);
+  auto& reBUseT = rfBaz->byAst(bUseT);
+  assert(reBUseT.type().type() == chpl::types::IntType::get(ctx, 0));
+  assert(reBUseT.type().kind() == QualifiedType::TYPE);
+  assert(reBUseT.toId() == tVar->id());
+  auto& reBazUseN = rfBaz->byAst(bazUseN);
+  assert(reBazUseN.type().type() == chpl::types::IntType::get(ctx, 0));
+  assert(reBazUseN.type().kind() == QualifiedType::REF);
+  assert(reBazUseN.toId() == nVar->id());
+
+  assert(!guard.realizeErrors());
+}
+**/
 
 int main() {
   test0();
   test1();
+  // test2();
   return 0;
 }
