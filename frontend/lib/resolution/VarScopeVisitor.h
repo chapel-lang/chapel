@@ -99,7 +99,7 @@ class VarScopeVisitor {
   /** Called to process a Conditional after handling its contents --
       should update currentFrame() which is the frame for the Conditional.
       The then/else frames are sitting in currentFrame().subBlocks. */
-  virtual void handleConditional(const uast::Conditional* cond, RV& rv) = 0;
+  virtual void handleConditional(const uast::Conditional* cond, RV& rv);
   /** Called to process a Try after handling its contents --
       should update currentFrame() which is the frame for the Try.
       The catch clause frames are sitting in currentFrame().subBlocks. */
@@ -107,7 +107,16 @@ class VarScopeVisitor {
   /** Called to process a Select after handling its contents --
       should update currentFrame() which is the frame for the Select.
       The when frames are sitting in currentFrame().subBlocks. */
-  virtual void handleSelect(const uast::Select* cond, RV& rv) = 0;
+  virtual void handleSelect(const uast::Select* cond, RV& rv);
+  /** Generalizes processing Conditional and Select nodes after handling 
+      their contents. Updates currentFrame based on the frames of the 
+      possible branching targets stored in frames. total indicates whether
+      a branch is taken no matter the input. */
+  virtual void handleDisjunction(const uast::AstNode * node, 
+                                 VarFrame* currentFrame, 
+                                 const std::vector<VarFrame*>& frames, 
+                                 bool total,
+                                 RV& rv) = 0;
   /** Called to process any other Scope after handling its contents --
       should update scopeStack.back() which is the frame for the Try.
       Not called for Conditional or Try. */
@@ -264,11 +273,11 @@ struct VarFrame {
   // has the block already encountered a return or a throw?
   bool returnsOrThrows = false;
 
-  // for conditionals/selects, is this known to be the only path?
-  bool paramTrue = false;
-
   // for conditionals/selects, does this block have a param true condition?
-  bool hasParamTrueCond = false;
+  bool paramTrueCond = false;
+
+  // for conditionals/selects, is this known to be the only path?
+  bool knownPath = false;
 
   // When processing a conditional or catch blocks,
   // instead of popping the SplitInitFrame for the then/else/catch blocks,

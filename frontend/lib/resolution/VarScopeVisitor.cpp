@@ -217,6 +217,33 @@ const QualifiedType& VarScopeVisitor::returnOrYieldType() {
   return fnReturnType;
 }
 
+void VarScopeVisitor::handleConditional(const Conditional* cond, RV& rv) {
+  VarFrame* frame = currentFrame();
+  VarFrame* thenFrame = currentThenFrame();
+  VarFrame* elseFrame = currentElseFrame();
+
+  std::vector<VarFrame*> frames;
+  if (thenFrame) frames.push_back(thenFrame);
+  if (elseFrame) frames.push_back(elseFrame);
+  handleDisjunction(cond, frame, frames, elseFrame != nullptr, rv);
+  handleScope(cond, rv);
+}
+
+void VarScopeVisitor::handleSelect(const Select* sel, RV& rv) {
+  VarFrame * frame = currentFrame();
+
+  std::vector<VarFrame*> frames;
+  bool total = sel->hasOtherwise();
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
+    VarFrame * whenFrame = currentWhenFrame(i);
+    if (!whenFrame) continue;
+    frames.push_back(whenFrame);
+    total |= whenFrame->paramTrueCond;
+  }
+  handleDisjunction(sel, frame, frames, total, rv);
+  handleScope(sel, rv);
+}
+
 void VarScopeVisitor::enterScope(const AstNode* ast, RV& rv) {
   if (createsScope(ast->tag())) {
     scopeStack.push_back(toOwned(new VarFrame(ast)));
@@ -275,10 +302,10 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
             thenFrame->returnsOrThrows && elseFrame->returnsOrThrows) {
           parentFrame->returnsOrThrows = true;
         }
-        if (thenFrame && thenFrame->returnsOrThrows && thenFrame->paramTrue) {
+        if (thenFrame && thenFrame->returnsOrThrows && thenFrame->knownPath) {
           parentFrame->returnsOrThrows = true;
         }
-        if (elseFrame && elseFrame->returnsOrThrows && elseFrame->paramTrue) {
+        if (elseFrame && elseFrame->returnsOrThrows && elseFrame->knownPath) {
           parentFrame->returnsOrThrows = true;
         }
       }
@@ -311,7 +338,7 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
           auto whenFrame = currentWhenFrame(i);  
           if (!whenFrame) continue;  
           allReturnOrThrow &= whenFrame->returnsOrThrows;  
-          if (whenFrame->paramTrue) {  // this is known to be the taken path
+          if (whenFrame->knownPath) {  // this is known to be the taken path
             parentFrame->returnsOrThrows = whenFrame->returnsOrThrows;  
             break;  
           }  
@@ -546,14 +573,14 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
   if (condRE.type().isParamTrue()) {
     // Don't need to process the false branch.
     cond->thenBlock()->traverse(rv);
-    currentThenFrame()->paramTrue = true;
-    currentThenFrame()->hasParamTrueCond = true;
+    currentThenFrame()->paramTrueCond = true;
+    currentThenFrame()->knownPath = true;
     return false;
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = cond->elseBlock()) {
       elseBlock->traverse(rv);
-      currentElseFrame()->paramTrue = true;
-      currentElseFrame()->hasParamTrueCond = true;
+      currentElseFrame()->paramTrueCond = true;
+      currentElseFrame()->knownPath = true;
     }
     return false;
   }
@@ -591,15 +618,15 @@ bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
       whenAst->traverse(rv);
       // if there is a param true case and none of the preceding whens might
       // be taken at runtime, then this is the only path we need to consider
-      currentWhenFrame(i)->paramTrue = anyCaseParamTrue && !anyWhenNonParam;
-      currentWhenFrame(i)->hasParamTrueCond = anyCaseParamTrue;
+      currentWhenFrame(i)->knownPath = anyCaseParamTrue && !anyWhenNonParam;
+      currentWhenFrame(i)->paramTrueCond = anyCaseParamTrue;
     }
 
     if (whenAst->isOtherwise()) {
       // if we've reached this point, none of the preceding whens have a param
       // true condition, so the otherwise is paramTrue if all preceding whens
       // are param false.
-      currentWhenFrame(i)->paramTrue = !anyWhenNonParam;
+      currentWhenFrame(i)->knownPath = !anyWhenNonParam;
     } else if (anyCaseParamTrue) {
       break;
     }
