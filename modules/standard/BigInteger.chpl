@@ -274,42 +274,6 @@ module BigInteger {
     /* See :proc:`init=` */
     proc init=(x : integral) do this.init(x);
 
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(const ref num: bigint) do this.init(num);
-
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: int) do this.init(num);
-
-    pragma "last resort"
-    @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-    proc init(num: uint) do this.init(num);
-
-    /* Initialize a :record:`bigint` from a string and optionally a provided base
-       to use with the string.  If the string is not a correct base ``base``
-       number, will throw a :type:`~OS.BadFormatError`.
-
-       :arg str: The value to be stored in the resulting :record:`bigint`.
-       :type str: `string`
-
-       :arg base: The base to use when creating the :record:`bigint` from ``str``.
-                  May vary from ``2`` to ``62`` or be ``0``.  Defaults to ``0``,
-                  which causes the base to be read from the start of the ``str``
-                  itself (``0x`` and ``0X`` will give hexadecimal, ``0b`` and
-                  ``0B`` will give binary, ``0`` will give octal, and everything
-                  else will be interpreted as decimal).
-       :type base: `int`
-
-       :throws BadFormatError: Thrown when ``str`` is not a correctly formatted
-                               number in base ``base``.
-
-     */
-    pragma "last resort"
-    @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-    proc init(str: string, base: int = 0) throws
-      do try! this.init(str, base);
-
     // Within a given locale, bigint assignment creates a deep copy of the
     // data and so the record "owns" the GMP data.
     //
@@ -1756,11 +1720,6 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc root(ref result: bigint, const ref a: bigint, n: uint) : int
-    do return root(result, a, n);
-
   /* Sets ``result`` to the truncated integer ``n`` th root of ``x``. Stores
      the remainder in ``remain``.
 
@@ -1824,11 +1783,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc sqrt(ref result: bigint, const ref a: bigint)
-    do sqrt(result, a);
 
   /* Sets ``result`` to the truncated integer square root of ``x``. Stores
      the remainder in ``remain``.
@@ -2243,29 +2197,6 @@ module BigInteger {
       throw new owned InversionError();
     }
   }
-
-  /* Set the value of ``result`` to the inverse of ``a`` modulo ``b``
-
-     .. note::
-        If an inverse does not exist, an :class:`InversionError` will be thrown,
-        and the value of ``result`` will be left undefined
-
-     This fulfills the same role as the GMP number theoretic function ``mpz_invert``.
-
-     :arg result: Where the result is stored
-     :type result: :record:`bigint`
-
-     :arg a: The dividend of the modulo operation
-     :type a: :record:`bigint`
-
-     :arg b: The divisor of the modulo operation
-     :type b: :record:`bigint`
-
-  */
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc invert(ref result: bigint, const ref a: bigint, const ref b: bigint) throws
-    do invert(result, a, b);
 
   @deprecated("bigint.remove is deprecated, use :proc:`~BigInteger.removeFactor` instead")
   proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
@@ -2893,21 +2824,6 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.add(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.add(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc add(ref result: bigint, const ref a: bigint, b: uint)
-    do BigInteger.add(result, a, b);
-
   /*
      Sets ``result`` to the difference of ``x`` and ``y``.
 
@@ -3010,31 +2926,6 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result:bigint, const ref a: bigint, b: uint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, a: int, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc sub(ref result: bigint, a: uint, const ref b: bigint)
-    do BigInteger.sub(result, a, b);
-
   /*
      Sets ``result`` to the product of ``x`` and ``y``.
 
@@ -3103,21 +2994,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mul(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, b: int)
-    do BigInteger.mul(result, a, b);
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc mul(ref result: bigint, const ref a: bigint, b: uint)
-    do BigInteger.mul(result, a, b);
 
   /*
      Adds the product of ``x`` and ``y`` to ``result``
@@ -3296,10 +3172,6 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc neg(ref result: bigint, const ref a: bigint) do BigInteger.neg(result, a);
-
   /*
      Sets ``result`` to the absolute value of ``x``.
 
@@ -3326,10 +3198,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc abs(ref result: bigint, const ref a: bigint) do BigInteger.abs(result, a);
 
   /* Divide ``numer`` by ``denom``, forming a quotient and storing it in
      ``result``.
@@ -3750,35 +3618,6 @@ module BigInteger {
     }
   }
 
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     The result is stored in ``result``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.mod(result, a, b);
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(a, b) = a - b * floor(a / b)``.
-
-     If b is of an unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is stored in ``result`` and returned as an ``int``.
-
-     The result is always >= 0 if `b` > 0.
-     It is an error if `b` == 0.
-  */
-  pragma "last resort"
-  @deprecated(notes=":proc:`~BigInteger.mod` with named formals `a` and `b` is deprecated, please use the version with `x` and `y` instead")
-  proc mod(ref result: bigint, const ref a: bigint, b: integral) : int
-    do return BigInteger.mod(result, a, b);
-
   /*
      Compares ``this`` and ``x``.
 
@@ -3836,22 +3675,6 @@ module BigInteger {
     return ret.safeCast(int);
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(const ref b: bigint) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: int) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: uint) : int do return this.cmp(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmp(b: real) : int do return this.cmp(b);
-
   /*
      Compares the absolute value of ``this`` and the absolute value of ``x``.
 
@@ -3897,18 +3720,6 @@ module BigInteger {
 
     return ret.safeCast(int);
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(const ref b: bigint) : int do return this.cmpabs(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(b: uint) : int do return this.cmpabs(b);
-
-  pragma "last resort"
-  @deprecated("the argument name 'b' is deprecated - please use 'x' instead")
-  proc bigint.cmpabs(b: real) : int do return this.cmpabs(b);
 
   /*
      Returns the sign of ``this``.
@@ -3959,11 +3770,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc and(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.and(result, a, b);
 
   /*
     Compute the bitwise inclusive or of ``x`` and ``y`` and store it in
@@ -4029,11 +3835,6 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument names 'a' and 'b' are deprecated - please use 'x' and 'y' instead")
-  proc xor(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.xor(result, a, b);
-
   /*
     Compute the bitwise one's complement of ``x`` and store it in ``result``.
 
@@ -4060,10 +3861,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc com(ref result: bigint, const ref a: bigint) do BigInteger.com(result, a);
 
   /*
     Assign ``x`` to ``this``
@@ -4159,26 +3956,6 @@ module BigInteger {
     }
   }
 
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc ref bigint.set(const ref a: bigint) do this.set(a);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num : int) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num : uint) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'num' is deprecated - please use 'x' instead")
-  proc ref bigint.set(num: real) do this.set(num);
-
-  pragma "last resort"
-  @deprecated("the argument name 'str' is deprecated - please use 'x' instead")
-  proc ref bigint.set(str: string, base: int = 0) do this.set(str, base);
-
   /*
     Swaps ``this`` and ``x``
 
@@ -4205,10 +3982,6 @@ module BigInteger {
       }
     }
   }
-
-  pragma "last resort"
-  @deprecated("the argument name 'a' is deprecated - please use 'x' instead")
-  proc ref bigint.swap(ref a: bigint) do this.swap(a);
 
   @chpldoc.nodoc
   record bigintWrapper {
