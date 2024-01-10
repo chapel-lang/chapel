@@ -1862,10 +1862,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("rootrem is deprecated - please use :proc:`rootRem` instead")
-  proc rootrem(ref root: bigint, ref rem: bigint, const ref u: bigint, n: uint)
-    do BigInteger.rootRem(root, rem, u, n);
-
   /*
      Sets ``result`` to the truncated integer square root of ``x``.
 
@@ -1934,10 +1930,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("sqrtrem is deprecated - please use :proc:`sqrtRem` instead")
-  proc sqrtrem(ref root: bigint, ref rem: bigint, const ref a: bigint)
-    do BigInteger.sqrtRem(root, rem, a);
 
   @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
   proc bigint.perfect_power_p() : int {
@@ -2656,38 +2648,6 @@ module BigInteger {
 
     return ret.safeCast(uint);
   }
-
-  /*
-    Scan ``this``, starting from ``startBitIdx``, towards more significant
-    bits until the first ``0`` bit is found.  Return the index of the found
-    bit.
-
-    If the bit at ``startBitIdx`` is ``0``, will return ``startBitIdx``.
-
-    :arg startBitIdx: The index of the first bit to start searching for a ``0``
-    :type startBitIdx: ``integral``
-    :returns: The index of the first ``0`` bit after ``startBitIdx``, inclusive
-    :rtype: ``uint``
-  */
-  @deprecated("scan0 is deprecated - please use :proc:`bigint.findNext0` instead")
-  proc bigint.scan0(startBitIdx: integral): uint
-    do return this.findNext0(startBitIdx);
-
-  /*
-    Scan ``this``, starting from ``startBitIdx``, towards more significant
-    bits until the first ``1`` bit is found.  Return the index of the found
-    bit.
-
-    If the bit at ``startBitIdx`` is ``1``, will return ``startBitIdx``.
-
-    :arg startBitIdx: The index of the first bit to start searching for a ``1``
-    :type startBitIdx: ``integral``
-    :returns: The index of the first ``1`` bit after ``startBitIdx``, inclusive
-    :rtype: ``uint``
-  */
-  @deprecated("scan1 is deprecated - please use :proc:`bigint.findNext1` instead")
-  proc bigint.scan1(startBitIdx: integral): uint
-    do return this.findNext1(startBitIdx);
 
   /*
     Returns the index of the first ``0`` bit found, starting from
