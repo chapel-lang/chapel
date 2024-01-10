@@ -1601,9 +1601,11 @@ void Resolver::adjustTypesForSplitInit(ID id,
   if (p && symbol->isModule()) {
     // This is a white lie since if we are in a module-level statement, the
     // kind we see here will always be UNKNOWN, whether this is a PARAM or not.
-    // Set it to PARAM here so we are allowed to store a param value for it,
-    // else we get a complaint about storing a param value on a non-param kind.
-    // The param kind will only get preserved later (at module-level
+    // This is because module statements are resolved separately from each
+    // other.
+    // Set it to PARAM here so we are allowed to store a param value for
+    // it, else we get a complaint about storing a param value on a non-param
+    // kind. The param kind will only get preserved later (at module-level
     // resolution) if it actually is a PARAM decl.
     useKind = QualifiedType::PARAM;
   }
