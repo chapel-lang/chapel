@@ -21,33 +21,33 @@
 /*
   Helper procedures for doing parallel I/O
 
-  This module provides the following procedures, each intended for a slightly
-  different use case (but all focused on cases where a large file containing
-  only a header, and then a continuous stream of deserializeable values of the
-  same type).
+  This module provides a few procedures for reading a file's contents into
+  a distributed array in parallel. The procedures are designed to be used for
+  cases where a large file contains a header followed by a continuous stream
+  of delimited values of the same type. The procedures are:
 
-  There are distributed and local versions of each procedure. The distributed
-  procedures return a block distributed array over the provided locales, while
-  the local procedures return a default rectangular array.
-
-  * :proc:`readParallelLines`: read each of the lines of a file as a ``string``
-    or ``bytes`` value
-  * :proc:`readParallelDelimited`: read a file where each value is strictly
+  * :proc:`readLinesAsBlockArray`: read each of the lines of a file as a
+    ``string`` or ``bytes`` value
+  * :proc:`readDelimitedAsBlockArray`: read a file where each value is strictly
     separated by a delimiter, and the delimiter cannot be found in the
     value (e.g., CSV)
-  * :proc:`readParallel`: read a file where each value is separated by delimiter
+  * :proc:`readItemsAsBlockArray`: read a file where values are separated by a
+    delimiter, but the delimiter can be found in the value
 
-  There are also some helper procedures that can be used to implement other
-  parallel I/O procedures:
+  There are also non-distributed versions of each procedure that return a
+  default rectangular array instead of a block-distributed array.
+
+  This module also includes some helper procedures for breaking files into chunks
+  that could be used to implement other parallel I/O routines:
 
   * :proc:`findDelimChunks`: find a set of byte offsets that divide a file into
     roughly equal chunks where each chunk begins with a delimiter
-  * :proc:`findDelimChunksChecked`: find a set of byte offsets that divide a file
-    into roughly equal chunks where each chunk begins with a delimiter and each
-    chunk starts with a deserializable value
   * :proc:`findItemOffsets`: get a prefix sum of the number of items in each
     chunk of a file, where the chunks are defined by the ``byteOffsets`` array,
-    and each item is separated by the given delimiter
+    and each item is strictly separated by the given delimiter
+  * :proc:`findDelimChunksChecked`: find a set of byte offsets that divide a file
+    into roughly equal chunks where each chunk begins with a delimiter and each
+    chunk starts with a deserializable value of the given type
 */
 @unstable("the 'parallelIO' module is unstable and subject to change in a future release")
 module ParallelIO {
@@ -56,7 +56,7 @@ module ParallelIO {
   /*
     Read a file's lines in parallel into a block-distributed array.
 
-    This routine is similar to :proc:`readParallelDelimited`, except that it
+    This routine is similar to :proc:`readDelimitedAsBlockArray`, except that it
     reads each line as a :type:`~String.string` or :type:`~Bytes.bytes` value.
 
     :arg filePath: a path to the file to read from
@@ -72,9 +72,10 @@ module ParallelIO {
              in any of the chunks
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
+    to open the file
   */
-  proc readParallelLines(filePath: string, type lineType = string, header = headerPolicy.noHeader,
-                         nTasks: int = -1, targetLocales: [?d] locale = Locales
+  proc readLinesAsBlockArray(filePath: string, type lineType = string, header = headerPolicy.noHeader,
+                             nTasks: int = -1, targetLocales: [?d] locale = Locales
   ): [] lineType throws
     where lineType == string || lineType == bytes
   {
@@ -109,7 +110,7 @@ module ParallelIO {
   /*
     Read a file's lines in parallel into an array.
 
-    This routine is essentially the same as :proc:`readParallelLines`, except
+    This routine is essentially the same as :proc:`readLinesAsBlockArray`, except
     that it only executes on the calling locale. As such, it does not accept a
     ``targetLocales`` argument and returns a non-distributed array.
 
@@ -125,8 +126,8 @@ module ParallelIO {
 
     See :proc:`~IO.open` for other errors that could be thrown when attempting
   */
-  proc readParallelLinesLocal(filePath: string, type lineType = string,
-                              header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+  proc readLinesAsArray(filePath: string, type lineType = string,
+                        header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
   ): [] lineType throws
     where lineType == string || lineType == bytes
   {
@@ -169,8 +170,8 @@ module ParallelIO {
 
           * have a 'deserialize method'
           * have a default (zero argument) initializer
-          * not contain the delimiter in its serialized form (if it does, use
-            :proc:`readParallel` instead)
+          * not contain the delimiter in its serialized form (if it does,
+            consider using :proc:`readItemsAsBlockArray` instead)
 
     This procedure can be used for a variety of purposes, such as reading a CSV
     file. To do so, the delimiter should keep its default value of ``b"\n"``.
@@ -214,9 +215,9 @@ module ParallelIO {
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
   */
-  proc readParallelDelimited(filePath: string, type t, in delim: ?dt = b"\n", header = headerPolicy.noHeader,
-                             nTasks: int = -1, type deserializerType = defaultDeserializer,
-                             targetLocales: [?d] locale = Locales
+  proc readDelimitedAsBlockArray(filePath: string, type t, in delim: ?dt = b"\n", header = headerPolicy.noHeader,
+                                 nTasks: int = -1, type deserializerType = defaultDeserializer,
+                                 targetLocales: [?d] locale = Locales
   ): [] t throws
     where d.rank == 1 && (dt == bytes || dt == string)
   {
@@ -254,7 +255,7 @@ module ParallelIO {
   /*
     Read a delimited file in parallel into an array.
 
-    This procedure is essentially the same as :proc:`readParallelDelimited`,
+    This procedure is essentially the same as :proc:`readDelimitedAsBlockArray`,
     except that it only executes on the calling locale. As such, it does not
     accept a ``targetLocales`` argument and returns a non-distributed array.
 
@@ -273,9 +274,9 @@ module ParallelIO {
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
   */
-  proc readParallelDelimitedLocal(filePath: string, type t, in delim: ?dt = b"\n",
-                                  header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                                  type deserializerType = defaultDeserializer
+  proc readDelimitedAsArray(filePath: string, type t, in delim: ?dt = b"\n",
+                            header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                            type deserializerType = defaultDeserializer
   ): [] t throws
     where dt == bytes || dt == string
   {
@@ -304,27 +305,35 @@ module ParallelIO {
   }
 
   /*
-    Read a delimited file in parallel into a block-distributed array.
+    Read items from a file in parallel into a block-distributed array.
 
     This routine assumes that the file is composed of a series of deserializable
     values of type ``t`` (optionally with a header at the beginning of the file).
     Each ``t`` must be separated by a delimiter which can either be provided as
-    a ``string`` or ``bytes`` value. Unlike :proc:`readParallelDelimited`
+    a ``string`` or ``bytes`` value. Unlike :proc:`readDelimitedAsBlockArray`
     the delimiter can also be found in the serialized form of ``t``.
 
-    This routine will use the delimiter to split the file into ``d.size`` chunks
-    of roughly equal size and read each chunk concurrently across the target locales.
-    If multiple tasks are used per locale, each locale will further decompose its
-    chunk into smaller chunks and read each of those in parallel. The chunks are
-    computed using :proc:`findDelimChunksChecked`.
+    This routine uses the following heuristic to split the file into chunks:
+
+    A given byte offset is a valid offset for a task to start deserializing
+    values of type ``t`` if:
+
+    * it is preceded by, or begins with the delimiter
+    * a ``t`` can be deserialized at that offset (i.e., calling ``t.deserialize``
+      on the bytes starting at that offset does not throw an error)
+
+    The heuristic, implemented in :proc:`findDelimChunksChecked`, will be used to
+    split the file in ``d.size`` chunks with a roughly equal number of items per
+    chunk. If multiple tasks per locale are used, each locale will further decompose
+    its chunk into smaller chunks and read each of those in parallel.
 
     .. note:: ``t`` must:
 
-          * have a 'deserialize' method that throws when a ``t`` cannot be read
+          * have a 'deserialize' method that throws when a valid ``t`` cannot be read
           * have a default (zero argument) initializer
 
     :arg filePath: a path to the file to read from
-    :arg delim: the delimiter to use to separate ``t`` values in the file
+    :arg delim: the delimiter used to guide file chunking
     :arg t: the type of value to read from the file
     :arg nTasks: the number of tasks to use per locale
         (if ``-1``, query ``here.maxTaskPar`` on each locale)
@@ -340,19 +349,18 @@ module ParallelIO {
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
   */
-  proc readParallel(filePath: string, type t, in delim: ?dt = b"\n", header = headerPolicy.noHeader,
-                    nTasks: int = -1, type deserializerType = defaultDeserializer,
-                    targetLocales: [?d] locale = Locales
+  proc readItemsAsBlockArray(filePath: string, type t, in delim: ?dt = b"\n", header = headerPolicy.noHeader,
+                             nTasks: int = -1, type deserializerType = defaultDeserializer,
+                             targetLocales: [?d] locale = Locales
   ): [] t throws
     where d.rank == 1 && (dt == bytes || dt == string)
   {
     const OnePerLoc = blockDist.createDomain({0..<d.size}, targetLocales=targetLocales);
-    var results: [OnePerLoc] list(t),
-        globalStartOffset = 0;
+    var results: [OnePerLoc] list(t);
 
     // find the starting offsets for each locale
     const fMeta = open(filePath, ioMode.r),
-          fileBounds = globalStartOffset..<fMeta.size,
+          fileBounds = 0..<fMeta.size,
           byteOffsets = findDelimChunksChecked(fMeta, delim, d.size, t, fileBounds,
                                                header, deserializerType);
 
@@ -395,14 +403,14 @@ module ParallelIO {
   }
 
   /*
-    Read a delimited file in parallel into an array.
+    Read items from a file in parallel into an array.
 
-    This procedure is essentially the same as :proc:`readParallel`,
+    This procedure is essentially the same as :proc:`readItemsAsBlockArray`,
     except that it only executes on the calling locale. As such, it does not
     accept a ``targetLocales`` argument and returns a non-distributed array.
 
     :arg filePath: a path to the file to read from
-    :arg delim: the delimiter to use to separate ``t`` values in the file
+    :arg delim: the delimiter used to guide file chunking
     :arg t: the type of value to read from the file
     :arg nTasks: the number of tasks to use
     :arg header: how to handle the file header (see :record:`headerPolicy`)
@@ -416,9 +424,9 @@ module ParallelIO {
     See :proc:`~IO.open` for other errors that could be thrown when attempting
     to open the file
   */
-  proc readParallelLocal(filePath: string, type t, in delim: ?dt = b"\n",
-                         header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
-                         type deserializerType = defaultDeserializer
+  proc readItemsAsArray(filePath: string, type t, in delim: ?dt = b"\n",
+                        header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
+                        type deserializerType = defaultDeserializer
   ): [] t throws
     where dt == bytes || dt == string
   {
@@ -482,8 +490,8 @@ module ParallelIO {
     chunkOffsets[0] = startOffset;
     chunkOffsets[n] = bounds.high;
 
-    coforall i in chunkIndices with (ref chunkOffsets) {
-      const estOffset = chunkOffsets[0] + i * approxBytesPerChunk,
+    forall i in chunkIndices with (ref chunkOffsets) {
+      const estOffset = startOffset + i * approxBytesPerChunk,
             r = f.reader(locking=false, region=estOffset..);
 
       try {
@@ -532,8 +540,6 @@ module ParallelIO {
   {
     const (findStart, startOffset) = header.apply(f, bounds),
           chunkIndices = if findStart then 0..<n else 1..<n;
-    // const chunkIndices = 1..<n,
-    //       startOffset = bounds.low;
 
     const nDataBytes = bounds.high - startOffset,
           approxBytesPerChunk = nDataBytes / n,
@@ -544,7 +550,7 @@ module ParallelIO {
     chunkOffsets[0] = startOffset;
     chunkOffsets[n] = bounds.high;
 
-    coforall i in chunkIndices with (ref chunkOffsets) {
+    forall i in chunkIndices with (ref chunkOffsets) {
       const estOffset = bounds.low + i * approxBytesPerChunk,
             r = f.reader(locking=false, region=estOffset..);
       var tTest: t;
@@ -602,7 +608,7 @@ module ParallelIO {
   {
     var nPerChunk: [d] int;
 
-    coforall c in 0..<d.high with (ref nPerChunk) {
+    forall c in 0..<d.high with (ref nPerChunk) {
       const r = f.reader(locking=false, region=byteOffsets[c]..byteOffsets[c+1]);
 
       // count the number of items in the chunk
