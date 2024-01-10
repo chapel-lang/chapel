@@ -2670,11 +2670,6 @@ module BigInteger {
     return fits_into(t_.mpz, t);
   }
 
-  @deprecated("bigint.even_p is deprecated, use :proc:`bigint.isEven` instead")
-  proc bigint.even_p() : int {
-    return this.isEven();
-  }
-
   /*
     Returns ``true`` if ``this`` is an even number, ``false`` otherwise.
 
@@ -2694,11 +2689,6 @@ module BigInteger {
       return true;
     else
       return false;
-  }
-
-  @deprecated("bigint.odd_p is deprecated, use :proc:`bigint.isOdd` instead")
-  proc bigint.odd_p() : int {
-    return this.isOdd();
   }
 
   /*
