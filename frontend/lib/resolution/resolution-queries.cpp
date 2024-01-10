@@ -114,8 +114,8 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
 
   // check to see if it is generic/unknown
   // (otherwise we do not need to infer anything)
-  if (!(lhsType.isUnknownKindOrType() ||
-        getTypeGenericity(context, lhsType.type()) == Type::GENERIC))
+  if (!lhsType.isUnknownKindOrType() &&
+      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
     return;
 
   const Param* p = rhsType.param();
