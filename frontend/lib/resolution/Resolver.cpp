@@ -2996,7 +2996,7 @@ bool Resolver::enter(const NamedDecl* decl) {
       // then leave since we're just scope-resolving.
       if (computeOuterVars) {
         if (auto ovs = computeOuterVariables(context, id)) {
-          for (size_t i = 0; i < ovs->numVariables(); i++) {
+          for (int i = 0; i < ovs->numVariables(); i++) {
             if (ovs->isReachingVariable(i)) {
               ID var = ovs->variable(i);
               ID mention;
@@ -3012,7 +3012,7 @@ bool Resolver::enter(const NamedDecl* decl) {
       // variable types for the nested function at this point. This
       // will scope resolve the inner function to collect outer variables
       // if they haven't been collected already.
-      if (auto tfsParent = typedSignature) {
+      if (typedSignature != nullptr) {
 
         // Used to store the computed outer variable types.
         TypedFnSignature::OuterVariableTypes ovsTypes;
@@ -3020,7 +3020,7 @@ bool Resolver::enter(const NamedDecl* decl) {
         if (auto ovs = computeOuterVariables(context, id)) {
           CHPL_ASSERT(!ovs->isEmpty());
 
-          for (size_t i = 0; i < ovs->numVariables(); i++) {
+          for (int i = 0; i < ovs->numVariables(); i++) {
             ID idVar = ovs->variable(i);
 
             // These (e.g., functions, classes) are not collected.
