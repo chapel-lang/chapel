@@ -1821,11 +1821,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("bigint.perfect_power_p is deprecated, use :proc:`bigint.isPerfectPower` instead")
-  proc bigint.perfect_power_p() : int {
-    return this.isPerfectPower();
-  }
-
   /*
     Return ``true`` if ``this`` is a perfect power, i.e., if there exist
     integers ``a`` and ``b`` with ``b > 1``, such that ``this = a^b``.
