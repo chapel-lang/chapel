@@ -1,28 +1,20 @@
-array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of begin_fn()
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:22: note: to ref formal here
-array-intent-from-actual-error-task.chpl:25: note: passed as ref here
-array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of cobegin_fn()
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:22: note: to ref formal here
-array-intent-from-actual-error-task.chpl:27: note: passed as ref here
-array-intent-from-actual-error-task.chpl:22: error: const actual is passed to 'ref' formal 'A' of coforall_fn()
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:22: note: to ref formal here
-array-intent-from-actual-error-task.chpl:24: note: passed as ref here
-array-intent-from-actual-error-task.chpl:24: note: passed as ref here
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
 array-intent-from-actual-error-task.chpl:4: In function 'explicitConst1':
-array-intent-from-actual-error-task.chpl:4: error: const actual is passed to 'ref' formal 'A' of coforall_fn()
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:4: note: to ref formal here
-array-intent-from-actual-error-task.chpl:7: note: passed as ref here
-array-intent-from-actual-error-task.chpl:7: note: passed as ref here
-array-intent-from-actual-error-task.chpl:4: error: const actual is passed to 'ref' formal 'A' of begin_fn()
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:4: note: to ref formal here
-array-intent-from-actual-error-task.chpl:8: note: passed as ref here
-array-intent-from-actual-error-task.chpl:4: error: const actual is passed to 'ref' formal 'A' of cobegin_fn()
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
 note: to formal of type [domain(1,int(64),one)] int(64)
-array-intent-from-actual-error-task.chpl:4: note: to ref formal here
-array-intent-from-actual-error-task.chpl:10: note: passed as ref here
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
   array-intent-from-actual-error-task.chpl:17: called as explicitConst1(A: [domain(1,int(64),one)] int(64))
