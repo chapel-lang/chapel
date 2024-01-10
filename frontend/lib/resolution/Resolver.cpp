@@ -1592,19 +1592,9 @@ void Resolver::adjustTypesForSplitInit(ID id,
 
   // check to see if it is generic/unknown
   // (otherwise we do not need to infer anything)
-  auto g = Type::MAYBE_GENERIC;
-  if (lhsType.isUnknownKindOrType()) {
-     // includes nullptr type, UnknownType, and param with unknown value
-     g = Type::GENERIC;
-  } else {
-    CHPL_ASSERT(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
-    g = getTypeGenericity(context, lhsType.type());
-  }
-
-  // return if there's nothing to do
-  if (g != Type::GENERIC) {
+  if (!(lhsType.isUnknownKindOrType() ||
+        getTypeGenericity(context, lhsType.type()) == Type::GENERIC))
     return;
-  }
 
   const Param* p = rhsType.param();
   auto useKind = lhsType.kind();
