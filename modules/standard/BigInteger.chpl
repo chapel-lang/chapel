@@ -2596,9 +2596,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("popcount is deprecated - please use :proc:`bigint.popCount` instead")
-  proc bigint.popcount() : uint do return this.popCount();
-
   /*
     Returns the number of ``1`` bits in ``this``. If ``this`` is negative, the
     number of ``1`` bits is infinite and the return value is the largest
@@ -3301,10 +3298,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="mul_2exp is deprecated - please use :proc:`mul2Exp` instead")
-  proc mul_2exp(ref result: bigint, const ref a: bigint, b: integral)
-    do mul2Exp(result, a, b);
 
   /*
     Computes ``x*(2**exp)`` and stores the result in ``result``.
@@ -4233,10 +4226,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="ior is deprecated - please use :proc:`or` instead")
-  proc ior(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do BigInteger.or(result, a, b);
 
   /*
     Compute the bitwise exclusive or of ``x`` and ``y`` and store it in
