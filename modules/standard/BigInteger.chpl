@@ -454,9 +454,6 @@ module BigInteger {
       return ret;
     }
 
-    @deprecated("get_str is deprecated - please use a cast to a string or IO methods to get the string representation")
-    proc get_str(base: int = 10): string do return this.getStr(base);
-
     @chpldoc.nodoc
     proc writeThis(writer) throws {
       var s: string;
