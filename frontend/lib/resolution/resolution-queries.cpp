@@ -106,9 +106,8 @@ scopeResolveModuleStmt(Context* context, ID id) {
 }
 
 static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
-                                   ResolvedExpression& lhs,
-                                   const ResolvedExpression& rhs,
-                                   std::set<ID>& alreadyUpdated) {
+                                              ResolvedExpression& lhs,
+                                              const ResolvedExpression& rhs) {
   const QualifiedType lhsType = lhs.type();
   const QualifiedType rhsType = rhs.type();
 
@@ -124,24 +123,7 @@ static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
   }
   const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
 
-  // set the type for the 1st split init only
-  // a later traversal will check the type of subsequent split inits
-  // (in the other branch of a conditional, say)
-  auto pair = alreadyUpdated.insert(id);
-  if (pair.second) {
-    // insertion took place, so update the type
-    lhs.setType(useType);
-  } else {
-    // insertion did not take place, so check that the type matches exactly,
-    // and issue an error if not.
-    // (we cannot unify the types for split init without causing resolution
-    //  to either go out of order or to produce results that change within
-    //  a function even when there are no errors).
-
-    if (lhsType != useType) {
-      context->error(id, "split-init type does not match");
-    }
-  }
+  lhs.setType(useType);
 }
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
@@ -158,7 +140,6 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       auto modScope = scopeForId(context, mod->id());
       emitMultipleDefinedSymbolErrors(context, modScope);
 
-      std::set<ID> splitInitTypeInferredVariables;
       auto r = Resolver::createForModuleStmt(context, mod, nullptr, result);
 
       for (auto child: mod->children()) {
@@ -194,8 +175,7 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
             ID exprId(stmtId.symbolPath(), i, 0);
             ResolvedExpression& re = result.byId(exprId);
             if (auto reToCopy = resolved.byIdOrNull(exprId)) {
-              updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy,
-                                     splitInitTypeInferredVariables);
+              updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy);
             }
           }
         }

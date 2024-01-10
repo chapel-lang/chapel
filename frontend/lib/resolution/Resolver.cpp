@@ -1612,28 +1612,10 @@ void Resolver::adjustTypesForSplitInit(ID id,
   if (useKind != QualifiedType::PARAM) p = nullptr;
   const auto useType = QualifiedType(useKind, rhsType.type(), p);
 
-  // set the type for the 1st split init only
-  // a later traversal will check the type of subsequent split inits
-  // (in the other branch of a conditional, say)
-  auto pair = splitInitTypeInferredVariables.insert(id);
-  if (pair.second) {
-    // insertion took place, so update the type
-    lhs.setType(useType);
-
-    if (lhsExprAst != nullptr) {
-      ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
-      lhsExpr.setType(useType);
-    }
-  } else {
-    // insertion did not take place, so check that the type matches exactly,
-    // and issue an error if not.
-    // (we cannot unify the types for split init without causing resolution
-    //  to either go out of order or to produce results that change within
-    //  a function even when there are no errors).
-
-    if (lhsType != useType) {
-      context->error(astForError, "split-init type does not match");
-    }
+  lhs.setType(useType);
+  if (lhsExprAst != nullptr) {
+    ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
+    lhsExpr.setType(useType);
   }
 }
 
