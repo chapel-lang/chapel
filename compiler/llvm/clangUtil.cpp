@@ -4877,11 +4877,7 @@ void makeBinaryLLVM(void) {
 
     initializeGenInfo();
 
-    // setup filenames to be referenced
     setupLLVMCodegenFilenames();
-    setupDefaultFilenames();
-    restoreAdditionalSourceFiles();
-    restoreLibraryAndIncludeInfo();
 
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
