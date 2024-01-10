@@ -1847,11 +1847,6 @@ module BigInteger {
       return false;
   }
 
-  @deprecated("bigint.perfect_square_p is deprecated, use :proc:`bigint.isPerfectSquare` instead")
-  proc bigint.perfect_square_p() : int {
-    return this.isPerfectSquare();
-  }
-
   /*
     Return ``true`` if ``this`` is a perfect square, i.e., if the square root of
     ``this`` is an integer.
