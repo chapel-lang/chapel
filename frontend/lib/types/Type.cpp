@@ -19,6 +19,7 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/framework/query-impl.h"
 #include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
@@ -40,6 +41,7 @@
 #include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 
 namespace chpl {
 namespace types {
@@ -230,6 +232,69 @@ const CompositeType* Type::getCompositeType() const {
   return nullptr;
 }
 
+static bool
+compositeTypeIsPod(Context* context, const Type* t) {
+  using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  if (!ct) return false;
+
+  const uast::AstNode* ast = nullptr;
+  if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
+
+  if (auto tfs = tryResolveDeinit(context, ast, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+
+  // Check all fields recursively.
+  bool ret = true;
+  auto rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    if (auto ft = rf.fieldType(i).type()) {
+      ret = Type::isPod(context, ft);
+    } else {
+      ret = false;
+    }
+    if (!ret) break;
+  }
+
+  return ret;
+}
+
+static const bool&
+compositeTypeIsPodQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
+  bool ret = compositeTypeIsPod(context, t);
+  return QUERY_END(ret);
+}
+
+bool Type::isPod(Context* context, const Type* t) {
+  if (t->isUnknownType() || t->isErroneousType() ||
+      t->isAnyType()) return false;
+  if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SINGLE))
+    return false;
+  if (t->hasPragma(context, uast::PRAGMA_SINGLE))
+    return false;
+  if (t->isDomainType()) return false;
+  if (t->isArrayType()) return false;
+  if (auto cls = t->toClassType()) {
+    if (cls->decorator().isManaged()) return false;
+  }
+  auto g = resolution::getTypeGenericity(context, t);
+  if (g == Type::GENERIC || g == Type::MAYBE_GENERIC) return false;
+  if (t->getCompositeType()) {
+    return compositeTypeIsPodQuery(context, t);
+  }
+  return true;
+}
 
 } // end namespace types
 } // end namespace chpl
