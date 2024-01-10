@@ -2184,11 +2184,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("bigint.remove is deprecated, use :proc:`~BigInteger.removeFactor` instead")
-  proc ref bigint.remove(const ref a: bigint, const ref f: bigint) : uint {
-    return BigInteger.removeFactor(this, a,f);
-  }
-
   // This helper is intended for use only when the factor is 0
   // Division by 0 is undefined and it results in a
   // Floating point exception error.
