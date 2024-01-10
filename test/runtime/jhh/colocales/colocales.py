@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 
 """
-Co-locale tests. Usage: ./colocales.py. The -v flag prints
-verbose output, the -f flag will cause testing to stop when the
-first test fails.
+Co-locale tests
+Usage: ./colocales.py [options] compiler
+The -v flag prints verbose output, the -f flag will cause testing to stop when
+the first test fails.
 """
 
 import unittest
@@ -19,7 +20,6 @@ if not 'CHPL_HOME' in os.environ:
 
 import sub_test
 import printchplenv
-
 
 verbose = False
 skipReason = None
@@ -45,10 +45,6 @@ def skipif():
     env = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
 
     # Verify Chapel configuration
-    # It's only necessary to run this on a single locale.
-    if env.get('CHPL_COMM', 'none') != 'none':
-        skipReason = "CHPL_COMM != none"
-        return
     if env.get('CHPL_HWLOC', 'none') == 'none':
         skipReason = "CHPL_HWLOC == none"
         return
@@ -56,15 +52,18 @@ def skipif():
 def stringify(lst):
     return " ".join([str(i) for i in lst])
 
-"""
-This class defines utility functions and the test cases (which start
-with 'test_'). The tests in this class are not run directly, but instead are
-run from subclasses that use different machine topologies. The outer class
-'TestCases' prevents the unittest framework from trying to run the test cases
-in TestCase.
-"""
 class TestCases(object):
+    """
+    This outer class prevents the unittest framework from running the
+    test cases in TestCase.
+    """
     class TestCase(unittest.TestCase):
+        """
+        This class defines utility functions and the test cases (which start
+        with 'test_'). The tests in this class are not run directly, but
+        instead are run from subclasses that use different machine
+        topologies.
+        """
         def setUp(self):
             if skipReason is not None:
                 self.skipTest(skipReason)
@@ -107,47 +106,66 @@ class TestCases(object):
         def getSocketThreads(self, socket):
             return self.getThreads(socket, self.sockets)
 
-        """
-        One locale, should have access to all cores and threads and use the
-        suggested NIC.
-        """
         def test_00_base(self):
+            """
+            One locale, should have access to all cores and threads and use
+            the suggested NIC.
+            """
             output = self.runCmd("./colocales -N %s" % self.nics[0])
-            cpus = " ".join([str(i) for i in self.getSocketCores("all")])
-            self.assertIn("Physical CPUs: " + cpus, output)
-            cpus = " ".join([str(i) for i in self.getSocketThreads("all")])
-            self.assertIn("Logical CPUs: " + cpus, output)
+            cpus = stringify(self.getSocketCores("all"))
+            self.assertIn("Physical CPUs: %s\n" % cpus, output)
+            cpus = stringify(self.getSocketThreads("all"))
+            self.assertIn("Logical CPUs: %s\n" % cpus, output)
             self.assertIn("NIC: " + self.nics[0], output)
 
-        """
-        One locale, should have access to all cores and threads and use
-        another NIC when it is suggested.
-        """
         def test_01_use_another_NIC(self):
+            """
+            One locale, should have access to all cores and threads and use
+            another NIC when it is suggested.
+            """
             if (len(self.nics) == 1):
                 self.skipTest("only one NIC")
             output = self.runCmd("./colocales -N %s" % self.nics[1])
             self.assertIn("NIC: " + self.nics[1], output)
 
-        """
-        Locale in socket should use cores and threads in that socket and
-        the closest NIC.
-        """
-        def test_02_in_socket(self):
+        def in_socket_test(self, socket, nic):
+            """
+            Locale in socket should use cores and threads in that socket and
+            the closest NIC, no matter which NIC is suggested.
+            """
             env = self.env.copy()
             env['CHPL_RT_LOCALES_PER_NODE'] = str(self.sockets)
+            output = self.runCmd("./colocales -r %d -n %d -N %s" %
+                             (socket, self.sockets, nic), env=env)
+            cpus = stringify(self.getSocketCores(socket))
+            self.assertIn("Physical CPUs: %s\n" % cpus, output)
+            cpus = stringify(self.getSocketThreads(socket))
+            self.assertIn("Logical CPUs: %s\n" % cpus, output)
+            self.assertIn("NIC: " + self.nicForSocket[socket], output)
+
+        def test_02_suggest_nic_in_socket(self):
+            """
+            Locale should use NIC in its socket when that is suggested.
+            """
+            if not hasattr(self, 'nicForSocket'):
+                self.skipTest("NICs are not in sockets")
             for i in range(0, self.sockets):
                 with self.subTest(i=i):
-                    output = self.runCmd("./colocales -r %d -n %d -N %s" %
-                                     (i, self.sockets, self.nicForSocket[i]),
-                                     env=env)
-                    cpus = stringify(self.getSocketCores(i))
-                    self.assertIn("Physical CPUs: %s\n" % cpus, output)
-                    cpus = stringify(self.getSocketThreads(i))
-                    self.assertIn("Logical CPUs: %s\n" % cpus, output)
-                    self.assertIn("NIC: " + self.nicForSocket[i], output)
+                    self.in_socket_test(i, self.nicForSocket[i])
 
-
+        def test_03_suggest_nic_in_other_socket(self):
+            """
+            Locale should use NIC in its socket when a different NIC is
+            suggested.
+            """
+            if not hasattr(self, 'nicForSocket'):
+                self.skipTest("NICs are not in sockets")
+            if (len(self.nics) == 1):
+                self.skipTest("only one NIC")
+            for i in range(0, self.sockets):
+                with self.subTest(i=i):
+                    self.in_socket_test(i,
+                                   self.nicForSocket[(i+1)%self.sockets])
 """
 These classes represent different machine topologies based on real machines.
 The topologies are stored in the XML files. We could extract the number of
@@ -155,11 +173,11 @@ sockets, cores, etc., from those files, but for now we just hard-code that
 information because there are only a few configurations.
 """
 
-"""
-HPE Cray EX. Two sockets, four NUMA domains per socket, 64 cores per socket,
-two threads per core, and one NIC per socket.
-"""
 class Ex2Tests(TestCases.TestCase):
+    """
+    HPE Cray EX. Two sockets, four NUMA domains per socket, 64 cores per
+    socket, two threads per core, and one NIC per socket.
+    """
     def setUp(self):
         super().setUp()
         self.env['HWLOC_XMLFILE'] = 'ex2.xml'
@@ -170,12 +188,12 @@ class Ex2Tests(TestCases.TestCase):
         self.nics= ['0000:21:00.0', '0000:a1:00.0']
         self.nicForSocket = ['0000:21:00.0', '0000:a1:00.0']
 
-"""
-AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
-cores per socket, one thread per core, and one NIC not in a socket.
-domains.
-"""
 class Hpc6aTests(TestCases.TestCase):
+    """
+    AWS hpc6a.48xlarge instance. Two sockets, two NUMA domains per socket, 48
+    cores per socket, one thread per core, and one NIC not in a socket.
+    domains.
+    """
     def setUp(self):
         super().setUp()
         self.env['HWLOC_XMLFILE'] = 'hpc6a.48xlarge.xml'
@@ -186,10 +204,13 @@ class Hpc6aTests(TestCases.TestCase):
         self.nics= ['0000:00:06.0']
         self.nicForSocket = ['0000:00:06.0', '0000:00:06.0']
 
-# AWS m6in-dy-m6in32xlarge instance. Two sockets, one NUMA domain per socket,
-# 32 cores per socket, one thread per core, and two NICs not in sockets.
 
 class M6inTests(TestCases.TestCase):
+    """
+    AWS m6in-dy-m6in32xlarge instance. Two sockets, one NUMA domain per
+    socket, 32 cores per socket, one thread per core, and two NICs not in
+    sockets.
+    """
     def setUp(self):
         super().setUp()
         self.env['HWLOC_XMLFILE'] = 'm6in-dy-m6in32xlarge.xml'
@@ -199,12 +220,11 @@ class M6inTests(TestCases.TestCase):
         self.threads = 2
         self.nics= ['0000:00:06.0', '0000:00:08.0']
 
-    """
-    The base test_02_in_socket test doesn't work because the NICs are not in
-    sockets in this topology. Instead, check that the two locales use
-    different NICs.
-    """
-    def test_02_in_socket(self):
+    def test_02_unique_nics(self):
+        """
+        In this topology the NICs are not in sockets. Test that each locale
+        gets a unique NIC.
+        """
         self.env['CHPL_RT_LOCALES_PER_NODE'] = '2'
         output = self.runCmd("./colocales -r 0 -n 2 -N %s" % self.nics[0])
         for line in output.split('\n'):
@@ -242,6 +262,7 @@ def main(argv):
         sys.exit(0)
 
     compiler = argv[1]
+    os.environ['CHPL_COMPILER'] = compiler
     del argv[1]
     localDir = sub_test.get_local_dir(sub_test.get_chpl_base(compiler))
     name = os.path.join(localDir, argv[0])
