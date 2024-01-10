@@ -1933,10 +1933,6 @@ module BigInteger {
       return isPrime;
   }
 
-  @deprecated("nextprime is deprecated - please use :proc:`~BigInteger.nextPrime` instead")
-  proc nextprime(ref result: bigint, const ref a: bigint)
-    do BigInteger.nextPrime(result, a);
-
   /* Set ``result`` to the next prime number greater than ``x``.
 
      .. note::
@@ -2383,10 +2379,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("lucnum is deprecated - please use :proc:`~BigInteger.lucNum` instead")
-  proc lucnum(ref result: bigint, n: integral)
-    do BigInteger.lucNum(result, n);
-
   /*
     Set ``result`` to the ``n`` th Lucas number.
 
@@ -2411,10 +2403,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("lucnum2 is deprecated - please use :proc:`~BigInteger.lucNum2` instead")
-  proc lucnum2(ref result: bigint, ref fnsub1: bigint, n: integral)
-    do BigInteger.lucNum2(result, fnsub1, n);
 
   /*
     Set ``result`` to the ``n`` th Lucas number and set ``fnsub1`` to the
@@ -2473,9 +2461,6 @@ module BigInteger {
 
     return ret.safeCast(uint);
   }
-
-  @deprecated("bigint.hamdist is deprecated - please use :proc:`bigint.hammingDistance` instead")
-  proc bigint.hamdist(const ref b: bigint): uint do return this.hammingDistance(b);
 
   /*
     Returns the number of bit positions that differ between ``this`` and ``x``.
