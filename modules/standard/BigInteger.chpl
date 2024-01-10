@@ -3239,18 +3239,6 @@ module BigInteger {
   proc mul(ref result: bigint, const ref a: bigint, b: uint)
     do BigInteger.mul(result, a, b);
 
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do addMul(result, a, b);
-
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, b: int)
-    do addMul(result, a, b);
-
-  @deprecated(notes="addmul is deprecated - please use :proc:`addMul` instead")
-  proc addmul(ref result: bigint, const ref a: bigint, b: uint)
-    do addMul(result, a, b);
-
   /*
      Adds the product of ``x`` and ``y`` to ``result``
      (``result = result + (x * y)``).
@@ -3308,18 +3296,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, const ref b: bigint)
-    do subMul(result, a, b);
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, b: int)
-    do subMul(result, a, b);
-
-  @deprecated(notes="submul is deprecated - please use :proc:`subMul` instead")
-  proc submul(ref result: bigint, const ref a: bigint, b: uint)
-    do subMul(result, a, b);
 
   /*
      Subtracts the product of ``x`` and ``y`` from ``result``
