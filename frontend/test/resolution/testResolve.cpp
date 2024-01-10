@@ -777,8 +777,8 @@ static void test18() {
       )""", {"foo"});
 
   assert(guard.numErrors() == 1);
-  assert(guard.error(0)->message() ==
-         "types do not match in conditional split init");
+  assert(guard.error(0)->type() ==
+         ErrorType::SplitInitMismatchedConditionalTypes);
 
   guard.realizeErrors();
 }
