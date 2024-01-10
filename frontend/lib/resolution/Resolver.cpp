@@ -1599,8 +1599,12 @@ void Resolver::adjustTypesForSplitInit(ID id,
   const Param* p = rhsType.param();
   auto useKind = lhsType.kind();
   if (p && symbol->isModule()) {
-    // White lie to let us save the param value for later, since at module level
-    // we may later learn the thing being split-init'd is param and needs it.
+    // This is a white lie since if we are in a module-level statement, the
+    // kind we see here will always be UNKNOWN, whether this is a PARAM or not.
+    // Set it to PARAM here so we are allowed to store a param value for it,
+    // else we get a complaint about storing a param value on a non-param kind.
+    // The param kind will only get preserved later (at module-level
+    // resolution) if it actually is a PARAM decl.
     useKind = QualifiedType::PARAM;
   }
   if (useKind != QualifiedType::PARAM) p = nullptr;
