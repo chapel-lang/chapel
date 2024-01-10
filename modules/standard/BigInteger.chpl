@@ -2739,10 +2739,6 @@ module BigInteger {
     return ret.safeCast(uint);
   }
 
-  // Set/Clr bit
-  @deprecated("bigint.setbit is deprecated - please use :proc:`bigint.setBit`")
-  proc ref bigint.setbit(bit_index: integral) do this.setBit(bit_index);
-
   /*
     Set the bit at ``idx`` of ``this``.
 
@@ -2766,9 +2762,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("bigint.clrbit is deprecated - please use :proc:`bigint.clearBit`")
-  proc ref bigint.clrbit(bit_index: integral) do this.clearBit(bit_index);
 
   /*
     Clear the bit at ``idx`` of ``this``.
@@ -2794,9 +2787,6 @@ module BigInteger {
     }
   }
 
-  @deprecated("bigint.combit is deprecated - please use :proc:`bigint.toggleBit`")
-  proc ref bigint.combit(bit_index: integral) do this.toggleBit(bit_index);
-
   /*
     Toggle the bit at ``idx`` of ``this``. If the bit was 1, set it to 0. If
     the bit was 0, set it to 1.
@@ -2821,9 +2811,6 @@ module BigInteger {
       }
     }
   }
-
-  @deprecated("bigint.tstbit is deprecated - please use :proc:`bigint.getBit`")
-  proc bigint.tstbit(bit_index: integral): int do return this.getBit(bit_index);
 
   /*
     Get the bit at ``idx`` of ``this``.
