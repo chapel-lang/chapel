@@ -1379,6 +1379,122 @@ static void test41() {
     {});
 }
 
+static void test42() {
+  testCopyElision("test42a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          var c: int = 0;
+          var x: int = 0;
+          var y: int;
+          select 2 {
+            when c {
+              y=x;
+            }
+            when 2 {
+
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test42b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          var c: int = 0;
+          var x: int = 0;
+          var y: int;
+          select 2 {
+            when c {
+              y=x;
+            }
+            when 2 {
+              y=x;
+            }
+          }
+        }
+      }
+    )"""",
+    {"M.test@12","M.test@18"});
+}
+
+static void test43() {
+  testCopyElision("test43a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          var c: int = 0;
+          var x: int = 0;
+          var y = x;
+          select 2 {
+            when c {
+              y;
+            }
+            when 2 {
+              x;
+            }
+          }
+        }
+      }
+    )"""",
+    {});
+  testCopyElision("test43b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        proc test() {
+          var c: int = 0;
+          var x: int = 0;
+          var y = x;
+          select 2 {
+            when c {
+              y;
+            }
+            when 2 {
+              y;
+            }
+            when 3 {
+              x;
+            }
+          }
+        }
+      }
+    )"""",
+    {"M.test@7"});
+}
 int main() {
   test1();
   test2();
@@ -1421,5 +1537,7 @@ int main() {
   test39();
   test40();
   test41();
+  test42();
+  test43();
   return 0;
 }

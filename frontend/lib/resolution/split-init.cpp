@@ -52,6 +52,10 @@ struct FindSplitInits : VarScopeVisitor {
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
+  void handleDisjunction(const AstNode * node, VarFrame * parentFrame, const std::vector<VarFrame*>& frames, bool total);
+  void splitInitErrorChecking(const AstNode * node, std::vector<std::vector<ID>> splitInitedAllIds,
+                            std::vector<std::vector<QualifiedType>> splitInitedAllTypes);
+
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
@@ -228,6 +232,159 @@ void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 
+static void propogateMentions(VarFrame * parentFrame, VarFrame* frame) {
+  for (const auto& id : frame->mentionedVars) {
+    if (frame->declaredVars.count(id) == 0) {
+      parentFrame->mentionedVars.insert(id);
+    }
+  }
+}
+void FindSplitInits::splitInitErrorChecking(const AstNode * node, std::vector<std::vector<ID>> splitInitedAllIds,
+                            std::vector<std::vector<QualifiedType>> splitInitedAllTypes) {
+    for(size_t i = 1; i < splitInitedAllIds.size(); i++) {
+    CHPL_ASSERT(splitInitedAllIds.at(i).size() == 
+                splitInitedAllIds.at(i-1).size());
+    CHPL_ASSERT(splitInitedAllTypes.at(i).size()  ==
+                splitInitedAllTypes.at(i-i).size());
+  }
+  bool orderOk = true;
+  for(size_t i = 0; i < splitInitedAllIds.size(); i++) {
+    std::vector<ID> reference = splitInitedAllIds.at(0);
+    std::vector<ID> compared = splitInitedAllIds.at(i);
+    for(size_t j = 0; j < reference.size(); j++) {
+      ID referenceId = reference[j];
+      ID comparedId = compared[j];
+      if(referenceId != comparedId) {
+        orderOk = false;
+        context->error(node, 
+                       "initialization order in select does not match");
+        break;
+      }
+    }
+  }
+  if (orderOk) {
+    for(size_t i = 0; i < splitInitedAllTypes.size(); i++) {
+      std::vector<QualifiedType> reference = splitInitedAllTypes.at(0);
+      std::vector<QualifiedType> compared = splitInitedAllTypes.at(i);
+      for(size_t j = 0; j < reference.size(); j++) {
+        QualifiedType referenceType = reference[j];
+        QualifiedType comparedType = compared[j];
+        if(referenceType != comparedType) {
+          orderOk = false;
+          context->error(node, 
+                        "types do not match in select split init");
+        }
+      }
+    }
+  }
+}
+void FindSplitInits::handleDisjunction(const AstNode * node, VarFrame * parentFrame, const std::vector<VarFrame*>& frames, bool total) {
+
+  // first, if the branch is known at compile time, just process that one.
+  for(auto frame: frames) {
+    if (!frame->paramTrue) continue;
+
+    for (auto pair : frame->initedVarsVec) {
+      const auto & id = pair.first;
+      const auto & rhsType = pair.second;
+      if (frame->eligibleVars.count(id) > 0) {
+        // variable is local to this frame's scope; save the result.
+        allSplitInitedVars.insert(id);
+      } else {
+        // variable was declared in an outer scope, and this is only
+        // possible path, so its definitely a valid split init
+        addInit(parentFrame, id, rhsType);
+      }
+    }
+
+    propogateMentions(parentFrame, frame);
+    return;
+  }
+
+
+
+  // gather the set of variables inited in any of the branches
+  std::set<ID> locallyInitedVars;
+  for(auto frame : frames) {
+    for (const auto& id : frame->initedVars) {
+      if (frame->eligibleVars.count(id) > 0) {
+        // variable declared and inited locally. save the result
+        allSplitInitedVars.insert(id);
+      } else {
+        // it was declared in an outer scope
+        locallyInitedVars.insert(id);
+      }
+    }
+  }
+
+  // remove the variables mentioned in other branches. 
+  // this is to handle out intent formals
+  for(auto frame: frames) {
+    for (const auto& id : frame->mentionedVars) {
+      locallyInitedVars.erase(id);
+    }
+  }
+
+  // calculate the set of variables that are initialized in all 
+  // frames that do not return or throw
+  std::set<ID> locallySplitInitedVars;
+  // calculate the set of variables that are initialized in all 
+  // frames. 
+  std::set<ID> splitInitedInAll;
+  for (auto id : locallyInitedVars) {
+    bool allFramesInit = true;
+    bool allFramesInitReturnOrThrow = true;
+    for(auto frame : frames) {
+      bool thisFrameInits = frame->initedVars.count(id) > 0;
+      allFramesInit &= thisFrameInits;
+      allFramesInitReturnOrThrow &= (thisFrameInits || frame->returnsOrThrows);
+    }
+    if (allFramesInit) {
+      splitInitedInAll.insert(id);
+    }
+    if (allFramesInitReturnOrThrow) {
+      locallySplitInitedVars.insert(id);
+    } else {
+      parentFrame->mentionedVars.insert(id);
+    }
+  }
+
+  if (!total) {
+    for (auto frame: frames) {propogateMentions(parentFrame, frame);}
+    for (const auto & id: locallySplitInitedVars) {
+      parentFrame->mentionedVars.insert(id);
+    }
+    return;
+  }
+
+  // propogate the initialization points for split init variables
+  // also gather the split-inited variable order and types for errory checking
+  std::vector<std::vector<ID>> splitInitedAllIds;
+  std::vector<std::vector<QualifiedType>> splitInitedAllTypes;
+  for (auto frame : frames) {
+    std::vector<ID> currIds;
+    std::vector<QualifiedType> currTypes;
+    for (auto pair : frame->initedVarsVec) {
+      ID id = pair.first;
+      QualifiedType rhsType = pair.second;
+      if (locallySplitInitedVars.count(id) > 0) {
+        addInit(parentFrame, id, rhsType);
+      }
+      if (splitInitedInAll.count(id) > 0) {
+        currIds.push_back(id);
+        currTypes.push_back(rhsType);
+      }
+    }
+    splitInitedAllIds.push_back(currIds);
+    splitInitedAllTypes.push_back(currTypes);
+  }
+  splitInitErrorChecking(node, splitInitedAllIds, splitInitedAllTypes);
+
+  for (auto frame: frames) {
+    propogateMentions(parentFrame, frame);
+  }
+
+}
 // updates the back frame with the combined result from
 // the then/else blocks from the conditional
 void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
@@ -235,6 +392,12 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
   VarFrame* thenFrame = currentThenFrame();
   VarFrame* elseFrame = currentElseFrame();
 
+  std::vector<VarFrame*> frames;
+  if (thenFrame) frames.push_back(thenFrame);
+  if (elseFrame) frames.push_back(elseFrame);
+  handleDisjunction(cond, frame, frames, elseFrame != nullptr);
+  handleScope(cond, rv);
+  return;
   // save results for vars declared in then/else
   // gather the set of variables to consider
   std::set<ID> locInitedVars;
@@ -505,150 +668,19 @@ void FindSplitInits::handleTry(const Try* t, RV& rv) {
 }
 
 void FindSplitInits::handleSelect(const Select* sel, RV& rv) {
-  VarFrame* frame = currentFrame();
+  VarFrame * frame = currentFrame();
 
-  //save results for vars declared in when blocks
-  //gather the set of variables to consider
-  std::set<ID> locInitedVars;
-  for(int i = 0; i < currentNumWhenFrames(); i++) {
-    auto whenFrame = currentWhenFrame(i);
-    if (whenFrame == nullptr) continue;
-    for (const auto& id : whenFrame->initedVars) {
-      if (whenFrame->eligibleVars.count(id) > 0) {
-        // variable declared in this scope, so save the result
-        allSplitInitedVars.insert(id);
-      } else {
-        bool notMentionedElsewhere = true;
-        for(int j = 0; j < currentNumWhenFrames(); j++) {
-          auto otherFrame = currentWhenFrame(j);
-          if (i != j && otherFrame && otherFrame->mentionedVars.count(id) != 0) {
-            notMentionedElsewhere = false;
-          }
-        }
-        if (notMentionedElsewhere) {
-          locInitedVars.insert(id);
-        }
-      }
-    }
-  }
-
-  std::set<ID> locSplitInitedVars;
-  std::set<ID> splitInitedInAll;
-  // now consider the initializer 'vars' and propogate them
-  // split init is OK if:
-  //  if otherwise block, all present frames init, return, or throw
-  //  if no otherwise block, all present frames init, return, or throw, 
-  //    and at least one path is param true
-  for (const auto& id : locInitedVars) {
-    bool allInitReturnOrThrow = true;
-    bool allInit = true;
-    bool anyParamTrue = false;
-    for(int i = 0; i < sel->numWhenStmts(); i++) {
-      auto whenFrame = currentWhenFrame(i);
-      if (!whenFrame) continue;
-      
-      bool thisInits = whenFrame->initedVars.count(id) > 0;
-      bool thisReturnsThrows = whenFrame->returnsOrThrows;
-      bool thisParamTrue = whenFrame->paramTrue;
-
-      allInitReturnOrThrow = allInitReturnOrThrow && (thisInits || thisReturnsThrows);
-      allInit = allInit && thisInits;
-      anyParamTrue = anyParamTrue || thisParamTrue;
-    }
-    
-    if (sel->hasOtherwise() && allInitReturnOrThrow) {
-      locSplitInitedVars.insert(id);
-    } else if (!sel->hasOtherwise() && allInitReturnOrThrow && anyParamTrue) {
-      locSplitInitedVars.insert(id);
-    } else {
-      frame->mentionedVars.insert(id);
-    }
-
-    if (sel->hasOtherwise() && allInit) {
-      splitInitedInAll.insert(id);
-    } else if (!sel->hasOtherwise() && allInit && anyParamTrue) {
-      splitInitedInAll.insert(id);
-    }
-  }
-
-  // Compute the order and types for error checking
-  // Propogate the split-inited variables
-  std::vector<std::vector<ID>> splitInitedAllIds;
-  std::vector<std::vector<QualifiedType>> splitInitedAllTypes;
-
-  for(int i = 0; i < currentNumWhenFrames(); i++) {
-    auto whenFrame = currentWhenFrame(i);
+  std::vector<VarFrame*> frames;
+  bool total = false;
+  for(int i = 0; i < sel->numWhenStmts(); i++) {
+    VarFrame * whenFrame = currentWhenFrame(i);
     if (!whenFrame) continue;
-    std::vector<ID> currIds;
-    std::vector<QualifiedType> currTypes;
-    for (auto pair: whenFrame->initedVarsVec) {
-      ID id = pair.first;
-      QualifiedType rhsType = pair.second;
-      if(locSplitInitedVars.count(id) > 0) {
-        addInit(frame, id, rhsType); //propogate
-        if (splitInitedInAll.count(id) > 0) {
-          currIds.push_back(id);
-          currTypes.push_back(rhsType);
-        }
-      }
-    }
-    splitInitedAllIds.push_back(currIds);
-    splitInitedAllTypes.push_back(currTypes);
+    frames.push_back(whenFrame);
+    if (whenFrame->hasParamTrueCond) total = true;
   }
-
-  //do error checking
-  // * split-init variables are initialized in the same order in all blocks
-  // * split init variables are initialized with the same type in all blocks
-  for(size_t i = 1; i < splitInitedAllIds.size(); i++) {
-    CHPL_ASSERT(splitInitedAllIds.at(i).size() == 
-                splitInitedAllIds.at(i-1).size());
-    CHPL_ASSERT(splitInitedAllTypes.at(i).size()  ==
-                splitInitedAllTypes.at(i-i).size());
-  }
-  bool orderOk;
-  for(size_t i = 0; i < splitInitedAllIds.size(); i++) {
-    std::vector<ID> reference = splitInitedAllIds.at(0);
-    std::vector<ID> compared = splitInitedAllIds.at(i);
-    for(size_t j = 0; j < reference.size(); j++) {
-      ID referenceId = reference[j];
-      ID comparedId = compared[j];
-      if(referenceId != comparedId) {
-        orderOk = false;
-        context->error(sel, 
-                       "initialization order in select does not match");
-        break;
-      }
-    }
-  }
-  if (orderOk) {
-    for(size_t i = 0; i < splitInitedAllTypes.size(); i++) {
-      std::vector<QualifiedType> reference = splitInitedAllTypes.at(0);
-      std::vector<QualifiedType> compared = splitInitedAllTypes.at(i);
-      for(size_t j = 0; j < reference.size(); j++) {
-        QualifiedType referenceType = reference[j];
-        QualifiedType comparedType = compared[j];
-        if(referenceType != comparedType) {
-          orderOk = false;
-          context->error(sel, 
-                        "types do not match in select split init");
-        }
-      }
-    }
-  }
-
-  //propogate the mentioned variables
-  for(int i = 0; i < currentNumWhenFrames(); i++) {
-    auto whenFrame = currentWhenFrame(i);
-    if (whenFrame != nullptr) {
-      for (const auto& id : whenFrame->mentionedVars) {
-        if (whenFrame->declaredVars.count(id) == 0) {
-          frame->mentionedVars.insert(id);
-        }
-      }
-    }
-  }
-
+  handleDisjunction(sel, frame, frames, sel->hasOtherwise() || total);
   handleScope(sel, rv);
+  return;
 }
 static bool allowsSplitInit(const AstNode* ast) {
   return ast->isBlock() ||

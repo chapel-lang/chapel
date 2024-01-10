@@ -306,25 +306,18 @@ void VarScopeVisitor::exitScope(const AstNode* ast, RV& rv) {
     } else if (auto s = ast->toSelect()) {
       handleSelect(s, rv);
       if (parentFrame != nullptr) {
-        //if no otherwise block, returnsOrThrows only if all present blocks 
-        // returnsOrThrows and one of them is paramTrue
-        //if otherwise block, returnsOrThrows only if all present blocks 
-        // returnsOrThrows
         bool allReturnOrThrow = true;
-        bool anyParamTrue = false;
-        for(int i = 0; i < s->numWhenStmts(); i++) {
-          auto whenFrame = currentWhenFrame(i);
-          if (!whenFrame) continue;
-          allReturnOrThrow = allReturnOrThrow && whenFrame->returnsOrThrows;
-          anyParamTrue = anyParamTrue || whenFrame->paramTrue;
+        for(int i = 0; i < s->numWhenStmts(); i++) {  
+          auto whenFrame = currentWhenFrame(i);  
+          if (!whenFrame) continue;  
+          allReturnOrThrow &= whenFrame->returnsOrThrows;  
+          if (whenFrame->paramTrue) {  // this is known to be the taken path
+            parentFrame->returnsOrThrows = whenFrame->returnsOrThrows;  
+            break;  
+          }  
         }
-        bool hasOtherwise = s->hasOtherwise();
 
-        if (hasOtherwise) {
-          parentFrame->returnsOrThrows = allReturnOrThrow;
-        } else {
-          parentFrame->returnsOrThrows = allReturnOrThrow && anyParamTrue;
-        }
+        if (s->hasOtherwise()) parentFrame->returnsOrThrows |= allReturnOrThrow;
       }
     } else {
       handleScope(ast, rv);
@@ -554,11 +547,13 @@ bool VarScopeVisitor::enter(const Conditional* cond, RV& rv) {
     // Don't need to process the false branch.
     cond->thenBlock()->traverse(rv);
     currentThenFrame()->paramTrue = true;
+    currentThenFrame()->hasParamTrueCond = true;
     return false;
   } else if (condRE.type().isParamFalse()) {
     if (auto elseBlock = cond->elseBlock()) {
       elseBlock->traverse(rv);
       currentElseFrame()->paramTrue = true;
+      currentElseFrame()->hasParamTrueCond = true;
     }
     return false;
   }
@@ -574,39 +569,39 @@ void VarScopeVisitor::exit(const Conditional* cond, RV& rv) {
 bool VarScopeVisitor::enter(const Select* sel, RV& rv) {
   enterAst(sel);
   enterScope(sel, rv);
-  
-  //traverse the not paramFalse children
+
+  // have we encountered a when without param-decided conditions?
+  bool anyWhenNonParam = false; 
+
   for(int i = 0; i < sel->numWhenStmts(); i++) {
     auto whenAst = sel->whenStmt(i);
-    bool anyParamTrue = false;
-    bool allParamFalse = !whenAst->isOtherwise();
+
+    bool anyCaseParamTrue = false;
+    bool allCaseParamFalse = !whenAst->isOtherwise();
     for(auto caseExpr : whenAst->caseExprs()) {
       auto res = rv.byAst(caseExpr);
-      anyParamTrue = anyParamTrue || res.type().isParamTrue();
-      allParamFalse = allParamFalse && res.type().isParamFalse();
+      anyCaseParamTrue |= res.type().isParamTrue();
+      allCaseParamFalse &= res.type().isParamFalse();
     }
-    if (!allParamFalse) {
-      whenAst->traverse(rv);
-      currentWhenFrame(i)->paramTrue = anyParamTrue;
-    } else {
-      CHPL_ASSERT(currentWhenFrame(i) == nullptr);
-    }
-    if (anyParamTrue) {
-      break;
-    }
-  }
+    
+    anyWhenNonParam |= !anyCaseParamTrue && !allCaseParamFalse;
 
-  //if all branches are param false, the otherwise branch is param true
-  if (sel->hasOtherwise()) {
-    bool allParamFalse = true;
-    for(int i = 0; i < sel->numWhenStmts(); i++) {
-      auto whenFrame = currentWhenFrame(i);
-      if (!whenFrame || sel->whenStmt(i)->isOtherwise()) continue;
-      allParamFalse = false;
+    if (!allCaseParamFalse) {
+      // only traverse whens that are not param false
+      whenAst->traverse(rv);
+      // if there is a param true case and none of the preceding whens might
+      // be taken at runtime, then this is the only path we need to consider
+      currentWhenFrame(i)->paramTrue = anyCaseParamTrue && !anyWhenNonParam;
+      currentWhenFrame(i)->hasParamTrueCond = anyCaseParamTrue;
     }
-    if (allParamFalse) {
-      auto otherwiseFrame = currentWhenFrame(sel->numWhenStmts() - 1);
-      otherwiseFrame->paramTrue = true;
+
+    if (whenAst->isOtherwise()) {
+      // if we've reached this point, none of the preceding whens have a param
+      // true condition, so the otherwise is paramTrue if all preceding whens
+      // are param false.
+      currentWhenFrame(i)->paramTrue = !anyWhenNonParam;
+    } else if (anyCaseParamTrue) {
+      break;
     }
   }
 
