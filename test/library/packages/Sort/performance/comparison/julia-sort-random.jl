@@ -1,5 +1,5 @@
 # run it with
-#   julia sort-random.jl
+#   julia julia-sort-random.jl
 
 function testSort(n)
   v = rand(Int, n)
