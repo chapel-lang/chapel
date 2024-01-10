@@ -104,6 +104,7 @@ chpl_bool chpl_topo_isOversubscribed(void) {
 
 chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
                                             chpl_topo_pci_addr_t *outAddr) {
-  return NULL;
+  *outAddr = *inAddr;
+  return outAddr;
 }
 
