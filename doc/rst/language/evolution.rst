@@ -25,7 +25,7 @@ Default task intents for arrays
 In 1.34, the default task intent for an array is now determined by the outer
 variable. If the outer array is ``const`` then the default intent is ``const``,
 otherwise the default intent is ``ref``. Therefore, if an array is modifiable
-outside a parallel bloc, it is modifiable inside the parallel block. It is no
+outside a parallel block, it is modifiable inside the parallel block. It is no
 longer necessary to use an explicit intent like ``with (ref myArray)`` to
 modify ``myArray`` in a parallel block. This change applies to ``forall``,
 ``coforall``, ``begin``, and ``cobegin``.
