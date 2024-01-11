@@ -1,6 +1,7 @@
 // param ToLookFor = "??";
 module M1 {
-    module ToLookFor {}
+    module ToLookFor {
+    }
     module M2 {
         module ToLookFor {}
         module M3 {
