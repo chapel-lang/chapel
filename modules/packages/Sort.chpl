@@ -422,16 +422,16 @@ proc radixSortOk(Data: [?Dom] ?eltType, comparator) param {
 
 /*
 
-Sort the elements in a 1D rectangular array. After the call, the ``Data`` array
-will store elements in sorted order.
+Sort the elements in the 1D rectangular array ``Data``.
+After the call, ``Data`` will store elements in sorted order.
 
 The choice of sorting algorithm used is made by the implementation.
 
 .. note::
 
   When reordering elements, the sort implementation might use assignment, memory
-  moves, or the swap operator. Additionally, the sort might create
-  copy-initialize elements, for example, to create a pivot.
+  moves, or the swap operator. Additionally, the sort might
+  copy-initialize some elements, for example, to create a pivot in quicksort.
 
 .. note::
 
@@ -465,13 +465,13 @@ The choice of sorting algorithm used is made by the implementation.
 :arg stable: Defaults to ``false``. If it is ``false``, the implementation
   can sort in a way that reorders equal keys. If it is ``true``, it will use a
   stable algorithm in order to preserve the order of equal keys.
-:arg mimimizeMemory: Defaults to ``false``. If it is ``false``, the
+:arg inPlaceAlgorithm: Defaults to ``false``. If it is ``false``, the
   implementation can make a copy of ``Data`` for scratch storage during the
   sort. If it is ``true``, it will use an in-place algorithm in order to use
   less memory.
  */
 proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
-          param stable:bool = false, param minimizeMemory:bool = false) {
+          param stable:bool = false, param inPlaceAlgorithm:bool = false) {
   chpl_check_comparator(comparator, eltType);
 
   if Dom.low >= Dom.high then
@@ -484,7 +484,7 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
     compilerError("stable sort not yet implemented");
   } else {
     if radixSortOk(Data, comparator) {
-      if minimizeMemory {
+      if inPlaceAlgorithm {
         // use an in-place algorithm
         MSBRadixSort.msbRadixSort(Data, comparator=comparator);
       } else {
