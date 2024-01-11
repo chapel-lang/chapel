@@ -37,6 +37,7 @@
 #include "default-functions.h"
 #include "maybe-const.h"
 #include "prims.h"
+#include "resolution-help.h"
 #include "return-type-inference.h"
 #include "signature-checks.h"
 #include "try-catch-analysis.h"
@@ -362,41 +363,6 @@ QualifiedType typeForLiteral(Context* context, const Literal* literal) {
 
 /////// function resolution
 
-static bool
-anyFormalNeedsInstantiation(Context* context,
-                            const std::vector<types::QualifiedType>& formalTs,
-                            const UntypedFnSignature* untypedSig,
-                            SubstitutionsMap* substitutions) {
-  bool genericOrUnknown = false;
-  int i = 0;
-  for (const auto& qt : formalTs) {
-    if (qt.isUnknown()) {
-      genericOrUnknown = true;
-      break;
-    }
-
-    bool considerGenericity = true;
-    if (substitutions != nullptr) {
-      auto formalDecl = untypedSig->formalDecl(i);
-      if (substitutions->count(formalDecl->id())) {
-        // don't consider it needing a substitution - e.g. when passing
-        // a generic type into a type argument.
-        considerGenericity = false;
-      }
-    }
-
-    if (considerGenericity) {
-      auto g = getTypeGenericity(context, qt);
-      if (g != Type::CONCRETE) {
-        genericOrUnknown = true;
-        break;
-      }
-    }
-
-    i++;
-  }
-  return genericOrUnknown;
-}
 
 static TypedFnSignature::WhereClauseResult whereClauseResult(
                                      Context* context,
@@ -464,65 +430,98 @@ static void checkForParenlessMethodFieldRedefinition(Context* context,
   }
 }
 
-static const TypedFnSignature* const&
-typedSignatureInitialQuery(Context* context,
-                           const UntypedFnSignature* untypedSig) {
-  QUERY_BEGIN(typedSignatureInitialQuery, context, untypedSig);
-
+static const TypedFnSignature*
+typedSignatureInitialQueryBody(
+                        Context* context,
+                        const TypedFnSignature* instantiatedParentSig,
+                        const UntypedFnSignature* untypedSig,
+                        TypedFnSignature::OuterVariableTypes outerVarTypes) {
   const TypedFnSignature* result = nullptr;
   const AstNode* ast = parsing::idToAst(context, untypedSig->id());
   const Function* fn = ast->toFunction();
 
-  if (fn != nullptr) {
-    // look at the parent scopes to find the parent function, if any
-    const UntypedFnSignature* parentFnUntyped = nullptr;
-    const TypedFnSignature* parentFnTyped = nullptr;
-    ID parentFnId = parentFunctionId(context, fn->id());
-    if (!parentFnId.isEmpty()) {
+  if (fn == nullptr) return result;
+
+  const UntypedFnSignature* parentFnUntyped = nullptr;
+  const TypedFnSignature* parentFnTyped = nullptr;
+
+  if (!instantiatedParentSig) {
+    if (ID parentFnId = parentFunctionId(context, fn->id())) {
+      auto ovs = computeOuterVariables(context, fn->id());
+      // Reaching nested functions should not have gotten this far.
+      CHPL_ASSERT(!ovs);
       auto parentAst = parsing::idToAst(context, parentFnId);
       auto parentFn = parentAst->toFunction();
       parentFnUntyped = UntypedFnSignature::get(context, parentFn);
       parentFnTyped = typedSignatureInitial(context, parentFnUntyped);
     }
+  } else {
+    parentFnTyped = instantiatedParentSig;
+    parentFnUntyped = instantiatedParentSig->untyped();
+  }
 
-    ResolutionResultByPostorderID r;
-    auto visitor = Resolver::createForInitialSignature(context, fn, r);
-    // visit the formals
-    for (auto formal : fn->formals()) {
-      formal->traverse(visitor);
+  ResolutionResultByPostorderID r;
+  auto v = Resolver::createForInitialSignature(context, fn, r, outerVarTypes);
+
+  // Visit the formals, but not the return type or function body.
+  for (auto formal : fn->formals()) {
+    formal->traverse(v);
+  }
+
+  // now, construct a TypedFnSignature from the result
+  std::vector<types::QualifiedType> formalTypes = v.getFormalTypes(fn);
+  bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
+                                                        untypedSig,
+                                                        nullptr);
+
+  // visit the where clause, unless it needs to be instantiated, in
+  // which case we will visit the where clause when that happens
+  TypedFnSignature::WhereClauseResult whereResult =
+    TypedFnSignature::WHERE_NONE;
+  if (auto whereClause = fn->whereClause()) {
+    if (needsInstantiation) {
+      whereResult = TypedFnSignature::WHERE_TBD;
+    } else {
+      whereClause->traverse(v);
+      whereResult = whereClauseResult(context, fn, r, needsInstantiation);
     }
-    // do not visit the return type or function body
+  }
 
-    // now, construct a TypedFnSignature from the result
-    std::vector<types::QualifiedType> formalTypes = visitor.getFormalTypes(fn);
-    bool needsInstantiation = anyFormalNeedsInstantiation(context, formalTypes,
-                                                          untypedSig,
-                                                          nullptr);
+  checkForParenlessMethodFieldRedefinition(context, fn, v);
 
-    // visit the where clause, unless it needs to be instantiated, in
-    // which case we will visit the where clause when that happens
-    TypedFnSignature::WhereClauseResult whereResult =
-      TypedFnSignature::WHERE_NONE;
-    if (auto whereClause = fn->whereClause()) {
-      if (needsInstantiation) {
-        whereResult = TypedFnSignature::WHERE_TBD;
-      } else {
-        whereClause->traverse(visitor);
-        whereResult = whereClauseResult(context, fn, r, needsInstantiation);
-      }
+  result = TypedFnSignature::get(context,
+                                 untypedSig,
+                                 std::move(formalTypes),
+                                 whereResult,
+                                 needsInstantiation,
+                                 /* instantiatedFrom */ nullptr,
+                                 /* parentFn */ parentFnTyped,
+                                 std::move(outerVarTypes),
+                                 /* formalsInstantiated */ Bitmap());
+  return result;
+}
+
+static const TypedFnSignature* const&
+typedSignatureInitialQuery(
+                    Context* context,
+                    const UntypedFnSignature* untypedSig) {
+  QUERY_BEGIN(typedSignatureInitialQuery, context, untypedSig);
+  const TypedFnSignature* result = nullptr;
+  bool proceed = true;
+
+  // A nested function that captures any outer variables cannot proceed.
+  if (parsing::idIsNestedFunction(context, untypedSig->id())) {
+    if (auto ovs = computeOuterVariables(context, untypedSig->id())) {
+      CHPL_ASSERT(ovs->numVariables() > 0);
+      proceed = false;
     }
+  }
 
-    checkForParenlessMethodFieldRedefinition(context, fn, visitor);
-
-    result = TypedFnSignature::get(context,
-                                   untypedSig,
-                                   std::move(formalTypes),
-                                   whereResult,
-                                   needsInstantiation,
-                                   /* instantiatedFrom */ nullptr,
-                                   /* parentFn */ parentFnTyped,
-                                   /* formalsInstantiated */ Bitmap());
-
+  if (proceed) {
+    const TypedFnSignature* instantiatedParentSig = nullptr;
+    result = typedSignatureInitialQueryBody(context, instantiatedParentSig,
+                                            untypedSig,
+                                            {});
   }
 
   return QUERY_END(result);
@@ -531,12 +530,9 @@ typedSignatureInitialQuery(Context* context,
 const TypedFnSignature*
 typedSignatureInitial(Context* context,
                       const UntypedFnSignature* untypedSig) {
-
   auto ret = typedSignatureInitialQuery(context, untypedSig);
   // also check the signature at this point if it is concrete
-  if (!ret->needsInstantiation()) {
-    checkSignature(context, ret);
-  }
+  if (ret && !ret->needsInstantiation()) checkSignature(context, ret);
   return ret;
 }
 
@@ -1254,6 +1250,7 @@ typeConstructorInitialQuery(Context* context, const Type* t)
                                  /* needsInstantiation */ true,
                                  /* instantiatedFrom */ nullptr,
                                  /* parentFn */ nullptr,
+                                 /* outerVariableTypes */ {},
                                  /* formalsInstantiated */ Bitmap());
 
   return QUERY_END(result);
@@ -1439,19 +1436,10 @@ static bool isCallInfoForInitializer(const CallInfo& ci) {
   return false;
 }
 
-// TODO: Move these to the 'InitResolver' visitor.
-static bool isTfsForInitializer(const TypedFnSignature* tfs) {
-  if (tfs->untyped()->name() == USTR("init") ||
-      tfs->untyped()->name() == USTR("init="))
-    if (tfs->untyped()->isMethod())
-      return true;
-  return false;
-}
-
 static bool ensureBodyIsResolved(Context* context, const CallInfo& ci,
                                  const TypedFnSignature* tfs) {
   if (tfs->untyped()->isCompilerGenerated()) return false;
-  if (isTfsForInitializer(tfs)) return true;
+  if (InitResolver::isTfsForInitializer(tfs)) return true;
   return false;
 }
 
@@ -1789,12 +1777,13 @@ ApplicabilityResult instantiateSignature(Context* context,
                                       needsInstantiation,
                                       /* instantiatedFrom */ sig,
                                       /* parentFn */ parentFnTyped,
+                                      /* outerVariableTypes*/ {},
                                       std::move(formalsInstantiated));
 
   // May need to resolve the body at this point to compute final TFS.
   if (ensureBodyIsResolved(context, call, result)) {
     if (!result->untyped()->isCompilerGenerated()) {
-      if (isTfsForInitializer(result)) {
+      if (InitResolver::isTfsForInitializer(result)) {
         auto resolvedFn = resolveInitializer(context, result, poiScope);
         auto newTfs = resolvedFn->signature();
         CHPL_ASSERT(!newTfs->needsInstantiation());
@@ -1855,7 +1844,7 @@ resolveFunctionByInfoQuery(Context* context,
   PoiInfo resolvedPoiInfo;
 
   // Note that in this case the AST for the function can be nullptr.
-  if (isTfsForInitializer(sig)) {
+  if (InitResolver::isTfsForInitializer(sig)) {
     auto retType = QualifiedType(QualifiedType::VAR, VoidType::get(context));
 
     ResolutionResultByPostorderID resolutionById;
@@ -1990,8 +1979,7 @@ resolveFunctionByInfoQuery(Context* context,
 const ResolvedFunction* resolveInitializer(Context* context,
                                            const TypedFnSignature* sig,
                                            const PoiScope* poiScope) {
-  bool isAcceptable = isTfsForInitializer(sig);
-  if (!isAcceptable) {
+  if (!InitResolver::isTfsForInitializer(sig)) {
     CHPL_ASSERT(false && "Should only be called for initializers");
   }
 
@@ -2083,9 +2071,10 @@ const ResolvedFunction* resolveFunction(Context* context,
   return helpResolveFunction(context, sig, poiScope, /* skipIfRunning */ false);
 }
 
-const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
-  if (id.isEmpty())
-    return nullptr;
+// This resolves a concrete function without considering nestedness.
+static const ResolvedFunction*
+resolveOneConcreteFunction(Context* context, ID id) {
+  if (id.isEmpty()) return nullptr;
 
   const UntypedFnSignature* uSig = UntypedFnSignature::get(context, id);
   const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
@@ -2103,20 +2092,85 @@ const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
   return ret;
 }
 
-static const owned<ResolvedFunction>&
-scopeResolveFunctionQuery(Context* context, ID id) {
-  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
+const ResolvedFunction* resolveConcreteFunction(Context* context, ID id) {
+  if (!parsing::idIsFunction(context, id)) return nullptr;
 
+  if (!parsing::idIsNestedFunction(context, id)) {
+    return resolveOneConcreteFunction(context, id);
+  }
+
+  // Collect all IDs from 'id' to the root non-nested parent.
+  std::vector<ID> ids;
+  for (ID up = id; parsing::idIsFunction(context, up);
+          up = up.parentSymbolId(context)) {
+    ids.push_back(up);
+  }
+
+  // Reverse IDs so that { parent, nested0, nested1, ... }.
+  std::reverse(ids.begin(), ids.end());
+
+  // Resolve each function, but bail if any function is generic.
+  const TypedFnSignature* lastParentTfs = nullptr;
+  const TypedFnSignature* tfs = nullptr;
+  for (size_t i = 0; i < ids.size(); i++) {
+    bool hasOuterVariables = false;
+    auto& id = ids[i];
+
+    // First, update the parent (will be 'nullptr' at first).
+    lastParentTfs = tfs;
+
+    if (auto ovs = computeOuterVariables(context, id)) {
+      hasOuterVariables = !ovs->isEmpty();
+    }
+
+    if (!hasOuterVariables) {
+      auto ufs = UntypedFnSignature::get(context, id);
+      tfs = typedSignatureInitial(context, ufs); 
+    } else {
+      CHPL_ASSERT(lastParentTfs);
+      tfs = nestedTypedSignatureInitial(context, id, lastParentTfs);
+    }
+
+    // Something went wrong or a function is generic, so we have to bail.
+    if (!tfs || tfs->needsInstantiation()) return nullptr;
+
+    // Have to resolve the entire stack for correctness.
+    std::ignore = resolveFunction(context, tfs, nullptr);
+  }
+
+  CHPL_ASSERT(tfs && lastParentTfs);
+
+  // TODO: The 'resolveOneConcreteFunction' skips resolution if the where
+  // clause is false, but does regular old 'resolveFunction'? Should it?
+  auto ret = resolveFunction(context, tfs, nullptr);
+
+  return ret;
+}
+
+// TODO: This uses the body of 'scopeResolveFunctionQuery'. Is there any
+// way that can be generalized so that we can just use one implementation?
+static const owned<OuterVariables>&
+computeOuterVariablesQuery(Context* context, ID id) {
+  QUERY_BEGIN(computeOuterVariablesQuery, context, id);
+  owned<OuterVariables> ret;
+  CHPL_ASSERT(false && "Should not be called directly!");
+  return QUERY_END(ret);
+}
+
+static owned<ResolvedFunction>
+scopeResolveFunctionQueryBody(Context* context, ID id, bool computeOuterVars) {
   const AstNode* ast = parsing::idToAst(context, id);
   const Function* fn = ast->toFunction();
 
   ResolutionResultByPostorderID resolutionById;
   const TypedFnSignature* sig = nullptr;
   owned<ResolvedFunction> result;
+  owned<OuterVariables> outerVariables;
 
   if (fn) {
     auto visitor =
-      Resolver::createForScopeResolvingFunction(context, fn, resolutionById);
+      Resolver::createForScopeResolvingFunction(context, fn, resolutionById,
+                                                computeOuterVars);
 
     // visit the children of fn to scope resolve
     // (visiting the children because visiting a function will not
@@ -2133,16 +2187,33 @@ scopeResolveFunctionQuery(Context* context, ID id) {
     }
 
     checkForParenlessMethodFieldRedefinition(context, fn, visitor);
-
     sig = visitor.typedSignature;
+
+    if (!visitor.outerVariables.isEmpty()) {
+      outerVariables = toOwned(new OuterVariables());
+      outerVariables->swap(visitor.outerVariables);
+    }
   }
+
+  QUERY_STORE_RESULT(computeOuterVariablesQuery,
+                     context,
+                     outerVariables,
+                     id);
 
   result = toOwned(new ResolvedFunction(sig, fn->returnIntent(),
                                         std::move(resolutionById),
                                         PoiInfo(),
                                         QualifiedType()));
+  return result;
+}
 
-  return QUERY_END(result);
+static const owned<ResolvedFunction>&
+scopeResolveFunctionQuery(Context* context, ID id) {
+  QUERY_BEGIN(scopeResolveFunctionQuery, context, id);
+  const bool computeOuterVars = true;
+  owned<ResolvedFunction> ret;
+  ret = scopeResolveFunctionQueryBody(context, id, computeOuterVars);
+  return QUERY_END(ret);
 }
 
 const ResolvedFunction* scopeResolveFunction(Context* context,
@@ -2154,6 +2225,81 @@ const ResolvedFunction* scopeResolveFunction(Context* context,
     scopeResolveFunctionQuery(context, id);
 
   return result.get();
+}
+
+// The 'computeOuterVariablesQuery' is set as a side effect of performing
+// scope resolution (and potentially resolution, later).
+const OuterVariables* computeOuterVariables(Context* context, ID id) {
+  if (!context->hasCurrentResultForQuery(computeOuterVariablesQuery, { id })) {
+    if (!context->isQueryRunning(scopeResolveFunctionQuery, { id })) {
+      std::ignore = scopeResolveFunction(context, id);
+
+    // Just return 'nullptr', we have no results to use, yet. The caller
+    // can only be the Resolver set up for scope-resolve if this branch
+    // is happening.
+    } else {
+      return nullptr;
+    }
+  }
+
+  // We should have a result at this point.
+  return computeOuterVariablesQuery(context, id).get();
+}
+
+static const TypedFnSignature* const&
+nestedTypedSignatureInitialQuery(Context* context, ID id,
+                                 const TypedFnSignature* parentSig) {
+  QUERY_BEGIN(nestedTypedSignatureInitialQuery, context, id, parentSig);
+  CHPL_ASSERT(false && "Should never reach here!");
+  const TypedFnSignature* ret = nullptr;
+  return QUERY_END(ret);
+}
+
+// This is only visible to the resolver (i.e. not publicly callable). It is
+// called when the function for 'parentSig' is resolved. Its purpose is
+// to compute the initial typed signature. The invocation point is currently
+// the declaration-point for 'id'. TODO: Make the invocation point the first
+// point-of-call for 'id' instead.
+const TypedFnSignature*
+setNestedTypedSignatureInitial(
+                        Context* context,
+                        ID id,
+                        const TypedFnSignature* parentSig,
+                        TypedFnSignature::OuterVariableTypes outerVarTypes) {
+  if (context->hasCurrentResultForQuery(nestedTypedSignatureInitialQuery,
+                                        { id, parentSig })) {
+    return nestedTypedSignatureInitialQuery(context, id, parentSig);
+  }
+
+  auto untypedSig = UntypedFnSignature::get(context, id);
+  if (!untypedSig) return nullptr;
+
+  auto outerVars = computeOuterVariables(context, id);
+  if (!outerVars) CHPL_ASSERT(outerVarTypes.empty());
+
+  auto ret = typedSignatureInitialQueryBody(context, parentSig,
+                                            untypedSig,
+                                            std::move(outerVarTypes));
+  if (!ret->needsInstantiation()) checkSignature(context, ret);
+  QUERY_STORE_RESULT(nestedTypedSignatureInitialQuery, context, ret, id,
+                     parentSig);
+  return ret;
+}
+
+const TypedFnSignature*
+nestedTypedSignatureInitial(Context* context, ID id,
+                            const TypedFnSignature* parentSig) {
+  if (!id || !parentSig) return nullptr;
+  if (id.parentSymbolId(context) != parentSig->id()) return nullptr;
+
+  // TODO: Back up and resolve body of parent signature if needed.
+  if (!context->hasCurrentResultForQuery(nestedTypedSignatureInitialQuery,
+                                         { id, parentSig })) {
+    CHPL_UNIMPL("Need to resolve parent signature body!");
+    return nullptr;
+  }
+
+  return nestedTypedSignatureInitialQuery(context, id, parentSig);
 }
 
 const ResolutionResultByPostorderID& scopeResolveAggregate(Context* context,
@@ -2223,6 +2369,8 @@ isInitialTypedSignatureApplicable(Context* context,
                                   const TypedFnSignature* tfs,
                                   const FormalActualMap& faMap,
                                   const CallInfo& ci) {
+  CHPL_ASSERT(tfs != nullptr);
+
   if (!isUntypedSignatureApplicable(context, tfs->untyped(), faMap, ci)) {
     return ApplicabilityResult::failure(tfs->id(), /* TODO */ FAIL_CANDIDATE_OTHER);
   }
@@ -2335,7 +2483,13 @@ doIsCandidateApplicableInitial(Context* context,
     auto recv = ci.calledType();
     auto fn = parsing::idToAst(context, candidateId)->toFunction();
     ResolutionResultByPostorderID r;
-    auto vis = Resolver::createForInitialSignature(context, fn, r);
+    TypedFnSignature::OuterVariableTypes outerVarTypes;
+    // TODO: Maybe just pass in the parent signature instead?
+    if (auto sig = ci.callerSignature()) {
+      outerVarTypes = sig->outerVariableTypes();
+    }
+    auto vis = Resolver::createForInitialSignature(context, fn, r,
+                                                   std::move(outerVarTypes));
     fn->thisFormal()->traverse(vis);
     auto res = vis.byPostorder.byAst(fn->thisFormal());
 
@@ -2347,7 +2501,19 @@ doIsCandidateApplicableInitial(Context* context,
 
   auto ufs = UntypedFnSignature::get(context, candidateId);
   auto faMap = FormalActualMap(ufs, ci);
-  auto ret = typedSignatureInitial(context, ufs);
+  auto callerSig = ci.callerSignature();
+  const TypedFnSignature* ret = nullptr;
+
+  // We may find a nested function that refers to outer variables, in which
+  // case the caller's signature is required for additional context, as it
+  // can provide the type of the parent.
+  ret = nestedTypedSignatureInitial(context, ufs->id(), callerSig);
+
+  if (!ret) {
+    ret = typedSignatureInitial(context, ufs);
+  }
+
+  CHPL_ASSERT(ret != nullptr);
 
   return isInitialTypedSignatureApplicable(context, ret, faMap, ci);
 }
@@ -2970,6 +3136,7 @@ static void buildReaderWriterTypeCtor(Context* context,
                                       /* needsInstantiation */ true,
                                       /* instantiatedFrom */ nullptr,
                                       /* parentFn */ nullptr,
+                                      /* outerVariableTypes */ {},
                                       /* formalsInstantiated */ Bitmap());
 
   initialCandidates.push_back(result);
@@ -3211,6 +3378,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                        ci.isMethodCall(),
                                        ci.hasQuestionArg(),
                                        ci.isParenless(),
+                                       ci.callerSignature(),
                                        std::move(actuals)));
     }
 
@@ -3629,7 +3797,7 @@ CallResolutionResult resolveFnCall(Context* context,
   // signature is concrete, because there are semantic checks.
   if (isCallInfoForInitializer(ci) && mostSpecific.numBest() == 1) {
     auto candidateFn = mostSpecific.only().fn();
-    CHPL_ASSERT(isTfsForInitializer(candidateFn));
+    CHPL_ASSERT(InitResolver::isTfsForInitializer(candidateFn));
 
     // TODO: Can we move this into the 'InitVisitor'?
     if (!candidateFn->untyped()->isCompilerGenerated()) {
@@ -3853,7 +4021,9 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                      /* calledType */ lhsQt,
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
+                     /* isParenless */ false,
+                     /* callerSignature */ nullptr,
+                     actuals);
 
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
@@ -3878,7 +4048,9 @@ static const TypedFnSignature* tryResolveAssignHelper(
                      /* calledType */ lhsType,
                      /* isMethodCall */ asMethod,
                      /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
+                     /* isParenless */ false,
+                     /* callerSignature */ nullptr,
+                     actuals);
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
   auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope,

@@ -142,11 +142,12 @@ class UntypedFnSignature {
       kind_(kind),
       formals_(std::move(formals)),
       whereClause_(whereClause) {
-    CHPL_ASSERT(idTag == uast::asttags::Function ||
-           idTag == uast::asttags::Class    ||
-           idTag == uast::asttags::Record   ||
-           idTag == uast::asttags::Union    ||
-           idTag == uast::asttags::Variable);
+    CHPL_ASSERT(idTag == uast::asttags::Function      ||
+           idTag == uast::asttags::Class              ||
+           idTag == uast::asttags::Record             ||
+           idTag == uast::asttags::Union              ||
+           idTag == uast::asttags::Variable           ||
+           idTag == uast::asttags::FunctionSignature);
   }
 
   static const owned<UntypedFnSignature>&
@@ -179,9 +180,12 @@ class UntypedFnSignature {
   static const UntypedFnSignature* get(Context* context,
                                        const uast::Function* function);
 
+  static const UntypedFnSignature* get(Context* context,
+                                       const uast::FunctionSignature* sig);
+
   /** Get the unique UntypedFnSignature representing a Function's
-      signature from a Function ID. */
-  static const UntypedFnSignature* get(Context* context, ID functionId);
+      signature from a Function or FunctionSignature ID. */
+  static const UntypedFnSignature* get(Context* context, ID id);
 
   bool operator==(const UntypedFnSignature& other) const {
     return id_ == other.id_ &&
@@ -258,6 +262,8 @@ class UntypedFnSignature {
   bool idIsField() const {
     return idTag_ == uast::asttags::Variable;
   }
+
+  inline uast::asttags::AstTag idTag() const { return idTag_; }
 
   /** Returns true if this is a type constructor */
   bool isTypeConstructor() const {
@@ -354,168 +360,6 @@ class CallInfoActual {
   DECLARE_DUMP;
   /// \endcond DO_NOT_DOCUMENT
 };
-
-class ResolutionResultByPostorderID;
-
-/** CallInfo */
-class CallInfo {
- private:
-  UniqueString name_;                   // the name of the called thing
-  types::QualifiedType calledType_;     // the type of the called thing
-  bool isMethodCall_ = false;           // then actuals[0] is receiver
-  bool isOpCall_ = false;               // is an operator call
-  bool hasQuestionArg_ = false;         // includes ? arg for type constructor
-  bool isParenless_ = false;            // is a parenless call
-
-  // Performance TODO: use SmallVector here?
-  std::vector<CallInfoActual> actuals_; // types/params/names of actuals
-
- public:
-  using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
-
-  /** Construct a CallInfo that contains QualifiedTypes for actuals */
-  CallInfo(UniqueString name, types::QualifiedType calledType,
-           bool isMethodCall,
-           bool hasQuestionArg,
-           bool isParenless,
-           std::vector<CallInfoActual> actuals)
-      : name_(name), calledType_(calledType),
-        isMethodCall_(isMethodCall),
-        hasQuestionArg_(hasQuestionArg),
-        isParenless_(isParenless),
-        actuals_(std::move(actuals)) {
-    #ifndef NDEBUG
-    if (isMethodCall) {
-      CHPL_ASSERT(numActuals() >= 1);
-      CHPL_ASSERT(this->actual(0).byName() == "this");
-    }
-    if (isParenless) {
-      if (isMethodCall) {
-        CHPL_ASSERT(numActuals() == 1);
-      } else {
-        CHPL_ASSERT(numActuals() == 0);
-      }
-    }
-    #endif
-    isOpCall_ = uast::isOpName(name);
-  }
-
-  /** Construct a CallInfo with unknown types for the actuals
-      that can be used for FormalActualMap but not much else.
-      Assumes that the calledExpression is an identifier
-      and that it is a function name (vs a method invocation).
-      */
-  static CallInfo createSimple(const uast::FnCall* call);
-
-  /** Construct a CallInfo from a Call and optionally
-      raise errors that occur when doing so.
-      Assumes that the actual arguments have already been resolved
-      and their types are available in 'byPostorder'.
-
-      If 'raiseErrors' is 'true' (the default), then errors encountered
-      will be raised on the current query.
-
-      If actualAsts is provided and not 'nullptr', it will be updated
-      to contain the uAST pointers for each actual.
-   */
-  static CallInfo create(Context* context,
-                         const uast::Call* call,
-                         const ResolutionResultByPostorderID& byPostorder,
-                         bool raiseErrors = true,
-                         std::vector<const uast::AstNode*>* actualAsts=nullptr,
-                         UniqueString rename = UniqueString());
-
-  /** Construct a CallInfo by adding a method receiver argument to
-      the passed CallInfo. */
-  static CallInfo createWithReceiver(const CallInfo& ci,
-                                     types::QualifiedType receiverType,
-                                     UniqueString rename=UniqueString());
-
-  /** Copy and rename a CallInfo. */
-  static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
-
-  /** Prepare actuals for a call for later use in creating a CallInfo.
-      This is a helper function for CallInfo::create that is sometimes
-      useful to call separately.
-
-      Sets 'actuals' and 'hasQuestionArg'.
-
-      If actualIds is not 'nullptr', then the toID value of each actual is
-      pushed to that array.
-    */
-  static void prepareActuals(Context* context,
-                             const uast::Call* call,
-                             const ResolutionResultByPostorderID& byPostorder,
-                             bool raiseErrors,
-                             std::vector<CallInfoActual>& actuals,
-                             const uast::AstNode*& questionArg,
-                             std::vector<const uast::AstNode*>* actualAsts);
-
-
-  /** return the name of the called thing */
-  const UniqueString name() const { return name_; }
-
-  /** return the type of the called thing */
-  types::QualifiedType calledType() const { return calledType_; }
-
-  /** check if the call is a method call */
-  bool isMethodCall() const { return isMethodCall_; }
-
-  /** check if the call is an operator call */
-  bool isOpCall() const { return isOpCall_; }
-
-  /** check if the call includes ? arg for type constructor */
-  bool hasQuestionArg() const { return hasQuestionArg_; }
-
-  /** return true if the call did not use parens */
-  bool isParenless() const { return isParenless_; }
-
-  /** return the actuals */
-  CallInfoActualIterable actuals() const {
-    return CallInfoActualIterable(actuals_);
-  }
-
-  /** return the i'th actual */
-  const CallInfoActual& actual(size_t i) const {
-    CHPL_ASSERT(i < actuals_.size());
-    return actuals_[i];
-  }
-
-  /** return the number of actuals */
-  size_t numActuals() const { return actuals_.size(); }
-
-  bool operator==(const CallInfo& other) const {
-    return name_ == other.name_ &&
-           calledType_ == other.calledType_ &&
-           isMethodCall_ == other.isMethodCall_ &&
-           isOpCall_ == other.isOpCall_ &&
-           hasQuestionArg_ == other.hasQuestionArg_ &&
-           isParenless_ == other.isParenless_ &&
-           actuals_ == other.actuals_;
-  }
-  bool operator!=(const CallInfo& other) const {
-    return !(*this == other);
-  }
-  void mark(Context* context) const {
-    name_.mark(context);
-    calledType_.mark(context);
-    for (auto& actual : actuals_) {
-      actual.mark(context);
-    }
-  }
-  size_t hash() const {
-    return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
-                      hasQuestionArg_, isParenless_,
-                      actuals_);
-  }
-
-  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
-
-  /// \cond DO_NOT_DOCUMENT
-  DECLARE_DUMP;
-  /// \endcond DO_NOT_DOCUMENT
-};
-
 
 using PoiCallIdFnIds = std::set<std::pair<ID, ID>>;
 using PoiRecursiveCalls = std::set<std::pair<const TypedFnSignature*,
@@ -663,6 +507,9 @@ class PoiInfo {
   /// \endcond DO_NOT_DOCUMENT
 };
 
+/** See the documentation for types::CompositeType::SubstitutionsMap. */
+using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+
 // TODO: should this actually be types::FunctionType?
 /**
   This represents a typed function signature.
@@ -675,6 +522,8 @@ class TypedFnSignature {
     WHERE_TRUE,  // where resulted in true
     WHERE_FALSE, // where resulted in false
   } WhereClauseResult;
+
+  using OuterVariableTypes = SubstitutionsMap;
 
  private:
   // What is the untyped function signature?
@@ -703,6 +552,13 @@ class TypedFnSignature {
   // function signature?
   const TypedFnSignature* parentFn_ = nullptr;
 
+  // If this is for an inner function, then this stores the types of
+  // any captured outer variables declared in parent functions. This
+  // can be empty if this function uses no outer variables. If this
+  // is for an initial signature, only the outer variable types needed
+  // to evaluate formals need to be stored here.
+  OuterVariableTypes outerVariableTypes_;
+
   // Which formal arguments were substituted when instantiating?
   Bitmap formalsInstantiated_;
 
@@ -713,6 +569,7 @@ class TypedFnSignature {
                    bool isRefinementOnly,
                    const TypedFnSignature* instantiatedFrom,
                    const TypedFnSignature* parentFn,
+                   OuterVariableTypes outerVariableTypes,
                    Bitmap formalsInstantiated)
     : untypedSignature_(untypedSignature),
       formalTypes_(std::move(formalTypes)),
@@ -721,6 +578,7 @@ class TypedFnSignature {
       isRefinementOnly_(isRefinementOnly),
       instantiatedFrom_(instantiatedFrom),
       parentFn_(parentFn),
+      outerVariableTypes_(std::move(outerVariableTypes)),
       formalsInstantiated_(std::move(formalsInstantiated)) { }
 
   static const owned<TypedFnSignature>&
@@ -732,6 +590,7 @@ class TypedFnSignature {
                       bool isRefinementOnly,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
+                      OuterVariableTypes outerVariableTypes,
                       Bitmap formalsInstantiated);
 
  public:
@@ -744,6 +603,7 @@ class TypedFnSignature {
                               bool needsInstantiation,
                               const TypedFnSignature* instantiatedFrom,
                               const TypedFnSignature* parentFn,
+                              OuterVariableTypes outerVariableTypes,
                               Bitmap formalsInstantiated);
 
   /** Get the unique TypedFnSignature containing these components
@@ -764,6 +624,7 @@ class TypedFnSignature {
            isRefinementOnly_ == other.isRefinementOnly_ &&
            instantiatedFrom_ == other.instantiatedFrom_ &&
            parentFn_ == other.parentFn_ &&
+           outerVariableTypes_ == other.outerVariableTypes_ &&
            formalsInstantiated_ == other.formalsInstantiated_;
   }
   bool operator!=(const TypedFnSignature& other) const {
@@ -780,6 +641,10 @@ class TypedFnSignature {
     }
     context->markPointer(instantiatedFrom_);
     context->markPointer(parentFn_);
+    for (auto& p : outerVariableTypes_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
     (void) formalsInstantiated_; // nothing to mark
   }
 
@@ -837,7 +702,7 @@ class TypedFnSignature {
     Returns 'true' if formal argument i was instantiated; that is,
     it was present in the SubstitutionsMap when instantiating.
    */
-  bool formalIsInstantiated(int i) const {
+  inline bool formalIsInstantiated(int i) const {
     const TypedFnSignature* sig = inferredFrom();
     if (sig->instantiatedFrom_ == nullptr)
       return false;
@@ -845,35 +710,220 @@ class TypedFnSignature {
     return sig->formalsInstantiated_[i];
   }
 
-  const Bitmap& formalsInstantiatedBitmap() const {
+  inline const Bitmap& formalsInstantiatedBitmap() const {
     const TypedFnSignature* sig = inferredFrom();
     return sig->formalsInstantiated_;
   }
 
   /**
      Is this for an inner Function? If so, what is the parent
-     function signature?
+     function signature? It should be fully instantiated or
+      concrete.
    */
-  const TypedFnSignature* parentFn() const {
+  inline const TypedFnSignature* parentFn() const {
     const TypedFnSignature* sig = inferredFrom();
     return sig->parentFn_;
   }
 
+  /** Return types for outer variables declared in the parent function. */
+  inline const OuterVariableTypes& outerVariableTypes() const {
+    return outerVariableTypes_;
+  }
+
   /** Returns the number of formals */
-  int numFormals() const {
+  inline int numFormals() const {
     int ret = formalTypes_.size();
     CHPL_ASSERT(untypedSignature_ && ret == untypedSignature_->numFormals());
     return ret;
   }
   /** Returns the name of the i'th formal */
-  UniqueString formalName(int i) const {
+  inline UniqueString formalName(int i) const {
     return untypedSignature_->formalName(i);
   }
   /** Returns the type of the i'th formal */
-  const types::QualifiedType& formalType(int i) const {
+  inline const types::QualifiedType& formalType(int i) const {
     CHPL_ASSERT(0 <= i && (size_t) i < formalTypes_.size());
     return formalTypes_[i];
   }
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
+};
+
+class ResolutionResultByPostorderID;
+
+/** CallInfo */
+class CallInfo {
+ private:
+  UniqueString name_;                   // the name of the called thing
+  types::QualifiedType calledType_;     // the type of the called thing
+  bool isMethodCall_ = false;           // then actuals[0] is receiver
+  bool isOpCall_ = false;               // is an operator call
+  bool hasQuestionArg_ = false;         // includes ? arg for type constructor
+  bool isParenless_ = false;            // is a parenless call
+
+  // If this has a value, then the call is occurring within the function
+  // represented by 'callerSignature_'. If this does not have a value,
+  // then nested functions that refer to outer variables cannot be
+  // considered as candidates.
+  const TypedFnSignature* callerSignature_ = nullptr;
+
+  // Performance TODO: use SmallVector here?
+  std::vector<CallInfoActual> actuals_; // types/params/names of actuals
+ public:
+  using CallInfoActualIterable = Iterable<std::vector<CallInfoActual>>;
+
+  /** Construct a CallInfo that contains QualifiedTypes for actuals */
+  CallInfo(UniqueString name, types::QualifiedType calledType,
+           bool isMethodCall,
+           bool hasQuestionArg,
+           bool isParenless,
+           const TypedFnSignature* callerSignature,
+           std::vector<CallInfoActual> actuals)
+      : name_(name), calledType_(calledType),
+        isMethodCall_(isMethodCall),
+        hasQuestionArg_(hasQuestionArg),
+        isParenless_(isParenless),
+        callerSignature_(callerSignature),
+        actuals_(std::move(actuals)) {
+    #ifndef NDEBUG
+    if (isMethodCall) {
+      CHPL_ASSERT(numActuals() >= 1);
+      CHPL_ASSERT(this->actual(0).byName() == "this");
+    }
+    if (isParenless) {
+      if (isMethodCall) {
+        CHPL_ASSERT(numActuals() == 1);
+      } else {
+        CHPL_ASSERT(numActuals() == 0);
+      }
+    }
+    #endif
+    isOpCall_ = uast::isOpName(name);
+  }
+
+  /** Construct a CallInfo with unknown types for the actuals
+      that can be used for FormalActualMap but not much else.
+      Assumes that the calledExpression is an identifier
+      and that it is a function name (vs a method invocation).
+      */
+  static CallInfo createSimple(const uast::FnCall* call);
+
+  /** Construct a CallInfo from a Call and optionally
+      raise errors that occur when doing so.
+      Assumes that the actual arguments have already been resolved
+      and their types are available in 'byPostorder'.
+
+      If 'raiseErrors' is 'true' (the default), then errors encountered
+      will be raised on the current query.
+
+      If actualAsts is provided and not 'nullptr', it will be updated
+      to contain the uAST pointers for each actual.
+   */
+  static CallInfo create(Context* context,
+                         const uast::Call* call,
+                         const ResolutionResultByPostorderID& byPostorder,
+                         bool raiseErrors = true,
+                         std::vector<const uast::AstNode*>* actualAsts=nullptr,
+                         UniqueString rename = UniqueString());
+
+  /** Construct a CallInfo by adding a method receiver argument to
+      the passed CallInfo. */
+  static CallInfo createWithReceiver(const CallInfo& ci,
+                                     types::QualifiedType receiverType,
+                                     UniqueString rename=UniqueString());
+
+  /** Copy and rename a CallInfo. */
+  static CallInfo copyAndRename(const CallInfo& ci, UniqueString rename);
+
+  /** Prepare actuals for a call for later use in creating a CallInfo.
+      This is a helper function for CallInfo::create that is sometimes
+      useful to call separately.
+
+      Sets 'actuals' and 'hasQuestionArg'.
+
+      If actualIds is not 'nullptr', then the toID value of each actual is
+      pushed to that array.
+    */
+  static void prepareActuals(Context* context,
+                             const uast::Call* call,
+                             const ResolutionResultByPostorderID& byPostorder,
+                             bool raiseErrors,
+                             std::vector<CallInfoActual>& actuals,
+                             const uast::AstNode*& questionArg,
+                             std::vector<const uast::AstNode*>* actualAsts);
+
+  inline void setCallerSignature(const TypedFnSignature* callerSignature) {
+    callerSignature_ = callerSignature;
+  }
+
+  /** return the name of the called thing */
+  const UniqueString name() const { return name_; }
+
+  /** return the type of the called thing */
+  types::QualifiedType calledType() const { return calledType_; }
+
+  /** check if the call is a method call */
+  bool isMethodCall() const { return isMethodCall_; }
+
+  /** check if the call is an operator call */
+  bool isOpCall() const { return isOpCall_; }
+
+  /** check if the call includes ? arg for type constructor */
+  bool hasQuestionArg() const { return hasQuestionArg_; }
+
+  /** return true if the call did not use parens */
+  bool isParenless() const { return isParenless_; }
+
+  /** return the actuals */
+  inline CallInfoActualIterable actuals() const {
+    return CallInfoActualIterable(actuals_);
+  }
+
+  /** return the i'th actual */
+  inline const CallInfoActual& actual(size_t i) const {
+    CHPL_ASSERT(i < actuals_.size());
+    return actuals_[i];
+  }
+
+  /** return the number of actuals */
+  inline size_t numActuals() const { return actuals_.size(); }
+
+  inline const TypedFnSignature* callerSignature() const {
+    return callerSignature_;
+  }
+
+  inline bool operator==(const CallInfo& other) const {
+    return name_ == other.name_ &&
+           calledType_ == other.calledType_ &&
+           isMethodCall_ == other.isMethodCall_ &&
+           isOpCall_ == other.isOpCall_ &&
+           hasQuestionArg_ == other.hasQuestionArg_ &&
+           isParenless_ == other.isParenless_ &&
+           actuals_ == other.actuals_ &&
+           callerSignature_ == other.callerSignature_;
+  }
+  inline bool operator!=(const CallInfo& other) const {
+    return !(*this == other);
+  }
+  inline void mark(Context* context) const {
+    name_.mark(context);
+    calledType_.mark(context);
+    for (auto& actual : actuals_) {
+      actual.mark(context);
+    }
+    if (callerSignature_) callerSignature_->mark(context);
+  }
+  inline size_t hash() const {
+    return chpl::hash(name_, calledType_, isMethodCall_, isOpCall_,
+                      hasQuestionArg_,
+                      isParenless_,
+                      actuals_,
+                      callerSignature_);
+  }
+
+  void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
 
   /// \cond DO_NOT_DOCUMENT
   DECLARE_DUMP;
@@ -1661,10 +1711,154 @@ class ResolutionResultByPostorderID {
 };
 
 /**
+  This type represents the environment of a function. It stores the set of
+  outer variables that the function refers to, as well any reaching outer
+  variables (these are outer variables required by children of this function,
+  that are not declared in this function). This type preserves the lexical
+  ordering of mentions for outer variables in this function.
+*/
+// TODO: We can drop some of this state if we decide we don't care about
+// lexical ordering at all (not 100% sure yet).
+class OuterVariables {
+  using VariableAndOwner = std::pair<ID, ID>;
+  std::vector<VariableAndOwner> variables_;
+  std::vector<ID> mentions_;
+  std::unordered_map<ID, std::pair<size_t, std::vector<size_t>>>
+        variableToMentionIdx_;
+  // A variable is reaching if it is not declared in 'symbol_'.
+  int numReachingVariables_ = 0;
+  ID symbol_;
+  ID parent_;
+
+  template <typename T>
+  static inline bool inBounds(const std::vector<T> v, size_t idx) {
+    return 0 <= idx && idx < v.size();
+  }
+public:
+  OuterVariables() = default;
+ ~OuterVariables() = default;
+
+  inline bool operator==(const OuterVariables& other) const {
+    return variables_ == other.variables_ &&
+           mentions_ == other.mentions_ &&
+           variableToMentionIdx_ == other.variableToMentionIdx_ &&
+           numReachingVariables_ == other.numReachingVariables_ &&
+           symbol_ == other.symbol_ &&
+           parent_ == other.parent_;
+  }
+
+  inline bool operator!=(const OuterVariables& other) const {
+    return !(*this == other);
+  }
+
+  inline void swap(OuterVariables& other) {
+    std::swap(variables_, other.variables_);
+    std::swap(mentions_, other.mentions_);
+    std::swap(variableToMentionIdx_, other.variableToMentionIdx_);
+    std::swap(numReachingVariables_, other.numReachingVariables_);
+    std::swap(symbol_, other.symbol_);
+    std::swap(parent_, other.parent_);
+  }
+
+  inline void mark(Context* context) const {
+    for (auto& p : variables_) {
+      p.first.mark(context);
+      p.second.mark(context);
+    }
+    for (auto& id : mentions_) id.mark(context);
+    for (auto& p : variableToMentionIdx_) p.first.mark(context);
+    symbol_.mark(context);
+    parent_.mark(context);
+  }
+
+  static inline bool update(owned<OuterVariables>& keep,
+                            owned<OuterVariables>& addin) {
+    return defaultUpdateOwned(keep, addin);
+  }
+
+  // Methods for mutation to use while building up state.
+  void setOwner(Context* context, ID symbol);
+  void add(Context* context, ID mention, ID var, bool isReachingUse);
+
+  /** Returns 'true' if there are no outer variables. */
+  inline bool isEmpty() const { return numVariables() == 0; }
+
+  /** The total number of outer variables. */
+  inline int numVariables() const { return variables_.size(); }
+
+  /** The number of outer variables declared in our immediate parent. */
+  inline int numImmediateVariables() const {
+    return numVariables() - numReachingVariables_;
+  }
+
+  /** The number of outer variables declared in our non-immediate parents. */
+  inline int numReachingVariables() const { return numReachingVariables_; }
+
+  /** The number of outer variable mentions in this symbol's body. */
+  inline int numMentions() const { return mentions_.size(); }
+
+  /** Get the number of mentions for 'var' in this symbol. */
+  inline int numMentions(ID var) const {
+    auto it = variableToMentionIdx_.find(var);
+    return it != variableToMentionIdx_.end() ? it->second.second.size() : 0;
+  }
+
+  /** Returns 'true' if there is at least one mention of 'var'. */
+  inline bool mentions(ID var) const { return numMentions(var) > 0; }
+
+  /** Returns 'true' if this contains an entry for 'var'. */
+  inline bool contains(ID var) const {
+    return variableToMentionIdx_.find(var) != variableToMentionIdx_.end();
+  }
+
+  /** Get the i'th outer variable. It may be a reaching variable, in which
+      case it was not declared in our immediate parent. */
+  inline ID variable(size_t idx) const {
+    return inBounds(variables_, idx) ? variables_[idx].first : ID();
+  }
+
+  /** A reaching variable is declared in a non-immediate parent(s). */
+  inline bool isReachingVariable(ID var) const {
+    auto it = variableToMentionIdx_.find(var);
+    if (it != variableToMentionIdx_.end()) {
+      auto& varAndOwner = variables_[it->second.first];
+      return varAndOwner.second != parent_;
+    }
+    return false;
+  }
+
+  /** A reaching variable is declared in a non-immediate parent(s). */
+  inline bool isReachingVariable(size_t idx) const {
+    if (auto id = variable(idx)) return isReachingVariable(id);
+    return false;
+  }
+
+  /** Get the i'th mention in this function. */
+  inline ID mention(size_t idx) const {
+    return inBounds(mentions_, idx) ? mentions_[idx] : ID();
+  }
+
+  /** Get the i'th mention for 'var' within this function, or the empty ID. */
+  inline ID mention(ID var, size_t idx) const {
+    auto it = variableToMentionIdx_.find(var);
+    if (it == variableToMentionIdx_.end()) return {};
+    return inBounds(it->second.second, idx)
+      ? mentions_[it->second.second[idx]]
+      : ID();
+  }
+
+  /** Get the first mention of 'var', or the empty ID. */
+  inline ID firstMention(ID var) const { return mention(var, 0); }
+
+  /** Get the ID of the symbol owning these outer variables. */
+  inline const ID& symbol() const { return symbol_; }
+};
+
+/**
   This type represents a resolved function.
 */
 class ResolvedFunction {
- private:
+private:
   const TypedFnSignature* signature_ = nullptr;
 
   uast::Function::ReturnIntent returnIntent_ =
@@ -1685,7 +1879,8 @@ class ResolvedFunction {
                    ResolutionResultByPostorderID resolutionById,
                    PoiInfo poiInfo,
                    types::QualifiedType returnType)
-      : signature_(signature), returnIntent_(returnIntent),
+      : signature_(signature),
+        returnIntent_(returnIntent),
         resolutionById_(std::move(resolutionById)),
         poiInfo_(std::move(poiInfo)),
         returnType_(std::move(returnType)) {}
@@ -1726,10 +1921,12 @@ class ResolvedFunction {
     poiInfo_.swap(other.poiInfo_);
     returnType_.swap(other.returnType_);
   }
+
   static bool update(owned<ResolvedFunction>& keep,
                      owned<ResolvedFunction>& addin) {
     return defaultUpdateOwned(keep, addin);
   }
+
   void mark(Context* context) const {
     context->markPointer(signature_);
     resolutionById_.mark(context);
@@ -2054,8 +2251,7 @@ class ResolvedParamLoop {
     }
 };
 
-/** See the documentation for types::CompositeType::SubstitutionsMap. */
-using SubstitutionsMap = types::CompositeType::SubstitutionsMap;
+
 
 // Represents result info on either a type's copyability or assignability, from
 // ref and/or from const.

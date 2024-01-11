@@ -72,6 +72,14 @@ InitResolver::create(Context* ctx, Resolver& visitor, const Function* fn) {
   return ret;
 }
 
+bool InitResolver::isTfsForInitializer(const TypedFnSignature* tfs) {
+  if (tfs->untyped()->name() == USTR("init") ||
+      tfs->untyped()->name() == USTR("init="))
+    if (tfs->untyped()->isMethod())
+      return true;
+  return false;
+}
+
 owned<InitResolver> InitResolver::fork() {
   auto ret = toOwned(new InitResolver(ctx_, initResolver_, fn_, currentRecvType_));
   ret->copyState(*this);
@@ -323,9 +331,10 @@ InitResolver::computeTypedSignature(const Type* newRecvType) {
 
   ret = TypedFnSignature::get(ctx_, ufs, formalTypes,
                               tfs->whereClauseResult(),
-                              /* needsInstantiation */ false,
+                              /*needsInstantiation*/ false,
                               tfs->instantiatedFrom(),
                               tfs->parentFn(),
+                              /*outerVariableTypes*/ {},
                               formalsInstantiated);
   return ret;
 }

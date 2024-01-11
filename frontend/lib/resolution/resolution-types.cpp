@@ -25,6 +25,7 @@
 #include "chpl/framework/query-impl.h"
 #include "chpl/framework/update-functions.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "chpl/types/TupleType.h"
 #include "chpl/uast/Builder.h"
 #include "chpl/uast/FnCall.h"
@@ -39,6 +40,39 @@ namespace resolution {
 
 using namespace uast;
 using namespace types;
+
+void OuterVariables::add(Context* context, ID mention, ID var,
+                         bool isReachingUse) {
+  ID varParent = var.parentSymbolId(context);
+  ID mentionParent = mention.parentSymbolId(context);
+
+  if (!isReachingUse) {
+    CHPL_ASSERT(mention && mentionParent == symbol_);
+    CHPL_ASSERT(varParent != symbol_);
+  }
+
+  auto it = variableToMentionIdx_.find(var);
+  auto& p = variableToMentionIdx_[var];
+  if (it == variableToMentionIdx_.end()) {
+    p.first = variables_.size();
+    variables_.push_back({ var, varParent });
+  }
+
+  // Reaching if the parent is non-immediate.
+  if (varParent != parent_) numReachingVariables_++;
+
+  // Don't bother storing the mention for a child use. 
+  if (!isReachingUse) {
+    p.second.push_back(mentions_.size());
+    mentions_.push_back(mention);
+  }
+}
+
+void OuterVariables::setOwner(Context* context, ID symbol) {
+  symbol_ = symbol;
+  parent_ = symbol_.parentSymbolId(context);
+  CHPL_ASSERT(symbol_.isSymbolId());
+}
 
 const owned<UntypedFnSignature>&
 UntypedFnSignature::getUntypedFnSignature(Context* context, ID id,
@@ -81,8 +115,8 @@ UntypedFnSignature::get(Context* context, ID id,
                                std::move(formals), whereClause).get();
 }
 
-static const UntypedFnSignature*
-getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, const Function* fn) {
   const UntypedFnSignature* result = nullptr;
 
   if (fn != nullptr) {
@@ -122,36 +156,70 @@ getUntypedFnSignatureForFn(Context* context, const uast::Function* fn) {
   return result;
 }
 
-const UntypedFnSignature* UntypedFnSignature::get(Context* context,
-                                                  const Function* function) {
-  if (function == nullptr) {
-    return nullptr;
+const UntypedFnSignature*
+UntypedFnSignature::get(Context* context, const FunctionSignature* sig) {
+  if (sig == nullptr) return nullptr;
+
+  const UntypedFnSignature* result = nullptr;
+  std::vector<UntypedFnSignature::FormalDetail> formals;
+
+  for (auto ast : sig->formals()) {
+    auto decl = ast->toDecl();
+    CHPL_ASSERT(ast);
+
+    UniqueString name;
+    bool hasDefault = false;
+    if (auto formal = decl->toFormal()) {
+      name = formal->name();
+      hasDefault = formal->initExpression() != nullptr;
+    } else if (auto varargs = decl->toVarArgFormal()) {
+      name = varargs->name();
+
+      // This should not be possible. Currently varargs with a default value
+      // will be considered a syntax error.
+      hasDefault = false;
+      CHPL_ASSERT(varargs->initExpression() == nullptr);
+    }
+
+    auto fd = UntypedFnSignature::FormalDetail(name, hasDefault, decl,
+                                               decl->isVarArgFormal());
+    formals.push_back(std::move(fd));
   }
 
-  return getUntypedFnSignatureForFn(context, function);
+  // find the unique-ified untyped signature
+  result = UntypedFnSignature::get(context, sig->id(), UniqueString(),
+                                   sig->isMethod(),
+                                   /* isTypeConstructor */ false,
+                                   /* isCompilerGenerated */ false,
+                                   /* throws */ sig->throws(),
+                                   /* idTag */ asttags::FunctionSignature,
+                                   sig->kind(),
+                                   std::move(formals),
+                                   /* whereClause */ nullptr);
+  return result;
 }
 
 static const UntypedFnSignature* const&
-getUntypedFnSignatureForIdQuery(Context* context, ID functionId) {
-  QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, functionId);
+getUntypedFnSignatureForIdQuery(Context* context, ID id) {
+  QUERY_BEGIN(getUntypedFnSignatureForIdQuery, context, id);
 
   const UntypedFnSignature* result = nullptr;
-  const AstNode* ast = parsing::idToAst(context, functionId);
 
-  if (ast != nullptr && ast->isFunction()) {
-    result = getUntypedFnSignatureForFn(context, ast->toFunction());
+  if (!id.isEmpty()) {
+    if (auto ast = parsing::idToAst(context, id)) {
+      if (auto fn = ast->toFunction()) {
+        result = UntypedFnSignature::get(context, fn);
+      } else if (auto sig = ast->toFunctionSignature()) {
+        result = UntypedFnSignature::get(context, sig);
+      }
+    }
   }
 
   return QUERY_END(result);
 }
 
-const UntypedFnSignature* UntypedFnSignature::get(Context* context,
-                                                  ID functionId) {
-  if (functionId.isEmpty()) {
-    return nullptr;
-  }
-
-  return getUntypedFnSignatureForIdQuery(context, functionId);
+const UntypedFnSignature* UntypedFnSignature::get(Context* context, ID id) {
+  return getUntypedFnSignatureForIdQuery(context, id);
 }
 
 CallInfo CallInfo::createSimple(const uast::FnCall* call) {
@@ -186,7 +254,9 @@ CallInfo CallInfo::createSimple(const uast::FnCall* call) {
   }
 
   auto ret = CallInfo(name, calledType, isMethodCall, hasQuestionArg,
-                      /* isParenless */ false, actuals);
+                      /* isParenless */ false,
+                      /* callerSignature*/ nullptr,
+                      actuals);
 
   return ret;
 }
@@ -388,7 +458,9 @@ CallInfo CallInfo::create(Context* context,
 
   auto ret = CallInfo(name, calledType, isMethodCall,
                       /* hasQuestionArg */ questionArg != nullptr,
-                      /* isParenless */ false, actuals);
+                      /* isParenless */ false,
+                      /* callerSignature */ nullptr,
+                      actuals);
 
   return ret;
 }
@@ -406,12 +478,14 @@ CallInfo CallInfo::createWithReceiver(const CallInfo& ci,
                   /* isMethodCall */ true,
                   ci.hasQuestionArg_,
                   ci.isParenless_,
+                  ci.callerSignature_,
                   std::move(newActuals));
 }
 
 CallInfo CallInfo::copyAndRename(const CallInfo &ci, UniqueString rename) {
   return CallInfo(rename, ci.calledType(), ci.isMethodCall(),
-                  ci.hasQuestionArg_, ci.isParenless_, ci.actuals_);
+                  ci.hasQuestionArg_, ci.isParenless_,
+                  ci.callerSignature_, ci.actuals_);
 }
 
 void ResolutionResultByPostorderID::setupForSymbol(const AstNode* ast) {
@@ -686,11 +760,12 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                     bool isRefinementOnly,
                     const TypedFnSignature* instantiatedFrom,
                     const TypedFnSignature* parentFn,
+                    TypedFnSignature::OuterVariableTypes outerVariableTypes,
                     Bitmap formalsInstantiated) {
   QUERY_BEGIN(getTypedFnSignature, context,
               untypedSignature, formalTypes, whereClauseResult,
               needsInstantiation, isRefinementOnly, instantiatedFrom, parentFn,
-              formalsInstantiated);
+              outerVariableTypes, formalsInstantiated);
 
   auto result = toOwned(new TypedFnSignature(untypedSignature,
                                              std::move(formalTypes),
@@ -699,6 +774,7 @@ TypedFnSignature::getTypedFnSignature(Context* context,
                                              isRefinementOnly,
                                              instantiatedFrom,
                                              parentFn,
+                                             std::move(outerVariableTypes),
                                              std::move(formalsInstantiated)));
 
   return QUERY_END(result);
@@ -712,6 +788,7 @@ TypedFnSignature::get(Context* context,
                       bool needsInstantiation,
                       const TypedFnSignature* instantiatedFrom,
                       const TypedFnSignature* parentFn,
+                      TypedFnSignature::OuterVariableTypes outerVariableTypes,
                       Bitmap formalsInstantiated) {
   return getTypedFnSignature(context, untypedSignature,
                              std::move(formalTypes),
@@ -720,6 +797,7 @@ TypedFnSignature::get(Context* context,
                              /* isRefinementOnly */ false,
                              instantiatedFrom,
                              parentFn,
+                             std::move(outerVariableTypes),
                              std::move(formalsInstantiated)).get();
 }
 
@@ -736,6 +814,7 @@ TypedFnSignature::getInferred(
                              /* isRefinementOnly */ true,
                              inferredFrom->inferredFrom(),
                              inferredFrom->parentFn(),
+                             inferredFrom->outerVariableTypes(),
                              inferredFrom->formalsInstantiatedBitmap()).get();
 }
 

@@ -31,6 +31,7 @@ target_sources(ChplFrontend-obj
                maybe-const.cpp
                prims.cpp
                resolution-error-classes-list.cpp
+               resolution-help.cpp
                resolution-queries.cpp
                resolution-types.cpp
                return-type-inference.cpp

@@ -17,8 +17,8 @@
  * limitations under the License.
  */
 
-#ifndef CHPL_UAST_FUNCTION_SIGNATURE_H
-#define CHPL_UAST_FUNCTION_SIGNATURE_H
+#ifndef CHPL_UAST_FUNCTIONSIGNATURE_H
+#define CHPL_UAST_FUNCTIONSIGNATURE_H
 
 #include "chpl/framework/Location.h"
 #include "chpl/uast/Formal.h"
@@ -36,7 +36,7 @@ namespace uast {
   \rst
   .. code-block:: chapel
 
-    type T = proc(int, int): int;
+    type T = proc(_: int, _: int): int;
 
   \endrst
 
@@ -178,6 +178,8 @@ class FunctionSignature final : public AstNode {
     CHPL_ASSERT(ret->isFormal());
     return (const Formal*) ret;
   }
+
+  inline bool isMethod() const { return thisFormal() != nullptr; }
 
   /**
     Returns the expression for the return type or nullptr if there was none.

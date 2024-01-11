@@ -30,6 +30,17 @@
 namespace chpl {
 namespace resolution {
 
+// This is an extern symbol defined in the 'resolution-queries.cpp' source
+// file that the resolver needs to see. It calls this when passing by a
+// nested function during resolution. This function will take the parent
+// TFS, the nested function ID, as well as outer variable types that were
+// computed, and use them to compute the initial nested function TFS. The
+// child TFS is then mapped to the parent by setting a query. Only the outer
+// variables declared immediately in the parent function need to be passed.
+const TypedFnSignature*
+setNestedTypedSignatureInitial(Context*, ID, const TypedFnSignature*,
+                               TypedFnSignature::OuterVariableTypes);
+
 struct Resolver {
   // types used below
   using ReceiverScopesVec = llvm::SmallVector<const Scope*, 3>;
@@ -63,6 +74,9 @@ struct Resolver {
   ReceiverScopesVec savedReceiverScopes;
   Resolver* parentResolver = nullptr;
   owned<InitResolver> initResolver = nullptr;
+  TypedFnSignature::OuterVariableTypes outerVarTypes;
+  OuterVariables outerVariables;
+  bool computeOuterVars = false;
 
   // results of the resolution process
 
@@ -113,8 +127,11 @@ struct Resolver {
 
   // set up Resolver to resolve a potentially generic Function signature
   static Resolver
-  createForInitialSignature(Context* context, const uast::Function* fn,
-                            ResolutionResultByPostorderID& byPostorder);
+  createForInitialSignature(
+                      Context* context,
+                      const uast::Function* fn,
+                      ResolutionResultByPostorderID& byPostorder,
+                      TypedFnSignature::OuterVariableTypes outerVarTypes);
 
   // set up Resolver to resolve an instantiation of a Function signature
   static Resolver
@@ -143,7 +160,8 @@ struct Resolver {
   // set up Resolver to scope resolve a Function
   static Resolver
   createForScopeResolvingFunction(Context* context, const uast::Function* fn,
-                                  ResolutionResultByPostorderID& byPostorder);
+                                  ResolutionResultByPostorderID& byPostorder,
+                                  bool computeOuterVars);
 
   static Resolver createForScopeResolvingField(Context* context,
                                          const uast::AggregateDecl* ad,
@@ -219,12 +237,12 @@ struct Resolver {
   gatherReceiverAndParentScopesForType(Context* context,
                                        const types::Type* thisType);
 
-
   /* Determine the method receiver,  which is a type under
      full resolution, but only an ID under scope resolution.
     */
   bool getMethodReceiver(types::QualifiedType* outType = nullptr,
                          ID* outId = nullptr);
+
   /* Compute the receiver scopes (when resolving a method)
      and return an empty vector if it is not applicable.
    */
@@ -558,6 +576,9 @@ struct Resolver {
 
   bool enter(const uast::Import* node);
   void exit(const uast::Import* node);
+
+  bool enter(const uast::FunctionSignature* node);
+  void exit(const uast::FunctionSignature* node);
 
   // if none of the above is called, fall back on this one
   bool enter(const uast::AstNode* ast);

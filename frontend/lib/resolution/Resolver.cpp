@@ -30,6 +30,7 @@
 #include "chpl/uast/all-uast.h"
 
 #include "InitResolver.h"
+#include "resolution-help.h"
 #include "VarScopeVisitor.h"
 
 #include "llvm/ADT/ArrayRef.h"
@@ -75,6 +76,20 @@ qualifiedTypeKindForDecl(Context* context, const NamedDecl* decl) {
 
   QualifiedType::Kind ret = qualifiedTypeKindForId(context, decl->id());
   CHPL_ASSERT(ret != QualifiedType::UNKNOWN && "case not handled");
+  return ret;
+}
+
+static bool isOuterVariable(Resolver* rv, ID target) {
+  if (target.isEmpty()) return false;
+
+  // E.g., a function, or a class/record/union/enum. We don't need to track
+  // this, and shouldn't, because its current instantiation may not make any
+  // sense in this context. As well, these things have an "infinite lifetime",
+  // and are always reachable.
+  if (target.isSymbolId()) return false;
+  auto up = target.parentSymbolId(rv->context);
+  auto ast = parsing::idToAst(rv->context, up);
+  bool ret = ast && ast != rv->symbol && ast->isFunction();
   return ret;
 }
 
@@ -133,13 +148,16 @@ Resolver::createForScopeResolvingModuleStmt(
 }
 
 Resolver
-Resolver::createForInitialSignature(Context* context, const Function* fn,
-                                    ResolutionResultByPostorderID& byId)
-{
+Resolver::createForInitialSignature(
+                        Context* context,
+                        const Function* fn,
+                        ResolutionResultByPostorderID& byId,
+                        TypedFnSignature::OuterVariableTypes outerVarTypes) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.signatureOnly = true;
   ret.fnBody = fn->body();
   ret.byPostorder.setupForSignature(fn);
+  ret.outerVarTypes = std::move(outerVarTypes);
 
   if (fn->isMethod()) {
     fn->thisFormal()->traverse(ret);
@@ -224,12 +242,15 @@ Resolver::createForInitializer(Context* context,
 Resolver
 Resolver::createForScopeResolvingFunction(Context* context,
                                           const Function* fn,
-                                          ResolutionResultByPostorderID& byId) {
+                                          ResolutionResultByPostorderID& byId,
+                                          bool computeOuterVars) {
   auto ret = Resolver(context, fn, byId, nullptr);
   ret.typedSignature = nullptr; // re-set below
   ret.signatureOnly = true; // re-set below
   ret.scopeResolveOnly = true;
   ret.fnBody = fn->body();
+  ret.computeOuterVars = computeOuterVars;
+  ret.outerVariables.setOwner(context, fn->id());
 
   ret.byPostorder.setupForFunction(fn);
 
@@ -249,6 +270,7 @@ Resolver::createForScopeResolvingFunction(Context* context,
                           /* needsInstantiation */ false,
                           /* instantiatedFrom */ nullptr,
                           /* parentFn */ nullptr,
+                          /* outerVariableTypes */ {},
                           /* formalsInstantiated */ Bitmap());
 
   ret.typedSignature = sig;
@@ -929,7 +951,6 @@ bool Resolver::checkForKindError(const AstNode* typeForErr,
   return false; // no error
 }
 
-
 static const CompositeType*
 getTypeWithCustomInfer(Context* context, const Type* type) {
   if (auto rec = type->getCompositeType()) {
@@ -964,6 +985,7 @@ Resolver::computeCustomInferType(const AstNode* decl,
                      /* isMethodCall */ true,
                      /* hasQuestionArg */ false,
                      /* isParenless */ false,
+                     /* callerSignature */ nullptr,
                      std::move(actuals));
   auto rr = resolveGeneratedCall(context, nullptr, ci, scopeStack.back(), poiScope);
   if (rr.mostSpecific().only()) {
@@ -1723,6 +1745,7 @@ void Resolver::resolveTupleUnpackAssign(ResolvedExpression& r,
                           /* isMethodCall */ false,
                           /* hasQuestionArg */ false,
                           /* isParenless */ false,
+                          /* callerSignature */ nullptr,
                           actuals);
 
       auto c = resolveGeneratedCall(context, actual, ci, scope, poiScope);
@@ -1868,6 +1891,7 @@ bool Resolver::resolveSpecialNewCall(const Call* call) {
   auto ci = CallInfo(name, calledType, isMethodCall,
                      /* hasQuestionArg */ questionArg != nullptr,
                      /* isParenless */ false,
+                     /* callerSignature */ typedSignature,
                      std::move(actuals));
   auto inScope = scopeStack.back();
   auto inPoiScope = poiScope;
@@ -2135,9 +2159,50 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     parentTag = parsing::idToTag(context, parentId);
   }
 
+  // If the id is contained within a module, use typeForModuleLevelSymbol.
   if (asttags::isModule(parentTag)) {
-    // If the id is contained within a module, use typeForModuleLevelSymbol.
     return typeForModuleLevelSymbol(context, id);
+  }
+
+  // If the ID is a variable, then it's an outer variable reference.
+  if (asttags::isFunction(parentTag)) {
+    CHPL_ASSERT(isOuterVariable(this, id));
+    QualifiedType ret;
+
+    // Determine which set of outer variable substitutions to use.
+    const TypedFnSignature::OuterVariableTypes* outerVarTypes
+          = &this->outerVarTypes;
+    if (auto sig = typedSignature) {
+      auto idVarParent = id.parentSymbolId(context);
+      for (; sig; sig = sig->parentFn()) {
+        auto ovs = computeOuterVariables(context, sig->id());
+        if (idVarParent == ovs->symbol().parentSymbolId(context)) {
+          CHPL_ASSERT(sig->id() == ovs->symbol());
+          outerVarTypes = &sig->outerVariableTypes();
+          break;
+        }
+      }
+    }
+
+    // Now attempt to look up the outer variable.
+    if (outerVarTypes) {
+      auto it = outerVarTypes->find(id);
+      if (it != outerVarTypes->end()) ret = it->second;
+    }
+
+    // Mark the use as either 'ref' or 'const ref', since the variables
+    // do not live in any of our frames. However, if the variable is a
+    // 'param' or 'type', then leave it as is.
+    // TODO: This adjustment probably has to be a bit more sophisticated.
+    if (!ret.isUnknown() && !ret.isErroneousType() && !ret.isParam() &&
+        !ret.isType()) {
+      auto kind = ret.isConst() || ret.isImmutable()
+            ? QualifiedType::CONST_REF
+            : QualifiedType::REF;
+      ret = QualifiedType(kind, ret.type());
+    }
+
+    return ret;
   }
 
   // If the id is contained within a class/record/union that we are resolving,
@@ -2366,6 +2431,7 @@ bool Resolver::enter(const uast::Select* sel) {
                             /* isMethodCall */ false,
                             /* hasQuestionArg */ false,
                             /* isParenless */ false,
+                            /* callerSignature */ nullptr,
                             actuals);
         auto c = resolveGeneratedCall(context, caseExpr, ci, scope, poiScope);
         handleResolvedAssociatedCall(caseResult, caseExpr, ci, c,
@@ -2742,6 +2808,14 @@ void Resolver::resolveIdentifier(const Identifier* ident,
 
     maybeEmitWarningsForId(this, type, ident, id);
 
+    // Record uses of outer variables.
+    if (isOuterVariable(this, id) && computeOuterVars) {
+      const ID& mention = ident->id();
+      const ID& var = id;
+      const bool isReachingUse = false;
+      outerVariables.add(context, mention, var, isReachingUse);
+    }
+
     if (type.kind() == QualifiedType::TYPE) {
       // now, for a type that is generic with defaults,
       // compute the default version when needed. e.g.
@@ -2767,6 +2841,7 @@ void Resolver::resolveIdentifier(const Identifier* ident,
                             /* isMethodCall */ false,
                             /* hasQuestionArg */ false,
                             /* isParenless */ true,
+                            /* callerSignature */ typedSignature,
                             actuals);
         auto inScope = scopeStack.back();
         if (isMethodOrField) {
@@ -2890,11 +2965,68 @@ void Resolver::exit(const TypeQuery* tq) {
 }
 
 bool Resolver::enter(const NamedDecl* decl) {
+  // We are resolving a symbol with a different path (e.g., a Function or
+  // a CompositeType declaration). In most cases we do not try to resolve
+  // in this traversal. However, if the symbol is a nested function, we
+  // can do some limited resolution to compute the types of outer variables
+  // given our TFS.
+  auto id = decl->id();
+  if (id.isSymbolId()) {
+    if (parsing::idIsNestedFunction(context, id)) {
 
-  if (decl->id().postOrderId() < 0) {
-    // It's a symbol with a different path, e.g. a Function.
-    // Don't try to resolve it now in this
-    // traversal. Instead, resolve it e.g. when the function is called.
+      // Propagate any reaching variables in child functions into our set,
+      // then leave since we're just scope-resolving.
+      if (computeOuterVars) {
+        if (auto ovs = computeOuterVariables(context, id)) {
+          for (int i = 0; i < ovs->numVariables(); i++) {
+            if (ovs->isReachingVariable(i)) {
+              ID var = ovs->variable(i);
+              ID mention;
+              const bool isReachingUse = true;
+              outerVariables.add(context, mention, var, isReachingUse);
+            }
+          }
+        }
+        return false;
+      }
+
+      // We ourselves have a typed signature, so we can compute outer
+      // variable types for the nested function at this point. This
+      // will scope resolve the inner function to collect outer variables
+      // if they haven't been collected already.
+      if (typedSignature != nullptr) {
+
+        // Used to store the computed outer variable types.
+        TypedFnSignature::OuterVariableTypes ovsTypes;
+
+        if (auto ovs = computeOuterVariables(context, id)) {
+          CHPL_ASSERT(!ovs->isEmpty());
+
+          for (int i = 0; i < ovs->numVariables(); i++) {
+            ID idVar = ovs->variable(i);
+
+            // These (e.g., functions, classes) are not collected.
+            CHPL_ASSERT(!idVar.isSymbolId());
+
+            // Reaching variables are declared in our parent(s). We don't
+            // need to keep track of them as they will be stored in the
+            // parent's TFS.
+            if (!ovs->isReachingVariable(idVar)) {
+              auto& re = byPostorder.byId(idVar);
+              auto& qt = re.type();
+              ovsTypes.insert({idVar, qt});
+            }
+          }
+
+          // Set a query to link the parent TFS to a child TFS. This process
+          // occurs even if the child does not capture outer variables.
+          auto tfs = setNestedTypedSignatureInitial(context, decl->id(),
+                                                    typedSignature,
+                                                    std::move(ovsTypes));
+          std::ignore = tfs;
+        }
+      }
+    }
     return false;
   }
 
@@ -3282,6 +3414,9 @@ void Resolver::exit(const Call* call) {
                              /* raiseErrors */ true,
                              &actualAsts);
 
+  // Set a caller signature if it is present.
+  ci.setCallerSignature(typedSignature);
+
   // With some exceptions (see below), don't try to resolve a call that accepts:
   enum SkipReason {
     NONE = 0,
@@ -3584,6 +3719,7 @@ void Resolver::exit(const Dot* dot) {
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ true,
+                      /* callerSignature */ typedSignature,
                       actuals);
   auto inScope = scopeStack.back();
   auto c = resolveGeneratedCall(context, dot, ci, inScope, poiScope);
@@ -3751,6 +3887,7 @@ static QualifiedType resolveSerialIterType(Resolver& resolver,
                         /* isMethodCall */ true,
                         /* hasQuestionArg */ false,
                         /* isParenless */ false,
+                        /* callerSignature */ nullptr,
                         actuals);
     auto inScope = resolver.scopeStack.back();
     auto c = resolveGeneratedCall(context, iterand, ci,
@@ -3986,6 +4123,7 @@ constructReduceScanOpClass(Resolver& resolver,
                       /* isMethodCall */ false,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       actuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
   auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
@@ -4066,6 +4204,7 @@ static QualifiedType getReduceScanOpResultType(Resolver& resolver,
                       /* isMethodCall */ true,
                       /* hasQuestionArg */ false,
                       /* isParenless */ false,
+                      /* callerSignature */ nullptr,
                       typeActuals);
   const Scope* scope = scopeForId(context, reduceOrScan->id());
   auto c = resolveGeneratedCall(context, reduceOrScan, ci, scope, resolver.poiScope);
@@ -4244,6 +4383,42 @@ bool Resolver::enter(const Import* node) {
 }
 
 void Resolver::exit(const Import* node) {}
+
+bool Resolver::enter(const FunctionSignature* node) {
+  return true;
+}
+
+void Resolver::exit(const FunctionSignature* node) {
+  auto ufs = UntypedFnSignature::get(context, node);
+  std::vector<types::QualifiedType> formalTypes;
+  bool needsInstantiation = false;
+  Bitmap formalsInstantiated;
+
+  for (auto ast : node->formals()) {
+    auto& re = byPostorder.byAst(ast);
+    formalTypes.push_back(re.type());
+  }
+
+  if (anyFormalNeedsInstantiation(context, formalTypes, ufs, nullptr)) {
+    needsInstantiation = true;
+  }
+
+  // TODO: Sanitize/sanity check these components.
+  auto tfs = TypedFnSignature::get(context, ufs, std::move(formalTypes),
+                                   TypedFnSignature::WHERE_NONE,
+                                   needsInstantiation,
+                                   /*instantiatedFrom*/ nullptr,
+                                   /*parentFn*/ nullptr,
+                                   /*outerVariableTypes*/ {},
+                                   std::move(formalsInstantiated));
+  auto& reRetType = byPostorder.byAst(node->returnType());
+  auto qtRetType = reRetType.type();
+
+  auto t = FunctionType::get(context, tfs, qtRetType);
+
+  auto& re = byPostorder.byAst(node);
+  re.setType(QualifiedType(QualifiedType::TYPE, t));
+}
 
 bool Resolver::enter(const AstNode* ast) {
   enterScope(ast);

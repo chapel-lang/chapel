@@ -1266,9 +1266,11 @@ void Visitor::warnUnstableSymbolNames(const NamedDecl* node) {
   if (!isUserCode()) return;
 
   auto name = node->name();
+  bool isAnonymousFormal = node->isFormal() && parent(0) &&
+                           parent(0)->isFunctionSignature();
 
   // warn on names with leading underscore, except for just underscore itself
-  if (name.startsWith("_") && name.length() > 1) {
+  if (!isAnonymousFormal && name.startsWith("_") && name.length() > 1) {
     warn(node,
          "symbol names with leading underscores (%s) are unstable.",
          name.c_str());
