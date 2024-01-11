@@ -57,7 +57,6 @@ struct Resolver {
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
-  std::set<ID> splitInitTypeInferredVariables;
   std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;

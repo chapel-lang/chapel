@@ -1138,6 +1138,25 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
   }
 }
 
+void ErrorSplitInitMismatchedConditionalTypes::write(
+    ErrorWriterBase& wr) const {
+  const uast::Variable* var = std::get<0>(info);
+  const uast::Conditional* cond = std::get<1>(info);
+  const types::QualifiedType thenType = std::get<2>(info);
+  const types::QualifiedType elseType = std::get<3>(info);
+
+  wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in conditional branches.");
+  wr.note(cond->thenBlock(), "initialized with ", thenType,
+          " in 'then' branch");
+  wr.note(cond->elseBlock(), "initialized with ", elseType,
+          " in 'else' branch");
+  wr.message(
+      "Types of different initialization parts for split-initialized "
+      "declarations must exactly match");
+}
+
 void ErrorSuperFromTopLevelModule::write(ErrorWriterBase& wr) const {
   auto use = std::get<const uast::AstNode*>(info);
   auto mod = std::get<const uast::Module*>(info);

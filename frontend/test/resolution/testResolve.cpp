@@ -723,6 +723,113 @@ static void test16() {
   }
 }
 
+// module-level split-init variables
+static void test17() {
+  Context context;
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var foo;
+      foo = 5;
+
+      proc setArgToStr(out arg: string) {
+        arg = "str";
+      }
+      var bar;
+      setArgToStr(bar);
+
+      param foo_param;
+      foo_param = 5;
+      param bar_param;
+      bar_param = "bar_param";
+
+      )""", { "foo", "bar", "foo_param", "bar_param"});
+
+  auto foo = variables.at("foo");
+  assert(foo.kind() == QualifiedType::VAR);
+  assert(foo.type());
+  assert(foo.type()->isIntType());
+
+  auto bar = variables.at("bar");
+  assert(bar.kind() == QualifiedType::VAR);
+  assert(bar.type());
+  assert(bar.type()->isStringType());
+
+  ensureParamInt(variables.at("foo_param"), 5);
+  ensureParamString(variables.at("bar_param"), "bar_param");
+}
+
+// invalid module-level split-init
+static void test18() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var flag = true;
+      var foo;
+      if (flag) {
+        foo = 5;
+      } else {
+        foo = "asdf";
+      }
+      )""", {"foo"});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() ==
+         ErrorType::SplitInitMismatchedConditionalTypes);
+
+  guard.realizeErrors();
+}
+
+// split-init in mutually recursive modules
+static void test19() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+  R""""(
+  module M {
+    use N;
+    var x;
+    x = y;
+    var z: int;
+  }
+
+  module N {
+    use M;
+    var y = z;
+  }
+  )"""";
+
+  // parse modules and get M
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(contents));
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0];
+
+  // extract x
+  assert(m->numStmts() > 0);
+  // hardcoded stmt number
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+  // no init expr here, but should get type set from module resolution
+  /* auto initExpr = x->initExpression(); */
+  /* assert(initExpr); */
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  // check type
+  auto qt = rr.byAst(x).type();
+  assert(!qt.isUnknown());
+  assert(qt.type()->isIntType());
+
+  guard.realizeErrors();
+}
+
 int main() {
   test1();
   test2();
@@ -740,6 +847,9 @@ int main() {
   test14();
   test15();
   test16();
+  test17();
+  test18();
+  test19();
 
   return 0;
 }

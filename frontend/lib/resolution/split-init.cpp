@@ -19,9 +19,11 @@
 
 #include "chpl/resolution/split-init.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -394,8 +396,12 @@ void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
       QualifiedType thenRhsType = splitInitedBothThenTypes[i];
       QualifiedType elseRhsType = splitInitedBothElseTypes[i];
       if (thenRhsType != elseRhsType) {
-        context->error(cond,
-                       "types do not match in conditional split init");
+        ID varId = splitInitedBothThenIds[i];
+        // TODO: store IDs of init-parts for split-inited variables, so we can
+        // report where conflicting init-parts are.
+        CHPL_REPORT(context, SplitInitMismatchedConditionalTypes,
+                    parsing::idToAst(context, varId)->toVariable(), cond,
+                    thenRhsType, elseRhsType);
       }
     }
   }

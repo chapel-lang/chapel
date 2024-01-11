@@ -70,6 +70,19 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
 
       exitScope(body, rv);
     }
+  } else if (auto mod = symbol->toModule()) {
+    // Process module initialization code, similarly to a function body
+
+    enterScope(mod, rv);
+
+    for (auto child : mod->children()) {
+      // Skip functions and nested modules as they are handled elsewhere
+      if (!(child->isFunction() || child->isModule())) {
+        child->traverse(rv);
+      }
+    }
+
+    exitScope(mod, rv);
   } else {
     symbol->traverse(rv);
   }

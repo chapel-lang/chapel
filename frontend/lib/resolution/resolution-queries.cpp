@@ -65,10 +65,6 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
-  // TODO: can we save space better here by having
-  // the ResolutionResultByPostorderID have a different offset
-  // (so it can contain only ids within the requested stmt) or
-  // maybe we can make it sparse with a hashtable or something?
   ResolutionResultByPostorderID result;
 
   ID moduleId = parsing::idToParentId(context, id);
@@ -109,7 +105,26 @@ scopeResolveModuleStmt(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
+                                              ResolvedExpression& lhs,
+                                              const ResolvedExpression& rhs) {
+  const QualifiedType lhsType = lhs.type();
+  const QualifiedType rhsType = rhs.type();
 
+  // check to see if it is generic/unknown
+  // (otherwise we do not need to infer anything)
+  if (!lhsType.isUnknownKindOrType() &&
+      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
+    return;
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  lhs.setType(useType);
+}
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -125,7 +140,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       auto modScope = scopeForId(context, mod->id());
       emitMultipleDefinedSymbolErrors(context, modScope);
 
-      result.setupForSymbol(mod);
+      auto r = Resolver::createForModuleStmt(context, mod, nullptr, result);
+
       for (auto child: mod->children()) {
         if (child->isComment() ||
             child->isTypeDecl() ||
@@ -154,9 +170,18 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
               re = *reToCopy;
             }
           }
+          // copy results for split-inited vars
+          for (int i = 0; i < firstId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy);
+            }
+          }
         }
       }
       checkThrows(context, result, mod);
+      callInitDeinit(r);
     }
   }
 
