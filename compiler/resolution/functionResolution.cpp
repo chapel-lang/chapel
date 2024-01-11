@@ -1728,8 +1728,10 @@ bool doCanDispatch(Type*     actualType,
     if (formalSym->originalIntent == INTENT_INOUT) {
       actualType = actualType->getValType();
       formalType = formalType->getValType();
-    } else if (formalSym->intent == INTENT_CONST_REF) {
-      // ignore ref type when deciding what can pass to 'const ref'
+    } else if (formalSym->intent == INTENT_CONST_REF &&
+               (formalSym->originalIntent == INTENT_BLANK ||
+                formalSym->originalIntent == INTENT_CONST)) {
+      // ignore ref type when deciding what can pass to 'const' / default intent
       // to enable implicit conversions in that case
       // (note: when passing to 'ref', the fact that the formal
       //  type is 'ref' is what prevents implicit conversions)
