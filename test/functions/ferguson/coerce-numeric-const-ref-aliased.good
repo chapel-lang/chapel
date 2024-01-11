@@ -1,0 +1,4 @@
+coerce-numeric-const-ref-aliased.chpl:3: error: unresolved call 'f(int(16))'
+coerce-numeric-const-ref-aliased.chpl:5: note: this candidate did not match: f(const ref g: int)
+coerce-numeric-const-ref-aliased.chpl:3: note: because actual argument #1 with type 'int(16)'
+coerce-numeric-const-ref-aliased.chpl:5: note: is passed to formal 'const ref g: int(64)'
