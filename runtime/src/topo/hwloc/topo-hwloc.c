@@ -1104,7 +1104,7 @@ distance(hwloc_topology_t topology, hwloc_obj_t obj0, hwloc_obj_t obj1) {
 }
 
 //
-// Comparison function for sort. Sorts objects based on OS index.
+// Comparison function for sort. Sorts objects based on PCI bus address.
 //
 static int comparePCIObjs(const void *a, const void *b)
 {
