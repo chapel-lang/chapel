@@ -474,10 +474,7 @@ corresponding shadow variable.
 The implicit formals of task functions generally have
 :ref:`the default argument intent <The_Default_Intent>` by default. Note that
 the default intent usually allows the compiler to assume that the value will
-not be concurrently modified. For variables of primitive and class types, this
-has the effect of capturing the value of the variable at task creation time and
-referencing that value instead of the original variable within the lexical
-scope of the task construct.
+not be concurrently modified. That assumption is useful for the compiler to, for example, make a per-task copy of an outer variable of ``int`` type.
 
 Implicit formals of array types are an exception: they inherit their default
 intent from the array actual. An immutable array has a default intent of
