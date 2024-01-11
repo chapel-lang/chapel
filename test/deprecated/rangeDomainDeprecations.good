@@ -1,7 +1,1 @@
-rangeDomainDeprecations.chpl:7: warning: range.boundsCheck() is deprecated, please use range.contains() instead
-rangeDomainDeprecations.chpl:8: warning: range.boundsCheck() is deprecated, consider using range.contains() instead
-rangeDomainDeprecations.chpl:9: warning: range.boundsCheck() is deprecated, consider using range.contains() instead
-rangeDomainDeprecations.chpl:12: warning: initializing an unbounded range with idxType bool from an unbounded range with idxType int(64) is deprecated
-rangeDomainDeprecations.chpl:13: warning: initializing an unbounded range with idxType bool from an unbounded range with idxType int(64) is deprecated
-rangeDomainDeprecations.chpl:17: warning: domain.dist is deprecated, please use domain.distribution instead
-rangeDomainDeprecations.chpl:19: warning: domain.dist is deprecated, please use domain.distribution instead
+rangeDomainDeprecations.chpl:3: error: 'domain.dist' is no longer supported, use 'domain.distribution' instead

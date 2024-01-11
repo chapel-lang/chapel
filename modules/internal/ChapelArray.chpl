@@ -256,10 +256,6 @@ module ChapelArray {
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
 
-  @chpldoc.nodoc
-  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
-  config param useNewArrayFind = false;
-
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
 
@@ -956,9 +952,6 @@ module ChapelArray {
        :proc:`idxType` above.  For a multidimensional array, it will be
        :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type do return this.domain.fullIdxType;
-
-    @deprecated("'.intIdxType' on arrays is deprecated; please let us know if you're relying on it")
-    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
