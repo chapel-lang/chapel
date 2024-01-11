@@ -35,13 +35,15 @@ module ChapelRange {
   @chpldoc.nodoc
   config param useOptimizedRangeIterators = true;
 
-  /* Compile with ``-snewSliceRule`` to switch to using the new slicing rule
+  /* This flag, when set to `true`, used to switch to using the new slicing rule
      and to turn off the deprecation warning for using the old rule.
+     Now the new rule is always enabled regardless of this flag's value.
      When slicing with a range with a negative stride, the old rule
      preserves the direction of the original range or domain/array dimension
      whereas the new rule reverses such direction. */
   @chpldoc.nodoc
-  config param newSliceRule = false;
+  @deprecated("'newSliceRule' is deprecated and will be removed in a future release; it is now 'true' by default; slicing with a range with a negative stride now always reverses the direction of the original range or domain/array dimension, regardless of the value of 'newSliceRule'")
+  config param newSliceRule = true;
 
   /* Compile with ``-snewRangeLiteralType`` to switch to using the new rule
      for determining the idxType of a range literal with param integral bounds
@@ -1572,7 +1574,7 @@ module ChapelRange {
     if this.bounds == boundKind.both && this.sizeAs(uint) == 0 then
       return other.bounds == boundKind.both && other.sizeAs(uint) == 0;
 
-    var slice = this.chpl_slice(other, forceNewRule=true);
+    var slice = this[other];
 
     // Slicing reversed the direction of 'other' if this.stride < 0.
     // Switch it back before comparing.
@@ -2628,11 +2630,6 @@ private proc isBCPindex(type t) param do
   @chpldoc.nodoc
   inline proc const range.this(other: range(?))
   {
-    return this.chpl_slice(other, forceNewRule=false);
-  }
-
-  proc const range.chpl_slice(other: range(?), param forceNewRule: bool)
-  {
     // Disallow slicing of an unaligned range, at least for now.
     if ! this.isAligned() then
       HaltWrappers.unimplementedFeatureHalt("slicing of an unaligned range");
@@ -2768,25 +2765,7 @@ private proc isBCPindex(type t) param do
     // abs(result.stride) = LCM(st1, st2)
     // sign(result.stride) = sign(this.stride) * sign(other.stride)
 
-    param multiplyStrideSigns = newSliceRule || forceNewRule;
-    param newStrideKind = computeStrideKind(this, other, multiplyStrideSigns);
-
-    proc computeStrideKind(r1, r2, param multiplyStrideSigns) param do
-      if multiplyStrideSigns then
-        return chpl_strideProduct(r1, r2);
-      else {
-        // preserve the sign of r1
-        use strideKind;
-        select r1.strides {
-          when one      do return if r2.hasPosNegUnitStride() then one
-                                                              else positive;
-          when negOne   do return if r2.hasPosNegUnitStride() then negOne
-                                                              else negative;
-          when positive do return positive;
-          when negative do return negative;
-          when any      do return any;
-        }
-      }
+    param newStrideKind = chpl_strideProduct(this, other);
 
     var newStride = st1, newAbsStride = st1;
     var gcd, x: strType;
@@ -2801,32 +2780,16 @@ private proc isBCPindex(type t) param do
         newAbsStride = newStride;
       }
 
-      if multiplyStrideSigns {
-        // sign of resulting stride = sign of 'this' * sign of 'other'
-        if this.hasPositiveStride() && other.hasNegativeStride() ||
-           this.hasNegativeStride() && other.hasPositiveStride()
-        then
-          newStride = -newStride;
+      // sign of resulting stride = sign of 'this' * sign of 'other'
+      if this.hasPositiveStride() && other.hasNegativeStride() ||
+        this.hasNegativeStride() && other.hasPositiveStride()
+      then
+        newStride = -newStride;
 
-      } else {
-        // sign of resulting stride = sign of 'this'
-        if this.hasNegativeStride() then
-          newStride = - newStride;
-      }
     } else {  // newStrideKind.isPosNegOne()
       compilerAssert(this.hasPosNegUnitStride());
       // we must have newStride == newAbsStride == 1
       if newStrideKind.isNegOne() then newStride = -1;
-    }
-
-    if ! multiplyStrideSigns && other.hasNegativeStride() {
-      if other.strides.isNegative() then // we know it at compile time
-        compilerWarning("when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning");
-
-      // Due to how our implementation caches compile-time warnings,
-      // the above compilerWarning() will print only for the first location.
-      // Therefore issue a runtime warning regardless of the above.
-      warning("when slicing with a range with a negative stride, the sign of the stride of the original range or domain/array dimension is currently preserved, but will be negated in a future release; compile with -snewSliceRule to switch to this new rule and turn off this warning; while slicing ", this, " with ", other);
     }
 
     /////////// allocate the result ///////////
