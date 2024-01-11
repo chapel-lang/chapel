@@ -642,7 +642,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       FnSymbol *fn = call->resolvedFunction();
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
+        callStack.push_back(call);
         reportNotGpuizable(fn, "function is marked as not eligible for GPU execution", &callStack);
+        callStack.pop_back();
         return false;
       }
 
@@ -742,40 +744,101 @@ bool GpuizableLoop::extractUpperBound() {
   return true;
 }
 
+static bool shouldSkipInStaticTrace(CallExpr* call) {
+  if (developer) return false;
+
+  if (call->linenum() > 0 &&
+      call->getModule()->modTag == MOD_USER &&
+      !call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
+    return false;
+
+  return true;
+}
+
+/* Find the first element of the call stack that we should print. We shouldn't
+   print everything because module code is probably not relevant to the
+   general user, unless --developer is thrown.
+ */
+static ssize_t findFirstPrintableStackElement(const std::vector<CallExpr*>* callStack) {
+  for (ssize_t i = callStack->size() - 1; i >= 0; i--) {
+    CallExpr* from = (*callStack)[i];
+    if (!shouldSkipInStaticTrace(from)) return i;
+  }
+
+  return -1;
+}
+
+static const char* maybeGetCallName(CallExpr* call) {
+  if (SymExpr* base = toSymExpr(call->baseExpr)) {
+    return base->symbol()->name;
+  }
+  return nullptr;
+}
+
+static const char* maybeSayLoopBody(ssize_t idx) {
+  if (idx == 0) return " in loop body";
+  return "";
+}
+
 void GpuizableLoop::reportNotGpuizable(BaseAST* ast, const char *msg,
                                        const std::vector<CallExpr*>* callStack) {
   this->reason = msg;
   if(this->compileTimeGpuAssertion_) {
     printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
 
-    if (developer || ast->getModule()->modTag != MOD_INTERNAL) {
-      USR_PRINT(ast, "%s", msg);
+    BaseAST* lastPrinted = nullptr;
+
+    size_t traceFrom = -1;
+    ssize_t firstPrintableStackElement = -1;
+    if (callStack) {
+      traceFrom = callStack->size() - 1;
+      firstPrintableStackElement = findFirstPrintableStackElement(callStack);
     }
 
-    if (callStack) {
-      int i = callStack->size() - 1;
-      for (; i >= 0; i--) {
-        CallExpr* from = (*callStack)[i];
-
-        // Stop iterating as soon as we hit the first user-printable
-        // line of code.
-        if (developer) break;
-
-        if (from->linenum() > 0 &&
-            from->getModule()->modTag != MOD_INTERNAL &&
-            !from->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
-          break;
+    // If the call is in user code, we can print it as usual.
+    // But if it's in module code, maybe we don't want to show the exact reason
+    // GPUization failed (it's an implementation detail). Instead, we want
+    // to call out a standard function as being ineligible for GPU execution.
+    //
+    // If no stack element is printable, begruginly print the call anyway.
+    if (developer || ast->getModule()->modTag == MOD_USER || firstPrintableStackElement == -1) {
+      USR_PRINT(ast, "%s", msg);
+      lastPrinted = ast;
+    } else {
+      const char* functionName = "";
+      auto call = callStack->at(firstPrintableStackElement);
+      if (auto name = maybeGetCallName(call)) {
+        functionName = astr(" '", name, "'");
       }
+      USR_PRINT(call, "use of ineligible standard library function%s%s",
+                functionName, maybeSayLoopBody(firstPrintableStackElement));
+      lastPrinted = call;
 
-      for (; i >= 0; i--) {
-        CallExpr* from = (*callStack)[i];
-        const char* extra = i == 0 ? " in loop body" : "";
-        if (SymExpr* base = toSymExpr(from->baseExpr)) {
-          USR_PRINT(from, "  reached via call to '%s'%s here", base->symbol()->name, extra);
-        } else {
-          USR_PRINT(from, "  reached via this call%s", extra);
+      // Sicne we printed a call partway in the stack, start the rest of the
+      // trace after that.
+      traceFrom = firstPrintableStackElement - 1;
+    }
+
+    for (ssize_t i = traceFrom; i >= 0; i--) {
+      CallExpr* from = (*callStack)[i];
+
+      if (shouldSkipInStaticTrace(from)) {
+        if (lastPrinted) {
+          USR_PRINT(lastPrinted, "  reached via standard library code");
+          lastPrinted = nullptr;
         }
+        continue;
       }
+
+      const char* functionName = maybeGetCallName(from);
+      const char* extra = maybeSayLoopBody(i);
+      if (functionName) {
+        USR_PRINT(from, "  reached via call to '%s'%s here", functionName, extra);
+      } else {
+        USR_PRINT(from, "  reached via this call%s", extra);
+      }
+
+      lastPrinted = from;
     }
     USR_STOP();
   }
