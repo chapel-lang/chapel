@@ -142,11 +142,7 @@ module Time {
   /* Specifies the day of the week */
   @deprecated(notes="enum 'day' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum day       { sunday=0, monday, tuesday, wednesday, thursday, friday, saturday }
-  pragma "do not resolve unless called"
-  @chpldoc.nodoc
-  proc DayOfWeek {
-    compilerError("'DayOfWeek' was renamed. Please use 'dayOfWeek' instead");
-  }
+
   /* Days in the week, starting with `Monday` = 1 */
   @deprecated(notes="enum 'isoDayOfWeek' is deprecated. Please use :enum:`dayOfWeek` instead")
   enum isoDayOfWeek {
@@ -157,11 +153,6 @@ module Time {
     Friday =    5,
     Saturday =  6,
     Sunday =    7
-  }
-  pragma "do not resolve unless called"
-  @chpldoc.nodoc
-  proc ISODayOfWeek {
-    compilerError("'ISODayOfWeek was renamed. Please use 'isoDayOfWeek' instead");
   }
 
   /* End day-of-week enums */
@@ -736,12 +727,6 @@ module Time {
       return chpl_tz;
     }
 
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
-    }
-
     /* The minimum representable `time` */
     proc type min : time {
       return new time();
@@ -1181,12 +1166,6 @@ module Time {
     proc timezone : shared Timezone? {
       return chpl_time.timezone;
     }
-
-    @chpldoc.nodoc
-    @deprecated(notes="'tzinfo' is deprecated, please use 'timezone' instead")
-    proc tzinfo {
-      return timezone;
-    }
   }
 
   /* initializers/factories for dateTime values */
@@ -1311,11 +1290,6 @@ module Time {
   }
 
   /* Methods on dateTime values */
-
-  @deprecated(notes="'dateTime.getdate' is deprecated. Please use :proc:`dateTime.getDate` instead")
-  proc dateTime.getdate() : date {
-    return chpl_date;
-  }
 
   /* Get the `date` portion of the `dateTime` value */
   proc dateTime.getDate() : date {
@@ -1466,23 +1440,11 @@ module Time {
     return getDate().isoWeekday();
   }
 
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isoweekday` is deprecated, please use `dateTime.getDate().weekday()` instead")
-  proc dateTime.isoweekday() : isoDayOfWeek {
-    return isoWeekday();
-  }
-
   /* Return the ISO date as a tuple containing the ISO year, ISO week number,
      and ISO day of the week
    */
   @deprecated(notes="`dateTime.isoCalendar` is deprecated; use `dateTime.getDate().isoWeekDate()` instead")
   proc dateTime.isoCalendar() : (int, int, int) {
-    return getDate().isoCalendar();
-  }
-
-  @chpldoc.nodoc
-  @deprecated(notes="`dateTime.isocalendar` is deprecated, please use `dateTime.getDate().isoWeekDate()` instead")
-  proc dateTime.isocalendar() : (int, int, int) {
     return getDate().isoCalendar();
   }
 
@@ -2129,10 +2091,6 @@ module Time {
     }
     return str;
   }
-
-  @chpldoc.nodoc
-  @deprecated(notes="'TZInfo' is deprecated, please use 'Timezone' instead")
-  class TZInfo: Timezone { }
 
   /* Abstract base class for time zones. This class should not be used
      directly, but concrete implementations of time zones should be
