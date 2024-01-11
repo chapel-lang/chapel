@@ -214,7 +214,7 @@ void ErrorUseImportNeedsModule::write(ErrorWriterBase& wr) const {
              "' statements must refer to module",
              (isImport ? "" : " or 'enum'"), " symbols.");
   wr.message("In the following '", useOrImport, "' statement:");
-  wr.code(loc);
+  wr.codeForLocation(loc);
 }
 
 // catch-alls for simple parsing errors
