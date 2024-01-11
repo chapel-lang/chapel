@@ -360,18 +360,14 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
- Returns true if the ID is marked 'extern' or if it has the pragma
- 'PRAGMA_EXTERN' attached to it. Set 'considerPragmas' to false to
- ignore pragmas.
+ Returns true if the ID is marked 'extern'.
  */
-bool idIsExtern(Context* context, ID id, bool considerPragmas=true);
+bool idIsExtern(Context* context, ID id);
 
 /**
- Returns true if the ID is marked 'export' or if it has the pragma
- 'PRAGMA_EXPORT' attached to it. Set 'considerPragmas' to false to
- ignore pragmas.
+ Returns true if the ID is marked 'export'.
  */
-bool idIsExport(Context* context, ID id, bool considerPragmas=true);
+bool idIsExport(Context* context, ID id);
 
 /**
  Returns true if the ID is a method.

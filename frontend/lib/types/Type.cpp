@@ -252,9 +252,8 @@ compositeTypeIsPod(Context* context, const Type* t) {
     if (!tfs->isCompilerGenerated()) return false;
   }
 
-  // Check all fields recursively.
   bool ret = true;
-  auto rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
   for (int i = 0; i < rf.numFields(); i++) {
     if (auto ft = rf.fieldType(i).type()) {
       ret = Type::isPod(context, ft);
@@ -279,10 +278,8 @@ bool Type::isPod(Context* context, const Type* t) {
       t->isAnyType()) return false;
   if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
   if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
-  if (t->hasPragma(context, uast::PRAGMA_SINGLE))
-    return false;
-  if (t->hasPragma(context, uast::PRAGMA_SINGLE))
-    return false;
+  if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SINGLE)) return false;
   if (t->isDomainType()) return false;
   if (t->isArrayType()) return false;
   if (auto cls = t->toClassType()) {

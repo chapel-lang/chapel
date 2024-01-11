@@ -641,7 +641,6 @@ static void test13() {
     .prelude = R"""(
                extern type foo;
                extern record bar {}
-               pragma "extern"
                record baz {}
                )""",
     .primitive = chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
@@ -649,7 +648,6 @@ static void test13() {
       { {"int"}, Test::FALSE },
       { {"foo"}, Test::TRUE },
       { {"bar"}, Test::TRUE },
-      { {"baz"}, Test::TRUE },
      },
   };
   testPrimitive(tpg);

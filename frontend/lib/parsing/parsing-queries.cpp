@@ -855,39 +855,25 @@ bool idIsFunction(Context* context, ID id) {
 }
 
 static bool
-checkLinkageAndPragma(Context* context, ID id, bool considerPragmas,
-                      uast::Decl::Linkage linkage,
-                      uast::PragmaTag pragma) {
+checkLinkage(Context* context, ID id, uast::Decl::Linkage linkage) {
   if (id.isEmpty()) return false;
-  bool hasLinkage = false;
-  bool hasPragma = false;
+  bool ret = false;
 
   if (auto ast = parsing::idToAst(context, id)) {
     if (auto decl = ast->toDecl()) {
-      hasLinkage = decl->linkage() == linkage;
+      ret = decl->linkage() == linkage;
     }
   }
 
-  if (considerPragmas) {
-    if (auto attr = parsing::idToAttributeGroup(context, id)) {
-      hasPragma = attr->hasPragma(pragma);
-    }
-  }
-
-  bool ret = hasLinkage || hasPragma;
   return ret;
 }
 
-bool idIsExtern(Context* context, ID id, bool considerPragmas) {
-  return checkLinkageAndPragma(context, id, considerPragmas,
-                               Decl::EXTERN,
-                               uast::PRAGMA_EXTERN);
+bool idIsExtern(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXTERN);
 }
 
-bool idIsExport(Context* context, ID id, bool considerPragmas) {
-  return checkLinkageAndPragma(context, id, considerPragmas,
-                               Decl::EXPORT,
-                               uast::PRAGMA_EXPORT);
+bool idIsExport(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXPORT);
 }
 
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {

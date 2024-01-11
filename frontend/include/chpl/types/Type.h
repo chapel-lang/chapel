@@ -290,10 +290,6 @@ class Type {
   #undef TYPE_END_SUBCLASSES
   #undef TYPE_TO
 
-  /// \cond DO_NOT_DOCUMENT
-  DECLARE_DUMP;
-  /// \endcond DO_NOT_DOCUMENT
-
   /** Given a type 't', determine if 't' is "plain-old-data" (POD).
 
       If 't' is the sync type, the single type, an atomic type, the
@@ -308,9 +304,16 @@ class Type {
       If 't' is a record, class, or union type, and any member of 't'
       is not POD, then 't' is not POD.
 
+      If 't' is generic then it is considered to be not POD for the
+      purposes of this evaluation.
+
       All other cases are considered to be POD.
   */
   static bool isPod(Context* context, const Type* t);
+
+  /// \cond DO_NOT_DOCUMENT
+  DECLARE_DUMP;
+  /// \endcond DO_NOT_DOCUMENT
 };
 
 namespace detail {
