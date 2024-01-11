@@ -1104,14 +1104,33 @@ distance(hwloc_topology_t topology, hwloc_obj_t obj0, hwloc_obj_t obj1) {
 }
 
 //
-// Comparison function for sort. Sorts objects based on OS index.
+// Comparison function for sort. Sorts objects based on PCI bus address.
 //
-static int compareObjs(const void *a, const void *b)
+static int comparePCIObjs(const void *a, const void *b)
 {
-  hwloc_obj_t objA = (hwloc_obj_t) a;
-  hwloc_obj_t objB = (hwloc_obj_t) b;
+  hwloc_obj_t objA = *((hwloc_obj_t *) a);
+  hwloc_obj_t objB = *((hwloc_obj_t *) b);
 
-  return (objA->os_index - objB->os_index);
+  assert(objA->type == HWLOC_OBJ_PCI_DEVICE);
+  assert(objB->type == HWLOC_OBJ_PCI_DEVICE);
+
+  struct hwloc_pcidev_attr_s *attrA = &(objA->attr->pcidev);
+  struct hwloc_pcidev_attr_s *attrB = &(objB->attr->pcidev);
+
+  // Compare the PCI bus addresses
+  int result = 0;
+  if (attrA->domain != attrB->domain) {
+    result = attrA->domain < attrB->domain ? -1 : 1;
+  } else if (attrA->bus != attrB->bus) {
+    result = attrA->bus < attrB->bus ? -1 : 1;
+  } else if (attrA->dev != attrB->dev) {
+    result = attrA->dev < attrB->dev ? -1 : 1;
+  } else if (attrA->func != attrB->func) {
+    result = attrA->func < attrB->func ? -1 : 1;
+  } else {
+    result = 0;
+  }
+  return result;
 }
 
 //
@@ -1169,7 +1188,7 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
         // Sort the NICs so that all locales have them in the same order,
         // should hwloc return them in different orders to different locales.
         //
-        qsort(nics, numNics, sizeof(*nics), compareObjs);
+        qsort(nics, numNics, sizeof(*nics), comparePCIObjs);
 
         //
         // Build a distance matrix between locales and NICs. Then search the
