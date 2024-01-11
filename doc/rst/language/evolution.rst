@@ -22,17 +22,13 @@ version 1.34, March 2024
 Default task intents for arrays
 *******************************
 
-In version 1.34, arrays have a slightly more relaxed default task intent. The
-default task intent for arrays was ``const`` by default since 1.32. This meant
-that to modify an array inside of a task parallel construct (``coforall``,
-``begin``, and ``cobegin``) always required a with clause to make the array
-modifiable. This change was only made to the task parallel constructs in 1.32,
-while ``forall`` was left as an unstable special case. 1.34 makes ``forall``,
-``coforall``, ``begin``, and ``cobegin`` consist with respect to their
-treatment of the default array intent.
-
-In 1.34, if an array is modifiable outside a parallel block, it is modifiable
-inside the parallel block.
+In 1.34, the default task intent for an array is now determined by the outer
+variable. If the outer array is ``const`` then the default intent is ``const``,
+otherwise the default intent is ``ref``. Therefore, if an array is modifiable
+outside a parallel bloc, it is modifiable inside the parallel block. It is no
+longer necessary to use an explicit intent like ``with (ref myArray)`` to
+modify ``myArray`` in a parallel block. This change applies to ``forall``,
+``coforall``, ``begin``, and ``cobegin``.
 
 Consider the following code which illustrates this.
 
@@ -48,7 +44,8 @@ The default task intent for ``A`` is ``ref``, since the argument formal ``A``
 is mutable. This simplifies parallel code, making it simpler and cleaner to
 write.
 
-In 1.32, the above ``begin`` would have resulted in a deprecation warning. In 1.34, this is valid code just like it was prior to 1.32.
+Prior to 1.34, the above ``begin`` would have resulted in a deprecation
+warning. In 1.34, this is valid code again.
 
 version 1.32, September 2023
 ----------------------------
