@@ -454,7 +454,8 @@ module ParallelIO {
     a ``string`` or ``bytes`` value. Unlike :proc:`readDelimitedAsBlockArray`
     the delimiter can also be found in the serialized form of ``t``.
 
-    This routine uses the following heuristic to split the file into chunks:
+    This routine uses the following heuristic to split the file into chunks, which
+    may not be accurate in all cases:
 
     A given byte offset is a valid offset for a task to start deserializing
     values of type ``t`` if:
