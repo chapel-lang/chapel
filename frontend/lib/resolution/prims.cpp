@@ -865,8 +865,11 @@ static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_EXTERN_TYPE");
-  return QualifiedType();
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    if (t->isExternType()) return true;
+    auto ct = t->getCompositeType();
+    return ct ? parsing::idIsExtern(context, ct->id()) : false;
+  });
 }
 
 static QualifiedType

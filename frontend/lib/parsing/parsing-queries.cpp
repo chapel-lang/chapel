@@ -854,6 +854,42 @@ bool idIsFunction(Context* context, ID id) {
   return asttags::isFunction(tag);
 }
 
+static bool
+checkLinkageAndPragma(Context* context, ID id, bool considerPragmas,
+                      uast::Decl::Linkage linkage,
+                      uast::PragmaTag pragma) {
+  if (id.isEmpty()) return false;
+  bool hasLinkage = false;
+  bool hasPragma = false;
+
+  if (auto ast = parsing::idToAst(context, id)) {
+    if (auto decl = ast->toDecl()) {
+      hasLinkage = decl->linkage() == linkage;
+    }
+  }
+
+  if (considerPragmas) {
+    if (auto attr = parsing::idToAttributeGroup(context, id)) {
+      hasPragma = attr->hasPragma(pragma);
+    }
+  }
+
+  bool ret = hasLinkage || hasPragma;
+  return ret;
+}
+
+bool idIsExtern(Context* context, ID id, bool considerPragmas) {
+  return checkLinkageAndPragma(context, id, considerPragmas,
+                               Decl::EXTERN,
+                               uast::PRAGMA_EXTERN);
+}
+
+bool idIsExport(Context* context, ID id, bool considerPragmas) {
+  return checkLinkageAndPragma(context, id, considerPragmas,
+                               Decl::EXPORT,
+                               uast::PRAGMA_EXPORT);
+}
+
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
 

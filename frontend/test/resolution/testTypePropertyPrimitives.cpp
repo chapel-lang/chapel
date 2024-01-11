@@ -634,6 +634,27 @@ static void test12() {
   testPrimitive(tpg);
 }
 
+static void test13() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+               extern type foo;
+               extern record bar {}
+               pragma "extern"
+               record baz {}
+               )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
+    .calls = {
+      { {"int"}, Test::FALSE },
+      { {"foo"}, Test::TRUE },
+      { {"bar"}, Test::TRUE },
+      { {"baz"}, Test::TRUE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
 int main() {
   test0();
   test1();
@@ -648,4 +669,5 @@ int main() {
   test10();
   test11();
   test12();
+  test13();
 }
