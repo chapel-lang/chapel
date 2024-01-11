@@ -100,10 +100,6 @@ proc anonymizeWarning(warning: string) : string {
   // Anonymize known warning messages that include variable names
   // when so that it doesn't reveal variable names or other impl details
 
-  const forallRef ="warning: inferring a 'ref' intent on an array in a forall is unstable - in the future this may require an explicit 'ref' forall intent for";
-  if warning.find(forallRef) != -1 then
-    return forallRef + " <var-name>";
-
   const typeName = "warning: using a type's name ";
   const typeNameUse = "in a 'use' statement to access its tertiary methods is an unstable feature";
   const typeNameImport = "in an 'import' statement to access its tertiary methods is an unstable feature";

@@ -33,7 +33,7 @@ proc multiplyAtAv(v, ref tmp, ref AtAv) {
 // Compute A * v ('Av').
 //
 proc multiplyAv(v: [?Dv], ref Av: [?DAv]) {
-  forall i in DAv with (ref Av) do
+  forall i in DAv do
     Av[i] = + reduce (for j in Dv do A[i,j] * v[j]);
 }
 
@@ -41,7 +41,7 @@ proc multiplyAv(v: [?Dv], ref Av: [?DAv]) {
 // Compute A-transpose * v ('Atv').
 //
 proc multiplyAtv(v: [?Dv], ref Atv: [?DAtv]) {
-  forall i in DAtv with (ref Atv) do
+  forall i in DAtv do
     Atv[i] = + reduce (for j in Dv do A[j,i] * v[j]);
 }
 

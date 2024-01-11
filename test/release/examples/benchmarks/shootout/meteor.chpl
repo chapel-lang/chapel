@@ -105,7 +105,7 @@ proc main() {
 proc calcPieces() {
   var cells: [0..#numPieces] [0..4] int;
 
-  forall piece in 0..#numPieces with (ref cells, ref pieceDef) {
+  forall piece in 0..#numPieces {
     for indx in 0..#boardCells {
       calcSixRotations(piece, indx, cells[piece]);
       serial do pieceDef[piece] = flip(pieceDef[piece]);
@@ -338,7 +338,7 @@ proc flip(dir: direction) {
 proc calcRows() {
   var badEvenRows, badOddRows: [0..31] [0..31] bool;
 
-  forall row1 in 0..31 with (ref badEvenRows, ref badOddRows) {
+  forall row1 in 0..31 {
     for row2 in 0..31 {
       badEvenRows[row1][row2] = rowsBad(row1, row2, true);
       badOddRows[row1][row2] = rowsBad(row1, row2, false);

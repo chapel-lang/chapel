@@ -1,0 +1,20 @@
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
+array-intent-from-actual-error-task.chpl:22: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:20: note: The shadow variable 'A' is constant due to task intents in this loop
+array-intent-from-actual-error-task.chpl:4: In function 'explicitConst1':
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
+array-intent-from-actual-error-task.chpl:4: error: cannot assign to const variable
+note: to formal of type [domain(1,int(64),one)] int(64)
+array-intent-from-actual-error-task.chpl:1: note: The shadow variable 'A' is constant due to task intents in this parallel statement
+  array-intent-from-actual-error-task.chpl:17: called as explicitConst1(A: [domain(1,int(64),one)] int(64))
