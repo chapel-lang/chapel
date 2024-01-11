@@ -34,11 +34,21 @@
   * :proc:`readItemsAsBlockArray`: read a file where values are separated by a
     delimiter, but the delimiter can be found in the value
 
-  There are also non-distributed versions of each procedure that return a
-  default rectangular array instead of a block-distributed array.
+  There are also non-distributed versions of these procedures that return a
+  default rectangular array instead of a block-distributed array. These tend
+  to be a faster option if the file is small enough to fit in memory on a
+  single locale.
 
-  This module also includes some helper procedures for breaking files into chunks
-  that could be used to implement other parallel I/O routines:
+  Two parallel iterators are also provided:
+
+  * :proc:`readLines`: iterate over a file's lines in parallel
+  * :proc:`readDelimited`: iterate over the values of a delimited file in parallel
+
+  Both iterators only work in a standalone context (i.e., they cannot be used
+  for zippered iteration). Adding leader/follower support is a future goal.
+
+  This module also exposes some helper procedures used to break files into chunks.
+  These could be used as building blocks to implement other parallel I/O routines:
 
   * :proc:`findDelimChunks`: find a set of byte offsets that divide a file into
     roughly equal chunks where each chunk begins with a delimiter
@@ -52,6 +62,137 @@
 @unstable("the 'parallelIO' module is unstable and subject to change in a future release")
 module ParallelIO {
   private use IO, BlockDist, List, CTypes, OS;
+
+  /*
+    Iterate over a file's lines in parallel.
+
+    This routine is similar to :proc:`readLinesAsArray`, except that it yields
+    each line as it is read instead of returning an array of lines.
+
+    .. warning::
+
+      This routine will halt if the file cannot be opened or if an
+      I/O error occurs while reading the file. This limitation is
+      expected to be removed in a future release.
+
+    .. note::
+
+      Only serial and standalone-parallel iteration is supported. This
+      iterator cannot yet be used in a zippered context.
+
+    :arg filePath: a path to the file to read from
+    :arg lineType: which type to return for each line — either ``string`` or ``bytes``
+    :arg header: how to handle the file header (see :record:`headerPolicy`)
+    :arg nTasks: the number of tasks used to read the file
+  */
+  iter readLines(filePath: string, type lineType = string,
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+  ): lineType
+    where lineType == string || lineType == bytes
+  {
+    param delim = b"\n";
+
+    const f = try! open(filePath, ioMode.r),
+          (findStart, startOffset) = try! header.apply(f, 0..<f.size),
+          r = try! f.reader(locking=false, region=startOffset..);
+
+    if findStart then try! r.advanceThrough(delim);
+
+    var line: lineType;
+    while (try! r.readLine(line, stripNewline=true)) do
+      yield line;
+  }
+
+  @chpldoc.nodoc
+  iter readLines(param tag: iterKind, filePath: string, type lineType = string,
+                 header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar
+  ): lineType
+    where tag == iterKind.standalone && (lineType == string || lineType == bytes)
+  {
+    param delim = b"\n";
+
+    const fMeta = try! open(filePath, ioMode.r),
+          fileBounds = 0..<(try! fMeta.size),
+          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+
+    coforall tid in 0..<nTasks {
+      const taskBounds = byteOffsets[tid]..<byteOffsets[tid+1],
+            r = try! fMeta.reader(locking=false, region=taskBounds);
+
+      var line: lineType;
+      while (try! r.readLine(line, stripNewline=true)) do
+        yield line;
+    }
+  }
+
+  /*
+    Iterate over the values of a delimited file in parallel.
+
+    This routine is similar to :proc:`readDelimitedAsArray`, except that it
+    yields each value as it is read instead of returning an array of values.
+
+    .. warning::
+
+      This routine will halt if the file cannot be opened or if an
+      I/O error occurs while reading the file. This limitation is
+      expected to be removed in a future release.
+
+    .. note::
+
+      Only serial and standalone-parallel iteration is supported. This
+      iterator cannot yet be used in a zippered context.
+
+    :arg filePath: a path to the file to read from
+    :arg t: the type of value to read from the file
+    :arg delim: the delimiter to use to separate ``t`` values in the file
+    :arg header: how to handle the file header (see :record:`headerPolicy`)
+    :arg nTasks: the number of tasks used to read the file
+    :arg deserializerType: the type of deserializer to use when reading values
+  */
+  iter readDelimited(filePath: string, type t, in delim: ?dt = b"\n",
+                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskpar,
+                     type deserializerType = defaultDeserializer
+  ): t
+    where dt == string || dt == bytes
+  {
+    var des: deserializerType;
+    const f = try! open(filePath, ioMode.r),
+          (findStart, startOffset) = try! header.apply(f, 0..<f.size),
+          r = try! f.reader(locking=false, region=startOffset.., deserializer=des);
+
+    if findStart then try! r.advanceThrough(delim);
+
+    var item: t, first = true;
+    while (try! r.read(item)) {
+      if first then first = false; else try! r.advanceThrough(delim);
+      yield item;
+    }
+  }
+
+  @chpldoc.nodoc
+  iter readDelimited(param tag: iterKind,
+                     filePath: string, type t, in delim: ?dt = b"\n",
+                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskpar,
+                     type deserializerType = defaultDeserializer
+  ): t
+    where tag == iterKind.standalone && (dt == string || dt == bytes)
+  {
+    const fMeta = try! open(filePath, ioMode.r),
+          fileBounds = 0..<(try! fMeta.size),
+          byteOffsets = try! findDelimChunks(fMeta, delim, nTasks, fileBounds, header);
+
+    coforall tid in 0..<nTasks {
+      var des: deserializerType;
+      const taskBounds = byteOffsets[tid]..byteOffsets[tid+1],
+            r = try! fMeta.reader(locking=false, region=taskBounds, deserializer=des);
+
+      var item: t;
+      while (try! r.read(item)) {
+        yield item;
+        try! r.advanceThrough(delim);
+      }
+    }
+  }
 
   /*
     Read a file's lines in parallel into a block-distributed array.

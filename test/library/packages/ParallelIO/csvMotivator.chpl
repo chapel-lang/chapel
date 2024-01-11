@@ -21,11 +21,11 @@ proc main() {
   }
 
   if CollectPerfData then s.restart();
-  const c1 = readParallelDelimited(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
+  const c1 = readDelimitedAsBlockArray(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
   if CollectPerfData then writeln(s.elapsed());
 
   if CollectPerfData then s.restart();
-  const c2 = readParallelDelimitedLocal(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
+  const c2 = readDelimitedAsArray(fileName, t=color, nTasks=nTasks, header=headerPolicy.skipLines(1));
   if CollectPerfData then writeln(s.elapsed());
 
   // test correctness

@@ -24,11 +24,11 @@ proc main() {
     }
 
     if CollectPerfData then s.restart();
-    const l1 = readParallelLines(fileName, lineType=bytes, nTasks=nTasks);
+    const l1 = readLinesAsBlockArray(fileName, lineType=bytes, nTasks=nTasks);
     if CollectPerfData then writeln(s.elapsed());
 
     if CollectPerfData then s.restart();
-    const l2 = readParallelLinesLocal(fileName, lineType=bytes, nTasks=nTasks);
+    const l2 = readLinesAsArray(fileName, lineType=bytes, nTasks=nTasks);
     if CollectPerfData then writeln(s.elapsed());
 
     assert(l1.size == lines.size);

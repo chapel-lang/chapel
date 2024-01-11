@@ -17,11 +17,11 @@ proc main() {
   if CollectPerfData then writeln("serial: ", sw.elapsed());
 
   if CollectPerfData then sw.restart();
-  const s1 = readParallel(fileName, fastQSequence, b"\n@", nTasks=nTasks);
+  const s1 = readItemsAsBlockArray(fileName, fastQSequence, b"\n@", nTasks=nTasks);
   if CollectPerfData then writeln("parallel: ", sw.elapsed());
 
   if CollectPerfData then sw.restart();
-  const s2 = readParallelLocal(fileName, fastQSequence, b"\n@", nTasks=nTasks);
+  const s2 = readItemsAsArray(fileName, fastQSequence, b"\n@", nTasks=nTasks);
   if CollectPerfData then writeln("parallel local: ", sw.elapsed());
 
   for s in (s1, s2) {
