@@ -1,8 +1,8 @@
-─── error in fullImportPath.chpl:10 [UseImportUnknownMod] ───
+─── error in fullImportPath.chpl:11 [UseImportUnknownMod] ───
   Cannot find module named 'ToLookFor'.
   In the following 'import' statement:
        |
-    10 |                 import ToLookFor;
+    11 |                 import ToLookFor;
        |                        ⎺⎺⎺⎺⎺⎺⎺⎺⎺
        |
   The following declarations are not covered by the 'import' statement but seem similar to what you meant.
