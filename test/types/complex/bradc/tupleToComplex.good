@@ -1,0 +1,12 @@
+(-18.0, inf): 2*real(64)
+-18.0 + infi: complex(128)
+(-18.0, inf)
+
+(-18.0, inf): 2*real(32)
+-18.0 + infi: complex(64)
+(-18.0, inf)
+
+(-18.0, inf): 2*real(32)
+-18.0 + infi: complex(128)
+(-18.0, inf)
+

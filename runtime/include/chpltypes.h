@@ -31,6 +31,8 @@
 #include <string.h>
 #include <sys/time.h> // for struct timeval
 
+// Skip complex stuff when compiling this header with C++ compiler, as for re2
+#ifndef __cplusplus
 #include <complex.h>
 typedef float _Complex        _complex64;
 typedef double _Complex       _complex128;
@@ -38,6 +40,7 @@ typedef double _Complex       _complex128;
 // clang doesn't have _Complex_I but it supports initializer lists for complex
 #ifndef _Complex_I
 static const _complex64 _Complex_I = {0.0f, 1.0f};
+#endif
 #endif
 
 #ifdef __cplusplus
@@ -254,11 +257,13 @@ typedef struct chpl_main_argument_s {
   int32_t return_value;
 } chpl_main_argument;
 
+// Skip complex stuff when compiling this header with C++ compiler, as for re2
+#ifndef __cplusplus
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
-  return re + im*_Complex_I;
+  return CMPLX(re, im);
 }
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
-  return re + im*_Complex_I;
+  return CMPLXF(re, im);
 }
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
@@ -307,6 +312,7 @@ static inline _complex64 complexSubtract64(_complex64 c1, _complex64 c2) {
 static inline _complex64 complexUnaryMinus64(_complex64 c1) {
   return -c1;
 }
+#endif
 
 /* This should be moved somewhere else, but where is the question */
 static inline const char* chpl_get_argument_i(chpl_main_argument* args, int32_t i)
