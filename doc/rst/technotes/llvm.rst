@@ -73,7 +73,9 @@ something like ``opt --passes='...'``.
 
 This information can be combined with dumping LLVM IR, so that developers can
 focus on the LLVM IR level transformations without needing to worry about the
-frontend. The following flags are very useful for printing and maniupltaing LLVM IR. All should be passed as ``--mllvm <flag>``, for example ``--mllvm --print-after-all``
+frontend. The following flags are very useful for printing and manipulating
+LLVM IR. All should be passed as ``--mllvm <flag>``, for example
+``--mllvm --print-after-all``.
 
  * ``--print-before=<PASSES>``
     * Enables printing the LLVM IR before each pass.

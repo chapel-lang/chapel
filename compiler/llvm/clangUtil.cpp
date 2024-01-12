@@ -2468,7 +2468,10 @@ static void registerDumpIrExtensions(PassBuilder& PB);
 namespace llvm {
 extern cl::opt<bool> PrintPipelinePasses;
 }
-static PassBuilder constructPassBuilder(llvm::TargetMachine* targetMachine, PassInstrumentationCallbacks* PIC, bool forFunction) {
+static PassBuilder constructPassBuilder(
+  llvm::TargetMachine* targetMachine,
+  PassInstrumentationCallbacks* PIC,
+  bool forFunction) {
   // this is required to be set, or LLVM will not properly populate the pass
   // names. technically this flag enables extra printing to the dbg() output,
   // but we only keep the flag long enough to populate the pass names.
