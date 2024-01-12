@@ -254,20 +254,41 @@ typedef struct chpl_main_argument_s {
   int32_t return_value;
 } chpl_main_argument;
 
-// Skip these routines when cmopiling this header with the C++
-// compiler (as we do when compiling re2 headers) because these
-// CMPLX*() macros are not available in C++.  This should not be an
-// issue since we don't use complex in re2.
-#ifndef __cplusplus
-
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
+#ifdef CMPLX
   return CMPLX(re, im);
-}
-static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
-  return CMPLXF(re, im);
+#else
+#ifndef DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re64(c) (_Generic((c), _complex128 : ((double *)&(c)))[0])
+#define cmplx_im64(c) (_Generic((c), _complex128 : ((double *)&(c)))[1])
+  _complex128 val;
+  cmplx_re64(val) = re;
+  cmplx_im64(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
+  return re + im*_Complex_I;
+#endif
+#endif
 }
 
+static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
+#ifdef CMPLXF
+  return CMPLXF(re, im);
+#else
+#ifndef DONT_USE_CMPLX_PTR_ALIASING
+#define cmplx_re32(c) (_Generic((c), _complex64 : ((float *)&(c)))[0])
+#define cmplx_im32(c) (_Generic((c), _complex64 : ((float *)&(c)))[1])
+  _complex64 val;
+  cmplx_re32(val) = re;
+  cmplx_im32(val) = im;
+  return val;
+#else
+  // This can generate bad values in the face of inf/nan values
+  return re + im*_Complex_I;
 #endif
+#endif
+}
 
 static inline _real64* complex128GetRealRef(_complex128* cplx) {
   return ((_real64*)cplx) + 0;
