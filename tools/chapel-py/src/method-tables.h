@@ -108,6 +108,8 @@ CLASS_END(Attribute)
 CLASS_BEGIN(AttributeGroup)
   PLAIN_GETTER(AttributeGroup, is_unstable, "Check if this AttributeGroup contains the 'unstable' attribute",
                bool, return node->isUnstable())
+  PLAIN_GETTER(AttributeGroup, is_deprecated, "Check if this AttributeGroup contains the 'deprecated' attribute",
+               bool, return node->isDeprecated())
 CLASS_END(AttributeGroup)
 
 CLASS_BEGIN(Break)
