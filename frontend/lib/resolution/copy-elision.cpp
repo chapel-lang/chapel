@@ -415,6 +415,7 @@ static void propogateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
     if(!pair.second.lastIsCopy) {
       CopyElisionState& parentState = parentFrame->copyElisionState[id];
       parentState.lastIsCopy = false;
+      parentState.points.clear();
     }
   }
 }
@@ -454,14 +455,14 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
     propogateMentionsAndInits(currentFrame, frame);
   }
 
-  if (!total) return;
-
   std::vector<VarFrame*> nonReturningFrames;
   for(auto frame: frames) {
     if (frame->returnsOrThrows) continue;
     saveLocalVarElidedCopies(frame);
     nonReturningFrames.push_back(frame);
   }
+
+  if (!total) return;
 
   // Now, note all variables that are elided in all non-returning branches.
   std::unordered_map<ID, size_t> idCounts;

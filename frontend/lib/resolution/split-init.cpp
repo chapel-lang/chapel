@@ -52,7 +52,7 @@ struct FindSplitInits : VarScopeVisitor {
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
-  void errorChecking(const AstNode * node, std::vector<std::vector<ID>> idLists,
+  void checkForErrors(const AstNode * node, std::vector<std::vector<ID>> idLists,
                             std::vector<std::vector<QualifiedType>> typeLists);
 
   // overrides
@@ -243,7 +243,7 @@ static void propogateMentions(VarFrame * parentFrame, VarFrame* frame) {
   }
 }
 
-void FindSplitInits::errorChecking(const AstNode * node, 
+void FindSplitInits::checkForErrors(const AstNode * node, 
                                    std::vector<std::vector<ID>> idLists,
                                    std::vector<std::vector<QualifiedType>> typeLists) {
   for(size_t i = 1; i < idLists.size(); i++) {
@@ -256,24 +256,22 @@ void FindSplitInits::errorChecking(const AstNode * node,
   bool orderOk = true;
 
   std::vector<ID> referenceIds = idLists.at(0);
-  for (std::vector<ID> comparedIds : idLists) {
+  for (size_t i = 1; i < idLists.size(); i++) {
+    auto comparedIds = idLists[i];
     for(size_t i = 0; i < referenceIds.size(); i++) {
       if(referenceIds[i] != comparedIds[i]) {
-        orderOk = false;
         context->error(node, 
                        "initialization order does not match between branches");
-        break;
+        return;
       }
     }
   }
-  
-  if (!orderOk) return;
 
   std::vector<QualifiedType> referenceTypes = typeLists.at(0);
-  for(const std::vector<QualifiedType>& comparedTypes: typeLists) {
+  for(size_t i = 1; i < typeLists.size(); i++) {
+    auto comparedTypes = typeLists[i];
     for(size_t i = 0; i < referenceTypes.size(); i++) {
       if(referenceTypes[i] != comparedTypes[i]) {
-        orderOk = false;
         context->error(node, 
                       "initialized types do not match between branches");
       }
@@ -385,7 +383,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     splitInitedAllTypes.push_back(currTypes);
   }
   
-  errorChecking(node, splitInitedAllIds, splitInitedAllTypes);
+  checkForErrors(node, splitInitedAllIds, splitInitedAllTypes);
 
   for (auto frame: frames) {
     propogateMentions(currentFrame, frame);
