@@ -18,23 +18,11 @@
 #
 
 import chapel.core
+import chapel.lsp
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import Diagnostic, Range, Position, DiagnosticSeverity
-
-def location_to_range(location):
-    """
-    Convert a Chapel location into a lsprotocol.types Range, which is
-    used for e.g. reporting diagnostics.
-    """
-
-    start = location.start()
-    end = location.end()
-    return Range(
-        start=Position(start[0]-1, start[1]-1),
-        end=Position(end[0]-1, end[1]-1)
-    )
 
 def run_lsp(driver):
     """
@@ -93,7 +81,7 @@ def run_lsp(driver):
             diagnostics = []
             for (node, rule) in driver.run_checks(context, asts):
                 diagnostic = Diagnostic(
-                    range= location_to_range(node.location()),
+                    range=chapel.lsp.location_to_range(node.location()),
                     message="Lint: rule [{}] violated".format(rule),
                     severity=DiagnosticSeverity.Warning
                 )
@@ -108,7 +96,7 @@ def run_lsp(driver):
 
         for error in errors:
             diagnostic = Diagnostic(
-                range= location_to_range(error.location()),
+                range= chapel.lsp.location_to_range(error.location()),
                 message="{}: [{}]: {}".format(error.kind().capitalize(), error.type(), error.message()),
                 severity=kind_to_severity[error.kind()]
             )
