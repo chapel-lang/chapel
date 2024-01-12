@@ -293,16 +293,6 @@ module OwnedObject {
     }
   }
 
-  @deprecated("calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead")
-  proc type _owned.borrow() type {
-    if _to_nilable(chpl_t) == chpl_t {
-      return chpl_t;
-    } else {
-      return _to_nonnil(chpl_t);
-    }
-  }
-
-
   /*
     Assignment between two :type:`owned` transfers ownership of the object
     managed by ``rhs`` to ``lhs``. This is done by setting ``rhs`` to `nil` and
