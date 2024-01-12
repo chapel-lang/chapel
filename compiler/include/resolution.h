@@ -68,9 +68,9 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 bool       tryingToResolve();
-
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
+void       printCallstackForLastError();
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 
