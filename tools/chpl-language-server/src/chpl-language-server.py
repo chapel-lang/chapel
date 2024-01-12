@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2024-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -19,68 +18,59 @@
 # limitations under the License.
 #
 
-from typing import Any, Callable, Dict, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from dataclasses import dataclass, field
+from bisect import bisect_right
+import itertools
 
 
 import chapel.core
+from chapel.lsp import location_to_range
 from pygls.server import LanguageServer
+from lsprotocol.types import Location, Diagnostic, Range, Position, DiagnosticSeverity
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
-from lsprotocol.types import TEXT_DOCUMENT_FORMATTING, DocumentFormattingParams
-from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams, Location
+from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
 from lsprotocol.types import (
-    Diagnostic,
-    Range,
-    Position,
-    DiagnosticSeverity,
-    TextEdit,
-    MessageType,
-    TextDocumentEdit,
-    WorkspaceConfigurationParams,
-    WorkspaceEdit,
-    ConfigurationItem,
-    TEXT_DOCUMENT_CODE_ACTION,
     TEXT_DOCUMENT_DOCUMENT_SYMBOL,
     DocumentSymbolParams,
-    CodeActionParams,
-    CodeActionKind,
-    CodeAction,
     SymbolInformation,
     SymbolKind,
 )
-
-import subprocess as sp
-import re
-from dataclasses import dataclass, field
-from bisect import bisect_right
-
-
-def location_to_range(location) -> Range:
-    """
-    Convert a Chapel location into a lsprotocol.types Range, which is
-    used for e.g. reporting diagnostics.
-    """
-
-    start = location.start()
-    end = location.end()
-    return Range(
-        start=Position(start[0] - 1, start[1] - 1), end=Position(end[0] - 1, end[1] - 1)
-    )
-
-def node_has_attribute(node: chapel.core.AstNode, marker: str) -> bool:
-    """
-    a symbol has an attribute if it has an attribute that matches the argument
-    """
-    return (attrs := node.attribute_group()) and any(a.name() == marker for a in attrs)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_HOVER,
+    HoverParams,
+    Hover,
+    MarkupContent,
+    MarkupKind,
+)
 
 
-def is_deprecated(node: chapel.core.AstNode) -> bool:
-    """a node is deprecated if it or its parent has an attribute that is deprecated"""
-    return node_has_attribute(node, "deprecated")
+# TODO: for now, just text based. but should resolve generic types
+def get_symbol_sig(node: chapel.core.AstNode):
+    if isinstance(node, chapel.core.Class):
+        s = ""
+        if (ie := list(node.inherit_exprs())) and len(ie) > 0:
+            s = ": " + ", ".join([x.name() for x in ie])
+        return f"class {node.name()}{s}"
+    elif isinstance(node, chapel.core.Record):
+        s = ""
+        if (ie := list(node.inherit_exprs())) and len(ie) > 0:
+            s = ": " + ", ".join([x.name() for x in ie])
+        return f"record {node.name()}{s}"
+    elif isinstance(node, chapel.core.Interface):
+        return f"interface {node.name()}"
+    elif isinstance(node, chapel.core.Module):
+        return f"module {node.name()}"
+    elif isinstance(node, chapel.core.Enum):
+        return f"enum {node.name()}"
+
+    assert isinstance(node, chapel.core.NamedDecl)
+    return node.name()
+
 
 def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
-    # File
-    if isinstance(decl, chapel.core.Module):
+    if isinstance(decl, chapel.core.Module) and decl.kind() != "implicit":
         return SymbolKind.Module
     elif isinstance(decl, chapel.core.Class):
         return SymbolKind.Class
@@ -106,22 +96,25 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
     elif isinstance(decl, chapel.core.Variable):
         if decl.is_field():
             return SymbolKind.Field
-        # TODO: replace storage_kind with intent
-        elif decl.storage_kind() == "<const-var>":
+        elif decl.intent() == "<const-var>":
             return SymbolKind.Constant
-        elif decl.storage_kind() == "type":
+        elif decl.intent() == "type":
             return SymbolKind.TypeParameter
         else:
             return SymbolKind.Variable
     return None
 
 
-def NamedDecl_to_SymbolInformation(
+def get_symbol_information(
     decl: chapel.core.NamedDecl, uri: str
 ) -> Optional[SymbolInformation]:
     loc = Location(uri, location_to_range(decl.location()))
     if kind := decl_kind(decl):
-        return SymbolInformation(loc, decl.name(), kind, deprecated=is_deprecated(decl))
+        # TODO: should we use DocumentSymbol or SymbolInformation
+        # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
+        # using symbol information for now, as it sort-of autogets the tree structure
+        is_deprecated = chapel.is_deprecated(decl)
+        return SymbolInformation(loc, decl.name(), kind, deprecated=is_deprecated)
     return None
 
 
@@ -139,10 +132,17 @@ class NodeAndRange:
 
 
 @dataclass
+class ResolvedPair:
+    ident: NodeAndRange
+    resolved_to: NodeAndRange
+
+
+@dataclass
 class FileInfo:
     uri: str
     context: chapel.core.Context
-    segments: List[Tuple[NodeAndRange, NodeAndRange]] = field(default_factory=list)
+    segments: List[ResolvedPair] = field(default_factory=list)
+    siblings: chapel.SiblingMap = field(init=False)
 
     def __post_init__(self):
         self.rebuild_segments()
@@ -164,11 +164,12 @@ class FileInfo:
         asts = self.get_asts()
         # get ids
         self.segments = [
-            (NodeAndRange(node), NodeAndRange(to))
+            ResolvedPair(NodeAndRange(node), NodeAndRange(to))
             for node, _ in chapel.each_matching(asts, chapel.core.Identifier)
             if (to := node.to_node())
         ]
-        self.segments.sort(key=lambda s: s[0].rng.start)
+        self.segments.sort(key=lambda s: s.ident.rng.start)
+        self.siblings = chapel.SiblingMap(self.get_asts())
 
 
 def run_lsp():
@@ -262,9 +263,11 @@ def run_lsp():
         fi, _ = get_context(text_doc.uri)
         segments = fi.segments
 
-        idx = bisect_right(segments, params.position, key=lambda s: s[0].rng.start) - 1
-        if idx >= 0 and params.position < segments[idx][0].rng.end:
-            return [segments[idx][0].get_location(), segments[idx][1].get_location()]
+        idx = (
+            bisect_right(segments, params.position, key=lambda s: s.ident.rng.start) - 1
+        )
+        if idx >= 0 and params.position < segments[idx].ident.rng.end:
+            return segments[idx].resolved_to.get_location()
 
         return None
 
@@ -273,14 +276,49 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        # TODO: should use custom traversal to ignore defs inside of functions
+
+        # doesn't descend into nested definitions for Functions
+        def preorder_ignore_funcs(node):
+            yield node
+            if isinstance(node, chapel.core.Function):
+                return
+            for child in node:
+                yield from preorder_ignore_funcs(child)
+
         syms = [
             si
-            for node, _ in chapel.each_matching(fi.get_asts(), chapel.core.NamedDecl)
-            if (si := NamedDecl_to_SymbolInformation(node, text_doc.uri))
+            for node, _ in chapel.each_matching(
+                fi.get_asts(), chapel.core.NamedDecl, iterator=preorder_ignore_funcs
+            )
+            if (si := get_symbol_information(node, text_doc.uri))
         ]
 
         return syms
+
+    @server.feature(TEXT_DOCUMENT_HOVER)
+    async def hover(ls: LanguageServer, params: HoverParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = get_context(text_doc.uri)
+        segments = fi.segments
+
+        idx = (
+            bisect_right(segments, params.position, key=lambda s: s.ident.rng.start) - 1
+        )
+        if not (idx >= 0 and params.position < segments[idx].ident.rng.end):
+            return None
+
+        node = segments[idx].resolved_to.node
+        node_path = node.location().path()
+        node_fi, _ = get_context(f"file://{node_path}")
+
+        signature = get_symbol_sig(node)
+        docstring = chapel.get_docstring(node, node_fi.siblings)
+        text = f"```chapel\n{signature}\n```"
+        if docstring:
+            text += f"\n---\n{docstring}"
+        content = MarkupContent(MarkupKind.Markdown, text)
+        return Hover(content, range=segments[idx].resolved_to.get_location().range)
 
     server.start_io()
 
