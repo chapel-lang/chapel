@@ -814,7 +814,7 @@ void GpuizableLoop::reportNotGpuizable(BaseAST* ast, const char *msg,
                 functionName, maybeSayLoopBody(firstPrintableStackElement));
       lastPrinted = call;
 
-      // Sicne we printed a call partway in the stack, start the rest of the
+      // Since we printed a call partway in the stack, start the rest of the
       // trace after that.
       traceFrom = firstPrintableStackElement - 1;
     }
