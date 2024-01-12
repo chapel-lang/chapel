@@ -183,7 +183,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "unique_id",
-            rettype="int",
+            rettype="str",
             docstring="Get a unique identifier for this AST node",
         ),
         _wrap_method(
