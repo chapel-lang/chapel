@@ -2086,7 +2086,8 @@ module ShallowCopy {
                                        /*src*/ A,
                                        {src_idx..#nElts_idx});
       if !ok {
-        halt("bulk transfer failed in sorting");
+        // fall back on PRIM_ASSIGN to move the elements
+        // at present, this is needed for Cyclic and Replicated.
         foreach i in 0..#nElts {
           __primitive("=", A[dst_idx+i:idxType], A[src_idx+i:idxType]);
         }
@@ -2127,7 +2128,8 @@ module ShallowCopy {
                                        /*src*/ SrcA,
                                        {src_idx..#nElts_src_idx});
       if !ok {
-        halt("bulk transfer failed in sorting");
+        // fall back on PRIM_ASSIGN to move the elements
+        // at present, this is needed for Cyclic and Replicated.
         foreach i in 0..#nElts_dst_idx {
           __primitive("=", DstA[dst_idx+i], SrcA[src_idx+i:SrcA.idxType]);
         }
