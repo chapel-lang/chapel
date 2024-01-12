@@ -178,6 +178,7 @@ static chpl_bool envInjectRMA;          // env: inject RMA messages
 static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
 static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
+static const char *envExpectedProvider; // env: provider we should select
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -1022,6 +1023,7 @@ void chpl_comm_init(int *argc_p, char ***argv_p) {
   envInjectAM = chpl_env_rt_get_bool("COMM_OFI_INJECT_AM", true);
   envUseDedicatedAmhCores = chpl_env_rt_get_bool(
                                   "COMM_OFI_DEDICATED_AMH_CORES", false);
+  envExpectedProvider = chpl_env_rt_get("COMM_OFI_EXPECTED_PROVIDER", NULL);
   //
   // The user can specify the provider by setting either the Chapel
   // CHPL_RT_COMM_OFI_PROVIDER environment variable or the libfabric
@@ -2040,6 +2042,19 @@ void init_ofiFabricDomain(void) {
   // If we get here, we have a provider in ofi_info.
   //
   fi_freeinfo(hints);
+
+  // 
+  // Make sure we selected the provider we were expected to select, if
+  // specified.
+  //
+  if ((envExpectedProvider != NULL) &&
+      (strcmp(ofi_info->fabric_attr->prov_name, envExpectedProvider))) {
+    char msg[128];
+    snprintf(msg, sizeof(msg),
+             "Selected incorrect provider: %s != %s",
+             ofi_info->fabric_attr->prov_name, envExpectedProvider);
+    chpl_error(msg, 0, 0);
+  }
 
   if (DBG_TEST_MASK(DBG_PROV_ALL)) {
     if (chpl_nodeID == 0) {
