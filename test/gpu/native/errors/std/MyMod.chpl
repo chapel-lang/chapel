@@ -1,4 +1,7 @@
 module MyMod {
+
+  config param usePoi = true;
+
   pragma "no gpu codegen"
   proc doSomethingElse(x) {}
 
@@ -12,5 +15,16 @@ module MyMod {
 
   proc doSomethingPOI(x) {
     doSomethingElsePOI(x);
+  }
+
+  proc badLoop(type t) {
+    @assertOnGpu
+    foreach 1..10 {
+      if usePoi {
+        doSomethingPOI(new t());
+      } else {
+        doSomething(new t());
+      }
+    }
   }
 }
