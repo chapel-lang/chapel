@@ -134,7 +134,7 @@ struct CallInitDeinit : VarScopeVisitor {
   void handleYield(const uast::Yield* ast, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
   void handleDisjunction(const AstNode * node, 
-                         VarFrame * parentFrame,
+                         VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
                          bool total, RV& rv) override;
   void handleScope(const AstNode* ast, RV& rv) override;

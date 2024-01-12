@@ -75,7 +75,7 @@ struct FindSplitInits : VarScopeVisitor {
   void handleTry(const Try* t, RV& rv) override;
 
   void handleDisjunction(const AstNode * node, 
-                         VarFrame * parentFrame,
+                         VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
                          bool total, RV& rv) override;
 
@@ -282,7 +282,7 @@ void FindSplitInits::errorChecking(const AstNode * node,
 }
 
 void FindSplitInits::handleDisjunction(const AstNode * node, 
-                                       VarFrame * parentFrame, 
+                                       VarFrame * currentFrame, 
                                        const std::vector<VarFrame*>& frames, 
                                        bool total, RV& rv) {
 
@@ -299,11 +299,11 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
       } else {
         // variable was declared in an outer scope, and this is only
         // possible path, so its definitely a valid split init
-        addInit(parentFrame, id, rhsType);
+        addInit(currentFrame, id, rhsType);
       }
     }
 
-    propogateMentions(parentFrame, frame);
+    propogateMentions(currentFrame, frame);
     return;
   }
 
@@ -349,16 +349,16 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     if (allFramesInitReturnOrThrow) {
       locallySplitInitedVars.insert(id);
     } else {
-      parentFrame->mentionedVars.insert(id);
+      currentFrame->mentionedVars.insert(id);
     }
   }
 
   if (!total) {
     for (auto frame: frames) {
-      propogateMentions(parentFrame, frame);
+      propogateMentions(currentFrame, frame);
     } 
     for (const auto & id: locallySplitInitedVars) {
-      parentFrame->mentionedVars.insert(id);
+      currentFrame->mentionedVars.insert(id);
     }
     return;
   }
@@ -374,7 +374,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
       ID id = pair.first;
       QualifiedType rhsType = pair.second;
       if (locallySplitInitedVars.count(id) > 0) {
-        addInit(parentFrame, id, rhsType);
+        addInit(currentFrame, id, rhsType);
       }
       if (splitInitedInAll.count(id) > 0) {
         currIds.push_back(id);
@@ -388,7 +388,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
   errorChecking(node, splitInitedAllIds, splitInitedAllTypes);
 
   for (auto frame: frames) {
-    propogateMentions(parentFrame, frame);
+    propogateMentions(currentFrame, frame);
   }
 }
 

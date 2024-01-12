@@ -102,7 +102,7 @@ struct FindElidedCopies : VarScopeVisitor {
   void handleTry(const Try* t, RV& rv) override;
   
   void handleDisjunction(const AstNode * node, 
-                         VarFrame * parentFrame,
+                         VarFrame * currentFrame,
                          const std::vector<VarFrame*>& frames, 
                          bool total, RV& rv) override;
   
@@ -421,7 +421,7 @@ static void propogateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFram
 
 
 void FindElidedCopies::handleDisjunction(const AstNode * node,
-                                         VarFrame * parentFrame, 
+                                         VarFrame * currentFrame, 
                                          const std::vector<VarFrame*>& frames, 
                                          bool total, RV& rv) {
   // if any frame is 'param true' the rest of the frames do not matter
@@ -438,20 +438,20 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
       ID id = entry.first;
       const CopyElisionState& state = entry.second;
       if (state.lastIsCopy && frame->eligibleVars.count(id) == 0) {
-        CopyElisionState& s = parentFrame->copyElisionState[id];
+        CopyElisionState& s = currentFrame->copyElisionState[id];
         s.lastIsCopy = true;
         s.points.insert(state.points.begin(), state.points.end());
       }
     }
 
-    propogateMentionsAndInits(parentFrame, frame);
+    propogateMentionsAndInits(currentFrame, frame);
 
     return;
   }
 
   //propogate mentions to the parent
   for(auto frame: frames) {
-    propogateMentionsAndInits(parentFrame, frame);
+    propogateMentionsAndInits(currentFrame, frame);
   }
 
   if (!total) return;
@@ -476,7 +476,7 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
     if (pair.second != nonReturningFrames.size()) continue;
 
     // Populate the parent frame
-    CopyElisionState& parentState = parentFrame->copyElisionState[pair.first];
+    CopyElisionState& parentState = currentFrame->copyElisionState[pair.first];
     parentState.lastIsCopy = true;
     for (auto frame : nonReturningFrames) {
       CopyElisionState& frameState = frame->copyElisionState.at(pair.first);
