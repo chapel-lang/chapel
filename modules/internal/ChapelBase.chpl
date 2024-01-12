@@ -1633,6 +1633,19 @@ module ChapelBase {
     return ret;
   }
 
+  pragma "llvm return noalias"
+  proc _ddata_allocate_noinit_gpu_shared(type eltType, size: integral,
+                                         out callPostAlloc: bool,
+                                         subloc = c_sublocid_none) {
+    if CHPL_LOCALE_MODEL != "gpu" then
+      compilerError("_ddata_allocate_noinit_gpu_shared can't be called in this config");
+
+    var ret: _ddata(eltType);
+    // TODO why fixed size?
+    ret = __primitive("cast", ret.type, __primitive("gpu allocShared", 4096*8));
+    return ret;
+  }
+
   inline proc _ddata_allocate_postalloc(data:_ddata, size: integral) {
     pragma "fn synchronization free"
     pragma "insert line file info"

@@ -130,6 +130,44 @@ static TypeSymbol* expandTypeAlias(SymExpr* se);
 *                                                                             *
 ************************************** | *************************************/
 
+static void earlyGpuTransforms() {
+  forv_expanding_Vec(CallExpr, call, gCallExprs) {
+    if (!call->isPrimitive(PRIM_HOIST_TO_CONTEXT)) continue;
+
+    // The particular definition we expect is a default-init c_array, which is:
+    //
+    //    unknown myArray;
+    //    unknown call_tmp;
+    //    call_tmp = c_array(t, k);
+    //    __primitive("default init var", myArray, call_tmp);
+
+    auto hoistDefExpr = toSymExpr(call->get(2))->symbol()->defPoint;
+    if (!isDefExpr(hoistDefExpr->next)) continue;
+    auto typeDefExpr = toDefExpr(hoistDefExpr->next);
+    if (!isCallExpr(typeDefExpr->next)) continue;
+    auto typeAssign = toCallExpr(typeDefExpr->next);
+    if (!typeAssign->isPrimitive(PRIM_MOVE) ||
+        !isCallExpr(typeAssign->get(2))) continue;
+    auto typeCall = toCallExpr(typeAssign->get(2));
+    if (!isCallExpr(typeAssign->next)) continue;
+    auto initCall = toCallExpr(typeAssign->next);
+    if (!initCall->isPrimitive(PRIM_DEFAULT_INIT_VAR)) continue;
+
+    auto typeConstructor = toSymExpr(typeCall->baseExpr);
+    if (!typeConstructor) continue;
+    if (typeConstructor->symbol()->name != astr("c_array")) continue;
+
+    SET_LINENO(hoistDefExpr);
+    auto newBlock = new BlockStmt();
+    auto newArr = new VarSymbol(astr("shared_", hoistDefExpr->sym->name));
+    newArr->qual = Qualifier::QUAL_REF;
+    newBlock->insertAtTail(new DefExpr(newArr));
+    newBlock->insertAtTail(new CallExpr(PRIM_MOVE, new SymExpr(newArr), new CallExpr("createSharedCArray", new SymExpr(typeDefExpr->sym))));
+    initCall->insertAfter(newBlock);
+  }
+}
+
+
 void normalize() {
 
   insertModuleInit();
@@ -263,6 +301,8 @@ void normalize() {
 
     }
   }
+
+  earlyGpuTransforms();
 
   find_printModuleInit_stuff();
 }

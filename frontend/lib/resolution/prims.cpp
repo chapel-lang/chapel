@@ -1716,6 +1716,9 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_REF_DESERIALIZE:
     case PRIM_UNKNOWN:
+    case PRIM_INNERMOST_CONTEXT:
+    case PRIM_OUTER_CONTEXT:
+    case PRIM_HOIST_TO_CONTEXT:
     case NUM_KNOWN_PRIMS:
     case PRIM_BREAKPOINT:
     case PRIM_CONST_ARG_HASH:

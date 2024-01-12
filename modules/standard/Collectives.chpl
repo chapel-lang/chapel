@@ -137,6 +137,12 @@ module Collectives {
     inline proc reset(nTasks: int) {
       bar.reset(nTasks);
     }
+
+    @chpldoc.nodoc
+    proc multiply(n: int) {
+      try! reset((bar:(unmanaged aBarrier)).n*n);
+    }
+
   }
 
   /* The BarrierBaseType class provides an abstract base type for barriers

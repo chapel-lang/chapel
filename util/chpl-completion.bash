@@ -347,6 +347,7 @@ _chpl ()
 --report-auto-aggregation \
 --report-auto-local-access \
 --report-blocking \
+--report-context-adjustments \
 --report-dead-blocks \
 --report-dead-modules \
 --report-gpu \
