@@ -796,6 +796,10 @@ class TypedFnSignature {
     return untypedSignature_;
   }
 
+  inline bool isCompilerGenerated() const {
+    return untyped()->isCompilerGenerated();
+  }
+
   /** Returns the result of evaluating the where clause */
   WhereClauseResult whereClauseResult() const {
     return whereClauseResult_;

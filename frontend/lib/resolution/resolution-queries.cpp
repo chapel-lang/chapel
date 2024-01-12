@@ -3839,7 +3839,7 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                                          const types::Type* lhsType,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope) {
-  CHPL_ASSERT(lhsType->isRecordType() || lhsType->isUnionType());
+  if (!lhsType->getCompositeType()) return nullptr;
 
   // use the regular VAR kind for this query
   // (don't want a type-expr lhsType to be considered a TYPE here)
@@ -3862,23 +3862,53 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
   return c.mostSpecific().only().fn();
 }
 
-static const TypedFnSignature* tryResolveAssignHelper(
-    Context* context, const uast::AstNode* astForScopeOrErr,
-    const types::Type* t, bool asMethod) {
-  auto lhsType = QualifiedType(QualifiedType::CONST_REF, t);
-  auto rhsType = QualifiedType(QualifiedType::CONST_REF, t);
+const TypedFnSignature* tryResolveDeinit(Context* context,
+                                         const AstNode* astForScopeOrErr,
+                                         const types::Type* t,
+                                         const PoiScope* poiScope) {
+  if (!t->getCompositeType()) return nullptr;
+
+  QualifiedType qt(QualifiedType::VAR, t);
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(qt, USTR("this")));
+  auto ci = CallInfo(/* name */ USTR("deinit"),
+                     /* calledType */ qt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope, poiScope);
+  return c.mostSpecific().only().fn();
+}
+
+static const TypedFnSignature*
+tryResolveAssignHelper(Context* context,
+                       const uast::AstNode* astForScopeOrErr,
+                       const types::Type* lhsType,
+                       const types::Type* rhsType,
+                       bool asMethod) {
+  // Use 'var' here since actual types don't really matter, and some
+  // assignment operators (e.g., for 'owned') will mutate the RHS.
+  auto qtLhs = QualifiedType(QualifiedType::VAR, lhsType);
+  auto qtRhs = QualifiedType(QualifiedType::VAR, rhsType);
 
   std::vector<CallInfoActual> actuals;
   if (asMethod) {
-    actuals.push_back(CallInfoActual(lhsType, USTR("this")));
+    actuals.push_back(CallInfoActual(qtLhs, USTR("this")));
   }
-  actuals.push_back(CallInfoActual(lhsType, UniqueString()));
-  actuals.push_back(CallInfoActual(rhsType, UniqueString()));
+  actuals.push_back(CallInfoActual(qtLhs, UniqueString()));
+  actuals.push_back(CallInfoActual(qtRhs, UniqueString()));
   auto ci = CallInfo(/* name */ USTR("="),
-                     /* calledType */ lhsType,
+                     /* calledType */ qtLhs,
                      /* isMethodCall */ asMethod,
                      /* hasQuestionArg */ false,
-                     /* isParenless */ false, actuals);
+                     /* isParenless */ false,
+                     actuals);
   const Scope* scope = nullptr;
   if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
   auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope,
@@ -3888,17 +3918,20 @@ static const TypedFnSignature* tryResolveAssignHelper(
 
 // Tries to resolve an = that assigns a type from itself, first as a method and
 // then as a standalone operator.
-static const TypedFnSignature* tryResolveAssign(
-    Context* context, const uast::AstNode* astForScopeOrErr,
-    const types::Type* t) {
-  CHPL_ASSERT(t->isRecordType() || t->isUnionType());
-
-  const TypedFnSignature* res =
-      tryResolveAssignHelper(context, astForScopeOrErr, t, /* asMethod */ true);
-  if (!res)
-    res =
-        tryResolveAssignHelper(context, astForScopeOrErr, t, /* asMethod */ false);
-
+const TypedFnSignature*
+tryResolveAssign(Context* context,
+                 const uast::AstNode* astForScopeOrErr,
+                 const types::Type* lhsType,
+                 const types::Type* rhsType,
+                 const PoiScope* poiScope) {
+  auto res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+                                    rhsType,
+                                    /* asMethod */ true);
+  if (!res) {
+    res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+                                 rhsType,
+                                 /* asMethod */ false);
+  }
   return res;
 }
 
@@ -4122,7 +4155,7 @@ static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
       // determine copy/assignability, respectively.
       const TypedFnSignature* testResolvedSig =
           (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
-                         : tryResolveAssign(context, ast, ct));
+                         : tryResolveAssign(context, ast, ct, ct));
       if (testResolvedSig) {
         if (testResolvedSig->untyped()->isCompilerGenerated()) {
           // Check for class fields reducing copy/assignability; otherwise it

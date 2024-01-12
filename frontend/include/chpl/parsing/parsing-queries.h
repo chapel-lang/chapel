@@ -360,6 +360,16 @@ bool idIsPrivateDecl(Context* context, ID id);
 bool idIsFunction(Context* context, ID id);
 
 /**
+ Returns true if the ID is marked 'extern'.
+ */
+bool idIsExtern(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'export'.
+ */
+bool idIsExport(Context* context, ID id);
+
+/**
  Returns true if the ID is a method.
  */
 bool idIsMethod(Context* context, ID id);

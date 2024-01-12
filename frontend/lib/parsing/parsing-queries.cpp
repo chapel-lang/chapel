@@ -854,6 +854,28 @@ bool idIsFunction(Context* context, ID id) {
   return asttags::isFunction(tag);
 }
 
+static bool
+checkLinkage(Context* context, ID id, uast::Decl::Linkage linkage) {
+  if (id.isEmpty()) return false;
+  bool ret = false;
+
+  if (auto ast = parsing::idToAst(context, id)) {
+    if (auto decl = ast->toDecl()) {
+      ret = decl->linkage() == linkage;
+    }
+  }
+
+  return ret;
+}
+
+bool idIsExtern(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXTERN);
+}
+
+bool idIsExport(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXPORT);
+}
+
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {
   QUERY_BEGIN(idIsPrivateDeclQuery, context, id);
 

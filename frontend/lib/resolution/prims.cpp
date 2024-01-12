@@ -865,8 +865,11 @@ static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_EXTERN_TYPE");
-  return QualifiedType();
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    if (t->isExternType()) return true;
+    auto ct = t->getCompositeType();
+    return ct ? parsing::idIsExtern(context, ct->id()) : false;
+  });
 }
 
 static QualifiedType
@@ -906,10 +909,10 @@ primIsAbsEnumType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType
-primIsPod(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_POD");
-  return QualifiedType();
+static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return Type::isPod(context, t);
+  });
 }
 
 static QualifiedType
