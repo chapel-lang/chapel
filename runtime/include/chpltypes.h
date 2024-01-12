@@ -259,8 +259,8 @@ static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
   return CMPLX(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
-#define cmplx_re64(c) (_Generic((c), _complex128 : ((double *)&(c)))[0])
-#define cmplx_im64(c) (_Generic((c), _complex128 : ((double *)&(c)))[1])
+#define cmplx_re64(c) (((double *)&(c))[0])
+#define cmplx_im64(c) (((double *)&(c))[1])
   _complex128 val;
   cmplx_re64(val) = re;
   cmplx_im64(val) = im;
@@ -277,8 +277,8 @@ static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
   return CMPLXF(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
-#define cmplx_re32(c) (_Generic((c), _complex64 : ((float *)&(c)))[0])
-#define cmplx_im32(c) (_Generic((c), _complex64 : ((float *)&(c)))[1])
+#define cmplx_re32(c) (((float *)&(c))[0])
+#define cmplx_im32(c) (((float *)&(c))[1])
   _complex64 val;
   cmplx_re32(val) = re;
   cmplx_im32(val) = im;
