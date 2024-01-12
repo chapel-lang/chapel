@@ -242,6 +242,18 @@ compositeTypeIsPod(Context* context, const Type* t) {
   const uast::AstNode* ast = nullptr;
   if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
 
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!Type::isPod(context, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
   if (auto tfs = tryResolveDeinit(context, ast, t)) {
     if (!tfs->isCompilerGenerated()) return false;
   }
@@ -252,18 +264,7 @@ compositeTypeIsPod(Context* context, const Type* t) {
     if (!tfs->isCompilerGenerated()) return false;
   }
 
-  bool ret = true;
-  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
-  for (int i = 0; i < rf.numFields(); i++) {
-    if (auto ft = rf.fieldType(i).type()) {
-      ret = Type::isPod(context, ft);
-    } else {
-      ret = false;
-    }
-    if (!ret) break;
-  }
-
-  return ret;
+  return true;
 }
 
 static const bool&
@@ -276,6 +277,7 @@ compositeTypeIsPodQuery(Context* context, const Type* t) {
 bool Type::isPod(Context* context, const Type* t) {
   if (t->isUnknownType() || t->isErroneousType() ||
       t->isAnyType()) return false;
+  if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
   if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
   if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
   if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
@@ -285,11 +287,13 @@ bool Type::isPod(Context* context, const Type* t) {
   if (auto cls = t->toClassType()) {
     if (cls->decorator().isManaged()) return false;
   }
+  // TODO: We might like to be able to mark something as POD if it contains
+  // all marked-as-POD members (e.g., all ranges) even if it is generic.
+  // Currently, we can't do that, because call resolution can't get far
+  // when given a generic actual.
   auto g = resolution::getTypeGenericity(context, t);
-  if (g == Type::GENERIC || g == Type::MAYBE_GENERIC) return false;
-  if (t->getCompositeType()) {
-    return compositeTypeIsPodQuery(context, t);
-  }
+  if (g != Type::CONCRETE) return false;
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
   return true;
 }
 

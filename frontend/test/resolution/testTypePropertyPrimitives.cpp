@@ -588,7 +588,12 @@ static void test12() {
             }
             record r8 {}
             operator=(lhs: r8, rhs: r8) {}
+            // Should be marked POD irregardless of the generic.
+            pragma "plain old data"
+            record r9 { type T; var x: T; }
             class c1 { var x: int; }
+            record r10 { var x: owned c1?; }
+            record r11 { var x: r9; }
             )""",
     .primitive = chpl::uast::primtags::PRIM_IS_POD,
     .calls = {
@@ -620,6 +625,12 @@ static void test12() {
       { {"r6"}, Test::FALSE },
       { {"r7"}, Test::FALSE },
       { {"r8"}, Test::FALSE },
+      { {"r9"}, Test::TRUE },
+      { {"r10"}, Test::FALSE },
+      // TODO: Currently marked as non-POD even though all the members are
+      // marked as POD - this is because 'r9' is technically generic, which
+      // causes problems.
+      { {"r11"}, Test::FALSE },
       { {"c1"}, Test::FALSE },
       { {"owned c1"}, Test::FALSE },
       { {"owned c1?"}, Test::FALSE },

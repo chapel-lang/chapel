@@ -3867,8 +3867,10 @@ tryResolveAssignHelper(Context* context,
                        const types::Type* lhsType,
                        const types::Type* rhsType,
                        bool asMethod) {
-  auto qtLhs = QualifiedType(QualifiedType::CONST_REF, lhsType);
-  auto qtRhs = QualifiedType(QualifiedType::CONST_REF, rhsType);
+  // Use 'var' here since actual types don't really matter, and some
+  // assignment operators (e.g., for 'owned') will mutate the RHS.
+  auto qtLhs = QualifiedType(QualifiedType::VAR, lhsType);
+  auto qtRhs = QualifiedType(QualifiedType::VAR, rhsType);
 
   std::vector<CallInfoActual> actuals;
   if (asMethod) {

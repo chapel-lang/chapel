@@ -292,17 +292,21 @@ class Type {
 
   /** Given a type 't', determine if 't' is "plain-old-data" (POD).
 
+      If 't' is marked with the pragma "plain old data" then it is
+      always considered to be POD, and no further evaluation takes
+      place.
+
       If 't' is the sync type, the single type, an atomic type, the
       array type, or the domain type, then 't' is not POD.
-
-      If 't' is a record or union type with a user-defined 'deinit',
-      'init=', or assignment operator, then 't' is not POD.
 
       If 't' is a class with 'owned' or 'shared' management, then 't'
       is not POD.
 
       If 't' is a record, class, or union type, and any member of 't'
       is not POD, then 't' is not POD.
+
+      If 't' is a record or union type with a user-defined 'deinit',
+      'init=', or assignment operator, then 't' is not POD.
 
       If 't' is generic then it is considered to be not POD for the
       purposes of this evaluation.
