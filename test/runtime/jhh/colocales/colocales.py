@@ -45,8 +45,15 @@ def skipif():
     env = {k.strip():v for k,v in printchplenv.ENV_VALS.items()}
 
     # Verify Chapel configuration
+
+    # Tests requires hwloc
     if env.get('CHPL_HWLOC', 'none') == 'none':
         skipReason = "CHPL_HWLOC == none"
+        return
+
+    # Don't test in multi-locale configurations
+    if env.get('CHPL_COMM', 'none') != 'none':
+        skipReason = "CHPL_COMM != none"
         return
 
 def stringify(lst):
@@ -264,7 +271,10 @@ def main(argv):
     compiler = argv[1]
     os.environ['CHPL_COMPILER'] = compiler
     del argv[1]
-    localDir = sub_test.get_local_dir(sub_test.get_chpl_base(compiler))
+    baseDir = sub_test.get_chpl_base(compiler)
+    homeDir = sub_test.get_chpl_home(baseDir)
+    testDir = sub_test.get_test_dir(homeDir)
+    localDir = sub_test.get_local_dir(testDir)
     name = os.path.join(localDir, argv[0])
     base = os.path.splitext(os.path.basename(argv[0]))[0]
 
