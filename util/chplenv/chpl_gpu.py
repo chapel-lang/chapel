@@ -78,11 +78,7 @@ def determine_gpu_type():
 
 def get_llvm_override():
     if get() == 'amd':
-        print('version', get_sdk_version())
-        print(get_sdk_version().split('.'))
-        print(get_sdk_version().split('.')[0] == '5')
         if get_sdk_version().split('.')[0] == '5':
-            print('want to override')
             return '{}/llvm/bin/llvm-config'.format(get_sdk_path('amd'))
         pass
     return 'none'
