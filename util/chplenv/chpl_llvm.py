@@ -89,9 +89,14 @@ def get_llvm_config_version(llvm_config):
             got_version = got_out
 
         if chpl_gpu.get() == 'amd':
-            # strip the "git" suffix
-            if got_version[-4:] == 'git':
-                got_version = got_version[:-4]
+            # strip the "git" suffix. This is a TODO. We want to be able to
+            # detect LLVM "nightly" versions because ROCm seems to ship with
+            # those. A sign for that is the `git` suffix at the end of the
+            # version string. As of today 15.0.0git works for us as, I believe,
+            # it is pretty close to 15.0.0 proper.
+            got_version = got_version.strip()
+            if got_version[-3:] == 'git':
+                got_version = got_version[:-3]
     return got_version
 
 # Returns the full output of clang --version for the passed clang command.

@@ -221,42 +221,21 @@ def _validate_cuda_version_impl():
     MIN_REQ_VERSION = "7"
     MAX_REQ_VERSION = "13"
 
-    chpl_cuda_path = get_sdk_path('nvidia')
-    version_file_json = '%s/version.json' % chpl_cuda_path
-    version_file_txt = '%s/version.txt' % chpl_cuda_path
-    cudaVersion = None
-    if os.path.exists(version_file_json):
-        f = open(version_file_json)
-        version_json = json.load(f)
-        f.close()
-        cudaVersion = version_json["cuda"]["version"]
-    elif os.path.exists(version_file_txt):
-        txt = open(version_file_txt).read()
-        match = re.search(r'\d+\.\d+\.\d+', txt)
-        if match:
-            cudaVersion = match.group()
-    if cudaVersion is None:
-        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
-            ["nvcc", "--version"])
-        if exists and returncode == 0:
-            pattern = r"Cuda compilation tools, release ([\d\.]+)"
-            match = re.search(pattern, my_stdout)
-            if match:
-                cudaVersion = match.group(1)
+    cuda_version = get_sdk_version()
 
-    if cudaVersion is None:
+    if cuda_version is None:
         _reportMissingGpuReq("Unable to determine CUDA version.")
         return False
 
-    if not is_ver_in_range(cudaVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(cuda_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
       _reportMissingGpuReq(
             "Chapel requires a CUDA version between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, cudaVersion))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, cuda_version))
       return False
 
     # CUDA 12 requires the bundled LLVM or the major LLVM version must be >15
-    if is_ver_in_range(cudaVersion, "12", "13"):
+    if is_ver_in_range(cuda_version, "12", "13"):
         llvm = chpl_llvm.get()
         if llvm == "system":
             llvm_config = chpl_llvm.find_system_llvm_config()
@@ -294,7 +273,33 @@ def get_sdk_version():
                 match = re.search(r"rocm?-([\d\.]+)", my_stdout)
                 if match:
                     rocm_version = match.group(1)
-    return rocm_version
+        return rocm_version
+    
+    if get() == 'nvidia':
+        chpl_cuda_path = get_sdk_path('nvidia')
+        version_file_json = '%s/version.json' % chpl_cuda_path
+        version_file_txt = '%s/version.txt' % chpl_cuda_path
+        cuda_version = None
+        if os.path.exists(version_file_json):
+            f = open(version_file_json)
+            version_json = json.load(f)
+            f.close()
+            cuda_version = version_json["cuda"]["version"]
+        elif os.path.exists(version_file_txt):
+            txt = open(version_file_txt).read()
+            match = re.search(r'\d+\.\d+\.\d+', txt)
+            if match:
+                cuda_version = match.group()
+        if cuda_version is None:
+            exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+                ["nvcc", "--version"])
+            if exists and returncode == 0:
+                pattern = r"Cuda compilation tools, release ([\d\.]+)"
+                match = re.search(pattern, my_stdout)
+                if match:
+                    cuda_version = match.group(1)
+        return cuda_version
+
 
 def _validate_rocm_version_impl():
     """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
