@@ -125,7 +125,7 @@ module Iterators {
         // not checking here whether the new low and high fit into idxType
         var low = (stride * followThis(i).lowBound:strType):idxType;
         var high = (stride * followThis(i).highBound:strType):idxType;
-        t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType).safeCast(t(i).type);
+        t(i) = ((low..high by stride:strType) + whole.dim(i).low by followThis(i).stride:strType) : (t(i).type);
       }
       for i in {(...t)} {
         yield i;

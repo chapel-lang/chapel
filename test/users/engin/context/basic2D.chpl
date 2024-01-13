@@ -7,7 +7,7 @@ config const n = 8;
 
 
 
-var dom = Block.createDomain(0..<n, 0..<n);
+var dom = blockDist.createDomain(0..<n, 0..<n);
 var arr: [dom] int;
 
 type ctx1 = Context(1, int(64));

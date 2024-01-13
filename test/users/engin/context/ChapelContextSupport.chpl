@@ -15,13 +15,13 @@ module ChapelContextSupport {
 
     proc init() {
       this.rank = 1;
-      this.complete();
+      init this;
       // this is a loop context and not an iterator context
     }
 
     proc init(param rank, taskId, numTasks) {
       this.rank=rank;
-      this.complete();
+      init this;
       this.taskId = taskId;
       this.numTasks = numTasks;
     }
