@@ -7,6 +7,7 @@ import re
 
 import chpl_bin_subdir, chpl_arch, chpl_compiler, chpl_platform, overrides
 from chpl_home_utils import get_chpl_third_party, get_chpl_home
+import chpl_gpu
 from utils import which, memoize, error, run_command, try_run_command, warning
 from collections import defaultdict
 
@@ -87,6 +88,10 @@ def get_llvm_config_version(llvm_config):
         if exists and returncode == 0:
             got_version = got_out
 
+        if chpl_gpu.get() == 'amd':
+            # strip the "git" suffix
+            if got_version[-4:] == 'git':
+                got_version = got_version[:-4]
     return got_version
 
 # Returns the full output of clang --version for the passed clang command.
@@ -238,6 +243,11 @@ def find_system_llvm_config():
     llvm_config = overrides.get('CHPL_LLVM_CONFIG', 'none')
     if llvm_config != 'none':
         return llvm_config
+
+    llvm_config = chpl_gpu.get_llvm_override()
+    if llvm_config != 'none':
+        return llvm_config
+
 
     homebrew_prefix = chpl_platform.get_homebrew_prefix()
 

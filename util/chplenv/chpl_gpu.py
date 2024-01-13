@@ -76,6 +76,17 @@ def determine_gpu_type():
        ", ".join(GPU_TYPES.keys())))
     return None;
 
+def get_llvm_override():
+    if get() == 'amd':
+        print('version', get_sdk_version())
+        print(get_sdk_version().split('.'))
+        print(get_sdk_version().split('.')[0] == '5')
+        if get_sdk_version().split('.')[0] == '5':
+            print('want to override')
+            return '{}/llvm/bin/llvm-config'.format(get_sdk_path('amd'))
+        pass
+    return 'none'
+
 @memoize
 def get():
     if chpl_locale_model.get() != 'gpu':
@@ -261,6 +272,29 @@ def _validate_cuda_version_impl():
 
     return True
 
+def get_sdk_version():
+    if get() == 'amd':
+        chpl_rocm_path = get_sdk_path('amd')
+        files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
+            '%s/.info/version-libs' % chpl_rocm_path]
+
+        version_filename = None
+        for fname in files_to_try:
+           if os.path.exists(fname):
+               version_filename = fname
+               break
+
+        rocm_version = None
+        if version_filename is not None:
+            rocm_version = open(version_filename).read()
+        else:
+            exists, returncode, my_stdout, my_stderr = utils.try_run_command(
+                ["hipcc", "--version"])
+            if exists and returncode == 0:
+                match = re.search(r"rocm?-([\d\.]+)", my_stdout)
+                if match:
+                    rocm_version = match.group(1)
+    return rocm_version
 
 def _validate_rocm_version_impl():
     """Check that the installed ROCM version is >= MIN_REQ_VERSION and <
@@ -268,36 +302,17 @@ def _validate_rocm_version_impl():
     MIN_REQ_VERSION = "4"
     MAX_REQ_VERSION = "5.5"
 
-    chpl_rocm_path = get_sdk_path('amd')
-    files_to_try = ['%s/.info/version-hiprt' % chpl_rocm_path,
-        '%s/.info/version-libs' % chpl_rocm_path]
+    rocm_version = get_sdk_version()
 
-    version_filename = None
-    for fname in files_to_try:
-       if os.path.exists(fname):
-           version_filename = fname
-           break
-
-    rocmVersion = None
-    if version_filename is not None:
-        rocmVersion = open(version_filename).read()
-    else:
-        exists, returncode, my_stdout, my_stderr = utils.try_run_command(
-            ["hipcc", "--version"])
-        if exists and returncode == 0:
-            match = re.search(r"rocm?-([\d\.]+)", my_stdout)
-            if match:
-                rocmVersion = match.group(1)
-
-    if rocmVersion is None:
+    if rocm_version is None:
         _reportMissingGpuReq("Unable to determine ROCm version.")
         return False
 
-    if not is_ver_in_range(rocmVersion, MIN_REQ_VERSION, MAX_REQ_VERSION):
+    if not is_ver_in_range(rocm_version, MIN_REQ_VERSION, MAX_REQ_VERSION):
         _reportMissingGpuReq(
             "Chapel requires ROCm to be a version between %s and %s, "
             "detected version %s on system." %
-            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocmVersion))
+            (MIN_REQ_VERSION, MAX_REQ_VERSION, rocm_version))
         return False
 
     return True
