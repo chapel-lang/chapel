@@ -87,20 +87,9 @@ def run_lsp(driver):
                 )
                 diagnostics.append(diagnostic)
 
-        kind_to_severity = {
-            "error": DiagnosticSeverity.Error,
-            "syntax": DiagnosticSeverity.Error,
-            "note": DiagnosticSeverity.Information,
-            "warning": DiagnosticSeverity.Warning,
-        }
-
-        for error in errors:
-            diagnostic = Diagnostic(
-                range= chapel.lsp.location_to_range(error.location()),
-                message="{}: [{}]: {}".format(error.kind().capitalize(), error.type(), error.message()),
-                severity=kind_to_severity[error.kind()]
-            )
-            diagnostics.append(diagnostic)
+        # process the errors from syntax/scope resolution
+        # TODO: should chplcheck still do this?
+        diagnostics += list([chapel.lsp.error_to_diagnostic(e) for e in errors])
         return diagnostics
 
     # The following functions are handlers for LSP events received by the server.

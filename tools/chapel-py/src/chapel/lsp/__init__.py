@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-from lsprotocol.types import Position, Range
+from lsprotocol.types import Position, Range, Diagnostic, DiagnosticSeverity
 
 
 def location_to_range(location) -> Range:
@@ -33,3 +33,23 @@ def location_to_range(location) -> Range:
         start=Position(start[0] - 1, start[1] - 1),
         end=Position(end[0] - 1, end[1]),
     )
+
+def error_to_diagnostic(error) -> Diagnostic:
+    """
+    Convert a Chapel error into a lsprotocol.types Diagnostic
+    """
+    kind_to_severity = {
+        "error": DiagnosticSeverity.Error,
+        "syntax": DiagnosticSeverity.Error,
+        "note": DiagnosticSeverity.Information,
+        "warning": DiagnosticSeverity.Warning,
+    }
+
+    diagnostic = Diagnostic(
+        range=location_to_range(error.location()),
+        message="{}: [{}]: {}".format(
+            error.kind().capitalize(), error.type(), error.message()
+        ),
+        severity=kind_to_severity[error.kind()],
+    )
+    return diagnostic

@@ -25,9 +25,15 @@ import itertools
 
 
 import chapel.core
-from chapel.lsp import location_to_range
+from chapel.lsp import location_to_range, error_to_diagnostic
 from pygls.server import LanguageServer
-from lsprotocol.types import Location, Diagnostic, Range, Position, DiagnosticSeverity
+from lsprotocol.types import (
+    Location,
+    Diagnostic,
+    Range,
+    Position,
+    DiagnosticSeverity,
+)
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
@@ -91,8 +97,6 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
             return SymbolKind.Operator
         else:
             return SymbolKind.Function
-    elif isinstance(decl, chapel.core.Variable) and decl.is_field():
-        return SymbolKind.Field
     elif isinstance(decl, chapel.core.Variable):
         if decl.is_field():
             return SymbolKind.Field
@@ -114,7 +118,9 @@ def get_symbol_information(
         # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
         # using symbol information for now, as it sort-of autogets the tree structure
         is_deprecated = chapel.is_deprecated(decl)
-        return SymbolInformation(loc, decl.name(), kind, deprecated=is_deprecated)
+        return SymbolInformation(
+            loc, decl.name(), kind, deprecated=is_deprecated
+        )
     return None
 
 
@@ -127,8 +133,11 @@ class NodeAndRange:
         self.rng = location_to_range(self.node.location())
 
     def get_location(self):
+        return Location(self.get_uri(), self.rng)
+
+    def get_uri(self):
         path = self.node.location().path()
-        return Location(f"file://{path}", self.rng)
+        return f"file://{path}"
 
 
 @dataclass
@@ -149,18 +158,28 @@ class FileInfo:
 
     def parse_file(self) -> List[chapel.core.AstNode]:
         """
-        Given a file URI, return the ASTs making up that file. Advances
-        the context if one already exists to make sure an updated result
-        is returned.
+        Parses this file and returns the toplevel ast elements
+
+        Note: if there are errors they will be printed to the console.
+        This call should be wrapped an appropriate error context.
         """
 
         return self.context.parse(self.uri[len("file://") :])
 
     def get_asts(self) -> List[chapel.core.AstNode]:
+        """
+        Returns toplevel ast elements. This method silences all errors.
+        """
         with self.context.track_errors() as _:
             return self.parse_file()
 
     def rebuild_segments(self):
+        """
+        Rebuild the cached line info and siblings information
+
+        Note: this is a potentially expensive operation, it should only be done
+        when advancing the revision
+        """
         asts = self.get_asts()
         # get ids
         self.segments = [
@@ -171,30 +190,32 @@ class FileInfo:
         self.segments.sort(key=lambda s: s.ident.rng.start)
         self.siblings = chapel.SiblingMap(self.get_asts())
 
+    def get_segment_at_position(
+        self, position: Position
+    ) -> Optional[ResolvedPair]:
+        """lookup a segment based upon a Position, likely a user mouse location"""
+        idx = bisect_right(
+            self.segments, position, key=lambda s: s.ident.rng.start
+        )
+        idx -= 1
+        if not (idx >= 0 and position < self.segments[idx].ident.rng.end):
+            return None
+        return self.segments[idx]
+
 
 def run_lsp():
     """
-    Start a language server on the standard input/output, and use it to
-    report linter warnings as LSP diagnostics.
+    Start a language server on the standard input/output
     """
-
-    server = LanguageServer("chplcheck", "v0.1")
+    server = LanguageServer("chpl-language-server", "v0.1")
 
     contexts: Dict[str, FileInfo] = {}
 
-    def get_context(uri: str, do_update: bool = False) -> Tuple[FileInfo, List[Any]]:
+    def get_context(
+        uri: str, do_update: bool = False
+    ) -> Tuple[FileInfo, List[Any]]:
         """
-        The LSP driver maintains one Chapel context per-file. This is to avoid
-        having to reset all files' text etc. when a single file is updated.
-        There may be a more principled approach we can take in the future.
-
-        This function returns an _update_ context, which is effectively a context
-        in which we can save / make use of updated file text. If there wasn't
-        a context for a URI, a brand new context will do. For existing contexts,
-        an older version of the file's text is probably stored, so advance
-        the context to next revision, invalidating that cache.
-
-        Thus, this method is effectively allocate-or-advance-context.
+        The LSP driver maintains one Chapel context per-file. If there is no context, this function creates a context. If `do_update` is set, this function assumes the file content has change and advances revisions.
         """
 
         errors = []
@@ -213,10 +234,10 @@ def run_lsp():
 
         return (file_info, errors)
 
-    def build_diagnostics(uri):
+    def build_diagnostics(uri: str) -> List[Diagnostic]:
         """
-        Parse a file at a particular URI, run the linter rules on the resulting
-        ASTs, and return them as LSP diagnostics.
+        Parse a file at a particular URI, capture the errors, and return then
+        as a list of LSP Diagnostics.
         """
 
         fi, errors = get_context(uri, do_update=True)
@@ -224,24 +245,7 @@ def run_lsp():
             _ = fi.parse_file()
         errors.extend(new_errors)
 
-        diagnostics = []
-
-        kind_to_severity = {
-            "error": DiagnosticSeverity.Error,
-            "syntax": DiagnosticSeverity.Error,
-            "note": DiagnosticSeverity.Information,
-            "warning": DiagnosticSeverity.Warning,
-        }
-
-        for error in errors:
-            diagnostic = Diagnostic(
-                range=location_to_range(error.location()),
-                message="{}: [{}]: {}".format(
-                    error.kind().capitalize(), error.type(), error.message()
-                ),
-                severity=kind_to_severity[error.kind()],
-            )
-            diagnostics.append(diagnostic)
+        diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
 
     # The following functions are handlers for LSP events received by the server.
@@ -261,14 +265,8 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segments = fi.segments
-
-        idx = (
-            bisect_right(segments, params.position, key=lambda s: s.ident.rng.start) - 1
-        )
-        if idx >= 0 and params.position < segments[idx].ident.rng.end:
-            return segments[idx].resolved_to.get_location()
-
+        if segment := fi.get_segment_at_position(params.position):
+            return segment.resolved_to.get_location()
         return None
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
@@ -288,7 +286,9 @@ def run_lsp():
         syms = [
             si
             for node, _ in chapel.each_matching(
-                fi.get_asts(), chapel.core.NamedDecl, iterator=preorder_ignore_funcs
+                fi.get_asts(),
+                chapel.core.NamedDecl,
+                iterator=preorder_ignore_funcs,
             )
             if (si := get_symbol_information(node, text_doc.uri))
         ]
@@ -300,25 +300,21 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segments = fi.segments
-
-        idx = (
-            bisect_right(segments, params.position, key=lambda s: s.ident.rng.start) - 1
-        )
-        if not (idx >= 0 and params.position < segments[idx].ident.rng.end):
+        segment = fi.get_segment_at_position(params.position)
+        if not segment:
             return None
+        resolved_to = segment.resolved_to
+        node_fi, _ = get_context(resolved_to.get_uri())
 
-        node = segments[idx].resolved_to.node
-        node_path = node.location().path()
-        node_fi, _ = get_context(f"file://{node_path}")
-
-        signature = get_symbol_sig(node)
-        docstring = chapel.get_docstring(node, node_fi.siblings)
+        signature = get_symbol_sig(resolved_to.node)
+        docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
             text += f"\n---\n{docstring}"
         content = MarkupContent(MarkupKind.Markdown, text)
-        return Hover(content, range=segments[idx].resolved_to.get_location().range)
+        return Hover(
+            content, range=resolved_to.get_location().range
+        )
 
     server.start_io()
 

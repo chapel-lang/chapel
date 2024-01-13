@@ -76,7 +76,7 @@ static const char* intentToString(IntentType intent) {
   return qualifierToString(Qualifier(int(intent)));
 }
 
-static const ID scopeResolveVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
+static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
   if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
     auto useParent = parsing::parentAst(context, visibilityStmt);
     auto scope = resolution::scopeForId(context, useParent->id());
@@ -90,9 +90,10 @@ static const ID scopeResolveVisibilityStmt(Context* context, const AstNode* visi
   return ID();
 }
 
-static const ID scopeResolveFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
+static const ID scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
   if (auto fn = fnNode->toFunction()) {
-    auto byId = resolution::scopeResolveFunction(context, fn->id())->resolutionById();
+    auto byId =
+        resolution::scopeResolveFunction(context, fn->id())->resolutionById();
     if (auto res = byId.byAstOrNull(node)) {
       return res->toId();
     }
@@ -100,7 +101,7 @@ static const ID scopeResolveFunction(Context* context, const AstNode* fnNode, co
   return ID();
 }
 
-static const ID scopeResolveModule(Context* context, const AstNode* modNode, const AstNode* node) {
+static const ID scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
   if (auto mod = modNode->toModule()) {
     auto byId = resolution::scopeResolveModule(context, mod->id());
     if (auto res = byId.byAstOrNull(node)) {
@@ -113,11 +114,11 @@ static const ID scopeResolveModule(Context* context, const AstNode* modNode, con
 static const ID scopeResolveResultsForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    if (auto id = scopeResolveFunction(context, search, node)) {
+    if (auto id = scopeResolveViaFunction(context, search, node)) {
       return id;
-    } else if (auto id = scopeResolveModule(context, search, node)) {
+    } else if (auto id = scopeResolveViaModule(context, search, node)) {
       return id;
-    } else if(auto id = scopeResolveVisibilityStmt(context, search, node)) {
+    } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
       return id;
     }
     search = parsing::parentAst(context, search);
