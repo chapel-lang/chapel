@@ -54,6 +54,52 @@ from lsprotocol.types import (
 
 # TODO: for now, just text based. but should resolve generic types
 def get_symbol_sig(node: chapel.core.AstNode):
+    assert isinstance(node, chapel.core.NamedDecl)
+
+    def node_to_string(node: chapel.core.AstNode) -> str:
+        if isinstance(node, chapel.core.NamedDecl):
+            return get_symbol_sig(node)
+        elif isinstance(node, chapel.core.Identifier):
+            return node.name()
+        elif isinstance(node, chapel.core.IntLiteral):
+            return node.text()
+        elif isinstance(node, chapel.core.UintLiteral):
+            return node.text()
+        elif isinstance(node, chapel.core.BoolLiteral):
+            return node.value()
+        elif isinstance(node, chapel.core.ImagLiteral):
+            return node.text()
+        elif isinstance(node, chapel.core.RealLiteral):
+            return node.text()
+        elif isinstance(node, chapel.core.StringLiteral):
+            return '"' + node.value() + '"'
+        elif isinstance(node, chapel.core.CStringLiteral):
+            return 'c"' + node.value() + '"'
+        return ""
+
+    def var_to_string(node: chapel.core.VarLikeDecl) -> str:
+        s = ""
+        if isinstance(node, chapel.core.Variable):
+            if node.is_config():
+                s += "config "
+            if k := intent_to_string(node.kind()):
+                s += f"{k} "
+        s += node.name()
+        if type_ := node.type_expression():
+            s += f": {node_to_string(type_)}"
+        if init := node.init_expression():
+            s += f" = {node_to_string(init)}"
+        return s
+
+    def intent_to_string(intent: Optional[str]) -> str:
+        remap = {
+            "<default-intent>": "",
+            "<index>": "",
+            "<const-var>": "const",
+        }
+        # use 'intent' as the default, so if no remap no work done
+        return remap.get(intent, intent) if intent else ""
+
     if isinstance(node, chapel.core.Class):
         s = ""
         if (ie := list(node.inherit_exprs())) and len(ie) > 0:
@@ -70,8 +116,9 @@ def get_symbol_sig(node: chapel.core.AstNode):
         return f"module {node.name()}"
     elif isinstance(node, chapel.core.Enum):
         return f"enum {node.name()}"
+    elif isinstance(node, chapel.core.Variable):
+        return var_to_string(node)
 
-    assert isinstance(node, chapel.core.NamedDecl)
     return node.name()
 
 
@@ -312,9 +359,7 @@ def run_lsp():
         if docstring:
             text += f"\n---\n{docstring}"
         content = MarkupContent(MarkupKind.Markdown, text)
-        return Hover(
-            content, range=resolved_to.get_location().range
-        )
+        return Hover(content, range=resolved_to.get_location().range)
 
     server.start_io()
 
