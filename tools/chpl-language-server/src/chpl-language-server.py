@@ -75,7 +75,7 @@ def get_symbol_sig(node: chapel.core.AstNode):
             return '"' + node.value() + '"'
         elif isinstance(node, chapel.core.CStringLiteral):
             return 'c"' + node.value() + '"'
-        return ""
+        return "<...>"
 
     def var_to_string(node: chapel.core.VarLikeDecl) -> str:
         s = ""
