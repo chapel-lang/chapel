@@ -30,5 +30,6 @@ def location_to_range(location) -> Range:
     end = location.end()
     # NOTE: we want the char number to be one extra, otherwise single character identifiers don't work right
     return Range(
-        start=Position(start[0] - 1, start[1] - 1), end=Position(end[0] - 1, end[1])
+        start=Position(start[0] - 1, start[1] - 1),
+        end=Position(end[0] - 1, end[1]),
     )
