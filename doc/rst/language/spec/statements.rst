@@ -602,7 +602,7 @@ support iteration over a 2D `m` x `n` space as well.
 
    .. code-block:: printoutput
 
-      1 4 2 5 3 6
+      1 4 2 5 3 6 
 
 .. _Parameter_For_Loops:
 

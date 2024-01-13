@@ -1796,9 +1796,9 @@ proc _norm(x: [?D], param p: normType) where x.rank == 2 {
 }
 
 /* Return the solution ``x`` to the linear system ``L * x = b``
-    where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
-    will assume the diagonal elements as `1` and will not be referenced
-    within this procedure.
+   where ``L`` is a lower triangular matrix. Setting `unit_diag` to true
+   will assume the diagonal elements as `1` and will not be referenced
+   within this procedure.
 
    .. note::
 
@@ -1826,7 +1826,7 @@ proc solve_tril(const ref L: [?Ldom] ?eltType, const ref b: [?bdom] eltType,
 }
 
 /* Return the solution ``x`` to the linear system ``U * x = b``
-    where ``U`` is an upper triangular matrix.
+   where ``U`` is an upper triangular matrix.
 
    .. note::
 
@@ -2276,7 +2276,9 @@ proc eig(A: [] ?t, param left = false, param right = false)
                    eltType=real);
     var (U, s, Vh) = svd(A);
 
-  :throws LinearAlgebraError: if the SVD computation does not converge or an illegal argument, such as a matrix containing a ``NAN`` value, is given.
+  :throws LinearAlgebraError: if the SVD computation does not converge or an
+                              illegal argument, such as a matrix containing a
+                              ``NAN`` value, is given.
 
   .. note::
 
@@ -2421,8 +2423,8 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
 }
 
 /*
-  Matrix exponential using Pade approximation. This method returns square matrix which
-  is matrix exponential of ``A``.
+  Matrix exponential using Pade approximation. This method returns a square matrix which
+  is the matrix exponential of ``A``.
 
   :arg A: Expects a square matrix.
   :type A: `A`
@@ -2430,7 +2432,7 @@ proc kron(A: [?ADom] ?eltType, B: [?BDom] eltType) {
   :arg useExactOneNorm: boolean value specifying if the onenorm has to be exact. Defaults to `true`.
   :type useExactOneNorm: bool
 
-  :throws LinearAlgebraError: If input matrix is not square matrix.
+  :throws LinearAlgebraError: If the input matrix is not a square matrix.
 
   :returns: Matrix exponential of the given matrix.
   :rtype: `A`
@@ -2543,7 +2545,7 @@ private proc solvePQ(U: [?D], V: [D]) where !usingLAPACK {
   :returns: Matrix a tuple of sin and cosine of the given matrix.
   :rtype: (`A`, `A`)
 
-  :throws LinearAlgebraError: If input matrix is not square matrix.
+  :throws LinearAlgebraError: If the input matrix is not a square matrix.
 */
 proc sincos(A: []) throws {
   if A.eltType == real {
@@ -2570,7 +2572,7 @@ proc sincos(A: []) throws {
   :returns: Matrix returns the sine of the given matrix.
   :rtype: `A`
 
-  :throws LinearAlgebraError: If input matrix is not square matrix.
+  :throws LinearAlgebraError: If the input matrix is not a square matrix.
 */
 proc sinm(A: []) throws {
   if A.eltType == real {
@@ -2592,7 +2594,7 @@ proc sinm(A: []) throws {
   :returns: Matrix returns the cosine of the given matrix.
   :rtype: `A`
 
-  :throws LinearAlgebraError: If input matrix is not square matrix.
+  :throws LinearAlgebraError: If the input matrix is not a square matrix.
 */
 proc cosm(A: []) throws {
   if A.eltType == real {
