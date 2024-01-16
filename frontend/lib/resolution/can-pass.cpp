@@ -333,8 +333,14 @@ bool
 CanPassResult::canConvertCPtr(Context* context,
                               const Type* actualT,
                               const Type* formalT) {
-  if (actualT->isCPtrType()) {
+  if (auto actualPtr = actualT->toCPtrType()) {
     if (auto formalPtr = formalT->toCPtrType()) {
+      // Allow constness casts: an int* can be a const int*.
+      // In Chapel lingo, `c_ptr(int)` is passable to `c_ptrConst(int)`.
+      if (formalPtr->isConst() && !actualPtr->isConst() &&
+          formalPtr->eltType() == actualPtr->eltType())
+        return true;
+
       return formalPtr->isVoidPtr();
     } else {
       // Check for old c_void_ptr behavior.

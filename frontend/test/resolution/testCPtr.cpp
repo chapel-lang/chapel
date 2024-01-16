@@ -245,6 +245,14 @@ static void test17() {
   });
 }
 
+static void test18() {
+  testCPtrArg("c_ptrConst(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(t);
+    assert(t->isConst());
+    assert(t->eltType()->isIntType());
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -263,6 +271,7 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
 
   return 0;
 }
