@@ -254,22 +254,37 @@ module AutoMath {
 
      In concert with the related :proc:`phase` (a.k.a. argument)
      of `x`, it can be used to recompute `x`.
-
-     :rtype: ``real(w/2)`` when `x` has a type of ``complex(w)``.
   */
-  inline proc abs(x : complex(?w)): real(w/2) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cabsf(x: complex(64)): real(32);
+  inline proc abs(x : complex(128)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cabs(x: complex(128)): real(64);
-    if w == 64 then
-      return cabsf(x);
-    else
-      return cabs(x);
+    return cabs(x);
   }
 
+  /* Returns the magnitude of a ``param`` ``complex(128)``.
+  */
+  proc abs(param x : complex(128)) param :real(64) {
+    return __primitive("abs", x);
+  }
+
+  /* Returns the magnitude (often called modulus) of complex `x`.
+
+     In concert with the related :proc:`phase` (a.k.a. argument)
+     of `x`, it can be used to recompute `x`.
+  */
+  inline proc abs(x : complex(64)): real(32) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cabsf(x: complex(64)): real(32);
+    return cabsf(x);
+  }
+
+  /* Returns the magnitude of a ``param`` ``complex(64)``.
+  */
+  proc abs(param x : complex(64)) param :real(32) {
+    return __primitive("abs", x);
+  }
 
   /* Returns the absolute value of the integer argument.
 
