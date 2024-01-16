@@ -88,7 +88,8 @@ class LintDriver:
 
     def _is_unstable_module(node):
         if isinstance(node, chapel.core.Module):
-            if attrs := node.attribute_group():
+            attrs = node.attribute_group()
+            if attrs:
                 if attrs.is_unstable():
                     return True
         return False
