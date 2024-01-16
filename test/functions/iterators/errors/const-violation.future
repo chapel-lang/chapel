@@ -1,0 +1,2 @@
+bug: shouldn't be able to yield const things by ref
+#23970
