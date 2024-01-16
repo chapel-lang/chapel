@@ -46,7 +46,8 @@ def is_deprecated(node: core.AstNode) -> bool:
     """
     Returns true if node is marked with a @deprecated attribute
     """
-    if attrs := node.attribute_group():
+    attrs = node.attribute_group()
+    if attrs:
         return attrs.is_deprecated()
     return False
 
@@ -55,7 +56,8 @@ def is_unstable(node: core.AstNode) -> bool:
     """
     Returns true if node is marked with a @unstable attribute
     """
-    if attrs := node.attribute_group():
+    attrs = node.attribute_group()
+    if attrs:
         return attrs.is_unstable()
     return False
 
@@ -106,8 +108,9 @@ def get_docstring(node: core.AstNode, sibling_map: SiblingMap) -> Optional[str]:
     """
     Get the docstring for a node, if it exists
     """
+    prev_sibling = sibling_map.get_sibling(node)
     if (
-        (prev_sibling := sibling_map.get_sibling(node))
+        prev_sibling
         and isinstance(prev_sibling, core.Comment)
         and is_docstring_comment(prev_sibling)
     ):

@@ -82,12 +82,15 @@ def get_symbol_sig(node: chapel.core.AstNode):
         if isinstance(node, chapel.core.Variable):
             if node.is_config():
                 s += "config "
-            if k := intent_to_string(node.kind()):
-                s += f"{k} "
+            intent = intent_to_string(node.kind())
+            if intent:
+                s += f"{intent} "
         s += node.name()
-        if type_ := node.type_expression():
+        type_ = node.type_expression()
+        if type_:
             s += f": {node_to_string(type_)}"
-        if init := node.init_expression():
+        init = node.init_expression()
+        if init:
             s += f" = {node_to_string(init)}"
         return s
 
@@ -102,12 +105,14 @@ def get_symbol_sig(node: chapel.core.AstNode):
 
     if isinstance(node, chapel.core.Class):
         s = ""
-        if (ie := list(node.inherit_exprs())) and len(ie) > 0:
+        ie = list(node.inherit_exprs())
+        if len(ie) > 0:
             s = ": " + ", ".join([x.name() for x in ie])
         return f"class {node.name()}{s}"
     elif isinstance(node, chapel.core.Record):
         s = ""
-        if (ie := list(node.inherit_exprs())) and len(ie) > 0:
+        ie = list(node.inherit_exprs())
+        if len(ie) > 0:
             s = ": " + ", ".join([x.name() for x in ie])
         return f"record {node.name()}{s}"
     elif isinstance(node, chapel.core.Interface):
@@ -160,7 +165,8 @@ def get_symbol_information(
     decl: chapel.core.NamedDecl, uri: str
 ) -> Optional[SymbolInformation]:
     loc = Location(uri, location_to_range(decl.location()))
-    if kind := decl_kind(decl):
+    kind = decl_kind(decl)
+    if kind:
         # TODO: should we use DocumentSymbol or SymbolInformation
         # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
         # using symbol information for now, as it sort-of autogets the tree structure
@@ -229,11 +235,11 @@ class FileInfo:
         """
         asts = self.get_asts()
         # get ids
-        self.segments = [
-            ResolvedPair(NodeAndRange(node), NodeAndRange(to))
-            for node, _ in chapel.each_matching(asts, chapel.core.Identifier)
-            if (to := node.to_node())
-        ]
+        self.segments = []
+        for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
+            to = node.to_node()
+            if to:
+                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         self.segments.sort(key=lambda s: s.ident.rng.start)
         self.siblings = chapel.SiblingMap(self.get_asts())
 
@@ -312,7 +318,8 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        if segment := fi.get_segment_at_position(params.position):
+        segment = fi.get_segment_at_position(params.position)
+        if segment:
             return segment.resolved_to.get_location()
         return None
 
@@ -330,15 +337,15 @@ def run_lsp():
             for child in node:
                 yield from preorder_ignore_funcs(child)
 
-        syms = [
-            si
-            for node, _ in chapel.each_matching(
-                fi.get_asts(),
-                chapel.core.NamedDecl,
-                iterator=preorder_ignore_funcs,
-            )
-            if (si := get_symbol_information(node, text_doc.uri))
-        ]
+        syms = []
+        for node, _ in chapel.each_matching(
+            fi.get_asts(),
+            chapel.core.NamedDecl,
+            iterator=preorder_ignore_funcs,
+        ):
+            si = get_symbol_information(node, text_doc.uri)
+            if si:
+                syms.append(si)
 
         return syms
 
