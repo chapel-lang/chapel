@@ -422,6 +422,24 @@ module CTypes {
     return __primitive("cast", c_ptr(void), x);
   }
 
+  // Enable fn_ptr == nil syntax for checking whether a function pointer is NULL
+  @chpldoc.nodoc
+  inline operator ==(a: c_fn_ptr, b: _nilType) {
+    return a:c_ptr(void) == b;
+  }
+  @chpldoc.nodoc
+  inline operator ==(a: _nilType, b: c_fn_ptr) {
+    return b == a;
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: c_fn_ptr, b: _nilType) {
+    return !(a == b);
+  }
+  @chpldoc.nodoc
+  inline operator !=(a: _nilType, b: c_fn_ptr) {
+    return b != a;
+  }
+
   // Note: we rely from nil to pointer types for ptr = nil, nil:ptr cases
 
   /* Helper function for determining if casting between two types as pointee
