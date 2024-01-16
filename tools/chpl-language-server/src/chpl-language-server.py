@@ -183,7 +183,10 @@ class NodeAndRange:
     rng: Range = field(init=False)
 
     def __post_init__(self):
-        self.rng = location_to_range(self.node.location())
+        if isinstance(self.node, chapel.core.Dot):
+            self.rng = location_to_range(self.node.field_location())
+        else:
+            self.rng = location_to_range(self.node.location())
 
     def get_location(self):
         return Location(self.get_uri(), self.rng)
@@ -237,6 +240,10 @@ class FileInfo:
         # get ids
         self.segments = []
         for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
+            to = node.to_node()
+            if to:
+                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
+        for node, _ in chapel.each_matching(asts, chapel.core.Dot):
             to = node.to_node()
             if to:
                 self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
