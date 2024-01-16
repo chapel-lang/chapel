@@ -1,6 +1,7 @@
 
 use BigInteger;
 use IO;
+use FileSystem;
 
 config var filename = "test.txt";
 var f = open(filename, ioMode.cwr);
@@ -24,3 +25,6 @@ var f = open(filename, ioMode.cwr);
   r.read(a);
   writeln("read ", a);
 }
+
+
+remove(filename);
