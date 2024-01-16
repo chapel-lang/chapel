@@ -376,12 +376,8 @@ PyObject* AstNodeObject_iter(AstNodeObject *self) {
 }
 
 PyObject* AstNodeObject_location(AstNodeObject *self) {
-  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
-  auto& location = ((LocationObject*) locationObjectPy)->location;
   auto context = &((ContextObject*) self->contextObject)->context;
-
-  location = parsing::locateAst(context, self->astNode);
-  return locationObjectPy;
+  return wrapLocation(parsing::locateAst(context, self->astNode));
 }
 
 
@@ -427,4 +423,12 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
   }
   Py_XDECREF(args);
   return toReturn;
+}
+
+PyObject* wrapLocation(Location loc) {
+  auto locationObjectPy = PyObject_CallObject((PyObject *) &LocationType, nullptr);
+  auto& location = ((LocationObject*) locationObjectPy)->location;
+
+  location = std::move(loc);
+  return locationObjectPy;
 }

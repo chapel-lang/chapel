@@ -110,4 +110,9 @@ void setupPerNodeTypes();
  */
 PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
 
+/**
+  Create a Python object from the given Location.
+ */
+PyObject* wrapLocation(chpl::Location loc);
+
 #endif
