@@ -178,7 +178,7 @@ static chpl_bool envInjectRMA;          // env: inject RMA messages
 static chpl_bool envInjectAMO;          // env: inject AMO messages
 static chpl_bool envInjectAM;           // env: inject AM messages
 static chpl_bool envUseDedicatedAmhCores;  // env: use dedicated AM cores
-static const char *envExpectedProvider; // env: provider we should select
+static const char* envExpectedProvider; // env: provider we should select
 
 static int numTxCtxs;
 static int numRxCtxs;
@@ -2043,7 +2043,7 @@ void init_ofiFabricDomain(void) {
   //
   fi_freeinfo(hints);
 
-  // 
+  //
   // Make sure we selected the provider we were expected to select, if
   // specified.
   //
