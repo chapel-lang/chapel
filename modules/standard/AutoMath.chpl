@@ -300,20 +300,6 @@ module AutoMath {
     return abs(z);
   }
 
-  /* Returns the phase (often called `argument`) of complex `z`, an angle (in
-     radians).
-
-     In concert with the related :proc:`abs`, the magnitude (a.k.a.
-     modulus) of `z`, it can be used to recompute `z`.
-
-     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
-  */
-  @deprecated("'carg' is deprecated, please use :proc:`phase` instead")
-  inline proc carg(z: complex(?w)): real(w/2) {
-    return phase(z);
-  }
-
-
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
