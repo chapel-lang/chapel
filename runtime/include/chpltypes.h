@@ -255,7 +255,11 @@ typedef struct chpl_main_argument_s {
 } chpl_main_argument;
 
 static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
-#ifdef CMPLX
+// though CMPLX works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLX) && !defined(__cplusplus)
   return CMPLX(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
@@ -273,7 +277,11 @@ static inline _complex128 _chpl_complex128(_real64 re, _real64 im) {
 }
 
 static inline _complex64 _chpl_complex64(_real32 re, _real32 im) {
-#ifdef CMPLXF
+// though CMPLXF works for some C++ compilers, it doesn't work for all in our
+// test environments, so dodge it to be safe;  Currently, we only compile
+// this header using a C++ compiler when compiling our re2 stubs, which
+// don't seem to use this routine anyway.
+#if defined(CMPLX) && !defined(__cplusplus)
   return CMPLXF(re, im);
 #else
 #ifndef CHPL_DONT_USE_CMPLX_PTR_ALIASING
