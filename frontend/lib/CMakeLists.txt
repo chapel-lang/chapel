@@ -93,11 +93,10 @@ endif()
 add_library(ChplFrontendShared SHARED
             $<TARGET_OBJECTS:ChplFrontend-obj>
             $<TARGET_OBJECTS:git-sha-obj>)
-target_link_libraries(ChplFrontendShared ChplFrontend)
 
-target_include_directories(ChplFrontend PUBLIC
-                           ${CHPL_MAIN_INCLUDE_DIR}
-                           ${CHPL_INCLUDE_DIR})
+set(CHPL_FRONTEND_INCLUDES ${CHPL_MAIN_INCLUDE_DIR} ${CHPL_INCLUDE_DIR})
+target_include_directories(ChplFrontend PUBLIC ${CHPL_FRONTEND_INCLUDES})
+target_include_directories(ChplFrontendShared PUBLIC ${CHPL_FRONTEND_INCLUDES})
 
 if (CHPL_LLVM_STATIC_DYNAMIC STREQUAL "static")
   if(APPLE)
@@ -130,8 +129,12 @@ else()
     target_link_libraries(ChplFrontend PUBLIC ${CHPL_LLVM_LINK_ARGS})
 endif()
 
+target_link_libraries(ChplFrontendShared PUBLIC ${CHPL_LLVM_LINK_ARGS})
+
 # TODO: Get printchplenv output proper so that we don't need to SHELL here
 target_compile_options(ChplFrontend PUBLIC
+                       SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
+target_compile_options(ChplFrontendShared PUBLIC
                        SHELL:$<$<COMPILE_LANGUAGE:CXX>:${CHPL_LLVM_COMP_ARGS}>)
 
 
