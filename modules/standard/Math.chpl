@@ -626,27 +626,19 @@ module Math {
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `exp` power, i.e., ``x * 2**exp``. */
   inline proc ldExp(x:real(64), exp:int(32)):real(64) {
-    return chpl_ldexp(x, exp);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexp(x:real(64), n:int(32)):real(64);
+    return ldexp(x, n);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
      argument `exp` power, i.e., ``x * 2**exp``. */
   inline proc ldExp(x:real(32), exp:int(32)):real(32) {
-    return chpl_ldexp(x, exp);
-  }
-
-  /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., ``x * 2**n``. */
-  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
-  inline proc ldexp(x:real(64), n:int(32)):real(64) {
-    return ldExp(x, n);
-  }
-
-  /* Returns the value of the argument `x` multiplied by 2 raised to the
-     argument `n` power, i.e., ``x * 2**n``. */
-  @deprecated(notes="'ldexp' with an 'n' argument has been deprecated, please use :proc:`ldExp` with an 'exp' argument instead")
-  inline proc ldexp(x:real(32), n:int(32)):real(32) {
-    return ldExp(x, n);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ldexpf(x:real(32), n:int(32)):real(32);
+    return ldexpf(x, n);
   }
 
   /* Returns the natural logarithm of the absolute value
