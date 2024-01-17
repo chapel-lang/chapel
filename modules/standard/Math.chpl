@@ -628,22 +628,6 @@ module Math {
     return lgammaf(x);
   }
 
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
-  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
-  inline proc lgamma(x: real(64)): real(64) {
-    return lnGamma(x);
-  }
-
-  /* Returns the natural logarithm of the absolute value
-     of the gamma function of the argument `x`.
-  */
-  @deprecated(notes="'lgamma' has been deprecated in favor of :proc:`lnGamma`, please use that instead")
-  inline proc lgamma(x : real(32)): real(32) {
-    return lnGamma(x);
-  }
-
   /* Returns the natural logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
@@ -1058,18 +1042,6 @@ module Math {
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(128)): complex(128) {
     return chpl_tanh(x);
-  }
-
-  /* Returns the gamma function of the argument `x`. */
-  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
-  inline proc tgamma(x: real(64)): real(64) {
-    return chpl_tgamma(x);
-  }
-
-  /* Returns the gamma function of the argument `x`. */
-  @deprecated("'tgamma' has been deprecated in favor of :proc:`gamma`, please use that instead")
-  inline proc tgamma(x : real(32)): real(32) {
-    return chpl_tgamma(x);
   }
 
   /* Returns the greatest common divisor of the integer arguments `x` and
