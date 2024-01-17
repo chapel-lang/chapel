@@ -1240,41 +1240,6 @@ module AutoMath {
      `false` otherwise. */
   inline proc isNan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
 
-  // To prevent this auto-included module from using a non-auto-included module
-  // (Math)
-  inline proc chpl_log1p(x: real(64)): real(64) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc log1p(x: real(64)): real(64);
-    return log1p(x);
-  }
-
-  // To prevent this auto-included module from using a non-auto-included module
-  // (Math)
-  inline proc chpl_log1p(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc log1pf(x: real(32)): real(32);
-    return log1pf(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_log1p and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
-  proc log1p(x: real(64)): real(64) {
-    return chpl_log1p(x);
-  }
-
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="log1p is no longer included by default, please 'use' or 'import' the 'Math' module to call it")
-  inline proc log1p(x : real(32)): real(32) {
-    return chpl_log1p(x);
-  }
-
   //
   // min and max
   //
