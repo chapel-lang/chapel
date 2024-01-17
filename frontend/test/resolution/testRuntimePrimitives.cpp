@@ -256,6 +256,12 @@ static void test24() {
   intPrimTypeHelper(32, "_wide_get_node", {});
 }
 
+// test for prim "sizeof_bundle" and "sizeof_ddata_element", which should return an int(64)
+static void test25() {
+  intPrimTypeHelper(64, "sizeof_bundle", {});
+  intPrimTypeHelper(64, "sizeof_ddata_element", {});
+}
+
 
 int main() {
   testVoidPrims();
@@ -283,6 +289,7 @@ int main() {
   test22();
   test23();
   test24();
+  test25();
 
   return 0;
 }

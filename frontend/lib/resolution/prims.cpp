@@ -1556,6 +1556,10 @@ CallResolutionResult resolvePrimCall(Context* context,
 
     case PRIM_SIZEOF_BUNDLE:
     case PRIM_SIZEOF_DDATA_ELEMENT:
+      type = QualifiedType(QualifiedType::CONST_VAR,
+                           IntType::get(context, 64));
+      break;
+
     case PRIM_LIFETIME_OF:
       CHPL_UNIMPL("misc primitives");
       break;
