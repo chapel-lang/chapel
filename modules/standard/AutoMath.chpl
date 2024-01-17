@@ -1885,31 +1885,6 @@ module AutoMath {
     return roundf(x);
   }
 
-
-  /* Returns the signum function of the integer argument `i`:
-     1 if positive, -1 if negative, 0 if zero.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
-  inline proc sgn(i : int(?w)): int(8) do
-    return sgn(i);
-
-  /* Returns the signum function of the unsigned integer argument `i`:
-     1 if positive, -1 if negative, 0 if zero.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for 'sgn', please use 'x' instead")
-  inline proc sgn(i : uint(?w)): uint(8) do
-    return sgn(i);
-
-  /* Returns the signum function of the integer param argument `i`:
-     1 if positive, -1 if negative, 0 if zero.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for param 'sgn', please use 'x' instead")
-  proc sgn(param i : integral) param do
-    return sgn(i);
-
   /* Returns the signum function of the integer argument `x`:
      1 if positive, -1 if negative, 0 if zero.
   */
