@@ -340,8 +340,10 @@ PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
 }
 
 PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
-  auto uniqueID = (intptr_t)self->astNode;
-  return Py_BuildValue("K", uniqueID);
+  std::stringstream ss;
+  self->astNode->id().stringify(ss, CHPL_SYNTAX);
+  auto uniqueID = ss.str();
+  return Py_BuildValue("s", uniqueID.c_str());
 }
 
 

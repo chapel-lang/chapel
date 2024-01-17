@@ -78,6 +78,8 @@ The library is split into three major components:
   to perform transformations on existing Chapel files for various reasons. For
   instance, deprecations and syntax changes can be performed automatically using
   the replacer API, by finding AST patterns and performing string substitution.
+* The `chapel.lsp` module provides a few helpers to tranform Dyno types to LSP
+  (Language Server Protocol) types.
 
 The following sections document the three modules.
 
