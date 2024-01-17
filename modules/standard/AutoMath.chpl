@@ -1673,33 +1673,6 @@ module AutoMath {
   }
 
   /* Computes the mod operator on the two arguments, defined as
-     ``mod(m,n) = m - n * floor(m / n)``.
-
-     The result is always >= 0 if `n` > 0.
-     It is an error if `n` == 0.
-  */
-  pragma "last resort"
-  @deprecated("The argument names 'm' and 'n' are deprecated for param 'mod', please use 'x' and 'y' instead")
-  proc mod(param m: integral, param n: integral) param {
-    return mod(m, n);
-  }
-
-  /* Computes the mod operator on the two arguments, defined as
-     ``mod(m,n) = m - n * floor(m / n)``.
-
-     If the arguments are of unsigned type, then
-     fewer conditionals will be evaluated at run time.
-
-     The result is always >= 0 if `n` > 0.
-     It is an error if `n` == 0.
-  */
-  pragma "last resort"
-  @deprecated("The argument names 'm' and 'n' are deprecated for 'mod', please use 'x' and 'y' instead")
-  proc mod(m: integral, n: integral) {
-    return mod(m, n);
-  }
-
-  /* Computes the mod operator on the two arguments, defined as
      ``mod(x,y) = x - y * floor(x / y)``.
 
      The result is always >= 0 if `y` > 0.
