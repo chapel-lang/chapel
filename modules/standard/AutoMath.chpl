@@ -932,12 +932,6 @@ module AutoMath {
     return conj(z);
   }
 
-  /* Returns the projection of `z` on a Riemann sphere. */
-  @deprecated("'cproj' has been deprecated, please use :proc:`riemProj` instead")
-  inline proc cproj(z: complex(?w)): complex(w) {
-    return riemProj(z);
-  }
-
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
