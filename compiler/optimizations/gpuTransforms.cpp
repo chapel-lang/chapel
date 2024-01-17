@@ -360,6 +360,145 @@ void CreateGpuFunctionSpecializations::doit() {
   rewriteSpecializationsToCallOtherSpecializations();
 }
 
+class GpuAssertionReporter {
+ private:
+  CallExpr* compileTimeGpuAssertion_;
+  std::vector<CallExpr*> callStack_;
+
+  // Internal mutable state for printing the trace.
+  BaseAST* lastPrinted;
+
+  static bool shouldSkipInStaticTrace(CallExpr* call) {
+    if (developer) return false;
+
+    if (call->linenum() > 0 &&
+        call->getModule()->modTag == MOD_USER &&
+        !call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
+      return false;
+
+    return true;
+  }
+
+  static const char* maybeGetCallName(CallExpr* call) {
+    if (SymExpr* base = toSymExpr(call->baseExpr)) {
+      return base->symbol()->name;
+    }
+    return nullptr;
+  }
+
+  static const char* maybeSayLoopBody(ssize_t idx) {
+    if (idx == 0) return " in loop body";
+    return "";
+  }
+
+  /* Find the first element of the call stack that we should print. We shouldn't
+     print everything because module code is probably not relevant to the
+     general user, unless --developer is thrown.
+   */
+  ssize_t findFirstPrintableStackElement() const {
+    for (ssize_t i = ((ssize_t) callStack_.size()) - 1; i >= 0; i--) {
+      CallExpr* from = callStack_[i];
+      if (!shouldSkipInStaticTrace(from)) return i;
+    }
+
+    return -1;
+  }
+
+  void printNonGpuizableError(CallExpr* assertion, Expr* loc) const {
+    debuggerBreakHere();
+    const char* reason = "contains assertOnGpu()";
+    auto isAttributeSym = toSymExpr(assertion->get(1));
+    INT_ASSERT(isAttributeSym);
+    if (isAttributeSym->symbol() == gTrue) {
+      reason = "is marked with @assertOnGpu";
+    }
+    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
+  }
+
+  ssize_t printNonGpuizableTraceHeader(BaseAST* ast, const char* msg) {
+    ssize_t traceFrom = ((ssize_t) callStack_.size()) - 1;
+    ssize_t firstPrintableStackElement = findFirstPrintableStackElement();
+    // If the call is in user code, we can print it as usual.
+    // But if it's in module code, maybe we don't want to show the exact reason
+    // GPUization failed (it's an implementation detail). Instead, we want
+    // to call out a standard function as being ineligible for GPU execution.
+    //
+    // If no stack element is printable, begruginly print the call anyway.
+    if (developer || ast->getModule()->modTag == MOD_USER || firstPrintableStackElement == -1) {
+      USR_PRINT(ast, "%s", msg);
+      lastPrinted = ast;
+    } else {
+      const char* functionName = "";
+      auto call = callStack_.at(firstPrintableStackElement);
+      if (auto name = maybeGetCallName(call)) {
+        functionName = astr(" '", name, "'");
+      }
+      USR_PRINT(call, "use of ineligible standard library function%s%s",
+                functionName, maybeSayLoopBody(firstPrintableStackElement));
+      lastPrinted = call;
+
+      // Since we printed a call partway in the stack, start the rest of the
+      // trace after that.
+      traceFrom = firstPrintableStackElement - 1;
+    }
+
+    return traceFrom;
+  }
+
+  void printRestOfGpuizableTrace(ssize_t traceFrom) {
+    for (ssize_t i = traceFrom; i >= 0; i--) {
+      CallExpr* from = callStack_[i];
+
+      if (shouldSkipInStaticTrace(from)) {
+        if (lastPrinted) {
+          USR_PRINT(lastPrinted, "  reached via standard library code");
+          lastPrinted = nullptr;
+        }
+        continue;
+      }
+
+      const char* functionName = maybeGetCallName(from);
+      const char* extra = maybeSayLoopBody(i);
+      if (functionName) {
+        USR_PRINT(from, "  reached via call to '%s'%s here", functionName, extra);
+      } else {
+        USR_PRINT(from, "  reached via this call%s", extra);
+      }
+
+      lastPrinted = from;
+    }
+  }
+
+ public:
+  void noteGpuizableAssertion(CallExpr* assertion) {
+    this->compileTimeGpuAssertion_ = assertion;
+  }
+
+  void pushCall(CallExpr* enter) {
+    callStack_.push_back(enter);
+  }
+
+  void popCall() {
+    callStack_.pop_back();
+  }
+
+  void fallbackReportGpuizationFailure(BlockStmt* blk) {
+    if(this->compileTimeGpuAssertion_) {
+      printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
+      USR_STOP();
+    }
+  }
+
+  void reportNotGpuizable(CForLoop* loop, BaseAST* ast, const char *msg) {
+    if(this->compileTimeGpuAssertion_) {
+      printNonGpuizableError(this->compileTimeGpuAssertion_, loop);
+
+      ssize_t traceFrom = printNonGpuizableTraceHeader(ast, msg);
+      printRestOfGpuizableTrace(traceFrom);
+      USR_STOP();
+    }
+  }
+};
 
 // ----------------------------------------------------------------------------
 // GpuizableLoop
@@ -375,8 +514,8 @@ class GpuizableLoop {
   std::vector<Symbol*> loopIndices_;
   std::vector<Symbol*> lowerBounds_;
   std::vector<CallExpr*> gpuAssertions_;
-  CallExpr* compileTimeGpuAssertion_;
-  const char* reason = nullptr;
+
+  GpuAssertionReporter assertionReporter_;
 
   CondStmt* gpuCond_ = nullptr;
   BlockStmt* cpuBlock_ = nullptr;
@@ -443,13 +582,10 @@ private:
   bool attemptToExtractLoopInformation();
   bool extractIndicesAndLowerBounds();
   bool extractUpperBound();
-  void reportNotGpuizable(BaseAST* ast, const char *msg,
-                          const std::vector<CallExpr*>* callStack = nullptr);
 
   bool callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                    std::set<FnSymbol*>& okFns,
-                                   std::set<FnSymbol*> visitedFns,
-                                   std::vector<CallExpr*>& callStack);
+                                   std::set<FnSymbol*> visitedFns);
 };
 
 std::unordered_map<CForLoop*, GpuizableLoop> eligibleLoops;
@@ -459,7 +595,7 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
 
   this->loop_ = toCForLoop(blk);
   this->parentFn_ = toFnSymbol(blk->getFunction());
-  this->compileTimeGpuAssertion_ = findCompileTimeGpuAssertions();
+  this->assertionReporter_.noteGpuizableAssertion(findCompileTimeGpuAssertions());
   this->isEligible_ = evaluateLoop();
 
   // Ideally we should error out earlier than this with a more specific
@@ -467,12 +603,8 @@ GpuizableLoop::GpuizableLoop(BlockStmt *blk) {
   // There's one use case we want to exempt, which is failure to
   // gpuize a nested loop. In this case if there was a failure to gpuize
   // the outer loop we already would have errored.
-  if(this->compileTimeGpuAssertion_ &&
-    !this->isEligible_ &&
-    !isAlreadyInGpuKernel())
-  {
-    printNonGpuizableError(this->compileTimeGpuAssertion_, blk);
-    USR_STOP();
+  if(!this->isEligible_ && !isAlreadyInGpuKernel()) {
+    this->assertionReporter_.fallbackReportGpuizationFailure(blk);
   }
 
   cleanupAssertGpuizable();
@@ -521,17 +653,6 @@ CallExpr* GpuizableLoop::findCompileTimeGpuAssertions() {
   return nullptr;
 }
 
-void GpuizableLoop::printNonGpuizableError(CallExpr* assertion, Expr* loc) {
-    debuggerBreakHere();
-    const char* reason = "contains assertOnGpu()";
-    auto isAttributeSym = toSymExpr(assertion->get(1));
-    INT_ASSERT(isAttributeSym);
-    if (isAttributeSym->symbol() == gTrue) {
-      reason = "is marked with @assertOnGpu";
-    }
-    USR_FATAL_CONT(loc, "Loop %s but is not eligible for execution on a GPU", reason);
-}
-
 bool GpuizableLoop::isAlreadyInGpuKernel() {
   return this->parentFn_->hasFlag(FLAG_GPU_CODEGEN);
 }
@@ -557,7 +678,7 @@ bool GpuizableLoop::parentFnAllowsGpuization() {
   FnSymbol *cur = this->parentFn_;
   while (cur) {
     if (cur->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-      reportNotGpuizable(cur, "parent function disallows execution on a GPU");
+      assertionReporter_.reportNotGpuizable(loop_, cur, "parent function disallows execution on a GPU");
       return false;
     }
 
@@ -598,14 +719,12 @@ bool GpuizableLoop::symsInBodyAreGpuizable() {
 bool GpuizableLoop::callsInBodyAreGpuizable() {
   std::set<FnSymbol*> okFns;
   std::set<FnSymbol*> visitedFns;
-  std::vector<CallExpr*> callStack;
-  return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns, callStack);
+  return callsInBodyAreGpuizableHelp(this->loop_, okFns, visitedFns);
 }
 
 bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
                                                 std::set<FnSymbol*>& okFns,
-                                                std::set<FnSymbol*> visitedFns,
-                                                std::vector<CallExpr*>& callStack) {
+                                                std::set<FnSymbol*> visitedFns) {
   FnSymbol* fn = blk->getFunction();
   if (debugPrintGPUChecks) {
     printf("%*s%s:%d: %s[%d]\n", indentGPUChecksLevel, "",
@@ -632,7 +751,7 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       bool inLocal = inLocalBlock(call);
       int is = classifyPrimitive(call, inLocal);
       if ((is != FAST_AND_LOCAL)) {
-        reportNotGpuizable(call, "call to a primitive that is not fast and local", &callStack);
+        assertionReporter_.reportNotGpuizable(loop_, call, "call to a primitive that is not fast and local");
         return false;
       }
     } else if (call->isResolved()) {
@@ -642,9 +761,9 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
       FnSymbol *fn = call->resolvedFunction();
 
       if (fn->hasFlag(FLAG_NO_GPU_CODEGEN)) {
-        callStack.push_back(call);
-        reportNotGpuizable(fn, "function is marked as not eligible for GPU execution", &callStack);
-        callStack.pop_back();
+        assertionReporter_.pushCall(call);
+        assertionReporter_.reportNotGpuizable(loop_, fn, "function is marked as not eligible for GPU execution");
+        assertionReporter_.popCall();
         return false;
       }
 
@@ -655,21 +774,21 @@ bool GpuizableLoop::callsInBodyAreGpuizableHelp(BlockStmt* blk,
         std::string msg = "function calls out to extern function (";
         msg += fn->name;
         msg += "), which is not marked as GPU eligible";
-        reportNotGpuizable(fn, msg.c_str(), &callStack);
+        assertionReporter_.reportNotGpuizable(loop_, fn, msg.c_str());
         return false;
       }
 
       if (hasOuterVarAccesses(fn)) {
-        reportNotGpuizable(call, "call has outer var access", &callStack);
+        assertionReporter_.reportNotGpuizable(loop_, call, "call has outer var access");
         return false;
       }
 
       indentGPUChecksLevel += 2;
       bool ok = okFns.count(fn) != 0;
       if (!ok) {
-        callStack.push_back(call);
-        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns, callStack);
-        callStack.pop_back();
+        assertionReporter_.pushCall(call);
+        ok = callsInBodyAreGpuizableHelp(fn->body, okFns, visitedFns);
+        assertionReporter_.popCall();
       }
       if (ok) {
         indentGPUChecksLevel -= 2;
@@ -711,7 +830,7 @@ bool GpuizableLoop::extractIndicesAndLowerBounds() {
     INT_ASSERT(bs->body.length == (int)this->loopIndices_.size());
     INT_ASSERT(bs->body.length == (int)this->lowerBounds_.size());
   } else {
-    reportNotGpuizable(loop_, "loop indices do not match expected pattern for GPU execution");
+    assertionReporter_.reportNotGpuizable(loop_, loop_, "loop indices do not match expected pattern for GPU execution");
     return false;
   }
 
@@ -738,110 +857,10 @@ bool GpuizableLoop::extractUpperBound() {
   }
 
   if(upperBound_ == nullptr) {
-    reportNotGpuizable(loop_, "upper bound does not match expected pattern for GPU execution");
+    assertionReporter_.reportNotGpuizable(loop_, loop_, "upper bound does not match expected pattern for GPU execution");
     return false;
   }
   return true;
-}
-
-static bool shouldSkipInStaticTrace(CallExpr* call) {
-  if (developer) return false;
-
-  if (call->linenum() > 0 &&
-      call->getModule()->modTag == MOD_USER &&
-      !call->getFunction()->hasFlag(FLAG_COMPILER_GENERATED))
-    return false;
-
-  return true;
-}
-
-/* Find the first element of the call stack that we should print. We shouldn't
-   print everything because module code is probably not relevant to the
-   general user, unless --developer is thrown.
- */
-static ssize_t findFirstPrintableStackElement(const std::vector<CallExpr*>* callStack) {
-  for (ssize_t i = callStack->size() - 1; i >= 0; i--) {
-    CallExpr* from = (*callStack)[i];
-    if (!shouldSkipInStaticTrace(from)) return i;
-  }
-
-  return -1;
-}
-
-static const char* maybeGetCallName(CallExpr* call) {
-  if (SymExpr* base = toSymExpr(call->baseExpr)) {
-    return base->symbol()->name;
-  }
-  return nullptr;
-}
-
-static const char* maybeSayLoopBody(ssize_t idx) {
-  if (idx == 0) return " in loop body";
-  return "";
-}
-
-void GpuizableLoop::reportNotGpuizable(BaseAST* ast, const char *msg,
-                                       const std::vector<CallExpr*>* callStack) {
-  this->reason = msg;
-  if(this->compileTimeGpuAssertion_) {
-    printNonGpuizableError(this->compileTimeGpuAssertion_, loop_);
-
-    BaseAST* lastPrinted = nullptr;
-
-    size_t traceFrom = -1;
-    ssize_t firstPrintableStackElement = -1;
-    if (callStack) {
-      traceFrom = callStack->size() - 1;
-      firstPrintableStackElement = findFirstPrintableStackElement(callStack);
-    }
-
-    // If the call is in user code, we can print it as usual.
-    // But if it's in module code, maybe we don't want to show the exact reason
-    // GPUization failed (it's an implementation detail). Instead, we want
-    // to call out a standard function as being ineligible for GPU execution.
-    //
-    // If no stack element is printable, begruginly print the call anyway.
-    if (developer || ast->getModule()->modTag == MOD_USER || firstPrintableStackElement == -1) {
-      USR_PRINT(ast, "%s", msg);
-      lastPrinted = ast;
-    } else {
-      const char* functionName = "";
-      auto call = callStack->at(firstPrintableStackElement);
-      if (auto name = maybeGetCallName(call)) {
-        functionName = astr(" '", name, "'");
-      }
-      USR_PRINT(call, "use of ineligible standard library function%s%s",
-                functionName, maybeSayLoopBody(firstPrintableStackElement));
-      lastPrinted = call;
-
-      // Since we printed a call partway in the stack, start the rest of the
-      // trace after that.
-      traceFrom = firstPrintableStackElement - 1;
-    }
-
-    for (ssize_t i = traceFrom; i >= 0; i--) {
-      CallExpr* from = (*callStack)[i];
-
-      if (shouldSkipInStaticTrace(from)) {
-        if (lastPrinted) {
-          USR_PRINT(lastPrinted, "  reached via standard library code");
-          lastPrinted = nullptr;
-        }
-        continue;
-      }
-
-      const char* functionName = maybeGetCallName(from);
-      const char* extra = maybeSayLoopBody(i);
-      if (functionName) {
-        USR_PRINT(from, "  reached via call to '%s'%s here", functionName, extra);
-      } else {
-        USR_PRINT(from, "  reached via this call%s", extra);
-      }
-
-      lastPrinted = from;
-    }
-    USR_STOP();
-  }
 }
 
 // ----------------------------------------------------------------------------
