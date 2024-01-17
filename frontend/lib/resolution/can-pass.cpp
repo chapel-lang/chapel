@@ -460,8 +460,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalNily.isUnknownNilability())
       instantiates = true; // instantiating with passed nilability
     else if (actualNily.isNonNilable() && formalNily.isNilable())
-      // non-nil to nil conversion
-      conversion = SUBTYPE;
+      conversion = SUBTYPE;  // non-nil to nil conversion
     else
       fails = FAIL_INCOMPATIBLE_NILABILITY; // all other nilability cases
   }
@@ -469,11 +468,10 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
   // consider management.
   if (actualMgmt != formalMgmt) {
     if (formalMgmt.isUnknownManagement())
-      instantiates = true; // instantiating with passed management
-    else if (formalMgmt.isBorrowed())
-      // management can convert to borrowed
-      conversion = BORROWS;
-    else
+      instantiates = true;  // instantiating with passed management
+    else if (formalMgmt.isBorrowed()) {
+      conversion = BORROWS;  // management can convert to borrowed
+    } else
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
 
@@ -500,10 +498,9 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (!decResult.passes())
     return decResult;
-  else if (!(decResult.conversionKind_ == NONE ||
-             decResult.conversionKind_ == SUBTYPE)) {
-    return fail(FAIL_EXPECTED_SUBTYPE);
-  }
+
+  if (decResult.conversionKind_ != NONE)
+    decResult.conversionKind_ = SUBTYPE;
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
