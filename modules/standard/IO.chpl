@@ -5794,12 +5794,6 @@ proc openReader(path:string,
                           style: iostyleInternal);
 }
 
-/* Used to control the behavior of the region argument for :proc:`openReader`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
-config param useNewOpenReaderRegionBounds = true;
-
 // We can simply call fileReader.close() on these, since the underlying file
 // will be closed once we no longer have any references to it (which in this
 // case, since we only will have one reference, will be right after we close
@@ -6051,12 +6045,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
-
-/* Used to control the behavior of the region argument for :proc:`file.writer`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
-config param useNewFileWriterRegionBounds = true;
 
 /*
    Create a :record:`fileWriter` that supports writing to a file. See
