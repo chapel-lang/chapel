@@ -110,7 +110,8 @@ class CanPassResult {
 
   static CanPassResult canPassDecorators(Context* context,
                                          types::ClassTypeDecorator actual,
-                                         types::ClassTypeDecorator formal);
+                                         types::ClassTypeDecorator formal,
+                                         bool considerBorrows = false);
 
   static CanPassResult canPassClassTypes(Context* context,
                                          const types::ClassType* actualCt,

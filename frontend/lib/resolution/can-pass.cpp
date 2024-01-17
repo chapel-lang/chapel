@@ -440,7 +440,8 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
 CanPassResult CanPassResult::canPassDecorators(Context* context,
                                                ClassTypeDecorator actual,
-                                               ClassTypeDecorator formal) {
+                                               ClassTypeDecorator formal,
+                                               bool considerBorrows) {
   if (actual == formal) {
     return passAsIs();
   }
@@ -470,7 +471,8 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalMgmt.isUnknownManagement())
       instantiates = true;  // instantiating with passed management
     else if (formalMgmt.isBorrowed()) {
-      conversion = BORROWS;  // management can convert to borrowed
+      // management can convert to borrowed
+      if (considerBorrows) conversion = BORROWS;
     } else
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
@@ -498,9 +500,6 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (!decResult.passes())
     return decResult;
-
-  if (decResult.conversionKind_ != NONE)
-    decResult.conversionKind_ = SUBTYPE;
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
@@ -557,24 +556,26 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 CanPassResult CanPassResult::canPassBorrowing(Context* context,
                                               const Type* actualT,
                                               const Type* formalT) {
-  CanPassResult result = fail(FAIL_FORMAL_OTHER);
+  CanPassResult failure = fail(FAIL_INCOMPATIBLE_MGMT);
 
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
       if (actualCt->basicClassType() == formalCt->basicClassType()) {
-        CanPassResult decResult = canPassDecorators(
-            context, actualCt->decorator(), formalCt->decorator());
-        if (decResult.passes() && !(decResult.conversionKind_ == NONE ||
-                                    decResult.conversionKind_ == BORROWS)) {
+        CanPassResult result = canPassDecorators(context, actualCt->decorator(),
+                                                 formalCt->decorator(),
+                                                 /* considerBorrows */ true);
+        if (result.passes() && !(result.conversionKind_ == NONE ||
+                                 result.conversionKind_ == BORROWS)) {
           // Ignore passing via means other than implicit borrowing conversion.
+          return failure;
         } else {
-          result = decResult;
+          return result;
         }
       }
     }
   }
 
-  return result;
+  return failure;
 }
 
 // The compiler considers many patterns of "subtyping" as things that require
