@@ -1,4 +1,0 @@
-depIsFinite.chpl:1: warning: 'isfinite' is deprecated in favor of isFinite, please use that instead
-depIsFinite.chpl:2: warning: 'isfinite' is deprecated in favor of isFinite, please use that instead
-true
-false

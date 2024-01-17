@@ -1381,16 +1381,6 @@ module AutoMath {
      `false` otherwise. */
   inline proc isFinite(x: real(32)): bool do return chpl_macro_float_isfinite(x):bool;
 
-  /* Returns `true` if the argument `x` is a representation of a finite value;
-     `false` otherwise. */
-  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
-  inline proc isfinite(x: real(64)): bool do return isFinite(x):bool;
-
-  /* Returns `true` if the argument `x` is a representation of a finite value;
-     `false` otherwise. */
-  @deprecated(notes="'isfinite' is deprecated in favor of :proc:`isFinite`, please use that instead")
-  inline proc isfinite(x: real(32)): bool do return isFinite(x):bool;
-
   /* Returns `true` if the argument `x` is a representation of *infinity*;
      `false` otherwise. */
   inline proc isInf(x: real(64)): bool do return chpl_macro_double_isinf(x):bool;
