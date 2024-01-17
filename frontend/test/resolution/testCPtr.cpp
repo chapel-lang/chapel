@@ -238,10 +238,58 @@ static void test16() {
 
 static void test17() {
   testCPtrArg("c_ptr(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
     assert(t);
     assert(!t->isConst());
     assert(t->isVoidPtr());
     // expect no errors; this is the pattern of passing a const to deallocate
+  });
+}
+
+static void test18() {
+  testCPtrArg("c_ptrConst(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    assert(t->eltType()->isIntType());
+  });
+}
+
+static void test19() {
+  testCPtrArg("c_ptrConst(int(?w))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT == IntType::get(eg.context(), 32));
+  });
+}
+
+static void test20() {
+  testCPtrArg("c_ptrConst(rec(?t))", "c_ptr(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isRecordType());
+    auto rt = eltT->toRecordType();
+    assert(rt->name() == "rec");
+    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
+  });
+}
+
+static void test21() {
+  testCPtrArg("c_ptr(int(?w))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
+  });
+}
+
+static void test22() {
+  testCPtrArg("c_ptr(rec(?t))", "c_ptrConst(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
   });
 }
 
@@ -263,6 +311,11 @@ int main() {
   test15();
   test16();
   test17();
+  test18();
+  test19();
+  test20();
+  test21();
+  test22();
 
   return 0;
 }
