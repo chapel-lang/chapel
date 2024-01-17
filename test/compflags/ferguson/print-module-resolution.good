@@ -190,18 +190,6 @@ CopyAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation.CopyAggregation
 ChapelAutoAggregation
   from print-module-resolution.ChapelStandard.ChapelAutoAggregation
-BitOps_internal
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.BitOps.BitOps_internal
-BitOps
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.BitOps
-Map
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time.JSON.Map
-JSON
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time.JSON
-Time
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU.Time
-GPU
-  from print-module-resolution.ChapelStandard.ChapelGpuSupport.GPU
 ChapelGpuSupport
   from print-module-resolution.ChapelStandard.ChapelGpuSupport
 ChapelContext

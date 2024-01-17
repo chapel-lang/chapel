@@ -81,6 +81,8 @@ bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
     case P_prim_minus:
     case P_prim_not:
     case P_prim_lnot:
+    case P_prim_abs:
+    case P_prim_sqrt:
       return true;
     default:
       return false;

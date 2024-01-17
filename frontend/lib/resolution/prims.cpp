@@ -740,11 +740,31 @@ primComplexGetComponent(Context* context, const CallInfo& ci) {
   if (ci.numActuals() != 1) return ret;
 
   if (auto comp = ci.actual(0).type().type()->toComplexType()) {
-    if (comp->bitwidth() == 64) {
-      ret = QualifiedType(QualifiedType::REF, RealType::get(context, 32));
-    } else if (comp->bitwidth() == 128) {
-      ret = QualifiedType(QualifiedType::REF, RealType::get(context, 64));
-    }
+    int w = comp->componentBitwidth();
+    ret = QualifiedType(QualifiedType::REF, RealType::get(context, w));
+  }
+  return ret;
+}
+
+/* for abs */
+static QualifiedType
+primAbsGetType(Context* context, const CallInfo& ci) {
+  QualifiedType ret = QualifiedType();
+
+  if (ci.numActuals() != 1) return ret;
+
+  // Note: the PRIM_ABS primitive is only actually used for params,
+  // so this code should probably assert that.
+  QualifiedType actualType = ci.actual(0).type();
+  if (auto comp = actualType.type()->toComplexType()) {
+    int w = comp->componentBitwidth();
+    ret = QualifiedType(QualifiedType::CONST_VAR, RealType::get(context, w));
+  } else if (auto img = actualType.type()->toImagType()) {
+    int w = img->bitwidth();
+    ret = QualifiedType(QualifiedType::CONST_VAR, RealType::get(context, w));
+  } else {
+    // otherwise just use the original type
+    ret = QualifiedType(QualifiedType::CONST_VAR, actualType.type());
   }
   return ret;
 }
@@ -1375,10 +1395,13 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_MIN:
     case PRIM_MAX:
     case PRIM_STEAL:
+    case PRIM_SQRT:
       if (ci.numActuals() > 0) {
         type = QualifiedType(QualifiedType::CONST_VAR,
                              ci.actual(0).type().type());
       }
+      // Note: PRIM_SQRT primitive is only actually used for params,
+      // so this code should probably assert that
       break;
     /* primitives that return default int */
     case PRIM_GET_UNION_ID:
@@ -1502,8 +1525,14 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return real parts from a complex */
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
+      // TODO: get the real/imag component from a param complex
       type = primComplexGetComponent(context, ci);
       break;
+    /* other math primitives */
+    case PRIM_ABS:
+      type = primAbsGetType(context, ci);
+      break;
+    /* Getting the wide pointer address */
     case PRIM_WIDE_GET_ADDR:
       type = QualifiedType(QualifiedType::CONST_VAR,
                            CPtrType::getCVoidPtrType(context));

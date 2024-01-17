@@ -125,6 +125,8 @@ classifyPrimitive(CallExpr *call) {
   case PRIM_POW:
   case PRIM_MIN:
   case PRIM_MAX:
+  case PRIM_SQRT:
+  case PRIM_ABS:
 
   case PRIM_GET_MEMBER:
   case PRIM_GET_SVEC_MEMBER:

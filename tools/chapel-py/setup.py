@@ -48,6 +48,6 @@ LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", 
 setup(name = "chapel",
       version = "0.1",
       package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace', 'chapel.visitor'],
+      packages = ['chapel', 'chapel.replace', 'chapel.visitor', 'chapel.lsp'],
       ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )

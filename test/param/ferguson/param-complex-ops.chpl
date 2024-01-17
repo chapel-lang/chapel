@@ -31,3 +31,14 @@ checkYes(c1 + c_2 == c1_2);
 checkYes((+cn1)+cn_2 == cn1_2);
 checkYes((-c1_2) == cn1_2);
 checkYes((-c1) - c_2 == cn1_2);
+
+proc testReIm(param p) {
+  param rePart = p.re;
+  param imPart = p.im;
+  if rePart != 1.0 then compilerWarning("assert failed");
+  if imPart != 2.0 then compilerWarning("assert failed");
+}
+
+testReIm(1.0 + 2.0i);
+testReIm((1.0 + 2.0i):complex(128));
+testReIm((1.0 + 2.0i):complex(64));
