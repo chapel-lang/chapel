@@ -518,7 +518,8 @@ proc loadScene() {
 
   // a map (associative array) from the supported input file argument
   // types to the number of columns of input they expect
-  const expectedArgs = ['l'=>4, 'c'=>8, 's'=>10];
+  const expectedArgsDom : domain(string, parSafe=true) = {"l", "c", "s"};
+  const expectedArgs : [expectedArgsDom] int = ['l'=>4, 'c'=>8, 's'=>10];
 
   // loop over the lines from the input file, counting them
   for (rawLine, lineno) in zip(infile.lines(), 0..) {
