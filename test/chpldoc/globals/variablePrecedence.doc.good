@@ -123,11 +123,13 @@ or
 
 .. data:: var lL = a << (b << c)
 
-.. data:: var ee = a == b == c
-
-.. data:: var Ee = a == b == c
+.. data:: var Ee = (a == b) == c
 
 .. data:: var eE = a == (b == c)
+
+.. data:: var Gg = (a > b) > c
+
+.. data:: var gG = a > (b > c)
 
 .. data:: var xx = a**b**c
 
