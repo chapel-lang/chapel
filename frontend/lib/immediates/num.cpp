@@ -546,7 +546,7 @@ static void doFoldSqrt(chpl::Context* context,
     case NUM_KIND_REAL: case NUM_KIND_IMAG:
       switch (imm->num_index) {
         case FLOAT_SIZE_32:
-          imm->v_float32 = sqrtf(im1.v_float32); break;
+          imm->v_float32 = sqrt(im1.v_float32); break;
         case FLOAT_SIZE_64:
           imm->v_float64 = sqrt(im1.v_float64); break;
         default: CHPL_ASSERT(false && "Unhandled case in switch statement");
@@ -565,7 +565,7 @@ static void doFoldSqrt(chpl::Context* context,
 }
 
 static float complexAbs64(complex64 x) {
-  return  fsqrt(x.r*x.r + x.i*x.i);
+  return sqrt(x.r*x.r + x.i*x.i);
 }
 
 static double complexAbs128(complex128 x) {
