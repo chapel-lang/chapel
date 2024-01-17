@@ -326,7 +326,6 @@ void normalize(Expr* expr) {
 static void preNormalizeHandleStaticVars() {
   forv_Vec(CallExpr, call, gCallExprs) {
     if (call->isPrimitive(PRIM_STATIC_FUNCTION_VAR)) {
-      debuggerBreakHere();
       SET_LINENO(call);
 
       Expr* anchor = call;
@@ -343,15 +342,21 @@ static void preNormalizeHandleStaticVars() {
 
       // Create the container for the static variable. This is defined in
       // module code.
-      auto wrapperTemp = newTemp("staticWrapper");
-      auto wrapperDef = new DefExpr(wrapperTemp, nullptr,
-          new CallExpr(new SymExpr(dtStatic->symbol),
-                       new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
-                                    new CallExpr(PRIM_TYPEOF, initVarTemp))));
+      auto wrapperTypeTemp = newTemp("staticVarType");
+      auto wrapperTypeDef = new DefExpr(wrapperTypeTemp,
+        new CallExpr(new SymExpr(dtStatic->symbol),
+                     new CallExpr(PRIM_STATIC_FUNCTION_VAR_VALIDATE_TYPE,
+                                  new CallExpr(PRIM_TYPEOF, initVarTemp))));
+      wrapperTypeTemp->addFlag(FLAG_TYPE_VARIABLE);
+
+      auto wrapperVar = new VarSymbol("staticWrapper", dtUnknown);
+      auto wrapperDef = new DefExpr(wrapperVar, nullptr, wrapperTypeTemp);
       auto wrapperBlock = new BlockStmt(BLOCK_SCOPELESS);
+      wrapperBlock->insertAtTail(wrapperTypeDef);
       wrapperBlock->insertAtTail(wrapperDef);
       wrapperBlock->insertAtTail(new CallExpr(PRIM_STATIC_FUNCTION_VAR_WRAPPER,
-                                              wrapperTemp, initVarTemp));
+                                              wrapperVar, initVarTemp));
+      wrapperBlock->insertAtTail(new CallExpr(PRIM_DEFAULT_INIT_VAR, wrapperVar, wrapperTypeTemp));
 
       anchor->insertBefore(initVarBlock);
       anchor->insertBefore(wrapperBlock);
@@ -361,15 +366,15 @@ static void preNormalizeHandleStaticVars() {
       SymbolMap map;
       auto computeValueBlock = initVarBlock->copy(&map);
       auto computeValueSym = map.get(initVarTemp);
-      auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperTemp,
+      auto setValueCall = new CallExpr("setValue", gMethodToken, wrapperVar,
                                        computeValueSym);
       computeValueBlock->insertAtTail(setValueCall);
       auto readyPred = new CallExpr("needsInitialization", gMethodToken,
-                                    wrapperTemp);
+                                    wrapperVar);
       auto readyCond = new CondStmt(readyPred, computeValueBlock);
       anchor->insertBefore(readyCond);
 
-      call->replace(new CallExpr("getValue", gMethodToken, wrapperTemp));
+      call->replace(new CallExpr("getValue", gMethodToken, wrapperVar));
     }
   }
 }

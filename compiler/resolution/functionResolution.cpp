@@ -11511,8 +11511,7 @@ static void postResolveLiftStaticVars() {
 
       // Now move the initialization code into the module init function.
       // The last statement is the 'return void', which we keep.
-      call->getModule()->initFn->body->body.last()
-        ->insertBefore(wrapperBlock->remove());
+      call->getModule()->initFn->body->insertAtHead(wrapperBlock->remove());
       wrapperBlock->flattenAndRemove();
       call->remove();
     }
