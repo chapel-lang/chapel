@@ -932,43 +932,6 @@ module AutoMath {
     return x;
   }
 
-  /* Returns the complex conjugate of the complex argument `z`.
-
-     :rtype: A complex number of the same type as `z`.
-  */
-  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
-  inline proc conjg(z: complex(?w)) {
-    return conj(z);
-  }
-
-  /* Returns the complex conjugate of the imaginary argument `z`.
-
-     :rtype: An imaginary number of the same type as `z`.
-  */
-  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
-  inline proc conjg(z: imag(?w)) {
-    return conj(z);
-  }
-
-  /* Returns the argument `z`.
-
-     :rtype: A number that is not complex or imaginary of the same type as `z`.
-  */
-  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
-  inline proc conjg(z: int(?w)) {
-    return conj(z);
-  }
-
-  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
-  inline proc conjg(z: uint(?w)) {
-    return conj(z);
-  }
-
-  @deprecated("'conjg' with a 'z' argument has been deprecated, please use 'conj' with an 'x' argument instead")
-  inline proc conjg(z: real(?w)) {
-    return conj(z);
-  }
-
   // When removing this deprecated function, be sure to remove chpl_cos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
