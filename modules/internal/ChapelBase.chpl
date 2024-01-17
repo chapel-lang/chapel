@@ -1377,6 +1377,9 @@ module ChapelBase {
   inline proc ref chpl_anycomplex.re ref {
     return __primitive("complex_get_real", this);
   }
+  proc param chpl_anycomplex.re param {
+    return __primitive("complex_get_real", this);
+  }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
@@ -1389,6 +1392,9 @@ module ChapelBase {
     }
   }
   inline proc ref chpl_anycomplex.im ref {
+    return __primitive("complex_get_imag", this);
+  }
+  proc param chpl_anycomplex.im param {
     return __primitive("complex_get_imag", this);
   }
   inline proc chpl_anycomplex.im {

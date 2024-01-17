@@ -2548,6 +2548,17 @@ module AutoMath {
 
   /* Returns the square root of the argument `x`.
 
+     It is an error if the `x` is less than zero.
+  */
+  proc sqrt(param x: real(64)) param :real(64) {
+    if x < 0 {
+      compilerError("sqrt of a negative number -- cast to complex if a complex result is desired");
+    }
+    return __primitive("sqrt", x);
+  }
+
+  /* Returns the square root of the argument `x`.
+
      It is an error if  `x` is less than zero.
   */
   inline proc sqrt(x : real(32)): real(32) {
@@ -2555,6 +2566,17 @@ module AutoMath {
     pragma "codegen for CPU and GPU"
     extern proc sqrtf(x: real(32)): real(32);
     return sqrtf(x);
+  }
+
+  /* Returns the square root of the argument `x`.
+
+     It is an error if  `x` is less than zero.
+  */
+  proc sqrt(param x: real(32)) param :real(32) {
+    if x < 0 {
+      compilerError("sqrt of a negative number -- cast to complex if a complex result is desired");
+    }
+    return __primitive("sqrt", x);
   }
 
   /* Returns the square root of the argument `z`. */
@@ -2566,11 +2588,21 @@ module AutoMath {
   }
 
   /* Returns the square root of the argument `z`. */
+  proc sqrt(param x: complex(64)) param :complex(64) {
+    return __primitive("sqrt", x);
+  }
+
+  /* Returns the square root of the argument `z`. */
   inline proc sqrt(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csqrt(x: complex(128)): complex(128);
     return csqrt(x);
+  }
+
+  /* Returns the square root of the argument `z`. */
+  proc sqrt(param x: complex(128)) param :complex(128) {
+    return __primitive("sqrt", x);
   }
 
   /* Returns the square root of the argument `z`. */

@@ -31,6 +31,7 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
+#include <complex>
 
 #include "num.h"
 #include "prim_data.h"
@@ -488,113 +489,187 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
           break; \
       }
 
-#define DO_FOLDSQRT() \
-      switch (imm->const_kind) { \
-        case NUM_KIND_NONE: \
-          break; \
-        case NUM_KIND_BOOL: { \
-          imm->v_bool = im1.bool_value(); break; \
-        } \
-        case NUM_KIND_UINT: { \
-          switch (imm->num_index) { \
-            case INT_SIZE_8:  \
-              imm->v_uint8 = (uint8_t) sqrt(im1.v_uint8); break; \
-            case INT_SIZE_16: \
-              imm->v_uint16 = (uint16_t) sqrt(im1.v_uint16); break; \
-            case INT_SIZE_32: \
-              imm->v_uint32 = (uint32_t) sqrt(im1.v_uint32); break; \
-            case INT_SIZE_64: \
-              imm->v_uint64 = (uint64_t) sqrt(im1.v_uint64); break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        } \
-        case NUM_KIND_INT: { \
-          switch (imm->num_index) { \
-            case INT_SIZE_8: \
-              imm->v_int8 = (int8_t) sqrt(im1.v_int8); break; \
-            case INT_SIZE_16: \
-              imm->v_int16 = (int16_t) sqrt(im1.v_int16); break; \
-            case INT_SIZE_32: \
-              imm->v_int32 = (int32_t) sqrt(im1.v_int32); break; \
-            case INT_SIZE_64: \
-              imm->v_int64 = (int64_t) sqrt(im1.v_int64); break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (imm->num_index) { \
-            case FLOAT_SIZE_32: \
-              imm->v_float32 = sqrtf(im1.v_float32); break; \
-            case FLOAT_SIZE_64: \
-              imm->v_float64 = sqrt(im1.v_float64); break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        case NUM_KIND_COMPLEX: \
-          CHPL_ASSERT(false && "Cannot fold sqrt on floating point values"); \
-          break; \
-      }
+static complex64 complexSqrt64(complex64 x) {
+  auto c = std::complex<float>(x.r, x.i);
+  auto n = std::sqrt(c);
+  complex64 ret;
+  ret.r = std::real(n);
+  ret.i = std::imag(n);
+  return ret;
+}
+static complex128 complexSqrt128(complex128 x) {
+  auto c = std::complex<double>(x.r, x.i);
+  auto n = std::sqrt(c);
+  complex128 ret;
+  ret.r = std::real(n);
+  ret.i = std::imag(n);
+  return ret;
+}
 
-#define DO_FOLDABS() \
-      switch (im1.const_kind) { \
-        case NUM_KIND_NONE: \
-          break; \
-        case NUM_KIND_BOOL: { \
-          imm->v_bool = im1.bool_value(); break; \
-        } \
-        case NUM_KIND_UINT: { \
-          switch (im1.num_index) { \
-            case INT_SIZE_8:  \
-              imm->v_uint8 = im1.v_uint8; break; \
-            case INT_SIZE_16: \
-              imm->v_uint16 = im1.v_uint16; break; \
-            case INT_SIZE_32: \
-              imm->v_uint32 = im1.v_uint32; break; \
-            case INT_SIZE_64: \
-              imm->v_uint64 = im1.v_uint64; break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        } \
-        case NUM_KIND_INT: { \
-          switch (im1.num_index) { \
-            case INT_SIZE_8: \
-              imm->v_int8 = (int8_t) labs(im1.v_int8); break; \
-            case INT_SIZE_16: \
-              imm->v_int16 = (int16_t) labs(im1.v_int16); break; \
-            case INT_SIZE_32: \
-              imm->v_int32 = (int32_t) labs(im1.v_int32); break; \
-            case INT_SIZE_64: \
-              imm->v_int64 = (int64_t) labs(im1.v_int64); break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        } \
-        case NUM_KIND_REAL: case NUM_KIND_IMAG: \
-          switch (im1.num_index) { \
-            case FLOAT_SIZE_32: \
-              imm->v_float32 = fabsf(im1.v_float32); break; \
-            case FLOAT_SIZE_64: \
-              imm->v_float64 = fabs(im1.v_float64); break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
-        case NUM_KIND_COMPLEX: \
-          switch (im1.num_index) { \
-            case COMPLEX_SIZE_64: \
-              imm->v_float32 = fsqrt(im1.v_complex64.r*im1.v_complex64.r + \
-                                     im1.v_complex64.i*im1.v_complex64.i); \
-              break; \
-            case COMPLEX_SIZE_128: \
-              imm->v_float64 = sqrt(im1.v_complex128.r*im1.v_complex128.r + \
-                                    im1.v_complex128.i*im1.v_complex128.i); \
-              break; \
-            default: CHPL_ASSERT(false && "Unhandled case in switch statement"); \
-          } \
-          break; \
+static void doFoldSqrt(chpl::Context* context,
+                       Immediate &im1, /* input */
+                       Immediate *imm  /* output */) {
+  switch (imm->const_kind) {
+    case NUM_KIND_NONE:
+      break;
+    case NUM_KIND_BOOL: {
+      imm->v_bool = im1.bool_value(); break;
+    }
+    case NUM_KIND_UINT: {
+      switch (imm->num_index) {
+        case INT_SIZE_8:
+          imm->v_uint8 = (uint8_t) sqrt(im1.v_uint8); break;
+        case INT_SIZE_16:
+          imm->v_uint16 = (uint16_t) sqrt(im1.v_uint16); break;
+        case INT_SIZE_32:
+          imm->v_uint32 = (uint32_t) sqrt(im1.v_uint32); break;
+        case INT_SIZE_64:
+          imm->v_uint64 = (uint64_t) sqrt(im1.v_uint64); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
       }
+      break;
+    }
+    case NUM_KIND_INT: {
+      switch (imm->num_index) {
+        case INT_SIZE_8:
+          imm->v_int8 = (int8_t) sqrt(im1.v_int8); break;
+        case INT_SIZE_16:
+          imm->v_int16 = (int16_t) sqrt(im1.v_int16); break;
+        case INT_SIZE_32:
+          imm->v_int32 = (int32_t) sqrt(im1.v_int32); break;
+        case INT_SIZE_64:
+          imm->v_int64 = (int64_t) sqrt(im1.v_int64); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+    }
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
+      switch (imm->num_index) {
+        case FLOAT_SIZE_32:
+          imm->v_float32 = sqrtf(im1.v_float32); break;
+        case FLOAT_SIZE_64:
+          imm->v_float64 = sqrt(im1.v_float64); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+    case NUM_KIND_COMPLEX:
+      switch (imm->num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_complex64 = complexSqrt64(im1.v_complex64); break;
+        case COMPLEX_SIZE_128:
+          imm->v_complex128 = complexSqrt128(im1.v_complex128); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+  }
+}
+
+static float complexAbs64(complex64 x) {
+  return  fsqrt(x.r*x.r + x.i*x.i);
+}
+
+static double complexAbs128(complex128 x) {
+  return sqrt(x.r*x.r + x.i*x.i);
+}
+
+static void doFoldAbs(chpl::Context* context,
+                      Immediate &im1, /* input */
+                      Immediate *imm  /* output */) {
+  switch (im1.const_kind) {
+    case NUM_KIND_NONE:
+      break;
+    case NUM_KIND_BOOL: {
+      imm->v_bool = im1.bool_value(); break;
+    }
+    case NUM_KIND_UINT: {
+      switch (im1.num_index) {
+        case INT_SIZE_8:
+          imm->v_uint8 = im1.v_uint8; break;
+        case INT_SIZE_16:
+          imm->v_uint16 = im1.v_uint16; break;
+        case INT_SIZE_32:
+          imm->v_uint32 = im1.v_uint32; break;
+        case INT_SIZE_64:
+          imm->v_uint64 = im1.v_uint64; break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+    }
+    case NUM_KIND_INT: {
+      switch (im1.num_index) {
+        case INT_SIZE_8:
+          imm->v_int8 = (int8_t) labs(im1.v_int8); break;
+        case INT_SIZE_16:
+          imm->v_int16 = (int16_t) labs(im1.v_int16); break;
+        case INT_SIZE_32:
+          imm->v_int32 = (int32_t) labs(im1.v_int32); break;
+        case INT_SIZE_64:
+          imm->v_int64 = (int64_t) labs(im1.v_int64); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+    }
+    case NUM_KIND_REAL: case NUM_KIND_IMAG:
+      switch (im1.num_index) {
+        case FLOAT_SIZE_32:
+          imm->v_float32 = fabsf(im1.v_float32); break;
+        case FLOAT_SIZE_64:
+          imm->v_float64 = fabs(im1.v_float64); break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+    case NUM_KIND_COMPLEX:
+      switch (im1.num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_float32 = complexAbs64(im1.v_complex64);
+          break;
+        case COMPLEX_SIZE_128:
+          imm->v_float64 = complexAbs128(im1.v_complex128);
+          break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+  }
+}
+
+static void doFoldGetReal(chpl::Context* context,
+                          Immediate &im1, /* input */
+                          Immediate *imm  /* output */) {
+  switch (im1.const_kind) {
+    case NUM_KIND_COMPLEX:
+      switch (im1.num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_float32 = im1.v_complex64.r;
+          break;
+        case COMPLEX_SIZE_128:
+          imm->v_float64 = im1.v_complex128.r;
+          break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+  }
+}
+
+static void doFoldGetImag(chpl::Context* context,
+                          Immediate &im1, /* input */
+                          Immediate *imm  /* output */) {
+  switch (im1.const_kind) {
+    case NUM_KIND_COMPLEX:
+      switch (im1.num_index) {
+        case COMPLEX_SIZE_64:
+          imm->v_float32 = im1.v_complex64.i;
+          break;
+        case COMPLEX_SIZE_128:
+          imm->v_float64 = im1.v_complex128.i;
+          break;
+        default: CHPL_ASSERT(false && "Unhandled case in switch statement");
+      }
+      break;
+  }
+}
+
+
+
 
 #define DO_FOLDB(_op,_complex_combine) \
       switch (im1.const_kind) { \
@@ -998,6 +1073,8 @@ fold_constant(chpl::Context* context, int op,
       imm->num_index = im1.num_index;
       break;
     case P_prim_abs:
+    case P_prim_get_imag:
+    case P_prim_get_real:
       if (im1.const_kind == NUM_KIND_IMAG) {
         imm->const_kind = NUM_KIND_REAL;
         imm->num_index = im1.num_index;
@@ -1052,11 +1129,19 @@ fold_constant(chpl::Context* context, int op,
       break;
     }
     case P_prim_sqrt: {
-      DO_FOLDSQRT();
+      doFoldSqrt(context, im1, imm);
       break;
     }
     case P_prim_abs: {
-      DO_FOLDABS();
+      doFoldAbs(context, im1, imm);
+      break;
+    }
+    case P_prim_get_imag: {
+      doFoldGetImag(context, im1, imm);
+      break;
+    }
+    case P_prim_get_real: {
+      doFoldGetReal(context, im1, imm);
       break;
     }
   }
