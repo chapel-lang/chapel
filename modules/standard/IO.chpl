@@ -5486,12 +5486,6 @@ inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-/* Used to control the behavior of the region argument for
-   :proc:`fileReader.seek` or :proc:`fileWriter.seek`. */
-@chpldoc.nodoc()
-@deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
-config param useNewSeekRegionBounds = true;
-
 /*
    Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
    discarded.
