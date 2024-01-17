@@ -6044,12 +6044,6 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
   return ret;
 }
 
-/* Used to control the behavior of the region argument for :proc:`file.lines`. // which has now been removed
- */
-@chpldoc.nodoc()
-@deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
-config param useNewLinesRegionBounds = true;
-
 @deprecated("writer with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
