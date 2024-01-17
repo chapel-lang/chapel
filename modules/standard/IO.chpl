@@ -5944,12 +5944,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
-/* Used to control the behavior of the region argument for :proc:`file.reader`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release")
-config param useNewFileReaderRegionBounds = true;
-
 /*
    Create a :record:`fileReader` that supports reading from a file. See
    :ref:`about-io-overview`.
