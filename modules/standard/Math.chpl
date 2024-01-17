@@ -932,7 +932,10 @@ module Math {
   */
   @unstable("rint is unstable while we design more thorough rounding support")
   inline proc rint(x: real(64)): real(64) {
-    return chpl_rint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rint(x: real(64)): real(64);
+    return rint(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -941,7 +944,10 @@ module Math {
   */
   @unstable("rint is unstable while we design more thorough rounding support")
   inline proc rint(x : real(32)): real(32) {
-    return chpl_rint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc rintf(x: real(32)): real(32);
+    return rintf(x);
   }
 
   /* Returns the sine of the argument `x`. */
