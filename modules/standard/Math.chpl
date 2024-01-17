@@ -457,8 +457,14 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divCeil(param x: integral, param y: integral) param do
-    return chpl_divceil(x, y);
+  proc divCeil(param x: integral, param y: integral) param do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then (x + y - 1) / y
+      else                     x / y
+    else
+      if isNonnegative(y) then x / y
+      else                     (x + y + 1) / y;
+
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded up to the nearest integer.
@@ -466,7 +472,13 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divCeil(x: integral, y: integral) do return chpl_divceil(x, y);
+  proc divCeil(x: integral, y: integral) do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then (x + y - 1) / y
+      else                     x / y
+    else
+      if isNonnegative(y) then x / y
+      else                     (x + y + 1) / y;
 
   /*
     A variant of :proc:`divCeil` that performs no runtime checks.
@@ -475,7 +487,9 @@ module Math {
   */
   @unstable("divCeilPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
   proc divCeilPos(x: integral, y: integral) {
-    return chpl_divceilpos(x, y);
+    if !isIntType(x.type) || !isIntType(y.type) then
+      compilerError("divCeilPos() accepts only arguments of signed integer types");
+    return (x - 1) / y + 1;
   }
 
   /* Returns :proc:`~Math.floor`\(`x`/`y`),
@@ -485,7 +499,12 @@ module Math {
      fewer conditionals will be evaluated at run time.
   */
   proc divFloor(param x: integral, param y: integral) param do return
-    chpl_divfloor(x, y);
+    if isNonnegative(x) then
+      if isNonnegative(y) then x / y
+      else                     (x - y - 1) / y
+    else
+      if isNonnegative(y) then (x - y + 1) / y
+      else                     x / y;
 
   /* Returns :proc:`~Math.floor`\(`x`/`y`),
      i.e., the fraction `x`/`y` rounded down to the nearest integer.
@@ -493,7 +512,13 @@ module Math {
      If the arguments are of unsigned type, then
      fewer conditionals will be evaluated at run time.
   */
-  proc divFloor(x: integral, y: integral) do return chpl_divfloor(x, y);
+  proc divFloor(x: integral, y: integral) do return
+    if isNonnegative(x) then
+      if isNonnegative(y) then x / y
+      else                     (x - y - 1) / y
+    else
+      if isNonnegative(y) then (x - y + 1) / y
+      else                     x / y;
 
   /*
     A variant of :proc:`divFloor` that performs no runtime checks.
@@ -502,7 +527,9 @@ module Math {
   */
   @unstable("divFloorPos is unstable due to questions about its utility.  If you find this function valuable, please let us know!")
   proc divFloorPos(x: integral, y: integral) {
-    return chpl_divfloorpos(x, y);
+    if !isIntType(x.type) || !isIntType(y.type) then
+      compilerError("divFloorPos() accepts only arguments of signed integer types");
+    return x / y;
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
