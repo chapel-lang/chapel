@@ -18,7 +18,6 @@ writeln();
 
 writeln("/////////// domain + and - ///////////");
 
-var d1 = {1..3};  //wass needed?
 var d2, d3: domain(string, parSafe=false);
 config var str = "xyz", str2 = "s2";
 
