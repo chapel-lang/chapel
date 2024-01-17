@@ -86,11 +86,37 @@ const ID& CPtrType::getId(Context* context) {
   return QUERY_END(result);
 }
 
+const CPtrType* CPtrType::withoutConst(Context* context) const {
+  const CPtrType* instFrom = nullptr;
+  if (instantiatedFrom_) {
+    instFrom = instantiatedFrom_->withoutConst(context);
+  }
+
+  return CPtrType::getCPtrType(context, instFrom, eltType_, /* isConst */ false).get();
+}
+
 const ID& CPtrType::getConstId(Context* context) {
   QUERY_BEGIN(getConstId, context);
   UniqueString path = UniqueString::get(context, "CTypes.c_ptrConst");
   ID result { path, -1, 0 };
   return QUERY_END(result);
+}
+
+bool CPtrType::isInstantiationOf(Context* context, const CPtrType* genericType) const {
+  auto thisFrom = instantiatedFromCPtrType();
+  auto argFrom = genericType->instantiatedFromCPtrType();
+  if (argFrom == nullptr) {
+    // if genericType is not a partial instantiation
+    return (thisFrom != nullptr && thisFrom == genericType);
+  }
+
+  if (thisFrom == argFrom) {
+    // handle the case of genericType being partly instantiated
+    // (or instantiated with a generic type)
+    return isEltTypeInstantiationOf(context, genericType);
+  }
+
+  return false;
 }
 
 void CPtrType::stringify(std::ostream& ss,

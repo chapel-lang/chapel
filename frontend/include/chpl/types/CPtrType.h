@@ -86,6 +86,8 @@ class CPtrType final : public Type {
     return eltType_;
   }
 
+  const CPtrType* withoutConst(Context* context) const;
+
   bool isConst() const {
     return isConst_;
   }
@@ -96,22 +98,7 @@ class CPtrType final : public Type {
   }
 
   bool isInstantiationOf(Context* context,
-                         const CPtrType* genericType) const {
-    auto thisFrom = instantiatedFromCPtrType();
-    auto argFrom = genericType->instantiatedFromCPtrType();
-    if (argFrom == nullptr) {
-      // if genericType is not a partial instantiation
-      return (thisFrom != nullptr && thisFrom == genericType);
-    }
-
-    if (thisFrom == argFrom) {
-      // handle the case of genericType being partly instantiated
-      // (or instantiated with a generic type)
-      return isEltTypeInstantiationOf(context, genericType);
-    }
-
-    return false;
-  }
+                         const CPtrType* genericType) const;
 
   virtual void stringify(std::ostream& ss,
                          chpl::StringifyKind stringKind) const override;

@@ -253,6 +253,30 @@ static void test18() {
   });
 }
 
+static void test19() {
+  testCPtrArg("c_ptrConst(int(?w))", "c_ptr(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT == IntType::get(eg.context(), 32));
+  });
+}
+
+static void test20() {
+  testCPtrArg("c_ptrConst(rec(?t))", "c_ptr(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isRecordType());
+    auto rt = eltT->toRecordType();
+    assert(rt->name() == "rec");
+    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -272,6 +296,8 @@ int main() {
   test16();
   test17();
   test18();
+  test19();
+  test20();
 
   return 0;
 }

@@ -1352,6 +1352,16 @@ QualifiedType getInstantiationType(Context* context,
       auto ct = ClassType::get(context, bct, manager, dec);
       return QualifiedType(formalType.kind(), ct);
     }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      // The only reason we should need an instantiation type is if a constness
+      // coercion was applied, which is only possible for const formal, non-const
+      // actual.
+      CHPL_ASSERT(formalPt->isConst() && !actualPt->isConst());
+
+      auto pt = CPtrType::getConst(context, actualPt->eltType());
+      return QualifiedType(formalType.kind(), pt);
+    }
   }
 
   // TODO: sync type -> value type?
