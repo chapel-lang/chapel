@@ -609,12 +609,18 @@ module Math {
 
   /* Returns the gamma function of the argument `x`. */
   inline proc gamma(x: real(64)): real(64) {
-    return chpl_tgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tgamma(x: real(64)): real(64);
+    return tgamma(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
   inline proc gamma(x : real(32)): real(32) {
-    return chpl_tgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tgammaf(x: real(32)): real(32);
+    return tgammaf(x);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the

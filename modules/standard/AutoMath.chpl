@@ -2549,44 +2549,6 @@ module AutoMath {
     return ctanh(z);
   }
 
-  // When removing this deprecated function, be sure to remove chpl_tgamma and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
-  inline proc tgamma(x: real(64)): real(64) {
-    return chpl_tgamma(x);
-  }
-
-  inline proc chpl_tgamma(x: real(64)): real(64) {
-    // Note: this extern proc was originally free standing.  It might be
-    // reasonable to make it that way again when the deprecated version is
-    // removed
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc tgamma(x: real(64)): real(64);
-    return tgamma(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_tgamma and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'tgamma' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it.  Note that the function has been renamed to 'gamma' there")
-  inline proc tgamma(x : real(32)): real(32) {
-    return chpl_tgamma(x);
-  }
-
-  inline proc chpl_tgamma(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc tgammaf(x: real(32)): real(32);
-    return tgammaf(x);
-  }
-
-
   /* Returns the nearest integral value to the argument `x` that is not larger
      than `x` in absolute value. */
   pragma "fn synchronization free"

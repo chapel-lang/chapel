@@ -1,4 +1,0 @@
-depTgamma.chpl:6: warning: 'tgamma' has been deprecated in favor of gamma, please use that instead
-depTgamma.chpl:7: warning: 'tgamma' has been deprecated in favor of gamma, please use that instead
-true
-true
