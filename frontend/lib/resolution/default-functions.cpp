@@ -97,7 +97,11 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           // if the receiver type is a generic type and we have
           // an instantiation.
           auto result = canPass(context, haveQt, receiverQualType);
-          if (result.passes() && !result.converts() && !result.promotes()) {
+          if (result.passes() &&
+              (!result.converts() ||
+               result.conversionKind() ==
+                   CanPassResult::ConversionKind::BORROWS) &&
+              !result.promotes()) {
             return true;
           }
         }
