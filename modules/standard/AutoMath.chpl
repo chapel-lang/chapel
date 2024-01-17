@@ -2459,17 +2459,6 @@ module AutoMath {
     return ( (diff<=abs(relTol*y)) || (diff<=abs(relTol*x)) || (diff<=absTol) );
   }
 
-  /* Returns true if `x` and `y` are approximately equal, else returns false. */
-  @deprecated("isclose with 'rtol' and 'atol' arguments is now deprecated, please use :proc:`isClose` with 'relTol' and 'absTol' arguments instead")
-  inline proc isclose(x, y, rtol = 1e-5, atol = 0.0): bool {
-    if boundsChecking && (rtol < 0) then
-      HaltWrappers.boundsCheckHalt("Input value for rtol must be positive");
-    if boundsChecking && (atol < 0) then
-      HaltWrappers.boundsCheckHalt("Input value for atol must be positive");
-    var diff: real = abs(x-y);
-    return ( (diff<=abs(rtol*y)) || (diff<=abs(rtol*x)) || (diff<=atol) );
-  }
-
   /* Returns true if the sign of `x` is negative, else returns false. It detects
      the sign bit of zeroes, infinities, and nans */
   @unstable("signbit is unstable and may change its name in the future")
