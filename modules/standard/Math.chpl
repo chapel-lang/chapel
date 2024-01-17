@@ -633,7 +633,7 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc ln(x: real(64)): real(64) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -641,17 +641,17 @@ module Math {
      It is an error if `x` is less than or equal to zero.
   */
   inline proc ln(x : real(32)): real(32) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc ln(x: complex(64)): complex(64) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc ln(x: complex(128)): complex(128) {
-    return chpl_log(x);
+    return log(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -690,26 +690,35 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log(x: real(64)): real(64) {
-    return chpl_log(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log(x: real(64)): real(64);
 
   /* Returns the natural logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log(x : real(32)): real(32) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc logf(x: real(32)): real(32);
+    return logf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc log(x: complex(64)): complex(64) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc clogf(z: complex(64)): complex(64);
+    return clogf(x);
   }
 
   /* Returns the natural logarithm of the argument `x`. */
   inline proc log(x: complex(128)): complex(128) {
-    return chpl_log(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc clog(z: complex(128)): complex(128);
+    return clog(x);
   }
 
   /* Returns the natural logarithm of the argument `x`.
@@ -748,16 +757,19 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log10(x: real(64)): real(64) {
-    return chpl_log10(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log10(x: real(64)): real(64);
 
   /* Returns the base 10 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log10(x : real(32)): real(32) {
-    return chpl_log10(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log10f(x: real(32)): real(32);
+    return log10f(x);
   }
 
   /* Returns the base 10 logarithm of the argument `x`.
@@ -838,6 +850,41 @@ module Math {
     }
   }
 
+  private inline proc _logBasePow2Help(in val, baseLog2) {
+    // These are used here to avoid including BitOps by default.
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_bitops_clz_32(x: c_uint) : uint(32);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc chpl_bitops_clz_64(x: c_ulonglong) : uint(64);
+
+    var lg2 = 0;
+
+    if numBits(val.type) <= 32 {
+      var tmp:uint(32) = val:uint(32);
+      lg2 = 32 - 1 - chpl_bitops_clz_32(tmp):int;
+    } else if numBits(val.type) == 64 {
+      var tmp:uint(64) = val:uint(64);
+      lg2 = 64 - 1 - chpl_bitops_clz_64(tmp):int;
+    } else {
+      compilerError("Integer width not handled in logBasePow2");
+    }
+
+    return lg2 / baseLog2;
+  }
+
+  private inline proc chpl_logBasePow2(val: int(?w), baseLog2) {
+    if (val < 1) {
+      halt("Can't take the log() of a non-positive integer");
+    }
+    return _logBasePow2Help(val, baseLog2);
+  }
+
+  private inline proc chpl_logBasePow2(val: uint(?w), baseLog2) {
+    return _logBasePow2Help(val, baseLog2);
+  }
+
   /* Returns the log to the base `2**exp` of the given `x` value.
      If `exp` is `1`, then returns the log to the base `2`;
      if `exp` is `2`, then returns the log to the base `4`, etc.
@@ -866,16 +913,19 @@ module Math {
 
      It is an error if `x` is less than or equal to zero.
   */
-  inline proc log2(x: real(64)): real(64) {
-    return chpl_log2(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc log2(x: real(64)): real(64);
 
   /* Returns the base 2 logarithm of the argument `x`.
 
      It is an error if `x` is less than or equal to zero.
   */
   inline proc log2(x : real(32)): real(32) {
-    return chpl_log2(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc log2f(x: real(32)): real(32);
+    return log2f(x);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -887,7 +937,7 @@ module Math {
   */
   @unstable("The version of 'log2' that takes an int argument is unstable")
   inline proc log2(x: int(?w)) {
-    return chpl_log2(x);
+    return chpl_logBasePow2(x, 1);
   }
 
   /* Returns the base 2 logarithm of the argument `x`,
@@ -899,7 +949,7 @@ module Math {
   */
   @unstable("The version of 'log2' that takes an uint argument is unstable")
   inline proc log2(x: uint(?w)) {
-    return chpl_log2(x);
+    return chpl_logBasePow2(x, 1);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
