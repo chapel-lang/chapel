@@ -155,9 +155,11 @@ proc testsize(size:int) {
 
   var ntrials = 1;
   if mibibytes < 1 then
-    ntrials = 10;
+    ntrials = 200;
+  if kibibytes < 100 then
+    ntrials = 2_000;
   if kibibytes < 1 then
-    ntrials = 100;
+    ntrials = 20_000;
 
   for m in methods {
     const ref cmp = if reverse then reverseComparator else defaultComparator;
