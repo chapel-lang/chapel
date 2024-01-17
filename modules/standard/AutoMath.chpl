@@ -1397,16 +1397,6 @@ module AutoMath {
      `false` otherwise. */
   inline proc isNan(x: real(32)): bool do return chpl_macro_float_isnan(x):bool;
 
-  /* Returns `true` if the argument `x` does not represent a valid number;
-     `false` otherwise. */
-  @deprecated(notes="'isnan' is deprecated in favor of :proc:`isNan`, please use that instead")
-  inline proc isnan(x: real(64)): bool do return isNan(x):bool;
-
-  /* Returns `true` if the argument `x` does not represent a valid number;
-     `false` otherwise. */
-  @deprecated(notes="'isnan' is deprecated in favor of :proc:`isNan`, please use that instead")
-  inline proc isnan(x: real(32)): bool do return isNan(x):bool;
-
   // When removing this deprecated function, be sure to remove chpl_log and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
