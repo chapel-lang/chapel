@@ -277,6 +277,20 @@ static void test20() {
   });
 }
 
+static void test21() {
+  testCPtrArg("c_ptr(int(?w))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
+  });
+}
+
+static void test22() {
+  testCPtrArg("c_ptr(rec(?t))", "c_ptrConst(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -298,6 +312,8 @@ int main() {
   test18();
   test19();
   test20();
+  test21();
+  test22();
 
   return 0;
 }
