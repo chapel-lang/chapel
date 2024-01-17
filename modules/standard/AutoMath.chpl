@@ -217,57 +217,6 @@ module AutoMath {
     return __primitive("abs", x);
   }
 
-  /* Returns the absolute value of the integer argument.
-
-     :rtype: The type of `i`.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(i : int(?w)) do return abs(i);
-
-  /* Returns the absolute value of the unsigned integer argument.
-
-     :rtype: The type of `i`.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(i : uint(?w)) do return abs(i);
-
-  /* Returns the absolute value of the integer param argument `i`. */
-  pragma "last resort"
-  @deprecated("The argument name 'i' is deprecated for param function 'abs', please use 'x' instead")
-  proc abs(param i : integral) param do return abs(i);
-
-  /* Returns the magnitude of the real argument `r`. */
-  pragma "last resort"
-  @deprecated("The argument name 'r' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(r : real(64)):real(64) do return abs(r);
-
-  /* Returns the real magnitude of the imaginary argument `im`. */
-  pragma "last resort"
-  @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(im : imag(64)): real(64) do return abs(im);
-
-  /* Returns the real magnitude of the imaginary argument `im`. */
-  pragma "last resort"
-  @deprecated("The argument name 'im' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(im: imag(32)): real(32) {
-    return abs(im);
-  }
-
-  /* Returns the magnitude (often called modulus) of complex `z`.
-
-     In concert with the related :proc:`phase` (a.k.a. argument)
-     of `z`, it can be used to recompute `z`.
-
-     :rtype: ``real(w/2)`` when `z` has a type of ``complex(w)``.
-  */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'abs', please use 'x' instead")
-  inline proc abs(z : complex(?w)): real(w/2) {
-    return abs(z);
-  }
-
   // When removing this deprecated function, be sure to remove chpl_acos and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
