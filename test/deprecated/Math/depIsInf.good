@@ -1,4 +1,0 @@
-depIsInf.chpl:1: warning: 'isinf' is deprecated in favor of isInf, please use that instead
-depIsInf.chpl:2: warning: 'isinf' is deprecated in favor of isInf, please use that instead
-false
-true

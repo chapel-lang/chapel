@@ -1389,16 +1389,6 @@ module AutoMath {
      `false` otherwise. */
   inline proc isInf(x: real(32)): bool do return chpl_macro_float_isinf(x):bool;
 
-  /* Returns `true` if the argument `x` is a representation of *infinity*;
-     `false` otherwise. */
-  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
-  inline proc isinf(x: real(64)): bool do return isInf(x):bool;
-
-  /* Returns `true` if the argument `x` is a representation of *infinity*;
-     `false` otherwise. */
-  @deprecated(notes="'isinf' is deprecated in favor of :proc:`isInf`, please use that instead")
-  inline proc isinf(x: real(32)): bool do return isInf(x):bool;
-
   /* Returns `true` if the argument `x` does not represent a valid number;
      `false` otherwise. */
   inline proc isNan(x: real(64)): bool do return chpl_macro_double_isnan(x):bool;
