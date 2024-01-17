@@ -251,9 +251,9 @@ static void test23() {
   primTypeHelper<VoidType>("gpu arg", {});
 }
 
-// test for prim "_wide_get_node", which should return a NodeIdType (int(32))
+// test for prim "_wide_get_node", which should return an int(32)
 static void test24() {
-  primTypeHelper<NodeIdType>("_wide_get_node", {});
+  intPrimTypeHelper(32, "_wide_get_node", {});
 }
 
 

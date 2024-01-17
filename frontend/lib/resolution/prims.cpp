@@ -1571,9 +1571,9 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_STATIC_FIELD_TYPE:
       type = staticFieldType(context, ci);
       break;
-    case PRIM_WIDE_GET_NODE: // TODO: this should be nodeIdType (int32)
+    case PRIM_WIDE_GET_NODE: // NodeIdType is defined as int32
       type = QualifiedType(QualifiedType::CONST_VAR,
-                           NodeIdType::get(context));
+                           IntType::get(context, 32));
       break;
     case PRIM_USED_MODULES_LIST:
     case PRIM_REFERENCED_MODULES_LIST:

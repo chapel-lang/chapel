@@ -64,7 +64,6 @@ TYPE_BEGIN_SUBCLASSES(BuiltinType)
   BUILTIN_TYPE_NODE(SyncAuxType, "_sync_aux_t")
   BUILTIN_TYPE_NODE(SingleAuxType, "_single_aux_t")
   BUILTIN_TYPE_NODE(TaskIdType, "chpl_taskID_t")
-  BUILTIN_TYPE_NODE(NodeIdType, "chpl_nodeID_t")
 
   // generic builtin types. AnyComplexType must be the first of these
   // (or else adjust BuiltinType::genericity and this comment)

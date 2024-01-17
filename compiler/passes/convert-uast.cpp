@@ -4138,7 +4138,6 @@ Type* Converter::convertType(const types::QualifiedType qt) {
     case typetags::SyncAuxType:   return dtSyncVarAuxFields;
     case typetags::SingleAuxType: return dtSingleVarAuxFields;
     case typetags::TaskIdType:    return dtTaskID;
-    case typetags::NodeIdType:    return NODE_ID_TYPE;
 
     // generic builtin types
     case typetags::AnyComplexType:               return dtAnyComplex;
