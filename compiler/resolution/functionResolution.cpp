@@ -4184,11 +4184,6 @@ static FnSymbol* resolveNormalCall(CallInfo& info, check_state_t checkState) {
   if (retval) {
     retval->maybeGenerateDeprecationWarning(info.call);
     retval->maybeGenerateUnstableWarning(info.call);
-    // if(retval->hasFlag(FLAG_RUNTIME_TYPE_INIT_FN)){
-    //   if(retval->numFormals()==3 && retval->getFormal(2)->intent==INTENT_TYPE){
-    //     USR_WARN("boo boo");
-    //   }
-    // }
   }
 
   return retval;

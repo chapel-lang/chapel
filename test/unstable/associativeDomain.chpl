@@ -29,7 +29,7 @@ var y1 = new Y(), y2 = new Y();
 }
 
 
-// The warnings for -sparSafeDefault seem to be optimized away
+// The warnings for -sparSafeOnByDefault seem to be optimized away
 // But they reappear if you comment out the above block?
 {
  // parSafe=true

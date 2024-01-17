@@ -45,12 +45,13 @@ module ChapelDomain {
   @chpldoc.nodoc
   config param noNegativeStrideWarnings = false;
 
-  /* Compile with ``-sparSafeDefault`` to use ``parSafe=true``
+  /* Compile with ``-sparSafeOnByDefault`` to use ``parSafe=true``
      by default for associative domains and arrays */
   @chpldoc.nodoc
-  config param parSafeDefault = false;
+  config param parSafeOnByDefault = false;
 
   /* Compile with ``-snoParSafeWarning`` to suppress the warning
+     about a missing explicit ``parSafe`` parameter and
      about the default parSafe-ty mode for associative domains
      and arrays changing from ``true`` to ``false``. */
   @chpldoc.nodoc
@@ -102,19 +103,19 @@ module ChapelDomain {
   }
 
   private proc warnParSafetyDefaultChange(param domainLiteralCall:bool=false) param {
-    if !parSafeDefault && !noParSafeWarning {
+    if !parSafeOnByDefault && !noParSafeWarning {
         /* User didn't compile with any additional flags, so we generate the standard warning*/
         if domainLiteralCall then
-          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. If you want to use parSafe=true, use the domain type initializer (ex:domain(string, parSafe=true)). To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeOnByDefault'.");
         else
-          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.");
+          compilerWarning("The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeOnByDefault'.");
       }
-    return parSafeDefault;
+    return parSafeOnByDefault;
   }
 
   private proc warnParSafeUnstable(param parSafe : bool) param {
     if parSafe && chpl_warnUnstable then
-      compilerWarning("parSafe=true is unstable for associative domains and arrays, and it's behavior may change in the future");
+      compilerWarning("parSafe=true is unstable for associative domains and arrays, and its behavior may change in the future");
   }
 
   private proc isUltimatelyRectangularParent(parentDom: domain) param {
@@ -125,27 +126,7 @@ module ChapelDomain {
     else
       return false;
   }
-  // We created two version of this function
-  // to differentiate the case where user specifies
-  // parSafe=false (no warning should be issued) with the case where
-  // user does not specify parSafe and it defaults to false (warning issued
-  // in this case unless silenced by -snoParSafeWarning)
 
-  // pragma "runtime type init fn"
-  // proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType) type {
-  //   checkDomainType(idxType);
-  //   warnParSafetyDefaultChange();
-  //   return new _domain(dist, idxType, parSafeDefault);
-  // }
-
-  // pragma "runtime type init fn"
-  // proc chpl__buildDomainRuntimeType(dist: _distribution, type idxType,
-  //                                   param parSafe: bool) type {
-  //   checkDomainType(idxType);
-  //   warnParSafeUnstable(parSafe);
-  //   // warnParSafetyDefaultChange();
-  //   return new _domain(dist, idxType, parSafe);
-  // }
   pragma "runtime type init fn"
   proc chpl__buildSparseDomainRuntimeType(dist,
                                           parentDom: domain) type {

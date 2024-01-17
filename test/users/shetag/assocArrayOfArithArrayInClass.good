@@ -1,4 +1,4 @@
-assocArrayOfArithArrayInClass.chpl:2: warning: The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeDefault'.
+assocArrayOfArithArrayInClass.chpl:2: warning: The default parSafe mode for associative domains and arrays is changing from 'true' to 'false'. To suppress this warning, compile with '-snoParSafeWarning'. To use the old default of parSafe=true, compile with '-sparSafeOnByDefault'.
 {0..1}
 1.0 2.0
 {0..1}
