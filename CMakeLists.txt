@@ -388,7 +388,7 @@ else()
       set(CHPL_INSTALL_RPATH "@executable_path/../../lib/compiler/${CHPL_HOST_BIN_SUBDIR}")
     endif()
 
-    set_target_properties(chpl chpldoc
+    set_target_properties(chpl chpldoc ChplFrontendShared
                           PROPERTIES
                           BUILD_WITH_INSTALL_RPATH TRUE
                           INSTALL_RPATH ${CHPL_INSTALL_RPATH})
