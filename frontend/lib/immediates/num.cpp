@@ -1026,9 +1026,6 @@ fold_constant(chpl::Context* context, int op,
   if (aim2)
     im2 = *aim2;
 
-  if (op == P_prim_abs && im1.const_kind == NUM_KIND_COMPLEX)
-    gdbShouldBreakHere();
-
   switch (op) {
     default: CHPL_ASSERT(false && "fold constant op not supported"); break;
     case P_prim_mult:
