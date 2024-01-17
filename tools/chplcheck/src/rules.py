@@ -142,7 +142,8 @@ def register_rules(driver):
             var_kind = var_node.kind()
 
             var_attributes = ''
-            if var_attribute_group := var_node.attribute_group():
+            var_attribute_group = var_node.attribute_group()
+            if var_attribute_group:
                 var_attributes = " ".join(
                     [a.name() for a in var_attribute_group if a is not None])
 
@@ -225,7 +226,8 @@ def register_rules(driver):
             formals[formal.unique_id()] = formal
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
@@ -250,7 +252,8 @@ def register_rules(driver):
                 indices[index.unique_id()] = index
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in indices.keys() - uses:

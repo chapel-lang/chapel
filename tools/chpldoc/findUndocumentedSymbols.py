@@ -91,7 +91,8 @@ def get_module(n: dyno.AstNode) -> dyno.AstNode:
         return None
     if isinstance(n, dyno.Module):
         return n
-    if parent := n.parent():
+    parent = n.parent()
+    if parent:
         return get_module(parent)
     return None
 
@@ -100,7 +101,9 @@ def node_has_attribute(node: dyno.AstNode, marker: str) -> bool:
     """
     a symbol has an attribute if it has an attribute that matches the argument
     """
-    return (attrs := node.attribute_group()) and any(a.name() == marker for a in attrs)
+    attrs = node.attribute_group()
+    if attrs:
+        return any(a.name() == marker for a in attrs)
 
 
 def is_deprecated(node: dyno.AstNode) -> bool:
@@ -138,7 +141,9 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     # and one `chpldoc` also doesn't handle currently
     if (
         isinstance(node, dyno.MultiDecl)
-        and any(n.name().startswith("chpl_") for n in node if hasattr(n, "name"))
+        and any(
+            n.name().startswith("chpl_") for n in node if hasattr(n, "name")
+        )
         and "chpldoc ignore chpl prefix" not in node.pragmas()
     ):
         return True
@@ -189,19 +194,21 @@ def get_node_name(node: dyno.AstNode) -> List[str]:
         # handles secondary methods
         if (
             isinstance(node, dyno.Function)
-            and (this := node.this_formal())
-            and (typename := this.type_expression())
+            and node.this_formal()
+            and node.this_formal().type_expression()
         ):
             aggregate_name = get_single_name(typename)
             name = f"{aggregate_name}.{name}"
         # handles primary methods and fields
-        elif (p := node.parent()) and (
-            isinstance(p, dyno.AggregateDecl) or isinstance(p, dyno.Interface)
+        elif node.parent() and (
+            isinstance(node.parent(), dyno.AggregateDecl)
+            or isinstance(node.parent(), dyno.Interface)
         ):
-            aggregate_name = get_single_name(p)
+            aggregate_name = get_single_name(node.parent())
             name = f"{aggregate_name}.{name}"
 
-        if (mod := get_module(node.parent())) and mod.kind() != "implicit":
+        mod = get_module(node.parent())
+        if mod and mod.kind() != "implicit":
             module_name = mod.name()
             name = f"{module_name}.{name}"
 
@@ -313,8 +320,9 @@ class FindUndocumentedSymbols:
         - the previous node is a comment
         """
 
+        prev = self._get_previous_sibling(node)
         if (
-            (prev := self._get_previous_sibling(node))
+            prev
             and isinstance(prev, dyno.Comment)
             and is_docstring_comment(prev)
         ):
@@ -337,7 +345,9 @@ def get_files(files: List[str]) -> Generator:
         if os.path.isfile(file):
             yield file
         elif os.path.isdir(file):
-            yield from glob.glob(os.path.join(file, "**", "*.chpl"), recursive=True)
+            yield from glob.glob(
+                os.path.join(file, "**", "*.chpl"), recursive=True
+            )
         else:
             print("Error: path was not file or directory", file=sys.stderr)
             exit(1)
@@ -386,7 +396,9 @@ def main(raw_args: List[str]) -> int:
             path = os.path.relpath(loc.path(), curdir)
             names = get_node_name(sym)
             for name in names:
-                print(f"{report_kind}: '{name}' at {path}:{line} is undocumented")
+                print(
+                    f"{report_kind}: '{name}' at {path}:{line} is undocumented"
+                )
                 ret_code = 1 if ci else 0
 
     return ret_code

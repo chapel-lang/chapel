@@ -19,7 +19,7 @@
 #
 
 import chapel.core
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
 
 
 def _get_base_header() -> str:
@@ -27,7 +27,7 @@ def _get_base_header() -> str:
     return c._get_pyi_file()
 
 
-def _section(*args: str | List[str], indent: int = 4) -> List[str]:
+def _section(*args: Union[str, List[str]], indent: int = 4) -> List[str]:
     temp = []
     for arg in args:
         if not isinstance(arg, list):
@@ -43,9 +43,9 @@ def _wrap_docstring(docstring: str) -> List[str]:
 
 def _wrap_method(
     name: str,
-    args: List[Tuple[str, str | None]] = [],
+    args: List[Tuple[str, Optional[str]]] = [],
     rettype: str = "None",
-    docstring: str | None = None,
+    docstring: Optional[str] = None,
 ) -> List[str]:
     argstr = ""
     for a, t in args:
@@ -163,7 +163,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "attribute_group",
-            rettype="AttributeGroup | None",
+            rettype="typing.Optional[AttributeGroup]",
             docstring="Get the attribute group, if any, associated with this node",
         ),
         _wrap_method(
@@ -173,7 +173,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "parent",
-            rettype="AstNode | None",
+            rettype="typing.Optional[AstNode]",
             docstring="Get the parent node of this AST node",
         ),
         _wrap_method(
