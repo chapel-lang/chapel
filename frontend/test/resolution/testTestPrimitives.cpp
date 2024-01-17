@@ -70,7 +70,7 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
         assert(gatherResult.type().isParam());
         assert(gatherResult.type().param());
         assert(gatherResult.type().param()->isIntParam());
-        assert(gatherResult.type().param()->toIntParam()->value() == expectedTestNames.size());
+        assert((size_t)(gatherResult.type().param()->toIntParam()->value()) == expectedTestNames.size());
       }
     }
   }
@@ -84,7 +84,7 @@ static void testGatherTests(const std::vector<std::pair<std::string, std::string
   std::sort(actualTestNames.begin(), actualTestNames.end());
 
   assert(expectedTestNames.size() == expectedTestNames.size());
-  for (int i = 0; i < expectedTestNames.size(); i++) {
+  for (size_t i = 0; i < expectedTestNames.size(); i++) {
     assert(expectedTestNames[i] == actualTestNames[i]);
   }
 }

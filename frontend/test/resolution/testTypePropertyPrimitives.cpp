@@ -34,7 +34,7 @@ struct Test {
     TRUE,
     FALSE,
     STRING,
-    ERROR 
+    ERROR
   };
 
   struct PrimitiveCalls {
@@ -62,7 +62,7 @@ static bool
 isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
                    std::string& out) {
   if (qt.kind() == QualifiedType::PARAM) {
-    if (auto t = qt.type()) {
+    if (qt.type()) {
       if (auto p = qt.param()) {
         if (auto sp = p->toStringParam()) {
           out = sp->value().c_str();
@@ -119,7 +119,7 @@ static void testPrimitive(const Test& tpg) {
     ps << "param " << var << " = " << "__primitive(\"";
     ps << tagStr << "\", ";
 
-    for (int i = 0; i < call.actuals.size(); i++) {
+    for (size_t i = 0; i < call.actuals.size(); i++) {
       ps << call.actuals[i];
       bool last = (i+1) == call.actuals.size();
       if (!last) ps << ", ";
