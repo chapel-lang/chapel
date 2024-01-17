@@ -2271,7 +2271,7 @@ module SequentialInPlacePartitioning {
 module TwoArrayPartitioning {
   private use Math;
   public use List only list;
-  import Sort.{ShellSort, MSBRadixSort, QuickSort};
+  import Sort.{ShellSort, MSBRadixSort};
   import Sort.{RadixSortHelp, ShallowCopy};
   use MSBRadixSort;
 
