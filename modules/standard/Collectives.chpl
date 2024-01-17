@@ -291,4 +291,3 @@ module Collectives {
     }
   }
 }
-

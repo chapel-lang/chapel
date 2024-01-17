@@ -86,7 +86,7 @@ module MemMove {
       upon a call to :proc:`explicitDeinit()`. It should only be called
       when deinitialization would not occur otherwise.
 
-    :arg: A variable to deinitialize
+    :arg arg: A variable to deinitialize
   */
   @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
   proc explicitDeinit(ref arg: ?t) {
