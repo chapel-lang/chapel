@@ -423,7 +423,7 @@ class GpuAssertionReporter {
     // GPUization failed (it's an implementation detail). Instead, we want
     // to call out a standard function as being ineligible for GPU execution.
     //
-    // If no stack element is printable, begruginly print the call anyway.
+    // If no stack element is printable, begrudgingly print the call anyway.
     if (developer || ast->getModule()->modTag == MOD_USER || firstPrintableStackElement == -1) {
       USR_PRINT(ast, "%s", msg);
       lastPrinted = ast;
