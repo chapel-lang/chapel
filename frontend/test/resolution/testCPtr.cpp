@@ -238,6 +238,7 @@ static void test16() {
 
 static void test17() {
   testCPtrArg("c_ptr(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
     assert(t);
     assert(!t->isConst());
     assert(t->isVoidPtr());
@@ -247,6 +248,7 @@ static void test17() {
 
 static void test18() {
   testCPtrArg("c_ptrConst(int)", "c_ptr(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
     assert(t);
     assert(t->isConst());
     assert(t->eltType()->isIntType());
