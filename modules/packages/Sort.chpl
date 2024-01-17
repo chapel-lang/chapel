@@ -3360,6 +3360,7 @@ module TwoArrayRadixSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
+  private import super.QuickSort;
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
@@ -3367,9 +3368,16 @@ module TwoArrayRadixSort {
       compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
     }
 
-    var sequentialSizePerTask=4096;
     var baseCaseSize=16;
-    var distributedBaseCaseSize=1024;
+    var quickSortSize=10000;
+    var sequentialSizePerTask=4096;
+    // quick sort performs better for middle problem sizes
+    // (too large for insertion sort, but not big enough
+    //  for radix sort to be beneficial)
+    if Data.domain.size < quickSortSize {
+      QuickSort.quickSort(Data, comparator=comparator);
+      return;
+    }
 
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
