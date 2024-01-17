@@ -20,6 +20,7 @@
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/resolution/scope-queries.h"
@@ -132,9 +133,11 @@ static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
   return parsing::idToAst(context, id);
 }
 
-static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) {
+static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) {
+  QUERY_BEGIN(nodeOrNullFromToId, context, node);
   auto id = scopeResolveResultsForNode(context, node);
-  return idOrEmptyToAstNodeOrNull(context, id);
+  auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
+  return QUERY_END(nodeOrNull);
 }
 
 /* The METHOD macro is overridden here to actually create a Python-compatible

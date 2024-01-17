@@ -169,8 +169,12 @@ CLASS_END(Domain)
 CLASS_BEGIN(Dot)
   PLAIN_GETTER(Dot, field, "Get the field accessed in the Dot node",
                UniqueString, return node->field())
+  PLAIN_GETTER(Dot, field_location, "Get the textual location of the Dot node's field expression",
+               Location, return chpl::parsing::locateDotFieldWithAst(context, node))
   PLAIN_GETTER(Dot, receiver, "Get the receiver of the Dot node",
                const AstNode*, return node->receiver())
+  PLAIN_GETTER(Dot, to_node, "Get the AST node that this Dot node refers to",
+               const AstNode*, return nodeOrNullFromToId(context, node))
 CLASS_END(Dot)
 
 CLASS_BEGIN(ExternBlock)
