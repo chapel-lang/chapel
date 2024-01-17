@@ -653,14 +653,20 @@ module Math {
      of the gamma function of the argument `x`.
   */
   inline proc lnGamma(x: real(64)): real(64) {
-    return chpl_lgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc lgamma(x: real(64)): real(64);
+    return lgamma(x);
   }
 
   /* Returns the natural logarithm of the absolute value
      of the gamma function of the argument `x`.
   */
   inline proc lnGamma(x : real(32)): real(32) {
-    return chpl_lgamma(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc lgammaf(x: real(32)): real(32);
+    return lgammaf(x);
   }
 
   /* Returns the natural logarithm of the absolute value
