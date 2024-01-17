@@ -2129,21 +2129,6 @@ module AutoMath {
     return __primitive("sqrt", x);
   }
 
-  /* Returns the square root of the argument `z`. */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
-  inline proc sqrt(z: complex(64)): complex(64) {
-    return sqrt(z);
-  }
-
-  /* Returns the square root of the argument `z`. */
-  pragma "last resort"
-  @deprecated("The argument name 'z' is deprecated for 'sqrt', please use 'x' instead")
-  inline proc sqrt(z: complex(128)): complex(128) {
-    return sqrt(z);
-  }
-
-
   // When removing this deprecated function, be sure to remove chpl_tan and
   // move its contents into Math.chpl to reduce the symbols living in this
   // module.
