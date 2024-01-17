@@ -90,7 +90,7 @@ module Tensor {
         for param i in 0..#rank {
             const dim = shape[rank - i - 1];
             idxs[rank - i - 1] = n % dim;
-            n = Math.divfloor(n,dim);
+            n = Math.divFloor(n,dim);
         }
         return idxs;
     }
