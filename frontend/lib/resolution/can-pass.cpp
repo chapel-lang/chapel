@@ -446,7 +446,7 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
   }
 
   bool instantiates = false;
-  bool converts = false;
+  ConversionKind conversion = NONE;
   optional<PassingFailureReason> fails = {};
 
   ClassTypeDecorator actualNily = actual.toBorrowed();
@@ -460,7 +460,8 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalNily.isUnknownNilability())
       instantiates = true; // instantiating with passed nilability
     else if (actualNily.isNonNilable() && formalNily.isNilable())
-      converts = true; // non-nil to nil conversion
+      // non-nil to nil conversion
+      conversion = SUBTYPE;
     else
       fails = FAIL_INCOMPATIBLE_NILABILITY; // all other nilability cases
   }
@@ -470,16 +471,14 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
     if (formalMgmt.isUnknownManagement())
       instantiates = true; // instantiating with passed management
     else if (formalMgmt.isBorrowed())
-      converts = true; // management can convert to borrowed
+      // management can convert to borrowed
+      conversion = BORROWS;
     else
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
 
   if (fails)
     return fail(*fails);
-
-  // all class conversions are subtype conversions
-  ConversionKind conversion = converts ? SUBTYPE : NONE;
 
   return CanPassResult(/* no fail reason, passes */ {},
                        instantiates,
@@ -501,6 +500,10 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (!decResult.passes())
     return decResult;
+  else if (!(decResult.conversionKind_ == NONE ||
+             decResult.conversionKind_ == SUBTYPE)) {
+    return fail(FAIL_EXPECTED_SUBTYPE);
+  }
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
@@ -552,6 +555,30 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
+// This function returns CanPassResult which always has conversion
+// kind of NONE or BORROWS.
+CanPassResult CanPassResult::canPassBorrowing(Context* context,
+                                              const Type* actualT,
+                                              const Type* formalT) {
+  CanPassResult result = fail(FAIL_FORMAL_OTHER);
+
+  if (auto actualCt = actualT->toClassType()) {
+    if (auto formalCt = formalT->toClassType()) {
+      if (actualCt->basicClassType() == formalCt->basicClassType()) {
+        CanPassResult decResult = canPassDecorators(
+            context, actualCt->decorator(), formalCt->decorator());
+        if (decResult.passes() && !(decResult.conversionKind_ == NONE ||
+                                    decResult.conversionKind_ == BORROWS)) {
+          // Ignore passing via means other than implicit borrowing conversion.
+        } else {
+          result = decResult;
+        }
+      }
+    }
+  }
+
+  return result;
+}
 
 // The compiler considers many patterns of "subtyping" as things that require
 // implicit conversions (they often require implicit conversions in the
@@ -655,11 +682,20 @@ CanPassResult CanPassResult::canConvert(Context* context,
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
 
+  // can we convert with a borrowing conversion (without any subtyping)?
+  {
+    auto got = canPassBorrowing(context, actualT, formalT);
+    if (got.passes()) {
+      CHPL_ASSERT(got.conversionKind_ == NONE ||
+                  got.conversionKind_ == BORROWS);
+      return got;
+    }
+  }
+
   // can we convert with a subtype conversion, including class subtyping?
   {
     auto got = canPassSubtype(context, actualT, formalT);
     if (got.passes()) {
-      // canPassSubtype should always return NONE or SUBTYPE conversion.
       CHPL_ASSERT(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
       return got;
     }

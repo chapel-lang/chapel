@@ -52,6 +52,8 @@ class CanPassResult {
     NUMERIC,
     /** A conversion that implements subtyping */
     SUBTYPE,
+    /** A conversion that borrows a managed type */
+    BORROWS,
     /** Non-subtype conversion that doesn't produce a param */
     OTHER,
   };
@@ -113,6 +115,10 @@ class CanPassResult {
   static CanPassResult canPassClassTypes(Context* context,
                                          const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
+
+  static CanPassResult canPassBorrowing(Context* context,
+                                        const types::Type* actualT,
+                                        const types::Type* formalT);
 
   static CanPassResult canPassSubtype(Context* context,
                                       const types::Type* actualT,
