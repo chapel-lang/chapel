@@ -1,4 +1,0 @@
-warning: 'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release
-note: 'useNewSeekRegionBounds' was set via a compiler flag
-depSeekFlag.chpl:3: warning: 'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release
-false
