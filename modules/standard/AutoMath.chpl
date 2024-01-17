@@ -2204,26 +2204,6 @@ module AutoMath {
     return truncf(x);
   }
 
-  // When removing this deprecated function, be sure to remove chpl_gcd and
-  // move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  /* Returns the greatest common divisor of the integer argument `a` and
-     `b`. */
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'gcd' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
-  proc gcd(in a: int,in b: int): int {
-    (a, b) = (abs(a), abs(b));
-    return chpl_gcd(a, b);
-  }
-
-  proc chpl_gcd(in a,in b) {
-    while(b != 0) {
-      (a, b) = (b, a % b);
-    }
-    return a;
-  }
-
   /* Returns true if `x` and `y` are approximately equal, else returns false.
 
      `relTol` specifies the relative tolerance for differences between `x` and
