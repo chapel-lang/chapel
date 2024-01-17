@@ -318,10 +318,17 @@ it is subject to forall intents and all references to this field within
 the forall construct implicitly refer to the corresponding shadow
 variable.
 
-Each formal argument of a task function or iterator has the default
-intent by default.  See also :ref:`The_Default_Intent`. Note that the
-default intent allows the compiler to assume that the value will not be
+The implicit formals of task functions and iterators generally have
+:ref:`the default argument intent <The_Default_Intent>` by default. Note that
+the default intent allows the compiler to assume that the value will not be
 concurrently modified, except for values of ``sync`` or ``atomic`` type.
+
+Implicit formals of array types are an exception: they inherit their default
+intent from the array actual. An immutable array has a default intent of
+``const`` and a mutable array has a default intent of ``ref``. This allows
+arrays to be modified inside the body of a forall if it is modifiable outside
+the body of the forall. A mutable array can have an explicit ``const`` forall
+intent to make it immutable inside the body of a forall.
 
 For variables of primitive, enum, and class types,
 this has the effect of capturing the value of the variable at task

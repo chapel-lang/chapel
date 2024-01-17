@@ -424,11 +424,18 @@ static void maybeIssueRefMaybeConstWarning(ArgSymbol* arg) {
   // we have full control here, but this should be ok
   bool isOuter = arg->hasFlag(FLAG_OUTER_VARIABLE);
 
+  bool isArray = arg->type->symbol->hasFlag(FLAG_ARRAY);
+
   bool shouldWarn = !isOuter && !fromPragma && !isCompilerGenerated;
 
   // if its an outer variable but its used in a task intent, warn
   if (!shouldWarn && isOuter && isTaskIntent) {
     shouldWarn = true;
+  }
+
+  // should not warn for arrays in task functions
+  if(shouldWarn && isArray && isTaskIntent) {
+    shouldWarn = false;
   }
 
   // should not warn if a method is marked pragma "reference to const when const this"

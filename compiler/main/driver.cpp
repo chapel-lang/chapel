@@ -345,6 +345,7 @@ static bool fPrintChplHome = false;
 std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
+bool fLlvmPrintPasses = false;
 
 bool fPrintAdditionalErrors;
 
@@ -435,6 +436,35 @@ static void saveChplHomeDerivedInEnv() {
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
+static bool restoreChplHomeDerivedFromEnv() {
+  bool haveAll = true;
+
+  const char* envVar;
+
+  envVar = getenv("CHPL_RUNTIME_LIB");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_LIB, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_RUNTIME_INCL");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_INCL, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_THIRD_PARTY");
+  if (envVar) {
+    strncpy(CHPL_THIRD_PARTY, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  return haveAll;
+}
+
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -481,19 +511,17 @@ static void setupChplHome(const char* argv0) {
 
     if( guess == NULL ) {
       // Could not find exe path, but have a env var set
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     } else {
       // We have env var and found exe path.
       // Check that they match and emit a warning if not.
-
       if( ! isSameFile(chpl_home, guess) ) {
         // Not the same. Emit warning.
         USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
                  chpl_home, guess);
       }
-      // Since we have an enviro var, always use that.
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     }
+    // Since we have an enviro var, always use that.
+    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
   } else {
 
     // Check in a default location too
@@ -545,7 +573,12 @@ static void setupChplHome(const char* argv0) {
 
 
 
-  if( installed ) {
+  // Get derived-from-home vars
+  if (restoreChplHomeDerivedFromEnv()) {
+    // if these were all present in the environment, just use those values
+  } else if( installed ) {
+    // detected we are installed in a prefix, calculate values from that
+
     int rc;
     // E.g. /usr/lib/chapel/1.16/runtime/lib
     rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
@@ -568,6 +601,7 @@ static void setupChplHome(const char* argv0) {
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
   } else {
+    // set to default values based on home path
     setChplHomeDerivedVars();
   }
 
@@ -764,6 +798,13 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
   for(auto n: fNames) {
     llvmRemarksFunctionsToShow.push_back(n);
   }
+}
+
+static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg) {
+#ifdef LLVM_USE_OLD_PASSES
+  printf("Cannot use '--llvm-print-passes' with this version of LLVM");
+  clean_exit(1);
+#endif
 }
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
@@ -1397,6 +1438,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
+ {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},

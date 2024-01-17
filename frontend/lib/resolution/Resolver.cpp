@@ -708,7 +708,7 @@ static bool isCallToCPtr(const AstNode* formalTypeExpr) {
     if (auto calledAst = call->calledExpression()) {
       if (auto calledIdent = calledAst->toIdentifier()) {
         UniqueString n = calledIdent->name();
-        if (n == USTR("c_ptr")) {
+        if (n == USTR("c_ptr") || n == USTR("c_ptrConst")) {
           return true;
         }
       }
@@ -1592,48 +1592,30 @@ void Resolver::adjustTypesForSplitInit(ID id,
 
   // check to see if it is generic/unknown
   // (otherwise we do not need to infer anything)
-  auto g = Type::MAYBE_GENERIC;
-  if (lhsType.isUnknownKindOrType()) {
-     // includes nullptr type, UnknownType, and param with unknown value
-     g = Type::GENERIC;
-  } else {
-    CHPL_ASSERT(lhsType.type()); // should not be nullptr b/c of isUnknownKindOrType
-    g = getTypeGenericity(context, lhsType.type());
-  }
-
-  // return if there's nothing to do
-  if (g != Type::GENERIC) {
+  if (!lhsType.isUnknownKindOrType() &&
+      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
     return;
-  }
 
   const Param* p = rhsType.param();
-  if (lhsType.kind() != QualifiedType::PARAM) {
-    p = nullptr;
+  auto useKind = lhsType.kind();
+  if (p && symbol->isModule()) {
+    // This is a white lie since if we are in a module-level statement, the
+    // kind we see here will always be UNKNOWN, whether this is a PARAM or not.
+    // This is because module statements are resolved separately from each
+    // other.
+    // Set it to PARAM here so we are allowed to store a param value for
+    // it, else we get a complaint about storing a param value on a non-param
+    // kind. The param kind will only get preserved later (at module-level
+    // resolution) if it actually is a PARAM decl.
+    useKind = QualifiedType::PARAM;
   }
-  auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+  if (useKind != QualifiedType::PARAM) p = nullptr;
+  const auto useType = QualifiedType(useKind, rhsType.type(), p);
 
-  // set the type for the 1st split init only
-  // a later traversal will check the type of subsequent split inits
-  // (in the other branch of a conditional, say)
-  auto pair = splitInitTypeInferredVariables.insert(id);
-  if (pair.second) {
-    // insertion took place, so update the type
-    lhs.setType(useType);
-
-    if (lhsExprAst != nullptr) {
-      ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
-      lhsExpr.setType(useType);
-    }
-  } else {
-    // insertion did not take place, so check that the type matches exactly,
-    // and issue an error if not.
-    // (we cannot unify the types for split init without causing resolution
-    //  to either go out of order or to produce results that change within
-    //  a function even when there are no errors).
-
-    if (lhsType != useType) {
-      context->error(astForError, "split-init type does not match");
-    }
+  lhs.setType(useType);
+  if (lhsExprAst != nullptr) {
+    ResolvedExpression& lhsExpr = byPostorder.byAst(lhsExprAst);
+    lhsExpr.setType(useType);
   }
 }
 
@@ -2050,9 +2032,12 @@ QualifiedType Resolver::typeForId(const ID& id, bool localGenericToUnknown) {
     return QualifiedType(kind, type);
   }
 
-  // Intercept the standard library `c_ptr` and turn it into the builtin type.
+  // Intercept the standard library `c_ptr` and `c_ptrConst` and turn them into
+  // the builtin type.
   if (id == CPtrType::getId(context)) {
     return QualifiedType(QualifiedType::TYPE, CPtrType::get(context));
+  } else if (id == CPtrType::getConstId(context)) {
+    return QualifiedType(QualifiedType::TYPE, CPtrType::getConst(context));
   }
 
   // if the id is contained within this symbol,

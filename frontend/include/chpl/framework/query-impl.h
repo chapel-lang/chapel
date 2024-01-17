@@ -526,6 +526,21 @@ Context::isQueryRunning(
   return search2->lastChecked == -1;
 }
 
+template<typename ResultType,
+         typename... ArgTs>
+const typename QueryMap<ResultType, ArgTs...>::MapType*
+Context::querySavedResults(
+     const ResultType& (*queryFunction)(Context* context, ArgTs...)) {
+  const void* queryFuncV = (const void*) queryFunction;
+  // Look up the map entry for this query
+  auto search = this->queryDB.find(queryFuncV);
+  if (search == this->queryDB.end()) {
+    return nullptr;
+  }
+
+  return &((QueryMap<ResultType, ArgTs...>*) search->second.get())->map;
+}
+
 
 template<typename ResultType,
          typename... ArgTs>

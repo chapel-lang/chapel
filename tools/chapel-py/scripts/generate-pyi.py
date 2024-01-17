@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -20,7 +19,7 @@
 #
 
 import chapel.core
-from typing import List, Tuple
+from typing import List, Tuple, Optional, Union
 
 
 def _get_base_header() -> str:
@@ -28,7 +27,7 @@ def _get_base_header() -> str:
     return c._get_pyi_file()
 
 
-def _section(*args: str | List[str], indent: int = 4) -> List[str]:
+def _section(*args: Union[str, List[str]], indent: int = 4) -> List[str]:
     temp = []
     for arg in args:
         if not isinstance(arg, list):
@@ -44,9 +43,9 @@ def _wrap_docstring(docstring: str) -> List[str]:
 
 def _wrap_method(
     name: str,
-    args: List[Tuple[str, str | None]] = [],
+    args: List[Tuple[str, Optional[str]]] = [],
     rettype: str = "None",
-    docstring: str | None = None,
+    docstring: Optional[str] = None,
 ) -> List[str]:
     argstr = ""
     for a, t in args:
@@ -66,7 +65,7 @@ def get_Context_header() -> str:
         _wrap_method(
             "parse",
             args=[("path", "str")],
-            rettype="List[AstNode]",
+            rettype="typing.List[AstNode]",
             docstring="Parse a top-level AST node from the given file",
         ),
         _wrap_method(
@@ -77,6 +76,7 @@ def get_Context_header() -> str:
         ),
         _wrap_method(
             "advance_to_next_revision",
+            args=[("gc", "bool")],
             docstring="Advance the context to the next revision",
         ),
         _wrap_method(
@@ -98,10 +98,10 @@ def get_Location_header() -> str:
     s = _section(
         "class Location:",
         _wrap_method(
-            "start", rettype="int", docstring="Get the start of a Location object"
+            "start", rettype="typing.Tuple[int, int]", docstring="Get the start of a Location object"
         ),
         _wrap_method(
-            "end", rettype="int", docstring="Get the end of a Location object"
+            "end", rettype="typing.Tuple[int, int]", docstring="Get the end of a Location object"
         ),
         _wrap_method(
             "path", rettype="str", docstring="Get the path of a Location object"
@@ -114,7 +114,7 @@ def get_Location_header() -> str:
 def get_ErrorManager_header() -> str:
     s = _section(
         "class ErrorManager:",
-        _wrap_method("__enter__", rettype="List[Error]"),
+        _wrap_method("__enter__", rettype="typing.List[Error]"),
         _wrap_method("__exit__", args=[("*args", None)]),
         indent=0,
     )
@@ -163,7 +163,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "attribute_group",
-            rettype="AttributeGroup | None",
+            rettype="typing.Optional[AttributeGroup]",
             docstring="Get the attribute group, if any, associated with this node",
         ),
         _wrap_method(
@@ -173,12 +173,12 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "parent",
-            rettype="AstNode | None",
+            rettype="typing.Optional[AstNode]",
             docstring="Get the parent node of this AST node",
         ),
         _wrap_method(
             "pragmas",
-            rettype="Set[str]",
+            rettype="typing.Set[str]",
             docstring="Get the pragmas of this AST node",
         ),
         _wrap_method(
@@ -188,7 +188,7 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "__iter__",
-            rettype="Iterator[AstNode]",
+            rettype="typing.Iterator[AstNode]",
             docstring="Iterate over this AST node's children",
         ),
         indent=0,

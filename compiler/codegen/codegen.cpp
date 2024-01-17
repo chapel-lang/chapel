@@ -3058,6 +3058,12 @@ void makeBinary(void) {
   // (Unless we're doing GPU codegen, which currently happens in the compilation
   // phase.)
   INT_ASSERT(!fDriverCompilationPhase || gCodegenGPU);
+  if (fDriverMakeBinaryPhase) {
+    // Setup/restore filenames to be referenced in makeBinary phase.
+    setupDefaultFilenames();
+    restoreAdditionalSourceFiles();
+    restoreLibraryAndIncludeInfo();
+  }
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

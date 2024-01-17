@@ -7062,7 +7062,7 @@ yyreduce:
       ModuleParts parts = (yyvsp[-2].moduleParts);
       ParserExprList* body = context->makeList();
       context->appendList(body, context->gatherComments((yylsp[0])));
-      auto mod = Module::build(BUILDER, LOC((yylsp[-2])), toOwned(parts.attributeGroup),
+      auto mod = Module::build(BUILDER, LOC((yyloc)), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -7081,7 +7081,7 @@ yyreduce:
       ModuleParts parts = (yyvsp[-3].moduleParts);
       ParserExprList* body = (yyvsp[-1].exprList);
       context->appendList(body, context->gatherComments((yylsp[0])));
-      auto mod = Module::build(BUILDER, LOC((yylsp[-3])), toOwned(parts.attributeGroup),
+      auto mod = Module::build(BUILDER, LOC((yyloc)), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,
@@ -7098,7 +7098,7 @@ yyreduce:
       ModuleParts parts = (yyvsp[-3].moduleParts);
       auto err = ErroneousExpression::build(BUILDER, LOC((yylsp[-1])));
       ParserExprList* body = context->makeList(std::move(err));
-      auto mod = Module::build(BUILDER, LOC((yylsp[-3])), toOwned(parts.attributeGroup),
+      auto mod = Module::build(BUILDER, LOC((yyloc)), toOwned(parts.attributeGroup),
                                parts.visibility,
                                parts.name,
                                parts.kind,

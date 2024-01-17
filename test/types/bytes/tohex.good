@@ -1,0 +1,14 @@
+uppercase bytes
+000123456789ABCDEFFE : bytes
+lowercase bytes
+000123456789abcdeffe : bytes
+default case bytes
+000123456789abcdeffe : bytes
+uppercase string
+000123456789ABCDEFFE : string
+lowercase string
+000123456789abcdeffe : string
+default case string
+000123456789abcdeffe : string
+default case default return type
+000123456789abcdeffe : bytes

@@ -19,6 +19,7 @@
 
 #include "chpl/types/Type.h"
 
+#include "chpl/framework/query-impl.h"
 #include "chpl/types/AnyClassType.h"
 #include "chpl/types/AnyType.h"
 #include "chpl/types/BoolType.h"
@@ -40,6 +41,7 @@
 #include "chpl/types/TupleType.h"
 #include "chpl/types/VoidType.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/resolution-queries.h"
 
 namespace chpl {
 namespace types {
@@ -129,6 +131,8 @@ void Type::gatherBuiltins(Context* context,
   gatherType(context, map, "class", AnyClassType::get(context));
 
   gatherType(context, map, "c_ptr", CPtrType::get(context));
+
+  gatherType(context, map, "c_ptrConst", CPtrType::getConst(context));
 
   BuiltinType::gatherBuiltins(context, map);
 }
@@ -228,6 +232,70 @@ const CompositeType* Type::getCompositeType() const {
   return nullptr;
 }
 
+static bool
+compositeTypeIsPod(Context* context, const Type* t) {
+  using namespace resolution;
+
+  auto ct = t->getCompositeType();
+  if (!ct) return false;
+
+  const uast::AstNode* ast = nullptr;
+  if (auto id = ct->id()) ast = parsing::idToAst(context, std::move(id));
+
+  auto& rf = fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+  for (int i = 0; i < rf.numFields(); i++) {
+    auto qt = rf.fieldType(i);
+    if (auto ft = qt.type()) {
+      if (qt.kind() == QualifiedType::PARAM ||
+          qt.kind() == QualifiedType::TYPE) continue;
+      if (!Type::isPod(context, ft)) return false;
+    } else {
+      return false;
+    }
+  }
+
+  if (auto tfs = tryResolveDeinit(context, ast, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveInitEq(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+  if (auto tfs = tryResolveAssign(context, ast, t, t)) {
+    if (!tfs->isCompilerGenerated()) return false;
+  }
+
+  return true;
+}
+
+static const bool&
+compositeTypeIsPodQuery(Context* context, const Type* t) {
+  QUERY_BEGIN(compositeTypeIsPodQuery, context, t);
+  bool ret = compositeTypeIsPod(context, t);
+  return QUERY_END(ret);
+}
+
+bool Type::isPod(Context* context, const Type* t) {
+  if (t->isUnknownType() || t->isErroneousType() ||
+      t->isAnyType()) return false;
+  if (t->hasPragma(context, uast::PRAGMA_POD)) return true;
+  if (t->hasPragma(context, uast::PRAGMA_IGNORE_NOINIT)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_ATOMIC_TYPE)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SYNC)) return false;
+  if (t->hasPragma(context, uast::PRAGMA_SINGLE)) return false;
+  if (t->isDomainType()) return false;
+  if (t->isArrayType()) return false;
+  if (auto cls = t->toClassType()) {
+    if (cls->decorator().isManaged()) return false;
+  }
+  // TODO: We might like to be able to mark something as POD if it contains
+  // all marked-as-POD members (e.g., all ranges) even if it is generic.
+  // Currently, we can't do that, because call resolution can't get far
+  // when given a generic actual.
+  auto g = resolution::getTypeGenericity(context, t);
+  if (g != Type::CONCRETE) return false;
+  if (t->getCompositeType()) return compositeTypeIsPodQuery(context, t);
+  return true;
+}
 
 } // end namespace types
 } // end namespace chpl

@@ -19,12 +19,14 @@
 
 #include "prims.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
 #include "chpl/types/all-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/framework/ErrorBase.h"
 #include "chpl/resolution/can-pass.h"
 #include "chpl/util/version-info.h"
+#include "chpl/framework/query-impl.h"
 
 namespace chpl {
 namespace resolution {
@@ -404,6 +406,73 @@ static QualifiedType staticFieldType(Context* context, const CallInfo& ci) {
     }
   }
   return QualifiedType();
+}
+
+struct TestFunctionFinder {
+  // Inputs
+  Context* context;
+  const QualifiedType& testType;
+
+  // Outputs
+  std::vector<const Function*> fns;
+
+  TestFunctionFinder(Context* context, const QualifiedType& testType)
+    : context(context), testType(testType) {}
+
+  bool enter(const Function* fn) {
+    // We're looking for a non-method function that throws and accepts
+    // a single argument (which we will soon validate to be of the testType).
+    if (!fn->throws() || fn->isMethod() || fn->numFormals() != 1) return false;
+    // Skip non-user functions.
+    if (parsing::idIsInBundledModule(context, fn->id())) return false;
+
+    // The function also needs to be concrete.
+    const UntypedFnSignature* uSig = UntypedFnSignature::get(context, fn);
+    const TypedFnSignature* sig = typedSignatureInitial(context, uSig);
+    if (sig->needsInstantiation()) return false;
+
+    if (canPass(context, testType, sig->formalType(0)).passes()) {
+      // One formal of 'testType', which constitutes a test.
+      fns.push_back(fn);
+    }
+
+    return false;
+  }
+  void exit(const Function* fn) {}
+
+  bool enter(const AstNode* node) { return true; }
+  void exit(const AstNode* node) {}
+};
+
+static const std::vector<const Function*>& gatheredTestsQuery(Context* context) {
+  QUERY_BEGIN_INPUT(gatheredTestsQuery, context);
+  std::vector<const Function*> toReturn;
+  return QUERY_END(toReturn);
+}
+
+const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context) {
+  return gatheredTestsQuery(context);
+}
+
+static QualifiedType primGatherTests(Context* context, const CallInfo& ci) {
+  if (ci.numActuals() != 1) return QualifiedType();
+
+  auto testType = ci.actual(0).type();
+  if (testType.isUnknown() || testType.isErroneousType())
+    return QualifiedType();
+
+  TestFunctionFinder finder(context, testType);
+  auto topLevelAsts = parsing::introspectParsedTopLevelExpressions(context);
+  for (auto ast : topLevelAsts) {
+    ast->traverse(finder);
+  }
+
+  QUERY_STORE_INPUT_RESULT(gatheredTestsQuery, context, finder.fns);
+  auto numFoundFns = (int) gatheredTestsQuery(context).size();
+
+  return QualifiedType(QualifiedType::PARAM,
+                       IntType::get(context, 0),
+                       IntParam::get(context, numFoundFns));
 }
 
 static QualifiedType primIsTuple(Context* context,
@@ -796,8 +865,11 @@ static QualifiedType primIsUnionType(Context* context, const CallInfo& ci) {
 }
 
 static QualifiedType primIsExternType(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_EXTERN_TYPE");
-  return QualifiedType();
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    if (t->isExternType()) return true;
+    auto ct = t->getCompositeType();
+    return ct ? parsing::idIsExtern(context, ct->id()) : false;
+  });
 }
 
 static QualifiedType
@@ -837,10 +909,10 @@ primIsAbsEnumType(Context* context, const CallInfo& ci) {
   });
 }
 
-static QualifiedType
-primIsPod(Context* context, const CallInfo& ci) {
-  CHPL_UNIMPL("PRIM_IS_POD");
-  return QualifiedType();
+static QualifiedType primIsPod(Context* context, const CallInfo& ci) {
+  return actualTypeHasProperty(context, ci, [=](auto t) {
+    return Type::isPod(context, t);
+  });
 }
 
 static QualifiedType
@@ -1545,8 +1617,11 @@ CallResolutionResult resolvePrimCall(Context* context,
     case PRIM_NO_ALIAS_SET:
     case PRIM_COPIES_NO_ALIAS_SET:
     case PRIM_OPTIMIZATION_INFO:
-    case PRIM_GATHER_TESTS:       // param uses in module code
       CHPL_UNIMPL("misc primitives");
+      break;
+
+    case PRIM_GATHER_TESTS:
+      type = primGatherTests(context, ci);
       break;
 
     case PRIM_VERSION_MAJOR:

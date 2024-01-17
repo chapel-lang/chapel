@@ -1,6 +1,0 @@
-deprecateNumberTheory.chpl:6: warning: nextprime is deprecated - please use nextPrime instead
-deprecateNumberTheory.chpl:12: warning: lucnum is deprecated - please use lucNum instead
-deprecateNumberTheory.chpl:19: warning: lucnum2 is deprecated - please use lucNum2 instead
-7
-3
-(7, 4)

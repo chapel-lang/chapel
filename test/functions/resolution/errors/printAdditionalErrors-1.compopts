@@ -1,0 +1,3 @@
+                                                     # printAdditionalErrors-1.dflt.good
+--print-additional-errors                            # printAdditionalErrors-1.pae.good
+--print-additional-errors --print-callstack-on-error # printAdditionalErrors-1.all.good

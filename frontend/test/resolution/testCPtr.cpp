@@ -155,6 +155,96 @@ static void test8() {
   });
 }
 
+static void test9() {
+  testCPtrArg("c_ptrConst", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT->toIntType()->isDefaultWidth());
+  });
+}
+
+static void test10() {
+  testCPtrArg("c_ptrConst", "c_ptrConst(real)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isRealType());
+    assert(eltT->toRealType()->isDefaultWidth());
+  });
+}
+
+static void test11() {
+  testCPtrArg("c_ptrConst(int(?w))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT == IntType::get(eg.context(), 32));
+  });
+}
+
+static void test12() {
+  testCPtrArg("c_ptrConst(rec(?t))", "c_ptrConst(rec(int))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isRecordType());
+    auto rt = eltT->toRecordType();
+    assert(rt->name() == "rec");
+    auto& fields = fieldsForTypeDecl(eg.context(), rt, DefaultsPolicy::IGNORE_DEFAULTS);
+    assert(fields.numFields() == 1 && fields.fieldType(0).type()->isIntType());
+  });
+}
+
+static void test13() {
+  testCPtrArg("c_ptrConst(int(?w))", "c_ptrConst(uint(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
+  });
+}
+
+static void test14() {
+  testCPtrArg("c_ptrConst(int(64))", "c_ptrConst(int(32))", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(!fn);
+    assert(eg.realizeErrors() == 1);
+  });
+}
+
+static void test15() {
+  testCPtrArg("c_ptrConst(int)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(fn);
+    assert(t);
+    assert(t->isConst());
+    auto eltT = t->eltType();
+    assert(eltT && eltT->isIntType());
+    assert(eltT->toIntType()->isDefaultWidth());
+  });
+}
+
+static void test16() {
+  testCPtrArg("c_ptrConst(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(t);
+    assert(t->isConst());
+    assert(t->isVoidPtr());
+    // expect no errors; this should be valid.
+  });
+}
+
+static void test17() {
+  testCPtrArg("c_ptr(void)", "c_ptrConst(int)", [](const TypedFnSignature* fn, const CPtrType* t, ErrorGuard& eg) {
+    assert(t);
+    assert(!t->isConst());
+    assert(t->isVoidPtr());
+    // expect no errors; this is the pattern of passing a const to deallocate
+  });
+}
+
 int main() {
   test1();
   test2();
@@ -164,4 +254,15 @@ int main() {
   test6();
   test7();
   test8();
+  test9();
+  test10();
+  test11();
+  test12();
+  test13();
+  test14();
+  test15();
+  test16();
+  test17();
+
+  return 0;
 }

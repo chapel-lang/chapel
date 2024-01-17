@@ -34,7 +34,7 @@ struct Test {
     TRUE,
     FALSE,
     STRING,
-    ERROR 
+    ERROR
   };
 
   struct PrimitiveCalls {
@@ -62,7 +62,7 @@ static bool
 isParamStringMatch(chpl::types::QualifiedType qt, std::string str,
                    std::string& out) {
   if (qt.kind() == QualifiedType::PARAM) {
-    if (auto t = qt.type()) {
+    if (qt.type()) {
       if (auto p = qt.param()) {
         if (auto sp = p->toStringParam()) {
           out = sp->value().c_str();
@@ -98,6 +98,10 @@ static void testPrimitive(const Test& tpg) {
   Context* context = &ctx;
   ErrorGuard guard(context);
 
+  if (tpg.isChplHomeRequired) {
+    setupModuleSearchPaths(context, false, false, {}, {});
+  }
+
   std::stringstream ps;
   int counter = 0;
   int expectedErrorCount = 0;
@@ -115,7 +119,7 @@ static void testPrimitive(const Test& tpg) {
     ps << "param " << var << " = " << "__primitive(\"";
     ps << tagStr << "\", ";
 
-    for (int i = 0; i < call.actuals.size(); i++) {
+    for (size_t i = 0; i < call.actuals.size(); i++) {
       ps << call.actuals[i];
       bool last = (i+1) == call.actuals.size();
       if (!last) ps << ", ";
@@ -462,9 +466,9 @@ static void test9() {
 
 static void test10() {
   Test tpg {
-    .testName=__FUNCTION__,
+    .testName = __FUNCTION__,
     .isChplHomeRequired = false,
-    .prelude=R"""(
+    .prelude = R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
             record r3 { type T=int; var x: T; }
@@ -474,8 +478,8 @@ static void test10() {
             union u1 {}
             enum e1 { foo }
             )""",
-    .primitive=chpl::uast::primtags::PRIM_TYPE_TO_STRING,
-    .calls={
+    .primitive = chpl::uast::primtags::PRIM_TYPE_TO_STRING,
+    .calls = {
       { {"bool"}, Test::STRING, "bool" },
       { {"int"}, Test::STRING, "int(64)" },
       { {"int(8)"}, Test::STRING, "int(8)" },
@@ -515,9 +519,9 @@ static void test10() {
 
 static void test11() {
   Test tpg {
-    .testName=__FUNCTION__,
+    .testName = __FUNCTION__,
     .isChplHomeRequired = false,
-    .prelude=R"""(
+    .prelude = R"""(
             record r1 { var x: int; }
             record r2 { type T; var x: T; }
             record r3 { type T=int; var x: T; }
@@ -527,8 +531,8 @@ static void test11() {
             union u1 {}
             enum e1 { foo }
             )""",
-    .primitive=chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
-    .calls={
+    .primitive = chpl::uast::primtags::PRIM_SIMPLE_TYPE_NAME,
+    .calls = {
       { {"bool"}, Test::STRING, "bool" },
       { {"int"}, Test::STRING, "int(64)" },
       { {"int(8)"}, Test::STRING, "int(8)" },
@@ -563,6 +567,103 @@ static void test11() {
   testPrimitive(tpg);
 }
 
+static void test12() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,    // TODO: True...
+    .prelude = R"""(
+            pragma "ignore noinit"
+            record r1 {}
+            record r2 { var x: int; var y: real; }
+            record r3 { var x: int; var y: real; var z: integral; }
+            record r4 { var x: r2; var y: int; }
+            record r5 {
+              proc deinit() {}
+            }
+            record r6 {
+              proc init=(rhs: r6) {}
+            }
+            record r7 {
+              operator=(lhs: r7, rhs: r7) {}
+            }
+            record r8 {}
+            operator=(lhs: r8, rhs: r8) {}
+            // Should be marked POD irregardless of the generic.
+            pragma "plain old data"
+            record r9 { type T; var x: T; }
+            class c1 { var x: int; }
+            record r10 { var x: owned c1?; }
+            record r11 { var x: r9; }
+            )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_POD,
+    .calls = {
+      { {"bool"}, Test::TRUE },
+      { {"int"}, Test::TRUE },
+      { {"int(8)"}, Test::TRUE },
+      { {"int(16)"}, Test::TRUE },
+      { {"int(32)"}, Test::TRUE },
+      { {"int(64)"}, Test::TRUE },
+      { {"uint"}, Test::TRUE },
+      { {"uint(8)"}, Test::TRUE },
+      { {"uint(16)"}, Test::TRUE },
+      { {"uint(32)"}, Test::TRUE },
+      { {"uint(64)"}, Test::TRUE },
+      { {"real(32)"}, Test::TRUE },
+      { {"real(64)"}, Test::TRUE },
+      { {"complex"}, Test::TRUE },
+      { {"imag"}, Test::TRUE },
+      { {"integral"}, Test::FALSE },
+      // TODO:
+      // { {"atomic int"}, Test::FALSE },
+      // { {"single int"}, Test::FALSE },
+      // { {"sync int"}, Test::FALSE },
+      { {"r1"}, Test::FALSE },
+      { {"r2"}, Test::TRUE },
+      { {"r3"}, Test::FALSE },
+      { {"r4"}, Test::TRUE },
+      { {"r5"}, Test::FALSE },
+      { {"r6"}, Test::FALSE },
+      { {"r7"}, Test::FALSE },
+      { {"r8"}, Test::FALSE },
+      { {"r9"}, Test::TRUE },
+      { {"r10"}, Test::FALSE },
+      // TODO: Currently marked as non-POD even though all the members are
+      // marked as POD - this is because 'r9' is technically generic, which
+      // causes problems.
+      { {"r11"}, Test::FALSE },
+      { {"c1"}, Test::FALSE },
+      { {"owned c1"}, Test::FALSE },
+      { {"owned c1?"}, Test::FALSE },
+      { {"shared c1"}, Test::FALSE },
+      { {"shared c1?"}, Test::FALSE },
+      { {"borrowed c1"}, Test::TRUE },
+      { {"borrowed c1?"}, Test::TRUE },
+      { {"unmanaged c1"}, Test::TRUE },
+      { {"unmanaged c1?"}, Test::TRUE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
+static void test13() {
+  Test tpg {
+    .testName = __FUNCTION__,
+    .isChplHomeRequired = false,
+    .prelude = R"""(
+               extern type foo;
+               extern record bar {}
+               record baz {}
+               )""",
+    .primitive = chpl::uast::primtags::PRIM_IS_EXTERN_TYPE,
+    .calls = {
+      { {"int"}, Test::FALSE },
+      { {"foo"}, Test::TRUE },
+      { {"bar"}, Test::TRUE },
+     },
+  };
+  testPrimitive(tpg);
+}
+
 int main() {
   test0();
   test1();
@@ -576,4 +677,6 @@ int main() {
   test9();
   test10();
   test11();
+  test12();
+  test13();
 }

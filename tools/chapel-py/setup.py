@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -49,6 +48,6 @@ LDFLAGS += ["-L{}".format(chpl_lib_path), "-lChplFrontendShared", "-Wl,-rpath", 
 setup(name = "chapel",
       version = "0.1",
       package_dir = {'': 'src'},
-      packages = ['chapel', 'chapel.replace'],
+      packages = ['chapel', 'chapel.replace', 'chapel.visitor'],
       ext_modules = [Extension("chapel.core", glob.glob("src/*.cpp"), extra_compile_args = CXXFLAGS, extra_link_args=LDFLAGS)]
       )

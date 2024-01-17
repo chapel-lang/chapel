@@ -65,11 +65,11 @@ module ChapelGpuSupport {
 
   if CHPL_LOCALE_MODEL == 'gpu' {
     if(enableGpuP2P) {
-      use GPU;
       for loc in Locales do on loc do
         for gpu1 in here.gpus do
           for gpu2 in here.gpus do
-            if canAccessPeer(gpu1,gpu2) then setPeerAccess(gpu1,gpu2,true);
+            if chpl_canAccessPeer(gpu1,gpu2) then
+              chpl_setPeerAccess(gpu1,gpu2,true);
     }
 
     // There are some allocations that occur in the locale model's
@@ -82,6 +82,35 @@ module ChapelGpuSupport {
     // calling this so we make this call here in ChapelGpuSupport.
     coforall loc in Locales do on loc do
       chpl_gpu_support_module_finished_initializing();
+  }
+
+  // chpl_canAccessPeer() and chpl_setPeerAccess() are in this module
+  // so that they can be invoked above without use-ing the GPU module.
+  // Otherwise even non-GPU compilations would include the GPU module.
+
+  @chpldoc.nodoc
+  proc chpl_canAccessPeer(loc1 : locale, loc2 : locale) : bool {
+    extern proc chpl_gpu_can_access_peer(i : c_int, j : c_int) : bool;
+
+    if(!loc1.isGpu() || !loc2.isGpu()) then
+      halt("Non GPU locale passed to 'canAccessPeer'");
+    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
+    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
+
+    return chpl_gpu_can_access_peer(loc1Sid, loc2Sid);
+  }
+
+  @chpldoc.nodoc
+  proc chpl_setPeerAccess(loc1 : locale, loc2 : locale, shouldEnable : bool) {
+    extern proc chpl_gpu_set_peer_access(
+      i : c_int, j : c_int, shouldEnable : bool) : void;
+
+    if(!loc1.isGpu() || !loc2.isGpu()) then
+      halt("Non GPU locale passed to 'canAccessPeer'");
+    const loc1Sid = chpl_sublocFromLocaleID(loc1.chpl_localeid());
+    const loc2Sid = chpl_sublocFromLocaleID(loc2.chpl_localeid());
+
+    chpl_gpu_set_peer_access(loc1Sid, loc2Sid, shouldEnable);
   }
 
   private proc isEnvSet(name: string): bool {

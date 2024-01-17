@@ -782,7 +782,7 @@ module ArrayViewReindex {
     }
     for param d in 0..updom.rank-1 {
       if ! newStrides.isOne() {  // todo: optimize when newStrides.isNegOne()
-        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride);
+        const relStride = max(1, (dims(d).stride / updom.dsiDim(d).stride) * downdom.dsiDim(d).stride): uint; // relStride is always positive
         // Slicing the ranges preserves the stride
         ranges(d) = downdom.dsiDim(d)[actualLow(d)..actualHigh(d) by relStride];
       } else {

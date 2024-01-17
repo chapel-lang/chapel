@@ -889,8 +889,8 @@ void codegen_makefile(fileinfo* mainfile, const char** tmpbinname,
   // List source files needed to compile this deliverable.
   if (fMultiLocaleInterop) {
 
-    const char* client = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibClientFile);
-    const char* server = astr(gContext->tmpDir().c_str(), "/", gMultiLocaleLibServerFile);
+    const char* client = genIntermediateFilename(gMultiLocaleLibClientFile);
+    const char* server = genIntermediateFilename(gMultiLocaleLibServerFile);
 
     // Only one source file for client (for now).
     fprintf(makefile.fptr, "CHPLSRC = \\\n");

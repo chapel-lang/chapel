@@ -516,7 +516,7 @@ static void printCallstack(FnSymbol* errFn, FnSymbol* prevFn,
 // Print instantiation information for err_fn.
 // Should be called at USR_STOP or just before the next
 // error changing err_fn is printed.
-static void printCallstackForLastError() {
+void printCallstackForLastError() {
   if (err_fn_header_printed && err_fn) {
     // Clear out err_fn to avoid infinite loop if an error
     // is encountered when printing the call stack.

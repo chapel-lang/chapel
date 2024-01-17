@@ -25,6 +25,8 @@ chpl:chplref valueType
 cpp:identifier chpl
 cpp:identifier querydetail
 cpp:identifier querydetail::QueryMapResultBase
+cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>
+cpp:identifier querydetail::QueryMap<ResultType, ArgTs...>::MapType
 cpp:identifier UniqueString
 cpp:identifier ID
 cpp:identifier Location

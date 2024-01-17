@@ -388,6 +388,19 @@ const TypedFnSignature* tryResolveInitEq(Context* context,
                                          const types::Type* rhsType,
                                          const PoiScope* poiScope = nullptr);
 
+// tries to resolve an (unambiguous) assign
+const TypedFnSignature* tryResolveAssign(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope = nullptr);
+
+// tries to resolve an (unambiguous) deinit
+const TypedFnSignature* tryResolveDeinit(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* t,
+                                         const PoiScope* poiScope = nullptr);
+
 /**
   Given a type 't', compute whether or not 't' is default initializable.
   If 't' is a generic type, it is considered non-default-initializable.
@@ -416,6 +429,13 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::Class* node,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
+
+/**
+  One of the compiler primitives has the side effect of collecting all
+  test functions. This helper retrieves the list of test functions that has
+  been collected.
+ */
+const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 
 } // end namespace resolution

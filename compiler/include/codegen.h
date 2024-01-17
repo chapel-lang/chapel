@@ -51,6 +51,7 @@ namespace clang {
 #include "llvm/IR/IRBuilder.h"
 #include "llvm/IR/MDBuilder.h"
 #include "llvm/IR/PassManager.h"
+#include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Target/TargetMachine.h"
 
 struct ClangInfo;
@@ -163,6 +164,8 @@ struct GenInfo {
   llvm::CGSCCAnalysisManager* CGAM = nullptr;
   llvm::ModuleAnalysisManager* MAM = nullptr;
   llvm::FunctionPassManager* FunctionSimplificationPM = nullptr;
+  llvm::PassInstrumentationCallbacks* PIC = nullptr;
+  llvm::StandardInstrumentations* SI = nullptr;
 
   // pointer to clang support info
   ClangInfo* clangInfo = nullptr;

@@ -8,4 +8,4 @@ WORKSPACE=${WORKSPACE:-$CWD/../..}
 export TMPDIR=$(mktemp -d $WORKSPACE/chapel-test-release.XXXXXX)
 export CHPL_GEN_RELEASE_TMPDIR=$TMPDIR
 
-$CWD/../buildRelease/testRelease -cron
+$CWD/../buildRelease/testRelease

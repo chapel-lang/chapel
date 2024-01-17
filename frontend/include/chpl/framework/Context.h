@@ -891,6 +891,15 @@ class Context {
        const ResultType& (*queryFunction)(Context* context, ArgTs...),
        const std::tuple<ArgTs...>& tupleOfArgs);
 
+  template<typename ResultType,
+           typename... ArgTs>
+  const typename querydetail::QueryMap<ResultType, ArgTs...>::MapType*
+  querySavedResults(
+       const ResultType& (*queryFunction)(Context* context, ArgTs...));
+
+  bool isResultUpToDate(const querydetail::QueryMapResultBase& resultEntry) const {
+    return resultEntry.lastChanged == this->currentRevisionNumber;
+  }
 
   // the following functions are called by the macros defined in QueryImpl.h
   // and should not be called directly

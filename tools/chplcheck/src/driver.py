@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -89,7 +88,8 @@ class LintDriver:
 
     def _is_unstable_module(node):
         if isinstance(node, chapel.core.Module):
-            if attrs := node.attribute_group():
+            attrs = node.attribute_group()
+            if attrs:
                 if attrs.is_unstable():
                     return True
         return False

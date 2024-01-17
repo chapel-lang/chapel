@@ -1162,9 +1162,11 @@ module ChapelDomain {
       }
     }
 
-    /* Returns the domain map that implements this domain. */
-    @deprecated("domain.dist is deprecated, please use domain.distribution instead")
-    proc dist do return this.distribution;
+    /* Prevent users from accessing internal datatypes unintentionally. It
+       used to be a public method deprecated in favor of domain.distribution. */
+    @chpldoc.nodoc
+    proc dist do compilerError("'domain.dist' is no longer supported,",
+                               " use 'domain.distribution' instead");
 
     /* Returns the number of dimensions in this domain. */
     proc rank param {
@@ -1191,14 +1193,6 @@ module ChapelDomain {
       } else {
         return this.rank * this.idxType;
       }
-    }
-
-    /* The ``idxType`` as represented by an integer type.  When
-       ``idxType`` is an enum type, this evaluates to ``int``.
-       Otherwise, it evaluates to ``idxType``. */
-    @deprecated("'.intIdxType' on domains is deprecated; please let us know if you're relying on it")
-    proc intIdxType type {
-      return chpl_integralIdxType;
     }
 
     proc chpl_integralIdxType type {
@@ -1519,14 +1513,6 @@ module ChapelDomain {
     proc highBound {
       return _value.dsiHigh;
     }
-
-    /* Returns the low index in this domain factoring in alignment. */
-    @deprecated(notes="'.alignedLow' is deprecated; please use '.low' instead")
-    proc alignedLow do return _value.dsiAlignedLow;
-
-    /* Returns the high index in this domain factoring in alignment. */
-    @deprecated(notes="'.alignedHigh' is deprecated; please use '.high' instead")
-    proc alignedHigh do return _value.dsiAlignedHigh;
 
     /* Returns the first index in this domain. */
     proc first do return _value.dsiFirst;
@@ -2807,41 +2793,6 @@ module ChapelDomain {
     @chpldoc.nodoc
     proc iteratorYieldsLocalElements() param {
       return _value.dsiIteratorYieldsLocalElements();
-    }
-
-    /* Casts a rectangular domain to another rectangular domain type.
-       Ensures that the original domain's stride is acceptable
-       by the target type.
-     */
-    @deprecated("domain.safeCast() is deprecated; instead consider using a cast ':'")
-    proc safeCast(type t:_domain)
-      where chpl__isRectangularDomType(t) && this.isRectangular() {
-      var tmpD: t;
-      if tmpD.rank != this.rank then
-        compilerError("safeCast to a domain with rank=", tmpD.rank,
-                            " from a domain with rank=", this.rank);
-      if tmpD.idxType != this.idxType then
-        // todo: relax this restriction
-        compilerError("safeCast to a domain with idxType=", tmpD.idxType,
-                            " from a domain with idxType=", this.idxType);
-      if tmpD.strides == this.strides then
-        return this;
-      else if chpl_assignStrideIsUnsafe(tmpD.strides, this.strides) then
-        compilerError("safeCast to a domain with strides=", tmpD.strides,
-                            " from a domain with strides=", this.strides);
-      else if ! chpl_assignStrideIsSafe(tmpD.strides, this.strides) {
-        const inds = this.getIndices();
-        var newInds: tmpD.getIndices().type;
-
-        for param dim in 0..inds.size-1 {
-          newInds(dim) = inds(dim).safeCast(newInds(dim).type);
-        }
-        tmpD.setIndices(newInds);
-        return tmpD;
-      } else { // cast is always safe
-        tmpD = this;
-        return tmpD;
-      }
     }
 
     /* Casts a rectangular domain to a new rectangular domain type.

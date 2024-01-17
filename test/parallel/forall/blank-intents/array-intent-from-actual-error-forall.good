@@ -1,0 +1,6 @@
+array-intent-from-actual-error-forall.chpl:4: In function 'explicitConst1':
+array-intent-from-actual-error-forall.chpl:6: error: cannot assign to const variable
+array-intent-from-actual-error-forall.chpl:7: error: cannot assign to const variable
+  array-intent-from-actual-error-forall.chpl:13: called as explicitConst1(A: [domain(1,int(64),one)] int(64))
+array-intent-from-actual-error-forall.chpl:19: error: cannot assign to const variable
+array-intent-from-actual-error-forall.chpl:20: error: cannot assign to const variable

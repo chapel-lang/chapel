@@ -5,4 +5,5 @@ slice-unrep-1.chpl:7: warning: slicing a range(int(64),high,positive) with a ran
 slice-unrep-1.chpl:9: warning: slicing a range(int(64),neither,positive) with a range(int(64),low,positive) might produce an empty range and result in a halt
 slice-unrep-1.chpl:10: warning: slicing a range(int(64),neither,positive) with a range(int(64),high,positive) might produce an empty range and result in a halt
 slice-unrep-1.chpl:11: warning: slicing a range(int(64),neither,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
+slice-unrep-1.chpl:15: warning: slicing a range(int(64),neither,positive) with a range(int(64),neither,positive) might produce an empty range and result in a halt
 slice-unrep-1.chpl:nnnn: error: halt reached - could not represent range slice - it needs to be empty, but the slice type is not bounded

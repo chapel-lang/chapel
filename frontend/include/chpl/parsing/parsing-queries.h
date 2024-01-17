@@ -97,6 +97,9 @@ const uast::BuilderResult&
 parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
                                  UniqueString parentSymbolPath);
 
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context);
+
 /**
   Like parseFileToBuilderResult but parses whatever file contained 'id'.
   Useful for projection queries.
@@ -355,6 +358,16 @@ bool idIsPrivateDecl(Context* context, ID id);
  Returns true if the ID is a function.
  */
 bool idIsFunction(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'extern'.
+ */
+bool idIsExtern(Context* context, ID id);
+
+/**
+ Returns true if the ID is marked 'export'.
+ */
+bool idIsExport(Context* context, ID id);
 
 /**
  Returns true if the ID is a method.
