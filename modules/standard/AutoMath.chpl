@@ -1958,11 +1958,6 @@ module AutoMath {
   /* Returns a value for which :proc:`isNan` will return `true`. */
   inline proc nan param : real(64) do return chpl_NAN;
 
-  /* Returns a value for which :proc:`isNan` will return `true`. */
-  @deprecated(notes="'NAN' is deprecated in favor of :proc:`nan`, please use that instead")
-  inline proc NAN param : real(64) do return nan;
-
-
   // When removing this deprecated function, be sure to remove chpl_nearbyint
   // and move its contents into Math.chpl to reduce the symbols living in this
   // module.
