@@ -2350,8 +2350,12 @@ doIsCandidateApplicableInitial(Context* context,
     auto res = vis.byPostorder.byAst(fn->thisFormal());
 
     auto got = canPass(context, recv, res.type());
-    if (!got.passes()) {
-      return ApplicabilityResult::failure(candidateId, /* TODO */ FAIL_CANDIDATE_OTHER);
+    // Allow passing directly or via implicit borrowing only.
+    if (!got.passes() ||
+        (got.converts() &&
+         got.conversionKind() != CanPassResult::ConversionKind::BORROWS)) {
+      return ApplicabilityResult::failure(candidateId,
+                                          /* TODO */ FAIL_CANDIDATE_OTHER);
     }
   }
 
