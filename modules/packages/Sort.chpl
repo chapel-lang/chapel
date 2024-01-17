@@ -3569,7 +3569,7 @@ module InPlacePartitioning {
 // it is not stable and not fully parallel
 @chpldoc.nodoc
 module MSBRadixSort {
-  import Sort.{defaultComparator, ShellSort};
+  import Sort.{defaultComparator, ShellSort, InsertionSort};
   private use super.RadixSortHelp;
   private use OS.POSIX;
 
@@ -3611,9 +3611,13 @@ module MSBRadixSort {
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
-      ShellSort.shellSortMoveElts(A, criterion,
-                                  start=start_n,
-                                  end=end_n);
+      // Since the problem size is bounded, insertion sort is faster
+      // than shell sort.
+      // If we want sortSwitch to be pretty big, we can
+      // use quickSort.
+      InsertionSort.insertionSortMoveElts(A, comparator=criterion,
+                                          lo=start_n,
+                                          hi=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
     }
