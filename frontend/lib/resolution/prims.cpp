@@ -753,6 +753,8 @@ primAbsGetType(Context* context, const CallInfo& ci) {
 
   if (ci.numActuals() != 1) return ret;
 
+  // Note: the PRIM_ABS primitive is only actually used for params,
+  // so this code should probably assert that.
   QualifiedType actualType = ci.actual(0).type();
   if (auto comp = actualType.type()->toComplexType()) {
     int w = comp->componentBitwidth();
@@ -1398,6 +1400,8 @@ CallResolutionResult resolvePrimCall(Context* context,
         type = QualifiedType(QualifiedType::CONST_VAR,
                              ci.actual(0).type().type());
       }
+      // Note: PRIM_SQRT primitive is only actually used for params,
+      // so this code should probably assert that
       break;
     /* primitives that return default int */
     case PRIM_GET_UNION_ID:
@@ -1521,6 +1525,7 @@ CallResolutionResult resolvePrimCall(Context* context,
     /* primitives that return real parts from a complex */
     case PRIM_GET_REAL:
     case PRIM_GET_IMAG:
+      // TODO: get the real/imag component from a param complex
       type = primComplexGetComponent(context, ci);
       break;
     /* other math primitives */
