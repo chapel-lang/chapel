@@ -1744,51 +1744,6 @@ module AutoMath {
   /* Returns a value for which :proc:`isNan` will return `true`. */
   inline proc nan param : real(64) do return chpl_NAN;
 
-  // When removing this deprecated function, be sure to remove chpl_nearbyint
-  // and move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  /* Returns the rounded integral value of the argument `x` determined by the
-     current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
-     floating-point exception.
-  */
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'nearbyint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
-  inline proc nearbyint(x: real(64)): real(64) {
-    return chpl_nearbyint(x);
-  }
-
-  inline proc chpl_nearbyint(x: real(64)): real(64) {
-    // Note: this extern proc was originally free standing.  It might be
-    // reasonable to make it that way again when the deprecated version is
-    // removed
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc nearbyint(x: real(64)): real(64);
-    return nearbyint(x);
-  }
-
-  // When removing this deprecated function, be sure to remove chpl_nearbyint
-  // and move its contents into Math.chpl to reduce the symbols living in this
-  // module.
-  /* Returns the rounded integral value of the argument `x` determined by the
-     current rounding direction.  :proc:`nearbyint` will not raise the "inexact"
-     floating-point exception.
-  */
-  pragma "last resort"
-  @chpldoc.nodoc
-  @deprecated(notes="In an upcoming release 'nearbyint' will no longer be included by default, please 'use' or 'import' the :mod:`Math` module to call it")
-  inline proc nearbyint(x : real(32)): real(32) {
-    return chpl_nearbyint(x);
-  }
-
-  inline proc chpl_nearbyint(x : real(32)): real(32) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc nearbyintf(x: real(32)): real(32);
-    return nearbyintf(x);
-  }
-
   /* Returns the phase (often called `argument`) of complex `x`, an angle (in
      radians).
 

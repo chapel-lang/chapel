@@ -908,7 +908,10 @@ module Math {
   */
   @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x: real(64)): real(64) {
-    return chpl_nearbyint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc nearbyint(x: real(64)): real(64);
+    return nearbyint(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
@@ -917,7 +920,10 @@ module Math {
   */
   @unstable("nearbyint is unstable while we design more thorough rounding support")
   inline proc nearbyint(x : real(32)): real(32) {
-    return chpl_nearbyint(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc nearbyintf(x: real(32)): real(32);
+    return nearbyintf(x);
   }
 
   /* Returns the rounded integral value of the argument `x` determined by the
