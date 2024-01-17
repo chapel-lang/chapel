@@ -154,6 +154,23 @@ returnInfoComplexField(CallExpr* call) {  // for get real/imag primitives
 }
 
 static QualifiedType
+returnInfoAbs(CallExpr* call) {
+  Type *t = call->get(1)->getValType();
+  if (t == dtComplex[COMPLEX_SIZE_64]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
+  } else if (t == dtComplex[COMPLEX_SIZE_128]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_32]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_32], QUAL_VAL);
+  } else if (t == dtImag[FLOAT_SIZE_64]) {
+    return QualifiedType(dtReal[FLOAT_SIZE_64], QUAL_VAL);
+  }
+
+  return QualifiedType(t, QUAL_VAL);
+}
+
+
+static QualifiedType
 returnInfoFirst(CallExpr* call) {
   return call->get(1)->qualType();
 }
@@ -743,6 +760,8 @@ initPrimitive() {
   prim_def(PRIM_UNARY_PLUS, "u+", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_NOT, "u~", returnInfoFirstDeref);
   prim_def(PRIM_UNARY_LNOT, "u!", returnInfoBool);
+  prim_def(PRIM_SQRT, "sqrt", returnInfoFirst);
+  prim_def(PRIM_ABS, "abs", returnInfoAbs);
   prim_def(PRIM_ADD, "+", returnInfoNumericUp);
   prim_def(PRIM_SUBTRACT, "-", returnInfoNumericUp);
   prim_def(PRIM_MULT, "*", returnInfoNumericUp);

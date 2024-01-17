@@ -47,5 +47,9 @@
 #define P_prim_minus          chpl::uast::primtags::PRIM_UNARY_MINUS
 #define P_prim_not            chpl::uast::primtags::PRIM_UNARY_NOT
 #define P_prim_lnot           chpl::uast::primtags::PRIM_UNARY_LNOT
+#define P_prim_abs            chpl::uast::primtags::PRIM_ABS
+#define P_prim_sqrt           chpl::uast::primtags::PRIM_SQRT
+#define P_prim_get_imag       chpl::uast::primtags::PRIM_GET_IMAG
+#define P_prim_get_real       chpl::uast::primtags::PRIM_GET_REAL
 
 #endif

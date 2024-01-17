@@ -606,6 +606,18 @@ static Expr* postFoldPrimop(CallExpr* call) {
   } else if (call->isPrimitive(PRIM_UNARY_LNOT) == true) {
     FOLD_CALL1(P_prim_lnot);
 
+  } else if (call->isPrimitive(PRIM_ABS) == true) {
+    FOLD_CALL1(P_prim_abs);
+
+  } else if (call->isPrimitive(PRIM_SQRT) == true) {
+    FOLD_CALL1(P_prim_sqrt);
+
+  } else if (call->isPrimitive(PRIM_GET_REAL) == true) {
+    FOLD_CALL1(P_prim_get_real);
+
+  } else if (call->isPrimitive(PRIM_GET_IMAG) == true) {
+    FOLD_CALL1(P_prim_get_imag);
+
   } else if (call->isPrimitive(PRIM_ADD) == true) {
     FOLD_CALL2(P_prim_add);
 

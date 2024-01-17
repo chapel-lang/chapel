@@ -4608,7 +4608,7 @@ DEFINE_PRIM(UNARY_PLUS) {
     else
       ret = tmp; // nothing is necessary.
   }
-  DEFINE_PRIM(UNARY_NOT) {
+DEFINE_PRIM(UNARY_NOT) {
     GenRet tmp = codegenValue(call->get(1));
 
     if (gGenInfo->cfile) {
@@ -4621,6 +4621,12 @@ DEFINE_PRIM(UNARY_PLUS) {
 }
 DEFINE_PRIM(UNARY_LNOT) {
   ret = codegenIsZero(call->get(1));
+}
+DEFINE_PRIM(SQRT) {
+  INT_FATAL(call, "not expecting to codegen primitive sqrt calls");
+}
+DEFINE_PRIM(ABS) {
+  INT_FATAL(call, "not expecting to codegen primitive abs calls");
 }
 DEFINE_PRIM(ADD) {
     ret = codegenAdd(call->get(1), call->get(2));
