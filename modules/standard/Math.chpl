@@ -629,7 +629,7 @@ module Math {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ldexp(x:real(64), n:int(32)):real(64);
-    return ldexp(x, n);
+    return ldexp(x, exp);
   }
 
   /* Returns the value of the argument `x` multiplied by 2 raised to the
@@ -638,7 +638,7 @@ module Math {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc ldexpf(x:real(32), n:int(32)):real(32);
-    return ldexpf(x, n);
+    return ldexpf(x, exp);
   }
 
   /* Returns the natural logarithm of the absolute value
