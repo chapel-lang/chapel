@@ -2285,6 +2285,7 @@ module TwoArrayPartitioning {
   public use List only list;
   import Sort.{ShellSort, MSBRadixSort};
   import Sort.{RadixSortHelp, ShallowCopy};
+  import Sort;
   use MSBRadixSort;
 
   private param debug = false;
@@ -2513,21 +2514,9 @@ module TwoArrayPartitioning {
       if debug then
         writeln("recursing to sort the sample");
 
-      // sort the sample
+      // sort the sample using the usual sorting algorithm
+      Sort.sort(A[start_n..#sampleSize], comparator=criterion);
 
-
-      // TODO: make it adjustable from the settings
-      if sampleSize <= 1024*1024 {
-        // base case sort, parallel OK
-        msbRadixSort(A, start_n, start_n + sampleSize - 1,
-                     criterion,
-                     startbit, state.endbit,
-                     settings=new MSBRadixSortSettings());
-      } else {
-        partitioningSortWithScratchSpace(start_n, start_n + sampleSize - 1,
-                                         A, Scratch,
-                                         state, criterion, startbit);
-      }
       if debug {
         RadixSortHelp.checkSorted(start_n, start_n + sampleSize - 1, A, criterion, startbit);
       }
