@@ -26,10 +26,10 @@ export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.chapcs.playground"
 #
 
 # Test perf using llvm fastcc
-GITHUB_USER=jabraham17
-GITHUB_BRANCH=use-fast-call
-SHORT_NAME=fastcall
-START_DATE=12/13/23
+GITHUB_USER=chapel-lang
+GITHUB_BRANCH=main
+SHORT_NAME=main
+START_DATE=1/18/24
 
 git branch -D $GITHUB_USER-$GITHUB_BRANCH
 git checkout -b $GITHUB_USER-$GITHUB_BRANCH
