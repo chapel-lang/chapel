@@ -1153,23 +1153,32 @@ module Math {
   }
 
   /* Returns the tangent of the argument `x`. */
-  inline proc tan(x: real(64)): real(64) {
-    return chpl_tan(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc tan(x: real(64)): real(64);
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x : real(32)): real(32) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tanf(x: real(32)): real(32);
+    return tanf(x);
   }
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x: complex(64)): complex(64) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ctanf(z: complex(64)): complex(64);
+    return ctanf(x);
   }
 
   /* Returns the tangent of the argument `x`. */
   inline proc tan(x: complex(128)): complex(128) {
-    return chpl_tan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ctan(z: complex(128)): complex(128);
+    return ctan(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
