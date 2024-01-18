@@ -1,0 +1,2 @@
+# libc++ does not have an IEEE standard compliant sqrt
+CHPL_TARGET_PLATFORM == darwin
