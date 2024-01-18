@@ -510,31 +510,15 @@ struct ParserContext {
                                        WithClause* withClause,
                                        CommentsAndStmt cs);
 
-  CommentsAndStmt buildForallLoopStmt(YYLTYPE locForall,
+  CommentsAndStmt buildGeneralLoopStmt(YYLTYPE locKw,
                                       YYLTYPE locIndex,
                                       YYLTYPE locBodyAnchor,
+                                      PODUniqueString loopType,
                                       AstNode* indexExpr,
                                       AstNode* iterandExpr,
                                       WithClause* withClause,
                                       BlockOrDo blockOrDo);
                                       // AttributeGroup* attributeGroup);
-
-  CommentsAndStmt buildForeachLoopStmt(YYLTYPE locForeach,
-                                       YYLTYPE locIndex,
-                                       YYLTYPE locBodyAnchor,
-                                       AstNode* indexExpr,
-                                       AstNode* iterandExpr,
-                                       WithClause* withClause,
-                                       BlockOrDo blockOrDo);
-                                      //  AttributeGroup* attributeGroup);
-
-  CommentsAndStmt buildForLoopStmt(YYLTYPE locFor,
-                                   YYLTYPE locIndex,
-                                   YYLTYPE locBodyAnchor,
-                                   AstNode* indexExpr,
-                                   AstNode* iterandExpr,
-                                   BlockOrDo blockOrDo);
-                                  //  AttributeGroup* attributeGroup);
 
   CommentsAndStmt buildCoforallLoopStmt(YYLTYPE locCoforall,
                                         YYLTYPE locIndex,
