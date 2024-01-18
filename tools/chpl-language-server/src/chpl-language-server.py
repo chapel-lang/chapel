@@ -18,7 +18,7 @@
 # limitations under the License.
 #
 
-from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
+from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Set, Tuple, TypeVar, Union
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 import itertools
@@ -214,6 +214,28 @@ def get_symbol_information(
         )
     return None
 
+EltT = TypeVar('EltT')
+
+@dataclass
+class PositionList(Generic[EltT]):
+    get_range: Callable[[EltT], Range]
+    elts: List[EltT] = field(default_factory=list)
+
+    def sort(self):
+        self.elts.sort(key=lambda x: self.get_range(x).start)
+
+    def append(self, elt: EltT):
+        self.elts.append(elt)
+
+    def clear(self):
+        self.elts.clear()
+
+    def find(self, pos: Position) -> Optional[EltT]:
+        idx = bisect_right(self.elts, pos, key=lambda x: self.get_range(x).start)
+        idx -= 1
+        if idx < 0 or pos > self.get_range(self.elts[idx]).end:
+            return None
+        return self.elts[idx]
 
 @dataclass
 class NodeAndRange:
@@ -244,12 +266,13 @@ class ResolvedPair:
 class FileInfo:
     uri: str
     context: chapel.core.Context
-    segments: List[ResolvedPair] = field(default_factory=list)
+    segments: PositionList[ResolvedPair] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.core.Module] = field(init=False)
     possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
 
     def __post_init__(self):
+        self.segments = PositionList(lambda x: x.ident.rng)
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.core.AstNode]:
@@ -277,8 +300,8 @@ class FileInfo:
         when advancing the revision
         """
         asts = self.parse_file()
-        # get ids
-        self.segments = []
+
+        self.segments.clear()
         for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
             to = node.to_node()
             if to:
@@ -287,7 +310,7 @@ class FileInfo:
             to = node.to_node()
             if to:
                 self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
-        self.segments.sort(key=lambda s: s.ident.rng.start)
+        self.segments.sort()
         self.siblings = chapel.SiblingMap(asts)
 
         self.used_modules = []
@@ -312,13 +335,7 @@ class FileInfo:
         self, position: Position
     ) -> Optional[ResolvedPair]:
         """lookup a segment based upon a Position, likely a user mouse location"""
-        idx = bisect_right(
-            self.segments, position, key=lambda s: s.ident.rng.start
-        )
-        idx -= 1
-        if idx < 0 or position > self.segments[idx].ident.rng.end:
-            return None
-        return self.segments[idx]
+        return self.segments.find(position)
 
 
 def run_lsp():
@@ -436,7 +453,7 @@ def run_lsp():
 
         fi, _ = get_context(text_doc.uri)
 
-        items = []
+        items: List[Optional[CompletionItem]] = []
         items.extend(completion_item_for_decl(decl) for decl in fi.possibly_visible_decls)
         items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
