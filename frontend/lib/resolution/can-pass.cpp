@@ -562,27 +562,6 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
-// Check if implicit borrowing (including with subtype) is needed to pass.
-// To be called on types that are already known to pass.
-CanPassResult::ConversionKind CanPassResult::canPassBorrowing(
-    Context* context, const Type* actualT, const Type* formalT) {
-  if (auto actualCt = actualT->toClassType()) {
-    if (auto formalCt = formalT->toClassType()) {
-      CanPassResult result = canPassDecorators(context, actualCt->decorator(),
-                                               formalCt->decorator());
-      CHPL_ASSERT(result.passes() && "expected types known to pass");
-      // We only care about borrowing conversions here.
-      if (result.conversionKind_ == SUBTYPE) result.conversionKind_ = NONE;
-      CHPL_ASSERT(result.conversionKind_ == NONE ||
-                  result.conversionKind_ == BORROWS ||
-                  result.conversionKind_ == BORROWS_SUBTYPE);
-      return result.conversionKind_;
-    }
-  }
-
-  return NONE;
-}
-
 // The compiler considers many patterns of "subtyping" as things that require
 // implicit conversions (they often require implicit conversions in the
 // generated C).  However not all implicit conversions are created equal.
@@ -621,6 +600,57 @@ CanPassResult CanPassResult::canPassSubtype(Context* context,
   // TODO: c_array -> c_ptr(void), c_array(t) -> c_ptr(t)
 
   return fail(FAIL_EXPECTED_SUBTYPE);
+}
+
+// Like canPassSubtype, but considers subtyping conversions and/or implicit
+// borrowing conversions.
+// This function returns CanPassResult which always has
+// conversion kind of NONE, SUBTYPE, BORROWS, or BORROWS_SUBTYPE.
+CanPassResult CanPassResult::canPassSubtypeOrBorrowing(Context* context,
+                                                       const Type* actualT,
+                                                       const Type* formalT) {
+  // First check if we can pass directly or with subtype conversion, ignoring
+  // any borrowing that may be necessary.
+  auto result = canPassSubtype(context, actualT, formalT);
+  if (result.passes()) {
+    const ConversionKind subtypingConversion = result.conversionKind_;
+    CHPL_ASSERT(subtypingConversion == NONE || subtypingConversion == SUBTYPE);
+
+    // Check if borrowing is required for the conversion.
+    ConversionKind borrowingConversion = NONE;
+    if (auto actualCt = actualT->toClassType()) {
+      if (auto formalCt = formalT->toClassType()) {
+        CanPassResult decResult = canPassDecorators(
+            context, actualCt->decorator(), formalCt->decorator());
+        CHPL_ASSERT(decResult.passes() && "expected types known to pass");
+        // Extract borrowing conversion info only.
+        borrowingConversion = decResult.conversionKind();
+        if (borrowingConversion == SUBTYPE) borrowingConversion = NONE;
+      }
+    }
+
+    // Adjust subtyping component of conversion to reflect necessary borrowing.
+    ConversionKind adjustedConversion;
+    if (borrowingConversion == NONE) {
+      // no adjustment needed
+      adjustedConversion = subtypingConversion;
+    } else if (borrowingConversion == BORROWS) {
+      if (subtypingConversion == NONE) {
+        adjustedConversion = BORROWS;
+      } else {
+        adjustedConversion = BORROWS_SUBTYPE;
+      }
+    } else {
+      CHPL_ASSERT(borrowingConversion == BORROWS_SUBTYPE);
+      CHPL_ASSERT(subtypingConversion == SUBTYPE);
+      adjustedConversion = BORROWS_SUBTYPE;
+    }
+
+    result.conversionKind_ = adjustedConversion;
+    return result;
+  } else {
+    return fail(FAIL_EXPECTED_SUBTYPE);
+  }
 }
 
 CanPassResult CanPassResult::canConvertTuples(Context* context,
@@ -688,36 +718,12 @@ CanPassResult CanPassResult::canConvert(Context* context,
   // can we convert with a subtype conversion (including class subtyping) and/or
   // a borrowing conversion?
   {
-    auto got = canPassSubtype(context, actualT, formalT);
+    auto got = canPassSubtypeOrBorrowing(context, actualT, formalT);
     if (got.passes()) {
-      const ConversionKind subtypingConversion = got.conversionKind_;
-      CHPL_ASSERT(subtypingConversion == NONE ||
-                  subtypingConversion == SUBTYPE);
-
-      // Check if borrowing is required for the conversion and adjust kind to
-      // reflect this.
-      const ConversionKind borrowingConversion =
-          canPassBorrowing(context, actualT, formalT);
-      CHPL_ASSERT(borrowingConversion == NONE ||
-                  borrowingConversion == BORROWS ||
-                  borrowingConversion == BORROWS_SUBTYPE);
-      ConversionKind adjustedConversion;
-      if (borrowingConversion == NONE) {
-        // no adjustment needed
-        adjustedConversion = subtypingConversion;
-      } else if (borrowingConversion == BORROWS) {
-        if (subtypingConversion == NONE) {
-          adjustedConversion = BORROWS;
-        } else {
-          adjustedConversion = BORROWS_SUBTYPE;
-        }
-      } else {
-        CHPL_ASSERT(borrowingConversion == BORROWS_SUBTYPE);
-        CHPL_ASSERT(subtypingConversion == SUBTYPE);
-        adjustedConversion = BORROWS_SUBTYPE;
-      }
-
-      got.conversionKind_ = adjustedConversion;
+      CHPL_ASSERT(got.conversionKind_ == NONE ||
+                  got.conversionKind_ == SUBTYPE ||
+                  got.conversionKind_ == BORROWS ||
+                  got.conversionKind_ == BORROWS_SUBTYPE);
       return got;
     }
   }

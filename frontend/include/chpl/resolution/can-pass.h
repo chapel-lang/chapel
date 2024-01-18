@@ -118,8 +118,9 @@ class CanPassResult {
                                          const types::ClassType* actualCt,
                                          const types::ClassType* formalCt);
 
-  static CanPassResult::ConversionKind canPassBorrowing(
-      Context* context, const types::Type* actualT, const types::Type* formalT);
+  static CanPassResult canPassSubtypeOrBorrowing(Context* context,
+                                                 const types::Type* actualT,
+                                                 const types::Type* formalT);
 
   static CanPassResult canPassSubtype(Context* context,
                                       const types::Type* actualT,
