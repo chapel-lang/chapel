@@ -353,23 +353,32 @@ module Math {
   }
 
   /* Returns the arc tangent of the argument `x`. */
-  inline proc atan(x: real(64)): real(64) {
-    return chpl_atan(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atan(x: real(64)): real(64);
 
   /* Returns the arc tangent of the argument `x`. */
   inline proc atan(x : real(32)): real(32) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanf(x: real(32)): real(32);
+    return atanf(x);
   }
 
   /* Returns the arc tangent of the argument `x`. */
   inline proc atan(x: complex(64)): complex(64) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc catanf(z: complex(64)): complex(64);
+    return catanf(x);
   }
 
   /* Returns the arc tangent of the argument `x`. */
   inline proc atan(x: complex(128)): complex(128) {
-    return chpl_atan(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc catan(z: complex(128)): complex(128);
+    return catan(x);
   }
 
   /* Returns the arc tangent of the ratio of the two arguments.
