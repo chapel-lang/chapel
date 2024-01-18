@@ -563,13 +563,16 @@ module Math {
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
-  inline proc exp2(x: real(64)): real(64) {
-    return chpl_exp2(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc exp2(x: real(64)): real(64);
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
   inline proc exp2(x : real(32)): real(32) {
-    return chpl_exp2(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc exp2f(x: real(32)): real(32);
+    return exp2f(x);
   }
 
   /* Returns one less than the value of the Napierian :param:`e` raised to the
