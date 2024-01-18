@@ -577,13 +577,17 @@ module Math {
 
   /* Returns one less than the value of the Napierian :param:`e` raised to the
      power of the argument `x`. */
-  inline proc expm1(x: real(64)): real(64) {
-     return chpl_expm1(x); }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc expm1(x: real(64)): real(64);
 
   /* Returns one less than the value of the Napierian :param:`e` raised to the
      power of the argument `x`. */
   inline proc expm1(x : real(32)): real(32) {
-    return chpl_expm1(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc expm1f(x: real(32)): real(32);
+    return expm1f(x);
   }
 
   /* Returns the gamma function of the argument `x`. */
