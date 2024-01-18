@@ -3571,14 +3571,14 @@ module InPlacePartitioning {
 // it is not stable and not fully parallel
 @chpldoc.nodoc
 module MSBRadixSort {
-  import Sort.{defaultComparator, ShellSort, InsertionSort};
+  import Sort.{defaultComparator, ShellSort};
   private use super.RadixSortHelp;
   private use OS.POSIX;
 
   // This structure tracks configuration for the radix sorter.
   record MSBRadixSortSettings {
     param DISTRIBUTE_BUFFER = 5; // Number of temps during shuffle step
-    const sortSwitch = 256; // when sorting <= this many elements, use shell sort
+    const sortSwitch = 256; // when sorting <= this # elements, use other sort
     const minForTask = 256; // when sorting >= this many elements, go parallel
     param CHECK_SORTS = false; // do costly extra checks that data is sorted
     param progress = false; // print progress
@@ -3613,13 +3613,13 @@ module MSBRadixSort {
       return;
 
     if( end_n - start_n < settings.sortSwitch ) {
-      // Since the problem size is bounded, insertion sort is faster
-      // than shell sort.
-      // If we want sortSwitch to be pretty big, we can
-      // use quickSort.
-      InsertionSort.insertionSortMoveElts(A, comparator=criterion,
-                                          lo=start_n,
-                                          hi=end_n);
+      // Shell sort here works reasonably well for
+      // ordered and random input sequences.
+      // Insertion sort would improve performance for random sequences
+      // but causes performance problems with ordered sequences.
+      // Using quicksort here has a similar, but less extreme impact.
+      ShellSort.shellSortMoveElts(A, criterion,
+                                  start=start_n, end=end_n);
       if settings.CHECK_SORTS then checkSorted(start_n, end_n, A, criterion);
       return;
     }
