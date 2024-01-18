@@ -440,8 +440,7 @@ CanPassResult::canConvertParamNarrowing(Context* context,
 
 CanPassResult CanPassResult::canPassDecorators(Context* context,
                                                ClassTypeDecorator actual,
-                                               ClassTypeDecorator formal,
-                                               bool considerBorrows) {
+                                               ClassTypeDecorator formal) {
   if (actual == formal) {
     return passAsIs();
   }
@@ -472,7 +471,12 @@ CanPassResult CanPassResult::canPassDecorators(Context* context,
       instantiates = true;  // instantiating with passed management
     else if (formalMgmt.isBorrowed()) {
       // management can convert to borrowed
-      if (considerBorrows) conversion = BORROWS;
+      if (conversion == NONE)
+        conversion = BORROWS;
+      else if (conversion == SUBTYPE)
+        conversion = BORROWS_SUBTYPE;
+      else
+        CHPL_ASSERT(false && "should be unreachable");
     } else
       fails = FAIL_INCOMPATIBLE_MGMT;
   }
@@ -500,6 +504,13 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
 
   if (!decResult.passes())
     return decResult;
+
+  // Only worry about subtype conversion here; we will address
+  // borrowing conversions later.
+  if (decResult.conversionKind_ == BORROWS)
+    decResult.conversionKind_ = NONE;
+  else if (decResult.conversionKind_ == BORROWS_SUBTYPE)
+    decResult.conversionKind_ = SUBTYPE;
 
   if (actualCt->decorator().isManaged() &&
       formalCt->decorator().isManaged() &&
@@ -551,31 +562,25 @@ CanPassResult CanPassResult::canPassClassTypes(Context* context,
   return fail(FAIL_EXPECTED_SUBTYPE);
 }
 
-// This function returns CanPassResult which always has conversion
-// kind of NONE or BORROWS.
-CanPassResult CanPassResult::canPassBorrowing(Context* context,
-                                              const Type* actualT,
-                                              const Type* formalT) {
-  CanPassResult failure = fail(FAIL_INCOMPATIBLE_MGMT);
-
+// Check if implicit borrowing (including with subtype) is needed to pass.
+// To be called on types that are already known to pass.
+CanPassResult::ConversionKind CanPassResult::canPassBorrowing(
+    Context* context, const Type* actualT, const Type* formalT) {
   if (auto actualCt = actualT->toClassType()) {
     if (auto formalCt = formalT->toClassType()) {
-      if (actualCt->basicClassType() == formalCt->basicClassType()) {
-        CanPassResult result = canPassDecorators(context, actualCt->decorator(),
-                                                 formalCt->decorator(),
-                                                 /* considerBorrows */ true);
-        if (result.passes() && !(result.conversionKind_ == NONE ||
-                                 result.conversionKind_ == BORROWS)) {
-          // Ignore passing via means other than implicit borrowing conversion.
-          return failure;
-        } else {
-          return result;
-        }
-      }
+      CanPassResult result = canPassDecorators(context, actualCt->decorator(),
+                                               formalCt->decorator());
+      CHPL_ASSERT(result.passes() && "expected types known to pass");
+      // We only care about borrowing conversions here.
+      if (result.conversionKind_ == SUBTYPE) result.conversionKind_ = NONE;
+      CHPL_ASSERT(result.conversionKind_ == NONE ||
+                  result.conversionKind_ == BORROWS ||
+                  result.conversionKind_ == BORROWS_SUBTYPE);
+      return result.conversionKind_;
     }
   }
 
-  return failure;
+  return NONE;
 }
 
 // The compiler considers many patterns of "subtyping" as things that require
@@ -680,21 +685,39 @@ CanPassResult CanPassResult::canConvert(Context* context,
   const Type* actualT = actualQT.type();
   const Type* formalT = formalQT.type();
 
-  // can we convert with a borrowing conversion (without any subtyping)?
-  {
-    auto got = canPassBorrowing(context, actualT, formalT);
-    if (got.passes()) {
-      CHPL_ASSERT(got.conversionKind_ == NONE ||
-                  got.conversionKind_ == BORROWS);
-      return got;
-    }
-  }
-
-  // can we convert with a subtype conversion, including class subtyping?
+  // can we convert with a subtype conversion (including class subtyping) and/or
+  // a borrowing conversion?
   {
     auto got = canPassSubtype(context, actualT, formalT);
     if (got.passes()) {
-      CHPL_ASSERT(got.conversionKind_ == NONE || got.conversionKind_ == SUBTYPE);
+      const ConversionKind subtypingConversion = got.conversionKind_;
+      CHPL_ASSERT(subtypingConversion == NONE ||
+                  subtypingConversion == SUBTYPE);
+
+      // Check if borrowing is required for the conversion and adjust kind to
+      // reflect this.
+      const ConversionKind borrowingConversion =
+          canPassBorrowing(context, actualT, formalT);
+      CHPL_ASSERT(borrowingConversion == NONE ||
+                  borrowingConversion == BORROWS ||
+                  borrowingConversion == BORROWS_SUBTYPE);
+      ConversionKind adjustedConversion;
+      if (borrowingConversion == NONE) {
+        // no adjustment needed
+        adjustedConversion = subtypingConversion;
+      } else if (borrowingConversion == BORROWS) {
+        if (subtypingConversion == NONE) {
+          adjustedConversion = BORROWS;
+        } else {
+          adjustedConversion = BORROWS_SUBTYPE;
+        }
+      } else {
+        CHPL_ASSERT(borrowingConversion == BORROWS_SUBTYPE);
+        CHPL_ASSERT(subtypingConversion == SUBTYPE);
+        adjustedConversion = BORROWS_SUBTYPE;
+      }
+
+      got.conversionKind_ = adjustedConversion;
       return got;
     }
   }
