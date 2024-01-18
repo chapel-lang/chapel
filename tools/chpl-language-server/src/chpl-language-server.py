@@ -258,7 +258,7 @@ class FileInfo:
             self.segments, position, key=lambda s: s.ident.rng.start
         )
         idx -= 1
-        if idx < 0 or position >= self.segments[idx].ident.rng.end:
+        if idx < 0 or position > self.segments[idx].ident.rng.end:
             return None
         return self.segments[idx]
 
