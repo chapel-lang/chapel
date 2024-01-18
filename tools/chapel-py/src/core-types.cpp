@@ -442,10 +442,15 @@ PyObject* AstNodeObject_location(AstNodeObject *self) {
 PyObject* AstNodeObject_scope(AstNodeObject *self) {
   PyObject* args = Py_BuildValue("(O)", self->contextObject);
   auto context = &((ContextObject*) self->contextObject)->context;
+  auto scope = resolution::scopeForId(context, self->astNode->id());
+
+  if (scope == nullptr) {
+    Py_RETURN_NONE;
+  }
+
   auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
   auto scopeObject = (ScopeObject*) scopeObjectPy;
-
-  scopeObject->scope = resolution::scopeForId(context, self->astNode->id());
+  scopeObject->scope = scope;
 
   return scopeObjectPy;
 }
