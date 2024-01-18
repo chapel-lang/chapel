@@ -465,23 +465,32 @@ module Math {
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
-  inline proc cosh(x: real(64)): real(64) {
-    return chpl_cosh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc cosh(x: real(64)): real(64);
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x : real(32)): real(32) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc coshf(x: real(32)): real(32);
+    return coshf(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x: complex(64)): complex(64) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ccoshf(z: complex(64)): complex(64);
+    return ccoshf(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
   inline proc cosh(x: complex(128)): complex(128) {
-    return chpl_cosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ccosh(z: complex(128)): complex(128);
+    return ccosh(x);
   }
 
   /* Returns :proc:`~Math.ceil`\(`x`/`y`),
