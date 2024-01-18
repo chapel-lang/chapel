@@ -1124,23 +1124,32 @@ module Math {
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
-  inline proc sinh(x: real(64)): real(64) {
-    return chpl_sinh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc sinh(x: real(64)): real(64);
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x : real(32)): real(32) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sinhf(x: real(32)): real(32);
+    return sinhf(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x: complex(64)): complex(64) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csinhf(z: complex(64)): complex(64);
+    return csinhf(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
   inline proc sinh(x: complex(128)): complex(128) {
-    return chpl_sinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csinh(z: complex(128)): complex(128);
+    return csinh(x);
   }
 
   /* Returns the tangent of the argument `x`. */
