@@ -60,6 +60,18 @@ PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args));
 typedef struct {
   PyObject_HEAD
   PyObject* contextObject;
+  const chpl::resolution::Scope* scope;
+} ScopeObject;
+extern PyTypeObject ScopeType;
+void setupScopeType();
+
+int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs);
+void ScopeObject_dealloc(ScopeObject* self);
+PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUSED(args));
+
+typedef struct {
+  PyObject_HEAD
+  PyObject* contextObject;
   const chpl::uast::AstNode* astNode;
 } AstNodeObject;
 extern PyTypeObject AstNodeType;
@@ -75,6 +87,7 @@ PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored
 PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored));
 PyObject* AstNodeObject_iter(AstNodeObject *self);
 PyObject* AstNodeObject_location(AstNodeObject *self);
+PyObject* AstNodeObject_scope(AstNodeObject *self);
 
 /**
   Declare a Python PyTypeObject that corresponds to an AST node with the given
