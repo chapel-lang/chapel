@@ -296,7 +296,7 @@ class FileInfo:
             if scope:
                 self.used_modules.extend(scope.used_imported_modules())
 
-        self.possibly_visible_decls = set()
+        self.possibly_visible_decls = []
         for mod in self.used_modules:
             for child in mod:
                 if not isinstance(child, chapel.core.NamedDecl):
@@ -305,7 +305,7 @@ class FileInfo:
                 if child.visibility() == "private":
                     continue
 
-                self.possibly_visible_decls.add(child)
+                self.possibly_visible_decls.append(child)
 
 
     def get_segment_at_position(
