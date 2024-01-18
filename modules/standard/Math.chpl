@@ -531,26 +531,35 @@ module Math {
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
-  inline proc exp(x: real(64)): real(64) {
-    return chpl_exp(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc exp(x: real(64)): real(64);
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x : real(32)): real(32) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc expf(x: real(32)): real(32);
+    return expf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(64)): complex(64) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cexpf(z: complex(64)): complex(64);
+    return cexpf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
      argument `x`. */
   inline proc exp(x: complex(128)): complex(128) {
-    return chpl_exp(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cexp(z: complex(128)): complex(128);
+    return cexp(x);
   }
 
   /* Returns the value of `2` raised to the power of the argument `x`. */
