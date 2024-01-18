@@ -1182,23 +1182,32 @@ module Math {
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
-  inline proc tanh(x: real(64)): real(64) {
-    return chpl_tanh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc tanh(x: real(64)): real(64);
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x : real(32)): real(32) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc tanhf(x: real(32)): real(32);
+    return tanhf(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(64)): complex(64) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ctanhf(z: complex(64)): complex(64);
+    return ctanhf(x);
   }
 
   /* Returns the hyperbolic tangent of the argument `x`. */
   inline proc tanh(x: complex(128)): complex(128) {
-    return chpl_tanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ctanh(z: complex(128)): complex(128);
+    return ctanh(x);
   }
 
   /* Returns the greatest common divisor of the integer arguments `x` and
