@@ -436,23 +436,32 @@ module Math {
   }
 
   /* Returns the cosine of the argument `x`. */
-  inline proc cos(x: real(64)): real(64) {
-    return chpl_cos(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc cos(x: real(64)): real(64);
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : real(32)): real(32) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cosf(x: real(32)): real(32);
+    return cosf(x);
   }
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : complex(64)): complex(64) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ccosf(z: complex(64)): complex(64);
+    return ccosf(x);
   }
 
   /* Returns the cosine of the argument `x`. */
   inline proc cos(x : complex(128)): complex(128) {
-    return chpl_cos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc ccos(z: complex(128)): complex(128);
+    return ccos(x);
   }
 
   /* Returns the hyperbolic cosine of the argument `x`. */
