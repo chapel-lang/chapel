@@ -102,12 +102,19 @@ def get_symbol_sig(node: chapel.core.AstNode):
 
     def var_to_string(node: chapel.core.VarLikeDecl) -> str:
         s = ""
+        if node.visibility():
+            s += f"{node.visibility()} "
+        if node.linkage():
+            s += f"{node.linkage()} "
+        if node.linkage_name():
+            s += f"{node_to_string(node.linkage_name())} "
+
         if isinstance(node, chapel.core.Variable):
             if node.is_config():
                 s += "config "
-            intent = intent_to_string(node.kind())
-            if intent:
-                s += f"{intent} "
+        intent = intent_to_string(node.intent())
+        if intent:
+            s += f"{intent} "
         s += node.name()
         type_ = node.type_expression()
         if type_:
@@ -115,6 +122,44 @@ def get_symbol_sig(node: chapel.core.AstNode):
         init = node.init_expression()
         if init:
             s += f" = {node_to_string(init)}"
+        return s
+
+    def proc_to_string(node: chapel.core.Function) -> str:
+        s = ""
+
+        if node.visibility():
+            s += f"{node.visibility()} "
+        if node.linkage():
+            s += f"{node.linkage()} "
+        if node.linkage_name():
+            s += f"{node_to_string(node.linkage_name())} "
+        if node.is_override():
+            s += "override "
+        if node.is_inline():
+            s += "inline "
+
+
+        s += f"{node.kind()} "
+        # if it has a this-formal, check for this intent
+        if node.this_formal() and intent_to_string(node.this_formal().intent()):
+            s += f"{intent_to_string(node.this_formal().intent())} "
+        s += f"{node.name()}"
+
+        if not node.is_parenless():
+            start_idx = 1 if node.this_formal() else 0
+            formal_strings = [var_to_string(node.formal(i)) for i in range(start_idx, node.num_formals())]
+            s += f"({', '.join(formal_strings)})"
+
+
+        if intent_to_string(node.return_intent()):
+            s += f" {intent_to_string(node.return_intent())}"
+        if node.return_type():
+            s += f": {node_to_string(node.return_type())}"
+        if node.throws():
+            s += " throws"
+        if node.where_clause():
+            s += f" where {node_to_string(node.where_clause())}"
+
         return s
 
     def intent_to_string(intent: Optional[str]) -> str:
@@ -137,7 +182,13 @@ def get_symbol_sig(node: chapel.core.AstNode):
         ie = list(node.inherit_exprs())
         if len(ie) > 0:
             s = ": " + ", ".join([x.name() for x in ie])
-        return f"record {node.name()}{s}"
+        prefix = ""
+        if node.linkage():
+            prefix += f"{node.linkage()} "
+        if node.linkage_name():
+            prefix += f"{node_to_string(node.linkage_name())} "
+
+        return f"{prefix}record {node.name()}{s}"
     elif isinstance(node, chapel.core.Interface):
         return f"interface {node.name()}"
     elif isinstance(node, chapel.core.Module):
@@ -146,6 +197,8 @@ def get_symbol_sig(node: chapel.core.AstNode):
         return f"enum {node.name()}"
     elif isinstance(node, chapel.core.Variable):
         return var_to_string(node)
+    elif isinstance(node, chapel.core.Function):
+        return proc_to_string(node)
 
     return node.name()
 
