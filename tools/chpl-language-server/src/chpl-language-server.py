@@ -301,9 +301,6 @@ def run_lsp():
         """
 
         fi, errors = get_context(uri, do_update=True)
-        with fi.context.track_errors() as new_errors:
-            _ = fi.parse_file()
-        errors.extend(new_errors)
 
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
