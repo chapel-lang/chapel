@@ -37,6 +37,7 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
     CompletionParams,
@@ -267,12 +268,14 @@ class FileInfo:
     uri: str
     context: chapel.core.Context
     use_segments: PositionList[ResolvedPair] = field(init=False)
+    def_segments: PositionList[NodeAndRange] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.core.Module] = field(init=False)
     possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
+        self.def_segments = PositionList(lambda x: x.rng)
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.core.AstNode]:
@@ -311,6 +314,12 @@ class FileInfo:
             if to:
                 self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         self.use_segments.sort()
+
+        self.def_segments.clear()
+        for node, _ in chapel.each_matching(asts, chapel.core.NamedDecl):
+            self.def_segments.append(NodeAndRange(node))
+        self.def_segments.sort()
+
         self.siblings = chapel.SiblingMap(asts)
 
         self.used_modules = []
@@ -334,8 +343,14 @@ class FileInfo:
     def get_use_segment_at_position(
         self, position: Position
     ) -> Optional[ResolvedPair]:
-        """lookup a segment based upon a Position, likely a user mouse location"""
+        """lookup a use segment based upon a Position, likely a user mouse location"""
         return self.use_segments.find(position)
+
+    def get_def_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        """lookup a def segment based upon a Position, likely a user mouse location"""
+        return self.def_segments.find(position)
 
 
 def run_lsp():
@@ -401,6 +416,34 @@ def run_lsp():
         if segment:
             return segment.resolved_to.get_location()
         return None
+
+    @server.feature(TEXT_DOCUMENT_REFERENCES)
+    async def get_refs(ls: LanguageServer, params: ReferenceParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = get_context(text_doc.uri)
+
+        node = None
+        # First, search definitions. If the cursor is over a declaration,
+        # that's what we're looking for.
+        segment = fi.get_def_segment_at_position(params.position)
+        if segment:
+            node = segment.node
+        else:
+            # Also search identifiers. If the cursor is over a reference,
+            # we might as well try find all the other references.
+            segment = fi.get_use_segment_at_position(params.position)
+            if segment:
+                node = segment.resolved_to.node
+
+        if not node:
+            return None
+
+        locations = []
+        for use in fi.use_segments.elts:
+            if use.resolved_to.node.unique_id() == node.unique_id():
+                locations.append(use.ident.get_location())
+        return locations
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
