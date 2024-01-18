@@ -93,9 +93,10 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           checkFormal->traverse(vis);
           auto receiverQualType = vis.byPostorder.byAst(checkFormal).type();
 
-          // return true if the receiver type matches or
-          // if the receiver type is a generic type and we have
-          // an instantiation.
+          // Return true if:
+          // * the receiver type matches
+          // * the receiver type is a generic type and we have an instantiation
+          // * the receiver type converts via implicit borrowing
           auto result = canPass(context, haveQt, receiverQualType);
           if (result.passes() &&
               (!result.converts() || result.convertsWithBorrowing()) &&
