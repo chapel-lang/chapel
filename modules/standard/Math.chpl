@@ -242,7 +242,7 @@ module Math {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacosf(z: complex(64)): complex(64);
-    return cacosf(z);
+    return cacosf(x);
   }
 
   /* Returns the arc cosine of the argument `x`. */
@@ -250,7 +250,7 @@ module Math {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cacos(z: complex(128)): complex(128);
-    return cacos(z);
+    return cacos(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
