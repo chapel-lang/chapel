@@ -19,6 +19,7 @@
 #
 
 from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 import itertools
@@ -269,6 +270,7 @@ class FileInfo:
     context: chapel.core.Context
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
+    uses_here: Dict[str, List[ResolvedPair]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.core.Module] = field(init=False)
     possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
@@ -304,14 +306,17 @@ class FileInfo:
         """
         asts = self.parse_file()
 
+        self.uses_here = defaultdict(list)
         self.use_segments.clear()
         for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
             to = node.to_node()
             if to:
+                self.uses_here[to.unique_id()].append(NodeAndRange(node))
                 self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         for node, _ in chapel.each_matching(asts, chapel.core.Dot):
             to = node.to_node()
             if to:
+                self.uses_here[to.unique_id()].append(NodeAndRange(node))
                 self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         self.use_segments.sort()
 
@@ -423,26 +428,26 @@ def run_lsp():
 
         fi, _ = get_context(text_doc.uri)
 
-        node = None
+        node_and_loc = None
         # First, search definitions. If the cursor is over a declaration,
         # that's what we're looking for.
         segment = fi.get_def_segment_at_position(params.position)
         if segment:
-            node = segment.node
+            node_and_loc = segment
         else:
             # Also search identifiers. If the cursor is over a reference,
             # we might as well try find all the other references.
             segment = fi.get_use_segment_at_position(params.position)
             if segment:
-                node = segment.resolved_to.node
+                node_and_loc = segment.resolved_to
 
-        if not node:
+        if not node_and_loc:
             return None
 
-        locations = []
-        for use in fi.use_segments.elts:
-            if use.resolved_to.node.unique_id() == node.unique_id():
-                locations.append(use.ident.get_location())
+        locations = [node_and_loc.get_location()]
+        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+            locations.append(use.get_location())
+
         return locations
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
