@@ -3470,11 +3470,6 @@ module TwoArraySampleSort {
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;
 
-    var endbit:int;
-    endbit = msbRadixSortParamLastStartBit(Data, comparator);
-    if endbit < 0 then
-      endbit = max(int);
-
     // Allocate the Scratch array.
     pragma "no auto destroy"
     var Scratch: Data.type =
@@ -3485,8 +3480,7 @@ module TwoArraySampleSort {
 
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new SampleBucketizer(Data.eltType),
-      baseCaseSize=baseCaseSize,
-      endbit=endbit);
+      baseCaseSize=baseCaseSize);
 
     partitioningSortWithScratchSpace(Data.domain.low.safeCast(int),
                                      Data.domain.high.safeCast(int),
