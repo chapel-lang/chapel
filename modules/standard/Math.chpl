@@ -292,26 +292,35 @@ module Math {
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  inline proc asin(x: real(64)): real(64) {
-    return chpl_asin(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc asin(x: real(64)): real(64);
 
   /* Returns the arc sine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc asin(x : real(32)): real(32) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asinf(x: real(32)): real(32);
+    return asinf(x);
   }
 
   /* Returns the arc sine of the argument `x`. */
   inline proc asin(x: complex(64)): complex(64) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc casinf(z: complex(64)): complex(64);
+    return casinf(x);
   }
 
   /* Returns the arc sine of the argument `x`. */
   inline proc asin(x: complex(128)): complex(128) {
-    return chpl_asin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc casin(z: complex(128)): complex(128);
+    return casin(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
