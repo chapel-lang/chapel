@@ -429,6 +429,14 @@ struct ParserContext {
                                 ParserExprList* iterandExprs,
                                 AstNode* bodyExpr);
 
+  AstNode* buildGeneralLoopExpr(YYLTYPE locWhole,
+                                YYLTYPE locIndex,
+                                YYLTYPE locBodyAnchor,
+                                PODUniqueString loopType,
+                                AstNode* indexExpr,
+                                AstNode* iterandExpr,
+                                AstNode* blockOrDo);
+
   AstNode* buildTupleComponent(YYLTYPE location, PODUniqueString name);
   AstNode* buildTupleComponent(YYLTYPE location, ParserExprList* exprs);
 
