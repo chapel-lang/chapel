@@ -98,9 +98,7 @@ areOverloadsPresentInDefiningScope(Context* context, const Type* type,
           // an instantiation.
           auto result = canPass(context, haveQt, receiverQualType);
           if (result.passes() &&
-              (!result.converts() ||
-               result.conversionKind() ==
-                   CanPassResult::ConversionKind::BORROWS) &&
+              (!result.converts() || result.convertsWithBorrowing()) &&
               !result.promotes()) {
             return true;
           }

@@ -171,6 +171,10 @@ class CanPassResult {
     return conversionKind_ == PARAM_NARROWING;
   }
 
+  /** Returns true if an implicit borrowing conversion is required.
+      Does not include borrowing with implicit subtyping. */
+  bool convertsWithBorrowing() const { return conversionKind_ == BORROWS; }
+
   // implementation of canPass to allow use of private fields
   static CanPassResult canPass(Context* context,
                                const types::QualifiedType& actualType,

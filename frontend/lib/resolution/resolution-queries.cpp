@@ -2351,9 +2351,7 @@ doIsCandidateApplicableInitial(Context* context,
 
     auto got = canPass(context, recv, res.type());
     // Allow passing directly or via implicit borrowing only.
-    if (!got.passes() ||
-        (got.converts() &&
-         got.conversionKind() != CanPassResult::ConversionKind::BORROWS)) {
+    if (!got.passes() || (got.converts() && !got.convertsWithBorrowing())) {
       return ApplicabilityResult::failure(candidateId,
                                           /* TODO */ FAIL_CANDIDATE_OTHER);
     }
