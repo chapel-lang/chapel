@@ -764,6 +764,7 @@ module InsertionSort {
 
     for i in low..high by stride {
       pragma "no auto destroy"
+      pragma "no copy"
       var ithVal = ShallowCopy.shallowCopyInit(Data[i]);
 
       var inserted = false;
@@ -1157,6 +1158,7 @@ module QuickSort {
 
     // Now swap the pivot to a local variable
     pragma "no auto destroy"
+    pragma "no copy"
     var piv: eltType = ShallowCopy.shallowCopyInit(Data[lo]); // leaves Data[lo] empty
 
     while true {
@@ -1475,6 +1477,7 @@ module ShellSort {
       for is in hs..end {
         // move Data[is] into v
         pragma "no auto destroy"
+        pragma "no copy"
         var v = ShallowCopy.shallowCopyInit(Data[is]);
         js = is;
         while js >= hs && chpl_compare(v,Data[js-h],comparator) < 0 {
@@ -2054,7 +2057,6 @@ module ShallowCopy {
     }
   }
 
-  // TODO: These shallowCopy functions should handle Block,Cyclic arrays
   inline proc shallowCopy(ref A, dst, src, nElts) {
 
     // Ideally this would just be

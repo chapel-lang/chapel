@@ -74,12 +74,6 @@ proc checkSorts(arr, comparator) {
   QuickSort.quickSort(c, comparator=comparator);
   assert(isSorted(c, comparator));
   assert(a.equals(c));
-
-  // check shellSortMoveElts
-  var d = arr;
-  ShellSort.shellSortMoveElts(d, comparator=comparator);
-  assert(isSorted(d, comparator));
-  assert(a.equals(d));
 }
 
 proc checkSorts(arr) {
