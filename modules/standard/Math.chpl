@@ -405,25 +405,34 @@ module Math {
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
-  inline proc atanh(x: real(64)): real(64) {
-    return chpl_atanh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atanh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1. */
   inline proc atanh(x : real(32)): real(32) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atanhf(x: real(32)): real(32);
+    return atanhf(x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`. */
   inline proc atanh(x: complex(64)): complex(64) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc catanhf(z: complex(64)): complex(64);
+    return catanhf(x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`. */
   inline proc atanh(x: complex(128)): complex(128) {
-    return chpl_atanh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc catanh(z: complex(128)): complex(128);
+    return catanh(x);
   }
 
   /* Returns the cosine of the argument `x`. */
