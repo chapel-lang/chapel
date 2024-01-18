@@ -578,14 +578,20 @@ module Math {
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x: real(64)): real(64) {
-    return chpl_erf(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erf(x: real(64)): real(64);
+    return erf(x);
   }
 
   /* Returns the error function of the argument `x`. This is equivalent to
      ``2/sqrt(pi)`` * the integral of ``exp(-t**2)dt`` from 0 to `x`. */
   @unstable("'erf' is unstable and may be renamed or moved to a different module in the future")
   inline proc erf(x : real(32)): real(32) {
-    return chpl_erf(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erff(x: real(32)): real(32);
+    return erff(x);
   }
 
   /* Returns the complementary error function of the argument `x`.
@@ -593,7 +599,10 @@ module Math {
   */
   @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x: real(64)): real(64) {
-    return chpl_erfc(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfc(x: real(64)): real(64);
+    return erfc(x);
   }
 
   /* Returns the complementary error function of the argument `x`.
@@ -601,7 +610,10 @@ module Math {
   */
   @unstable("'erfc' is unstable and may be renamed or moved to a different module in the future")
   inline proc erfc(x : real(32)): real(32) {
-    return chpl_erfc(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc erfcf(x: real(32)): real(32);
+    return erfcf(x);
   }
 
   /* Returns the value of the Napierian :param:`e` raised to the power of the
