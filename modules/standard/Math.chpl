@@ -324,23 +324,32 @@ module Math {
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
-  inline proc asinh(x: real(64)): real(64) {
-    return chpl_asinh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc asinh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x : real(32)): real(32) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc asinhf(x: real(32)): real(32);
+    return asinhf(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x: complex(64)): complex(64) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc casinhf(z: complex(64)): complex(64);
+    return casinhf(x);
   }
 
   /* Returns the inverse hyperbolic sine of the argument `x`. */
   inline proc asinh(x: complex(128)): complex(128) {
-    return chpl_asinh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc casinh(z: complex(128)): complex(128);
+    return casinh(x);
   }
 
   /* Returns the arc tangent of the argument `x`. */
