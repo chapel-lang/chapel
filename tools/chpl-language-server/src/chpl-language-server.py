@@ -266,13 +266,13 @@ class ResolvedPair:
 class FileInfo:
     uri: str
     context: chapel.core.Context
-    segments: PositionList[ResolvedPair] = field(init=False)
+    use_segments: PositionList[ResolvedPair] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.core.Module] = field(init=False)
     possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
 
     def __post_init__(self):
-        self.segments = PositionList(lambda x: x.ident.rng)
+        self.use_segments = PositionList(lambda x: x.ident.rng)
         self.rebuild_index()
 
     def parse_file(self) -> List[chapel.core.AstNode]:
@@ -301,16 +301,16 @@ class FileInfo:
         """
         asts = self.parse_file()
 
-        self.segments.clear()
+        self.use_segments.clear()
         for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
             to = node.to_node()
             if to:
-                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
+                self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         for node, _ in chapel.each_matching(asts, chapel.core.Dot):
             to = node.to_node()
             if to:
-                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
-        self.segments.sort()
+                self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
+        self.use_segments.sort()
         self.siblings = chapel.SiblingMap(asts)
 
         self.used_modules = []
@@ -331,11 +331,11 @@ class FileInfo:
                 self.possibly_visible_decls.append(child)
 
 
-    def get_segment_at_position(
+    def get_use_segment_at_position(
         self, position: Position
     ) -> Optional[ResolvedPair]:
         """lookup a segment based upon a Position, likely a user mouse location"""
-        return self.segments.find(position)
+        return self.use_segments.find(position)
 
 
 def run_lsp():
@@ -397,7 +397,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segment = fi.get_segment_at_position(params.position)
+        segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
         return None
@@ -433,7 +433,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segment = fi.get_segment_at_position(params.position)
+        segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
