@@ -222,26 +222,35 @@ module Math {
 
      It is an error if `x` is less than -1 or greater than 1.
   */
-  inline proc acos(x: real(64)): real(64) {
-    return chpl_acos(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc acos(x: real(64)): real(64);
 
   /* Returns the arc cosine of the argument `x`.
 
      It is an error if `x` is less than -1 or greater than 1.
   */
   inline proc acos(x : real(32)): real(32) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acosf(x: real(32)): real(32);
+    return acosf(x);
   }
 
   /* Returns the arc cosine of the argument `x`. */
   inline proc acos(x: complex(64)): complex(64) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cacosf(z: complex(64)): complex(64);
+    return cacosf(z);
   }
 
   /* Returns the arc cosine of the argument `x`. */
   inline proc acos(x: complex(128)): complex(128) {
-    return chpl_acos(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cacos(z: complex(128)): complex(128);
+    return cacos(z);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
