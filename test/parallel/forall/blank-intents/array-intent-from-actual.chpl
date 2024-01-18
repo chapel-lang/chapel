@@ -31,16 +31,16 @@ proc explicitRef2(ref A) {
 // }
 
 proc explicitConst2(const A) {
-  forall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  [i in A.domain /*with (const A)*/] writeln(A[i]);
-  coforall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  sync begin /*with (const A)*/ writeln(A);
-  sync cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  forall i in A.domain do writeln(A[i]);
+  [i in A.domain] writeln(A[i]);
+  coforall i in A.domain do writeln(A[i]);
+  sync begin writeln(A);
+  sync cobegin {
     writeln(A);
     doNothing();
   }
 }
-
 
 //
 // in the deprecation period of ref-maybe-const formals, this will just be a
