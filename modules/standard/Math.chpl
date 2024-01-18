@@ -386,9 +386,9 @@ module Math {
      This is equivalent to
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
-  inline proc atan2(y: real(64), x: real(64)): real(64) {
-    return chpl_atan2(y, x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc atan2(y: real(64), x: real(64)): real(64);
 
   /* Returns the arc tangent of the ratio of the two arguments.
 
@@ -396,7 +396,10 @@ module Math {
      the arc tangent of `y` / `x` except that the signs of `y`
      and `x` are used to determine the quadrant of the result. */
   inline proc atan2(y : real(32), x: real(32)): real(32) {
-    return chpl_atan2(y, x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc atan2f(y: real(32), x: real(32)): real(32);
+    return atan2f(y, x);
   }
 
   /* Returns the inverse hyperbolic tangent of the argument `x`.
