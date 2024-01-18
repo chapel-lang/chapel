@@ -5,8 +5,8 @@ proc explicitRef1(ref A) {
   forall i in A.domain do A[i] = i;
   [i in A.domain] A[i] = i;
   coforall i in A.domain do A[i] = i;
-  begin A = A.domain;
-  cobegin {
+  sync begin A = A.domain;
+  sync cobegin {
     A = A.domain;
     doNothing();
   }
@@ -16,8 +16,8 @@ proc explicitRef2(ref A) {
   forall i in A.domain do writeln(A[i]);
   [i in A.domain] writeln(A[i]);
   coforall i in A.domain do writeln(A[i]);
-  begin writeln(A);
-  cobegin {
+  sync begin writeln(A);
+  sync cobegin {
     writeln(A);
     doNothing();
   }
@@ -31,16 +31,16 @@ proc explicitRef2(ref A) {
 // }
 
 proc explicitConst2(const A) {
-  forall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  [i in A.domain /*with (const A)*/] writeln(A[i]);
-  coforall i in A.domain /*with (const A)*/ do writeln(A[i]);
-  begin /*with (const A)*/ writeln(A);
-  cobegin /*with (const A)*/ {
+  // all the following statements have an implicit `with (const A)`
+  forall i in A.domain do writeln(A[i]);
+  [i in A.domain] writeln(A[i]);
+  coforall i in A.domain do writeln(A[i]);
+  sync begin writeln(A);
+  sync cobegin {
     writeln(A);
     doNothing();
   }
 }
-
 
 //
 // in the deprecation period of ref-maybe-const formals, this will just be a
@@ -55,8 +55,8 @@ proc blankIntent1(A) {
   forall i in A.domain do A[i] = i;
   [i in A.domain] A[i] = i;
   coforall i in A.domain do A[i] = i;
-  begin A = A.domain;
-  cobegin {
+  sync begin A = A.domain;
+  sync cobegin {
     A = A.domain;
     doNothing();
   }
@@ -67,8 +67,8 @@ proc blankIntent2(A) {
   forall i in A.domain do writeln(A[i]);
   [i in A.domain] writeln(A[i]);
   coforall i in A.domain do writeln(A[i]);
-  begin writeln(A);
-  cobegin {
+  sync begin writeln(A);
+  sync cobegin {
     writeln(A);
     doNothing();
   }
@@ -85,8 +85,8 @@ proc callFunction(A) {
   [i in A.domain] update(A, i);
   [i in A.domain] update(A, i);
   coforall i in A.domain do update(A, i);
-  begin update(A, 1);
-  cobegin {
+  sync begin update(A, 1);
+  sync cobegin {
     update(A, 1);
     doNothing();
   }
@@ -120,8 +120,8 @@ proc callFunction(A) {
   forall i in 1..10 do A[i] = i;
   [i in 1..10] A[i] = i;
   coforall i in A.domain do A[i] = i;
-  begin A = A.domain;
-  cobegin {
+  sync begin A = A.domain;
+  sync cobegin {
     A = A.domain;
     doNothing();
   }
