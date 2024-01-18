@@ -18,7 +18,7 @@
 # limitations under the License.
 #
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import Any, Dict, Iterable, List, Optional, Set, Tuple, Union
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 import itertools
@@ -37,6 +37,14 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import (
+    TEXT_DOCUMENT_COMPLETION,
+    CompletionParams,
+    CompletionOptions,
+    CompletionList,
+    CompletionItem,
+    CompletionItemKind,
+)
 from lsprotocol.types import (
     TEXT_DOCUMENT_DOCUMENT_SYMBOL,
     DocumentSymbolParams,
@@ -160,6 +168,36 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
             return SymbolKind.Variable
     return None
 
+def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
+    conversion_map = {
+        SymbolKind.Module: CompletionItemKind.Module,
+        SymbolKind.Class: CompletionItemKind.Class,
+        SymbolKind.Struct: CompletionItemKind.Struct,
+        SymbolKind.Interface: CompletionItemKind.Interface,
+        SymbolKind.Enum: CompletionItemKind.Enum,
+        SymbolKind.EnumMember: CompletionItemKind.EnumMember,
+        SymbolKind.Method: CompletionItemKind.Method,
+        SymbolKind.Constructor: CompletionItemKind.Constructor,
+        SymbolKind.Operator: CompletionItemKind.Operator,
+        SymbolKind.Function: CompletionItemKind.Function,
+        SymbolKind.Field: CompletionItemKind.Field,
+        SymbolKind.Constant: CompletionItemKind.Constant,
+        SymbolKind.TypeParameter: CompletionItemKind.TypeParameter,
+        SymbolKind.Variable: CompletionItemKind.Variable,
+    }
+    return conversion_map[kind]
+
+def completion_item_for_decl(decl: chapel.core.NamedDecl) -> Optional[CompletionItem]:
+    kind = decl_kind(decl)
+    if not kind:
+        return None
+
+    return CompletionItem(
+        label=decl.name(),
+        kind=decl_kind_to_completion_kind(kind),
+        insert_text=decl.name(),
+        sort_text=decl.name(),
+    )
 
 def get_symbol_information(
     decl: chapel.core.NamedDecl, uri: str
@@ -208,9 +246,11 @@ class FileInfo:
     context: chapel.core.Context
     segments: List[ResolvedPair] = field(default_factory=list)
     siblings: chapel.SiblingMap = field(init=False)
+    used_modules: List[chapel.core.Module] = field(init=False)
+    possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
 
     def __post_init__(self):
-        self.rebuild_segments()
+        self.rebuild_index()
 
     def parse_file(self) -> List[chapel.core.AstNode]:
         """
@@ -229,7 +269,7 @@ class FileInfo:
         with self.context.track_errors() as _:
             return self.parse_file()
 
-    def rebuild_segments(self):
+    def rebuild_index(self):
         """
         Rebuild the cached line info and siblings information
 
@@ -249,6 +289,24 @@ class FileInfo:
                 self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         self.segments.sort(key=lambda s: s.ident.rng.start)
         self.siblings = chapel.SiblingMap(asts)
+
+        self.used_modules = []
+        for ast in asts:
+            scope = ast.scope()
+            if scope:
+                self.used_modules.extend(scope.used_imported_modules())
+
+        self.possibly_visible_decls = set()
+        for mod in self.used_modules:
+            for child in mod:
+                if not isinstance(child, chapel.core.NamedDecl):
+                    continue
+
+                if child.visibility() == "private":
+                    continue
+
+                self.possibly_visible_decls.add(child)
+
 
     def get_segment_at_position(
         self, position: Position
@@ -285,7 +343,7 @@ def run_lsp():
             if do_update:
                 file_info.context.advance_to_next_revision(False)
                 with file_info.context.track_errors() as errors:
-                    file_info.rebuild_segments()
+                    file_info.rebuild_index()
         else:
             context = chapel.core.Context()
             with context.track_errors() as errors:
@@ -371,6 +429,20 @@ def run_lsp():
             text += f"\n---\n{docstring}"
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=resolved_to.get_location().range)
+
+    @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
+    async def complete(ls: LanguageServer, params: CompletionParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = get_context(text_doc.uri)
+
+        items = []
+        items.extend(completion_item_for_decl(decl) for decl in fi.possibly_visible_decls)
+        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
+
+        items = [item for item in items if item]
+
+        return CompletionList(is_incomplete=False, items=items)
 
     server.start_io()
 
