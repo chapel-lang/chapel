@@ -1095,23 +1095,32 @@ module Math {
   }
 
   /* Returns the sine of the argument `x`. */
-  inline proc sin(x: real(64)): real(64) {
-    return chpl_sin(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc sin(x: real(64)): real(64);
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: real(32)): real(32) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc sinf(x: real(32)): real(32);
+    return sinf(x);
   }
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: complex(64)): complex(64) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csinf(z: complex(64)): complex(64);
+    return csinf(x);
   }
 
   /* Returns the sine of the argument `x`. */
   inline proc sin(x: complex(128)): complex(128) {
-    return chpl_sin(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc csin(z: complex(128)): complex(128);
+    return csin(x);
   }
 
   /* Returns the hyperbolic sine of the argument `x`. */
