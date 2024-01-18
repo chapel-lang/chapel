@@ -257,26 +257,35 @@ module Math {
 
      It is an error if `x` is less than 1.
   */
-  inline proc acosh(x: real(64)): real(64) {
-    return chpl_acosh(x);
-  }
+  pragma "fn synchronization free"
+  pragma "codegen for CPU and GPU"
+  extern proc acosh(x: real(64)): real(64);
 
   /* Returns the inverse hyperbolic cosine of the argument `x`.
 
      It is an error if `x` is less than 1.
   */
   inline proc acosh(x : real(32)): real(32) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc acoshf(x: real(32)): real(32);
+    return acoshf(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`. */
   inline proc acosh(x: complex(64)): complex(64) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cacoshf(z: complex(64)): complex(64);
+    return cacoshf(x);
   }
 
   /* Returns the inverse hyperbolic cosine of the argument `x`. */
   inline proc acosh(x: complex(128)): complex(128) {
-    return chpl_acosh(x);
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cacosh(z: complex(128)): complex(128);
+    return cacosh(x);
   }
 
   /* Returns the arc sine of the argument `x`.
