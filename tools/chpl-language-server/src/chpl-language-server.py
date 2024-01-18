@@ -236,7 +236,7 @@ class FileInfo:
         Note: this is a potentially expensive operation, it should only be done
         when advancing the revision
         """
-        asts = self.get_asts()
+        asts = self.parse_file()
         # get ids
         self.segments = []
         for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
@@ -248,7 +248,7 @@ class FileInfo:
             if to:
                 self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
         self.segments.sort(key=lambda s: s.ident.rng.start)
-        self.siblings = chapel.SiblingMap(self.get_asts())
+        self.siblings = chapel.SiblingMap(asts)
 
     def get_segment_at_position(
         self, position: Position
