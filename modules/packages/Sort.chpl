@@ -484,6 +484,18 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
     compilerError("stable sort not yet implemented");
   } else {
     if radixSortOk(Data, comparator) {
+      // TODO: use a sample sort if the input does not have enough
+      // randomness, according to some heuristic
+
+      var quickSortSize=50_000;
+      // quick sort performs better for middle problem sizes
+      // (too large for insertion sort etc, but not big enough
+      //  to overcome the larger constant overhead of radix sort)
+      if Data.domain.size < quickSortSize {
+        QuickSort.quickSort(Data, comparator=comparator);
+        return;
+      }
+
       if inPlaceAlgorithm {
         // use an in-place algorithm
         MSBRadixSort.msbRadixSort(Data, comparator=comparator);
@@ -3360,7 +3372,6 @@ module TwoArrayRadixSort {
   import Sort.defaultComparator;
   private use super.TwoArrayPartitioning;
   private use super.RadixSortHelp;
-  private import super.QuickSort;
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
@@ -3369,16 +3380,7 @@ module TwoArrayRadixSort {
     }
 
     var baseCaseSize=16;
-    var quickSortSize=10000;
     var sequentialSizePerTask=4096;
-    // quick sort performs better for middle problem sizes
-    // (too large for insertion sort, but not big enough
-    //  for radix sort to be beneficial)
-    if Data.domain.size < quickSortSize {
-      QuickSort.quickSort(Data, comparator=comparator);
-      return;
-    }
-
     var endbit:int;
     endbit = msbRadixSortParamLastStartBit(Data, comparator);
     if endbit < 0 then
