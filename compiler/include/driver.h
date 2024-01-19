@@ -242,6 +242,7 @@ extern bool fWarnIntUint;
 extern bool fWarnUnstable;
 extern bool fWarnUnstableStandard;
 extern bool fWarnUnstableInternal;
+extern bool fWarnRaceConditions;
 
 extern bool fReportAliases;
 extern bool fReportBlocking;
