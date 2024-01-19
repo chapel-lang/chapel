@@ -2240,6 +2240,8 @@ compilerAndTestingStats: &compiler-perf-base
     - Eliminate extra destructions when yielding tuples (#21887)
   12/01/23:
     - Move the GpuSort Module code into the GPU module (#23989)
+  01/18/24:
+    - Remove 'use GPU' from ChapelGpuSupport (#24185)
 
 allTotalTime:
   <<: *compiler-perf-base
