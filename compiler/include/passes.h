@@ -134,9 +134,10 @@ void  handleCallsToOtherCGfuns(FnSymbol* origFn, InterfaceInfo* ifcInfo,
 
 // iterator.cpp
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr);
+                                 bool fromForExpr, bool fromForeachExpr);
 void setIteratorRecordShape(CallExpr* call);
 bool checkIteratorFromForExpr(Expr* ref, Symbol* shape);
+bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape);
 
 // LoopExpr.cpp
 bool isOuterVarLoop(Symbol* sym, Expr* enclosingExpr);

@@ -1942,8 +1942,10 @@ static Expr* preFoldPrimOp(CallExpr* call) {
       INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
       Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
       Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
+      Symbol* fromForeachLoop = toSymExpr(call->get(4))->symbol();
       retval = setIteratorRecordShape(call, ir, shapeSpec,
-                 getSymbolImmediate(fromForLoop)->bool_value());
+                 getSymbolImmediate(fromForLoop)->bool_value(),
+                 getSymbolImmediate(fromForeachLoop)->bool_value());
       call->replace(retval);
     }
 

@@ -2247,12 +2247,16 @@ static void addSetIteratorShape(PromotionInfo& promotion, CallExpr* call) {
   // The first promoted argument argument determines the shape.
   Symbol* shapeSource = leadingArg(promotion, call);
 
-  Symbol* fromForExpr = (! promotion.hasLeaderFollowers             ||
-                         checkIteratorFromForExpr(move, shapeSource) )
+  bool isFromForeachExpr = checkIteratorFromForeachExpr(move, shapeSource);
+
+  Symbol* fromForeachExpr = isFromForeachExpr ? gTrue : gFalse;
+  Symbol* fromForExpr = (!isFromForeachExpr &&
+                         (! promotion.hasLeaderFollowers             ||
+                          checkIteratorFromForExpr(move, shapeSource) ))
                         ? gTrue : gFalse;
 
   move->insertAfter(new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE,
-                                 irTemp, shapeSource, fromForExpr));
+                                 irTemp, shapeSource, fromForExpr, fromForeachExpr));
 }
 
 

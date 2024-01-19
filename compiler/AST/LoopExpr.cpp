@@ -177,7 +177,7 @@ static int loopexpr_uid = 1;
 
 static CallExpr* buildLoopExprFunctions(LoopExpr* faExpr);
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered);
+                            bool forall, bool foreach, bool zippered);
 
 class LowerLoopExprVisitor final : public AstVisitorTraverse
 {
@@ -222,7 +222,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // Do not preserve the shape if there is a filtering predicate.
     if (noFilter) {
       normalize(replacement); // for addIterRecShape()
-      addIterRecShape(replacement, node->forall || node->foreach, node->zippered);
+      addIterRecShape(replacement, node->forall, node->foreach, node->zippered);
     }
   }
 
@@ -246,7 +246,7 @@ static Expr* getShapeForZippered(Expr* tupleRef) {
 // 'forallExprCall', during resolution, returns an iterator record
 // for the forall expression. Ensure it will get a shape.
 static void addIterRecShape(CallExpr* forallExprCall,
-                            bool parallel, bool zippered) {
+                            bool fromForall, bool fromForeach, bool zippered) {
   if (CallExpr* move = toCallExpr(forallExprCall->parentExpr)) {
     if (move->isPrimitive(PRIM_MOVE)) {
       Expr* dest = move->get(1)->copy();
@@ -254,7 +254,9 @@ static void addIterRecShape(CallExpr* forallExprCall,
       if (zippered) shape = getShapeForZippered(shape);
       move->getStmtExpr()->insertAfter(
         new CallExpr(PRIM_ITERATOR_RECORD_SET_SHAPE, dest,
-                     shape->copy(), parallel ? gFalse : gTrue));
+                     shape->copy(),
+                     (fromForall || fromForeach) ? gFalse : gTrue,
+                     fromForeach ? gTrue : gFalse));
     }
   }
 }

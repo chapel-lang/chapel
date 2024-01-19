@@ -437,10 +437,10 @@ removeRetSymbolAndUses(FnSymbol* fn) {
 // Handle the shape of the yielded values.
 //
 
-// add "proc ir._fromForExpr_ param return true;"
-static void addIteratorFromForExpr(Expr* ref, Symbol* ir) {
+// add "proc ir.fn param return true;"
+static void addIteratorFromHelp(const char* fnName, Expr* ref, Symbol* ir) {
   SET_LINENO(ref);
-  FnSymbol* fn = new FnSymbol("_fromForExpr_");
+  FnSymbol* fn = new FnSymbol(fnName);
   fn->addFlag(FLAG_COMPILER_GENERATED);
   fn->addFlag(FLAG_METHOD);
   fn->addFlag(FLAG_NO_PARENS);
@@ -466,9 +466,18 @@ static void addIteratorFromForExpr(Expr* ref, Symbol* ir) {
   resolveFunction(fn);
 }
 
-// return the result of "chpl_iteratorFromForExpr(ir)"
-bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
-  CallExpr* checkCall = new CallExpr("chpl_iteratorFromForExpr", shape);
+// add "proc ir._fromForExpr_ param return true;"
+static void addIteratorFromForExpr(Expr* ref, Symbol* ir) {
+  addIteratorFromHelp("_fromForExpr_", ref, ir);
+}
+
+static void addIteratorFromForeachExpr(Expr* ref, Symbol* ir) {
+  addIteratorFromHelp("_fromForeachExpr_", ref, ir);
+}
+
+// return the result of "fromFn(ir)"
+static bool checkIteratorFromHelp(const char* fromFn, Expr* ref, Symbol* shape) {
+  CallExpr* checkCall = new CallExpr(fromFn, shape);
   BlockStmt* holder = new BlockStmt(BLOCK_SCOPELESS);
   holder->insertAtTail(checkCall);
   ref->insertAfter(holder);
@@ -484,6 +493,15 @@ bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
   return getSymbolImmediate(checkResult)->bool_value();
 }
 
+// return the result of "chpl_iteratorFromForExpr(ir)"
+bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
+  return checkIteratorFromHelp("chpl_iteratorFromForExpr", ref, shape);
+}
+
+bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape) {
+  return checkIteratorFromHelp("chpl_iteratorFromForeachExpr", ref, shape);
+}
+
 //
 // Insert before 'ref':
 //   temp = chpl_computeIteratorShape(shapeSpec);
@@ -493,7 +511,8 @@ bool checkIteratorFromForExpr(Expr* ref, Symbol* shape) {
 // if the field did not exist.
 //
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr) {
+                                 bool fromForExpr,
+                                 bool fromForeachExpr) {
   // We could skip this if the field already exists and is void.
   // It might be better to insert these anyway for uniformity.
   VarSymbol* value  = newTemp("shapeTemp");
@@ -518,6 +537,8 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     theProgram->block->insertAtTail(accessor->defPoint->remove());
     if (fromForExpr)
       addIteratorFromForExpr(ref, ir);
+    if (fromForeachExpr)
+      addIteratorFromForeachExpr(ref, ir);
   } else {
     INT_ASSERT(field->type == value->type);
   }
@@ -538,8 +559,10 @@ void setIteratorRecordShape(CallExpr* call) {
   INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
   Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
   Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
+  Symbol* fromForeachLoop = toSymExpr(call->get(4))->symbol();
   CallExpr* shapeCall = setIteratorRecordShape(call, ir, shapeSpec,
-                          getSymbolImmediate(fromForLoop)->bool_value());
+                          getSymbolImmediate(fromForLoop)->bool_value(),
+                          getSymbolImmediate(fromForeachLoop)->bool_value());
   call->replace(shapeCall);
 }
 
