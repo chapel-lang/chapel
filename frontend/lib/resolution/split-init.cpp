@@ -253,10 +253,12 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
 
   std::vector<std::pair<ID,QualifiedType>> referenceInitOrder;
   std::map<ID, QualifiedType> referenceInitTypes;
+  std::map<ID, int> initTypeBranchIdxs;
+  int frameCount = 0; // needed to track branches for error reporting
   for (auto frame : frames) {
-
-    size_t idx = 0;
     
+    size_t idx = 0;
+
     for (auto & pair : frame->initedVarsVec) {
       auto& id = pair.first;
       auto& qt = pair.second;
@@ -267,9 +269,12 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
       //check types for all frames
       if (referenceInitTypes.count(id) == 0) {
         referenceInitTypes[id] = qt;
+        initTypeBranchIdxs[id] = frameCount;
       } else if (referenceInitTypes[id] != qt) {
-        context->error(node, 
-                      "initialized types do not match between branches");
+        CHPL_REPORT(context, SplitInitMismatchedConditionalTypes,
+                    parsing::idToAst(context, id)->toVariable(), node,
+                    qt, referenceInitTypes[id], 
+                    frameCount, initTypeBranchIdxs[id]);
         return std::map<ID,QualifiedType>();
       }
 
@@ -286,6 +291,7 @@ std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode 
       }
       idx++;
     }
+    frameCount++;
   }
   return referenceInitTypes;
 }
