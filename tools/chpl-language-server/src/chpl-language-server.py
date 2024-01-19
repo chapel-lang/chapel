@@ -20,7 +20,7 @@
 
 from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
 from dataclasses import dataclass, field
-from bisect import bisect_right
+from bisect_compat import bisect_right
 import itertools
 
 
