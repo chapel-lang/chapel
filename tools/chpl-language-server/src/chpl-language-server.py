@@ -39,6 +39,7 @@ import itertools
 
 import chapel.core
 from chapel.lsp import location_to_range, error_to_diagnostic
+from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     Location,
@@ -283,6 +284,7 @@ class ResolvedPair:
 
 
 @dataclass
+@visitor
 class FileInfo:
     uri: str
     context: chapel.core.Context
@@ -315,46 +317,40 @@ class FileInfo:
         with self.context.track_errors() as _:
             return self.parse_file()
 
-    def rebuild_index(self):
+    def _note_reference(self, node: chapel.core.AstNode):
         """
-        Rebuild the cached line info and siblings information
-
-        Note: this is a potentially expensive operation, it should only be done
-        when advancing the revision
+        Given a node that can refer to another node, note what it refers
+        to in by updating the 'use' segment table and the list of uses.
         """
-        asts = self.parse_file()
+        to = node.to_node()
+        if not to:
+            return
 
-        self.uses_here = defaultdict(list)
-        self.use_segments.clear()
-        for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
-            to = node.to_node()
-            if to:
-                self.uses_here[to.unique_id()].append(NodeAndRange(node))
-                self.use_segments.append(
-                    ResolvedPair(NodeAndRange(node), NodeAndRange(to))
-                )
-        for node, _ in chapel.each_matching(asts, chapel.core.Dot):
-            to = node.to_node()
-            if to:
-                self.uses_here[to.unique_id()].append(NodeAndRange(node))
-                self.use_segments.append(
-                    ResolvedPair(NodeAndRange(node), NodeAndRange(to))
-                )
-        self.use_segments.sort()
+        self.uses_here[to.unique_id()].append(NodeAndRange(node))
+        self.use_segments.append(
+            ResolvedPair(NodeAndRange(node), NodeAndRange(to))
+        )
 
-        self.def_segments.clear()
-        for node, _ in chapel.each_matching(asts, chapel.core.NamedDecl):
-            self.def_segments.append(NodeAndRange(node))
-        self.def_segments.sort()
+    @enter
+    def _enter_Identifier(self, node: chapel.core.Identifier):
+        self._note_reference(node)
 
-        self.siblings = chapel.SiblingMap(asts)
+    @enter
+    def _enter_Dot(self, node: chapel.core.Dot):
+        self._note_reference(node)
 
+    @enter
+    def _enter_NamedDecl(self, node: chapel.core.NamedDecl):
+        self.def_segments.append(NodeAndRange(node))
+
+    def _collect_used_modules(self, asts: List[chapel.core.AstNode]):
         self.used_modules = []
         for ast in asts:
             scope = ast.scope()
             if scope:
                 self.used_modules.extend(scope.used_imported_modules())
 
+    def _collect_possibly_visible_decls(self):
         self.possibly_visible_decls = []
         for mod in self.used_modules:
             for child in mod:
@@ -365,6 +361,28 @@ class FileInfo:
                     continue
 
                 self.possibly_visible_decls.append(child)
+
+    def rebuild_index(self):
+        """
+        Rebuild the cached line info and siblings information
+
+        Note: this is a potentially expensive operation, it should only be done
+        when advancing the revision
+        """
+        asts = self.parse_file()
+
+        # Use this class as an AST visitor to rebuild the use and definition segment
+        # table, as well as the list of references.
+        self.uses_here = defaultdict(list)
+        self.use_segments.clear()
+        self.def_segments.clear()
+        self.visit(asts)
+        self.use_segments.sort()
+        self.def_segments.sort()
+
+        self.siblings = chapel.SiblingMap(asts)
+        self._collect_used_modules(asts)
+        self._collect_possibly_visible_decls()
 
 
     def get_use_segment_at_position(
