@@ -1,0 +1,3 @@
+ # promoted.good
+--no-warn-race-conditions # promoted.good
+--warn-race-conditions # promoted-const-error.good
