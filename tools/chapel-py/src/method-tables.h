@@ -494,6 +494,8 @@ CLASS_END(ForwardingDecl)
 CLASS_BEGIN(START_NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                UniqueString, return node->name())
+  PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
+               Location, return chpl::parsing::locateDeclNameWithAst(context, node))
 CLASS_END(START_NamedDecl)
 
 CLASS_BEGIN(EnumElement)

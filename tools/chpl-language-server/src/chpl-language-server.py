@@ -266,6 +266,8 @@ class NodeAndRange:
     def __post_init__(self):
         if isinstance(self.node, chapel.core.Dot):
             self.rng = location_to_range(self.node.field_location())
+        elif isinstance(self.node, chapel.core.NamedDecl):
+            self.rng = location_to_range(self.node.name_location())
         else:
             self.rng = location_to_range(self.node.location())
 
