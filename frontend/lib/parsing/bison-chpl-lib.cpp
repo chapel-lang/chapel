@@ -7834,7 +7834,7 @@ yyreduce:
 
   case 263: /* ifc_formal: ident_def  */
 #line 1855 "chpl.ypp"
-             { (yyval.expr) = context->buildInterfaceFormal((yylsp[0]), (yyvsp[0].uniqueStr)); }
+             { (yyval.expr) = context->buildInterfaceFormal((yylsp[0]), (yylsp[0]), (yyvsp[0].uniqueStr)); }
 #line 7839 "bison-chpl-lib.cpp"
     break;
 
@@ -8710,7 +8710,7 @@ yyreduce:
   case 426: /* named_formal: opt_formal_intent_tag formal_ident_def opt_colon_formal_type opt_init_expr  */
 #line 2556 "chpl.ypp"
   {
-    (yyval.expr) = context->buildFormal((yyloc), (yyvsp[-3].intentTag), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr), (yyvsp[0].expr));
+    (yyval.expr) = context->buildFormal((yyloc), (yylsp[-2]), (yyvsp[-3].intentTag), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr), (yyvsp[0].expr));
   }
 #line 8716 "bison-chpl-lib.cpp"
     break;
@@ -8718,7 +8718,7 @@ yyreduce:
   case 427: /* named_formal: pragma_ls opt_formal_intent_tag formal_ident_def opt_colon_formal_type opt_init_expr  */
 #line 2561 "chpl.ypp"
   {
-    (yyval.expr) = context->buildFormal((yyloc), (yyvsp[-3].intentTag), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr), (yyvsp[0].expr), true);
+    (yyval.expr) = context->buildFormal((yyloc), (yylsp[-2]), (yyvsp[-3].intentTag), (yyvsp[-2].uniqueStr), (yyvsp[-1].expr), (yyvsp[0].expr), true);
   }
 #line 8724 "bison-chpl-lib.cpp"
     break;

@@ -1156,7 +1156,9 @@ ParserContext::buildFunctionExpr(YYLTYPE location, FunctionParts& fp) {
 }
 
 AstNode*
-ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
+ParserContext::buildFormal(YYLTYPE location,
+                           YYLTYPE locName,
+                           Formal::Intent intent,
                            PODUniqueString name,
                            AstNode* typeExpr,
                            AstNode* initExpr,
@@ -1166,6 +1168,7 @@ ParserContext::buildFormal(YYLTYPE location, Formal::Intent intent,
   auto node = Formal::build(builder, loc, std::move(attr), name, intent,
                             toOwned(typeExpr),
                             toOwned(initExpr));
+  builder->noteDeclNameLocation(node.get(), convertLocation(locName));
   this->noteIsBuildingFormal(false);
   if (consumeAttributeGroup) resetAttributeGroupPartsState();
   return node.release();
@@ -3001,8 +3004,9 @@ ParserContext::buildSelectStmt(YYLTYPE location, owned<AstNode> expr,
 }
 
 AstNode* ParserContext::buildInterfaceFormal(YYLTYPE location,
+                                             YYLTYPE locName,
                                              PODUniqueString name) {
-  return buildFormal(location, Formal::Intent::TYPE, name,
+  return buildFormal(location, locName, Formal::Intent::TYPE, name,
                     /* typeExpr */ nullptr,
                     /* initExpr */ nullptr,
                     /* consumeAttributeGroup */ false);
@@ -3027,7 +3031,7 @@ CommentsAndStmt ParserContext::buildInterfaceStmt(YYLTYPE location,
     formalList = consumeList(formals);
   } else {
     auto selfStr = PODUniqueString::get(context(), "Self");
-    formalList.push_back(toOwned(buildInterfaceFormal(location, selfStr)));
+    formalList.push_back(toOwned(buildInterfaceFormal(location, {}, selfStr)));
   }
 
   AstList bodyStmts = bodyExprLst
