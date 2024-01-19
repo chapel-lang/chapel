@@ -18,7 +18,19 @@
 # limitations under the License.
 #
 
-from typing import Any, Callable, Dict, Generic, Iterable, List, Optional, Set, Tuple, TypeVar, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
@@ -170,6 +182,7 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
             return SymbolKind.Variable
     return None
 
+
 def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
     conversion_map = {
         SymbolKind.Module: CompletionItemKind.Module,
@@ -189,7 +202,10 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
     }
     return conversion_map[kind]
 
-def completion_item_for_decl(decl: chapel.core.NamedDecl) -> Optional[CompletionItem]:
+
+def completion_item_for_decl(
+    decl: chapel.core.NamedDecl,
+) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
         return None
@@ -201,6 +217,7 @@ def completion_item_for_decl(decl: chapel.core.NamedDecl) -> Optional[Completion
         sort_text=decl.name(),
     )
 
+
 def get_symbol_information(
     decl: chapel.core.NamedDecl, uri: str
 ) -> Optional[SymbolInformation]:
@@ -211,12 +228,12 @@ def get_symbol_information(
         # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
         # using symbol information for now, as it sort-of autogets the tree structure
         is_deprecated = chapel.is_deprecated(decl)
-        return SymbolInformation(
-            loc, decl.name(), kind, deprecated=is_deprecated
-        )
+        return SymbolInformation(loc, decl.name(), kind, deprecated=is_deprecated)
     return None
 
+
 EltT = TypeVar('EltT')
+
 
 @dataclass
 class PositionList(Generic[EltT]):
@@ -238,6 +255,7 @@ class PositionList(Generic[EltT]):
         if idx < 0 or pos > self.get_range(self.elts[idx]).end:
             return None
         return self.elts[idx]
+
 
 @dataclass
 class NodeAndRange:
@@ -270,7 +288,7 @@ class FileInfo:
     context: chapel.core.Context
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
-    uses_here: Dict[str, List[ResolvedPair]] = field(init=False)
+    uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
     used_modules: List[chapel.core.Module] = field(init=False)
     possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
@@ -312,12 +330,16 @@ class FileInfo:
             to = node.to_node()
             if to:
                 self.uses_here[to.unique_id()].append(NodeAndRange(node))
-                self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
+                self.use_segments.append(
+                    ResolvedPair(NodeAndRange(node), NodeAndRange(to))
+                )
         for node, _ in chapel.each_matching(asts, chapel.core.Dot):
             to = node.to_node()
             if to:
                 self.uses_here[to.unique_id()].append(NodeAndRange(node))
-                self.use_segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
+                self.use_segments.append(
+                    ResolvedPair(NodeAndRange(node), NodeAndRange(to))
+                )
         self.use_segments.sort()
 
         self.def_segments.clear()
@@ -501,9 +523,13 @@ def run_lsp():
 
         fi, _ = get_context(text_doc.uri)
 
-        items: List[Optional[CompletionItem]] = []
-        items.extend(completion_item_for_decl(decl) for decl in fi.possibly_visible_decls)
-        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
+        items = []
+        items.extend(
+            completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
+        )
+        items.extend(
+            completion_item_for_decl(mod) for mod in fi.used_modules
+        )
 
         items = [item for item in items if item]
 
