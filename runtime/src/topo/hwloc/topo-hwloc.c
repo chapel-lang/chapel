@@ -533,7 +533,7 @@ static void partitionResources(void) {
                  "\"%s\" is not a valid value for CHPL_RT_FORCE_COLOCALE.\n"
                  "Must be either \"socket\" or \"numa\".",
                  coloStr);
-          chpl_error(msg, 0, 0);
+        chpl_error(msg, 0, 0);
       }
     }
   }
