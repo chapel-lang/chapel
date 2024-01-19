@@ -406,7 +406,7 @@ void FindElidedCopies::handleYield(const uast::Yield* ast, RV& rv) {
 
 }
 
-static void propogateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFrame) {
+static void propagateMentionsAndInits(VarFrame* parentFrame, VarFrame* childFrame) {
   parentFrame->initedVars.insert(childFrame->initedVars.begin(),
                                  childFrame->initedVars.end());
   for(auto pair : childFrame->copyElisionState) {
@@ -445,14 +445,14 @@ void FindElidedCopies::handleDisjunction(const AstNode * node,
       }
     }
 
-    propogateMentionsAndInits(currentFrame, frame);
+    propagateMentionsAndInits(currentFrame, frame);
 
     return;
   }
 
-  //propogate mentions to the parent
+  //propagate mentions to the parent
   for(auto frame: frames) {
-    propogateMentionsAndInits(currentFrame, frame);
+    propagateMentionsAndInits(currentFrame, frame);
   }
 
   std::vector<VarFrame*> nonReturningFrames;
@@ -539,11 +539,11 @@ void FindElidedCopies::handleTry(const Try* t, RV& rv) {
 
   tryFrame->copyElisionState.swap(updatedState);
 
-  //propogate mentions in the catch clauses
+  //propagate mentions in the catch clauses
   for (int i = 0; i < nCatchFrames; i++) {
     VarFrame* catchFrame = currentCatchFrame(i);
     if (catchFrame) {
-      propogateMentionsAndInits(tryFrame, catchFrame);
+      propagateMentionsAndInits(tryFrame, catchFrame);
     }
   }
   handleScope(t, rv);

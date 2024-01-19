@@ -52,8 +52,9 @@ struct FindSplitInits : VarScopeVisitor {
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
-  void checkForErrors(const AstNode * node, std::vector<std::vector<ID>> idLists,
-                            std::vector<std::vector<QualifiedType>> typeLists);
+  std::map<ID,QualifiedType> verifyInitOrderAndType(const AstNode * node, 
+                                                    const std::vector<VarFrame*>& frames,
+                                                    const std::set<ID>& splitInitedVars);
 
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
@@ -235,7 +236,7 @@ void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 
-static void propogateMentions(VarFrame * parentFrame, VarFrame* frame) {
+static void propagateMentions(VarFrame * parentFrame, VarFrame* frame) {
   for (const auto& id : frame->mentionedVars) {
     if (frame->declaredVars.count(id) == 0) {
       parentFrame->mentionedVars.insert(id);
@@ -243,40 +244,48 @@ static void propogateMentions(VarFrame * parentFrame, VarFrame* frame) {
   }
 }
 
-void FindSplitInits::checkForErrors(const AstNode * node, 
-                                   std::vector<std::vector<ID>> idLists,
-                                   std::vector<std::vector<QualifiedType>> typeLists) {
-  for(size_t i = 1; i < idLists.size(); i++) {
-    CHPL_ASSERT(idLists.at(i).size() == 
-                idLists.at(i-1).size());
-    CHPL_ASSERT(typeLists.at(i).size()  ==
-                typeLists.at(i-i).size());
-  }
 
-  bool orderOk = true;
+std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode * node, 
+                                                                  const std::vector<VarFrame*>& frames,
+                                                                  const std::set<ID>& splitInitedVars) {
 
-  std::vector<ID> referenceIds = idLists.at(0);
-  for (size_t i = 1; i < idLists.size(); i++) {
-    auto comparedIds = idLists[i];
-    for(size_t i = 0; i < referenceIds.size(); i++) {
-      if(referenceIds[i] != comparedIds[i]) {
-        context->error(node, 
-                       "initialization order does not match between branches");
-        return;
-      }
-    }
-  }
+  std::vector<std::pair<ID,QualifiedType>> referenceInitOrder;
+  std::map<ID, QualifiedType> referenceInitTypes;
+  for (auto frame : frames) {
 
-  std::vector<QualifiedType> referenceTypes = typeLists.at(0);
-  for(size_t i = 1; i < typeLists.size(); i++) {
-    auto comparedTypes = typeLists[i];
-    for(size_t i = 0; i < referenceTypes.size(); i++) {
-      if(referenceTypes[i] != comparedTypes[i]) {
+    size_t idx = 0;
+    
+    for (auto & pair : frame->initedVarsVec) {
+      auto& id = pair.first;
+      auto& qt = pair.second;
+
+      // only consider the variables that are being split-inited
+      if (splitInitedVars.count(id) == 0) continue;
+
+      //check types for all frames
+      if (referenceInitTypes.count(id) == 0) {
+        referenceInitTypes[id] = qt;
+      } else if (referenceInitTypes[id] != qt) {
         context->error(node, 
                       "initialized types do not match between branches");
+        return std::map<ID,QualifiedType>();
       }
+
+      // only check initialization order if the branch 
+      // does not unconditionally return
+      if (frame->returnsOrThrows) continue;
+
+      if (idx >= referenceInitOrder.size()) {
+        referenceInitOrder.emplace_back(id, qt);
+      } else if (referenceInitOrder[idx].first != id) {
+          context->error(node, 
+                       "initialization order does not match between branches");
+          return std::map<ID,QualifiedType>();
+      }
+      idx++;
     }
   }
+  return referenceInitTypes;
 }
 
 void FindSplitInits::handleDisjunction(const AstNode * node, 
@@ -301,7 +310,7 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
       }
     }
 
-    propogateMentions(currentFrame, frame);
+    propagateMentions(currentFrame, frame);
     return;
   }
 
@@ -327,22 +336,18 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
     }
   }
 
-  // calculate the set of variables that are initialized in all 
-  // frames that do not return or throw
+
+
+
+  // calculate the set of variables that are split initialized in at least 
+  // one branch. A variable is split inited if all branches either 
+  // return/throw or initialize the variable.
   std::set<ID> locallySplitInitedVars;
-  // calculate the set of variables that are initialized in all 
-  // frames. 
-  std::set<ID> splitInitedInAll;
   for (auto id : locallyInitedVars) {
-    bool allFramesInit = true;
     bool allFramesInitReturnOrThrow = true;
     for(auto frame : frames) {
       bool thisFrameInits = frame->initedVars.count(id) > 0;
-      allFramesInit &= thisFrameInits;
-      allFramesInitReturnOrThrow &= (thisFrameInits || frame->returnsOrThrows);
-    }
-    if (allFramesInit) {
-      splitInitedInAll.insert(id);
+      allFramesInitReturnOrThrow &= thisFrameInits || frame->returnsOrThrows;
     }
     if (allFramesInitReturnOrThrow) {
       locallySplitInitedVars.insert(id);
@@ -353,40 +358,22 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
 
   if (!total) {
     for (auto frame: frames) {
-      propogateMentions(currentFrame, frame);
+      propagateMentions(currentFrame, frame);
     } 
     for (const auto & id: locallySplitInitedVars) {
       currentFrame->mentionedVars.insert(id);
     }
     return;
   }
-
-  // propogate the initialization points for split init variables
-  // also gather the split-inited variable order and types for errory checking
-  std::vector<std::vector<ID>> splitInitedAllIds;
-  std::vector<std::vector<QualifiedType>> splitInitedAllTypes;
-  for (auto frame : frames) {
-    std::vector<ID> currIds;
-    std::vector<QualifiedType> currTypes;
-    for (auto pair : frame->initedVarsVec) {
-      ID id = pair.first;
-      QualifiedType rhsType = pair.second;
-      if (locallySplitInitedVars.count(id) > 0) {
-        addInit(currentFrame, id, rhsType);
-      }
-      if (splitInitedInAll.count(id) > 0) {
-        currIds.push_back(id);
-        currTypes.push_back(rhsType);
-      }
-    }
-    splitInitedAllIds.push_back(currIds);
-    splitInitedAllTypes.push_back(currTypes);
-  }
   
-  checkForErrors(node, splitInitedAllIds, splitInitedAllTypes);
+  auto verifiedInits = verifyInitOrderAndType(node, frames, 
+                                              locallySplitInitedVars);
+  for (auto& pair : verifiedInits) {
+    addInit(currentFrame, pair.first, pair.second);
+  }
 
   for (auto frame: frames) {
-    propogateMentions(currentFrame, frame);
+    propagateMentions(currentFrame, frame);
   }
 }
 

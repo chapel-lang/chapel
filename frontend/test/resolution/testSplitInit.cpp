@@ -678,7 +678,7 @@ static void test26a() {
         }
       }
     )"""",
-    {"x"}, ERRORS_EXPECTED);
+    {}, ERRORS_EXPECTED);
 }
 
 static void test26b() {
@@ -706,7 +706,7 @@ static void test26b() {
         }
       }
     )"""",
-    {"x"}, ERRORS_EXPECTED);
+    {}, ERRORS_EXPECTED);
 }
 
 static void test26c() {
@@ -732,7 +732,7 @@ static void test26c() {
         }
       }
     )"""",
-    {"x"}, ERRORS_EXPECTED);
+    {}, ERRORS_EXPECTED);
 }
 
 static void test27() {
@@ -819,7 +819,7 @@ static void test30() {
         }
       }
     )"""",
-    {"x", "y"}, ERRORS_EXPECTED);
+    {}, ERRORS_EXPECTED);
 }
 
 /* Uncomment these tests after we have nested functions implemented
@@ -1674,6 +1674,104 @@ static void test66() {
     {});
 }
 
+static void test67() {
+  testSplitInit("test67a",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        config const i: int;
+        proc test(i: int) {
+          
+          var x, y;
+          select i {
+            when 1 { x = 1; y = 2; }
+            when 2 { return; }
+            otherwise { y = 1; x = 2; }
+          }
+        }
+      }
+    )"""",
+    {}, ERRORS_EXPECTED);
+  testSplitInit("test67b",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        config const i: int;
+        proc test(i: int) {
+          
+          var x, y, z;
+          select i {
+            when 1 { z = 0; return; }
+            when 2 { z = 0; x = 1; y = 2; }
+            otherwise { z = 0; y = 1; x = 2; }
+          }
+        }
+      }
+    )"""",
+    {}, ERRORS_EXPECTED);
+  testSplitInit("test67c",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        config const i: int;
+        proc test(i: int) {
+          
+          var x, y, z;
+          select i {
+            when 1 { z = 0; return; }
+            when 2 { z = 0; y = 1; x = 2; }
+            otherwise { z = 0; y = 1; x = 2; }
+          }
+        }
+      }
+    )"""",
+    {"z", "y", "x"});
+  testSplitInit("test67d",
+    R""""(
+      module M {
+        // this would be in the standard library...
+        operator =(ref lhs: int, rhs: int) {
+          __primitive("=", lhs, rhs);
+        }
+        operator ==(ref lhs: int, rhs: int) {
+          __primitive("==", lhs, rhs);
+        }
+
+        config const i: int;
+        proc test(i: int) {
+          
+          var x,y,z;
+          select i {
+            when 1 { z = 0; y = 1; return;}
+            when 2 {y = 2; x = 0; return;}
+            otherwise {z = 1; x = 4; return;}
+          }
+        }
+      }
+    )"""",
+    {"z", "x", "y"});
+}
 
 
 static void testParamTrueWhen() {
@@ -1927,10 +2025,11 @@ int main() {
   test62();
   test63();
   test64();
-  test65();
-  test66();
   test64a();
+  test65();
   test65a();
+  test66();
+  test67();
   testParamTrueWhen();
   return 0;
 }
