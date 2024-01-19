@@ -20,6 +20,7 @@
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
 #include "chpl/parsing/parsing-queries.h"
+#include "chpl/resolution/scope-queries.h"
 #include "python-types.h"
 #include "error-tracker.h"
 
@@ -178,6 +179,7 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "class Location: pass" << std::endl << std::endl;
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
+  ss << "class Scope: pass" << std::endl << std::endl;
   ss << "class AstNode: pass" << std::endl << std::endl;
 
   // Here, use X-macros with the method-tables.h header file to generate
@@ -285,6 +287,63 @@ PyObject* LocationObject_path(LocationObject *self, PyObject* Py_UNUSED(args)) {
   return Py_BuildValue("s", self->location.path().c_str());
 }
 
+static PyMethodDef ScopeObject_methods[] = {
+  { "used_imported_modules", (PyCFunction) ScopeObject_used_imported_modules, METH_VARARGS, "Get the modules that were used or imported in this scope" },
+  {NULL, NULL, 0, NULL}  /* Sentinel */
+};
+
+PyTypeObject ScopeType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+};
+
+void setupScopeType() {
+  ScopeType.tp_name = "Scope";
+  ScopeType.tp_basicsize = sizeof(ScopeObject);
+  ScopeType.tp_itemsize = 0;
+  ScopeType.tp_dealloc = (destructor) ScopeObject_dealloc;
+  ScopeType.tp_flags = Py_TPFLAGS_DEFAULT;
+  ScopeType.tp_doc = PyDoc_STR("A scope in the Chapel program, such as a block.");
+  ScopeType.tp_methods = ScopeObject_methods;
+  ScopeType.tp_init = (initproc) ScopeObject_init;
+  ScopeType.tp_new = PyType_GenericNew;
+}
+
+int ScopeObject_init(ScopeObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+
+  Py_INCREF(contextObjectPy);
+  self->scope = nullptr;
+  self->contextObject = contextObjectPy;
+  return 0;
+}
+
+void ScopeObject_dealloc(ScopeObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+PyObject* ScopeObject_used_imported_modules(ScopeObject* self, PyObject* Py_UNUSED(args)) {
+  auto contextObject = ((ContextObject*) self->contextObject);
+  auto context = &contextObject->context;
+  auto& moduleIds = resolution::findUsedImportedModules(context, self->scope);
+
+  // Dyno sometimes reports duplicate IDs; ignore them using a set.
+  std::set<ID> reportedIds;
+  PyObject* modulesList = PyList_New(0);
+  for (size_t i = 0; i < moduleIds.size(); i++) {
+    auto& id = moduleIds[i];
+    if (!reportedIds.insert(id).second) continue;
+
+    auto ast = parsing::idToAst(context, id);
+    PyObject* node = wrapAstNode(contextObject, ast);
+    PyList_Append(modulesList, node);
+  }
+
+  return modulesList;
+}
+
 static PyMethodDef AstNodeObject_methods[] = {
   {"dump", (PyCFunction) AstNodeObject_dump, METH_NOARGS, "Dump the internal representation of the given AST node"},
   {"tag", (PyCFunction) AstNodeObject_tag, METH_NOARGS, "Get a string representation of the AST node's type"},
@@ -293,6 +352,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"parent", (PyCFunction) AstNodeObject_parent, METH_NOARGS, "Get the parent node of this AST node"},
   {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "Get the pragmas of this AST node"},
   {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifier for this AST node"},
+  {"scope", (PyCFunction) AstNodeObject_scope, METH_NOARGS, "Get the scope for this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -378,6 +438,22 @@ PyObject* AstNodeObject_iter(AstNodeObject *self) {
 PyObject* AstNodeObject_location(AstNodeObject *self) {
   auto context = &((ContextObject*) self->contextObject)->context;
   return wrapLocation(parsing::locateAst(context, self->astNode));
+}
+
+PyObject* AstNodeObject_scope(AstNodeObject *self) {
+  PyObject* args = Py_BuildValue("(O)", self->contextObject);
+  auto context = &((ContextObject*) self->contextObject)->context;
+  auto scope = resolution::scopeForId(context, self->astNode->id());
+
+  if (scope == nullptr) {
+    Py_RETURN_NONE;
+  }
+
+  auto scopeObjectPy = PyObject_CallObject((PyObject *) &ScopeType, args);
+  auto scopeObject = (ScopeObject*) scopeObjectPy;
+  scopeObject->scope = scope;
+
+  return scopeObjectPy;
 }
 
 

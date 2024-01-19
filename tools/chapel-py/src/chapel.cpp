@@ -47,6 +47,7 @@ PyMODINIT_FUNC PyInit_core() {
   setupErrorType();
   setupErrorManagerType();
   setupLocationType();
+  setupScopeType();
   setupAstIterType();
   setupAstCallIterType();
   setupAstNodeType();
@@ -56,6 +57,7 @@ PyMODINIT_FUNC PyInit_core() {
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
   if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;
   if (PyType_Ready(&LocationType) < 0) return nullptr;
+  if (PyType_Ready(&ScopeType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
   if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;

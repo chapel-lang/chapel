@@ -18,7 +18,20 @@
 # limitations under the License.
 #
 
-from typing import Any, Dict, Iterable, List, Optional, Tuple, Union
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Generic,
+    Iterable,
+    List,
+    Optional,
+    Set,
+    Tuple,
+    TypeVar,
+    Union,
+)
+from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 import itertools
@@ -26,6 +39,7 @@ import itertools
 
 import chapel.core
 from chapel.lsp import location_to_range, error_to_diagnostic
+from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     Location,
@@ -37,6 +51,15 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
+from lsprotocol.types import (
+    TEXT_DOCUMENT_COMPLETION,
+    CompletionParams,
+    CompletionOptions,
+    CompletionList,
+    CompletionItem,
+    CompletionItemKind,
+)
 from lsprotocol.types import (
     TEXT_DOCUMENT_DOCUMENT_SYMBOL,
     DocumentSymbolParams,
@@ -161,20 +184,84 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
     return None
 
 
+def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
+    conversion_map = {
+        SymbolKind.Module: CompletionItemKind.Module,
+        SymbolKind.Class: CompletionItemKind.Class,
+        SymbolKind.Struct: CompletionItemKind.Struct,
+        SymbolKind.Interface: CompletionItemKind.Interface,
+        SymbolKind.Enum: CompletionItemKind.Enum,
+        SymbolKind.EnumMember: CompletionItemKind.EnumMember,
+        SymbolKind.Method: CompletionItemKind.Method,
+        SymbolKind.Constructor: CompletionItemKind.Constructor,
+        SymbolKind.Operator: CompletionItemKind.Operator,
+        SymbolKind.Function: CompletionItemKind.Function,
+        SymbolKind.Field: CompletionItemKind.Field,
+        SymbolKind.Constant: CompletionItemKind.Constant,
+        SymbolKind.TypeParameter: CompletionItemKind.TypeParameter,
+        SymbolKind.Variable: CompletionItemKind.Variable,
+    }
+    return conversion_map[kind]
+
+
+def completion_item_for_decl(
+    decl: chapel.core.NamedDecl,
+) -> Optional[CompletionItem]:
+    kind = decl_kind(decl)
+    if not kind:
+        return None
+
+    return CompletionItem(
+        label=decl.name(),
+        kind=decl_kind_to_completion_kind(kind),
+        insert_text=decl.name(),
+        sort_text=decl.name(),
+    )
+
+
 def get_symbol_information(
     decl: chapel.core.NamedDecl, uri: str
 ) -> Optional[SymbolInformation]:
     loc = Location(uri, location_to_range(decl.location()))
     kind = decl_kind(decl)
     if kind:
-        # TODO: should we use DocumentSymbol or SymbolInformation
-        # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
-        # using symbol information for now, as it sort-of autogets the tree structure
+        # TODO: should we use DocumentSymbol or SymbolInformation LSP spec says
+        # prefer DocumentSymbol, but nesting doesn't work out of the box.
+        # implies that we need some kind of visitor pattern to build a DS tree
+        # using symbol information for now, as it sort-of autogets the tree
+        # structure
         is_deprecated = chapel.is_deprecated(decl)
         return SymbolInformation(
             loc, decl.name(), kind, deprecated=is_deprecated
         )
     return None
+
+
+EltT = TypeVar("EltT")
+
+
+@dataclass
+class PositionList(Generic[EltT]):
+    get_range: Callable[[EltT], Range]
+    elts: List[EltT] = field(default_factory=list)
+
+    def sort(self):
+        self.elts.sort(key=lambda x: self.get_range(x).start)
+
+    def append(self, elt: EltT):
+        self.elts.append(elt)
+
+    def clear(self):
+        self.elts.clear()
+
+    def find(self, pos: Position) -> Optional[EltT]:
+        idx = bisect_right(
+            self.elts, pos, key=lambda x: self.get_range(x).start
+        )
+        idx -= 1
+        if idx < 0 or pos > self.get_range(self.elts[idx]).end:
+            return None
+        return self.elts[idx]
 
 
 @dataclass
@@ -185,6 +272,8 @@ class NodeAndRange:
     def __post_init__(self):
         if isinstance(self.node, chapel.core.Dot):
             self.rng = location_to_range(self.node.field_location())
+        elif isinstance(self.node, chapel.core.NamedDecl):
+            self.rng = location_to_range(self.node.name_location())
         else:
             self.rng = location_to_range(self.node.location())
 
@@ -203,14 +292,21 @@ class ResolvedPair:
 
 
 @dataclass
+@visitor
 class FileInfo:
     uri: str
     context: chapel.core.Context
-    segments: List[ResolvedPair] = field(default_factory=list)
+    use_segments: PositionList[ResolvedPair] = field(init=False)
+    def_segments: PositionList[NodeAndRange] = field(init=False)
+    uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
+    used_modules: List[chapel.core.Module] = field(init=False)
+    possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
 
     def __post_init__(self):
-        self.rebuild_segments()
+        self.use_segments = PositionList(lambda x: x.ident.rng)
+        self.def_segments = PositionList(lambda x: x.rng)
+        self.rebuild_index()
 
     def parse_file(self) -> List[chapel.core.AstNode]:
         """
@@ -229,7 +325,52 @@ class FileInfo:
         with self.context.track_errors() as _:
             return self.parse_file()
 
-    def rebuild_segments(self):
+    def _note_reference(self, node: chapel.core.AstNode):
+        """
+        Given a node that can refer to another node, note what it refers
+        to in by updating the 'use' segment table and the list of uses.
+        """
+        to = node.to_node()
+        if not to:
+            return
+
+        self.uses_here[to.unique_id()].append(NodeAndRange(node))
+        self.use_segments.append(
+            ResolvedPair(NodeAndRange(node), NodeAndRange(to))
+        )
+
+    @enter
+    def _enter_Identifier(self, node: chapel.core.Identifier):
+        self._note_reference(node)
+
+    @enter
+    def _enter_Dot(self, node: chapel.core.Dot):
+        self._note_reference(node)
+
+    @enter
+    def _enter_NamedDecl(self, node: chapel.core.NamedDecl):
+        self.def_segments.append(NodeAndRange(node))
+
+    def _collect_used_modules(self, asts: List[chapel.core.AstNode]):
+        self.used_modules = []
+        for ast in asts:
+            scope = ast.scope()
+            if scope:
+                self.used_modules.extend(scope.used_imported_modules())
+
+    def _collect_possibly_visible_decls(self):
+        self.possibly_visible_decls = []
+        for mod in self.used_modules:
+            for child in mod:
+                if not isinstance(child, chapel.core.NamedDecl):
+                    continue
+
+                if child.visibility() == "private":
+                    continue
+
+                self.possibly_visible_decls.append(child)
+
+    def rebuild_index(self):
         """
         Rebuild the cached line info and siblings information
 
@@ -237,30 +378,31 @@ class FileInfo:
         when advancing the revision
         """
         asts = self.parse_file()
-        # get ids
-        self.segments = []
-        for node, _ in chapel.each_matching(asts, chapel.core.Identifier):
-            to = node.to_node()
-            if to:
-                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
-        for node, _ in chapel.each_matching(asts, chapel.core.Dot):
-            to = node.to_node()
-            if to:
-                self.segments.append(ResolvedPair(NodeAndRange(node), NodeAndRange(to)))
-        self.segments.sort(key=lambda s: s.ident.rng.start)
-        self.siblings = chapel.SiblingMap(asts)
 
-    def get_segment_at_position(
+        # Use this class as an AST visitor to rebuild the use and definition segment
+        # table, as well as the list of references.
+        self.uses_here = defaultdict(list)
+        self.use_segments.clear()
+        self.def_segments.clear()
+        self.visit(asts)
+        self.use_segments.sort()
+        self.def_segments.sort()
+
+        self.siblings = chapel.SiblingMap(asts)
+        self._collect_used_modules(asts)
+        self._collect_possibly_visible_decls()
+
+    def get_use_segment_at_position(
         self, position: Position
     ) -> Optional[ResolvedPair]:
-        """lookup a segment based upon a Position, likely a user mouse location"""
-        idx = bisect_right(
-            self.segments, position, key=lambda s: s.ident.rng.start
-        )
-        idx -= 1
-        if idx < 0 or position > self.segments[idx].ident.rng.end:
-            return None
-        return self.segments[idx]
+        """lookup a use segment based upon a Position, likely a user mouse location"""
+        return self.use_segments.find(position)
+
+    def get_def_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        """lookup a def segment based upon a Position, likely a user mouse location"""
+        return self.def_segments.find(position)
 
 
 def run_lsp():
@@ -285,7 +427,7 @@ def run_lsp():
             if do_update:
                 file_info.context.advance_to_next_revision(False)
                 with file_info.context.track_errors() as errors:
-                    file_info.rebuild_segments()
+                    file_info.rebuild_index()
         else:
             context = chapel.core.Context()
             with context.track_errors() as errors:
@@ -322,10 +464,38 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segment = fi.get_segment_at_position(params.position)
+        segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
         return None
+
+    @server.feature(TEXT_DOCUMENT_REFERENCES)
+    async def get_refs(ls: LanguageServer, params: ReferenceParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = get_context(text_doc.uri)
+
+        node_and_loc = None
+        # First, search definitions. If the cursor is over a declaration,
+        # that's what we're looking for.
+        segment = fi.get_def_segment_at_position(params.position)
+        if segment:
+            node_and_loc = segment
+        else:
+            # Also search identifiers. If the cursor is over a reference,
+            # we might as well try find all the other references.
+            segment = fi.get_use_segment_at_position(params.position)
+            if segment:
+                node_and_loc = segment.resolved_to
+
+        if not node_and_loc:
+            return None
+
+        locations = [node_and_loc.get_location()]
+        for use in fi.uses_here[node_and_loc.node.unique_id()]:
+            locations.append(use.get_location())
+
+        return locations
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
@@ -358,7 +528,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = get_context(text_doc.uri)
-        segment = fi.get_segment_at_position(params.position)
+        segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
@@ -371,6 +541,22 @@ def run_lsp():
             text += f"\n---\n{docstring}"
         content = MarkupContent(MarkupKind.Markdown, text)
         return Hover(content, range=resolved_to.get_location().range)
+
+    @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
+    async def complete(ls: LanguageServer, params: CompletionParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = get_context(text_doc.uri)
+
+        items = []
+        items.extend(
+            completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
+        )
+        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
+
+        items = [item for item in items if item]
+
+        return CompletionList(is_incomplete=False, items=items)
 
     server.start_io()
 

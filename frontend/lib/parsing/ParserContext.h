@@ -329,7 +329,9 @@ struct ParserContext {
                                   bool isOverride);
 
   AstNode*
-  buildFormal(YYLTYPE location, Formal::Intent intent,
+  buildFormal(YYLTYPE location,
+              YYLTYPE locName,
+              Formal::Intent intent,
               PODUniqueString name,
               AstNode* typeExpr,
               AstNode* initExpr,
@@ -677,7 +679,9 @@ struct ParserContext {
   buildForwardingDecl(YYLTYPE location, owned<AttributeGroup> attributeGroup,
                       CommentsAndStmt cs);
 
-  AstNode* buildInterfaceFormal(YYLTYPE location, PODUniqueString name);
+  AstNode* buildInterfaceFormal(YYLTYPE location,
+                                YYLTYPE locName,
+                                PODUniqueString name);
 
   CommentsAndStmt buildInterfaceStmt(YYLTYPE location,
                                      PODUniqueString name,
