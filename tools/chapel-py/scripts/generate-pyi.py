@@ -149,6 +149,15 @@ def get_Error_header() -> str:
     return "\n".join(s)
 
 
+def get_Scope_header() -> str:
+    s = _section(
+        "class Scope:",
+        _wrap_method("__init__", args=[("context", "Context")]),
+        _wrap_method("used_imported_modules", rettype="typing.List[AstNode]", docstring="Get the modules that were used or imported in this scope"),
+        indent=0,
+    )
+    return "\n".join(s)
+
 def get_AstNode_header() -> str:
     s = _section(
         "class AstNode:",
@@ -170,6 +179,11 @@ def get_AstNode_header() -> str:
             "location",
             rettype="Location",
             docstring="Get the location of this AST node in its file",
+        ),
+        _wrap_method(
+            "scope",
+            rettype="typing.Optional[Scope]",
+            docstring="Get the scope for this AST node, if it has one",
         ),
         _wrap_method(
             "parent",
@@ -201,6 +215,7 @@ replacements = {
     "class Location: pass": get_Location_header,
     "class ErrorManager: pass": get_ErrorManager_header,
     "class Error: pass": get_Error_header,
+    "class Scope: pass": get_Scope_header,
     "class AstNode: pass": get_AstNode_header,
 }
 

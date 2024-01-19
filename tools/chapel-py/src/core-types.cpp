@@ -179,6 +179,7 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "class Location: pass" << std::endl << std::endl;
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;
+  ss << "class Scope: pass" << std::endl << std::endl;
   ss << "class AstNode: pass" << std::endl << std::endl;
 
   // Here, use X-macros with the method-tables.h header file to generate
