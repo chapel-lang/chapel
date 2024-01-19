@@ -48,7 +48,7 @@ bytes for smaller numbers. Portions of the number are stored in a
 variable number of component bytes. Each component byte has part of the
 number stored in the bottom 7 bits and uses the top bit to indicate if
 there are more components. The components store portions of the original
-number in a little-endian way (i.e., starting with the least-siginificant
+number in a little-endian way (i.e., starting with the least-significant
 group of 7 bits).
 
 For example, the variable byte encoding of 0b110110 is just 0b00110110

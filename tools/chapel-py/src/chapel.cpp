@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -47,6 +47,7 @@ PyMODINIT_FUNC PyInit_core() {
   setupErrorType();
   setupErrorManagerType();
   setupLocationType();
+  setupScopeType();
   setupAstIterType();
   setupAstCallIterType();
   setupAstNodeType();
@@ -56,6 +57,7 @@ PyMODINIT_FUNC PyInit_core() {
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
   if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;
   if (PyType_Ready(&LocationType) < 0) return nullptr;
+  if (PyType_Ready(&ScopeType) < 0) return nullptr;
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
   if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;

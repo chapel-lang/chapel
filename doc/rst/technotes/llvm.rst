@@ -62,6 +62,39 @@ files:
  * ``chpl__module.bc`` is the version that will be linked
  * ``chpl__module-nopt.bc`` is the generated code without optimizations applied.
 
+Inspecting Individual LLVM Passes
+---------------------------------
+
+When debugging LLVM optimizations, it can be useful to inspect what passes have
+run and what they changed. The Chapel compiler supports the flag
+``--llvm-print-passes``, which will print all the LLVM passes that will be run.
+These pass names are printed as a pipeline, so the output can be fed into
+something like ``opt --passes='...'``.
+
+This information can be combined with dumping LLVM IR, so that developers can
+focus on the LLVM IR level transformations without needing to worry about the
+frontend. The following flags are very useful for printing and manipulating
+LLVM IR. All should be passed as ``--mllvm <flag>``, for example
+``--mllvm --print-after-all``.
+
+ * ``--print-before=<PASSES>``
+    * Enables printing the LLVM IR before each pass.
+    * Takes a comma separated list of LLVM passes.
+ * ``--print-before-all``
+    * Enables printing the LLVM IR before every pass.
+ * ``--print-after=<PASSES>``
+    * Enables printing the LLVM IR after each pass.
+    * Takes a comma separated list of LLVM passes.
+ * ``--print-after-all``
+    * Enables printing the LLVM IR after every pass.
+ * ``--print-module-scope``
+    * When printing LLVM IR, always print the module level scope.
+    * This flag generally allows the output to be passed to ``opt`` separately
+      from Chapel.
+ * ``--filter-print-funcs=<FUNCTIONS>``
+    * When printing LLVM IR, only print the IR for the listed functions
+    * Takes a comma separated list of LLVM IR function names.
+
 --------------------
 Optimization Options
 --------------------

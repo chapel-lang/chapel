@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1062,7 +1062,7 @@ module ConcurrentMap {
 
       :arg ch: A channel to write to.
     */
-    proc writeThis(f) throws {
+    proc writeThis(ch) throws {
       ch.write("{");
       var first = true;
       for (key, val) in this {

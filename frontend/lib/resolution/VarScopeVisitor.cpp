@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -70,6 +70,19 @@ VarScopeVisitor::process(const uast::AstNode* symbol,
 
       exitScope(body, rv);
     }
+  } else if (auto mod = symbol->toModule()) {
+    // Process module initialization code, similarly to a function body
+
+    enterScope(mod, rv);
+
+    for (auto child : mod->children()) {
+      // Skip functions and nested modules as they are handled elsewhere
+      if (!(child->isFunction() || child->isModule())) {
+        child->traverse(rv);
+      }
+    }
+
+    exitScope(mod, rv);
   } else {
     symbol->traverse(rv);
   }

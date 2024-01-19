@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -89,7 +89,7 @@ void AstDump::view(const char* passName, int passNum) {
           // update it to take a file pointer use it and pass it along as needed. But rather
           // than update all the code I instead redirect stdout to the file (and then restore it
           // after the dump is done).  This makes debugging pain and folks can really get caught
-          // off-gaurd when stdout is no longer really stdout.
+          // off-guard when stdout is no longer really stdout.
           int oldStdout = dup(1);
           dup2(fileno(logger.mFP), 1);
 

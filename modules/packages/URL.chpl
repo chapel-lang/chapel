@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,7 +68,7 @@ module URL {
 
   Open a fileReader from a particular URL.
 
-  :arg url: which url to open (for example, "http://example.com").
+  :arg url: which URL to open (for example, "http://example.com").
   :arg locking: compile-time argument to determine whether or not the
                 channel should use locking; sets the
                 corresponding parameter of the :record:`~IO.fileReader` type.
@@ -79,7 +79,7 @@ module URL {
                start of the file to no end point.
   :returns: an open fileReader to the requested resource.
 
-  :throws SystemError: Thrown if a fileReader could not be returned.
+  :throws SystemError: If a fileReader could not be returned.
    */
   proc openUrlReader(url:string, param locking=true,
                      region: range(?) = 0..)
@@ -125,7 +125,7 @@ module URL {
 
   Open a fileWriter to a particular URL.
 
-  :arg path: which file to open (for example, "ftp://127.0.0.1/upload/test.txt")
+  :arg url: which URL to open (for example, "ftp://127.0.0.1/upload/test.txt")
   :arg locking: compile-time argument to determine whether or not the
                 fileWriter should use locking; sets the
                 corresponding parameter of the :record:`~IO.fileWriter` type.
@@ -136,7 +136,7 @@ module URL {
                start of the file to no end point.
   :returns: an open fileWriter to the requested resource.
 
-  :throws SystemError: Thrown if a fileWriter could not be returned.
+  :throws SystemError: If a fileWriter could not be returned.
   */
   proc openUrlWriter(url:string, param locking=true,
                  region: range(?) = 0..)

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -423,6 +423,7 @@ module Atomics {
   }
 
   // TODO: should this be an operator method AtomicBool.: ?
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   operator :(rhs: bool, type t:AtomicBool) {
     var lhs: AtomicBool = rhs; // use init=

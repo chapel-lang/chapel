@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -83,6 +83,12 @@ CLASS_BEGIN(AnonFormal)
                const AstNode*, return node->typeExpression())
 CLASS_END(AnonFormal)
 
+CLASS_BEGIN(As)
+  PLAIN_GETTER(As, symbol, "Get the symbol for this As node",
+               const AstNode*, return node->symbol())
+  PLAIN_GETTER(As, rename, "Get the rename for this As node",
+               const AstNode*, return node->rename())
+CLASS_END(As)
 
 CLASS_BEGIN(Array)
   PLAIN_GETTER(Array, exprs, "Get the expressions from this Array node",
@@ -102,6 +108,8 @@ CLASS_END(Attribute)
 CLASS_BEGIN(AttributeGroup)
   PLAIN_GETTER(AttributeGroup, is_unstable, "Check if this AttributeGroup contains the 'unstable' attribute",
                bool, return node->isUnstable())
+  PLAIN_GETTER(AttributeGroup, is_deprecated, "Check if this AttributeGroup contains the 'deprecated' attribute",
+               bool, return node->isDeprecated())
 CLASS_END(AttributeGroup)
 
 CLASS_BEGIN(Break)
@@ -109,12 +117,28 @@ CLASS_BEGIN(Break)
                const AstNode*, return node->target())
 CLASS_END(Break)
 
+CLASS_BEGIN(Catch)
+  PLAIN_GETTER(Catch, target, "Get the error from this Catch node",
+               const AstNode*, return node->error())
+  PLAIN_GETTER(Catch, body, "Get the body from this Catch node",
+               const AstNode*, return node->body())
+  PLAIN_GETTER(Catch, has_parens_around_error, "Check if this Catch uses parentheses",
+               bool, return node->hasParensAroundError())
+CLASS_END(Catch)
+
+CLASS_BEGIN(Cobegin)
+  PLAIN_GETTER(Cobegin, with_clause, "Get the WithClause from this Cobegin node",
+               const AstNode*, return node->withClause())
+  PLAIN_GETTER(Cobegin, task_bodies, "Get tasks from this Cobegin node",
+               IterAdapterBase*, return mkIterPair(node->taskBodies()))
+CLASS_END(Cobegin)
+
 CLASS_BEGIN(Conditional)
   PLAIN_GETTER(Conditional, condition, "Get the condition of this Conditional node",
                const AstNode*, return node->condition())
   PLAIN_GETTER(Conditional, else_block, "Get the else block of this Conditional node or None if no else block",
                const AstNode*, return node->elseBlock())
-  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression level",
+  PLAIN_GETTER(Conditional, is_expression_level, "Checks if this Conditional node is expression-level",
                bool, return node->isExpressionLevel())
   PLAIN_GETTER(Conditional, then_block, "Get the then block of this Conditional node",
                const AstNode*, return node->thenBlock())
@@ -145,9 +169,18 @@ CLASS_END(Domain)
 CLASS_BEGIN(Dot)
   PLAIN_GETTER(Dot, field, "Get the field accessed in the Dot node",
                UniqueString, return node->field())
+  PLAIN_GETTER(Dot, field_location, "Get the textual location of the Dot node's field expression",
+               Location, return chpl::parsing::locateDotFieldWithAst(context, node))
   PLAIN_GETTER(Dot, receiver, "Get the receiver of the Dot node",
                const AstNode*, return node->receiver())
+  PLAIN_GETTER(Dot, to_node, "Get the AST node that this Dot node refers to",
+               const AstNode*, return nodeOrNullFromToId(context, node))
 CLASS_END(Dot)
+
+CLASS_BEGIN(ExternBlock)
+  PLAIN_GETTER(ExternBlock, code, "Get C code of this ExternBlock node",
+               std::string, return node->code())
+CLASS_END(ExternBlock)
 
 CLASS_BEGIN(FunctionSignature)
   PLAIN_GETTER(FunctionSignature, formals, "Get the formals for this FunctionSignature node",
@@ -166,12 +199,39 @@ CLASS_BEGIN(FunctionSignature)
                bool, return node->throws())
 CLASS_END(FunctionSignature)
 
+CLASS_BEGIN(Implements)
+  PLAIN_GETTER(Implements, interface_name, "Get the interface name of this Implements node",
+               UniqueString, return node->interfaceName())
+  PLAIN_GETTER(Implements, type_ident, "Get the type identifier from this Implements node",
+               const AstNode*, return node->typeIdent())
+  PLAIN_GETTER(Implements, interface_expr, "Get the interface expression from this Implements node",
+               const AstNode*, return node->interfaceExpr())
+  PLAIN_GETTER(Implements, is_expression_level, "Check if this Implements node is expression level",
+               bool, return node->isExpressionLevel())
+CLASS_END(Implements)
+
 CLASS_BEGIN(Identifier)
   PLAIN_GETTER(Identifier, name, "Get the name of this Identifier node",
                UniqueString, return node->name())
   PLAIN_GETTER(Identifier, to_node, "Get the AST node that this Identifier node refers to",
                const AstNode*, return nodeOrNullFromToId(context, node))
 CLASS_END(Identifier)
+
+CLASS_BEGIN(Import)
+  PLAIN_GETTER(Import, visibility, "Get the visibility of this Import node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Import, visibility_clauses, "Get the visibility clauses of this Import node",
+               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+CLASS_END(Import)
+
+CLASS_BEGIN(Include)
+  PLAIN_GETTER(Include, name, "Get the name of this Include node",
+               UniqueString, return node->name())
+  PLAIN_GETTER(Include, is_prototype, "Check if this Include node is for a prototype module",
+               bool, return node->isPrototype())
+  PLAIN_GETTER(Include, visibility, "Get the visibility of this Include node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+CLASS_END(Include)
 
 CLASS_BEGIN(Init)
   PLAIN_GETTER(Init, target, "Get the target of this Init node",
@@ -201,15 +261,45 @@ CLASS_BEGIN(Range)
                const AstNode*, return node->upperBound())
 CLASS_END(Range)
 
+CLASS_BEGIN(Require)
+  PLAIN_GETTER(Require, exprs, "Get the expressions of this Require node",
+               IterAdapterBase*, return mkIterPair(node->exprs()))
+CLASS_END(Require)
+
 CLASS_BEGIN(Return)
   PLAIN_GETTER(Return, value, "Get the expression returned by this Return node",
                const AstNode*, return node->value())
 CLASS_END(Return)
 
+CLASS_BEGIN(Select)
+  PLAIN_GETTER(Select, exprs, "Get the expression of this Select node",
+               const AstNode*, return node->expr())
+  PLAIN_GETTER(Select, when_stmts, "Get the When statements of this Select node",
+               IterAdapterBase*, return mkIterPair(node->whenStmts()))
+CLASS_END(Select)
+
 CLASS_BEGIN(Throw)
   PLAIN_GETTER(Throw, error_expression, "Get the expression thrown by this Throw node",
                const AstNode*, return node->errorExpression())
 CLASS_END(Throw)
+
+CLASS_BEGIN(Try)
+  PLAIN_GETTER(Try, body, "Get the body of this Try node",
+               const AstNode*, return node->body())
+  PLAIN_GETTER(Try, handlers, "Get the Catch node handlers of this Try node",
+               IterAdapterBase*, return mkIterPair(node->handlers()))
+  PLAIN_GETTER(Try, is_expression_level, "Check if this Try node is expression level",
+               bool, return node->isExpressionLevel())
+  PLAIN_GETTER(Try, is_try_bang, "Check if this Try node is a 'try!'",
+               bool, return node->isTryBang())
+CLASS_END(Try)
+
+CLASS_BEGIN(Use)
+  PLAIN_GETTER(Use, visibility, "Get the visibility of this Use node",
+               const char*, return Decl::visibilityToString(node->visibility()))
+  PLAIN_GETTER(Use, visibility_clauses, "Get the visibility clauses of this Use node",
+               IterAdapterBase*, return mkIterPair(node->visibilityClauses()))
+CLASS_END(Use)
 
 CLASS_BEGIN(VisibilityClause)
   PLAIN_GETTER(VisibilityClause, symbol, "Get the symbol referenced by this VisibilityClause node",
@@ -241,6 +331,11 @@ CLASS_BEGIN(Local)
                const AstNode*, return node->condition())
 CLASS_END(Local)
 
+CLASS_BEGIN(Manage)
+  PLAIN_GETTER(Manage, managers, "Get the managers of this Manage node",
+               IterAdapterBase*, return mkIterPair(node->managers()))
+CLASS_END(Manage)
+
 CLASS_BEGIN(On)
   PLAIN_GETTER(On, destination, "Get the destination of this On node",
                const AstNode*, return node->destination())
@@ -250,6 +345,17 @@ CLASS_BEGIN(Serial)
   PLAIN_GETTER(Serial, condition, "Get the condition of this Serial node",
                const AstNode*, return node->condition())
 CLASS_END(Serial)
+
+CLASS_BEGIN(When)
+  PLAIN_GETTER(When, block_style, "Get the block style of this When node",
+               const char*, return blockStyleToString(node->blockStyle()))
+  PLAIN_GETTER(When, body, "Get the body of this When node",
+               const AstNode*, return node->body())
+  PLAIN_GETTER(When, case_exprs, "Get the case expressions of this When node",
+               IterAdapterBase*, return mkIterPair(node->caseExprs()))
+  PLAIN_GETTER(When, is_otherwise, "Check if this When node uses the otherwise keyword",
+               bool, return node->isOtherwise())
+CLASS_END(When)
 
 CLASS_BEGIN(START_Loop)
   PLAIN_GETTER(Loop, block_style, "Get the block style of this Loop node",
@@ -341,12 +447,24 @@ CLASS_BEGIN(OpCall)
                UniqueString, return node->op())
 CLASS_END(OpCall)
 
+CLASS_BEGIN(PrimCall)
+  PLAIN_GETTER(PrimCall, prim, "Get the primitive name for this PrimCall node",
+               const char*, return chpl::uast::primtags::primTagToName(node->prim()))
+CLASS_END(PrimCall)
+
 CLASS_BEGIN(Reduce)
   PLAIN_GETTER(Reduce, iterand, "Get the iterand for this Reduce node",
                const AstNode*, return node->iterand())
   PLAIN_GETTER(Reduce, op, "Get the op for this Reduce node",
                const AstNode*, return node->op())
 CLASS_END(Reduce)
+
+CLASS_BEGIN(Scan)
+  PLAIN_GETTER(Scan, iterand, "Get the iterand for this Scan node",
+               const AstNode*, return node->iterand())
+  PLAIN_GETTER(Scan, op, "Get the op for this Scan node",
+               const AstNode*, return node->op())
+CLASS_END(Scan)
 
 CLASS_BEGIN(START_Decl)
   PLAIN_GETTER(Decl, linkage, "Get the linkage of this Decl node",
@@ -368,9 +486,16 @@ CLASS_BEGIN(TupleDecl)
                const AstNode*, return node->initExpression())
 CLASS_END(TupleDecl)
 
+CLASS_BEGIN(ForwardingDecl)
+  PLAIN_GETTER(ForwardingDecl, expr, "Get the expression of this ForwardingDecl node",
+               const AstNode*, return node->expr())
+CLASS_END(ForwardingDecl)
+
 CLASS_BEGIN(START_NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                UniqueString, return node->name())
+  PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
+               Location, return chpl::parsing::locateDeclNameWithAst(context, node))
 CLASS_END(START_NamedDecl)
 
 CLASS_BEGIN(EnumElement)
@@ -415,6 +540,15 @@ CLASS_BEGIN(Function)
                const AstNode*, return node->whereClause())
 CLASS_END(Function)
 
+CLASS_BEGIN(Interface)
+  PLAIN_GETTER(Interface, stmts, "Get the statements for this Interface node",
+               IterAdapterBase*, return mkIterPair(node->stmts()))
+  PLAIN_GETTER(Interface, formals, "Get the formals for this Interface node",
+               IterAdapterBase*, return mkIterPair(node->formals()))
+  PLAIN_GETTER(Interface, is_formal_list_explicit, "Check if this Interface node has an explicit formal list",
+               bool, return node->isFormalListExplicit())
+CLASS_END(Interface)
+
 CLASS_BEGIN(Module)
   PLAIN_GETTER(Module, kind, "Get the kind of this Module node",
                const char*, return Module::moduleKindToString(node->kind()))
@@ -432,17 +566,14 @@ CLASS_BEGIN(START_VarLikeDecl)
                const char*, return qualifierToString(node->storageKind()))
   PLAIN_GETTER(VarLikeDecl, type_expression, "Get the type expression of this VarLikeDecl node",
                const AstNode*, return node->typeExpression())
+  PLAIN_GETTER(VarLikeDecl, intent, "Get the intent for this VarLikeDecl node",
+               const char*, return intentToString(node->storageKind()))
 CLASS_END(START_VarLikeDecl)
 
-CLASS_BEGIN(Formal)
-  PLAIN_GETTER(Formal, intent, "Get the intent for this Formal node",
-               const char*, return intentToString(node->intent()))
-CLASS_END(Formal)
-
-CLASS_BEGIN(TaskVar)
-  PLAIN_GETTER(TaskVar, intent, "Get the intent of this TaskVar node",
-               const char*, return intentToString(node->intent()))
-CLASS_END(TaskVar)
+CLASS_BEGIN(VarArgFormal)
+  PLAIN_GETTER(VarArgFormal, count, "Get the count expression of this VarArgFormal node",
+               const AstNode*, return node->count())
+CLASS_END(VarArgFormal)
 
 CLASS_BEGIN(Variable)
   PLAIN_GETTER(Variable, is_config, "Check if this Variable node is a config variable",

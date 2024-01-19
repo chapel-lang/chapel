@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,9 +19,11 @@
 
 #include "chpl/resolution/split-init.h"
 
+#include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/ResolvedVisitor.h"
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/resolution/scope-queries.h"
+#include "chpl/framework/ErrorBase.h"
 #include "chpl/uast/all-uast.h"
 
 #include "VarScopeVisitor.h"
@@ -335,9 +337,6 @@ void FindSplitInits::handleDisjunction(const AstNode * node,
       locallyInitedVars.erase(id);
     }
   }
-
-
-
 
   // calculate the set of variables that are split initialized in at least 
   // one branch. A variable is split inited if all branches either 

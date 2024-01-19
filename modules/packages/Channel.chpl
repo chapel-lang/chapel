@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -180,8 +180,7 @@ module Channel {
     /*
      Initialize a channel
 
-     :arg elt: The element type used for sending and receiving
-     :type elt: `type`
+     :arg eltType: The element type used for sending and receiving
 
      :arg size: Specify the maximum capacity for the channel ``bufferSize``.
      :type size: `int`

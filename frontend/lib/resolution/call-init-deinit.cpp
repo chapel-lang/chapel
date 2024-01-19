@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -1050,9 +1050,16 @@ void callInitDeinit(Resolver& resolver) {
     symName = nd->name();
   }
 
-  CallInitDeinit uv(resolver.context, resolver,
-                    splitInitedVars, elidedCopyFromIds);
-  uv.process(resolver.symbol, resolver.byPostorder);
+  // TODO: Run this for module initializer code as well. Currently if enabled,
+  // it breaks a large number of dyno tests that have module-initializer code
+  // containing things we can't resolve default-init for yet, such as
+  // fully-defaulted generic types. Either adjust the tests to expect the errors
+  // for unsupported code, or add the support, then enable this on modules.
+  if (!resolver.symbol->isModule()) {
+    CallInitDeinit uv(resolver.context, resolver,
+                      splitInitedVars, elidedCopyFromIds);
+    uv.process(resolver.symbol, resolver.byPostorder);
+  }
 }
 
 

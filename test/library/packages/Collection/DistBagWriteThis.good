@@ -1,3 +1,4 @@
+DistBagWriteThis.chpl:8: warning: The DistributedBagDeprecated module is deprecated
 [1, 2]
 []
 [5]

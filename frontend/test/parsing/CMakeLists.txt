@@ -1,4 +1,4 @@
-# Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2021-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -32,6 +32,7 @@ comp_unit_test(testParseDefer)
 comp_unit_test(testParseDelete)
 comp_unit_test(testParseDoWhile)
 comp_unit_test(testParseEnums)
+comp_unit_test(testParseErrors)
 comp_unit_test(testParseFor)
 comp_unit_test(testParseForall)
 comp_unit_test(testParseForeach)

@@ -1,0 +1,6 @@
+gpuTraceViaCall.chpl:18: In function 'main':
+gpuTraceViaCall.chpl:20: error: Loop is marked with @assertOnGpu but is not eligible for execution on a GPU
+std/MyMod.chpl:6: note: function is marked as not eligible for GPU execution
+std/MyMod.chpl:9: note:   reached via call to 'doSomethingElse' here
+gpuTraceViaCall.chpl:14: note:   reached via call to 'doSomething' here
+gpuTraceViaCall.chpl:20: note:   reached via call to 'notEligible' in loop body here

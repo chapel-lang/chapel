@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -333,8 +333,14 @@ bool
 CanPassResult::canConvertCPtr(Context* context,
                               const Type* actualT,
                               const Type* formalT) {
-  if (actualT->isCPtrType()) {
+  if (auto actualPtr = actualT->toCPtrType()) {
     if (auto formalPtr = formalT->toCPtrType()) {
+      // Allow constness casts: an int* can be a const int*.
+      // In Chapel lingo, `c_ptr(int)` is passable to `c_ptrConst(int)`.
+      if (formalPtr->isConst() && !actualPtr->isConst() &&
+          formalPtr->eltType() == actualPtr->eltType())
+        return true;
+
       return formalPtr->isVoidPtr();
     } else {
       // Check for old c_void_ptr behavior.
@@ -815,8 +821,20 @@ CanPassResult CanPassResult::canInstantiate(Context* context,
     }
   } else if (auto actualPt = actualT->toCPtrType()) {
     if (auto formalPt = formalT->toCPtrType()) {
+      // Check first if they're direct instantiations (c_ptr(int(?w)) <- c_ptr(int)).
       if (actualPt->isInstantiationOf(context, formalPt)) {
         return instantiate();
+      }
+
+      // Instantiation might still be possible, together with a coercion, if
+      // the formal is const but the actual isn't.
+      formalPt = formalPt->withoutConst(context);
+
+      if (actualPt->isInstantiationOf(context, formalPt)) {
+        return CanPassResult(/* no fail reason, passes */ {},
+                             /* instantiates */ true,
+                             /* promotes */ false,
+                             /* converts */ ConversionKind::OTHER);
       }
     }
   }
@@ -991,95 +1009,70 @@ CanPassResult CanPassResult::canPass(Context* context,
   return fail(FAIL_FORMAL_OTHER);
 }
 
-// When trying to combine two kinds, you can't just pick one.
-// For instance, if any type in the list is a value, the result
-// should be a value, and if any type in the list is const, the
-// result should be const. Thus, combining `const ref` and `var`
-// should result in `const var`.
-//
-// This class is used to describe the "mixing rules" of various kinds.
-// To this end, it breaks them down into their properties (const-ness,
-// ref-ness, etc) each of which are processed independently from
-// the others.
-class KindProperties {
- private:
-  bool isConst = false;
-  bool isRef = false;
-  bool isType = false;
-  bool isParam = false;
-  bool isValid = false;
+void KindProperties::invalidate() {
+  isRef = isConst = isType = isParam = isValid = false;
+}
 
-  KindProperties() {}
+KindProperties KindProperties::fromKind(QualifiedType::Kind kind) {
+  if (kind == QualifiedType::TYPE)
+    return KindProperties(false, false, true, false);
+  if (kind == QualifiedType::PARAM)
+    // Mark params as const to cover the case in which a
+    // param decays to a const var.
+    return KindProperties(true, false, false, true);
+  auto isConst = isConstQualifier(kind);
+  auto isRef = isRefQualifier(kind);
+  return KindProperties(isConst, isRef, false, false);
+}
 
-  KindProperties(bool isConst, bool isRef, bool isType,
-                 bool isParam)
-    : isConst(isConst), isRef(isRef), isType(isType),
-      isParam(isParam), isValid(true) {}
+void KindProperties::setRef(bool isRef) {
+  this->isRef = isRef;
+}
 
- public:
-  static KindProperties fromKind(QualifiedType::Kind kind) {
-    if (kind == QualifiedType::TYPE)
-      return KindProperties(false, false, true, false);
-    if (kind == QualifiedType::PARAM)
-      // Mark params as const to cover the case in which a
-      // param decays to a const var.
-      return KindProperties(true, false, false, true);
-    auto isConst = isConstQualifier(kind);
-    auto isRef = isRefQualifier(kind);
-    return KindProperties(isConst, isRef, false, false);
+void KindProperties::setParam(bool isParam) {
+  this->isParam = isParam;
+}
+
+void KindProperties::combineWith(const KindProperties& other) {
+  if (!isValid) return;
+  if (!other.isValid || isType != other.isType) {
+    // Can't mix types and non-types.
+    invalidate();
+    return;
   }
+  isConst = isConst || other.isConst;
+  isRef = isRef && other.isRef;
+  isParam = isParam && other.isParam;
+}
 
-  void invalidate() {
-    isRef = isConst = isType = isParam = isValid = false;
+void KindProperties::strictCombineWith(const KindProperties& other) {
+  if (!isValid) return;
+  if (!other.isValid || isType != other.isType) {
+    // Can't mix types and non-types.
+    invalidate();
+    return;
   }
-
-  void setParam(bool isParam) {
-    this->isParam = isParam;
+  if (isParam && !other.isParam) {
+    // If a param is required, can't return a non-param.
+    invalidate();
+    return;
   }
+  // Ensuring that everything can actually be made
+  // into a reference and const will happen later.
+  // leave isRef and isConst as specified.
+  // We could do some checking now, but that might be a bit premature.
+}
 
-  void combineWith(const KindProperties& other) {
-    if (!isValid) return;
-    if (!other.isValid || isType != other.isType) {
-      // Can't mix types and non-types.
-      invalidate();
-      return;
-    }
-    isConst = isConst || other.isConst;
-    isRef = isRef && other.isRef;
-    isParam = isParam && other.isParam;
+QualifiedType::Kind KindProperties::toKind() const {
+  if (!isValid) return QualifiedType::UNKNOWN;
+  if (isType) return QualifiedType::TYPE;
+  if (isParam) return QualifiedType::PARAM;
+  if (isConst) {
+    return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
+  } else {
+    return isRef ? QualifiedType::REF : QualifiedType::VAR ;
   }
-
-  void strictCombineWith(const KindProperties& other) {
-    if (!isValid) return;
-    if (!other.isValid || isType != other.isType) {
-      // Can't mix types and non-types.
-      invalidate();
-      return;
-    }
-    if (isParam && !other.isParam) {
-      // If a param is required, can't return a non-param.
-      invalidate();
-      return;
-    }
-    // Ensuring that everything can actually be made
-    // into a reference and const will happen later.
-    // leave isRef and isConst as specified.
-    // We could do some checking now, but that might be a bit premature.
-  }
-
-  QualifiedType::Kind toKind() const {
-    if (!isValid) return QualifiedType::UNKNOWN;
-    if (isType) return QualifiedType::TYPE;
-    if (isParam) return QualifiedType::PARAM;
-    if (isConst) {
-      return isRef ? QualifiedType::CONST_REF : QualifiedType::CONST_VAR ;
-    } else {
-      return isRef ? QualifiedType::REF : QualifiedType::VAR ;
-    }
-  }
-
-  bool valid() const { return isValid; }
-};
+}
 
 static optional<QualifiedType>
 findByPassing(Context* context,

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -729,7 +729,7 @@ module Random {
 
       :arg n: The position to skip to
 
-      :throws IllegalArgumentError: Thrown if ``n`` is negative
+      :throws IllegalArgumentError: If ``n`` is negative
     */
     @unstable("'skipToNth' is unstable and subject to change")
     proc ref skipToNth(n: integral) throws do
@@ -742,7 +742,7 @@ module Random {
 
       :arg n: The position to skip to and retrieve (must be greater than zero)
 
-      :throws IllegalArgumentError: Thrown if ``n`` is negative
+      :throws IllegalArgumentError: If ``n`` is negative
     */
     @unstable("'getNth' is unstable and subject to change")
     proc ref getNth(n: integral): eltType throws do

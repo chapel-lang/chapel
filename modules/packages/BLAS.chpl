@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -109,13 +109,6 @@ The ``ldA`` argument is omitted from the Chapel BLAS API. Chapel determines the
 dimensions of the matrices from the arrays that are passed in, even when one is
 passing in a sub-array such that the array elements are not contiguously stored
 in memory.
-
-.. warning::
-
-  The ``CHPL_LOCALE_MODEL=numa``\* configuration is currently not supported by
-  this module.
-
-  \*The NUMA Locale model is deprecated.
 
 .. MKL Documentation References
 
@@ -2146,16 +2139,14 @@ module BLAS {
   /*
       Wrapper for `DOT`_ routines
 
-      Returns  the dot product of two vectors::
+      Returns the dot product of two vectors::
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
   */
@@ -2181,22 +2172,18 @@ module BLAS {
   }
 
   /*
-      Wrapper for  `DOTU`_ routines (``DOTU_SUB``)
+      Wrapper for `DOTU`_ routines (``DOTU_SUB``)
 
       Obtains the dot product of two complex vectors::
 
          X*Y
 
-      **Input:**
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
-
-    :returns: The complex dot product
-
-
+      :returns: The complex dot product
   */
   proc dotu(X: [?D]?eltType,  Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
     where D.rank == 1
@@ -2231,16 +2218,12 @@ module BLAS {
 
          conj(X)*Y
 
-      **Input:**
-
-      - ``X``: Conjugated input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Conjugated input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: The complex dot product
-
-
   */
   proc dotc(X: [?D]?eltType, Y: [D]eltType, incY: c_int = 1, incX: c_int = 1)
    where D.rank == 1 {
@@ -2272,18 +2255,14 @@ module BLAS {
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
-
-
   */
-  proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(64)
+  proc dsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1, incX: c_int = 1): real(64)
    where D.rank == 1 {
     require header;
 
@@ -2300,18 +2279,14 @@ module BLAS {
 
          X*Y
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``Y``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
-      - ``incY``: Defines the increment for the vector ``Y``
+      :arg X: Input vector
+      :arg Y: Input vector
+      :arg incX: Defines the increment for the vector ``X``
+      :arg incY: Defines the increment for the vector ``Y``
 
       :returns: Scalar value of dot product
-
-
   */
-  proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1,incX: c_int = 1): real(32)
+  proc sdsdot(X: [?D] real(32), Y: [D] real(32), incY: c_int = 1, incX: c_int = 1): real(32)
    where D.rank == 1 {
     require header;
 
@@ -2324,14 +2299,12 @@ module BLAS {
   /*
       Wrapper for `NRM2`_ routines
 
-      Returns the  Euclidean norm of vector ``X``::
+      Returns the Euclidean norm of vector ``X``::
 
         ||X||
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The 2-norm of ``X`` vector
 
@@ -2369,10 +2342,8 @@ module BLAS {
 
         |Re X[1]| + |Im X[1]| + |Re  X[2]| + |Im  X[2]|+ ... + |Re  X[N]| + |Im X[N]|.
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The 1-norm of ``X`` vector
 
@@ -2408,10 +2379,8 @@ module BLAS {
 
       Returns the index of element in the vector with maximum absolute value.
 
-      **Input:**
-
-      - ``X``: Input vector
-      - ``incX``: Defines the increment for the vector ``X``
+      :arg X: Input vector
+      :arg incX: Defines the increment for the vector ``X``
 
       :returns: The index of maximum absolute value
 

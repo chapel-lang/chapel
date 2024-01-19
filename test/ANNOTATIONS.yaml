@@ -522,7 +522,7 @@ all:
     - text: Improvements for iterating over unbounded enum/bool ranges (#21332)
       config: chapcs
     - text: Avoid loading CUDA module at each kernel launch (#21346)
-      config: gpu
+      config: 1-node-p100
   01/19/23:
     - text: Support for one locale per socket (#21057)
       config: 16-node-xc, 16-node-cs-hdr
@@ -533,7 +533,7 @@ all:
     - text: Fix default and const argument intents on tuples (#21665)
       config: chapcs, 1-node-xc
     - text: Do less normalization in gpuTransforms and do gpuTransforms after loop invariant code motion (#21673)
-      config: gpu
+      config: 1-node-p100
   03/07/23:
     - text: Switch DR.dsiAccess tuple arg to const ref (#21777)
       config: chapcs, 1-node-xc
@@ -542,7 +542,7 @@ all:
       config: chapcs
   03/16/23:
     - text: Update GPU performance tests to not count launches in perf mode (#21891)
-      config: gpu
+      config: 1-node-p100
   04/06/23:
     - text: Make Dyno scope resolution default (#21983)
       config: chapcs
@@ -554,6 +554,18 @@ all:
       config: chapcs
   08/09/23:
     - text: Deprecate c_string in user facing modules (#22622)
+      config: chapcs
+  08/31/23:
+    - text: Relax LICM aliasing rules for GPU kernels to try benefit performance (#22664)
+      config: 1-node-p100, 1-node-mi60
+  09/01/23:
+    - text: Switch the default GPU memory strategy to `array_on_device` (#23138)
+      config: 1-node-p100, 1-node-mi60
+  09/15/23:
+    - text: Use per-task, per-device GPU streams for asynchronous execution (#23307)
+      config: 1-node-p100, 1-node-mi60
+  01/11/24:
+    - text: Remove the old slicing rule (#24154)
       config: chapcs
 
 # End all
@@ -2226,6 +2238,10 @@ compilerAndTestingStats: &compiler-perf-base
     - Yield tuples by value when appropriate (#21789)
   03/14/23:
     - Eliminate extra destructions when yielding tuples (#21887)
+  12/01/23:
+    - Move the GpuSort Module code into the GPU module (#23989)
+  01/18/24:
+    - Remove 'use GPU' from ChapelGpuSupport (#24185)
 
 allTotalTime:
   <<: *compiler-perf-base
@@ -2408,6 +2424,12 @@ arkouda: &arkouda-base
     - Scaffolding for multi-dimensional arrays (Bears-R-Us/arkouda#2829)
   11/21/23:
     - Update Arkouda release testing from 1.31 to 1.32 (#23900)
+  12/07/23:
+    - Array creation perf patch (Bears-R-Us/arkouda#2869)
+  12/11/23:
+    - Closes 2873 Short strings optimization for multicol groupby (Bears-R-Us/arkouda#2877)
+  01/07/24:
+    - Array API infrastructure and partial implementation (Bears-R-Us/arkouda#2865)
 
 
 arkouda-string:
@@ -2448,7 +2470,7 @@ arkouda-comp:
   05/02/23:
     - Generate write method stubs for FCF superclass types (#22195)
 
-shoc-triad-bw-lg:
+shoc-triad-all-lg:
   11/10/22:
     - Ensure we time mem transfer in SHOC Triad (#20961)
 
@@ -2459,3 +2481,16 @@ shoc-sort:
 chplGPU:
   03/25/23:
     - Upstream changes
+  09/18/23:
+    - Upstream changes
+
+coral:
+  09/20/23:
+    - Can't repro on RTX A2000
+  11/21/23:
+    - text: Pin CUDA 11.3 on a test system that was defaulting to 11.0 (#23894)
+      config: 1-node-p100
+
+transpose-time:
+  09/01/23:
+    - Can only repro on nightly testing system

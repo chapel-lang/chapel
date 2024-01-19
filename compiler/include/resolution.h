@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -68,9 +68,9 @@ bool       isTupleContainingAnyReferences(Type* t);
 void       ensureEnumTypeResolved(EnumType* etype);
 
 bool       tryingToResolve();
-
 void       resolveFnForCall(FnSymbol* fn, CallExpr* call);
 FnSymbol*  tryResolveFunction(FnSymbol* fn);
+void       printCallstackForLastError();
 
 bool       canInstantiate(Type* actualType, Type* formalType);
 

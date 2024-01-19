@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -190,30 +190,6 @@ proc locale.chdir(name: string) throws {
 }
 
 // CHPLDOC TODO: really want to make a section for S_IRUSR and friends.
-
-/* Set the permissions of the file or directory specified by the argument
-   `name` to that indicated by the argument `mode`.
-
-   :arg name: The name of the file or directory whose permissions should be
-              altered.
-   :type name: `string`
-   :arg mode: The permissions desired for the file or directory in question.
-              See description of :const:`S_IRUSR`, for instance, for potential
-              values.
-   :type mode: `int`
-
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
-                              to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
-                            permission to change the permissions
-*/
-@deprecated(notes="'FileSystem.chmod()' is deprecated. Please use 'OS.POSIX.chmod()' instead")
-proc chmod(name: string, mode: int) throws {
-  extern proc chpl_fs_chmod(name: c_ptrConst(c_char), mode: int): errorCode;
-
-  var err = chpl_fs_chmod(unescape(name).c_str(), mode);
-  if err then try ioerror(err, "in chmod", name);
-}
 
 /* Change one or both of the owner and group id of the named file or directory
    to the specified values.  If `uid` or `gid` are -1, the value in question
@@ -452,45 +428,6 @@ private proc copyFileImpl(src: string, dest: string) throws {
   try srcFile.close();
 }
 
-/* Copies the permissions of the file indicated by `src` to the file indicated
-   by `dest`, leaving contents, owner and group unaffected.
-
-   :arg src: The source file whose permissions are to be copied.
-   :type src: `string`
-   :arg dest: The intended destination of the permissions.
-   :type dest: `string`
-
-   :throws FileNotFoundError: Thrown when the name specified does not correspond
-                              to a file or directory that exists.
-   :throws PermissionError: Thrown when the current user does not have
-                            permission to change the permissions
-*/
-@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
-proc copyMode(src: string, dest: string) throws {
-  try {
-    // Gets the mode from the source file.
-    var srcMode = getMode(src);
-    // Sets the mode of the destination to the source's mode.
-    chmod(dest, srcMode);
-  } catch e: SystemError {
-    // Hide implementation details.
-    try ioerror(e.err, "in copyMode " + src, dest);
-  }
-}
-
-@chpldoc.nodoc
-@deprecated(notes="'FileSystem.copyMode()' is deprecated. Please use 'OS.POSIX.stat()' and 'OS.POSIX.chmod()' instead.")
-proc copyMode(out error: errorCode, src: string, dest: string) {
-  var err: errorCode = 0;
-  try {
-    copyMode(src, dest);
-  } catch e: SystemError {
-    error = e.err;
-  } catch {
-    error = EINVAL;
-  }
-}
-
 /* Will recursively copy the tree which lives under `src` into `dst`,
    including all contents and permissions. Metadata such as file creation and
    modification times, uid, and gid will be preserved if `metadata` is true.
@@ -703,29 +640,6 @@ proc getGid(name: string): int throws {
   var err = chpl_fs_get_gid(result, unescape(name).c_str());
   if err then try ioerror(err, "in getGid");
   return result;
-}
-
-/* Obtains and returns the current permissions of the file or directory
-   specified by `name`.
-
-   :arg name: The file or directory whose permissions are desired.
-   :type name: `string`
-
-   :return: The permissions of the specified file or directory
-            See description of :const:`S_IRUSR`, for instance, for potential
-            values.
-   :rtype: `int`
-
-   :throws SystemError: Thrown to describe an error if one occurs.
-*/
-@deprecated(notes="'FileSystem.getMode()' is deprecated, please use 'OS.POSIX.stat()' instead")
-proc getMode(name: string): int throws {
-  extern proc chpl_fs_viewmode(ref result:c_int, name: c_ptrConst(c_char)): errorCode;
-
-  var ret:c_int;
-  var err = chpl_fs_viewmode(ret, unescape(name).c_str());
-  if err then try ioerror(err, "in getMode", name);
-  return ret;
 }
 
 /* Obtains and returns the size (in bytes) of the file specified by `name`.
@@ -1302,42 +1216,6 @@ proc sameFile(file1: string, file2: string): bool throws {
   return ret != 0;
 }
 
-/* Determines if both :type:`~IO.file` records refer to the same file
-   (utilizing operating system operations rather than string ones, due to the
-   possibility of symbolic links, :data:`~Path.curDir`, or
-   :data:`~Path.parentDir` appearing in the path) and returns the result of that
-   check
-
-   :arg file1: The first file to be compared.
-   :type file1: `file`
-   :arg file2: The second file to be compared.
-   :type file2: `file`
-
-   :return: `true` if the two records refer to the same file, `false`
-            otherwise.
-   :rtype: `bool`
-
-   :throws SystemError: Thrown to describe an error if one occurs.
-*/
-@deprecated(notes="'sameFile(file, file)' is deprecated. Please use 'sameFile(string, string)' instead")
-proc sameFile(file1: file, file2: file): bool throws {
-  extern proc chpl_fs_samefile(ref ret: c_int, file1: qio_file_ptr_t,
-                               file2: qio_file_ptr_t): errorCode;
-
-  // If one of the files references a null or closed file, throw to avoid a
-  // segfault.
-  if (!file1.isOpen() || !file2.isOpen()) {
-    throw createSystemError(EBADF,
-                            "Operation attempted on a file that is not open");
-  }
-
-  var ret:c_int;
-  var err = chpl_fs_samefile(ret, file1._file_internal, file2._file_internal);
-  if err then try ioerror(err, "in sameFile " + file1._tryGetPath(),
-                          file2._tryGetPath());
-  return ret != 0;
-}
-
 /* Create a symbolic link pointing to `oldName` with the path `newName`.
 
    :arg oldName: The source file to be linked
@@ -1485,7 +1363,5 @@ iter walkDirs(path: string = ".", topdown: bool = true, depth: int =max(int),
   if (!topdown) then
     yield path;
 }
-
-
 
 }

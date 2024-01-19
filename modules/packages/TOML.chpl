@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -62,7 +62,7 @@ to access to the following TOML file's project name,
      name = "example"
      version = "1.0.0"
 
-Use the following code in chapel.
+Use the following code in Chapel.
 
 .. code-block:: chapel
 

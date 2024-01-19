@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -3085,6 +3085,13 @@ struct Converter {
 
     // used to be buildFunctionSymbol
     fn->cname = fn->name = astr(convName);
+
+    if (fIdBasedMunging && node->linkage() == uast::Decl::DEFAULT_LINKAGE &&
+        // ignore things like chpl_taskAddCoStmt
+        !fn->hasFlag(FLAG_ALWAYS_RESOLVE)) {
+      CHPL_ASSERT(node->id().postOrderId() == -1);
+      fn->cname = astr(node->id().symbolPath());
+    }
 
     if (convertedReceiver) {
       fn->thisTag = thisTag;

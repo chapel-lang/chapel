@@ -1,0 +1,9 @@
+int-error-generic-field.chpl:5: In initializer:
+int-error-generic-field.chpl:5: warning: need '(?)' on the type 'fileWriter' of the formal 'stream' because this type is generic
+int-error-generic-field.chpl:4: warning: please use '?' when declaring a field with generic type
+int-error-generic-field.chpl:4: note: for example with 'fileWriter(?)'
+int-error-generic-field.chpl:8: In method 'deinit':
+int-error-generic-field.chpl:9: error: call to throwing function flush without throws, try, or try! (relaxed mode)
+$CHPL_HOME/modules/standard/IO.chpl:nnnn: note: throwing function flush defined here
+  $CHPL_HOME/modules/internal/ChapelBase.chpl:nnnn: called as (bar(fileWriter(true,defaultSerializer))).deinit()
+  within internal functions (use --print-callstack-on-error to see)

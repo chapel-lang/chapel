@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -876,7 +876,6 @@ extern Symbol *gUnknown;
 extern Symbol *gMethodToken;
 extern Symbol *gTypeDefaultToken;
 extern Symbol *gLeaderTag, *gFollowerTag, *gStandaloneTag;
-extern Symbol *gStrideOne, *gStrideAny; //deprecation in 1.31 for #17131
 extern Symbol *gModuleToken;
 extern Symbol *gNoInit;
 extern Symbol *gSplitInit;
@@ -922,9 +921,13 @@ typedef enum {
        // and match ExtensionPointTy in PassManagerBuilder
        EarlyAsPossible,
        ModuleOptimizerEarly,
+       LateLoopOptimizer,
        LoopOptimizerEnd,
        ScalarOptimizerLate,
+       EarlySimplification,
+       OptimizerEarly,
        OptimizerLast,
+       CGSCCOptimizerLate,
        VectorizerStart,
        EnabledOnOptLevel0,
        Peephole,
@@ -940,12 +943,10 @@ extern llvmStageNum_t llvmPrintIrStageNum;
 const char *llvmStageNameFromLlvmStageNum(llvmStageNum_t stageNum);
 llvmStageNum_t llvmStageNumFromLlvmStageName(const char* stageName);
 
-void addNameToPrintLlvmIr(const char* name);
-void addCNameToPrintLlvmIr(const char* name);
+void addNameToPrintLlvmIrRequestedNames(const char* name);
 
-bool shouldLlvmPrintIrName(const char* name);
 bool shouldLlvmPrintIrCName(const char* name);
-bool shouldLlvmPrintIrFn(FnSymbol* fn);
+
 std::vector<std::string> gatherPrintLlvmIrCNames();
 
 #ifdef HAVE_LLVM

@@ -1,2 +1,0 @@
---codegen         # sliceNegativeStride.old.good
--snewSliceRule    # sliceNegativeStride.good

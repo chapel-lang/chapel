@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -209,6 +209,11 @@ module AutoMath {
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(64)):real(64) do return fabs(x);
 
+  /* Return the absolute value of a param real(64) as a param */
+  proc abs(param x: real(64)) param :real(64) {
+    return __primitive("abs", x);
+  }
+
   /* Returns the magnitude of the real argument `x`. */
   inline proc abs(x : real(32)): real(32) {
     pragma "fn synchronization free"
@@ -217,8 +222,19 @@ module AutoMath {
     return fabsf(x);
   }
 
+  /* Return the absolute value of a param real(32) as a param */
+  proc abs(param x: real(32)) param : real(32) {
+    return __primitive("abs", x);
+  }
+
   /* Returns the real magnitude of the imaginary argument `x`. */
   inline proc abs(x : imag(64)): real(64) do return fabs(_i2r(x));
+
+  /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
+  */
+  proc abs(param x: imag(64)) param :real(64) {
+    return abs(x:real(64));
+  }
 
   /* Returns the real magnitude of the imaginary argument `x`. */
   inline proc abs(x: imag(32)): real(32) {
@@ -228,26 +244,47 @@ module AutoMath {
     return fabsf(_i2r(x));
   }
 
+  /* Return the real magnitude of a `param` imaginary argument `x` as a `param`
+  */
+  proc abs(param x: imag(32)) param :real(32) {
+    return abs(x:real(32));
+  }
+
   /* Returns the magnitude (often called modulus) of complex `x`.
 
      In concert with the related :proc:`phase` (a.k.a. argument)
      of `x`, it can be used to recompute `x`.
-
-     :rtype: ``real(w/2)`` when `x` has a type of ``complex(w)``.
   */
-  inline proc abs(x : complex(?w)): real(w/2) {
-    pragma "fn synchronization free"
-    pragma "codegen for CPU and GPU"
-    extern proc cabsf(x: complex(64)): real(32);
+  inline proc abs(x : complex(128)): real(64) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc cabs(x: complex(128)): real(64);
-    if w == 64 then
-      return cabsf(x);
-    else
-      return cabs(x);
+    return cabs(x);
   }
 
+  /* Returns the magnitude of a ``param`` ``complex(128)``.
+  */
+  proc abs(param x : complex(128)) param :real(64) {
+    return __primitive("abs", x);
+  }
+
+  /* Returns the magnitude (often called modulus) of complex `x`.
+
+     In concert with the related :proc:`phase` (a.k.a. argument)
+     of `x`, it can be used to recompute `x`.
+  */
+  inline proc abs(x : complex(64)): real(32) {
+    pragma "fn synchronization free"
+    pragma "codegen for CPU and GPU"
+    extern proc cabsf(x: complex(64)): real(32);
+    return cabsf(x);
+  }
+
+  /* Returns the magnitude of a ``param`` ``complex(64)``.
+  */
+  proc abs(param x : complex(64)) param :real(32) {
+    return __primitive("abs", x);
+  }
 
   /* Returns the absolute value of the integer argument.
 
@@ -2511,6 +2548,17 @@ module AutoMath {
 
   /* Returns the square root of the argument `x`.
 
+     It is an error if the `x` is less than zero.
+  */
+  proc sqrt(param x: real(64)) param :real(64) {
+    if x < 0 {
+      compilerError("sqrt of a negative number -- cast to complex if a complex result is desired");
+    }
+    return __primitive("sqrt", x);
+  }
+
+  /* Returns the square root of the argument `x`.
+
      It is an error if  `x` is less than zero.
   */
   inline proc sqrt(x : real(32)): real(32) {
@@ -2518,6 +2566,17 @@ module AutoMath {
     pragma "codegen for CPU and GPU"
     extern proc sqrtf(x: real(32)): real(32);
     return sqrtf(x);
+  }
+
+  /* Returns the square root of the argument `x`.
+
+     It is an error if  `x` is less than zero.
+  */
+  proc sqrt(param x: real(32)) param :real(32) {
+    if x < 0 {
+      compilerError("sqrt of a negative number -- cast to complex if a complex result is desired");
+    }
+    return __primitive("sqrt", x);
   }
 
   /* Returns the square root of the argument `z`. */
@@ -2529,11 +2588,21 @@ module AutoMath {
   }
 
   /* Returns the square root of the argument `z`. */
+  proc sqrt(param x: complex(64)) param :complex(64) {
+    return __primitive("sqrt", x);
+  }
+
+  /* Returns the square root of the argument `z`. */
   inline proc sqrt(x: complex(128)): complex(128) {
     pragma "fn synchronization free"
     pragma "codegen for CPU and GPU"
     extern proc csqrt(x: complex(128)): complex(128);
     return csqrt(x);
+  }
+
+  /* Returns the square root of the argument `z`. */
+  proc sqrt(param x: complex(128)) param :complex(128) {
+    return __primitive("sqrt", x);
   }
 
   /* Returns the square root of the argument `z`. */

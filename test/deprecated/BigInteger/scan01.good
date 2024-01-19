@@ -1,4 +1,0 @@
-scan01.chpl:7: warning: scan0 is deprecated - please use bigint.findNext0 instead
-scan01.chpl:10: warning: scan1 is deprecated - please use bigint.findNext1 instead
-3
-4

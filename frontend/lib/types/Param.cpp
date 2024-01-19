@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -81,6 +81,8 @@ bool Param::isParamOpFoldable(chpl::uast::PrimitiveTag op) {
     case P_prim_minus:
     case P_prim_not:
     case P_prim_lnot:
+    case P_prim_abs:
+    case P_prim_sqrt:
       return true;
     default:
       return false;

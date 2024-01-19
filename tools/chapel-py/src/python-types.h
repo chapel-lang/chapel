@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -62,13 +62,14 @@ struct PythonReturnTypeInfo {};
    using X-macros for the entire AST class hierarchy if we wanted to be
    more specific. */
 
-DEFINE_RETURN_TYPE(bool, "bool", Py_BuildValue("b", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
+DEFINE_RETURN_TYPE(bool, "bool", PyBool_FromLong(TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_RETURN_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNWRAP));
 DEFINE_RETURN_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
 DEFINE_RETURN_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->context, PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_RETURN_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->astNode);
-DEFINE_RETURN_TYPE(IterAdapterBase*, "Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+DEFINE_RETURN_TYPE(chpl::Location, "Location", wrapLocation(TO_WRAP), ((LocationObject*) TO_UNWRAP)->location);
+DEFINE_RETURN_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 
 /* In the `method-tables.h` file, we encode a method signature using the C++
    function type in the form `R(Args...)`. This template, PythonFnHelper, is

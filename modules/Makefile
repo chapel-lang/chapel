@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -121,6 +121,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
+	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/EpochManager.chpl \

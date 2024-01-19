@@ -1,0 +1,1 @@
+--llvm-print-ir multiSqrt --llvm-print-ir-stage asm --fast

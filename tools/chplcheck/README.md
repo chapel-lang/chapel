@@ -189,7 +189,8 @@ def UnusedFormal(context, root):
         formals[formal.unique_id()] = formal
 
     for (use, _) in chapel.each_matching(root, Identifier):
-        if refersto := use.to_node():
+        refersto = use.to_node()
+        if refersto:
             uses.add(refersto.unique_id())
 
     for unused in formals.keys() - uses:

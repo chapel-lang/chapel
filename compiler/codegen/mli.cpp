@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -35,10 +35,9 @@
 #include <map>
 #include <sstream>
 
-// These are populated after 'codegenMultiLocaleInteropWrappers' is done.
-const char* gMultiLocaleLibMarshallingFile = NULL;
-const char* gMultiLocaleLibClientFile = NULL;
-const char* gMultiLocaleLibServerFile = NULL;
+const char* gMultiLocaleLibMarshallingFile = "chpl_mli_marshalling.c";
+const char* gMultiLocaleLibClientFile = "chpl_mli_client.c";
+const char* gMultiLocaleLibServerFile = "chpl_mli_server.c";
 
 const char* mliClientRuntimeSource = "chpl-mli-client-runtime.c";
 const char* mliServerRuntimeSource = "chpl-mli-server-runtime.c";
@@ -170,9 +169,9 @@ MLIContext::MLIContext(bool debugPrint) {
 
   this->debugPrint = debugPrint;
 
-  openCFile(&this->fiMarshalling, "chpl_mli_marshalling", "c");
-  openCFile(&this->fiClientBundle, "chpl_mli_client", "c");
-  openCFile(&this->fiServerBundle, "chpl_mli_server", "c");
+  openCFile(&this->fiMarshalling, gMultiLocaleLibMarshallingFile);
+  openCFile(&this->fiClientBundle, gMultiLocaleLibClientFile);
+  openCFile(&this->fiServerBundle, gMultiLocaleLibServerFile);
 
   INT_ASSERT(gGenInfo != NULL);
   this->info = gGenInfo;
@@ -181,12 +180,6 @@ MLIContext::MLIContext(bool debugPrint) {
 }
 
 MLIContext::~MLIContext() {
-
-  if (NULL == gMultiLocaleLibMarshallingFile) {
-    gMultiLocaleLibMarshallingFile = this->fiMarshalling.filename;
-    gMultiLocaleLibClientFile = this->fiClientBundle.filename;
-    gMultiLocaleLibServerFile = this->fiServerBundle.filename;
-  }
 
   closeCFile(&this->fiMarshalling, true);
   closeCFile(&this->fiClientBundle, true);

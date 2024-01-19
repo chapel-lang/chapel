@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -360,14 +360,16 @@ int main(int argc, char** argv) {
     int ch = 0;
     do {
       ch = getc(stdin);
-    } while (ch != 0 && (ch == ' ' || ch == '\n'));
+    } while (ch != 0 && ch == ' ');
 
     if (ch == 'g' || ch == 'G') {
       gc = true;
-    } else if (!(ch == 'Y' || ch == 'y' || ch == '\n')) {
+    } else if (ch == 'Y' || ch == 'y' || ch == '\n') {
+      printf("\n");
+      continue;
+    } else {
       break;
     }
-    printf("\n");
   }
 
   return 0;

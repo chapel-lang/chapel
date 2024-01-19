@@ -63,6 +63,8 @@ def get_compile_args():
         else:
             # Try using pkg-config to get the compile-time flags.
             x = third_party_utils.pkgconfig_get_system_compile_args('libfabric')
+            if x == (None, None):
+                error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
             args = x
 
     if libfabric_val == 'system' or libfabric_val == 'bundled':
@@ -101,6 +103,8 @@ def get_link_args():
             # Try using pkg-config to get the libraries to link
             # libfabric with.
             tup = third_party_utils.pkgconfig_get_system_link_args('libfabric')
+            if tup == (None, None):
+                error("Could not find a system install of 'libfabric', try setting LIBFABRIC_DIR")
             # put the two lists together (but expect tup[0] to be empty)
             pclibs = tup[0] + tup[1]
 

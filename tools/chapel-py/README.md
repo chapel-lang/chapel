@@ -48,17 +48,21 @@ myfile
 ```
 
 ## Installation
+
 Make sure that you have a from-source build of Chapel available in your
 `CHPL_HOME`, and that the Dyno compiler library has been built (this usually
-happens if you build the compiler, or run `make test-frontend`). Currently,
-the build script also requires having LLVM available in your path. With
-those constraints met, you can just run `pip install`:
+happens if you build the compiler, or run `make test-frontend`). Currently, the
+build script also requires having LLVM available in your path. The build script
+also requires that the development package of python be installed (for many
+package managers this is called `python3-devel`). With those constraints met,
+you can just run `pip install`:
 
 ```Bash
 python3 -m pip install -e .
 ```
 
 ## Usage
+
 Check the `chplcheck.py` file in the root directory to see the library
 in action.
 
@@ -74,10 +78,13 @@ The library is split into three major components:
   to perform transformations on existing Chapel files for various reasons. For
   instance, deprecations and syntax changes can be performed automatically using
   the replacer API, by finding AST patterns and performing string substitution.
+* The `chapel.lsp` module provides a few helpers to tranform Dyno types to LSP
+  (Language Server Protocol) types.
 
 The following sections document the three modules.
 
 ### `chapel.core`
+
 The main entry point to the Chapel Python API is the `Context` object. This
 is a wrapper around the C++ construct of the same name. The Context in 'dyno'
 is responsible of memoizing computations, interning strings, and more. The
@@ -152,6 +159,7 @@ implementation of the former is included above). It also provides a couple
 of more advanced helpers for dealing with Chapel ASTs.
 
 #### `chapel.parse_attribute`
+
 The `parse_attribute` function, given a "description" of an attribute (its
 name and formal list), tries to parse an `Attribute` AST node. This function
 accounts for named and unnamed actuals, reordering, etc. For instance, given
@@ -193,6 +201,7 @@ def ignores_rule(node, rulename):
 ```
 
 #### `chapel.match_pattern`
+
 This function provides general pattern matching functionality to enable users
 of the Python API to rapidly find "interesting" locations in the AST. It
 supports arbitrary levels of nesting, as well as "named variables" to easily
@@ -455,4 +464,3 @@ def tag_aggregates_with_io_interfaces(rc, root):
 
         yield (record, new_text)
 ```
-

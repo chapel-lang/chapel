@@ -1,5 +1,5 @@
 use Collectives;
-use DistributedBag;
+use DistributedBagDeprecated;
 use DistributedDeque;
 
 /*

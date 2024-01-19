@@ -35,13 +35,13 @@ if runRace {
 
 } else {
 
-  forall i in 2..n-1 by 2 with (ref A) do
+  forall i in 2..n-1 by 2 do
     A[i] = A[i-1] + A[i+1];
   writeln("A is: ", A);
   writeln();
   
   var B: [1..n] real;
-  forall i in 2..n-1 with (ref B) do
+  forall i in 2..n-1 do
     B[i] = A[i-1] + A[i+1];
   writeln("B is: ", B);
   writeln();

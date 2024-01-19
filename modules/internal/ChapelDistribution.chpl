@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -111,27 +111,11 @@ module ChapelDistribution {
       writeln("<no way to display representation>");
     }
 
-/* These methods are commented out so that __primitive("resolves")
-   in proc newRectangularDom() fails.
-   Also, the compiler is currently adjusted to forego the 'override'
-   checking so that user-defined domain maps can continue specifying
-   'override' on their implementations of dsiNewRectangularDom().
-   The second overload below needs to be restored when 'stridable'
-   is removed entirely.
-
-    // this overload supports deprecation by Vass in 1.31 to implement #17131
-    pragma "last resort" @chpldoc.nodoc
-    proc dsiNewRectangularDom(param rank: int, type idxType,
-                              param stridable: bool, inds) {
-      compilerError("rectangular domains not supported by this distribution");
-    }
-
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewRectangularDom(param rank: int, type idxType,
                               param strides: strideKind, inds) {
       compilerError("rectangular domains not supported by this distribution");
     }
-*/
 
     pragma "last resort" @chpldoc.nodoc
     proc dsiNewAssociativeDom(type idxType, param parSafe: bool) {
@@ -426,12 +410,6 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param strides: strideKind;
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc stridable param do return strides.toStridable();
-    @deprecated("domain.stridable is deprecated; use domain.strides instead")
-    proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();
@@ -967,12 +945,6 @@ module ChapelDistribution {
     param rank : int;
     type idxType;
     param strides: strideKind;
-
-    // deprecated by Vass in 1.31 to implement #17131
-    @deprecated("[array].stridable is deprecated; use [array].strides instead")
-    proc stridable param do return strides.toStridable();
-    @deprecated("[array].stridable is deprecated; use [array].strides instead")
-    proc type stridable param do return strides.toStridable();
 
     @chpldoc.nodoc proc hasUnitStride() param do return strides.isOne();
     @chpldoc.nodoc proc hasPosNegUnitStride() param do return strides.isPosNegOne();

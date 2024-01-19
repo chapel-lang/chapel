@@ -101,7 +101,7 @@ simultaneous access to. There are several ways to do this.
 
 One way is to mount a flash drive and export it as a network file system to the
 other nodes in the cluster. The steps to achieve this are described in sections
-4.1.1 to 4.1.2 from this `Medium article <https://glmdev.medium.com/building-a-raspberry-pi-cluster-784f0df9afbd>`_.
+4.1 to 4.3 from this `Medium article <https://glmdev.medium.com/building-a-raspberry-pi-cluster-784f0df9afbd>`_.
 
 --------------------------------------
 Configuring for Multi-Locale Execution

@@ -8,7 +8,7 @@ CHPLDEPS = $(shell $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/chplenv/chpl_home_
 COPY_IF_DIFFERENT = $(CHPL_MAKE_PYTHON) $(CHPL_MAKE_HOME)/util/config/update-if-different --copy
 
 # You can set these variables from the command line.
-SPHINXOPTS    = -n -W --keep-going
+SPHINXOPTS    = -W --keep-going
 SPHINXBUILD = $(CHPL_MAKE_PYTHON) $(CHPLDEPS) sphinx-build
 PAPER         =
 SOURCEDIR     = rst

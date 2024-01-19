@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -301,6 +301,7 @@ extern bool fIncrementalCompilation;
 extern std::string llvmFlags;
 extern std::string llvmRemarksFilters;
 extern std::vector<std::string> llvmRemarksFunctionsToShow;
+extern bool fLlvmPrintPasses;
 
 extern bool fPrintAdditionalErrors;
 
@@ -310,8 +311,12 @@ extern bool fDynoScopeProduction;
 extern bool fDynoScopeBundled;
 extern bool fDynoDebugTrace;
 extern bool fDynoVerifySerialization;
+extern bool fDynoGenStdLib;
 
 extern size_t fDynoBreakOnHash;
+
+extern bool fResolveConcreteFns;
+extern bool fIdBasedMunging;
 
 extern bool fNoIOGenSerialization;
 extern bool fNoIOSerializeWriteThis;

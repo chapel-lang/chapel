@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -45,11 +45,13 @@ module ChapelBase {
   inline operator c_fn_ptr.=(ref a:c_fn_ptr, b:c_fn_ptr) {
     __primitive("=", a, b);
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this() {
     compilerError("Can't call a C function pointer within Chapel");
   }
+  pragma "do not resolve unless called"
   @chpldoc.nodoc
   @unstable
   proc c_fn_ptr.this(args...) {
@@ -1320,10 +1322,6 @@ module ChapelBase {
       return x;
     } else if (isCoercible(t, int) || isCoercible(t, uint)) {
       return x != 0:x.type;
-    } else if t == strideKind {
-      // to support deprecation by Vass in 1.31 to implement #17131
-      compilerWarning("this condition is checking a strideKind value, which is deprecated; one possible cause is the recent change where a formal argument's type like 'range(?i,?b,?s)' causes 's' to be a strideKind where it used to be a bool");
-      return x.toStridable();
     } else {
       compilerError("invalid type ", t:string, " used in if or while condition");
     }
@@ -1379,6 +1377,9 @@ module ChapelBase {
   inline proc ref chpl_anycomplex.re ref {
     return __primitive("complex_get_real", this);
   }
+  proc param chpl_anycomplex.re param {
+    return __primitive("complex_get_real", this);
+  }
   inline proc chpl_anycomplex.re {
     if this.type == complex(128) {
       pragma "fn synchronization free"
@@ -1391,6 +1392,9 @@ module ChapelBase {
     }
   }
   inline proc ref chpl_anycomplex.im ref {
+    return __primitive("complex_get_imag", this);
+  }
+  proc param chpl_anycomplex.im param {
     return __primitive("complex_get_imag", this);
   }
   inline proc chpl_anycomplex.im {

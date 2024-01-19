@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -86,7 +86,7 @@ module MemMove {
       upon a call to :proc:`explicitDeinit()`. It should only be called
       when deinitialization would not occur otherwise.
 
-    :arg: A variable to deinitialize
+    :arg arg: A variable to deinitialize
   */
   @deprecated(notes="'explicitDeinit' is now deprecated; please use 'destroy' instead")
   proc explicitDeinit(ref arg: ?t) {
