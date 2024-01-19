@@ -69,6 +69,7 @@ LoopExpr::LoopExpr(Expr* indices,
                    Expr* cond,
                    Expr* loopBody,
                    bool forall,
+                   bool foreach,
                    bool zippered,
                    bool maybeArrayType) :
   Expr(E_LoopExpr),
@@ -77,12 +78,13 @@ LoopExpr::LoopExpr(Expr* indices,
   cond(cond),
   loopBody(NULL),
   forall(forall),
+  foreach(foreach),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
 
   if (forall == false && maybeArrayType) {
-    INT_FATAL("For-exprs cannot possibly result in an array type");
+    INT_FATAL("For-exprs and foreach-exprs cannot possibly result in an array type");
   }
 
   // 'expr' should be a BlockStmt so that any nested functions remain within
@@ -100,13 +102,14 @@ LoopExpr::LoopExpr(Expr* indices,
   gLoopExprs.add(this);
 }
 
-LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
+LoopExpr::LoopExpr(bool forall, bool foreach, bool zippered, bool maybeArrayType) :
   Expr(E_LoopExpr),
   indices(NULL),
   iteratorExpr(NULL),
   cond(NULL),
   loopBody(NULL),
   forall(forall),
+  foreach(foreach),
   zippered(zippered),
   maybeArrayType(maybeArrayType)
 {
@@ -114,7 +117,7 @@ LoopExpr::LoopExpr(bool forall, bool zippered, bool maybeArrayType) :
 }
 
 LoopExpr* LoopExpr::copyInner(SymbolMap* map) {
-  LoopExpr* ret = new LoopExpr(forall, zippered, maybeArrayType);
+  LoopExpr* ret = new LoopExpr(forall, foreach, zippered, maybeArrayType);
 
   ret->indices        = COPY_INT(indices);
   ret->iteratorExpr   = COPY_INT(iteratorExpr);

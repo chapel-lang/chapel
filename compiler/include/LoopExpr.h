@@ -32,8 +32,10 @@ public:
   Expr* cond;          // filtering condition or NULL if none
   BlockStmt* loopBody;
 
-  // Indicates whether this loop-expression is a forall-expr or for-expr
+  // Indicates whether this loop-expression is a forall-expr
   bool forall;
+  // Indicates whether this loop-expression is a foreach-expr
+  bool foreach;
 
   // 'true' if the iteratorExpr is zippered
   bool zippered;
@@ -50,9 +52,10 @@ public:
            Expr* cond,
            Expr* loopBody,
            bool forall,
+           bool foreach,
            bool zippered,
            bool maybeArrayType);
-  LoopExpr(bool forall, bool zippered, bool maybeArrayType);
+  LoopExpr(bool forall, bool foreach, bool zippered, bool maybeArrayType);
 
   DECLARE_COPY(LoopExpr);
   LoopExpr* copyInner(SymbolMap* map)                 override;
