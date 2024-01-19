@@ -18,8 +18,6 @@
 #  Make*
 #
 
-set -e
-
 # Skip check if we are within a grace period at the beginning of a new year.
 grace_period_end="01-07"
 # Get today's date and the grace period end date as %m%d format for comparison.
