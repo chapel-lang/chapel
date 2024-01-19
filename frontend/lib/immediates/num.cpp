@@ -31,11 +31,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-//#include <complex>
-
-extern "C" {
-#include "complex-support.h"
-}
 
 #include "num.h"
 #include "prim_data.h"

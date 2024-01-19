@@ -24,7 +24,9 @@
 #include "chpl/framework/Context.h"
 #include "chpl/framework/UniqueString.h"
 
-#include "complex-support.h"
+extern "C" {
+  #include "complex-support.h"
+}
 
 #include <cstdlib>
 #include <cstring>
