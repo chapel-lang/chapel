@@ -6824,6 +6824,13 @@ chpl_comm_nb_handle_t amoFn_msgOrdFence(struct amoBundle_t *ab,
   chpl_bool haveAmosOut = bitmapTest(tcip->amoVisBitmap, ab->node);
 
   //
+  // Force visibility of all pending Puts and AMOs on all locales except for
+  // the target locale. We will ensure visibility on the target below.
+  //
+  forceMemFxVisAllNodes(true /*checkPuts*/, true /*checkAmos*/,
+                        ab->node /*skipNode*/, tcip);
+
+  //
   // Inject this AMO if it is non-fetching, we have a bound tx context so we
   // can delay forcing the memory visibility until later, and the size
   // doesn't exceed the injection size limit.
