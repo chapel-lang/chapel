@@ -2808,6 +2808,7 @@ var_decl_stmt_inner:
                                      context->isVarDeclConfig,
                                      context->currentScopeIsAggregate(),
                                      toOwned($2), toOwned($3));
+      BUILDER->noteDeclNameLocation(varDecl.get(), LOC(@1));
       // gather the comments like a statement does
       $$ = STMT(@1, varDecl.release());
       context->clearComments();
