@@ -225,15 +225,19 @@ def get_symbol_information(
     loc = Location(uri, location_to_range(decl.location()))
     kind = decl_kind(decl)
     if kind:
-        # TODO: should we use DocumentSymbol or SymbolInformation
-        # LSP spec says prefer DocumentSymbol, but nesting doesn't work out of the box. implies that we need some kind of visitor pattern to build a DS tree
-        # using symbol information for now, as it sort-of autogets the tree structure
+        # TODO: should we use DocumentSymbol or SymbolInformation LSP spec says
+        # prefer DocumentSymbol, but nesting doesn't work out of the box.
+        # implies that we need some kind of visitor pattern to build a DS tree
+        # using symbol information for now, as it sort-of autogets the tree
+        # structure
         is_deprecated = chapel.is_deprecated(decl)
-        return SymbolInformation(loc, decl.name(), kind, deprecated=is_deprecated)
+        return SymbolInformation(
+            loc, decl.name(), kind, deprecated=is_deprecated
+        )
     return None
 
 
-EltT = TypeVar('EltT')
+EltT = TypeVar("EltT")
 
 
 @dataclass
@@ -251,7 +255,9 @@ class PositionList(Generic[EltT]):
         self.elts.clear()
 
     def find(self, pos: Position) -> Optional[EltT]:
-        idx = bisect_right(self.elts, pos, key=lambda x: self.get_range(x).start)
+        idx = bisect_right(
+            self.elts, pos, key=lambda x: self.get_range(x).start
+        )
         idx -= 1
         if idx < 0 or pos > self.get_range(self.elts[idx]).end:
             return None
@@ -385,7 +391,6 @@ class FileInfo:
         self.siblings = chapel.SiblingMap(asts)
         self._collect_used_modules(asts)
         self._collect_possibly_visible_decls()
-
 
     def get_use_segment_at_position(
         self, position: Position
@@ -547,9 +552,7 @@ def run_lsp():
         items.extend(
             completion_item_for_decl(decl) for decl in fi.possibly_visible_decls
         )
-        items.extend(
-            completion_item_for_decl(mod) for mod in fi.used_modules
-        )
+        items.extend(completion_item_for_decl(mod) for mod in fi.used_modules)
 
         items = [item for item in items if item]
 
