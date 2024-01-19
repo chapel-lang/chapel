@@ -197,7 +197,7 @@ def get_node_name(node: dyno.AstNode) -> List[str]:
             and node.this_formal()
             and node.this_formal().type_expression()
         ):
-            aggregate_name = get_single_name(typename)
+            aggregate_name = get_single_name(node.this_formal().type_expression())
             name = f"{aggregate_name}.{name}"
         # handles primary methods and fields
         elif node.parent() and (
