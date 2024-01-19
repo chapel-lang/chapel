@@ -430,7 +430,7 @@ module BigInteger {
       writeThis(writer);
     }
 
-    /* Writes this number to a :type:`~IO.fileWriter` */
+    /* Read this number from a :type:`~IO.fileReader` */
     proc ref deserialize(reader, ref deserializer) throws {
       var s: string;
       reader.read(s);
