@@ -222,7 +222,7 @@ bool LowerLoopExprVisitor::enterLoopExpr(LoopExpr* node) {
     // Do not preserve the shape if there is a filtering predicate.
     if (noFilter) {
       normalize(replacement); // for addIterRecShape()
-      addIterRecShape(replacement, node->forall, node->zippered);
+      addIterRecShape(replacement, node->forall || node->foreach, node->zippered);
     }
   }
 
