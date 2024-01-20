@@ -1,0 +1,4 @@
+
+Directory will contain files used in building programs: object files that
+haven't been linked, and auto-generated dependencies.  Nothing here should
+be checked in; make will create what it needs.
