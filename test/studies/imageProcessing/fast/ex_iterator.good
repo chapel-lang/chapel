@@ -1,0 +1,22 @@
+whilerange 1..5
+  1
+  2
+  3
+  4
+  5
+whilerange -1..-5 by -1
+  -1
+  -2
+  -3
+  -4
+  -5
+whilerange 1..10 by 2
+  1
+  3
+  5
+  7
+  9
+whilerange 1..5 by -1
+whilerange -1..-5 by 1
+whilerange -1..-5 by 0
+1 3 5 7 9

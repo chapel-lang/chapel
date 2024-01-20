@@ -1,0 +1,23 @@
+Iterate over circle radius 5 at 1,1
+init r to 5 along with xc, yc, closed
+  iter (1, 1)
+  iter (2, 2)
+  iter (3, 3)
+  iter (4, 4)
+  iter (5, 5)
+  iter (6, 6)
+Iterate over circle radius 4 at 1,1
+init r to 4
+  iter (1, 1)
+  iter (2, 2)
+  iter (3, 3)
+  iter (4, 4)
+  iter (5, 5)
+Iterate over circle radius 5 at 3,2
+update r to 5
+  iter (3, 2)
+  iter (4, 3)
+  iter (5, 4)
+  iter (6, 5)
+  iter (7, 6)
+  iter (8, 7)
