@@ -1292,7 +1292,7 @@ static ArgumentDescription arg_desc[] = {
  {"warnings", ' ', NULL, "Enable [disable] output of warnings", "n", &ignore_warnings, "CHPL_WARNINGS", NULL},
  {"warn-unknown-attribute-toolname", ' ', NULL, "Enable [disable] warnings when an unknown tool name is found in an attribute", "N", &fWarnUnknownAttributeToolname, "CHPL_WARN_UNKNOWN_ATTRIBUTE_TOOLNAME", NULL},
  {"using-attribute-toolname", ' ', "<toolname>", "Specify additional tool names for attributes that are expected in the source", "S", NULL, "CHPL_ATTRIBUTE_TOOLNAMES", addUsingAttributeToolname},
-{"warn-race-conditions", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnRaceConditions, "CHPL_WARN_RACE_CONDITIONS", NULL},
+{"warn-potential-race-conditions", ' ', NULL, "Enable [disable] output of warnings for potential race conditions", "N", &fWarnRaceConditions, "CHPL_WARN_RACE_CONDITIONS", NULL},
 
  {"", ' ', NULL, "Parallelism Control Options", NULL, NULL, NULL, NULL},
  {"local", ' ', NULL, "Target one [many] locale[s]", "N", &fLocal, "CHPL_LOCAL", setLocal},

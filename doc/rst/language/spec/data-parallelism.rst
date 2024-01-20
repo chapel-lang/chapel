@@ -791,11 +791,8 @@ result:
    B = [1, 2, 1];
    A[B] += 3;
 
-The compilation flag ``--warn-race-conditions`` will warn for cases like the
-one above.
-
-The correct code can be written using an explicit loop statement and the proper
-intents, for example:
+To avoid this race, the above code could be written using an explicit loop
+statement and the proper intents, for example:
 
 .. code-block:: chapel
 

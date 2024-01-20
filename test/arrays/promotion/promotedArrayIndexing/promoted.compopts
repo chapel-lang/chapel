@@ -1,3 +1,3 @@
  # promoted.good
---no-warn-race-conditions
---warn-race-conditions # promoted-error.good
+--no-warn-potential-race-conditions
+--warn-potential-race-conditions # promoted-error.good
