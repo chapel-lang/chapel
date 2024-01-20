@@ -1,0 +1,5 @@
+#!/bin/sh
+
+outfile=$2
+
+sed -i '/Timing/d; /forall/d; /reduce/d' $outfile
