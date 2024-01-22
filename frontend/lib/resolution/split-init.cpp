@@ -54,6 +54,10 @@ struct FindSplitInits : VarScopeVisitor {
   static void addInit(VarFrame* frame, ID varId, QualifiedType rhsType);
   void handleInitOrAssign(ID varId, QualifiedType rhsType, RV& rv);
 
+  std::map<ID,QualifiedType> verifyInitOrderAndType(const AstNode * node, 
+                                                    const std::vector<VarFrame*>& frames,
+                                                    const std::set<ID>& splitInitedVars);
+
   // overrides
   void handleDeclaration(const VarLikeDecl* ast, RV& rv) override;
   void handleMention(const Identifier* ast, ID varId, RV& rv) override;
@@ -71,8 +75,13 @@ struct FindSplitInits : VarScopeVisitor {
   void handleReturn(const uast::Return* ast, RV& rv) override;
   void handleThrow(const uast::Throw* ast, RV& rv) override;
   void handleYield(const uast::Yield* ast, RV& rv) override;
-  void handleConditional(const Conditional* cond, RV& rv) override;
   void handleTry(const Try* t, RV& rv) override;
+
+  void handleDisjunction(const AstNode * node, 
+                         VarFrame * currentFrame,
+                         const std::vector<VarFrame*>& frames, 
+                         bool total, RV& rv) override;
+
   void handleScope(const AstNode* ast, RV& rv) override;
 };
 
@@ -229,200 +238,148 @@ void FindSplitInits::handleYield(const uast::Yield* ast, RV& rv) {
   // no action needed
 }
 
-// updates the back frame with the combined result from
-// the then/else blocks from the conditional
-void FindSplitInits::handleConditional(const Conditional* cond, RV& rv) {
-  VarFrame* frame = currentFrame();
-  VarFrame* thenFrame = currentThenFrame();
-  VarFrame* elseFrame = currentElseFrame();
-
-  // save results for vars declared in then/else
-  // gather the set of variables to consider
-  std::set<ID> locInitedVars;
-  if (thenFrame != nullptr) {
-    for (const auto& id : thenFrame->initedVars) {
-      if (thenFrame->eligibleVars.count(id) > 0) {
-        // variable declared in this scope, so save the result
-        allSplitInitedVars.insert(id);
-      } else if (elseFrame == nullptr ||
-                 elseFrame->mentionedVars.count(id) == 0) {
-        // variable inited in 'then' but not mentioned in 'else'
-        locInitedVars.insert(id);
-      }
+static void propagateMentions(VarFrame * parentFrame, VarFrame* frame) {
+  for (const auto& id : frame->mentionedVars) {
+    if (frame->declaredVars.count(id) == 0) {
+      parentFrame->mentionedVars.insert(id);
     }
   }
-  if (elseFrame != nullptr) {
-    for (const auto& id : elseFrame->initedVars) {
-      if (elseFrame->eligibleVars.count(id) > 0) {
-        // variable declared in this scope, so save the result
-        allSplitInitedVars.insert(id);
-      } else if (thenFrame->mentionedVars.count(id) == 0) {
-        // variable inited in 'else' and not mentioned in 'then'
-        locInitedVars.insert(id);
-      }
-    }
-  }
+}
 
-  bool thenReturnsThrows = false;
-  if (thenFrame != nullptr) {
-    thenReturnsThrows = thenFrame->returnsOrThrows;
-  }
-  bool elseReturnsThrows = false;
-  if (elseFrame != nullptr) {
-    elseReturnsThrows = elseFrame->returnsOrThrows;
-  }
 
-  std::set<ID> locSplitInitedVars;
+std::map<ID,QualifiedType> FindSplitInits::verifyInitOrderAndType(const AstNode * node, 
+                                                                  const std::vector<VarFrame*>& frames,
+                                                                  const std::set<ID>& splitInitedVars) {
 
-  // now consider the initialized 'vars' && propagate them
-  // split init is OK if:
-  //   both then & else blocks initialize it before mentioning it
-  //   one initializes it and the other returns
-  for (const auto& id : locInitedVars) {
-    bool thenInits = false;
-    if (thenFrame) {
-      thenInits = thenFrame->initedVars.count(id) > 0;
-    }
-    bool elseInits = false;
-    if (elseFrame) {
-      elseInits = elseFrame->initedVars.count(id) > 0;
-    }
+  std::vector<std::pair<ID,QualifiedType>> referenceInitOrder;
+  std::map<ID, QualifiedType> referenceInitTypes;
+  std::map<ID, int> initTypeBranchIdxs;
+  int frameCount = 0; // needed to track branches for error reporting
+  for (auto frame : frames) {
+    
+    size_t idx = 0;
 
-    if (thenInits && elseInits) {
-      locSplitInitedVars.insert(id);
-    } else if ((thenInits         && elseReturnsThrows) ||
-               (thenReturnsThrows && elseInits)) {
-      // one branch returns or throws and the other inits
-      locSplitInitedVars.insert(id);
-    } else {
-      frame->mentionedVars.insert(id);
-    }
-  }
+    for (auto & pair : frame->initedVarsVec) {
+      auto& id = pair.first;
+      auto& qt = pair.second;
 
-  // compute set of variables initialized in both branches
-  // (different from locSplitInitedVars because one branch might have
-  //  returned early)
-  // this will be used for error checking
-  std::set<ID> splitInitedInBoth;
-  if (thenFrame && elseFrame) {
-    for (const auto& id : thenFrame->initedVars) {
-      if (elseFrame->initedVars.count(id) > 0) {
-        splitInitedInBoth.insert(id);
-      }
-    }
-  }
+      // only consider the variables that are being split-inited
+      if (splitInitedVars.count(id) == 0) continue;
 
-  // Compute the then and else orders and RHS types for error checking
-  // Propagate the split-inited variables
-  std::vector<ID> splitInitedBothThenIds;
-  std::vector<ID> splitInitedBothElseIds;
-  std::vector<QualifiedType> splitInitedBothThenTypes;
-  std::vector<QualifiedType> splitInitedBothElseTypes;
-
-  if (thenFrame) {
-    for (auto pair: thenFrame->initedVarsVec) {
-      ID id = pair.first;
-      QualifiedType rhsType = pair.second;
-      if (locSplitInitedVars.count(id) > 0) {
-        addInit(frame, id, rhsType); // propagate
-        if (splitInitedInBoth.count(id) > 0) {
-          splitInitedBothThenIds.push_back(id);
-          splitInitedBothThenTypes.push_back(rhsType);
-        }
-      }
-    }
-  }
-  if (elseFrame) {
-    for (auto pair: elseFrame->initedVarsVec) {
-      ID id = pair.first;
-      QualifiedType rhsType = pair.second;
-      if (locSplitInitedVars.count(id) > 0) {
-        addInit(frame, id, rhsType); // propagate
-        if (splitInitedInBoth.count(id) > 0) {
-          splitInitedBothElseIds.push_back(id);
-          splitInitedBothElseTypes.push_back(rhsType);
-        }
-      }
-    }
-  }
-
-  // do error checking
-  // * split-init variables are initialized in the same order
-  //   in the 'then' and 'else' blocks
-  // * split-init variables are initialized with the same type
-  //   in the 'then' and 'else' blocks
-  size_t size = splitInitedBothThenIds.size();
-  // these asserts should always be true because the 'both'
-  // set was computed first; and because the vectors are
-  // just the ordering for things in the set.
-  CHPL_ASSERT(splitInitedBothElseIds.size() == size);
-  CHPL_ASSERT(splitInitedBothThenTypes.size() == size);
-  CHPL_ASSERT(splitInitedBothElseTypes.size() == size);
-  bool orderOk = true;
-  // first, check the order
-  for (size_t i = 0; i < size; i++) {
-    ID thenId = splitInitedBothThenIds[i];
-    ID elseId = splitInitedBothElseIds[i];
-
-    if (thenId != elseId) {
-      orderOk = false;
-      context->error(cond,
-                     "initialization order in conditional does not match");
-      break;
-    }
-  }
-  // then, check the types
-  if (orderOk) {
-    /* Why do we insist that the types match for split init?
-       Say we are resolving this:
-       {
-          var x;
-
-          if cond {
-            x = 5;
-            compilerWarning('in if branch, x.type is ' + x.type:string);
-          } else {
-            x = 12.0;
-            compilerWarning('in else branch, x.type is ' + x.type:string);
-          }
-        }
-
-        If it succeeds at compiling, the type of 'x' will seem to change
-        as it compiles. It's OK to be temporarily wrong about a type
-        like this if we are going to issue an error, but to do so
-        for correct code seems problematic.
-     */
-    for (size_t i = 0; i < size; i++) {
-      QualifiedType thenRhsType = splitInitedBothThenTypes[i];
-      QualifiedType elseRhsType = splitInitedBothElseTypes[i];
-      if (thenRhsType != elseRhsType) {
-        ID varId = splitInitedBothThenIds[i];
-        // TODO: store IDs of init-parts for split-inited variables, so we can
-        // report where conflicting init-parts are.
+      //check types for all frames
+      if (referenceInitTypes.count(id) == 0) {
+        referenceInitTypes[id] = qt;
+        initTypeBranchIdxs[id] = frameCount;
+      } else if (referenceInitTypes[id] != qt) {
         CHPL_REPORT(context, SplitInitMismatchedConditionalTypes,
-                    parsing::idToAst(context, varId)->toVariable(), cond,
-                    thenRhsType, elseRhsType);
+                    parsing::idToAst(context, id)->toVariable(), node,
+                    qt, referenceInitTypes[id], 
+                    frameCount, initTypeBranchIdxs[id]);
+        return std::map<ID,QualifiedType>();
+      }
+
+      // only check initialization order if the branch 
+      // does not unconditionally return
+      if (frame->returnsOrThrows) continue;
+
+      if (idx >= referenceInitOrder.size()) {
+        referenceInitOrder.emplace_back(id, qt);
+      } else if (referenceInitOrder[idx].first != id) {
+          context->error(node, 
+                       "initialization order does not match between branches");
+          return std::map<ID,QualifiedType>();
+      }
+      idx++;
+    }
+    frameCount++;
+  }
+  return referenceInitTypes;
+}
+
+void FindSplitInits::handleDisjunction(const AstNode * node, 
+                                       VarFrame * currentFrame, 
+                                       const std::vector<VarFrame*>& frames, 
+                                       bool total, RV& rv) {
+
+  // first, if the branch is known at compile time, just process that one.
+  for(auto frame: frames) {
+    if (!frame->paramTrueCond) continue;
+
+    for (auto pair : frame->initedVarsVec) {
+      const auto & id = pair.first;
+      const auto & rhsType = pair.second;
+      if (frame->eligibleVars.count(id) > 0) {
+        // variable is local to this frame's scope; save the result.
+        allSplitInitedVars.insert(id);
+      } else {
+        // variable was declared in an outer scope, and this is only
+        // possible path, so its definitely a valid split init
+        addInit(currentFrame, id, rhsType);
+      }
+    }
+
+    propagateMentions(currentFrame, frame);
+    return;
+  }
+
+  // gather the set of variables inited in any of the branches
+  std::set<ID> locallyInitedVars;
+  for(auto frame : frames) {
+    for (const auto& id : frame->initedVars) {
+      if (frame->eligibleVars.count(id) > 0) {
+        // variable declared and inited locally. save the result
+        allSplitInitedVars.insert(id);
+      } else {
+        // it was declared in an outer scope
+        locallyInitedVars.insert(id);
       }
     }
   }
 
-  // propagate the mentioned variables
-  if (thenFrame != nullptr) {
-    for (const auto& id : thenFrame->mentionedVars) {
-      if (thenFrame->declaredVars.count(id) == 0) {
-        frame->mentionedVars.insert(id);
-      }
-    }
-  }
-  if (elseFrame != nullptr) {
-    for (const auto& id : elseFrame->mentionedVars) {
-      if (elseFrame->declaredVars.count(id) == 0) {
-        frame->mentionedVars.insert(id);
-      }
+  // remove variables mentioned in other branches, as that means they
+  // were not initialized in that branch. 
+  for(auto frame: frames) {
+    for (const auto& id : frame->mentionedVars) {
+      locallyInitedVars.erase(id);
     }
   }
 
-  handleScope(cond, rv);
+  // calculate the set of variables that are split initialized in at least 
+  // one branch. A variable is split inited if all branches either 
+  // return/throw or initialize the variable.
+  std::set<ID> locallySplitInitedVars;
+  for (auto id : locallyInitedVars) {
+    bool allFramesInitReturnOrThrow = true;
+    for(auto frame : frames) {
+      bool thisFrameInits = frame->initedVars.count(id) > 0;
+      allFramesInitReturnOrThrow &= thisFrameInits || frame->returnsOrThrows;
+    }
+    if (allFramesInitReturnOrThrow) {
+      locallySplitInitedVars.insert(id);
+    } else {
+      currentFrame->mentionedVars.insert(id);
+    }
+  }
+
+  if (!total) {
+    for (auto frame: frames) {
+      propagateMentions(currentFrame, frame);
+    } 
+    for (const auto & id: locallySplitInitedVars) {
+      currentFrame->mentionedVars.insert(id);
+    }
+    return;
+  }
+  
+  auto verifiedInits = verifyInitOrderAndType(node, frames, 
+                                              locallySplitInitedVars);
+  for (auto& pair : verifiedInits) {
+    addInit(currentFrame, pair.first, pair.second);
+  }
+
+  for (auto frame: frames) {
+    propagateMentions(currentFrame, frame);
+  }
 }
 
 void FindSplitInits::handleTry(const Try* t, RV& rv) {
@@ -514,6 +471,7 @@ static bool allowsSplitInit(const AstNode* ast) {
          ast->isConditional() ||
          ast->isLocal() ||
          ast->isSerial() ||
+         ast->isSelect() ||
          ast->isTry();
 }
 

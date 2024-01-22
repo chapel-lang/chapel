@@ -968,7 +968,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "string"} //future test for init resolution DCE
+                      {"string", "string"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -991,7 +991,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "real(64)"} //future test for init resolution DCE
+                      {"string", "real(64)"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
