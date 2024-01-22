@@ -1,4 +1,0 @@
-depCarg.chpl:2: In function 'testTypes':
-depCarg.chpl:3: warning: 'carg' is deprecated, please use phase instead
-depCarg.chpl:2: In function 'testTypes':
-depCarg.chpl:3: warning: 'carg' is deprecated, please use phase instead

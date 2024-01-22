@@ -5486,12 +5486,6 @@ inline proc fileWriter.commit() {
   qio_channel_commit_unlocked(_channel_internal);
 }
 
-/* Used to control the behavior of the region argument for
-   :proc:`fileReader.seek` or :proc:`fileWriter.seek`. */
-@chpldoc.nodoc()
-@deprecated("'useNewSeekRegionBounds' has been deprecated - the region adjustment it was controlling is now always 'true', this config no longer impacts code and will be removed in a future release")
-config param useNewSeekRegionBounds = true;
-
 /*
    Adjust a :record:`fileReader`'s region. The ``fileReader``'s buffer will be
    discarded.
@@ -5800,12 +5794,6 @@ proc openReader(path:string,
                           style: iostyleInternal);
 }
 
-/* Used to control the behavior of the region argument for :proc:`openReader`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release")
-config param useNewOpenReaderRegionBounds = true;
-
 // We can simply call fileReader.close() on these, since the underlying file
 // will be closed once we no longer have any references to it (which in this
 // case, since we only will have one reference, will be right after we close
@@ -5950,12 +5938,6 @@ proc file.reader(param kind=iokind.dynamic, param locking=true,
   return this.readerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
 
-/* Used to control the behavior of the region argument for :proc:`file.reader`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release")
-config param useNewFileReaderRegionBounds = true;
-
 /*
    Create a :record:`fileReader` that supports reading from a file. See
    :ref:`about-io-overview`.
@@ -6056,12 +6038,6 @@ proc file.readerHelper(param kind=_iokind.dynamic, param locking=true,
   return ret;
 }
 
-/* Used to control the behavior of the region argument for :proc:`file.lines`. // which has now been removed
- */
-@chpldoc.nodoc()
-@deprecated("'useNewLinesRegionBounds' is deprecated - :proc:`file.lines` now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release")
-config param useNewLinesRegionBounds = true;
-
 @deprecated("writer with a 'style' argument is deprecated, please pass a Serializer to the 'serializer' argument instead")
 proc file.writer(param kind=iokind.dynamic, param locking=true,
                  start:int(64) = 0, end:int(64) = max(int(64)),
@@ -6069,12 +6045,6 @@ proc file.writer(param kind=iokind.dynamic, param locking=true,
                  fileWriter(kind,locking) throws {
   return this.writerHelper(kind, locking, start..end, hints, style: iostyleInternal);
 }
-
-/* Used to control the behavior of the region argument for :proc:`file.writer`.
- */
-@chpldoc.nodoc()
-@deprecated("'useNewFileWriterRegionBounds' is deprecated - :proc:`file.writer` now always includes the high bounds and this flag no longer impacts that behavior.  The flag will be removed in a future release")
-config param useNewFileWriterRegionBounds = true;
 
 /*
    Create a :record:`fileWriter` that supports writing to a file. See

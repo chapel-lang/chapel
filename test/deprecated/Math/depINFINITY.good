@@ -1,2 +1,0 @@
-depINFINITY.chpl:1: warning: 'INFINITY' has been deprecated in favor of inf, please use that instead
-inf

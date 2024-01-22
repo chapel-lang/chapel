@@ -1,2 +1,0 @@
-depNAN.chpl:1: warning: 'NAN' is deprecated in favor of nan, please use that instead
-nan
