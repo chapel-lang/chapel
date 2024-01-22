@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -255,11 +255,6 @@ module ChapelArray {
   config param arrayLiteralLowBound = defaultLowBound;
   @chpldoc.nodoc
   config param capturedIteratorLowBound = defaultLowBound;
-
-  @chpldoc.nodoc
-  @deprecated("'useNewArrayFind' no longer has any role and is deprecated")
-  config param useNewArrayFind = false;
-
 
   pragma "ignore transfer errors"
   proc chpl__buildArrayExpr( pragma "no auto destroy" in elems ...?k ) {
@@ -774,47 +769,11 @@ module ChapelArray {
       return new _distribution(_value.dsiClone());
     }
 
-    /* This is a workaround for an internal failure I experienced when
-       this code was part of newRectangularDom() and relied on split init:
-       var x;
-       if __prim(...) then x = ...;
-       else if __prim(...) then x = ...;
-       else compilerError(...); */
-    proc chpl_dsiNRDhelp(param rank, type idxType, param strides, ranges) {
-
-      // Due to a bug, see library/standard/Reflection/primitives/ResolvesDmap
-      // we use "method call resolves" instead of just "resolves".
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, strides, ranges) {
-        return _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
-      }
-
-      // The following supports deprecation by Vass in 1.31 to implement #17131
-      // Once range.stridable is removed, replace chpl_dsiNRDhelp() with
-      //   var x = _value.dsiNewRectangularDom(..., strides, ranges);
-      // and uncomment proc dsiNewRectangularDom() in ChapelDistribution.chpl
-
-      param stridable = strides.toStridable();
-      const ranges2 = chpl_convertRangeTuple(ranges, stridable);
-      if __primitive("method call resolves", _value, "dsiNewRectangularDom",
-                     rank, idxType, stridable, ranges2) {
-
-        compilerWarning("the domain map '", _value.type:string,
-          "' needs to be updated from 'stridable: bool' to",
-          " 'strides: strideKind' because 'stridable' is deprecated");
-
-        return _value.dsiNewRectangularDom(rank, idxType, stridable, ranges2);
-      }
-
-      compilerError("rectangular domains are not supported by",
-                    " the distribution ", this.type:string);
-    }
-
     proc newRectangularDom(param rank: int, type idxType,
                            param strides: strideKind,
                            ranges: rank*range(idxType, boundKind.both, strides),
                            definedConst: bool = false) {
-      var x = chpl_dsiNRDhelp(rank, idxType, strides, ranges);
+      var x = _value.dsiNewRectangularDom(rank, idxType, strides, ranges);
 
       x.definedConst = definedConst;
 
@@ -932,22 +891,6 @@ module ChapelArray {
     return false;
   }
 
-  // supports deprecation by Vass in 1.31 to implement #17131
-  // A compatibility wrapper that allows code to work with domain maps
-  // whether they have been converted from stridable to strides or not.
-  proc chpl_dsiNewRectangularDom(dist, param rank: int, type idxType,
-                           param strides: strideKind,
-                           ranges: rank*range(idxType, boundKind.both, strides),
-                           definedConst: bool = false) {
-    if __primitive("resolves",
-                   dist.dsiNewRectangularDom(rank, idxType, strides, ranges))
-    then
-      return dist.dsiNewRectangularDom(rank, idxType, strides, ranges);
-    else
-      return dist.dsiNewRectangularDom(rank, idxType,
-                                       strides.toStridable(), ranges);
-  }
-
   // Array wrapper record
   pragma "array"
   pragma "has runtime type"
@@ -1009,9 +952,6 @@ module ChapelArray {
        :proc:`idxType` above.  For a multidimensional array, it will be
        :proc:`rank` * :proc:`idxType`. */
     proc fullIdxType type do return this.domain.fullIdxType;
-
-    @deprecated("'.intIdxType' on arrays is deprecated; please let us know if you're relying on it")
-    proc intIdxType type do return chpl__idxTypeToIntIdxType(_value.idxType);
 
     pragma "no copy return"
     pragma "return not owned"
@@ -1770,24 +1710,6 @@ module ChapelArray {
       return _value.IRV;
     }
 
-    /* Yield the array elements in sorted order. */
-    @deprecated(notes="'Array.sorted' is deprecated - use Sort.sort instead")
-    iter sorted(comparator:?t = chpl_defaultComparator()) {
-      if Reflection.canResolveMethod(_value, "dsiSorted", comparator) {
-        for i in _value.dsiSorted(comparator) {
-          yield i;
-        }
-      } else if Reflection.canResolveMethod(_value, "dsiSorted") {
-        compilerError(_value.type:string + " does not support dsiSorted(comparator)");
-      } else {
-        use Sort;
-        var copy = this;
-        sort(copy, comparator=comparator);
-        for ind in copy do
-          yield ind;
-      }
-    }
-
     @chpldoc.nodoc
     proc displayRepresentation() { _value.dsiDisplayRepresentation(); }
 
@@ -1862,24 +1784,6 @@ module ChapelArray {
       return this.sizeAs(uint) == 0;
     }
 
-    /* Return the first value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="head() is deprecated on arrays, use A[A.domain.low] instead")
-    proc head(): this._value.eltType {
-      return this[this.domain.low];
-    }
-
-    /* Return the last value in the array */
-    // The return type used here is currently not pretty in the generated
-    // documentation. Don't document it for now.
-    @chpldoc.nodoc
-    @deprecated(notes="tail() is deprecated on arrays, use A[A.domain.high] instead")
-    proc tail(): this._value.eltType {
-      return this[this.domain.high];
-    }
-
     /* Return the last element in the array. The array must be a
        rectangular 1-D array.
      */
@@ -1904,19 +1808,6 @@ module ChapelArray {
         halt("first called on an empty array");
 
       return this(this.domain.first);
-    }
-
-    /* Reverse the order of the values in the array. */
-    @deprecated(notes="'Array.reverse' is deprecated")
-    proc ref reverse() {
-      if (!chpl__isDense1DArray()) then
-        compilerError("reverse() is only supported on dense 1D arrays");
-      const lo = this.domain.low,
-            mid = this.domain.sizeAs(this.idxType) / 2,
-            hi = this.domain.high;
-      for i in 0..#mid {
-        this[lo + i] <=> this[hi - i];
-      }
     }
 
     /*

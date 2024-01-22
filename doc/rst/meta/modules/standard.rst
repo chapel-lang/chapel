@@ -41,9 +41,9 @@ Diagnostics
    :maxdepth: 1
 
    CommDiagnostics <standard/CommDiagnostics>
+   Debugger <standard/Debugger>
    GpuDiagnostics <standard/GpuDiagnostics>
    MemDiagnostics <standard/MemDiagnostics>
-   Debugger <standard/Debugger>
 
 
 Files/IO
@@ -87,7 +87,6 @@ Parallelism/Distributed Computing
 .. toctree::
    :maxdepth: 1
 
-   Barriers <standard/Barriers>
    Collectives <standard/Collectives>
    Communication <standard/Communication>
    DynamicIters <standard/DynamicIters>

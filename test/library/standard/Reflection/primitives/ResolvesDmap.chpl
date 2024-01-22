@@ -25,3 +25,7 @@ compilerError("done");
 class GlobalDistribution {
   proc dsiNewRectangularDom(param stridable: bool) do return 0;
 }
+
+@chpldoc.nodoc proc param strideKind.toStridable() param
+  do return this != strideKind.one;
+

@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2023-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -20,8 +20,10 @@
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
+#include "chpl/framework/query-impl.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/resolution-queries.h"
+#include "chpl/resolution/scope-queries.h"
 
 using namespace chpl;
 using namespace uast;
@@ -75,19 +77,54 @@ static const char* intentToString(IntentType intent) {
   return qualifierToString(Qualifier(int(intent)));
 }
 
-static const resolution::ResolvedExpression*
-scopeResolveResultsForNode(Context* context, const AstNode* node) {
+static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
+  if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
+    auto useParent = parsing::parentAst(context, visibilityStmt);
+    auto scope = resolution::scopeForId(context, useParent->id());
+    auto reScope = resolution::resolveVisibilityStmts(context, scope);
+    for (auto visCla: reScope->visibilityClauses()) {
+      if(visCla.visibilityClauseId().contains(node->id())) {
+        return visCla.scope()->id();
+      }
+    }
+  }
+  return ID();
+}
+
+static const ID scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
+  if (auto fn = fnNode->toFunction()) {
+    auto byId =
+        resolution::scopeResolveFunction(context, fn->id())->resolutionById();
+    if (auto res = byId.byAstOrNull(node)) {
+      return res->toId();
+    }
+  }
+  return ID();
+}
+
+static const ID scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
+  if (auto mod = modNode->toModule()) {
+    auto byId = resolution::scopeResolveModule(context, mod->id());
+    if (auto res = byId.byAstOrNull(node)) {
+      return res->toId();
+    }
+  }
+  return ID();
+}
+
+static const ID scopeResolveResultsForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    if (auto fn = search->toFunction()) {
-      return resolution::scopeResolveFunction(context, search->id())->resolutionById().byAstOrNull(node);
-    } else if (auto mod = search->toModule()) {
-      return resolution::scopeResolveModule(context, search->id()).byAstOrNull(node);
+    if (auto id = scopeResolveViaFunction(context, search, node)) {
+      return id;
+    } else if (auto id = scopeResolveViaModule(context, search, node)) {
+      return id;
+    } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
+      return id;
     }
-
     search = parsing::parentAst(context, search);
   }
-  return nullptr;
+  return ID();
 }
 
 static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
@@ -96,12 +133,11 @@ static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
   return parsing::idToAst(context, id);
 }
 
-static const AstNode* nodeOrNullFromToId(Context* context, const AstNode* node) {
-  auto resolvedExpr = scopeResolveResultsForNode(context, node);
-  if (resolvedExpr != nullptr) {
-    return idOrEmptyToAstNodeOrNull(context, resolvedExpr->toId());
-  }
-  return nullptr;
+static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) {
+  QUERY_BEGIN(nodeOrNullFromToId, context, node);
+  auto id = scopeResolveResultsForNode(context, node);
+  auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
+  return QUERY_END(nodeOrNull);
 }
 
 /* The METHOD macro is overridden here to actually create a Python-compatible

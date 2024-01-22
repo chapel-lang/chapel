@@ -1,4 +1,4 @@
-use NPBRandom;
+use Random;
 
 config const n = 100000,
              seed = 589494289;
@@ -7,7 +7,7 @@ writeln("Number of points      = ", n);
 writeln("Random number seed    = ", seed);
 writeln("dataParTasksPerLocale = ", dataParTasksPerLocale);
 
-var rs = new owned NPBRandomStream(real, seed, parSafe=false);
+var rs = new randomStream(real, seed);
 
 //
 // Create a domain over the number of random points to generate.

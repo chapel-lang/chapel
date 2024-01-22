@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -29,6 +29,7 @@
 #include "chpl/uast/Identifier.h"
 #include "chpl/uast/Module.h"
 #include "chpl/uast/Variable.h"
+#include "chpl/util/version-info.h"
 
 // test resolving a very simple module
 static void test1() {
@@ -522,6 +523,312 @@ static void test10() {
   guard.realizeErrors();
 }
 
+// Test transmutation primitives (for params, currently only real(64) -> uint(64)
+// is possible since there's no way to get other params of these types.
+
+static void test11() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents = R""""(
+                          module M {
+                            var real32v: real(32);
+                            var real64v: real(64);
+                            var uint32v: uint(32);
+                            var uint64v: uint(64);
+
+                            param x =
+                              __primitive("real32 as uint32", real32v).type == uint(32) &&
+                              __primitive("real64 as uint64", real64v).type == uint(64) &&
+                              __primitive("uint32 as real32", uint32v).type == real(32) &&
+                              __primitive("uint64 as real64", uint64v).type == real(64);
+                          }
+                        )"""";
+
+  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+  assert(guard.realizeErrors() == 0);
+  assert(type.isParamTrue());
+}
+
+static void test12() {
+  printf("test11\n");
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents = R""""(
+                          module M {
+                            param real64p = 1.0;
+                            param x = __primitive("real64 as uint64", real64p);
+                          }
+                        )"""";
+
+  auto type = resolveTypeOfXInit(context, contents, /* requireKnown */ true);
+  assert(guard.realizeErrors() == 0);
+  assert(type.isParam() && type.type()->isUintType());
+  assert(type.param() && type.param()->isUintParam());
+  assert(type.param()->toUintParam()->value() == 4607182418800017408);
+}
+
+static void test13() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      param r1 = __primitive("version major");
+      param r2 = __primitive("version minor");
+      param r3 = __primitive("version update");
+      param r4 = __primitive("version sha");
+      )""", { "r1", "r2", "r3", "r4" });
+  ensureParamInt(variables.at("r1"), getMajorVersion());
+  ensureParamInt(variables.at("r2"), getMinorVersion());
+  ensureParamInt(variables.at("r3"), getUpdateVersion());
+  ensureParamString(variables.at("r4"), getIsOfficialRelease() ? "" : getCommitHash());
+}
+
+static void test14() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      param xp = 42;
+      var xv = 42;
+      const xcv = 42;
+      param yp = "hello";
+      var yv = "hello";
+      const ycv = "hello";
+
+      var r1 = __primitive("addr of", xp);
+      var r2 = __primitive("addr of", xv);
+      var r3 = __primitive("addr of", xcv);
+      var r4 = __primitive("addr of", yp);
+      var r5 = __primitive("addr of", yv);
+      var r6 = __primitive("addr of", ycv);
+      var r7 = __primitive("addr of", int);
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6", "r7" });
+
+  auto refInt = QualifiedType(QualifiedType::REF, IntType::get(&context, 0));
+  auto constRefInt = QualifiedType(QualifiedType::CONST_REF, IntType::get(&context, 0));
+  auto refStr = QualifiedType(QualifiedType::REF, RecordType::getStringType(&context));
+  auto constRefStr = QualifiedType(QualifiedType::CONST_REF, RecordType::getStringType(&context));
+
+  assert(variables.at("r1") == constRefInt);
+  assert(variables.at("r2") == refInt);
+  assert(variables.at("r3") == constRefInt);
+  assert(variables.at("r4") == constRefStr);
+  assert(variables.at("r5") == refStr);
+  assert(variables.at("r6") == constRefStr);
+  assert(variables.at("r7").isErroneousType());
+
+  // One error for the invalid call of "addr of" with type.
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test15() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      record R {}
+
+      var r: R;
+      var x = 42;
+
+      type t0 = __primitive("typeof", int);
+      type t1 = __primitive("typeof", r);
+      type t2 = __primitive("typeof", x);
+      type t3 = __primitive("typeof", 42);
+      type t4 = __primitive("typeof", (r, r));
+
+      type t5 = __primitive("static typeof", int);
+      type t6 = __primitive("static typeof", r);
+      type t7 = __primitive("static typeof", x);
+      type t8 = __primitive("static typeof", 42);
+      type t9 = __primitive("static typeof", (r, r));
+      )""", { "t0", "t1", "t2", "t3", "t4", "t5", "t6", "t7", "t8", "t9"});
+
+  for (auto& pair : variables) {
+    if (!pair.second.isErroneousType()) {
+      assert(pair.second.isType());
+      assert(pair.second.type() != nullptr);
+    }
+  }
+
+  assert(variables.at("t0").isErroneousType());
+  assert(variables.at("t1").type()->isRecordType());
+  assert(variables.at("t2").type()->isIntType());
+  assert(variables.at("t3").type()->isIntType());
+  auto tupQt1 = variables.at("t4");
+  auto tupType1 = tupQt1.type()->toTupleType();
+  assert(tupType1);
+  assert(tupType1->numElements() == 2);
+  assert(tupType1->elementType(0).kind() == QualifiedType::VAR);
+  assert(tupType1->elementType(0).type()->isRecordType());
+  assert(tupType1->elementType(1).kind() == QualifiedType::VAR);
+  assert(tupType1->elementType(1).type()->isRecordType());
+
+  assert(variables.at("t5").type()->isIntType());
+  assert(variables.at("t6").type()->isRecordType());
+  assert(variables.at("t7").type()->isIntType());
+  assert(variables.at("t8").type()->isIntType());
+  auto tupQt2 = variables.at("t9");
+  auto tupType2 = tupQt2.type()->toTupleType();
+  assert(tupType2);
+  assert(tupType2->numElements() == 2);
+  assert(tupType2->elementType(0).kind() == QualifiedType::VAR);
+  assert(tupType2->elementType(0).type()->isRecordType());
+  assert(tupType2->elementType(1).kind() == QualifiedType::VAR);
+  assert(tupType2->elementType(1).type()->isRecordType());
+
+  // One error for the invalid call of "typeof" with type.
+  assert(guard.realizeErrors() == 1);
+}
+
+static void test16() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+  auto variables = resolveTypesOfVariablesInit(&context,
+      R"""(
+      record Concrete {
+          var x: int;
+          var y: string;
+          var z: (int, string);
+      };
+
+      record Generic {
+          var x;
+          var y;
+          var z;
+      }
+
+      var conc: Concrete;
+      var inst: Generic(int, string, (int, string));
+
+      param r1 = __primitive("static field type", conc, "x") == int;
+      param r2 = __primitive("static field type", conc, "y") == string;
+      param r3 = __primitive("static field type", conc, "z") == (int, string);
+      param r4 = __primitive("static field type", inst, "x") == int;
+      param r5 = __primitive("static field type", inst, "y") == string;
+      param r6 = __primitive("static field type", inst, "z") == (int, string);
+      )""", { "r1", "r2", "r3", "r4", "r5", "r6"});
+
+  for (auto& pair : variables) {
+    pair.second.isParamTrue();
+  }
+}
+
+// module-level split-init variables
+static void test17() {
+  Context context;
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var foo;
+      foo = 5;
+
+      proc setArgToStr(out arg: string) {
+        arg = "str";
+      }
+      var bar;
+      setArgToStr(bar);
+
+      param foo_param;
+      foo_param = 5;
+      param bar_param;
+      bar_param = "bar_param";
+
+      )""", { "foo", "bar", "foo_param", "bar_param"});
+
+  auto foo = variables.at("foo");
+  assert(foo.kind() == QualifiedType::VAR);
+  assert(foo.type());
+  assert(foo.type()->isIntType());
+
+  auto bar = variables.at("bar");
+  assert(bar.kind() == QualifiedType::VAR);
+  assert(bar.type());
+  assert(bar.type()->isStringType());
+
+  ensureParamInt(variables.at("foo_param"), 5);
+  ensureParamString(variables.at("bar_param"), "bar_param");
+}
+
+// invalid module-level split-init
+static void test18() {
+  Context context;
+  // Make sure no errors make it to the user, even though we will get errors.
+  ErrorGuard guard(&context);
+
+  auto variables = resolveTypesOfVariables(&context,
+      R"""(
+      var flag = true;
+      var foo;
+      if (flag) {
+        foo = 5;
+      } else {
+        foo = "asdf";
+      }
+      )""", {"foo"});
+
+  assert(guard.numErrors() == 1);
+  assert(guard.error(0)->type() ==
+         ErrorType::SplitInitMismatchedConditionalTypes);
+
+  guard.realizeErrors();
+}
+
+// split-init in mutually recursive modules
+static void test19() {
+  Context ctx;
+  Context* context = &ctx;
+  ErrorGuard guard(context);
+
+  std::string contents =
+  R""""(
+  module M {
+    use N;
+    var x;
+    x = y;
+    var z: int;
+  }
+
+  module N {
+    use M;
+    var y = z;
+  }
+  )"""";
+
+  // parse modules and get M
+  auto path = UniqueString::get(context, "input.chpl");
+  setFileText(context, path, std::move(contents));
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 2);
+  const Module* m = vec[0];
+
+  // extract x
+  assert(m->numStmts() > 0);
+  // hardcoded stmt number
+  const Variable* x = m->stmt(1)->toVariable();
+  assert(x);
+  assert(x->name() == "x");
+  // no init expr here, but should get type set from module resolution
+  /* auto initExpr = x->initExpression(); */
+  /* assert(initExpr); */
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+
+  // check type
+  auto qt = rr.byAst(x).type();
+  assert(!qt.isUnknown());
+  assert(qt.type()->isIntType());
+
+  guard.realizeErrors();
+}
 
 int main() {
   test1();
@@ -534,6 +841,15 @@ int main() {
   test8();
   test9();
   test10();
+  test11();
+  test12();
+  test13();
+  test14();
+  test15();
+  test16();
+  test17();
+  test18();
+  test19();
 
   return 0;
 }

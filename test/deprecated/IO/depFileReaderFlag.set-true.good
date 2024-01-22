@@ -1,4 +1,0 @@
-warning: 'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release
-note: 'useNewFileReaderRegionBounds' was set via a compiler flag
-depFileReaderFlag.chpl:3: warning: 'useNewFileReaderRegionBounds' is now deprecated - fileReaders now always use the region argument to fully specify the bounds, and this flag is no longer used to change that.  This flag will be removed in a future release
-true

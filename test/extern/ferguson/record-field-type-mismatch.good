@@ -1,0 +1,1 @@
+record-field-type-mismatch.chpl:4: error: extern declaration type 'int' does not match C type 'char'

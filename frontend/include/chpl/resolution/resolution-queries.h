@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -381,6 +381,25 @@ resolveGeneratedCallInMethod(Context* context,
                              const PoiScope* inPoiScope,
                              types::QualifiedType implicitReceiver);
 
+// tries to resolve an (unambiguous) init=
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope = nullptr);
+
+// tries to resolve an (unambiguous) assign
+const TypedFnSignature* tryResolveAssign(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope = nullptr);
+
+// tries to resolve an (unambiguous) deinit
+const TypedFnSignature* tryResolveDeinit(Context* context,
+                                         const uast::AstNode* astForScopeOrErr,
+                                         const types::Type* t,
+                                         const PoiScope* poiScope = nullptr);
 
 /**
   Given a type 't', compute whether or not 't' is default initializable.
@@ -388,6 +407,15 @@ resolveGeneratedCallInMethod(Context* context,
   Considers the fields and substitutions of composite types.
 */
 bool isTypeDefaultInitializable(Context* context, const types::Type* t);
+
+/**
+  Determine whether type 't' is copyable/assignable from const or/and from ref.
+  When checkCopyable is true, this checks copyability, and for false checks
+  assignability.
+*/
+CopyableAssignableInfo getCopyOrAssignableInfo(Context* context,
+                                               const types::Type* t,
+                                               bool checkCopyable);
 
 /**
   Determine the types of various compiler-generated globals, which depend
@@ -401,6 +429,13 @@ reportInvalidMultipleInheritance(Context* context,
                                  const uast::Class* node,
                                  const uast::AstNode* firstParent,
                                  const uast::AstNode* secondParent);
+
+/**
+  One of the compiler primitives has the side effect of collecting all
+  test functions. This helper retrieves the list of test functions that has
+  been collected.
+ */
+const std::vector<const uast::Function*>& getTestsGatheredViaPrimitive(Context* context);
 
 
 } // end namespace resolution

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1302,7 +1302,7 @@ void  chpl_comm_get_strd(void* dstaddr, size_t* dststrides, c_nodeid_t srcnode_i
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
-  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
   // will ignore arrays in this case
   const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t srcnode = (gasnet_node_t)srcnode_id;
@@ -1345,7 +1345,7 @@ void  chpl_comm_put_strd(void* dstaddr, size_t* dststrides, c_nodeid_t dstnode_i
                          int ln, int32_t fn) {
   int i;
   const size_t strlvls = (size_t)stridelevels;
-  // Avoid 0-lengh VLA when stridelevels is 0 (contiguous transfer), gasnet
+  // Avoid 0-length VLA when stridelevels is 0 (contiguous transfer), gasnet
   // will ignore arrays in this case
   const size_t strlvls_nz = strlvls == 0 ? 1 : strlvls;
   const gasnet_node_t dstnode = (gasnet_node_t)dstnode_id;

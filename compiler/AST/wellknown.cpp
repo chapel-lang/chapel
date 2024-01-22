@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -96,8 +96,7 @@ FnSymbol *gChplBuildLocaleId;
 
 void gatherIteratorTags() {
   forv_Vec(TypeSymbol, ts, gTypeSymbols) {
-    if (strcmp(ts->name, iterKindTypename) == 0
-        || strcmp(ts->name, strideKindTypename)  == 0) {
+    if (strcmp(ts->name, iterKindTypename) == 0) {
       if (EnumType* enumType = toEnumType(ts->type)) {
         for_alist(expr, enumType->constants) {
           if (DefExpr* def = toDefExpr(expr)) {
@@ -112,11 +111,6 @@ void gatherIteratorTags() {
             } else if (strcmp(name, iterKindStandaloneTagname) == 0) {
               gStandaloneTag = def->sym;
 
-            } else if (strcmp(name, strideKindOneTagname)      == 0) {
-              gStrideOne     = def->sym;
-
-            } else if (strcmp(name, strideKindAnyTagname)      == 0) {
-              gStrideAny     = def->sym;
             }
           }
         }

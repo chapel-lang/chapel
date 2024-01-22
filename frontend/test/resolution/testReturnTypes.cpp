@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -968,7 +968,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "string"} //future test for init resolution DCE
+                      {"string", "string"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);
@@ -991,7 +991,7 @@ static void testSelectTypes() {
     }
     )""";
     stringMap vals = {{"int", "int(64)"},
-                      //{"string", "real(64)"} //future test for init resolution DCE
+                      {"string", "real(64)"}
                       };
 
     testSelectCases(fooFunc, vals, /*isType=*/false);

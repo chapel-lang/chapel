@@ -13,6 +13,6 @@ source $CWD/common-c-backend.bash
 
 export CHPL_TARGET_CPU=none
 
-$CWD/nightly -cron ${nightly_args} -no-buildcheck
+$CWD/nightly -cron ${nightly_args}
 
 sync_graphs

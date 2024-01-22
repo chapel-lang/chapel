@@ -16,7 +16,6 @@ revcomp8.chpl:156: warning: This cast from 'c_ptr(uint(8))' to 'c_ptr(uint(16))'
 revcomp8.chpl:80: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'seq'
 revcomp8.chpl:146: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'buff'
 revcomp8.chpl:146: warning: inferring a default intent to be 'ref' is deprecated - please use an explicit 'ref' intent for the argument 'seq'
-revcomp8.chpl:96: warning: inferring a default intent to be 'ref' is deprecated - please add an explicit 'ref' task intent for 'seq'
 >ONE Homo sapiens alu
 CGGAGTCTCGCTCTGTCGCCCAGGCTGGAGTGCAGTGGCGCGATCTCGGCTCACTGCAAC
 CTCCGCCTCCCGGGTTCAAGCGATTCTCCTGCCTCAGCCTCCCGAGTAGCTGGGATTACA

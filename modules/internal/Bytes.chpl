@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1126,6 +1126,56 @@ module Bytes {
   */
   operator bytes.+=(ref lhs: bytes, const ref rhs: bytes) : void {
     doAppend(lhs, rhs);
+  }
+
+  /*
+     Appends the one or more byte values passed as arguments to
+     the :type:`bytes` `this`.
+   */
+  @unstable("'bytes.appendByteValues' is unstable and may change in the future")
+  proc ref bytes.appendByteValues(x: uint(8) ...) : void {
+    var buf: c_array(uint(8), x.size);
+    for param i in 0..<x.size {
+      buf(i) = x(i);
+    }
+
+    doAppendSomeBytes(this, x.size, buf, nCodepoints=0);
+  }
+
+  /* Convert a nibble into a character in its hexadecimal representation */
+  private proc convertNibble(in nib:uint(8), uppercase: bool): uint(8) {
+    nib = nib & 0xf;
+    if 0 <= nib && nib <= 9 {
+      param zero:uint(8) = b"0"(0); // aka 0x30
+      return zero + nib;
+    } else if 10 <= nib && nib <= 15 {
+      param a:uint(8) = b"a"(0); // aka 0x61
+      param A:uint(8) = b"A"(0); // aka 0x41
+      return (if uppercase then A else a) + nib - 10;
+    }
+
+    return 0;
+  }
+
+  /*
+    Computes a hexadecimal representation for a ``bytes``
+    and returns it as a ``bytes``.
+   */
+  @unstable("'bytes.toHexadecimal' is unstable and may change in the future")
+  proc bytes.toHexadecimal(uppercase: bool = false,
+                           type resultType = bytes) : resultType {
+    var result: resultType;
+    for byte in this {
+      const nib1 = convertNibble((byte>>4)&0xf, uppercase);
+      const nib2 = convertNibble(byte&0xf, uppercase);
+      if resultType == bytes {
+        result.appendByteValues(nib1, nib2);
+      }
+      if resultType == string {
+        result.appendCodepointValues(nib1, nib2);
+      }
+    }
+    return result;
   }
 
   /*

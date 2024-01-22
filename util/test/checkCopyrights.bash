@@ -18,14 +18,23 @@
 #  Make*
 #
 
+# Skip check if we are within a grace period at the beginning of a new year.
+grace_period_end="01-07"
+# Get today's date and the grace period end date as %m%d format for comparison.
 todate=`date "+%m%d"`
-# This hardcoding is intentional. Date accepts a full date like this,
-# but %m%d cuts off the year so it only compares 0107 to the current date
-cond=`date -d 2023-01-07 "+%m%d"`
+# Invoke macOS and Linux `date` differently to get the same output.
+if [[ "$OSTYPE" == "darwin"* ]]; then
+  cond=`date -j -f "%m-%d" $grace_period_end "+%m%d"`
+else
+  # The hardcoded year is just a placeholder. Date accepts a full date like this,
+  # but %m%d cuts off the year so it only compares 0107 to the current date.
+  cond=`date -d 1970-$grace_period_end "+%m%d"`
+fi
 
 if [ $todate -le $cond ];
 then
- exit 0;
+  echo "[INFO] Skipping copyright check as we are within the grace period (ending $grace_period_end)"
+  exit 0;
 fi
 
 CWD=$(cd $(dirname $0) ; pwd)

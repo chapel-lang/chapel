@@ -1,9 +1,0 @@
-deprecateBitFunctions.chpl:8: warning: bigint.clrbit is deprecated - please use bigint.clearBit
-deprecateBitFunctions.chpl:11: warning: bigint.combit is deprecated - please use bigint.toggleBit
-deprecateBitFunctions.chpl:14: warning: bigint.setbit is deprecated - please use bigint.setBit
-deprecateBitFunctions.chpl:17: warning: bigint.tstbit is deprecated - please use bigint.getBit
-0xff
-0xfe
-0xfa
-0x2fa
-0

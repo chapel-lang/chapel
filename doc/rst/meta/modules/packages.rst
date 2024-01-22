@@ -41,6 +41,7 @@ Data Structures
 
    ConcurrentMap <packages/ConcurrentMap>
    DistributedBag <packages/DistributedBag>
+   DistributedBagDeprecated <packages/DistributedBagDeprecated>
    DistributedDeque <packages/DistributedDeque>
    DistributedIters <packages/DistributedIters>
    LinkedLists <packages/LinkedLists>
@@ -63,6 +64,7 @@ File Formats and I/O
    RecordParser <packages/RecordParser>
    TOML <packages/TOML>
    YAML <packages/YAML>
+   ObjectSerialization <packages/ObjectSerialization>
 
 Math / Numerical Computing
 --------------------------

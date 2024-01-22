@@ -11,3 +11,4 @@ assertOnFailToGpuize.chpl:80: warning: the functional form of assertOnGpu() is d
 assertOnFailToGpuize.chpl:81: warning: the functional form of assertOnGpu() is deprecated. Please use the @assertOnGpu loop attribute instead.
 assertOnFailToGpuize.chpl:31: error: Loop contains assertOnGpu() but is not eligible for execution on a GPU
 assertOnFailToGpuize.chpl:23: note: function is marked as not eligible for GPU execution
+assertOnFailToGpuize.chpl:33: note:   reached via call to 'funcMarkedNotGpuizable' in loop body here

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -61,13 +61,23 @@
 #include "llvm/IRReader/IRReader.h"
 #include "llvm/Linker/Linker.h"
 #include "llvm/MC/MCSubtargetInfo.h"
+
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/SubtargetFeature.h"
+#else
 #include "llvm/MC/SubtargetFeature.h"
+#endif
+
 #include "llvm/Passes/PassBuilder.h"
 #include "llvm/Passes/StandardInstrumentations.h"
 #include "llvm/Support/CommandLine.h"
 #include "llvm/Support/ErrorOr.h"
 #include "llvm/Support/FileSystem.h"
+#if HAVE_LLVM_VER >= 170
+#include "llvm/TargetParser/Host.h"
+#else
 #include "llvm/Support/Host.h"
+#endif
 #include "llvm/Support/MemoryBuffer.h"
 #include "llvm/Support/Path.h"
 #include "llvm/Support/TargetSelect.h"
@@ -76,7 +86,9 @@
 #include "llvm/Transforms/IPO.h"
 #include "llvm/Transforms/IPO/AlwaysInliner.h"
 #include "llvm/Transforms/IPO/Internalize.h"
+#if HAVE_LLVM_VER < 170
 #include "llvm/Transforms/IPO/PassManagerBuilder.h"
+#endif
 #include "llvm/Transforms/Utils/Cloning.h"
 
 #if HAVE_LLVM_VER >= 140
@@ -1689,6 +1701,10 @@ void setupClang(GenInfo* info, std::string mainFile)
   std::unique_ptr<clang::driver::Compilation> C(
       TheDriver.BuildCompilation(clangInfo->driverArgsCStrings));
 
+  if (diagClient->getNumErrors() > 0) {
+    USR_FATAL("error in back-end LLVM compilation");
+  }
+
   clang::driver::Command* job = NULL;
 
   if (usingGpuLocaleModel() == false) {
@@ -1944,11 +1960,14 @@ static llvm::TargetOptions getTargetOptions(
   Options.UniqueBasicBlockSectionNames =
       CodeGenOpts.UniqueBasicBlockSectionNames;
   Options.TLSSize = CodeGenOpts.TLSSize;
-  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
-#if HAVE_LLVM_VER >= 160
+#if HAVE_LLVM_VER >= 170
+  Options.EmulatedTLS = true;
+#elif HAVE_LLVM_VER >= 160
   Options.ExplicitEmulatedTLS = true;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #else
   Options.ExplicitEmulatedTLS = CodeGenOpts.ExplicitEmulatedTLS;
+  Options.EmulatedTLS = CodeGenOpts.EmulatedTLS;
 #endif
   Options.DebuggerTuning = CodeGenOpts.getDebuggerTuning();
   Options.EmitStackSizeSection = CodeGenOpts.StackSizeSection;
@@ -1966,7 +1985,11 @@ static llvm::TargetOptions getTargetOptions(
       CodeGenOpts.ValueTrackingVariableLocations;
 #endif
 #endif
+#if HAVE_LLVM_VER >= 170
+  Options.XRayFunctionIndex = CodeGenOpts.XRayFunctionIndex;
+#else
   Options.XRayOmitFunctionIndex = CodeGenOpts.XRayOmitFunctionIndex;
+#endif
 #if HAVE_LLVM_VER >= 140
   Options.LoopAlignment = CodeGenOpts.LoopAlignment;
 #endif
@@ -2178,6 +2201,16 @@ static void cleanupFunctionOptManagers() {
     info->FunctionSimplificationPM = nullptr;
   }
 
+  if (info->SI) {
+    delete info->SI;
+    info->SI = nullptr;
+  }
+
+  if (info->PIC) {
+    delete info->PIC;
+    info->PIC = nullptr;
+  }
+
   if (info->MAM) {
     delete info->MAM;
     info->MAM = nullptr;
@@ -2361,6 +2394,7 @@ llvm::PipelineTuningOptions createPipelineOptions(bool forFunctionPasses) {
 }
 #endif
 
+#ifdef LLVM_USE_OLD_PASSES
 // This has code based on clang's EmitAssemblyHelper::CreatePasses
 // in BackendUtil.cpp.
 static
@@ -2427,10 +2461,33 @@ void configurePMBuilder(PassManagerBuilder &PMBuilder, bool forFunctionPasses, i
 
   // TODO: we might need to call TargetMachine's addEarlyAsPossiblePasses
 }
+#endif
 
 #ifndef LLVM_USE_OLD_PASSES
 
 static void registerDumpIrExtensions(PassBuilder& PB);
+
+// expose a command line option from LLVM
+// we set it via a chpl command line option
+namespace llvm {
+extern cl::opt<bool> PrintPipelinePasses;
+}
+static PassBuilder constructPassBuilder(
+  llvm::TargetMachine* targetMachine,
+  PassInstrumentationCallbacks* PIC,
+  bool forFunction) {
+  // this is required to be set, or LLVM will not properly populate the pass
+  // names. technically this flag enables extra printing to the dbg() output,
+  // but we only keep the flag long enough to populate the pass names.
+  // this must always be set so that `--print-before` (and similar commands) will
+  // still work with their nice pass name
+  llvm::PrintPipelinePasses = true;
+  chpl::optional<PGOOptions> PGOOpt;
+  PassBuilder PB(targetMachine, createPipelineOptions(forFunction), PGOOpt, PIC);
+  llvm::PrintPipelinePasses = false;
+  return PB;
+}
+
 
 static void runModuleOptPipeline(bool addWideOpts) {
   GenInfo* info = gGenInfo;
@@ -2446,12 +2503,13 @@ static void runModuleOptPipeline(bool addWideOpts) {
                               info->llvmContext,
 #endif
                               /* DebugLogging */ false);
+#if HAVE_LLVM_VER >= 170
+  SI.registerCallbacks(PIC, &MAM);
+#else
   SI.registerCallbacks(PIC, &FAM);
+#endif
 
-  chpl::optional<PGOOptions> PGOOpt;
-  PassBuilder PB(info->targetMachine, createPipelineOptions(false),
-                 PGOOpt, &PIC);
-
+  PassBuilder PB = constructPassBuilder(info->targetMachine, &PIC, false);
 
   // some FAM add-ins
   std::unique_ptr<TargetLibraryInfoImpl> TLII(
@@ -2492,11 +2550,23 @@ static void runModuleOptPipeline(bool addWideOpts) {
   if (addWideOpts) {
     if (optLvl != LlvmOptimizationLevel::O0) {
       auto globalSpace = info->globalToWideInfo.globalSpace;
+      PIC.addClassToPassName("AggregateGlobalOpsOptPass", "aggregate-global-ops");
       MPM.addPass(llvm::createModuleToFunctionPassAdaptor(
                            AggregateGlobalOpsOptPass(globalSpace)));
     }
+    PIC.addClassToPassName("GlobalToWidePass", "global-to-wide");
     MPM.addPass(GlobalToWidePass(&info->globalToWideInfo,
                                  info->clangInfo->asmTargetLayoutStr));
+  }
+
+  if (fLlvmPrintPasses) {
+    std::string Pipeline;
+    llvm::raw_string_ostream SOS(Pipeline);
+    MPM.printPipeline(SOS, [&PIC](StringRef ClassName) {
+      auto PassName = PIC.getPassNameForClassName(ClassName);
+      return PassName.empty() ? ClassName : PassName;
+    });
+    llvm::errs() << "Module Pipeline: '" << Pipeline << "'\n";
   }
 
   // Run the opts
@@ -2509,12 +2579,11 @@ void prepareCodegenLLVM()
 {
   GenInfo *info = gGenInfo;
 
+#ifdef LLVM_USE_OLD_PASSES
   llvm::legacy::FunctionPassManager *fpm = new llvm::legacy::FunctionPassManager(info->module);
 
   PassManagerBuilder PMBuilder;
-
   // Set up the optimizer pipeline.
-
   // Add the TransformInfo pass
   fpm->add(createTargetTransformInfoWrapperPass(
            info->targetMachine->getTargetIRAnalysis()));
@@ -2527,11 +2596,10 @@ void prepareCodegenLLVM()
   configurePMBuilder(PMBuilder, /*for function passes*/ true);
   PMBuilder.populateFunctionPassManager(*fpm);
 
-  // Even when using the new pass manager,
-  // we run doInitialization with the legacy passes to make sure to
-  // update the module's DataLayout based on the target information.
-  // TODO: there is probably a nicer way to do this using the new pass manager
+  // run doInitialization to make sure to update the module's DataLayout
+  // based on the target information.
   fpm->doInitialization();
+#endif
 
   // Set the floating point optimization level
   // see also code setting targetOptions.UnsafeFPMath etc
@@ -2558,9 +2626,6 @@ void prepareCodegenLLVM()
 #ifdef LLVM_USE_OLD_PASSES
   info->FPM_postgen = fpm;
 #else
-  // if not using the old optimization pipeline, we didn't save
-  // fpm in info, so need to delete it now.
-  delete fpm;
 
   // if using the new optimization pipeline, set up the various
   // AnalysisManagers
@@ -2569,10 +2634,27 @@ void prepareCodegenLLVM()
   info->CGAM = new CGSCCAnalysisManager();
   info->MAM = new ModuleAnalysisManager();
 
-  info->FAM->registerPass([&] { return TargetLibraryAnalysis(TLII); });
+  info->FAM->registerPass([&] { return info->targetMachine->getTargetIRAnalysis(); });
+
+  // Add the TargetLibraryInfo pass
+  Triple TargetTriple(info->module->getTargetTriple());
+  llvm::TargetLibraryInfoImpl TLII(TargetTriple);
+  info->FAM->registerPass([&TLII] { return TargetLibraryAnalysis(TLII); });
+
+  info->PIC = new PassInstrumentationCallbacks();
+  info->SI = new StandardInstrumentations(
+#if HAVE_LLVM_VER >= 160
+                              info->llvmContext,
+#endif
+                              /* DebugLogging */ false);
+#if HAVE_LLVM_VER >= 170
+  info->SI->registerCallbacks(*info->PIC, info->MAM);
+#else
+  info->SI->registerCallbacks(*info->PIC, info->FAM);
+#endif
 
   // Construct a function simplification pass manager
-  PassBuilder PB(info->targetMachine, createPipelineOptions(true));
+  PassBuilder PB = constructPassBuilder(info->targetMachine, info->PIC, true);
 
   // Register all the basic analyses with the managers.
   PB.registerModuleAnalyses(*info->MAM);
@@ -2585,6 +2667,16 @@ void prepareCodegenLLVM()
   if (lvl != LlvmOptimizationLevel::O0) {
     info->FunctionSimplificationPM = new FunctionPassManager(
         PB.buildFunctionSimplificationPipeline(lvl, ThinOrFullLTOPhase::None));
+
+    if (fLlvmPrintPasses) {
+      std::string Pipeline;
+      llvm::raw_string_ostream SOS(Pipeline);
+      info->FunctionSimplificationPM->printPipeline(SOS, [&info](StringRef ClassName) {
+        auto PassName = info->PIC->getPassNameForClassName(ClassName);
+        return PassName.empty() ? ClassName : PassName;
+      });
+      llvm::errs() << "Function Simplification Pipeline: '" << Pipeline << "'\n";
+    }
   }
 #endif
 }
@@ -2739,11 +2831,6 @@ static void helpComputeClangArgs(std::string& clangCC,
     "-Wno-strict-aliasing",
     NULL};
 
-  const char* clang_debug = "-g";
-  const char* clang_opt = "-O3";
-  const char* clang_fast_float = "-ffast-math";
-  const char* clang_ieee_float = "-fno-fast-math";
-
   BumpPtrAllocator A;
   StringSaver Saver(A);
 
@@ -2807,13 +2894,13 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Add debug flags
   if (debugCCode) {
-    clangCCArgs.push_back(clang_debug);
+    clangCCArgs.push_back("-g");
     clangCCArgs.push_back("-DCHPL_DEBUG");
   }
 
   // Add optimize flags
   if (optimizeCCode) {
-    clangCCArgs.push_back(clang_opt);
+    clangCCArgs.push_back("-O3");
     clangCCArgs.push_back("-DCHPL_OPTIMIZE");
   }
 
@@ -2848,11 +2935,16 @@ static void helpComputeClangArgs(std::string& clangCC,
 
   // Passing -ffast-math is important to get approximate versions
   // of cabs but it appears to slow down simple complex multiplication.
-  if (ffloatOpt > 0) // --no-ieee-float
-    clangCCArgs.push_back(clang_fast_float); // --ffast-math
-
-  if (ffloatOpt < 0) // --ieee-float
-    clangCCArgs.push_back(clang_ieee_float); // -fno-fast-math
+  if (ffloatOpt > 0) { // --no-ieee-float
+    clangCCArgs.push_back("-ffast-math");
+  } else {
+    if (ffloatOpt < 0) { // --ieee-float
+      clangCCArgs.push_back("-fno-fast-math"); // -fno-fast-math
+    }
+    // always disable math functions setting errno since
+    // this does not make sense in a Chapel context
+    clangCCArgs.push_back("-fno-math-errno");
+  }
 
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
@@ -2985,7 +3077,6 @@ void runClang(const char* just_parse_filename) {
 
       // Include the contents of the server bundle...
       clangOtherArgs.push_back("-include");
-      INT_ASSERT(gMultiLocaleLibServerFile != NULL);
       clangOtherArgs.push_back(gMultiLocaleLibServerFile);
 
       // As well as the path to extra code for the client and server.
@@ -4152,6 +4243,11 @@ static void addDumpIrModule(ModulePassManager& MPM,
                             llvmStageNum::llvmStageNum_t stage) {
   MPM.addPass(llvm::createModuleToFunctionPassAdaptor(DumpIRPass(stage)));
 }
+static void addDumpIrCG(CGSCCPassManager& CPM,
+                        LlvmOptimizationLevel v,
+                        llvmStageNum::llvmStageNum_t stage) {
+  CPM.addPass(DumpIRPass(stage));
+}
 static void addDumpIrFunction(FunctionPassManager& FPM,
                               LlvmOptimizationLevel v,
                               llvmStageNum::llvmStageNum_t stage) {
@@ -4181,6 +4277,12 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       "with the new pass manager\n");
           }
           break;
+        case llvmStageNum::LateLoopOptimizer:
+          PB.registerLateLoopOptimizationsEPCallback(
+            [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
+                      addDumpIrLoop(LPM, v, stage);
+                    });
+          break;
         case llvmStageNum::LoopOptimizerEnd:
           PB.registerLoopOptimizerEndEPCallback(
             [stage](LoopPassManager &LPM, LlvmOptimizationLevel v) {
@@ -4193,10 +4295,28 @@ static void registerDumpIrExtensions(PassBuilder& PB) {
                       addDumpIrFunction(FPM, v, stage);
                     });
           break;
+        case llvmStageNum::EarlySimplification:
+          PB.registerPipelineEarlySimplificationEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::OptimizerEarly:
+          PB.registerOptimizerEarlyEPCallback(
+            [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
+                      addDumpIrModule(MPM, v, stage);
+                    });
+          break;
         case llvmStageNum::OptimizerLast:
           PB.registerOptimizerLastEPCallback(
             [stage](ModulePassManager &MPM, LlvmOptimizationLevel v) {
                       addDumpIrModule(MPM, v, stage);
+                    });
+          break;
+        case llvmStageNum::CGSCCOptimizerLate:
+          PB.registerCGSCCOptimizerLateEPCallback(
+            [stage](CGSCCPassManager &CPM, LlvmOptimizationLevel v) {
+                      addDumpIrCG(CPM, v, stage);
                     });
           break;
         case llvmStageNum::VectorizerStart:
@@ -4264,14 +4384,29 @@ bool getIrDumpExtensionPoint(llvmStageNum_t s,
     case llvmStageNum::ModuleOptimizerEarly:
       dumpIrPoint = PassManagerBuilder::EP_ModuleOptimizerEarly;
       return true;
+    case llvmStageNum::LateLoopOptimizer:
+      USR_FATAL("Cannot use llvm-print-ir-stage late-loop-optimizer "
+                      "with the old pass manager\n");
+      return false;
     case llvmStageNum::LoopOptimizerEnd:
       dumpIrPoint = PassManagerBuilder::EP_LoopOptimizerEnd;
       return true;
     case llvmStageNum::ScalarOptimizerLate:
       dumpIrPoint = PassManagerBuilder::EP_ScalarOptimizerLate;
       return true;
+    case llvmStageNum::EarlySimplification:
+      USR_FATAL("Cannot use llvm-print-ir-stage early-simplification "
+                      "with the old pass manager\n");
+      return false;
+    case llvmStageNum::OptimizerEarly:
+      USR_FATAL("Cannot use llvm-print-ir-stage optimizer-early "
+                      "with the old pass manager\n");
+      return false;
     case llvmStageNum::OptimizerLast:
       dumpIrPoint = PassManagerBuilder::EP_OptimizerLast;
+      return true;
+    case llvmStageNum::CGSCCOptimizerLate:
+      dumpIrPoint = PassManagerBuilder::EP_CGSCCOptimizerLate;
       return true;
     case llvmStageNum::VectorizerStart:
       dumpIrPoint = PassManagerBuilder::EP_VectorizerStart;
@@ -4585,7 +4720,7 @@ static llvm::CodeGenFileType getCodeGenFileType() {
 static std::string findSiblingClangToolPath(const std::string &toolName) {
   // Find path to a tool that is a sibling to clang
   // note that if we have /path/to/clang-14, this logic
-  // will loop for /path/to/${toolName}-14.
+  // will look for /path/to/${toolName}-14.
   //
   // If such suffixes do not turn out to matter in practice, it would
   // be nice to update this code to use sys::path::parent_path().
@@ -4712,8 +4847,14 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
   // So this loop should run exactly one iteration.
   INT_ASSERT(gpuArches.size() == 1);
 
-  std::string targets;
-  std::string inputs;
+  std::string targets = "-targets=host-x86_64-unknown-linux";
+#if HAVE_LLVM_VER >= 150
+  std::string inputs = "-input=/dev/null ";
+  std::string outputs = "-output=" + fatbinFilename;
+#else
+  std::string inputs = "-inputs=/dev/null";
+  std::string outputs = "-outputs=" + fatbinFilename;
+#endif
   for (auto& gpuArch : gpuArches) {
     std::string gpuObject = gpuObjFilename + "_" + gpuArch + ".o";
     std::string gpuOut = outFilenamePrefix + "_" + gpuArch + ".out";
@@ -4736,17 +4877,18 @@ static void makeBinaryLLVMForHIP(const std::string& artifactFilename,
     mysystem(lldCmd.c_str(), "Device .o file to .out file");
 
     targets += std::string(",hipv4-amdgcn-amd-amdhsa--") + gpuArch;
-    inputs += std::string(",") + gpuOut;
+#if HAVE_LLVM_VER >= 150
+    inputs += "-input=" + gpuOut + " ";
+#else
+    inputs += "," + gpuOut;
+#endif
 
   }
-  std::string bundlerCmd = std::string(gGpuSdkPath) +
-                          "/llvm/bin/clang-offload-bundler" +
-                           " -type=o -bundle-align=4096" +
-                           " -targets=host-x86_64-unknown-linux" +
-                           targets +
-                           " -inputs=/dev/null" +
-                           inputs +
-                           " -outputs=" + fatbinFilename;
+  std::string bundlerCmd = findSiblingClangToolPath("clang-offload-bundler") +
+                           " -type=o -bundle-align=4096 " +
+                           targets + " " +
+                           inputs + " " +
+                           outputs;
 
   mysystem(bundlerCmd.c_str(), ".out file to fatbin file");
 }
@@ -4842,11 +4984,7 @@ void makeBinaryLLVM(void) {
 
     initializeGenInfo();
 
-    // setup filenames to be referenced
     setupLLVMCodegenFilenames();
-    setupDefaultFilenames();
-    restoreAdditionalSourceFiles();
-    restoreLibraryAndIncludeInfo();
 
     // regenerate ClangInfo
     assert(!gGenInfo->clangInfo);
@@ -4929,23 +5067,42 @@ void makeBinaryLLVM(void) {
       cargs += clangInfo->clangCCArgs[i];
     }
 
+    // if we are using rocm, we'll have to adjust the path so that clang can
+    // find rocm's lld. We ideally want to include lld in our bundled llvm
+    std::string curPath = "";
+
     std::string gpuArgs = "";
     if (usingGpuLocaleModel()) {
-      gpuArgs = generateClangGpuLangArgs() + " -Wno-unknown-cuda-version";
+      gpuArgs = generateClangGpuLangArgs();
+      if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+        gpuArgs += " -Wno-unknown-cuda-version";
+      }
+      else if (getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+        curPath = std::getenv("PATH");
+        std::string adjPath = curPath + std::string(":") + gGpuSdkPath +
+                              std::string("/llvm/bin");
+
+        setenv("PATH", adjPath.c_str(), /*override*/ 1);
+      }
     }
 
     int filenum = 0;
     while (const char* inputFilename = nthFilename(filenum++)) {
       if (isCSource(inputFilename)) {
         const char* objFilename = objectFileForCFile(inputFilename);
-        std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename + " " +
-                          inputFilename + " " + cargs;
+        std::string cmd = clangCC + " " + gpuArgs + " -c -o " + objFilename +
+                          " " + inputFilename + " " + cargs;
 
         mysystem(cmd.c_str(), "Compile C File");
         dotOFiles.push_back(objFilename);
       } else if( isObjFile(inputFilename) ) {
         dotOFiles.push_back(inputFilename);
       }
+    }
+
+    if (usingGpuLocaleModel() &&
+        getGpuCodegenType() == GpuCodegenType::GPU_CG_AMD_HIP) {
+      setenv("PATH", curPath.c_str(), /*override*/ 1);
     }
 
     // Note: we used to start 'options' with 'cargs' so that
@@ -5343,6 +5500,8 @@ static void handlePrintAsm(std::string dotOFile) {
       fflush(stdout);
       std::vector<std::string> cmd;
       cmd.push_back(llvmObjDump);
+      // use this flag to get human-readable labels
+      cmd.push_back("--symbolize-operands");
       std::string arg = disSymArg; // e.g. --disassemble=
       arg += name;
       cmd.push_back(arg);

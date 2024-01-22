@@ -6,7 +6,7 @@ config const printOutput = true;
 config const printTiming = false;
 type indexType = int;
 
-use NPBRandom, Time;
+use Random, Time;
 
 proc dgemm(p: indexType,       // number of rows in A
           q: indexType,       // number of cols in A, number of rows in B

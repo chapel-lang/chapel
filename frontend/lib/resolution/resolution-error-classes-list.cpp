@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -326,6 +326,34 @@ void ErrorDotExprInUseImport::write(ErrorWriterBase& wr) const {
   wr.message(
       "Dot expressions are not allowed in the 'except' or 'only' list of a "
       "'use' or 'import'.");
+}
+
+void ErrorDotTypeOnType::write(ErrorWriterBase& wr) const {
+  auto dot = std::get<const uast::Dot*>(info);
+  auto dottedType = std::get<const types::Type*>(info);
+  auto typeDeclId = std::get<ID>(info);
+  const bool haveType = dottedType && !dottedType->isErroneousType();
+  if (haveType) {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type ('",
+               dottedType, "').");
+  } else {
+    wr.heading(kind_, type_, dot, "can't apply '.type' to a type.");
+  }
+  wr.code(dot, {dot});
+  if (haveType) {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is the type '",
+        dottedType, "'.");
+  } else {
+    wr.message(
+        "The '.type' accessor can only be applied to values, but the receiver "
+        "of the above expression is a type.");
+  }
+  if (typeDeclId) {
+    wr.message("The receiver is declared as a 'type' variable here:");
+    wr.code(typeDeclId);
+  }
 }
 
 void ErrorExternCCompilation::write(ErrorWriterBase& wr) const {
@@ -1107,6 +1135,45 @@ void ErrorReductionNotReduceScanOp::write(ErrorWriterBase& wr) const {
   if (actualClassType) {
     wr.message("Did you mean for class '", actualClassType,
         "' to extend 'ReduceScanOp'?");
+  }
+}
+
+void ErrorSplitInitMismatchedConditionalTypes::write(
+    ErrorWriterBase& wr) const {
+  const uast::Variable* var = std::get<0>(info);
+  const uast::AstNode* node = std::get<1>(info);
+  const types::QualifiedType thenType = std::get<2>(info);
+  const types::QualifiedType elseType = std::get<3>(info);
+  const int idx1 = std::get<4>(info);
+  const int idx2 = std::get<5>(info);
+
+  if (node->isConditional()) {
+    const uast::Conditional* cond = node->toConditional();
+    wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in conditional branches.");
+    wr.note(cond->thenBlock(), "initialized with ", thenType,
+            " in 'then' branch");
+    wr.note(cond->elseBlock(), "initialized with ", elseType,
+            " in 'else' branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
+  } else {
+    const uast::Select* sel = node->toSelect();
+    const uast::When* branch1 = sel->whenStmt(idx1);
+    const uast::When* branch2 = sel->whenStmt(idx2);
+    wr.heading(kind_, type_, var,
+             "mismatched types for split-initialization of '", var->name(),
+             "' in select branches.");
+    
+    wr.note(branch1, "Initialized with ", thenType,
+            " in one branch");
+    wr.note(branch2, "Initialized with ", elseType,
+            " in another branch");
+    wr.message(
+        "Types of different initialization parts for split-initialized "
+        "declarations must exactly match");
   }
 }
 

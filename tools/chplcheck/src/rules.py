@@ -1,6 +1,5 @@
 #
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
-# Copyright 2004-2019 Cray Inc.
+# Copyright 2023-2024 Hewlett Packard Enterprise Development LP
 # Other additional copyright holders may be indicated within.
 #
 # The entirety of this work is licensed under the Apache License,
@@ -24,8 +23,6 @@ import re
 
 def name_for_linting(node):
     name = node.name()
-    if name.startswith("chpl_"):
-        name = name.removeprefix("chpl_")
 
     # Strip dollar signs.
     name = name.replace("$", "")
@@ -33,19 +30,32 @@ def name_for_linting(node):
     return name
 
 def check_camel_case(node):
-    return re.fullmatch(r'_?([a-z]+([A-Z][a-z]+|\d+)*|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'([a-z]+([A-Z][a-z]*|\d+)*|[A-Z]+)?', name_for_linting(node))
 
 def check_pascal_case(node):
-    return re.fullmatch(r'_?(([A-Z][a-z]+|\d+)+|[A-Z]+)?', name_for_linting(node))
+    return re.fullmatch(r'(([A-Z][a-z]*|\d+)+|[A-Z]+)?', name_for_linting(node))
 
 def register_rules(driver):
     @driver.basic_rule(VarLikeDecl, default=False)
-    def CamelCaseVariables(context, node):
+    def CamelOrPascalCaseVariables(context, node):
         if node.name() == "_": return True
-        return check_camel_case(node)
+        if node.linkage() == 'extern': return True
+        return check_camel_case(node) or check_pascal_case(node)
 
     @driver.basic_rule(Record)
     def CamelCaseRecords(context, node):
+        return check_camel_case(node)
+
+    @driver.basic_rule(Function)
+    def CamelCaseFunctions(context, node):
+        # Override functions / methods can't control the name, that's up
+        # to the parent.
+        if node.is_override(): return True
+
+        if node.linkage() == 'extern': return True
+        if node.kind() == 'operator': return True
+        if node.name() == 'init=': return True
+
         return check_camel_case(node)
 
     @driver.basic_rule(Class)
@@ -64,7 +74,7 @@ def register_rules(driver):
     def DoKeywordAndBlock(context, node):
         return node.block_style() != "unnecessary"
 
-    @driver.basic_rule(Coforall)
+    @driver.basic_rule(Coforall, default=False)
     def NestedCoforalls(context, node):
         parent = node.parent()
         while parent is not None:
@@ -95,42 +105,82 @@ def register_rules(driver):
                 method_seen = True
         return True
 
+    #Five things have to match between consecutive decls for this to warn:
+    # 1. same type
+    # 2. same kind
+    # 3. same attributes
+    # 4. same linkage
+    # 5. same pragmas
     @driver.advanced_rule(default=False)
     def ConsecutiveDecls(context, root):
         def is_relevant_decl(node):
+            var_node = None
             if isinstance(node, MultiDecl):
                 for child in node:
-                    if isinstance(child, Variable): return child.kind()
+                    if isinstance(child, Variable): var_node = child
             elif isinstance(node, Variable):
-                return node.kind()
-            return None
+                var_node = node
+            else:
+                return None
 
-        def recurse(node, skip_direct = False):
+            var_type = None
+            var_type_expr = var_node.type_expression()
+
+            if isinstance(var_type_expr, FnCall):
+                #for function call, we need to match all the components
+                var_type = ''
+                for child in var_type_expr:
+                    if child is None:
+                        continue
+                    if 'name' in dir(child):
+                        var_type += child.name()
+                    elif 'text' in dir(child):
+                        var_type += child.text()
+            elif isinstance(var_type_expr, Identifier):
+                var_type = var_type_expr.name()
+
+            var_kind = var_node.kind()
+
+            var_attributes = ''
+            var_attribute_group = var_node.attribute_group()
+            if var_attribute_group:
+                var_attributes = " ".join(
+                    [a.name() for a in var_attribute_group if a is not None])
+
+            var_linkage = var_node.linkage()
+
+            var_pragmas = ' '.join(var_node.pragmas())
+            return (var_type, var_kind, var_attributes, var_linkage, var_pragmas)
+
+        def recurse(node):
             consecutive = []
-            last_kind = None
-            last_has_attribute = False
+            last_characteristics = None
 
             for child in node:
-                yield from recurse(child, skip_direct = isinstance(child, MultiDecl))
+                #we want to skip Comments entirely
+                if isinstance(child,Comment):
+                    continue
 
-                if skip_direct: continue
+                #we want to do MultiDecls and TupleDecls, but not recurse
+                skip_children = isinstance(child, (MultiDecl, TupleDecl))
 
-                new_kind = is_relevant_decl(child)
-                has_attribute = child.attribute_group() is not None
-                any_has_attribute = last_has_attribute or has_attribute
-                compatible_kinds = not any_has_attribute and (last_kind is None or last_kind == new_kind)
-                last_kind = new_kind
-                last_has_attribute = has_attribute
+                if not skip_children:
+                    yield from recurse(child)
 
-                # If we ran out of compatible decls, see if we can return them.
-                if not compatible_kinds:
+                new_characteristics = is_relevant_decl(child)
+                compatible = new_characteristics is not None and \
+                    new_characteristics == last_characteristics
+
+                last_characteristics = new_characteristics
+
+                if compatible:
+                    consecutive.append(child)
+                else:
+                    #this one doesn't match, yield any from previous sequence
+                    # and start looking for matches for this one
                     if len(consecutive) > 1:
                         yield consecutive[1]
-                    consecutive = []
-
-                # If this could be a compatible decl, start a new list.
-                if new_kind is not None:
-                    consecutive.append(child)
+                    consecutive = [child]
 
             if len(consecutive) > 1:
                 yield consecutive[1]
@@ -176,7 +226,8 @@ def register_rules(driver):
             formals[formal.unique_id()] = formal
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in formals.keys() - uses:
@@ -189,7 +240,7 @@ def register_rules(driver):
 
         def variables(node):
             if isinstance(node, Variable):
-                yield node
+                if node.name() != "_": yield node
             elif isinstance(node, TupleDecl):
                 for child in node:
                     yield from variables(child)
@@ -201,7 +252,8 @@ def register_rules(driver):
                 indices[index.unique_id()] = index
 
         for (use, _) in chapel.each_matching(root, Identifier):
-            if refersto := use.to_node():
+            refersto = use.to_node()
+            if refersto:
                 uses.add(refersto.unique_id())
 
         for unused in indices.keys() - uses:

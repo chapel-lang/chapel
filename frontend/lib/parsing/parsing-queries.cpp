@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -167,6 +167,23 @@ parseFileToBuilderResultAndCheck(Context* context, UniqueString path,
 
   checkBuilderResult(context, path, result);
   return result;
+}
+
+std::vector<const uast::AstNode*>
+introspectParsedTopLevelExpressions(Context* context) {
+  std::vector<const uast::AstNode*> toReturn;
+
+  if (auto parsedResults = context->querySavedResults(parsing::parseFileToBuilderResultQuery)) {
+    for (auto& result : *parsedResults) {
+      if (!context->isResultUpToDate(result)) continue;
+
+      for (auto topLevelExpr : result.result.topLevelExpressions()) {
+        toReturn.push_back(topLevelExpr);
+      }
+    }
+  }
+
+  return toReturn;
 }
 
 // parses whatever file exists that contains the passed ID and returns it
@@ -835,6 +852,28 @@ bool idIsFunction(Context* context, ID id) {
 
   AstTag tag = idToTag(context, id);
   return asttags::isFunction(tag);
+}
+
+static bool
+checkLinkage(Context* context, ID id, uast::Decl::Linkage linkage) {
+  if (id.isEmpty()) return false;
+  bool ret = false;
+
+  if (auto ast = parsing::idToAst(context, id)) {
+    if (auto decl = ast->toDecl()) {
+      ret = decl->linkage() == linkage;
+    }
+  }
+
+  return ret;
+}
+
+bool idIsExtern(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXTERN);
+}
+
+bool idIsExport(Context* context, ID id) {
+  return checkLinkage(context, id, Decl::EXPORT);
 }
 
 static const bool& idIsPrivateDeclQuery(Context* context, ID id) {

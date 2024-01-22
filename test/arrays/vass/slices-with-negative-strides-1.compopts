@@ -1,2 +1,0 @@
---codegen         # slices-with-negative-strides-1.old.good
--snewSliceRule    # slices-with-negative-strides-1.good

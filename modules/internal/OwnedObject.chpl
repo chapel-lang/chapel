@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -292,16 +292,6 @@ module OwnedObject {
       return chpl_p!;
     }
   }
-
-  @deprecated("calling `.borrow()` on an `owned` type is deprecated - please use a cast to `borrowed` instead")
-  proc type _owned.borrow() type {
-    if _to_nilable(chpl_t) == chpl_t {
-      return chpl_t;
-    } else {
-      return _to_nonnil(chpl_t);
-    }
-  }
-
 
   /*
     Assignment between two :type:`owned` transfers ownership of the object

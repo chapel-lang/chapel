@@ -1,4 +1,0 @@
-depLdexp.chpl:7: warning: 'ldexp' with an 'n' argument has been deprecated, please use ldExp with an 'exp' argument instead
-depLdexp.chpl:10: warning: 'ldexp' with an 'n' argument has been deprecated, please use ldExp with an 'exp' argument instead
-true
-true

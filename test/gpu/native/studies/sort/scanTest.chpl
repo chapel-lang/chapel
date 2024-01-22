@@ -3,6 +3,7 @@ import Random;
 import Time;
 import IO.FormattedIO.format;
 
+config const useGpuId = 0;
 config const arrSize = 1<<11;
 config const printTimes = false;
 config const low = 0;
@@ -18,7 +19,7 @@ if nonGpuTest {
 // So it doesn't cause a compilation error in that case
 if multiDimArray {
   var cpuArr: [low..#arrSize, low..#arrSize] int;
-  on here.gpus[0]{
+  on here.gpus[useGpuId]{
     var gpuArr = cpuArr;
     gpuScan(gpuArr);
   }
@@ -35,7 +36,7 @@ proc testType(type t) {
   Random.fillRandom(cpuArr);
 
   var gpuScanArr = cpuArr;
-  on here.gpus[0]{
+  on here.gpus[useGpuId]{
     var gpuArr = gpuScanArr;
     timer.clear();
     timer.start();

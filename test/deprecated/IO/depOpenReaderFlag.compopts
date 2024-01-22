@@ -1,3 +1,0 @@
--suseNewOpenReaderRegionBounds=true # depOpenReaderFlag.set-true.good
--suseNewOpenReaderRegionBounds=false # depOpenReaderFlag.set-false.good
- # depOpenReaderFlag.unset.good

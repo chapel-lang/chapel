@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -22,16 +22,6 @@
 #endif
 #include <hip/hip_common.h>
 #include <hip/hip_runtime.h>
-
-#if __has_include(<rocm-core/rocm_version.h>)  // 5.x wants this
-#include <rocm-core/rocm_version.h>
-#elif __has_include(<rocm/rocm_version.h>)  // 4.x wants this
-#include <rocm/rocm_version.h>
-#elif __has_include(<rocm_version.h>)  // Deprecated. 5.x used to want this
-#include <rocm_version.h>
-#elif !defined(ROCM_VERSION_MAJOR)
-#define ROCM_VERSION_MAJOR 4 // this is the safe bet
-#endif
 
 #ifdef __cplusplus
 extern "C" {

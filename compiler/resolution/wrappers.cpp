@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -1324,6 +1324,11 @@ static bool needToAddCoercion(Type*      actualType,
   if (canCoerce(actualType, actualSym, formalType, formal, fn))
     return true;
 
+  if (formal->intent == INTENT_CONST_REF)
+    if (canCoerce(actualType, actualSym, formalType->getValType(), formal, fn))
+      return true;
+
+
   return false;
 }
 
@@ -1442,6 +1447,17 @@ static void errorIfValueCoercionToRef(CallExpr* call, Symbol* actual,
       formal->originalIntent == INTENT_OUT)
     return;
 
+  if (formal->intent == INTENT_CONST_REF) {
+    if (!typeNeedsCopyInitDeinit(formal->getValType()) &&
+        !isClassLikeOrManaged(formal->getValType())) {
+      // allow implicit conversion for 'const ref' for numeric types etc
+      return;
+    }
+    // TODO: also allow this case for class types (including owned)
+    // once we are able to address the type-punning issue
+    // so we can avoid ownership transfer.
+  }
+
   // Error for coerce->value passed to ref / out / etc
   if (argumentCanModifyActual(intent) || isRefFormal) {
     USR_FATAL_CONT(call, "in call to '%s', cannot pass result of coercion "
@@ -1493,6 +1509,9 @@ static void addArgCoercion(FnSymbol*  fn,
 
   // adjust fts for inout to use the value type
   if (formal->originalIntent == INTENT_INOUT)
+    fts = fts->getValType()->symbol;
+  // ditto for 'const ref'
+  if (formal->intent == INTENT_CONST_REF)
     fts = fts->getValType()->symbol;
 
   // Here we will often strip the type of its sync-ness.

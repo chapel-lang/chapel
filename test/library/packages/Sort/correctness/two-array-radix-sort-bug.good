@@ -5,7 +5,7 @@ standard sort
 Result is sorted? true
 
 testing distributed sorting
-TwoArrayRadixSort.twoArrayRadixSort
+TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort
 Result is sorted? true
 standard sort
 Result is sorted? true

@@ -2681,6 +2681,7 @@ FILEID: 613bf236-1d80-11e6-a3a6-10ddb1d4c3d5
 breakflags
 hdrs
 libdevice
+makebinary
 ptxas
 rocm
 rungdb
@@ -2739,6 +2740,7 @@ urse
 
 FILEID: 75f1ecaa-1d83-11e6-a3a6-10ddb1d4c3d5
 cint
+cnamesfunction
 defnfile
 libhdrfile
 mainmodpath
@@ -3206,10 +3208,12 @@ filereader
 filereaders
 filewriter
 filewriters
+ioendian
 isopen
 madvise
 nommap
 sfile
+swarn
 takz
 willneed
 xzob
@@ -3222,6 +3226,7 @@ nospace
 
 FILEID: 6ba10a44-1f2f-11e6-a3a6-10ddb1d4c3d5
 arand
+seedable
 testu
 useed
 
@@ -3354,6 +3359,7 @@ filereader
 filereaders
 filewriter
 filewriters
+forceable
 geany
 gemm
 gemv
@@ -3366,6 +3372,7 @@ gpakosz
 greptests
 hepl
 illumos
+ioendian
 keypart
 liblibdyno
 libmvec
@@ -3483,6 +3490,7 @@ rowno
 wfmt
 
 FILEID: 7de3ce6c-3f64-11e6-907f-843835579daa
+automath
 cabsf
 cacos
 cacosf
@@ -3516,6 +3524,7 @@ ctan
 ctanf
 ctanh
 ctanhf
+fmaf
 rtol
 
 FILEID: 7ada2798-4027-11e6-907f-843835579daa
@@ -3949,6 +3958,7 @@ FILEID: 80fcfaee-ad3f-11e6-91b8-10ddb1d4c3d5
 allocas
 astrs
 cdesc
+dedup
 disubprogram
 dtype
 inalloca
@@ -6154,6 +6164,7 @@ griddim
 
 FILEID: 1a2ad1ac-e3ac-11ec-a8be-cd81bce0efc4
 clst
+opcalls
 redeclares
 
 FILEID: 202a65c2-e3ac-11ec-a8be-cd81bce0efc4
@@ -6351,7 +6362,10 @@ nodashes
 usearg
 
 FILEID: 4f8eb54c-3010-11ed-b71b-d7492178b4dc
+blelloch
+gpuopen
 ptxas
+toooo
 
 FILEID: 57e7dbc4-3010-11ed-b71b-d7492178b4dc
 deallocator
@@ -6648,14 +6662,51 @@ onlcr
 
 FILEID: fc8e745e-5502-11ee-81ec-fb959b7aa6d7
 ammpi
+aslr
 bptr
+elemsz
 exittimeout
+myclient
+myep
+mysegment
+myteam
+reqrep
 
 FILEID: 77c41520-5503-11ee-81ec-fb959b7aa6d7
 centjustify
 
 FILEID: 308a2a9e-6257-11ee-a276-cf4fa088a92b
 bitcode
+makebinary
+
+FILEID: a32da940-924f-11ee-8bda-4776592287bc
+libchpl
+
+FILEID: c7f2b9fa-924f-11ee-8bda-4776592287bc
+seekp
+tellp
+
+FILEID: ceb6bab6-924f-11ee-8bda-4776592287bc
+addnl
+
+FILEID: d5cb2580-924f-11ee-8bda-4776592287bc
+ltype
+yychpl
+
+FILEID: d8d61abe-924f-11ee-8bda-4776592287bc
+eabba
+
+FILEID: da9ccc58-924f-11ee-8bda-4776592287bc
+htonl
+ntohl
+
+FILEID: 8885f7a4-9250-11ee-8bda-4776592287bc
+arand
+testu
+useed
+
+FILEID: 9d9ca5ac-9250-11ee-8bda-4776592287bc
+chplconstargcheck
 
 NATURAL:
 aarch
@@ -6926,6 +6977,7 @@ bundler
 bynodeset
 byref
 byrne
+bytecode
 bytecount
 byteorder
 byteranges
@@ -7182,6 +7234,7 @@ debian
 debugf
 debuggability
 debugprint
+debugtrap
 december
 decls
 declspecs
@@ -7245,6 +7298,7 @@ deserialize
 deserialized
 deserializer
 deserializers
+deserializes
 deserializing
 destructors
 destructure
@@ -7273,6 +7327,7 @@ dinan
 directcall
 dirlistonly
 disambiguates
+disassembly
 discernable
 discontiguous
 discoverability
@@ -7413,6 +7468,7 @@ endbit
 endblock
 endcounts
 endfast
+endianness
 endid
 enetdown
 enetreset
@@ -7908,7 +7964,6 @@ iobig
 ioctldata
 ioctlfunction
 iodynamic
-endianness
 ioerror
 iohint
 iohints
@@ -8146,6 +8201,7 @@ lgmp
 lgpl
 lhdfs
 lhugetlbfs
+libchpl
 libclang
 libcrypto
 libcurl
@@ -8514,6 +8570,7 @@ nilpotent
 nimit
 nist
 nixos
+nlogn
 nmemb
 noakes
 noalias
@@ -8560,6 +8617,7 @@ nonsingular
 nonstridable
 nonterminals
 nontree
+nontype
 nonunicode
 nonvirtual
 nonvoid
@@ -9347,6 +9405,7 @@ subfolders
 subgraph
 subgraphs
 subindex
+subinvocation
 sublicense
 sublocale
 sublocales
@@ -9466,6 +9525,7 @@ thai
 theodore
 thomas
 thomasvandoren
+thonk
 thorat
 threadidx
 thunderx

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.  *
  * The entirety of this work is licensed under the Apache License,
@@ -19,11 +19,13 @@
 
 #ifdef HAS_GPU_LOCALE
 
-#include "../common/rocm-utils.h"
 
 #include <hip/hip_common.h>
+#include "../common/rocm-version.h"
 
 #if ROCM_VERSION_MAJOR >= 5
+// if we include this all the time, we get unused function errors
+#include "../common/rocm-utils.h"
 #include <hipcub/hipcub.hpp>
 #endif
 

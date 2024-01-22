@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -217,4 +217,53 @@ resolveTypesOfVariables(Context* context,
     toReturn[variable] = rr.byAst(varAst).type();
   }
   return toReturn;
+}
+
+std::unordered_map<std::string, QualifiedType>
+resolveTypesOfVariablesInit(Context* context,
+                        std::string program,
+                        const std::vector<std::string>& variables) {
+  auto m = parseModule(context, std::move(program));
+  auto& rr = resolveModule(context, m->id());
+
+  std::unordered_map<std::string, QualifiedType> toReturn;
+  for (auto& variable : variables) {
+    auto varAst = findVariable(m, variable.c_str());
+    assert(varAst != nullptr);
+    assert(varAst->initExpression());
+    toReturn[variable] = rr.byAst(varAst->initExpression()).type();
+  }
+  return toReturn;
+}
+
+void ensureParamInt(const QualifiedType& type, int64_t expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isIntType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isIntParam());
+  assert(type.param()->toIntParam()->value() == expectedValue);
+}
+
+void ensureParamBool(const QualifiedType& type, bool expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isBoolType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isBoolParam());
+  assert(type.param()->toBoolParam()->value() == expectedValue);
+}
+
+void ensureParamString(const QualifiedType& type, const std::string& expectedValue) {
+  assert(type.kind() == QualifiedType::PARAM);
+  assert(type.type() != nullptr);
+  assert(type.type()->isStringType());
+  assert(type.param() != nullptr);
+  assert(type.param()->isStringParam());
+  assert(type.param()->toStringParam()->value() == expectedValue);
+}
+
+void ensureErroneousType(const QualifiedType& type) {
+  assert(type.type() != nullptr);
+  assert(type.type()->isErroneousType());
 }

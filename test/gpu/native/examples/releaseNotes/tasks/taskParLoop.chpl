@@ -38,7 +38,7 @@ startGpuDiagnostics();
     }
   }
 }
-startGpuDiagnostics();
+stopGpuDiagnostics();
 
 writeln(HostOut);
 

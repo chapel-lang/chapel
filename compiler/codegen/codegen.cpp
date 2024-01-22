@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -160,6 +160,9 @@ const char* legalizeName(const char* name) {
 }
 
 static void legalizeSymbolName(Symbol* sym) {
+  if (fIdBasedMunging)
+    return;
+
   if (!fLibraryCompile && !sym->isRenameable())
     return;
 
@@ -1315,6 +1318,9 @@ static void codegen_header_compilation_config() {
 }
 
 static void protectNameFromC(Symbol* sym) {
+  if (fIdBasedMunging)
+    return;
+
   //
   // Symbols that start with 'chpl_' were presumably named by the
   // implementation (compiler, internal modules, runtime) and
@@ -2975,7 +2981,7 @@ static void codegenPartTwo() {
                                  std::move(genMap));
     }
 
-    // compute the cnamesfunction names
+    // write the library file
     libWriter.writeAllSections();
 #endif
   }
@@ -3052,6 +3058,12 @@ void makeBinary(void) {
   // (Unless we're doing GPU codegen, which currently happens in the compilation
   // phase.)
   INT_ASSERT(!fDriverCompilationPhase || gCodegenGPU);
+  if (fDriverMakeBinaryPhase) {
+    // Setup/restore filenames to be referenced in makeBinary phase.
+    setupDefaultFilenames();
+    restoreAdditionalSourceFiles();
+    restoreLibraryAndIncludeInfo();
+  }
 
   if(fLlvmCodegen) {
 #ifdef HAVE_LLVM

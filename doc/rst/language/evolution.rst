@@ -14,6 +14,39 @@ The purpose of this flag is to identify portions of a program that use a
 language or library feature has recently changed meaning or which is
 expected to change meaning in the future.
 
+version 1.34, March 2024
+------------------------
+
+.. _readme-evolution.default-task-intent-arrays:
+
+Default task intents for arrays
+*******************************
+
+In 1.34, the default task intent for an array is now determined by the outer
+variable. If the outer array is ``const`` then the default intent is ``const``,
+otherwise the default intent is ``ref``. Therefore, if an array is modifiable
+outside a parallel block, it is modifiable inside the parallel block. It is no
+longer necessary to use an explicit intent like ``with (ref myArray)`` to
+modify ``myArray`` in a parallel block. This change applies to ``forall``,
+``coforall``, ``begin``, and ``cobegin``.
+
+Consider the following code which illustrates this.
+
+.. code-block:: chapel
+
+   proc myFunction(ref A: []) {
+     begin {
+       A = 17;
+     }
+   }
+
+The default task intent for ``A`` is ``ref``, since the argument formal ``A``
+is mutable. This simplifies parallel code, making it simpler and cleaner to
+write.
+
+Prior to 1.34, the above ``begin`` would have resulted in a deprecation
+warning. In 1.34, this is valid code again.
+
 version 1.32, September 2023
 ----------------------------
 

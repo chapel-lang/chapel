@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -154,9 +154,6 @@ void normalize(Expr* expr);
 void checkUseBeforeDefs(FnSymbol* fn);
 void addMentionToEndOfStatement(Expr* node, CallExpr* existingEndOfStatement);
 Expr* partOfNonNormalizableExpr(Expr* expr);
-// support for deprecation by Vass in 1.31 to implement #17131
-bool tryReplaceStridable(CallExpr* parentCall, const char* name,
-                         UnresolvedSymExpr* use);
 void warnIfGenericFormalMissingQ(ArgSymbol* arg, Type* type, Expr* typeExpr);
 
 // parallel.cpp

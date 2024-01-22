@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -65,10 +65,6 @@ const ResolutionResultByPostorderID& resolveModuleStmt(Context* context,
 
   CHPL_ASSERT(id.postOrderId() >= 0);
 
-  // TODO: can we save space better here by having
-  // the ResolutionResultByPostorderID have a different offset
-  // (so it can contain only ids within the requested stmt) or
-  // maybe we can make it sparse with a hashtable or something?
   ResolutionResultByPostorderID result;
 
   ID moduleId = parsing::idToParentId(context, id);
@@ -109,7 +105,26 @@ scopeResolveModuleStmt(Context* context, ID id) {
   return QUERY_END(result);
 }
 
+static void updateTypeForModuleLevelSplitInit(Context* context, ID id,
+                                              ResolvedExpression& lhs,
+                                              const ResolvedExpression& rhs) {
+  const QualifiedType lhsType = lhs.type();
+  const QualifiedType rhsType = rhs.type();
 
+  // check to see if it is generic/unknown
+  // (otherwise we do not need to infer anything)
+  if (!lhsType.isUnknownKindOrType() &&
+      getTypeGenericity(context, lhsType.type()) != Type::GENERIC)
+    return;
+
+  const Param* p = rhsType.param();
+  if (lhsType.kind() != QualifiedType::PARAM) {
+    p = nullptr;
+  }
+  const auto useType = QualifiedType(lhsType.kind(), rhsType.type(), p);
+
+  lhs.setType(useType);
+}
 
 const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
   QUERY_BEGIN(resolveModule, context, id);
@@ -125,7 +140,8 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
       auto modScope = scopeForId(context, mod->id());
       emitMultipleDefinedSymbolErrors(context, modScope);
 
-      result.setupForSymbol(mod);
+      auto r = Resolver::createForModuleStmt(context, mod, nullptr, result);
+
       for (auto child: mod->children()) {
         if (child->isComment() ||
             child->isTypeDecl() ||
@@ -154,9 +170,18 @@ const ResolutionResultByPostorderID& resolveModule(Context* context, ID id) {
               re = *reToCopy;
             }
           }
+          // copy results for split-inited vars
+          for (int i = 0; i < firstId; i++) {
+            ID exprId(stmtId.symbolPath(), i, 0);
+            ResolvedExpression& re = result.byId(exprId);
+            if (auto reToCopy = resolved.byIdOrNull(exprId)) {
+              updateTypeForModuleLevelSplitInit(context, exprId, re, *reToCopy);
+            }
+          }
         }
       }
       checkThrows(context, result, mod);
+      callInitDeinit(r);
     }
   }
 
@@ -1326,6 +1351,16 @@ QualifiedType getInstantiationType(Context* context,
       // now construct the ClassType
       auto ct = ClassType::get(context, bct, manager, dec);
       return QualifiedType(formalType.kind(), ct);
+    }
+  } else if (auto actualPt = actualT->toCPtrType()) {
+    if (auto formalPt = formalT->toCPtrType()) {
+      // The only reason we should need an instantiation type is if a constness
+      // coercion was applied, which is only possible for const formal, non-const
+      // actual.
+      CHPL_ASSERT(formalPt->isConst() && !actualPt->isConst());
+
+      auto pt = CPtrType::getConst(context, actualPt->eltType());
+      return QualifiedType(formalType.kind(), pt);
     }
   }
 
@@ -2635,65 +2670,72 @@ static const Type* getNumericType(Context* context,
   return nullptr;
 }
 
+/*
+  gets either a c_ptr or c_ptrConst type depending on the name in the CallInfo
+*/
 static const Type* getCPtrType(Context* context,
                                const AstNode* astForErr,
                                const CallInfo& ci) {
   UniqueString name = ci.name();
+  bool isConst;
 
   if (name == USTR("c_ptr")) {
-    // Should we compute the generic version of the type (e.g. c_ptr(?))
-    bool useGenericType = false;
+    isConst = false;
+  } else if (name == USTR("c_ptrConst")) {
+    isConst = true;
+  } else {
+    return nullptr;
+  }
+  // Should we compute the generic version of the type (e.g. c_ptr(?)/c_ptrConst(?)
+  bool useGenericType = false;
 
-    // There should be 0 or 1 actuals depending on if it is ?
-    if (ci.hasQuestionArg()) {
-      // handle c_ptr(?)
-      if (ci.numActuals() != 0) {
-        context->error(astForErr, "invalid c_ptr type construction");
-        return ErroneousType::get(context);
-      }
-      useGenericType = true;
-    } else {
-      // handle c_ptr(?t) or c_ptr(eltT)
-      if (ci.numActuals() != 1) {
-        context->error(astForErr, "invalid c_ptr type construction");
-        return ErroneousType::get(context);
-      }
-
-      QualifiedType qt = ci.actual(0).type();
-      if (qt.type() && qt.type()->isAnyType()) {
-        useGenericType = true;
-      }
+  // There should be 0 or 1 actuals depending on if it is ?
+  if (ci.hasQuestionArg()) {
+    // handle c_ptr(?)/c_ptrConst(?)
+    if (ci.numActuals() != 0) {
+      context->error(astForErr, "invalid %s type construction", name.c_str());
+      return ErroneousType::get(context);
     }
-
-    if (useGenericType) {
-      return CPtrType::get(context);
-    }
-
-    QualifiedType qt;
-    if (ci.numActuals() > 0)
-      qt = ci.actual(0).type();
-
-    const Type* t = qt.type();
-    if (t == nullptr) {
-      // Details not yet known so return UnknownType
-      return UnknownType::get(context);
-    }
-    if (t->isUnknownType() || t->isErroneousType()) {
-      // Just propagate the Unknown / Erroneous type
-      // without raising any errors
-      return t;
-    }
-
-    if (!qt.isType()) {
-      // raise an error b/c of type mismatch
-      context->error(astForErr, "invalid c_ptr type construction");
+    useGenericType = true;
+  } else {
+    // handle c_ptr(?t) or c_ptr(eltT)/c_ptrConst(?t) or c_ptrConst(eltT)
+    if (ci.numActuals() != 1) {
+      context->error(astForErr,"invalid %s type construction", name.c_str());
       return ErroneousType::get(context);
     }
 
-    return CPtrType::get(context, qt.type());
+    QualifiedType qt = ci.actual(0).type();
+    if (qt.type() && qt.type()->isAnyType()) {
+      useGenericType = true;
+    }
   }
 
-  return nullptr;
+  if (useGenericType) {
+    return isConst ? CPtrType::getConst(context) : CPtrType::get(context);
+  }
+
+  QualifiedType qt;
+  CHPL_ASSERT(ci.numActuals() > 0);
+  qt = ci.actual(0).type();
+
+  const Type* t = qt.type();
+  if (t == nullptr) {
+    // Details not yet known so return UnknownType
+    return UnknownType::get(context);
+  } else if (t->isUnknownType() || t->isErroneousType()) {
+    // Just propagate the Unknown / Erroneous type
+    // without raising any errors
+    return t;
+  }
+
+  if (!qt.isType()) {
+    // raise an error b/c of type mismatch
+    context->error(astForErr,"invalid %s type construction", name.c_str());
+    return ErroneousType::get(context);
+  } else {
+    return isConst ? CPtrType::getConst(context, t) :
+                     CPtrType::get(context, t);
+  }
 }
 
 static const Type*
@@ -3802,6 +3844,107 @@ resolveGeneratedCallInMethod(Context* context,
   return resolveGeneratedCall(context, astForErr, ci, inScope, inPoiScope);
 }
 
+const TypedFnSignature* tryResolveInitEq(Context* context,
+                                         const AstNode* astForScopeOrErr,
+                                         const types::Type* lhsType,
+                                         const types::Type* rhsType,
+                                         const PoiScope* poiScope) {
+  if (!lhsType->getCompositeType()) return nullptr;
+
+  // use the regular VAR kind for this query
+  // (don't want a type-expr lhsType to be considered a TYPE here)
+  QualifiedType lhsQt(QualifiedType::VAR, lhsType);
+  QualifiedType rhsQt(QualifiedType::VAR, rhsType);
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(lhsQt, USTR("this")));
+  actuals.push_back(CallInfoActual(rhsQt, UniqueString()));
+  auto ci = CallInfo(/* name */ USTR("init="),
+                     /* calledType */ lhsQt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false, actuals);
+
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope, poiScope);
+  return c.mostSpecific().only().fn();
+}
+
+const TypedFnSignature* tryResolveDeinit(Context* context,
+                                         const AstNode* astForScopeOrErr,
+                                         const types::Type* t,
+                                         const PoiScope* poiScope) {
+  if (!t->getCompositeType()) return nullptr;
+
+  QualifiedType qt(QualifiedType::VAR, t);
+
+  std::vector<CallInfoActual> actuals;
+  actuals.push_back(CallInfoActual(qt, USTR("this")));
+  auto ci = CallInfo(/* name */ USTR("deinit"),
+                     /* calledType */ qt,
+                     /* isMethodCall */ true,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope, poiScope);
+  return c.mostSpecific().only().fn();
+}
+
+static const TypedFnSignature*
+tryResolveAssignHelper(Context* context,
+                       const uast::AstNode* astForScopeOrErr,
+                       const types::Type* lhsType,
+                       const types::Type* rhsType,
+                       bool asMethod) {
+  // Use 'var' here since actual types don't really matter, and some
+  // assignment operators (e.g., for 'owned') will mutate the RHS.
+  auto qtLhs = QualifiedType(QualifiedType::VAR, lhsType);
+  auto qtRhs = QualifiedType(QualifiedType::VAR, rhsType);
+
+  std::vector<CallInfoActual> actuals;
+  if (asMethod) {
+    actuals.push_back(CallInfoActual(qtLhs, USTR("this")));
+  }
+  actuals.push_back(CallInfoActual(qtLhs, UniqueString()));
+  actuals.push_back(CallInfoActual(qtRhs, UniqueString()));
+  auto ci = CallInfo(/* name */ USTR("="),
+                     /* calledType */ qtLhs,
+                     /* isMethodCall */ asMethod,
+                     /* hasQuestionArg */ false,
+                     /* isParenless */ false,
+                     actuals);
+  const Scope* scope = nullptr;
+  if (astForScopeOrErr) scope = scopeForId(context, astForScopeOrErr->id());
+  auto c = resolveGeneratedCall(context, astForScopeOrErr, ci, scope,
+                                /* poiScope */ nullptr);
+  return c.mostSpecific().only().fn();
+}
+
+// Tries to resolve an = that assigns a type from itself, first as a method and
+// then as a standalone operator.
+const TypedFnSignature*
+tryResolveAssign(Context* context,
+                 const uast::AstNode* astForScopeOrErr,
+                 const types::Type* lhsType,
+                 const types::Type* rhsType,
+                 const PoiScope* poiScope) {
+  auto res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+                                    rhsType,
+                                    /* asMethod */ true);
+  if (!res) {
+    res = tryResolveAssignHelper(context, astForScopeOrErr, lhsType,
+                                 rhsType,
+                                 /* asMethod */ false);
+  }
+  return res;
+}
+
 static bool helpFieldNameCheck(const AstNode* ast,
                                UniqueString name) {
   if (auto var = ast->toVarLikeDecl()) {
@@ -3956,6 +4099,142 @@ bool isTypeDefaultInitializable(Context* context, const Type* t) {
   return isTypeDefaultInitializableQuery(context, t);
 }
 
+void getCopyOrAssignableInfo(Context* context, const Type* t,
+                                    bool& fromConst, bool& fromRef,
+                                    bool checkCopyable);
+
+// Determine whether a class type is copyable or assignable, from ref and/or
+// from const.
+static const CopyableAssignableInfo getClassTypeCopyOrAssignable(
+    const ClassType* ct) {
+  CopyableAssignableInfo result;
+
+  if (ct->decorator().isManaged() && ct->manager()->isAnyOwnedType()) {
+    // Owned class types are copyable/assignable from ref iff they are nilable.
+    // TODO: update if/when user-defined memory management styles are added
+    if (ct->decorator().isNilable()) {
+      result = CopyableAssignableInfo::fromRef();
+    }
+  } else {
+    // Class types of other management are copyable/assignable from const.
+    result = CopyableAssignableInfo::fromConst();
+  }
+
+  return result;
+}
+
+// Set checkCopyable true for copyable, false for assignable.
+static const CopyableAssignableInfo& getCopyOrAssignableInfoQuery(
+    Context* context, const CompositeType* ct, bool checkCopyable) {
+  QUERY_BEGIN(getCopyOrAssignableInfoQuery, context, ct, checkCopyable);
+
+
+  CopyableAssignableInfo result = CopyableAssignableInfo::fromNone();
+
+  // Inspect type for either kind of copyability/assignability.
+  auto genericity = getTypeGenericity(context, ct);
+  if (genericity == Type::GENERIC || genericity == Type::MAYBE_GENERIC) {
+    // generic composite types cannot be copied or assigned
+    result = CopyableAssignableInfo::fromNone();
+  } else if (auto at = ct->toArrayType()) {
+    if (auto eltType = at->eltType().type()) {
+      // Arrays are copyable/assignable if their elements are
+      result = getCopyOrAssignableInfo(context, eltType, checkCopyable);
+    }
+  } else if (auto tt = ct->toTupleType()) {
+    // Tuples have the minimum copyable/assignable-ness of their elements
+    result = CopyableAssignableInfo::fromConst();
+    // TODO: add iterator for TupleType element types and use a range-based for
+    for (int i = 0; i < tt->numElements(); i++) {
+      result.intersectWith(getCopyOrAssignableInfo(
+          context, tt->elementType(i).type(), checkCopyable));
+      if (tt->isStarTuple()) break;
+    }
+  } else {
+    auto ast = parsing::idToAst(context, ct->id());
+    const AttributeGroup* attrs = nullptr;
+    if (ast) attrs = ast->attributeGroup();
+    if (checkCopyable && attrs &&
+        (attrs->hasPragma(PRAGMA_SYNC) || attrs->hasPragma(PRAGMA_SINGLE))) {
+      // Syncs and singles are copyable
+      // This is a special case to preserve deprecated behavior before
+      // sync/single implicit reads are removed. 12/8/23
+      result = CopyableAssignableInfo::fromConst();
+    } else {
+      // In general, try to resolve the type's 'init='/'=', and examine it to
+      // determine copy/assignability, respectively.
+      const TypedFnSignature* testResolvedSig =
+          (checkCopyable ? tryResolveInitEq(context, ast, ct, ct)
+                         : tryResolveAssign(context, ast, ct, ct));
+      if (testResolvedSig) {
+        if (testResolvedSig->untyped()->isCompilerGenerated()) {
+          // Check for class fields reducing copy/assignability; otherwise it
+          // is from const.
+
+          result = CopyableAssignableInfo::fromConst();
+          auto resolvedFields =
+              fieldsForTypeDecl(context, ct, DefaultsPolicy::USE_DEFAULTS);
+          for (int i = 0; i < resolvedFields.numFields(); i++) {
+            auto fieldType = resolvedFields.fieldType(i).type();
+            if (auto classTy = fieldType->toClassType()) {
+              result.intersectWith(getClassTypeCopyOrAssignable(classTy));
+            } else if (auto rt = fieldType->toRecordType()) {
+              // check record fields recursively
+              result.intersectWith(
+                  getCopyOrAssignableInfo(context, rt, checkCopyable));
+            }
+          }
+        } else {
+          // Check intent of formal to copy/assign from.
+
+          // For init=, formals are (this, other). For =, formals are (lhs,
+          // rhs), unless it is a method in which case they are (this, lhs,
+          // rhs). Get the index of the 'other' or 'rhs' formal.
+          int otherFormalNum = 1;
+          if (!checkCopyable && testResolvedSig->untyped()->isMethod()) {
+            otherFormalNum = 2;
+          }
+          CHPL_ASSERT(testResolvedSig->numFormals() == (otherFormalNum + 1) &&
+                      "unexpected formals");
+          auto other = testResolvedSig->formalType(otherFormalNum);
+          CHPL_ASSERT(!other.isNonConcreteIntent() &&
+                      "should have resolved concrete intent by now");
+
+          if (other.isIn() || other.isConst() ||
+              other.kind() == QualifiedType::TYPE ||
+              other.kind() == QualifiedType::PARAM) {
+            result = CopyableAssignableInfo::fromConst();
+          } else if (other.isRef()) {
+            result = CopyableAssignableInfo::fromRef();
+          } else {
+            context->error(
+                testResolvedSig->untyped()->formalDecl(otherFormalNum),
+                "unexpected formal intent for special proc");
+          }
+        }
+      }
+    }
+  }
+
+  return QUERY_END(result);
+}
+
+CopyableAssignableInfo getCopyOrAssignableInfo(Context* context, const Type* t,
+                                               bool checkCopyable) {
+  CopyableAssignableInfo result;
+
+  if (auto ct = t->toCompositeType()) {
+    // Use query to cache results only for composite types, others are trivial
+    result = getCopyOrAssignableInfoQuery(context, ct, checkCopyable);
+  } else if (auto classTy = t->toClassType()) {
+    result = getClassTypeCopyOrAssignable(classTy);
+  } else {
+    // Non-composite/class types are always copyable/assignable from const
+    result = CopyableAssignableInfo::fromConst();
+  }
+
+  return result;
+}
 
 template <typename T>
 QualifiedType paramTypeFromValue(Context* context, T value);

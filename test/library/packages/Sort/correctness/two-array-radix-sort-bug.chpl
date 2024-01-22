@@ -36,9 +36,9 @@ proc testDist() {
 
   fillRandom(A, seed=seed);
   A = abs(A) % bound;
-  writeln("TwoArrayRadixSort.twoArrayRadixSort");
+  writeln("TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort");
   var AA = A;
-  TwoArrayRadixSort.twoArrayRadixSort(AA);
+  TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort(AA);
   writeln("Result is sorted? ", isSorted(AA));
 
   writeln("standard sort");

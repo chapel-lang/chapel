@@ -1,0 +1,3 @@
+# this test runs long enough to timeout on cygwin and valgrind
+CHPL_HOST_PLATFORM <= cygwin
+CHPL_TEST_VGRND_EXE == on

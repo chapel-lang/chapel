@@ -1,2 +1,0 @@
-deprecateHamDist.chpl:6: warning: bigint.hamdist is deprecated - please use bigint.hammingDistance instead
-8

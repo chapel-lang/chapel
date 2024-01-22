@@ -1,1 +1,1 @@
-$CHPL_HOME/modules/standard/GPU.chpl:nnnn: error: halt reached - gpuScan must be run on a gpu locale
+scanTest.chpl:15: error: halt reached - gpuScan must be run on a gpu locale

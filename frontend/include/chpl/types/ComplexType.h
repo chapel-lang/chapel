@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -55,8 +55,16 @@ class ComplexType final : public PrimitiveType {
 
   static const ComplexType* get(Context* context, int bitwidth);
 
+  /** Returns the bit width of this complex (64 or 128 bits,
+      including both components */
   int bitwidth() const override {
     return bitwidth_;
+  }
+
+  /** Returns the bit width of a single component of this complex
+      (which is half of bitwidth() ) */
+  int componentBitwidth() const {
+    return bitwidth_ / 2;
   }
 
   bool isDefaultWidth() const override {

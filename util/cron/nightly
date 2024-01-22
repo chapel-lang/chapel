@@ -268,19 +268,7 @@ if ($debug == 1 && $debugmail eq "") {
 $today = `date +%w-%a`; chomp($today);
 $starttime = localtime;
 
-# Override $failuremail and $allmail if -cron-recipient argument or
-# CHPL_NIGHTLY_CRON_RECIPIENT is set.
 
-if ($cronrecipient eq "" and exists($ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"})) {
-    $cronrecipient = $ENV{"CHPL_NIGHTLY_CRON_RECIPIENT"};
-}
-
-if ($cronrecipient ne "") {
-    print "Overriding \$failuremail and \$allmail with: $cronrecipient.\n";
-    $failuremail = $cronrecipient;
-    $allmail = $cronrecipient;
-    $replymail = $cronrecipient;
-}
 
 #
 # directory locations

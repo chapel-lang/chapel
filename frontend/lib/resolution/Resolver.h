@@ -1,5 +1,5 @@
 /*
- * Copyright 2021-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2021-2024 Hewlett Packard Enterprise Development LP
  * Other additional copyright holders may be indicated within.
  *
  * The entirety of this work is licensed under the Apache License,
@@ -57,7 +57,6 @@ struct Resolver {
   const uast::Block* fnBody = nullptr;
   std::set<ID> fieldOrFormals;
   std::set<ID> instantiatedFieldOrFormals;
-  std::set<ID> splitInitTypeInferredVariables;
   std::set<UniqueString> namesWithErrorsEmitted;
   const uast::Call* inLeafCall = nullptr;
   bool receiverScopesComputed = false;
@@ -292,12 +291,6 @@ struct Resolver {
                          types::QualifiedType declaredType,
                          types::QualifiedType initExprType);
 
-  // helper for getTypeForDecl
-  // tries to resolve an init= that initializes one type from another
-  const types::Type* tryResolveCrossTypeInitEq(const uast::AstNode* ast,
-                                               types::QualifiedType lhsType,
-                                               types::QualifiedType rhsType);
-
   const types::Type* computeCustomInferType(const uast::AstNode* initExpr,
                                             const types::CompositeType* ct);
 
@@ -316,6 +309,13 @@ struct Resolver {
   // useType will be used to set the type if it is not nullptr
   void resolveNamedDecl(const uast::NamedDecl* decl,
                         const types::Type* useType);
+
+  // helper to compute the intent for formals
+  // (including type constructor formals)
+  void computeFormalIntent(const uast::NamedDecl* decl,
+                                 types::QualifiedType::Kind& qtKind,
+                           const types::Type* typePtr,
+                           const types::Param* paramPtr);
 
   // issue ambiguity / no matching candidates / etc error
   void issueErrorForFailedCallResolution(const uast::AstNode* astForErr,
@@ -414,6 +414,10 @@ struct Resolver {
 
   // resolve a special op call such as tuple unpack assign
   bool resolveSpecialOpCall(const uast::Call* call);
+
+  // resolve a special primitive call such as 'resolves', which has its
+  // own logic for traversing actuals etc.
+  bool resolveSpecialPrimitiveCall(const uast::Call* call);
 
   // resolve a keyword call like index(D)
   bool resolveSpecialKeywordCall(const uast::Call* call);

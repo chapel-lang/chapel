@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -183,7 +183,7 @@ static Expr* foldTryCond(Expr* expr);
 static void unmarkDefaultedGenerics();
 static void resolveUsesAndModule(ModuleSymbol* mod, const char* path);
 static void resolveSupportForModuleDeinits();
-static void resolveExports();
+static void resolveExportsEtc();
 static void resolveEnumTypes();
 static void populateRuntimeTypeMap();
 static void resolveAutoCopies();
@@ -1705,6 +1705,7 @@ bool doCanDispatch(Type*     actualType,
                    bool*     promotes,
                    bool*     paramNarrows,
                    bool      paramCoerce) {
+
   if (actualType == formalType)
     return true;
 
@@ -1723,11 +1724,26 @@ bool doCanDispatch(Type*     actualType,
         fn->hasFlag(FLAG_ALLOW_REF)))
     return true;
 
-  if (formalSym != NULL &&
-      formalSym->originalIntent == INTENT_INOUT &&
-      formalType->symbol->hasFlag(FLAG_REF)) {
-    actualType = actualType->getValType();
-    formalType = formalType->getValType();
+  if (formalSym != NULL && formalType->symbol->hasFlag(FLAG_REF)) {
+    if (formalSym->originalIntent == INTENT_INOUT) {
+      actualType = actualType->getValType();
+      formalType = formalType->getValType();
+    } else if (formalSym->intent == INTENT_CONST_REF) {
+      if (formalSym->originalIntent == INTENT_BLANK ||
+          formalSym->originalIntent == INTENT_CONST ||
+          (actualSym && actualSym->isParameter())) {
+        // ignore the ref type:
+        //  * if passing to default intent or 'const' intent
+        //    that turned into 'const ref'
+        //  * if passing a 'param' to a 'const ref' intent of any sort
+        //
+        // (note: when passing to 'ref', the fact that the formal
+        //  type is 'ref' is what prevents implicit conversions here)
+        formalType = formalType->getValType();
+      }
+    }
+    if (actualType == formalType)
+      return true;
   }
 
   if (paramCoerce == false &&
@@ -2939,20 +2955,15 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
 
       bool eq  = name == astrSeq;
       bool ne  = name == astrSne;
-      bool lt  = name == astrSlt;
-      bool lte = name == astrSlte;
-      bool gt  = name == astrSgt;
-      bool gte = name == astrSgte;
 
-      if (eq || ne || lt || lte || gt || gte) {
+      if (eq || ne) {
         SymExpr* lhs = toSymExpr(call->get(1));
         SymExpr* rhs = toSymExpr(call->get(2));
 
         if (lhs && rhs &&
             lhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE) &&
-            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE)) {
-
-          if (eq || ne) {
+            rhs->symbol()->hasFlag(FLAG_TYPE_VARIABLE))
+        {
             Symbol* value = gFalse;
             bool sameType = lhs->symbol()->type == rhs->symbol()->type;
             if (eq && sameType)
@@ -2964,29 +2975,8 @@ static bool resolveTypeComparisonCall(CallExpr* call) {
             call->replace(se);
             // Put the call back in to aid traversal
             se->getStmtExpr()->insertBefore(call);
-          } else {
-            USR_WARN(call, "type comparison operators are deprecated; "
-              "use isSubtype/isProperSubtype instead");
 
-            rhs->remove();
-            lhs->remove();
-            call->baseExpr->remove();
-
-            if (lte || gte)
-              call->primitive = primitives[PRIM_IS_SUBTYPE];
-            else
-              call->primitive = primitives[PRIM_IS_PROPER_SUBTYPE];
-
-            if (lt || lte) {
-              call->insertAtTail(rhs);
-              call->insertAtTail(lhs);
-            } else {
-              call->insertAtTail(lhs);
-              call->insertAtTail(rhs);
-            }
-          }
-
-          return true;
+            return true;
         }
       }
     }
@@ -7652,16 +7642,60 @@ static void lvalueCheckActual(CallExpr* call, Expr* actual, IntentTag intent, Ar
   }
 }
 
+// heuristic to walk up a series of temps to find the base object of a method call
+static Symbol* maybeGetBaseSymHelper(SymExpr* def);
+static Symbol* maybeGetBaseSym(Symbol* sym) {
+  for_SymbolDefs(def, sym) {
+    if (auto baseSym = maybeGetBaseSymHelper(def)) {
+      return baseSym;
+    }
+  }
+  return nullptr;
+}
+static Symbol* maybeGetBaseSymHelper(SymExpr* def) {
+  if (auto parentCall = toCallExpr(def->parentExpr)) {
+    if (isMoveOrAssign(parentCall)) {
+      if (auto maybeMethodCall = toCallExpr(parentCall->get(2))) {
+        if (maybeMethodCall->resolvedFunction() &&
+            maybeMethodCall->resolvedFunction()->isMethod()) {
+          if (auto baseExpr = toSymExpr(maybeMethodCall->get(2))) {
+            auto baseSym = baseExpr->symbol();
+            // if the baseSym is still a temp, try and for a nested method call.
+            // typically happens in the `r.A[i]` field access case (`A` is an array).
+            if (baseSym->hasFlag(FLAG_TEMP)) {
+              if(auto sym = maybeGetBaseSym(baseSym)) {
+                return sym;
+              }
+            }
+            return baseSym;
+          }
+        }
+      }
+    }
+  }
+  return nullptr;
+}
+
 void printTaskOrForallConstErrorNote(Symbol* aVar) {
   const char* varname = aVar->name;
 
+  Symbol* baseSym = aVar;
   if (strncmp(varname, "_formal_tmp_in_", 15) == 0)
     varname += 15;
   else if (strncmp(varname, "_formal_tmp_", 12) == 0)
     varname += 12;
+  else if (strncmp(varname, "call_tmp", 8) == 0) {
+    // if the temp is named `call_tmp`, theres a good chance its the result of
+    // a field access (represented as a method call). try and find the base object
+    // of the aggregate type
+    if(auto sym = maybeGetBaseSym(aVar)) {
+      varname = sym->name;
+      baseSym = sym;
+    }
+  }
 
-  if (isArgSymbol(aVar) || aVar->hasFlag(FLAG_TEMP)) {
-    Symbol*     enclTaskFn    = aVar->defPoint->parentSymbol;
+  if (isArgSymbol(baseSym) || baseSym->hasFlag(FLAG_TEMP)) {
+    Symbol*     enclTaskFn    = baseSym->defPoint->parentSymbol;
     BaseAST*    marker        = NULL;
     const char* constructName = NULL;
 
@@ -7682,7 +7716,7 @@ void printTaskOrForallConstErrorNote(Symbol* aVar) {
               constructName);
 
   } else {
-    Expr* enclLoop = aVar->defPoint->parentExpr;
+    Expr* enclLoop = baseSym->defPoint->parentExpr;
 
     USR_PRINT(enclLoop,
               "The shadow variable '%s' is constant due to task intents "
@@ -9229,7 +9263,9 @@ static void resolveMoveForRhsSymExpr(CallExpr* call, SymExpr* rhs) {
 
   } else if (rhsSym->hasFlag(FLAG_REF_TO_CONST)) {
     lhsSym->addFlag(FLAG_REF_TO_CONST);
-
+    if (rhsSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+      lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+    }
   }
 
   if (lhsSym->hasFlag(FLAG_TYPE_VARIABLE) &&
@@ -9355,6 +9391,9 @@ static void moveSetConstFlagsAndCheck(CallExpr* call, CallExpr* rhs) {
           rhsBase->symbol()->hasFlag(FLAG_REF_TO_CONST) == true) {
         toSymExpr(call->get(1))->symbol()->addFlag(FLAG_REF_TO_CONST);
       }
+      if (rhsBase->symbol()->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT)) {
+        toSymExpr(call->get(1))->symbol()->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
+      }
 
     } else {
       INT_ASSERT(false);
@@ -9410,6 +9449,8 @@ static void moveSetFlagsForConstAccess(Symbol*   lhsSym,
 
     if (isReferenceType(lhsSym->type) == true) {
       lhsSym->addFlag(FLAG_REF_TO_CONST);
+      if (baseSym->hasFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT))
+        lhsSym->addFlag(FLAG_CONST_DUE_TO_TASK_FORALL_INTENT);
     } else {
       lhsSym->addFlag(FLAG_CONST);
     }
@@ -10992,6 +11033,14 @@ static bool isStringLiteral(Symbol* sym) {
   return retval;
 }
 
+// This enables printing the callstack for the error.
+static void reportPostponedError(BaseAST* ref, const char* errorMessage) {
+  if (fPrintAdditionalErrors) {
+    USR_WARN(ref, "postponed error: %s", errorMessage);
+    printCallstackForLastError(); // this info may get lost later
+  }
+}
+
 static void resolveExprMaybeIssueError(CallExpr* call) {
   //
   // Disable compiler warnings in internal modules that are triggered within
@@ -11090,6 +11139,8 @@ static void resolveExprMaybeIssueError(CallExpr* call) {
         if (FnSymbol* fn = callStack.v[head]->resolvedFunction())
           outerCompilerErrorMap[fn] = str;
       } else {
+        reportPostponedError(from, str);
+
         tryResolveStates.back() = CHECK_FAILED;
 
         if (tryResolveFunctions.size() > 0) {
@@ -11462,7 +11513,7 @@ void resolve() {
 
   finishInterfaceChecking();  // should happen before resolveAutoCopies
 
-  resolveExports();
+  resolveExportsEtc();
 
   resolveEnumTypes();
 
@@ -11649,8 +11700,29 @@ static void resolveSupportForModuleDeinits() {
 *                                                                             *
 ************************************** | *************************************/
 
-static void resolveExports() {
+static bool hasVariableArgs(FnSymbol* fn) {
+  for_formals(formal, fn) {
+    if (formal->variableExpr) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
+static bool isGenericFn(FnSymbol* fn) {
+  if (!fn->isGenericIsValid()) {
+    fn->tagIfGeneric();
+  }
+  return fn->isGeneric();
+}
+
+static void resolveExportsEtc() {
   std::vector<FnSymbol*> exps;
+
+  // try to resolve concrete functions when using --dyno-gen-lib
+  bool alsoConcrete = (fResolveConcreteFns || !gDynoGenLibOutput.empty()) &&
+                      !fMinimalModules;
 
   // We need to resolve any additional functions that will be exported.
   forv_expanding_Vec(FnSymbol, fn, gFnSymbols) {
@@ -11668,6 +11740,44 @@ static void resolveExports() {
 
       if (fn->hasFlag(FLAG_EXPORT))
         exps.push_back(fn);
+    } else if (alsoConcrete) {
+      // gather the receiver type if there is one
+      AggregateType* at = NULL;
+      if (fn->_this) {
+        at = toAggregateType(fn->_this->type);
+      }
+
+      if (!fn->hasFlag(FLAG_GENERIC) &&
+          !fn->hasFlag(FLAG_LAST_RESORT) /* often a compilerError overload*/ &&
+          !fn->hasFlag(FLAG_DO_NOT_RESOLVE_UNLESS_CALLED) &&
+          !hasVariableArgs(fn) &&
+          !fn->hasFlag(FLAG_RESOLVED) &&
+          !fn->hasFlag(FLAG_INVISIBLE_FN) &&
+          !fn->hasFlag(FLAG_INLINE) &&
+          !fn->hasFlag(FLAG_EXTERN) &&
+          !fn->hasFlag(FLAG_ON) &&
+          !fn->hasFlag(FLAG_COBEGIN_OR_COFORALL) &&
+          !fn->hasFlag(FLAG_COMPILER_GENERATED) &&
+          // either this is not a method, or at least it's not a method
+          // on a generic type
+          (fn->_this == NULL || !at || !at->isGeneric()) &&
+          // for now, ignore chpl_ functions
+          (strncmp(fn->name, "chpl_", 5) != 0) &&
+          fn->defPoint &&
+          // Nested functions are tricky because their resolution may depend
+          // on the resolution of the outer function in which they are located;
+          // i.e., they may be generic w.r.t. outer-scoped variables, yet not
+          // marked with FLAG_GENERIC.  For now, rule out all nested functions.
+          !isFnSymbol(fn->defPoint->parentSymbol) && // fn is not nested
+          fn->defPoint->getModule() &&
+          !isGenericFn(fn)
+         ) {
+        SET_LINENO(fn);
+
+        if (evaluateWhereClause(fn)) {
+          resolveSignatureAndFunction(fn);
+        }
+      }
     }
   }
 

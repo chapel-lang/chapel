@@ -1,4 +1,0 @@
-dateCreateFromTimestamp.chpl:4: warning: 'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead
-dateCreateFromTimestamp.chpl:13: warning: 'date.createFromTimestamp' is deprecated, please use 'dateTime.createUtcFromTimestamp().getDate()' instead
-true
-true

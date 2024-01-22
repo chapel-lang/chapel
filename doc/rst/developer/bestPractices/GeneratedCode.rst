@@ -200,7 +200,7 @@ To use ``gprof``:
   This produces a `gprof-enabled` executable.
 
   The use of ``--fast`` and ``--savec`` are not strictly necessary,
-  but will improve exeution time and give you access to the generated
+  but will improve execution time and give you access to the generated
   C code (in the named directory), respectively.
 
 

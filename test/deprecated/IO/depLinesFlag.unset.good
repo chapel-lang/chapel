@@ -1,2 +1,0 @@
-depLinesFlag.chpl:3: warning: 'useNewLinesRegionBounds' is deprecated - file.lines now always uses the high bound and this flag no longer impacts its behavior.  The flag will be removed in a future release
-true

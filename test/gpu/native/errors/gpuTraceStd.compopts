@@ -1,0 +1,4 @@
+--prepend-standard-module-dir std -susePoi=true --devel # gpuTraceStd.devel.poi.good
+--prepend-standard-module-dir std -susePoi=false --devel # gpuTraceStd.devel.nopoi.good
+--prepend-standard-module-dir std -susePoi=true # gpuTraceStd.poi.good
+--prepend-standard-module-dir std -susePoi=false # gpuTraceStd.nopoi.good

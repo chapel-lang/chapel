@@ -1,2 +1,0 @@
-depOpenReaderFlag.chpl:3: warning: 'useNewOpenReaderRegionBounds' is now deprecated - the region argument for openReader always fully specifies the bounds, and this flag no longer impacts openReader's behavior.  This flag will be removed in a future release
-true

@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -126,7 +126,7 @@ module DefaultRectangular {
     proc dsiEqualDMaps(d:unmanaged DefaultDist) param do return true;
     proc dsiEqualDMaps(d) param do return false;
 
-    proc trackDomains() param do return false;
+    override proc trackDomains() param do return false;
     override proc dsiTrackDomains() do    return false;
 
     override proc singleton() param do return true;
@@ -1017,15 +1017,6 @@ module DefaultRectangular {
       this.strides = strides;
       // This should resize the arrays
       targetLocDom=newTargetLocDom;
-    }
-
-    // supports deprecation by Vass in 1.31 to implement #17131
-    pragma "dont disable remote value forwarding"
-    @deprecated("'LocRADCache' initializer with 'stridable: bool' is deprecated; please use 'strides: strideKind' instead")
-    proc init(type eltType, param rank: int, type idxType,
-              param stridable: bool, newTargetLocDom: domain(rank)) {
-      this.init(eltType, rank, idxType, chpl_strideKind(stridable),
-                newTargetLocDom);
     }
 
     inline proc lockRAD(rlocIdx) {

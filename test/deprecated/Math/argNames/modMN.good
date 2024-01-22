@@ -1,4 +1,0 @@
-modMN.chpl:1: warning: The argument names 'm' and 'n' are deprecated for param 'mod', please use 'x' and 'y' instead
-modMN.chpl:5: warning: The argument names 'm' and 'n' are deprecated for 'mod', please use 'x' and 'y' instead
-0
-1

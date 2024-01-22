@@ -99,7 +99,7 @@ Blocks
 ------
 
 A block is a statement or a possibly empty list of statements that form
-their own scope. A block is given by 
+their own scope. A block is given by
 
 .. code-block:: syntax
 
@@ -122,7 +122,7 @@ Expression Statements
 ---------------------
 
 The expression statement evaluates an expression solely for side
-effects. The syntax for an expression statement is given by 
+effects. The syntax for an expression statement is given by
 
 .. code-block:: syntax
 
@@ -146,7 +146,7 @@ expression, for example, a variable. Assignment statements are given by
 .. code-block:: syntax
 
    assignment-statement:
-     lvalue-expression assignment-operator expression
+     lvalue-expression assignment-operator expression ;
 
    assignment-operator: one of
       = += -= *= /= %= **= &= |= ^= &&= ||= <<= >>=
@@ -222,12 +222,12 @@ to, each must be a valid lvalue
 expression (:ref:`LValue_Expressions`).
 
 The swap operator can be overloaded for different types using operator
-overloading (:ref:`Function_Overloading`). 
+overloading (:ref:`Function_Overloading`).
 
 .. code-block:: syntax
 
    swap-statement:
-     lvalue-expression swap-operator lvalue-expression
+     lvalue-expression swap-operator lvalue-expression ;
 
    swap-operator:
      <=>
@@ -238,7 +238,7 @@ as necessary.
    *Example*.
 
    When resolved to the default swap operator, the following swap
-   statement 
+   statement
 
    .. code-block:: chapel
 
@@ -246,7 +246,7 @@ as necessary.
 
       a <=> b;
 
-   is semantically equivalent to: 
+   is semantically equivalent to:
 
    .. code-block:: chapel
 
@@ -261,7 +261,7 @@ The Conditional Statement
 
 The conditional statement allows execution to choose between two
 statements based on the evaluation of an expression of ``bool`` type.
-The syntax for a conditional statement is given by 
+The syntax for a conditional statement is given by
 
 .. code-block:: syntax
 
@@ -296,8 +296,8 @@ whether or not an explicit block surrounds it.
 
 The control-flow declaration *ctrl-decl*, when used, declares a variable
 whose scope is the then-clause of the conditional statement.
-The expression must be of a class type. 
-If it evaluates to ``nil``, the else-clause is executed if present. Otherwise 
+The expression must be of a class type.
+If it evaluates to ``nil``, the else-clause is executed if present. Otherwise
 its value is stored in the declared variable and the then-clause is executed.
 If the expression's type is ``borrowed`` or  ``unmanaged``,
 the variable's type is its non-nilable variant (:ref:`Nilable_Classes`).
@@ -316,7 +316,7 @@ statement, too.
    *Example (conditionals.chpl)*.
 
    The following function prints ``two`` when ``x`` is ``2`` and
-   ``B,four`` when ``x`` is ``4``. 
+   ``B,four`` when ``x`` is ``4``.
 
    .. code-block:: chapel
 
@@ -335,13 +335,13 @@ statement, too.
           writeln("other");
       }
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       for i in 2..6 do condtest(i);
 
-   
+
 
    .. BLOCK-test-chapeloutput
 
@@ -357,7 +357,7 @@ The Select Statement
 --------------------
 
 The select statement is a multi-way variant of the conditional
-statement. The syntax is given by: 
+statement. The syntax is given by:
 
 .. code-block:: syntax
 
@@ -388,8 +388,8 @@ that comparison is ``true`` will be selected and control transferred to
 the associated statement. If the comparison is always ``false``, the
 statement associated with the keyword ``otherwise``, if it exists, will
 be selected and control transferred to it. There may be at most one
-``otherwise`` statement and its location within the select statement
-does not matter.
+``otherwise`` statement and it must be the last clause of the `select`
+statement.
 
 Each statement embedded in the *when-statement* or the
 *otherwise-statement* has its own scope whether or not an explicit block
@@ -401,7 +401,7 @@ The While Do and Do While Loops
 -------------------------------
 
 There are two variants of the while loop in Chapel. The syntax of the
-while-do loop is given by: 
+while-do loop is given by:
 
 .. code-block:: syntax
 
@@ -411,7 +411,7 @@ while-do loop is given by:
      'while' ctrl-decl 'do' statement
      'while' ctrl-decl block-statement
 
-The syntax of the do-while loop is given by: 
+The syntax of the do-while loop is given by:
 
 .. code-block:: syntax
 
@@ -453,7 +453,7 @@ unconditionally the first time.
    ``do-while-statement`` and the ``while-do-statement``. The body of
    the do-while loop is always executed at least once, even if the loop
    conditional is already false when it is entered. The code
-   
+
 
    .. code-block:: chapel
 
@@ -472,7 +472,7 @@ unconditionally the first time.
         writeln(t);
       }
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -489,7 +489,7 @@ termination expression.
    *Example (do-while.chpl)*.
 
    The following example demonstrates that the scope of the variable t
-   includes the loop termination expression. 
+   includes the loop termination expression.
 
    .. code-block:: chapel
 
@@ -500,7 +500,7 @@ termination expression.
         writeln(t);
       } while (t != 5);
 
-   produces the output 
+   produces the output
 
    .. code-block:: printoutput
 
@@ -534,7 +534,7 @@ The For Loop
 
 The for loop iterates over ranges, domains, arrays, iterators, or any
 class that implements an iterator named ``these``. The syntax of the for
-loop is given by: 
+loop is given by:
 
 .. code-block:: syntax
 
@@ -585,20 +585,20 @@ support iteration over a 2D `m` x `n` space as well.
 
    *Example (zipper.chpl)*.
 
-   The output of 
+   The output of
 
    .. code-block:: chapel
 
       for (i, j) in zip(1..3, 4..6) do
         write(i, " ", j, " ");
 
-   
+
 
    .. BLOCK-test-chapelpost
 
       writeln();
 
-   is 
+   is
 
    .. code-block:: printoutput
 
@@ -611,7 +611,7 @@ Parameter For Loops
 
 Parameter for loops are unrolled by the compiler so that the index
 variable is a parameter rather than a variable. The syntax for a
-parameter for loop statement is given by: 
+parameter for loop statement is given by:
 
 .. code-block:: syntax
 
@@ -676,7 +676,7 @@ A ``break`` statement cannot be used to exit a parallel loop
 .. note::
 
   *Future:*
-    
+
     We expect to support a *eureka* concept which would enable one or
     more tasks to stop the execution of all current and future iterations
     of the loop.
@@ -687,7 +687,7 @@ A ``break`` statement cannot be used to exit a parallel loop
    In the following code, the index of the first element in each row of
    ``A`` that is equal to ``findVal`` is printed. Once a match is found,
    the continue statement is executed causing the outer loop to move to
-   the next row. 
+   the next row.
 
    .. code-block:: chapel
 
@@ -745,7 +745,7 @@ string.  Only ``require`` statements in code that the compiler considers
 executable will be processed.  Thus, a ``require`` statement
 guarded by a ``param`` conditional that the compiler folds out, or
 in a module that does not appear in the program's ``use``
-statements will not be added to the program's requirements.  
+statements will not be added to the program's requirements.
 
    *Rationale*.
 
@@ -846,7 +846,7 @@ an action to be executed when returning from a function:
 
    *Example (defer1.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -865,7 +865,7 @@ an action to be executed when returning from a function:
       }
       deferInFunction();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -882,7 +882,7 @@ is handled when exiting the block in which it is contained:
 
    *Example (defer2.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -906,7 +906,7 @@ is handled when exiting the block in which it is contained:
       }
       deferInNestedBlock();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -930,7 +930,7 @@ body is exited early.
 
    *Example (defer3.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -952,7 +952,7 @@ body is exited early.
       }
       deferInLoop();
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -978,7 +978,7 @@ cleanup action run.
 
    *Example (defer4.chpl)*.
 
-   
+
 
    .. code-block:: chapel
 
@@ -998,7 +998,7 @@ cleanup action run.
       writeln("Condition: true");
       deferControl(true);
 
-   produces the output 
+   produces the output
 
    .. BLOCK-test-chapeloutput
 
@@ -1018,7 +1018,7 @@ The Empty Statement
 -------------------
 
 An empty statement has no effect. The syntax of an empty statement is
-given by 
+given by
 
 .. code-block:: syntax
 
@@ -1230,4 +1230,3 @@ Before executing the code in the body of the manage statement, the
 ``enterContext()`` method is called on each manager from left to right.
 Upon exiting the managed scope, the ``exitContext()`` method is called
 on each manager from right to left.
-

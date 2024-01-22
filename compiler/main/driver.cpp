@@ -1,5 +1,5 @@
 /*
- * Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
  * Copyright 2004-2019 Cray Inc.
  * Other additional copyright holders may be indicated within.
  *
@@ -345,6 +345,7 @@ static bool fPrintChplHome = false;
 std::string llvmFlags;
 std::string llvmRemarksFilters;
 std::vector<std::string> llvmRemarksFunctionsToShow;
+bool fLlvmPrintPasses = false;
 
 bool fPrintAdditionalErrors;
 
@@ -361,7 +362,12 @@ bool fDynoScopeProduction = true;
 bool fDynoScopeBundled = false;
 bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
+static bool fDynoGenLibProvided = false;
+bool fDynoGenStdLib = false;
 size_t fDynoBreakOnHash = 0;
+
+bool fResolveConcreteFns = false;
+bool fIdBasedMunging = false;
 
 bool fNoIOGenSerialization = false;
 bool fNoIOSerializeWriteThis = false;
@@ -430,6 +436,35 @@ static void saveChplHomeDerivedInEnv() {
   if( rc ) USR_FATAL("Could not setenv CHPL_THIRD_PARTY");
 }
 
+static bool restoreChplHomeDerivedFromEnv() {
+  bool haveAll = true;
+
+  const char* envVar;
+
+  envVar = getenv("CHPL_RUNTIME_LIB");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_LIB, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_RUNTIME_INCL");
+  if (envVar) {
+    strncpy(CHPL_RUNTIME_INCL, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  envVar = getenv("CHPL_THIRD_PARTY");
+  if (envVar) {
+    strncpy(CHPL_THIRD_PARTY, envVar, FILENAME_MAX);
+  } else {
+    haveAll = false;
+  }
+
+  return haveAll;
+}
+
 static void setupChplHome(const char* argv0) {
   const char* chpl_home = getenv("CHPL_HOME");
   char*       guess     = NULL;
@@ -476,19 +511,17 @@ static void setupChplHome(const char* argv0) {
 
     if( guess == NULL ) {
       // Could not find exe path, but have a env var set
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     } else {
       // We have env var and found exe path.
       // Check that they match and emit a warning if not.
-
       if( ! isSameFile(chpl_home, guess) ) {
         // Not the same. Emit warning.
         USR_WARN("$CHPL_HOME=%s mismatched with executable home=%s",
                  chpl_home, guess);
       }
-      // Since we have an enviro var, always use that.
-      strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
     }
+    // Since we have an enviro var, always use that.
+    strncpy(CHPL_HOME, chpl_home, FILENAME_MAX);
   } else {
 
     // Check in a default location too
@@ -540,7 +573,12 @@ static void setupChplHome(const char* argv0) {
 
 
 
-  if( installed ) {
+  // Get derived-from-home vars
+  if (restoreChplHomeDerivedFromEnv()) {
+    // if these were all present in the environment, just use those values
+  } else if( installed ) {
+    // detected we are installed in a prefix, calculate values from that
+
     int rc;
     // E.g. /usr/lib/chapel/1.16/runtime/lib
     rc = snprintf(CHPL_RUNTIME_LIB, FILENAME_MAX, "%s/%s/%s/%s",
@@ -563,6 +601,7 @@ static void setupChplHome(const char* argv0) {
     if ( rc >= FILENAME_MAX ) USR_FATAL("Installed pathname too long");
 
   } else {
+    // set to default values based on home path
     setChplHomeDerivedVars();
   }
 
@@ -676,7 +715,7 @@ static void setPrintIr(const ArgumentDescription* desc, const char* arg) {
   std::vector<std::string> fNames;
   splitString(std::string(arg), fNames, ",");
   for (std::size_t i = 0; i < fNames.size(); ++i) {
-    addNameToPrintLlvmIr(fNames[i].c_str());
+    addNameToPrintLlvmIrRequestedNames(fNames[i].c_str());
   }
 }
 
@@ -759,6 +798,13 @@ static void setLLVMRemarksFunctions(const ArgumentDescription* desc, const char*
   for(auto n: fNames) {
     llvmRemarksFunctionsToShow.push_back(n);
   }
+}
+
+static void setLLVMPrintPasses(const ArgumentDescription* desc, const char* arg) {
+#ifdef LLVM_USE_OLD_PASSES
+  printf("Cannot use '--llvm-print-passes' with this version of LLVM");
+  clean_exit(1);
+#endif
 }
 
 static void handleLibrary(const ArgumentDescription* desc, const char* arg_unused) {
@@ -1189,6 +1235,20 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
   // set the output path. other variables will be set later
   gDynoGenLibOutput = usePath;
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
+
+  // note that --dyno-gen-lib was provided
+  fDynoGenLibProvided = true;
+}
+
+static
+void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
+  gDynoGenLibOutput = "chpl_standard.dyno";
+
+  // turn on ID-based munging
+  fIdBasedMunging = true;
 }
 
 /*
@@ -1378,6 +1438,7 @@ static ArgumentDescription arg_desc[] = {
  {"llvm-print-ir-stage", ' ', "<stage>", "Specifies from which LLVM optimization stage to print function: none, basic, full", "S", NULL, "CHPL_LLVM_PRINT_IR_STAGE", &verifyStageAndSetStageNum},
  {"llvm-remarks", ' ', "<regex>", "Print LLVM optimization remarks", "S", NULL, NULL, &setLLVMRemarksFilters},
  {"llvm-remarks-function", ' ', "<name>", "Print LLVM optimization remarks only for these functions", "S", NULL, NULL, &setLLVMRemarksFunctions},
+ {"llvm-print-passes", ' ', NULL, "Print the LLVM optimizations to be run", "F", &fLlvmPrintPasses, NULL, &setLLVMPrintPasses},
  {"verify", ' ', NULL, "Run consistency checks during compilation", "N", &fVerify, "CHPL_VERIFY", NULL},
  {"parse-only", ' ', NULL, "Stop compiling after 'parse' pass for syntax checking", "N", &fParseOnly, NULL, NULL},
  {"parser-debug", ' ', NULL, "Set parser debug level", "+", &debugParserLevel, "CHPL_PARSER_DEBUG", NULL},
@@ -1449,6 +1510,7 @@ static ArgumentDescription arg_desc[] = {
  {"library-python-name", ' ', "<filename>", "Name generated Python module", "P", pythonModulename, NULL, setPythonAndLibmode},
  {"library-ml-debug", ' ', NULL, "Enable [disable] generation of debug messages in multi-locale libraries", "N", &fMultiLocaleLibraryDebug, NULL, NULL},
  {"localize-global-consts", ' ', NULL, "Enable [disable] optimization of global constants", "n", &fNoGlobalConstOpt, "CHPL_DISABLE_GLOBAL_CONST_OPT", NULL},
+ {"munge-with-ids", ' ', NULL, "[Don't] use ID-based munging", "N", &fIdBasedMunging, NULL, NULL},
  {"local-temp-names", ' ', NULL, "[Don't] Generate locally-unique temp names", "N", &localTempNames, "CHPL_LOCAL_TEMP_NAMES", NULL},
  {"log-deleted-ids-to", ' ', "<filename>", "Log AST id and memory address of each deleted node to the specified file", "P", deletedIdFilename, "CHPL_DELETED_ID_FILENAME", NULL},
  {"memory-frees", ' ', NULL, "Enable [disable] memory frees in the generated code", "n", &fNoMemoryFrees, "CHPL_DISABLE_MEMORY_FREES", NULL},
@@ -1487,7 +1549,9 @@ static ArgumentDescription arg_desc[] = {
  {"dyno-debug-trace", ' ', NULL, "Enable [disable] debug-trace output when using dyno compiler library", "N", &fDynoDebugTrace, "CHPL_DYNO_DEBUG_TRACE", NULL},
  {"dyno-break-on-hash", ' ' , NULL, "Break when query with given hash value is executed when using dyno compiler library", "X", &fDynoBreakOnHash, "CHPL_DYNO_BREAK_ON_HASH", NULL},
  {"dyno-gen-lib", ' ', "<path>", "Specify files named on the command line should be saved into a .dyno library", "P", NULL, NULL, addDynoGenLib},
+ {"dyno-gen-std", ' ', NULL, "Generate a .dyno library file for the standard library", "F", &fDynoGenStdLib, NULL, setDynoGenStdLib},
  {"dyno-verify-serialization", ' ', NULL, "Enable [disable] verification of serialization", "N", &fDynoVerifySerialization, NULL, NULL},
+ {"resolve-concrete-fns", ' ', NULL, "Enable [disable] resolving concrete functions",  "N", &fResolveConcreteFns, NULL, NULL},
  {"foreach-intents", ' ', NULL, "Enable [disable] (current, experimental, support for) foreach intents.", "N", &fForeachIntents, "CHPL_FOREACH_INTENTS", NULL},
 
  {"io-gen-serialization", ' ', NULL, "Enable [disable] generation of IO serialization methods", "n", &fNoIOGenSerialization, "CHPL_IO_GEN_SERIALIZATION", NULL},
@@ -1615,7 +1679,12 @@ static void printStuff(const char* argv0) {
     clean_exit(status);
   }
 
-  if (fPrintHelp || (!printedSomething && sArgState.nfile_arguments < 1)) {
+  // show usage if no files were provided
+  bool missingAnyFile = sArgState.nfile_arguments < 1;
+  // except with --dyno-gen-std, no files need to be provided
+  if (fDynoGenStdLib) missingAnyFile = false;
+
+  if (fPrintHelp || (!printedSomething && missingAnyFile)) {
     if (printedSomething) printf("\n");
 
     usage(&sArgState, !fPrintHelp, fPrintEnvHelp, fPrintSettingsHelp);
@@ -1624,7 +1693,7 @@ static void printStuff(const char* argv0) {
     printedSomething = true;
   }
 
-  if (printedSomething && sArgState.nfile_arguments < 1) {
+  if (printedSomething && missingAnyFile) {
     shouldExit       = true;
   }
 
@@ -2052,6 +2121,9 @@ static void checkGenLibNotLLVM() {
   if (!gDynoGenLibOutput.empty() && !fLlvmCodegen) {
     USR_FATAL("--dyno-gen-lib only works with the LLVM backend");
   }
+  if (fIdBasedMunging && !fLlvmCodegen) {
+    USR_FATAL("--munge-with-ids only works with the LLVM backend");
+  }
 }
 
 static void checkUnsupportedConfigs(void) {
@@ -2470,7 +2542,18 @@ int main(int argc, char* argv[]) {
       if (fRunlldb) runCompilerInLLDB(argc, argv);
     }
 
-    assertSourceFilesFound();
+    if (!fDynoGenStdLib) {
+      assertSourceFilesFound();
+    } else {
+      // --dyno-gen-std should not be used with --dyno-gen-lib
+      if (fDynoGenLibProvided) {
+        USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
+      }
+      // there should be no input files for --dyno-gen-std
+      if (nthFilename(0) != nullptr) {
+        USR_FATAL("file arguments not allowed with --dyno-gen-std");
+      }
+    }
 
     runPasses(tracker);
   }

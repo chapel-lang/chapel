@@ -1,0 +1,6 @@
+errorAccessRecordField.chpl:16: error: cannot assign to const variable
+errorAccessRecordField.chpl:14: note: The shadow variable 'r' is constant due to task intents in this loop
+errorAccessRecordField.chpl:17: error: cannot assign to const variable
+errorAccessRecordField.chpl:14: note: The shadow variable 'r' is constant due to task intents in this loop
+errorAccessRecordField.chpl:18: error: cannot assign to const variable
+errorAccessRecordField.chpl:14: note: The shadow variable 'r' is constant due to task intents in this loop

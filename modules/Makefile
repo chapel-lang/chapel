@@ -1,4 +1,4 @@
-# Copyright 2020-2023 Hewlett Packard Enterprise Development LP
+# Copyright 2020-2024 Hewlett Packard Enterprise Development LP
 # Copyright 2004-2019 Cray Inc.
 # Other additional copyright holders may be indicated within.
 #
@@ -69,7 +69,6 @@ $(SYS_CTYPES_MODULE_DOC): $(MAKE_SYS_BASIC_TYPES)
 
 MODULES_TO_DOCUMENT = \
 	standard/AutoMath.chpl \
-	standard/Barriers.chpl \
 	standard/BigInteger.chpl \
 	standard/BitOps.chpl \
 	standard/ChapelIO.chpl \
@@ -122,6 +121,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/Crypto.chpl \
 	packages/Curl.chpl \
 	packages/DistributedBag.chpl \
+	packages/DistributedBagDeprecated.chpl \
 	packages/DistributedDeque.chpl \
 	packages/DistributedIters.chpl \
 	packages/EpochManager.chpl \
@@ -138,6 +138,7 @@ PACKAGES_TO_DOCUMENT = \
 	packages/MPI.chpl \
 	packages/NetCDF.chpl \
 	packages/NPBRandom.chpl \
+	packages/ObjectSerialization.chpl \
 	packages/ProtobufProtocolSupport.chpl \
 	packages/PeekPoke.chpl \
 	packages/RangeChunk.chpl \
