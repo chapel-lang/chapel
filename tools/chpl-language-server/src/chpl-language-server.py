@@ -74,6 +74,9 @@ from lsprotocol.types import (
     MarkupKind,
 )
 
+from lsprotocol.types import WorkspaceFolder
+import json
+
 
 def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
     if isinstance(decl, chapel.core.Module) and decl.kind() != "implicit":
@@ -221,6 +224,7 @@ class ResolvedPair:
 class FileInfo:
     uri: str
     context: chapel.Context
+    workspace: Optional[WorkspaceFolder]
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
@@ -233,6 +237,17 @@ class FileInfo:
         self.def_segments = PositionList(lambda x: x.rng)
         self.rebuild_index()
 
+    def get_workspace_config(self) -> Optional[Dict]:
+        if self.workspace is None:
+            return None
+        wsPath = self.workspace.uri[len("file://") :]
+        configPath = os.path.join(wsPath, ".cls-config.json")
+        config = dict()
+        if os.path.exists(configPath):
+            with open(configPath, "r") as fp:
+                config = json.load(fp)
+        return config
+
     def parse_file(self) -> List[chapel.AstNode]:
         """
         Parses this file and returns the toplevel ast elements
@@ -241,11 +256,19 @@ class FileInfo:
         This call should be wrapped an appropriate error context.
         """
         path = self.uri[len("file://") :]
+
         directory = os.path.dirname(path)
 
         # prior to parsing the file, make sure its path is in the search path
         # this allows us to resolve sibling files
         self.context.add_module_path(directory)
+
+        config = self.get_workspace_config()
+        if config:
+            module_dirs = config.get(path, [])
+            for module_dir in module_dirs:
+                for d in module_dir.get("module_dirs", []):
+                    self.context.add_module_path(d)
 
         return self.context.parse(path)
 
@@ -344,8 +367,17 @@ def run_lsp():
 
     contexts: Dict[str, FileInfo] = {}
 
+    def get_workspace_for_uri(
+        ls: LanguageServer, uri: str
+    ) -> Optional[WorkspaceFolder]:
+        folders = ls.workspace.folders
+        for f, ws in folders.items():
+            if uri.startswith(f):
+                return ws
+        return None
+
     def get_context(
-        uri: str, do_update: bool = False
+        ls: LanguageServer, uri: str, do_update: bool = False
     ) -> Tuple[FileInfo, List[Any]]:
         """
         The LSP driver maintains one Chapel context per-file. If there is no context, this function creates a context. If `do_update` is set, this function assumes the file content has change and advances revisions.
@@ -362,18 +394,19 @@ def run_lsp():
         else:
             context = chapel.Context()
             with context.track_errors() as errors:
-                file_info = FileInfo(uri, context)
+                ws = get_workspace_for_uri(ls, uri)
+                file_info = FileInfo(uri, context, ws)
             contexts[uri] = file_info
 
         return (file_info, errors)
 
-    def build_diagnostics(uri: str) -> List[Diagnostic]:
+    def build_diagnostics(ls: LanguageServer, uri: str) -> List[Diagnostic]:
         """
         Parse a file at a particular URI, capture the errors, and return then
         as a list of LSP Diagnostics.
         """
 
-        fi, errors = get_context(uri, do_update=True)
+        fi, errors = get_context(ls, uri, do_update=True)
 
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
@@ -387,14 +420,14 @@ def run_lsp():
         params: Union[DidSaveTextDocumentParams, DidOpenTextDocumentParams],
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
-        diag = build_diagnostics(text_doc.uri)
+        diag = build_diagnostics(ls, text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
 
     @server.feature(TEXT_DOCUMENT_DEFINITION)
     async def get_def(ls: LanguageServer, params: DefinitionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_context(ls, text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
@@ -404,7 +437,7 @@ def run_lsp():
     async def get_refs(ls: LanguageServer, params: ReferenceParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_context(ls, text_doc.uri)
 
         node_and_loc = None
         # First, search definitions. If the cursor is over a declaration,
@@ -432,7 +465,7 @@ def run_lsp():
     async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_context(ls, text_doc.uri)
 
         # doesn't descend into nested definitions for Functions
         def preorder_ignore_funcs(node):
@@ -458,12 +491,12 @@ def run_lsp():
     async def hover(ls: LanguageServer, params: HoverParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_context(ls, text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
-        node_fi, _ = get_context(resolved_to.get_uri())
+        node_fi, _ = get_context(ls, resolved_to.get_uri())
 
         signature = get_symbol_signature(resolved_to.node)
         docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
@@ -477,7 +510,7 @@ def run_lsp():
     async def complete(ls: LanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_context(ls, text_doc.uri)
 
         items = []
         items.extend(
