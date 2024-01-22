@@ -34,7 +34,7 @@ static PyMethodDef ContextObject_methods[] = {
   { "_get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
   { "track_errors", (PyCFunction) ContextObject_track_errors, METH_NOARGS, "Return a context manager that tracks errors emitted by this Context" },
   { "set_module_search_paths", (PyCFunction) ContextObject_set_module_search_paths, METH_VARARGS, "" },
-  { "get_chpl_home", (PyCFunction) ContextObject_get_chpl_home, METH_NOARGS, "" },
+  { "home", (PyCFunction) ContextObject_home, METH_NOARGS, "" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
