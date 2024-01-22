@@ -199,9 +199,12 @@ class NodeAndRange:
     def __post_init__(self):
         if isinstance(self.node, chapel.core.Dot):
             self.rng = location_to_range(self.node.field_location())
-        elif isinstance(self.node, chapel.core.NamedDecl):
+        elif isinstance(self.node, (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl)):
             self.rng = location_to_range(self.node.name_location())
         else:
+            # TODO: Some NamedDecls are not reported using name_location().
+            #       This s because name_location() is not correctly reported
+            #       by the parser today.
             self.rng = location_to_range(self.node.location())
 
     def get_location(self):
