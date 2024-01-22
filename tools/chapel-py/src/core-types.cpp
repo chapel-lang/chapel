@@ -60,9 +60,7 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) Context(std::move(config));
   self->context.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
-  std::vector<std::string> modulePaths;
-  modulePaths.push_back("..");
-  parsing::setupModuleSearchPaths(&self->context, false, false, modulePaths, {"modify-with-method.chpl", "TestArray.chpl"});
+  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
 
   return 0;
 }
