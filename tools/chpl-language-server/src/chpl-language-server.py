@@ -218,11 +218,53 @@ class ResolvedPair:
     resolved_to: NodeAndRange
 
 
+class ContextContainer:
+    context: chapel.core.Context
+    file_paths: List[str]
+    module_paths: List[str]
+    file_infos: List['FileInfo']
+
+    def _get_configuration(self, path, project_root):
+        cls_config = os.path.join(project_root, ".cls-info.json")
+        self.module_paths = []
+        self.file_paths = [path]
+        if os.path.exists(cls_config):
+            with open(cls_config) as f:
+                commands = json.load(f)
+                if path in commands:
+                    self.module_paths = commands[path][0]["module_dirs"]
+                    self.file_paths = commands[path][0]["files"]
+        self.context.set_module_paths(self.module_paths, self.file_paths)
+
+    def __init__(self, file: str, project_root: str):
+        self.context = chapel.core.Context()
+        self.file_paths = []
+        self.module_paths = []
+        self.file_infos = []
+
+        self._get_configuration(file, project_root)
+
+    def new_file_info(self, uri: str):
+        with self.context.track_errors() as errors:
+            fi = FileInfo(uri, self)
+            self.file_infos.append(fi)
+        return (fi, errors)
+
+    def advance(self):
+        self.context.advance_to_next_revision(False)
+        self.context.set_module_paths(self.module_paths, self.file_paths)
+
+        with self.context.track_errors() as errors:
+            for fi in self.file_infos:
+                fi.rebuild_index()
+        return errors
+
+
 @dataclass
 @visitor
 class FileInfo:
     uri: str
-    context: chapel.core.Context
+    context: ContextContainer
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
@@ -243,13 +285,13 @@ class FileInfo:
         This call should be wrapped an appropriate error context.
         """
 
-        return self.context.parse(self.uri[len("file://") :])
+        return self.context.context.parse(self.uri[len("file://") :])
 
     def get_asts(self) -> List[chapel.core.AstNode]:
         """
         Returns toplevel ast elements. This method silences all errors.
         """
-        with self.context.track_errors() as _:
+        with self.context.context.track_errors() as _:
             return self.parse_file()
 
     def _note_reference(self, node: chapel.core.AstNode):
@@ -338,9 +380,24 @@ def run_lsp():
     """
     server = LanguageServer("chpl-language-server", "v0.1")
 
-    contexts: Dict[str, FileInfo] = {}
+    contexts: Dict[str, ContextContainer] = {}
+    file_infos: Dict[str, FileInfo] = {}
 
-    def get_context(
+    def get_context(uri: str) -> ContextContainer:
+        path = uri[len("file://") :]
+        project_root = server.workspace.root_uri[len("file://") :]
+
+        if path in contexts:
+            return contexts[path]
+
+        context = ContextContainer(path, project_root)
+        for file in context.file_paths:
+            contexts[file] = context
+        contexts[path] = context
+
+        return context
+
+    def get_file_info(
         uri: str, do_update: bool = False
     ) -> Tuple[FileInfo, List[Any]]:
         """
@@ -348,34 +405,14 @@ def run_lsp():
         """
 
         errors = []
-        path = uri[len("file://") :]
 
-        def configure_search_paths(context: chapel.core.Context):
-            cls_config = os.path.join(server.workspace.root_uri[len("file://") :], ".cls-info.json")
-            module_paths = []
-            file_paths = []
-            if os.path.exists(cls_config):
-                with open(cls_config) as f:
-                    commands = json.load(f)
-                    if path in commands:
-                        module_paths = commands[path][0]["module_dirs"]
-                        file_paths = commands[path][0]["files"]
-
-            context.set_module_paths(module_paths, file_paths)
-
-        if uri in contexts:
-            file_info = contexts[uri]
+        if uri in file_infos:
+            file_info = file_infos[uri]
             if do_update:
-                file_info.context.advance_to_next_revision(False)
-                configure_search_paths(file_info.context)
-                with file_info.context.track_errors() as errors:
-                    file_info.rebuild_index()
+                errors = file_info.context.advance()
         else:
-            context = chapel.core.Context()
-            configure_search_paths(context)
-            with context.track_errors() as errors:
-                file_info = FileInfo(uri, context)
-            contexts[uri] = file_info
+            file_info, errors = get_context(uri).new_file_info(uri)
+            file_infos[uri] = file_info
 
         return (file_info, errors)
 
@@ -385,7 +422,7 @@ def run_lsp():
         as a list of LSP Diagnostics.
         """
 
-        fi, errors = get_context(uri, do_update=True)
+        fi, errors = get_file_info(uri, do_update=True)
 
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
@@ -406,7 +443,7 @@ def run_lsp():
     async def get_def(ls: LanguageServer, params: DefinitionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_file_info(text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
@@ -416,7 +453,7 @@ def run_lsp():
     async def get_refs(ls: LanguageServer, params: ReferenceParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_file_info(text_doc.uri)
 
         node_and_loc = None
         # First, search definitions. If the cursor is over a declaration,
@@ -444,7 +481,7 @@ def run_lsp():
     async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_file_info(text_doc.uri)
 
         # doesn't descend into nested definitions for Functions
         def preorder_ignore_funcs(node):
@@ -470,12 +507,12 @@ def run_lsp():
     async def hover(ls: LanguageServer, params: HoverParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_file_info(text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
-        node_fi, _ = get_context(resolved_to.get_uri())
+        node_fi, _ = get_file_info(resolved_to.get_uri())
 
         signature = get_symbol_signature(resolved_to.node)
         docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
@@ -489,7 +526,7 @@ def run_lsp():
     async def complete(ls: LanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = get_file_info(text_doc.uri)
 
         items = []
         items.extend(
