@@ -24,6 +24,51 @@ from typing import Dict, List, Optional
 from . import visitor
 
 
+
+class Context():
+
+    def __init__(self):
+        self._impl = core._Context()
+        self._paths: List[str] = []
+        self._impl.set_module_search_paths(self._paths)
+
+    def add_module_path(self, path: str):
+        if path in self._paths:
+            return
+        self._paths.append(path)
+
+        self.advance_to_next_revision(False)
+
+    def parse(self, path: str) -> List[AstNode]:
+        """
+        Parse a top-level AST node from the given file
+        """
+        return self._impl.parse(path)
+
+    def is_bundled_path(self, path: str) -> bool:
+        """
+        Check if the given file path is within the bundled (built-in) Chapel files
+        """
+        return self._impl.is_bundled_path(path)
+
+    def advance_to_next_revision(self, gc: bool) -> None:
+        """
+        Advance the context to the next revision
+        """
+        self._impl.advance_to_next_revision(gc)
+
+        # always reset the paths
+        self._impl.set_module_search_paths(self._paths)
+
+    def track_errors(self):
+        """
+        Return a context manager that tracks errors emitted by this Context
+        """
+        return self._impl.track_errors()
+
+
+
+
 def preorder(node):
     """
     Recursively visit the given AST node, going in pre-order (parent-then-children)

@@ -33,6 +33,8 @@ static PyMethodDef ContextObject_methods[] = {
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
   { "_get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
   { "track_errors", (PyCFunction) ContextObject_track_errors, METH_NOARGS, "Return a context manager that tracks errors emitted by this Context" },
+  { "set_module_search_paths", (PyCFunction) ContextObject_set_module_search_paths, METH_VARARGS, "" },
+  { "get_chpl_home", (PyCFunction) ContextObject_get_chpl_home, METH_NOARGS, "" },
   {NULL, NULL, 0, NULL}  /* Sentinel */
 };
 
@@ -41,7 +43,7 @@ PyTypeObject ContextType = {
 };
 
 void setupContextType() {
-  ContextType.tp_name = "Context";
+  ContextType.tp_name = "_Context";
   ContextType.tp_basicsize = sizeof(ContextObject);
   ContextType.tp_itemsize = 0;
   ContextType.tp_dealloc = (destructor) ContextObject_dealloc;
@@ -58,7 +60,9 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) Context(std::move(config));
   self->context.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
-  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+  std::vector<std::string> modulePaths;
+  modulePaths.push_back("..");
+  parsing::setupModuleSearchPaths(&self->context, false, false, modulePaths, {"modify-with-method.chpl", "TestArray.chpl"});
 
   return 0;
 }
@@ -114,9 +118,35 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
   }
 
   context->advanceToNextRevision(prepareToGc);
-  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
+  Py_RETURN_NONE;
+}
+
+PyObject* ContextObject_set_module_search_paths(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+  PyObject* pythonList;
+  if (!PyArg_ParseTuple(args, "O", &pythonList)) {
+    PyErr_BadArgument();
+    return nullptr;
+  }
+  std::vector<std::string> modulePaths;
+  PyObject* it = PyObject_GetIter(pythonList);
+  while (true) {
+    PyObject* item = PyIter_Next(it);
+    if (item == nullptr) break;
+    const char* s = PyUnicode_AsUTF8(item);
+    modulePaths.push_back(std::string(s));
+  }
+  Py_DECREF(it);
+
+  parsing::setupModuleSearchPaths(&self->context, false, false, modulePaths, {});
 
   Py_RETURN_NONE;
+}
+
+PyObject* ContextObject_home(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+  auto chplHome = context->chplHome();
+  return Py_BuildValue("s", chplHome.c_str());
 }
 
 template <typename Tuple, size_t ... Indices>
@@ -175,7 +205,7 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "import typing" << std::endl << std::endl;
 
   // these get replaced with `scripts/generate-pyi.py`
-  ss << "class Context: pass" << std::endl << std::endl;
+  ss << "class _Context: pass" << std::endl << std::endl;
   ss << "class Location: pass" << std::endl << std::endl;
   ss << "class ErrorManager: pass" << std::endl << std::endl;
   ss << "class Error: pass" << std::endl << std::endl;

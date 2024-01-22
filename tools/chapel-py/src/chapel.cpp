@@ -86,7 +86,7 @@ PyMODINIT_FUNC PyInit_core() {
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
   ADD_TYPE(AstNode);
-  if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
+  if (PyModule_AddObject(chapelModule, "_Context", (PyObject *) &ContextType) < 0) {
     Py_DECREF(&ContextType);
     Py_DECREF(chapelModule);
     return NULL;
@@ -94,8 +94,4 @@ PyMODINIT_FUNC PyInit_core() {
   return chapelModule;
 }
 
-}
-
-int main() {
-  chpl::Context myContext;
 }

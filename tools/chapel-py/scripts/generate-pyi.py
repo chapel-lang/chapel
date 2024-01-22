@@ -23,7 +23,7 @@ from typing import List, Tuple, Optional, Union
 
 
 def _get_base_header() -> str:
-    c = chapel.core.Context()
+    c = chapel.core._Context()
     return c._get_pyi_file()
 
 
@@ -61,7 +61,7 @@ def _wrap_method(
 
 def get_Context_header() -> str:
     s = _section(
-        "class Context:",
+        "class _Context:",
         _wrap_method(
             "parse",
             args=[("path", "str")],
@@ -82,7 +82,7 @@ def get_Context_header() -> str:
         _wrap_method(
             "track_errors",
             rettype="ErrorManager",
-            docstring="Generate a stub file for the Chapel AST nodes",
+            docstring="Return a context manager that tracks errors emitted by this Context",
         ),
         _wrap_method(
             "_get_pyi_file",
@@ -211,7 +211,7 @@ def get_AstNode_header() -> str:
 
 
 replacements = {
-    "class Context: pass": get_Context_header,
+    "class _Context: pass": get_Context_header,
     "class Location: pass": get_Location_header,
     "class ErrorManager: pass": get_ErrorManager_header,
     "class Error: pass": get_Error_header,
