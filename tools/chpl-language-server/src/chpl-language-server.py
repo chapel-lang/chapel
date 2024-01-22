@@ -34,7 +34,7 @@ from typing import (
 from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
-import itertools
+from symbol_signature import get_symbol_signature
 
 
 import chapel.core
@@ -46,7 +46,6 @@ from lsprotocol.types import (
     Diagnostic,
     Range,
     Position,
-    DiagnosticSeverity,
 )
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
@@ -73,81 +72,6 @@ from lsprotocol.types import (
     MarkupContent,
     MarkupKind,
 )
-
-
-# TODO: for now, just text based. but should resolve generic types
-def get_symbol_sig(node: chapel.core.AstNode):
-    assert isinstance(node, chapel.core.NamedDecl)
-
-    def node_to_string(node: chapel.core.AstNode) -> str:
-        if isinstance(node, chapel.core.NamedDecl):
-            return get_symbol_sig(node)
-        elif isinstance(node, chapel.core.Identifier):
-            return node.name()
-        elif isinstance(node, chapel.core.IntLiteral):
-            return node.text()
-        elif isinstance(node, chapel.core.UintLiteral):
-            return node.text()
-        elif isinstance(node, chapel.core.BoolLiteral):
-            return node.value()
-        elif isinstance(node, chapel.core.ImagLiteral):
-            return node.text()
-        elif isinstance(node, chapel.core.RealLiteral):
-            return node.text()
-        elif isinstance(node, chapel.core.StringLiteral):
-            return '"' + node.value() + '"'
-        elif isinstance(node, chapel.core.CStringLiteral):
-            return 'c"' + node.value() + '"'
-        return "<...>"
-
-    def var_to_string(node: chapel.core.VarLikeDecl) -> str:
-        s = ""
-        if isinstance(node, chapel.core.Variable):
-            if node.is_config():
-                s += "config "
-            intent = intent_to_string(node.kind())
-            if intent:
-                s += f"{intent} "
-        s += node.name()
-        type_ = node.type_expression()
-        if type_:
-            s += f": {node_to_string(type_)}"
-        init = node.init_expression()
-        if init:
-            s += f" = {node_to_string(init)}"
-        return s
-
-    def intent_to_string(intent: Optional[str]) -> str:
-        remap = {
-            "<default-intent>": "",
-            "<index>": "",
-            "<const-var>": "const",
-        }
-        # use 'intent' as the default, so if no remap no work done
-        return remap.get(intent, intent) if intent else ""
-
-    if isinstance(node, chapel.core.Class):
-        s = ""
-        ie = list(node.inherit_exprs())
-        if len(ie) > 0:
-            s = ": " + ", ".join([x.name() for x in ie])
-        return f"class {node.name()}{s}"
-    elif isinstance(node, chapel.core.Record):
-        s = ""
-        ie = list(node.inherit_exprs())
-        if len(ie) > 0:
-            s = ": " + ", ".join([x.name() for x in ie])
-        return f"record {node.name()}{s}"
-    elif isinstance(node, chapel.core.Interface):
-        return f"interface {node.name()}"
-    elif isinstance(node, chapel.core.Module):
-        return f"module {node.name()}"
-    elif isinstance(node, chapel.core.Enum):
-        return f"enum {node.name()}"
-    elif isinstance(node, chapel.core.Variable):
-        return var_to_string(node)
-
-    return node.name()
 
 
 def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
@@ -534,7 +458,7 @@ def run_lsp():
         resolved_to = segment.resolved_to
         node_fi, _ = get_context(resolved_to.get_uri())
 
-        signature = get_symbol_sig(resolved_to.node)
+        signature = get_symbol_signature(resolved_to.node)
         docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
         text = f"```chapel\n{signature}\n```"
         if docstring:
