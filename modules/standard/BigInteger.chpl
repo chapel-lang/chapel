@@ -168,7 +168,7 @@ module BigInteger {
     precision integers across multiple locales.
   */
   pragma "ignore noinit"
-  record bigint : writeSerializable {
+  record bigint : serializable {
     // The underlying GMP C structure
     pragma "no init"
     @chpldoc.nodoc
@@ -421,6 +421,13 @@ module BigInteger {
     /* Writes this number to a :type:`~IO.fileWriter` */
     proc serialize(writer, ref serializer) throws {
       writeThis(writer);
+    }
+
+    /* Read this number from a :type:`~IO.fileReader` */
+    proc ref deserialize(reader, ref deserializer) throws {
+      var s: string;
+      reader.read(s);
+      this = new bigint(s);
     }
   }
 
