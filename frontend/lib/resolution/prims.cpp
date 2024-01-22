@@ -651,14 +651,22 @@ static QualifiedType primFamilyIsSubtype(Context* context,
     // it's sufficient to check if no conversion occurs (both instantiates()
     // and !instantiates() are allowed).
     result = cpr.passes() && !cpr.converts() && !cpr.promotes();
-  } else if (prim == PRIM_IS_SUBTYPE) {
-    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
-                              cpr.conversionKind() == CanPassResult::SUBTYPE);
   } else {
-    CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
-    result = cpr.passes() && (cpr.conversionKind() == CanPassResult::NONE ||
-                              cpr.conversionKind() == CanPassResult::SUBTYPE) &&
-             newSubQT != newParentQT;
+    // TODO: Don't count borrowing conversion as implying subtype, since that's
+    // not what the spec does.
+    bool isSubType = cpr.passes() &&
+                     (cpr.conversionKind() == CanPassResult::NONE ||
+                      cpr.conversionKind() == CanPassResult::SUBTYPE ||
+                      cpr.conversionKind() == CanPassResult::BORROWS ||
+                      cpr.conversionKind() == CanPassResult::BORROWS_SUBTYPE);
+    if (prim == PRIM_IS_SUBTYPE) {
+      result = isSubType;
+    } else {
+      CHPL_ASSERT(prim == PRIM_IS_PROPER_SUBTYPE);
+      // TODO: Analogous to the above, don't count a non-subtype borrowing
+      // conversion as a proper subtype.
+      result = isSubType && newSubQT != newParentQT;
+    }
   }
 
   return QualifiedType(QualifiedType::PARAM, BoolType::get(context),
