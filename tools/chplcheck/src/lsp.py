@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-import chapel.core
+import chapel
 import chapel.lsp
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
@@ -52,7 +52,7 @@ def run_lsp(driver):
             context = contexts[uri]
             context.advance_to_next_revision(False)
         else:
-            context = chapel.core.Context()
+            context = chapel.Context()
             contexts[uri] = context
         return context
 

@@ -20,7 +20,7 @@
 #
 
 import chapel
-import chapel.core
+import chapel
 import chapel.replace
 import sys
 import argparse
