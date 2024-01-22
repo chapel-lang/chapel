@@ -4157,6 +4157,14 @@ void Resolver::exit(const Try* node) {
   if (initResolver && node->isTryBang() && node->numHandlers() > 0) {
     context->error(node, "Only catch-less try! statements are allowed in initializers for now");
   }
+  // Node inherits the type of its expression if it is not a statement.
+  if (node->isExpressionLevel()) {
+    auto expr = node->stmt(0);
+    CHPL_ASSERT(expr);
+    auto& reNode = byPostorder.byAst(node);
+    auto& reExpr = byPostorder.byAst(expr);
+    reNode.setType(reExpr.type());
+  }
   exitScope(node);
 }
 
