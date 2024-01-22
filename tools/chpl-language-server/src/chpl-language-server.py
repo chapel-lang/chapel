@@ -35,6 +35,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 from symbol_signature import get_symbol_signature
+import itertools
+import os
+import json
 
 
 import chapel.core
@@ -345,15 +348,31 @@ def run_lsp():
         """
 
         errors = []
+        path = uri[len("file://") :]
+
+        def configure_search_paths(context: chapel.core.Context):
+            cls_config = os.path.join(server.workspace.root_uri[len("file://") :], ".cls-info.json")
+            module_paths = []
+            file_paths = []
+            if os.path.exists(cls_config):
+                with open(cls_config) as f:
+                    commands = json.load(f)
+                    if path in commands:
+                        module_paths = commands[path][0]["module_dirs"]
+                        file_paths = commands[path][0]["files"]
+
+            context.set_module_paths(module_paths, file_paths)
 
         if uri in contexts:
             file_info = contexts[uri]
             if do_update:
                 file_info.context.advance_to_next_revision(False)
+                configure_search_paths(file_info.context)
                 with file_info.context.track_errors() as errors:
                     file_info.rebuild_index()
         else:
             context = chapel.core.Context()
+            configure_search_paths(context)
             with context.track_errors() as errors:
                 file_info = FileInfo(uri, context)
             contexts[uri] = file_info
