@@ -29,6 +29,8 @@ using namespace uast;
 
 static PyMethodDef ContextObject_methods[] = {
   { "parse", (PyCFunction) ContextObject_parse, METH_VARARGS, "Parse a top-level AST node from the given file" },
+  { "set_module_paths", (PyCFunction) ContextObject_set_module_paths, METH_VARARGS, "Set the module path arguments to the given lists of module paths and filenames" },
+  { "introspect_parsed_files", (PyCFunction) ContextObject_introspect_parsed_files, METH_VARARGS, "Inspect the list of files that have been parsed by the Context" },
   { "is_bundled_path", (PyCFunction) ContextObject_is_bundled_path, METH_VARARGS, "Check if the given file path is within the bundled (built-in) Chapel files" },
   { "advance_to_next_revision", (PyCFunction) ContextObject_advance_to_next_revision, METH_VARARGS, "Advance the context to the next revision" },
   { "_get_pyi_file", (PyCFunction) ContextObject_get_pyi_file, METH_NOARGS, "Generate a stub file for the Chapel AST nodes" },
@@ -58,8 +60,6 @@ int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs) {
   new (&self->context) Context(std::move(config));
   self->context.installErrorHandler(owned<PythonErrorHandler>(new PythonErrorHandler((PyObject*) self)));
 
-  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
-
   return 0;
 }
 
@@ -88,6 +88,51 @@ PyObject* ContextObject_parse(ContextObject *self, PyObject* args) {
   return topExprs;
 }
 
+static void extractListOfStrings(PyObject* list, std::vector<std::string>& into) {
+  for (int i = 0; i < PyList_Size(list); i++) {
+    PyObject* pathObject = PyList_GetItem(list, i);
+    if (!PyUnicode_Check(pathObject)) {
+      PyErr_BadArgument();
+      return;
+    }
+    into.push_back(PyUnicode_AsUTF8(pathObject));
+  }
+}
+
+PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+  std::vector<std::string> paths;
+  std::vector<std::string> filenames;
+
+  PyObject* pathsObject = nullptr;
+  PyObject* filenamesObject = nullptr;
+
+  if (!PyArg_ParseTuple(args, "OO", &pathsObject, &filenamesObject)) {
+    PyErr_BadArgument();
+    return nullptr;
+  }
+
+  extractListOfStrings(pathsObject, paths);
+  extractListOfStrings(filenamesObject, filenames);
+  parsing::setupModuleSearchPaths(context, false, false, paths, filenames);
+
+  Py_RETURN_NONE;
+}
+
+PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* args) {
+  auto context = &self->context;
+
+  auto parsedFiles = parsing::introspectParsedFiles(context);
+  PyObject* destinationList = PyList_New(parsedFiles.size());
+
+  size_t idx = 0;
+  for (auto file : parsedFiles) {
+    PyList_SetItem(destinationList, idx++, Py_BuildValue("s", file.c_str()));
+  }
+
+  return destinationList;
+}
+
 PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args) {
   auto context = &self->context;
   const char* fileName;
@@ -114,8 +159,6 @@ PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* 
   }
 
   context->advanceToNextRevision(prepareToGc);
-  parsing::setupModuleSearchPaths(&self->context, false, false, {}, {});
-
   Py_RETURN_NONE;
 }
 
