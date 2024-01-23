@@ -183,7 +183,7 @@ static void setupStopAfterPass() {
 
 void runPasses(PhaseTracker& tracker) {
 
-  if (fDriverDoMonolithic || fDriverCompilationPhase) setupLogfiles();
+  setupLogfiles();
 
   if (printPasses == true || printPassesFile != 0) {
     if (fDriverCompilationPhase) {
