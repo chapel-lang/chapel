@@ -95,7 +95,3 @@ PyMODINIT_FUNC PyInit_core() {
 }
 
 }
-
-int main() {
-  chpl::Context myContext;
-}
