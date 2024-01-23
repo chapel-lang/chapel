@@ -78,8 +78,8 @@ from lsprotocol.types import WorkspaceFolder
 import json
 
 
-def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
-    if isinstance(decl, chapel.core.Module) and decl.kind() != "implicit":
+def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
+    if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
         return SymbolKind.Module
     elif isinstance(decl, chapel.Class):
         return SymbolKind.Class
