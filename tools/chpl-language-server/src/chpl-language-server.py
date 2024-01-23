@@ -247,7 +247,7 @@ class ContextContainer:
 
     def new_file_info(
         self, uri: str
-    ) -> Tuple["FileInfo", List[chapel.core.Error]]:
+    ) -> Tuple["FileInfo", List[Any]]:
         """
         Creates a new FileInfo for a given URI. FileInfos constructed in
         this manner are tied to this ContextContainer, and have their
@@ -260,7 +260,7 @@ class ContextContainer:
             self.file_infos.append(fi)
         return (fi, errors)
 
-    def advance(self) -> List[chapel.core.Error]:
+    def advance(self) -> List[Any]:
         """
         Advances the Dyno context within to the next revision, and takes
         care of setting the necessary input queries in this revision. All
@@ -392,6 +392,14 @@ class FileInfo:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
 
+def get_root_for_uri(
+    ls: LanguageServer, uri: str
+) -> str:
+    folders = ls.workspace.folders
+    for f, ws in folders.items():
+        if uri.startswith(f):
+            return ws.uri
+    return ls.workspace.root_uri
 
 def run_lsp():
     """
@@ -402,9 +410,9 @@ def run_lsp():
     contexts: Dict[str, ContextContainer] = {}
     file_infos: Dict[str, FileInfo] = {}
 
-    def get_context(uri: str) -> ContextContainer:
+    def get_context(ls: LanguageServer, uri: str) -> ContextContainer:
         path = uri[len("file://") :]
-        project_root = server.workspace.root_uri[len("file://") :]
+        project_root = get_root_for_uri(ls, uri)[len("file://") :]
 
         if path in contexts:
             return contexts[path]
@@ -417,7 +425,7 @@ def run_lsp():
         return context
 
     def get_file_info(
-        uri: str, do_update: bool = False
+        ls: LanguageServer, uri: str, do_update: bool = False
     ) -> Tuple[FileInfo, List[Any]]:
         """
         The LSP driver maintains one Chapel context per-file. If there is no context, this function creates a context. If `do_update` is set, this function assumes the file content has change and advances revisions.
@@ -430,18 +438,18 @@ def run_lsp():
             if do_update:
                 errors = file_info.context.advance()
         else:
-            file_info, errors = get_context(uri).new_file_info(uri)
+            file_info, errors = get_context(ls, uri).new_file_info(uri)
             file_infos[uri] = file_info
 
         return (file_info, errors)
 
-    def build_diagnostics(uri: str) -> List[Diagnostic]:
+    def build_diagnostics(ls: LanguageServer, uri: str) -> List[Diagnostic]:
         """
         Parse a file at a particular URI, capture the errors, and return then
         as a list of LSP Diagnostics.
         """
 
-        fi, errors = get_file_info(uri, do_update=True)
+        fi, errors = get_file_info(ls, uri, do_update=True)
 
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
@@ -455,14 +463,14 @@ def run_lsp():
         params: Union[DidSaveTextDocumentParams, DidOpenTextDocumentParams],
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
-        diag = build_diagnostics(text_doc.uri)
+        diag = build_diagnostics(ls, text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
 
     @server.feature(TEXT_DOCUMENT_DEFINITION)
     async def get_def(ls: LanguageServer, params: DefinitionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_file_info(text_doc.uri)
+        fi, _ = get_file_info(ls, text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
@@ -472,7 +480,7 @@ def run_lsp():
     async def get_refs(ls: LanguageServer, params: ReferenceParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_file_info(text_doc.uri)
+        fi, _ = get_file_info(ls, text_doc.uri)
 
         node_and_loc = None
         # First, search definitions. If the cursor is over a declaration,
@@ -500,7 +508,7 @@ def run_lsp():
     async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_file_info(text_doc.uri)
+        fi, _ = get_file_info(ls, text_doc.uri)
 
         # doesn't descend into nested definitions for Functions
         def preorder_ignore_funcs(node):
@@ -526,12 +534,12 @@ def run_lsp():
     async def hover(ls: LanguageServer, params: HoverParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_file_info(text_doc.uri)
+        fi, _ = get_file_info(ls, text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
-        node_fi, _ = get_file_info(resolved_to.get_uri())
+        node_fi, _ = get_file_info(ls, resolved_to.get_uri())
 
         signature = get_symbol_signature(resolved_to.node)
         docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
@@ -545,7 +553,7 @@ def run_lsp():
     async def complete(ls: LanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_file_info(text_doc.uri)
+        fi, _ = get_file_info(ls, text_doc.uri)
 
         items = []
         items.extend(
