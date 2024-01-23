@@ -25,4 +25,4 @@ if [ -z "$CHPL_HOME" ]; then
 fi
 
 exec $CHPL_HOME/util/config/run-in-venv-with-python-bindings.bash \
-     $CHPL_HOME/tools/chpl-language-server/src/shimchapel.py "$@"
+     $CHPL_HOME/tools/chpl-language-server/src/chpl-shim.py "$@"

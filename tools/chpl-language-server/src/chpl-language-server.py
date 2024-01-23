@@ -206,7 +206,7 @@ class NodeAndRange:
             self.rng = location_to_range(self.node.name_location())
         else:
             # TODO: Some NamedDecls are not reported using name_location().
-            #       This s because name_location() is not correctly reported
+            #       This is because name_location() is not correctly reported
             #       by the parser today.
             self.rng = location_to_range(self.node.location())
 
@@ -225,11 +225,6 @@ class ResolvedPair:
 
 
 class ContextContainer:
-    context: chapel.core.Context
-    file_paths: List[str]
-    module_paths: List[str]
-    file_infos: List["FileInfo"]
-
     def _get_configuration(self, path: str, project_root: str):
         cls_config = os.path.join(project_root, ".cls-info.json")
         self.module_paths = []
@@ -243,22 +238,36 @@ class ContextContainer:
         self.context.set_module_paths(self.module_paths, self.file_paths)
 
     def __init__(self, file: str, project_root: str):
-        self.context = chapel.core.Context()
-        self.file_paths = []
-        self.module_paths = []
-        self.file_infos = []
+        self.context: chapel.core.Context = chapel.core.Context()
+        self.file_paths: List[str] = []
+        self.module_paths: List[str] = []
+        self.file_infos: List["FileInfo"] = []
 
         self._get_configuration(file, project_root)
 
     def new_file_info(
         self, uri: str
     ) -> Tuple["FileInfo", List[chapel.core.Error]]:
+        """
+        Creates a new FileInfo for a given URI. FileInfos constructed in
+        this manner are tied to this ContextContainer, and have their
+        indices rebuilt when the context updates. They also use
+        this context object to perform parsing etc.
+        """
+
         with self.context.track_errors() as errors:
             fi = FileInfo(uri, self)
             self.file_infos.append(fi)
         return (fi, errors)
 
     def advance(self) -> List[chapel.core.Error]:
+        """
+        Advances the Dyno context within to the next revision, and takes
+        care of setting the necessary input queries in this revision. All
+        dependent FileInfos are also updated since the file contents
+        they represent may have changed.
+        """
+
         self.context.advance_to_next_revision(False)
         self.context.set_module_paths(self.module_paths, self.file_paths)
 

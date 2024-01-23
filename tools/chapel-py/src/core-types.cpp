@@ -125,9 +125,8 @@ PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* a
   auto parsedFiles = parsing::introspectParsedFiles(context);
   PyObject* destinationList = PyList_New(parsedFiles.size());
 
-  size_t idx = 0;
-  for (auto file : parsedFiles) {
-    PyList_SetItem(destinationList, idx++, Py_BuildValue("s", file.c_str()));
+  for (size_t i = 0; i < parsedFiles.size(); i++) {
+    PyList_SetItem(destinationList, i, Py_BuildValue("s", parsedFiles[i].c_str()));
   }
 
   return destinationList;
