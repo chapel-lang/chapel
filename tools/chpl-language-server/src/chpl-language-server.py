@@ -297,7 +297,7 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _note_reference(self, node: chapel.core.AstNode):
+    def _note_reference(self, node: Union[chapel.core.Dot, chapel.core.Identifier]):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
