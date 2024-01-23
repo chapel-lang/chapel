@@ -230,7 +230,7 @@ class ContextContainer:
     module_paths: List[str]
     file_infos: List["FileInfo"]
 
-    def _get_configuration(self, path, project_root):
+    def _get_configuration(self, path: str, project_root: str):
         cls_config = os.path.join(project_root, ".cls-info.json")
         self.module_paths = []
         self.file_paths = [path]
@@ -250,13 +250,15 @@ class ContextContainer:
 
         self._get_configuration(file, project_root)
 
-    def new_file_info(self, uri: str):
+    def new_file_info(
+        self, uri: str
+    ) -> Tuple["FileInfo", List[chapel.core.Error]]:
         with self.context.track_errors() as errors:
             fi = FileInfo(uri, self)
             self.file_infos.append(fi)
         return (fi, errors)
 
-    def advance(self):
+    def advance(self) -> List[chapel.core.Error]:
         self.context.advance_to_next_revision(False)
         self.context.set_module_paths(self.module_paths, self.file_paths)
 
