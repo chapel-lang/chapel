@@ -199,7 +199,10 @@ class NodeAndRange:
     def __post_init__(self):
         if isinstance(self.node, chapel.core.Dot):
             self.rng = location_to_range(self.node.field_location())
-        elif isinstance(self.node, (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl)):
+        elif isinstance(
+            self.node,
+            (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl),
+        ):
             self.rng = location_to_range(self.node.name_location())
         else:
             # TODO: Some NamedDecls are not reported using name_location().
@@ -225,7 +228,7 @@ class ContextContainer:
     context: chapel.core.Context
     file_paths: List[str]
     module_paths: List[str]
-    file_infos: List['FileInfo']
+    file_infos: List["FileInfo"]
 
     def _get_configuration(self, path, project_root):
         cls_config = os.path.join(project_root, ".cls-info.json")
@@ -297,7 +300,9 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _note_reference(self, node: Union[chapel.core.Dot, chapel.core.Identifier]):
+    def _note_reference(
+        self, node: Union[chapel.core.Dot, chapel.core.Identifier]
+    ):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
