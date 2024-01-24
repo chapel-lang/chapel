@@ -300,6 +300,93 @@ module Random {
     compilerError("'shuffle' only supports 1D rectangular arrays");
   }
 
+  /*
+    Produce a random permutation of an array's elements
+
+    :arg arr: A 1D rectangular array
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: A new array containing each of the values from ``arr`` in a
+              pseudo-random order.
+  */
+  proc permute(const ref arr: [?d] ?t, seed: int): [] t
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.permute(arr);
+  }
+
+  /*
+    Produce a random permutation of an array's elements
+
+    :arg arr: A 1D rectangular array
+
+    :return: A new array containing each of the values from ``arr`` in a
+              pseudo-random order.
+  */
+  @unstable("the overload of permute that generates its own seed is unstable")
+  proc permute(const ref arr: [?d] ?t): [] t
+    where is1DRectangularDomain(d)
+  {
+    var rs = new randomStream(d.idxType);
+    return rs.permute(arr);
+  }
+
+  /*
+    Produce a random permutation of the indices in a domain.
+
+    :arg d: A 1D rectangular domain
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: An array containing each of the indices from ``d`` in a
+              pseudo-random order.
+  */
+  proc permute(d: domain(1,?), seed: int): [] d.idxType {
+    var rs = new randomStream(d.idxType, seed);
+    return rs.permute(d);
+  }
+
+  /*
+    Produce a random permutation of the indices in a domain.
+
+    :arg d: A 1D rectangular domain
+
+    :return: An array containing each of the indices from ``d`` in a
+              pseudo-random order.
+  */
+  @unstable("the overload of permute that generates its own seed is unstable")
+  proc permute(d: domain(1,?)): [] d.idxType {
+    var rs = new randomStream(d.idxType);
+    return rs.permute(d);
+  }
+
+  /*
+    Produce a random permutation of the values in a range.
+
+    :arg r: A fully bounded range
+    :arg seed: The seed to use when creating the ``randomStream``
+
+    :return: An array containing each of the values from ``r`` in a
+              pseudo-random order.
+  */
+  proc permute(r: range(bounds=boundKind.both, ?), seed: int): [] r.idxType {
+    var rs = new randomStream(r.idxType, seed);
+    return rs.permute(r);
+  }
+  /*
+    Produce a random permutation of the values in a range.
+
+    :arg r: A fully bounded range
+
+    :return: An array containing each of the values from ``r`` in a
+              pseudo-random order.
+  */
+  @unstable("the overload of permute that generates its own seed is unstable")
+  proc permute(r: range(bounds=boundKind.both, ?)): [] r.idxType {
+    var rs = new randomStream(r.idxType);
+    return rs.permute(r);
+  }
+
   /* Produce a random permutation, storing it in a 1-D array.
      The resulting array will include each value from low..high
      exactly once, where low and high refer to the array's domain.
@@ -331,7 +418,7 @@ module Random {
     :arg arr: The array to store the permutation in
     :arg seed: The seed to use when creating the ``randomStream``
   */
-  @unstable("'permutation' is unstable and subject to change")
+  @deprecated("'permutation(arr, seed)' is deprecated; please use 'arr = permutation(arr.domain, seed)' instead")
   proc permutation(ref arr: [?d] ?t, seed: int)
     where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
   {
@@ -349,7 +436,7 @@ module Random {
 
     :arg arr: The array to store the permutation in
   */
-  @unstable("'permutation' is unstable and subject to change")
+  @deprecated("'permutation(arr)' is deprecated; please use 'arr = permutation(arr.domain)' instead")
   proc permutation(ref arr: [?d] ?t)
     where isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
   {
@@ -581,13 +668,57 @@ module Random {
       do this.pcg.shuffle(arr);
 
     /*
+      Produce a random permutation of an array's elements
+
+      :arg arr: A 1D rectangular array whose domain's ``idxType``
+                must be coercible from this stream's ``eltType``.
+
+      :return: A new array containing each of the values from ``arr`` in a
+               pseudo-random order.
+    */
+    proc ref permute(ref arr: [?d] ?t): [] t
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
+    {
+      const dp = this.pcg.domPermutation(d);
+      var res: [d] t;
+      forall (i, ip) in zip(d, dp) do res[i] = arr[ip];
+      return res;
+    }
+
+    /*
+      Produce a random permutation of the indices in a domain.
+
+      :arg d: A 1D rectangular domain whose ``idxType`` must be coercible
+                from this stream's ``eltType``.
+
+      :return: An array containing each of the indices from ``d`` in a
+               pseudo-random order.
+    */
+    proc ref permute(d: domain(1,?)): [] d.idxType
+      where isCoercible(this.eltType, d.idxType)
+        do return this.pcg.domPermutation(d);
+
+    /*
+      Produce a random permutation of the values in a range.
+
+      :arg r: A fully bounded range whose ``idxType`` must be coercible from
+              this stream's ``eltType``.
+
+      :return: An array containing each of the values from ``r`` in a
+               pseudo-random order.
+    */
+    proc ref permute(r: range(bounds=boundKind.both, ?)): [] r.idxType
+      where isCoercible(this.eltType, r.idxType)
+        do return this.pcg.domPermutation({r});
+
+    /*
       Produce a random permutation of an array's domain. The values
       ``d.dim(0).low..d.dim(0).high`` will appear exactly once in the array in
       a pseudo-random order.
 
       :arg arr: The array to store the permutation in
     */
-    @unstable("'permutation' is unstable and subject to change")
+    @deprecated("'permutation(arr)' is deprecated; please use 'arr = permutation(arr.domain)' instead")
     proc ref permutation(ref arr: [?d] ?t)
       where isCoercible(this.eltType, d.idxType) && isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
         this.pcg.permutation(arr);
@@ -1921,10 +2052,7 @@ module Random {
         }
       }
 
-      /* Produce a random permutation, storing it in a 1-D array.
-         The resulting array will include each value from low..high
-         exactly once, where low and high refer to the array's domain.
-         */
+      // TODO: can be removed when the deprecated permutation procs are removed
       proc ref permutation(ref arr: [] eltType) {
 
         if(!arr.isRectangular()) then
@@ -1944,6 +2072,25 @@ module Random {
           arr[i] = arr[j];
           arr[j] = i;
         }
+      }
+
+      proc ref domPermutation(d: domain): [d] d.idxType
+        where is1DRectangularDomain(d)
+      {
+        const lo = d.lowBound,
+              hi = d.highBound;
+
+        var indices: [d] d.idxType,
+            count = 0;
+
+        for i in d {
+          const j = d.orderToIndex(PCGRandomStreamPrivate_getNext_noLock(d.idxType, 0, count));
+          count += 1;
+          indices[i] = indices[j];
+          indices[j] = i;
+        }
+
+        return indices;
       }
 
       /*
