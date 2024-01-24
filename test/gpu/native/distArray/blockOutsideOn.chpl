@@ -1,8 +1,8 @@
 use BlockDist;
 use GpuDiagnostics;
 
-
-config const n = 20;
+config const printArr = false;
+config const n = here.maxTaskPar*2;
 
 startGpuDiagnostics();
 
@@ -18,7 +18,9 @@ stopGpuDiagnostics();
 
 var hostArr: [space] int;
 hostArr = arr;
-writeln(hostArr);
 
+if printArr then writeln(hostArr);
+
+assert((+ reduce hostArr) == n);
 assertGpuDiags(kernel_launch_um=here.maxTaskPar,
                kernel_launch_aod=here.maxTaskPar+1);

@@ -2,7 +2,8 @@ use BlockDist;
 use GpuDiagnostics;
 use CTypes;
 
-config const n = 20;
+config const printArr = false;
+config const n = here.maxTaskPar*2;
 
 startGpuDiagnostics();
 
@@ -22,11 +23,9 @@ stopGpuDiagnostics();
 
 var hostArr: [space] int;
 hostArr = arr;
-writeln(hostArr);
 
-// TODO this following part is where we have the problem with AOD
-/*var sum = 0;*/
-/*for a in arr do sum += a;*/
-/*assert(sum == n);*/
+if printArr then writeln(hostArr);
+
+assert((+ reduce hostArr) == n);
 assertGpuDiags(kernel_launch_um=here.maxTaskPar,
                kernel_launch_aod=here.maxTaskPar+1);
