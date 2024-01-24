@@ -121,11 +121,11 @@ module Random {
     return d.isRectangular() && d.rank == 1;
 
 
-  private proc oddTimeSeed(): int(64) {
+  private proc randomishSeed(): int(64) {
     use Time;
-    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
-    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-    return oddseed;
+    const now = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+
+    return now | (here.hash(): int(64));
   }
 
   pragma "last resort"
@@ -527,7 +527,7 @@ module Random {
     @unstable("The :record:`randomStream` initializer that generates a seed is unstable and subject to change")
     proc init(type eltType) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
-      this.seed = oddTimeSeed();
+      this.seed = randomishSeed();
       this.pcg = new PCGImpl(eltType, this.seed);
     }
 
