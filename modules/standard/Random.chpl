@@ -121,11 +121,15 @@ module Random {
     return d.isRectangular() && d.rank == 1;
 
 
-  private proc randomishSeed(): int(64) {
-    use Time;
-    const now = (timeSinceEpoch().totalSeconds()*1_000_000): int;
+  private proc randomishSeed(): int {
+    import Time;
+    extern proc chpl_task_getId(): chpl_taskID_t;
 
-    return now | (here.hash(): int(64));
+    const sWhen = (Time.timeSinceEpoch().totalSeconds()*1_000_000):int,
+          sWhere = here.hash():int,
+          sWho = chpl_task_getId().hash():int;
+
+    return sWhen ^ sWhere ^ sWho;
   }
 
   pragma "last resort"
