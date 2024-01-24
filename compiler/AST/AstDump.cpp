@@ -363,7 +363,7 @@ bool AstDump::enterLoopExpr(LoopExpr* node) {
     write(true, "(", false);
   }
 
-  if (node->forall) {
+  if (node->type == FORALL_EXPR) {
     if (node->maybeArrayType) write("[ ");
     else write("forall ");
   } else {

@@ -511,8 +511,7 @@ bool checkIteratorFromForeachExpr(Expr* ref, Symbol* shape) {
 // if the field did not exist.
 //
 CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
-                                 bool fromForExpr,
-                                 bool fromForeachExpr) {
+                                 LoopExprType type) {
   // We could skip this if the field already exists and is void.
   // It might be better to insert these anyway for uniformity.
   VarSymbol* value  = newTemp("shapeTemp");
@@ -535,14 +534,16 @@ CallExpr* setIteratorRecordShape(Expr* ref, Symbol* ir, Symbol* shapeSpec,
     // This sidesteps the visibility issue in the presence of nested
     // LoopExprs. Ex. test/expressions/loop-expr/scoping-1.chpl
     theProgram->block->insertAtTail(accessor->defPoint->remove());
-    if (fromForExpr)
-      addIteratorFromForExpr(ref, ir);
-    if (fromForeachExpr)
-      addIteratorFromForeachExpr(ref, ir);
+
+    switch (type) {
+      case FOR_EXPR: addIteratorFromForExpr(ref, ir); break;
+      case FOREACH_EXPR: addIteratorFromForeachExpr(ref, ir); break;
+      default: break;
+    }
   } else {
     INT_ASSERT(field->type == value->type);
   }
-  INT_ASSERT(fromForExpr || !checkIteratorFromForExpr(ref, ir));
+  INT_ASSERT(type == FOR_EXPR || !checkIteratorFromForExpr(ref, ir));
 
   return new CallExpr(PRIM_SET_MEMBER, ir, field, value);
 }
@@ -558,11 +559,9 @@ void setIteratorRecordShape(CallExpr* call) {
   Symbol* ir = toSymExpr(call->get(1))->symbol();
   INT_ASSERT(ir->type->symbol->hasFlag(FLAG_ITERATOR_RECORD));
   Symbol* shapeSpec = toSymExpr(call->get(2))->symbol();
-  Symbol* fromForLoop = toSymExpr(call->get(3))->symbol();
-  Symbol* fromForeachLoop = toSymExpr(call->get(4))->symbol();
-  CallExpr* shapeCall = setIteratorRecordShape(call, ir, shapeSpec,
-                          getSymbolImmediate(fromForLoop)->bool_value(),
-                          getSymbolImmediate(fromForeachLoop)->bool_value());
+  Symbol* fromLoop = toSymExpr(call->get(3))->symbol();
+  auto type = (LoopExprType) getSymbolImmediate(fromLoop)->int_value();
+  CallExpr* shapeCall = setIteratorRecordShape(call, ir, shapeSpec, type);
   call->replace(shapeCall);
 }
 
