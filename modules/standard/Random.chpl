@@ -722,7 +722,7 @@ module Random {
 
       :arg arr: The array to store the permutation in
     */
-    @deprecated("'permutation(arr)' is deprecated; please use 'arr = permutation(arr.domain)' instead")
+    @deprecated("'randomStream.permutation(arr)' is deprecated; please use 'arr = randomStream.permutation(arr.domain)' instead")
     proc ref permutation(ref arr: [?d] ?t)
       where isCoercible(this.eltType, d.idxType) && isCoercible(d.idxType, t) && is1DRectangularDomain(d) do
         this.pcg.permutation(arr);
