@@ -58,6 +58,7 @@
 #include "llvm/IR/DiagnosticPrinter.h"
 #include "llvm/IR/LLVMRemarkStreamer.h"
 #include "llvm/IR/Module.h"
+#include "llvm/Linker/IRMover.h"
 #include "llvm/Pass.h"
 #include "llvm/Remarks/RemarkSerializer.h"
 #include "llvm/Remarks/RemarkStreamer.h"
@@ -2923,6 +2924,8 @@ static void codegenPartTwo() {
   }
 
 
+
+  // generate a .dyno file storing the result of separate compliation.
   if (fDynoGenLib && fLlvmCodegen) {
 #ifdef HAVE_LLVM
     llvm::Module* llvmModule = gGenInfo->module;
@@ -3001,6 +3004,7 @@ static void codegenPartTwo() {
       {
         llvm::raw_string_ostream OS(generatedCodeBuffer);
         llvm::WriteBitcodeToFile(*M.get(), OS);
+        M->dump();
       }
 
       auto modName = UniqueString::get(gContext, genMod->name);
@@ -3012,6 +3016,61 @@ static void codegenPartTwo() {
     // write the library file
     libWriter.writeAllSections();
 #endif
+  }
+
+  // finish bringing in symbols from separately compiled .dyno files
+  if (fDynoLibGenOrUse && fLlvmCodegen && !fDynoGenLib) {
+    llvm::Module* DstMod = info->module;
+    llvm::IRMover irMover(*DstMod);
+
+    fprintf(stderr, "Linking in a module\n");
+
+    for (auto& pair : info->precompiledMods) {
+      GenInfo::PrecompiledModule& pm = pair.second;
+      std::vector<llvm::GlobalValue*> ValuesToLink;
+      for (auto name : pm.neededGlobalNames) {
+        llvm::GlobalValue* GV = pm.mod->getNamedValue(name.c_str());
+        if (GV == nullptr) {
+          USR_FATAL("could not find %s in library file", name.c_str());
+          continue;
+        }
+
+        ValuesToLink.push_back(GV);
+
+        llvm::Error err = GV->materialize();
+        fprintf(stderr, "Will link %s\n", name.c_str());
+        GV->dump();
+      }
+
+      fprintf(stderr, "Module Before Linking\n");
+      DstMod->dump();
+
+      // take the mod from the PrecompiledModule map
+      std::unique_ptr<llvm::Module> takeMod;
+      takeMod.swap(pm.mod);
+
+      llvm::Error err =
+        irMover.move(std::move(takeMod), ValuesToLink,
+                     [DstMod](llvm::GlobalValue& v,
+                              llvm::IRMover::ValueAdder add) {
+                        // does the existing module already have a
+                        // definition with the same name?
+                        llvm::GlobalValue* HaveGV =
+                          DstMod->getNamedValue(v.getName());
+                        if (HaveGV->isDeclaration()) {
+                          // it's not a definition, so link it in
+                          add(v);
+                        }
+                     },
+                     /*IsPerformingImport*/ false);
+
+      if (err) {
+        INT_FATAL("Failure in IRMover");
+      }
+
+      fprintf(stderr, "Module After Linking\n");
+      DstMod->dump();
+    }
   }
 }
 

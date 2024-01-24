@@ -314,6 +314,7 @@ extern bool fDynoDebugTrace;
 extern bool fDynoVerifySerialization;
 extern bool fDynoGenLib;
 extern bool fDynoGenStdLib;
+extern bool fDynoLibGenOrUse;
 
 extern size_t fDynoBreakOnHash;
 

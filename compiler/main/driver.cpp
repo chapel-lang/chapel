@@ -366,6 +366,7 @@ bool fDynoDebugTrace = false;
 bool fDynoVerifySerialization = false;
 bool fDynoGenLib = false;
 bool fDynoGenStdLib = false;
+bool fDynoLibGenOrUse = false; // .dyno file or --dyno-gen-lib/std
 size_t fDynoBreakOnHash = 0;
 
 bool fResolveConcreteFns = false;
@@ -1230,6 +1231,10 @@ static void driverSetDevelSettings(const ArgumentDescription* desc, const char* 
 }
 
 void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
+  if (fDynoGenLib) {
+    USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
+  }
+
   std::string path = std::string(newpath);
   auto dot = path.find_last_of(".");
   std::string noExt = path.substr(0, dot);
@@ -1244,12 +1249,10 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
   // turn on .dyno lib generation
   fDynoGenLib = true;
+  fDynoLibGenOrUse = true;
 
   // turn on ID-based munging
   fIdBasedMunging = true;
-
-  // note that --dyno-gen-lib was provided
-  fDynoGenLib = true;
 
   // turn on resolution of concrete functions
   fResolveConcreteFns = true;
@@ -1257,13 +1260,15 @@ void addDynoGenLib(const ArgumentDescription* desc, const char* newpath) {
 
 static
 void setDynoGenStdLib(const ArgumentDescription* desc, const char* newpath) {
+  if (fDynoGenLib) {
+    USR_FATAL("cannot have multiple --dyno-gen-lib / --dyno-gen-std flags");
+  }
+
   gDynoGenLibOutput = "chpl_standard.dyno";
 
   // turn on .dyno lib generation
   fDynoGenLib = true;
-
-  // turn on ID-based munging
-  fIdBasedMunging = true;
+  fDynoLibGenOrUse = true;
 
   // turn on ID-based munging
   fIdBasedMunging = true;
@@ -2584,10 +2589,6 @@ int main(int argc, char* argv[]) {
     if (!fDynoGenStdLib) {
       assertSourceFilesFound();
     } else {
-      // --dyno-gen-std should not be used with --dyno-gen-lib
-      if (fDynoGenLib) {
-        USR_FATAL("--dyno-gen-std cannot be used with --dyno-gen-lib");
-      }
       // there should be no input files for --dyno-gen-std
       if (nthFilename(0) != nullptr) {
         USR_FATAL("file arguments not allowed with --dyno-gen-std");

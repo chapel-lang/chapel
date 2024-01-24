@@ -35,6 +35,7 @@
 #endif
 
 #include <cstring>
+//#include <chrono>
 
 namespace chpl {
 namespace libraries {
@@ -965,13 +966,13 @@ LibraryFile::loadLocations(Context* context,
                             symbolTableEntryIndex, symbolTableEntryAst);
 }
 
-const owned<LibraryFile::ModuleIr>&
-LibraryFile::loadLlvmModuleQuery(Context* context,
-                                 const LibraryFile* f,
-                                 int moduleIndex) {
-  QUERY_BEGIN(loadLlvmModuleQuery, context, f, moduleIndex);
+owned<llvm::Module>
+LibraryFile::loadLlvmModuleImpl(Context* context,
+                                const LibraryFile* f,
+                                int moduleIndex) {
+  owned<llvm::Module> result;
 
-  owned<ModuleIr> result;
+  //auto start = std::chrono::steady_clock::now();
 
 #ifdef HAVE_LLVM
   if (0 <= moduleIndex && (size_t) moduleIndex < f->modules.size()) {
@@ -987,29 +988,31 @@ LibraryFile::loadLlvmModuleQuery(Context* context,
         llvm::MemoryBuffer::getMemBuffer(inputData, bufferName, reqNullTerm);
       llvm::SMDiagnostic err;
 
-      owned<llvm::Module> mod =
+      result =
         llvm::getLazyIRModule(std::move(ownedMemBuf),
                               err,
                               context->llvmContext(),
                               /*ShouldLazyLoadMetadata*/ false);
-      result = toOwned(new ModuleIr(std::move(mod)));
     }
   }
 #endif
 
-  return QUERY_END(result);
+  //auto end = std::chrono::steady_clock::now();
+  //std::chrono::duration<double> elapsed = end - start;
+  //printf("time: %lf\n", (double) elapsed.count());
+
+  return result;
 }
 
-const llvm::Module*
+owned<llvm::Module>
 LibraryFile::loadGenCodeModule(Context* context,
                                UniqueString moduleSymPath) const {
   auto search = moduleSymPathToIdx.find(moduleSymPath);
   if (search != moduleSymPathToIdx.end()) {
     size_t moduleIdx = search->second;
     if (0 <= moduleIdx && moduleIdx < modules.size()) {
-      // Load the LLVM IR if it is not already loaded
-      const owned<ModuleIr>& ir = loadLlvmModuleQuery(context, this, moduleIdx);
-      return ir->llvmModule.get();
+      // Load a copy of the LLVM IR
+      return loadLlvmModuleImpl(context, this, moduleIdx);
     } else {
       CHPL_ASSERT(false && "moduleSymPathToIdx has out of bounds index");
     }

@@ -204,31 +204,6 @@ class LibraryFile {
     void mark(Context* context) const;
   };
 
-  struct ModuleIr {
-    owned<llvm::Module> llvmModule;
-
-    ModuleIr(owned<llvm::Module> llvmModule)
-      : llvmModule(std::move(llvmModule)) {
-    }
-
-    bool operator==(const ModuleIr& other) const {
-      // just check for null vs not null
-      // everything else should be handled by the LibraryFile hash
-      return (this->llvmModule.get() != nullptr) ==
-             (other.llvmModule.get() != nullptr);
-    }
-    bool operator!=(const ModuleIr& other) const {
-      return !(*this == other);
-    }
-    static bool update(owned<ModuleIr>& keep,
-                       owned<ModuleIr>& addin) {
-      return defaultUpdateOwned(keep, addin);
-    }
-    void mark(Context* context) const {
-      // nothing to mark
-    }
-  };
-
 
  private:
   struct ModuleInfo {
@@ -355,10 +330,9 @@ class LibraryFile {
                      int symbolTableEntryIndex,
                      const uast::AstNode* symbolTableEntryAst);
 
-  static const owned<ModuleIr>&
-  loadLlvmModuleQuery(Context* context,
-                      const LibraryFile* f,
-                      int moduleIndex);
+  static owned<llvm::Module>
+  loadLlvmModuleImpl(Context* context, const LibraryFile* f, int moduleIndex);
+
  public:
   ~LibraryFile();
 
@@ -425,7 +399,7 @@ class LibraryFile {
     Returns nullptr if no such module is found in this LibraryFile
     or if an error occurred.
    */
-  const llvm::Module* loadGenCodeModule(Context* context,
+  owned<llvm::Module> loadGenCodeModule(Context* context,
                                         UniqueString moduleSymPath) const;
 };
 

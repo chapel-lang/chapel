@@ -46,6 +46,13 @@ namespace clang {
   }
 }
 
+// and some chpl frontend things
+namespace chpl {
+  namespace libraries {
+    class LibraryFile;
+  }
+}
+
 #include "llvm/Analysis/LoopAnalysisManager.h"
 #include "llvm/Analysis/CGSCCPassManager.h"
 #include "llvm/IR/IRBuilder.h"
@@ -92,6 +99,17 @@ struct LLVMGenFilenames {
  * or LLVM module in which to generate.
  */
 struct GenInfo {
+
+  /* Stores information about precompiled llvm Modules */
+  struct PrecompiledModule {
+#ifdef HAVE_LLVM
+    const chpl::libraries::LibraryFile* lf = nullptr;
+    std::unique_ptr<llvm::Module> mod;
+    // the names of the globals needed from this module
+    std::vector<UniqueString> neededGlobalNames;
+#endif
+  };
+
   // If we're generating C, this is the FILE* to print to
   // TODO: Rename cfile to just 'file' since it's also used when
   //       generating Fortran and Python interfaces.
@@ -167,6 +185,11 @@ struct GenInfo {
 
   // pointer to clang support info
   ClangInfo* clangInfo = nullptr;
+
+  // When a separately compiled .dyno file,
+  // keep track of the LLVM IR modules that have been used
+  // for the separately compiled information.
+  std::map<UniqueString, PrecompiledModule> precompiledMods;
 #endif
 
   GenInfo();

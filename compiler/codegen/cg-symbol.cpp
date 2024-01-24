@@ -79,6 +79,7 @@
 #include "llvm/IR/LegacyPassManager.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Verifier.h"
+//#include "llvm/Linker/IRMover.h"
 #include "llvm/Target/TargetIntrinsicInfo.h"
 #include "clang/CodeGen/CGFunctionInfo.h"
 #endif
@@ -923,7 +924,7 @@ void VarSymbol::codegenGlobalDef(bool isHeader) {
       INT_ASSERT(llTy);
 
       auto linkage = llvm::GlobalVariable::InternalLinkage;
-      if (fDynoGenLib)
+      if (fDynoLibGenOrUse)
         linkage = llvm::Function::WeakODRLinkage;
       if (hasFlag(FLAG_EXPORT))
         linkage = llvm::GlobalVariable::ExternalLinkage;
@@ -2297,6 +2298,111 @@ GenRet FnSymbol::codegenCast(GenRet fnPtr) {
   return fngen;
 }
 
+#ifdef HAVE_LLVM
+static GenInfo::PrecompiledModule& getPrecompiledModule(chpl::ID modId) {
+  GenInfo *info = gGenInfo;
+  UniqueString modSymPath = modId.symbolPath();
+
+  // look for a cached result; if nothing was in the map, create
+  // an entry with nullptr
+  GenInfo::PrecompiledModule& pm = info->precompiledMods[modSymPath];
+
+  if (pm.lf == nullptr) {
+    fprintf(stderr, "Reading Library File\n");
+    // get the LibraryFile
+    chpl::UniqueString libPath;
+    bool inLib = gContext->moduleIsInLibrary(modId, libPath);
+    CHPL_ASSERT(inLib && "or sym should not be marked with FLAG_PRECOMPILED");
+    CHPL_ASSERT(!libPath.isEmpty());
+
+    pm.lf = chpl::libraries::LibraryFile::load(gContext, libPath);
+    if (pm.lf == nullptr) {
+      USR_FATAL("could not load library file %s", libPath.c_str());
+    }
+  }
+
+  if (pm.mod.get() == nullptr) {
+    // need to load the LLVM module!
+    pm.mod = pm.lf->loadGenCodeModule(gContext, modSymPath);
+
+    if (pm.mod.get() == nullptr) {
+      USR_FATAL("could not load module %s", modSymPath.c_str());
+    }
+
+    fprintf(stderr, "Importing Module\n");
+    pm.mod->dump();
+  }
+
+  return pm;
+}
+
+static llvm::Function* importPrecompiledFunctionProto(chpl::ID fnId) {
+  llvm::Function* ret = nullptr;
+  GenInfo *info = gGenInfo;
+  UniqueString fnSymbolPath = fnId.symbolPath();
+  const char* cname = fnSymbolPath.c_str();
+
+  INT_ASSERT(fIdBasedMunging && "expected ID based munging");
+
+  printf("%s was precompiled!\n", cname);
+  chpl::ID modId = chpl::parsing::idToParentModule(gContext, fnId);
+  CHPL_ASSERT(!modId.isEmpty());
+
+  GenInfo::PrecompiledModule& pm = getPrecompiledModule(modId);
+
+  fprintf(stderr, "Preparing to import function %s\n", cname);
+
+  fprintf(stderr, "Current Module\n");
+  info->module->dump();
+
+  // check to see if the library's LLVM IR contains the symbol
+  // find the function
+  llvm::Function* SF = pm.mod->getFunction(cname);
+
+  if (SF == nullptr) {
+    USR_FATAL("could not find %s in library file", cname);
+    return nullptr;
+  }
+
+  llvm::Module* DstM = info->module;
+
+  printf("Found function %s\n", cname);
+
+  // copy over just the function signature
+  // c.f. IRLinker::copyFunctionProto in LLVM's IRMover.cpp
+  auto *F = llvm::Function::Create(SF->getFunctionType(),
+                                   llvm::GlobalValue::ExternalLinkage,
+                                   SF->getAddressSpace(),
+                                   SF->getName(),
+                                   DstM);
+  F->copyAttributesFrom(SF);
+
+  // also copy the metadata
+  F->copyMetadata(SF, 0);
+
+  // record the fact that the function was probably needed
+  pm.neededGlobalNames.push_back(fnSymbolPath);
+
+#if 0
+  llvm::IRMover irMover(*info->module);
+  llvm::Error err = irMover.move(std::move(mod), {f},
+                                 /*LazyCallback*/ nullptr,
+                                 /*IsPerformingImport*/ false);
+
+  if (err) {
+    INT_FATAL("Failure in IRMover");
+  } else {
+    ret = f;
+  }
+#endif
+
+  fprintf(stderr, "After Module\n");
+  info->module->dump();
+
+  return ret;
+}
+#endif
+
 void FnSymbol::codegenPrototype() {
   if (id == breakOnCodegenID) gdbShouldBreakHere();
   if (breakOnCodegenCname[0] && !strcmp(cname, breakOnCodegenCname)) {
@@ -2321,6 +2427,11 @@ void FnSymbol::codegenPrototype() {
     fprintf(info->cfile, ";\n");
   } else {
 #ifdef HAVE_LLVM
+    if (hasFlag(FLAG_PRECOMPILED) && !astloc.id().isEmpty()) {
+      importPrecompiledFunctionProto(astloc.id());
+      return;
+    }
+
     std::vector<const char*> argNames;
     llvm::AttributeList argAttrs;
     llvm::FunctionType *fTy = codegenFunctionTypeLLVM(this,
@@ -2354,7 +2465,7 @@ void FnSymbol::codegenPrototype() {
     bool generatingGPUKernel = (gCodegenGPU && hasFlag(FLAG_GPU_CODEGEN));
 
     llvm::Function::LinkageTypes linkage = llvm::Function::InternalLinkage;
-    if (fDynoGenLib) {
+    if (fDynoLibGenOrUse) {
       linkage = llvm::Function::WeakODRLinkage;
     }
     if (hasFlag(FLAG_EXPORT) || generatingGPUKernel) {
@@ -2557,25 +2668,10 @@ void FnSymbol::codegenDef() {
     fprintf(outfile, " {\n");
   } else {
 #ifdef HAVE_LLVM
-
     if (hasFlag(FLAG_PRECOMPILED) && !astloc.id().isEmpty()) {
-      printf("%s was precompiled!\n", name);
-      chpl::ID modId = chpl::parsing::idToParentModule(gContext, astloc.id());
-      CHPL_ASSERT(!modId.isEmpty());
-
-      // get the LibraryFile
-      chpl::UniqueString libPath;
-      bool inLib = gContext->moduleIsInLibrary(modId, libPath);
-      CHPL_ASSERT(inLib && "or should not be marked with FLAG_PRECOMPILED");
-      CHPL_ASSERT(!libPath.isEmpty());
-
-      const chpl::libraries::LibraryFile* lf =
-        chpl::libraries::LibraryFile::load(gContext, libPath);
-
-      // check to see if the library's LLVM IR contains the symbol
-      const llvm::Module* mod =
-        lf->loadGenCodeModule(gContext, modId.symbolPath());
-      printf("Found module %p\n", mod);
+      // the definition should have been imported along side the
+      // declaration in codegenPrototype.
+      return;
     }
 
     // Mark local reference/ptr variables that must refer to
