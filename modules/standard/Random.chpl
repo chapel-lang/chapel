@@ -341,7 +341,9 @@ module Random {
     :return: An array containing each of the indices from ``d`` in a
               pseudo-random order.
   */
-  proc permute(d: domain(1,?), seed: int): [] d.idxType {
+  proc permute(d: domain(?), seed: int): [] d.idxType
+    where is1DRectangularDomain(d)
+  {
     var rs = new randomStream(d.idxType, seed);
     return rs.permute(d);
   }
@@ -355,7 +357,9 @@ module Random {
               pseudo-random order.
   */
   @unstable("the overload of permute that generates its own seed is unstable")
-  proc permute(d: domain(1,?)): [] d.idxType {
+  proc permute(d: domain(?)): [] d.idxType
+    where is1DRectangularDomain(d)
+  {
     var rs = new randomStream(d.idxType);
     return rs.permute(d);
   }
@@ -676,7 +680,7 @@ module Random {
       :return: A new array containing each of the values from ``arr`` in a
                pseudo-random order.
     */
-    proc ref permute(ref arr: [?d] ?t): [] t
+    proc ref permute(const ref arr: [?d] ?t): [] t
       where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
     {
       const dp = this.pcg.domPermutation(d);
@@ -694,8 +698,8 @@ module Random {
       :return: An array containing each of the indices from ``d`` in a
                pseudo-random order.
     */
-    proc ref permute(d: domain(1,?)): [] d.idxType
-      where isCoercible(this.eltType, d.idxType)
+    proc ref permute(d: domain(?)): [] d.idxType
+      where is1DRectangularDomain(d) && isCoercible(this.eltType, d.idxType)
         do return this.pcg.domPermutation(d);
 
     /*
