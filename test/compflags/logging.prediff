@@ -1,0 +1,13 @@
+#!/usr/bin/env bash
+
+# Just check that log dir exists and contains files.
+
+LOG_DIR_NAME="log"
+
+if [ ! -d "$LOG_DIR_NAME" ]; then
+  echo "error: log dir does not exist" > $2
+elif [ -z "$(ls -A $LOG_DIR_NAME)" ]; then
+  echo "error: log dir is empty" > $2
+else
+  echo "success: log dir is present and not empty" > $2
+fi
