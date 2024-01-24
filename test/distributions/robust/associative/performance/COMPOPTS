@@ -1,0 +1,8 @@
+#!/usr/bin/env python3
+import os
+
+# For valgrind testing, activate backend optimizations
+# (but don't specialize or turn off bounds checking)
+# in order to make the run time more acceptable
+if os.getenv('CHPL_TEST_VGRND_EXE') == 'on':
+    print('--ccflags -O3')
