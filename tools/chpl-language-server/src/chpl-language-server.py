@@ -46,6 +46,7 @@ from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     Location,
+    MessageType,
     Diagnostic,
     Range,
     Position,
@@ -74,6 +75,14 @@ from lsprotocol.types import (
     Hover,
     MarkupContent,
     MarkupKind,
+)
+from lsprotocol.types import (
+    WORKSPACE_DID_CHANGE_WORKSPACE_FOLDERS,
+    DidChangeWorkspaceFoldersParams,
+)
+from lsprotocol.types import (
+    INITIALIZE,
+    InitializeParams,
 )
 
 
@@ -225,25 +234,19 @@ class ResolvedPair:
 
 
 class ContextContainer:
-    def _get_configuration(self, path: str, project_root: str):
-        cls_config = os.path.join(project_root, ".cls-info.json")
-        self.module_paths = []
-        self.file_paths = [path]
-        if os.path.exists(cls_config):
-            with open(cls_config) as f:
-                commands = json.load(f)
-                if path in commands:
-                    self.module_paths = commands[path][0]["module_dirs"]
-                    self.file_paths = commands[path][0]["files"]
-        self.context.set_module_paths(self.module_paths, self.file_paths)
-
-    def __init__(self, file: str, project_root: str):
-        self.context: chapel.core.Context = chapel.core.Context()
+    def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
         self.file_paths: List[str] = []
-        self.module_paths: List[str] = []
+        self.module_paths: List[str] = [file]
+        self.context: chapel.core.Context = chapel.core.Context()
         self.file_infos: List["FileInfo"] = []
 
-        self._get_configuration(file, project_root)
+        if config:
+            file_config = config.for_file(file)
+            if file_config:
+                self.module_paths = file_config["module_dirs"]
+                self.file_paths = file_config["files"]
+
+        self.context.set_module_paths(self.module_paths, self.file_paths)
 
     def new_file_info(self, uri: str) -> Tuple["FileInfo", List[Any]]:
         """
@@ -391,14 +394,55 @@ class FileInfo:
         return self.def_segments.find(position)
 
 
+class WorkspaceConfig:
+    def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
+        self.files: Dict[str, Dict[str, Any]] = {}
+
+        for key in json:
+            compile_commands = json[key]
+
+            if not isinstance(compile_commands, list):
+                ls.show_message(
+                    "invalid .cls-info.json file", MessageType.Error
+                )
+                continue
+
+            # There can be several compile commands. They can conflict,
+            # so we can't safely merge them (chpl -M modulesA and chpl -M modulesB
+            # can lead to two different to-IDs etc.). However, we do expect
+            # at least one compile command.
+            if len(compile_commands) == 0:
+                ls.show_message(
+                    ".cls-info.json file contains invalid file commands",
+                    MessageType.Error,
+                )
+                continue
+
+            self.files[key] = compile_commands[0]
+
+    def for_file(self, path: str) -> Optional[Dict[str, Any]]:
+        if path in self.files:
+            return self.files[path]
+        return None
+
+    @staticmethod
+    def from_file(ls: "ChapelLanguageServer", path: str):
+        if os.path.exists(path):
+            with open(path) as f:
+                commands = json.load(f)
+                return WorkspaceConfig(ls, commands)
+        return None
+
+
 class ChapelLanguageServer(LanguageServer):
     def __init__(self):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
         self.file_infos: Dict[str, FileInfo] = {}
+        self.configurations: Dict[str, WorkspaceConfig] = {}
 
-    def get_root_for_uri(self, uri: str) -> str:
+    def get_config_for_uri(self, uri: str) -> Optional[WorkspaceConfig]:
         """
         In case multiple workspace folders are in use, pick the root folder
         that matches the given URI.
@@ -407,8 +451,10 @@ class ChapelLanguageServer(LanguageServer):
         folders = self.workspace.folders
         for f, ws in folders.items():
             if uri.startswith(f):
-                return ws.uri
-        return self.workspace.root_uri
+                uri = ws.uri
+                if uri in self.configurations:
+                    return self.configurations[uri]
+        return None
 
     def get_context(self, uri: str) -> ContextContainer:
         """
@@ -420,12 +466,12 @@ class ChapelLanguageServer(LanguageServer):
         """
 
         path = uri[len("file://") :]
-        project_root = self.get_root_for_uri(uri)[len("file://") :]
+        workspace_config = self.get_config_for_uri(uri)
 
         if path in self.contexts:
             return self.contexts[path]
 
-        context = ContextContainer(path, project_root)
+        context = ContextContainer(path, workspace_config)
         for file in context.file_paths:
             self.contexts[file] = context
         self.contexts[path] = context
@@ -469,6 +515,16 @@ class ChapelLanguageServer(LanguageServer):
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
 
+    def register_workspace(self, uri: str):
+        path = os.path.join(uri[len("file://") :], ".cls-info.json")
+        config = WorkspaceConfig.from_file(self, path)
+        if config:
+            self.configurations[uri] = config
+
+    def unregister_workspace(self, uri: str):
+        if uri in self.configurations:
+            del self.configurations[uri]
+
 
 def run_lsp():
     """
@@ -477,6 +533,27 @@ def run_lsp():
     server = ChapelLanguageServer()
 
     # The following functions are handlers for LSP events received by the server.
+
+    @server.feature(INITIALIZE)
+    async def initialize(
+        ls: ChapelLanguageServer,
+        params: InitializeParams,
+    ):
+        if params.workspace_folders is None:
+            return
+
+        for ws in params.workspace_folders:
+            ls.register_workspace(ws.uri)
+
+    @server.feature(WORKSPACE_DID_CHANGE_WORKSPACE_FOLDERS)
+    async def did_change_folders(
+        ls: ChapelLanguageServer,
+        params: DidChangeWorkspaceFoldersParams,
+    ):
+        for added in params.event.added:
+            ls.register_workspace(added.uri)
+        for removed in params.event.removed:
+            ls.unregister_workspace(removed.uri)
 
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     @server.feature(TEXT_DOCUMENT_DID_SAVE)
@@ -575,7 +652,7 @@ def run_lsp():
     async def complete(ls: ChapelLanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = ls.get_file_info(ls, text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
         items.extend(
