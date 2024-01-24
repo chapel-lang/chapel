@@ -358,7 +358,7 @@ static void cfg_add_pid(kernel_cfg* cfg, int64_t pid, size_t size) {
                                             CHPL_RT_MD_GPU_KERNEL_ARG,
                                             cfg->ln, cfg->fn);
 
-    CHPL_GPU_DEBUG("\tdevice instance %p\n", dev_instance);
+    CHPL_GPU_DEBUG("\tprivatized device instance %p\n", dev_instance);
 
     chpl_gpu_impl_copy_host_to_device(dev_instance,
                                       chpl_privateObjects[pid].obj,
@@ -387,14 +387,23 @@ static void cfg_finalize_priv_table(kernel_cfg *cfg) {
 
   assert(cfg->priv_table_dev == NULL); // we'll create this now.
 
-  // allocate and stage a table on the host side:
   const size_t offload_size = (cfg->max_pid+1)*sizeof(chpl_privateObject_t);
 
+  // Engin: Here we can either:
+  // 1. Allocate and stage a table on the host, offload it to the device in one
+  // go or
+  // 2. Allocate a table directly on the device, offload instances one by one
+  //
+  // My instinct is that 1 is the faster/better approach, but I am not very
+  // confident in that. We can revisit that, especially if this turns out to be
+  // slower than we'd like.
+
+  // allocate and stage a table on the host side:
   cfg->priv_table_host = chpl_mem_alloc(offload_size,
                                     CHPL_RT_MD_COMM_PRV_OBJ_ARRAY,
                                     cfg->ln, cfg->fn);
 
-  // we use the `priv_insts` to populate the actual table
+  // we use `priv_insts` to populate the actual table
   for (int i=0 ; i<cfg->n_pids ; i++) {
     int64_t pid = cfg->priv_insts[i].pid;
     void* dev_instance = cfg->priv_insts[i].dev_instance;

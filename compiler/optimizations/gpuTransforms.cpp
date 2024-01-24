@@ -1497,7 +1497,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                     new_IntSymbol(gpuLoop.pidGets().size()));
   gpuBlock->insertAtTail(new CallExpr(PRIM_MOVE, cfg, initCfgCall));
 
-  // first, we have to add pids, so that we can allocate the privatization table
+  // first, add pids
   for (auto pidGet: gpuLoop.pidGets()) {
     Type* pidType = pidGet->get(2)->typeInfo();
     Symbol* pid = new VarSymbol("pid_tmp", pidType);
@@ -1518,6 +1518,7 @@ static void generateGPUKernelCall(const GpuizableLoop &gpuLoop,
                                         instanceSize));
   }
 
+  // now, add kernel actuals
   for (auto actual: kernel.kernelActuals()) {
     gpuBlock->insertAtTail(new CallExpr(PRIM_GPU_ARG, cfg, actual.sym,
                                         new_IntSymbol(actual.kind)));

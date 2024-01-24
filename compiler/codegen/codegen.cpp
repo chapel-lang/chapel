@@ -307,7 +307,7 @@ genGlobalVoidPtr(const char* cname, bool isHeader, bool isConstant=true) {
     llvm::GlobalVariable *global = llvm::cast<llvm::GlobalVariable>(
         info->module->getOrInsertGlobal(cname, voidPtrTy));
     global->setInitializer(llvm::Constant::getNullValue(voidPtrTy));
-    global->setConstant(false);
+    global->setConstant(isConstant);
     info->lvt->addGlobalValue(cname, global, GEN_PTR, false, dtCVoidPtr);
 #endif
   }
