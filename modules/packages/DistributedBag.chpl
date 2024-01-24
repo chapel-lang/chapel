@@ -690,8 +690,7 @@ module DistributedBag
         // In the 'rand' strategy, victims are randomly selected.
         when "rand" {
           var id: int;
-          var victims: [0..#N] int = noinit;
-          permutation(victims);
+          const victims = permute(0..#N);
 
           while ((count < limit) && (count < tries)) {
             if (victims[id] != callerId) {

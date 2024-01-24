@@ -158,8 +158,7 @@ proc test5() {
 
 proc test6() {
   // Write 0..maxint using a permutation and then read it normally
-  var A:[0..maxint] int;
-  Random.permutation(A);
+  var A = Random.permute(0..maxint);
 
   // Write to the permutation
   {
@@ -186,8 +185,7 @@ proc test6() {
 
 proc test7() {
   // Write 0..maxint and then read with a permutation
-  var A:[0..maxint] int;
-  Random.permutation(A);
+  var A = Random.permute(0..maxint);
 
   {
     var w = writer();

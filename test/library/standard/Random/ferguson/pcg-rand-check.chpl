@@ -226,7 +226,7 @@ writeln("Checking real(64)");
   }
 }
 
-writeln("Checking random shuffle and permutation");
+writeln("Checking random shuffle and permute");
 // try a random permutation
 {
   for i in 1..10 {
@@ -237,10 +237,10 @@ writeln("Checking random shuffle and permutation");
   }
 
   for i in 1..10 {
-    var arr:[1..4] int;
+    var arr = [ii in 1..4] ii;
 
-    permutation(arr, seed=i);
-    writeln(arr);
+    const x = permute(arr, seed=i);
+    writeln(x);
   }
 }
 

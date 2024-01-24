@@ -2085,7 +2085,7 @@ module Random {
               hi = d.highBound;
 
         var indices: [d] d.idxType,
-            count = 0;
+            count: d.idxType = 0;
 
         for i in d {
           const j = d.orderToIndex(PCGRandomStreamPrivate_getNext_noLock(d.idxType, 0, count));
