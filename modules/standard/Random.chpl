@@ -133,7 +133,7 @@ module Random {
 
     try {
       var urand = IO.openReader("/dev/urandom");
-      return sWho ^ sWhat ^ sWhen ^ sWhere ^ urand.read(int);
+      return sWho ^ sWhat ^ sWhen ^ sWhere ^ urand.readBits(int, 64);
     } catch {
       return sWho ^ sWhat ^ sWhen ^ sWhere;
     }
