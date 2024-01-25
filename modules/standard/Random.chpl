@@ -122,14 +122,21 @@ module Random {
 
 
   private proc randomishSeed(): int {
-    import Time;
+    import Time, IO, CTypes;
     extern proc chpl_task_getId(): chpl_taskID_t;
+    extern proc getpid(): CTypes.c_int;
 
-    const sWhen = (Time.timeSinceEpoch().totalSeconds()*1_000_000):int,
-          sWhere = here.hash():int,
-          sWho = chpl_task_getId().hash():int;
+    const sWho = chpl_task_getId().hash():int,
+          sWhat = getpid():int,
+          sWhen = (Time.timeSinceEpoch().totalSeconds()*1_000_000):int,
+          sWhere = here.hash():int;
 
-    return sWhen ^ sWhere ^ sWho;
+    try {
+      var urand = IO.openReader("/dev/urandom");
+      return sWho ^ sWhat ^ sWhen ^ sWhere ^ urand.read(int);
+    } catch {
+      return sWho ^ sWhat ^ sWhen ^ sWhere;
+    }
   }
 
   pragma "last resort"
