@@ -4,12 +4,6 @@ use Random;
 
 var a: [1..10] int;
 
-// overload that doesn't accept a seed is unstable
-fillRandom(a);
-
-// overload that doesn't accept a seed is unstable
-shuffle(a);
-
 permutation(a);
 permutation(a, 123);
 writeln(a);
