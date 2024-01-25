@@ -289,7 +289,7 @@ _chpl ()
 --no-warn-const-loops \
 --no-warn-domain-literal \
 --no-warn-int-uint \
---no-warn-potential-race-conditions \
+--no-warn-potential-races \
 --no-warn-special \
 --no-warn-tuple-iteration \
 --no-warn-unknown-attribute-toolname \
@@ -386,7 +386,7 @@ _chpl ()
 --warn-const-loops \
 --warn-domain-literal \
 --warn-int-uint \
---warn-potential-race-conditions \
+--warn-potential-races \
 --warn-special \
 --warn-tuple-iteration \
 --warn-unknown-attribute-toolname \
@@ -531,7 +531,7 @@ _chpl ()
 --no-task-tracking \
 --no-tuple-copy-opt \
 --no-vectorize \
---no-warn-potential-race-conditions \
+--no-warn-potential-races \
 --no-warn-unknown-attribute-toolname \
 --no-warn-unstable \
 --no-warnings \
@@ -578,7 +578,7 @@ _chpl ()
 --using-attribute-toolname \
 --vectorize \
 --version \
---warn-potential-race-conditions \
+--warn-potential-races \
 --warn-unknown-attribute-toolname \
 --warn-unstable \
 --warnings \

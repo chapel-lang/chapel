@@ -199,7 +199,7 @@ bool symbolIsUsedAsRef(Symbol* sym) {
 static
 void checkForPromotionsThatMayRace() {
   // skip check if warning is off
-  if (!fWarnRaceConditions) return;
+  if (!fWarnPotentialRaces) return;
 
   // for all CallExprs, if we call a promotion wrapper that is marked no promotion, warn
   // checking here after all ContextCallExpr's have been resolved to plain CallExpr's
