@@ -12,7 +12,8 @@ Compiler Driver Mode
    filing an issue as described in :ref:`readme-bugs`. Driver mode can be
    disabled with the ``--no-compiler-driver`` compiler flag, to determine if the
    problem is specific to driver mode or as a temporary workaround before it is
-   fixed.
+   fixed. This flag will be removed at some point in the future when driver mode
+   becomes the only option.
 
 The Chapel compiler ``chpl`` previously ran as a single executable responsible
 for compilation, assembly, and linking, with some components done in
