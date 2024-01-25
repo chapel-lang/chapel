@@ -1,3 +1,0 @@
-All tests in this directory are symlinked to the `const` directory.
-This allows test cases to be defined in one place in `TestArray.chpl` and then used in the tests.
-If adding more tests here, please make a `const` version as well.

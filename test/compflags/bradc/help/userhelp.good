@@ -23,6 +23,8 @@ Warning and Language Control Options:
                                       Specify additional tool names for
                                       attributes that are expected in the
                                       source
+      --[no-]warn-potential-races     Enable [disable] output of warnings for
+                                      potential race conditions
 
 Parallelism Control Options:
       --[no-]local                    Target one [many] locale[s]
