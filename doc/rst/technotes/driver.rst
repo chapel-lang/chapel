@@ -23,8 +23,10 @@ A compiler driver is a smaller program responsible for processing arguments and
 invoking separate processes for the different stages of compilation required. As
 of release 1.34, ``chpl`` runs as a compiler driver by default, with the
 following phases run as separate subprocesses:
+
 - ``compilation``: Everything through code generation (C code or LLVM bitcode).
 - ``makeBinary``: Binary generation (including linking).
+
 Driver mode can be opted-out of with ``--no-compiler-driver``. This flag will be
 removed at some point in the future when driver mode becomes the only option.
 
