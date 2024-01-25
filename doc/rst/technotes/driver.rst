@@ -21,7 +21,7 @@ subprocesses depending on which backend is used. By contrast, many compiler
 executables (including ``gcc`` and ``clang``) are actually `compiler drivers`.
 A compiler driver is a smaller program responsible for processing arguments and
 invoking separate processes for the different stages of compilation required. As
-of release 1.33, ``chpl`` runs as a compiler driver by default, which can be
+of release 1.34, ``chpl`` runs as a compiler driver by default, which can be
 opted-out of with ``--no-compiler-driver``. This flag will be removed at some
 point in the future when driver mode becomes the only option.
 
