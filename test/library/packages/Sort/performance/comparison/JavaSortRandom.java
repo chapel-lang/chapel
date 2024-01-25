@@ -22,5 +22,6 @@ public class JavaSortRandom {
     double elapsed = (end-start)/1000.0/1000.0/1000.0;
     System.out.println("Sorting took " + elapsed + " seconds");
     System.out.println("MiB/s: " + (8*n/elapsed/1024.0/1024.0));
+    System.out.println("MB/s: " + (8*n/elapsed/1000.0/1000.0));
   }
 }

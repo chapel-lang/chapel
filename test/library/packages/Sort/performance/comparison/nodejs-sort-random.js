@@ -17,7 +17,8 @@ function test() {
   const end = performance.now();
   const elapsed = (end - start)/1000.0; // in seconds
   console.log("Time: " + elapsed + " s");
-  console.log("MiB/s: " + 8*n/elapsed/1024.0/1024.0 + " s");
+  console.log("MiB/s: " + 8*n/elapsed/1024.0/1024.0);
+  console.log("MB/s: " + 8*n/elapsed/1000.0/1000.0);
 }
 
 test()

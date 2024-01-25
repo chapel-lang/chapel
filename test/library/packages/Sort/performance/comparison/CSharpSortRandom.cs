@@ -26,5 +26,6 @@ class CSharpSortRandom {
     double elapsed = stopwatch.Elapsed.TotalSeconds;
     Console.WriteLine("Sorting Time Elapsed " + elapsed + " s");
     Console.WriteLine((8*n/elapsed/1024.0/1024.0) + " MiB/s");
+    Console.WriteLine((8*n/elapsed/1000.0/1000.0) + " MB/s");
   }
 }

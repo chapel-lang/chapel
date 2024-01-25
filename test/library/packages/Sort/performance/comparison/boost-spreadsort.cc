@@ -38,6 +38,7 @@ int main() {
 
   printf("Sorted %i elements in %f seconds\n", n, end-start);
   printf("%f MiB/s\n", 8*n / (end-start) / 1024.0 / 1024.0);
+  printf("%f MB/s\n", 8*n / (end-start) / 1000.0 / 1000.0);
 
   return 0;
 }

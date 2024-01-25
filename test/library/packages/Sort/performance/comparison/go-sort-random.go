@@ -28,4 +28,5 @@ func main() {
   elapsed := time.Since(start).Seconds()
   fmt.Printf("Sorting it took %v\n", elapsed)
   fmt.Printf("%v MiB/s\n", float64(8*n)/elapsed/1024.0/1024.0)
+  fmt.Printf("%v MB/s\n", float64(8*n)/elapsed/1000.0/1000.0)
 }

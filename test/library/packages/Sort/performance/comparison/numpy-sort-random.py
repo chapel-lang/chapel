@@ -18,3 +18,4 @@ stop = time.time()
 
 print ("Sorted ", n, " elements in ", stop-start, " seconds")
 print (((8*n) / (stop-start))/1024.0/1024.0, " MiB/s")
+print (((8*n) / (stop-start))/1000.0/1000.0, " MB/s")
