@@ -22,7 +22,7 @@
 #include <complex.h>
 
 static double complex makeDoubleComplex(double re, double im) {
-  // Some test environments don't have a working CMPLXF
+  // Some test environments don't have a working CMPLX
   // so use another way to set if needed.
 #if defined(CMPLX)
   return CMPLX(re, im);
