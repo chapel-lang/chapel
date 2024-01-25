@@ -1,6 +1,6 @@
-randomModule.chpl:8: warning: the overload of fillRandom that generates its own seed is unstable
-randomModule.chpl:11: warning: the overload of shuffle that generates its own seed is unstable
-randomModule.chpl:14: warning: the overload of permute that generates its own seed is unstable
+randomModule.chpl:8: warning: the overload of 'fillRandom' that generates its own seed is unstable
+randomModule.chpl:11: warning: the overload of 'shuffle' that generates its own seed is unstable
+randomModule.chpl:14: warning: the overload of 'permute' that generates its own seed is unstable
 randomModule.chpl:19: warning: 'choice' is unstable and subject to change
 randomModule.chpl:20: warning: 'choice' is unstable and subject to change
 randomModule.chpl:21: warning: 'choice' is unstable and subject to change

@@ -168,7 +168,7 @@ module Random {
 
     :arg arr: An array of numeric values
   */
-  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -226,7 +226,7 @@ module Random {
     :arg min: The (inclusive) lower bound for the random values
     :arg max: The (inclusive) upper bound for the random values
   */
-  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t, min: t, max: t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -284,7 +284,7 @@ module Random {
 
     :arg arr: A non-strided default rectangular 1D array
   */
-  @unstable("the overload of shuffle that generates its own seed is unstable")
+  @unstable("the overload of 'shuffle' that generates its own seed is unstable")
   proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
     var rs = new randomStream(d.idxType);
     rs.shuffle(arr);
@@ -324,7 +324,7 @@ module Random {
     :return: A new array containing each of the values from ``arr`` in a
               pseudo-random order.
   */
-  @unstable("the overload of permute that generates its own seed is unstable")
+  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(const ref arr: [?d] ?t): [] t
     where is1DRectangularDomain(d)
   {
@@ -356,7 +356,7 @@ module Random {
     :return: An array containing each of the indices from ``d`` in a
               pseudo-random order.
   */
-  @unstable("the overload of permute that generates its own seed is unstable")
+  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(d: domain(?)): [] d.idxType
     where is1DRectangularDomain(d)
   {
@@ -385,7 +385,7 @@ module Random {
     :return: An array containing each of the values from ``r`` in a
               pseudo-random order.
   */
-  @unstable("the overload of permute that generates its own seed is unstable")
+  @unstable("the overload of 'permute' that generates its own seed is unstable")
   proc permute(r: range(bounds=boundKind.both, ?)): [] r.idxType {
     var rs = new randomStream(r.idxType);
     return rs.permute(r);
