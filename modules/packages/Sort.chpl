@@ -2386,7 +2386,7 @@ module TwoArrayPartitioning {
   // state is used locally by this routine or used elsewhere
   proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
-                 criterion, startbit:int) {
+                 criterion, inout startbit:int) {
 
     if debug then
       writeln("bucketize ", start_n..end_n, " startbit=", startbit);
@@ -2429,6 +2429,62 @@ module TwoArrayPartitioning {
       // Now store the counts into the global counts array
       foreach bin in 0..#nBuckets {
         state.globalCounts[bin*nTasks + tid] = counts[bin];
+      }
+    }
+
+    // Compute the total counts for the next check and for use
+    // after this function returns.
+    ref counts = state.counts;
+    forall bin in 0..#nBuckets with (ref counts) {
+      var total = 0;
+      for tid in 0..#nTasks {
+        total += state.globalCounts[bin*nTasks + tid];
+      }
+      counts[bin] = total;
+    }
+
+    if !state.bucketizer.isSampleSort {
+      // If the data parts we gathered all have the same leading bits,
+      // we can skip ahead immediately to the next count step.
+      //
+      // Check: was there actually only one bin with data?
+      var onlyBin: int = -1;
+      for bin in 0..#nBuckets {
+        var total = counts[bin];
+        if total == 0 {
+          // ok, continue
+        } else if total == n {
+          // everything is in one bin, so we can stop
+          onlyBin = bin;
+          break;
+        } else {
+          // a bin contained not 0 and not n,
+          // so this check is done
+          break;
+        }
+      }
+
+      if onlyBin >= 0 {
+        // TODO: would it help performance to compute min and max
+        // here and reset startbit according to these?
+        // Or, would it be better to compute min and max word
+        // in the above loop? (similar to 'ubits' in msbRadixSort)
+
+        // compute the next start bit since there was no need to sort
+        // at this start bit
+        startbit = state.bucketizer.getNextStartBit(startbit);
+        // stop if the next startbit is too far
+        if startbit > state.endbit then
+          return;
+
+        // stop if it's a bin that doesn't need sorting
+        // (bin for end-of-string indicator)
+        if !state.bucketizer.getBinsToRecursivelySort().contains(onlyBin) then
+          return;
+
+        // start over with the new start bit
+        bucketize(start_n, end_n, dst, src, state, criterion, startbit);
+        return; // note: startbit is inout so will change at call site
       }
     }
 
@@ -2479,16 +2535,6 @@ module TwoArrayPartitioning {
         ShallowCopy.shallowCopy(dst, next, src, i:idxType, 1:idxType);
         next += 1;
       }
-    }
-
-    // Compute the total counts
-    ref counts = state.counts;
-    forall bin in 0..#nBuckets with (ref counts) {
-      var total = 0;
-      for tid in 0..#nTasks {
-        total += state.globalCounts[bin*nTasks + tid];
-      }
-      counts[bin] = total;
     }
   }
   proc testBucketize(start_n: int, end_n: int, ref dst:[], src:[],
@@ -2576,6 +2622,7 @@ module TwoArrayPartitioning {
     while !state.bigTasks.isEmpty() {
       const task = state.bigTasks.popBack();
       const taskEnd = task.start + task.size - 1;
+      var taskStartBit = task.startbit;
 
       assert(task.doSort);
 
@@ -2586,11 +2633,11 @@ module TwoArrayPartitioning {
       if task.inA {
         partitioningSortWithScratchSpaceHandleSampling(
               task.start, taskEnd, A, Scratch,
-              state, criterion, task.startbit);
+              state, criterion, taskStartBit);
 
         // Count and partition
         bucketize(task.start, taskEnd, Scratch, A, state,
-                  criterion, task.startbit);
+                  criterion, taskStartBit);
         // bucketized data now in Scratch
         if debug {
           writef("pb %i %i Scratch=%?\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
@@ -2598,11 +2645,11 @@ module TwoArrayPartitioning {
       } else {
         partitioningSortWithScratchSpaceHandleSampling(
               task.start, taskEnd, Scratch, A,
-              state, criterion, task.startbit);
+              state, criterion, taskStartBit);
 
         // Count and partition
         bucketize(task.start, taskEnd, A, Scratch, state,
-                  criterion, task.startbit);
+                  criterion, taskStartBit);
         // bucketized data now in A
         if debug {
           writef("pb %i %i A=%?\n", task.start, taskEnd, A[task.start..taskEnd]);
@@ -2619,7 +2666,7 @@ module TwoArrayPartitioning {
         const binSize = state.counts[bin];
         const binStart = state.ends[bin] - binSize;
         const binEnd = binStart + binSize - 1;
-        const binStartBit = state.bucketizer.getNextStartBit(task.startbit);
+        const binStartBit = state.bucketizer.getNextStartBit(taskStartBit);
 
         const sortit =
           binSize > 1 && // have 2 or more elements to sort
