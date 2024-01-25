@@ -127,8 +127,8 @@ module Random {
     extern proc getpid(): CTypes.c_int;
 
     const sWho = chpl_task_getId().hash():int,
-          sWhat = getpid():int,
-          sWhen = (Time.timeSinceEpoch().totalSeconds()*1_000_000):int,
+          sWhat = (getpid():int).hash():int,
+          sWhen = Time.timeSinceEpoch().totalSeconds().hash():int,
           sWhere = here.hash():int;
 
     try {
