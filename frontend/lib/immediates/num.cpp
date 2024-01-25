@@ -31,7 +31,6 @@
 #include <cmath>
 #include <cstdio>
 #include <cstring>
-#include <complex>
 
 #include "num.h"
 #include "prim_data.h"
@@ -488,23 +487,6 @@ coerce_immediate(chpl::Context* context, Immediate *from, Immediate *to) {
           CHPL_ASSERT(false && "Cannot fold ** on floating point values"); \
           break; \
       }
-
-static complex64 complexSqrt64(complex64 x) {
-  auto c = std::complex<float>(x.r, x.i);
-  auto n = std::sqrt(c);
-  complex64 ret;
-  ret.r = std::real(n);
-  ret.i = std::imag(n);
-  return ret;
-}
-static complex128 complexSqrt128(complex128 x) {
-  auto c = std::complex<double>(x.r, x.i);
-  auto n = std::sqrt(c);
-  complex128 ret;
-  ret.r = std::real(n);
-  ret.i = std::imag(n);
-  return ret;
-}
 
 static void doFoldSqrt(chpl::Context* context,
                        Immediate &im1, /* input */
