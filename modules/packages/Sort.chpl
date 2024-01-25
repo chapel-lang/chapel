@@ -2313,10 +2313,24 @@ module TwoArrayPartitioning {
     var localCounts: [0..#maxBuckets] int;
   }
 
+  proc defaultNumTasks() {
+    if __primitive("task_get_serial") {
+      return 1;
+    }
+
+    const tasksPerLocale = dataParTasksPerLocale;
+    const ignoreRunning = dataParIgnoreRunningTasks;
+    var nTasks = if tasksPerLocale > 0 then tasksPerLocale else here.maxTaskPar;
+    if !ignoreRunning {
+      const otherTasks = here.runningTasks() - 1; // don't include self
+      nTasks = if otherTasks < nTasks then (nTasks-otherTasks):int else 1;
+    }
+
+    return nTasks;
+  }
+
   record TwoArrayBucketizerSharedState {
-    var nTasks:int = if dataParTasksPerLocale > 0
-                      then dataParTasksPerLocale
-                      else here.maxTaskPar;
+    var nTasks:int = defaultNumTasks();
     var countsSize:int = nTasks*maxBuckets;
 
     type bucketizerType;
