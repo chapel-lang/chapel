@@ -116,7 +116,7 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self);
 
 /* Generate a Python object for reach AST node type. */
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
-#include "uast-classes-list-adapter.h"
+#include "generated-types-list.h"
 #undef DECLARE_PY_OBJECT_FOR
 
 void setupGeneratedTypes();

@@ -47,7 +47,7 @@ using namespace uast;
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
-#include "uast-classes-list-adapter.h"
+#include "generated-types-list.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
   switch (blockStyle) {
@@ -165,7 +165,7 @@ struct PerNodeInfo {
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
-#include "uast-classes-list-adapter.h"
+#include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
   TYPE.tp_name = #NAME; \
@@ -180,5 +180,5 @@ struct PerNodeInfo {
 
 void setupGeneratedTypes() {
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
-#include "uast-classes-list-adapter.h"
+#include "generated-types-list.h"
 }

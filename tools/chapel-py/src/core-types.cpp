@@ -197,7 +197,7 @@ struct GeneratedTypeInfo {};
     static constexpr auto Tag = TAG; \
     static constexpr const char* Name = #NAME; \
   };
-#include "uast-classes-list-adapter.h"
+#include "generated-types-list.h"
 
 PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   std::ostringstream ss;
@@ -252,7 +252,7 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
     } \
 
   #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
-  #include "uast-classes-list-adapter.h"
+  #include "generated-types-list.h"
   #undef ENSURE_ALL_CLASSES
 
   return Py_BuildValue("s", ss.str().c_str());
