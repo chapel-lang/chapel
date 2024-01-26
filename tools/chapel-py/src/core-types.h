@@ -116,6 +116,7 @@ void setupParamType();
 
 int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
 void ParamObject_dealloc(ParamObject* self);
+PyObject* ParamObject_str(ParamObject* self);
 
 /**
   Declare a Python PyTypeObject that corresponds to a generated type

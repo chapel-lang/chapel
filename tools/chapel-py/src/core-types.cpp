@@ -564,6 +564,7 @@ void setupParamType() {
   ParamType.tp_methods = ParamObject_methods;
   ParamType.tp_init = (initproc) ParamObject_init;
   ParamType.tp_new = PyType_GenericNew;
+  ParamType.tp_str = (reprfunc) ParamObject_str;
 }
 
 int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
@@ -580,6 +581,13 @@ int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
 void ParamObject_dealloc(ParamObject* self) {
   Py_XDECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+PyObject* ParamObject_str(ParamObject* self) {
+  std::stringstream ss;
+  self->ptr->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
 }
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
