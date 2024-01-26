@@ -19,6 +19,7 @@
 
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/types/all-types.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "python-types.h"
@@ -498,6 +499,42 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
   return scopeObjectPy;
 }
 
+static PyMethodDef ChapelTypeObject_methods[] = {
+  {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+PyTypeObject ChapelTypeType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+};
+
+void setupChapelTypeType() {
+  ChapelTypeType.tp_name = "ChapelType";
+  ChapelTypeType.tp_basicsize = sizeof(ChapelTypeObject);
+  ChapelTypeType.tp_itemsize = 0;
+  ChapelTypeType.tp_dealloc = (destructor) ChapelTypeObject_dealloc;
+  ChapelTypeType.tp_flags = Py_TPFLAGS_BASETYPE;
+  ChapelTypeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
+  ChapelTypeType.tp_methods = ChapelTypeObject_methods;
+  ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
+  ChapelTypeType.tp_new = PyType_GenericNew;
+}
+
+int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+
+  Py_INCREF(contextObjectPy);
+  self->type = nullptr;
+  self->contextObject = contextObjectPy;
+  return 0;
+}
+
+void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
@@ -508,12 +545,27 @@ PyTypeObject* parentTypeFor(asttags::AstTag tag) {
     return &NAME##Type; \
   }
 #include "chpl/uast/uast-classes-list.h"
-#include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
   return &AstNodeType;
+}
+
+PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
+#define TYPE_NODE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME) \
+  if (tag > types::typetags::START_##NAME && tag < types::typetags::END_##NAME) { \
+    return &NAME##Type; \
+  }
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+  return &ChapelTypeType;
 }
 
 PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
@@ -537,6 +589,35 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
+#undef CAST_TO
+    default: break;
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapType(ContextObject* context, const types::Type* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    Py_RETURN_NONE;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->tag()) {
+#define CAST_TO(NAME) \
+    case types::typetags::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.type = (const types::Type*) node->to##NAME(); \
+      break;
+#define TYPE_NODE(NAME) CAST_TO(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) CAST_TO(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) /* No need to handle abstract parent classes. */
+#define TYPE_END_SUBCLASSES(NAME)
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef CAST_TO
     default: break;
   }
   Py_XDECREF(args);

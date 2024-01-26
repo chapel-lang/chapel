@@ -52,6 +52,8 @@ PyMODINIT_FUNC PyInit_core() {
   setupAstCallIterType();
   setupAstNodeType();
   setupPerNodeTypes();
+  setupChapelTypeType();
+  setupPerTypeTypes();
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
@@ -61,6 +63,7 @@ PyMODINIT_FUNC PyInit_core() {
   if (PyType_Ready(&AstIterType) < 0) return nullptr;
   if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;
+  if (PyType_Ready(&ChapelTypeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
 #define AST_NODE(NAME) READY_TYPE(NAME)
 #define AST_LEAF(NAME) READY_TYPE(NAME)
@@ -71,6 +74,16 @@ PyMODINIT_FUNC PyInit_core() {
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
+
+#define TYPE_NODE(NAME) READY_TYPE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) READY_TYPE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) READY_TYPE(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -86,6 +99,18 @@ PyMODINIT_FUNC PyInit_core() {
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
   ADD_TYPE(AstNode);
+
+#define TYPE_NODE(NAME) ADD_TYPE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) ADD_TYPE(NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME) ADD_TYPE(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+  ADD_TYPE(ChapelType);
+
   if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
     Py_DECREF(&ContextType);
     Py_DECREF(chapelModule);
