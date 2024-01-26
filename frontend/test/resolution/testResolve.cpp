@@ -950,7 +950,7 @@ static void test20() {
 
     assert(guard.numErrors() == 1);
     assert(guard.error(0)->message() ==
-           "Could not resolve call to foo: ambiguity");
+           "Cannot resolve call to 'foo': ambiguity");
     guard.realizeErrors();
 
     context->collectGarbage();
@@ -984,7 +984,7 @@ static void test20() {
     assert(m->numStmts() == 3);
 
     // variable initialized with foo call
-    const Variable* x = m->stmt(1)->toVariable();
+    const Variable* x = m->stmt(2)->toVariable();
     assert(x);
     const AstNode* rhs = x->initExpression();
     assert(rhs);
@@ -1000,7 +1000,7 @@ static void test20() {
     // Check we called the correct foo.
     assert(c.fn()->untyped()->name() == "foo");
     assert(c.fn()->numFormals() == 1);
-    assert(c.fn()->formalName(0) == "x");
+    assert(c.fn()->formalName(0) == "y");
     assert(c.fn()->formalType(0).type());
     assert(c.fn()->formalType(0).type()->isIntType());
 
