@@ -135,6 +135,11 @@ void ParamObject_dealloc(ParamObject* self);
 
 void setupGeneratedTypes();
 
+template<typename IntentType>
+const char* intentToString(IntentType intent) {
+  return qualifierToString(chpl::uast::Qualifier(int(intent)));
+}
+
 /**
   Create a Python object of the class corresponding to the given AST node's
   type. For example, an Identifier node will be wrapped in a chapel.Identifier.

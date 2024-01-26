@@ -65,11 +65,6 @@ static const char* opKindToString(Range::OpKind kind) {
   }
 }
 
-template<typename IntentType>
-static const char* intentToString(IntentType intent) {
-  return qualifierToString(Qualifier(int(intent)));
-}
-
 /* The METHOD macro is overridden here to actually create a Python-compatible
    function to insert into the method table. Each such function retrieves
    a node's context object, calls the method body, and wraps the result

@@ -490,7 +490,16 @@ PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) 
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
-  return wrapType(contextObject, typeForNode(context, self->ptr).type());
+  auto qt = typeForNode(context, self->ptr);
+  if (qt.isUnknown()) {
+    Py_RETURN_NONE;
+  }
+
+  auto ret = Py_BuildValue("(sOO)", intentToString(qt.kind()),
+                                    wrapType(contextObject, qt.type()),
+                                    wrapParam(contextObject, qt.param()));
+
+  return ret;
 }
 
 static PyMethodDef ChapelTypeObject_methods[] = {
