@@ -75,7 +75,7 @@ PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUS
 typedef struct {
   PyObject_HEAD
   PyObject* contextObject;
-  const chpl::uast::AstNode* astNode;
+  const chpl::uast::AstNode* ptr;
 } AstNodeObject;
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
@@ -95,7 +95,7 @@ PyObject* AstNodeObject_scope(AstNodeObject *self);
 typedef struct {
   PyObject_HEAD
   PyObject* contextObject;
-  const chpl::types::Type* type;
+  const chpl::types::Type* ptr;
 } ChapelTypeObject;
 extern PyTypeObject ChapelTypeType;
 void setupChapelTypeType();
@@ -104,48 +104,22 @@ int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwar
 void ChapelTypeObject_dealloc(ChapelTypeObject* self);
 
 /**
-  Declare a Python PyTypeObject that corresponds to an AST node with the given
-  name.
+  Declare a Python PyTypeObject that corresponds to a generated type
+  (AST node, Chapel type, etc.) of a given name.
  */
-#define DECLARE_PY_OBJECT_FOR(NAME)\
+#define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
   typedef struct { \
-    AstNodeObject parent; \
+    ROOT##Object parent; \
   } NAME##Object; \
   \
   extern PyTypeObject NAME##Type;
 
 /* Generate a Python object for reach AST node type. */
-#define GENERATED_TYPE(NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(NAME)
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
 #include "uast-classes-list-adapter.h"
 #undef DECLARE_PY_OBJECT_FOR
 
-void setupPerNodeTypes();
-
-/**
-  Declare a Python PyTypeObject that corresponds to an Chapel type class with
-  the given name.
- */
-#define DECLARE_PY_OBJECT_FOR(NAME)\
-  typedef struct { \
-    ChapelTypeObject parent; \
-  } NAME##Object; \
-  \
-  extern PyTypeObject NAME##Type;
-
-/* Generate a Python object for reach Chapel type class. */
-#define TYPE_NODE(NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
-#include "chpl/types/type-classes-list.h"
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
-#undef DECLARE_PY_OBJECT_FOR
-
-void setupPerTypeTypes();
-
+void setupGeneratedTypes();
 
 /**
   Create a Python object of the class corresponding to the given AST node's

@@ -46,7 +46,7 @@ using namespace uast;
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
-#define GENERATED_TYPE(NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
 #include "uast-classes-list-adapter.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
@@ -77,7 +77,7 @@ static const char* intentToString(IntentType intent) {
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto node = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
+    auto node = ((NODE##Object*) self)->parent.ptr->to##NODE(); \
     auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
     auto context = &contextObject->context; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
@@ -97,7 +97,7 @@ static const char* intentToString(IntentType intent) {
    */
 #define ACTUAL_ITERATOR(NAME)\
   static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
-    auto node = ((NAME##Object*) self)->parent.astNode->to##NAME(); \
+    auto node = ((NAME##Object*) self)->parent.ptr->to##NAME(); \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
     auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
@@ -132,18 +132,18 @@ ACTUAL_ITERATOR(FnCall);
 
    Macros below take this a step further and compiler-generate the template
    specializations. */
-template <asttags::AstTag tag>
+template <typename ObjectType>
 struct PerNodeInfo {
   static constexpr PyMethodDef methods[] = {
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
 
-#define CLASS_BEGIN(TAG) \
+#define CLASS_BEGIN(NAME) \
   template <> \
-  struct PerNodeInfo<asttags::TAG> { \
+  struct PerNodeInfo<NAME##Object> { \
     static constexpr PyMethodDef methods[] = {
-#define CLASS_END(TAG) \
+#define CLASS_END(NAME) \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
   };
@@ -164,7 +164,7 @@ struct PerNodeInfo {
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define GENERATED_TYPE(NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
 #include "uast-classes-list-adapter.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
@@ -173,12 +173,12 @@ struct PerNodeInfo {
   TYPE.tp_itemsize = 0; \
   TYPE.tp_flags = FLAGS; \
   TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
-  TYPE.tp_methods = (PyMethodDef*) PerNodeInfo<TAG>::methods; \
+  TYPE.tp_methods = (PyMethodDef*) PerNodeInfo<NAME##Object>::methods; \
   TYPE.tp_base = parentTypeFor(TAG); \
   TYPE.tp_init = (initproc) NAME##Object_init; \
   TYPE.tp_new = PyType_GenericNew; \
 
-void setupPerNodeTypes() {
-#define GENERATED_TYPE(NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+void setupGeneratedTypes() {
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
 #include "uast-classes-list-adapter.h"
 }

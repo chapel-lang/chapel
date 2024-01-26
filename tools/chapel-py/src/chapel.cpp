@@ -51,9 +51,8 @@ PyMODINIT_FUNC PyInit_core() {
   setupAstIterType();
   setupAstCallIterType();
   setupAstNodeType();
-  setupPerNodeTypes();
   setupChapelTypeType();
-  setupPerTypeTypes();
+  setupGeneratedTypes();
 
   if (PyType_Ready(&ContextType) < 0) return nullptr;
   if (PyType_Ready(&ErrorType) < 0) return nullptr;
@@ -65,36 +64,18 @@ PyMODINIT_FUNC PyInit_core() {
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;
   if (PyType_Ready(&ChapelTypeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(NAME, TAG, FLAGS) READY_TYPE(NAME)
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) READY_TYPE(NAME)
 #include "uast-classes-list-adapter.h"
-
-#define TYPE_NODE(NAME) READY_TYPE(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) READY_TYPE(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) READY_TYPE(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
-#include "chpl/types/type-classes-list.h"
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
+#undef GENERATED_TYPE
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
 
 #define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
-#define GENERATED_TYPE(NAME, TAG, FLAGS) ADD_TYPE(NAME)
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) ADD_TYPE(NAME)
 #include "uast-classes-list-adapter.h"
+#undef GENERATED_TYPE
   ADD_TYPE(AstNode);
-
-#define TYPE_NODE(NAME) ADD_TYPE(NAME)
-#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) ADD_TYPE(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) ADD_TYPE(NAME)
-#define TYPE_END_SUBCLASSES(NAME)
-#include "chpl/types/type-classes-list.h"
-#undef TYPE_NODE
-#undef BUILTIN_TYPE_NODE
-#undef TYPE_BEGIN_SUBCLASSES
-#undef TYPE_END_SUBCLASSES
   ADD_TYPE(ChapelType);
 
   if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {

@@ -316,10 +316,10 @@ CLASS_BEGIN(Yield)
                const AstNode*, return node->value())
 CLASS_END(Yield)
 
-CLASS_BEGIN(START_SimpleBlockLike)
+CLASS_BEGIN(SimpleBlockLike)
   PLAIN_GETTER(SimpleBlockLike, block_style, "Get the block style of this SimpleBlockLike node",
                const char*, return blockStyleToString(node->blockStyle()))
-CLASS_END(START_SimpleBlockLike)
+CLASS_END(SimpleBlockLike)
 
 CLASS_BEGIN(Begin)
   PLAIN_GETTER(Begin, with_clause, "Get the WithClause of this Begin node",
@@ -357,12 +357,12 @@ CLASS_BEGIN(When)
                bool, return node->isOtherwise())
 CLASS_END(When)
 
-CLASS_BEGIN(START_Loop)
+CLASS_BEGIN(Loop)
   PLAIN_GETTER(Loop, block_style, "Get the block style of this Loop node",
                const char*, return blockStyleToString(node->blockStyle()))
   PLAIN_GETTER(Loop, body, "Get the body of this Loop node",
                const AstNode*, return node->body())
-CLASS_END(START_Loop)
+CLASS_END(Loop)
 
 CLASS_BEGIN(DoWhile)
   PLAIN_GETTER(DoWhile, condition, "Get the condition of this DoWhole node",
@@ -374,7 +374,7 @@ CLASS_BEGIN(While)
                const AstNode*, return node->condition())
 CLASS_END(While)
 
-CLASS_BEGIN(START_IndexableLoop)
+CLASS_BEGIN(IndexableLoop)
   PLAIN_GETTER(IndexableLoop, index, "Get the index of this IndexableLoop node",
                const AstNode*, return node->index())
   PLAIN_GETTER(IndexableLoop, is_expression_level, "Check if this IndexableLoop node is expression level",
@@ -383,7 +383,7 @@ CLASS_BEGIN(START_IndexableLoop)
                const AstNode*, return node->iterand())
   PLAIN_GETTER(IndexableLoop, with_clause, "Get the WithClause of this IndexableLoop node",
                const AstNode*, return node->withClause())
-CLASS_END(START_IndexableLoop)
+CLASS_END(IndexableLoop)
 
 CLASS_BEGIN(BracketLoop)
   PLAIN_GETTER(BracketLoop, is_maybe_array_type, "Check if this BracketLoop node may actually be a type",
@@ -420,17 +420,17 @@ CLASS_BEGIN(UintLiteral)
                UniqueString, return node->text())
 CLASS_END(UintLiteral)
 
-CLASS_BEGIN(START_StringLikeLiteral)
+CLASS_BEGIN(StringLikeLiteral)
   PLAIN_GETTER(StringLikeLiteral, value, "Get the value of this StringLikeLiteral node",
                UniqueString, return node->value())
-CLASS_END(START_StringLikeLiteral)
+CLASS_END(StringLikeLiteral)
 
-CLASS_BEGIN(START_Call)
+CLASS_BEGIN(Call)
   PLAIN_GETTER(Call, actuals, "Get the arguments to this Call node",
                IterAdapterBase*, return mkIterPair(node->actuals()))
   PLAIN_GETTER(Call, called_expression, "Get the expression invoked by this Call node",
                const AstNode*, return node->calledExpression())
-CLASS_END(START_Call)
+CLASS_END(Call)
 
 CLASS_BEGIN(FnCall)
   METHOD_PROTOTYPE(FnCall, actuals, "Get the actuals of this FnCall node")
@@ -466,14 +466,14 @@ CLASS_BEGIN(Scan)
                const AstNode*, return node->op())
 CLASS_END(Scan)
 
-CLASS_BEGIN(START_Decl)
+CLASS_BEGIN(Decl)
   PLAIN_GETTER(Decl, linkage, "Get the linkage of this Decl node",
                const char*, return Decl::linkageToString(node->linkage()))
   PLAIN_GETTER(Decl, linkage_name, "Get the linkage name of this Decl node",
                const AstNode*, return node->linkageName())
   PLAIN_GETTER(Decl, visibility, "Get the visibility of this Decl node",
                const char*, return Decl::visibilityToString(node->visibility()))
-CLASS_END(START_Decl)
+CLASS_END(Decl)
 
 CLASS_BEGIN(TupleDecl)
   PLAIN_GETTER(TupleDecl, decls, "Get the declarations for this TupleDecl node",
@@ -491,12 +491,12 @@ CLASS_BEGIN(ForwardingDecl)
                const AstNode*, return node->expr())
 CLASS_END(ForwardingDecl)
 
-CLASS_BEGIN(START_NamedDecl)
+CLASS_BEGIN(NamedDecl)
   PLAIN_GETTER(NamedDecl, name, "Get the name of this NamedDecl node",
                UniqueString, return node->name())
   PLAIN_GETTER(NamedDecl, name_location, "Get the textual location of the NamedDecl node's name",
                Location, return chpl::parsing::locateDeclNameWithAst(context, node))
-CLASS_END(START_NamedDecl)
+CLASS_END(NamedDecl)
 
 CLASS_BEGIN(EnumElement)
   PLAIN_GETTER(EnumElement, init_expression, "Get the init expression of this EnumElement node",
@@ -559,7 +559,7 @@ CLASS_BEGIN(ReduceIntent)
                const AstNode*, return node->op())
 CLASS_END(ReduceIntent)
 
-CLASS_BEGIN(START_VarLikeDecl)
+CLASS_BEGIN(VarLikeDecl)
   PLAIN_GETTER(VarLikeDecl, init_expression, "Get the init expression of this VarLikeDecl node",
                const AstNode*, return node->initExpression())
   PLAIN_GETTER(VarLikeDecl, storage_kind, "Get the storage kind of this VarLikeDecl node",
@@ -568,7 +568,7 @@ CLASS_BEGIN(START_VarLikeDecl)
                const AstNode*, return node->typeExpression())
   PLAIN_GETTER(VarLikeDecl, intent, "Get the intent for this VarLikeDecl node",
                const char*, return intentToString(node->storageKind()))
-CLASS_END(START_VarLikeDecl)
+CLASS_END(VarLikeDecl)
 
 CLASS_BEGIN(VarArgFormal)
   PLAIN_GETTER(VarArgFormal, count, "Get the count expression of this VarArgFormal node",
@@ -584,12 +584,12 @@ CLASS_BEGIN(Variable)
                const char*, return qualifierToString(node->storageKind()))
 CLASS_END(Variable)
 
-CLASS_BEGIN(START_AggregateDecl)
+CLASS_BEGIN(AggregateDecl)
   PLAIN_GETTER(AggregateDecl, decls_or_comments, "Get the declarations and comments of this AggregateDecl node",
                IterAdapterBase*, return mkIterPair(node->declOrComments()))
   PLAIN_GETTER(AggregateDecl, inherit_exprs, "Get the inherit expressions of this AggregateDecl node",
                IterAdapterBase*, return mkIterPair(node->inheritExprs()))
-CLASS_END(START_AggregateDecl)
+CLASS_END(AggregateDecl)
 
 //
 // Cleanup and undefine all macros
