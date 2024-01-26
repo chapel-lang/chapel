@@ -482,7 +482,7 @@ class ChapelLanguageServer(LanguageServer):
         self, uri: str, do_update: bool = False
     ) -> Tuple[FileInfo, List[Any]]:
         """
-        The language server maintains a FileInfo object for file. The FileInfo
+        The language server maintains a FileInfo object per file. The FileInfo
         contains precomputed information (binary-search-ready tables for
         finding an element under a cursor).
 
