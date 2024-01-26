@@ -103,6 +103,7 @@ void setupChapelTypeType();
 
 int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs);
 void ChapelTypeObject_dealloc(ChapelTypeObject* self);
+PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
 
 /**
   Declare a Python PyTypeObject that corresponds to a generated type

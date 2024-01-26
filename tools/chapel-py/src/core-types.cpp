@@ -509,6 +509,7 @@ void setupChapelTypeType() {
   ChapelTypeType.tp_methods = ChapelTypeObject_methods;
   ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
   ChapelTypeType.tp_new = PyType_GenericNew;
+  ChapelTypeType.tp_str = (reprfunc) ChapelTypeObject_str;
 }
 
 int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs) {
@@ -527,6 +528,12 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
+PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
+  std::stringstream ss;
+  self->ptr->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
