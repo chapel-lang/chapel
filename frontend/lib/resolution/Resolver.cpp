@@ -1494,6 +1494,7 @@ bool Resolver::handleResolvedCallWithoutError(ResolvedExpression& r,
 
   if (!c.exprType().hasTypePtr()) {
     r.setType(QualifiedType(r.type().kind(), ErroneousType::get(context)));
+    r.setMostSpecific(c.mostSpecific());
     return true;
   } else {
     r.setPoiScope(c.poiInfo().poiScope());
