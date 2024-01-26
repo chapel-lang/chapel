@@ -216,6 +216,8 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "class Error: pass" << std::endl << std::endl;
   ss << "class Scope: pass" << std::endl << std::endl;
   ss << "class AstNode: pass" << std::endl << std::endl;
+  ss << "class ChapelType: pass" << std::endl << std::endl;
+  ss << "class Param: pass" << std::endl << std::endl;
 
   // Here, use X-macros with the method-tables.h header file to generate
   // printing code for each AST node class. This uses the helper function
