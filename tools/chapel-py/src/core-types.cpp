@@ -194,18 +194,11 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
     names for abstract base classes. */
 static const char* tagToUserFacingStringTable[asttags::NUM_AST_TAGS] = {
 // define tag to string conversion
-#define AST_NODE(NAME) #NAME,
-#define AST_LEAF(NAME) #NAME,
-#define AST_BEGIN_SUBCLASSES(NAME) #NAME,
-#define AST_END_SUBCLASSES(NAME) #NAME,
+#define GENERATED_TYPE(NAME, TAG, FLAGS) #NAME,
+#define GENERATED_TYPE_END(NAME, TAG, FLAGS) #NAME,
 // Apply the above macros to uast-classes-list.h
-#include "chpl/uast/uast-classes-list.h"
+#include "uast-classes-list-adapter.h"
 // clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef NAMESTR
 };
 
 PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
@@ -253,23 +246,15 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #include "method-tables.h"
 
   #define ENSURE_ALL_CLASSES(NODE) \
-    if(generated.find(tagToUserFacingStringTable[asttags::NODE]) == generated.end()) { \
-      ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
-      ss << parentTypeFor(asttags::NODE)->tp_name; \
+    if(generated.find(tagToUserFacingStringTable[NODE]) == generated.end()) { \
+      ss << "class " << tagToUserFacingStringTable[NODE] << "("; \
+      ss << parentTypeFor(NODE)->tp_name; \
       ss << "):" << std::endl; \
       ss << "    pass" << std::endl; \
     } \
 
-  #define AST_NODE(NAME) ENSURE_ALL_CLASSES(NAME)
-  #define AST_LEAF(NAME) ENSURE_ALL_CLASSES(NAME)
-  #define AST_BEGIN_SUBCLASSES(NAME) ENSURE_ALL_CLASSES(START_##NAME)
-  #define AST_END_SUBCLASSES(NAME)
-  #include "chpl/uast/uast-classes-list.h"
-  #undef AST_NODE
-  #undef AST_LEAF
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
-
+  #define GENERATED_TYPE(NAME, TAG, FLAGS) ENSURE_ALL_CLASSES(TAG)
+  #include "uast-classes-list-adapter.h"
   #undef ENSURE_ALL_CLASSES
 
   return Py_BuildValue("s", ss.str().c_str());

@@ -65,15 +65,8 @@ PyMODINIT_FUNC PyInit_core() {
   if (PyType_Ready(&AstNodeType) < 0) return nullptr;
   if (PyType_Ready(&ChapelTypeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
-#define AST_NODE(NAME) READY_TYPE(NAME)
-#define AST_LEAF(NAME) READY_TYPE(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) READY_TYPE(NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(NAME, TAG, FLAGS) READY_TYPE(NAME)
+#include "uast-classes-list-adapter.h"
 
 #define TYPE_NODE(NAME) READY_TYPE(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) READY_TYPE(NAME)
@@ -89,15 +82,8 @@ PyMODINIT_FUNC PyInit_core() {
   if (!chapelModule) return nullptr;
 
 #define ADD_TYPE(NAME) if (PyModule_AddObject(chapelModule, #NAME, (PyObject*) &NAME##Type) < 0) return nullptr;
-#define AST_NODE(NAME) ADD_TYPE(NAME)
-#define AST_LEAF(NAME) ADD_TYPE(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) ADD_TYPE(NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(NAME, TAG, FLAGS) ADD_TYPE(NAME)
+#include "uast-classes-list-adapter.h"
   ADD_TYPE(AstNode);
 
 #define TYPE_NODE(NAME) ADD_TYPE(NAME)

@@ -115,15 +115,8 @@ void ChapelTypeObject_dealloc(ChapelTypeObject* self);
   extern PyTypeObject NAME##Type;
 
 /* Generate a Python object for reach AST node type. */
-#define AST_NODE(NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define AST_LEAF(NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DECLARE_PY_OBJECT_FOR(NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(NAME)
+#include "uast-classes-list-adapter.h"
 #undef DECLARE_PY_OBJECT_FOR
 
 void setupPerNodeTypes();

@@ -42,20 +42,12 @@ using namespace uast;
  */
 #define DEFINE_INIT_FOR(NAME, TAG)\
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return parentTypeFor(asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
+    return parentTypeFor(TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
-#define AST_NODE(NAME) DEFINE_INIT_FOR(NAME, NAME)
-#define AST_LEAF(NAME) DEFINE_INIT_FOR(NAME, NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_INIT_FOR(NAME, START_##NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef DEFINE_INIT_FOR
+#define GENERATED_TYPE(NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
+#include "uast-classes-list-adapter.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
   switch (blockStyle) {
@@ -166,21 +158,14 @@ struct PerNodeInfo {
    macro defines what a type object for an AST node (abstract or not) should
    look like. */
 
-#define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
+#define DEFINE_PY_TYPE_FOR(NAME)\
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
+#include "uast-classes-list-adapter.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
   TYPE.tp_name = #NAME; \
@@ -194,13 +179,6 @@ struct PerNodeInfo {
   TYPE.tp_new = PyType_GenericNew; \
 
 void setupPerNodeTypes() {
-#define AST_NODE(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+#include "uast-classes-list-adapter.h"
 }
