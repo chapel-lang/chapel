@@ -18,6 +18,7 @@
  */
 
 #include "core-types.h"
+#include "resolution.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 #include "chpl/framework/query-impl.h"
@@ -75,69 +76,6 @@ static const char* opKindToString(Range::OpKind kind) {
 template<typename IntentType>
 static const char* intentToString(IntentType intent) {
   return qualifierToString(Qualifier(int(intent)));
-}
-
-static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
-  if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
-    auto useParent = parsing::parentAst(context, visibilityStmt);
-    auto scope = resolution::scopeForId(context, useParent->id());
-    auto reScope = resolution::resolveVisibilityStmts(context, scope);
-    for (auto visCla: reScope->visibilityClauses()) {
-      if(visCla.visibilityClauseId().contains(node->id())) {
-        return visCla.scope()->id();
-      }
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
-  if (auto fn = fnNode->toFunction()) {
-    auto byId =
-        resolution::scopeResolveFunction(context, fn->id())->resolutionById();
-    if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
-  if (auto mod = modNode->toModule()) {
-    auto byId = resolution::scopeResolveModule(context, mod->id());
-    if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveResultsForNode(Context* context, const AstNode* node) {
-  const AstNode* search = node;
-  while (search) {
-    if (auto id = scopeResolveViaFunction(context, search, node)) {
-      return id;
-    } else if (auto id = scopeResolveViaModule(context, search, node)) {
-      return id;
-    } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
-      return id;
-    }
-    search = parsing::parentAst(context, search);
-  }
-  return ID();
-}
-
-static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
-  if (id.isEmpty()) return nullptr;
-
-  return parsing::idToAst(context, id);
-}
-
-static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) {
-  QUERY_BEGIN(nodeOrNullFromToId, context, node);
-  auto id = scopeResolveResultsForNode(context, node);
-  auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
-  return QUERY_END(nodeOrNull);
 }
 
 /* The METHOD macro is overridden here to actually create a Python-compatible
