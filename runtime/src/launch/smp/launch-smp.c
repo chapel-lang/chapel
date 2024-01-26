@@ -24,14 +24,16 @@
 #include "chpllaunch.h"
 
 
-// Simple launcher that just sets GASNET_PSHM_NODES and launchers the _real
+// Simple launcher that just sets GASNET_PSHM_NODES and launches the _real
 
 int chpl_launch(int argc, char* argv[], int32_t numLocales,
                 int32_t numLocalesPerNode) {
   char baseCommand[4096];
 
-  if (numLocalesPerNode > 1) {
-    chpl_launcher_no_colocales_error(NULL);
+  int32_t numNodes = (numLocales + numLocalesPerNode - 1) / numLocalesPerNode;
+
+  if ((numLocalesPerNode > 1) && (numNodes != 1)) {
+    chpl_error("smp launcher does not support multiple nodes", 0, 0);
   }
 
   chpl_env_set_uint("GASNET_PSHM_NODES", numLocales, 1);
