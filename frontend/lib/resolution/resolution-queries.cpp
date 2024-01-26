@@ -3352,6 +3352,26 @@ static bool isInsideForwarding(Context* context, const Call* call) {
   return insideForwarding;
 }
 
+// Returns candidates with last resort candidates removed and saved in a
+// separate list.
+static void filterCandidatesLastResort(
+    Context* context, const CandidatesVec& list, CandidatesVec& result,
+    std::vector<const CandidatesVec>& lastResort) {
+  CandidatesVec newLastResortCandidates;
+
+  for (auto& candidate : list) {
+    auto attrs =
+        parsing::idToAttributeGroup(context, candidate->untyped()->id());
+    if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
+      newLastResortCandidates.push_back(candidate);
+    } else {
+      result.push_back(candidate);
+    }
+  }
+
+  lastResort.push_back(newLastResortCandidates);
+}
+
 // Returns candidates (including instantiating candidates)
 // for resolving CallInfo 'ci'.
 //
@@ -3374,6 +3394,9 @@ gatherAndFilterCandidates(Context* context,
                           ForwardingInfoVec& forwardingInfo,
                           std::vector<ApplicabilityResult>* rejected) {
   CandidatesVec candidates;
+  // Last resort candidates, grouped by without-POI, then from innermost POI
+  // scope outward, then forwading.
+  std::vector<const CandidatesVec> lrcGroups;
   CheckedScopes visited;
   firstPoiCandidate = 0;
 
@@ -3403,13 +3426,18 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesVec candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroups);
   }
 
   // next, look for candidates using POI
@@ -3439,13 +3467,18 @@ gatherAndFilterCandidates(Context* context,
     }
 
     // find candidates, doing instantiation if necessary
+    CandidatesVec candidatesWithInstantiations;
     filterCandidatesInstantiating(context,
                                   initialCandidates,
                                   ci,
                                   inScope,
                                   inPoiScope,
-                                  candidates,
+                                  candidatesWithInstantiations,
                                   rejected);
+
+    // filter out last resort candidates
+    filterCandidatesLastResort(context, candidatesWithInstantiations,
+                               candidates, lrcGroups);
   }
 
   // If no candidates were found and it's a method, try forwarding
@@ -3496,6 +3529,22 @@ gatherAndFilterCandidates(Context* context,
       forwardingInfo.insert(forwardingInfo.end(),
                             poiForwardingTo.begin(),
                             poiForwardingTo.end());
+    }
+  }
+
+  // If no candidates have been found, consider last resort candidates from
+  // innermost to outermost.
+  bool pastPoiLrcs = false;
+  for (const auto& lrcGroup : lrcGroups) {
+    if (candidates.empty()) {
+      candidates = lrcGroup;
+      // Bump firstPoiCandidate index after non-POI last resorts
+      if (!pastPoiLrcs) {
+        firstPoiCandidate = candidates.size();
+        pastPoiLrcs = true;
+      }
+    } else {
+      break;
     }
   }
 
