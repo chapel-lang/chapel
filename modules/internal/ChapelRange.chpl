@@ -2451,7 +2451,7 @@ private proc isBCPindex(type t) param do
   // Slicing, implementing the slice semantics in #20462.
   // Return the intersection of this and other.
   @chpldoc.nodoc
-  inline proc const range.this(other: range(?))
+  proc const range.this(other: range(?))
   {
     // Disallow slicing of an unaligned range, at least for now.
     if ! this.isAligned() then
