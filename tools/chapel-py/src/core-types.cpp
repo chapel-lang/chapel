@@ -24,6 +24,7 @@
 #include "chpl/resolution/scope-queries.h"
 #include "python-types.h"
 #include "error-tracker.h"
+#include "resolution.h"
 
 using namespace chpl;
 using namespace uast;
@@ -379,6 +380,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "Get the pragmas of this AST node"},
   {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifier for this AST node"},
   {"scope", (PyCFunction) AstNodeObject_scope, METH_NOARGS, "Get the scope for this AST node"},
+  {"type", (PyCFunction) AstNodeObject_type, METH_NOARGS, "Get the type of this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -480,6 +482,13 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
   scopeObject->scope = scope;
 
   return scopeObjectPy;
+}
+
+PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto contextObject = (ContextObject*) self->contextObject;
+  auto context = &contextObject->context;
+
+  return wrapType(contextObject, typeForNode(context, self->ptr).type());
 }
 
 static PyMethodDef ChapelTypeObject_methods[] = {
