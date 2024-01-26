@@ -3148,6 +3148,26 @@ static void helpComputeForwardingTo(const CallInfo& fci,
   }
 }
 
+// Returns candidates with last resort candidates removed and saved in a
+// separate list.
+static void filterCandidatesLastResort(
+    Context* context, const CandidatesVec& list, CandidatesVec& result,
+    std::vector<CandidatesVec>& lastResort) {
+  CandidatesVec newLastResortCandidates;
+
+  for (auto& candidate : list) {
+    auto attrs =
+        parsing::idToAttributeGroup(context, candidate->untyped()->id());
+    if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
+      newLastResortCandidates.push_back(candidate);
+    } else {
+      result.push_back(candidate);
+    }
+  }
+
+  lastResort.push_back(newLastResortCandidates);
+}
+
 // this function gathers candidates not from POI and candidates
 // from POI into separate vectors.
 // For each of these vectors, the corresponding forwardingTo vector
@@ -3163,7 +3183,9 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& nonPoiCandidates,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
-                                    ForwardingInfoVec& poiForwardingTo) {
+                                    ForwardingInfoVec& poiForwardingTo,
+                                    std::vector<CandidatesVec> lrcGroups,
+                                    std::vector<ForwardingInfoVec> lrcForwardingTo) {
 
   const Type* receiverType = ci.actual(0).type().type();
 
@@ -3243,11 +3265,14 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                           nonPoiCandidates);
       // update forwardingTo
       helpComputeForwardingTo(fci, start, nonPoiCandidates, nonPoiForwardingTo);
+
+      // don't worry about last resort for compiler generated candidates
     }
 
     // next, look for candidates without using POI.
     {
       int i = 0;
+      ForwardingInfoVec newLrcForwardingTo;
       for (const auto& fci : forwardingCis) {
         size_t start = nonPoiCandidates.size();
         // compute the potential functions that it could resolve to
@@ -3258,19 +3283,27 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesVec candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      nonPoiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   nonPoiCandidates, lrcGroups);
+
+        // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start,
                                 nonPoiCandidates, nonPoiForwardingTo);
+        helpComputeForwardingTo(fci, start, lrcGroups.back(),
+                                newLrcForwardingTo);
         i++;
       }
+      lrcForwardingTo.push_back(newLrcForwardingTo);
     }
 
     // next, look for candidates using POI
@@ -3285,6 +3318,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
 
       int i = 0;
+      ForwardingInfoVec newLrcForwardingTo;
       for (const auto& fci : forwardingCis) {
         size_t start = poiCandidates.size();
 
@@ -3296,18 +3330,26 @@ gatherAndFilterCandidatesForwarding(Context* context,
           filterCandidatesInitial(context, std::move(v), fci);
 
         // find candidates, doing instantiation if necessary
+        CandidatesVec candidatesWithInstantiations;
         filterCandidatesInstantiating(context,
                                       initialCandidates,
                                       fci,
                                       inScope,
                                       inPoiScope,
-                                      poiCandidates,
+                                      candidatesWithInstantiations,
                                       /* rejected */ nullptr);
 
-        // update forwardingTo
+        // filter out last resort candidates
+        filterCandidatesLastResort(context, candidatesWithInstantiations,
+                                   poiCandidates, lrcGroups);
+
+        // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
+        helpComputeForwardingTo(fci, start, lrcGroups.back(),
+                                newLrcForwardingTo);
         i++;
       }
+      lrcForwardingTo.push_back(newLrcForwardingTo);
     }
 
     // If no candidates were found and it's a method, try forwarding
@@ -3322,12 +3364,17 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 nonPoiCandidates,
                                                 poiCandidates,
                                                 nonPoiForwardingTo,
-                                                poiForwardingTo);
+                                                poiForwardingTo,
+                                                lrcGroups,
+                                                lrcForwardingTo);
           }
         }
       }
     }
   }
+
+  // No need to gather up last resort candidates here, gatherAndFilterCandidates
+  // above us will handle it.
 }
 
 // TODO: Could/should this be a parsing query?
@@ -3350,26 +3397,6 @@ static bool isInsideForwarding(Context* context, const Call* call) {
   }
 
   return insideForwarding;
-}
-
-// Returns candidates with last resort candidates removed and saved in a
-// separate list.
-static void filterCandidatesLastResort(
-    Context* context, const CandidatesVec& list, CandidatesVec& result,
-    std::vector<CandidatesVec>& lastResort) {
-  CandidatesVec newLastResortCandidates;
-
-  for (auto& candidate : list) {
-    auto attrs =
-        parsing::idToAttributeGroup(context, candidate->untyped()->id());
-    if (attrs && attrs->hasPragma(PRAGMA_LAST_RESORT)) {
-      newLastResortCandidates.push_back(candidate);
-    } else {
-      result.push_back(candidate);
-    }
-  }
-
-  lastResort.push_back(newLastResortCandidates);
 }
 
 // Returns candidates (including instantiating candidates)
@@ -3397,6 +3424,9 @@ gatherAndFilterCandidates(Context* context,
   // Last resort candidates, grouped by without-POI, then from innermost POI
   // scope outward, then forwading.
   std::vector<CandidatesVec> lrcGroups;
+  // Analogous last resort candidate handling for forwarding, if needed.
+  std::vector<CandidatesVec> forwardingLrcGroups;
+  std::vector<ForwardingInfoVec> forwardingLrcForwardingTo;
   CheckedScopes visited;
   firstPoiCandidate = 0;
 
@@ -3407,6 +3437,8 @@ gatherAndFilterCandidates(Context* context,
   //  considered part of the custom type)
   considerCompilerGeneratedCandidates(context, ci, inScope, inPoiScope,
                                       candidates);
+
+  // don't worry about last resort for compiler generated candidates
 
   // next, look for candidates without using POI.
   {
@@ -3511,10 +3543,10 @@ gatherAndFilterCandidates(Context* context,
       ForwardingInfoVec nonPoiForwardingTo;
       ForwardingInfoVec poiForwardingTo;
 
-      gatherAndFilterCandidatesForwarding(context, call, ci,
-                                          inScope, inPoiScope,
-                                          nonPoiCandidates, poiCandidates,
-                                          nonPoiForwardingTo, poiForwardingTo);
+      gatherAndFilterCandidatesForwarding(
+          context, call, ci, inScope, inPoiScope, nonPoiCandidates,
+          poiCandidates, nonPoiForwardingTo, poiForwardingTo,
+          forwardingLrcGroups, forwardingLrcForwardingTo);
 
       // append non-poi candidates
       candidates.insert(candidates.end(),
@@ -3534,14 +3566,25 @@ gatherAndFilterCandidates(Context* context,
 
   // If no candidates have been found, consider last resort candidates from
   // innermost to outermost.
-  bool pastPoiLrcs = false;
-  for (const auto& lrcGroup : lrcGroups) {
+  for (int i = 0; i < lrcGroups.size(); i++) {
     if (candidates.empty()) {
-      candidates = lrcGroup;
+      candidates = lrcGroups[i];
       // Bump firstPoiCandidate index after non-POI last resorts
-      if (!pastPoiLrcs) {
+      if (i == 0) {
         firstPoiCandidate = candidates.size();
-        pastPoiLrcs = true;
+      }
+    } else {
+      break;
+    }
+  }
+  // If still no candidates, repeat for last resort candidates from forwarding.
+  for (int i = 0; i < forwardingLrcGroups.size(); i++) {
+    if (candidates.empty()) {
+      candidates = forwardingLrcGroups[i];
+      forwardingInfo = forwardingLrcForwardingTo[i];
+      // Bump firstPoiCandidate index after non-POI last resorts
+      if (i == 0) {
+        firstPoiCandidate = candidates.size();
       }
     } else {
       break;
