@@ -535,6 +535,40 @@ PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
   return Py_BuildValue("s", typeString.c_str());
 }
 
+static PyMethodDef ParamObject_methods[] = {
+  {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+PyTypeObject ParamType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+};
+
+void setupParamType() {
+  ParamType.tp_name = "Param";
+  ParamType.tp_basicsize = sizeof(ParamObject);
+  ParamType.tp_itemsize = 0;
+  ParamType.tp_dealloc = (destructor) ParamObject_dealloc;
+  ParamType.tp_flags = Py_TPFLAGS_BASETYPE;
+  ParamType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
+  ParamType.tp_methods = ParamObject_methods;
+  ParamType.tp_init = (initproc) ParamObject_init;
+  ParamType.tp_new = PyType_GenericNew;
+}
+
+int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+
+  Py_INCREF(contextObjectPy);
+  self->ptr = nullptr;
+  return 0;
+}
+
+void ParamObject_dealloc(ParamObject* self) {
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
 #define AST_LEAF(NAME)
@@ -565,6 +599,10 @@ PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
 #undef TYPE_BEGIN_SUBCLASSES
 #undef TYPE_END_SUBCLASSES
   return &ChapelTypeType;
+}
+
+PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
+  return &ParamType;
 }
 
 PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
@@ -618,6 +656,25 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
 #undef TYPE_END_SUBCLASSES
 #undef CAST_TO
     default: break;
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    Py_RETURN_NONE;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->tag()) {
+#define PARAM_NODE(NAME, TYPE) \
+    case chpl::types::paramtags::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      break;
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
   }
   Py_XDECREF(args);
   return toReturn;

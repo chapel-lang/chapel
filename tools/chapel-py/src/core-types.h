@@ -28,6 +28,7 @@
 
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
 PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
+PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
 typedef struct {
   PyObject_HEAD
@@ -105,6 +106,16 @@ int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwar
 void ChapelTypeObject_dealloc(ChapelTypeObject* self);
 PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
 
+typedef struct {
+  PyObject_HEAD
+  const chpl::types::Param* ptr;
+} ParamObject;
+extern PyTypeObject ParamType;
+void setupParamType();
+
+int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
+void ParamObject_dealloc(ParamObject* self);
+
 /**
   Declare a Python PyTypeObject that corresponds to a generated type
   (AST node, Chapel type, etc.) of a given name.
@@ -134,6 +145,11 @@ PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
   For example, an ArrayType type will be wrapped in a chapel.ArrayType.
  */
 PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
+
+/**
+  Creates a Python object of the class corresponding to the given Param*.
+ */
+PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
 
 /**
   Create a Python object from the given Location.

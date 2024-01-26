@@ -49,6 +49,10 @@
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
 
+#define PARAM_NODE(NAME, TYPE) GENERATED_TYPE(Param, NAME, chpl::types::paramtags::NAME, Py_TPFLAGS_DEFAULT)
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
+
 #undef GENERATED_TYPE
 #undef GENERATED_TYPE_BEGIN
 #undef GENERATED_TYPE_END

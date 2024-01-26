@@ -52,21 +52,23 @@ PyMODINIT_FUNC PyInit_core() {
   setupAstCallIterType();
   setupAstNodeType();
   setupChapelTypeType();
+  setupParamType();
   setupGeneratedTypes();
 
-  if (PyType_Ready(&ContextType) < 0) return nullptr;
-  if (PyType_Ready(&ErrorType) < 0) return nullptr;
-  if (PyType_Ready(&ErrorManagerType) < 0) return nullptr;
-  if (PyType_Ready(&LocationType) < 0) return nullptr;
-  if (PyType_Ready(&ScopeType) < 0) return nullptr;
-  if (PyType_Ready(&AstIterType) < 0) return nullptr;
-  if (PyType_Ready(&AstCallIterType) < 0) return nullptr;
-  if (PyType_Ready(&AstNodeType) < 0) return nullptr;
-  if (PyType_Ready(&ChapelTypeType) < 0) return nullptr;
 #define READY_TYPE(NAME) if (PyType_Ready(&NAME##Type) < 0) return nullptr;
 #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) READY_TYPE(NAME)
 #include "generated-types-list.h"
 #undef GENERATED_TYPE
+  READY_TYPE(Context)
+  READY_TYPE(Error)
+  READY_TYPE(ErrorManager)
+  READY_TYPE(Location)
+  READY_TYPE(Scope)
+  READY_TYPE(AstIter)
+  READY_TYPE(AstCallIter)
+  READY_TYPE(AstNode)
+  READY_TYPE(ChapelType)
+  READY_TYPE(Param)
 
   chapelModule = PyModule_Create(&ChapelModule);
   if (!chapelModule) return nullptr;
@@ -77,6 +79,7 @@ PyMODINIT_FUNC PyInit_core() {
 #undef GENERATED_TYPE
   ADD_TYPE(AstNode);
   ADD_TYPE(ChapelType);
+  ADD_TYPE(Param);
 
   if (PyModule_AddObject(chapelModule, "Context", (PyObject *) &ContextType) < 0) {
     Py_DECREF(&ContextType);

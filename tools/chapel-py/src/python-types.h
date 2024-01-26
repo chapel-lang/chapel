@@ -69,6 +69,7 @@ DEFINE_RETURN_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()
 DEFINE_RETURN_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->ptr);
 DEFINE_RETURN_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->ptr);
+DEFINE_RETURN_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->ptr);
 DEFINE_RETURN_TYPE(chpl::Location, "Location", wrapLocation(TO_WRAP), ((LocationObject*) TO_UNWRAP)->location);
 DEFINE_RETURN_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
 
