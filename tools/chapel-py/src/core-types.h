@@ -39,6 +39,8 @@ void setupContextType();
 int ContextObject_init(ContextObject* self, PyObject* args, PyObject* kwargs);
 void ContextObject_dealloc(ContextObject* self);
 PyObject* ContextObject_parse(ContextObject *self, PyObject* args);
+PyObject* ContextObject_set_module_paths(ContextObject *self, PyObject* args);
+PyObject* ContextObject_introspect_parsed_files(ContextObject *self, PyObject* args);
 PyObject* ContextObject_is_bundled_path(ContextObject *self, PyObject* args);
 PyObject* ContextObject_advance_to_next_revision(ContextObject *self, PyObject* args);
 PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args);

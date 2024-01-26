@@ -69,6 +69,18 @@ def get_Context_header() -> str:
             docstring="Parse a top-level AST node from the given file",
         ),
         _wrap_method(
+            "set_module_paths",
+            args=[("module_paths", "List[str]"), ("file_paths", "List[str]")],
+            rettype="None",
+            docstring="Set the module and file paths for finding Chapel modules",
+        ),
+        _wrap_method(
+            "introspect_parsed_files",
+            args=[],
+            rettype="List[str]",
+            docstring="List all files that have been parsed in this revision",
+        ),
+        _wrap_method(
             "is_bundled_path",
             args=[("path", "str")],
             rettype="bool",
@@ -153,7 +165,7 @@ def get_Scope_header() -> str:
     s = _section(
         "class Scope:",
         _wrap_method("__init__", args=[("context", "Context")]),
-        _wrap_method("used_imported_modules", rettype="typing.List[AstNode]", docstring="Get the modules that were used or imported in this scope"),
+        _wrap_method("used_imported_modules", rettype="typing.List[Module]", docstring="Get the modules that were used or imported in this scope"),
         indent=0,
     )
     return "\n".join(s)

@@ -35,6 +35,9 @@ from collections import defaultdict
 from dataclasses import dataclass, field
 from bisect_compat import bisect_right
 from symbol_signature import get_symbol_signature
+import itertools
+import os
+import json
 
 
 import chapel.core
@@ -43,6 +46,7 @@ from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
 from lsprotocol.types import (
     Location,
+    MessageType,
     Diagnostic,
     Range,
     Position,
@@ -71,6 +75,14 @@ from lsprotocol.types import (
     Hover,
     MarkupContent,
     MarkupKind,
+)
+from lsprotocol.types import (
+    WORKSPACE_DID_CHANGE_WORKSPACE_FOLDERS,
+    DidChangeWorkspaceFoldersParams,
+)
+from lsprotocol.types import (
+    INITIALIZE,
+    InitializeParams,
 )
 
 
@@ -196,9 +208,15 @@ class NodeAndRange:
     def __post_init__(self):
         if isinstance(self.node, chapel.core.Dot):
             self.rng = location_to_range(self.node.field_location())
-        elif isinstance(self.node, chapel.core.NamedDecl):
+        elif isinstance(
+            self.node,
+            (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl),
+        ):
             self.rng = location_to_range(self.node.name_location())
         else:
+            # TODO: Some NamedDecls are not reported using name_location().
+            #       This is because name_location() is not correctly reported
+            #       by the parser today.
             self.rng = location_to_range(self.node.location())
 
     def get_location(self):
@@ -215,11 +233,56 @@ class ResolvedPair:
     resolved_to: NodeAndRange
 
 
+class ContextContainer:
+    def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
+        self.file_paths: List[str] = []
+        self.module_paths: List[str] = [file]
+        self.context: chapel.core.Context = chapel.core.Context()
+        self.file_infos: List["FileInfo"] = []
+
+        if config:
+            file_config = config.for_file(file)
+            if file_config:
+                self.module_paths = file_config["module_dirs"]
+                self.file_paths = file_config["files"]
+
+        self.context.set_module_paths(self.module_paths, self.file_paths)
+
+    def new_file_info(self, uri: str) -> Tuple["FileInfo", List[Any]]:
+        """
+        Creates a new FileInfo for a given URI. FileInfos constructed in
+        this manner are tied to this ContextContainer, and have their
+        indices rebuilt when the context updates. They also use
+        this context object to perform parsing etc.
+        """
+
+        with self.context.track_errors() as errors:
+            fi = FileInfo(uri, self)
+            self.file_infos.append(fi)
+        return (fi, errors)
+
+    def advance(self) -> List[Any]:
+        """
+        Advances the Dyno context within to the next revision, and takes
+        care of setting the necessary input queries in this revision. All
+        dependent FileInfos are also updated since the file contents
+        they represent may have changed.
+        """
+
+        self.context.advance_to_next_revision(False)
+        self.context.set_module_paths(self.module_paths, self.file_paths)
+
+        with self.context.track_errors() as errors:
+            for fi in self.file_infos:
+                fi.rebuild_index()
+        return errors
+
+
 @dataclass
 @visitor
 class FileInfo:
     uri: str
-    context: chapel.core.Context
+    context: ContextContainer
     use_segments: PositionList[ResolvedPair] = field(init=False)
     def_segments: PositionList[NodeAndRange] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
@@ -240,16 +303,18 @@ class FileInfo:
         This call should be wrapped an appropriate error context.
         """
 
-        return self.context.parse(self.uri[len("file://") :])
+        return self.context.context.parse(self.uri[len("file://") :])
 
     def get_asts(self) -> List[chapel.core.AstNode]:
         """
         Returns toplevel ast elements. This method silences all errors.
         """
-        with self.context.track_errors() as _:
+        with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _note_reference(self, node: chapel.core.AstNode):
+    def _note_reference(
+        self, node: Union[chapel.core.Dot, chapel.core.Identifier]
+    ):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
@@ -329,75 +394,192 @@ class FileInfo:
         return self.def_segments.find(position)
 
 
-def run_lsp():
-    """
-    Start a language server on the standard input/output
-    """
-    server = LanguageServer("chpl-language-server", "v0.1")
+class WorkspaceConfig:
+    def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
+        self.files: Dict[str, Dict[str, Any]] = {}
 
-    contexts: Dict[str, FileInfo] = {}
+        for key in json:
+            compile_commands = json[key]
 
-    def get_context(
-        uri: str, do_update: bool = False
+            if not isinstance(compile_commands, list):
+                ls.show_message(
+                    "invalid .cls-info.json file", MessageType.Error
+                )
+                continue
+
+            # There can be several compile commands. They can conflict,
+            # so we can't safely merge them (chpl -M modulesA and chpl -M modulesB
+            # can lead to two different to-IDs etc.). However, we do expect
+            # at least one compile command.
+            if len(compile_commands) == 0:
+                ls.show_message(
+                    ".cls-info.json file contains invalid file commands",
+                    MessageType.Error,
+                )
+                continue
+
+            self.files[key] = compile_commands[0]
+
+    def for_file(self, path: str) -> Optional[Dict[str, Any]]:
+        if path in self.files:
+            return self.files[path]
+        return None
+
+    @staticmethod
+    def from_file(ls: "ChapelLanguageServer", path: str):
+        if os.path.exists(path):
+            with open(path) as f:
+                commands = json.load(f)
+                return WorkspaceConfig(ls, commands)
+        return None
+
+
+class ChapelLanguageServer(LanguageServer):
+    def __init__(self):
+        super().__init__("chpl-language-server", "v0.1")
+
+        self.contexts: Dict[str, ContextContainer] = {}
+        self.file_infos: Dict[str, FileInfo] = {}
+        self.configurations: Dict[str, WorkspaceConfig] = {}
+
+    def get_config_for_uri(self, uri: str) -> Optional[WorkspaceConfig]:
+        """
+        In case multiple workspace folders are in use, pick the root folder
+        that matches the given URI.
+        """
+
+        folders = self.workspace.folders
+        for f, ws in folders.items():
+            if uri.startswith(f):
+                uri = ws.uri
+                if uri in self.configurations:
+                    return self.configurations[uri]
+        return None
+
+    def get_context(self, uri: str) -> ContextContainer:
+        """
+        Get the Chapel context for a given URI. Creating a new context
+        for a file associates it with the file, as well as with any
+        files that are associated with the file. For instance, if
+        A.chpl imports B.chpl, and a context is created for either A.chpl
+        or B.chpl, both files are associated with this new context.
+        """
+
+        path = uri[len("file://") :]
+        workspace_config = self.get_config_for_uri(uri)
+
+        if path in self.contexts:
+            return self.contexts[path]
+
+        context = ContextContainer(path, workspace_config)
+        for file in context.file_paths:
+            self.contexts[file] = context
+        self.contexts[path] = context
+
+        return context
+
+    def get_file_info(
+        self, uri: str, do_update: bool = False
     ) -> Tuple[FileInfo, List[Any]]:
         """
-        The LSP driver maintains one Chapel context per-file. If there is no context, this function creates a context. If `do_update` is set, this function assumes the file content has change and advances revisions.
+        The language server maintains a FileInfo object per file. The FileInfo
+        contains precomputed information (binary-search-ready tables for
+        finding an element under a cursor).
+
+        This method retrieves the FileInfo object for a particular URI,
+        creating one if it doesn't exist. If do_update is set to True,
+        then the FileInfo's index is reuilt even if it has already been
+        computed. This is useful if the underlying file has changed.
         """
 
         errors = []
 
-        if uri in contexts:
-            file_info = contexts[uri]
+        if uri in self.file_infos:
+            file_info = self.file_infos[uri]
             if do_update:
-                file_info.context.advance_to_next_revision(False)
-                with file_info.context.track_errors() as errors:
-                    file_info.rebuild_index()
+                errors = file_info.context.advance()
         else:
-            context = chapel.core.Context()
-            with context.track_errors() as errors:
-                file_info = FileInfo(uri, context)
-            contexts[uri] = file_info
+            file_info, errors = self.get_context(uri).new_file_info(uri)
+            self.file_infos[uri] = file_info
 
         return (file_info, errors)
 
-    def build_diagnostics(uri: str) -> List[Diagnostic]:
+    def build_diagnostics(self, uri: str) -> List[Diagnostic]:
         """
         Parse a file at a particular URI, capture the errors, and return then
         as a list of LSP Diagnostics.
         """
 
-        fi, errors = get_context(uri, do_update=True)
+        _, errors = self.get_file_info(uri, do_update=True)
 
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
 
+    def register_workspace(self, uri: str):
+        path = os.path.join(uri[len("file://") :], ".cls-info.json")
+        config = WorkspaceConfig.from_file(self, path)
+        if config:
+            self.configurations[uri] = config
+
+    def unregister_workspace(self, uri: str):
+        if uri in self.configurations:
+            del self.configurations[uri]
+
+
+def run_lsp():
+    """
+    Start a language server on the standard input/output
+    """
+    server = ChapelLanguageServer()
+
     # The following functions are handlers for LSP events received by the server.
+
+    @server.feature(INITIALIZE)
+    async def initialize(
+        ls: ChapelLanguageServer,
+        params: InitializeParams,
+    ):
+        if params.workspace_folders is None:
+            return
+
+        for ws in params.workspace_folders:
+            ls.register_workspace(ws.uri)
+
+    @server.feature(WORKSPACE_DID_CHANGE_WORKSPACE_FOLDERS)
+    async def did_change_folders(
+        ls: ChapelLanguageServer,
+        params: DidChangeWorkspaceFoldersParams,
+    ):
+        for added in params.event.added:
+            ls.register_workspace(added.uri)
+        for removed in params.event.removed:
+            ls.unregister_workspace(removed.uri)
 
     @server.feature(TEXT_DOCUMENT_DID_OPEN)
     @server.feature(TEXT_DOCUMENT_DID_SAVE)
     async def did_save(
-        ls: LanguageServer,
+        ls: ChapelLanguageServer,
         params: Union[DidSaveTextDocumentParams, DidOpenTextDocumentParams],
     ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
-        diag = build_diagnostics(text_doc.uri)
+        diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
 
     @server.feature(TEXT_DOCUMENT_DEFINITION)
-    async def get_def(ls: LanguageServer, params: DefinitionParams):
+    async def get_def(ls: ChapelLanguageServer, params: DefinitionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if segment:
             return segment.resolved_to.get_location()
         return None
 
     @server.feature(TEXT_DOCUMENT_REFERENCES)
-    async def get_refs(ls: LanguageServer, params: ReferenceParams):
+    async def get_refs(ls: ChapelLanguageServer, params: ReferenceParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
 
         node_and_loc = None
         # First, search definitions. If the cursor is over a declaration,
@@ -422,10 +604,10 @@ def run_lsp():
         return locations
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
-    async def get_sym(ls: LanguageServer, params: DocumentSymbolParams):
+    async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
 
         # doesn't descend into nested definitions for Functions
         def preorder_ignore_funcs(node):
@@ -448,15 +630,15 @@ def run_lsp():
         return syms
 
     @server.feature(TEXT_DOCUMENT_HOVER)
-    async def hover(ls: LanguageServer, params: HoverParams):
+    async def hover(ls: ChapelLanguageServer, params: HoverParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
         segment = fi.get_use_segment_at_position(params.position)
         if not segment:
             return None
         resolved_to = segment.resolved_to
-        node_fi, _ = get_context(resolved_to.get_uri())
+        node_fi, _ = ls.get_file_info(resolved_to.get_uri())
 
         signature = get_symbol_signature(resolved_to.node)
         docstring = chapel.get_docstring(resolved_to.node, node_fi.siblings)
@@ -467,10 +649,10 @@ def run_lsp():
         return Hover(content, range=resolved_to.get_location().range)
 
     @server.feature(TEXT_DOCUMENT_COMPLETION, CompletionOptions())
-    async def complete(ls: LanguageServer, params: CompletionParams):
+    async def complete(ls: ChapelLanguageServer, params: CompletionParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
-        fi, _ = get_context(text_doc.uri)
+        fi, _ = ls.get_file_info(text_doc.uri)
 
         items = []
         items.extend(
