@@ -131,12 +131,14 @@ module Random {
           sWhen = Time.timeSinceEpoch().totalSeconds().hash():int,
           sWhere = here.hash():int;
 
+    var randomBits: int = 0;
     try {
-      var urand = IO.openReader("/dev/urandom");
-      return sWho ^ sWhat ^ sWhen ^ sWhere ^ urand.readBits(int, 64);
+      IO.openReader("/dev/urandom").readBits(randomBits, 64);
     } catch {
-      return sWho ^ sWhat ^ sWhen ^ sWhere;
+      // may not be able to open /dev/urandom, ignore this step
     }
+
+    return sWho ^ sWhat ^ sWhen ^ sWhere ^ randomBits;
   }
 
   pragma "last resort"
