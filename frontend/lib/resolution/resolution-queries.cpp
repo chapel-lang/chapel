@@ -3356,7 +3356,7 @@ static bool isInsideForwarding(Context* context, const Call* call) {
 // separate list.
 static void filterCandidatesLastResort(
     Context* context, const CandidatesVec& list, CandidatesVec& result,
-    std::vector<const CandidatesVec>& lastResort) {
+    std::vector<CandidatesVec>& lastResort) {
   CandidatesVec newLastResortCandidates;
 
   for (auto& candidate : list) {
@@ -3396,7 +3396,7 @@ gatherAndFilterCandidates(Context* context,
   CandidatesVec candidates;
   // Last resort candidates, grouped by without-POI, then from innermost POI
   // scope outward, then forwading.
-  std::vector<const CandidatesVec> lrcGroups;
+  std::vector<CandidatesVec> lrcGroups;
   CheckedScopes visited;
   firstPoiCandidate = 0;
 
