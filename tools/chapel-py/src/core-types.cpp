@@ -564,10 +564,12 @@ int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
 
   Py_INCREF(contextObjectPy);
   self->ptr = nullptr;
+  self->contextObject = contextObjectPy;
   return 0;
 }
 
 void ParamObject_dealloc(ParamObject* self) {
+  Py_XDECREF(self->contextObject);
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 

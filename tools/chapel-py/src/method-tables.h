@@ -591,6 +591,26 @@ CLASS_BEGIN(AggregateDecl)
                IterAdapterBase*, return mkIterPair(node->inheritExprs()))
 CLASS_END(AggregateDecl)
 
+CLASS_BEGIN(BoolParam)
+  PLAIN_GETTER(BoolParam, value, "Get the value of this boolean Param",
+               bool, return node->value())
+CLASS_END(BoolParam)
+
+CLASS_BEGIN(EnumParam)
+  PLAIN_GETTER(EnumParam, value, "Get the value of this enum Param",
+               const AstNode*, return parsing::idToAst(context, node->value()))
+CLASS_END(EnumParam)
+
+CLASS_BEGIN(IntParam)
+  PLAIN_GETTER(IntParam, value, "Get the value of this integer Param",
+               int, return node->value())
+CLASS_END(IntParam)
+
+CLASS_BEGIN(StringParam)
+  PLAIN_GETTER(StringParam, value, "Get the value of this string Param",
+               UniqueString, return node->value())
+CLASS_END(StringParam)
+
 //
 // Cleanup and undefine all macros
 //

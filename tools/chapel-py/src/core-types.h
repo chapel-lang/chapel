@@ -108,6 +108,7 @@ PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
 
 typedef struct {
   PyObject_HEAD
+  PyObject* contextObject;
   const chpl::types::Param* ptr;
 } ParamObject;
 extern PyTypeObject ParamType;
