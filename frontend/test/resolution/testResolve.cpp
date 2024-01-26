@@ -830,6 +830,68 @@ static void test19() {
   guard.realizeErrors();
 }
 
+// Test ambiguity broken by pragma "last resort".
+
+static void test20() {
+  Context ctx;
+  Context* context = &ctx;
+
+  auto path = UniqueString::get(context, "input.chpl");
+  std::string contents = R""""(
+      module M {
+        proc foo(x: int) {
+          return x;
+        }
+        pragma "last resort"
+        proc foo(y: int) {
+          return y;
+        }
+        var x = foo(4);
+      }
+                        )"""";
+
+  setFileText(context, path, contents);
+
+  const ModuleVec& vec = parseToplevel(context, path);
+  assert(vec.size() == 1);
+  const Module* m = vec[0]->toModule();
+  assert(m);
+  assert(m->numStmts() == 3);
+
+  // foo overload with x arg
+  const Function* procFooX = m->stmt(0)->toFunction();
+  assert(procFooX && procFooX->name() == "foo" && procFooX->numFormals() == 1);
+  const NamedDecl* procFooXArg = procFooX->formal(0)->toNamedDecl();
+  assert(procFooXArg && procFooXArg->name() == "x");
+
+  // last resort foo overload with y arg
+  const Function* procFooY = m->stmt(1)->toFunction();
+  assert(procFooY && procFooY->name() == "foo" && procFooY->numFormals() == 1);
+  const NamedDecl* procFooYArg = procFooY->formal(0)->toNamedDecl();
+  assert(procFooYArg && procFooYArg->name() == "y");
+
+  // variable initialized with foo call
+  const Variable* x = m->stmt(2)->toVariable();
+  assert(x);
+  const AstNode* rhs = x->initExpression();
+  assert(rhs);
+  const FnCall* fnCall = rhs->toFnCall();
+  assert(fnCall);
+
+  // Get called foo
+  const Identifier* foo = fnCall->calledExpression()->toIdentifier();
+  assert(foo && foo->name() == "foo");
+  const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+  const ResolvedExpression& re = rr.byAst(foo);
+  auto c = re.mostSpecific().only();
+  assert(c);
+
+  // Check we called the correct foo.
+  assert(c.fn()->untyped()->name() == "foo");
+  assert(c.fn()->numFormals() == 1);
+  assert(c.fn()->formalName(0) == "x");
+}
+
 int main() {
   test1();
   test2();
@@ -850,6 +912,7 @@ int main() {
   test17();
   test18();
   test19();
+  test20();
 
   return 0;
 }
