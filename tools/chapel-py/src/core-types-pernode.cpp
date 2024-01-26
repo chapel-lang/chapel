@@ -126,14 +126,14 @@ ACTUAL_ITERATOR(FnCall);
    to an empty method table (to save on typing / boilerplate), but at the same
    time to make it easy to override a node's method table.
 
-   To this end, we use template specialization of the PerNodeInfo struct. The
+   To this end, we use template specialization of the PerTypeMethods struct. The
    default template provides an empty table; it can be specialized per-node to
    change the table for that node.
 
    Macros below take this a step further and compiler-generate the template
    specializations. */
 template <typename ObjectType>
-struct PerNodeInfo {
+struct PerTypeMethods {
   static constexpr PyMethodDef methods[] = {
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
@@ -141,7 +141,7 @@ struct PerNodeInfo {
 
 #define CLASS_BEGIN(NAME) \
   template <> \
-  struct PerNodeInfo<NAME##Object> { \
+  struct PerTypeMethods<NAME##Object> { \
     static constexpr PyMethodDef methods[] = {
 #define CLASS_END(NAME) \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
@@ -173,7 +173,7 @@ struct PerNodeInfo {
   TYPE.tp_itemsize = 0; \
   TYPE.tp_flags = FLAGS; \
   TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
-  TYPE.tp_methods = (PyMethodDef*) PerNodeInfo<NAME##Object>::methods; \
+  TYPE.tp_methods = (PyMethodDef*) PerTypeMethods<NAME##Object>::methods; \
   TYPE.tp_base = parentTypeFor(TAG); \
   TYPE.tp_init = (initproc) NAME##Object_init; \
   TYPE.tp_new = PyType_GenericNew; \
