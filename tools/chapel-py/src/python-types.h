@@ -42,12 +42,11 @@ struct PythonReturnTypeInfo {};
 
 /** This macro is used to help define template specializations for PythonReturnTypeInfo.
     It just hides some of the boilerplate. */
-#define DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
-  template <> \
+#define T_DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
   struct PythonReturnTypeInfo<TYPE> { \
-    static constexpr const char* TypeString = TYPESTR; \
+    static constexpr char TypeString[] = TYPESTR; \
   \
-    static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
+    static PyObject* wrap(ContextObject* CONTEXT, const typename std::remove_const<TYPE>::type& TO_WRAP) { \
       return WRAP; \
     } \
   \
@@ -56,6 +55,33 @@ struct PythonReturnTypeInfo {};
     } \
   \
   }
+
+#define DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
+  template <> \
+  T_DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP)
+
+template <typename T>
+constexpr const char* typeName() {
+  return PythonReturnTypeInfo<T>::TypeString;
+}
+
+template <typename T>
+PyObject* wrapVector(ContextObject* CONTEXT, const std::vector<T>& vec) {
+  PyObject* toReturn = PyList_New(vec.size());
+  for (size_t i = 0; i < vec.size(); i++) {
+    PyList_SetItem(toReturn, i, PythonReturnTypeInfo<T>::wrap(CONTEXT, vec[i]));
+  }
+  return toReturn;
+}
+
+template <typename T>
+std::vector<T> unwrapVector(ContextObject* CONTEXT, PyObject* vec) {
+  std::vector<T> toReturn;
+  for (ssize_t i = 0; i < PyList_Size(vec); i++) {
+    toReturn.push_back(PythonReturnTypeInfo<T>::unwrap(CONTEXT, PyList_GetItem(vec, i)));
+  }
+  return toReturn;
+}
 
 /* Invoke the DEFINE_RETURN_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
@@ -70,6 +96,9 @@ DEFINE_RETURN_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std:
 DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->astNode);
 DEFINE_RETURN_TYPE(chpl::Location, "Location", wrapLocation(TO_WRAP), ((LocationObject*) TO_UNWRAP)->location);
 DEFINE_RETURN_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+
+template <typename T>
+T_DEFINE_RETURN_TYPE(std::vector<T>, "List[typing.Any]", wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
 
 /* In the `method-tables.h` file, we encode a method signature using the C++
    function type in the form `R(Args...)`. This template, PythonFnHelper, is
