@@ -430,6 +430,8 @@ CLASS_BEGIN(Call)
                IterAdapterBase*, return mkIterPair(node->actuals()))
   PLAIN_GETTER(Call, called_expression, "Get the expression invoked by this Call node",
                const AstNode*, return node->calledExpression())
+  PLAIN_GETTER(Call, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
+               std::vector<int>, return actualOrderForNode(context, node))
 CLASS_END(Call)
 
 CLASS_BEGIN(FnCall)

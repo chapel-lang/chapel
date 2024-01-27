@@ -93,6 +93,7 @@ PyObject* AstNodeObject_iter(AstNodeObject *self);
 PyObject* AstNodeObject_location(AstNodeObject *self);
 PyObject* AstNodeObject_scope(AstNodeObject *self);
 PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
+PyObject* AstNodeObject_called_fn(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
 
 typedef struct {
   PyObject_HEAD

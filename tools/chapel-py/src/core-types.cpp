@@ -383,6 +383,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifier for this AST node"},
   {"scope", (PyCFunction) AstNodeObject_scope, METH_NOARGS, "Get the scope for this AST node"},
   {"type", (PyCFunction) AstNodeObject_type, METH_NOARGS, "Get the type of this AST node"},
+  {"called_fn", (PyCFunction) AstNodeObject_called_fn, METH_NOARGS, "Get the function being invoked by this node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -500,6 +501,13 @@ PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) 
                                     wrapParam(contextObject, qt.param()));
 
   return ret;
+}
+
+PyObject* AstNodeObject_called_fn(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto contextObject = (ContextObject*) self->contextObject;
+  auto context = &contextObject->context;
+
+  return wrapAstNode(contextObject, calledFnForNode(context, self->ptr));
 }
 
 static PyMethodDef ChapelTypeObject_methods[] = {

@@ -90,46 +90,84 @@ const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) 
   return QUERY_END(nodeOrNull);
 }
 
-static QualifiedType resolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
+static const resolution::ResolvedExpression* resolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
   if (auto fn = fnNode->toFunction()) {
 
     auto resolvedFn = resolution::resolveConcreteFunction(context, fn->id());
-    if (!resolvedFn) return QualifiedType();
+    if (!resolvedFn) return nullptr;
 
     auto& byId = resolvedFn->resolutionById();
     if (auto res = byId.byAstOrNull(node)) {
-      return res->type();
+      return res;
     }
   }
-  return QualifiedType();
+  return nullptr;
 }
 
-static QualifiedType resolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
+static const resolution::ResolvedExpression* resolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
   if (auto mod = modNode->toModule()) {
-    auto byId = resolution::resolveModule(context, mod->id());
+    auto& byId = resolution::resolveModule(context, mod->id());
     if (auto res = byId.byAstOrNull(node)) {
-      return res->type();
+      return res;
     }
   }
-  return QualifiedType();
+  return nullptr;
 }
 
-static QualifiedType resolveResultsForNode(Context* context, const AstNode* node) {
+static const resolution::ResolvedExpression* resolveResultsForNode(Context* context, const AstNode* node) {
   const AstNode* search = node;
   while (search) {
-    auto qt = resolveViaFunction(context, search, node);
-    if (!qt.isUnknown()) { return qt; }
+    auto rr = resolveViaFunction(context, search, node);
+    if (rr) { return rr; }
 
-    qt = resolveViaModule(context, search, node);
-    if (!qt.isUnknown()) { return qt; }
+    rr = resolveViaModule(context, search, node);
+    if (rr) { return rr; }
 
     search = parsing::parentAst(context, search);
   }
-  return QualifiedType();
+  return nullptr;
 }
 
 QualifiedType const& typeForNode(Context* context, const AstNode* node) {
   QUERY_BEGIN(typeForNode, context, node);
-  auto qt = resolveResultsForNode(context, node);
+
+  auto rr = resolveResultsForNode(context, node);
+  QualifiedType qt;
+  if (rr) {
+    qt = rr->type();
+  }
+
   return QUERY_END(qt);
+}
+
+const AstNode* const& calledFnForNode(Context* context, const AstNode* node) {
+  QUERY_BEGIN(calledFnForNode, context, node);
+
+  auto rr = resolveResultsForNode(context, node);
+  ID id;
+  if (rr) {
+    if (const auto& only = rr->mostSpecific().only()) {
+      id = only.fn()->id();
+    }
+  }
+
+  auto res = idOrEmptyToAstNodeOrNull(context, id);
+  return QUERY_END(res);
+}
+
+std::vector<int> const& actualOrderForNode(Context* context, const AstNode* node) {
+  QUERY_BEGIN(actualOrderForNode, context, node);
+
+  auto rr = resolveResultsForNode(context, node);
+  std::vector<int> res;
+  if (rr) {
+    if (const auto& only = rr->mostSpecific().only()) {
+      int i = 0;
+      while (auto formalActual = only.formalActualMap().byActualIdx(i++)) {
+        res.push_back(formalActual->formalIdx());
+      }
+    }
+  }
+
+  return QUERY_END(res);
 }
