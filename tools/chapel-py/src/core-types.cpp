@@ -170,9 +170,9 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
   // in this case, a variadic list of tuple indices. That's what this
   // function does.
   //
-  // From there, we can use variadic template expansion to print the TypeString
+  // From there, we can use variadic template expansion to print the typeString
   // corresponding to each element / index of the tuple. If we just wanted to
-  // print the TypeStrings without spaces or punctuation, we could have used
+  // print the typeStrings without spaces or punctuation, we could have used
   // (<<) with a fold expression[1]. However, we want to print a comma and
   // more, so it's more convenient to use a wrapper function printArg to handle
   // the formatting.
@@ -180,11 +180,11 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
   // [1]: https://en.cppreference.com/w/cpp/language/fold
 
   int counter = 0;
-  auto printArg = [&](const char* arg) {
+  auto printArg = [&](const std::string& arg) {
     ss << ", arg" << counter++ << ": " << arg;
   };
 
-  (printArg(std::tuple_element<Indices, Tuple>::type::TypeString), ...);
+  (printArg(std::tuple_element<Indices, Tuple>::type::typeString()), ...);
 }
 
 
@@ -242,7 +242,7 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
     ss << "    def " << #NAME << "(self"; \
     printTypedPythonFunctionArgs<PythonFnHelper<TYPEFN>::ArgTypeInfo>(ss, std::make_index_sequence<std::tuple_size<PythonFnHelper<TYPEFN>::ArgTypeInfo>::value>()); \
-    ss << ") -> " << PythonFnHelper<TYPEFN>::ReturnTypeInfo::TypeString << ":" << std::endl;\
+    ss << ") -> " << PythonFnHelper<TYPEFN>::ReturnTypeInfo::typeString() << ":" << std::endl;\
     ss << "        \"\"\"" << std::endl; \
     ss << "        " << DOCSTR << std::endl; \
     ss << "        \"\"\"" << std::endl; \
