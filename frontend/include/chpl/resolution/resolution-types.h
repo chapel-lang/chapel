@@ -1214,7 +1214,7 @@ class MostSpecificCandidate {
   friend class MostSpecificCandidates;
 
   const TypedFnSignature* fn_;
-  optional<FormalActualMap> faMap_;
+  owned<FormalActualMap> faMap_;
   int constRefCoercionFormal_;
   int constRefCoercionActual_;
 
@@ -1222,7 +1222,7 @@ class MostSpecificCandidate {
                         FormalActualMap faMap,
                         int constRefCoercionFormal,
                         int constRefCoercionActual)
-    : fn_(fn), faMap_(std::move(faMap)),
+    : fn_(fn), faMap_(new FormalActualMap(std::move(faMap))),
       constRefCoercionFormal_(constRefCoercionFormal),
       constRefCoercionActual_(constRefCoercionActual) {}
 
@@ -1231,6 +1231,20 @@ class MostSpecificCandidate {
     : fn_(nullptr), faMap_(),
       constRefCoercionFormal_(-1),
       constRefCoercionActual_(-1) {}
+
+  MostSpecificCandidate& operator=(MostSpecificCandidate&& other) = default;
+  MostSpecificCandidate& operator=(const MostSpecificCandidate& other) {
+    fn_ = other.fn_;
+    if (other.faMap_) {
+      faMap_ = toOwned(new FormalActualMap(*other.faMap_));
+    }
+    constRefCoercionFormal_ = other.constRefCoercionFormal_;
+    constRefCoercionActual_ = other.constRefCoercionActual_;
+    return *this;
+  }
+
+  MostSpecificCandidate(MostSpecificCandidate&& other) = default;
+  MostSpecificCandidate(const MostSpecificCandidate& other) { *this = other; }
 
   static MostSpecificCandidate fromTypedFnSignature(Context* context,
                                         const TypedFnSignature* fn,
