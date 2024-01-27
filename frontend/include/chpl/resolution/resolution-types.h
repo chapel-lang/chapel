@@ -1270,8 +1270,16 @@ class MostSpecificCandidate {
   }
 
   bool operator==(const MostSpecificCandidate& other) const {
+    bool faMapsEqual = faMap_ == other.faMap_;
+    if (!faMapsEqual && faMap_ && other.faMap_) {
+      // Try a deep comparison to avoid unnecessary cache invalidation when
+      // bumping generations. The pointers may differ, but contain the enclosed
+      // maps can be equivalent.
+      faMapsEqual = *faMap_ == *other.faMap_;
+    }
+
     return fn_ == other.fn_ &&
-           faMap_ == other.faMap_ &&
+           faMapsEqual &&
            constRefCoercionFormal_ == other.constRefCoercionFormal_ &&
            constRefCoercionActual_ == other.constRefCoercionActual_;
   }
