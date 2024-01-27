@@ -95,6 +95,11 @@ from lsprotocol.types import (
     CodeActionKind,
     WorkspaceEdit,
 )
+from lsprotocol.types import (
+    TEXT_DOCUMENT_INLAY_HINT,
+    InlayHintParams,
+    InlayHint,
+)
 
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
@@ -771,6 +776,52 @@ def run_lsp():
             )
 
         return actions
+
+    # @server.feature(TEXT_DOCUMENT_INLAY_HINT)
+    async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        import time
+
+        t0 = time.time()
+        decls = fi.def_segments.range(params.range)
+        value_list: List[InlayHint] = []
+
+        with fi.context.context.track_errors() as _:
+            for decl in decls:
+                tp = decl.node.type()
+                if not tp:
+                    continue
+
+                _, _, param = tp
+                if param:
+                    value_list.append(InlayHint(
+                        position=decl.rng.end,
+                        label="param value is " + str(param),
+                        padding_left=True
+                    ))
+
+            for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall):
+                fn = call.called_fn()
+                if not fn or not isinstance(fn, chapel.core.Function):
+                    continue
+
+                for (i, act) in zip(call.formal_actual_mapping(), call.actuals()):
+                    if not isinstance(act, chapel.core.AstNode):
+                        # Named arguments are represented using (name, node)
+                        # tuples. We don't need hints for those.
+                        continue
+
+                    begin = location_to_range(act.location()).start
+                    value_list.append(InlayHint(
+                        position = begin,
+                        label = fn.formal(i).name() + " = ",
+                    ))
+
+        t1 = time.time()
+        ls.show_message("Elapsed time: " + str(t1-t0))
 
     server.start_io()
 
