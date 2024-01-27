@@ -29,6 +29,8 @@
 #include <utility>
 #include <vector>
 
+#include "chpl/util/memory.h"
+
 namespace chpl {
 
 // Combine two hash functions
@@ -143,6 +145,21 @@ template<typename T> struct hash<std::set<T>> {
     return chpl::hashSet(key);
   }
 };
+
+// std::hash is already defined for std::optional<T>, which is what we use
+// for LLVM >= 16. So, only define it for LLVM < 16.
+#if LLVM_VERSION_MAJOR < 16
+template<typename T> struct hash<chpl::optional<T>> {
+  size_t operator()(const chpl::optional<T>& key) const {
+    if (key) {
+      return chpl::hash(*key);
+    } else {
+      return 0;
+    }
+  }
+};
+#endif
+
 template<typename T, typename U> struct hash<std::pair<T,U>> {
   size_t operator()(const std::pair<T,U>& key) const {
     return chpl::hashPair(key);
