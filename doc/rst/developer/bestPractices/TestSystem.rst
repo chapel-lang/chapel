@@ -398,7 +398,7 @@ Using precomp, preexec, and prediff files
 When creating a ``.precomp``, ``.preexec``, or ``.prediff`` file, the file
 must be an executable. You can turn your script into an executable by running:
 ``chmod +x foo.precomp``. To specify these files for entire directories,
-the files should be named ``PRECOMP``, ``PREXEC``, and ``PREDIFF``,
+the files should be named ``PRECOMP``, ``PREEXEC``, and ``PREDIFF``,
 respectively.
 
 If you wish to have a system wide ``.prediff`` file, you can use the
