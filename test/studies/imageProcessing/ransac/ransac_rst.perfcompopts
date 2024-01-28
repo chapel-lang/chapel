@@ -1,2 +1,0 @@
--sfixrng=true ip_color_v3.chpl ip_corner.chpl kdtree.chpl img_png_v3.h build/img_png_v3.o -lpng --dynamic
-
