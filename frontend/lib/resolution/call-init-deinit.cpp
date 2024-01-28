@@ -1023,7 +1023,7 @@ void CallInitDeinit::handleDisjunction(const uast::AstNode * node,
     }
   }
 
-  //propogate out of the disjunction itself
+  //propagate out of the disjunction itself
   processDeinitsAndPropagate(currentFrame, currentParentFrame(), rv);
 }
 
