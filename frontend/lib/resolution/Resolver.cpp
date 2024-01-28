@@ -1326,7 +1326,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
 
       // for an initializer expression that is the default value of a formal,
       // check if we have the formal type already and then use that to
-      // compute the QTkind now rather than trying to getTypeForDecl first,
+      // compute the qtKind now rather than trying to getTypeForDecl first,
       // which will fail in cases where an implicit conversion is needed
       if (!isVarArgs && typeExprT.hasTypePtr() &&
           (isFormal || (signatureOnly && isField))) {
