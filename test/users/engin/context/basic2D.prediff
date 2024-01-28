@@ -1,4 +1,4 @@
 #!/bin/sh
 
-sort $2 > $2.prediffed
+grep -v 'NUMA domains but only .* Qthreads shepherds' $2 | sort > $2.prediffed
 mv $2.prediffed $2

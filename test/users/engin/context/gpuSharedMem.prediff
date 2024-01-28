@@ -3,6 +3,6 @@
 testname=$1
 outfile=$2
 
-tmpfile=$outfile.prediff.tmp
+tmpfile=$outfile.prediffed
 grep 'A (stable)' $outfile > $tmpfile
 mv $tmpfile $outfile

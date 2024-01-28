@@ -1,6 +1,26 @@
+/*
+ * Copyright 2020-2024 Hewlett Packard Enterprise Development LP
+ * Copyright 2004-2019 Cray Inc.
+ * Other additional copyright holders may be indicated within.
+ *
+ * The entirety of this work is licensed under the Apache License,
+ * Version 2.0 (the "License"); you may not use this file except
+ * in compliance with the License.
+ *
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
+
 #include <memory>
 
-// probably too much:
+// todo: can any of these be removed?
 #include "astutil.h"
 #include "AstVisitorTraverse.h"
 #include "CForLoop.h"
@@ -39,30 +59,35 @@ static bool fnCanHaveContext(FnSymbol* fn) {
 
 }
 
-static void CONTEXT_DEBUG(int indent, std::string msg, BaseAST* node) {
+static std::string showid(BaseAST* node, const char* endstring="") {
+  std::string result;
+  if (developer) result = "[" + std::to_string(node->id) + "]" + endstring;
+  return result;
+}
+static void CONTEXT_DEBUG(int indent, std::string msg,
+                          BaseAST* node, Symbol* sym = nullptr) {
   if (fReportContextAdj) {
-    for(int i=0 ; i<indent ; i++) {
-      std::cout << " ";
-    }
-    std::cout << "[" << node->id << "] " << msg << std::endl;
+    for (int i=0 ; i<indent ; i++) std::cout << " ";
+    if (Symbol* nodeSym = toSymbol(node))
+      std::cout << showid(node, "'") << nodeSym->name << "' " << msg;
+    else
+      std::cout << showid(node, " ") << msg;
+    if (sym != nullptr) std::cout << " '" << sym->name << showid(sym) << "'";
+    std::cout << std::endl;
   }
 }
 
 static int findFormalIndex(FnSymbol* fn, ArgSymbol* arg) {
-  int ret = -1;
-
   int i = 1;
   for_formals (formal, fn) {
-    if (formal == arg) {
-      ret = i;
-    }
+    if (formal == arg) return i;
     i++;
   }
-
-  return ret;
+  return -1;
 }
 
-
+// This class factors out code related to handles, esp. findLoopContextHandle.
+// Todo: perhaps switch its subclasses from "is a Context" to "has a Context"?
 class Context {
   public:
   Symbol* localHandle_ = NULL;
@@ -72,10 +97,14 @@ class Context {
   Expr* endOfLocalHandleSetup_ = NULL;
   Expr* upEndCount_ = NULL;
 
+  bool hasLocalHandle() {
+    return localHandle_ != nullptr;
+  }
+
   // this'll need to be differentiated between LoopContext and IteratorContext
   // when we have a proper syntax. The current implementation is more suitable
   // for IteratorContext
-  bool findLoopContextHandle() {
+  void findLoopContextHandle() {
     const int debugDepth = 1;
     std::vector<DefExpr*> defExprs;
     collectDefExprs(this->node(), defExprs);
@@ -99,8 +128,6 @@ class Context {
         }
       }
     }
-
-    return localHandle_ != NULL;
   }
 
   void collectLocalHandleAutoDestroys() {
@@ -166,6 +193,8 @@ class Context {
   bool defExprIsLocalHandle(DefExpr* def) {
     if (isArgSymbol(def->sym)) return false;
 
+    //todo: the check for FLAG_CONTEXT_TYPE should suffice
+    //      and perhaps FLAG_TEMP - ??
     return !def->sym->hasFlag(FLAG_TEMP) &&
            !isLabelSymbol(def->sym) &&
            !def->sym->hasFlag(FLAG_INDEX_VAR) && // avoid re-finding loop's
@@ -173,7 +202,7 @@ class Context {
            def->sym->getValType()->symbol->hasFlag(FLAG_CONTEXT_TYPE);
   }
 
-};
+}; // class Context
 
 class LoopContext: public Context {
   public:
@@ -181,9 +210,6 @@ class LoopContext: public Context {
   LoopContext(CForLoop* loop): loop_(loop) {}
 
   BaseAST* node() override { return loop_; };
-
-
-
 };
 
 class CoforallOnContext;
@@ -295,7 +321,7 @@ class IteratorContext: public Context {
 
   virtual void dump(int depth) const = 0;
   virtual void recomputeActualSymbol(int& actualIdx, Symbol*& actual) const = 0;
-};
+}; // class IteratorContext
 
 class CoforallOnContext : public IteratorContext {
  private:
@@ -314,7 +340,10 @@ class CoforallOnContext : public IteratorContext {
     else if (fn_->hasFlag(FLAG_COBEGIN_OR_COFORALL)) {
       msg += "coforall function with handle ";
     }
-    msg += "[" + std::to_string(localHandle_->id) + "]";
+    msg += localHandle_->name;
+    if (developer) {
+      msg += "[" + std::to_string(localHandle_->id) + "]";
+    }
     CONTEXT_DEBUG(depth, msg, fn_);
   }
 
@@ -328,24 +357,13 @@ class CoforallOnContext : public IteratorContext {
       auto parentFn = toFnSymbol(callToFn->parentSymbol);
       INT_ASSERT(parentFn);
       int formalIdx = findFormalIndex(parentFn, curFormal);
-      if (formalIdx >= 0) {
-        // CONTEXT_DEBUG(debugDepth+2,
-        //               "which is actually the formal at idx " + std::to_string(formalIdx),
-        //               curFormal);
-
-        actualIdx = formalIdx; // update to this function's formal idx
-      } else {
-        INT_FATAL("how come?");
-      }
+      INT_ASSERT(formalIdx >= 0);
+      actualIdx = formalIdx; // update to this function's formal idx
     } else {
-      // CONTEXT_DEBUG(debugDepth+2,
-      //               "which is this symbol",
-      //               curActual);
-
       actualIdx = -1; // signal that this variable is local here
     }
   }
-};
+}; // class CoforallOnContext
 
 class VectorizedLoopContext : public IteratorContext {
  private:
@@ -359,14 +377,17 @@ class VectorizedLoopContext : public IteratorContext {
 
   void dump(int depth) const override {
     std::string msg = "vectorized loop with handle ";
-    msg += "[" + std::to_string(localHandle_->id) + "]";
+    msg += localHandle_->name;
+    if (developer) {
+      msg += "[" + std::to_string(localHandle_->id) + "]";
+    }
     CONTEXT_DEBUG(depth, msg, loop_);
   }
 
   void recomputeActualSymbol(int& actualIdx, Symbol*& actual) const override {
     // Do nothing, because vectorized loops aren't implemented as functions.
   }
-};
+}; // class VectorizedLoopContext
 
 using IterContextPtr = std::unique_ptr<IteratorContext>;
 
@@ -376,27 +397,30 @@ class ContextHandler {
   std::vector<IterContextPtr> contextStack_;
 
   // map between any handle used within user's loop body and the indices to
-  // contexts within contextStack 
+  // contexts within contextStack
   std::map<Symbol*, int> handleMap_;
 
-  ContextHandler(CForLoop* loop): loopCtx_(loop) {
-    const int debugDepth = 1;
+  ContextHandler(CForLoop* loop): loopCtx_(loop) {}
 
+  void collectHandleAndOuterContexts() {
+    const int debugDepth = 1;
+    CForLoop* loop = loopCtx_.loop_;
 
     CONTEXT_DEBUG(debugDepth, "looking for the handle", loop);
-    if (loopCtx_.findLoopContextHandle()) {
-      CONTEXT_DEBUG(debugDepth+1, "found loop context handle", loopCtx_.localHandle_);
+    loopCtx_.findLoopContextHandle();
+
+    if (loopCtx_.hasLocalHandle()) {
+      CONTEXT_DEBUG(debugDepth+1, "found loop context handle",
+                    loopCtx_.localHandle_);
 
       CONTEXT_DEBUG(debugDepth, "collecting context chain", loop);
 
-      if (this->collectOuterContexts()) { }
-      else {
-        CONTEXT_DEBUG(debugDepth, "couldn't find any context chain", loop);
-      }
+      this->collectOuterContexts();
     }
     else {
       CONTEXT_DEBUG(debugDepth+1, "couldn't find context handle", loop);
     }
+    dumpOuterContexts();
   }
 
   CForLoop* findInnermostLoop(Expr* curParent) {
@@ -412,7 +436,7 @@ class ContextHandler {
     return nullptr;
   }
 
-  bool collectOuterContexts() {
+  void collectOuterContexts() {
     const int debugDepth = 2;
 
     // If the current context was implemented using a plain loop, that loop.
@@ -432,8 +456,8 @@ class ContextHandler {
             outerCtx->setInnermostLooop(plainLoop);
             outerCtx->setCallToInner(callToCurCtx);
             outerCtx->setInnerLoop(findInnermostLoop(callToCurCtx));
-
-            if (!outerCtx->findLoopContextHandle()) break;
+            outerCtx->findLoopContextHandle();
+            if (!outerCtx->hasLocalHandle()) break;
 
             contextStack_.push_back(std::move(outerCtx));
             cur = cur->parentExpr;
@@ -459,8 +483,8 @@ class ContextHandler {
         outerCtx->setInnermostLooop(plainLoop);
         outerCtx->setCallToInner(callToCurCtx);
         outerCtx->setInnerLoop(findInnermostLoop(callToCurCtx));
-
-        if (!outerCtx->findLoopContextHandle()) break;
+        outerCtx->findLoopContextHandle();
+        if (!outerCtx->hasLocalHandle()) break;
 
         contextStack_.push_back(std::move(outerCtx));
         cur = callToCurCtx = parentFn->singleInvocation();
@@ -470,15 +494,17 @@ class ContextHandler {
         break;
       }
     } while (true);
-
-    return contextStack_.size() > 0;
   }
 
   void dumpOuterContexts() {
-    int debugDepth = 3;
-    CONTEXT_DEBUG(debugDepth, "found the following context chain:", this->loop());
-    for (auto& i : contextStack_) {
-      i->dump(++debugDepth);
+    int debugDepth = 2;
+    if (contextStack_.size() == 0) {
+      CONTEXT_DEBUG(debugDepth, "couldn't find any context chain", this->loop());
+    } else {
+      CONTEXT_DEBUG(debugDepth, "found the following context chain:", this->loop());
+      for (auto& i : contextStack_) {
+        i->dump(++debugDepth);
+      }
     }
   }
 
@@ -550,8 +576,7 @@ class ContextHandler {
     INT_ASSERT(toSymExpr(callAfterDef->get(1))->symbol() == outerCtxHandle);
     INT_ASSERT(toSymExpr(callAfterDef->get(2))->symbol() == lhs);
 
-    CONTEXT_DEBUG(debugDepth, "found an outer context handle",
-                  outerCtxHandle);
+    CONTEXT_DEBUG(debugDepth, "found an outer context handle", outerCtxHandle);
     INT_ASSERT(handleMap_.count(outerCtxHandle) == 0);
 
     int outerCtxIdx = -1;
@@ -572,11 +597,15 @@ class ContextHandler {
       }
     }
 
+    if (outerCtxIdx >= (int)contextStack_.size()) {
+      USR_FATAL(call, "could not find the %d-th outer context"
+                " in the iterator for the enclosing loop", outerCtxIdx+1);
+    }
+
     handleMap_[outerCtxHandle] = outerCtxIdx;
 
-    CONTEXT_DEBUG(debugDepth+1,
-                  "mapped to ["+std::to_string(contextStack_[outerCtxIdx]->localHandle_->id)+"]",
-                  outerCtxHandle);
+    CONTEXT_DEBUG(debugDepth+1, "mapped to", outerCtxHandle,
+                  contextStack_[outerCtxIdx]->localHandle_);
 
     // TODO refactor this into a common helper
     SET_LINENO(nextDef);
@@ -605,8 +634,7 @@ class ContextHandler {
                                           int targetCtxIdx,
                                           HoistingKind kind) {
     const int debugDepth = 3;
-    CONTEXT_DEBUG(debugDepth, "will hoist to ["+std::to_string(context->localHandle_->id)+"]",
-                  call);
+    CONTEXT_DEBUG(debugDepth, "will hoist to", call, context->localHandle_);
 
     if (kind == HoistingKind::CArray) {
       // The early GPU transformations would've added a block here with
@@ -614,7 +642,7 @@ class ContextHandler {
       // being hoisted to the GPU, so remove that block.
       auto block = toBlockStmt(call->prev);
       INT_ASSERT(block && "Expected a generated block before the hoist");
-      CONTEXT_DEBUG(debugDepth, "removing block ["+std::to_string(block->id)+"]", block);
+      CONTEXT_DEBUG(debugDepth, "removing this block", block);
       block->remove();
     }
 
@@ -703,16 +731,11 @@ class ContextHandler {
           if (outerActuals.count(argSym) == 1) continue;
 
           int formalIdx = findFormalIndex(parentFn, argSym);
-          if (formalIdx >= 0) {
-            CONTEXT_DEBUG(debugDepth+1,
-                          "found a formal at idx " + std::to_string(formalIdx),
-                          argSym);
-
-            outerActuals[argSym] = formalIdx;
-          }
-          else {
-            INT_FATAL("how come?");
-          }
+          INT_ASSERT(formalIdx >= 0);
+          CONTEXT_DEBUG(debugDepth+1,
+                        "found a formal at idx " + std::to_string(formalIdx),
+                        argSym);
+          outerActuals[argSym] = formalIdx;
         }
       }
 
@@ -732,7 +755,7 @@ class ContextHandler {
       cur = call->prev;
     }
 
-    // we have some symbols declared elsewhere in the block that we are hoisting 
+    // we have some symbols declared elsewhere in the block that we are hoisting
     // walk up the context stack to the target to find where they are
     SymbolMap newContextUpdateMap;
     for (auto& outerActualToIdx : outerActuals) {
@@ -745,7 +768,7 @@ class ContextHandler {
           // context. IOW, the user wants to hoist a block that has a symbol,
           // to a block where the symbol wasn't defined yet. This is a user
           // error.
-          USR_FATAL("Attempt to hoist symbols from an inner context to an outer context");
+          USR_FATAL(call, "Attempt to hoist symbols from an inner context to an outer context");
         }
 
         contextStack_[i]->recomputeActualSymbol(actualIdx, curActual);
@@ -754,20 +777,19 @@ class ContextHandler {
       newContextUpdateMap.put(outerActualToIdx.first, curActual);
     }
 
-    std::string hoistedName = "hoisted_" + std::string(toHoist->name);
-
-    Symbol* refToSym = new VarSymbol(hoistedName.c_str(), toHoist->getRefType());
+    const char* hoistedName = astr("hoisted_", toHoist->name);
+    Symbol* refToSym = new VarSymbol(hoistedName, toHoist->getRefType());
     DefExpr* refToSymDef = new DefExpr(refToSym);
     CallExpr* setRef = new CallExpr(PRIM_MOVE, refToSym, new CallExpr(PRIM_ADDR_OF, toHoist));
 
     context->getInsertBeforeCallToInnerAnchor()->insertBefore(refToSymDef);
     context->getInsertBeforeCallToInnerAnchor()->insertBefore(setRef);
 
-
     for (int curCtx = targetCtxIdx ; curCtx >= 0 ; curCtx--) {
       auto& ctx = contextStack_[curCtx];
 
-      auto innerSym = ctx->insertActualForHoistedSymbol(refToSym, hoistedName.c_str(), toHoist->getRefType());
+      auto innerSym = ctx->insertActualForHoistedSymbol(refToSym, hoistedName,
+                                                        toHoist->getRefType());
 
       if (kind == HoistingKind::Barrier) {
         if (Expr* upEndCount = ctx->getUpEndCount()) {
@@ -896,7 +918,6 @@ class ContextHandler {
     while (curIdx < handles.size()) {
       const int debugDepth = 1;
       std::vector<SymExpr*> handleUses;
-
       collectSymExprsFor(this->loop(), handles[curIdx], handleUses);
 
       for_vector (SymExpr, use, handleUses) {
@@ -917,44 +938,19 @@ class ContextHandler {
         }
         else {
           CONTEXT_DEBUG(debugDepth, "illegal use of context handle", use);
-          INT_FATAL("illegal use of context handle");
+          USR_FATAL(use, "illegal use of context handle %s",
+                    loopHandle()->name);
         }
       }
 
       curIdx++;
     }
   }
-
-  void handleContextUsesWithinLoopBody(Symbol* handle) {
-    const int debugDepth = 1;
-    std::vector<SymExpr*> handleUses;
-    collectSymExprsFor(this->loop(), handle, handleUses);
-
-    for_vector (SymExpr, use, handleUses) {
-      if (CallExpr* call = toCallExpr(use->parentExpr)) {
-        CONTEXT_DEBUG(debugDepth+1, "found a call that uses handle", call);
-
-        if (call->isPrimitive(PRIM_OUTER_CONTEXT)) {
-          handleOuterContextCall(call);
-        }
-        else if (call->isPrimitive(PRIM_MOVE)) {
-          CONTEXT_DEBUG(debugDepth+2, "ignoring call", call);
-        }
-        else {
-          CONTEXT_DEBUG(debugDepth+2, "call is illegal", call);
-          INT_FATAL("call is illegal");
-        }
-      }
-      else {
-        CONTEXT_DEBUG(debugDepth, "illegal use of context handle", use);
-        INT_FATAL("illegal use of context handle");
-      }
-    }
-  }
-};
-
+}; // class ContextHandler
 
 void lowerContexts() {
+  if (!fIteratorContexts) return;
+
   forv_Vec(FnSymbol*, fn, gFnSymbols) {
     if (!isInUserCode(fn)) continue;
 
@@ -964,14 +960,11 @@ void lowerContexts() {
 
     for_vector(BaseAST, ast, asts) {
       if (CForLoop* loop = toCForLoop(ast)) {
-        const int debugDepth = 0;
-
-        CONTEXT_DEBUG(debugDepth, "encountered a C loop", loop);
+        CONTEXT_DEBUG(0, "encountered a C loop", loop);
+        if (loop->id == breakOnResolveID) gdbShouldBreakHere();
 
         ContextHandler h(loop);
-
-        h.dumpOuterContexts();
-
+        h.collectHandleAndOuterContexts();
         h.handleContextUsesWithinLoopBody();
       }
     }

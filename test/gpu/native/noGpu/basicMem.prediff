@@ -1,5 +1,9 @@
 #!/bin/sh
 
-sed -i -e 's/0x.*/0xPREDIFFED/' $2
-sed -i -e '/<internal>/d' $2
-sed -i -e '/basicMem.chpl:5:.*\[domain(1,int(64),one)\] int(64) at/s/ 1[0-9][0-9]B / 1nnB /' $2
+cat $2 | sed \
+  -e 's/0x.*/0xPREDIFFED/' \
+  -e '/<internal>/d' \
+  -e '/basicMem.chpl:5:.*\[domain(1,int(64),one)\] int(64) at/s/ 1[0-9][0-9]B / 1nnB /' \
+  $2 > $2.tmp
+
+mv $2.tmp $2

@@ -121,6 +121,7 @@ _chpl ()
 --io-deserialize-readThis \
 --io-gen-serialization \
 --io-serialize-writeThis \
+--iterator-contexts \
 --launcher \
 --ldflags \
 --lib-linkage \

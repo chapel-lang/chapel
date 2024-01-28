@@ -55,6 +55,13 @@ module Iterators {
     use DSIUtil;
     use ChapelContextSupport;
 
+    /////////// BlockDom.customThese() : serial, leader, follower ///////////
+
+    iter BlockDom.customThese() {
+      for i in whole do
+        yield i;
+    }
+
     iter BlockDom.customThese(param tag: iterKind) where tag == iterKind.leader {
       const maxTasks = dist.dataParTasksPerLocale;
       const ignoreRunning = dist.dataParIgnoreRunningTasks;
@@ -132,13 +139,14 @@ module Iterators {
       }
     }
 
+    /////////// DefaultRectangularDom.customThese() leader ///////////
+
     iter DefaultRectangularDom.customThese(param tag: iterKind,
                tasksPerLocale = dataParTasksPerLocale,
                ignoreRunning = dataParIgnoreRunningTasks,
                minIndicesPerTask = dataParMinGranularity,
                offset=createTuple(rank, chpl_integralIdxType, 0:chpl_integralIdxType))
       where tag == iterKind.leader {
-
 
       const numSublocs = here._getChildCount();
 
@@ -264,10 +272,7 @@ module Iterators {
       }
     }
 
-    iter BlockDom.customThese() {
-      for i in whole do
-        yield i;
-    }
+    /////////// _domain.customThese() : serial, s/a, leader, follower ///////////
 
     /* Yield the domain indices */
     iter _domain.customThese() {
@@ -279,10 +284,11 @@ module Iterators {
     @chpldoc.nodoc
     iter _domain.customThese(param tag: iterKind)
       where tag == iterKind.standalone &&
-            __primitive("resolves", _value.these(tag=tag)) {
+            __primitive("resolves", _value.customThese(tag=tag)) {
       for i in _value.customThese(tag) do
         yield i;
     }
+
     @chpldoc.nodoc
     iter _domain.customThese(param tag: iterKind)
       where tag == iterKind.leader {
@@ -292,6 +298,7 @@ module Iterators {
       for followThis in _value.customThese(tag) do
         yield followThis;
     }
+
     @chpldoc.nodoc
     iter _domain.customThese(param tag: iterKind, followThis, param fast: bool = false)
       where tag == iterKind.follower {
@@ -305,5 +312,5 @@ module Iterators {
       }
     }
 
-  }
+  } // module TertiaryDRDomIterators
 }

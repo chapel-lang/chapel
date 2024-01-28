@@ -10,7 +10,6 @@ module load cudatoolkit/11.3
 
 export CHPL_GPU=nvidia
 export CHPL_COMM=none
-export CHPL_NIGHTLY_TEST_DIRS="gpu/native/"
 export CHPL_GPU_MEM_STRATEGY=unified_memory
 export CHPL_LAUNCHER_PARTITION=stormP100
 

@@ -62,4 +62,3 @@ LOCALE0 (7, 4): (taskId = 3, numTasks = 4) (taskId = (0, 0), numTasks = (1, 1))
 LOCALE0 (7, 5): (taskId = 3, numTasks = 4) (taskId = (0, 0), numTasks = (1, 1))
 LOCALE0 (7, 6): (taskId = 3, numTasks = 4) (taskId = (0, 0), numTasks = (1, 1))
 LOCALE0 (7, 7): (taskId = 3, numTasks = 4) (taskId = (0, 0), numTasks = (1, 1))
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly

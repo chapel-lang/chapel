@@ -17,7 +17,7 @@ config const verboseComm = false;
 config const verify = false;
 
 const Space = {0..<n, 0..<n};
-const Dom = Block.createDomain(Space);
+const Dom = blockDist.createDomain(Space);
 var Input: [Dom] int;
 var Output: [Dom] int;
 

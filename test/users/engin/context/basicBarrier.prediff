@@ -1,4 +1,4 @@
 #!/bin/sh
 
-sort -n $2 > $2.prediff
-mv $2.prediff $2
+sort -n $2 > $2.prediffed
+mv $2.prediffed $2

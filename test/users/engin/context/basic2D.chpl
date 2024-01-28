@@ -5,8 +5,6 @@ use Iterators.TertiaryDRDomIterators;
 
 config const n = 8;
 
-
-
 var dom = blockDist.createDomain(0..<n, 0..<n);
 var arr: [dom] int;
 
@@ -19,5 +17,6 @@ forall idx in dom.customThese() {
   const localTaskContext = __primitive("outer context", ctx1, vectorContext);
   const localeContext = __primitive("outer context", ctx2, localTaskContext);
 
+  // localTaskContext <-- innerCtx, localeContext <-- onCtx
   writeln(here, " ", idx, ": ", localTaskContext, " ", localeContext);
 }

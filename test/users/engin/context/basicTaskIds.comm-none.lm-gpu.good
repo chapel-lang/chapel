@@ -1,5 +1,4 @@
 LOCALE0  0 (taskId = 0, numTasks = 4) (taskId = 0, numTasks = 1) (taskId = 0, numTasks = 1)
-warning: The prototype GPU support implies --no-checks. This may impact debuggability. To suppress this warning, compile with --no-checks explicitly
 LOCALE0  1 (taskId = 0, numTasks = 4) (taskId = 0, numTasks = 1) (taskId = 0, numTasks = 1)
 LOCALE0  2 (taskId = 0, numTasks = 4) (taskId = 0, numTasks = 1) (taskId = 0, numTasks = 1)
 LOCALE0  3 (taskId = 0, numTasks = 4) (taskId = 0, numTasks = 1) (taskId = 0, numTasks = 1)

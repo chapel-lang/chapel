@@ -73,10 +73,6 @@ chpl_localeID_t chpl_gen_getLocaleID(void)
   return localeID;
 }
 
-static inline void chpl_assert_on_gpu(int32_t lineno, int32_t filenameIdx) {
-  chpl_error("assertOnGpu() failed", lineno, filenameIdx);
-}
-
 #ifdef __cplusplus
 }
 #endif

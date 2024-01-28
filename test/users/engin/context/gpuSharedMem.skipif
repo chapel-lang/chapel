@@ -1,1 +1,4 @@
+# This test is specific to device shared memory,
+# otherwise the behavior is undefined.
 CHPL_LOCALE_MODEL!=gpu
+CHPL_GPU=cpu
