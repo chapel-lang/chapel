@@ -38,12 +38,14 @@ from symbol_signature import get_symbol_signature
 import itertools
 import os
 import json
+import re
 
 
 import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
 from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
+from pygls.workspace import TextDocument
 from lsprotocol.types import (
     Location,
     MessageType,
@@ -54,6 +56,7 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
 from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
@@ -83,6 +86,14 @@ from lsprotocol.types import (
 from lsprotocol.types import (
     INITIALIZE,
     InitializeParams,
+)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_CODE_ACTION,
+    CodeActionParams,
+    CodeAction,
+    TextEdit,
+    CodeActionKind,
+    WorkspaceEdit,
 )
 
 
@@ -161,15 +172,14 @@ def get_symbol_information(
     loc = Location(uri, location_to_range(decl.location()))
     kind = decl_kind(decl)
     if kind:
-        # TODO: should we use DocumentSymbol or SymbolInformation LSP spec says
+        # TODO: should we use DocumentSymbol or SymbolInformation? LSP spec says
         # prefer DocumentSymbol, but nesting doesn't work out of the box.
         # implies that we need some kind of visitor pattern to build a DS tree
         # using symbol information for now, as it sort-of autogets the tree
         # structure
         is_deprecated = chapel.is_deprecated(decl)
-        return SymbolInformation(
-            loc, decl.name(), kind, deprecated=is_deprecated
-        )
+        name = get_symbol_signature(decl)
+        return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
     return None
 
 
@@ -442,6 +452,35 @@ class ChapelLanguageServer(LanguageServer):
         self.file_infos: Dict[str, FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
 
+        self._setup_regexes()
+
+    def _setup_regexes(self):
+        """
+        sets up regular expressions for use in text replacement for code actions
+        """
+        prefix = "Warning: \\[Deprecation\\]:"
+        chars = "[a-zA-Z0-9_.:;,'`\\- ]*?"
+        ident = "[a-zA-Z0-9_.()]+?"
+        pat1 = f"{prefix}{chars}(?:'(?P<original1>{ident})'{chars})?'(?P<replace1>{ident})'{chars}"
+        pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
+        # use pat2 first since it is more specific
+        self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
+
+    def get_deprecation_replacement(self, text: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Given a deprecation warning message, return the string to replace the deprecation with if possible
+        """
+
+        m = re.match(self._find_rename_deprecation_regex, text)
+        if m and (m.group("replace1") or m.group("replace2")):
+            replacement = m.group("replace1") or m.group("replace2")
+            original = None
+            if m.group("original1"):
+                original =  m.group("original1")
+            return (original, replacement)
+
+        return (None, None)
+
     def get_config_for_uri(self, uri: str) -> Optional[WorkspaceConfig]:
         """
         In case multiple workspace folders are in use, pick the root folder
@@ -515,6 +554,22 @@ class ChapelLanguageServer(LanguageServer):
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
 
+    def get_text(self, text_doc: TextDocument, rng: Range) -> str:
+        """
+        Get the text of a TextDocument within a Range
+        """
+        start_line = rng.start.line
+        stop_line = rng.end.line
+        if start_line == stop_line:
+            return text_doc.lines[start_line][
+                rng.start.character : rng.end.character
+            ]
+        else:
+            lines = text_doc.lines[start_line : stop_line + 1]
+            lines[0] = lines[0][rng.start.character :]
+            lines[-1] = lines[-1][: rng.end.character]
+            return "\n".join(lines)
+
     def register_workspace(self, uri: str):
         path = os.path.join(uri[len("file://") :], ".cls-info.json")
         config = WorkspaceConfig.from_file(self, path)
@@ -565,8 +620,12 @@ def run_lsp():
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
 
+    @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
-    async def get_def(ls: ChapelLanguageServer, params: DefinitionParams):
+    async def get_def(
+        ls: ChapelLanguageServer,
+        params: Union[DefinitionParams, DeclarationParams],
+    ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -663,6 +722,46 @@ def run_lsp():
         items = [item for item in items if item]
 
         return CompletionList(is_incomplete=False, items=items)
+
+    @server.feature(TEXT_DOCUMENT_CODE_ACTION)
+    async def code_action(ls: ChapelLanguageServer, params: CodeActionParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        actions = []
+
+        diagnostics_used: List[Diagnostic] = []
+        edits_to_make: List[TextEdit] = []
+
+        for d in params.context.diagnostics:
+            original, replacement = ls.get_deprecation_replacement(d.message)
+            if replacement is not None:
+                full_text = ls.get_text(text_doc, d.range)
+                if original is None:
+                    original = full_text
+                to_replace = full_text.replace(original, replacement)
+                te = TextEdit(d.range, to_replace)
+                msg = f"Resolve Deprecation: replace {original} with {to_replace}"
+                diagnostics_used.append(d)
+                edits_to_make.append(te)
+                ca = CodeAction(
+                    msg,
+                    CodeActionKind.QuickFix,
+                    diagnostics=[d],
+                    edit=WorkspaceEdit(changes={text_doc.uri: [te]}),
+                )
+                actions.append(ca)
+
+        if len(edits_to_make) > 0:
+            actions.append(
+                CodeAction(
+                    "Resolve Deprecations",
+                    CodeActionKind.SourceFixAll,
+                    diagnostics=diagnostics_used,
+                    edit=WorkspaceEdit(changes={text_doc.uri: edits_to_make}),
+                    is_preferred=True,
+                )
+            )
+
+        return actions
 
     server.start_io()
 
