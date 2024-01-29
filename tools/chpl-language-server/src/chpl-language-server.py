@@ -452,6 +452,35 @@ class ChapelLanguageServer(LanguageServer):
         self.file_infos: Dict[str, FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
 
+        self._setup_regexes()
+
+    def _setup_regexes(self):
+        """
+        sets up regular expressions for use in text replacement for code actions
+        """
+        prefix = "Warning: \\[Deprecation\\]:"
+        chars = "[a-zA-Z0-9_.:;,'`\\- ]*?"
+        ident = "[a-zA-Z0-9_.()]+?"
+        pat1 = f"{prefix}{chars}(?:'(?P<original1>{ident})'{chars})?'(?P<replace1>{ident})'{chars}"
+        pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
+        # use pat2 first since it is more specific
+        self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
+
+    def get_deprecation_replacement(self, text: str) -> Tuple[Optional[str], Optional[str]]:
+        """
+        Given a deprecation warning message, return the string to replace the deprecation with if possible
+        """
+
+        m = re.match(self._find_rename_deprecation_regex, text)
+        if m and (m.group("replace1") or m.group("replace2")):
+            replacement = m.group("replace1") or m.group("replace2")
+            original = None
+            if m.group("original1"):
+                original =  m.group("original1")
+            return (original, replacement)
+
+        return (None, None)
+
     def get_config_for_uri(self, uri: str) -> Optional[WorkspaceConfig]:
         """
         In case multiple workspace folders are in use, pick the root folder
@@ -699,24 +728,20 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         actions = []
 
-        prefix = "Warning: \\[Deprecation\\]:"
-        chars = "[a-zA-Z0-9_.:;\\- ]*?"
-        ident = "[a-zA-Z0-9_.]+?"
-        pat1 = f"{prefix}{chars}(?:'(?:{ident})'{chars})?'(?P<replace1>{ident})'{chars}"
-        pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
-        regex = re.compile(f"({pat1})|({pat2})")
-
-        edits_to_make: Tuple[List[Diagnostic], List[TextEdit]] = ([], [])
+        diagnostics_used: List[Diagnostic] = []
+        edits_to_make: List[TextEdit] = []
 
         for d in params.context.diagnostics:
-            m = re.match(regex, d.message)
-            if m and (m.group("replace1") or m.group("replace2")):
-                original = ls.get_text(text_doc, d.range)
-                replacement = m.group("replace1") or m.group("replace2")
-                te = TextEdit(d.range, replacement)
-                msg = f"Resolve Deprecation: replace {original} with {replacement}"
-                edits_to_make[0].append(d)
-                edits_to_make[1].append(te)
+            original, replacement = ls.get_deprecation_replacement(d.message)
+            if replacement is not None:
+                full_text = ls.get_text(text_doc, d.range)
+                if original is None:
+                    original = full_text
+                to_replace = full_text.replace(original, replacement)
+                te = TextEdit(d.range, to_replace)
+                msg = f"Resolve Deprecation: replace {original} with {to_replace}"
+                diagnostics_used.append(d)
+                edits_to_make.append(te)
                 ca = CodeAction(
                     msg,
                     CodeActionKind.QuickFix,
@@ -725,15 +750,13 @@ def run_lsp():
                 )
                 actions.append(ca)
 
-        if len(edits_to_make[0]) > 0:
+        if len(edits_to_make) > 0:
             actions.append(
                 CodeAction(
                     "Resolve Deprecations",
                     CodeActionKind.SourceFixAll,
-                    diagnostics=edits_to_make[0],
-                    edit=WorkspaceEdit(
-                        changes={text_doc.uri: edits_to_make[1]}
-                    ),
+                    diagnostics=diagnostics_used,
+                    edit=WorkspaceEdit(changes={text_doc.uri: edits_to_make}),
                     is_preferred=True,
                 )
             )
