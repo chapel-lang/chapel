@@ -176,7 +176,8 @@ contain an initialization expression of the same type.
 
 Any variables declared in a particular scope that are initialized with
 split init in multiple branches of a conditional or ``select``
-must be initialized in the same order in all branches.
+must be initialized in the same order in all branches that do not
+unconditionally return.
 
    *Example (simple-split-init.chpl)*
 
