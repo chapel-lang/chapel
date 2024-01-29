@@ -1273,7 +1273,7 @@ class MostSpecificCandidate {
     bool faMapsEqual = faMap_ == other.faMap_;
     if (!faMapsEqual && faMap_ && other.faMap_) {
       // Try a deep comparison to avoid unnecessary cache invalidation when
-      // bumping generations. The pointers may differ, but contain the enclosed
+      // bumping generations. The pointers may differ, but the contained
       // maps can be equivalent.
       faMapsEqual = *faMap_ == *other.faMap_;
     }
@@ -1297,6 +1297,18 @@ class MostSpecificCandidate {
 
   size_t hash() const {
     return chpl::hash(fn_, faMap_, constRefCoercionFormal_, constRefCoercionActual_);
+  }
+
+  static bool update(MostSpecificCandidate& keep,
+                     MostSpecificCandidate& addin) {
+    return defaultUpdate(keep, addin);
+  }
+
+  void swap(MostSpecificCandidate& other) {
+    std::swap(fn_, other.fn_);
+    std::swap(faMap_, other.faMap_);
+    std::swap(constRefCoercionFormal_, other.constRefCoercionFormal_);
+    std::swap(constRefCoercionActual_, other.constRefCoercionActual_);
   }
 
   void stringify(std::ostream& ss, chpl::StringifyKind stringKind) const;
