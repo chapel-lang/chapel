@@ -26,8 +26,3 @@ writeln("Demo param argument and unspecified argument type");
 var ex1 = filltuple(4, 2.178);
 writeln("  fill 4-tuple ", ex1);
 writeln("  type is ", ex1.type : string);
-
-
-
-
-

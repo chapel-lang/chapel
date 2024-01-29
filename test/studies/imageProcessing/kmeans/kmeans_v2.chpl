@@ -1,7 +1,7 @@
 
 /*****
       kmeans_.chpl -
-      Quantize colors in an image by using k-means clustering.  Not all 
+      Quantize colors in an image by using k-means clustering.  Not all
       clusters may be used (some may end up empty).  Prints the color of
       each cluster to stdout.
       This version uses atomic variables in the cluster for the iteration pass.
@@ -102,7 +102,7 @@ proc random_domain(rand : RandomStream, dom : domain) : dom.rank * dom.idxType {
                < 0 on failure (value depends on error)
     modifies:  kset, ids
 ***/
-proc cluster_colors(clr : clrimage, ncluster : int, 
+proc cluster_colors(clr : clrimage, ncluster : int,
                     out kset : [] cluster, ref quant : rgbimage) : int {
   const ids : domain(1) = { 1..ncluster };
                                         /* range of clusters */
@@ -174,7 +174,7 @@ proc iterate_pass(clr : clrimage, const ref kset : [] cluster) {
   var knew : [kset.domain] cluster;     /* new cluster definitions */
 
   forall (y, x) in clr.area {
-    const closest = 
+    const closest =
       closest_cluster(clr.c1(y,x), clr.c2(y,x), clr.c3(y,x), clr.space, kset);
     knew(closest).sumpix.add(1);
     if (clr.space == clrspace.HSV) {
@@ -266,7 +266,7 @@ proc cluster_sep(pixc1 : real, pixc2 : real, pixc3 : real, space : clrspace,
                       kset - all clusters
     returns:   index of closest cluster
 ***/
-proc closest_cluster(c1 : real, c2 : real, c3 : real, space : clrspace, 
+proc closest_cluster(c1 : real, c2 : real, c3 : real, space : clrspace,
                      kset : [] cluster) : int {
   var d : real;                         /* distance from point to cluster */
   var dmin : real;                      /* closest distance */
@@ -290,7 +290,7 @@ proc closest_cluster(c1 : real, c2 : real, c3 : real, space : clrspace,
     fillin_empties:  For very empty (npix = 0) cluster, re-seed it to
                      halfway between the biggest and next biggest that haven't
                      been used (ie. work down a sorted list).  If there are
-                     more empties than pairs of non-empties, then leave them 
+                     more empties than pairs of non-empties, then leave them
                      so.  kset is sorted in descending order of pixel
                      counts as a side effect.
     args:            kset - cluster assignments after image pass
@@ -361,9 +361,9 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
   kset(1).c1 = clr.c1(pt);
   kset(1).c2 = clr.c2(pt);
   kset(1).c3 = clr.c3(pt);
-  
+
   /* The seeding strategy here is to generate a fixed number of points and to
-     take the furthest from the previous seeds if it meets the minimum 
+     take the furthest from the previous seeds if it meets the minimum
      distance requirement.  This assumes a somewhat uniform distribution of
      points over the space - otherwise we are likely to keep picking points
      near others in color space, and failing to find enough unique.
@@ -390,7 +390,7 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
       kset(i).c2 = clr.c2(maxpt);
       kset(i).c3 = clr.c3(maxpt);
     } else {
-      writef("  could not seed cluster %i with %i attempts, max %6.4dr\n", 
+      writef("  could not seed cluster %i with %i attempts, max %6.4dr\n",
              i, NPTSEED, dmax);
       kset(i).skip = true;
     }
@@ -400,8 +400,8 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
 }
 
 /***
-    mark_and_backfill:  Clean up.  Allocate an RGB image and store the 
-                        cluster ID of each pixel in its R plane.  Also 
+    mark_and_backfill:  Clean up.  Allocate an RGB image and store the
+                        cluster ID of each pixel in its R plane.  Also
                         calculate the RGB value for the cluster.
     args:               clr - source image
                         kset - cluster in image
@@ -410,7 +410,7 @@ proc seed_clusters(clr : clrimage, kset : [] cluster) {
                < 0 on failure (value depends on error)
     modifies:  kset, ids
 ***/
-proc mark_and_backfill(clr : clrimage, kset : [] cluster, 
+proc mark_and_backfill(clr : clrimage, kset : [] cluster,
                        ref quant : rgbimage) : int {
   var retval: int;
 
@@ -418,7 +418,7 @@ proc mark_and_backfill(clr : clrimage, kset : [] cluster,
   for k in kset {
     if (!k.skip) {
       select (clr.space) {
-      when clrspace.LAB do 
+      when clrspace.LAB do
         labpix_to_rgb(k.c1, k.c2, k.c3, k.r, k.g, k.b);
       when clrspace.YUV do
         yuvpix_to_rgb(k.c1, k.c2, k.c3, k.r, k.g, k.b);
@@ -429,7 +429,7 @@ proc mark_and_backfill(clr : clrimage, kset : [] cluster,
       otherwise return -1;
       }
     }
-  }   
+  }
 
   retval = alloc_rgbimage(quant, clr.ncol : c_int, clr.nrow : c_int);
   if (retval < 0) then return retval;
@@ -520,7 +520,7 @@ proc main() {
   for k in kset.domain {
     if (!kset[k].skip) {
       writef("%3i     %6i     %7.2dr  %7.2dr  %7.2dr     %3u  %3u  %3u\n",
-             k, kset(k).npix, kset(k).c1, kset(k).c2, kset(k).c3, 
+             k, kset(k).npix, kset(k).c1, kset(k).c2, kset(k).c3,
              kset(k).r, kset(k).g, kset(k).b);
     }
   }
@@ -528,6 +528,6 @@ proc main() {
   free_rgbimage(rgb);
   delete clr;
   free_rgbimage(ids);
-  
+
   return 0;
 }

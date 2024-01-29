@@ -1,7 +1,7 @@
 
 /*****
       ex_genclass.chpl -
-      An example of a generic class implementing a chunked array, which 
+      An example of a generic class implementing a chunked array, which
       over-allocates an array to amortize the cost of re-sizing when adding
       new elements.  See text for details.
 
@@ -13,14 +13,14 @@ class chunkarray {
   param INIT_ALLOC                      /* initial allocation size */
     = 2;
   param GROW_ALLOC                      /* chunk/allocation size */
-    = 2;               
+    = 2;
   var Lalloc : domain(rank=1)           /* internal allocation range */
     = 1..INIT_ALLOC;
   var Ldata : domain(rank=1)            /* range for data (starts empty) */
-    = 1..0;    
+    = 1..0;
   var data : [Lalloc] eltType;          /* the allocation */
   var lock$ : sync int                  /* synchronization lock in append */
-    = 1;              
+    = 1;
 
   /***
       this:  Retrieve the array.
@@ -59,7 +59,7 @@ class chunkarray {
       Lalloc = Lalloc.expand(GROW_ALLOC)[1..];
       /* For demo to show we're re-allocating. */
       writeln("grew array to ", Lalloc);
-    }      
+    }
     Ldata = Ldata.expand(1)[1..];
     data[Ldata.high] = val;
 
@@ -102,4 +102,3 @@ writeln(" dump array:");
 for c in corners do writeln("  corner at ", c.xc, ", ", c.yc, "   len ", c.len);
 
 delete corners;
-

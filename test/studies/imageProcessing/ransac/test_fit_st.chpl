@@ -83,7 +83,7 @@ proc verify_setup() {
   if (!PNG_isa(inname1.c_str())) then usage("input file 1 not a PNG picture");
   if ("" == inname2) then usage("missing --inname2");
   if (!PNG_isa(inname2.c_str())) then usage("input file 2 not a PNG picture");
-  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then 
+  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then
     usage("only use LAB or YUV color spaces");
   if (radius < 3) then usage("radius too small");
   /* Do not check the shifts since 0 is a valid value for them. */
@@ -161,10 +161,6 @@ proc main() {
   delete clr1;
   delete clr2;
   delete tree;
-  
+
   return 0;
 }
-
-
-
-

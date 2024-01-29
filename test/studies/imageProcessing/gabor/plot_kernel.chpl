@@ -57,7 +57,7 @@ extern const CLR_B : int(32);
 
 extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
 extern proc free_rgbimage(ref img : rgbimage) : void;
 
@@ -67,7 +67,7 @@ extern proc free_rgbimage(ref img : rgbimage) : void;
 
 /***
     gaborfn:  Calculate the Gabor function at a point using the global params.
-    args:     x, y - unrotated coordinates 
+    args:     x, y - unrotated coordinates
     returns:  Gabor at x, y
 ***/
 inline proc gaborfn(x : real, y : real) : real {
@@ -80,7 +80,7 @@ inline proc gaborfn(x : real, y : real) : real {
   x2scl = (xrot * xrot) / (sclx * sclx);
   y2scl = (yrot * yrot) / (scly * scly);
 
-  return 
+  return
     exp(-(x2scl + y2scl)/2.0) * cos((2.0 * pi * xrot / wavelen) + phi_rad);
 }
 
@@ -157,9 +157,3 @@ proc main() {
 
   exit(retval);
 }
-
-
-
-
-
-

@@ -86,7 +86,7 @@ proc verify_setup() {
   if (!PNG_isa(inname1.c_str())) then usage("input file 1 not a PNG picture");
   if ("" == inname2) then usage("missing --inname2");
   if (!PNG_isa(inname2.c_str())) then usage("input file 2 not a PNG picture");
-  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then 
+  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then
     usage("only use LAB or YUV color spaces");
   if (radius < 3) then usage("radius too small");
   /* Do not check theta or the shifts since 0 is a valid value for them. */
@@ -159,9 +159,9 @@ proc main() {
   var nmap = count_matches(mapped1, corners2(), tree);
 
   writeln("\nMatching from fixed mapping");
-  writef("  x2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n", 
+  writef("  x2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n",
          testmap.sxx, testmap.sxy, testmap.dx);
-  writef("  y2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n", 
+  writef("  y2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n",
          testmap.syx, testmap.syy, testmap.dy);
   writef("  number matching corners  %i\n", nmap);
 
@@ -173,7 +173,3 @@ proc main() {
 
   return 0;
 }
-
-
-
-

@@ -81,7 +81,7 @@ tstfn4(call1, call2, call3, call7, call5, call6);
 writeln();
 proc tstfn5(arg1 : int) {
   if (arg1 < 5) {
-    return 5;         
+    return 5;
   } else if (arg1 < 10) {
     return 6.0;
   } else {
@@ -107,4 +107,3 @@ proc tstfn6(arg1 : int) {
 }
 
 tstfn6(3);
-

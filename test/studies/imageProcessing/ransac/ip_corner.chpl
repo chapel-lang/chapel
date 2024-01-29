@@ -119,7 +119,7 @@ class circumference {
       modifies:  r, x_center, y_center, close_circle
   ***/
   proc circumference(radius : int, xc : int, yc : int, closed = false) {
-   
+
     set_radius(radius);
     x_center = xc;
     y_center = yc;
@@ -153,7 +153,7 @@ class circumference {
       var (x, y) = quad(i);
       yield (xc + x, yc + y);
     }
-    /* - 1 because we don't want to duplicate the last point of 
+    /* - 1 because we don't want to duplicate the last point of
        previous quadrant. */
     for i in 0..quadcnt-1 by -1 {
       var (x, y) = quad(i);
@@ -212,7 +212,7 @@ class circumference {
       var (x, y) = quad(i);
       yield (xc + x, yc + y);
     }
-    /* - 1 because we don't want to duplicate the last point of 
+    /* - 1 because we don't want to duplicate the last point of
        previous quadrant. */
     for i in 0..quadcnt-1 by -1 {
       var (x, y) = quad(i);
@@ -235,14 +235,14 @@ class circumference {
   /** Setup (private) **/
 
   /***
-      set_radius:  Change the radius of the circle, updating the cache if 
-                   needed.  Note that you don't call the 'this' method, just 
+      set_radius:  Change the radius of the circle, updating the cache if
+                   needed.  Note that you don't call the 'this' method, just
                    pass a single integer to the class instance.
       args:  radius - radius of circle (>= 3)
       modifies:  r
   ***/
   proc set_radius(radius : int) {
-    
+
     if (radius < 3) {
       writeln("circle circumference must have radius >= 3, not ", radius);
       halt();
@@ -264,7 +264,7 @@ class circumference {
     /* This is a little too big, but we're guaranteed not to have more than
        this many, and calculating the exact number beforehand is a bother. */
     Lquad = 0..2*r;
-    
+
     /*   r=3        r=4          r=5            r=6              r=7       */
     /*                                                                     */
     /*                                                          *****      */
@@ -380,14 +380,14 @@ class chunkarray {
   param INIT_ALLOC                      /* initial allocation size */
     = 1000;
   param GROW_ALLOC                      /* chunk/allocation size */
-    = 500;               
+    = 500;
   var Lalloc : domain(rank=1)           /* internal allocation range */
     = 1..INIT_ALLOC;
   var Ldata : domain(rank=1)            /* range for data (starts empty) */
-    = 1..0;    
+    = 1..0;
   var data : [Lalloc] eltType;          /* the allocation */
   var lock$ : sync int                  /* synchronization lock in append */
-    = 1;              
+    = 1;
 
   /***
       this:  Return a copy of the data array limiting only to stored entries.
@@ -424,7 +424,7 @@ class chunkarray {
     /* Slice the expansion to trim negative values. */
     if (Ldata.high == Lalloc.high) {
       Lalloc = Lalloc.expand(GROW_ALLOC)[1..];
-    }      
+    }
     Ldata = Ldata.expand(1)[1..];
     data(Ldata.high) = val;
 
@@ -449,7 +449,7 @@ class chunkarray {
                    weakest (with the smallest gap between the center pixel
                    and the continuous ring segment) that are within range of
                    a stronger.  The result is sorted first in x, then in y.
-    args:          img - greyscale image (in c1 plane) to look for corners 
+    args:          img - greyscale image (in c1 plane) to look for corners
                    spec - parameters for FAST detector
     returns:   list of corners (may be empty)
 ***/
@@ -459,7 +459,7 @@ proc find_corners(img : clrimage, spec : fastspec) : chunkarray(corner) {
   const Ainside                         /* image interior we can analyze */
     = img.area.expand(-spec.radius, -spec.radius);
   var corners                           /* corners we've found */
-    = new chunkarray(corner); 
+    = new chunkarray(corner);
 
   forall (y,x) in Ainside {
     var details : corner;               /* info about corner */
@@ -566,19 +566,19 @@ proc is_corner_with_details(img : clrimage, x : int, y : int, spec : fastspec,
   if (initdir == dir) {
     len += initlen;
     if ((spec.minlen <= len) && (len <= spec.maxlen) && (thrdir.SAME != dir)) {
-      if (((thrdir.MORE == dir) && (initdpix < dpix)) || 
+      if (((thrdir.MORE == dir) && (initdpix < dpix)) ||
           ((thrdir.LESS == dir) && (dpix < initdpix))) {
         register_details(x, y, len, stpt, dir, dpix, details);
       } else {
         register_details(x, y, len, stpt, dir, initdpix, details);
-      }        
+      }
       return true;
     }
-  } else if ((spec.minlen <= len) && (len <= spec.maxlen) && 
+  } else if ((spec.minlen <= len) && (len <= spec.maxlen) &&
              (thrdir.SAME != dir)) {
     register_details(x, y, len, stpt, dir, dpix, details);
     return true;
-  } else if ((spec.minlen <= initlen) && (initlen <= spec.maxlen) && 
+  } else if ((spec.minlen <= initlen) && (initlen <= spec.maxlen) &&
              (thrdir.SAME != initdir)) {
     register_details(x, y, initlen, initpt, initdir, initdpix, details);
     return true;
@@ -588,7 +588,7 @@ proc is_corner_with_details(img : clrimage, x : int, y : int, spec : fastspec,
 }
 
 /***
-    pixel_thrdir:  Compare the greyscale value at pt2 to pt1, classifying it 
+    pixel_thrdir:  Compare the greyscale value at pt2 to pt1, classifying it
                    above/below the threshold.
     args:          img - greyscale image, uses plane C1
                    x1, y1 - base point
@@ -596,7 +596,7 @@ proc is_corner_with_details(img : clrimage, x : int, y : int, spec : fastspec,
                    spec - requirements for FAST detector
     returns:   thrdir classification at pt2
 ***/
-private inline 
+private inline
 proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
                   x2 : int, y2 : int, spec : fastspec) : thrdir {
 
@@ -606,7 +606,7 @@ proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
 }
 
 /***
-    register_details:  Copy the corner details into the summary data 
+    register_details:  Copy the corner details into the summary data
                        structure.
     args:              xc, yc - corner point
                        len - length of continuously differing pixels
@@ -616,7 +616,7 @@ proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
                        details - where to store info
     modifies:  details
 ***/
-private 
+private
 proc register_details(xc : int, yc : int, len : int, stpt : 2*int,
                       dir : thrdir, dpix : real, out details : corner) {
 
@@ -662,7 +662,7 @@ proc suppress_corners(rawcnr : chunkarray(corner),
   for c1 in cnr.domain {
     for c2 in cnr.domain[c1+1..] {
       const (xc1, yc1)                  /* center of corner 1 */
-        = cnr(c1).center;       
+        = cnr(c1).center;
       const (xc2, yc2)                  /* center of corner 2 */
         = cnr(c2).center;
       /* Sorted by x, so we don't have to check c2.xc < c1.xc. */
@@ -722,7 +722,7 @@ proc set_parent(corners : [] corner, c1 : int, c2 : int, parent : [] int) {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : clrimage, space : clrspace, 
+proc mark_corners(clr : clrimage, space : clrspace,
                   corners : chunkarray(corner), ref marked : rgbimage) : int {
   var retval : int;
 
@@ -771,8 +771,3 @@ proc mark_corners(clr : clrimage, space : clrspace,
 
   return 0;
 }
-
-
-
-
-

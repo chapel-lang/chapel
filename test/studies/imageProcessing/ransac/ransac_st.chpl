@@ -5,7 +5,7 @@
       translation (st), not rotation, ie.
            x' = sx * x + dx
            y' = sy * y + dy
-      Uses corners from the FAST detector as features.  Prints the best fit 
+      Uses corners from the FAST detector as features.  Prints the best fit
       information when done.
 
       Call:
@@ -160,7 +160,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
       }
       tries(i).nfail += 1;
     } while (tries(i).nfail < nfail);
-    
+
     trytime.stop();
     tries(i).ttry = trytime.elapsed(TimeUnits.milliseconds);
 
@@ -206,7 +206,7 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
   var retval = true;
 
   ind11 = random_ranged(rand, rng1);
-  
+
   nmatch = 0;
   for i in rng2 {
     if are_corners_similar(corners1(ind11), corners2(i)) {
@@ -359,7 +359,7 @@ proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
 
 /***
     match_corners:  Compare the lists of corners, finding those that are
-                    similar and close in position.  
+                    similar and close in position.
     args:           corners1 - corners to match, in corners2 coords
                     corners2 - corners to be matched
                     tree - sorted tree of corners2 points
@@ -367,7 +367,7 @@ proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
     returns:   number of corners that match
     modifies:  map1to2, map2to1
 ***/
-proc match_corners(const corners1 : [] corner, const corners2 : [] corner, 
+proc match_corners(const corners1 : [] corner, const corners2 : [] corner,
                    tree : kdtree, map1to2 : [] int, map2to1 : [] int) : int {
   var nmap : int;                       /* number of matching corners */
 
@@ -392,23 +392,23 @@ proc match_corners(const corners1 : [] corner, const corners2 : [] corner,
     const c2 = tree.find_nearest_point(corners1(c1).center);
     const (xc, yc) = corners1(c1).center;
     const (vc, wc) = corners2(c2).center;
-    if ((map2to1(c2) < 0) && 
-        (abs(xc-vc) <= mapsep) && 
-        (abs(yc-wc) <= mapsep) && 
+    if ((map2to1(c2) < 0) &&
+        (abs(xc-vc) <= mapsep) &&
+        (abs(yc-wc) <= mapsep) &&
         are_corners_similar(corners1(c1), corners2(c2))) {
       nmap += 1;
       map1to2(c1) = c2;
       map2to1(c2) = c1;
     }
   }
-   
+
   return nmap;
 }
 
 /***
     select_besttry:  Pick the best mapping we've found (most matching corners).
-                     Note nfail in the data structure will be equal to nfail 
-                     the command line constant if we have no solution - that 
+                     Note nfail in the data structure will be equal to nfail
+                     the command line constant if we have no solution - that
                      try will be ignored.
     args:            tries - information about the attempts resulting in maps
     returns:   index into tries with best result
@@ -463,8 +463,8 @@ proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner,
                      m, b - slope and intercept, xc2 = m * xc1 + b
     modifies:  m, b
 ***/
-proc regress_coords(corners1 : [] corner, corners2 : [] corner, 
-                    map1to2 : [] int, cbase : int, 
+proc regress_coords(corners1 : [] corner, corners2 : [] corner,
+                    map1to2 : [] int, cbase : int,
                     out m : real, out b : real) {
   var sumx, sumv, sumxv, sumx2 : int;   /* partial sums for regression */
   var nmap : int;                       /* number of mapped corners */
@@ -580,7 +580,7 @@ proc dump_tries(tries : [] tryinfo) {
     totfail += t.nfail;
     ttot += t.ttry;
   }
-  
+
   writeln("\nSummary of fits");
   writef("  number maps attempted      %4i\n", tries.size);
   writef("  number with result         %4i     (%3.0dr%%)\n", nsucceed,
@@ -643,7 +643,7 @@ proc verify_setup() {
   if (!PNG_isa(inname1.c_str())) then usage("input file 1 not a PNG picture");
   if ("" == inname2) then usage("missing --inname2");
   if (!PNG_isa(inname2.c_str())) then usage("input file 2 not a PNG picture");
-  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then 
+  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then
     usage("only use LAB or YUV color spaces");
   if (radius < 3) then usage("radius too small");
 }
@@ -699,6 +699,3 @@ proc main() {
 
   return 0;
 }
-
-
-

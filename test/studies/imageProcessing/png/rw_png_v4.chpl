@@ -46,9 +46,9 @@ extern proc free_rgbimage(ref img : rgbimage) : void;
 extern proc PNG_isa(fname : c_string) : c_int;
 /* The rest of the interface we don't use now. */
 /*
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
-extern proc read_rgb(img : rgbimage, x, y : c_int, 
+extern proc read_rgb(img : rgbimage, x, y : c_int,
                      ref r, ref g, ref b : c_uchar) : c_int;
 extern proc write_rgb(img : rgbimage, x, y : c_int, r, g, b : c_uchar) : c_int;
 */
@@ -88,8 +88,8 @@ proc main(args : [] string) {
     else usage("too many arguments on command line");
   }
 
-  /* First sanity check the arguments, then read the image, get the pixel 
-     requested, change it, and write it back out.  Finally we need to free 
+  /* First sanity check the arguments, then read the image, get the pixel
+     requested, change it, and write it back out.  Finally we need to free
      the allocation made in PNG_read. */
 
   if (x < 0) then
@@ -102,13 +102,13 @@ proc main(args : [] string) {
     usage("input file not a PNG picture");
   if ("" == outname) then
     usage("missing --outname");
-  
+
   retval = PNG_read(inname.c_str(), rgb);
   if (retval < 0) {
     free_rgbimage(rgb);
     halt("program stopped after error");
   }
-  
+
   if (rgb.ncol <= x) {
     free_rgbimage(rgb);
     usage("--x (0-based) >= image width");
@@ -121,13 +121,13 @@ proc main(args : [] string) {
   /* Now we can access the fields directly. */
   xy = (y * rgb.ncol) + x;
   writef("\nRead %4i x %4i PNG image\n", rgb.ncol, rgb.nrow);
-  writef("At %4i,%4i      R %3u  G %3u  B %3u\n\n", x,y, 
+  writef("At %4i,%4i      R %3u  G %3u  B %3u\n\n", x,y,
          rgb.r(xy), rgb.g(xy), rgb.b(xy));
 
   rgb.r(xy) = 1;
   rgb.g(xy) = 2;
   rgb.b(xy) = 3;
-  
+
   retval = PNG_write(outname.c_str(), rgb);
   if (retval < 0) {
     free_rgbimage(rgb);
@@ -136,4 +136,3 @@ proc main(args : [] string) {
 
   free_rgbimage(rgb);
 }
-

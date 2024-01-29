@@ -42,7 +42,3 @@ writeln("whilerange -1..-5 by 0");
 for i in whilerange(-1, -5, 0) do writeln("  ", i);
 
 writeln(whilerange(1,10,2));
-
-
-
-

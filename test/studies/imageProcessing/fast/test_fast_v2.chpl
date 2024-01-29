@@ -286,7 +286,7 @@ proc test_is_corner() : bool {
     = true;
   var img : clrimage;                   /* dummy data */
   var circle                            /* iterator about circle */
-    = new circumference(3);    
+    = new circumference(3);
   var spec : fastspec;                  /* FAST parameters */
 
   writeln("\nStarting test bench for is_corner");
@@ -473,7 +473,7 @@ proc test_is_corner() : bool {
 }
 
 /***
-    test_is_corner_with_details:  Self-checking test bench for the 
+    test_is_corner_with_details:  Self-checking test bench for the
                                   is_corner_with_details procedure.
     returns:   pass/fail flag
 ***/
@@ -482,7 +482,7 @@ proc test_is_corner_with_details() : bool {
     = true;
   var img : clrimage;                   /* dummy data */
   var circle                            /* iterator about circle */
-    = new circumference(3);    
+    = new circumference(3);
   var spec : fastspec;                  /* FAST parameters */
   var details : corner;                 /* specifics about corner */
 
@@ -601,7 +601,7 @@ proc verify_details(details : corner, no : int, xc : int, yc : int, len : int,
     passed = false;
   }
   if (details.dpix != dpix) {
-    writef("  test %i expected dpix of %5.1dr, got %5.1dr\n", 
+    writef("  test %i expected dpix of %5.1dr, got %5.1dr\n",
            no, dpix, details.dpix);
     passed = false;
   }
@@ -650,13 +650,10 @@ proc main() {
   if (!test_circumference()) then passed = false;
   if (!test_is_corner()) then passed = false;
   if (!test_is_corner_with_details()) then passed = false;
-  
+
   writeln("\nTest Bench Summary");
   if (passed) then writeln("  all tests passed\n");
   else writeln("  some test FAILED");
 
   return 0;
 }
-
-
-

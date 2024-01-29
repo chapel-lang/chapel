@@ -154,7 +154,7 @@ int PNG_read(const char *fname, rgbimage **img) {
     retval = -1;
     goto cleanup;
   }
-    
+
   if (setjmp(png_jmpbuf(ptr))) {
     retval = -1;
     goto cleanup;
@@ -170,8 +170,8 @@ int PNG_read(const char *fname, rgbimage **img) {
   w = png_get_image_width(ptr, info);
   nchan = png_get_channels(ptr, info);
 
-  if ((8 != png_get_bit_depth(ptr, info)) || 
-      ((2 != png_get_color_type(ptr, info) && 
+  if ((8 != png_get_bit_depth(ptr, info)) ||
+      ((2 != png_get_color_type(ptr, info) &&
        (0 != png_get_color_type(ptr,info))))) {
     printf("PNG: unsupported bit depth %d or color type %d\n",
            png_get_bit_depth(ptr, info), png_get_color_type(ptr, info));
@@ -217,7 +217,7 @@ int PNG_read(const char *fname, rgbimage **img) {
     }
   }
 
-  /* Note that png_destroy removes all memory allocated for the image, 
+  /* Note that png_destroy removes all memory allocated for the image,
      including rows. */
   if (NULL != ptr) {
     if (NULL != info) {
@@ -282,7 +282,7 @@ int PNG_write(const char *fname, rgbimage *img) {
     retval = -1;
     goto cleanup;
   }
-    
+
   if (setjmp(png_jmpbuf(ptr))) {
     retval = -1;
     goto cleanup;
@@ -291,7 +291,7 @@ int PNG_write(const char *fname, rgbimage *img) {
   /* Prepare to write. */
   png_init_io(ptr, fout);
   png_set_IHDR(ptr, info, img->ncol, img->nrow, 8, PNG_COLOR_TYPE_RGB,
-               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT, 
+               PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
                PNG_FILTER_TYPE_DEFAULT);
   png_write_info(ptr, info);
 
@@ -423,9 +423,9 @@ void free_rgbimage(rgbimage **img) {
 ***/
 int read_rgb(rgbimage *img, int x, int y, uchar *r, uchar *g, uchar *b) {
   int xy;                               /* pixel index */
-  
+
   if ((x < 0) || (y < 0) || (img->ncol <= x) || (img->nrow <= y)) {
-    printf("pixel %d,%4d is OOB (image size %d x %4d)\n", x,y, 
+    printf("pixel %d,%4d is OOB (image size %d x %4d)\n", x,y,
            img->ncol,img->nrow);
     return -1;
   }
@@ -449,9 +449,9 @@ int read_rgb(rgbimage *img, int x, int y, uchar *r, uchar *g, uchar *b) {
 ***/
 int write_rgb(rgbimage *img, int x, int y, uchar r, uchar g, uchar b) {
   int xy;                               /* pixel index */
-  
+
   if ((x < 0) || (y < 0) || (img->ncol <= x) || (img->nrow <= y)) {
-    printf("pixel %d,%4d is OOB (image size %d x %4d)\n", x,y, 
+    printf("pixel %d,%4d is OOB (image size %d x %4d)\n", x,y,
            img->ncol,img->nrow);
     return -1;
   }

@@ -56,4 +56,3 @@ if (clrmasks.RED == 0xff0000 : clrmasks) {
   writeln("after check enum is   ", 0xff0000 : clrmasks);
 }
 */
-

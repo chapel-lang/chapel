@@ -48,7 +48,7 @@ extern const CLR_B : int(32);
 extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
 extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
 extern proc free_rgbimage(ref img : rgbimage) : void;
 
@@ -105,8 +105,8 @@ class clrimage {
    CENTER - limits are +/- largest absolute value in data
    CLIP - clamp values outside min/max range, no scaling
 */
-enum rgbconvert { 
-  BOUND, DATA, CENTER, CLIP 
+enum rgbconvert {
+  BOUND, DATA, CENTER, CLIP
 }
 
 /* which plane to handle in clrimage
@@ -141,7 +141,7 @@ proc rgb_to_lab(rgb : rgbimage, ref lab : clrimage) {
 
   for (y, x) in lab.area {
     const xy = (y * rgb.ncol) + x;      /* pixel index */
-    rgbpix_to_lab(rgb.r(xy), rgb.g(xy), rgb.b(xy), 
+    rgbpix_to_lab(rgb.r(xy), rgb.g(xy), rgb.b(xy),
                   lab.c1(y,x), lab.c2(y,x), lab.c3(y,x));
   }
 }
@@ -157,7 +157,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
   var x, y, z : real;                   /* intermidate conversion to CIE XYZ */
 
   rgbpix_to_xyz(r, g, b, x, y, z);
-  
+
   /* 116 = 25 * (100 ** (1/3))
      l will range from -16 to 100, l_a -500 to +500, l_b -200 to +200 */
   l = 116.0 * lab_map(y / LAB_YNORM) - 16.0;
@@ -166,7 +166,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
 }
 
 /***
-    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for 
+    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for
                     L*A*B*). XYZ are in the range 0 t/m 1/XYZ_SCALE (5.65075).
     args:           r, g, b - source pixel to convert
                     x, y, z - result
@@ -207,11 +207,11 @@ inline proc lab_map(t : real) : real {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : clrimage, ref rgb : rgbimage, 
+proc display_color(clr : clrimage, ref rgb : rgbimage,
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;
-  
+
   retval = alloc_rgbimage(rgb, clr.ncol : c_int, clr.nrow : c_int);
   if (retval < 0) then return retval;
 
@@ -270,7 +270,7 @@ proc display_color(clr : clrimage, ref rgb : rgbimage,
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int, 
+proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
                    spec : conversion) : c_int {
   var minpix, maxpix : real;            /* data limits */
   var pix : real;                       /* calculated pixel */
@@ -284,7 +284,7 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
     if (abs(minpix) < abs(maxpix)) then minpix = -maxpix;
     else maxpix = -minpix;
   }
-  
+
   /* Prevent a divide by 0.  Pixel will still map to 0. */
   if (minpix == maxpix) then maxpix = minpix + 1.0;
 
@@ -297,7 +297,7 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
       when rgbconvert.BOUND {
         if (clr(y,x) < spec.min) then pix = 0.0;
         else if (spec.max < clr(y,x)) then pix = 255.0;
-        else  
+        else
           pix = nearbyint(255.0 * (clr(y,x)-spec.min) / (spec.max-spec.min));
       }
       when rgbconvert.CLIP {
@@ -397,6 +397,3 @@ proc main() {
 
   return 0;
 }
-
-
-

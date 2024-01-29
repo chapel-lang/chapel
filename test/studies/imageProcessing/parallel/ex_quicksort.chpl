@@ -18,7 +18,7 @@ use Random;
    len_insert decreases.  The program will still run and pass verification,
    but you'll see a stream of error messages on the console.  Eventually
    the program does completely crash.
-   Increasing len_insert stops the recursion earlier, which allows a higher 
+   Increasing len_insert stops the recursion earlier, which allows a higher
    nelt.
    Compiling with --fast removes the warning messages.  You can get an large
    increase in nelt before the program starts crashing.
@@ -37,7 +37,7 @@ proc quicksort(data : [] real) {
   var q : int;                          /* index of pivot */
 
   if (data.domain.first < data.domain.last) {
-    if (use_insert && 
+    if (use_insert &&
         ((data.domain.last - data.domain.first + 1) <= len_insert)) then
       insertsort(data);
     else {
@@ -114,4 +114,3 @@ proc main() {
 
   delete rand;
 }
-

@@ -46,7 +46,7 @@ forall j in 0..4 do
   colsumB(j) = + scan img2[0..4,j];
 
 writeln("\nfirst scan (transposed cumulative column sum)");
-for j in 0..4 do 
+for j in 0..4 do
   writeln(colsumB(j));
 
 /* Transpose. */
@@ -58,6 +58,5 @@ forall i in 0..4 do
   intimg(i) = + scan colsumB[i][0..4];
 
 writeln("\nintegral image");
-for i in 0..4 do 
+for i in 0..4 do
   writeln(intimg(i));
-

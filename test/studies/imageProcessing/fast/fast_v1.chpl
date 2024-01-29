@@ -105,7 +105,7 @@ class circumference {
       modifies:  r, x_center, y_center, close_circle
   ***/
   proc circumference(radius : int, xc : int, yc : int, closed = false) {
-   
+
     set_radius(radius);
     x_center = xc;
     y_center = yc;
@@ -139,7 +139,7 @@ class circumference {
       var (x, y) = quad(i);
       yield (xc + x, yc + y);
     }
-    /* - 1 because we don't want to duplicate the last point of 
+    /* - 1 because we don't want to duplicate the last point of
        previous quadrant. */
     for i in 0..quadcnt-1 by -1 {
       var (x, y) = quad(i);
@@ -199,7 +199,7 @@ class circumference {
       var (x, y) = quad(i);
       yield (xc + x, yc + y);
     }
-    /* - 1 because we don't want to duplicate the last point of 
+    /* - 1 because we don't want to duplicate the last point of
        previous quadrant. */
     for i in 0..quadcnt-1 by -1 {
       var (x, y) = quad(i);
@@ -222,14 +222,14 @@ class circumference {
   /** Setup (all code below is private) **/
 
   /***
-      set_radius:  Change the radius of the circle, updating the cache if 
-                   needed.  Note that you don't call the 'this' method, just 
+      set_radius:  Change the radius of the circle, updating the cache if
+                   needed.  Note that you don't call the 'this' method, just
                    pass a single integer to the class instance.
       args:  radius - radius of circle (>= 3)
       modifies:  r
   ***/
   proc set_radius(radius : int) {
-    
+
     if (radius < 3) {
       writeln("circle circumference must have radius >= 3, not ", radius);
       halt();
@@ -251,7 +251,7 @@ class circumference {
     /* This is a little too big, but we're guaranteed not to have more than
        this many, and calculating the exact number beforehand is a bother. */
     Lquad = 0..2*r;
-    
+
     /*   r=3        r=4          r=5            r=6              r=7       */
     /*                                                                     */
     /*                                                          *****      */
@@ -358,7 +358,7 @@ class circumference {
                < 0 on failure (value depends on error)
     modifies:  marked
 ***/
-proc mark_corners(clr : clrimage, space : clrspace, 
+proc mark_corners(clr : clrimage, space : clrspace,
                   ref marked : rgbimage) : int {
   const circle                          /* iterator about pixel */
     = new circumference(radius);
@@ -397,7 +397,7 @@ proc mark_corners(clr : clrimage, space : clrspace,
       marked.b(xy) = 0;
       cnt += 1;
       */
-      
+
       for yc in clr.rows[y-5..y+5] {
         const xy = yc * marked.ncol + x;
         marked.r(xy) = 255;
@@ -430,7 +430,7 @@ proc mark_corners(clr : clrimage, space : clrspace,
                 circle - iterator with radius pre-set
     returns:   true if passes FAST criteria, false if not
 ***/
-proc is_corner(img : clrimage, x : int, y : int, 
+proc is_corner(img : clrimage, x : int, y : int,
                circle : circumference) : bool {
   var dir : thrdir;                     /* pixel difference direction */
   var len : int;                        /* consecutive length same dir */
@@ -471,7 +471,7 @@ proc is_corner(img : clrimage, x : int, y : int,
      start may also be good. */
   if (stdir == dir) {
     len += stlen;
-    if ((minlen <= len) && (len <= maxlen) && (thrdir.SAME != dir)) then 
+    if ((minlen <= len) && (len <= maxlen) && (thrdir.SAME != dir)) then
       return true;
   } else if ((minlen <= len) && (len <= maxlen) && (thrdir.SAME != dir)) {
       return true;
@@ -483,14 +483,14 @@ proc is_corner(img : clrimage, x : int, y : int,
 }
 
 /***
-    pixel_thrdir:  Compare the greyscale value at pt2 to pt1, classifying it 
+    pixel_thrdir:  Compare the greyscale value at pt2 to pt1, classifying it
                    above/below the threshold.
     args:          img - greyscale image, uses plane C1
                    x1, y1 - base point
                    x2, y2 - comparison point (direction relative to pt1)
     returns:   thrdir classification at pt2
 ***/
-inline proc pixel_thrdir(img : clrimage, x1 : int, y1 : int, 
+inline proc pixel_thrdir(img : clrimage, x1 : int, y1 : int,
                          x2 : int, y2 : int) : thrdir {
 
   if (img.c1(y2,x2) + thr <= img.c1(y1,x1)) then return thrdir.LESS;
@@ -548,7 +548,7 @@ proc verify_setup() {
   if ("" == inname) then usage("missing --inname");
   if (!PNG_isa(inname.c_str())) then usage("input file not a PNG picture");
   if ("" == outname) then usage("missing --outname");
-  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then 
+  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then
     usage("only use LAB or YUV color spaces");
   if (radius < 3) then usage("radius too small");
 }
@@ -578,4 +578,3 @@ proc main() {
 
   return 0;
 }
-

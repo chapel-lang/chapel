@@ -16,5 +16,3 @@ config var cfgvar : real = 2.178;
 
 writeln("cfgparam = ", cfgparam, "   cfgconst = ", cfgconst, "   cfgvar = ",
         cfgvar);
-
-

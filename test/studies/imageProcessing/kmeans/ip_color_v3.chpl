@@ -67,7 +67,7 @@ extern const CLR_B : int(32);
 extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
 extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
 extern proc free_rgbimage(ref img : rgbimage) : void;
 
@@ -126,7 +126,7 @@ class clrimage {
 
   /***
     clrimage:  "Copy" an existing image.  This instance will share the same
-               domain and ranges as the original.  The image data will not 
+               domain and ranges as the original.  The image data will not
                be shared.
     args:      orig - image to duplicate
     modifies:  ncol, nrow, npix, area
@@ -158,8 +158,8 @@ enum clrspace {
    CENTER - take limits from data, but if cross zero center at zero
    CLIP - clamp values outside min/max range, no scaling
 */
-enum rgbconvert { 
-  BOUND, DATA, CENTER, CLIP 
+enum rgbconvert {
+  BOUND, DATA, CENTER, CLIP
 }
 
 /* which plane to handle in clrimage
@@ -184,7 +184,7 @@ record conversion {
 /***
     rgb_convert:  Take an RGB image and convert it to some other color
                   space.  An instance of the image in the new space is
-                  created.  Basically a routing function to the 
+                  created.  Basically a routing function to the
                   specific implementations.
     args:         rgb - color image in RGB space
                   clr - converted image
@@ -220,7 +220,7 @@ proc rgb_to_lab(rgb : rgbimage, ref lab : clrimage) {
 
   for (y, x) in lab.area {
     xy = (y * rgb.ncol) + x;
-    rgbpix_to_lab(rgb.r(xy), rgb.g(xy), rgb.b(xy), 
+    rgbpix_to_lab(rgb.r(xy), rgb.g(xy), rgb.b(xy),
                lab.c1(y,x), lab.c2(y,x), lab.c3(y,x));
   }
 }
@@ -237,7 +237,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
   var x, y, z : real;                   /* intermidate conversion to CIE XYZ */
 
   rgbpix_to_xyz(r, g, b, x, y, z);
-  
+
   /* 116 = 25 * (100 ** (1/3)) */
   l = 116.0 * lab_map(y / LAB_YNORM) - 16.0;
   l_a = 500.0 * (lab_map(x / LAB_XNORM) - lab_map(y / LAB_YNORM));
@@ -245,7 +245,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
 }
 
 /***
-    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for 
+    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for
                     L*A*B*).  XYZ are in the range 0 t/m 1/XYZ_SCALE (5.65075).
     args:           r, g, b - source pixel to convert
                     x, y, z - result
@@ -377,8 +377,8 @@ proc rgb_to_yuv(rgb : rgbimage, ref yuv : clrimage) {
 }
 
 /***
-    rgbpix_to_yuv:  Convert an RGB pixel into the YUV space (aka YCbCr,  
-                    specifically, ITU-R BT.601).  Y, U, and V are clamped for 
+    rgbpix_to_yuv:  Convert an RGB pixel into the YUV space (aka YCbCr,
+                    specifically, ITU-R BT.601).  Y, U, and V are clamped for
                     a direct representation in 8-bit space.  Y offset to range
                     16 t/m 235, U and V 16 t/m 239.
     args:           r, g, b - source pixel to convert
@@ -433,7 +433,7 @@ private inline proc clamp(val : real, minval : real, maxval : real) {
 ***/
 proc rgb_to_rgb(rgb_c : rgbimage, ref rgb_chpl : clrimage) {
   var x, y, xy : int;                   /* pixel coordinates/index */
-  
+
   rgb_chpl = new clrimage(rgb_c.ncol, rgb_c.nrow, clrspace.RGB);
 
   for (y, x) in rgb_chpl.area {
@@ -460,11 +460,11 @@ proc rgb_to_rgb(rgb_c : rgbimage, ref rgb_chpl : clrimage) {
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_color(clr : clrimage, ref rgb : rgbimage, 
+proc display_color(clr : clrimage, ref rgb : rgbimage,
                    spec : conversion) : int {
   var xy : int;                         /* pixel index */
   var retval : int;
-  
+
   retval = alloc_rgbimage(rgb, clr.ncol : c_int, clr.nrow : c_int);
   if (retval < 0) then return retval;
 
@@ -523,7 +523,7 @@ proc display_color(clr : clrimage, ref rgb : rgbimage,
                < 0 on failure (value depends on error)
     modifies:  rgb
 ***/
-proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int, 
+proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
                    spec : conversion) : c_int {
   var minpix, maxpix : real;            /* data limits */
   var pix : real;                       /* calculated pixel */
@@ -537,7 +537,7 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
     if (abs(minpix) < abs(maxpix)) then minpix = -maxpix;
     else maxpix = -minpix;
   }
-      
+
   /* Prevent a divide by 0.  Pixel will still map to 0. */
   if (minpix == maxpix) then maxpix = minpix + 1.0;
 
@@ -547,7 +547,7 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
       if (clr(y,x) < 0.0) then pix = 0.0;
       else if (255.0 < clr(y,x)) then pix = 255.0;
       else pix = nearbyint(clr(y,x));
-    } else if ((rgbconvert.DATA == spec.how) || 
+    } else if ((rgbconvert.DATA == spec.how) ||
                (rgbconvert.CENTER == spec.how)) {
       pix = nearbyint(255.0 * (clr(y,x)-minpix) / (maxpix-minpix));
     } else if (rgbconvert.BOUND == spec.how) {
@@ -571,12 +571,12 @@ proc display_plane(clr : [] real, rgb : c_ptr(c_uchar), ncol : int,
 
 /***
     labpix_to_rgb:  Back convert a CIE L*A*B* pixel to RGB.  L is in the range
-                    
-    args:           
-                    
+
+    args:
+
     returns:   0 if successful
                < 0 on failure (value depends on error)
-    modifies:  
+    modifies:
 ***/
 proc labpix_to_rgb(l : real, l_a : real, l_b : real,
                    out r : c_uchar, out g : c_uchar, out b : c_uchar) {
@@ -641,7 +641,7 @@ proc yuvpix_to_rgb(y : real, u : real, v : real,
                    out r : c_uchar, out g : c_uchar, out b : c_uchar) {
   var ytmp, utmp, vtmp : real;          /* yuv shifted back to original range */
   var rtmp, gtmp, btmp : real;          /* intermediate RGB value */
-  
+
   ytmp = y - 16.0;
   utmp = u - 128.0;
   vtmp = v - 128.0;
@@ -664,7 +664,7 @@ proc yuvpix_to_rgb(y : real, u : real, v : real,
                     r, g, b - result
     modifies:  r, g, b
 ***/
-proc hsvpix_to_rgb(h : real, s : real, v : real, 
+proc hsvpix_to_rgb(h : real, s : real, v : real,
                    out r : c_uchar, out g : c_uchar, out b : c_uchar) {
   var rtmp, gtmp, btmp : real;          /* RGB intermediate value */
   var htmp : real;                      /* h rescaled to 0-6 */
@@ -709,7 +709,7 @@ proc hsvpix_to_rgb(h : real, s : real, v : real,
 }
 
 /***
-    rgbpix_to_rgb:  Back convert the clrimage RGB representation to the 
+    rgbpix_to_rgb:  Back convert the clrimage RGB representation to the
                     rgbimage format.  This is really a cast.
     args:           r_in, g_in, b_in - clrimage format of RGB value
                     r_out, g_out, b_out - rgbimage format of value

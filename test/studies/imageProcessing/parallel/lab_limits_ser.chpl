@@ -28,7 +28,7 @@ proc main() {
   writeln("\nVerify white point");
   rgbpix_to_xyz(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   x %7.2dr  y %7.2dr  z %7.2dr\n", x,y,z);
-  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n", 
+  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n",
          LAB_XNORM, LAB_YNORM, LAB_ZNORM);
   rgbpix_to_lab(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   l %7.2dr  a %7.2dr  b %7.2dr\n", x,y,z);
@@ -90,4 +90,3 @@ proc main() {
   (rpos, gpos, bpos) = bmaxpos;
   writef("  -  %7.2dr (%3i %3i %3i)\n", bmax, rpos, gpos, bpos);
 }
-

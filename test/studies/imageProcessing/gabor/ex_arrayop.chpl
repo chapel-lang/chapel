@@ -34,5 +34,3 @@ writeln(arr3);
 writeln("arr3 from for");
 arr3 = for (x, y) in arr3.domain do x+y;
 writeln(arr3);
-
-

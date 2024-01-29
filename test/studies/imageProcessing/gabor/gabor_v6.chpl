@@ -30,14 +30,14 @@ use Help;
 
 config const inname : string;           /* input file name */
 config const outname : string;          /* greyscale result of file */
-config const space = clrspace.LAB;      /* color space to use for greyscale */ 
+config const space = clrspace.LAB;      /* color space to use for greyscale */
 config const size = 13;                 /* kernel size/diameter, odd */
 config const theta = 0.0;               /* plane rotation/filter angle, deg */
 config const sclx = 2.8;                /* x scaling parameter */
 config const scly = 6.0;                /* y scaling parameter */
 config const wavelen = 12.0;            /* wavelength of sinusoid */
 config const phi = 90.0;                /* offset of sinusoid, deg */
-  
+
 
 
 /**** Constants - Internal ****/
@@ -45,7 +45,7 @@ config const phi = 90.0;                /* offset of sinusoid, deg */
 /* theta and phi converted to radians */
 const theta_rad = pi * wrap_360(theta) / 180.0;
 const phi_rad = pi * wrap_360(phi) / 180.0;
-                                     
+
 
 /**** Utility Functions ****/
 
@@ -89,7 +89,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
     const x2scl = (xrot * xrot) / (sclx * sclx);
     const y2scl = (yrot * yrot) / (scly * scly);
 
-    kernel(y,x) = 
+    kernel(y,x) =
       exp(-(x2scl + y2scl) / 2.0) * cos((2.0 * pi * xrot / wavelen) + phi);
   }
 }
@@ -109,7 +109,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
                       phi - offset of sinusoid, in radians
     modifies:  dest
 ***/
-proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int, 
+proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
                      theta : real, sclx : real, scly : real, wavelen : real,
                      phi : real) {
   const r = (size - 1) / 2;             /* kernel radius */
@@ -214,7 +214,7 @@ proc main() {
   /* Note this copies a reference of the domain from the old to the new, so
      both clr and gabor share the same. */
   gabor = new clrimage(clr);
-  run_gaborfilter(clr, gabor, size=size, theta=theta_rad, sclx=sclx, scly=scly, 
+  run_gaborfilter(clr, gabor, size=size, theta=theta_rad, sclx=sclx, scly=scly,
                   wavelen=wavelen, phi=phi_rad);
 
   t2.stop(); t3.start();
@@ -224,7 +224,7 @@ proc main() {
 
   retval = display_color(gabor, grey, gabor2grey);
   end_onerr(retval, rgb, grey, clr, gabor);
-  
+
   t3.stop(); t4.start();
 
   retval = PNG_write(outname.c_str(), grey, CLR_R);
@@ -246,8 +246,3 @@ proc main() {
 
   return 0;
 }
-
-
-
-
-

@@ -15,7 +15,7 @@ const b = 2;
 const c = 1;
 
 writeln("\nif block form:");
-/* You can follow the 'then' keyword with only one statement.  The second 
+/* You can follow the 'then' keyword with only one statement.  The second
    line will always be printed. */
 if (a == b) then
   writeln("a matches b");
@@ -24,7 +24,7 @@ writeln("going to next test");
 /* Same with an else in block form, just one statement follwos it. */
 if (a == c) then
   writeln("a matches c");
-else 
+else
   writeln("a, c differ");
 writeln("tests done");
 

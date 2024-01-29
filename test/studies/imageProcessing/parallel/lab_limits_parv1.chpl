@@ -2,7 +2,7 @@
 /*****
       lab_limits_parv1.chpl -
       Determine the actual min/max values for L, A, and B for all possible RGB
-      values.  Print the limits out when done. 
+      values.  Print the limits out when done.
       This version modifies lab_limits to run the outer loop in parallel.
 
       Call:
@@ -31,7 +31,7 @@ proc main() {
   writeln("\nVerify white point");
   rgbpix_to_xyz(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   x %7.2dr  y %7.2dr  z %7.2dr\n", x,y,z);
-  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n", 
+  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n",
          LAB_XNORM, LAB_YNORM, LAB_ZNORM);
   rgbpix_to_lab(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   l %7.2dr  a %7.2dr  b %7.2dr\n", x,y,z);
@@ -116,4 +116,3 @@ proc main() {
   writef("  forall    %6.0dr\n", tpar.elapsed(TimeUnits.milliseconds));
   writef("  reduce    %6.0dr\n\n", tred.elapsed(TimeUnits.milliseconds));
 }
-

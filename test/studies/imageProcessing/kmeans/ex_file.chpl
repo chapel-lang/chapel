@@ -2,7 +2,7 @@
 /*****
       ex_file.chpl -
       Example of writing and reading a class to/from a file.  See text for
-      details.  Pass --binout=true|false on the command line to switch 
+      details.  Pass --binout=true|false on the command line to switch
       between a binary and text representation.  Pass --fname="file" to
       change the input/output file name.
 
@@ -33,7 +33,7 @@ record cluster {
     if (binout) {
       f <~> npix <~> c1 <~> c2 <~> c3 <~> r <~> g <~> b;
     } else {
-      f <~> sp <~> npix <~> sp <~> c1 <~> sp <~> c2 <~> sp <~> c3 <~> sp <~> 
+      f <~> sp <~> npix <~> sp <~> c1 <~> sp <~> c2 <~> sp <~> c3 <~> sp <~>
         r <~> sp <~> g <~> sp <~> b;
     }
   }
@@ -57,7 +57,7 @@ proc main() {
     kout(i).c2 = i / 11.0;
     kout(i).c3 = i / 13.0;
   }
-  
+
   /* No error checking - see main version for full usage.  We first open
      the file, then a write/read channel to it, then close in the opposite
      order. */

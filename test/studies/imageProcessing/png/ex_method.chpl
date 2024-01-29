@@ -25,10 +25,3 @@ var oldn = n;
 writef("original instance %t (same as old? %s)\n", n, (n == oldn));
 n.changeInst();
 writef("new instance %t (same as old? %s)\n", n, (n == oldn));
-
-
-
-
-
-
-

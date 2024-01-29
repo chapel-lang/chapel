@@ -3,7 +3,7 @@
         rw_png_v3b.chpl -
         Program that reads a PNG file from disk, prints the RGB values found
         at one pixel, changes it to 1, 2, 3, and writes the change to disk.
-        This version validates the config constants and uses a variadic 
+        This version validates the config constants and uses a variadic
         procedure to handle cleaning up the C-side allocations on error.
 
         Call:
@@ -46,9 +46,9 @@ extern proc free_rgbimage(ref img : rgbimage) : void;
 extern proc PNG_isa(fname : c_string) : c_int;
 /* The rest of the interface we don't use now. */
 /*
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
-extern proc read_rgb(img : rgbimage, x, y : c_int, 
+extern proc read_rgb(img : rgbimage, x, y : c_int,
                      ref r, ref g, ref b : c_uchar) : c_int;
 extern proc write_rgb(img : rgbimage, x, y : c_int, r, g, b : c_uchar) : c_int;
 */
@@ -83,7 +83,7 @@ proc end_onerr(retval : int, inst ...?narg) : void {
   for param i in 1..narg {
     if (inst(i).type == rgbimage) then {
       writef("freeing rgb instance\n");
-      free_rgbimage(inst(i)); 
+      free_rgbimage(inst(i));
     } else if isClass(inst(i)) then {
       writef("freeing class instance\n");
       delete inst(i);
@@ -113,8 +113,8 @@ var dummy = new dummyclass(5,6);
 
 /**** Top Level ****/
 
-/* First sanity check the arguments, then read the image, get the pixel 
-   requested, change it, and write it back out.  Finally we need to free 
+/* First sanity check the arguments, then read the image, get the pixel
+   requested, change it, and write it back out.  Finally we need to free
    the allocation made in PNG_read. */
 
 if (x < 0) then
@@ -143,7 +143,7 @@ if (rgb.nrow <= y) {
 /* Now we can access the fields directly. */
 xy = (y * rgb.ncol) + x;
 writef("\nRead %4i x %4i PNG image\n", rgb.ncol, rgb.nrow);
-writef("At %4i,%4i      R %3u  G %3u  B %3u\n\n", x,y, 
+writef("At %4i,%4i      R %3u  G %3u  B %3u\n\n", x,y,
        rgb.r(xy), rgb.g(xy), rgb.b(xy));
 
 rgb.r(xy) = 1;
@@ -154,4 +154,3 @@ retval = PNG_write(outname.c_str(), rgb);
 end_onerr(retval, rgb, dummy);
 
 free_rgbimage(rgb);
-

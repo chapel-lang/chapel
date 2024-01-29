@@ -61,7 +61,3 @@ const imcast = "6.626e-34i" : imag;
 writef("\"6.626e-34i\" : imag  = %m\n", imcast);
 const bcast = "false" : bool;
 writef("\"false\" : bool       = %s\n", bcast);
-
-
-
-

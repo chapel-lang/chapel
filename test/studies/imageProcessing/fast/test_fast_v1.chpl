@@ -289,12 +289,12 @@ proc test_is_corner() : bool {
   writeln("\nStarting test bench for is_corner");
 
   if (9 != minlen) {
-    writeln("  assumes minlen is 9, not ", minlen, 
+    writeln("  assumes minlen is 9, not ", minlen,
             " - please correct on command line");
     return false;
   }
   if (13 != maxlen) {
-    writeln("  assumes maxlen is 13, not ", maxlen, 
+    writeln("  assumes maxlen is 13, not ", maxlen,
             " - please correct on command line");
     return false;
   }
@@ -511,13 +511,10 @@ proc main() {
 
   if (!test_circumference()) then passed = false;
   if (!test_is_corner()) then passed = false;
-  
+
   writeln("\nTest Bench Summary");
   if (passed) then writeln("  all tests passed\n");
   else writeln("  some test FAILED");
 
   return 0;
 }
-
-
-

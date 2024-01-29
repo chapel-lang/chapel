@@ -1,7 +1,7 @@
 
 /*****
       kdtree.chpl -
-      Module holding the kdtree class and kdpoint record declarations.  
+      Module holding the kdtree class and kdpoint record declarations.
       Generic in the type of data stored at each point and the dimensionality
       of the space (provide both with the constructor).  First load data into
       the tree, then assemble it - tree cannot be changed afterward.  Not a
@@ -10,7 +10,7 @@
       Tree construction based on the paper by R. Brown, "Building a Balanced
       k-d Tree in O(kn log n) Time", Journal of Computer Graphics Techniques
       vol 4, no. 1, pp. 50-68.  http://jcgt.org/published/0004/01/03.  Paper
-      claims it out-performs the O(n log n) algorithm that uses an O(n) 
+      claims it out-performs the O(n log n) algorithm that uses an O(n)
       median sort of the remaining points at each level of the tree if the
       number of coordinates is small (<= 4).
 
@@ -76,7 +76,7 @@ class kdtree {
   const IS_NIL  : uint(8) = 0x80;
 
   /***
-      kdtree:  Constructor for a tree.  Provide the number of elements you 
+      kdtree:  Constructor for a tree.  Provide the number of elements you
                want to store and their type and the dimensionality of the
                points used to divide the space.
       args:    nelt - number of elements to store
@@ -143,7 +143,7 @@ class kdtree {
   }
 
   /***
-      find_nearest_point:  Find the nearest point in the tree to the input and 
+      find_nearest_point:  Find the nearest point in the tree to the input and
                            return the payload value that's been stored with it.
       args:                pt - search point
       returns:   value stored at nearest point
@@ -155,9 +155,9 @@ class kdtree {
     var nearnode : int;                 /* node nearer than parnode */
 
     if (storable) then halt("tree not yet assembled");
-    
+
     if traverse_to_point(pt, parnode) then return tree(parnode).val;
-    
+
     d2min = dist2(pt, tree(parnode).pt);
 
     if check_nearest(pt, d2min, 1, nearnode) then return tree(nearnode).val;
@@ -174,7 +174,7 @@ class kdtree {
     for i in Ldata {
       if (tree(i).flags & IS_NIL) then continue;
 
-      writef("node %3i   c %i   pt %4i", i, 
+      writef("node %3i   c %i   pt %4i", i,
              tree(i).flags & COORD, tree(i).pt(1));
       for param c in 2..ndim do writef(", %4i", tree(i).pt(c));
       if (tree(i).flags & HAS_L) {
@@ -242,7 +242,7 @@ class kdtree {
     /* Note the smaller point - the median - goes in the last position. */
     if dataind_lt(cbase, midpt, cbase, last, cbase) then
       sortind(cbase)(midpt) <=> sortind(cbase)(last);
-    
+
     /* Loop will pre-increment first, so reduce by one now. */
     first -= 1;
     for i in (first+1)..(last-1) do
@@ -250,10 +250,10 @@ class kdtree {
         first += 1;
         sortind(cbase)(first) <=> sortind(cbase)(i);
       }
-    
+
     first += 1;
     sortind(cbase)(first) <=> sortind(cbase)(last);
-    
+
     return first;
   }
 
@@ -268,7 +268,7 @@ class kdtree {
     for j in Lsort.first+1..Lsort.last {
       const key = sortind(cbase)(j);  /* value to put in place */
       var i = j - 1;
-      while ((i >= Lsort.first) && 
+      while ((i >= Lsort.first) &&
              kdpoint_gt(data(sortind(cbase)(i)), data(key), cbase)) {
         sortind(cbase)(i+1) = sortind(cbase)(i);
         i -= 1;
@@ -278,7 +278,7 @@ class kdtree {
   }
 
   /***
-      place_node:  Put the median node according to the current primary 
+      place_node:  Put the median node according to the current primary
                    coordinate into the tree and build its children.
       args:        Lsort - subarray of sortind to process
                    cbase - primary coordinate
@@ -314,7 +314,7 @@ class kdtree {
       tree(right).flags = IS_NIL;
     } else {
       shuffle_sortind(Lsort, cbase, midpt);
-    
+
       tree(pos) = data(sortind(cbase)(midpt));
       tree(pos).flags = cbase : uint(8) | HAS_L | HAS_R;
       cobegin {
@@ -364,7 +364,7 @@ class kdtree {
             inshi += 1;
           }
         }
-        
+
         for i in Lsort {
           sortind(c)(i) = tmp(i);
         }
@@ -444,7 +444,7 @@ class kdtree {
   proc perpdist2(pt : ndim * int, node : int) : int {
     const cbase                         /* the primary coordinate */
       = tree(node).flags & COORD;
-    
+
     return (pt(cbase) - tree(node).pt(cbase)) ** 2;
   }
 
@@ -500,7 +500,7 @@ class kdtree {
       cbase = tree(node).flags & COORD;
       if (point_lt(pt, tree(node).pt, cbase)) {
         if (tree(node).flags & HAS_L) {
-          if check_nearest(pt, d2min, 2*node, neighbor) then 
+          if check_nearest(pt, d2min, 2*node, neighbor) then
             nearnode = neighbor;
         }
       } else {
@@ -520,31 +520,31 @@ class kdtree {
   /**** Private Methods - Comparison ****/
 
   /***
-      Comparison functions for kdpoint, cyclically comparing coordinates 
-      starting with the base.  Optional flag noeq toggles error if points 
-      are equal (this is implied when assemblying the tree but not while 
+      Comparison functions for kdpoint, cyclically comparing coordinates
+      starting with the base.  Optional flag noeq toggles error if points
+      are equal (this is implied when assemblying the tree but not while
       querying).
       args:  pt1, pt2 - points to compare
              cbase - primary sort coordinate
              noeq - true halts program if pt1 == pt2
   ***/
 
-  inline proc kdpoint_lteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int, 
+  inline proc kdpoint_lteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
                            noeq = true) : bool {
     return point_lteq(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_lt(pt1 : kdpoint, pt2 : kdpoint, cbase : int, 
+  inline proc kdpoint_lt(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
                          noeq = true) : bool {
     return point_lt(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_gt(pt1 : kdpoint, pt2 : kdpoint, cbase : int, 
+  inline proc kdpoint_gt(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
                          noeq = true) : bool {
     return point_gt(pt1.pt, pt2.pt, cbase, noeq);
   }
 
-  inline proc kdpoint_gteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int, 
+  inline proc kdpoint_gteq(pt1 : kdpoint, pt2 : kdpoint, cbase : int,
                            noeq = true) : bool {
     return point_gteq(pt1.pt, pt2.pt, cbase, noeq);
   }
@@ -566,28 +566,28 @@ class kdtree {
               noeq - true halts program if pt1 == pt2
   ***/
 
-  inline proc dataind_lteq(c1 : int, ind1 : int, c2 : int, ind2 : int, 
+  inline proc dataind_lteq(c1 : int, ind1 : int, c2 : int, ind2 : int,
                            cbase : int, noeq = true) : bool {
     const pt1 = data(sortind(c1)(ind1)).pt;
     const pt2 = data(sortind(c2)(ind2)).pt;
     return point_lteq(pt1, pt2, cbase, noeq);
   }
 
-  inline proc dataind_lt(c1 : int, ind1 : int, c2 : int, ind2 : int, 
+  inline proc dataind_lt(c1 : int, ind1 : int, c2 : int, ind2 : int,
                          cbase : int, noeq = true) : bool {
     const pt1 = data(sortind(c1)(ind1)).pt;
     const pt2 = data(sortind(c2)(ind2)).pt;
     return point_lt(pt1, pt2, cbase, noeq);
   }
 
-  inline proc dataind_gt(c1 : int, ind1 : int, c2 : int, ind2 : int, 
+  inline proc dataind_gt(c1 : int, ind1 : int, c2 : int, ind2 : int,
                          cbase : int, noeq = true) : bool {
     const pt1 = data(sortind(c1)(ind1)).pt;
     const pt2 = data(sortind(c2)(ind2)).pt;
     return point_gt(pt1, pt2, cbase, noeq);
   }
 
-  inline proc dataind_gteq(c1 : int, ind1 : int, c2 : int, ind2 : int, 
+  inline proc dataind_gteq(c1 : int, ind1 : int, c2 : int, ind2 : int,
                            cbase : int, noeq = true) : bool {
     const pt1 = data(sortind(c1)(ind1)).pt;
     const pt2 = data(sortind(c2)(ind2)).pt;
@@ -609,7 +609,7 @@ class kdtree {
               cbase - primary sort coordinate
   ***/
 
-  inline proc point_lteq(pt1 : ndim * int, pt2 : ndim * int, cbase : int, 
+  inline proc point_lteq(pt1 : ndim * int, pt2 : ndim * int, cbase : int,
                          noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
@@ -645,7 +645,7 @@ class kdtree {
     else return false;
   }
 
-  inline proc point_gteq(pt1 : ndim * int, pt2 : ndim * int, cbase : int, 
+  inline proc point_gteq(pt1 : ndim * int, pt2 : ndim * int, cbase : int,
                          noeq = false) : bool {
     for craw in cbase..(cbase+ndim-1) {
       const coff                        /* cycle through coordinates */
@@ -657,4 +657,3 @@ class kdtree {
     else return true;
   }
 }
-    

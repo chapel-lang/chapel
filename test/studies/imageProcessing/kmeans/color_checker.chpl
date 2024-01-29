@@ -55,8 +55,8 @@ clrs(24) = (0x34 : uint(8), 0x34 : uint(8), 0x34 : uint(8));
 proc main() {
   var rgb : rgbimage;                   /* color chart */
   var retval: int;
-  
-  retval = alloc_rgbimage(rgb, (NCOL*(WBORDER+WSQUARE)+WBORDER) : c_int, 
+
+  retval = alloc_rgbimage(rgb, (NCOL*(WBORDER+WSQUARE)+WBORDER) : c_int,
                           (NROW*(WBORDER+WSQUARE)+WBORDER) : c_int);
   if (retval < 0) then return retval;
 
@@ -71,7 +71,7 @@ proc main() {
           (rgb.r(xy+x), rgb.g(xy+x), rgb.b(xy+x)) = clrs(sq);
         }
       }
-    } 
+    }
   }
 
   retval = PNG_write(OUTNAME.c_str(), rgb, CLR_RGB);
@@ -80,5 +80,3 @@ proc main() {
 
   return retval;
 }
-
-

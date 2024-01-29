@@ -52,5 +52,3 @@ if ((x < 0) && (y < 0)) {
   var xy = (y * ncol) + x;              /* pixel index */
   writef("index at %2i, %2i: %3i\n", x,y, xy);
 }
-
-

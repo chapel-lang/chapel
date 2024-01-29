@@ -1,7 +1,7 @@
 
 /*****
       ransac_rst.chpl -
-      Use the RANSAC method to align to images.  Accounts for rotation, 
+      Use the RANSAC method to align to images.  Accounts for rotation,
       scaling, and translation (rst), ie.
            x' = sxx * x + sxy * y + dx
            y' = syx * x + syy * y + dy
@@ -11,7 +11,7 @@
            y' = -sy * sin(theta) x + sy * cos(theta) y + dy
       where theta = atan(sxy / sxx), sx = sxx / cos(tehta),
             sy = syy / sin(theta)
-      Uses corners from the FAST detector as features.  Prints the best fit 
+      Uses corners from the FAST detector as features.  Prints the best fit
       information when done.
 
       Call:
@@ -107,8 +107,8 @@ record tryinfo {
                     map1to2, map2to1 - corners that match up, by index
     modifies:  bestmap, map1to2, map2to1
 ***/
-proc align_corners(const corners1 : [] corner, const corners2 : [] corner, 
-                   out bestmap : mapinfo, 
+proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
+                   out bestmap : mapinfo,
                    map1to2 : [] int, map2to1 : [] int) {
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
@@ -186,9 +186,9 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
 /***
     pick_seeds:  Find three similar corners in each image.  There are no
                  restrictions on their placement relative to each other
-                 other than that the mapping they form be valid.  Seeds are 
-                 stored as (c1, c2) pairs of indices into the corners array 
-                 and may have garbage if the proc returns false.  Also 
+                 other than that the mapping they form be valid.  Seeds are
+                 stored as (c1, c2) pairs of indices into the corners array
+                 and may have garbage if the proc returns false.  Also
                  populates the mapping in the try based on the seeds.
     args:        corners1, corners2 - list of corners in each image
                  rand - random number generator
@@ -196,7 +196,7 @@ proc align_corners(const corners1 : [] corner, const corners2 : [] corner,
     returns:   true if all three seeds placed, false if cannot find three
     modifies:  trial.seed[123], trial.map
 ***/
-proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner, 
+proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
                 rand : RandomStream, inout trial : tryinfo) : bool {
   var ind11, ind12 : int;               /* seed1 indices in corners1,2 */
   var ind21, ind22 : int;               /* seed2 indices in corners1,2 */
@@ -220,7 +220,7 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
   /**!!!**/
   /* Work around a Chapel bug here that double-frees the matches array
      if we were to return directly.  Also for the seed2 and seed3 tests.
-  
+
      if (0 == nmatch) then return false;
   */
   if (0 == nmatch) {
@@ -231,7 +231,7 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
 
     do {
       ind21 = random_ranged(rand, rng1);
-    } while ((ind11 == ind21) || 
+    } while ((ind11 == ind21) ||
              (seed_distance(corners1, ind11, ind21) <= seedsep));
 
     nmatch = 0;
@@ -248,23 +248,23 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
       retval = false;
     } else {
       ind22 = matches(random_bound(rand, 1, nmatch));
-      
+
       trial.seed2 = (ind21, ind22);
-      
+
       do {
         ind31 = random_ranged(rand, rng1);
       } while ((ind11 == ind31) || (ind21 == ind31) ||
                (seed_distance(corners1, ind11, ind31) <= seedsep) ||
                (seed_distance(corners1, ind21, ind31) <= seedsep));
-      
+
       nmatch = 0;
       for i in rng2 {
         var mapping : mapinfo;          /* dummy mapping to validate seed3 */
         if ((i != ind12) && (seedsep < seed_distance(corners2, ind12, i)) &&
             (i != ind22) && (seedsep < seed_distance(corners2, ind22, i)) &&
             are_corners_similar(corners1(ind31), corners2(i))) {
-          /* Screen seed3 here to be only those that could satisfy the 
-             restrictions for scaling and rigidity.  Otherwise there are 
+          /* Screen seed3 here to be only those that could satisfy the
+             restrictions for scaling and rigidity.  Otherwise there are
              too few hits and we will never find a solution. */
           if map_seeds(corners1, corners2, trial.seed1, trial.seed2, (ind31, i),
                        mapping) {
@@ -273,7 +273,7 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
           }
         }
       }
-        
+
       if (0 == nmatch) {
         retval = false;
       } else {
@@ -283,7 +283,7 @@ proc pick_seeds(const corners1 : [] corner, const corners2 : [] corner,
         trial.seed3 = (ind31, ind32);
 
         /* Note we know this already passes. */
-        map_seeds(corners1, corners2, trial.seed1, trial.seed2, trial.seed3, 
+        map_seeds(corners1, corners2, trial.seed1, trial.seed2, trial.seed3,
                   trial.map);
       }
     }
@@ -319,8 +319,8 @@ inline proc seed_distance(corners : [] corner, seed1 : int, seed2 : int) : int {
     returns:   true if mapping acceptable, false if no valid mapping
     modifies:  mapping
 ***/
-proc map_seeds(const corners1 : [] corner, const corners2 : [] corner, 
-               seed1 : 2*int, seed2 : 2*int, seed3 : 2*int, 
+proc map_seeds(const corners1 : [] corner, const corners2 : [] corner,
+               seed1 : 2*int, seed2 : 2*int, seed3 : 2*int,
                inout mapping : mapinfo) : bool {
   /* First [123] is the seed, second [12] is the corners array. */
   const (ind11, ind12) = seed1;         /* seed 1 indices */
@@ -434,7 +434,7 @@ proc valid_map(mapping : mapinfo) : bool {
                   mapped - corners1 in corners2 plane
     returns:   mapped
 ***/
-proc map_corners(const corners : [] corner, const in mapping : mapinfo, 
+proc map_corners(const corners : [] corner, const in mapping : mapinfo,
                  mapped : [] corner) {
 
   /* This gets everything; we'll overwrite the center and start. */
@@ -470,7 +470,7 @@ proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
 
 /***
     match_corners:  Compare the lists of corners, remembering those that are
-                    similar and close in position.                    
+                    similar and close in position.
     args:           corners1 - corners to match, in corners2 coords
                     corners2 - corners to be matched
                     tree - sorted tree of corners2 points
@@ -478,15 +478,15 @@ proc count_matches(const corners1 : [] corner, const corners2 : [] corner,
     returns:   number of matched corners
     modifies:  map1to2, map2to1
 ***/
-proc match_corners(const corners1 : [] corner, const corners2 : [] corner, 
+proc match_corners(const corners1 : [] corner, const corners2 : [] corner,
                    tree : kdtree, map1to2 : [] int, map2to1 : [] int) : int {
   var nmap : int;                       /* number of matching corners */
-  
+
   map1to2 = -1;
   map2to1 = -1;
 
   /* We do not try to disambiguate multiple matches, nor do we attempt to
-     look at other corner2 points if the nearest isn't similar.  That can 
+     look at other corner2 points if the nearest isn't similar.  That can
      get ugly.  If the scale is about 1 and mapsep < suppsep, there shouldn't
      be a problem.  But extreme scaling can break this.
      Note that this is a serial process - it's a winner-take-all strategy.
@@ -498,9 +498,9 @@ proc match_corners(const corners1 : [] corner, const corners2 : [] corner,
     const c2 = tree.find_nearest_point(corners1(c1).center);
     const (xc, yc) = corners1(c1).center;
     const (vc, wc) = corners2(c2).center;
-    if ((map2to1(c2) < 0) && 
-        (abs(xc-vc) <= mapsep) && 
-        (abs(yc-wc) <= mapsep) && 
+    if ((map2to1(c2) < 0) &&
+        (abs(xc-vc) <= mapsep) &&
+        (abs(yc-wc) <= mapsep) &&
         are_corners_similar(corners1(c1), corners2(c2))) {
       nmap += 1;
       map1to2(c1) = c2;
@@ -543,7 +543,7 @@ proc select_besttry(tries : [] tryinfo) : int {
 
 /***
     refine_mapping:  Determine a best-fit mapping of the matches saved in the
-                     map[12]to[21] arrays with the try.  Basically a 
+                     map[12]to[21] arrays with the try.  Basically a
                      regression.  Note that corners1 should be in its original
                      coordinates.
     args:            corners1, corners2 - list of corners matched
@@ -551,15 +551,15 @@ proc select_besttry(tries : [] tryinfo) : int {
                      bestmap - final mapping
     modifies:  bestmap
 ***/
-proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner, 
+proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner,
                     const map1to2 : [] int, const map2to1 : [] int,
                     out bestmap : mapinfo) {
   var seedmap : mapinfo;                /* mapping from seeds */
 
   /* Cannot use a cobegin here because bestmap is an output. */
-  regress_coords(corners1, corners2, map1to2, 1, 
+  regress_coords(corners1, corners2, map1to2, 1,
                  bestmap.sxx, bestmap.sxy, bestmap.dx);
-  regress_coords(corners1, corners2, map1to2, 2, 
+  regress_coords(corners1, corners2, map1to2, 2,
                  bestmap.syx, bestmap.syy, bestmap.dy);
   affine_to_rst(bestmap);
 
@@ -582,7 +582,7 @@ proc refine_mapping(const corners1 : [] corner, const corners2 : [] corner,
                      A, B, C - mapping equation coefficients
     modifies:  A, B, C
 ***/
-proc regress_coords(const corners1 : [] corner, const corners2 : [] corner, 
+proc regress_coords(const corners1 : [] corner, const corners2 : [] corner,
                     map1to2 : [] int, cbase : int,
                     out A : real, out B : real, out C : real) {
   var sumx, sumy, sumx2, sumy2 : int;   /* partial sums for fit */
@@ -711,7 +711,7 @@ proc dump_tries(tries : [] tryinfo) {
     totfail += t.nfail;
     ttot += t.ttry;
   }
-  
+
   writeln("\nSummary of fits");
   writef("  number maps attempted      %4i\n", tries.size);
   writef("  number with result         %4i     (%3.0dr%%)\n", nsucceed,
@@ -732,9 +732,9 @@ proc dump_tries(tries : [] tryinfo) {
 proc dump_map(title : string, map : mapinfo) {
 
   writeln("\n", title);
-  writef("  x2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n", 
+  writef("  x2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n",
          map.sxx, map.sxy, map.dx);
-  writef("  y2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n", 
+  writef("  y2 = %6.3dr x1  %+6.3dr y1  %+7.1dr\n",
          map.syx, map.syy, map.dy);
   writef("or\n");
   writef("  x2 =  %6.3dr cos(theta) x1  %+6.3dr sin(theta) y1  %+7.1dr\n",
@@ -746,7 +746,7 @@ proc dump_map(title : string, map : mapinfo) {
 }
 
 /***
-    draw_matches:  Create and save an image with both (greyscale) input images 
+    draw_matches:  Create and save an image with both (greyscale) input images
                    and color lines between matching corners.  Routine will
                    bail (via cleanup_onerr) if there's a problem working with
                    the images.  Images will be written to the global const
@@ -756,7 +756,7 @@ proc dump_map(title : string, map : mapinfo) {
                    match1to2 - index of corners2 matching 1, < 0 if no match
 ***/
 proc draw_matches(img1 : clrimage, img2 : clrimage,
-                  corners1 : [] corner, corners2 : [] corner, 
+                  corners1 : [] corner, corners2 : [] corner,
                   match1to2 : [] int) : int {
   var disp : rgbimage;                       /* output image */
   var grey : rgbimage;                       /* greyscale version of input */
@@ -833,7 +833,7 @@ proc draw_matches(img1 : clrimage, img2 : clrimage,
       writef("draw line from   %4i,%4i   to   %4i,%4i\n",
              xc1+x1off,yc1+y1off, xc2+x2off,yc2+y2off);
       */
-      draw_line(disp, colors(cnt%(2*match_nclr)), (xc1+x1off, yc1+y1off), 
+      draw_line(disp, colors(cnt%(2*match_nclr)), (xc1+x1off, yc1+y1off),
                 (xc2+x2off, yc2+y2off));
       cnt += 1;
     }
@@ -857,8 +857,8 @@ proc draw_matches(img1 : clrimage, img2 : clrimage,
                      xoff2, yoff2 - position of (0,0) of img2 in combined
     modifies:  ncol, nrow, xoff1, yoff1, xoff2, yoff2
 ***/
-proc setup_combiimg(img1 : clrimage, img2: clrimage, 
-                    out ncol : c_int, out nrow : c_int, 
+proc setup_combiimg(img1 : clrimage, img2: clrimage,
+                    out ncol : c_int, out nrow : c_int,
                     out x1off : int, out y1off : int,
                     out x2off : int, out y2off : int) {
 
@@ -987,7 +987,7 @@ proc draw_line_octant1(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
 
 /***
     draw_line_octant2:  Draw a colored line in an image, overwriting anything
-                        underneath.  Only valid in the second octant, ie, 
+                        underneath.  Only valid in the second octant, ie,
                         0 < dx < dy.
     args:               img - where to draw
                         clr - (r, g, b) triple of color of line
@@ -1023,7 +1023,7 @@ proc draw_line_octant2(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
 
 /***
     draw_line_octant3:  Draw a colored line in an image, overwriting anything
-                        underneath.  Only valid in the third octant, ie, 
+                        underneath.  Only valid in the third octant, ie,
                         dx < 0, 0 < dy, and -dx < dy.
     args:               img - where to draw
                         clr - (r, g, b) triple of color of line
@@ -1059,7 +1059,7 @@ proc draw_line_octant3(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
 
 /***
     draw_line_octant8:  Draw a colored line in an image, overwriting anything
-                        underneath.  Only valid in the eigth octant, ie, 
+                        underneath.  Only valid in the eigth octant, ie,
                         0 < dx, dy < 0, and -dy < dx.
     args:               img - where to draw
                         clr - (r, g, b) triple of color of line
@@ -1083,7 +1083,7 @@ proc draw_line_octant8(img : rgbimage, clr : 3 * c_uchar, x0 : int, y0 : int,
     img.r(xy) = r;
     img.g(xy) = g;
     img.b(xy) = b;
-    
+
     err += dy;
     if ((2 * err) <= -dx) {
       y -= 1;
@@ -1131,8 +1131,8 @@ record attemptinfo {
                     map1to2, map2to1 - corners that match up, by index
     modifies:  bestmap, map1to2, map2to1
 ***/
-proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner, 
-                       out bestmap : mapinfo, 
+proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
+                       out bestmap : mapinfo,
                        map1to2 : [] int, map2to1 : [] int) {
   var tries : [1..ntry] tryinfo;        /* details about each try */
   var besttry : int;                    /* try with best result */
@@ -1180,7 +1180,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
         const picked = pick_seeds(corners1, corners2, rand_local, tries(trial));
         seedtime.stop();
         attempts(trial)(tries(trial).nfail).seeded = picked;
-        attempts(trial)(tries(trial).nfail).tseed = 
+        attempts(trial)(tries(trial).nfail).tseed =
           seedtime.elapsed(TimeUnits.milliseconds);
 
         if (picked) {
@@ -1193,7 +1193,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
           const matchcnt = count_matches(mapped1, corners2, tree);
 
           failtime.stop();
-          attempts(trial)(tries(trial).nfail).tattempt = 
+          attempts(trial)(tries(trial).nfail).tattempt =
             failtime.elapsed(TimeUnits.milliseconds);
 
           if (mincnt <= matchcnt) {
@@ -1203,7 +1203,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
           }
         } else {
           failtime.stop();
-          attempts(trial)(tries(trial).nfail).tattempt = 
+          attempts(trial)(tries(trial).nfail).tattempt =
             failtime.elapsed(TimeUnits.milliseconds);
         }
         tries(trial).nfail += 1;
@@ -1244,7 +1244,7 @@ proc align_corners_dbg(const corners1 : [] corner, const corners2 : [] corner,
     args:              tries - info collected per try
                        attempts - info collected per attempt
 ***/
-proc analyze_attempts(tries : [1..ntry] tryinfo, 
+proc analyze_attempts(tries : [1..ntry] tryinfo,
                       attempts : [1..ntry][0..nfail] attemptinfo) {
   const nthr = here.maxTaskPar;         /* number of threads (abbrev) */
   var tthread : [1..nthr] real;         /* total time per thread */
@@ -1265,7 +1265,7 @@ proc analyze_attempts(tries : [1..ntry] tryinfo,
     const l10_t = floor(log10(tries(trial).ttry)) : int;
     sumt += tries(trial).ttry;
     sum2t += tries(trial).ttry ** 2;
-    const tind = 
+    const tind =
       if (l10_t < -2) then -2 else if (10 < l10_t) then 10 else l10_t;
     thist(tind) += 1;
     /* Note this is at the trial level.  We're sure to have attempt 0 to get
@@ -1280,15 +1280,15 @@ proc analyze_attempts(tries : [1..ntry] tryinfo,
            tries(trial).seed2(1),tries(trial).seed2(2),
            tries(trial).seed3(1),tries(trial).seed3(2));
 
-    const nattempt = 
+    const nattempt =
       if (tries(trial).nfail == nfail) then nfail-1 else tries(trial).nfail;
     for a in 0..nattempt {
       const l10_s = floor(log10(attempts(trial)(a).tseed)) : int;
       const l10_a = floor(log10(attempts(trial)(a).tattempt)) : int;
-      const aind = 
+      const aind =
         if (l10_a < -2) then -2 else if (10 < l10_a) then 10 else l10_a;
       ahist(aind) += 1;
-      const sind = 
+      const sind =
         if (l10_s < -2) then -2 else if (10 < l10_s) then 10 else l10_s;
       shist(sind) += 1;
       tthread(attempts(trial)(a).thread) += attempts(trial)(a).tattempt;
@@ -1304,7 +1304,7 @@ proc analyze_attempts(tries : [1..ntry] tryinfo,
         nproc += 1;
         sump += tproc;
         sum2p += tproc ** 2;
-        
+
         writef("attempt %4i  thr %1i  t %8.1dr (%2i)  tseed %8.1dr (%2i)  tproc %8.1dr  seed (%4i,%4i) (%4i,%4i) (%4i,%4i)\n",
                a, attempts(trial)(a).thread, attempts(trial)(a).tattempt, l10_a,
                attempts(trial)(a).tseed, l10_s, tproc,
@@ -1349,11 +1349,11 @@ proc analyze_attempts(tries : [1..ntry] tryinfo,
     if (0 == thrcnt(i)) {
       writef("%2i          %3i\n", i, thrhist(i));
     } else {
-      writef("%2i          %3i     %8.1dr   %8.1dr\n", 
+      writef("%2i          %3i     %8.1dr   %8.1dr\n",
              i, thrhist(i), tthread(i), tthread(i) / thrcnt(i));
     }
   }
-  
+
   writeln("\n");
 }
 
@@ -1407,7 +1407,7 @@ proc verify_setup() {
   if (!PNG_isa(inname1.c_str())) then usage("input file 1 not a PNG picture");
   if ("" == inname2) then usage("missing --inname2");
   if (!PNG_isa(inname2.c_str())) then usage("input file 2 not a PNG picture");
-  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then 
+  if ((clrspace.LAB != space) && (clrspace.YUV != space)) then
     usage("only use LAB or YUV color spaces");
   if (radius < 3) then usage("radius too small");
 }
@@ -1463,6 +1463,3 @@ proc main() {
 
   return 0;
 }
-
-
-

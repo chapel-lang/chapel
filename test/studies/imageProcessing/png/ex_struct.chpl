@@ -52,24 +52,24 @@ var exrcd = new rgbimage_rcd(nrow=400, ncol=300);    /* example */
 var cprcd : rgbimage_rcd;                            /* copy of example */
 
 cprcd.npix = 100;
-writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow, 
+writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow,
        exrcd.npix, (nil == exrcd.r));
-writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s\n", cprcd.ncol,cprcd.nrow, 
+writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s\n", cprcd.ncol,cprcd.nrow,
        cprcd.npix, (nil == cprcd.r));
 
 writef("  ex == cp? %s\n", (exrcd == cprcd));
 cprcd = exrcd;
 writeln("  copy exrcd to cprcd");
-writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow, 
+writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow,
        exrcd.npix, (nil == exrcd.r));
-writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s   == exrcd? %s\n", 
+writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s   == exrcd? %s\n",
        cprcd.ncol,cprcd.nrow, cprcd.npix, (nil == cprcd.r), (exrcd == cprcd));
 exrcd.ncol = 600;
 exrcd.nrow = 800;
 writeln("  set exrcd ncol, nrow");
-writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow, 
+writef("  exrcd: %4i x %4i (= %6i pix)   nil r? %s\n", exrcd.ncol,exrcd.nrow,
        exrcd.npix, (nil == exrcd.r));
-writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s   == exrcd? %s\n", 
+writef("  cprcd: %4i x %4i (= %6i pix)   nil r? %s   == exrcd? %s\n",
        cprcd.ncol,cprcd.nrow, cprcd.npix, (nil == cprcd.r), (exrcd == cprcd));
 
 
@@ -122,21 +122,21 @@ class image_cls {
 }
 
 var eximg = new image_cls(10, 20);
-writef("image size %4i x %4i (= %6i npix)\n", 
+writef("image size %4i x %4i (= %6i npix)\n",
        eximg.ncol,eximg.nrow, eximg.npix);
 
 
 writeln("\nDemonstrating memory management");
 class test_cls {
   var tmp : int;
-  
+
   proc ~test_cls() {
     writeln("  called class destructor, tmp was ", tmp);
   }
 }
 record test_rcd {
   var tmp : int;
-  
+
   proc ~test_rcd() {
     writeln("  called record destructor, tmp was ", tmp);
   }
@@ -149,7 +149,7 @@ proc test_destruct1() {
   writeln("in test_destruct1:");
   /* This leaks c. */
 }
-         
+
 proc test_destruct2() {
   var c = new test_cls(2);
   var r = new test_rcd(3);
@@ -160,5 +160,3 @@ proc test_destruct2() {
 
 test_destruct1();
 test_destruct2();
-
-  

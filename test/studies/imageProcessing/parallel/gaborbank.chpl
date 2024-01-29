@@ -4,7 +4,7 @@
       Run a series of Gabor filters over an image, stepping the rotation
       between each.  The filters are run in parallel but are not themselves
       parallel.  Based off the gabor_v1 program.  The results are scaled to
-      8-bit and written out as PNGs.  The output name is fixed, 
+      8-bit and written out as PNGs.  The output name is fixed,
       "bank_<rot>.png" where rot is in degrees.  You can specify the size of
       the bank, the number of rotations between 0 and 180 degrees, on the
       command line.  (180-360 degrees inverts the result.)
@@ -29,21 +29,21 @@ use Help;
 
 
 config const inname : string;           /* input file name */
-config const space = clrspace.LAB;      /* color space to use for greyscale */ 
+config const space = clrspace.LAB;      /* color space to use for greyscale */
 config const nrot = 18;                 /* number rotations to make */
 config const size = 13;                 /* kernel size/diameter, odd */
 config const sclx = 2.8;                /* x scaling parameter */
 config const scly = 6.0;                /* y scaling parameter */
 config const wavelen = 12.0;            /* wavelength of sinusoid */
 config const phi = 90.0;                /* offset of sinusoid, deg */
-  
+
 
 
 /**** Constants - Internal ****/
 
 /* theta and phi converted to radians */
 const phi_rad = pi * wrap_360(phi) / 180.0;
-                                     
+
 
 /**** Utility Functions ****/
 
@@ -87,7 +87,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
     const x2scl = (xrot * xrot) / (sclx * sclx);
     const y2scl = (yrot * yrot) / (scly * scly);
 
-    kernel(y,x) = 
+    kernel(y,x) =
       exp(-(x2scl + y2scl) / 2.0) * cos((2.0 * pi * xrot / wavelen) + phi);
   }
 }
@@ -107,7 +107,7 @@ proc gabor_kernel(theta : real, sclx : real, scly : real,
                       phi - offset of sinusoid, in radians
     modifies:  dest
 ***/
-proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int, 
+proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
                      theta : real, sclx : real, scly : real, wavelen : real,
                      phi : real) {
   const r = (size - 1) / 2;             /* kernel radius */
@@ -122,7 +122,7 @@ proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
 
   /* Make sure destination is clear. */
   gabor.c1 = 0.0;
-  
+
   for (y, x) in Aconv {
     for (kj, ki) in Akern do
       gabor.c1(y,x) += img.c1(y+kj,x+ki) * kernel(kj,ki);
@@ -141,7 +141,7 @@ proc run_gaborfilter(img : clrimage, gabor : clrimage, size : int,
     returns:   0 if successful
                < 0 on failure (value depends on error)
 ***/
-proc filter_and_save(img : clrimage, size : int, theta : int, sclx : real, 
+proc filter_and_save(img : clrimage, size : int, theta : int, sclx : real,
                      scly : real, wavelen : real, phi_rad : real) : int {
   const theta_rad = pi * theta / 180;   /* angle of rotation, in radians */
   var gabor : clrimage;                 /* result of this filter */

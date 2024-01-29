@@ -16,7 +16,7 @@ use kdtree;
 /**** assemble_tree ****/
 
 /***
-    test_assemble:  Self-checking test bench for the add_node and 
+    test_assemble:  Self-checking test bench for the add_node and
                     assemble_tree procedures.
     returns:   true if all tests pass, false if any fail
 ***/
@@ -384,7 +384,7 @@ proc test_find_nearest() : bool {
     passed = false;
   }
 
-  /* See test 7 above - parent is (2,1,3).  (2,3,3) is equidistant and 
+  /* See test 7 above - parent is (2,1,3).  (2,3,3) is equidistant and
      therefore does not override parent. */
   val = tree.find_nearest_point((2,2,3));
   if (8 != val) {
@@ -411,7 +411,3 @@ proc main() {
   if (passed) then writeln("  all tests passed");
   else writeln("  some test FAILED");
 }
-
-
-
-

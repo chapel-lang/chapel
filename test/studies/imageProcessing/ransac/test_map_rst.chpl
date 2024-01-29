@@ -66,9 +66,9 @@ proc test_map_seeds() : bool {
   expmap.syy =  1.414;
 
   succeed = map_seeds(corners1, corners2, seed1, seed2, seed3, mapping);
-  if !verify_map(1, succeed, true, verify.RST, mapping, expmap) then 
+  if !verify_map(1, succeed, true, verify.RST, mapping, expmap) then
     passed = false;
-  if !verify_map(1, succeed, true, verify.AFFINE, mapping, expmap) then 
+  if !verify_map(1, succeed, true, verify.AFFINE, mapping, expmap) then
     passed = false;
 
   /* Test 1 - Rotate 30 degrees CW, scale by 1.4, 1.5, translate by (50,100). */
@@ -91,9 +91,9 @@ proc test_map_seeds() : bool {
   expmap.syy =  1.298;
 
   succeed = map_seeds(corners1, corners2, seed1, seed2, seed3, mapping);
-  if !verify_map(2, succeed, true, verify.RST, mapping, expmap) then 
+  if !verify_map(2, succeed, true, verify.RST, mapping, expmap) then
     passed = false;
-  if !verify_map(2, succeed, true, verify.AFFINE, mapping, expmap) then 
+  if !verify_map(2, succeed, true, verify.AFFINE, mapping, expmap) then
     passed = false;
 
   if passed then writeln("  all tests passed");
@@ -190,7 +190,3 @@ proc main() {
   /* This is needed because main() in ransac_rst returns an int?? */
   return 0;
 }
-
-
-
-

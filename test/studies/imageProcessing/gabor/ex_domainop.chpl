@@ -26,9 +26,9 @@ writeln("  arr2");
 writeln(arr2);
 
 writeln("\n adjusting domain iterations");
-writeln("  dom1 by 2          ", dom1 by 2, 
+writeln("  dom1 by 2          ", dom1 by 2,
         "   = ", for i in dom1 by 2 do i);
-writeln("  dom1 # (2, 1)      ", dom1 # (2, 1), 
+writeln("  dom1 # (2, 1)      ", dom1 # (2, 1),
         "   = ", for i in dom1 # (2,1) do i);
 
 var dom2 = { 1..10, 20..30 };
@@ -45,4 +45,3 @@ writeln("  dom2 exterior(-2,-3)             ", dom2.exterior(-2,-3));
 writeln("  dom2 interior(2,3)               ", dom2.interior(2,3));
 writeln("  dom2 interior(-2,-3)             ", dom2.interior(-2,-3));
 writeln("  base unchanged                   ", dom2);
-

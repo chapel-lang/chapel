@@ -31,7 +31,7 @@ proc main() {
   writeln("\nVerify white point");
   rgbpix_to_xyz(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   x %7.2dr  y %7.2dr  z %7.2dr\n", x,y,z);
-  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n", 
+  writef("              norm   x %7.2dr  y %7.2dr  z %7.2dr\n",
          LAB_XNORM, LAB_YNORM, LAB_ZNORM);
   rgbpix_to_lab(255, 255, 255, x, y, z);
   writef("at (255, 255, 255)   l %7.2dr  a %7.2dr  b %7.2dr\n", x,y,z);
@@ -48,7 +48,7 @@ proc main() {
      loop, and then doing a reduction over the cube.  But that would require
      a lot more storage. */
   forall (r, g, b) in cube do
-    rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar, 
+    rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
                   l(r,g,b), l_a(r,g,b), l_b(r,g,b));
 
   tpar.stop();
@@ -78,4 +78,3 @@ proc main() {
   writef("  forall    %6.0dr\n", tpar.elapsed(TimeUnits.milliseconds));
   writef("  reduce    %6.0dr\n\n", tred.elapsed(TimeUnits.milliseconds));
 }
-

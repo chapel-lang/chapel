@@ -46,7 +46,7 @@ extern const CLR_B : int(32);
 extern proc PNG_read(fname : c_string, ref img : rgbimage) : c_int;
 extern proc PNG_write(fname : c_string, img : rgbimage, plane : c_int) : c_int;
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : rgbimage, 
+extern proc alloc_rgbimage(ref img : rgbimage,
                            ncol : c_int, nrow : c_int) : c_int;
 extern proc free_rgbimage(ref img : rgbimage) : void;
 
@@ -96,7 +96,7 @@ proc rgb_to_lab(rgb : rgbimage, ref lab : rgbimage) : c_int {
   retval = alloc_rgbimage(lab, rgb.ncol, rgb.nrow);
   if (retval < 0) then return retval;
 
-  /* Since we scale the converted pixel immediately, it's not really 
+  /* Since we scale the converted pixel immediately, it's not really
      necessary to keep the results in the three arrays.  We could define
      l, l_a, and l_b as scalars inside the loop (so local).  We took this
      approach to try out arrays, and in preparation for the next version. */
@@ -130,7 +130,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
   var x, y, z : real;                   /* intermidate conversion to CIE XYZ */
 
   rgbpix_to_xyz(r, g, b, x, y, z);
-  
+
   /* 116 = 25 * (100 ** (1/3))
      l will range from -16 to 100, l_a -500 to +500, l_b -200 to +200 */
   l = 116.0 * lab_map(y / LAB_YNORM) - 16.0;
@@ -139,7 +139,7 @@ inline proc rgbpix_to_lab(r : c_uchar, g : c_uchar, b : c_uchar,
 }
 
 /***
-    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for 
+    rgbpix_to_xyz:  Convert an RGB pixel into the CIE XYZ space (used for
                     L*A*B*).  XYZ are in the range 0 t/m 1/XYZ_SCALE (5.65075).
     args:           r, g, b - source pixel to convert
                     x, y, z - result
@@ -254,6 +254,3 @@ proc main() {
 
   return 0;
 }
-
-
-

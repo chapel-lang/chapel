@@ -30,7 +30,7 @@ var rpix, gpix, bpix : c_uchar;         /* RGB value at x, y */
 extern type rgbimage;
 extern proc PNG_read(fname : c_string, ref img : c_ptr(rgbimage)) : c_int;
 extern proc PNG_write(fname : c_string, img : c_ptr(rgbimage)) : c_int;
-extern proc read_rgb(img : c_ptr(rgbimage), x : c_int, y : c_int, 
+extern proc read_rgb(img : c_ptr(rgbimage), x : c_int, y : c_int,
 ref r : c_uchar, ref g : c_uchar, ref b : c_uchar) : c_int;
 extern proc write_rgb(img : c_ptr(rgbimage), x : c_int, y : c_int,
 r : c_uchar, g : c_uchar, b : c_uchar) : c_int;
@@ -38,7 +38,7 @@ extern proc free_rgbimage(ref img : c_ptr(rgbimage)) : void;
 /* The rest of the interface we don't use now. */
 /*
 extern proc PNG_isa(fname : c_string) : c_int;
-extern proc alloc_rgbimage(ref img : c_ptr(rgbimage), 
+extern proc alloc_rgbimage(ref img : c_ptr(rgbimage),
 ncol : c_int, nrow : c_int) : c_int;
 */
 
@@ -52,6 +52,3 @@ writef("\nAt %4i,%4i   R %3u  G %3u  B %3u\n\n", x,y, rpix,gpix,bpix);
 write_rgb(rgb, x,y, 1, 2, 3);
 PNG_write(outname.c_str(), rgb);
 free_rgbimage(rgb);
-
-
-
