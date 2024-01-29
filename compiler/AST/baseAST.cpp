@@ -90,7 +90,7 @@ void printStatistics(const char* pass) {
   static int last_nasts = -1;
   static int maxK = -1, maxN = -1;
 
-  if (!strcmp(pass, "makeBinary")) {
+  if (strcmp(pass, "codegen") == 0) {
     if (strstr(fPrintStatistics, "m")) {
       fprintf(stderr, "Maximum # of ASTS: %d\n", maxN);
       fprintf(stderr, "Maximum Size (KB): %d\n", maxK);
