@@ -242,7 +242,7 @@ class KindProperties {
 
   /* Combine two sets of kind properties, strictly enforcing properties of
      the receiver (e.g. (receiver) param + (other) value = invalid, because
-     param-ness is requird).
+     param-ness is required).
 
      const-ness and ref-ness mismatch doesn't raise issues here since const/ref
      checking is a separate pass. */

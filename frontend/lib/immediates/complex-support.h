@@ -23,7 +23,7 @@
 /*
 
  This header exists to work around a problem with complex square root being
- innacurate on libc++ by using C functions to do the complex square root.
+ inaccurate on libc++ by using C functions to do the complex square root.
 
  */
 

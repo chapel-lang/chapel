@@ -486,7 +486,7 @@ static void test7() {
   r = canPass(c, unmanagedChildQ,  borrowedChild);    assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  borrowedChildQ);   assert(passesBorrowing(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedChild);       assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedChildQ);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedChild);       assert(doesNotPass(r));
@@ -523,7 +523,7 @@ static void test7() {
   r = canPass(c, unmanagedChildQ,  borrowedParent);   assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  borrowedParentQ);  assert(passesBorrowingSubtype(r));
 
-  // unamanaged - owned
+  // unmanaged - owned
   r = canPass(c, unmanagedChild,   ownedParent);      assert(doesNotPass(r));
   r = canPass(c, unmanagedChild,   ownedParentQ);     assert(doesNotPass(r));
   r = canPass(c, unmanagedChildQ,  ownedParent);      assert(doesNotPass(r));

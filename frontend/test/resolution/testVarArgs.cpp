@@ -655,7 +655,7 @@ static void testConcrete() {
   testMatcher(Qualifier::DEFAULT_INTENT, "int", "",
               ArgInfo({"int", "int(8)", "int(32)"}));
 
-  // varargs specifiying a tuple as the formal type
+  // varargs specifying a tuple as the formal type
   testMatcher(Qualifier::DEFAULT_INTENT, "(int,int,int)", "",
               ArgInfo(3, "(int,int,int)"));
 

@@ -566,7 +566,7 @@ static void test21() {
     /* expect errors for now as a temporary workaround */ ERRORS_EXPECTED);
 }
 
-/* not tested -- "ount intent varargs are not supported"
+/* not tested -- "out intent varargs are not supported"
 static void test22() {
   testSplitInit("test22",
     R""""(

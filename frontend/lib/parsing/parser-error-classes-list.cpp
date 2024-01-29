@@ -253,7 +253,7 @@ void ErrorWhenAfterOtherwise::write(ErrorWriterBase& wr) const {
   auto otherwise = std::get<1>(info);
   auto when = std::get<2>(info);
   wr.heading(kind_, type_, node, "'otherwise' clause must follow all 'when' clauses.");
-  wr.message("In the following 'select' statment:");
+  wr.message("In the following 'select' statement:");
   wr.code(node);
   wr.note(otherwise, "the 'otherwise' clause occurs here:");
   wr.code(otherwise);
