@@ -3566,7 +3566,7 @@ gatherAndFilterCandidates(Context* context,
 
   // If no candidates have been found, consider last resort candidates from
   // innermost to outermost.
-  for (int i = 0; i < lrcGroups.size(); i++) {
+  for (size_t i = 0; i < lrcGroups.size(); i++) {
     if (candidates.empty()) {
       candidates = lrcGroups[i];
       // Bump firstPoiCandidate index after non-POI last resorts
@@ -3578,7 +3578,7 @@ gatherAndFilterCandidates(Context* context,
     }
   }
   // If still no candidates, repeat for last resort candidates from forwarding.
-  for (int i = 0; i < forwardingLrcGroups.size(); i++) {
+  for (size_t i = 0; i < forwardingLrcGroups.size(); i++) {
     if (candidates.empty()) {
       candidates = forwardingLrcGroups[i];
       forwardingInfo = forwardingLrcForwardingTo[i];
