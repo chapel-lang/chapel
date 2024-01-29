@@ -3,4 +3,6 @@ passiveCache.chpl:46: In method 'buildAndSave':
 passiveCache.chpl:48: warning: The `weak` type is experimental; expect this API to change in the future.
   passiveCache.chpl:38: called as (PassiveCache(basicClass)).buildAndSave(key: int(64)) from method 'getOrBuild'
   passiveCache.chpl:66: called as (PassiveCache(basicClass)).getOrBuild(key: int(64))
+passiveCache.chpl:61: In function 'main':
+passiveCache.chpl:72: warning: the overload of 'fillRandom' that generates its own seed is unstable
 true

@@ -181,6 +181,7 @@ module Random {
 
     :arg arr: An array of numeric values
   */
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -238,6 +239,7 @@ module Random {
     :arg min: The (inclusive) lower bound for the random values
     :arg max: The (inclusive) upper bound for the random values
   */
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t, min: t, max: t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -295,6 +297,7 @@ module Random {
 
     :arg arr: A non-strided default rectangular 1D array
   */
+  @unstable("the overload of 'shuffle' that generates its own seed is unstable")
   proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
     var rs = new randomStream(d.idxType);
     rs.shuffle(arr);
@@ -534,6 +537,7 @@ module Random {
       A seed value will be generated in an implementation specific manner
       that depends on the current time.
     */
+    @unstable("The :record:`randomStream` initializer that generates a seed is unstable and subject to change")
     proc init(type eltType) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
       this.seed = randomishSeed();
