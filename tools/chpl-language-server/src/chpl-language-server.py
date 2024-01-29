@@ -38,12 +38,14 @@ from symbol_signature import get_symbol_signature
 import itertools
 import os
 import json
+import re
 
 
 import chapel.core
 from chapel.lsp import location_to_range, error_to_diagnostic
 from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
+from pygls.workspace import TextDocument
 from lsprotocol.types import (
     Location,
     MessageType,
@@ -54,6 +56,7 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
 from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
     TEXT_DOCUMENT_COMPLETION,
@@ -83,6 +86,14 @@ from lsprotocol.types import (
 from lsprotocol.types import (
     INITIALIZE,
     InitializeParams,
+)
+from lsprotocol.types import (
+    TEXT_DOCUMENT_CODE_ACTION,
+    CodeActionParams,
+    CodeAction,
+    TextEdit,
+    CodeActionKind,
+    WorkspaceEdit,
 )
 
 
@@ -514,6 +525,22 @@ class ChapelLanguageServer(LanguageServer):
         diagnostics = [error_to_diagnostic(e) for e in errors]
         return diagnostics
 
+    def get_text(self, text_doc: TextDocument, rng: Range) -> str:
+        """
+        Get the text of a TextDocument within a Range
+        """
+        start_line = rng.start.line
+        stop_line = rng.end.line
+        if start_line == stop_line:
+            return text_doc.lines[start_line][
+                rng.start.character : rng.end.character
+            ]
+        else:
+            lines = text_doc.lines[start_line : stop_line + 1]
+            lines[0] = lines[0][rng.start.character :]
+            lines[-1] = lines[-1][: rng.end.character]
+            return "\n".join(lines)
+
     def register_workspace(self, uri: str):
         path = os.path.join(uri[len("file://") :], ".cls-info.json")
         config = WorkspaceConfig.from_file(self, path)
@@ -666,6 +693,52 @@ def run_lsp():
         items = [item for item in items if item]
 
         return CompletionList(is_incomplete=False, items=items)
+
+    @server.feature(TEXT_DOCUMENT_CODE_ACTION)
+    async def code_action(ls: ChapelLanguageServer, params: CodeActionParams):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+        actions = []
+
+        prefix = "Warning: \\[Deprecation\\]:"
+        chars = "[a-zA-Z0-9_.:;\\- ]*?"
+        ident = "[a-zA-Z0-9_.]+?"
+        pat1 = f"{prefix}{chars}(?:'(?:{ident})'{chars})?'(?P<replace1>{ident})'{chars}"
+        pat2 = f"{prefix}{chars}use{chars}(?P<tick>[`' ])(?P<replace2>{ident})(?P=tick){chars}instead{chars}"
+        regex = re.compile(f"({pat1})|({pat2})")
+
+        edits_to_make: Tuple[List[Diagnostic], List[TextEdit]] = ([], [])
+
+        for d in params.context.diagnostics:
+            m = re.match(regex, d.message)
+            if m and (m.group("replace1") or m.group("replace2")):
+                original = ls.get_text(text_doc, d.range)
+                replacement = m.group("replace1") or m.group("replace2")
+                te = TextEdit(d.range, replacement)
+                msg = f"Resolve Deprecation: replace {original} with {replacement}"
+                edits_to_make[0].append(d)
+                edits_to_make[1].append(te)
+                ca = CodeAction(
+                    msg,
+                    CodeActionKind.QuickFix,
+                    diagnostics=[d],
+                    edit=WorkspaceEdit(changes={text_doc.uri: [te]}),
+                )
+                actions.append(ca)
+
+        if len(edits_to_make[0]) > 0:
+            actions.append(
+                CodeAction(
+                    "Resolve Deprecations",
+                    CodeActionKind.SourceFixAll,
+                    diagnostics=edits_to_make[0],
+                    edit=WorkspaceEdit(
+                        changes={text_doc.uri: edits_to_make[1]}
+                    ),
+                    is_preferred=True,
+                )
+            )
+
+        return actions
 
     server.start_io()
 
