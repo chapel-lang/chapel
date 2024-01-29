@@ -210,7 +210,7 @@ class NodeAndRange:
             self.rng = location_to_range(self.node.field_location())
         elif isinstance(
             self.node,
-            (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl),
+            (chapel.Formal, chapel.Module, chapel.TypeDecl),
         ):
             self.rng = location_to_range(self.node.name_location())
         else:
@@ -237,7 +237,7 @@ class ContextContainer:
     def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
         self.file_paths: List[str] = []
         self.module_paths: List[str] = [file]
-        self.context: chapel.core.Context = chapel.core.Context()
+        self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
 
         if config:
@@ -313,7 +313,7 @@ class FileInfo:
             return self.parse_file()
 
     def _note_reference(
-        self, node: Union[chapel.core.Dot, chapel.core.Identifier]
+        self, node: Union[chapel.Dot, chapel.Identifier]
     ):
         """
         Given a node that can refer to another node, note what it refers
