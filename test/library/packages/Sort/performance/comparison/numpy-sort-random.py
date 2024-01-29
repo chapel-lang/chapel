@@ -2,8 +2,7 @@ import numpy
 import random
 import time
 
-#n = 1024*1024*16 # for 16MiB
-n = 1024*1024*128 # for 128MiB
+n = 128*1024*1024
 
 # Note, this actually never generates the maximal element... oh well.
 t1 = time.time()
@@ -18,4 +17,4 @@ stop = time.time()
 
 print ("Sorted ", n, " elements in ", stop-start, " seconds")
 print (((8*n) / (stop-start))/1024.0/1024.0, " MiB/s")
-print (((8*n) / (stop-start))/1000.0/1000.0, " MB/s")
+print ((n / (stop-start))/1000.0/1000.0, " million elements sorted per second")
