@@ -1,1 +1,1 @@
-define internal i64 @munge-with-ids.foo() #0 {
+define internal i64 @munge-with-ids.foo() #n {
