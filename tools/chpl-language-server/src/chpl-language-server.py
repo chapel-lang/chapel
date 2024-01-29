@@ -161,15 +161,14 @@ def get_symbol_information(
     loc = Location(uri, location_to_range(decl.location()))
     kind = decl_kind(decl)
     if kind:
-        # TODO: should we use DocumentSymbol or SymbolInformation LSP spec says
+        # TODO: should we use DocumentSymbol or SymbolInformation? LSP spec says
         # prefer DocumentSymbol, but nesting doesn't work out of the box.
         # implies that we need some kind of visitor pattern to build a DS tree
         # using symbol information for now, as it sort-of autogets the tree
         # structure
         is_deprecated = chapel.is_deprecated(decl)
-        return SymbolInformation(
-            loc, decl.name(), kind, deprecated=is_deprecated
-        )
+        name = get_symbol_signature(decl)
+        return SymbolInformation(loc, name, kind, deprecated=is_deprecated)
     return None
 
 
