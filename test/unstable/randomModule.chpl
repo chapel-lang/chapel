@@ -14,7 +14,8 @@ permutation(a);
 permutation(a, 123);
 writeln(a);
 
-var rs = new randomStream(int, 123);
+var rs = new randomStream(int, 123),
+    rsu = new randomStream(int);
 
 rs.permutation(a);
 writeln(a);

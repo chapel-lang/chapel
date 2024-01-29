@@ -121,11 +121,24 @@ module Random {
     return d.isRectangular() && d.rank == 1;
 
 
-  private proc oddTimeSeed(): int(64) {
-    use Time;
-    const seed = (timeSinceEpoch().totalSeconds()*1_000_000): int;
-    const oddseed = if seed % 2 == 0 then seed + 1 else seed;
-    return oddseed;
+  private proc randomishSeed(): int {
+    import Time, IO, CTypes;
+    extern proc chpl_task_getId(): chpl_taskID_t;
+    extern proc getpid(): CTypes.c_int;
+
+    const sWho = chpl_task_getId().hash():int,
+          sWhat = (getpid():int).hash():int,
+          sWhen = Time.timeSinceEpoch().totalSeconds().hash():int,
+          sWhere = here.hash():int;
+
+    var randomBits: int = 0;
+    try {
+      IO.openReader("/dev/urandom").readBits(randomBits, 64);
+    } catch {
+      // may not be able to open /dev/urandom, ignore this step
+    }
+
+    return sWho ^ sWhat ^ sWhen ^ sWhere ^ randomBits;
   }
 
   pragma "last resort"
@@ -168,7 +181,7 @@ module Random {
 
     :arg arr: An array of numeric values
   */
-  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -226,7 +239,7 @@ module Random {
     :arg min: The (inclusive) lower bound for the random values
     :arg max: The (inclusive) upper bound for the random values
   */
-  @unstable("the overload of fillRandom that generates its own seed is unstable")
+  @unstable("the overload of 'fillRandom' that generates its own seed is unstable")
   proc fillRandom(ref arr: [] ?t, min: t, max: t)
     where isNumericOrBoolType(t) && arr.isRectangular()
   {
@@ -284,7 +297,7 @@ module Random {
 
     :arg arr: A non-strided default rectangular 1D array
   */
-  @unstable("the overload of shuffle that generates its own seed is unstable")
+  @unstable("the overload of 'shuffle' that generates its own seed is unstable")
   proc shuffle(ref arr: [?d]) where is1DRectangularDomain(d) {
     var rs = new randomStream(d.idxType);
     rs.shuffle(arr);
@@ -527,7 +540,7 @@ module Random {
     @unstable("The :record:`randomStream` initializer that generates a seed is unstable and subject to change")
     proc init(type eltType) where isNumericOrBoolType(eltType) {
       this.eltType = eltType;
-      this.seed = oddTimeSeed();
+      this.seed = randomishSeed();
       this.pcg = new PCGImpl(eltType, this.seed);
     }
 
