@@ -17,16 +17,26 @@ def _validate_rocm_version():
 
 class gpu_type:
     def __init__(self, sdk_path_env, compiler, default_arch, llvm_target,
-                 runtime_impl, version_validator):
+                 runtime_impl, version_validator, llvm_validator):
         self.sdk_path_env = sdk_path_env
         self.compiler = compiler
         self.default_arch = default_arch
         self.llvm_target = llvm_target
         self.runtime_impl = runtime_impl
         self.version_validator = version_validator
+        self.llvm_validator = llvm_validator
 
     def validate_sdk_version(self):
         return self.version_validator()
+
+    def validate_llvm(self):
+        return self.llvm_validator(self)
+
+def _validate_cuda_llvm_version(gpu: gpu_type):
+    return _validate_cuda_llvm_version_impl(gpu)
+
+def _validate_rocm_llvm_version(gpu: gpu_type):
+    return _validate_rocm_llvm_version_impl(gpu)
 
 
 GPU_TYPES = {
@@ -35,19 +45,22 @@ GPU_TYPES = {
                        default_arch="sm_60",
                        llvm_target="NVPTX",
                        runtime_impl="cuda",
-                       version_validator=_validate_cuda_version),
+                       version_validator=_validate_cuda_version,
+                       llvm_validator=_validate_cuda_llvm_version),
     "amd": gpu_type(sdk_path_env="CHPL_ROCM_PATH",
                     compiler="hipcc",
                     default_arch="",
                     llvm_target="AMDGPU",
                     runtime_impl="rocm",
-                    version_validator=_validate_rocm_version),
+                    version_validator=_validate_rocm_version,
+                    llvm_validator=_validate_rocm_llvm_version),
     "cpu": gpu_type(sdk_path_env="",
                     compiler="",
                     default_arch="",
                     llvm_target="",
                     runtime_impl="cpu",
-                    version_validator=lambda: None),
+                    version_validator=lambda: None,
+                    llvm_validator=lambda: None),
 }
 
 
@@ -211,6 +224,21 @@ def validateLlvmBuiltForTgt(expectedTgt):
     return expectedTgt in targets
 
 
+def _validate_cuda_llvm_version_impl(gpu: gpu_type):
+    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+        _reportMissingGpuReq(
+            "LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
+            gpu.llvm_target, allowExempt=False
+        )
+
+def _validate_rocm_llvm_version_impl(gpu: gpu_type):
+    if chpl_llvm.get() == 'bundled':
+        error("Cannot target AMD GPUs with CHPL_LLVM=bundled")
+    if not validateLlvmBuiltForTgt(gpu.llvm_target):
+        _reportMissingGpuReq(
+            "LLVM not built for %s." % gpu.llvm_target, allowExempt=False
+        )
+
 def _validate_cuda_version_impl():
     """Check that the installed CUDA version is >= MIN_REQ_VERSION and <
        MAX_REQ_VERSION"""
@@ -338,13 +366,7 @@ def validate(chplLocaleModel):
         error("The 'gpu' locale model can only be used with "
               "CHPL_TARGET_COMPILER=llvm.")
 
-    llvm_ver = chpl_llvm.get_llvm_version()
-    if llvm_ver in ('16','17',):
-        error("The 'gpu' locale model cannot be used with LLVM version {}".format(llvm_ver))
-
-    if not validateLlvmBuiltForTgt(gpu.llvm_target):
-        _reportMissingGpuReq("LLVM not built for %s, consider setting CHPL_LLVM to 'bundled'." %
-                             gpu.llvm_target, allowExempt=False)
+    gpu.validate_llvm()
 
     for depr_env in ("CHPL_GPU_CODEGEN", "CHPL_GPU_RUNTIME"):
         if os.environ.get(depr_env):
