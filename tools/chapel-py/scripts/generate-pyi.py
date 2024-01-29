@@ -94,7 +94,7 @@ def get_Context_header() -> str:
         _wrap_method(
             "track_errors",
             rettype="ErrorManager",
-            docstring="Generate a stub file for the Chapel AST nodes",
+            docstring="Return a context manager that tracks errors emitted by this Context",
         ),
         _wrap_method(
             "_get_pyi_file",

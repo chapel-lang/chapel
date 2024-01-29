@@ -17,7 +17,7 @@
 # limitations under the License.
 #
 
-import chapel.core
+import chapel
 import chapel.lsp
 from pygls.server import LanguageServer
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams

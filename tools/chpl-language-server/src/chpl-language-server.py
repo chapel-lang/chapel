@@ -40,7 +40,7 @@ import os
 import json
 
 
-import chapel.core
+import chapel
 from chapel.lsp import location_to_range, error_to_diagnostic
 from chapel.visitor import visitor, enter
 from pygls.server import LanguageServer
@@ -86,20 +86,20 @@ from lsprotocol.types import (
 )
 
 
-def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
-    if isinstance(decl, chapel.core.Module) and decl.kind() != "implicit":
+def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
+    if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
         return SymbolKind.Module
-    elif isinstance(decl, chapel.core.Class):
+    elif isinstance(decl, chapel.Class):
         return SymbolKind.Class
-    elif isinstance(decl, chapel.core.Record):
+    elif isinstance(decl, chapel.Record):
         return SymbolKind.Struct
-    elif isinstance(decl, chapel.core.Interface):
+    elif isinstance(decl, chapel.Interface):
         return SymbolKind.Interface
-    elif isinstance(decl, chapel.core.Enum):
+    elif isinstance(decl, chapel.Enum):
         return SymbolKind.Enum
-    elif isinstance(decl, chapel.core.EnumElement):
+    elif isinstance(decl, chapel.EnumElement):
         return SymbolKind.EnumMember
-    elif isinstance(decl, chapel.core.Function):
+    elif isinstance(decl, chapel.Function):
         if decl.is_method():
             return SymbolKind.Method
         elif decl.name() in ("init", "init="):
@@ -108,7 +108,7 @@ def decl_kind(decl: chapel.core.NamedDecl) -> Optional[SymbolKind]:
             return SymbolKind.Operator
         else:
             return SymbolKind.Function
-    elif isinstance(decl, chapel.core.Variable):
+    elif isinstance(decl, chapel.Variable):
         if decl.is_field():
             return SymbolKind.Field
         elif decl.intent() == "<const-var>":
@@ -141,7 +141,7 @@ def decl_kind_to_completion_kind(kind: SymbolKind) -> CompletionItemKind:
 
 
 def completion_item_for_decl(
-    decl: chapel.core.NamedDecl,
+    decl: chapel.NamedDecl,
 ) -> Optional[CompletionItem]:
     kind = decl_kind(decl)
     if not kind:
@@ -156,7 +156,7 @@ def completion_item_for_decl(
 
 
 def get_symbol_information(
-    decl: chapel.core.NamedDecl, uri: str
+    decl: chapel.NamedDecl, uri: str
 ) -> Optional[SymbolInformation]:
     loc = Location(uri, location_to_range(decl.location()))
     kind = decl_kind(decl)
@@ -202,15 +202,15 @@ class PositionList(Generic[EltT]):
 
 @dataclass
 class NodeAndRange:
-    node: chapel.core.AstNode
+    node: chapel.AstNode
     rng: Range = field(init=False)
 
     def __post_init__(self):
-        if isinstance(self.node, chapel.core.Dot):
+        if isinstance(self.node, chapel.Dot):
             self.rng = location_to_range(self.node.field_location())
         elif isinstance(
             self.node,
-            (chapel.core.Formal, chapel.core.Module, chapel.core.TypeDecl),
+            (chapel.Formal, chapel.Module, chapel.TypeDecl),
         ):
             self.rng = location_to_range(self.node.name_location())
         else:
@@ -237,7 +237,7 @@ class ContextContainer:
     def __init__(self, file: str, config: Optional["WorkspaceConfig"]):
         self.file_paths: List[str] = []
         self.module_paths: List[str] = [file]
-        self.context: chapel.core.Context = chapel.core.Context()
+        self.context: chapel.Context = chapel.Context()
         self.file_infos: List["FileInfo"] = []
 
         if config:
@@ -287,15 +287,15 @@ class FileInfo:
     def_segments: PositionList[NodeAndRange] = field(init=False)
     uses_here: Dict[str, List[NodeAndRange]] = field(init=False)
     siblings: chapel.SiblingMap = field(init=False)
-    used_modules: List[chapel.core.Module] = field(init=False)
-    possibly_visible_decls: List[chapel.core.NamedDecl] = field(init=False)
+    used_modules: List[chapel.Module] = field(init=False)
+    possibly_visible_decls: List[chapel.NamedDecl] = field(init=False)
 
     def __post_init__(self):
         self.use_segments = PositionList(lambda x: x.ident.rng)
         self.def_segments = PositionList(lambda x: x.rng)
         self.rebuild_index()
 
-    def parse_file(self) -> List[chapel.core.AstNode]:
+    def parse_file(self) -> List[chapel.AstNode]:
         """
         Parses this file and returns the toplevel ast elements
 
@@ -305,7 +305,7 @@ class FileInfo:
 
         return self.context.context.parse(self.uri[len("file://") :])
 
-    def get_asts(self) -> List[chapel.core.AstNode]:
+    def get_asts(self) -> List[chapel.AstNode]:
         """
         Returns toplevel ast elements. This method silences all errors.
         """
@@ -313,7 +313,7 @@ class FileInfo:
             return self.parse_file()
 
     def _note_reference(
-        self, node: Union[chapel.core.Dot, chapel.core.Identifier]
+        self, node: Union[chapel.Dot, chapel.Identifier]
     ):
         """
         Given a node that can refer to another node, note what it refers
@@ -329,18 +329,18 @@ class FileInfo:
         )
 
     @enter
-    def _enter_Identifier(self, node: chapel.core.Identifier):
+    def _enter_Identifier(self, node: chapel.Identifier):
         self._note_reference(node)
 
     @enter
-    def _enter_Dot(self, node: chapel.core.Dot):
+    def _enter_Dot(self, node: chapel.Dot):
         self._note_reference(node)
 
     @enter
-    def _enter_NamedDecl(self, node: chapel.core.NamedDecl):
+    def _enter_NamedDecl(self, node: chapel.NamedDecl):
         self.def_segments.append(NodeAndRange(node))
 
-    def _collect_used_modules(self, asts: List[chapel.core.AstNode]):
+    def _collect_used_modules(self, asts: List[chapel.AstNode]):
         self.used_modules = []
         for ast in asts:
             scope = ast.scope()
@@ -351,7 +351,7 @@ class FileInfo:
         self.possibly_visible_decls = []
         for mod in self.used_modules:
             for child in mod:
-                if not isinstance(child, chapel.core.NamedDecl):
+                if not isinstance(child, chapel.NamedDecl):
                     continue
 
                 if child.visibility() == "private":
@@ -612,7 +612,7 @@ def run_lsp():
         # doesn't descend into nested definitions for Functions
         def preorder_ignore_funcs(node):
             yield node
-            if isinstance(node, chapel.core.Function):
+            if isinstance(node, chapel.Function):
                 return
             for child in node:
                 yield from preorder_ignore_funcs(child)
@@ -620,7 +620,7 @@ def run_lsp():
         syms = []
         for node, _ in chapel.each_matching(
             fi.get_asts(),
-            chapel.core.NamedDecl,
+            chapel.NamedDecl,
             iterator=preorder_ignore_funcs,
         ):
             si = get_symbol_information(node, text_doc.uri)
