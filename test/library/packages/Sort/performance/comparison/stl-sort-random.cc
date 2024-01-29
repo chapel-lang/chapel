@@ -10,7 +10,7 @@
 int main() {
 
   int err = 0;
-  int n = 1024*1024*128;
+  int n = 128*1024*1024;
   uint64_t* arr = (uint64_t*) malloc(n*sizeof(uint64_t));
   struct timespec startts;
   struct timespec endts;
@@ -38,6 +38,8 @@ int main() {
 
   printf("Sorted %i elements in %f seconds\n", n, end-start);
   printf("%f MiB/s\n", 8*n / (end-start) / 1024.0 / 1024.0);
+  printf("%f million elements sorted per second\n",
+         n / (end-start) / 1000.0 / 1000.0);
 
   return 0;
 }
