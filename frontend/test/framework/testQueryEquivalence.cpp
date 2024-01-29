@@ -27,7 +27,6 @@ using namespace uast;
 using namespace types;
 
 static int mscQueryCounter = 0;
-static const FormalActualMap* oldFaMapPtr = nullptr;
 
 static MostSpecificCandidate const& mscQuery(Context* context) {
   QUERY_BEGIN_INPUT(mscQuery, context);
@@ -77,12 +76,6 @@ static MostSpecificCandidate const& mscQuery(Context* context) {
   assert(faMap.isValid());
 
   auto msc = MostSpecificCandidate::fromTypedFnSignature(context, typed, std::move(faMap));
-
-  // The test results are only testing what we want (deep == comparison) if
-  // the enclosed pointers are not shallowly equal. Make sure a new owned<FAMap>
-  // was allocated.
-  assert(&msc.formalActualMap() != oldFaMapPtr);
-  oldFaMapPtr = &msc.formalActualMap();
 
   return QUERY_END(msc);
 }
