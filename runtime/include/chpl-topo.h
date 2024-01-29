@@ -164,7 +164,6 @@ chpl_topo_pci_addr_t *chpl_topo_selectNicByType(chpl_topo_pci_addr_t *inAddr,
 // cores).
 chpl_bool chpl_topo_isOversubscribed(void);
 
-
 #ifdef __cplusplus
 } // end extern "C"
 #endif

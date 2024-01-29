@@ -30,7 +30,7 @@ int main(int argc, char* argv[]) {
   char *mask = NULL;
   int rank = -1;
   int numLocales = 1;
-  char *numLocalesStr = NULL;
+  char *numLocalesStr = "1";
   char *nic = NULL;
 
   while ((opt = getopt(argc, argv, "m:N:n:r:")) != -1) {
@@ -63,11 +63,11 @@ int main(int argc, char* argv[]) {
     exit(1);
   }
 
-  if (numLocales > 1) {
-    setenv("CHPL_RT_LOCALES_PER_NODE", numLocalesStr, 1);
-  } else {
-    unsetenv("CHPL_RT_LOCALES_PER_NODE");
+  if (rank >= numLocales) {
+    fprintf(stderr, "Rank must be less than number of locales on node.\n");
+    exit(1);
   }
+  setenv("CHPL_RT_LOCALES_PER_NODE", numLocalesStr, 1);
   chpl__init_colocales(0, 0); // unsure why this is needed
   chpl_set_num_locales_on_node(numLocales);
   if (rank != -1) {
