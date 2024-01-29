@@ -564,8 +564,12 @@ def run_lsp():
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
 
+    @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
-    async def get_def(ls: ChapelLanguageServer, params: DefinitionParams):
+    async def get_def(
+        ls: ChapelLanguageServer,
+        params: Union[DefinitionParams, DeclarationParams],
+    ):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
