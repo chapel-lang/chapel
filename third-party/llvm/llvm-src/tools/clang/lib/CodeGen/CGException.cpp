@@ -158,7 +158,7 @@ static const EHPersonality &getObjCPersonality(const TargetInfo &Target,
   case ObjCRuntime::GNUstep:
     if (L.ObjCRuntime.getVersion() >= VersionTuple(1, 7))
       return EHPersonality::GNUstep_ObjC;
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case ObjCRuntime::GCC:
   case ObjCRuntime::ObjFW:
     if (L.hasSjLjExceptions())
@@ -249,7 +249,7 @@ const EHPersonality &EHPersonality::get(CodeGenFunction &CGF) {
   // For outlined finallys and filters, use the SEH personality in case they
   // contain more SEH. This mostly only affects finallys. Filters could
   // hypothetically use gnu statement expressions to sneak in nested SEH.
-  FD = FD ? FD : CGF.CurSEHParent;
+  FD = FD ? FD : CGF.CurSEHParent.getDecl();
   return get(CGF.CGM, dyn_cast_or_null<FunctionDecl>(FD));
 }
 
@@ -401,7 +401,7 @@ void CodeGenFunction::EmitAnyExprToExn(const Expr *e, Address addr) {
   // __cxa_allocate_exception returns a void*;  we need to cast this
   // to the appropriate type for the object.
   llvm::Type *ty = ConvertTypeForMem(e->getType());
-  Address typedAddr = Builder.CreateElementBitCast(addr, ty);
+  Address typedAddr = addr.withElementType(ty);
 
   // FIXME: this isn't quite right!  If there's a final unelided call
   // to a copy constructor, then according to [except.terminate]p1 we
@@ -646,7 +646,7 @@ void CodeGenFunction::EnterCXXTryStmt(const CXXTryStmt &S, bool IsFnTryBlock) {
       // Under async exceptions, catch(...) need to catch HW exception too
       // Mark scope with SehTryBegin as a SEH __try scope
       if (getLangOpts().EHAsynch)
-        EmitRuntimeCallOrInvoke(getSehTryBeginFn(CGM));
+        EmitSehTryScopeBegin();
     }
   }
 }
@@ -1223,8 +1223,7 @@ void CodeGenFunction::ExitCXXTryStmt(const CXXTryStmt &S, bool IsFnTryBlock) {
   // Wasm uses Windows-style EH instructions, but merges all catch clauses into
   // one big catchpad. So we save the old funclet pad here before we traverse
   // each catch handler.
-  SaveAndRestore<llvm::Instruction *> RestoreCurrentFuncletPad(
-      CurrentFuncletPad);
+  SaveAndRestore RestoreCurrentFuncletPad(CurrentFuncletPad);
   llvm::BasicBlock *WasmCatchStartBlock = nullptr;
   if (EHPersonality::get(*this).isWasmPersonality()) {
     auto *CatchSwitch =
@@ -1257,8 +1256,7 @@ void CodeGenFunction::ExitCXXTryStmt(const CXXTryStmt &S, bool IsFnTryBlock) {
     RunCleanupsScope CatchScope(*this);
 
     // Initialize the catch variable and set up the cleanups.
-    SaveAndRestore<llvm::Instruction *> RestoreCurrentFuncletPad(
-        CurrentFuncletPad);
+    SaveAndRestore RestoreCurrentFuncletPad(CurrentFuncletPad);
     CGM.getCXXABI().emitBeginCatch(*this, C);
 
     // Emit the PGO counter increment.
@@ -1582,8 +1580,7 @@ llvm::BasicBlock *CodeGenFunction::getTerminateFunclet() {
 
   // Create the cleanuppad using the current parent pad as its token. Use 'none'
   // if this is a top-level terminate scope, which is the common case.
-  SaveAndRestore<llvm::Instruction *> RestoreCurrentFuncletPad(
-      CurrentFuncletPad);
+  SaveAndRestore RestoreCurrentFuncletPad(CurrentFuncletPad);
   llvm::Value *ParentPad = CurrentFuncletPad;
   if (!ParentPad)
     ParentPad = llvm::ConstantTokenNone::get(CGM.getLLVMContext());
@@ -1628,7 +1625,7 @@ llvm::BasicBlock *CodeGenFunction::getEHResumeBlock(bool isCleanup) {
   llvm::Value *Sel = getSelectorFromSlot();
 
   llvm::Type *LPadType = llvm::StructType::get(Exn->getType(), Sel->getType());
-  llvm::Value *LPadVal = llvm::UndefValue::get(LPadType);
+  llvm::Value *LPadVal = llvm::PoisonValue::get(LPadType);
   LPadVal = Builder.CreateInsertValue(LPadVal, Exn, 0, "lpad.val");
   LPadVal = Builder.CreateInsertValue(LPadVal, Sel, 1, "lpad.val");
 
@@ -1845,7 +1842,7 @@ Address CodeGenFunction::recoverAddrOfEscapedLocal(CodeGenFunction &ParentCGF,
   llvm::Value *ChildVar =
       Builder.CreateBitCast(RecoverCall, ParentVar.getType());
   ChildVar->setName(ParentVar.getName());
-  return ParentVar.withPointer(ChildVar);
+  return ParentVar.withPointer(ChildVar, KnownNonNull);
 }
 
 void CodeGenFunction::EmitCapturedLocals(CodeGenFunction &ParentCGF,
@@ -2005,7 +2002,7 @@ void CodeGenFunction::startOutlinedSEHHelper(CodeGenFunction &ParentCGF,
   SmallString<128> Name;
   {
     llvm::raw_svector_ostream OS(Name);
-    const NamedDecl *ParentSEHFn = ParentCGF.CurSEHParent;
+    GlobalDecl ParentSEHFn = ParentCGF.CurSEHParent;
     assert(ParentSEHFn && "No CurSEHParent!");
     MangleContext &Mangler = CGM.getCXXABI().getMangleContext();
     if (IsFilter)
@@ -2104,7 +2101,6 @@ void CodeGenFunction::EmitSEHExceptionCodeSave(CodeGenFunction &ParentCGF,
     // pointer is stored in the second field. So, GEP 20 bytes backwards and
     // load the pointer.
     SEHInfo = Builder.CreateConstInBoundsGEP1_32(Int8Ty, EntryFP, -20);
-    SEHInfo = Builder.CreateBitCast(SEHInfo, Int8PtrTy->getPointerTo());
     SEHInfo = Builder.CreateAlignedLoad(Int8PtrTy, SEHInfo, getPointerAlign());
     SEHCodeSlotStack.push_back(recoverAddrOfEscapedLocal(
         ParentCGF, ParentCGF.SEHCodeSlotStack.back(), ParentFP));
@@ -2117,10 +2113,9 @@ void CodeGenFunction::EmitSEHExceptionCodeSave(CodeGenFunction &ParentCGF,
   //   CONTEXT *ContextRecord;
   // };
   // int exceptioncode = exception_pointers->ExceptionRecord->ExceptionCode;
-  llvm::Type *RecordTy = CGM.Int32Ty->getPointerTo();
+  llvm::Type *RecordTy = llvm::PointerType::getUnqual(getLLVMContext());
   llvm::Type *PtrsTy = llvm::StructType::get(RecordTy, CGM.VoidPtrTy);
-  llvm::Value *Ptrs = Builder.CreateBitCast(SEHInfo, PtrsTy->getPointerTo());
-  llvm::Value *Rec = Builder.CreateStructGEP(PtrsTy, Ptrs, 0);
+  llvm::Value *Rec = Builder.CreateStructGEP(PtrsTy, SEHInfo, 0);
   Rec = Builder.CreateAlignedLoad(RecordTy, Rec, getPointerAlign());
   llvm::Value *Code = Builder.CreateAlignedLoad(Int32Ty, Rec, getIntAlign());
   assert(!SEHCodeSlotStack.empty() && "emitting EH code outside of __except");

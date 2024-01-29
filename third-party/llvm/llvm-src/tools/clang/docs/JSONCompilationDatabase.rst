@@ -29,8 +29,8 @@ system is not necessarily the best solution:
 Supported Systems
 =================
 
-Clang has the ablity to generate compilation database fragments via
-the :option:`-MJ argument <clang -MJ\<arg>>`. You can concatenate those
+Clang has the ability to generate compilation database fragments via
+``-MJ argument <clang -MJ\<arg>>``. You can concatenate those
 fragments together between ``[`` and ``]`` to create a compilation database.
 
 Currently `CMake <https://cmake.org>`_ (since 2.8.5) supports generation
@@ -40,8 +40,8 @@ works) with the option ``CMAKE_EXPORT_COMPILE_COMMANDS``.
 For projects on Linux, there is an alternative to intercept compiler
 calls with a tool called `Bear <https://github.com/rizsotto/Bear>`_.
 
-`Bazel <https://bazel.build>`_ can export a compilation database via 
-`this extractor extension 
+`Bazel <https://bazel.build>`_ can export a compilation database via
+`this extractor extension
 <https://github.com/hedronvision/bazel-compile-commands-extractor>`_.
 Bazel is otherwise resistant to Bear and other compiler-intercept
 techniques.
@@ -126,4 +126,3 @@ Example:
 
 Here ``-I libwidget/include`` is two arguments, and so becomes two lines.
 Paths are relative to the directory containing ``compile_flags.txt``.
-

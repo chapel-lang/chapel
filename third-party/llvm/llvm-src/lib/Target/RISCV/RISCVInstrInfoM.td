@@ -25,13 +25,13 @@ def riscv_remuw : SDNode<"RISCVISD::REMUW", SDT_RISCVIntBinOpW>;
 //===----------------------------------------------------------------------===//
 
 let Predicates = [HasStdExtMOrZmmul] in {
-def MUL     : ALU_rr<0b0000001, 0b000, "mul", /*Commutable*/1>,
+def MUL     : ALU_rr<0b0000001, 0b000, "mul", Commutable=1>,
               Sched<[WriteIMul, ReadIMul, ReadIMul]>;
-def MULH    : ALU_rr<0b0000001, 0b001, "mulh", /*Commutable*/1>,
+def MULH    : ALU_rr<0b0000001, 0b001, "mulh", Commutable=1>,
               Sched<[WriteIMul, ReadIMul, ReadIMul]>;
 def MULHSU  : ALU_rr<0b0000001, 0b010, "mulhsu">,
               Sched<[WriteIMul, ReadIMul, ReadIMul]>;
-def MULHU   : ALU_rr<0b0000001, 0b011, "mulhu", /*Commutable*/1>,
+def MULHU   : ALU_rr<0b0000001, 0b011, "mulhu", Commutable=1>,
               Sched<[WriteIMul, ReadIMul, ReadIMul]>;
 } // Predicates = [HasStdExtMOrZmmul]
 
@@ -46,12 +46,12 @@ def REMU    : ALU_rr<0b0000001, 0b111, "remu">,
               Sched<[WriteIDiv, ReadIDiv, ReadIDiv]>;
 } // Predicates = [HasStdExtM]
 
-let Predicates = [HasStdExtMOrZmmul, IsRV64] in {
-def MULW    : ALUW_rr<0b0000001, 0b000, "mulw", /*Commutable*/1>,
+let Predicates = [HasStdExtMOrZmmul, IsRV64], IsSignExtendingOpW = 1 in {
+def MULW    : ALUW_rr<0b0000001, 0b000, "mulw", Commutable=1>,
               Sched<[WriteIMul32, ReadIMul32, ReadIMul32]>;
 } // Predicates = [HasStdExtMOrZmmul, IsRV64]
 
-let Predicates = [HasStdExtM, IsRV64] in {
+let Predicates = [HasStdExtM, IsRV64], IsSignExtendingOpW = 1 in {
 def DIVW    : ALUW_rr<0b0000001, 0b100, "divw">,
               Sched<[WriteIDiv32, ReadIDiv32, ReadIDiv32]>;
 def DIVUW   : ALUW_rr<0b0000001, 0b101, "divuw">,

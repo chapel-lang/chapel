@@ -24,6 +24,7 @@
 #include "llvm/ADT/DenseMap.h"
 #include "llvm/ADT/DenseSet.h"
 #include "llvm/ADT/FoldingSet.h"
+#include "llvm/ADT/iterator_range.h"
 #include "llvm/Support/Allocator.h"
 #include <cassert>
 
@@ -582,7 +583,12 @@ class SymbolReaper {
   SymbolMapTy TheLiving;
   SymbolSetTy MetadataInUse;
 
-  RegionSetTy RegionRoots;
+  RegionSetTy LiveRegionRoots;
+  // The lazily copied regions are locations for which a program
+  // can access the value stored at that location, but not its address.
+  // These regions are constructed as a set of regions referred to by
+  // lazyCompoundVal.
+  RegionSetTy LazilyCopiedRegionRoots;
 
   const StackFrameContext *LCtx;
   const Stmt *Loc;
@@ -626,10 +632,9 @@ public:
   /// symbol marking has occurred, i.e. in the MarkLiveSymbols callback.
   void markInUse(SymbolRef sym);
 
-  using region_iterator = RegionSetTy::const_iterator;
-
-  region_iterator region_begin() const { return RegionRoots.begin(); }
-  region_iterator region_end() const { return RegionRoots.end(); }
+  llvm::iterator_range<RegionSetTy::const_iterator> regions() const {
+    return LiveRegionRoots;
+  }
 
   /// Returns whether or not a symbol has been confirmed dead.
   ///
@@ -640,6 +645,7 @@ public:
   }
 
   void markLive(const MemRegion *region);
+  void markLazilyCopied(const MemRegion *region);
   void markElementIndicesLive(const MemRegion *region);
 
   /// Set to the value of the symbolic store after
@@ -647,6 +653,12 @@ public:
   void setReapedStore(StoreRef st) { reapedStore = st; }
 
 private:
+  bool isLazilyCopiedRegion(const MemRegion *region) const;
+  // A readable region is a region that live or lazily copied.
+  // Any symbols that refer to values in regions are alive if the region
+  // is readable.
+  bool isReadableRegion(const MemRegion *region);
+
   /// Mark the symbols dependent on the input symbol as live.
   void markDependentsLive(SymbolRef sym);
 };
@@ -659,6 +671,11 @@ public:
   SymbolVisitor() = default;
   SymbolVisitor(const SymbolVisitor &) = default;
   SymbolVisitor(SymbolVisitor &&) {}
+
+  // The copy and move assignment operator is defined as deleted pending further
+  // motivation.
+  SymbolVisitor &operator=(const SymbolVisitor &) = delete;
+  SymbolVisitor &operator=(SymbolVisitor &&) = delete;
 
   /// A visitor method invoked by ProgramStateManager::scanReachableSymbols.
   ///

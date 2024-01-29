@@ -1,4 +1,4 @@
-//===--- RISCV.cpp - RISCV Helpers for Tools --------------------*- C++ -*-===//
+//===--- RISCV.cpp - RISC-V Helpers for Tools -------------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -13,12 +13,12 @@
 #include "clang/Driver/Driver.h"
 #include "clang/Driver/DriverDiagnostic.h"
 #include "clang/Driver/Options.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/Option/ArgList.h"
 #include "llvm/Support/Error.h"
 #include "llvm/Support/RISCVISAInfo.h"
-#include "llvm/Support/TargetParser.h"
 #include "llvm/Support/raw_ostream.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/RISCVTargetParser.h"
 
 using namespace clang::driver;
 using namespace clang::driver::tools;
@@ -43,20 +43,25 @@ static bool getArchFeatures(const Driver &D, StringRef Arch,
   }
 
   (*ISAInfo)->toFeatures(
-      Features, [&Args](const Twine &Str) { return Args.MakeArgString(Str); });
+      Features, [&Args](const Twine &Str) { return Args.MakeArgString(Str); },
+      /*AddAllExtensions=*/true);
   return true;
 }
 
 // Get features except standard extension feature
-static void getRISCFeaturesFromMcpu(const Driver &D, const llvm::Triple &Triple,
-                                    const llvm::opt::ArgList &Args,
-                                    const llvm::opt::Arg *A, StringRef Mcpu,
+static void getRISCFeaturesFromMcpu(const Driver &D, const Arg *A,
+                                    const llvm::Triple &Triple,
+                                    StringRef Mcpu,
                                     std::vector<StringRef> &Features) {
-  bool Is64Bit = (Triple.getArch() == llvm::Triple::riscv64);
-  llvm::RISCV::CPUKind CPUKind = llvm::RISCV::parseCPUKind(Mcpu);
-  if (!llvm::RISCV::checkCPUKind(CPUKind, Is64Bit) ||
-      !llvm::RISCV::getCPUFeaturesExceptStdExt(CPUKind, Features)) {
-    D.Diag(clang::diag::err_drv_clang_unsupported) << A->getAsString(Args);
+  bool Is64Bit = Triple.isRISCV64();
+  if (!llvm::RISCV::parseCPU(Mcpu, Is64Bit)) {
+    // Try inverting Is64Bit in case the CPU is valid, but for the wrong target.
+    if (llvm::RISCV::parseCPU(Mcpu, !Is64Bit))
+      D.Diag(clang::diag::err_drv_invalid_riscv_cpu_name_for_target)
+          << Mcpu << Is64Bit;
+    else
+      D.Diag(clang::diag::err_drv_unsupported_option_argument)
+          << A->getSpelling() << Mcpu;
   }
 }
 
@@ -70,8 +75,13 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
 
   // If users give march and mcpu, get std extension feature from MArch
   // and other features (ex. mirco architecture feature) from mcpu
-  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ))
-    getRISCFeaturesFromMcpu(D, Triple, Args, A, A->getValue(), Features);
+  if (Arg *A = Args.getLastArg(options::OPT_mcpu_EQ)) {
+    StringRef CPU = A->getValue();
+    if (CPU == "native")
+      CPU = llvm::sys::getHostCPUName();
+
+    getRISCFeaturesFromMcpu(D, A, Triple, CPU, Features);
+  }
 
   // Handle features corresponding to "-ffixed-X" options
   if (Args.hasArg(options::OPT_ffixed_x1))
@@ -159,13 +169,12 @@ void riscv::getRISCVTargetFeatures(const Driver &D, const llvm::Triple &Triple,
 
   // Now add any that the user explicitly requested on the command line,
   // which may override the defaults.
-  handleTargetFeaturesGroup(Args, Features, options::OPT_m_riscv_Features_Group);
+  handleTargetFeaturesGroup(D, Triple, Args, Features,
+                            options::OPT_m_riscv_Features_Group);
 }
 
 StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
-  assert((Triple.getArch() == llvm::Triple::riscv32 ||
-          Triple.getArch() == llvm::Triple::riscv64) &&
-         "Unexpected triple");
+  assert(Triple.isRISCV() && "Unexpected triple");
 
   // GCC's logic around choosing a default `-mabi=` is complex. If GCC is not
   // configured using `--with-abi=`, then the logic for the default choice is
@@ -213,7 +222,7 @@ StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
   // We deviate from GCC's defaults here:
   // - On `riscv{XLEN}-unknown-elf` we use the integer calling convention only.
   // - On all other OSs we use the double floating point calling convention.
-  if (Triple.getArch() == llvm::Triple::riscv32) {
+  if (Triple.isRISCV32()) {
     if (Triple.getOS() == llvm::Triple::UnknownOS)
       return "ilp32";
     else
@@ -228,9 +237,7 @@ StringRef riscv::getRISCVABI(const ArgList &Args, const llvm::Triple &Triple) {
 
 StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
                               const llvm::Triple &Triple) {
-  assert((Triple.getArch() == llvm::Triple::riscv32 ||
-          Triple.getArch() == llvm::Triple::riscv64) &&
-         "Unexpected triple");
+  assert(Triple.isRISCV() && "Unexpected triple");
 
   // GCC's logic around choosing a default `-march=` is complex. If GCC is not
   // configured using `--with-arch=`, then the logic for the default choice is
@@ -264,7 +271,10 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
 
   // 2. Get march (isa string) based on `-mcpu=`
   if (const Arg *A = Args.getLastArg(options::OPT_mcpu_EQ)) {
-    StringRef MArch = llvm::RISCV::getMArchFromMcpu(A->getValue());
+    StringRef CPU = A->getValue();
+    if (CPU == "native")
+      CPU = llvm::sys::getHostCPUName();
+    StringRef MArch = llvm::RISCV::getMArchFromMcpu(CPU);
     // Bypass if target cpu's default march is empty.
     if (MArch != "")
       return MArch;
@@ -280,10 +290,14 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
 
     if (MABI.equals_insensitive("ilp32e"))
       return "rv32e";
-    else if (MABI.startswith_insensitive("ilp32"))
+    else if (MABI.starts_with_insensitive("ilp32"))
       return "rv32imafdc";
-    else if (MABI.startswith_insensitive("lp64"))
+    else if (MABI.starts_with_insensitive("lp64")) {
+      if (Triple.isAndroid())
+        return "rv64imafdc_zba_zbb_zbs";
+
       return "rv64imafdc";
+    }
   }
 
   // 4. Choose a default based on the triple
@@ -291,7 +305,7 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   // We deviate from GCC's defaults here:
   // - On `riscv{XLEN}-unknown-elf` we default to `rv{XLEN}imac`
   // - On all other OSs we use `rv{XLEN}imafdc` (equivalent to `rv{XLEN}gc`)
-  if (Triple.getArch() == llvm::Triple::riscv32) {
+  if (Triple.isRISCV32()) {
     if (Triple.getOS() == llvm::Triple::UnknownOS)
       return "rv32imac";
     else
@@ -299,7 +313,26 @@ StringRef riscv::getRISCVArch(const llvm::opt::ArgList &Args,
   } else {
     if (Triple.getOS() == llvm::Triple::UnknownOS)
       return "rv64imac";
+    else if (Triple.isAndroid())
+      return "rv64imafdc_zba_zbb_zbs";
     else
       return "rv64imafdc";
   }
+}
+
+std::string riscv::getRISCVTargetCPU(const llvm::opt::ArgList &Args,
+                                     const llvm::Triple &Triple) {
+  std::string CPU;
+  // If we have -mcpu, use that.
+  if (const Arg *A = Args.getLastArg(options::OPT_mcpu_EQ))
+    CPU = A->getValue();
+
+  // Handle CPU name is 'native'.
+  if (CPU == "native")
+    CPU = llvm::sys::getHostCPUName();
+
+  if (!CPU.empty())
+    return CPU;
+
+  return Triple.isRISCV64() ? "generic-rv64" : "generic-rv32";
 }

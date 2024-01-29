@@ -184,8 +184,8 @@ static SymbolMap toSymbolMap(LLVMOrcCSymbolMapPairs Syms, size_t NumPairs) {
   SymbolMap SM;
   for (size_t I = 0; I != NumPairs; ++I) {
     JITSymbolFlags Flags = toJITSymbolFlags(Syms[I].Sym.Flags);
-    SM[OrcV2CAPIHelper::moveToSymbolStringPtr(unwrap(Syms[I].Name))] =
-        JITEvaluatedSymbol(Syms[I].Sym.Address, Flags);
+    SM[OrcV2CAPIHelper::moveToSymbolStringPtr(unwrap(Syms[I].Name))] = {
+        ExecutorAddr(Syms[I].Sym.Address), Flags};
   }
   return SM;
 }
@@ -269,8 +269,8 @@ static LLVMOrcSymbolLookupFlags fromSymbolLookupFlags(SymbolLookupFlags SLF) {
 }
 
 static LLVMJITEvaluatedSymbol
-fromJITEvaluatedSymbol(const JITEvaluatedSymbol &S) {
-  return {S.getAddress(), fromJITSymbolFlags(S.getFlags())};
+fromExecutorSymbolDef(const ExecutorSymbolDef &S) {
+  return {S.getAddress().getValue(), fromJITSymbolFlags(S.getFlags())};
 }
 
 } // end anonymous namespace
@@ -385,7 +385,7 @@ void LLVMOrcExecutionSessionLookup(
           for (auto &KV : *Result)
             CResult.push_back(LLVMOrcCSymbolMapPair{
                 wrap(OrcV2CAPIHelper::getRawPoolEntryPtr(KV.first)),
-                fromJITEvaluatedSymbol(KV.second)});
+                fromExecutorSymbolDef(KV.second)});
           HandleResult(LLVMErrorSuccess, CResult.data(), CResult.size(), Ctx);
         } else
           HandleResult(wrap(Result.takeError()), nullptr, 0, Ctx);
@@ -741,31 +741,19 @@ LLVMErrorRef LLVMOrcCreateDynamicLibrarySearchGeneratorForPath(
 
 LLVMErrorRef LLVMOrcCreateStaticLibrarySearchGeneratorForPath(
     LLVMOrcDefinitionGeneratorRef *Result, LLVMOrcObjectLayerRef ObjLayer,
-    const char *FileName, const char *TargetTriple) {
+    const char *FileName) {
   assert(Result && "Result can not be null");
   assert(FileName && "Filename can not be null");
   assert(ObjLayer && "ObjectLayer can not be null");
 
-  if (TargetTriple) {
-    auto TT = Triple(TargetTriple);
-    auto LibrarySymsGenerator =
-        StaticLibraryDefinitionGenerator::Load(*unwrap(ObjLayer), FileName, TT);
-    if (!LibrarySymsGenerator) {
-      *Result = nullptr;
-      return wrap(LibrarySymsGenerator.takeError());
-    }
-    *Result = wrap(LibrarySymsGenerator->release());
-    return LLVMErrorSuccess;
-  } else {
-    auto LibrarySymsGenerator =
-        StaticLibraryDefinitionGenerator::Load(*unwrap(ObjLayer), FileName);
-    if (!LibrarySymsGenerator) {
-      *Result = nullptr;
-      return wrap(LibrarySymsGenerator.takeError());
-    }
-    *Result = wrap(LibrarySymsGenerator->release());
-    return LLVMErrorSuccess;
+  auto LibrarySymsGenerator =
+      StaticLibraryDefinitionGenerator::Load(*unwrap(ObjLayer), FileName);
+  if (!LibrarySymsGenerator) {
+    *Result = nullptr;
+    return wrap(LibrarySymsGenerator.takeError());
   }
+  *Result = wrap(LibrarySymsGenerator->release());
+  return LLVMErrorSuccess;
 }
 
 LLVMOrcThreadSafeContextRef LLVMOrcCreateNewThreadSafeContext(void) {
@@ -859,9 +847,9 @@ LLVMErrorRef LLVMOrcObjectLayerAddObjectFile(LLVMOrcObjectLayerRef ObjLayer,
       *unwrap(JD), std::unique_ptr<MemoryBuffer>(unwrap(ObjBuffer))));
 }
 
-LLVMErrorRef LLVMOrcLLJITAddObjectFileWithRT(LLVMOrcObjectLayerRef ObjLayer,
-                                             LLVMOrcResourceTrackerRef RT,
-                                             LLVMMemoryBufferRef ObjBuffer) {
+LLVMErrorRef LLVMOrcObjectLayerAddObjectFileWithRT(LLVMOrcObjectLayerRef ObjLayer,
+                                                   LLVMOrcResourceTrackerRef RT,
+                                                   LLVMMemoryBufferRef ObjBuffer) {
   return wrap(
       unwrap(ObjLayer)->add(ResourceTrackerSP(unwrap(RT)),
                             std::unique_ptr<MemoryBuffer>(unwrap(ObjBuffer))));
@@ -892,7 +880,10 @@ void LLVMOrcIRTransformLayerSetTransform(
               assert(!TSMRef && "TSMRef was not reset to null on error");
               return unwrap(Err);
             }
-            return std::move(*unwrap(TSMRef));
+            assert(TSMRef && "Transform succeeded, but TSMRef was set to null");
+            ThreadSafeModule Result = std::move(*unwrap(TSMRef));
+            LLVMOrcDisposeThreadSafeModule(TSMRef);
+            return std::move(Result);
           });
 }
 
@@ -1066,6 +1057,116 @@ LLVMOrcCreateRTDyldObjectLinkingLayerWithSectionMemoryManager(
       *unwrap(ES), [] { return std::make_unique<SectionMemoryManager>(); }));
 }
 
+LLVMOrcObjectLayerRef
+LLVMOrcCreateRTDyldObjectLinkingLayerWithMCJITMemoryManagerLikeCallbacks(
+    LLVMOrcExecutionSessionRef ES, void *CreateContextCtx,
+    LLVMMemoryManagerCreateContextCallback CreateContext,
+    LLVMMemoryManagerNotifyTerminatingCallback NotifyTerminating,
+    LLVMMemoryManagerAllocateCodeSectionCallback AllocateCodeSection,
+    LLVMMemoryManagerAllocateDataSectionCallback AllocateDataSection,
+    LLVMMemoryManagerFinalizeMemoryCallback FinalizeMemory,
+    LLVMMemoryManagerDestroyCallback Destroy) {
+
+  struct MCJITMemoryManagerLikeCallbacks {
+    MCJITMemoryManagerLikeCallbacks() = default;
+    MCJITMemoryManagerLikeCallbacks(
+        void *CreateContextCtx,
+        LLVMMemoryManagerCreateContextCallback CreateContext,
+        LLVMMemoryManagerNotifyTerminatingCallback NotifyTerminating,
+        LLVMMemoryManagerAllocateCodeSectionCallback AllocateCodeSection,
+        LLVMMemoryManagerAllocateDataSectionCallback AllocateDataSection,
+        LLVMMemoryManagerFinalizeMemoryCallback FinalizeMemory,
+        LLVMMemoryManagerDestroyCallback Destroy)
+        : CreateContextCtx(CreateContextCtx), CreateContext(CreateContext),
+          NotifyTerminating(NotifyTerminating),
+          AllocateCodeSection(AllocateCodeSection),
+          AllocateDataSection(AllocateDataSection),
+          FinalizeMemory(FinalizeMemory), Destroy(Destroy) {}
+
+    MCJITMemoryManagerLikeCallbacks(MCJITMemoryManagerLikeCallbacks &&Other) {
+      std::swap(CreateContextCtx, Other.CreateContextCtx);
+      std::swap(CreateContext, Other.CreateContext);
+      std::swap(NotifyTerminating, Other.NotifyTerminating);
+      std::swap(AllocateCodeSection, Other.AllocateCodeSection);
+      std::swap(AllocateDataSection, Other.AllocateDataSection);
+      std::swap(FinalizeMemory, Other.FinalizeMemory);
+      std::swap(Destroy, Other.Destroy);
+    }
+
+    ~MCJITMemoryManagerLikeCallbacks() {
+      if (NotifyTerminating)
+        NotifyTerminating(CreateContextCtx);
+    }
+
+    void *CreateContextCtx = nullptr;
+    LLVMMemoryManagerCreateContextCallback CreateContext = nullptr;
+    LLVMMemoryManagerNotifyTerminatingCallback NotifyTerminating = nullptr;
+    LLVMMemoryManagerAllocateCodeSectionCallback AllocateCodeSection = nullptr;
+    LLVMMemoryManagerAllocateDataSectionCallback AllocateDataSection = nullptr;
+    LLVMMemoryManagerFinalizeMemoryCallback FinalizeMemory = nullptr;
+    LLVMMemoryManagerDestroyCallback Destroy = nullptr;
+  };
+
+  class MCJITMemoryManagerLikeCallbacksMemMgr : public RTDyldMemoryManager {
+  public:
+    MCJITMemoryManagerLikeCallbacksMemMgr(
+        const MCJITMemoryManagerLikeCallbacks &CBs)
+        : CBs(CBs) {
+      Opaque = CBs.CreateContext(CBs.CreateContextCtx);
+    }
+    ~MCJITMemoryManagerLikeCallbacksMemMgr() override { CBs.Destroy(Opaque); }
+
+    uint8_t *allocateCodeSection(uintptr_t Size, unsigned Alignment,
+                                 unsigned SectionID,
+                                 StringRef SectionName) override {
+      return CBs.AllocateCodeSection(Opaque, Size, Alignment, SectionID,
+                                     SectionName.str().c_str());
+    }
+
+    uint8_t *allocateDataSection(uintptr_t Size, unsigned Alignment,
+                                 unsigned SectionID, StringRef SectionName,
+                                 bool isReadOnly) override {
+      return CBs.AllocateDataSection(Opaque, Size, Alignment, SectionID,
+                                     SectionName.str().c_str(), isReadOnly);
+    }
+
+    bool finalizeMemory(std::string *ErrMsg) override {
+      char *ErrMsgCString = nullptr;
+      bool Result = CBs.FinalizeMemory(Opaque, &ErrMsgCString);
+      assert((Result || !ErrMsgCString) &&
+             "Did not expect an error message if FinalizeMemory succeeded");
+      if (ErrMsgCString) {
+        if (ErrMsg)
+          *ErrMsg = ErrMsgCString;
+        free(ErrMsgCString);
+      }
+      return Result;
+    }
+
+  private:
+    const MCJITMemoryManagerLikeCallbacks &CBs;
+    void *Opaque = nullptr;
+  };
+
+  assert(ES && "ES must not be null");
+  assert(CreateContext && "CreateContext must not be null");
+  assert(NotifyTerminating && "NotifyTerminating must not be null");
+  assert(AllocateCodeSection && "AllocateCodeSection must not be null");
+  assert(AllocateDataSection && "AllocateDataSection must not be null");
+  assert(FinalizeMemory && "FinalizeMemory must not be null");
+  assert(Destroy && "Destroy must not be null");
+
+  MCJITMemoryManagerLikeCallbacks CBs(
+      CreateContextCtx, CreateContext, NotifyTerminating, AllocateCodeSection,
+      AllocateDataSection, FinalizeMemory, Destroy);
+
+  return wrap(new RTDyldObjectLinkingLayer(*unwrap(ES), [CBs = std::move(CBs)] {
+    return std::make_unique<MCJITMemoryManagerLikeCallbacksMemMgr>(CBs);
+  }));
+
+  return nullptr;
+}
+
 void LLVMOrcRTDyldObjectLinkingLayerRegisterJITEventListener(
     LLVMOrcObjectLayerRef RTDyldObjLinkingLayer,
     LLVMJITEventListenerRef Listener) {
@@ -1097,8 +1198,8 @@ LLVMErrorRef LLVMOrcCreateLocalLazyCallThroughManager(
     const char *TargetTriple, LLVMOrcExecutionSessionRef ES,
     LLVMOrcJITTargetAddress ErrorHandlerAddr,
     LLVMOrcLazyCallThroughManagerRef *Result) {
-  auto LCTM = createLocalLazyCallThroughManager(Triple(TargetTriple),
-                                                *unwrap(ES), ErrorHandlerAddr);
+  auto LCTM = createLocalLazyCallThroughManager(
+      Triple(TargetTriple), *unwrap(ES), ExecutorAddr(ErrorHandlerAddr));
 
   if (!LCTM)
     return wrap(LCTM.takeError());

@@ -1,4 +1,4 @@
-//===- SROA.h - Scalar Replacement Of Aggregates ----------------*- C++ -*-===//
+﻿//===- SROA.h - Scalar Replacement Of Aggregates ----------------*- C++ -*-===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -15,17 +15,23 @@
 #ifndef LLVM_TRANSFORMS_SCALAR_SROA_H
 #define LLVM_TRANSFORMS_SCALAR_SROA_H
 
+#include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/PointerIntPair.h"
 #include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/IR/PassManager.h"
 #include "llvm/IR/ValueHandle.h"
+#include <variant>
 #include <vector>
 
 namespace llvm {
 
 class AllocaInst;
+class LoadInst;
+class StoreInst;
 class AssumptionCache;
 class DominatorTree;
+class DomTreeUpdater;
 class Function;
 class LLVMContext;
 class PHINode;
@@ -34,14 +40,40 @@ class Use;
 
 /// A private "module" namespace for types and utilities used by SROA. These
 /// are implementation details and should not be used by clients.
-namespace sroa LLVM_LIBRARY_VISIBILITY {
+namespace LLVM_LIBRARY_VISIBILITY sroa {
 
 class AllocaSliceRewriter;
 class AllocaSlices;
 class Partition;
 class SROALegacyPass;
 
+class SelectHandSpeculativity {
+  unsigned char Storage = 0; // None are speculatable by default.
+  using TrueVal = Bitfield::Element<bool, 0, 1>;  // Low 0'th bit.
+  using FalseVal = Bitfield::Element<bool, 1, 1>; // Low 1'th bit.
+public:
+  SelectHandSpeculativity() = default;
+  SelectHandSpeculativity &setAsSpeculatable(bool isTrueVal);
+  bool isSpeculatable(bool isTrueVal) const;
+  bool areAllSpeculatable() const;
+  bool areAnySpeculatable() const;
+  bool areNoneSpeculatable() const;
+  // For interop as int half of PointerIntPair.
+  explicit operator intptr_t() const { return static_cast<intptr_t>(Storage); }
+  explicit SelectHandSpeculativity(intptr_t Storage_) : Storage(Storage_) {}
+};
+static_assert(sizeof(SelectHandSpeculativity) == sizeof(unsigned char));
+
+using PossiblySpeculatableLoad =
+    PointerIntPair<LoadInst *, 2, sroa::SelectHandSpeculativity>;
+using UnspeculatableStore = StoreInst *;
+using RewriteableMemOp =
+    std::variant<PossiblySpeculatableLoad, UnspeculatableStore>;
+using RewriteableMemOps = SmallVector<RewriteableMemOp, 2>;
+
 } // end namespace sroa
+
+enum class SROAOptions : bool { ModifyCFG, PreserveCFG };
 
 /// An optimization pass providing Scalar Replacement of Aggregates.
 ///
@@ -63,8 +95,9 @@ class SROALegacyPass;
 ///    SSA vector values.
 class SROAPass : public PassInfoMixin<SROAPass> {
   LLVMContext *C = nullptr;
-  DominatorTree *DT = nullptr;
+  DomTreeUpdater *DTU = nullptr;
   AssumptionCache *AC = nullptr;
+  const bool PreserveCFG;
 
   /// Worklist of alloca instructions to simplify.
   ///
@@ -73,7 +106,7 @@ class SROAPass : public PassInfoMixin<SROAPass> {
   /// directly promoted. Finally, each time we rewrite a use of an alloca other
   /// the one being actively rewritten, we add it back onto the list if not
   /// already present to ensure it is re-visited.
-  SetVector<AllocaInst *, SmallVector<AllocaInst *, 16>> Worklist;
+  SmallSetVector<AllocaInst *, 16> Worklist;
 
   /// A collection of instructions to delete.
   /// We try to batch deletions to simplify code and make things a bit more
@@ -88,7 +121,7 @@ class SROAPass : public PassInfoMixin<SROAPass> {
   ///
   /// Note that we have to be very careful to clear allocas out of this list in
   /// the event they are deleted.
-  SetVector<AllocaInst *, SmallVector<AllocaInst *, 16>> PostPromotionWorklist;
+  SmallSetVector<AllocaInst *, 16> PostPromotionWorklist;
 
   /// A collection of alloca instructions we can directly promote.
   std::vector<AllocaInst *> PromotableAllocas;
@@ -98,27 +131,49 @@ class SROAPass : public PassInfoMixin<SROAPass> {
   /// All of these PHIs have been checked for the safety of speculation and by
   /// being speculated will allow promoting allocas currently in the promotable
   /// queue.
-  SetVector<PHINode *, SmallVector<PHINode *, 2>> SpeculatablePHIs;
+  SmallSetVector<PHINode *, 8> SpeculatablePHIs;
 
-  /// A worklist of select instructions to speculate prior to promoting
+  /// A worklist of select instructions to rewrite prior to promoting
   /// allocas.
+  SmallMapVector<SelectInst *, sroa::RewriteableMemOps, 8> SelectsToRewrite;
+
+  /// Select instructions that use an alloca and are subsequently loaded can be
+  /// rewritten to load both input pointers and then select between the result,
+  /// allowing the load of the alloca to be promoted.
+  /// From this:
+  ///   %P2 = select i1 %cond, ptr %Alloca, ptr %Other
+  ///   %V = load <type>, ptr %P2
+  /// to:
+  ///   %V1 = load <type>, ptr %Alloca      -> will be mem2reg'd
+  ///   %V2 = load <type>, ptr %Other
+  ///   %V = select i1 %cond, <type> %V1, <type> %V2
   ///
-  /// All of these select instructions have been checked for the safety of
-  /// speculation and by being speculated will allow promoting allocas
-  /// currently in the promotable queue.
-  SetVector<SelectInst *, SmallVector<SelectInst *, 2>> SpeculatableSelects;
+  /// We can do this to a select if its only uses are loads
+  /// and if either the operand to the select can be loaded unconditionally,
+  ///        or if we are allowed to perform CFG modifications.
+  /// If found an intervening bitcast with a single use of the load,
+  /// allow the promotion.
+  static std::optional<sroa::RewriteableMemOps>
+  isSafeSelectToSpeculate(SelectInst &SI, bool PreserveCFG);
 
 public:
-  SROAPass() = default;
+  /// If \p PreserveCFG is set, then the pass is not allowed to modify CFG
+  /// in any way, even if it would update CFG analyses.
+  SROAPass(SROAOptions PreserveCFG);
 
   /// Run the pass over the function.
   PreservedAnalyses run(Function &F, FunctionAnalysisManager &AM);
+
+  void printPipeline(raw_ostream &OS,
+                     function_ref<StringRef(StringRef)> MapClassName2PassName);
 
 private:
   friend class sroa::AllocaSliceRewriter;
   friend class sroa::SROALegacyPass;
 
   /// Helper used by both the public run method and by the legacy pass.
+  PreservedAnalyses runImpl(Function &F, DomTreeUpdater &RunDTU,
+                            AssumptionCache &RunAC);
   PreservedAnalyses runImpl(Function &F, DominatorTree &RunDT,
                             AssumptionCache &RunAC);
 
@@ -126,7 +181,7 @@ private:
   AllocaInst *rewritePartition(AllocaInst &AI, sroa::AllocaSlices &AS,
                                sroa::Partition &P);
   bool splitAlloca(AllocaInst &AI, sroa::AllocaSlices &AS);
-  bool runOnAlloca(AllocaInst &AI);
+  std::pair<bool /*Changed*/, bool /*CFGChanged*/> runOnAlloca(AllocaInst &AI);
   void clobberUse(Use &U);
   bool deleteDeadInstructions(SmallPtrSetImpl<AllocaInst *> &DeletedAllocas);
   bool promoteAllocas(Function &F);

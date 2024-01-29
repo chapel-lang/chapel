@@ -6,80 +6,18 @@
 //
 //===----------------------------------------------------------------------===//
 
-#include "clang/Format/Format.h"
+#include "FormatTestBase.h"
 
-#include "../Tooling/ReplacementTest.h"
-#include "FormatTestUtils.h"
-
-#include "llvm/Support/Debug.h"
-#include "llvm/Support/MemoryBuffer.h"
-#include "gtest/gtest.h"
-
-#define DEBUG_TYPE "format-test"
-
-using clang::tooling::ReplacementTest;
+#define DEBUG_TYPE "format-test-comments"
 
 namespace clang {
 namespace format {
+namespace test {
 namespace {
 
 FormatStyle getGoogleStyle() { return getGoogleStyle(FormatStyle::LK_Cpp); }
 
-class FormatTestComments : public ::testing::Test {
-protected:
-  enum StatusCheck { SC_ExpectComplete, SC_ExpectIncomplete, SC_DoNotCheck };
-
-  std::string format(llvm::StringRef Code,
-                     const FormatStyle &Style = getLLVMStyle(),
-                     StatusCheck CheckComplete = SC_ExpectComplete) {
-    LLVM_DEBUG(llvm::errs() << "---\n");
-    LLVM_DEBUG(llvm::errs() << Code << "\n\n");
-    std::vector<tooling::Range> Ranges(1, tooling::Range(0, Code.size()));
-    FormattingAttemptStatus Status;
-    tooling::Replacements Replaces =
-        reformat(Style, Code, Ranges, "<stdin>", &Status);
-    if (CheckComplete != SC_DoNotCheck) {
-      bool ExpectedCompleteFormat = CheckComplete == SC_ExpectComplete;
-      EXPECT_EQ(ExpectedCompleteFormat, Status.FormatComplete)
-          << Code << "\n\n";
-    }
-    ReplacementCount = Replaces.size();
-    auto Result = applyAllReplacements(Code, Replaces);
-    EXPECT_TRUE(static_cast<bool>(Result));
-    LLVM_DEBUG(llvm::errs() << "\n" << *Result << "\n\n");
-    return *Result;
-  }
-
-  FormatStyle getLLVMStyleWithColumns(unsigned ColumnLimit) {
-    FormatStyle Style = getLLVMStyle();
-    Style.ColumnLimit = ColumnLimit;
-    return Style;
-  }
-
-  FormatStyle getTextProtoStyleWithColumns(unsigned ColumnLimit) {
-    FormatStyle Style = getGoogleStyle(FormatStyle::FormatStyle::LK_TextProto);
-    Style.ColumnLimit = ColumnLimit;
-    return Style;
-  }
-
-  void verifyFormat(llvm::StringRef Code,
-                    const FormatStyle &Style = getLLVMStyle()) {
-    EXPECT_EQ(Code.str(), format(Code, Style)) << "Expected code is not stable";
-    EXPECT_EQ(Code.str(), format(test::messUp(Code), Style));
-  }
-
-  void verifyGoogleFormat(llvm::StringRef Code) {
-    verifyFormat(Code, getGoogleStyle());
-  }
-
-  /// \brief Verify that clang-format does not crash on the given input.
-  void verifyNoCrash(llvm::StringRef Code,
-                     const FormatStyle &Style = getLLVMStyle()) {
-    format(Code, Style, SC_DoNotCheck);
-  }
-
-  int ReplacementCount;
-};
+class FormatTestComments : public FormatTestBase {};
 
 //===----------------------------------------------------------------------===//
 // Tests for comments.
@@ -616,9 +554,8 @@ TEST_F(FormatTestComments, SplitsLongCxxComments) {
             "          // one line",
             format("if (true) // A comment that doesn't fit on one line   ",
                    getLLVMStyleWithColumns(30)));
-  EXPECT_EQ("//    Don't_touch_leading_whitespace",
-            format("//    Don't_touch_leading_whitespace",
-                   getLLVMStyleWithColumns(20)));
+  verifyNoChange("//    Don't_touch_leading_whitespace",
+                 getLLVMStyleWithColumns(20));
   EXPECT_EQ("// Add leading\n"
             "// whitespace",
             format("//Add leading whitespace", getLLVMStyleWithColumns(20)));
@@ -628,12 +565,12 @@ TEST_F(FormatTestComments, SplitsLongCxxComments) {
   EXPECT_EQ("//! Add leading\n"
             "//! whitespace",
             format("//!Add leading whitespace", getLLVMStyleWithColumns(20)));
-  EXPECT_EQ("// whitespace", format("//whitespace", getLLVMStyle()));
+  EXPECT_EQ("// whitespace", format("//whitespace"));
   EXPECT_EQ("// Even if it makes the line exceed the column\n"
             "// limit",
             format("//Even if it makes the line exceed the column limit",
                    getLLVMStyleWithColumns(51)));
-  EXPECT_EQ("//--But not here", format("//--But not here", getLLVMStyle()));
+  verifyFormat("//--But not here");
   EXPECT_EQ("/// line 1\n"
             "// add leading whitespace",
             format("/// line 1\n"
@@ -676,9 +613,8 @@ TEST_F(FormatTestComments, SplitsLongCxxComments) {
                    "    int bbbbbbbbbb, // xxxxxxx yyyyyyyyyy\n"
                    "    int c, int d, int e) {}",
                    getLLVMStyleWithColumns(40)));
-  EXPECT_EQ("//\t aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-            format("//\t aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-                   getLLVMStyleWithColumns(20)));
+  verifyFormat("//\t aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+               getLLVMStyleWithColumns(20));
   EXPECT_EQ(
       "#define XXX // a b c d\n"
       "            // e f g h",
@@ -716,6 +652,11 @@ TEST_F(FormatTestComments, SplitsLongCxxComments) {
             "//: one line",
             format("//: A comment that doesn't fit on one line",
                    getLLVMStyleWithColumns(20)));
+
+  verifyFormat(
+      "//\t\t\t\tofMap(message.velocity, 0, 127, 0, ofGetWidth()\n"
+      "//* 0.2)",
+      "//\t\t\t\tofMap(message.velocity, 0, 127, 0, ofGetWidth() * 0.2)");
 }
 
 TEST_F(FormatTestComments, PreservesHangingIndentInCxxComments) {
@@ -1121,6 +1062,24 @@ TEST_F(FormatTestComments, KeepsLevelOfCommentBeforePPDirective) {
                    "#endif\n"
                    "  }\n"
                    "}"));
+
+  const StringRef Code("void func() {\n"
+                       "  // clang-format off\n"
+                       "  #define KV(value) #value, value\n"
+                       "  // clang-format on\n"
+                       "}");
+  verifyNoChange(Code);
+
+  auto Style = getLLVMStyle();
+  Style.IndentPPDirectives = FormatStyle::PPDIS_BeforeHash;
+  verifyFormat("#ifdef FOO\n"
+               "  // Foo\n"
+               "  #define Foo foo\n"
+               "#else\n"
+               "  // Bar\n"
+               "  #define Bar bar\n"
+               "#endif",
+               Style);
 }
 
 TEST_F(FormatTestComments, SplitsLongLinesInComments) {
@@ -1283,9 +1242,8 @@ TEST_F(FormatTestComments, SplitsLongLinesInComments) {
 
   // This reproduces a crashing bug where both adaptStartOfLine and
   // getCommentSplit were trying to wrap after the "/**".
-  EXPECT_EQ("/** multilineblockcommentwithnowrapopportunity */",
-            format("/** multilineblockcommentwithnowrapopportunity */",
-                   getLLVMStyleWithColumns(20)));
+  verifyFormat("/** multilineblockcommentwithnowrapopportunity */",
+               getLLVMStyleWithColumns(20));
 
   EXPECT_EQ("/*\n"
             "\n"
@@ -1706,8 +1664,7 @@ TEST_F(FormatTestComments, ReflowsComments) {
                                         getLLVMStyleWithColumns(20)));
 
   // Don't shrink leading whitespace.
-  EXPECT_EQ("int i; ///           a",
-            format("int i; ///           a", getLLVMStyleWithColumns(20)));
+  verifyNoChange("int i; ///           a", getLLVMStyleWithColumns(20));
 
   // Shrink trailing whitespace if there is no postfix and reflow.
   EXPECT_EQ("// long long long\n"
@@ -2418,7 +2375,7 @@ TEST_F(FormatTestComments, BlockComments) {
             format("#define A\n"
                    "/* */someCall(parameter);",
                    getLLVMStyleWithColumns(15)));
-  EXPECT_EQ("/*\n**\n*/", format("/*\n**\n*/"));
+  verifyNoChange("/*\n**\n*/");
   EXPECT_EQ("/*\n"
             " *\n"
             " * aaaaaa\n"
@@ -2814,7 +2771,7 @@ TEST_F(FormatTestComments, AlignTrailingComments) {
 
   // Checks an edge case in preprocessor handling.
   // These comments should *not* be aligned
-  EXPECT_NE( // change for EQ when fixed
+  EXPECT_EQ(
       "#if FOO\n"
       "#else\n"
       "long a; // Line about a\n"
@@ -2858,69 +2815,340 @@ TEST_F(FormatTestComments, AlignTrailingComments) {
                "int a; //\n");
 }
 
+TEST_F(FormatTestComments, AlignTrailingCommentsAcrossEmptyLines) {
+  FormatStyle Style = getLLVMStyle();
+  Style.AlignTrailingComments.Kind = FormatStyle::TCAS_Always;
+  Style.AlignTrailingComments.OverEmptyLines = 1;
+  verifyFormat("#include \"a.h\"  // simple\n"
+               "\n"
+               "#include \"aa.h\" // example case\n",
+               Style);
+
+  verifyFormat("#include \"a.h\"   // align across\n"
+               "\n"
+               "#include \"aa.h\"  // two empty lines\n"
+               "\n"
+               "#include \"aaa.h\" // in a row\n",
+               Style);
+
+  verifyFormat("#include \"a.h\"      // align\n"
+               "#include \"aa.h\"     // comment\n"
+               "#include \"aaa.h\"    // blocks\n"
+               "\n"
+               "#include \"aaaa.h\"   // across\n"
+               "#include \"aaaaa.h\"  // one\n"
+               "#include \"aaaaaa.h\" // empty line\n",
+               Style);
+
+  verifyFormat("#include \"a.h\"  // align trailing comments\n"
+               "#include \"a.h\"\n"
+               "#include \"aa.h\" // across a line without comment\n",
+               Style);
+
+  verifyFormat("#include \"a.h\"   // align across\n"
+               "#include \"a.h\"\n"
+               "#include \"aa.h\"  // two lines without comment\n"
+               "#include \"a.h\"\n"
+               "#include \"aaa.h\" // in a row\n",
+               Style);
+
+  verifyFormat("#include \"a.h\"      // align\n"
+               "#include \"aa.h\"     // comment\n"
+               "#include \"aaa.h\"    // blocks\n"
+               "#include \"a.h\"\n"
+               "#include \"aaaa.h\"   // across\n"
+               "#include \"aaaaa.h\"  // a line without\n"
+               "#include \"aaaaaa.h\" // comment\n",
+               Style);
+
+  // Start of testing OverEmptyLines
+  Style.MaxEmptyLinesToKeep = 3;
+  Style.AlignTrailingComments.OverEmptyLines = 2;
+  // Cannot use verifyFormat here
+  // test::messUp removes all new lines which changes the logic
+  EXPECT_EQ("#include \"a.h\" // comment\n"
+            "\n"
+            "\n"
+            "\n"
+            "#include \"ab.h\"      // comment\n"
+            "\n"
+            "\n"
+            "#include \"abcdefg.h\" // comment\n",
+            format("#include \"a.h\" // comment\n"
+                   "\n"
+                   "\n"
+                   "\n"
+                   "#include \"ab.h\" // comment\n"
+                   "\n"
+                   "\n"
+                   "#include \"abcdefg.h\" // comment\n",
+                   Style));
+
+  Style.MaxEmptyLinesToKeep = 1;
+  Style.AlignTrailingComments.OverEmptyLines = 1;
+  // End of testing OverEmptyLines
+
+  Style.ColumnLimit = 15;
+  EXPECT_EQ("int ab; // line\n"
+            "int a;  // long\n"
+            "        // long\n"
+            "\n"
+            "        // long",
+            format("int ab; // line\n"
+                   "int a; // long long\n"
+                   "\n"
+                   "// long",
+                   Style));
+
+  Style.ColumnLimit = 15;
+  EXPECT_EQ("int ab; // line\n"
+            "\n"
+            "int a;  // long\n"
+            "        // long\n",
+            format("int ab; // line\n"
+                   "\n"
+                   "int a; // long long\n",
+                   Style));
+
+  Style.ColumnLimit = 30;
+  EXPECT_EQ("int foo = 12345; // comment\n"
+            "int bar =\n"
+            "    1234;  // This is a very\n"
+            "           // long comment\n"
+            "           // which is wrapped\n"
+            "           // arround.\n"
+            "\n"
+            "int x = 2; // Is this still\n"
+            "           // aligned?\n",
+            format("int foo = 12345; // comment\n"
+                   "int bar = 1234; // This is a very long comment\n"
+                   "                // which is wrapped arround.\n"
+                   "\n"
+                   "int x = 2; // Is this still aligned?\n",
+                   Style));
+
+  Style.ColumnLimit = 35;
+  EXPECT_EQ("int foo = 12345; // comment\n"
+            "int bar =\n"
+            "    1234; // This is a very long\n"
+            "          // comment which is\n"
+            "          // wrapped arround.\n"
+            "\n"
+            "int x =\n"
+            "    2; // Is this still aligned?\n",
+            format("int foo = 12345; // comment\n"
+                   "int bar = 1234; // This is a very long comment\n"
+                   "                // which is wrapped arround.\n"
+                   "\n"
+                   "int x = 2; // Is this still aligned?\n",
+                   Style));
+
+  Style.ColumnLimit = 40;
+  EXPECT_EQ("int foo = 12345; // comment\n"
+            "int bar =\n"
+            "    1234; // This is a very long comment\n"
+            "          // which is wrapped arround.\n"
+            "\n"
+            "int x = 2; // Is this still aligned?\n",
+            format("int foo = 12345; // comment\n"
+                   "int bar = 1234; // This is a very long comment\n"
+                   "                // which is wrapped arround.\n"
+                   "\n"
+                   "int x = 2; // Is this still aligned?\n",
+                   Style));
+
+  Style.ColumnLimit = 45;
+  EXPECT_EQ("int foo = 12345; // comment\n"
+            "int bar =\n"
+            "    1234;  // This is a very long comment\n"
+            "           // which is wrapped arround.\n"
+            "\n"
+            "int x = 2; // Is this still aligned?\n",
+            format("int foo = 12345; // comment\n"
+                   "int bar = 1234; // This is a very long comment\n"
+                   "                // which is wrapped arround.\n"
+                   "\n"
+                   "int x = 2; // Is this still aligned?\n",
+                   Style));
+
+  Style.ColumnLimit = 80;
+  EXPECT_EQ("int a; // line about a\n"
+            "\n"
+            "// line about b\n"
+            "long b;",
+            format("int a; // line about a\n"
+                   "\n"
+                   "       // line about b\n"
+                   "       long b;",
+                   Style));
+
+  Style.ColumnLimit = 80;
+  EXPECT_EQ("int a; // line about a\n"
+            "\n"
+            "// line 1 about b\n"
+            "// line 2 about b\n"
+            "long b;",
+            format("int a; // line about a\n"
+                   "\n"
+                   "       // line 1 about b\n"
+                   "       // line 2 about b\n"
+                   "       long b;",
+                   Style));
+}
+
+TEST_F(FormatTestComments, AlignTrailingCommentsLeave) {
+  FormatStyle Style = getLLVMStyle();
+  Style.AlignTrailingComments.Kind = FormatStyle::TCAS_Leave;
+
+  EXPECT_EQ("int a;// do not touch\n"
+            "int b; // any comments\n"
+            "int c;  // comment\n"
+            "int d;   // comment\n",
+            format("int a;// do not touch\n"
+                   "int b; // any comments\n"
+                   "int c;  // comment\n"
+                   "int d;   // comment\n",
+                   Style));
+
+  EXPECT_EQ("int a;   // do not touch\n"
+            "int b;  // any comments\n"
+            "int c; // comment\n"
+            "int d;// comment\n",
+            format("int a;   // do not touch\n"
+                   "int b;  // any comments\n"
+                   "int c; // comment\n"
+                   "int d;// comment\n",
+                   Style));
+
+  EXPECT_EQ("// do not touch\n"
+            "int a;  // any comments\n"
+            "\n"
+            "   // comment\n"
+            "// comment\n"
+            "\n"
+            "// comment",
+            format("// do not touch\n"
+                   "int a;  // any comments\n"
+                   "\n"
+                   "   // comment\n"
+                   "// comment\n"
+                   "\n"
+                   "// comment",
+                   Style));
+
+  EXPECT_EQ("// do not touch\n"
+            "int a;  // any comments\n"
+            "\n"
+            "   // comment\n"
+            "// comment\n"
+            "\n"
+            "// comment",
+            format("// do not touch\n"
+                   "int a;  // any comments\n"
+                   "\n"
+                   "\n"
+                   "   // comment\n"
+                   "// comment\n"
+                   "\n"
+                   "\n"
+                   "// comment",
+                   Style));
+
+  verifyFormat("namespace ns {\n"
+               "int i;\n"
+               "int j;\n"
+               "} // namespace ns",
+               "namespace ns {\n"
+               "int i;\n"
+               "int j;\n"
+               "}",
+               Style);
+
+  // Allow to keep 2 empty lines
+  Style.MaxEmptyLinesToKeep = 2;
+  EXPECT_EQ("// do not touch\n"
+            "int a;  // any comments\n"
+            "\n"
+            "\n"
+            "   // comment\n"
+            "// comment\n"
+            "\n"
+            "// comment",
+            format("// do not touch\n"
+                   "int a;  // any comments\n"
+                   "\n"
+                   "\n"
+                   "   // comment\n"
+                   "// comment\n"
+                   "\n"
+                   "// comment",
+                   Style));
+  Style.MaxEmptyLinesToKeep = 1;
+
+  // Just format comments normally when leaving exceeds the column limit
+  Style.ColumnLimit = 35;
+  EXPECT_EQ("int foo = 12345; // comment\n"
+            "int bar =\n"
+            "    1234; // This is a very long\n"
+            "          // comment which is\n"
+            "          // wrapped arround.\n",
+            format("int foo = 12345; // comment\n"
+                   "int bar = 1234;       // This is a very long comment\n"
+                   "          // which is wrapped arround.\n",
+                   Style));
+}
+
 TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
   EXPECT_EQ("/*\n"
             " */",
             format("/*\n"
-                   "*/",
-                   getLLVMStyle()));
+                   "*/"));
   EXPECT_EQ("/*\n"
             " */",
             format("/*\n"
-                   " */",
-                   getLLVMStyle()));
+                   " */"));
   EXPECT_EQ("/*\n"
             " */",
             format("/*\n"
-                   "  */",
-                   getLLVMStyle()));
+                   "  */"));
 
   // Align a single line.
   EXPECT_EQ("/*\n"
             " * line */",
             format("/*\n"
-                   "* line */",
-                   getLLVMStyle()));
+                   "* line */"));
   EXPECT_EQ("/*\n"
             " * line */",
             format("/*\n"
-                   " * line */",
-                   getLLVMStyle()));
+                   " * line */"));
   EXPECT_EQ("/*\n"
             " * line */",
             format("/*\n"
-                   "  * line */",
-                   getLLVMStyle()));
+                   "  * line */"));
   EXPECT_EQ("/*\n"
             " * line */",
             format("/*\n"
-                   "   * line */",
-                   getLLVMStyle()));
+                   "   * line */"));
   EXPECT_EQ("/**\n"
             " * line */",
             format("/**\n"
-                   "* line */",
-                   getLLVMStyle()));
+                   "* line */"));
   EXPECT_EQ("/**\n"
             " * line */",
             format("/**\n"
-                   " * line */",
-                   getLLVMStyle()));
+                   " * line */"));
   EXPECT_EQ("/**\n"
             " * line */",
             format("/**\n"
-                   "  * line */",
-                   getLLVMStyle()));
+                   "  * line */"));
   EXPECT_EQ("/**\n"
             " * line */",
             format("/**\n"
-                   "   * line */",
-                   getLLVMStyle()));
+                   "   * line */"));
   EXPECT_EQ("/**\n"
             " * line */",
             format("/**\n"
-                   "    * line */",
-                   getLLVMStyle()));
+                   "    * line */"));
 
   // Align the end '*/' after a line.
   EXPECT_EQ("/*\n"
@@ -2928,64 +3156,53 @@ TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
             " */",
             format("/*\n"
                    "* line\n"
-                   "*/",
-                   getLLVMStyle()));
+                   "*/"));
   EXPECT_EQ("/*\n"
             " * line\n"
             " */",
             format("/*\n"
                    "   * line\n"
-                   "  */",
-                   getLLVMStyle()));
+                   "  */"));
   EXPECT_EQ("/*\n"
             " * line\n"
             " */",
             format("/*\n"
                    "  * line\n"
-                   "  */",
-                   getLLVMStyle()));
+                   "  */"));
 
   // Align two lines.
   EXPECT_EQ("/* line 1\n"
             " * line 2 */",
             format("/* line 1\n"
-                   " * line 2 */",
-                   getLLVMStyle()));
+                   " * line 2 */"));
   EXPECT_EQ("/* line 1\n"
             " * line 2 */",
             format("/* line 1\n"
-                   "* line 2 */",
-                   getLLVMStyle()));
+                   "* line 2 */"));
   EXPECT_EQ("/* line 1\n"
             " * line 2 */",
             format("/* line 1\n"
-                   "  * line 2 */",
-                   getLLVMStyle()));
+                   "  * line 2 */"));
   EXPECT_EQ("/* line 1\n"
             " * line 2 */",
             format("/* line 1\n"
-                   "   * line 2 */",
-                   getLLVMStyle()));
+                   "   * line 2 */"));
   EXPECT_EQ("/* line 1\n"
             " * line 2 */",
             format("/* line 1\n"
-                   "    * line 2 */",
-                   getLLVMStyle()));
+                   "    * line 2 */"));
   EXPECT_EQ("int i; /* line 1\n"
             "        * line 2 */",
             format("int i; /* line 1\n"
-                   "* line 2 */",
-                   getLLVMStyle()));
+                   "* line 2 */"));
   EXPECT_EQ("int i; /* line 1\n"
             "        * line 2 */",
             format("int i; /* line 1\n"
-                   "        * line 2 */",
-                   getLLVMStyle()));
+                   "        * line 2 */"));
   EXPECT_EQ("int i; /* line 1\n"
             "        * line 2 */",
             format("int i; /* line 1\n"
-                   "             * line 2 */",
-                   getLLVMStyle()));
+                   "             * line 2 */"));
 
   // Align several lines.
   EXPECT_EQ("/* line 1\n"
@@ -2993,15 +3210,13 @@ TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
             " * line 3 */",
             format("/* line 1\n"
                    " * line 2\n"
-                   "* line 3 */",
-                   getLLVMStyle()));
+                   "* line 3 */"));
   EXPECT_EQ("/* line 1\n"
             " * line 2\n"
             " * line 3 */",
             format("/* line 1\n"
                    "  * line 2\n"
-                   "* line 3 */",
-                   getLLVMStyle()));
+                   "* line 3 */"));
   EXPECT_EQ("/*\n"
             "** line 1\n"
             "** line 2\n"
@@ -3009,8 +3224,7 @@ TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
             format("/*\n"
                    "** line 1\n"
                    " ** line 2\n"
-                   "*/",
-                   getLLVMStyle()));
+                   "*/"));
 
   // Align with different indent after the decorations.
   EXPECT_EQ("/*\n"
@@ -3024,8 +3238,7 @@ TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
                    "  *  line 2\n"
                    "   * line 3\n"
                    "*   line 4\n"
-                   "*/",
-                   getLLVMStyle()));
+                   "*/"));
 
   // Align empty or blank lines.
   EXPECT_EQ("/**\n"
@@ -3037,8 +3250,7 @@ TEST_F(FormatTestComments, AlignsBlockCommentDecorations) {
                    "*  \n"
                    " * \n"
                    "  *\n"
-                   "*/",
-                   getLLVMStyle()));
+                   "*/"));
 
   // Align while breaking and reflowing.
   EXPECT_EQ("/*\n"
@@ -3305,7 +3517,7 @@ TEST_F(FormatTestComments, SpaceAtLineCommentBegin) {
             format(NoTextInComment, Style));
 
   Style.SpacesInLineCommentPrefix.Minimum = 0;
-  EXPECT_EQ("//#comment", format("//#comment", Style));
+  verifyFormat("//#comment", Style);
   EXPECT_EQ("//\n"
             "\n"
             "void foo() { //\n"
@@ -4104,5 +4316,6 @@ TEST_F(FormatTestComments, SplitCommentIntroducers) {
 }
 
 } // end namespace
+} // namespace test
 } // end namespace format
 } // end namespace clang

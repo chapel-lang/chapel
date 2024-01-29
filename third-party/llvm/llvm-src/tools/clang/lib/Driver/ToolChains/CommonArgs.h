@@ -14,6 +14,9 @@
 #include "clang/Driver/Multilib.h"
 #include "clang/Driver/Tool.h"
 #include "clang/Driver/ToolChain.h"
+#include "llvm/ADT/StringRef.h"
+#include "llvm/Option/Arg.h"
+#include "llvm/Option/ArgList.h"
 #include "llvm/Support/CodeGen.h"
 
 namespace clang {
@@ -56,11 +59,6 @@ void AddStaticDeviceLibsLinking(Compilation &C, const Tool &T,
                                 llvm::opt::ArgStringList &CmdArgs,
                                 StringRef Arch, StringRef Target,
                                 bool isBitCodeSDL, bool postClangLink);
-void AddStaticDeviceLibsPostLinking(const Driver &D,
-                                    const llvm::opt::ArgList &DriverArgs,
-                                    llvm::opt::ArgStringList &CmdArgs,
-                                    StringRef Arch, StringRef Target,
-                                    bool isBitCodeSDL, bool postClangLink);
 void AddStaticDeviceLibs(Compilation *C, const Tool *T, const JobAction *JA,
                          const InputInfoList *Inputs, const Driver &D,
                          const llvm::opt::ArgList &DriverArgs,
@@ -93,22 +91,33 @@ void addLTOOptions(const ToolChain &ToolChain, const llvm::opt::ArgList &Args,
                    llvm::opt::ArgStringList &CmdArgs, const InputInfo &Output,
                    const InputInfo &Input, bool IsThinLTO);
 
+const char *RelocationModelName(llvm::Reloc::Model Model);
+
 std::tuple<llvm::Reloc::Model, unsigned, bool>
 ParsePICArgs(const ToolChain &ToolChain, const llvm::opt::ArgList &Args);
 
 unsigned ParseFunctionAlignment(const ToolChain &TC,
                                 const llvm::opt::ArgList &Args);
 
-unsigned ParseDebugDefaultVersion(const ToolChain &TC,
-                                  const llvm::opt::ArgList &Args);
+void addDebugInfoKind(llvm::opt::ArgStringList &CmdArgs,
+                      llvm::codegenoptions::DebugInfoKind DebugInfoKind);
+
+llvm::codegenoptions::DebugInfoKind
+debugLevelToInfoKind(const llvm::opt::Arg &A);
+
+// Extract the integer N from a string spelled "-dwarf-N", returning 0
+// on mismatch. The StringRef input (rather than an Arg) allows
+// for use by the "-Xassembler" option parser.
+unsigned DwarfVersionNum(StringRef ArgValue);
+// Find a DWARF format version option.
+// This function is a complementary for DwarfVersionNum().
+const llvm::opt::Arg *getDwarfNArg(const llvm::opt::ArgList &Args);
+unsigned getDwarfVersion(const ToolChain &TC, const llvm::opt::ArgList &Args);
 
 void AddAssemblerKPIC(const ToolChain &ToolChain,
                       const llvm::opt::ArgList &Args,
                       llvm::opt::ArgStringList &CmdArgs);
 
-void addOpenMPRuntimeSpecificRPath(const ToolChain &TC,
-                                   const llvm::opt::ArgList &Args,
-                                   llvm::opt::ArgStringList &CmdArgs);
 void addArchSpecificRPath(const ToolChain &TC, const llvm::opt::ArgList &Args,
                           llvm::opt::ArgStringList &CmdArgs);
 void addOpenMPRuntimeLibraryPath(const ToolChain &TC,
@@ -134,6 +143,7 @@ void addHIPRuntimeLibArgs(const ToolChain &TC, const llvm::opt::ArgList &Args,
 
 const char *getAsNeededOption(const ToolChain &TC, bool as_needed);
 
+llvm::opt::Arg *getLastCSProfileGenerateArg(const llvm::opt::ArgList &Args);
 llvm::opt::Arg *getLastProfileUseArg(const llvm::opt::ArgList &Args);
 llvm::opt::Arg *getLastProfileSampleUseArg(const llvm::opt::ArgList &Args);
 
@@ -163,13 +173,19 @@ void AddTargetFeature(const llvm::opt::ArgList &Args,
 std::string getCPUName(const Driver &D, const llvm::opt::ArgList &Args,
                        const llvm::Triple &T, bool FromAs = false);
 
+void getTargetFeatures(const Driver &D, const llvm::Triple &Triple,
+                       const llvm::opt::ArgList &Args,
+                       llvm::opt::ArgStringList &CmdArgs, bool ForAS,
+                       bool IsAux = false);
+
 /// Iterate \p Args and convert -mxxx to +xxx and -mno-xxx to -xxx and
 /// append it to \p Features.
 ///
 /// Note: Since \p Features may contain default values before calling
 /// this function, or may be appended with entries to override arguments,
 /// entries in \p Features are not unique.
-void handleTargetFeaturesGroup(const llvm::opt::ArgList &Args,
+void handleTargetFeaturesGroup(const Driver &D, const llvm::Triple &Triple,
+                               const llvm::opt::ArgList &Args,
                                std::vector<StringRef> &Features,
                                llvm::opt::OptSpecifier Group);
 
@@ -182,13 +198,13 @@ SmallString<128> getStatsFileName(const llvm::opt::ArgList &Args,
                                   const InputInfo &Output,
                                   const InputInfo &Input, const Driver &D);
 
-/// \p Flag must be a flag accepted by the driver with its leading '-' removed,
-//     otherwise '-print-multi-lib' will not emit them correctly.
-void addMultilibFlag(bool Enabled, const char *const Flag,
+/// \p Flag must be a flag accepted by the driver.
+void addMultilibFlag(bool Enabled, const StringRef Flag,
                      Multilib::flags_list &Flags);
 
 void addX86AlignBranchArgs(const Driver &D, const llvm::opt::ArgList &Args,
-                           llvm::opt::ArgStringList &CmdArgs, bool IsLTO);
+                           llvm::opt::ArgStringList &CmdArgs, bool IsLTO,
+                           const StringRef PluginOptPrefix = "");
 
 void checkAMDGPUCodeObjectVersion(const Driver &D,
                                   const llvm::opt::ArgList &Args);
@@ -201,7 +217,8 @@ bool haveAMDGPUCodeObjectVersionArgument(const Driver &D,
 
 void addMachineOutlinerArgs(const Driver &D, const llvm::opt::ArgList &Args,
                             llvm::opt::ArgStringList &CmdArgs,
-                            const llvm::Triple &Triple, bool IsLTO);
+                            const llvm::Triple &Triple, bool IsLTO,
+                            const StringRef PluginOptPrefix = "");
 
 void addOpenMPDeviceRTL(const Driver &D, const llvm::opt::ArgList &DriverArgs,
                         llvm::opt::ArgStringList &CC1Args,

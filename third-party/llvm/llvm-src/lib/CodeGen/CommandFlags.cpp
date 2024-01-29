@@ -14,15 +14,16 @@
 
 #include "llvm/CodeGen/CommandFlags.h"
 #include "llvm/ADT/StringExtras.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/IR/Instructions.h"
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
 #include "llvm/MC/MCTargetOptionsCommandFlags.h"
-#include "llvm/MC/SubtargetFeature.h"
 #include "llvm/Support/CommandLine.h"
-#include "llvm/Support/Host.h"
 #include "llvm/Support/MemoryBuffer.h"
+#include "llvm/TargetParser/Host.h"
+#include "llvm/TargetParser/SubtargetFeature.h"
+#include "llvm/TargetParser/Triple.h"
+#include <optional>
 
 using namespace llvm;
 
@@ -40,14 +41,15 @@ using namespace llvm;
     return *NAME##View;                                                        \
   }
 
+// Temporary macro for incremental transition to std::optional.
 #define CGOPT_EXP(TY, NAME)                                                    \
   CGOPT(TY, NAME)                                                              \
-  Optional<TY> codegen::getExplicit##NAME() {                                  \
+  std::optional<TY> codegen::getExplicit##NAME() {                             \
     if (NAME##View->getNumOccurrences()) {                                     \
       TY res = *NAME##View;                                                    \
       return res;                                                              \
     }                                                                          \
-    return None;                                                               \
+    return std::nullopt;                                                       \
   }
 
 CGOPT(std::string, MArch)
@@ -79,7 +81,7 @@ CGOPT(bool, StackSymbolOrdering)
 CGOPT(bool, StackRealign)
 CGOPT(std::string, TrapFuncName)
 CGOPT(bool, UseCtors)
-CGOPT(bool, LowerGlobalDtorsViaCxaAtExit)
+CGOPT(bool, DisableIntegratedAS)
 CGOPT(bool, RelaxELFRelocations)
 CGOPT_EXP(bool, DataSections)
 CGOPT_EXP(bool, FunctionSections)
@@ -87,7 +89,7 @@ CGOPT(bool, IgnoreXCOFFVisibility)
 CGOPT(bool, XCOFFTracebackTable)
 CGOPT(std::string, BBSections)
 CGOPT(unsigned, TLSSize)
-CGOPT(bool, EmulatedTLS)
+CGOPT_EXP(bool, EmulatedTLS)
 CGOPT(bool, UniqueSectionNames)
 CGOPT(bool, UniqueBasicBlockSectionNames)
 CGOPT(EABI, EABIVersion)
@@ -98,10 +100,11 @@ CGOPT(bool, EmitCallSiteInfo)
 CGOPT(bool, EnableMachineFunctionSplitter)
 CGOPT(bool, EnableDebugEntryValues)
 CGOPT(bool, ForceDwarfFrameSection)
-CGOPT(bool, XRayOmitFunctionIndex)
+CGOPT(bool, XRayFunctionIndex)
 CGOPT(bool, DebugStrictDwarf)
 CGOPT(unsigned, AlignLoops)
 CGOPT(bool, JMCInstrument)
+CGOPT(bool, XCOFFReadOnlyPointers)
 
 codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
 #define CGBINDOPT(NAME)                                                        \
@@ -239,14 +242,15 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
       cl::init(false));
   CGBINDOPT(EnableNoTrappingFPMath);
 
-  static const auto DenormFlagEnumOptions =
-  cl::values(clEnumValN(DenormalMode::IEEE, "ieee",
-                        "IEEE 754 denormal numbers"),
-             clEnumValN(DenormalMode::PreserveSign, "preserve-sign",
-                        "the sign of a  flushed-to-zero number is preserved "
-                        "in the sign of 0"),
-             clEnumValN(DenormalMode::PositiveZero, "positive-zero",
-                        "denormals are flushed to positive zero"));
+  static const auto DenormFlagEnumOptions = cl::values(
+      clEnumValN(DenormalMode::IEEE, "ieee", "IEEE 754 denormal numbers"),
+      clEnumValN(DenormalMode::PreserveSign, "preserve-sign",
+                 "the sign of a  flushed-to-zero number is preserved "
+                 "in the sign of 0"),
+      clEnumValN(DenormalMode::PositiveZero, "positive-zero",
+                 "denormals are flushed to positive zero"),
+      clEnumValN(DenormalMode::Dynamic, "dynamic",
+                 "denormals have unknown treatment"));
 
   // FIXME: Doesn't have way to specify separate input and output modes.
   static cl::opt<DenormalMode::DenormalModeKind> DenormalFPMath(
@@ -347,17 +351,11 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
                                 cl::init(false));
   CGBINDOPT(UseCtors);
 
-  static cl::opt<bool> LowerGlobalDtorsViaCxaAtExit(
-      "lower-global-dtors-via-cxa-atexit",
-      cl::desc("Lower llvm.global_dtors (global destructors) via __cxa_atexit"),
-      cl::init(true));
-  CGBINDOPT(LowerGlobalDtorsViaCxaAtExit);
-
   static cl::opt<bool> RelaxELFRelocations(
       "relax-elf-relocations",
       cl::desc(
           "Emit GOTPCRELX/REX_GOTPCRELX instead of GOTPCREL on x86-64 ELF"),
-      cl::init(false));
+      cl::init(true));
   CGBINDOPT(RelaxELFRelocations);
 
   static cl::opt<bool> DataSections(
@@ -464,10 +462,10 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
       cl::desc("Always emit a debug frame section."), cl::init(false));
   CGBINDOPT(ForceDwarfFrameSection);
 
-  static cl::opt<bool> XRayOmitFunctionIndex(
-      "no-xray-index", cl::desc("Don't emit xray_fn_idx section"),
-      cl::init(false));
-  CGBINDOPT(XRayOmitFunctionIndex);
+  static cl::opt<bool> XRayFunctionIndex("xray-function-index",
+                                         cl::desc("Emit xray_fn_idx section"),
+                                         cl::init(true));
+  CGBINDOPT(XRayFunctionIndex);
 
   static cl::opt<bool> DebugStrictDwarf(
       "strict-dwarf", cl::desc("use strict dwarf"), cl::init(false));
@@ -482,6 +480,18 @@ codegen::RegisterCodeGenFlags::RegisterCodeGenFlags() {
       cl::desc("Instrument functions with a call to __CheckForDebuggerJustMyCode"),
       cl::init(false));
   CGBINDOPT(JMCInstrument);
+
+  static cl::opt<bool> XCOFFReadOnlyPointers(
+      "mxcoff-roptr",
+      cl::desc("When set to true, const objects with relocatable address "
+               "values are put into the RO data section."),
+      cl::init(false));
+  CGBINDOPT(XCOFFReadOnlyPointers);
+
+  static cl::opt<bool> DisableIntegratedAS(
+      "no-integrated-as", cl::desc("Disable integrated assembler"),
+      cl::init(false));
+  CGBINDOPT(DisableIntegratedAS);
 
 #undef CGBINDOPT
 
@@ -536,7 +546,7 @@ codegen::InitTargetOptionsFromCodeGenFlags(const Triple &TheTriple) {
   Options.GuaranteedTailCallOpt = getEnableGuaranteedTailCallOpt();
   Options.StackSymbolOrdering = getStackSymbolOrdering();
   Options.UseInitArray = !getUseCtors();
-  Options.LowerGlobalDtorsViaCxaAtExit = getLowerGlobalDtorsViaCxaAtExit();
+  Options.DisableIntegratedAS = getDisableIntegratedAS();
   Options.RelaxELFRelocations = getRelaxELFRelocations();
   Options.DataSections =
       getExplicitDataSections().value_or(TheTriple.hasDefaultDataSections());
@@ -547,8 +557,8 @@ codegen::InitTargetOptionsFromCodeGenFlags(const Triple &TheTriple) {
   Options.UniqueSectionNames = getUniqueSectionNames();
   Options.UniqueBasicBlockSectionNames = getUniqueBasicBlockSectionNames();
   Options.TLSSize = getTLSSize();
-  Options.EmulatedTLS = getEmulatedTLS();
-  Options.ExplicitEmulatedTLS = EmulatedTLSView->getNumOccurrences() > 0;
+  Options.EmulatedTLS =
+      getExplicitEmulatedTLS().value_or(TheTriple.hasDefaultEmulatedTLS());
   Options.ExceptionModel = getExceptionModel();
   Options.EmitStackSizeSection = getEnableStackSizeSection();
   Options.EnableMachineFunctionSplitter = getEnableMachineFunctionSplitter();
@@ -556,10 +566,11 @@ codegen::InitTargetOptionsFromCodeGenFlags(const Triple &TheTriple) {
   Options.EmitCallSiteInfo = getEmitCallSiteInfo();
   Options.EnableDebugEntryValues = getEnableDebugEntryValues();
   Options.ForceDwarfFrameSection = getForceDwarfFrameSection();
-  Options.XRayOmitFunctionIndex = getXRayOmitFunctionIndex();
+  Options.XRayFunctionIndex = getXRayFunctionIndex();
   Options.DebugStrictDwarf = getDebugStrictDwarf();
   Options.LoopAlignment = getAlignLoops();
   Options.JMCInstrument = getJMCInstrument();
+  Options.XCOFFReadOnlyPointers = getXCOFFReadOnlyPointers();
 
   Options.MCOptions = mc::InitMCTargetOptionsFromFlags();
 
@@ -590,8 +601,8 @@ std::string codegen::getFeaturesStr() {
   if (getMCPU() == "native") {
     StringMap<bool> HostFeatures;
     if (sys::getHostCPUFeatures(HostFeatures))
-      for (auto &F : HostFeatures)
-        Features.AddFeature(F.first(), F.second);
+      for (const auto &[Feature, IsEnabled] : HostFeatures)
+        Features.AddFeature(Feature, IsEnabled);
   }
 
   for (auto const &MAttr : getMAttrs())
@@ -610,8 +621,8 @@ std::vector<std::string> codegen::getFeatureList() {
   if (getMCPU() == "native") {
     StringMap<bool> HostFeatures;
     if (sys::getHostCPUFeatures(HostFeatures))
-      for (auto &F : HostFeatures)
-        Features.AddFeature(F.first(), F.second);
+      for (const auto &[Feature, IsEnabled] : HostFeatures)
+        Features.AddFeature(Feature, IsEnabled);
   }
 
   for (auto const &MAttr : getMAttrs())

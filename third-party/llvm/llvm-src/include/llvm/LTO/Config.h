@@ -25,6 +25,7 @@
 #include "llvm/Target/TargetOptions.h"
 
 #include <functional>
+#include <optional>
 
 namespace llvm {
 
@@ -43,18 +44,20 @@ struct Config {
     ELF,
   };
   // Note: when adding fields here, consider whether they need to be added to
-  // computeCacheKey in LTO.cpp.
+  // computeLTOCacheKey in LTO.cpp.
   std::string CPU;
   TargetOptions Options;
   std::vector<std::string> MAttrs;
+  std::vector<std::string> MllvmArgs;
   std::vector<std::string> PassPlugins;
   /// For adding passes that run right before codegen.
   std::function<void(legacy::PassManager &)> PreCodeGenPassesHook;
-  Optional<Reloc::Model> RelocModel = Reloc::PIC_;
-  Optional<CodeModel::Model> CodeModel = None;
+  std::optional<Reloc::Model> RelocModel = Reloc::PIC_;
+  std::optional<CodeModel::Model> CodeModel;
   CodeGenOpt::Level CGOptLevel = CodeGenOpt::Default;
   CodeGenFileType CGFileType = CGFT_ObjectFile;
   unsigned OptLevel = 2;
+  bool VerifyEach = false;
   bool DisableVerify = false;
 
   /// Use the standard optimization pipeline.
@@ -151,7 +154,7 @@ struct Config {
   ///                    compilation.
   ///
   /// If threshold option is not specified, it is disabled by default.
-  llvm::Optional<uint64_t> RemarksHotnessThreshold = 0;
+  std::optional<uint64_t> RemarksHotnessThreshold = 0;
 
   /// The format used for serializing remarks (default: YAML).
   std::string RemarksFormat;
@@ -176,10 +179,6 @@ struct Config {
 
   /// Add FSAFDO discriminators.
   bool AddFSDiscriminator = false;
-
-  /// Use opaque pointer types. Used to call LLVMContext::setOpaquePointers
-  /// unless already set by the `-opaque-pointers` commandline option.
-  bool OpaquePointers = true;
 
   /// If this field is set, LTO will write input file paths and symbol
   /// resolutions here in llvm-lto2 command line flag format. This can be
@@ -296,8 +295,6 @@ struct LTOLLVMContext : LLVMContext {
     enableDebugTypeODRUniquing();
     setDiagnosticHandler(
         std::make_unique<LTOLLVMDiagnosticHandler>(&DiagHandler), true);
-    if (!hasSetOpaquePointersValue())
-      setOpaquePointers(C.OpaquePointers);
   }
   DiagnosticHandlerFunction DiagHandler;
 };

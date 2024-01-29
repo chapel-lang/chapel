@@ -20,6 +20,7 @@ static std::string createReproducerDir(std::error_code &EC) {
   } else {
     EC = sys::fs::createUniqueDirectory("dsymutil", Root);
   }
+  sys::fs::make_absolute(Root);
   return EC ? "" : std::string(Root);
 }
 
@@ -39,6 +40,8 @@ ReproducerGenerate::ReproducerGenerate(std::error_code &EC, int Argc,
 ReproducerGenerate::~ReproducerGenerate() {
   if (GenerateOnExit && !Generated)
     generate();
+  else if (!Generated && !Root.empty())
+    sys::fs::remove_directories(Root, /* IgnoreErrors */ true);
 }
 
 void ReproducerGenerate::generate() {

@@ -12,7 +12,6 @@
 
 #include "llvm/IR/Module.h"
 #include "SymbolTableListTraitsImpl.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringMap.h"
@@ -49,6 +48,7 @@
 #include <cassert>
 #include <cstdint>
 #include <memory>
+#include <optional>
 #include <utility>
 #include <vector>
 
@@ -262,7 +262,7 @@ NamedMDNode *Module::getOrInsertNamedMetadata(StringRef Name) {
   if (!NMD) {
     NMD = new NamedMDNode(Name);
     NMD->setParent(this);
-    NamedMDList.push_back(NMD);
+    insertNamedMDNode(NMD);
   }
   return NMD;
 }
@@ -271,7 +271,7 @@ NamedMDNode *Module::getOrInsertNamedMetadata(StringRef Name) {
 /// delete it.
 void Module::eraseNamedMetadata(NamedMDNode *NMD) {
   NamedMDSymTab.erase(NMD->getName());
-  NamedMDList.erase(NMD->getIterator());
+  eraseNamedMDNode(NMD);
 }
 
 bool Module::isValidModFlagBehavior(Metadata *MD, ModFlagBehavior &MFB) {
@@ -596,7 +596,9 @@ PICLevel::Level Module::getPICLevel() const {
 }
 
 void Module::setPICLevel(PICLevel::Level PL) {
-  addModuleFlag(ModFlagBehavior::Max, "PIC Level", PL);
+  // The merge result of a non-PIC object and a PIC object can only be reliably
+  // used as a non-PIC object, so use the Min merge behavior.
+  addModuleFlag(ModFlagBehavior::Min, "PIC Level", PL);
 }
 
 PIELevel::Level Module::getPIELevel() const {
@@ -613,11 +615,11 @@ void Module::setPIELevel(PIELevel::Level PL) {
   addModuleFlag(ModFlagBehavior::Max, "PIE Level", PL);
 }
 
-Optional<CodeModel::Model> Module::getCodeModel() const {
+std::optional<CodeModel::Model> Module::getCodeModel() const {
   auto *Val = cast_or_null<ConstantAsMetadata>(getModuleFlag("Code Model"));
 
   if (!Val)
-    return None;
+    return std::nullopt;
 
   return static_cast<CodeModel::Model>(
       cast<ConstantInt>(Val->getValue())->getZExtValue());
@@ -668,6 +670,18 @@ bool Module::getRtLibUseGOT() const {
 
 void Module::setRtLibUseGOT() {
   addModuleFlag(ModFlagBehavior::Max, "RtLibUseGOT", 1);
+}
+
+bool Module::getDirectAccessExternalData() const {
+  auto *Val = cast_or_null<ConstantAsMetadata>(
+      getModuleFlag("direct-access-external-data"));
+  if (Val)
+    return cast<ConstantInt>(Val->getValue())->getZExtValue() > 0;
+  return getPICLevel() == PICLevel::NotPIC;
+}
+
+void Module::setDirectAccessExternalData(bool Value) {
+  addModuleFlag(ModFlagBehavior::Max, "direct-access-external-data", Value);
 }
 
 UWTableKind Module::getUwtable() const {
@@ -744,6 +758,13 @@ unsigned Module::getOverrideStackAlignment() const {
   return 0;
 }
 
+unsigned Module::getMaxTLSAlignment() const {
+  Metadata *MD = getModuleFlag("MaxTLSAlign");
+  if (auto *CI = mdconst::dyn_extract_or_null<ConstantInt>(MD))
+    return CI->getZExtValue();
+  return 0;
+}
+
 void Module::setOverrideStackAlignment(unsigned Align) {
   addModuleFlag(ModFlagBehavior::Error, "override-stack-alignment", Align);
 }
@@ -773,9 +794,9 @@ static VersionTuple getSDKVersionMD(Metadata *MD) {
   auto *Arr = dyn_cast_or_null<ConstantDataArray>(CM->getValue());
   if (!Arr)
     return {};
-  auto getVersionComponent = [&](unsigned Index) -> Optional<unsigned> {
+  auto getVersionComponent = [&](unsigned Index) -> std::optional<unsigned> {
     if (Index >= Arr->getNumElements())
-      return None;
+      return std::nullopt;
     return (unsigned)Arr->getElementAsInteger(Index);
   };
   auto Major = getVersionComponent(0);

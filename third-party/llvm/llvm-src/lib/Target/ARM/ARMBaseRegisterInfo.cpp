@@ -222,8 +222,8 @@ getReservedRegs(const MachineFunction &MF) const {
   }
   const TargetRegisterClass &RC = ARM::GPRPairRegClass;
   for (unsigned Reg : RC)
-    for (MCSubRegIterator SI(Reg, this); SI.isValid(); ++SI)
-      if (Reserved.test(*SI))
+    for (MCPhysReg S : subregs(Reg))
+      if (Reserved.test(S))
         markSuperRegs(Reserved, Reg);
   // For v8.1m architecture
   markSuperRegs(Reserved, ARM::ZR);
@@ -326,9 +326,9 @@ ARMBaseRegisterInfo::getRegPressureLimit(const TargetRegisterClass *RC,
 // Get the other register in a GPRPair.
 static MCPhysReg getPairedGPR(MCPhysReg Reg, bool Odd,
                               const MCRegisterInfo *RI) {
-  for (MCSuperRegIterator Supers(Reg, RI); Supers.isValid(); ++Supers)
-    if (ARM::GPRPairRegClass.contains(*Supers))
-      return RI->getSubReg(*Supers, Odd ? ARM::gsub_1 : ARM::gsub_0);
+  for (MCPhysReg Super : RI->superregs(Reg))
+    if (ARM::GPRPairRegClass.contains(Super))
+      return RI->getSubReg(Super, Odd ? ARM::gsub_1 : ARM::gsub_0);
   return 0;
 }
 
@@ -338,7 +338,7 @@ bool ARMBaseRegisterInfo::getRegAllocationHints(
     SmallVectorImpl<MCPhysReg> &Hints, const MachineFunction &MF,
     const VirtRegMap *VRM, const LiveRegMatrix *Matrix) const {
   const MachineRegisterInfo &MRI = MF.getRegInfo();
-  std::pair<Register, Register> Hint = MRI.getRegAllocationHint(VirtReg);
+  std::pair<unsigned, Register> Hint = MRI.getRegAllocationHint(VirtReg);
 
   unsigned Odd;
   switch (Hint.first) {
@@ -391,7 +391,7 @@ bool ARMBaseRegisterInfo::getRegAllocationHints(
 void ARMBaseRegisterInfo::updateRegAllocHint(Register Reg, Register NewReg,
                                              MachineFunction &MF) const {
   MachineRegisterInfo *MRI = &MF.getRegInfo();
-  std::pair<Register, Register> Hint = MRI->getRegAllocationHint(Reg);
+  std::pair<unsigned, Register> Hint = MRI->getRegAllocationHint(Reg);
   if ((Hint.first == ARMRI::RegPairOdd || Hint.first == ARMRI::RegPairEven) &&
       Hint.second.isVirtual()) {
     // If 'Reg' is one of the even / odd register pair and it's now changed
@@ -403,7 +403,7 @@ void ARMBaseRegisterInfo::updateRegAllocHint(Register Reg, Register NewReg,
     // Make sure the pair has not already divorced.
     if (Hint.second == Reg) {
       MRI->setRegAllocationHint(OtherReg, Hint.first, NewReg);
-      if (Register::isVirtualRegister(NewReg))
+      if (NewReg.isVirtual())
         MRI->setRegAllocationHint(NewReg,
                                   Hint.first == ARMRI::RegPairOdd
                                       ? ARMRI::RegPairEven
@@ -786,7 +786,7 @@ bool ARMBaseRegisterInfo::isFrameOffsetLegal(const MachineInstr *MI,
   return false;
 }
 
-void
+bool
 ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                          int SPAdj, unsigned FIOperandNum,
                                          RegScavenger *RS) const {
@@ -830,7 +830,7 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     Done = rewriteT2FrameIndex(MI, FIOperandNum, FrameReg, Offset, TII, this);
   }
   if (Done)
-    return;
+    return false;
 
   // If we get here, the immediate doesn't fit into the instruction.  We folded
   // as much as possible above, handle the rest, providing a register that is
@@ -855,8 +855,7 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   const TargetRegisterClass *RegClass =
       TII.getRegClass(MCID, FIOperandNum, this, *MI.getParent()->getParent());
 
-  if (Offset == 0 &&
-      (Register::isVirtualRegister(FrameReg) || RegClass->contains(FrameReg)))
+  if (Offset == 0 && (FrameReg.isVirtual() || RegClass->contains(FrameReg)))
     // Must be addrmode4/6.
     MI.getOperand(FIOperandNum).ChangeToRegister(FrameReg, false, false, false);
   else {
@@ -872,6 +871,7 @@ ARMBaseRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
     // Update the original instruction to use the scratch register.
     MI.getOperand(FIOperandNum).ChangeToRegister(ScratchReg, false, false,true);
   }
+  return false;
 }
 
 bool ARMBaseRegisterInfo::shouldCoalesce(MachineInstr *MI,

@@ -8,6 +8,7 @@
 
 #include "llvm/ExecutionEngine/JITLink/JITLink.h"
 
+#include "llvm/ADT/StringExtras.h"
 #include "llvm/BinaryFormat/Magic.h"
 #include "llvm/ExecutionEngine/JITLink/COFF.h"
 #include "llvm/ExecutionEngine/JITLink/ELF.h"
@@ -86,6 +87,21 @@ const char *getScopeName(Scope S) {
     return "local";
   }
   llvm_unreachable("Unrecognized llvm.jitlink.Scope enum");
+}
+
+bool isCStringBlock(Block &B) {
+  if (B.getSize() == 0) // Empty blocks are not valid C-strings.
+    return false;
+
+  // Zero-fill blocks of size one are valid empty strings.
+  if (B.isZeroFill())
+    return B.getSize() == 1;
+
+  for (size_t I = 0; I != B.getSize() - 1; ++I)
+    if (B.getContent()[I] == '\0')
+      return false;
+
+  return B.getContent()[B.getSize() - 1] == '\0';
 }
 
 raw_ostream &operator<<(raw_ostream &OS, const Block &B) {
@@ -195,7 +211,7 @@ Block &LinkGraph::splitBlock(Block &B, size_t SplitIndex,
     SplitBlockCache LocalBlockSymbolsCache;
     if (!Cache)
       Cache = &LocalBlockSymbolsCache;
-    if (*Cache == None) {
+    if (*Cache == std::nullopt) {
       *Cache = SplitBlockCache::value_type();
       for (auto *Sym : B.getSection().symbols())
         if (&Sym->getBlock() == &B)
@@ -309,14 +325,14 @@ void LinkGraph::dump(raw_ostream &OS) {
   }
 
   OS << "Absolute symbols:\n";
-  if (!llvm::empty(absolute_symbols())) {
+  if (!absolute_symbols().empty()) {
     for (auto *Sym : absolute_symbols())
       OS << "  " << Sym->getAddress() << ": " << *Sym << "\n";
   } else
     OS << "  none\n";
 
   OS << "\nExternal symbols:\n";
-  if (!llvm::empty(external_symbols())) {
+  if (!external_symbols().empty()) {
     for (auto *Sym : external_symbols())
       OS << "  " << Sym->getAddress() << ": " << *Sym << "\n";
   } else

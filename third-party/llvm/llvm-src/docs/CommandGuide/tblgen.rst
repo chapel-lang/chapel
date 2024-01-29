@@ -109,7 +109,7 @@ clang-tblgen Options
 
 .. option:: -gen-clang-attr-classes
 
-  Generate Clang attribute clases.
+  Generate Clang attribute classes.
 
 .. option:: -gen-clang-attr-parser-string-switches
 
@@ -348,6 +348,14 @@ clang-tblgen Options
 
   Generate ``riscv_vector_builtin_cg.inc`` for Clang.
 
+.. option:: -gen-riscv-sifive-vector-builtins
+
+  Generate ``riscv_sifive_vector_builtins.inc`` for Clang.
+
+.. option:: -gen-riscv-sifive-vector-builtin-codegen
+
+  Generate ``riscv_sifive_vector_builtin_cg.inc`` for Clang.
+
 .. option:: -gen-attr-docs
 
   Generate attribute documentation.
@@ -499,11 +507,17 @@ llvm-tblgen Options
 
 .. option:: -gen-global-isel-combiner
 
-  Generate GlobalISel combiner.
+  (Deprecated, pending removal)
+  Generate legacy GlobalISel combiner.
+
+.. option:: -gen-global-isel-combiner-matchtable
+
+  Generate MatchTable-based GlobalISel combiner.
 
 .. option:: -combiners=list
 
-  Make -gen-global-isel-combiner emit the specified combiners.
+  Make -gen-global-isel-combiner and -gen-global-isel-combiner-matchtable
+  emit the specified combiners.
 
 .. option:: -gicombiner-show-expansions
 
@@ -516,8 +530,8 @@ llvm-tblgen Options
 
 .. option:: -gicombiner-stop-after-parse
 
-  Make -gen-global-isel-combiner stop processing after parsing rules
-  and dump state.
+  Make -gen-global-isel-combiner and -gen-global-isel-combiner-matchtable stop
+  processing after parsing rules and dump state.
 
 .. option:: -gen-instr-info
 

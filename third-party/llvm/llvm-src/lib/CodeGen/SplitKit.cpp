@@ -12,7 +12,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "SplitKit.h"
-#include "llvm/ADT/None.h"
 #include "llvm/ADT/STLExtras.h"
 #include "llvm/ADT/Statistic.h"
 #include "llvm/Analysis/AliasAnalysis.h"
@@ -323,7 +322,7 @@ unsigned SplitAnalysis::countLiveBlocks(const LiveInterval *cli) const {
 }
 
 bool SplitAnalysis::isOriginalEndpoint(SlotIndex Idx) const {
-  unsigned OrigReg = VRM.getOriginal(CurLI->reg());
+  Register OrigReg = VRM.getOriginal(CurLI->reg());
   const LiveInterval &Orig = LIS.getInterval(OrigReg);
   assert(!Orig.empty() && "Splitting empty interval?");
   LiveInterval::const_iterator I = Orig.find(Idx);
@@ -590,7 +589,7 @@ VNInfo *SplitEditor::defFromParent(unsigned RegIdx, const VNInfo *ParentVNI,
   bool Late = RegIdx != 0;
 
   // Attempt cheap-as-a-copy rematerialization.
-  unsigned Original = VRM.getOriginal(Edit->get(RegIdx));
+  Register Original = VRM.getOriginal(Edit->get(RegIdx));
   LiveInterval &OrigLI = LIS.getInterval(Original);
   VNInfo *OrigVNI = OrigLI.getVNInfoAt(UseIdx);
 
@@ -1366,7 +1365,7 @@ void SplitEditor::rewriteAssigned(bool ExtendRanges) {
         // The point we want to extend is 0d to 16e not 16r in this case, but if
         // we use 16r here we will extend nothing because that already contained
         // in [16e, 32d).
-        unsigned OpIdx = MI->getOperandNo(&MO);
+        unsigned OpIdx = MO.getOperandNo();
         unsigned DefOpIdx = MI->findTiedOperandIdx(OpIdx);
         const MachineOperand &DefOp = MI->getOperand(DefOpIdx);
         IsEarlyClobber = DefOp.isEarlyClobber();
@@ -1450,7 +1449,7 @@ void SplitEditor::deleteRematVictims() {
   if (Dead.empty())
     return;
 
-  Edit->eliminateDeadDefs(Dead, None);
+  Edit->eliminateDeadDefs(Dead, std::nullopt);
 }
 
 void SplitEditor::forceRecomputeVNI(const VNInfo &ParentVNI) {

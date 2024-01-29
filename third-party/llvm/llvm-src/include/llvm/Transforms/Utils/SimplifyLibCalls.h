@@ -18,6 +18,7 @@
 #include "llvm/Analysis/TargetLibraryInfo.h"
 
 namespace llvm {
+class AssumptionCache;
 class StringRef;
 class Value;
 class CallInst;
@@ -89,9 +90,9 @@ private:
   /// parameter. These are used by an implementation to opt-into stricter
   /// checking.
   bool isFortifiedCallFoldable(CallInst *CI, unsigned ObjSizeOp,
-                               Optional<unsigned> SizeOp = None,
-                               Optional<unsigned> StrOp = None,
-                               Optional<unsigned> FlagsOp = None);
+                               std::optional<unsigned> SizeOp = std::nullopt,
+                               std::optional<unsigned> StrOp = std::nullopt,
+                               std::optional<unsigned> FlagsOp = std::nullopt);
 };
 
 /// LibCallSimplifier - This class implements a collection of optimizations
@@ -102,6 +103,7 @@ private:
   FortifiedLibCallSimplifier FortifiedSimplifier;
   const DataLayout &DL;
   const TargetLibraryInfo *TLI;
+  AssumptionCache *AC;
   OptimizationRemarkEmitter &ORE;
   BlockFrequencyInfo *BFI;
   ProfileSummaryInfo *PSI;
@@ -134,9 +136,9 @@ private:
 
 public:
   LibCallSimplifier(
-      const DataLayout &DL, const TargetLibraryInfo *TLI,
-      OptimizationRemarkEmitter &ORE,
-      BlockFrequencyInfo *BFI, ProfileSummaryInfo *PSI,
+      const DataLayout &DL, const TargetLibraryInfo *TLI, AssumptionCache *AC,
+      OptimizationRemarkEmitter &ORE, BlockFrequencyInfo *BFI,
+      ProfileSummaryInfo *PSI,
       function_ref<void(Instruction *, Value *)> Replacer =
           &replaceAllUsesWithDefault,
       function_ref<void(Instruction *)> Eraser = &eraseFromParentDefault);
@@ -161,6 +163,7 @@ private:
   Value *optimizeStrNDup(CallInst *CI, IRBuilderBase &B);
   Value *optimizeStrCpy(CallInst *CI, IRBuilderBase &B);
   Value *optimizeStpCpy(CallInst *CI, IRBuilderBase &B);
+  Value *optimizeStrLCpy(CallInst *CI, IRBuilderBase &B);
   Value *optimizeStrNCpy(CallInst *CI, IRBuilderBase &B);
   Value *optimizeStrLen(CallInst *CI, IRBuilderBase &B);
   Value *optimizeStrNLen(CallInst *CI, IRBuilderBase &B);
@@ -180,8 +183,12 @@ private:
   Value *optimizeMemMove(CallInst *CI, IRBuilderBase &B);
   Value *optimizeMemSet(CallInst *CI, IRBuilderBase &B);
   Value *optimizeRealloc(CallInst *CI, IRBuilderBase &B);
+  Value *optimizeNew(CallInst *CI, IRBuilderBase &B, LibFunc &Func);
   Value *optimizeWcslen(CallInst *CI, IRBuilderBase &B);
   Value *optimizeBCopy(CallInst *CI, IRBuilderBase &B);
+
+  // Helper to optimize stpncpy and strncpy.
+  Value *optimizeStringNCpy(CallInst *CI, bool RetEnd, IRBuilderBase &B);
   // Wrapper for all String/Memory Library Call Optimizations
   Value *optimizeStringMemoryLibCall(CallInst *CI, IRBuilderBase &B);
 
@@ -194,7 +201,7 @@ private:
   Value *optimizeFMinFMax(CallInst *CI, IRBuilderBase &B);
   Value *optimizeLog(CallInst *CI, IRBuilderBase &B);
   Value *optimizeSqrt(CallInst *CI, IRBuilderBase &B);
-  Value *optimizeSinCosPi(CallInst *CI, IRBuilderBase &B);
+  Value *optimizeSinCosPi(CallInst *CI, bool IsSin, IRBuilderBase &B);
   Value *optimizeTan(CallInst *CI, IRBuilderBase &B);
   // Wrapper for all floating point library call optimizations
   Value *optimizeFloatingPointLibCall(CallInst *CI, LibFunc Func,
@@ -222,6 +229,8 @@ private:
   Value *optimizePuts(CallInst *CI, IRBuilderBase &B);
 
   // Helper methods
+  Value* emitSnPrintfMemCpy(CallInst *CI, Value *StrArg, StringRef Str,
+                            uint64_t N, IRBuilderBase &B);
   Value *emitStrLenMemCpy(Value *Src, Value *Dst, uint64_t Len,
                           IRBuilderBase &B);
   void classifyArgUse(Value *Val, Function *F, bool IsFloat,

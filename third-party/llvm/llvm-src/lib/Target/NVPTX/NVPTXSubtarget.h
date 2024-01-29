@@ -76,10 +76,21 @@ public:
   inline bool hasHWROT32() const { return SmVersion >= 32; }
   bool hasImageHandles() const;
   bool hasFP16Math() const { return SmVersion >= 53; }
+  bool hasBF16Math() const { return SmVersion >= 80; }
   bool allowFP16Math() const;
   bool hasMaskOperator() const { return PTXVersion >= 71; }
+  bool hasNoReturn() const { return SmVersion >= 30 && PTXVersion >= 64; }
   unsigned int getSmVersion() const { return SmVersion; }
   std::string getTargetName() const { return TargetName; }
+
+  // Get maximum value of required alignments among the supported data types.
+  // From the PTX ISA doc, section 8.2.3:
+  //  The memory consistency model relates operations executed on memory
+  //  locations with scalar data-types, which have a maximum size and alignment
+  //  of 64 bits. Memory operations with a vector data-type are modelled as a
+  //  set of equivalent memory operations with a scalar data-type, executed in
+  //  an unspecified order on the elements in the vector.
+  unsigned getMaxRequiredAlignment() const { return 8; }
 
   unsigned getPTXVersion() const { return PTXVersion; }
 

@@ -23,7 +23,6 @@ class VINTERPe_gfx11 <bits<7> op, VOPProfile P> : Enc64 {
 
   let Inst{31-26} = 0x33; // VOP3P encoding
   let Inst{25-24} = 0x1; // VINTERP sub-encoding
-  let Inst{23}    = 0; // reserved
 
   let Inst{7-0}   = vdst;
   let Inst{10-8}  = waitexp;
@@ -63,6 +62,10 @@ def VOP3_VINTERP_F32 : VOPProfile<[f32, f32, f32, f32]> {
   let HasOpSel = 0;
   let HasModifiers = 1;
 
+  let Src0Mod = FPVRegInputMods;
+  let Src1Mod = FPVRegInputMods;
+  let Src2Mod = FPVRegInputMods;
+
   let Outs64 = (outs VGPR_32:$vdst);
   let Ins64 = (ins Src0Mod:$src0_modifiers, VRegSrc_32:$src0,
                    Src1Mod:$src1_modifiers, VRegSrc_32:$src1,
@@ -76,6 +79,10 @@ def VOP3_VINTERP_F32 : VOPProfile<[f32, f32, f32, f32]> {
 class VOP3_VINTERP_F16 <list<ValueType> ArgVT> : VOPProfile<ArgVT> {
   let HasOpSel = 1;
   let HasModifiers = 1;
+
+  let Src0Mod = FPVRegInputMods;
+  let Src1Mod = FPVRegInputMods;
+  let Src2Mod = FPVRegInputMods;
 
   let Outs64 = (outs VGPR_32:$vdst);
   let Ins64 = (ins Src0Mod:$src0_modifiers, VRegSrc_32:$src0,

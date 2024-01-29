@@ -1,4 +1,4 @@
-//===- RISCVMacroFusion.cpp - RISCV Macro Fusion --------------------------===//
+//===- RISCVMacroFusion.cpp - RISC-V Macro Fusion -------------------------===//
 //
 // Part of the LLVM Project, under the Apache License v2.0 with LLVM Exceptions.
 // See https://llvm.org/LICENSE.txt for license information.
@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-/// \file This file contains the RISCV implementation of the DAG scheduling
+/// \file This file contains the RISC-V implementation of the DAG scheduling
 /// mutation to pair instructions back to back.
 //
 //===----------------------------------------------------------------------===//
@@ -45,9 +45,15 @@ static bool isLUIADDI(const MachineInstr *FirstMI,
   if (SecondMI.getOperand(1).getReg() != FirstDest)
     return false;
 
+  // If the input is virtual make sure this is the only user.
+  if (FirstDest.isVirtual()) {
+    auto &MRI = SecondMI.getMF()->getRegInfo();
+    return MRI.hasOneNonDBGUse(FirstDest);
+  }
+
   // If the FirstMI destination is non-virtual, it should match the SecondMI
   // destination.
-  return FirstDest.isVirtual() || SecondMI.getOperand(0).getReg() == FirstDest;
+  return SecondMI.getOperand(0).getReg() == FirstDest;
 }
 
 static bool shouldScheduleAdjacent(const TargetInstrInfo &TII,

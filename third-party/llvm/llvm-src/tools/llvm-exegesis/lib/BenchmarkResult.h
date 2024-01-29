@@ -19,10 +19,12 @@
 #include "RegisterValue.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
+#include "llvm/ADT/StringSet.h"
 #include "llvm/MC/MCInst.h"
 #include "llvm/MC/MCInstBuilder.h"
 #include "llvm/Support/YAMLTraits.h"
 #include <limits>
+#include <set>
 #include <string>
 #include <unordered_map>
 #include <vector>
@@ -32,11 +34,41 @@ class Error;
 
 namespace exegesis {
 
-struct InstructionBenchmarkKey {
+enum class BenchmarkPhaseSelectorE {
+  PrepareSnippet,
+  PrepareAndAssembleSnippet,
+  AssembleMeasuredCode,
+  Measure,
+};
+
+enum class BenchmarkFilter { All, RegOnly, WithMem };
+
+struct MemoryValue {
+  // The arbitrary bit width constant that defines the value.
+  APInt Value;
+  // The size of the value in bytes.
+  size_t SizeBytes;
+  // The index of the memory value.
+  size_t Index;
+};
+
+struct MemoryMapping {
+  // The address to place the mapping at.
+  intptr_t Address;
+  // The name of the value that should be mapped.
+  std::string MemoryValueName;
+};
+
+struct BenchmarkKey {
   // The LLVM opcode name.
   std::vector<MCInst> Instructions;
   // The initial values of the registers.
   std::vector<RegisterValue> RegisterInitialValues;
+  // The memory values that can be mapped into the execution context of the
+  // snippet.
+  std::unordered_map<std::string, MemoryValue> MemoryValues;
+  // The memory mappings that the snippet can access.
+  std::vector<MemoryMapping> MemoryMappings;
   // An opaque configuration, that can be used to separate several benchmarks of
   // the same instruction under different configurations.
   std::string Config;
@@ -57,8 +89,8 @@ struct BenchmarkMeasure {
 };
 
 // The result of an instruction benchmark.
-struct InstructionBenchmark {
-  InstructionBenchmarkKey Key;
+struct Benchmark {
+  BenchmarkKey Key;
   enum ModeE { Unknown, Latency, Uops, InverseThroughput };
   ModeE Mode;
   std::string CpuName;
@@ -76,19 +108,40 @@ struct InstructionBenchmark {
   std::vector<uint8_t> AssembledSnippet;
   // How to aggregate measurements.
   enum ResultAggregationModeE { Min, Max, Mean, MinVariance };
-  // Read functions.
-  static Expected<InstructionBenchmark> readYaml(const LLVMState &State,
-                                                 StringRef Filename);
 
-  static Expected<std::vector<InstructionBenchmark>>
-  readYamls(const LLVMState &State, StringRef Filename);
+  Benchmark() = default;
+  Benchmark(Benchmark &&) = default;
+
+  Benchmark(const Benchmark &) = delete;
+  Benchmark &operator=(const Benchmark &) = delete;
+  Benchmark &operator=(Benchmark &&) = delete;
+
+  // Read functions.
+  static Expected<Benchmark> readYaml(const LLVMState &State,
+                                                 MemoryBufferRef Buffer);
+
+  static Expected<std::vector<Benchmark>>
+  readYamls(const LLVMState &State, MemoryBufferRef Buffer);
+
+  // Given a set of serialized instruction benchmarks, returns the set of
+  // triples and CPUs that appear in the list of benchmarks.
+  struct TripleAndCpu {
+    std::string LLVMTriple;
+    std::string CpuName;
+    bool operator<(const TripleAndCpu &O) const {
+      return std::tie(LLVMTriple, CpuName) < std::tie(O.LLVMTriple, O.CpuName);
+    }
+  };
+  static Expected<std::set<TripleAndCpu>>
+  readTriplesAndCpusFromYamls(MemoryBufferRef Buffer);
 
   class Error readYamlFrom(const LLVMState &State, StringRef InputContent);
 
   // Write functions, non-const because of YAML traits.
+  // NOTE: we intentionally do *NOT* have a variant of this function taking
+  //       filename, because it's behaviour is bugprone with regards to
+  //       accidentally using it more than once and overriding previous YAML.
   class Error writeYamlTo(const LLVMState &State, raw_ostream &S);
-
-  class Error writeYaml(const LLVMState &State, const StringRef Filename);
 };
 
 bool operator==(const BenchmarkMeasure &A, const BenchmarkMeasure &B);

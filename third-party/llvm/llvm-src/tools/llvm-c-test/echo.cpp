@@ -133,10 +133,8 @@ struct TypeCloner {
         return S;
       }
       case LLVMArrayTypeKind:
-        return LLVMArrayType(
-          Clone(LLVMGetElementType(Src)),
-          LLVMGetArrayLength(Src)
-        );
+        return LLVMArrayType2(Clone(LLVMGetElementType(Src)),
+                              LLVMGetArrayLength2(Src));
       case LLVMPointerTypeKind:
         if (LLVMPointerTypeIsOpaque(Src))
           return LLVMPointerTypeInContext(Ctx, LLVMGetPointerAddressSpace(Src));
@@ -159,6 +157,8 @@ struct TypeCloner {
         return LLVMX86MMXTypeInContext(Ctx);
       case LLVMTokenTypeKind:
         return LLVMTokenTypeInContext(Ctx);
+      case LLVMTargetExtTypeKind:
+        assert(false && "Implement me");
     }
 
     fprintf(stderr, "%d is not a supported typekind\n", Kind);
@@ -307,9 +307,9 @@ static LLVMValueRef clone_constant_impl(LLVMValueRef Cst, LLVMModuleRef M) {
                               ? LLVMConstantArrayValueKind
                               : LLVMConstantDataArrayValueKind);
     LLVMTypeRef Ty = TypeCloner(M).Clone(Cst);
-    unsigned EltCount = LLVMGetArrayLength(Ty);
+    uint64_t EltCount = LLVMGetArrayLength2(Ty);
     SmallVector<LLVMValueRef, 8> Elts;
-    for (unsigned i = 0; i < EltCount; i++)
+    for (uint64_t i = 0; i < EltCount; i++)
       Elts.push_back(clone_constant(LLVMGetAggregateElement(Cst, i), M));
     return LLVMConstArray(LLVMGetElementType(Ty), Elts.data(), EltCount);
   }
@@ -536,31 +536,47 @@ struct FunCloner {
       case LLVMAdd: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool NUW = LLVMGetNUW(Src);
+        LLVMBool NSW = LLVMGetNSW(Src);
         Dst = LLVMBuildAdd(Builder, LHS, RHS, Name);
+        LLVMSetNUW(Dst, NUW);
+        LLVMSetNSW(Dst, NSW);
         break;
       }
       case LLVMSub: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool NUW = LLVMGetNUW(Src);
+        LLVMBool NSW = LLVMGetNSW(Src);
         Dst = LLVMBuildSub(Builder, LHS, RHS, Name);
+        LLVMSetNUW(Dst, NUW);
+        LLVMSetNSW(Dst, NSW);
         break;
       }
       case LLVMMul: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool NUW = LLVMGetNUW(Src);
+        LLVMBool NSW = LLVMGetNSW(Src);
         Dst = LLVMBuildMul(Builder, LHS, RHS, Name);
+        LLVMSetNUW(Dst, NUW);
+        LLVMSetNSW(Dst, NSW);
         break;
       }
       case LLVMUDiv: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool IsExact = LLVMGetExact(Src);
         Dst = LLVMBuildUDiv(Builder, LHS, RHS, Name);
+        LLVMSetExact(Dst, IsExact);
         break;
       }
       case LLVMSDiv: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool IsExact = LLVMGetExact(Src);
         Dst = LLVMBuildSDiv(Builder, LHS, RHS, Name);
+        LLVMSetExact(Dst, IsExact);
         break;
       }
       case LLVMURem: {
@@ -578,19 +594,27 @@ struct FunCloner {
       case LLVMShl: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool NUW = LLVMGetNUW(Src);
+        LLVMBool NSW = LLVMGetNSW(Src);
         Dst = LLVMBuildShl(Builder, LHS, RHS, Name);
+        LLVMSetNUW(Dst, NUW);
+        LLVMSetNSW(Dst, NSW);
         break;
       }
       case LLVMLShr: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool IsExact = LLVMGetExact(Src);
         Dst = LLVMBuildLShr(Builder, LHS, RHS, Name);
+        LLVMSetExact(Dst, IsExact);
         break;
       }
       case LLVMAShr: {
         LLVMValueRef LHS = CloneValue(LLVMGetOperand(Src, 0));
         LLVMValueRef RHS = CloneValue(LLVMGetOperand(Src, 1));
+        LLVMBool IsExact = LLVMGetExact(Src);
         Dst = LLVMBuildAShr(Builder, LHS, RHS, Name);
+        LLVMSetExact(Dst, IsExact);
         break;
       }
       case LLVMAnd: {
@@ -1374,7 +1398,7 @@ NamedMDClone:
   }
 }
 
-int llvm_echo(bool OpaquePointers) {
+int llvm_echo(void) {
   LLVMEnablePrettyStackTrace();
 
   LLVMModuleRef Src = llvm_load_module(false, true);
@@ -1383,8 +1407,6 @@ int llvm_echo(bool OpaquePointers) {
   size_t ModuleIdentLen;
   const char *ModuleName = LLVMGetModuleIdentifier(Src, &ModuleIdentLen);
   LLVMContextRef Ctx = LLVMContextCreate();
-  if (!OpaquePointers)
-    LLVMContextSetOpaquePointers(Ctx, false);
   LLVMModuleRef M = LLVMModuleCreateWithNameInContext(ModuleName, Ctx);
 
   LLVMSetSourceFileName(M, SourceFileName, SourceFileLen);

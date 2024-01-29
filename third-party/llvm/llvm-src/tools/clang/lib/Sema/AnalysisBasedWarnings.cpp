@@ -13,25 +13,32 @@
 //===----------------------------------------------------------------------===//
 
 #include "clang/Sema/AnalysisBasedWarnings.h"
+#include "clang/AST/Decl.h"
 #include "clang/AST/DeclCXX.h"
 #include "clang/AST/DeclObjC.h"
 #include "clang/AST/EvaluatedExprVisitor.h"
+#include "clang/AST/Expr.h"
 #include "clang/AST/ExprCXX.h"
 #include "clang/AST/ExprObjC.h"
+#include "clang/AST/OperationKinds.h"
 #include "clang/AST/ParentMap.h"
 #include "clang/AST/RecursiveASTVisitor.h"
 #include "clang/AST/StmtCXX.h"
 #include "clang/AST/StmtObjC.h"
 #include "clang/AST/StmtVisitor.h"
+#include "clang/AST/RecursiveASTVisitor.h"
+#include "clang/AST/Type.h"
 #include "clang/Analysis/Analyses/CFGReachabilityAnalysis.h"
 #include "clang/Analysis/Analyses/CalledOnceCheck.h"
 #include "clang/Analysis/Analyses/Consumed.h"
 #include "clang/Analysis/Analyses/ReachableCode.h"
 #include "clang/Analysis/Analyses/ThreadSafety.h"
 #include "clang/Analysis/Analyses/UninitializedValues.h"
+#include "clang/Analysis/Analyses/UnsafeBufferUsage.h"
 #include "clang/Analysis/AnalysisDeclContext.h"
 #include "clang/Analysis/CFG.h"
 #include "clang/Analysis/CFGStmtMap.h"
+#include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/SourceLocation.h"
 #include "clang/Basic/SourceManager.h"
 #include "clang/Lex/Preprocessor.h"
@@ -40,6 +47,7 @@
 #include "llvm/ADT/ArrayRef.h"
 #include "llvm/ADT/BitVector.h"
 #include "llvm/ADT/MapVector.h"
+#include "llvm/ADT/STLFunctionalExtras.h"
 #include "llvm/ADT/SmallString.h"
 #include "llvm/ADT/SmallVector.h"
 #include "llvm/ADT/StringRef.h"
@@ -47,6 +55,7 @@
 #include <algorithm>
 #include <deque>
 #include <iterator>
+#include <optional>
 
 using namespace clang;
 
@@ -62,11 +71,17 @@ namespace {
   public:
     UnreachableCodeHandler(Sema &s) : S(s) {}
 
-    void HandleUnreachable(reachable_code::UnreachableKind UK,
-                           SourceLocation L,
-                           SourceRange SilenceableCondVal,
-                           SourceRange R1,
-                           SourceRange R2) override {
+    void HandleUnreachable(reachable_code::UnreachableKind UK, SourceLocation L,
+                           SourceRange SilenceableCondVal, SourceRange R1,
+                           SourceRange R2, bool HasFallThroughAttr) override {
+      // If the diagnosed code is `[[fallthrough]];` and
+      // `-Wunreachable-code-fallthrough` is  enabled, suppress `code will never
+      // be executed` warning to avoid generating diagnostic twice
+      if (HasFallThroughAttr &&
+          !S.getDiagnostics().isIgnored(diag::warn_unreachable_fallthrough_attr,
+                                        SourceLocation()))
+        return;
+
       // Avoid reporting multiple unreachable code diagnostics that are
       // triggered by the same conditional value.
       if (PreviousSilenceableCondVal.isValid() &&
@@ -326,7 +341,7 @@ static void visitReachableThrows(
     if (!Reachable[B->getBlockID()])
       continue;
     for (CFGElement &E : *B) {
-      Optional<CFGStmt> S = E.getAs<CFGStmt>();
+      std::optional<CFGStmt> S = E.getAs<CFGStmt>();
       if (!S)
         continue;
       if (auto *Throw = dyn_cast<CXXThrowExpr>(S->getStmt()))
@@ -570,6 +585,7 @@ struct CheckFallThroughDiagnostics {
     D.diag_AlwaysFallThrough_HasNoReturn = 0;
     D.diag_AlwaysFallThrough_ReturnsNonVoid =
         diag::warn_falloff_nonvoid_coroutine;
+    D.diag_NeverFallThroughOrReturn = 0;
     D.funMode = Coroutine;
     return D;
   }
@@ -1113,19 +1129,19 @@ namespace {
 
         if (!ReachableBlocks.count(P)) {
           for (const CFGElement &Elem : llvm::reverse(*P)) {
-            if (Optional<CFGStmt> CS = Elem.getAs<CFGStmt>()) {
-              if (const AttributedStmt *AS = asFallThroughAttr(CS->getStmt())) {
-                // Don't issue a warning for an unreachable fallthrough
-                // attribute in template instantiations as it may not be
-                // unreachable in all instantiations of the template.
-                if (!IsTemplateInstantiation)
-                  S.Diag(AS->getBeginLoc(),
-                         diag::warn_unreachable_fallthrough_attr);
-                markFallthroughVisited(AS);
-                ++AnnotatedCnt;
-                break;
-              }
-              // Don't care about other unreachable statements.
+            if (std::optional<CFGStmt> CS = Elem.getAs<CFGStmt>()) {
+            if (const AttributedStmt *AS = asFallThroughAttr(CS->getStmt())) {
+              // Don't issue a warning for an unreachable fallthrough
+              // attribute in template instantiations as it may not be
+              // unreachable in all instantiations of the template.
+              if (!IsTemplateInstantiation)
+                S.Diag(AS->getBeginLoc(),
+                       diag::warn_unreachable_fallthrough_attr);
+              markFallthroughVisited(AS);
+              ++AnnotatedCnt;
+              break;
+            }
+            // Don't care about other unreachable statements.
             }
           }
           // If there are no unreachable statements, this may be a special
@@ -1198,7 +1214,7 @@ namespace {
       if (const Stmt *Term = B.getTerminatorStmt())
         return Term;
       for (const CFGElement &Elem : llvm::reverse(B))
-        if (Optional<CFGStmt> CS = Elem.getAs<CFGStmt>())
+        if (std::optional<CFGStmt> CS = Elem.getAs<CFGStmt>())
           return CS->getStmt();
       // Workaround to detect a statement thrown out by CFGBuilder:
       //   case X: {} case Y:
@@ -2139,6 +2155,161 @@ public:
 } // namespace clang
 
 //===----------------------------------------------------------------------===//
+// Unsafe buffer usage analysis.
+//===----------------------------------------------------------------------===//
+
+namespace {
+class UnsafeBufferUsageReporter : public UnsafeBufferUsageHandler {
+  Sema &S;
+  bool SuggestSuggestions;  // Recommend -fsafe-buffer-usage-suggestions?
+
+public:
+  UnsafeBufferUsageReporter(Sema &S, bool SuggestSuggestions)
+    : S(S), SuggestSuggestions(SuggestSuggestions) {}
+
+  void handleUnsafeOperation(const Stmt *Operation,
+                             bool IsRelatedToDecl) override {
+    SourceLocation Loc;
+    SourceRange Range;
+    unsigned MsgParam = 0;
+    if (const auto *ASE = dyn_cast<ArraySubscriptExpr>(Operation)) {
+      Loc = ASE->getBase()->getExprLoc();
+      Range = ASE->getBase()->getSourceRange();
+      MsgParam = 2;
+    } else if (const auto *BO = dyn_cast<BinaryOperator>(Operation)) {
+      BinaryOperator::Opcode Op = BO->getOpcode();
+      if (Op == BO_Add || Op == BO_AddAssign || Op == BO_Sub ||
+          Op == BO_SubAssign) {
+        if (BO->getRHS()->getType()->isIntegerType()) {
+          Loc = BO->getLHS()->getExprLoc();
+          Range = BO->getLHS()->getSourceRange();
+        } else {
+          Loc = BO->getRHS()->getExprLoc();
+          Range = BO->getRHS()->getSourceRange();
+        }
+        MsgParam = 1;
+      }
+    } else if (const auto *UO = dyn_cast<UnaryOperator>(Operation)) {
+      UnaryOperator::Opcode Op = UO->getOpcode();
+      if (Op == UO_PreInc || Op == UO_PreDec || Op == UO_PostInc ||
+          Op == UO_PostDec) {
+        Loc = UO->getSubExpr()->getExprLoc();
+        Range = UO->getSubExpr()->getSourceRange();
+        MsgParam = 1;
+      }
+    } else {
+      if (isa<CallExpr>(Operation)) {
+        // note_unsafe_buffer_operation doesn't have this mode yet.
+        assert(!IsRelatedToDecl && "Not implemented yet!");
+        MsgParam = 3;
+      }
+      Loc = Operation->getBeginLoc();
+      Range = Operation->getSourceRange();
+    }
+    if (IsRelatedToDecl) {
+      assert(!SuggestSuggestions &&
+             "Variables blamed for unsafe buffer usage without suggestions!");
+      S.Diag(Loc, diag::note_unsafe_buffer_operation) << MsgParam << Range;
+    } else {
+      S.Diag(Loc, diag::warn_unsafe_buffer_operation) << MsgParam << Range;
+      if (SuggestSuggestions) {
+        S.Diag(Loc, diag::note_safe_buffer_usage_suggestions_disabled);
+      }
+    }
+  }
+
+  void handleUnsafeVariableGroup(const VarDecl *Variable,
+                                 const DefMapTy &VarGrpMap,
+                             FixItList &&Fixes) override {
+    assert(!SuggestSuggestions &&
+           "Unsafe buffer usage fixits displayed without suggestions!");
+    S.Diag(Variable->getLocation(), diag::warn_unsafe_buffer_variable)
+        << Variable << (Variable->getType()->isPointerType() ? 0 : 1)
+        << Variable->getSourceRange();
+    if (!Fixes.empty()) {
+      const auto VarGroupForVD = VarGrpMap.find(Variable)->second;
+      unsigned FixItStrategy = 0; // For now we only have 'std::span' strategy
+      const auto &FD = S.Diag(Variable->getLocation(),
+                              diag::note_unsafe_buffer_variable_fixit_group);
+
+      FD << Variable << FixItStrategy;
+      std::string AllVars = "";
+      if (VarGroupForVD.size() > 1) {
+        if (VarGroupForVD.size() == 2) {
+          if (VarGroupForVD[0] == Variable) {
+            AllVars.append("'" + VarGroupForVD[1]->getName().str() + "'");
+          } else {
+            AllVars.append("'" + VarGroupForVD[0]->getName().str() + "'");
+          }
+        } else {
+          bool first = false;
+          if (VarGroupForVD.size() == 3) {
+            for (const VarDecl * V : VarGroupForVD) {
+              if (V == Variable) {
+                continue;
+              }
+              if (!first) {
+                first = true;
+                AllVars.append("'" + V->getName().str() + "'" + " and ");
+              } else {
+                AllVars.append("'" + V->getName().str() + "'");
+              }
+            }
+          } else {
+            for (const VarDecl * V : VarGroupForVD) {
+              if (V == Variable) {
+                continue;
+              }
+              if (VarGroupForVD.back() != V) {
+                AllVars.append("'" + V->getName().str() + "'" + ", ");
+              } else {
+                AllVars.append("and '" + V->getName().str() + "'");
+              }
+            }
+          }
+        }
+        FD << AllVars << 1;
+      } else {
+        FD << "" << 0;
+      }
+
+      for (const auto &F : Fixes)
+        FD << F;
+    }
+  }
+
+  bool isSafeBufferOptOut(const SourceLocation &Loc) const override {
+    return S.PP.isSafeBufferOptOut(S.getSourceManager(), Loc);
+  }
+
+  // Returns the text representation of clang::unsafe_buffer_usage attribute.
+  // `WSSuffix` holds customized "white-space"s, e.g., newline or whilespace
+  // characters.
+  std::string
+  getUnsafeBufferUsageAttributeTextAt(SourceLocation Loc,
+                                      StringRef WSSuffix = "") const override {
+    Preprocessor &PP = S.getPreprocessor();
+    TokenValue ClangUnsafeBufferUsageTokens[] = {
+        tok::l_square,
+        tok::l_square,
+        PP.getIdentifierInfo("clang"),
+        tok::coloncolon,
+        PP.getIdentifierInfo("unsafe_buffer_usage"),
+        tok::r_square,
+        tok::r_square};
+
+    StringRef MacroName;
+
+    // The returned macro (it returns) is guaranteed not to be function-like:
+    MacroName = PP.getLastMacroWithSpelling(Loc, ClangUnsafeBufferUsageTokens);
+    if (MacroName.empty())
+      MacroName = "[[clang::unsafe_buffer_usage]]";
+    return MacroName.str() + WSSuffix.str();
+  }
+};
+} // namespace
+
+//===----------------------------------------------------------------------===//
 // AnalysisBasedWarnings - Worker object used by Sema to execute analysis-based
 //  warnings on a function, method, or block.
 //===----------------------------------------------------------------------===//
@@ -2200,6 +2371,94 @@ sema::AnalysisBasedWarnings::~AnalysisBasedWarnings() = default;
 static void flushDiagnostics(Sema &S, const sema::FunctionScopeInfo *fscope) {
   for (const auto &D : fscope->PossiblyUnreachableDiags)
     S.Diag(D.Loc, D.PD);
+}
+
+// An AST Visitor that calls a callback function on each callable DEFINITION
+// that is NOT in a dependent context:
+class CallableVisitor : public RecursiveASTVisitor<CallableVisitor> {
+private:
+  llvm::function_ref<void(const Decl *)> Callback;
+
+public:
+  CallableVisitor(llvm::function_ref<void(const Decl *)> Callback)
+      : Callback(Callback) {}
+
+  bool VisitFunctionDecl(FunctionDecl *Node) {
+    if (cast<DeclContext>(Node)->isDependentContext())
+      return true; // Not to analyze dependent decl
+    // `FunctionDecl->hasBody()` returns true if the function has a body
+    // somewhere defined.  But we want to know if this `Node` has a body
+    // child.  So we use `doesThisDeclarationHaveABody`:
+    if (Node->doesThisDeclarationHaveABody())
+      Callback(Node);
+    return true;
+  }
+
+  bool VisitBlockDecl(BlockDecl *Node) {
+    if (cast<DeclContext>(Node)->isDependentContext())
+      return true; // Not to analyze dependent decl
+    Callback(Node);
+    return true;
+  }
+
+  bool VisitObjCMethodDecl(ObjCMethodDecl *Node) {
+    if (cast<DeclContext>(Node)->isDependentContext())
+      return true; // Not to analyze dependent decl
+    if (Node->hasBody())
+      Callback(Node);
+    return true;
+  }
+
+  bool VisitLambdaExpr(LambdaExpr *Node) {
+    return VisitFunctionDecl(Node->getCallOperator());
+  }
+
+  bool shouldVisitTemplateInstantiations() const { return true; }
+  bool shouldVisitImplicitCode() const { return false; }
+};
+
+void clang::sema::AnalysisBasedWarnings::IssueWarnings(
+     TranslationUnitDecl *TU) {
+  if (!TU)
+    return; // This is unexpected, give up quietly.
+
+  DiagnosticsEngine &Diags = S.getDiagnostics();
+
+  if (S.hasUncompilableErrorOccurred() || Diags.getIgnoreAllWarnings())
+    // exit if having uncompilable errors or ignoring all warnings:
+    return;
+
+  DiagnosticOptions &DiagOpts = Diags.getDiagnosticOptions();
+
+  // UnsafeBufferUsage analysis settings.
+  bool UnsafeBufferUsageCanEmitSuggestions = S.getLangOpts().CPlusPlus20;
+  bool UnsafeBufferUsageShouldEmitSuggestions =  // Should != Can.
+      UnsafeBufferUsageCanEmitSuggestions &&
+      DiagOpts.ShowSafeBufferUsageSuggestions;
+  bool UnsafeBufferUsageShouldSuggestSuggestions =
+      UnsafeBufferUsageCanEmitSuggestions &&
+      !DiagOpts.ShowSafeBufferUsageSuggestions;
+  UnsafeBufferUsageReporter R(S, UnsafeBufferUsageShouldSuggestSuggestions);
+
+  // The Callback function that performs analyses:
+  auto CallAnalyzers = [&](const Decl *Node) -> void {
+    // Perform unsafe buffer usage analysis:
+    if (!Diags.isIgnored(diag::warn_unsafe_buffer_operation,
+                         Node->getBeginLoc()) ||
+        !Diags.isIgnored(diag::warn_unsafe_buffer_variable,
+                         Node->getBeginLoc())) {
+      clang::checkUnsafeBufferUsage(Node, R,
+                                    UnsafeBufferUsageShouldEmitSuggestions);
+    }
+
+    // More analysis ...
+  };
+  // Emit per-function analysis-based warnings that require the whole-TU
+  // reasoning. Check if any of them is enabled at all before scanning the AST:
+  if (!Diags.isIgnored(diag::warn_unsafe_buffer_operation, SourceLocation()) ||
+      !Diags.isIgnored(diag::warn_unsafe_buffer_variable, SourceLocation())) {
+    CallableVisitor(CallAnalyzers).TraverseTranslationUnitDecl(TU);
+  }
 }
 
 void clang::sema::AnalysisBasedWarnings::IssueWarnings(
@@ -2269,7 +2528,7 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
   }
 
   // Install the logical handler.
-  llvm::Optional<LogicalErrorHandler> LEH;
+  std::optional<LogicalErrorHandler> LEH;
   if (LogicalErrorHandler::hasActiveDiagnostics(Diags, D->getBeginLoc())) {
     LEH.emplace(S);
     AC.getCFGBuildOptions().Observer = &*LEH;
@@ -2427,7 +2686,7 @@ void clang::sema::AnalysisBasedWarnings::IssueWarnings(
   // Check for throw out of non-throwing function.
   if (!Diags.isIgnored(diag::warn_throw_in_noexcept_func, D->getBeginLoc()))
     if (const FunctionDecl *FD = dyn_cast<FunctionDecl>(D))
-      if (S.getLangOpts().CPlusPlus && isNoexcept(FD))
+      if (S.getLangOpts().CPlusPlus && !fscope->isCoroutine() && isNoexcept(FD))
         checkThrowInNonThrowingFunc(S, FD, AC);
 
   // If none of the previous checks caused a CFG build, trigger one here

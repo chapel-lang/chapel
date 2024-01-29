@@ -156,9 +156,9 @@ IndexedReference::IndexedReference(Instruction &StoreOrLoadInst,
                                 << "\n");
 }
 
-Optional<bool> IndexedReference::hasSpacialReuse(const IndexedReference &Other,
-                                                 unsigned CLS,
-                                                 AAResults &AA) const {
+std::optional<bool>
+IndexedReference::hasSpacialReuse(const IndexedReference &Other, unsigned CLS,
+                                  AAResults &AA) const {
   assert(IsValid && "Expecting a valid reference");
 
   if (BasePointer != Other.getBasePointer() && !isAliased(Other, AA)) {
@@ -196,7 +196,7 @@ Optional<bool> IndexedReference::hasSpacialReuse(const IndexedReference &Other,
                << "No spacial reuse, difference between subscript:\n\t"
                << *LastSubscript << "\n\t" << OtherLastSubscript
                << "\nis not constant.\n");
-    return None;
+    return std::nullopt;
   }
 
   bool InSameCacheLine = (Diff->getValue()->getSExtValue() < CLS);
@@ -211,11 +211,10 @@ Optional<bool> IndexedReference::hasSpacialReuse(const IndexedReference &Other,
   return InSameCacheLine;
 }
 
-Optional<bool> IndexedReference::hasTemporalReuse(const IndexedReference &Other,
-                                                  unsigned MaxDistance,
-                                                  const Loop &L,
-                                                  DependenceInfo &DI,
-                                                  AAResults &AA) const {
+std::optional<bool>
+IndexedReference::hasTemporalReuse(const IndexedReference &Other,
+                                   unsigned MaxDistance, const Loop &L,
+                                   DependenceInfo &DI, AAResults &AA) const {
   assert(IsValid && "Expecting a valid reference");
 
   if (BasePointer != Other.getBasePointer() && !isAliased(Other, AA)) {
@@ -248,7 +247,7 @@ Optional<bool> IndexedReference::hasTemporalReuse(const IndexedReference &Other,
 
     if (SCEVConst == nullptr) {
       LLVM_DEBUG(dbgs().indent(2) << "No temporal reuse: distance unknown\n");
-      return None;
+      return std::nullopt;
     }
 
     const ConstantInt &CI = *SCEVConst->getValue();
@@ -298,7 +297,7 @@ CacheCostTy IndexedReference::computeRefCost(const Loop &L,
     Type *WiderType = SE.getWiderType(Stride->getType(), TripCount->getType());
     const SCEV *CacheLineSize = SE.getConstant(WiderType, CLS);
     Stride = SE.getNoopOrAnyExtend(Stride, WiderType);
-    TripCount = SE.getNoopOrAnyExtend(TripCount, WiderType);
+    TripCount = SE.getNoopOrZeroExtend(TripCount, WiderType);
     const SCEV *Numerator = SE.getMulExpr(Stride, TripCount);
     RefCost = SE.getUDivExpr(Numerator, CacheLineSize);
 
@@ -324,8 +323,8 @@ CacheCostTy IndexedReference::computeRefCost(const Loop &L,
       const SCEV *TripCount =
           computeTripCount(*AR->getLoop(), *Sizes.back(), SE);
       Type *WiderType = SE.getWiderType(RefCost->getType(), TripCount->getType());
-      RefCost = SE.getMulExpr(SE.getNoopOrAnyExtend(RefCost, WiderType),
-                              SE.getNoopOrAnyExtend(TripCount, WiderType));
+      RefCost = SE.getMulExpr(SE.getNoopOrZeroExtend(RefCost, WiderType),
+                              SE.getNoopOrZeroExtend(TripCount, WiderType));
     }
 
     LLVM_DEBUG(dbgs().indent(4)
@@ -335,7 +334,7 @@ CacheCostTy IndexedReference::computeRefCost(const Loop &L,
 
   // Attempt to fold RefCost into a constant.
   if (auto ConstantCost = dyn_cast<SCEVConstant>(RefCost))
-    return ConstantCost->getValue()->getSExtValue();
+    return ConstantCost->getValue()->getZExtValue();
 
   LLVM_DEBUG(dbgs().indent(4)
              << "RefCost is not a constant! Setting to RefCost=InvalidCost "
@@ -557,10 +556,10 @@ raw_ostream &llvm::operator<<(raw_ostream &OS, const CacheCost &CC) {
 
 CacheCost::CacheCost(const LoopVectorTy &Loops, const LoopInfo &LI,
                      ScalarEvolution &SE, TargetTransformInfo &TTI,
-                     AAResults &AA, DependenceInfo &DI, Optional<unsigned> TRT)
-    : Loops(Loops),
-      TRT((TRT == None) ? Optional<unsigned>(TemporalReuseThreshold) : TRT),
-      LI(LI), SE(SE), TTI(TTI), AA(AA), DI(DI) {
+                     AAResults &AA, DependenceInfo &DI,
+                     std::optional<unsigned> TRT)
+    : Loops(Loops), TRT(TRT.value_or(TemporalReuseThreshold)), LI(LI), SE(SE),
+      TTI(TTI), AA(AA), DI(DI) {
   assert(!Loops.empty() && "Expecting a non-empty loop vector.");
 
   for (const Loop *L : Loops) {
@@ -574,7 +573,7 @@ CacheCost::CacheCost(const LoopVectorTy &Loops, const LoopInfo &LI,
 
 std::unique_ptr<CacheCost>
 CacheCost::getCacheCost(Loop &Root, LoopStandardAnalysisResults &AR,
-                        DependenceInfo &DI, Optional<unsigned> TRT) {
+                        DependenceInfo &DI, std::optional<unsigned> TRT) {
   if (!Root.isOutermost()) {
     LLVM_DEBUG(dbgs() << "Expecting the outermost loop in a loop nest\n");
     return nullptr;
@@ -649,9 +648,9 @@ bool CacheCost::populateReferenceGroups(ReferenceGroupsTy &RefGroups) const {
        // when in actuality, depending on the array size, the first example
        // should have a cost closer to 2x the second due to the two cache
        // access per iteration from opposite ends of the array
-        Optional<bool> HasTemporalReuse =
+        std::optional<bool> HasTemporalReuse =
             R->hasTemporalReuse(Representative, *TRT, *InnerMostLoop, DI, AA);
-        Optional<bool> HasSpacialReuse =
+        std::optional<bool> HasSpacialReuse =
             R->hasSpacialReuse(Representative, CLS, AA);
 
         if ((HasTemporalReuse && *HasTemporalReuse) ||

@@ -17,9 +17,9 @@
 #include "clang/AST/Stmt.h"
 #include "clang/AST/StmtObjC.h"
 #include "clang/Analysis/AnalysisDeclContext.h"
+#include "clang/Basic/JsonSupport.h"
 #include "clang/Basic/LLVM.h"
 #include "clang/Basic/LangOptions.h"
-#include "clang/Basic/JsonSupport.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/ProgramState.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SValBuilder.h"
 #include "clang/StaticAnalyzer/Core/PathSensitive/SVals.h"
@@ -274,7 +274,8 @@ void Environment::printJson(raw_ostream &Out, const ASTContext &Ctx,
 
       const Stmt *S = I->first.getStmt();
       Indent(Out, InnerSpace, IsDot)
-          << "{ \"stmt_id\": " << S->getID(Ctx) << ", \"pretty\": ";
+          << "{ \"stmt_id\": " << S->getID(Ctx) << ", \"kind\": \""
+          << S->getStmtClassName() << "\", \"pretty\": ";
       S->printJson(Out, nullptr, PP, /*AddQuotes=*/true);
 
       Out << ", \"value\": ";

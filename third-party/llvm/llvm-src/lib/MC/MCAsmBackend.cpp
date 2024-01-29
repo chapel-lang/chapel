@@ -7,8 +7,6 @@
 //===----------------------------------------------------------------------===//
 
 #include "llvm/MC/MCAsmBackend.h"
-#include "llvm/ADT/None.h"
-#include "llvm/ADT/STLArrayExtras.h"
 #include "llvm/MC/MCDXContainerWriter.h"
 #include "llvm/MC/MCELFObjectWriter.h"
 #include "llvm/MC/MCFixupKindInfo.h"
@@ -24,7 +22,8 @@
 
 using namespace llvm;
 
-MCAsmBackend::MCAsmBackend(support::endianness Endian) : Endian(Endian) {}
+MCAsmBackend::MCAsmBackend(support::endianness Endian, unsigned RelaxFixupKind)
+    : Endian(Endian), RelaxFixupKind(RelaxFixupKind) {}
 
 MCAsmBackend::~MCAsmBackend() = default;
 
@@ -63,6 +62,9 @@ MCAsmBackend::createDwoObjectWriter(raw_pwrite_stream &OS,
                                     raw_pwrite_stream &DwoOS) const {
   auto TW = createObjectTargetWriter();
   switch (TW->getFormat()) {
+  case Triple::COFF:
+    return createWinCOFFDwoObjectWriter(
+        cast<MCWinCOFFObjectTargetWriter>(std::move(TW)), OS, DwoOS);
   case Triple::ELF:
     return createELFDwoObjectWriter(
         cast<MCELFObjectTargetWriter>(std::move(TW)), OS, DwoOS,
@@ -71,12 +73,12 @@ MCAsmBackend::createDwoObjectWriter(raw_pwrite_stream &OS,
     return createWasmDwoObjectWriter(
         cast<MCWasmObjectTargetWriter>(std::move(TW)), OS, DwoOS);
   default:
-    report_fatal_error("dwo only supported with ELF and Wasm");
+    report_fatal_error("dwo only supported with COFF, ELF, and Wasm");
   }
 }
 
-Optional<MCFixupKind> MCAsmBackend::getFixupKind(StringRef Name) const {
-  return None;
+std::optional<MCFixupKind> MCAsmBackend::getFixupKind(StringRef Name) const {
+  return std::nullopt;
 }
 
 const MCFixupKindInfo &MCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
@@ -105,7 +107,7 @@ const MCFixupKindInfo &MCAsmBackend::getFixupKindInfo(MCFixupKind Kind) const {
       {"FK_SecRel_8", 0, 64, 0},
   };
 
-  assert((size_t)Kind <= array_lengthof(Builtins) && "Unknown fixup kind");
+  assert((size_t)Kind <= std::size(Builtins) && "Unknown fixup kind");
   return Builtins[Kind];
 }
 
@@ -116,4 +118,20 @@ bool MCAsmBackend::fixupNeedsRelaxationAdvanced(
   if (!Resolved)
     return true;
   return fixupNeedsRelaxation(Fixup, Value, DF, Layout);
+}
+
+bool MCAsmBackend::isDarwinCanonicalPersonality(const MCSymbol *Sym) const {
+  // Consider a NULL personality (ie., no personality encoding) to be canonical
+  // because it's always at 0.
+  if (!Sym)
+    return true;
+
+  if (!Sym->isMachO())
+    llvm_unreachable("Expected MachO symbols only");
+
+  StringRef name = Sym->getName();
+  // XXX: We intentionally leave out "___gcc_personality_v0" because, despite
+  // being system-defined like these two, it is not very commonly-used.
+  // Reserving an empty slot for it seems silly.
+  return name == "___gxx_personality_v0" || name == "___objc_personality_v0";
 }
