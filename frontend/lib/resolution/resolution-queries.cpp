@@ -3152,14 +3152,14 @@ static void helpComputeForwardingTo(const CallInfo& fci,
 // preference.
 struct LastResortCandidateGroups {
   // Non-poi candidates (most preferred).
-  CandidatesVec nonPoi;
+  chpl::optional<CandidatesVec> nonPoi;
   // Poi candidates from innermost (more preferred) to outermost scope.
   std::vector<CandidatesVec> poi;
 
   LastResortCandidateGroups() = default;
 
-  const CandidatesVec& nonPoiCandidates() const {
-    return nonPoi;
+  const CandidatesVec nonPoiCandidates() const {
+    return nonPoi.value_or(CandidatesVec());
   }
 
   const size_t numPoiGroups() const {
@@ -3170,28 +3170,25 @@ struct LastResortCandidateGroups {
     return poi[idx];
   }
 
-  // Add a group of candidates in the most preferred available slot.
-  void addGroup(CandidatesVec&& group) {
-    if (!nonPoiSet) {
-      this->nonPoi = std::move(group);
-      nonPoiSet = true;
-    } else {
-      this->poi.push_back(std::move(group));
-    }
+  void addNonPoiCandidates(CandidatesVec&& group) {
+    CHPL_ASSERT(!nonPoi && "non poi candidates already set");
+    this->nonPoi = std::move(group);
+  }
+
+  void addPoiCandidates(CandidatesVec&& group) {
+    CHPL_ASSERT(!nonPoi && "setting poi candidates before non poi");
+    this->poi.push_back(std::move(group));
   }
 
   // Retrieve the last group added.
   const CandidatesVec& lastGroup() const {
-    CHPL_ASSERT(nonPoiSet && "expected at least one group added");
+    CHPL_ASSERT(nonPoi && "no candidates added to retrieve");
     if (numPoiGroups() > 0) {
       return poi.back();
     } else {
-      return nonPoi;
+      return *nonPoi;
     }
   }
-
- private:
-  bool nonPoiSet = false;
 };
 
 // Returns candidates with last resort candidates removed and saved in a
