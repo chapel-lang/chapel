@@ -1024,20 +1024,45 @@ QualifiedType Resolver::getTypeForDecl(const AstNode* declForErr,
     auto got = canPass(context, initExprType,
                        QualifiedType(declKind, declaredType.type()));
     if (!got.passes()) {
-      // For a record/union, check for an init= from the provided type
-      const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
-                                    declaredType.type()->isUnionType());
-      if (!(isRecordOrUnion &&
-            tryResolveInitEq(context, declForErr, declaredType.type(),
-                             initExprType.type(), poiScope))) {
-        CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
-                    initForErr, declaredType.type(), initExprType.type());
-        typePtr = ErroneousType::get(context);
+      if (declaredType.type()->isExternType()) {
+        auto varDT = QualifiedType(QualifiedType::VAR, declaredType.type());
+        // We allow for default-init-then-assign for extern types
+        std::vector<CallInfoActual> actuals;
+        actuals.push_back(CallInfoActual(varDT, UniqueString()));
+        actuals.push_back(CallInfoActual(initExprType, UniqueString()));
+        auto ci = CallInfo (/* name */ USTR("="),
+                            /* calledType */ QualifiedType(),
+                            /* isMethodCall */ false,
+                            /* hasQuestionArg */ false,
+                            /* isParenless */ false,
+                            actuals);
+
+        // TODO: store an associated action?
+        const Scope* scope = scopeStack.back();
+        auto c = resolveGeneratedCall(context, declForErr, ci, scope, poiScope);
+        if (!c.mostSpecific().isEmpty()) {
+          typePtr = declaredType.type();
+        } else {
+          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                      initForErr, declaredType.type(), initExprType.type());
+          typePtr = ErroneousType::get(context);
+        }
       } else {
-        // TODO: this might need to be an instantiation
-        // when we init= to create a type on a generic declared type, we want
-        // the type produced by the init= call
-        typePtr = declaredType.type();
+          // For a record/union, check for an init= from the provided type
+        const bool isRecordOrUnion = (declaredType.type()->isRecordType() ||
+                                      declaredType.type()->isUnionType());
+        if (!(isRecordOrUnion &&
+              tryResolveInitEq(context, declForErr, declaredType.type(),
+                               initExprType.type(), poiScope))) {
+          CHPL_REPORT(context, IncompatibleTypeAndInit, declForErr, typeForErr,
+                      initForErr, declaredType.type(), initExprType.type());
+          typePtr = ErroneousType::get(context);
+        } else {
+          // TODO: this might need to be an instantiation
+          // when we init= to create a type on a generic declared type, we want
+          // the type produced by the init= call
+          typePtr = declaredType.type();
+        }
       }
     } else if (!got.instantiates()) {
       // use the declared type since no conversion/promotion was needed
