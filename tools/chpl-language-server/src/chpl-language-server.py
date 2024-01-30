@@ -626,7 +626,9 @@ class ChapelLanguageServer(LanguageServer):
         if uri in self.configurations:
             del self.configurations[uri]
 
-    def _get_param_inlays(self, decl: NodeAndRange, qt: chapel.QualifiedType) -> List[InlayHint]:
+    def _get_param_inlays(
+        self, decl: NodeAndRange, qt: chapel.QualifiedType
+    ) -> List[InlayHint]:
         if not self.param_inlays:
             return []
 
@@ -642,7 +644,9 @@ class ChapelLanguageServer(LanguageServer):
             )
         ]
 
-    def _get_type_inlays(self, decl: NodeAndRange, qt: chapel.QualifiedType) -> List[InlayHint]:
+    def _get_type_inlays(
+        self, decl: NodeAndRange, qt: chapel.QualifiedType
+    ) -> List[InlayHint]:
         if not self.type_inlays:
             return []
 
@@ -948,7 +952,12 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         decls = fi.def_segments.range(params.range)
-        calls = list(call for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall))
+        calls = list(
+            call
+            for call, _ in chapel.each_matching(
+                fi.get_asts(), chapel.core.FnCall
+            )
+        )
 
         inlays: List[InlayHint] = []
         with fi.context.context.track_errors() as _:
