@@ -198,6 +198,11 @@ def get_AstNode_header() -> str:
             docstring="Get the scope for this AST node, if it has one",
         ),
         _wrap_method(
+            "type",
+            rettype="typing.Tuple[str, typing.Optional[ChapelType], typing.Optional[Param]]",
+            docstring="Get the type for this AST node, as a tuple of (kind, type, param value)",
+        ),
+        _wrap_method(
             "parent",
             rettype="typing.Optional[AstNode]",
             docstring="Get the parent node of this AST node",
