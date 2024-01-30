@@ -640,7 +640,8 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) /* No need to handle abstract parent classes. */
+/* No need to handle abstract parent classes. */
+#define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
@@ -668,7 +669,8 @@ PyObject* wrapType(ContextObject* context, const types::Type* node) {
       break;
 #define TYPE_NODE(NAME) CAST_TO(NAME)
 #define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) CAST_TO(NAME)
-#define TYPE_BEGIN_SUBCLASSES(NAME) /* No need to handle abstract parent classes. */
+/* No need to handle abstract parent classes. */
+#define TYPE_BEGIN_SUBCLASSES(NAME)
 #define TYPE_END_SUBCLASSES(NAME)
 #include "chpl/types/type-classes-list.h"
 #undef TYPE_NODE
