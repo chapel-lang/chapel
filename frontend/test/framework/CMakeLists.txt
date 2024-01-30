@@ -21,6 +21,7 @@ set_tests_properties(testRecursionFails PROPERTIES WILL_FAIL TRUE)
 comp_unit_test(testDependencies)
 comp_unit_test(testErrorTracking)
 comp_unit_test(testIds)
+comp_unit_test(testQueryEquivalence)
 comp_unit_test(testUniqueString)
 comp_unit_test(testVarint)
 

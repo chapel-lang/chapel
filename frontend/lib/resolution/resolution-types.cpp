@@ -844,7 +844,7 @@ MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* conte
     }
   }
 
-  return MostSpecificCandidate(fn, coercionFormal, coercionActual);
+  return MostSpecificCandidate(fn, faMap, coercionFormal, coercionActual);
 }
 
 MostSpecificCandidate MostSpecificCandidate::fromTypedFnSignature(Context* context,
