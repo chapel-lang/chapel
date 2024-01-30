@@ -3888,7 +3888,8 @@ bool Resolver::enter(const IndexableLoop* loop) {
 
         // TODO: resolve array types when the iterand is something other than
         // a domain.
-        if (eltType.isType()) {
+        if (eltType.isType() || eltType.kind() == QualifiedType::TYPE_QUERY) {
+          eltType = QualifiedType(QualifiedType::TYPE, eltType.type());
           auto arrayType = ArrayType::getArrayType(context, iterandType, eltType);
 
           ResolvedExpression& re = byPostorder.byAst(loop);
