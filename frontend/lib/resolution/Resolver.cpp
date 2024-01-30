@@ -376,6 +376,7 @@ Resolver::paramLoopResolver(Resolver& parent,
   ret.parentResolver = &parent;
   ret.declStack = parent.declStack;
   ret.byPostorder.setupForParamLoop(loop, parent.byPostorder);
+  ret.typedSignature = parent.typedSignature;
 
   return ret;
 }
