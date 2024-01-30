@@ -3441,7 +3441,8 @@ module TwoArrayRadixSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    // TODO: do some relevant first-touch
+    // It would make sense to touch the memory first here, but early experiments
+    // suggest that it doesn't help with CHPL_COMM=none.
     Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayBucketizerSharedState(
@@ -3490,7 +3491,7 @@ module TwoArrayDistributedRadixSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    // TODO: do some relevant first-touch
+    // TODO: do some first-touch, which should matter for comm=ugni
     Scratch.dsiElementInitializationComplete();
 
     var state1 = new TwoArrayDistributedBucketizerSharedState(
@@ -3536,7 +3537,8 @@ module TwoArraySampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    // TODO: do some relevant first-touch
+    // It would make sense to touch the memory first here, but early experiments
+    // suggest that it doesn't help with CHPL_COMM=none.
     Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayBucketizerSharedState(
@@ -3584,7 +3586,7 @@ module TwoArrayDistributedSampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
-    // TODO: do some relevant first-touch
+    // TODO: do some first-touch, which should matter for comm=ugni
     Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayDistributedBucketizerSharedState(
