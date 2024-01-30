@@ -449,7 +449,7 @@ class WorkspaceConfig:
 
             if not isinstance(compile_commands, list):
                 ls.show_message(
-                    "invalid .cls-info.json file", MessageType.Error
+                    "invalid .cls-commands.json file", MessageType.Error
                 )
                 continue
 
@@ -459,7 +459,7 @@ class WorkspaceConfig:
             # at least one compile command.
             if len(compile_commands) == 0:
                 ls.show_message(
-                    ".cls-info.json file contains invalid file commands",
+                    ".cls-commands.json file contains invalid file commands",
                     MessageType.Error,
                 )
                 continue
@@ -612,7 +612,7 @@ class ChapelLanguageServer(LanguageServer):
             return "\n".join(lines)
 
     def register_workspace(self, uri: str):
-        path = os.path.join(uri[len("file://") :], ".cls-info.json")
+        path = os.path.join(uri[len("file://") :], ".cls-commands.json")
         config = WorkspaceConfig.from_file(self, path)
         if config:
             self.configurations[uri] = config

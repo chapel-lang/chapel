@@ -79,7 +79,7 @@ def run_toplevel():
                 for key, value in from_file.items():
                     commands[key].append(value)
 
-    with open(".cls-info.json", "w") as f:
+    with open(".cls-commands.json", "w") as f:
         json.dump(commands, f)
 
 
