@@ -3138,7 +3138,7 @@ lookupCalledExpr(Context* context,
 
 static void helpComputeForwardingTo(const CallInfo& fci,
                                     size_t start,
-                                    CandidatesVec& candidates,
+                                    const CandidatesVec& candidates,
                                     std::vector<QualifiedType>& forwardingTo) {
   QualifiedType forwardingReceiverActualType = fci.calledType();
   size_t n = candidates.size();
@@ -3148,11 +3148,57 @@ static void helpComputeForwardingTo(const CallInfo& fci,
   }
 }
 
+// Container for ordering groups of last resort candidates by resolution
+// preference.
+struct LastResortCandidateGroups {
+  // Non-poi candidates (most preferred).
+  CandidatesVec nonPoi;
+  // Poi candidates from innermost (more preferred) to outermost scope.
+  std::vector<CandidatesVec> poi;
+
+  LastResortCandidateGroups() = default;
+
+  const CandidatesVec& nonPoiCandidates() const {
+    return nonPoi;
+  }
+
+  const size_t numPoiGroups() const {
+    return poi.size();
+  }
+
+  const CandidatesVec& poiCandidates(size_t idx) const {
+    return poi[idx];
+  }
+
+  // Add a group of candidates in the most preferred available slot.
+  void addGroup(CandidatesVec&& group) {
+    if (!nonPoiSet) {
+      this->nonPoi = std::move(group);
+      nonPoiSet = true;
+    } else {
+      this->poi.push_back(std::move(group));
+    }
+  }
+
+  // Retrieve the last group added.
+  // This method assumes at least one group has been added.
+  const CandidatesVec& lastGroup() const {
+    if (numPoiGroups() > 0) {
+      return poi.back();
+    } else {
+      return nonPoi;
+    }
+  }
+
+ private:
+  bool nonPoiSet = false;
+};
+
 // Returns candidates with last resort candidates removed and saved in a
 // separate list.
 static void filterCandidatesLastResort(
     Context* context, const CandidatesVec& list, CandidatesVec& result,
-    std::vector<CandidatesVec>& lastResort) {
+    LastResortCandidateGroups& lastResort) {
   CandidatesVec newLastResortCandidates;
 
   for (auto& candidate : list) {
@@ -3165,7 +3211,7 @@ static void filterCandidatesLastResort(
     }
   }
 
-  lastResort.push_back(newLastResortCandidates);
+  lastResort.addGroup(std::move(newLastResortCandidates));
 }
 
 // this function gathers candidates not from POI and candidates
@@ -3184,7 +3230,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                     CandidatesVec& poiCandidates,
                                     ForwardingInfoVec& nonPoiForwardingTo,
                                     ForwardingInfoVec& poiForwardingTo,
-                                    std::vector<CandidatesVec> lrcGroups,
+                                    LastResortCandidateGroups lrcGroups,
                                     std::vector<ForwardingInfoVec> lrcForwardingTo) {
 
   const Type* receiverType = ci.actual(0).type().type();
@@ -3299,7 +3345,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
         // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start,
                                 nonPoiCandidates, nonPoiForwardingTo);
-        helpComputeForwardingTo(fci, start, lrcGroups.back(),
+        helpComputeForwardingTo(fci, start, lrcGroups.lastGroup(),
                                 newLrcForwardingTo);
         i++;
       }
@@ -3345,7 +3391,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
 
         // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
-        helpComputeForwardingTo(fci, start, lrcGroups.back(),
+        helpComputeForwardingTo(fci, start, lrcGroups.lastGroup(),
                                 newLrcForwardingTo);
         i++;
       }
@@ -3421,11 +3467,8 @@ gatherAndFilterCandidates(Context* context,
                           ForwardingInfoVec& forwardingInfo,
                           std::vector<ApplicabilityResult>* rejected) {
   CandidatesVec candidates;
-  // Last resort candidates, grouped by without-POI, then from innermost POI
-  // scope outward, then forwading.
-  std::vector<CandidatesVec> lrcGroups;
-  // Analogous last resort candidate handling for forwarding, if needed.
-  std::vector<CandidatesVec> forwardingLrcGroups;
+  LastResortCandidateGroups lrcGroups;
+  LastResortCandidateGroups forwardingLrcGroups;
   std::vector<ForwardingInfoVec> forwardingLrcForwardingTo;
   CheckedScopes visited;
   firstPoiCandidate = 0;
@@ -3566,29 +3609,21 @@ gatherAndFilterCandidates(Context* context,
 
   // If no candidates have been found, consider last resort candidates from
   // innermost to outermost.
-  for (size_t i = 0; i < lrcGroups.size(); i++) {
-    if (candidates.empty()) {
-      candidates = lrcGroups[i];
-      // Bump firstPoiCandidate index after non-POI last resorts
-      if (i == 0) {
-        firstPoiCandidate = candidates.size();
-      }
-    } else {
-      break;
-    }
+  if (candidates.empty()) {
+    candidates = lrcGroups.nonPoiCandidates();
+    firstPoiCandidate = candidates.size();
   }
-  // If still no candidates, repeat for last resort candidates from forwarding.
-  for (size_t i = 0; i < forwardingLrcGroups.size(); i++) {
-    if (candidates.empty()) {
-      candidates = forwardingLrcGroups[i];
-      forwardingInfo = forwardingLrcForwardingTo[i];
-      // Bump firstPoiCandidate index after non-POI last resorts
-      if (i == 0) {
-        firstPoiCandidate = candidates.size();
-      }
-    } else {
-      break;
-    }
+  for (size_t i = 0; candidates.empty() && i < lrcGroups.numPoiGroups(); i++) {
+    candidates = lrcGroups.poiCandidates(i);
+  }
+  if (candidates.empty()) {
+    candidates = forwardingLrcGroups.nonPoiCandidates();
+    firstPoiCandidate = candidates.size();
+  }
+  for (size_t i = 0;
+       candidates.empty() && i < forwardingLrcGroups.numPoiGroups(); i++) {
+    candidates = forwardingLrcGroups.poiCandidates(i);
+    forwardingInfo = forwardingLrcForwardingTo[i];
   }
 
   return candidates;
