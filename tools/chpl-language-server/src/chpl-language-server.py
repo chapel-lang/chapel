@@ -101,6 +101,7 @@ from lsprotocol.types import (
     InlayHintParams,
     InlayHint,
 )
+from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
 
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
@@ -651,6 +652,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
