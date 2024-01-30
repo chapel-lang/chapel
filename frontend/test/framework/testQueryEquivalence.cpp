@@ -17,6 +17,13 @@
  * limitations under the License.
  */
 
+/* An important aspect of data structures in Dyno is that they behave properly
+   under the query system. This means that they support re-use and memoization
+   of queries. These tests are intended to lock in the behavior of data structures
+   under the query framework. In particular, they currently test that equivalent
+   but unequal data structures used in queries still allow the queries to be
+   re-used across generations. */
+
 #include "chpl/resolution/resolution-types.h"
 #include "chpl/framework/query-impl.h"
 #include "chpl/types/all-types.h"
