@@ -1396,6 +1396,7 @@ void Resolver::resolveNamedDecl(const NamedDecl* decl, const Type* useType) {
       if (declaredKind == QualifiedType::DEFAULT_INTENT ||
           declaredKind == QualifiedType::CONST_INTENT) {
         typePtr = tupleType->toReferentialTuple(context);
+        qtKind = QualifiedType::CONST_REF;
       } else if (qtKind == QualifiedType::VAR ||
                  qtKind == QualifiedType::CONST_VAR ||
                  qtKind == QualifiedType::CONST_REF ||

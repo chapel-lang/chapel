@@ -1035,6 +1035,21 @@ CanPassResult CanPassResult::canPass(Context* context,
     case QualifiedType::REF_MAYBE_CONST:
     case QualifiedType::TYPE:
       {
+        auto actualTup = actualT->toTupleType();
+        if (actualTup != nullptr  && formalT->isTupleType()) {
+          if (actualTup->isVarArgTuple() &&
+              actualTup->toReferentialTuple(context) == formalT) {
+            // Supports code like:
+            //   proc foo(args...) do
+            //     bar(args);
+            //
+            // TODO: Should this register as a conversion?
+            return passAsIs();
+          } else if (formalQT.kind() == QualifiedType::TYPE &&
+                actualTup->toValueTuple(context) == formalT) {
+            return passAsIs();
+          }
+        }
         // TODO: promotion
         return canPassSubtype(context, actualT, formalT);
       }
