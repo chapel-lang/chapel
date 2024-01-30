@@ -33,7 +33,7 @@ from typing import (
 )
 from collections import defaultdict
 from dataclasses import dataclass, field
-from bisect_compat import bisect_right
+from bisect_compat import bisect_left, bisect_right
 from symbol_signature import get_symbol_signature
 import itertools
 import os
@@ -208,6 +208,15 @@ class PositionList(Generic[EltT]):
         if idx < 0 or pos > self.get_range(self.elts[idx]).end:
             return None
         return self.elts[idx]
+
+    def range(self, rng: Range) -> List[EltT]:
+        start = bisect_right(
+            self.elts, rng.start, key=lambda x: self.get_range(x).start
+        )
+        end = bisect_left(
+            self.elts, rng.end, key=lambda x: self.get_range(x).start
+        )
+        return self.elts[start:end]
 
 
 @dataclass
