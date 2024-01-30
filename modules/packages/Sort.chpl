@@ -3363,6 +3363,10 @@ module TwoArrayRadixSort {
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
+    if !domainDistIsLayout(Data.domain) {
+      compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
+    }
+
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;
