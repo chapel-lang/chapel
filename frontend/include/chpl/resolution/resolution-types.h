@@ -145,6 +145,7 @@ class UntypedFnSignature {
     CHPL_ASSERT(idTag == uast::asttags::Function ||
            idTag == uast::asttags::Class    ||
            idTag == uast::asttags::Record   ||
+           idTag == uast::asttags::Tuple    ||
            idTag == uast::asttags::Union    ||
            idTag == uast::asttags::Variable);
   }
