@@ -883,10 +883,14 @@ def run_lsp():
                             # For only, onle show named arguments for literals
                             continue
 
+                        fml = fn.formal(i)
+                        if not isinstance(fml, chapel.core.Formal):
+                            continue
+
                         begin = location_to_range(act.location()).start
                         value_list.append(InlayHint(
                             position = begin,
-                            label = fn.formal(i).name() + " = ",
+                            label = fml.name() + " = ",
                         ))
 
         return value_list
