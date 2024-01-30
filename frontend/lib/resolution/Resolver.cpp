@@ -3341,11 +3341,18 @@ void Resolver::exit(const Call* call) {
       }
       QualifiedType qt = actual.type();
       const Type* t = qt.type();
+
+      const AstNode* formalAst = toId.isEmpty() ? nullptr : parsing::idToAst(context, toId);
+      bool isNonOutFormal = formalAst != nullptr &&
+                            formalAst->isFormal() &&
+                            formalAst->toFormal()->intent() != Formal::Intent::OUT;
+
       if (t != nullptr && t->isErroneousType()) {
         // always skip if there is an ErroneousType
         skip = ERRONEOUS_ACT;
-      } else if (!toId.isEmpty()) {
-        // don't skip because it could be initialized with 'out' intent
+      } else if (!toId.isEmpty() && !isNonOutFormal) {
+        // don't skip because it could be initialized with 'out' intent,
+        // but not for non-out formals because they can't be split-initialized.
       } else {
         if (qt.isParam() && qt.param() == nullptr) {
           skip = UNKNOWN_PARAM;
