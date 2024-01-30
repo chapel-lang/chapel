@@ -1,7 +1,7 @@
 Checking 32-bit RNG seq 1
 Checking 2x 32-bit RNG seq 1 seq 2
 Checking real(64)
-Checking random shuffle and permutation
+Checking random shuffle and permute
 10 40 30 20
 20 30 10 40
 30 40 10 20

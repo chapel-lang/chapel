@@ -1,1 +1,0 @@
-permutationAssociative.chpl:5: error: 'permutation' only supports 1D rectangular arrays whose domain idxType is compatible with eltType
