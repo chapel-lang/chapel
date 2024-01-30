@@ -1064,6 +1064,66 @@ static void test20() {
 
     context->collectGarbage();
   }
+
+  // Test resolving to a forwarded-to method over a last resort non-forwarded
+  // one.
+  {
+    printf("part 5\n");
+    context->advanceToNextRevision(true);
+
+    auto path = UniqueString::get(context, "input.chpl");
+    std::string contents = R""""(
+        module M {
+          record MyImpl {
+            proc foo(x: int) {
+              return x;
+            }
+          }
+          record MyForward {
+            forwarding var impl: MyImpl;
+
+            pragma "last resort"
+            proc foo(y: int) {
+              return y;
+            }
+          }
+          var mf: MyForward;
+          var x = mf.foo(4);
+        }
+                          )"""";
+
+    setFileText(context, path, contents);
+
+    const ModuleVec& vec = parseToplevel(context, path);
+    assert(vec.size() == 1);
+    const Module* m = vec[0]->toModule();
+    assert(m);
+    assert(m->numStmts() == 4);
+
+    // variable initialized with foo call
+    const Variable* x = m->stmt(3)->toVariable();
+    assert(x);
+    const AstNode* rhs = x->initExpression();
+    assert(rhs);
+    const FnCall* fnCall = rhs->toFnCall();
+    assert(fnCall);
+
+    // Get called foo
+    const ResolutionResultByPostorderID& rr = resolveModule(context, m->id());
+    const ResolvedExpression& re = rr.byAst(fnCall);
+    auto c = re.mostSpecific().only();
+    assert(c);
+
+    // Check we called the correct foo.
+    assert(c.fn()->untyped()->name() == "foo");
+    assert(c.fn()->numFormals() == 2);
+    assert(c.fn()->formalName(0) == "this");
+    assert(c.fn()->formalName(1) == "x");
+    assert(c.fn()->formalType(1).type());
+    assert(c.fn()->formalType(1).type()->isIntType());
+
+    context->collectGarbage();
+  }
 }
 
 int main() {
