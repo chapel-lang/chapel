@@ -613,6 +613,11 @@ CLASS_BEGIN(StringParam)
                UniqueString, return node->value())
 CLASS_END(StringParam)
 
+CLASS_BEGIN(CompositeType)
+  PLAIN_GETTER(CompositeType, decl, "Get the location where this composite type is declared",
+               const AstNode*, return parsing::idToAst(context, node->id()))
+CLASS_END(CompositeType)
+
 //
 // Cleanup and undefine all macros
 //
