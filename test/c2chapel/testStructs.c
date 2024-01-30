@@ -19,3 +19,11 @@ void fnStruct_call(fnStruct f) {
   printf("Calling fnStruct.fn(42):\n");
   f.fn(42);
 }
+
+void printForwardDeclStruct1(const forwardDeclStruct1* s) {
+  printf("%d\n", s->x);
+}
+
+void printForwardDeclStruct2(const struct forwardDeclStruct2* s) {
+  printf("%d\n", s->x);
+}

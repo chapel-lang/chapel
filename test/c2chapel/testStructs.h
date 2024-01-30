@@ -22,3 +22,15 @@ typedef struct {
 } fnStruct;
 
 void fnStruct_call(fnStruct f);
+
+struct forwardDeclStruct1;
+
+typedef struct forwardDeclStruct1 { int x; } forwardDeclStruct1;
+
+void printForwardDeclStruct1(const forwardDeclStruct1*);
+
+struct forwardDeclStruct2;
+
+struct forwardDeclStruct2 { int x; };
+
+void printForwardDeclStruct2(const struct forwardDeclStruct2*);
