@@ -56,6 +56,7 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_TYPE_DEFINITION, TypeDefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
 from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
@@ -417,6 +418,23 @@ class FileInfo:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
 
+    def get_use_or_def_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        # First, search definitions. If the cursor is over a declaration,
+        # that's what we're looking for.
+        segment = self.get_def_segment_at_position(position)
+        if segment:
+            return segment
+        else:
+            # Also search identifiers. If the cursor is over a reference,
+            # we might as well try find all the other references.
+            segment = self.get_use_segment_at_position(position)
+            if segment:
+                return segment.resolved_to
+
+        return None
+
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
@@ -654,19 +672,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = None
-        # First, search definitions. If the cursor is over a declaration,
-        # that's what we're looking for.
-        segment = fi.get_def_segment_at_position(params.position)
-        if segment:
-            node_and_loc = segment
-        else:
-            # Also search identifiers. If the cursor is over a reference,
-            # we might as well try find all the other references.
-            segment = fi.get_use_segment_at_position(params.position)
-            if segment:
-                node_and_loc = segment.resolved_to
-
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -675,6 +681,30 @@ def run_lsp():
             locations.append(use.get_location())
 
         return locations
+
+    @server.feature(TEXT_DOCUMENT_TYPE_DEFINITION)
+    async def get_type_def(
+        ls: ChapelLanguageServer,
+        params: TypeDefinitionParams
+    ):
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        if not node_and_loc:
+            return None
+
+        qt = node_and_loc.node.type()
+        if qt is None:
+            return None
+
+        _, type_, _ = qt
+        if not isinstance(type_, chapel.CompositeType):
+            return None
+
+        decl = type_.decl()
+        return Location(params.text_document.uri, location_to_range(decl.location()))
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
