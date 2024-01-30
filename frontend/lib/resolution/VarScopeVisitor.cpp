@@ -705,8 +705,7 @@ computeActualFormalIntents(Context* context,
   bool firstCandidate = true;
   for (const MostSpecificCandidate& candidate : candidates) {
     if (candidate) {
-      auto fn = candidate.fn();
-      auto formalActualMap = FormalActualMap(fn, ci);
+      auto& formalActualMap = candidate.formalActualMap();
       for (int actualIdx = 0; actualIdx < nActuals; actualIdx++) {
         const FormalActual* fa = formalActualMap.byActualIdx(actualIdx);
         auto intent  = normalizeFormalIntent(fa->formalType().kind());
