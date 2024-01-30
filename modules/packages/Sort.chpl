@@ -487,6 +487,8 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
       // TODO: use a sample sort if the input does not have enough
       // randomness, according to some heuristic
 
+      // TODO: uncomment the below when implementation is ready
+      /*
       var quickSortSize=50_000;
       // quick sort performs better for middle problem sizes
       // (too large for insertion sort etc, but not big enough
@@ -494,7 +496,7 @@ proc sort(ref Data: [?Dom] ?eltType, comparator:?rec=defaultComparator,
       if Data.domain.size < quickSortSize {
         QuickSort.quickSort(Data, comparator=comparator);
         return;
-      }
+      }*/
 
       if inPlaceAlgorithm {
         // use an in-place algorithm
