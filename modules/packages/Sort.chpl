@@ -3381,6 +3381,9 @@ module TwoArrayRadixSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
+
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new RadixBucketizer(),
       baseCaseSize=baseCaseSize,
@@ -3426,6 +3429,9 @@ module TwoArrayDistributedRadixSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
 
     var state1 = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=RadixBucketizer,
@@ -3475,6 +3481,9 @@ module TwoArraySampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
+
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new SampleBucketizer(Data.eltType),
       baseCaseSize=baseCaseSize,
@@ -3520,6 +3529,9 @@ module TwoArrayDistributedSampleSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=SampleBucketizer(Data.eltType),
