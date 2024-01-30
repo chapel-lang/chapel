@@ -27,6 +27,8 @@
 #include "error-tracker.h"
 
 PyTypeObject* parentTypeFor(chpl::uast::asttags::AstTag tag);
+PyTypeObject* parentTypeFor(chpl::types::typetags::TypeTag tag);
+PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag);
 
 typedef struct {
   PyObject_HEAD
@@ -74,7 +76,7 @@ PyObject* ScopeObject_used_imported_modules(ScopeObject *self, PyObject* Py_UNUS
 typedef struct {
   PyObject_HEAD
   PyObject* contextObject;
-  const chpl::uast::AstNode* astNode;
+  const chpl::uast::AstNode* ptr;
 } AstNodeObject;
 extern PyTypeObject AstNodeType;
 void setupAstNodeType();
@@ -90,40 +92,71 @@ PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)
 PyObject* AstNodeObject_iter(AstNodeObject *self);
 PyObject* AstNodeObject_location(AstNodeObject *self);
 PyObject* AstNodeObject_scope(AstNodeObject *self);
+PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
+
+typedef struct {
+  PyObject_HEAD
+  PyObject* contextObject;
+  const chpl::types::Type* ptr;
+} ChapelTypeObject;
+extern PyTypeObject ChapelTypeType;
+void setupChapelTypeType();
+
+int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs);
+void ChapelTypeObject_dealloc(ChapelTypeObject* self);
+PyObject* ChapelTypeObject_str(ChapelTypeObject* self);
+
+typedef struct {
+  PyObject_HEAD
+  PyObject* contextObject;
+  const chpl::types::Param* ptr;
+} ParamObject;
+extern PyTypeObject ParamType;
+void setupParamType();
+
+int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs);
+void ParamObject_dealloc(ParamObject* self);
+PyObject* ParamObject_str(ParamObject* self);
 
 /**
-  Declare a Python PyTypeObject that corresponds to an AST node with the given
-  name and tag. The tag is not the same as the name because abstract base
-  classes like NamedDecl have corresponding tags called START_NamedDecl
-  and END_NamedDecl, but not NamedDecl.
+  Declare a Python PyTypeObject that corresponds to a generated type
+  (AST node, Chapel type, etc.) of a given name.
  */
-#define DECLARE_PY_OBJECT_FOR(NAME, TAG)\
+#define DECLARE_PY_OBJECT_FOR(ROOT, NAME)\
   typedef struct { \
-    AstNodeObject parent; \
+    ROOT##Object parent; \
   } NAME##Object; \
   \
   extern PyTypeObject NAME##Type;
 
 /* Generate a Python object for reach AST node type. */
-#define AST_NODE(NAME) DECLARE_PY_OBJECT_FOR(NAME, NAME)
-#define AST_LEAF(NAME) DECLARE_PY_OBJECT_FOR(NAME, NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DECLARE_PY_OBJECT_FOR(NAME, START_##NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DECLARE_PY_OBJECT_FOR(ROOT, NAME)
+#include "generated-types-list.h"
 #undef DECLARE_PY_OBJECT_FOR
 
-void setupPerNodeTypes();
+void setupGeneratedTypes();
 
+template<typename IntentType>
+const char* intentToString(IntentType intent) {
+  return qualifierToString(chpl::uast::Qualifier(int(intent)));
+}
 
 /**
   Create a Python object of the class corresponding to the given AST node's
-  type. For example, an Identifier node will be wrapped in a a chapel.Identifier.
+  type. For example, an Identifier node will be wrapped in a chapel.Identifier.
  */
 PyObject* wrapAstNode(ContextObject* context, const chpl::uast::AstNode* node);
+
+/**
+  Create a Python object of the class corresponding to the given Type*.
+  For example, an ArrayType type will be wrapped in a chapel.ArrayType.
+ */
+PyObject* wrapType(ContextObject* context, const chpl::types::Type* node);
+
+/**
+  Creates a Python object of the class corresponding to the given Param*.
+ */
+PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node);
 
 /**
   Create a Python object from the given Location.

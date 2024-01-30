@@ -70,14 +70,14 @@ def get_Context_header() -> str:
         ),
         _wrap_method(
             "set_module_paths",
-            args=[("module_paths", "List[str]"), ("file_paths", "List[str]")],
+            args=[("module_paths", "typing.List[str]"), ("file_paths", "typing.List[str]")],
             rettype="None",
             docstring="Set the module and file paths for finding Chapel modules",
         ),
         _wrap_method(
             "introspect_parsed_files",
             args=[],
-            rettype="List[str]",
+            rettype="typing.List[str]",
             docstring="List all files that have been parsed in this revision",
         ),
         _wrap_method(
@@ -196,6 +196,11 @@ def get_AstNode_header() -> str:
             "scope",
             rettype="typing.Optional[Scope]",
             docstring="Get the scope for this AST node, if it has one",
+        ),
+        _wrap_method(
+            "type",
+            rettype="typing.Tuple[str, typing.Optional[ChapelType], typing.Optional[Param]]",
+            docstring="Get the type for this AST node, as a tuple of (kind, type, param value)",
         ),
         _wrap_method(
             "parent",

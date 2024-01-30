@@ -19,10 +19,12 @@
 
 #include "core-types.h"
 #include "chpl/uast/all-uast.h"
+#include "chpl/types/all-types.h"
 #include "chpl/parsing/parsing-queries.h"
 #include "chpl/resolution/scope-queries.h"
 #include "python-types.h"
 #include "error-tracker.h"
+#include "resolution.h"
 
 using namespace chpl;
 using namespace uast;
@@ -187,25 +189,16 @@ static void printTypedPythonFunctionArgs(std::ostringstream& ss, std::index_sequ
   (printArg(std::tuple_element<Indices, Tuple>::type::typeString()), ...);
 }
 
+template <typename T>
+struct GeneratedTypeInfo {};
 
-/** Same as the table in AstTag.cpp, except this one doesn't print
-    the START_ and END_ prefixes for tags. This way, we can get user-readable
-    names for abstract base classes. */
-static const char* tagToUserFacingStringTable[asttags::NUM_AST_TAGS] = {
-// define tag to string conversion
-#define AST_NODE(NAME) #NAME,
-#define AST_LEAF(NAME) #NAME,
-#define AST_BEGIN_SUBCLASSES(NAME) #NAME,
-#define AST_END_SUBCLASSES(NAME) #NAME,
-// Apply the above macros to uast-classes-list.h
-#include "chpl/uast/uast-classes-list.h"
-// clear the macros
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef NAMESTR
-};
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) \
+  template <> \
+  struct GeneratedTypeInfo<NAME##Object> { \
+    static constexpr auto Tag = TAG; \
+    static constexpr const char* Name = #NAME; \
+  };
+#include "generated-types-list.h"
 
 PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   std::ostringstream ss;
@@ -223,6 +216,8 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   ss << "class Error: pass" << std::endl << std::endl;
   ss << "class Scope: pass" << std::endl << std::endl;
   ss << "class AstNode: pass" << std::endl << std::endl;
+  ss << "class ChapelType: pass" << std::endl << std::endl;
+  ss << "class Param: pass" << std::endl << std::endl;
 
   // Here, use X-macros with the method-tables.h header file to generate
   // printing code for each AST node class. This uses the helper function
@@ -235,9 +230,9 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
   std::unordered_set<std::string> generated;
 
   #define CLASS_BEGIN(NODE) \
-    ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
-    generated.insert(tagToUserFacingStringTable[asttags::NODE]); \
-    ss << parentTypeFor(asttags::NODE)->tp_name; \
+    ss << "class " << GeneratedTypeInfo<NODE##Object>::Name << "("; \
+    generated.insert(GeneratedTypeInfo<NODE##Object>::Name); \
+    ss << parentTypeFor(GeneratedTypeInfo<NODE##Object>::Tag)->tp_name; \
     ss << "):" << std::endl;
   #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY) \
     ss << "    def " << #NAME << "(self"; \
@@ -251,24 +246,16 @@ PyObject* ContextObject_get_pyi_file(ContextObject *self, PyObject* args) {
     ss << std::endl;
   #include "method-tables.h"
 
-  #define ENSURE_ALL_CLASSES(NODE) \
-    if(generated.find(tagToUserFacingStringTable[asttags::NODE]) == generated.end()) { \
-      ss << "class " << tagToUserFacingStringTable[asttags::NODE] << "("; \
-      ss << parentTypeFor(asttags::NODE)->tp_name; \
+  #define ENSURE_ALL_CLASSES(NODE, TAG) \
+    if(generated.find(GeneratedTypeInfo<NODE##Object>::Name) == generated.end()) { \
+      ss << "class " << GeneratedTypeInfo<NODE##Object>::Name << "("; \
+      ss << parentTypeFor(TAG)->tp_name; \
       ss << "):" << std::endl; \
       ss << "    pass" << std::endl; \
     } \
 
-  #define AST_NODE(NAME) ENSURE_ALL_CLASSES(NAME)
-  #define AST_LEAF(NAME) ENSURE_ALL_CLASSES(NAME)
-  #define AST_BEGIN_SUBCLASSES(NAME) ENSURE_ALL_CLASSES(START_##NAME)
-  #define AST_END_SUBCLASSES(NAME)
-  #include "chpl/uast/uast-classes-list.h"
-  #undef AST_NODE
-  #undef AST_LEAF
-  #undef AST_BEGIN_SUBCLASSES
-  #undef AST_END_SUBCLASSES
-
+  #define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) ENSURE_ALL_CLASSES(NAME, TAG)
+  #include "generated-types-list.h"
   #undef ENSURE_ALL_CLASSES
 
   return Py_BuildValue("s", ss.str().c_str());
@@ -395,6 +382,7 @@ static PyMethodDef AstNodeObject_methods[] = {
   {"pragmas", (PyCFunction) AstNodeObject_pragmas, METH_NOARGS, "Get the pragmas of this AST node"},
   {"unique_id", (PyCFunction) AstNodeObject_unique_id, METH_NOARGS, "Get a unique identifier for this AST node"},
   {"scope", (PyCFunction) AstNodeObject_scope, METH_NOARGS, "Get the scope for this AST node"},
+  {"type", (PyCFunction) AstNodeObject_type, METH_NOARGS, "Get the type of this AST node"},
   {NULL, NULL, 0, NULL} /* Sentinel */
 };
 
@@ -421,7 +409,7 @@ int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs) {
       return -1;
 
   Py_INCREF(contextObjectPy);
-  self->astNode = nullptr;
+  self->ptr = nullptr;
   self->contextObject = contextObjectPy;
   return 0;
 }
@@ -432,18 +420,18 @@ void AstNodeObject_dealloc(AstNodeObject* self) {
 }
 
 PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
-  self->astNode->dump();
+  self->ptr->dump();
   Py_RETURN_NONE;
 }
 
 PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
-  const char* nodeType = asttags::tagToString(self->astNode->tag());
+  const char* nodeType = asttags::tagToString(self->ptr->tag());
   return Py_BuildValue("s", nodeType);
 }
 
 PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
   std::stringstream ss;
-  self->astNode->id().stringify(ss, CHPL_SYNTAX);
+  self->ptr->id().stringify(ss, CHPL_SYNTAX);
   auto uniqueID = ss.str();
   return Py_BuildValue("s", uniqueID.c_str());
 }
@@ -451,12 +439,12 @@ PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignor
 
 PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
   return wrapAstNode((ContextObject*) self->contextObject,
-                     self->astNode->attributeGroup());
+                     self->ptr->attributeGroup());
 }
 
 PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
   PyObject* elms = PySet_New(NULL);
-  auto attrs = self->astNode->attributeGroup();
+  auto attrs = self->ptr->attributeGroup();
   if (attrs) {
     for (auto p: attrs->pragmas()) {
       PyObject* s = Py_BuildValue("s", pragmatags::pragmaTagToName(p));
@@ -470,22 +458,22 @@ PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
-  return wrapAstNode(contextObject, parsing::parentAst(context, self->astNode));
+  return wrapAstNode(contextObject, parsing::parentAst(context, self->ptr));
 }
 
 PyObject* AstNodeObject_iter(AstNodeObject *self) {
-  return wrapIterPair((ContextObject*) self->contextObject, self->astNode->children());
+  return wrapIterPair((ContextObject*) self->contextObject, self->ptr->children());
 }
 
 PyObject* AstNodeObject_location(AstNodeObject *self) {
   auto context = &((ContextObject*) self->contextObject)->context;
-  return wrapLocation(parsing::locateAst(context, self->astNode));
+  return wrapLocation(parsing::locateAst(context, self->ptr));
 }
 
 PyObject* AstNodeObject_scope(AstNodeObject *self) {
   PyObject* args = Py_BuildValue("(O)", self->contextObject);
   auto context = &((ContextObject*) self->contextObject)->context;
-  auto scope = resolution::scopeForId(context, self->astNode->id());
+  auto scope = resolution::scopeForId(context, self->ptr->id());
 
   if (scope == nullptr) {
     Py_RETURN_NONE;
@@ -498,6 +486,109 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
   return scopeObjectPy;
 }
 
+PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+  auto contextObject = (ContextObject*) self->contextObject;
+  auto context = &contextObject->context;
+
+  auto qt = typeForNode(context, self->ptr);
+  if (qt.isUnknown()) {
+    Py_RETURN_NONE;
+  }
+
+  auto ret = Py_BuildValue("(sOO)", intentToString(qt.kind()),
+                                    wrapType(contextObject, qt.type()),
+                                    wrapParam(contextObject, qt.param()));
+
+  return ret;
+}
+
+static PyMethodDef ChapelTypeObject_methods[] = {
+  {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+PyTypeObject ChapelTypeType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+};
+
+void setupChapelTypeType() {
+  ChapelTypeType.tp_name = "ChapelType";
+  ChapelTypeType.tp_basicsize = sizeof(ChapelTypeObject);
+  ChapelTypeType.tp_itemsize = 0;
+  ChapelTypeType.tp_dealloc = (destructor) ChapelTypeObject_dealloc;
+  ChapelTypeType.tp_flags = Py_TPFLAGS_BASETYPE;
+  ChapelTypeType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
+  ChapelTypeType.tp_methods = ChapelTypeObject_methods;
+  ChapelTypeType.tp_init = (initproc) ChapelTypeObject_init;
+  ChapelTypeType.tp_new = PyType_GenericNew;
+  ChapelTypeType.tp_str = (reprfunc) ChapelTypeObject_str;
+}
+
+int ChapelTypeObject_init(ChapelTypeObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+
+  Py_INCREF(contextObjectPy);
+  self->ptr = nullptr;
+  self->contextObject = contextObjectPy;
+  return 0;
+}
+
+void ChapelTypeObject_dealloc(ChapelTypeObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+PyObject* ChapelTypeObject_str(ChapelTypeObject* self) {
+  std::stringstream ss;
+  self->ptr->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
+
+static PyMethodDef ParamObject_methods[] = {
+  {NULL, NULL, 0, NULL} /* Sentinel */
+};
+
+PyTypeObject ParamType = {
+  PyVarObject_HEAD_INIT(NULL, 0)
+};
+
+void setupParamType() {
+  ParamType.tp_name = "Param";
+  ParamType.tp_basicsize = sizeof(ParamObject);
+  ParamType.tp_itemsize = 0;
+  ParamType.tp_dealloc = (destructor) ParamObject_dealloc;
+  ParamType.tp_flags = Py_TPFLAGS_BASETYPE;
+  ParamType.tp_doc = PyDoc_STR("The base type of Chapel AST nodes");
+  ParamType.tp_methods = ParamObject_methods;
+  ParamType.tp_init = (initproc) ParamObject_init;
+  ParamType.tp_new = PyType_GenericNew;
+  ParamType.tp_str = (reprfunc) ParamObject_str;
+}
+
+int ParamObject_init(ParamObject* self, PyObject* args, PyObject* kwargs) {
+  PyObject* contextObjectPy;
+  if (!PyArg_ParseTuple(args, "O", &contextObjectPy))
+      return -1;
+
+  Py_INCREF(contextObjectPy);
+  self->ptr = nullptr;
+  self->contextObject = contextObjectPy;
+  return 0;
+}
+
+void ParamObject_dealloc(ParamObject* self) {
+  Py_XDECREF(self->contextObject);
+  Py_TYPE(self)->tp_free((PyObject *) self);
+}
+
+PyObject* ParamObject_str(ParamObject* self) {
+  std::stringstream ss;
+  self->ptr->stringify(ss, CHPL_SYNTAX);
+  auto typeString = ss.str();
+  return Py_BuildValue("s", typeString.c_str());
+}
 
 PyTypeObject* parentTypeFor(asttags::AstTag tag) {
 #define AST_NODE(NAME)
@@ -508,12 +599,31 @@ PyTypeObject* parentTypeFor(asttags::AstTag tag) {
     return &NAME##Type; \
   }
 #include "chpl/uast/uast-classes-list.h"
-#include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
   return &AstNodeType;
+}
+
+PyTypeObject* parentTypeFor(types::typetags::TypeTag tag) {
+#define TYPE_NODE(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME)
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME) \
+  if (tag > types::typetags::START_##NAME && tag < types::typetags::END_##NAME) { \
+    return &NAME##Type; \
+  }
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+  return &ChapelTypeType;
+}
+
+PyTypeObject* parentTypeFor(chpl::types::paramtags::ParamTag tag) {
+  return &ParamType;
 }
 
 PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
@@ -526,18 +636,68 @@ PyObject* wrapAstNode(ContextObject* context, const AstNode* node) {
 #define CAST_TO(NAME) \
     case asttags::NAME: \
       toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
-      ((NAME##Object*) toReturn)->parent.astNode = node->to##NAME(); \
+      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
       break;
 #define AST_NODE(NAME) CAST_TO(NAME)
 #define AST_LEAF(NAME) CAST_TO(NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) /* No need to handle abstract parent classes. */
+/* No need to handle abstract parent classes. */
+#define AST_BEGIN_SUBCLASSES(NAME)
 #define AST_END_SUBCLASSES(NAME)
 #include "chpl/uast/uast-classes-list.h"
 #undef AST_NODE
 #undef AST_LEAF
 #undef AST_BEGIN_SUBCLASSES
 #undef AST_END_SUBCLASSES
+#undef CAST_TO
     default: break;
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapType(ContextObject* context, const types::Type* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    Py_RETURN_NONE;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->tag()) {
+#define CAST_TO(NAME) \
+    case types::typetags::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.ptr = (const types::Type*) node->to##NAME(); \
+      break;
+#define TYPE_NODE(NAME) CAST_TO(NAME)
+#define BUILTIN_TYPE_NODE(NAME, CHPL_NAME) CAST_TO(NAME)
+/* No need to handle abstract parent classes. */
+#define TYPE_BEGIN_SUBCLASSES(NAME)
+#define TYPE_END_SUBCLASSES(NAME)
+#include "chpl/types/type-classes-list.h"
+#undef TYPE_NODE
+#undef BUILTIN_TYPE_NODE
+#undef TYPE_BEGIN_SUBCLASSES
+#undef TYPE_END_SUBCLASSES
+#undef CAST_TO
+    default: break;
+  }
+  Py_XDECREF(args);
+  return toReturn;
+}
+
+PyObject* wrapParam(ContextObject* context, const chpl::types::Param* node) {
+  PyObject* toReturn = nullptr;
+  if (node == nullptr) {
+    Py_RETURN_NONE;
+  }
+  PyObject* args = Py_BuildValue("(O)", (PyObject*) context);
+  switch (node->tag()) {
+#define PARAM_NODE(NAME, TYPE) \
+    case chpl::types::paramtags::NAME: \
+      toReturn = PyObject_CallObject((PyObject*) &NAME##Type, args); \
+      ((NAME##Object*) toReturn)->parent.ptr = node->to##NAME(); \
+      break;
+#include "chpl/types/param-classes-list.h"
+#undef PARAM_NODE
   }
   Py_XDECREF(args);
   return toReturn;

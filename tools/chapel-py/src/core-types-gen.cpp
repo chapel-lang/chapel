@@ -18,6 +18,7 @@
  */
 
 #include "core-types.h"
+#include "resolution.h"
 #include "chpl/uast/all-uast.h"
 #include "python-types.h"
 #include "chpl/framework/query-impl.h"
@@ -41,20 +42,12 @@ using namespace uast;
  */
 #define DEFINE_INIT_FOR(NAME, TAG)\
   int NAME##Object_init(NAME##Object* self, PyObject* args, PyObject* kwargs) { \
-    return parentTypeFor(asttags::TAG)->tp_init((PyObject*) self, args, kwargs); \
+    return parentTypeFor(TAG)->tp_init((PyObject*) self, args, kwargs); \
   } \
 
 /* Use the X-macros pattern to invoke DEFINE_INIT_FOR for each AST node type. */
-#define AST_NODE(NAME) DEFINE_INIT_FOR(NAME, NAME)
-#define AST_LEAF(NAME) DEFINE_INIT_FOR(NAME, NAME)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_INIT_FOR(NAME, START_##NAME)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
-#undef DEFINE_INIT_FOR
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_INIT_FOR(NAME, TAG)
+#include "generated-types-list.h"
 
 static const char* blockStyleToString(BlockStyle blockStyle) {
   switch (blockStyle) {
@@ -72,74 +65,6 @@ static const char* opKindToString(Range::OpKind kind) {
   }
 }
 
-template<typename IntentType>
-static const char* intentToString(IntentType intent) {
-  return qualifierToString(Qualifier(int(intent)));
-}
-
-static const ID scopeResolveViaVisibilityStmt(Context* context, const AstNode* visibilityStmt, const AstNode* node) {
-  if (visibilityStmt->isUse() || visibilityStmt->isImport()) {
-    auto useParent = parsing::parentAst(context, visibilityStmt);
-    auto scope = resolution::scopeForId(context, useParent->id());
-    auto reScope = resolution::resolveVisibilityStmts(context, scope);
-    for (auto visCla: reScope->visibilityClauses()) {
-      if(visCla.visibilityClauseId().contains(node->id())) {
-        return visCla.scope()->id();
-      }
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveViaFunction(Context* context, const AstNode* fnNode, const AstNode* node) {
-  if (auto fn = fnNode->toFunction()) {
-    auto byId =
-        resolution::scopeResolveFunction(context, fn->id())->resolutionById();
-    if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveViaModule(Context* context, const AstNode* modNode, const AstNode* node) {
-  if (auto mod = modNode->toModule()) {
-    auto byId = resolution::scopeResolveModule(context, mod->id());
-    if (auto res = byId.byAstOrNull(node)) {
-      return res->toId();
-    }
-  }
-  return ID();
-}
-
-static const ID scopeResolveResultsForNode(Context* context, const AstNode* node) {
-  const AstNode* search = node;
-  while (search) {
-    if (auto id = scopeResolveViaFunction(context, search, node)) {
-      return id;
-    } else if (auto id = scopeResolveViaModule(context, search, node)) {
-      return id;
-    } else if(auto id = scopeResolveViaVisibilityStmt(context, search, node)) {
-      return id;
-    }
-    search = parsing::parentAst(context, search);
-  }
-  return ID();
-}
-
-static const AstNode* idOrEmptyToAstNodeOrNull(Context* context, const ID& id) {
-  if (id.isEmpty()) return nullptr;
-
-  return parsing::idToAst(context, id);
-}
-
-static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode* node) {
-  QUERY_BEGIN(nodeOrNullFromToId, context, node);
-  auto id = scopeResolveResultsForNode(context, node);
-  auto nodeOrNull = idOrEmptyToAstNodeOrNull(context, id);
-  return QUERY_END(nodeOrNull);
-}
-
 /* The METHOD macro is overridden here to actually create a Python-compatible
    function to insert into the method table. Each such function retrieves
    a node's context object, calls the method body, and wraps the result
@@ -147,7 +72,7 @@ static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode*
  */
 #define METHOD(NODE, NAME, DOCSTR, TYPEFN, BODY)\
   static PyObject* NODE##Object_##NAME(PyObject *self, PyObject *argsTup) {\
-    auto node = ((NODE##Object*) self)->parent.astNode->to##NODE(); \
+    auto node = ((NODE##Object*) self)->parent.ptr->to##NODE(); \
     auto contextObject = (ContextObject*) ((NODE##Object*) self)->parent.contextObject; \
     auto context = &contextObject->context; \
     auto args = PythonFnHelper<TYPEFN>::unwrapArgs(contextObject, argsTup); \
@@ -167,7 +92,7 @@ static const AstNode* const& nodeOrNullFromToId(Context* context, const AstNode*
    */
 #define ACTUAL_ITERATOR(NAME)\
   static PyObject* NAME##Object_actuals(PyObject *self, PyObject *Py_UNUSED(ignored)) { \
-    auto node = ((NAME##Object*) self)->parent.astNode->to##NAME(); \
+    auto node = ((NAME##Object*) self)->parent.ptr->to##NAME(); \
     \
     auto argList = Py_BuildValue("(O)", (PyObject*) self); \
     auto astCallIterObjectPy = PyObject_CallObject((PyObject *) &AstCallIterType, argList); \
@@ -196,24 +121,24 @@ ACTUAL_ITERATOR(FnCall);
    to an empty method table (to save on typing / boilerplate), but at the same
    time to make it easy to override a node's method table.
 
-   To this end, we use template specialization of the PerNodeInfo struct. The
+   To this end, we use template specialization of the PerTypeMethods struct. The
    default template provides an empty table; it can be specialized per-node to
    change the table for that node.
 
    Macros below take this a step further and compiler-generate the template
    specializations. */
-template <asttags::AstTag tag>
-struct PerNodeInfo {
+template <typename ObjectType>
+struct PerTypeMethods {
   static constexpr PyMethodDef methods[] = {
     {NULL, NULL, 0, NULL}  /* Sentinel */
   };
 };
 
-#define CLASS_BEGIN(TAG) \
+#define CLASS_BEGIN(NAME) \
   template <> \
-  struct PerNodeInfo<asttags::TAG> { \
+  struct PerTypeMethods<NAME##Object> { \
     static constexpr PyMethodDef methods[] = {
-#define CLASS_END(TAG) \
+#define CLASS_END(NAME) \
       {NULL, NULL, 0, NULL}  /* Sentinel */ \
     }; \
   };
@@ -228,21 +153,14 @@ struct PerNodeInfo {
    macro defines what a type object for an AST node (abstract or not) should
    look like. */
 
-#define DEFINE_PY_TYPE_FOR(NAME, TAG, FLAGS)\
+#define DEFINE_PY_TYPE_FOR(NAME)\
   PyTypeObject NAME##Type = { \
     PyVarObject_HEAD_INIT(NULL, 0) \
   }; \
 
 /* Now, invoke DEFINE_PY_TYPE_FOR for each AST node to get our type objects. */
-#define AST_NODE(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) DEFINE_PY_TYPE_FOR(NAME, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) DEFINE_PY_TYPE_FOR(NAME)
+#include "generated-types-list.h"
 
 #define INITIALIZE_PY_TYPE_FOR(NAME, TYPE, TAG, FLAGS)\
   TYPE.tp_name = #NAME; \
@@ -250,19 +168,12 @@ struct PerNodeInfo {
   TYPE.tp_itemsize = 0; \
   TYPE.tp_flags = FLAGS; \
   TYPE.tp_doc = PyDoc_STR("A Chapel " #NAME " AST node"); \
-  TYPE.tp_methods = (PyMethodDef*) PerNodeInfo<TAG>::methods; \
+  TYPE.tp_methods = (PyMethodDef*) PerTypeMethods<NAME##Object>::methods; \
   TYPE.tp_base = parentTypeFor(TAG); \
   TYPE.tp_init = (initproc) NAME##Object_init; \
   TYPE.tp_new = PyType_GenericNew; \
 
-void setupPerNodeTypes() {
-#define AST_NODE(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_LEAF(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::NAME, Py_TPFLAGS_DEFAULT)
-#define AST_BEGIN_SUBCLASSES(NAME) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, asttags::START_##NAME, Py_TPFLAGS_BASETYPE)
-#define AST_END_SUBCLASSES(NAME)
-#include "chpl/uast/uast-classes-list.h"
-#undef AST_NODE
-#undef AST_LEAF
-#undef AST_BEGIN_SUBCLASSES
-#undef AST_END_SUBCLASSES
+void setupGeneratedTypes() {
+#define GENERATED_TYPE(ROOT, NAME, TAG, FLAGS) INITIALIZE_PY_TYPE_FOR(NAME, NAME##Type, TAG, FLAGS)
+#include "generated-types-list.h"
 }
