@@ -3181,8 +3181,8 @@ struct LastResortCandidateGroups {
   }
 
   // Retrieve the last group added.
-  // This method assumes at least one group has been added.
   const CandidatesVec& lastGroup() const {
+    CHPL_ASSERT(nonPoiSet && "expected at least one group added");
     if (numPoiGroups() > 0) {
       return poi.back();
     } else {
