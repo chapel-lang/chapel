@@ -423,14 +423,19 @@ class FileInfo:
     def get_use_or_def_segment_at_position(
         self, position: Position
     ) -> Optional[NodeAndRange]:
-        # First, search definitions. If the cursor is over a declaration,
-        # that's what we're looking for.
+        """
+        Retrieve the definition or reference to a definition at the given position.
+        This method is intended for LSP queries that ask for some property
+        of a definition: its type, references to it, etc. However, it is
+        convenient to be able to "find references" and "go to type definition"
+        from references to a definition too. Thus, this method returns
+        a definition when it can, and falls back to references otherwise.
+        """
+
         segment = self.get_def_segment_at_position(position)
         if segment:
             return segment
         else:
-            # Also search identifiers. If the cursor is over a reference,
-            # we might as well try find all the other references.
             segment = self.get_use_segment_at_position(position)
             if segment:
                 return segment.resolved_to
@@ -620,6 +625,92 @@ class ChapelLanguageServer(LanguageServer):
     def unregister_workspace(self, uri: str):
         if uri in self.configurations:
             del self.configurations[uri]
+
+    def _get_param_inlays(self, decl: NodeAndRange, qt: chapel.QualifiedType) -> List[InlayHint]:
+        if not self.param_inlays:
+            return []
+
+        _, _, param = qt
+        if not param:
+            return []
+
+        return [
+            InlayHint(
+                position=decl.rng.end,
+                label="param value is " + str(param),
+                padding_left=True,
+            )
+        ]
+
+    def _get_type_inlays(self, decl: NodeAndRange, qt: chapel.QualifiedType) -> List[InlayHint]:
+        if not self.type_inlays:
+            return []
+
+        # Only show type hints for variable declarations that don't have
+        # an explicit type, and whose type is valid.
+        _, type_, _ = qt
+        if (
+            not isinstance(decl.node, chapel.Variable)
+            or decl.node.type_expression() is not None
+            or isinstance(type_, chapel.ErroneousType)
+        ):
+            return []
+
+        name_rng = location_to_range(decl.node.name_location())
+        type_str = ": " + str(type_)
+        return [
+            InlayHint(
+                position=name_rng.end,
+                label=type_str,
+                text_edits=[
+                    TextEdit(Range(name_rng.end, name_rng.end), type_str)
+                ],
+            )
+        ]
+
+    def get_decl_inlays(self, decl: NodeAndRange) -> List[InlayHint]:
+        if not self.use_resolver:
+            return []
+
+        qt = decl.node.type()
+
+        inlays = []
+        inlays.extend(self._get_param_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt))
+        return inlays
+
+    def get_call_inlays(self, call: chapel.FnCall) -> List[InlayHint]:
+        if not self.literal_arg_inlays or not self.use_resolver:
+            return []
+
+        fn = call.called_fn()
+        if not fn or not isinstance(fn, chapel.core.Function):
+            return []
+
+        inlays = []
+        for i, act in zip(call.formal_actual_mapping(), call.actuals()):
+            if not isinstance(act, chapel.core.AstNode):
+                # Named arguments are represented using (name, node)
+                # tuples. We don't need hints for those.
+                continue
+
+            if not isinstance(act, chapel.core.Literal):
+                # Only show named arguments for literals.
+                continue
+
+            fml = fn.formal(i)
+            if not isinstance(fml, chapel.core.Formal):
+                continue
+
+            begin = location_to_range(act.location()).start
+            inlays.append(
+                InlayHint(
+                    position=begin,
+                    label=fml.name() + " = ",
+                )
+            )
+
+        return inlays
 
 
 def run_lsp():
@@ -844,6 +935,11 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_INLAY_HINT)
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
+        # The get_decl_inlays and get_call_inlays methods also check
+        # and return early if the resolver is not being used, but for
+        # the time being all hints are resolver-based, so we may
+        # as well save ourselves the work of finding declarations and
+        # calls to feed to those methods.
         if not ls.use_resolver:
             return None
 
@@ -852,77 +948,17 @@ def run_lsp():
         fi, _ = ls.get_file_info(text_doc.uri)
 
         decls = fi.def_segments.range(params.range)
-        value_list: List[InlayHint] = []
+        calls = list(call for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall))
 
+        inlays: List[InlayHint] = []
         with fi.context.context.track_errors() as _:
             for decl in decls:
-                qt = decl.node.type()
-                if not qt:
-                    continue
+                inlays.extend(ls.get_decl_inlays(decl))
 
-                _, type_, param = qt
-                if param and ls.param_inlays:
-                    value_list.append(
-                        InlayHint(
-                            position=decl.rng.end,
-                            label="param value is " + str(param),
-                            padding_left=True,
-                        )
-                    )
+            for call in calls:
+                inlays.extend(ls.get_call_inlays(call))
 
-                if (
-                    ls.type_inlays
-                    and isinstance(decl.node, chapel.Variable)
-                    and decl.node.type_expression() is None
-                    and not isinstance(type_, chapel.ErroneousType)
-                ):
-                    name_rng = location_to_range(decl.node.name_location())
-                    type_str = ": " + str(type_)
-                    value_list.append(
-                        InlayHint(
-                            position=name_rng.end,
-                            label=type_str,
-                            text_edits=[
-                                TextEdit(
-                                    Range(name_rng.end, name_rng.end), type_str
-                                )
-                            ],
-                        )
-                    )
-
-            if ls.literal_arg_inlays:
-                for call, _ in chapel.each_matching(
-                    fi.get_asts(), chapel.core.FnCall
-                ):
-                    fn = call.called_fn()
-                    if not fn or not isinstance(fn, chapel.core.Function):
-                        continue
-
-                    for i, act in zip(
-                        call.formal_actual_mapping(), call.actuals()
-                    ):
-                        if not isinstance(act, chapel.core.AstNode):
-                            # Named arguments are represented using (name, node)
-                            # tuples. We don't need hints for those.
-                            continue
-
-                        if not isinstance(act, chapel.core.Literal):
-                            # For only, onle show named arguments for literals
-                            continue
-
-                        fml = fn.formal(i)
-                        if not isinstance(fml, chapel.core.Formal):
-                            continue
-
-                        begin = location_to_range(act.location()).start
-                        value_list.append(
-                            InlayHint(
-                                position=begin,
-                                label=fml.name() + " = ",
-                            )
-                        )
-
-        return value_list
+        return inlays
 
     server.start_io()
 
