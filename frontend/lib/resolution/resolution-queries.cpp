@@ -3176,7 +3176,7 @@ struct LastResortCandidateGroups {
   }
 
   void addPoiCandidates(CandidatesVec&& group) {
-    CHPL_ASSERT(!nonPoi && "setting poi candidates before non poi");
+    CHPL_ASSERT(nonPoi && "setting poi candidates before non poi");
     this->poi.push_back(std::move(group));
   }
 
@@ -3193,9 +3193,10 @@ struct LastResortCandidateGroups {
 
 // Returns candidates with last resort candidates removed and saved in a
 // separate list.
-static void filterCandidatesLastResort(
-    Context* context, const CandidatesVec& list, CandidatesVec& result,
-    LastResortCandidateGroups& lastResort) {
+static void filterCandidatesLastResort(Context* context, bool isPoi,
+                                       const CandidatesVec& list,
+                                       CandidatesVec& result,
+                                       LastResortCandidateGroups& lastResort) {
   CandidatesVec newLastResortCandidates;
 
   for (auto& candidate : list) {
@@ -3208,7 +3209,11 @@ static void filterCandidatesLastResort(
     }
   }
 
-  lastResort.addGroup(std::move(newLastResortCandidates));
+  if (isPoi) {
+    lastResort.addPoiCandidates(std::move(newLastResortCandidates));
+  } else {
+    lastResort.addNonPoiCandidates(std::move(newLastResortCandidates));
+  }
 }
 
 // this function gathers candidates not from POI and candidates
@@ -3336,7 +3341,8 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       /* rejected */ nullptr);
 
         // filter out last resort candidates
-        filterCandidatesLastResort(context, candidatesWithInstantiations,
+        filterCandidatesLastResort(context, /* isPoi */ false,
+                                   candidatesWithInstantiations,
                                    nonPoiCandidates, lrcGroups);
 
         // update forwardingTo (for candidates and last resort candidates)
@@ -3383,8 +3389,9 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                       /* rejected */ nullptr);
 
         // filter out last resort candidates
-        filterCandidatesLastResort(context, candidatesWithInstantiations,
-                                   poiCandidates, lrcGroups);
+        filterCandidatesLastResort(context, /* isPoi */ true,
+                                   candidatesWithInstantiations, poiCandidates,
+                                   lrcGroups);
 
         // update forwardingTo (for candidates and last resort candidates)
         helpComputeForwardingTo(fci, start, poiCandidates, poiForwardingTo);
@@ -3508,8 +3515,9 @@ gatherAndFilterCandidates(Context* context,
                                   rejected);
 
     // filter out last resort candidates
-    filterCandidatesLastResort(context, candidatesWithInstantiations,
-                               candidates, lrcGroups);
+    filterCandidatesLastResort(context, /* isPoi */ false,
+                               candidatesWithInstantiations, candidates,
+                               lrcGroups);
   }
 
   // next, look for candidates using POI
@@ -3549,8 +3557,9 @@ gatherAndFilterCandidates(Context* context,
                                   rejected);
 
     // filter out last resort candidates
-    filterCandidatesLastResort(context, candidatesWithInstantiations,
-                               candidates, lrcGroups);
+    filterCandidatesLastResort(context, /* isPoi */ true,
+                               candidatesWithInstantiations, candidates,
+                               lrcGroups);
   }
 
   // If no candidates were found and it's a method, try forwarding
