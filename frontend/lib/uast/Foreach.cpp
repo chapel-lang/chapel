@@ -32,6 +32,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                               owned<WithClause> withClause,
                               BlockStyle blockStyle,
                               owned<Block> body,
+                              bool isExpressionLevel,
                               owned<AttributeGroup> attributeGroup) {
 
   CHPL_ASSERT(iterand.get() != nullptr);
@@ -71,6 +72,7 @@ owned<Foreach> Foreach::build(Builder* builder,
                              withClauseChildNum,
                              blockStyle,
                              loopBodyChildNum,
+                             isExpressionLevel,
                              attributeGroupChildNum);
 
   builder->noteLocation(ret, loc);

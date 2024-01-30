@@ -1,0 +1,4 @@
+ # promoted.good
+--no-warn-potential-races
+--warn-potential-races # promoted-error.good
+--warn-potential-races --no-warnings # promoted.good

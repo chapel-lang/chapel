@@ -8,5 +8,5 @@ LOG=$2
 # include only the 'define' line
 # looking for define internal i64 @munge-with-ids.foo() 
 #
-cat $LOG | grep define > $LOG.tmp
+cat $LOG | grep define | sed -E 's/#[[:digit:]]+/#n/' > $LOG.tmp
 mv $LOG.tmp $LOG

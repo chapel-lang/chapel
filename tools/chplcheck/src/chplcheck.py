@@ -20,7 +20,7 @@
 #
 
 import chapel
-import chapel.core
+import chapel
 import chapel.replace
 import sys
 import argparse
@@ -56,6 +56,8 @@ def main():
     printed_warning = False
 
     for (filename, context) in chapel.files_with_contexts(args.filenames):
+        context.set_module_paths([], [])
+
         # Silence errors, warnings etc. -- we're just linting.
         with context.track_errors() as errors:
             asts = context.parse(filename)

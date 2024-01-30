@@ -150,7 +150,7 @@ module ParallelIO {
     :arg deserializerType: the type of deserializer to use when reading values
   */
   iter readDelimited(filePath: string, type t, in delim: ?dt = b"\n",
-                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskpar,
+                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
                      type deserializerType = defaultDeserializer
   ): t
     where dt == string || dt == bytes
@@ -172,7 +172,7 @@ module ParallelIO {
   @chpldoc.nodoc
   iter readDelimited(param tag: iterKind,
                      filePath: string, type t, in delim: ?dt = b"\n",
-                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskpar,
+                     header = headerPolicy.noHeader, nTasks: int = here.maxTaskPar,
                      type deserializerType = defaultDeserializer
   ): t
     where tag == iterKind.standalone && (dt == string || dt == bytes)

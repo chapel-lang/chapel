@@ -42,7 +42,7 @@ for using Chapel:
     are currently supported. If a system-wide installation of
     LLVM and clang with one of those versions is not available, you can
     use the bundled LLVM or disable LLVM support (see
-    :ref:`readme-chplenv.CHPL_LLVM`). LLVM 16 support is avaible with certain
+    :ref:`readme-chplenv.CHPL_LLVM`). LLVM 16 support is available with certain
     configurations. If LLVM 16 is the only system-wide install of LLVM, it will
     be used by default. Otherwise you can opt-in to it explicitly by setting
     :ref:`readme-chplenv.CHPL_LLVM_CONFIG`.
@@ -129,7 +129,7 @@ We have used the following commands to install the above prerequisites:
       sudo pacman -S llvm14 clang14
 
 
-  * CentOS 7 Devtoolset 11 (but note `CentOS 7 CHPL_LLVM=system incompatability`_)::
+  * CentOS 7 Devtoolset 11 (but note `CentOS 7 CHPL_LLVM=system incompatibility`_)::
 
       sudo yum install centos-release-scl
       sudo yum install devtoolset-11-gcc*
@@ -161,7 +161,7 @@ We have used the following commands to install the above prerequisites:
       sudo apt-get install llvm-dev llvm clang libclang-dev libclang-cpp-dev libedit-dev
 
 
-  * Fedora 37, 38, 39, 40 (but note `Fedora CHPL_LLVM=system incompatabilities`_)::
+  * Fedora 37, 38, 39, 40 (but note `Fedora CHPL_LLVM=system incompatibilities`_)::
 
       sudo dnf install gcc gcc-c++ m4 perl python3 python3-devel bash make gawk git cmake
       sudo dnf install which diffutils
@@ -212,7 +212,7 @@ We have used the following commands to install the above prerequisites:
 
 
 
-Compatability Notes
+Compatibility Notes
 -------------------
 
 Alpine 3.19 LLVM build issue
@@ -222,14 +222,14 @@ We have observed problems building the bundled LLVM support library on
 Alpine 3.19. These problems can be resolved by installing a compatible
 LLVM package.
 
-CentOS 7 CHPL_LLVM=system incompatability
+CentOS 7 CHPL_LLVM=system incompatibility
 +++++++++++++++++++++++++++++++++++++++++
 
 CentOS 7 does not include a new enough LLVM release to work with
 ``CHPL_LLVM=system``. ``CHPL_LLVM=bundled`` or ``CHPL_LLVM=none`` are
 available as alternatives.
 
-Fedora CHPL_LLVM=system incompatabilities
+Fedora CHPL_LLVM=system incompatibilities
 +++++++++++++++++++++++++++++++++++++++++
 
 Fedora only includes a single version of ``clang``. As

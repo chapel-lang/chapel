@@ -13,7 +13,8 @@ shuffle(a);
 // overload that doesn't accept a seed is unstable
 permute(a);
 
-var rs = new randomStream(int, 123);
+var rs = new randomStream(int, 123),
+    rsu = new randomStream(int);
 
 a = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
 writeln(rs.choice(a, 1));

@@ -42,12 +42,11 @@ struct PythonReturnTypeInfo {};
 
 /** This macro is used to help define template specializations for PythonReturnTypeInfo.
     It just hides some of the boilerplate. */
-#define DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
-  template <> \
+#define T_DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
   struct PythonReturnTypeInfo<TYPE> { \
-    static constexpr const char* TypeString = TYPESTR; \
+    static std::string typeString() { return TYPESTR; } \
   \
-    static PyObject* wrap(ContextObject* CONTEXT, const std::remove_const<TYPE>::type& TO_WRAP) { \
+    static PyObject* wrap(ContextObject* CONTEXT, const typename std::remove_const<TYPE>::type& TO_WRAP) { \
       return WRAP; \
     } \
   \
@@ -56,6 +55,33 @@ struct PythonReturnTypeInfo {};
     } \
   \
   }
+
+#define DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP) \
+  template <> \
+  T_DEFINE_RETURN_TYPE(TYPE, TYPESTR, WRAP, UNWRAP)
+
+template <typename T>
+PyObject* wrapVector(ContextObject* CONTEXT, const std::vector<T>& vec) {
+  PyObject* toReturn = PyList_New(vec.size());
+  for (size_t i = 0; i < vec.size(); i++) {
+    PyList_SetItem(toReturn, i, PythonReturnTypeInfo<T>::wrap(CONTEXT, vec[i]));
+  }
+  return toReturn;
+}
+
+template <typename T>
+std::vector<T> unwrapVector(ContextObject* CONTEXT, PyObject* vec) {
+  std::vector<T> toReturn(PyList_Size(vec));
+  for (ssize_t i = 0; i < PyList_Size(vec); i++) {
+    toReturn.push_back(PythonReturnTypeInfo<T>::unwrap(CONTEXT, PyList_GetItem(vec, i)));
+  }
+  return toReturn;
+}
+
+template <typename T>
+std::string vectorTypeString() {
+  return std::string("List[") + PythonReturnTypeInfo<T>::typeString() + "]";
+}
 
 /* Invoke the DEFINE_RETURN_TYPE macro for each type we want to support.
    New types should be added here. We might consider performing these invocations
@@ -67,9 +93,14 @@ DEFINE_RETURN_TYPE(int, "int", Py_BuildValue("i", TO_WRAP), PyLong_AsLong(TO_UNW
 DEFINE_RETURN_TYPE(const char*, "str", Py_BuildValue("s", TO_WRAP), PyUnicode_AsUTF8(TO_UNWRAP));
 DEFINE_RETURN_TYPE(chpl::UniqueString, "str", Py_BuildValue("s", TO_WRAP.c_str()), chpl::UniqueString::get(&CONTEXT->context, PyUnicode_AsUTF8(TO_UNWRAP)));
 DEFINE_RETURN_TYPE(std::string, "str", Py_BuildValue("s", TO_WRAP.c_str()), std::string(PyUnicode_AsUTF8(TO_UNWRAP)));
-DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->astNode);
+DEFINE_RETURN_TYPE(const chpl::uast::AstNode*, "AstNode", wrapAstNode(CONTEXT, TO_WRAP), ((AstNodeObject*) TO_UNWRAP)->ptr);
+DEFINE_RETURN_TYPE(const chpl::types::Type*, "ChapelType", wrapType(CONTEXT, TO_WRAP), ((ChapelTypeObject*) TO_UNWRAP)->ptr);
+DEFINE_RETURN_TYPE(const chpl::types::Param*, "Param", wrapParam(CONTEXT, TO_WRAP), ((ParamObject*) TO_UNWRAP)->ptr);
 DEFINE_RETURN_TYPE(chpl::Location, "Location", wrapLocation(TO_WRAP), ((LocationObject*) TO_UNWRAP)->location);
 DEFINE_RETURN_TYPE(IterAdapterBase*, "typing.Iterator[AstNode]", wrapIterAdapter(CONTEXT, TO_WRAP), ((AstIterObject*) TO_UNWRAP)->iterAdapter);
+
+template <typename T>
+T_DEFINE_RETURN_TYPE(std::vector<T>, vectorTypeString<T>(), wrapVector(CONTEXT, TO_WRAP), unwrapVector<T>(CONTEXT, TO_UNWRAP));
 
 /* In the `method-tables.h` file, we encode a method signature using the C++
    function type in the form `R(Args...)`. This template, PythonFnHelper, is

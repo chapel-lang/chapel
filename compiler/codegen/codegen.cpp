@@ -2462,6 +2462,9 @@ void setupDefaultFilenames() {
     strncpy(pythonModulename, executableFilename, sizeof(pythonModulename)-1);
     pythonModulename[sizeof(pythonModulename)-1] = '\0';
   }
+
+  // Set the name of the library dir in library mode.
+  if (fLibraryCompile) ensureLibDirExists();
 }
 
 static std::map<const char*, Type*> cnameToTypeMap;

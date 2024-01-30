@@ -3633,6 +3633,21 @@ module ChapelArray {
           __primitive("=", r, copy);
         }
       }
+    } else if chpl_iteratorFromForeachExpr(ir) {
+      if needsInitWorkaround(result.eltType) {
+        foreach (ri, src) in zip(result.domain, ir) {
+          ref r = result[ri];
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      } else {
+        foreach (r, src) in zip(result, ir) {
+          pragma "no auto destroy"
+          var copy = src; // init copy, might be elided
+          __primitive("=", r, copy);
+        }
+      }
     } else {
       if needsInitWorkaround(result.eltType) {
         forall (ri, src) in zip(result.domain, ir) with (ref result) {

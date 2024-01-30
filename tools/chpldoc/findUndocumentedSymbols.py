@@ -77,7 +77,7 @@ import os
 import argparse as ap
 import itertools
 import glob
-import chapel.core as dyno
+import chapel
 from chapel import each_matching, files_with_contexts
 
 
@@ -86,10 +86,10 @@ helpers
 """
 
 
-def get_module(n: dyno.AstNode) -> dyno.AstNode:
+def get_module(n: chapel.AstNode) -> chapel.AstNode:
     if n is None:
         return None
-    if isinstance(n, dyno.Module):
+    if isinstance(n, chapel.Module):
         return n
     parent = n.parent()
     if parent:
@@ -97,7 +97,7 @@ def get_module(n: dyno.AstNode) -> dyno.AstNode:
     return None
 
 
-def node_has_attribute(node: dyno.AstNode, marker: str) -> bool:
+def node_has_attribute(node: chapel.AstNode, marker: str) -> bool:
     """
     a symbol has an attribute if it has an attribute that matches the argument
     """
@@ -106,17 +106,17 @@ def node_has_attribute(node: dyno.AstNode, marker: str) -> bool:
         return any(a.name() == marker for a in attrs)
 
 
-def is_deprecated(node: dyno.AstNode) -> bool:
+def is_deprecated(node: chapel.AstNode) -> bool:
     """a node is deprecated if it or its parent has an attribute that is deprecated"""
     return node_has_attribute(node, "deprecated")
 
 
-def is_unstable(node: dyno.AstNode) -> bool:
+def is_unstable(node: chapel.AstNode) -> bool:
     """a node is unstable if it or its parent has an attribute that is unstable"""
     return node_has_attribute(node, "unstable")
 
 
-def is_nodoc(node: dyno.AstNode) -> bool:
+def is_nodoc(node: chapel.AstNode) -> bool:
     """
     a symbol is marked nodoc for the following reasons
     - symbol has attribute `@chpldoc.nodoc`
@@ -140,7 +140,7 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     # even though arguably `y` is documentable. This is an uncommon scenario
     # and one `chpldoc` also doesn't handle currently
     if (
-        isinstance(node, dyno.MultiDecl)
+        isinstance(node, chapel.MultiDecl)
         and any(
             n.name().startswith("chpl_") for n in node if hasattr(n, "name")
         )
@@ -154,12 +154,12 @@ def is_nodoc(node: dyno.AstNode) -> bool:
     return False
 
 
-def is_docstring_comment(c: dyno.Comment) -> bool:
+def is_docstring_comment(c: chapel.Comment) -> bool:
     """c is a docstring if it doesn't begin with '//'"""
     return not c.text().startswith("//")
 
 
-def get_node_name(node: dyno.AstNode) -> List[str]:
+def get_node_name(node: chapel.AstNode) -> List[str]:
     """
     get the name of a node, even when it may not have a `name()` method
 
@@ -170,17 +170,17 @@ def get_node_name(node: dyno.AstNode) -> List[str]:
 
     """
 
-    def get_simple_node_names(node: dyno.AstNode) -> List[str]:
+    def get_simple_node_names(node: chapel.AstNode) -> List[str]:
         names: List[str] = []
         if hasattr(node, "name"):
             names.append(node.name())
-        elif isinstance(node, dyno.MultiDecl):
+        elif isinstance(node, chapel.MultiDecl):
             names.extend(c.name() for c in node)
         else:
             names.append(str(node))
         return names
 
-    def get_single_name(node: dyno.AstNode) -> str:
+    def get_single_name(node: chapel.AstNode) -> str:
         names = get_simple_node_names(node)
         if len(names) != 1:
             print("Error: violated invariant")
@@ -193,16 +193,16 @@ def get_node_name(node: dyno.AstNode) -> List[str]:
     for name in base_names:
         # handles secondary methods
         if (
-            isinstance(node, dyno.Function)
+            isinstance(node, chapel.Function)
             and node.this_formal()
             and node.this_formal().type_expression()
         ):
-            aggregate_name = get_single_name(typename)
+            aggregate_name = get_single_name(node.this_formal().type_expression())
             name = f"{aggregate_name}.{name}"
         # handles primary methods and fields
         elif node.parent() and (
-            isinstance(node.parent(), dyno.AggregateDecl)
-            or isinstance(node.parent(), dyno.Interface)
+            isinstance(node.parent(), chapel.AggregateDecl)
+            or isinstance(node.parent(), chapel.Interface)
         ):
             aggregate_name = get_single_name(node.parent())
             name = f"{aggregate_name}.{name}"
@@ -231,7 +231,7 @@ main code
 class FindUndocumentedSymbols:
     def __init__(
         self,
-        asts: List[dyno.AstNode],
+        asts: List[chapel.AstNode],
         ignore_deprecated: bool = False,
         ignore_unstable: bool = False,
     ):
@@ -239,42 +239,42 @@ class FindUndocumentedSymbols:
         self.ignore_deprecated = ignore_deprecated
         self.ignore_unstable = ignore_unstable
 
-    def _parent_is_module_or_aggregate(node: dyno.AstNode, match):
-        return isinstance(node.parent(), (dyno.Module, dyno.AggregateDecl))
+    def _parent_is_module_or_aggregate(node: chapel.AstNode, match):
+        return isinstance(node.parent(), (chapel.Module, chapel.AggregateDecl))
 
     # (pattern, extra check fun)
     documentable_symbol_patterns = {
         "function": (
-            dyno.Function,
+            chapel.Function,
             lambda node, match: isinstance(
-                node.parent(), (dyno.Module, dyno.AggregateDecl, dyno.Interface)
+                node.parent(), (chapel.Module, chapel.AggregateDecl, chapel.Interface)
             ),
         ),
-        "module": (dyno.Module, lambda node, match: node.kind() != "implicit"),
+        "module": (chapel.Module, lambda node, match: node.kind() != "implicit"),
         "aggregate_decl": (
-            dyno.AggregateDecl,
+            chapel.AggregateDecl,
             _parent_is_module_or_aggregate,
         ),
         "decl": (
-            dyno.Variable,
+            chapel.Variable,
             _parent_is_module_or_aggregate,
         ),
         "multi_decl": (
-            dyno.MultiDecl,
+            chapel.MultiDecl,
             _parent_is_module_or_aggregate,
         ),
         "enum": (
-            dyno.Enum,
+            chapel.Enum,
             _parent_is_module_or_aggregate,
         ),
-        "enum_element": (dyno.EnumElement, None),
+        "enum_element": (chapel.EnumElement, None),
         "interface": (
-            dyno.Interface,
+            chapel.Interface,
             _parent_is_module_or_aggregate,
         ),
     }
 
-    def _get_previous_sibling(self, node: dyno.AstNode):
+    def _get_previous_sibling(self, node: chapel.AstNode):
         parent = node.parent()
         lookin = parent if parent else self.asts
         for sib1, sib2 in look_ahead(lookin):
@@ -286,7 +286,7 @@ class FindUndocumentedSymbols:
         for a in self.asts:
             yield from self._get_documentable_symbols(a)
 
-    def _get_documentable_symbols(self, root: dyno.AstNode) -> Generator:
+    def _get_documentable_symbols(self, root: chapel.AstNode) -> Generator:
         def _preorder(node):
             """
             this preorder function respects `--ignore-[deprecated|unstable]`
@@ -314,7 +314,7 @@ class FindUndocumentedSymbols:
             for node, _ in matches:
                 yield node
 
-    def has_doc_comment(self, node: dyno.AstNode) -> bool:
+    def has_doc_comment(self, node: chapel.AstNode) -> bool:
         """
         This node has a doc comment if
         - the previous node is a comment
@@ -323,7 +323,7 @@ class FindUndocumentedSymbols:
         prev = self._get_previous_sibling(node)
         if (
             prev
-            and isinstance(prev, dyno.Comment)
+            and isinstance(prev, chapel.Comment)
             and is_docstring_comment(prev)
         ):
             return True

@@ -69,6 +69,18 @@ def get_Context_header() -> str:
             docstring="Parse a top-level AST node from the given file",
         ),
         _wrap_method(
+            "set_module_paths",
+            args=[("module_paths", "typing.List[str]"), ("file_paths", "typing.List[str]")],
+            rettype="None",
+            docstring="Set the module and file paths for finding Chapel modules",
+        ),
+        _wrap_method(
+            "introspect_parsed_files",
+            args=[],
+            rettype="typing.List[str]",
+            docstring="List all files that have been parsed in this revision",
+        ),
+        _wrap_method(
             "is_bundled_path",
             args=[("path", "str")],
             rettype="bool",
@@ -82,7 +94,7 @@ def get_Context_header() -> str:
         _wrap_method(
             "track_errors",
             rettype="ErrorManager",
-            docstring="Generate a stub file for the Chapel AST nodes",
+            docstring="Return a context manager that tracks errors emitted by this Context",
         ),
         _wrap_method(
             "_get_pyi_file",
@@ -153,7 +165,7 @@ def get_Scope_header() -> str:
     s = _section(
         "class Scope:",
         _wrap_method("__init__", args=[("context", "Context")]),
-        _wrap_method("used_imported_modules", rettype="typing.List[AstNode]", docstring="Get the modules that were used or imported in this scope"),
+        _wrap_method("used_imported_modules", rettype="typing.List[Module]", docstring="Get the modules that were used or imported in this scope"),
         indent=0,
     )
     return "\n".join(s)
@@ -184,6 +196,11 @@ def get_AstNode_header() -> str:
             "scope",
             rettype="typing.Optional[Scope]",
             docstring="Get the scope for this AST node, if it has one",
+        ),
+        _wrap_method(
+            "type",
+            rettype="typing.Tuple[str, typing.Optional[ChapelType], typing.Optional[Param]]",
+            docstring="Get the type for this AST node, as a tuple of (kind, type, param value)",
         ),
         _wrap_method(
             "parent",
