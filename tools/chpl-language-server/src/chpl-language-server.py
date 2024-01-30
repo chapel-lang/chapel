@@ -677,6 +677,8 @@ class ChapelLanguageServer(LanguageServer):
             return []
 
         qt = decl.node.type()
+        if qt is None:
+            return []
 
         inlays = []
         inlays.extend(self._get_param_inlays(decl, qt))
