@@ -88,7 +88,7 @@ def get_llvm_config_version(llvm_config):
         if exists and returncode == 0:
             got_version = got_out
 
-        if chpl_gpu.get() == 'amd':
+        if got_version != None and chpl_gpu.get() == 'amd':
             # strip the "git" suffix. This is a TODO. We want to be able to
             # detect LLVM "nightly" versions because ROCm seems to ship with
             # those. A sign for that is the `git` suffix at the end of the
