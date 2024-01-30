@@ -103,6 +103,9 @@ from lsprotocol.types import (
 )
 from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
 
+import argparse
+import configargparse
+
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
     if isinstance(decl, chapel.Module) and decl.kind() != "implicit":
@@ -478,12 +481,17 @@ class WorkspaceConfig:
 
 
 class ChapelLanguageServer(LanguageServer):
-    def __init__(self):
+    def __init__(self, config: argparse.Namespace):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
         self.file_infos: Dict[str, FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
+
+        self.use_resolver: bool = config.resolver
+        self.type_inlays: bool = config.type_inlays
+        self.literal_arg_inlays: bool = config.literal_arg_inlays
+        self.param_inlays: bool = config.param_inlays
 
         self._setup_regexes()
 
@@ -618,7 +626,13 @@ def run_lsp():
     """
     Start a language server on the standard input/output
     """
-    server = ChapelLanguageServer()
+    parser = configargparse.ArgParser(default_config_files=[".cls-config.yml"], config_file_parser_class=configargparse.YAMLConfigFileParser)
+    parser.add("--resolver", action=argparse.BooleanOptionalAction, default=False)
+    parser.add("--type-inlays", action=argparse.BooleanOptionalAction, default=True)
+    parser.add("--literal-arg-inlays", action=argparse.BooleanOptionalAction, default=True)
+    parser.add("--param-inlays", action=argparse.BooleanOptionalAction, default=True)
+
+    server = ChapelLanguageServer(parser.parse_args())
 
     # The following functions are handlers for LSP events received by the server.
 
@@ -689,6 +703,9 @@ def run_lsp():
         ls: ChapelLanguageServer,
         params: TypeDefinitionParams
     ):
+        if not ls.use_resolver:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -811,6 +828,9 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_INLAY_HINT)
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
+        if not ls.use_resolver:
+            return None
+
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
@@ -824,15 +844,16 @@ def run_lsp():
                 if not qt:
                     continue
 
-                _, type_, _ = qt
-                # if param:
-                #     value_list.append(InlayHint(
-                #         position=decl.rng.end,
-                #         label="param value is " + str(param),
-                #         padding_left=True
-                #     ))
+                _, type_, param = qt
+                if param and ls.param_inlays:
+                    value_list.append(InlayHint(
+                        position=decl.rng.end,
+                        label="param value is " + str(param),
+                        padding_left=True
+                    ))
 
                 if (
+                    ls.type_inlays and
                     isinstance(decl.node, chapel.Variable) and
                     decl.node.type_expression() is None and
                     not isinstance(type_, chapel.ErroneousType)
@@ -846,26 +867,27 @@ def run_lsp():
                     ))
 
 
-            for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall):
-                fn = call.called_fn()
-                if not fn or not isinstance(fn, chapel.core.Function):
-                    continue
-
-                for (i, act) in zip(call.formal_actual_mapping(), call.actuals()):
-                    if not isinstance(act, chapel.core.AstNode):
-                        # Named arguments are represented using (name, node)
-                        # tuples. We don't need hints for those.
+            if ls.literal_arg_inlays:
+                for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall):
+                    fn = call.called_fn()
+                    if not fn or not isinstance(fn, chapel.core.Function):
                         continue
 
-                    if not isinstance(act, chapel.core.Literal):
-                        # For only, onle show named arguments for literals
-                        continue
+                    for (i, act) in zip(call.formal_actual_mapping(), call.actuals()):
+                        if not isinstance(act, chapel.core.AstNode):
+                            # Named arguments are represented using (name, node)
+                            # tuples. We don't need hints for those.
+                            continue
 
-                    begin = location_to_range(act.location()).start
-                    value_list.append(InlayHint(
-                        position = begin,
-                        label = fn.formal(i).name() + " = ",
-                    ))
+                        if not isinstance(act, chapel.core.Literal):
+                            # For only, onle show named arguments for literals
+                            continue
+
+                        begin = location_to_range(act.location()).start
+                        value_list.append(InlayHint(
+                            position = begin,
+                            label = fn.formal(i).name() + " = ",
+                        ))
 
         return value_list
 
