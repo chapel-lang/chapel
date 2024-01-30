@@ -341,9 +341,7 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _note_reference(
-        self, node: Union[chapel.Dot, chapel.Identifier]
-    ):
+    def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
@@ -507,7 +505,9 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-    def get_deprecation_replacement(self, text: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_deprecation_replacement(
+        self, text: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Given a deprecation warning message, return the string to replace the deprecation with if possible
         """
@@ -517,7 +517,7 @@ class ChapelLanguageServer(LanguageServer):
             replacement = m.group("replace1") or m.group("replace2")
             original = None
             if m.group("original1"):
-                original =  m.group("original1")
+                original = m.group("original1")
             return (original, replacement)
 
         return (None, None)
@@ -626,11 +626,24 @@ def run_lsp():
     """
     Start a language server on the standard input/output
     """
-    parser = configargparse.ArgParser(default_config_files=[".cls-config.yml"], config_file_parser_class=configargparse.YAMLConfigFileParser)
-    parser.add("--resolver", action=argparse.BooleanOptionalAction, default=False)
-    parser.add("--type-inlays", action=argparse.BooleanOptionalAction, default=True)
-    parser.add("--literal-arg-inlays", action=argparse.BooleanOptionalAction, default=True)
-    parser.add("--param-inlays", action=argparse.BooleanOptionalAction, default=True)
+    parser = configargparse.ArgParser(
+        default_config_files=[".cls-config.yml"],
+        config_file_parser_class=configargparse.YAMLConfigFileParser,
+    )
+    parser.add(
+        "--resolver", action=argparse.BooleanOptionalAction, default=False
+    )
+    parser.add(
+        "--type-inlays", action=argparse.BooleanOptionalAction, default=True
+    )
+    parser.add(
+        "--literal-arg-inlays",
+        action=argparse.BooleanOptionalAction,
+        default=True,
+    )
+    parser.add(
+        "--param-inlays", action=argparse.BooleanOptionalAction, default=True
+    )
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -700,8 +713,7 @@ def run_lsp():
 
     @server.feature(TEXT_DOCUMENT_TYPE_DEFINITION)
     async def get_type_def(
-        ls: ChapelLanguageServer,
-        params: TypeDefinitionParams
+        ls: ChapelLanguageServer, params: TypeDefinitionParams
     ):
         if not ls.use_resolver:
             return None
@@ -723,7 +735,9 @@ def run_lsp():
             return None
 
         decl = type_.decl()
-        return Location(params.text_document.uri, location_to_range(decl.location()))
+        return Location(
+            params.text_document.uri, location_to_range(decl.location())
+        )
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
@@ -802,7 +816,9 @@ def run_lsp():
                     original = full_text
                 to_replace = full_text.replace(original, replacement)
                 te = TextEdit(d.range, to_replace)
-                msg = f"Resolve Deprecation: replace {original} with {to_replace}"
+                msg = (
+                    f"Resolve Deprecation: replace {original} with {to_replace}"
+                )
                 diagnostics_used.append(d)
                 edits_to_make.append(te)
                 ca = CodeAction(
@@ -846,34 +862,45 @@ def run_lsp():
 
                 _, type_, param = qt
                 if param and ls.param_inlays:
-                    value_list.append(InlayHint(
-                        position=decl.rng.end,
-                        label="param value is " + str(param),
-                        padding_left=True
-                    ))
+                    value_list.append(
+                        InlayHint(
+                            position=decl.rng.end,
+                            label="param value is " + str(param),
+                            padding_left=True,
+                        )
+                    )
 
                 if (
-                    ls.type_inlays and
-                    isinstance(decl.node, chapel.Variable) and
-                    decl.node.type_expression() is None and
-                    not isinstance(type_, chapel.ErroneousType)
+                    ls.type_inlays
+                    and isinstance(decl.node, chapel.Variable)
+                    and decl.node.type_expression() is None
+                    and not isinstance(type_, chapel.ErroneousType)
                 ):
                     name_rng = location_to_range(decl.node.name_location())
-                    type_str = ": " + str(type_);
-                    value_list.append(InlayHint(
-                        position=name_rng.end,
-                        label=type_str,
-                        text_edits=[TextEdit(Range(name_rng.end, name_rng.end), type_str)],
-                    ))
-
+                    type_str = ": " + str(type_)
+                    value_list.append(
+                        InlayHint(
+                            position=name_rng.end,
+                            label=type_str,
+                            text_edits=[
+                                TextEdit(
+                                    Range(name_rng.end, name_rng.end), type_str
+                                )
+                            ],
+                        )
+                    )
 
             if ls.literal_arg_inlays:
-                for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall):
+                for call, _ in chapel.each_matching(
+                    fi.get_asts(), chapel.core.FnCall
+                ):
                     fn = call.called_fn()
                     if not fn or not isinstance(fn, chapel.core.Function):
                         continue
 
-                    for (i, act) in zip(call.formal_actual_mapping(), call.actuals()):
+                    for i, act in zip(
+                        call.formal_actual_mapping(), call.actuals()
+                    ):
                         if not isinstance(act, chapel.core.AstNode):
                             # Named arguments are represented using (name, node)
                             # tuples. We don't need hints for those.
@@ -888,10 +915,12 @@ def run_lsp():
                             continue
 
                         begin = location_to_range(act.location()).start
-                        value_list.append(InlayHint(
-                            position = begin,
-                            label = fml.name() + " = ",
-                        ))
+                        value_list.append(
+                            InlayHint(
+                                position=begin,
+                                label=fml.name() + " = ",
+                            )
+                        )
 
         return value_list
 
