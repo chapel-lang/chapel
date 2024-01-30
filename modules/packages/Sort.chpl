@@ -3363,6 +3363,10 @@ module TwoArrayRadixSort {
 
   proc twoArrayRadixSort(ref Data:[], comparator:?rec=defaultComparator) {
 
+    if !domainDistIsLayout(Data.domain) {
+      compilerWarning("twoArrayRadix sort no longer handles distributed arrays. Please use TwoArrayDistributedRadixSort.twoArrayDistributedRadixSort instead (but note that it is not stable)");
+    }
+
     var sequentialSizePerTask=4096;
     var baseCaseSize=16;
     var distributedBaseCaseSize=1024;
@@ -3376,6 +3380,9 @@ module TwoArrayRadixSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new RadixBucketizer(),
@@ -3422,6 +3429,9 @@ module TwoArrayDistributedRadixSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
 
     var state1 = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=RadixBucketizer,
@@ -3471,6 +3481,9 @@ module TwoArraySampleSort {
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
 
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
+
     var state = new TwoArrayBucketizerSharedState(
       bucketizer=new SampleBucketizer(Data.eltType),
       baseCaseSize=baseCaseSize,
@@ -3516,6 +3529,9 @@ module TwoArrayDistributedSampleSort {
     pragma "no auto destroy"
     var Scratch: Data.type =
       Data.domain.buildArray(Data.eltType, initElts=false);
+
+    // TODO: do some relevant first-touch
+    Scratch.dsiElementInitializationComplete();
 
     var state = new TwoArrayDistributedBucketizerSharedState(
       bucketizerType=SampleBucketizer(Data.eltType),
