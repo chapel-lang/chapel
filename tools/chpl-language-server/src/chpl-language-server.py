@@ -809,31 +809,42 @@ def run_lsp():
 
         return actions
 
-    # @server.feature(TEXT_DOCUMENT_INLAY_HINT)
+    @server.feature(TEXT_DOCUMENT_INLAY_HINT)
     async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        import time
-
-        t0 = time.time()
         decls = fi.def_segments.range(params.range)
         value_list: List[InlayHint] = []
 
         with fi.context.context.track_errors() as _:
             for decl in decls:
-                tp = decl.node.type()
-                if not tp:
+                qt = decl.node.type()
+                if not qt:
                     continue
 
-                _, _, param = tp
-                if param:
+                _, type_, _ = qt
+                # if param:
+                #     value_list.append(InlayHint(
+                #         position=decl.rng.end,
+                #         label="param value is " + str(param),
+                #         padding_left=True
+                #     ))
+
+                if (
+                    isinstance(decl.node, chapel.Variable) and
+                    decl.node.type_expression() is None and
+                    not isinstance(type_, chapel.ErroneousType)
+                ):
+                    name_rng = location_to_range(decl.node.name_location())
+                    type_str = ": " + str(type_);
                     value_list.append(InlayHint(
-                        position=decl.rng.end,
-                        label="param value is " + str(param),
-                        padding_left=True
+                        position=name_rng.end,
+                        label=type_str,
+                        text_edits=[TextEdit(Range(name_rng.end, name_rng.end), type_str)],
                     ))
+
 
             for call, _ in chapel.each_matching(fi.get_asts(), chapel.core.FnCall):
                 fn = call.called_fn()
@@ -846,14 +857,17 @@ def run_lsp():
                         # tuples. We don't need hints for those.
                         continue
 
+                    if not isinstance(act, chapel.core.Literal):
+                        # For only, onle show named arguments for literals
+                        continue
+
                     begin = location_to_range(act.location()).start
                     value_list.append(InlayHint(
                         position = begin,
                         label = fn.formal(i).name() + " = ",
                     ))
 
-        t1 = time.time()
-        ls.show_message("Elapsed time: " + str(t1-t0))
+        return value_list
 
     server.start_io()
 
