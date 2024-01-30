@@ -307,7 +307,7 @@ module ChapelLocale {
     // Every locale has a parent, except for the root locale.
     // The parent of the root locale is nil (by definition).
     @chpldoc.nodoc
-    const parent = nilLocale;
+    const parent : locale = nilLocale;
 
     @chpldoc.nodoc var nPUsLogAcc: int;     // HW threads, accessible
     @chpldoc.nodoc var nPUsLogAll: int;     // HW threads, all
