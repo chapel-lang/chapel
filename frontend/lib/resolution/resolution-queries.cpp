@@ -3159,15 +3159,17 @@ struct LastResortCandidateGroups {
   // For use with candidates from multiple potential forwarding types.
   void mergeWithGroups(LastResortCandidateGroups&& other) {
     // merge non-poi candidate group and forwarding info
-    if (nonPoi) {
-      nonPoi->insert(nonPoi->end(), other.nonPoiCandidates().begin(),
-                     other.nonPoiCandidates().end());
-      nonPoiForwardingInfo.insert(nonPoiForwardingInfo.end(),
-                                  other.nonPoiForwardingTo().begin(),
-                                  other.nonPoiForwardingTo().end());
-    } else {
-      nonPoi = other.nonPoiCandidates();
-      nonPoiForwardingInfo = other.nonPoiForwardingTo();
+    if (other.nonPoiCandidates()) {
+      if (nonPoi) {
+        nonPoi->insert(nonPoi->end(), other.nonPoiCandidates()->begin(),
+                       other.nonPoiCandidates()->end());
+        nonPoiForwardingInfo.insert(nonPoiForwardingInfo.end(),
+                                    other.nonPoiForwardingTo().begin(),
+                                    other.nonPoiForwardingTo().end());
+      } else {
+        nonPoi = other.nonPoiCandidates();
+        nonPoiForwardingInfo = other.nonPoiForwardingTo();
+      }
     }
 
     // merge poi candidate groups and forwarding info at corresponding indexes
@@ -3198,6 +3200,8 @@ struct LastResortCandidateGroups {
     }
   }
 
+  // Get a pointer to the LastResortCandidateGroups for forwarded-to candidates,
+  // creating first if it does not exist. Does not take ownership.
   LastResortCandidateGroups* getForwardingGroups() {
     if (!forwardingCandidateGroups) {
       forwardingCandidateGroups = std::make_unique<LastResortCandidateGroups>();
@@ -3215,7 +3219,7 @@ struct LastResortCandidateGroups {
   const CandidatesVec firstNonEmptyCandidatesGroup(
       size_t* firstPoiCandidate, ForwardingInfoVec* forwardingInfo,
       bool inForwardingGroups = false) const {
-    if (!nonPoiCandidates().empty()) {
+    if (nonPoiCandidates() && !nonPoiCandidates()->empty()) {
       *firstPoiCandidate = nonPoi->size();
       if (inForwardingGroups) *forwardingInfo = nonPoiForwardingInfo;
       return *nonPoi;
@@ -3231,10 +3235,6 @@ struct LastResortCandidateGroups {
           firstPoiCandidate, forwardingInfo, /* inForwardingGroups */ true);
     }
     return CandidatesVec();
-  }
-
-  const ForwardingInfoVec poiForwardingTo(size_t idx) const {
-    return poiForwardingInfo[idx];
   }
 
   void addNonPoiCandidates(CandidatesVec&& group,
@@ -3267,15 +3267,16 @@ struct LastResortCandidateGroups {
   ForwardingInfoVec nonPoiForwardingInfo;
   std::vector<ForwardingInfoVec> poiForwardingInfo;
 
-  const CandidatesVec nonPoiCandidates() const {
-    if (nonPoi)
-      return *nonPoi;
-    else
-      return CandidatesVec();
+  const chpl::optional<CandidatesVec>& nonPoiCandidates() const {
+    return nonPoi;
   }
 
-  const ForwardingInfoVec nonPoiForwardingTo() const {
+  const ForwardingInfoVec& nonPoiForwardingTo() const {
     return nonPoiForwardingInfo;
+  }
+
+  const ForwardingInfoVec& poiForwardingTo(size_t idx) const {
+    return poiForwardingInfo[idx];
   }
 
   const size_t numPoiGroups() const {
