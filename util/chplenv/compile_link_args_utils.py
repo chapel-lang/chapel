@@ -97,8 +97,6 @@ def get_runtime_link_args(runtime_subdir):
         gpu_type = chpl_gpu.get()
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
 
-        # system.append("-std=c++17")
-
         if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
             system.append("-lcuda")
