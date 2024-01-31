@@ -3198,7 +3198,10 @@ struct LastResortCandidateGroups {
   }
 
   const CandidatesVec nonPoiCandidates() const {
-    return nonPoi.value_or(CandidatesVec());
+    if (nonPoi)
+      return *nonPoi;
+    else
+      return CandidatesVec();
   }
 
   const size_t numPoiGroups() const {
