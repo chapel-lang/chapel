@@ -2754,6 +2754,7 @@ static bool isTargetCpuValid(const char* targetCpu) {
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
   if (isFullGpuCodegen()) {
+    args += "-D__STRICT_ANSI__=1 ";
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
@@ -2945,6 +2946,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     // this does not make sense in a Chapel context
     clangCCArgs.push_back("-fno-math-errno");
   }
+  clangCCArgs.push_back("-nostdinc");
 
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {

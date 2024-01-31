@@ -69,6 +69,8 @@ def get_runtime_includes_and_defines():
             system.append("-isystem" + os.path.join(sdk_path, "hip", "include"))
             system.append("-isystem" + os.path.join(sdk_path, "hsa", "include"))
 
+        system.append("-D__STRICT_ANSI__=1")
+
     if mem == "jemalloc":
         # set -DCHPL_JEMALLOC_PREFIX=chpl_je_
         # this is needed since it affects code inside of headers
@@ -94,6 +96,9 @@ def get_runtime_link_args(runtime_subdir):
         # and add cuda libraries
         gpu_type = chpl_gpu.get()
         sdk_path = chpl_gpu.get_sdk_path(gpu_type)
+
+        # system.append("-std=c++17")
+
         if gpu_type == "nvidia":
             system.append("-L" + os.path.join(sdk_path, "lib64"))
             system.append("-lcuda")
