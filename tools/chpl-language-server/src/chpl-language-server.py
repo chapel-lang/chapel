@@ -727,7 +727,7 @@ def run_lsp():
     Start a language server on the standard input/output
     """
     parser = configargparse.ArgParser(
-        default_config_files=[".cls-config.yml"],
+        default_config_files=[], # Empty for now because cwd() is odd with VSCode etc.
         config_file_parser_class=configargparse.YAMLConfigFileParser,
     )
 
