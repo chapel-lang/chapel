@@ -258,7 +258,7 @@ class QueryMapResultBase {
   // Whether or not errors from this query result have been shown to the
   // user (they may not have been if some query checked for errors).
   mutable bool emittedErrors = false;
-  mutable std::set<void*> recursionErrors;
+  mutable std::set<const QueryMapResultBase*> recursionErrors;
   mutable QueryErrorVec errors;
 
   QueryMapBase* parentQueryMap;
@@ -266,7 +266,7 @@ class QueryMapResultBase {
   QueryMapResultBase(RevisionNumber lastChecked,
                      RevisionNumber lastChanged,
                      bool emittedErrors,
-                     std::set<void*> recursionErrors,
+                     std::set<const QueryMapResultBase*> recursionErrors,
                      QueryMapBase* parentQueryMap);
   virtual ~QueryMapResultBase() = 0; // this is an abstract base class
   virtual void recompute(Context* context) const = 0;
@@ -291,7 +291,7 @@ class QueryMapResult final : public QueryMapResultBase {
   QueryMapResult(RevisionNumber lastChecked,
                  RevisionNumber lastChanged,
                  bool emittedErrors,
-                 std::set<void*> recursionErrors,
+                 std::set<const QueryMapResultBase*> recursionErrors,
                  QueryMap<ResultType, ArgTs...>* parentQueryMap,
                  std::tuple<ArgTs...> tupleOfArgs,
                  ResultType result)

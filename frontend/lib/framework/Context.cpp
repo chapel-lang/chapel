@@ -1094,10 +1094,18 @@ void Context::saveDependencyInParent(const QueryMapResultBase* resultEntry) {
     // canUsedSavedResult or recomputeIfNeeded.
   } else if (queryStack.size() > 0) {
     auto parentQuery = queryStack.back();
-    CHPL_ASSERT(parentQuery != resultEntry); // should be parent query
-    bool errorCollectionRoot = !errorCollectionStack.empty() &&
-                               errorCollectionStack.back().collectingQuery() == parentQuery;
-    parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+    if (parentQuery == resultEntry) {
+      // Should only happen if recursion occurred, in which case do not add it
+      // to dependencies.
+    } else {
+      bool errorCollectionRoot = !errorCollectionStack.empty() &&
+                                 errorCollectionStack.back().collectingQuery() == parentQuery;
+      parentQuery->dependencies.push_back(QueryDependency(resultEntry, errorCollectionRoot));
+    }
+
+    // Propagate query errors that occurred in the child query to the parent
+    parentQuery->recursionErrors.insert(resultEntry->recursionErrors.begin(),
+                                        resultEntry->recursionErrors.end());
   }
 
   // The resultEntry might have been a query that silences errors. However,
@@ -1188,7 +1196,7 @@ void queryArgsPrintSep() {
 QueryMapResultBase::QueryMapResultBase(RevisionNumber lastChecked,
                    RevisionNumber lastChanged,
                    bool emittedErrors,
-                   std::set<void*> recursionErrors,
+                   std::set<const QueryMapResultBase*> recursionErrors,
                    QueryMapBase* parentQueryMap)
   : lastChecked(lastChecked),
     lastChanged(lastChanged),
