@@ -56,6 +56,7 @@ class SPIRVEmitIntrinsics
   DenseMap<Instruction *, Constant *> AggrConsts;
   DenseSet<Instruction *> AggrStores;
   void preprocessCompositeConstants();
+  void preprocessUndefs();
   CallInst *buildIntrWithMD(Intrinsic::ID IntrID, ArrayRef<Type *> Types,
                             Value *Arg, Value *Arg2) {
     ConstantAsMetadata *CM = ValueAsMetadata::getConstant(Arg);
@@ -88,6 +89,7 @@ public:
   Instruction *visitStoreInst(StoreInst &I);
   Instruction *visitAllocaInst(AllocaInst &I);
   Instruction *visitAtomicCmpXchgInst(AtomicCmpXchgInst &I);
+  Instruction *visitUnreachableInst(UnreachableInst &I);
   bool runOnFunction(Function &F) override;
 };
 } // namespace
@@ -150,6 +152,29 @@ void SPIRVEmitIntrinsics::replaceMemInstrUses(Instruction *Old,
   Old->eraseFromParent();
 }
 
+void SPIRVEmitIntrinsics::preprocessUndefs() {
+  std::queue<Instruction *> Worklist;
+  for (auto &I : instructions(F))
+    Worklist.push(&I);
+
+  while (!Worklist.empty()) {
+    Instruction *I = Worklist.front();
+    Worklist.pop();
+
+    for (auto &Op : I->operands()) {
+      auto *AggrUndef = dyn_cast<UndefValue>(Op);
+      if (!AggrUndef || !Op->getType()->isAggregateType())
+        continue;
+
+      IRB->SetInsertPoint(I);
+      auto *IntrUndef = IRB->CreateIntrinsic(Intrinsic::spv_undef, {}, {});
+      Worklist.push(IntrUndef);
+      I->replaceUsesOfWith(Op, IntrUndef);
+      AggrConsts[IntrUndef] = AggrUndef;
+    }
+  }
+}
+
 void SPIRVEmitIntrinsics::preprocessCompositeConstants() {
   std::queue<Instruction *> Worklist;
   for (auto &I : instructions(F))
@@ -197,6 +222,7 @@ Instruction *SPIRVEmitIntrinsics::visitSwitchInst(SwitchInst &I) {
   for (auto &Op : I.operands())
     if (Op.get()->getType()->isSized())
       Args.push_back(Op);
+  IRB->SetInsertPoint(&I);
   IRB->CreateIntrinsic(Intrinsic::spv_switch, {I.getOperand(0)->getType()},
                        {Args});
   return &I;
@@ -313,7 +339,13 @@ Instruction *SPIRVEmitIntrinsics::visitStoreInst(StoreInst &I) {
 
 Instruction *SPIRVEmitIntrinsics::visitAllocaInst(AllocaInst &I) {
   TrackConstants = false;
-  return &I;
+  Type *PtrTy = I.getType();
+  auto *NewI = IRB->CreateIntrinsic(Intrinsic::spv_alloca, {PtrTy}, {});
+  std::string InstName = I.hasName() ? I.getName().str() : "";
+  I.replaceAllUsesWith(NewI);
+  I.eraseFromParent();
+  NewI->setName(InstName);
+  return NewI;
 }
 
 Instruction *SPIRVEmitIntrinsics::visitAtomicCmpXchgInst(AtomicCmpXchgInst &I) {
@@ -330,6 +362,12 @@ Instruction *SPIRVEmitIntrinsics::visitAtomicCmpXchgInst(AtomicCmpXchgInst &I) {
                                     {I.getPointerOperand()->getType()}, {Args});
   replaceMemInstrUses(&I, NewI);
   return NewI;
+}
+
+Instruction *SPIRVEmitIntrinsics::visitUnreachableInst(UnreachableInst &I) {
+  IRB->SetInsertPoint(&I);
+  IRB->CreateIntrinsic(Intrinsic::spv_unreachable, {}, {});
+  return &I;
 }
 
 void SPIRVEmitIntrinsics::processGlobalValue(GlobalVariable &GV) {
@@ -355,7 +393,8 @@ void SPIRVEmitIntrinsics::insertAssignTypeIntrs(Instruction *I) {
     setInsertPointSkippingPhis(*IRB, I->getNextNode());
     Type *TypeToAssign = Ty;
     if (auto *II = dyn_cast<IntrinsicInst>(I)) {
-      if (II->getIntrinsicID() == Intrinsic::spv_const_composite) {
+      if (II->getIntrinsicID() == Intrinsic::spv_const_composite ||
+          II->getIntrinsicID() == Intrinsic::spv_undef) {
         auto t = AggrConsts.find(II);
         assert(t != AggrConsts.end());
         TypeToAssign = t->second->getType();
@@ -368,7 +407,7 @@ void SPIRVEmitIntrinsics::insertAssignTypeIntrs(Instruction *I) {
     if (isa<ConstantPointerNull>(Op) || isa<UndefValue>(Op) ||
         // Check GetElementPtrConstantExpr case.
         (isa<ConstantExpr>(Op) && isa<GEPOperator>(Op))) {
-      IRB->SetInsertPoint(I);
+      setInsertPointSkippingPhis(*IRB, I);
       if (isa<UndefValue>(Op) && Op->getType()->isAggregateType())
         buildIntrWithMD(Intrinsic::spv_assign_type, {IRB->getInt32Ty()}, Op,
                         UndefValue::get(IRB->getInt32Ty()));
@@ -439,6 +478,7 @@ bool SPIRVEmitIntrinsics::runOnFunction(Function &Func) {
   for (auto &GV : Func.getParent()->globals())
     processGlobalValue(GV);
 
+  preprocessUndefs();
   preprocessCompositeConstants();
   SmallVector<Instruction *> Worklist;
   for (auto &I : instructions(Func))

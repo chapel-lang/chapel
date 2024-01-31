@@ -13,12 +13,13 @@
 #include "llvm/DebugInfo/Symbolize/Symbolize.h"
 
 #include "llvm/ADT/STLExtras.h"
+#include "llvm/DebugInfo/BTF/BTFContext.h"
 #include "llvm/DebugInfo/DWARF/DWARFContext.h"
 #include "llvm/DebugInfo/PDB/PDB.h"
 #include "llvm/DebugInfo/PDB/PDBContext.h"
-#include "llvm/DebugInfo/Symbolize/DIFetcher.h"
 #include "llvm/DebugInfo/Symbolize/SymbolizableObjectFile.h"
 #include "llvm/Demangle/Demangle.h"
+#include "llvm/Object/BuildID.h"
 #include "llvm/Object/COFF.h"
 #include "llvm/Object/ELFObjectFile.h"
 #include "llvm/Object/MachO.h"
@@ -38,14 +39,13 @@ namespace llvm {
 namespace codeview {
 union DebugInfo;
 }
-namespace object {
-template <class ELFT> class ELFFile;
-}
 namespace symbolize {
 
 LLVMSymbolizer::LLVMSymbolizer() = default;
 
-LLVMSymbolizer::LLVMSymbolizer(const Options &Opts) : Opts(Opts) {}
+LLVMSymbolizer::LLVMSymbolizer(const Options &Opts)
+    : Opts(Opts),
+      BIDFetcher(std::make_unique<BuildIDFetcher>(Opts.DebugFileDirectory)) {}
 
 LLVMSymbolizer::~LLVMSymbolizer() = default;
 
@@ -307,42 +307,7 @@ bool darwinDsymMatchesBinary(const MachOObjectFile *DbgObj,
   return !memcmp(dbg_uuid.data(), bin_uuid.data(), dbg_uuid.size());
 }
 
-template <typename ELFT>
-Optional<ArrayRef<uint8_t>> getBuildID(const ELFFile<ELFT> &Obj) {
-  auto PhdrsOrErr = Obj.program_headers();
-  if (!PhdrsOrErr) {
-    consumeError(PhdrsOrErr.takeError());
-    return {};
-  }
-  for (const auto &P : *PhdrsOrErr) {
-    if (P.p_type != ELF::PT_NOTE)
-      continue;
-    Error Err = Error::success();
-    for (auto N : Obj.notes(P, Err))
-      if (N.getType() == ELF::NT_GNU_BUILD_ID &&
-          N.getName() == ELF::ELF_NOTE_GNU)
-        return N.getDesc();
-    consumeError(std::move(Err));
-  }
-  return {};
-}
-
 } // end anonymous namespace
-
-Optional<ArrayRef<uint8_t>> getBuildID(const ELFObjectFileBase *Obj) {
-  Optional<ArrayRef<uint8_t>> BuildID;
-  if (auto *O = dyn_cast<ELFObjectFile<ELF32LE>>(Obj))
-    BuildID = getBuildID(O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF32BE>>(Obj))
-    BuildID = getBuildID(O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF64LE>>(Obj))
-    BuildID = getBuildID(O->getELFFile());
-  else if (auto *O = dyn_cast<ELFObjectFile<ELF64BE>>(Obj))
-    BuildID = getBuildID(O->getELFFile());
-  else
-    llvm_unreachable("unsupported file format");
-  return BuildID;
-}
 
 ObjectFile *LLVMSymbolizer::lookUpDsymFile(const std::string &ExePath,
                                            const MachOObjectFile *MachExeObj,
@@ -399,12 +364,10 @@ ObjectFile *LLVMSymbolizer::lookUpBuildIDObject(const std::string &Path,
                                                 const ELFObjectFileBase *Obj,
                                                 const std::string &ArchName) {
   auto BuildID = getBuildID(Obj);
-  if (!BuildID)
-    return nullptr;
-  if (BuildID->size() < 2)
+  if (BuildID.size() < 2)
     return nullptr;
   std::string DebugBinaryPath;
-  if (!getOrFindDebugBinary(*BuildID, DebugBinaryPath))
+  if (!getOrFindDebugBinary(BuildID, DebugBinaryPath))
     return nullptr;
   auto DbgObjOrErr = getOrCreateObject(DebugBinaryPath, ArchName);
   if (!DbgObjOrErr) {
@@ -471,27 +434,14 @@ bool LLVMSymbolizer::getOrFindDebugBinary(const ArrayRef<uint8_t> BuildID,
     Result = I->second;
     return true;
   }
-  auto recordPath = [&](StringRef Path) {
-    Result = Path.str();
+  if (!BIDFetcher)
+    return false;
+  if (std::optional<std::string> Path = BIDFetcher->fetch(BuildID)) {
+    Result = *Path;
     auto InsertResult = BuildIDPaths.insert({BuildIDStr, Result});
     assert(InsertResult.second);
     (void)InsertResult;
-  };
-
-  Optional<std::string> Path;
-  Path = LocalDIFetcher(Opts.DebugFileDirectory).fetchBuildID(BuildID);
-  if (Path) {
-    recordPath(*Path);
     return true;
-  }
-
-  // Try caller-provided debug info fetchers.
-  for (const std::unique_ptr<DIFetcher> &Fetcher : DIFetchers) {
-    Path = Fetcher->fetchBuildID(BuildID);
-    if (Path) {
-      recordPath(*Path);
-      return true;
-    }
   }
 
   return false;
@@ -666,6 +616,13 @@ LLVMSymbolizer::getOrCreateModuleInfo(const std::string &ModuleName) {
   return ModuleOrErr;
 }
 
+// For BPF programs .BTF.ext section contains line numbers information,
+// use it if regular DWARF is not available (e.g. for stripped binary).
+static bool useBTFContext(const ObjectFile &Obj) {
+  return Obj.makeTriple().isBPF() && !Obj.hasDebugInfo() &&
+         BTFParser::hasBTFSections(Obj);
+}
+
 Expected<SymbolizableModule *>
 LLVMSymbolizer::getOrCreateModuleInfo(const ObjectFile &Obj) {
   StringRef ObjName = Obj.getFileName();
@@ -673,7 +630,11 @@ LLVMSymbolizer::getOrCreateModuleInfo(const ObjectFile &Obj) {
   if (I != Modules.end())
     return I->second.get();
 
-  std::unique_ptr<DIContext> Context = DWARFContext::create(Obj);
+  std::unique_ptr<DIContext> Context;
+  if (useBTFContext(Obj))
+    Context = BTFContext::create(Obj);
+  else
+    Context = DWARFContext::create(Obj);
   // FIXME: handle COFF object with PDB info to use PDBContext
   return createModuleInfo(&Obj, std::move(Context), ObjName);
 }
@@ -683,8 +644,7 @@ LLVMSymbolizer::getOrCreateModuleInfo(ArrayRef<uint8_t> BuildID) {
   std::string Path;
   if (!getOrFindDebugBinary(BuildID, Path)) {
     return createStringError(errc::no_such_file_or_directory,
-                             Twine("could not find build ID '") +
-                                 toHex(BuildID) + "'");
+                             "could not find build ID");
   }
   return getOrCreateModuleInfo(Path);
 }
@@ -698,22 +658,29 @@ namespace {
 // vectorcall  - foo@@12
 // These are all different linkage names for 'foo'.
 StringRef demanglePE32ExternCFunc(StringRef SymbolName) {
-  // Remove any '_' or '@' prefix.
   char Front = SymbolName.empty() ? '\0' : SymbolName[0];
-  if (Front == '_' || Front == '@')
-    SymbolName = SymbolName.drop_front();
 
   // Remove any '@[0-9]+' suffix.
+  bool HasAtNumSuffix = false;
   if (Front != '?') {
     size_t AtPos = SymbolName.rfind('@');
     if (AtPos != StringRef::npos &&
-        all_of(drop_begin(SymbolName, AtPos + 1), isDigit))
+        all_of(drop_begin(SymbolName, AtPos + 1), isDigit)) {
       SymbolName = SymbolName.substr(0, AtPos);
+      HasAtNumSuffix = true;
+    }
   }
 
   // Remove any ending '@' for vectorcall.
-  if (SymbolName.endswith("@"))
+  bool IsVectorCall = false;
+  if (HasAtNumSuffix && SymbolName.endswith("@")) {
     SymbolName = SymbolName.drop_back();
+    IsVectorCall = true;
+  }
+
+  // If not vectorcall, remove any '_' or '@' prefix.
+  if (!IsVectorCall && (Front == '_' || Front == '@'))
+    SymbolName = SymbolName.drop_front();
 
   return SymbolName;
 }
@@ -724,14 +691,14 @@ std::string
 LLVMSymbolizer::DemangleName(const std::string &Name,
                              const SymbolizableModule *DbiModuleDescriptor) {
   std::string Result;
-  if (nonMicrosoftDemangle(Name.c_str(), Result))
+  if (nonMicrosoftDemangle(Name, Result))
     return Result;
 
   if (!Name.empty() && Name.front() == '?') {
     // Only do MSVC C++ demangling on symbols starting with '?'.
     int status = 0;
     char *DemangledName = microsoftDemangle(
-        Name.c_str(), nullptr, nullptr, nullptr, &status,
+        Name, nullptr, &status,
         MSDemangleFlags(MSDF_NoAccessSpecifier | MSDF_NoCallingConvention |
                         MSDF_NoMemberType | MSDF_NoReturnType));
     if (status != 0)
@@ -741,8 +708,14 @@ LLVMSymbolizer::DemangleName(const std::string &Name,
     return Result;
   }
 
-  if (DbiModuleDescriptor && DbiModuleDescriptor->isWin32Module())
-    return std::string(demanglePE32ExternCFunc(Name));
+  if (DbiModuleDescriptor && DbiModuleDescriptor->isWin32Module()) {
+    std::string DemangledCName(demanglePE32ExternCFunc(Name));
+    // On i386 Windows, the C name mangling for different calling conventions
+    // may also be applied on top of the Itanium or Rust name mangling.
+    if (nonMicrosoftDemangle(DemangledCName, Result))
+      return Result;
+    return DemangledCName;
+  }
   return Name;
 }
 

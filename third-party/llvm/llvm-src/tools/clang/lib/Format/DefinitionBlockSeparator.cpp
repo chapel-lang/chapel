@@ -52,10 +52,10 @@ void DefinitionBlockSeparator::separateBlocks(
     for (const FormatToken *CurrentToken = Line->First; CurrentToken;
          CurrentToken = CurrentToken->Next) {
       if (BracketLevel == 0) {
-        if ((CurrentToken->isOneOf(tok::kw_class, tok::kw_struct,
-                                   tok::kw_union) ||
-             (Style.isJavaScript() &&
-              CurrentToken->is(ExtraKeywords.kw_function)))) {
+        if (CurrentToken->isOneOf(tok::kw_class, tok::kw_struct,
+                                  tok::kw_union) ||
+            (Style.isJavaScript() &&
+             CurrentToken->is(ExtraKeywords.kw_function))) {
           return true;
         }
         if (!ExcludeEnum && CurrentToken->is(tok::kw_enum))
@@ -69,11 +69,11 @@ void DefinitionBlockSeparator::separateBlocks(
       (Style.SeparateDefinitionBlocks == FormatStyle::SDS_Always ? 1 : 0) + 1;
   WhitespaceManager Whitespaces(
       Env.getSourceManager(), Style,
-      Style.DeriveLineEnding
+      Style.LineEnding > FormatStyle::LE_CRLF
           ? WhitespaceManager::inputUsesCRLF(
                 Env.getSourceManager().getBufferData(Env.getFileID()),
-                Style.UseCRLF)
-          : Style.UseCRLF);
+                Style.LineEnding == FormatStyle::LE_DeriveCRLF)
+          : Style.LineEnding == FormatStyle::LE_CRLF);
   for (unsigned I = 0; I < Lines.size(); ++I) {
     const auto &CurrentLine = Lines[I];
     if (CurrentLine->InPPDirective)
@@ -164,7 +164,7 @@ void DefinitionBlockSeparator::separateBlocks(
         }
       }
 
-      if ((Style.isCSharp() && OperateLine->First->is(TT_AttributeSquare)))
+      if (Style.isCSharp() && OperateLine->First->is(TT_AttributeSquare))
         return true;
       return false;
     };

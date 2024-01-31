@@ -209,7 +209,7 @@ void VLIWMachineScheduler::schedule() {
   Topo.InitDAGTopologicalSorting();
 
   // Postprocess the DAG to add platform-specific artificial dependencies.
-  postprocessDAG();
+  postProcessDAG();
 
   SmallVector<SUnit *, 8> TopRoots, BotRoots;
   findRootsAndBiasEdges(TopRoots, BotRoots);
@@ -582,7 +582,7 @@ int ConvergingVLIWScheduler::pressureChange(const SUnit *SU, bool isBotUp) {
   for (const auto &P : PD) {
     if (!P.isValid())
       continue;
-    // The pressure differences are computed bottom-up, so the comparision for
+    // The pressure differences are computed bottom-up, so the comparison for
     // an increase is positive in the bottom direction, but negative in the
     //  top-down direction.
     if (HighPressureSets[P.getPSet()])

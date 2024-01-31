@@ -377,7 +377,8 @@ this directive, all symbols are considered address-significant.
 
   .addrsig_sym sym
 
-This marks ``sym`` as address-significant.
+If ``sym`` is not otherwise referenced or defined anywhere else in the file,
+this directive is a no-op. Otherwise, mark ``sym`` as address-significant.
 
 ``SHT_LLVM_SYMPART`` Section (symbol partition specification)
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -461,6 +462,13 @@ automatically stripped from the final executable or shared library.
 The binary data stored in this section conforms to a custom binary format used
 for storing offloading metadata. This format is effectively a string table
 containing metadata accompanied by a device image.
+
+``SHT_LLVM_LTO`` Section (LLVM bitcode for fat LTO)
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+This section stores LLVM bitcode used to perform regular LTO or ThinLTO at link
+time. This section is generated when the compiler enables fat LTO. This section
+has the ``SHF_EXCLUDE`` flag so that it is stripped from the final executable
+or shared library.
 
 CodeView-Dependent
 ------------------

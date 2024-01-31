@@ -39,6 +39,16 @@ typedef float __m256_u __attribute__ ((__vector_size__ (32), __aligned__(1)));
 typedef double __m256d_u __attribute__((__vector_size__(32), __aligned__(1)));
 typedef long long __m256i_u __attribute__((__vector_size__(32), __aligned__(1)));
 
+#ifdef __SSE2__
+/* Both _Float16 and __bf16 require SSE2 being enabled. */
+typedef _Float16 __v16hf __attribute__((__vector_size__(32), __aligned__(32)));
+typedef _Float16 __m256h __attribute__((__vector_size__(32), __aligned__(32)));
+typedef _Float16 __m256h_u __attribute__((__vector_size__(32), __aligned__(1)));
+
+typedef __bf16 __v16bf __attribute__((__vector_size__(32), __aligned__(32)));
+typedef __bf16 __m256bh __attribute__((__vector_size__(32), __aligned__(32)));
+#endif
+
 /* Define the default attributes for the functions in this file. */
 #define __DEFAULT_FN_ATTRS __attribute__((__always_inline__, __nodebug__, __target__("avx"), __min_vector_width__(256)))
 #define __DEFAULT_FN_ATTRS128 __attribute__((__always_inline__, __nodebug__, __target__("avx"), __min_vector_width__(128)))
@@ -3007,8 +3017,11 @@ _mm256_zeroupper(void)
 static __inline __m128 __DEFAULT_FN_ATTRS128
 _mm_broadcast_ss(float const *__a)
 {
-  float __f = *__a;
-  return __extension__ (__m128)(__v4sf){ __f, __f, __f, __f };
+  struct __mm_broadcast_ss_struct {
+    float __f;
+  } __attribute__((__packed__, __may_alias__));
+  float __f = ((const struct __mm_broadcast_ss_struct*)__a)->__f;
+  return __extension__ (__m128){ __f, __f, __f, __f };
 }
 
 /// Loads a scalar double-precision floating point value from the
@@ -3026,7 +3039,10 @@ _mm_broadcast_ss(float const *__a)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_broadcast_sd(double const *__a)
 {
-  double __d = *__a;
+  struct __mm256_broadcast_sd_struct {
+    double __d;
+  } __attribute__((__packed__, __may_alias__));
+  double __d = ((const struct __mm256_broadcast_sd_struct*)__a)->__d;
   return __extension__ (__m256d)(__v4df){ __d, __d, __d, __d };
 }
 
@@ -3045,7 +3061,10 @@ _mm256_broadcast_sd(double const *__a)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_broadcast_ss(float const *__a)
 {
-  float __f = *__a;
+  struct __mm256_broadcast_ss_struct {
+    float __f;
+  } __attribute__((__packed__, __may_alias__));
+  float __f = ((const struct __mm256_broadcast_ss_struct*)__a)->__f;
   return __extension__ (__m256)(__v8sf){ __f, __f, __f, __f, __f, __f, __f, __f };
 }
 
@@ -4288,7 +4307,7 @@ _mm256_set1_epi64x(long long __q)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_setzero_pd(void)
 {
-  return __extension__ (__m256d){ 0, 0, 0, 0 };
+  return __extension__ (__m256d){ 0.0, 0.0, 0.0, 0.0 };
 }
 
 /// Constructs a 256-bit floating-point vector of [8 x float] with all
@@ -4302,7 +4321,7 @@ _mm256_setzero_pd(void)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_setzero_ps(void)
 {
-  return __extension__ (__m256){ 0, 0, 0, 0, 0, 0, 0, 0 };
+  return __extension__ (__m256){ 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f };
 }
 
 /// Constructs a 256-bit integer vector initialized to zero.
@@ -4489,7 +4508,8 @@ _mm256_castsi256_si128(__m256i __a)
 static __inline __m256d __DEFAULT_FN_ATTRS
 _mm256_castpd128_pd256(__m128d __a)
 {
-  return __builtin_shufflevector((__v2df)__a, (__v2df)__a, 0, 1, -1, -1);
+  return __builtin_shufflevector(
+      (__v2df)__a, (__v2df)__builtin_nondeterministic_value(__a), 0, 1, 2, 3);
 }
 
 /// Constructs a 256-bit floating-point vector of [8 x float] from a
@@ -4510,7 +4530,9 @@ _mm256_castpd128_pd256(__m128d __a)
 static __inline __m256 __DEFAULT_FN_ATTRS
 _mm256_castps128_ps256(__m128 __a)
 {
-  return __builtin_shufflevector((__v4sf)__a, (__v4sf)__a, 0, 1, 2, 3, -1, -1, -1, -1);
+  return __builtin_shufflevector((__v4sf)__a,
+                                 (__v4sf)__builtin_nondeterministic_value(__a),
+                                 0, 1, 2, 3, 4, 5, 6, 7);
 }
 
 /// Constructs a 256-bit integer vector from a 128-bit integer vector.
@@ -4529,7 +4551,8 @@ _mm256_castps128_ps256(__m128 __a)
 static __inline __m256i __DEFAULT_FN_ATTRS
 _mm256_castsi128_si256(__m128i __a)
 {
-  return __builtin_shufflevector((__v2di)__a, (__v2di)__a, 0, 1, -1, -1);
+  return __builtin_shufflevector(
+      (__v2di)__a, (__v2di)__builtin_nondeterministic_value(__a), 0, 1, 2, 3);
 }
 
 /// Constructs a 256-bit floating-point vector of [4 x double] from a

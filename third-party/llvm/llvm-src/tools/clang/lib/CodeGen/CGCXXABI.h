@@ -105,6 +105,10 @@ protected:
   /// final class will have been taken care of by the caller.
   virtual bool isThisCompleteObject(GlobalDecl GD) const = 0;
 
+  virtual bool constructorsAndDestructorsReturnThis() const {
+    return CGM.getCodeGenOpts().CtorDtorReturnThis;
+  }
+
 public:
 
   virtual ~CGCXXABI();
@@ -120,7 +124,13 @@ public:
   ///
   /// There currently is no way to indicate if a destructor returns 'this'
   /// when called virtually, and code generation does not support the case.
-  virtual bool HasThisReturn(GlobalDecl GD) const { return false; }
+  virtual bool HasThisReturn(GlobalDecl GD) const {
+    if (isa<CXXConstructorDecl>(GD.getDecl()) ||
+        (isa<CXXDestructorDecl>(GD.getDecl()) &&
+         GD.getDtorType() != Dtor_Deleting))
+      return constructorsAndDestructorsReturnThis();
+    return false;
+  }
 
   virtual bool hasMostDerivedReturn(GlobalDecl GD) const { return false; }
 
@@ -277,16 +287,26 @@ public:
 
   virtual bool shouldDynamicCastCallBeNullChecked(bool SrcIsPtr,
                                                   QualType SrcRecordTy) = 0;
+  virtual bool shouldEmitExactDynamicCast(QualType DestRecordTy) = 0;
 
-  virtual llvm::Value *
-  EmitDynamicCastCall(CodeGenFunction &CGF, Address Value,
-                      QualType SrcRecordTy, QualType DestTy,
-                      QualType DestRecordTy, llvm::BasicBlock *CastEnd) = 0;
+  virtual llvm::Value *emitDynamicCastCall(CodeGenFunction &CGF, Address Value,
+                                           QualType SrcRecordTy,
+                                           QualType DestTy,
+                                           QualType DestRecordTy,
+                                           llvm::BasicBlock *CastEnd) = 0;
 
-  virtual llvm::Value *EmitDynamicCastToVoid(CodeGenFunction &CGF,
+  virtual llvm::Value *emitDynamicCastToVoid(CodeGenFunction &CGF,
                                              Address Value,
-                                             QualType SrcRecordTy,
-                                             QualType DestTy) = 0;
+                                             QualType SrcRecordTy) = 0;
+
+  /// Emit a dynamic_cast from SrcRecordTy to DestRecordTy. The cast fails if
+  /// the dynamic type of Value is not exactly DestRecordTy.
+  virtual llvm::Value *emitExactDynamicCast(CodeGenFunction &CGF, Address Value,
+                                            QualType SrcRecordTy,
+                                            QualType DestTy,
+                                            QualType DestRecordTy,
+                                            llvm::BasicBlock *CastSuccess,
+                                            llvm::BasicBlock *CastFail) = 0;
 
   virtual bool EmitBadCastCall(CodeGenFunction &CGF) = 0;
 
@@ -369,9 +389,8 @@ public:
   /// zero if no specific type is applicable, e.g. if the ABI expects the "this"
   /// parameter to point to some artificial offset in a complete object due to
   /// vbases being reordered.
-  virtual const CXXRecordDecl *
-  getThisArgumentTypeForMethod(const CXXMethodDecl *MD) {
-    return MD->getParent();
+  virtual const CXXRecordDecl *getThisArgumentTypeForMethod(GlobalDecl GD) {
+    return cast<CXXMethodDecl>(GD.getDecl())->getParent();
   }
 
   /// Perform ABI-specific "this" argument adjustment required prior to

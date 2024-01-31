@@ -55,6 +55,7 @@ def : GINodeEquiv<G_FCONSTANT, fpimm>;
 def : GINodeEquiv<G_IMPLICIT_DEF, undef>;
 def : GINodeEquiv<G_FRAME_INDEX, frameindex>;
 def : GINodeEquiv<G_BLOCK_ADDR, blockaddress>;
+def : GINodeEquiv<G_PTR_ADD, ptradd>;
 def : GINodeEquiv<G_ADD, add>;
 def : GINodeEquiv<G_SUB, sub>;
 def : GINodeEquiv<G_MUL, mul>;
@@ -102,7 +103,9 @@ def : GINodeEquiv<G_FREM, frem>;
 def : GINodeEquiv<G_FPOW, fpow>;
 def : GINodeEquiv<G_FEXP2, fexp2>;
 def : GINodeEquiv<G_FLOG2, flog2>;
+def : GINodeEquiv<G_FLDEXP, fldexp>;
 def : GINodeEquiv<G_FCANONICALIZE, fcanonicalize>;
+def : GINodeEquiv<G_IS_FPCLASS, is_fpclass>;
 def : GINodeEquiv<G_INTRINSIC, intrinsic_wo_chain>;
 // ISD::INTRINSIC_VOID can also be handled with G_INTRINSIC_W_SIDE_EFFECTS.
 def : GINodeEquiv<G_INTRINSIC_W_SIDE_EFFECTS, intrinsic_void>;
@@ -148,6 +151,7 @@ def : GINodeEquiv<G_ROTR, rotr>;
 def : GINodeEquiv<G_ROTL, rotl>;
 def : GINodeEquiv<G_LROUND, lround>;
 def : GINodeEquiv<G_LLROUND, llround>;
+def : GINodeEquiv<G_VECREDUCE_FADD, vecreduce_fadd>;
 
 def : GINodeEquiv<G_STRICT_FADD, strict_fadd>;
 def : GINodeEquiv<G_STRICT_FSUB, strict_fsub>;
@@ -156,6 +160,7 @@ def : GINodeEquiv<G_STRICT_FDIV, strict_fdiv>;
 def : GINodeEquiv<G_STRICT_FREM, strict_frem>;
 def : GINodeEquiv<G_STRICT_FMA, strict_fma>;
 def : GINodeEquiv<G_STRICT_FSQRT, strict_fsqrt>;
+def : GINodeEquiv<G_STRICT_FLDEXP, strict_fldexp>;
 
 // Broadly speaking G_LOAD is equivalent to ISD::LOAD but there are some
 // complications that tablegen must take care of. For example, Predicates such
@@ -212,6 +217,8 @@ def : GINodeEquiv<G_ATOMICRMW_FADD, atomic_load_fadd>;
 def : GINodeEquiv<G_ATOMICRMW_FSUB, atomic_load_fsub>;
 def : GINodeEquiv<G_ATOMICRMW_FMAX, atomic_load_fmax>;
 def : GINodeEquiv<G_ATOMICRMW_FMIN, atomic_load_fmin>;
+def : GINodeEquiv<G_ATOMICRMW_UINC_WRAP, atomic_load_uinc_wrap>;
+def : GINodeEquiv<G_ATOMICRMW_UDEC_WRAP, atomic_load_udec_wrap>;
 def : GINodeEquiv<G_FENCE, atomic_fence>;
 
 // Specifies the GlobalISel equivalents for SelectionDAG's ComplexPattern.

@@ -116,12 +116,10 @@ TEST_F(FormatTestJS, JSDocComments) {
                    " */",
                    getGoogleJSStyleWithColumns(20)));
   // Don't break the first line of a short single line jsdoc comment.
-  EXPECT_EQ("/** jsdoc line 1 */",
-            format("/** jsdoc line 1 */", getGoogleJSStyleWithColumns(20)));
+  verifyFormat("/** jsdoc line 1 */", getGoogleJSStyleWithColumns(20));
   // Don't break the first line of a single line jsdoc comment if it just fits
   // the column limit.
-  EXPECT_EQ("/** jsdoc line 12 */",
-            format("/** jsdoc line 12 */", getGoogleJSStyleWithColumns(20)));
+  verifyFormat("/** jsdoc line 12 */", getGoogleJSStyleWithColumns(20));
   // Don't break after '/**' and before '*/' if there is no space between
   // '/**' and the content.
   EXPECT_EQ(
@@ -183,8 +181,7 @@ TEST_F(FormatTestJS, JSDocComments) {
                    getGoogleJSStyleWithColumns(20)));
 
   // Don't break the first line of a single line short jsdoc comment pragma.
-  EXPECT_EQ("/** @returns j */",
-            format("/** @returns j */", getGoogleJSStyleWithColumns(20)));
+  verifyFormat("/** @returns j */", getGoogleJSStyleWithColumns(20));
 
   // Break a single line long jsdoc comment pragma.
   EXPECT_EQ("/**\n"
@@ -1476,6 +1473,17 @@ TEST_F(FormatTestJS, ImportExportASI) {
                " export class Y {}");
 }
 
+TEST_F(FormatTestJS, ImportExportType) {
+  verifyFormat("import type {x, y} from 'y';\n"
+               "import type * as x from 'y';\n"
+               "import type x from 'y';\n"
+               "import {x, type yu, z} from 'y';\n");
+  verifyFormat("export type {x, y} from 'y';\n"
+               "export {x, type yu, z} from 'y';\n"
+               "export type {x, y};\n"
+               "export {x, type yu, z};\n");
+}
+
 TEST_F(FormatTestJS, ClosureStyleCasts) {
   verifyFormat("var x = /** @type {foo} */ (bar);");
 }
@@ -2145,6 +2153,9 @@ TEST_F(FormatTestJS, NestedTemplateStrings) {
 
   // Crashed at some point.
   verifyFormat("}");
+  verifyFormat("`");
+  // FIXME: still crashing?
+  // verifyFormat("`\\");
 }
 
 TEST_F(FormatTestJS, TaggedTemplateStrings) {
@@ -2218,6 +2229,7 @@ TEST_F(FormatTestJS, OptionalTypes) {
                "  aaaaaaaaaaaaaaa?: boolean,\n"
                "  aaaaaa?: List<string>\n"
                "}) {}");
+  verifyFormat("type X = [y?];");
 }
 
 TEST_F(FormatTestJS, IndexSignature) {

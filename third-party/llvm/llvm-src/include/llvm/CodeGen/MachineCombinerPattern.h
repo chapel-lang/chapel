@@ -169,6 +169,17 @@ enum class MachineCombinerPattern {
   FMULv4i32_indexed_OP2,
   FMULv8i16_indexed_OP1,
   FMULv8i16_indexed_OP2,
+
+  // RISCV FMADD, FMSUB, FNMSUB patterns
+  FMADD_AX,
+  FMADD_XA,
+  FMSUB,
+  FNMSUB,
+
+  // X86 VNNI
+  DPWSSD,
+
+  FNMADD,
 };
 
 } // end namespace llvm

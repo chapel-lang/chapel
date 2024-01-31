@@ -12,6 +12,7 @@
 #include "clang/AST/ASTConsumer.h"
 #include "clang/Basic/Diagnostic.h"
 #include "clang/Basic/SourceManager.h"
+#include "clang/Basic/TargetInfo.h"
 #include "clang/Frontend/CompilerInvocation.h"
 #include "clang/Frontend/PCHContainerOperations.h"
 #include "clang/Frontend/Utils.h"
@@ -26,6 +27,7 @@
 #include <cassert>
 #include <list>
 #include <memory>
+#include <optional>
 #include <string>
 #include <utility>
 
@@ -164,9 +166,10 @@ class CompilerInstance : public ModuleLoader {
   /// failed.
   struct OutputFile {
     std::string Filename;
-    Optional<llvm::sys::fs::TempFile> File;
+    std::optional<llvm::sys::fs::TempFile> File;
 
-    OutputFile(std::string filename, Optional<llvm::sys::fs::TempFile> file)
+    OutputFile(std::string filename,
+               std::optional<llvm::sys::fs::TempFile> file)
         : Filename(std::move(filename)), File(std::move(file)) {}
   };
 
@@ -230,6 +233,8 @@ public:
     assert(Invocation && "Compiler instance has no invocation!");
     return *Invocation;
   }
+
+  std::shared_ptr<CompilerInvocation> getInvocationPtr() { return Invocation; }
 
   /// setInvocation - Replace the current invocation.
   void setInvocation(std::shared_ptr<CompilerInvocation> Value);
@@ -336,6 +341,11 @@ public:
     return *Diagnostics;
   }
 
+  IntrusiveRefCntPtr<DiagnosticsEngine> getDiagnosticsPtr() const {
+    assert(Diagnostics && "Compiler instance has no diagnostics!");
+    return Diagnostics;
+  }
+
   /// setDiagnostics - Replace the current diagnostics engine.
   void setDiagnostics(DiagnosticsEngine *Value);
 
@@ -371,6 +381,11 @@ public:
     return *Target;
   }
 
+  IntrusiveRefCntPtr<TargetInfo> getTargetPtr() const {
+    assert(Target && "Compiler instance has no target!");
+    return Target;
+  }
+
   /// Replace the current Target.
   void setTarget(TargetInfo *Value);
 
@@ -404,6 +419,11 @@ public:
     return *FileMgr;
   }
 
+  IntrusiveRefCntPtr<FileManager> getFileManagerPtr() const {
+    assert(FileMgr && "Compiler instance has no file manager!");
+    return FileMgr;
+  }
+
   void resetAndLeakFileManager() {
     llvm::BuryPointer(FileMgr.get());
     FileMgr.resetWithoutRelease();
@@ -422,6 +442,11 @@ public:
   SourceManager &getSourceManager() const {
     assert(SourceMgr && "Compiler instance has no source manager!");
     return *SourceMgr;
+  }
+
+  IntrusiveRefCntPtr<SourceManager> getSourceManagerPtr() const {
+    assert(SourceMgr && "Compiler instance has no source manager!");
+    return SourceMgr;
   }
 
   void resetAndLeakSourceManager() {
@@ -462,6 +487,11 @@ public:
   ASTContext &getASTContext() const {
     assert(Context && "Compiler instance has no AST context!");
     return *Context;
+  }
+
+  IntrusiveRefCntPtr<ASTContext> getASTContextPtr() const {
+    assert(Context && "Compiler instance has no AST context!");
+    return Context;
   }
 
   void resetAndLeakASTContext() {

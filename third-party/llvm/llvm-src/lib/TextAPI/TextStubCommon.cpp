@@ -6,7 +6,7 @@
 //
 //===----------------------------------------------------------------------===//
 //
-// Implememts common Text Stub YAML mappings.
+// Implements common Text Stub YAML mappings.
 //
 //===----------------------------------------------------------------------===//
 
@@ -64,17 +64,17 @@ void ScalarTraits<PlatformSet>::output(const PlatformSet &Values, void *IO,
     OS << "macosx";
     break;
   case PLATFORM_IOSSIMULATOR:
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case PLATFORM_IOS:
     OS << "ios";
     break;
   case PLATFORM_WATCHOSSIMULATOR:
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case PLATFORM_WATCHOS:
     OS << "watchos";
     break;
   case PLATFORM_TVOSSIMULATOR:
-    LLVM_FALLTHROUGH;
+    [[fallthrough]];
   case PLATFORM_TVOS:
     OS << "tvos";
     break;
@@ -82,7 +82,7 @@ void ScalarTraits<PlatformSet>::output(const PlatformSet &Values, void *IO,
     OS << "bridgeos";
     break;
   case PLATFORM_MACCATALYST:
-    OS << "iosmac";
+    OS << "maccatalyst";
     break;
   case PLATFORM_DRIVERKIT:
     OS << "driverkit";
@@ -112,6 +112,8 @@ StringRef ScalarTraits<PlatformSet>::input(StringRef Scalar, void *IO,
                       .Case("tvos", PLATFORM_TVOS)
                       .Case("bridgeos", PLATFORM_BRIDGEOS)
                       .Case("iosmac", PLATFORM_MACCATALYST)
+                      .Case("maccatalyst", PLATFORM_MACCATALYST)
+                      .Case("driverkit", PLATFORM_DRIVERKIT)
                       .Default(PLATFORM_UNKNOWN);
 
   if (Platform == PLATFORM_MACCATALYST)
@@ -215,17 +217,10 @@ QuotingType ScalarTraits<SwiftVersion>::mustQuote(StringRef) {
   return QuotingType::None;
 }
 
-void ScalarTraits<UUID>::output(const UUID &Value, void *, raw_ostream &OS) {
-  OS << Value.first << ": " << Value.second;
-}
+void ScalarTraits<UUID>::output(const UUID &Value, void *, raw_ostream &OS) {}
+
 StringRef ScalarTraits<UUID>::input(StringRef Scalar, void *, UUID &Value) {
-  auto Split = Scalar.split(':');
-  auto Arch = Split.first.trim();
-  auto UUID = Split.second.trim();
-  if (UUID.empty())
-    return "invalid uuid string pair";
-  Value.second = std::string(UUID);
-  Value.first = Target{getArchitectureFromName(Arch), PLATFORM_UNKNOWN};
+  Value = {};
   return {};
 }
 

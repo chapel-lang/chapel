@@ -116,9 +116,10 @@ void ThumbRegisterInfo::emitLoadConstPool(
                                  PredReg, MIFlags);
 }
 
-/// emitThumbRegPlusImmInReg - Emits a series of instructions to materialize
-/// a destreg = basereg + immediate in Thumb code. Materialize the immediate
-/// in a register using mov / mvn sequences or load the immediate from a
+/// emitThumbRegPlusImmInReg - Emits a series of instructions to materialize a
+/// destreg = basereg + immediate in Thumb code. Materialize the immediate in a
+/// register using mov / mvn (armv6-M >) sequences, movs / lsls / adds / lsls /
+/// adds / lsls / adds sequences (armv6-M) or load the immediate from a
 /// constpool entry.
 static void emitThumbRegPlusImmInReg(
     MachineBasicBlock &MBB, MachineBasicBlock::iterator &MBBI,
@@ -141,7 +142,7 @@ static void emitThumbRegPlusImmInReg(
   Register LdReg = DestReg;
   if (DestReg == ARM::SP)
     assert(BaseReg == ARM::SP && "Unexpected!");
-  if (!isARMLowRegister(DestReg) && !Register::isVirtualRegister(DestReg))
+  if (!isARMLowRegister(DestReg) && !DestReg.isVirtual())
     LdReg = MF.getRegInfo().createVirtualRegister(&ARM::tGPRRegClass);
 
   if (NumBytes <= 255 && NumBytes >= 0 && CanChangeCC) {
@@ -159,7 +160,8 @@ static void emitThumbRegPlusImmInReg(
         .addReg(LdReg, RegState::Kill)
         .setMIFlags(MIFlags);
   } else if (ST.genExecuteOnly()) {
-    BuildMI(MBB, MBBI, dl, TII.get(ARM::t2MOVi32imm), LdReg)
+    unsigned XOInstr = ST.useMovt() ? ARM::t2MOVi32imm : ARM::tMOVi32imm;
+    BuildMI(MBB, MBBI, dl, TII.get(XOInstr), LdReg)
       .addImm(NumBytes).setMIFlags(MIFlags);
   } else
     MRI.emitLoadConstPool(MBB, MBBI, dl, LdReg, 0, NumBytes, ARMCC::AL, 0,
@@ -458,7 +460,7 @@ void ThumbRegisterInfo::resolveFrameIndex(MachineInstr &MI, Register BaseReg,
   (void)Done;
 }
 
-void ThumbRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
+bool ThumbRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
                                             int SPAdj, unsigned FIOperandNum,
                                             RegScavenger *RS) const {
   MachineInstr &MI = *II;
@@ -498,14 +500,14 @@ void ThumbRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   if (MI.isDebugValue()) {
     MI.getOperand(FIOperandNum).  ChangeToRegister(FrameReg, false /*isDef*/);
     MI.getOperand(FIOperandNum+1).ChangeToImmediate(Offset);
-    return;
+    return false;
   }
 
   // Modify MI as necessary to handle as much of 'Offset' as possible
   assert(MF.getInfo<ARMFunctionInfo>()->isThumbFunction() &&
          "This eliminateFrameIndex only supports Thumb1!");
   if (rewriteFrameIndex(MI, FIOperandNum, FrameReg, Offset, TII))
-    return;
+    return true;
 
   // If we get here, the immediate doesn't fit into the instruction.  We folded
   // as much as possible above, handle the rest, providing a register that is
@@ -596,6 +598,7 @@ void ThumbRegisterInfo::eliminateFrameIndex(MachineBasicBlock::iterator II,
   // Add predicate back if it's needed.
   if (MI.isPredicable())
     MIB.add(predOps(ARMCC::AL));
+  return false;
 }
 
 bool

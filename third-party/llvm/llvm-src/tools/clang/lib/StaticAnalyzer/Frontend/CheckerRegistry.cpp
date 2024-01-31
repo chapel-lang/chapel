@@ -15,7 +15,6 @@
 #include "clang/StaticAnalyzer/Core/AnalyzerOptions.h"
 #include "clang/StaticAnalyzer/Core/CheckerManager.h"
 #include "llvm/ADT/STLExtras.h"
-#include "llvm/ADT/SetVector.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
 #include "llvm/Support/DynamicLibrary.h"
@@ -234,7 +233,7 @@ void CheckerRegistry::initializeRegistry(const CheckerManager &Mgr) {
   // done recursively, its arguably cheaper, but for sure less error prone to
   // recalculate from scratch.
   auto IsEnabled = [&](const CheckerInfo *Checker) {
-    return llvm::is_contained(Tmp, Checker);
+    return Tmp.contains(Checker);
   };
   for (const CheckerInfo &Checker : Data.Checkers) {
     if (!Checker.isEnabled(Mgr))
@@ -526,4 +525,3 @@ void CheckerRegistry::validateCheckerOptions() const {
         << SuppliedCheckerOrPackage;
   }
 }
-

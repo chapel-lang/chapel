@@ -17,10 +17,8 @@
 #include "clang/Analysis/PathDiagnostic.h"
 #include "clang/Basic/LLVM.h"
 #include "llvm/ADT/IntrusiveRefCntPtr.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ADT/StringMap.h"
 #include "llvm/ADT/StringRef.h"
-#include "llvm/ADT/StringSwitch.h"
 #include <string>
 #include <utility>
 #include <vector>
@@ -262,9 +260,10 @@ public:
 #undef ANALYZER_OPTION
 #undef ANALYZER_OPTION_DEPENDS_ON_USER_MODE
 
-  // Create an array of all -analyzer-config command line options. Sort it in
-  // the constructor.
-  std::vector<llvm::StringLiteral> AnalyzerConfigCmdFlags = {
+  bool isUnknownAnalyzerConfig(llvm::StringRef Name) {
+    static std::vector<llvm::StringLiteral> AnalyzerConfigCmdFlags = []() {
+      // Create an array of all -analyzer-config command line options.
+      std::vector<llvm::StringLiteral> AnalyzerConfigCmdFlags = {
 #define ANALYZER_OPTION_DEPENDS_ON_USER_MODE(TYPE, NAME, CMDFLAG, DESC,        \
                                              SHALLOW_VAL, DEEP_VAL)            \
   ANALYZER_OPTION(TYPE, NAME, CMDFLAG, DESC, SHALLOW_VAL)
@@ -275,10 +274,11 @@ public:
 #include "clang/StaticAnalyzer/Core/AnalyzerOptions.def"
 #undef ANALYZER_OPTION
 #undef ANALYZER_OPTION_DEPENDS_ON_USER_MODE
-  };
-
-  bool isUnknownAnalyzerConfig(StringRef Name) const {
-    assert(llvm::is_sorted(AnalyzerConfigCmdFlags));
+      };
+      // FIXME: Sort this at compile-time when we get constexpr sort (C++20).
+      llvm::sort(AnalyzerConfigCmdFlags);
+      return AnalyzerConfigCmdFlags;
+    }();
 
     return !std::binary_search(AnalyzerConfigCmdFlags.begin(),
                                AnalyzerConfigCmdFlags.end(), Name);
@@ -289,13 +289,12 @@ public:
         ShowCheckerHelpAlpha(false), ShowCheckerHelpDeveloper(false),
         ShowCheckerOptionList(false), ShowCheckerOptionAlphaList(false),
         ShowCheckerOptionDeveloperList(false), ShowEnabledCheckerList(false),
-        ShowConfigOptionsList(false), AnalyzeAll(false),
+        ShowConfigOptionsList(false),
+        ShouldEmitErrorsOnInvalidConfigValue(false), AnalyzeAll(false),
         AnalyzerDisplayProgress(false), eagerlyAssumeBinOpBifurcation(false),
         TrimGraph(false), visualizeExplodedGraphWithGraphViz(false),
         UnoptimizedCFG(false), PrintStats(false), NoRetryExhausted(false),
-        AnalyzerWerror(false) {
-    llvm::sort(AnalyzerConfigCmdFlags);
-  }
+        AnalyzerWerror(false) {}
 
   /// Interprets an option's string value as a boolean. The "true" string is
   /// interpreted as true and the "false" string is interpreted as false.

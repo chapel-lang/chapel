@@ -307,7 +307,6 @@ defm : X86WriteResPairUnsupported<WriteFMAZ>;
 defm : X86WriteResPairUnsupported<WriteDPPD>;
 defm : X86WriteResPairUnsupported<WriteDPPS>;
 defm : X86WriteResPairUnsupported<WriteDPPSY>;
-defm : X86WriteResPairUnsupported<WriteDPPSZ>;
 defm : X86WriteResPairUnsupported<WriteFBlend>;
 defm : X86WriteResPairUnsupported<WriteFBlendY>;
 defm : X86WriteResPairUnsupported<WriteFBlendZ>;
@@ -538,7 +537,7 @@ def AtomWrite0_1_1 : SchedWriteRes<[AtomPort0, AtomPort1]> {
 def : InstRW<[AtomWrite0_1_1], (instrs POP32r, POP64r,
                                        POP16rmr, POP32rmr, POP64rmr,
                                        PUSH16r, PUSH32r, PUSH64r,
-                                       PUSHi16, PUSHi32,
+                                       PUSH16i, PUSH32i,
                                        PUSH16rmr, PUSH32rmr, PUSH64rmr,
                                        PUSH16i8, PUSH32i8, PUSH64i8, PUSH64i32,
                                        XCH_F)>;

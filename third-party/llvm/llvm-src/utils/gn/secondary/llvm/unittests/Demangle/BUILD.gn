@@ -1,4 +1,4 @@
-import("//llvm/utils/unittest/unittest.gni")
+import("//third-party/unittest/unittest.gni")
 
 unittest("DemangleTests") {
   deps = [ "//llvm/lib/Demangle" ]
@@ -9,6 +9,5 @@ unittest("DemangleTests") {
     "OutputBufferTest.cpp",
     "PartialDemangleTest.cpp",
     "RustDemangleTest.cpp",
-    "StringViewTest.cpp",
   ]
 }

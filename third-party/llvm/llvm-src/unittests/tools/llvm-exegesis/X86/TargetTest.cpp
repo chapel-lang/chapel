@@ -12,12 +12,18 @@
 #include <memory>
 
 #include "MCTargetDesc/X86MCTargetDesc.h"
+#include "SubprocessMemory.h"
 #include "llvm/MC/TargetRegistry.h"
 #include "llvm/Support/TargetSelect.h"
 #include "gmock/gmock.h"
 #include "gtest/gtest.h"
 
 #include "llvm/MC/MCInstPrinter.h"
+
+#ifdef __linux__
+#include <sys/mman.h>
+#include <sys/syscall.h>
+#endif // __linux__
 
 namespace llvm {
 
@@ -55,6 +61,7 @@ using testing::ElementsAre;
 using testing::ElementsAreArray;
 using testing::Eq;
 using testing::Gt;
+using testing::IsEmpty;
 using testing::Matcher;
 using testing::NotNull;
 using testing::Property;
@@ -77,6 +84,12 @@ Matcher<MCInst> OpcodeIs(unsigned Opcode) {
 Matcher<MCInst> IsMovImmediate(unsigned Opcode, int64_t Reg, int64_t Value) {
   return AllOf(OpcodeIs(Opcode), ElementsAre(IsReg(Reg), IsImm(Value)));
 }
+
+#ifdef __linux__
+Matcher<MCInst> IsMovRegToReg(unsigned Opcode, int64_t Reg1, int64_t Reg2) {
+  return AllOf(OpcodeIs(Opcode), ElementsAre(IsReg(Reg1), IsReg(Reg2)));
+}
+#endif
 
 Matcher<MCInst> IsMovValueToStack(unsigned Opcode, int64_t Value,
                                   size_t Offset) {
@@ -105,7 +118,8 @@ constexpr const char kTriple[] = "x86_64-unknown-linux";
 
 class X86TargetTest : public ::testing::Test {
 protected:
-  X86TargetTest(const char *Features) : State(kTriple, "core2", Features) {}
+  X86TargetTest(const char *Features)
+      : State(cantFail(LLVMState::Create(kTriple, "core2", Features))) {}
 
   static void SetUpTestCase() {
     LLVMInitializeX86TargetInfo();
@@ -139,6 +153,21 @@ public:
 class X86Core2Avx512TargetTest : public X86TargetTest {
 public:
   X86Core2Avx512TargetTest() : X86TargetTest("+avx512vl") {}
+};
+
+class X86Core2Avx512DQTargetTest : public X86TargetTest {
+public:
+  X86Core2Avx512DQTargetTest() : X86TargetTest("+avx512dq") {}
+};
+
+class X86Core2Avx512BWTargetTest : public X86TargetTest {
+public:
+  X86Core2Avx512BWTargetTest() : X86TargetTest("+avx512bw") {}
+};
+
+class X86Core2Avx512DQBWTargetTest : public X86TargetTest {
+public:
+  X86Core2Avx512DQBWTargetTest() : X86TargetTest("+avx512dq,+avx512bw") {}
 };
 
 TEST_F(X86Core2TargetTest, NoHighByteRegs) {
@@ -290,6 +319,174 @@ TEST_F(X86Core2Avx512TargetTest, SetRegToVR512Value) {
                         IsStackDeallocate(64)}));
 }
 
+TEST_F(X86Core2Avx512TargetTest, SetRegToK0_16Bits) {
+  const uint16_t Value = 0xABCDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 16;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(2),
+                          IsMovValueToStack(X86::MOV16mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVWkm, Reg),
+                          IsStackDeallocate(2)));
+}
+
+TEST_F(X86Core2Avx512DQTargetTest, SetRegToK0_16Bits) {
+  const uint16_t Value = 0xABCDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 16;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(2),
+                          IsMovValueToStack(X86::MOV16mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVWkm, Reg),
+                          IsStackDeallocate(2)));
+}
+
+TEST_F(X86Core2Avx512BWTargetTest, SetRegToK0_16Bits) {
+  const uint16_t Value = 0xABCDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 16;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV16mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVWkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512DQBWTargetTest, SetRegToK0_16Bits) {
+  const uint16_t Value = 0xABCDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 16;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV16mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVWkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512TargetTest, SetRegToK0_8Bits) {
+  const uint8_t Value = 0xABU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 8;
+  EXPECT_THAT(
+      setRegTo(Reg, APInt(RegBitWidth, Value)),
+      ElementsAre(IsStackAllocate(2),
+                  IsMovValueToStack(
+                      X86::MOV16mi,
+                      APInt(RegBitWidth, Value).zext(16).getZExtValue(), 0),
+                  IsMovValueFromStack(X86::KMOVWkm, Reg),
+                  IsStackDeallocate(2)));
+}
+
+TEST_F(X86Core2Avx512DQTargetTest, SetRegToK0_8Bits) {
+  const uint8_t Value = 0xABU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 8;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV8mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVBkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512BWTargetTest, SetRegToK0_8Bits) {
+  const uint8_t Value = 0xABU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 8;
+  EXPECT_THAT(
+      setRegTo(Reg, APInt(RegBitWidth, Value)),
+      ElementsAre(IsStackAllocate(2),
+                  IsMovValueToStack(
+                      X86::MOV16mi,
+                      APInt(RegBitWidth, Value).zext(16).getZExtValue(), 0),
+                  IsMovValueFromStack(X86::KMOVWkm, Reg),
+                  IsStackDeallocate(2)));
+}
+
+TEST_F(X86Core2Avx512DQBWTargetTest, SetRegToK0_8Bits) {
+  const uint8_t Value = 0xABU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 8;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV8mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVBkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512TargetTest, SetRegToK0_32Bits) {
+  const uint32_t Value = 0xABCDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 32;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)), IsEmpty());
+}
+
+TEST_F(X86Core2Avx512DQTargetTest, SetRegToK0_32Bits) {
+  const uint32_t Value = 0xABCDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 32;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)), IsEmpty());
+}
+
+TEST_F(X86Core2Avx512BWTargetTest, SetRegToK0_32Bits) {
+  const uint32_t Value = 0xABCDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 32;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV32mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVDkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512DQBWTargetTest, SetRegToK0_32Bits) {
+  const uint32_t Value = 0xABCDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 32;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV32mi, Value, 0),
+                          IsMovValueFromStack(X86::KMOVDkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512TargetTest, SetRegToK0_64Bits) {
+  const uint64_t Value = 0xABCDABCDCABDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 64;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)), IsEmpty());
+}
+
+TEST_F(X86Core2Avx512DQTargetTest, SetRegToK0_64Bits) {
+  const uint64_t Value = 0xABCDABCDCABDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 64;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)), IsEmpty());
+}
+
+TEST_F(X86Core2Avx512BWTargetTest, SetRegToK0_64Bits) {
+  const uint64_t Value = 0xABCDABCDCABDCABDUL;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 64;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV32mi, 0XCABDCABDUL, 0),
+                          IsMovValueToStack(X86::MOV32mi, 0xABCDABCDUL, 4),
+                          IsMovValueFromStack(X86::KMOVQkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
+TEST_F(X86Core2Avx512DQBWTargetTest, SetRegToK0_64Bits) {
+  const uint64_t Value = 0xABCDABCDCABDCABDU;
+  const unsigned Reg = X86::K0;
+  const unsigned RegBitWidth = 64;
+  EXPECT_THAT(setRegTo(Reg, APInt(RegBitWidth, Value)),
+              ElementsAre(IsStackAllocate(RegBitWidth / 8),
+                          IsMovValueToStack(X86::MOV32mi, 0XCABDCABDUL, 0),
+                          IsMovValueToStack(X86::MOV32mi, 0xABCDABCDUL, 4),
+                          IsMovValueFromStack(X86::KMOVQkm, Reg),
+                          IsStackDeallocate(RegBitWidth / 8)));
+}
+
 // Note: We always put 80 bits on the stack independently of the size of the
 // value. This uses a bit more space but makes the code simpler.
 
@@ -390,6 +587,104 @@ TEST_F(X86Core2TargetTest, AllowAsBackToBack) {
   EXPECT_FALSE(
       State.getExegesisTarget().allowAsBackToBack(getInstr(X86::LEA64r)));
 }
+
+#ifdef __linux__
+TEST_F(X86Core2TargetTest, GenerateLowerMunmapTest) {
+  std::vector<MCInst> GeneratedCode;
+  State.getExegesisTarget().generateLowerMunmap(GeneratedCode);
+  EXPECT_THAT(GeneratedCode,
+              ElementsAre(IsMovImmediate(X86::MOV64ri, X86::RDI, 0),
+                          OpcodeIs(X86::LEA64r), OpcodeIs(X86::SHR64ri),
+                          OpcodeIs(X86::SHL64ri), OpcodeIs(X86::SUB64ri32),
+                          IsMovImmediate(X86::MOV64ri, X86::RAX, SYS_munmap),
+                          OpcodeIs(X86::SYSCALL)));
+}
+
+#ifdef __arm__
+static constexpr const intptr_t VAddressSpaceCeiling = 0xC0000000;
+#else
+static constexpr const intptr_t VAddressSpaceCeiling = 0x0000800000000000;
+#endif
+
+TEST_F(X86Core2TargetTest, GenerateUpperMunmapTest) {
+  std::vector<MCInst> GeneratedCode;
+  State.getExegesisTarget().generateUpperMunmap(GeneratedCode);
+  EXPECT_THAT(
+      GeneratedCode,
+      ElementsAreArray({OpcodeIs(X86::LEA64r), OpcodeIs(X86::MOV64rr),
+                        OpcodeIs(X86::ADD64rr), OpcodeIs(X86::SHR64ri),
+                        OpcodeIs(X86::SHL64ri), OpcodeIs(X86::ADD64ri32),
+                        IsMovImmediate(X86::MOV64ri, X86::RSI,
+                                       VAddressSpaceCeiling - getpagesize()),
+                        OpcodeIs(X86::SUB64rr),
+                        IsMovImmediate(X86::MOV64ri, X86::RAX, SYS_munmap),
+                        OpcodeIs(X86::SYSCALL)}));
+}
+
+TEST_F(X86Core2TargetTest, GenerateExitSyscallTest) {
+  EXPECT_THAT(State.getExegesisTarget().generateExitSyscall(127),
+              ElementsAre(IsMovImmediate(X86::MOV64ri, X86::RDI, 127),
+                          IsMovImmediate(X86::MOV64ri, X86::RAX, SYS_exit),
+                          OpcodeIs(X86::SYSCALL)));
+}
+
+// Before kernel 4.17, Linux did not support MAP_FIXED_NOREPLACE, so if it is
+// not available, simplfy define it as MAP_FIXED which performs the same
+// function but does not guarantee existing mappings won't get clobbered.
+#ifndef MAP_FIXED_NOREPLACE
+#define MAP_FIXED_NOREPLACE MAP_FIXED
+#endif
+
+// Some 32-bit architectures don't have mmap and define mmap2 instead. The only
+// difference between the two syscalls is that mmap2's offset parameter is in
+// terms 4096 byte offsets rather than individual bytes, so for our purposes
+// they are effectively the same as all ofsets here are set to 0.
+#if defined(SYS_mmap2) && !defined(SYS_mmap)
+#define SYS_mmap SYS_mmap2
+#endif
+
+TEST_F(X86Core2TargetTest, GenerateMmapTest) {
+  EXPECT_THAT(State.getExegesisTarget().generateMmap(0x1000, 4096, 0x2000),
+              ElementsAre(IsMovImmediate(X86::MOV64ri, X86::RDI, 0x1000),
+                          IsMovImmediate(X86::MOV64ri, X86::RSI, 4096),
+                          IsMovImmediate(X86::MOV64ri, X86::RDX,
+                                         PROT_READ | PROT_WRITE),
+                          IsMovImmediate(X86::MOV64ri, X86::R10,
+                                         MAP_SHARED | MAP_FIXED_NOREPLACE),
+                          IsMovImmediate(X86::MOV64ri, X86::R8, 0x2000),
+                          OpcodeIs(X86::MOV32rm),
+                          IsMovImmediate(X86::MOV64ri, X86::R9, 0),
+                          IsMovImmediate(X86::MOV64ri, X86::RAX, SYS_mmap),
+                          OpcodeIs(X86::SYSCALL)));
+}
+
+TEST_F(X86Core2TargetTest, GenerateMmapAuxMemTest) {
+  std::vector<MCInst> GeneratedCode;
+  State.getExegesisTarget().generateMmapAuxMem(GeneratedCode);
+  EXPECT_THAT(
+      GeneratedCode,
+      ElementsAre(
+          IsMovImmediate(
+              X86::MOV64ri, X86::RDI,
+              State.getExegesisTarget().getAuxiliaryMemoryStartAddress()),
+          IsMovImmediate(X86::MOV64ri, X86::RSI,
+                         SubprocessMemory::AuxiliaryMemorySize),
+          IsMovImmediate(X86::MOV64ri, X86::RDX, PROT_READ | PROT_WRITE),
+          IsMovImmediate(X86::MOV64ri, X86::R10,
+                         MAP_SHARED | MAP_FIXED_NOREPLACE),
+          OpcodeIs(X86::MOV64rr), IsMovImmediate(X86::MOV64ri, X86::R9, 0),
+          IsMovImmediate(X86::MOV64ri, X86::RAX, SYS_mmap),
+          OpcodeIs(X86::SYSCALL)));
+}
+
+TEST_F(X86Core2TargetTest, MoveArgumentRegistersTest) {
+  std::vector<MCInst> GeneratedCode;
+  State.getExegesisTarget().moveArgumentRegisters(GeneratedCode);
+  EXPECT_THAT(GeneratedCode,
+              ElementsAre(IsMovRegToReg(X86::MOV64rr, X86::R12, X86::RDI),
+                          IsMovRegToReg(X86::MOV64rr, X86::R13, X86::RSI)));
+}
+#endif // __linux__
 
 } // namespace
 } // namespace exegesis

@@ -10,7 +10,6 @@
 #define LLVM_MC_MCASMBACKEND_H
 
 #include "llvm/ADT/ArrayRef.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/MC/MCDirectives.h"
 #include "llvm/MC/MCFixup.h"
 #include "llvm/Support/Endian.h"
@@ -26,7 +25,8 @@ class MCRelaxableFragment;
 class MCSymbol;
 class MCAsmLayout;
 class MCAssembler;
-class MCCFIInstruction;
+class MCContext;
+struct MCDwarfFrameInfo;
 struct MCFixupKindInfo;
 class MCInst;
 class MCObjectStreamer;
@@ -41,7 +41,8 @@ class raw_ostream;
 /// Generic interface to target specific assembler backends.
 class MCAsmBackend {
 protected: // Can only create subclasses.
-  MCAsmBackend(support::endianness Endian);
+  MCAsmBackend(support::endianness Endian,
+               unsigned RelaxFixupKind = MaxFixupKind);
 
 public:
   MCAsmBackend(const MCAsmBackend &) = delete;
@@ -49,6 +50,9 @@ public:
   virtual ~MCAsmBackend();
 
   const support::endianness Endian;
+
+  /// Fixup kind used for linker relaxation. Currently only used by RISC-V.
+  const unsigned RelaxFixupKind;
 
   /// Return true if this target might automatically pad instructions and thus
   /// need to emit padding enable/disable directives around sensative code.
@@ -89,7 +93,7 @@ public:
   virtual unsigned getNumFixupKinds() const = 0;
 
   /// Map a relocation name used in .reloc to a fixup kind.
-  virtual Optional<MCFixupKind> getFixupKind(StringRef Name) const;
+  virtual std::optional<MCFixupKind> getFixupKind(StringRef Name) const;
 
   /// Get information on a fixup kind.
   virtual const MCFixupKindInfo &getFixupKindInfo(MCFixupKind Kind) const;
@@ -123,6 +127,14 @@ public:
                                    const MCValue &Target, uint64_t &Value,
                                    bool &WasForced) {
     llvm_unreachable("Need to implement hook if target has custom fixups");
+  }
+
+  virtual bool handleAddSubRelocations(const MCAsmLayout &Layout,
+                                       const MCFragment &F,
+                                       const MCFixup &Fixup,
+                                       const MCValue &Target,
+                                       uint64_t &FixedValue) const {
+    return false;
   }
 
   /// Apply the \p Value for given \p Fixup into the provided data fragment, at
@@ -211,8 +223,8 @@ public:
   virtual void handleAssemblerFlag(MCAssemblerFlag Flag) {}
 
   /// Generate the compact unwind encoding for the CFI instructions.
-  virtual uint32_t
-      generateCompactUnwindEncoding(ArrayRef<MCCFIInstruction>) const {
+  virtual uint32_t generateCompactUnwindEncoding(const MCDwarfFrameInfo *FI,
+                                                 const MCContext *Ctxt) const {
     return 0;
   }
 
@@ -220,6 +232,8 @@ public:
   virtual bool isMicroMips(const MCSymbol *Sym) const {
     return false;
   }
+
+  bool isDarwinCanonicalPersonality(const MCSymbol *Sym) const;
 };
 
 } // end namespace llvm

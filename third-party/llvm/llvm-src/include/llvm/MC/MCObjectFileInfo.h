@@ -13,12 +13,13 @@
 #ifndef LLVM_MC_MCOBJECTFILEINFO_H
 #define LLVM_MC_MCOBJECTFILEINFO_H
 
-#include "llvm/ADT/Optional.h"
-#include "llvm/ADT/Triple.h"
 #include "llvm/BinaryFormat/Swift.h"
+#include "llvm/MC/MCSection.h"
 #include "llvm/Support/VersionTuple.h"
+#include "llvm/TargetParser/Triple.h"
 
 #include <array>
+#include <optional>
 
 namespace llvm {
 class MCContext;
@@ -26,10 +27,6 @@ class MCSection;
 
 class MCObjectFileInfo {
 protected:
-  /// True if .comm supports alignment.  This is a hack for as long as we
-  /// support 10.4 Tiger, whose assembler doesn't support alignment on comm.
-  bool CommDirectiveSupportsAlignment = false;
-
   /// True if target object file supports a weak_definition of constant 0 for an
   /// omitted EH frame.
   bool SupportsWeakOmittedEHFrame = false;
@@ -179,6 +176,9 @@ protected:
   MCSection *PseudoProbeSection = nullptr;
   MCSection *PseudoProbeDescSection = nullptr;
 
+  // Section for metadata of llvm statistics.
+  MCSection *LLVMStatsSection = nullptr;
+
   // ELF specific sections.
   MCSection *DataRelROSection = nullptr;
   MCSection *MergeableConst4Section = nullptr;
@@ -227,6 +227,7 @@ protected:
 
   // GOFF specific sections.
   MCSection *PPA1Section = nullptr;
+  MCSection *ADASection = nullptr;
 
   // XCOFF specific sections
   MCSection *TOCBaseSection = nullptr;
@@ -251,10 +252,6 @@ public:
   }
   bool getOmitDwarfIfHaveCompactUnwind() const {
     return OmitDwarfIfHaveCompactUnwind;
-  }
-
-  bool getCommDirectiveSupportsAlignment() const {
-    return CommDirectiveSupportsAlignment;
   }
 
   unsigned getFDEEncoding() const { return FDECFIEncoding; }
@@ -359,9 +356,15 @@ public:
 
   MCSection *getBBAddrMapSection(const MCSection &TextSec) const;
 
-  MCSection *getPseudoProbeSection(const MCSection *TextSec) const;
+  MCSection *getKCFITrapSection(const MCSection &TextSec) const;
+
+  MCSection *getPseudoProbeSection(const MCSection &TextSec) const;
 
   MCSection *getPseudoProbeDescSection(StringRef FuncName) const;
+
+  MCSection *getLLVMStatsSection() const;
+
+  MCSection *getPCSection(StringRef Name, const MCSection *TextSec) const;
 
   // ELF specific sections.
   MCSection *getDataRelROSection() const { return DataRelROSection; }
@@ -428,6 +431,7 @@ public:
 
   // GOFF specific sections.
   MCSection *getPPA1Section() const { return PPA1Section; }
+  MCSection *getADASection() const { return ADASection; }
 
   // XCOFF specific sections
   MCSection *getTOCBaseSection() const { return TOCBaseSection; }
@@ -449,7 +453,7 @@ private:
   bool PositionIndependent = false;
   MCContext *Ctx = nullptr;
   VersionTuple SDKVersion;
-  Optional<Triple> DarwinTargetVariantTriple;
+  std::optional<Triple> DarwinTargetVariantTriple;
   VersionTuple DarwinTargetVariantSDKVersion;
 
   void initMachOMCObjectFileInfo(const Triple &T);
@@ -474,8 +478,7 @@ public:
   }
 
   const Triple *getDarwinTargetVariantTriple() const {
-    return DarwinTargetVariantTriple ? DarwinTargetVariantTriple.getPointer()
-                                     : nullptr;
+    return DarwinTargetVariantTriple ? &*DarwinTargetVariantTriple : nullptr;
   }
 
   void setDarwinTargetVariantSDKVersion(const VersionTuple &TheSDKVersion) {

@@ -158,8 +158,7 @@ static const char *isLabelTail(const char *CurPtr) {
 
 LLLexer::LLLexer(StringRef StartBuf, SourceMgr &SM, SMDiagnostic &Err,
                  LLVMContext &C)
-    : CurBuf(StartBuf), ErrorInfo(Err), SM(SM), Context(C), APFloatVal(0.0),
-      IgnoreColonInIdentifiers(false) {
+    : CurBuf(StartBuf), ErrorInfo(Err), SM(SM), Context(C) {
   CurPtr = CurBuf.begin();
 }
 
@@ -597,6 +596,8 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(arm_aapcs_vfpcc);
   KEYWORD(aarch64_vector_pcs);
   KEYWORD(aarch64_sve_vector_pcs);
+  KEYWORD(aarch64_sme_preservemost_from_x0);
+  KEYWORD(aarch64_sme_preservemost_from_x2);
   KEYWORD(msp430_intrcc);
   KEYWORD(avr_intrcc);
   KEYWORD(avr_signalcc);
@@ -626,6 +627,8 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(amdgpu_gs);
   KEYWORD(amdgpu_ps);
   KEYWORD(amdgpu_cs);
+  KEYWORD(amdgpu_cs_chain);
+  KEYWORD(amdgpu_cs_chain_preserve);
   KEYWORD(amdgpu_kernel);
   KEYWORD(amdgpu_gfx);
   KEYWORD(tailcc);
@@ -641,6 +644,33 @@ lltok::Kind LLLexer::LexIdentifier() {
 #define ATTRIBUTE_ENUM(ENUM_NAME, DISPLAY_NAME) \
   KEYWORD(DISPLAY_NAME);
 #include "llvm/IR/Attributes.inc"
+
+  KEYWORD(read);
+  KEYWORD(write);
+  KEYWORD(readwrite);
+  KEYWORD(argmem);
+  KEYWORD(inaccessiblemem);
+  KEYWORD(argmemonly);
+  KEYWORD(inaccessiblememonly);
+  KEYWORD(inaccessiblemem_or_argmemonly);
+
+  // nofpclass attribute
+  KEYWORD(all);
+  KEYWORD(nan);
+  KEYWORD(snan);
+  KEYWORD(qnan);
+  KEYWORD(inf);
+  // ninf already a keyword
+  KEYWORD(pinf);
+  KEYWORD(norm);
+  KEYWORD(nnorm);
+  KEYWORD(pnorm);
+  // sub already a keyword
+  KEYWORD(nsub);
+  KEYWORD(psub);
+  KEYWORD(zero);
+  KEYWORD(nzero);
+  KEYWORD(pzero);
 
   KEYWORD(type);
   KEYWORD(opaque);
@@ -661,6 +691,8 @@ lltok::Kind LLLexer::LexIdentifier() {
 
   KEYWORD(xchg); KEYWORD(nand); KEYWORD(max); KEYWORD(min); KEYWORD(umax);
   KEYWORD(umin); KEYWORD(fmax); KEYWORD(fmin);
+  KEYWORD(uinc_wrap);
+  KEYWORD(udec_wrap);
 
   KEYWORD(vscale);
   KEYWORD(x);
@@ -761,6 +793,13 @@ lltok::Kind LLLexer::LexIdentifier() {
   KEYWORD(byte);
   KEYWORD(bit);
   KEYWORD(varFlags);
+  KEYWORD(callsites);
+  KEYWORD(clones);
+  KEYWORD(stackIds);
+  KEYWORD(allocs);
+  KEYWORD(versions);
+  KEYWORD(memProf);
+  KEYWORD(notcold);
 
 #undef KEYWORD
 
@@ -786,18 +825,7 @@ lltok::Kind LLLexer::LexIdentifier() {
   TYPEKEYWORD("x86_mmx",   Type::getX86_MMXTy(Context));
   TYPEKEYWORD("x86_amx",   Type::getX86_AMXTy(Context));
   TYPEKEYWORD("token",     Type::getTokenTy(Context));
-
-  if (Keyword == "ptr") {
-    // setOpaquePointers() must be called before creating any pointer types.
-    if (!Context.hasSetOpaquePointersValue()) {
-      Context.setOpaquePointers(true);
-    } else if (Context.supportsTypedPointers()) {
-      Warning("ptr type is only supported in -opaque-pointers mode");
-      return lltok::Error;
-    }
-    TyVal = PointerType::getUnqual(Context);
-    return lltok::Type;
-  }
+  TYPEKEYWORD("ptr",       PointerType::getUnqual(Context));
 
 #undef TYPEKEYWORD
 
@@ -910,7 +938,8 @@ lltok::Kind LLLexer::LexIdentifier() {
     return lltok::EmissionKind;
   }
 
-  if (Keyword == "GNU" || Keyword == "None" || Keyword == "Default") {
+  if (Keyword == "GNU" || Keyword == "Apple" || Keyword == "None" ||
+      Keyword == "Default") {
     StrVal.assign(Keyword.begin(), Keyword.end());
     return lltok::NameTableKind;
   }

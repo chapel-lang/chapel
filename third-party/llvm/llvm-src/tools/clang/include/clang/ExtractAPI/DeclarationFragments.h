@@ -87,26 +87,61 @@ public:
     /// The USR of the fragment symbol, if applicable.
     std::string PreciseIdentifier;
 
-    Fragment(StringRef Spelling, FragmentKind Kind, StringRef PreciseIdentifier)
-        : Spelling(Spelling), Kind(Kind), PreciseIdentifier(PreciseIdentifier) {
-    }
+    /// The associated declaration, if applicable. This is not intended to be
+    /// used outside of libclang.
+    const Decl *Declaration;
+
+    Fragment(StringRef Spelling, FragmentKind Kind, StringRef PreciseIdentifier,
+             const Decl *Declaration)
+        : Spelling(Spelling), Kind(Kind), PreciseIdentifier(PreciseIdentifier),
+          Declaration(Declaration) {}
   };
 
+  using FragmentIterator = std::vector<Fragment>::iterator;
+  using ConstFragmentIterator = std::vector<Fragment>::const_iterator;
+
   const std::vector<Fragment> &getFragments() const { return Fragments; }
+
+  FragmentIterator begin() { return Fragments.begin(); }
+
+  FragmentIterator end() { return Fragments.end(); }
+
+  ConstFragmentIterator cbegin() const { return Fragments.cbegin(); }
+
+  ConstFragmentIterator cend() const { return Fragments.cend(); }
+
+  // Add a new Fragment at an arbitrary offset.
+  DeclarationFragments &insert(FragmentIterator It, StringRef Spelling,
+                               FragmentKind Kind,
+                               StringRef PreciseIdentifier = "",
+                               const Decl *Declaration = nullptr) {
+    Fragments.insert(It,
+                     Fragment(Spelling, Kind, PreciseIdentifier, Declaration));
+    return *this;
+  }
+
+  DeclarationFragments &insert(FragmentIterator It,
+                               DeclarationFragments &&Other) {
+    Fragments.insert(It, std::make_move_iterator(Other.Fragments.begin()),
+                     std::make_move_iterator(Other.Fragments.end()));
+    Other.Fragments.clear();
+    return *this;
+  }
 
   /// Append a new Fragment to the end of the Fragments.
   ///
   /// \returns a reference to the DeclarationFragments object itself after
   /// appending to chain up consecutive appends.
   DeclarationFragments &append(StringRef Spelling, FragmentKind Kind,
-                               StringRef PreciseIdentifier = "") {
+                               StringRef PreciseIdentifier = "",
+                               const Decl *Declaration = nullptr) {
     if (Kind == FragmentKind::Text && !Fragments.empty() &&
         Fragments.back().Kind == FragmentKind::Text) {
       // If appending a text fragment, and the last fragment is also text,
       // merge into the last fragment.
       Fragments.back().Spelling.append(Spelling.data(), Spelling.size());
     } else {
-      Fragments.emplace_back(Spelling, Kind, PreciseIdentifier);
+      Fragments.emplace_back(Spelling, Kind, PreciseIdentifier, Declaration);
     }
     return *this;
   }

@@ -177,13 +177,27 @@ static bool sinkInstruction(
   SmallPtrSet<BasicBlock *, 2> BBs;
   for (auto &U : I.uses()) {
     Instruction *UI = cast<Instruction>(U.getUser());
-    // We cannot sink I to PHI-uses.
-    if (isa<PHINode>(UI))
-      return false;
+
     // We cannot sink I if it has uses outside of the loop.
     if (!L.contains(LI.getLoopFor(UI->getParent())))
       return false;
-    BBs.insert(UI->getParent());
+
+    if (!isa<PHINode>(UI)) {
+      BBs.insert(UI->getParent());
+      continue;
+    }
+
+    // We cannot sink I to PHI-uses, try to look through PHI to find the incoming
+    // block of the value being used.
+    PHINode *PN = dyn_cast<PHINode>(UI);
+    BasicBlock *PhiBB = PN->getIncomingBlock(U);
+
+    // If value's incoming block is from loop preheader directly, there's no
+    // place to sink to, bailout.
+    if (L.getLoopPreheader() == PhiBB)
+      return false;
+
+    BBs.insert(PhiBB);
   }
 
   // findBBsToSinkInto is O(BBs.size() * ColdLoopBBs.size()). We cap the max
@@ -215,7 +229,7 @@ static bool sinkInstruction(
   BasicBlock *MoveBB = *SortedBBsToSinkInto.begin();
   // FIXME: Optimize the efficiency for cloned value replacement. The current
   //        implementation is O(SortedBBsToSinkInto.size() * I.num_uses()).
-  for (BasicBlock *N : makeArrayRef(SortedBBsToSinkInto).drop_front(1)) {
+  for (BasicBlock *N : ArrayRef(SortedBBsToSinkInto).drop_front(1)) {
     assert(LoopBlockNumber.find(N)->second >
                LoopBlockNumber.find(MoveBB)->second &&
            "BBs not sorted!");
@@ -238,9 +252,11 @@ static bool sinkInstruction(
       }
     }
 
-    // Replaces uses of I with IC in N
+    // Replaces uses of I with IC in N, except PHI-use which is being taken
+    // care of by defs in PHI's incoming blocks.
     I.replaceUsesWithIf(IC, [N](Use &U) {
-      return cast<Instruction>(U.getUser())->getParent() == N;
+      Instruction *UIToReplace = cast<Instruction>(U.getUser());
+      return UIToReplace->getParent() == N && !isa<PHINode>(UIToReplace);
     });
     // Replaces uses of I with IC in blocks dominated by N
     replaceDominatedUsesWith(&I, IC, DT, N);
@@ -283,7 +299,7 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
     return false;
 
   MemorySSAUpdater MSSAU(&MSSA);
-  SinkAndHoistLICMFlags LICMFlags(/*IsSink=*/true, &L, &MSSA);
+  SinkAndHoistLICMFlags LICMFlags(/*IsSink=*/true, L, MSSA);
 
   bool Changed = false;
 
@@ -300,8 +316,8 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
     return BFI.getBlockFreq(A) < BFI.getBlockFreq(B);
   });
 
-  // Traverse preheader's instructions in reverse order becaue if A depends
-  // on B (A appears after B), A needs to be sinked first before B can be
+  // Traverse preheader's instructions in reverse order because if A depends
+  // on B (A appears after B), A needs to be sunk first before B can be
   // sinked.
   for (Instruction &I : llvm::make_early_inc_range(llvm::reverse(*Preheader))) {
     if (isa<PHINode>(&I))
@@ -312,16 +328,22 @@ static bool sinkLoopInvariantInstructions(Loop &L, AAResults &AA, LoopInfo &LI,
     if (!canSinkOrHoistInst(I, &AA, &DT, &L, MSSAU, false, LICMFlags))
       continue;
     if (sinkInstruction(L, I, ColdLoopBBs, LoopBlockNumber, LI, DT, BFI,
-                        &MSSAU))
+                        &MSSAU)) {
       Changed = true;
+      if (SE)
+        SE->forgetBlockAndLoopDispositions(&I);
+    }
   }
 
-  if (Changed && SE)
-    SE->forgetLoopDispositions(&L);
   return Changed;
 }
 
 PreservedAnalyses LoopSinkPass::run(Function &F, FunctionAnalysisManager &FAM) {
+  // Enable LoopSink only when runtime profile is available.
+  // With static profile, the sinking decision may be sub-optimal.
+  if (!F.hasProfileData())
+    return PreservedAnalyses::all();
+
   LoopInfo &LI = FAM.getResult<LoopAnalysis>(F);
   // Nothing to do if there are no loops.
   if (LI.empty())
@@ -345,11 +367,6 @@ PreservedAnalyses LoopSinkPass::run(Function &F, FunctionAnalysisManager &FAM) {
 
     BasicBlock *Preheader = L.getLoopPreheader();
     if (!Preheader)
-      continue;
-
-    // Enable LoopSink only when runtime profile is available.
-    // With static profile, the sinking decision may be sub-optimal.
-    if (!Preheader->getParent()->hasProfileData())
       continue;
 
     // Note that we don't pass SCEV here because it is only used to invalidate

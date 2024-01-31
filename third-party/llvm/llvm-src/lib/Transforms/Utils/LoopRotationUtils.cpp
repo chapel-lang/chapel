@@ -316,7 +316,7 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
                    L->dump());
         return Rotated;
       }
-      if (*Metrics.NumInsts.getValue() > MaxHeaderSize) {
+      if (Metrics.NumInsts > MaxHeaderSize) {
         LLVM_DEBUG(dbgs() << "LoopRotation: NOT rotating - contains "
                           << Metrics.NumInsts
                           << " instructions, which is more than the threshold ("
@@ -345,8 +345,14 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
     // all outer loops because insertion and deletion of blocks that happens
     // during the rotation may violate invariants related to backedge taken
     // infos in them.
-    if (SE)
+    if (SE) {
       SE->forgetTopmostLoop(L);
+      // We may hoist some instructions out of loop. In case if they were cached
+      // as "loop variant" or "loop computable", these caches must be dropped.
+      // We also may fold basic blocks, so cached block dispositions also need
+      // to be dropped.
+      SE->forgetBlockAndLoopDispositions();
+    }
 
     LLVM_DEBUG(dbgs() << "LoopRotation: rotating "; L->dump());
     if (MSSAU && VerifyMemorySSA)
@@ -429,6 +435,8 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
 
       // Otherwise, create a duplicate of the instruction.
       Instruction *C = Inst->clone();
+      C->insertBefore(LoopEntryBranch);
+
       ++NumInstrsDuplicated;
 
       // Eagerly remap the operands of the instruction.
@@ -438,7 +446,7 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
       // Avoid inserting the same intrinsic twice.
       if (auto *DII = dyn_cast<DbgVariableIntrinsic>(C))
         if (DbgIntrinsics.count(makeHash(DII))) {
-          C->deleteValue();
+          C->eraseFromParent();
           continue;
         }
 
@@ -451,7 +459,7 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
         // in the map.
         InsertNewValueIntoMap(ValueMap, Inst, V);
         if (!C->mayHaveSideEffects()) {
-          C->deleteValue();
+          C->eraseFromParent();
           C = nullptr;
         }
       } else {
@@ -460,7 +468,6 @@ bool LoopRotate::rotateLoop(Loop *L, bool SimplifiedLatch) {
       if (C) {
         // Otherwise, stick the new instruction into the new block!
         C->setName(Inst->getName());
-        C->insertBefore(LoopEntryBranch);
 
         if (auto *II = dyn_cast<AssumeInst>(C))
           AC->registerAssumption(II);
@@ -713,7 +720,7 @@ static bool shouldSpeculateInstrs(BasicBlock::iterator Begin,
       if (!cast<GEPOperator>(I)->hasAllConstantIndices())
         return false;
       // fall-thru to increment case
-      LLVM_FALLTHROUGH;
+      [[fallthrough]];
     case Instruction::Add:
     case Instruction::Sub:
     case Instruction::And:
@@ -788,6 +795,11 @@ bool LoopRotate::simplifyLoopLatch(Loop *L) {
   DomTreeUpdater DTU(DT, DomTreeUpdater::UpdateStrategy::Eager);
   MergeBlockIntoPredecessor(Latch, &DTU, LI, MSSAU, nullptr,
                             /*PredecessorWithTwoSuccessors=*/true);
+
+    if (SE) {
+      // Merging blocks may remove blocks reference in the block disposition cache. Clear the cache.
+      SE->forgetBlockAndLoopDispositions();
+    }
 
   if (MSSAU && VerifyMemorySSA)
     MSSAU->getMemorySSA()->verifyMemorySSA();

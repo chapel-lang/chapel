@@ -110,12 +110,15 @@ public:
   Value *FoldUnOpFMF(Instruction::UnaryOps Opc, Value *V,
                       FastMathFlags FMF) const override {
     if (Constant *C = dyn_cast<Constant>(V))
-      return Fold(ConstantExpr::get(Opc, C));
+      return ConstantFoldUnaryOpOperand(Opc, C, DL);
     return nullptr;
   }
 
   Value *FoldGEP(Type *Ty, Value *Ptr, ArrayRef<Value *> IdxList,
                  bool IsInBounds = false) const override {
+    if (!ConstantExpr::isSupportedGetElementPtr(Ty))
+      return nullptr;
+
     if (auto *PC = dyn_cast<Constant>(Ptr)) {
       // Every index must be constant.
       if (any_of(IdxList, [](Value *V) { return !isa<Constant>(V); }))
@@ -133,7 +136,7 @@ public:
     auto *TC = dyn_cast<Constant>(True);
     auto *FC = dyn_cast<Constant>(False);
     if (CC && TC && FC)
-      return Fold(ConstantExpr::getSelect(CC, TC, FC));
+      return ConstantFoldSelectInstruction(CC, TC, FC);
 
     return nullptr;
   }

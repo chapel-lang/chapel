@@ -10,9 +10,9 @@
 #define LLVM_EXECUTIONENGINE_RUNTIMEDYLDCHECKER_H
 
 #include "llvm/ADT/DenseMap.h"
-#include "llvm/ADT/Optional.h"
 #include "llvm/ExecutionEngine/JITSymbol.h"
 #include "llvm/Support/Endian.h"
+#include <optional>
 
 #include <cstdint>
 #include <memory>
@@ -62,6 +62,7 @@ class raw_ostream;
 ///            | 'next_pc'        '(' symbol ')'
 ///            | 'stub_addr' '(' stub-container-name ',' symbol ')'
 ///            | 'got_addr' '(' stub-container-name ',' symbol ')'
+///            | 'section_addr' '(' stub-container-name ',' symbol ')'
 ///            | symbol
 ///
 /// binary_expr = expr '+' expr
@@ -172,8 +173,8 @@ public:
                                                   bool LocalAddress);
 
   /// If there is a section at the given local address, return its load
-  /// address, otherwise return none.
-  Optional<uint64_t> getSectionLoadAddress(void *LocalAddress) const;
+  /// address, otherwise return std::nullopt.
+  std::optional<uint64_t> getSectionLoadAddress(void *LocalAddress) const;
 
 private:
   std::unique_ptr<RuntimeDyldCheckerImpl> Impl;

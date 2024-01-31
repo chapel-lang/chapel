@@ -40,15 +40,6 @@ static cl::opt<bool> DisableBPFavoidSpeculation(
     cl::init(false));
 
 namespace {
-
-class BPFAdjustOpt final : public ModulePass {
-public:
-  static char ID;
-
-  BPFAdjustOpt() : ModulePass(ID) {}
-  bool runOnModule(Module &M) override;
-};
-
 class BPFAdjustOptImpl {
   struct PassThroughInfo {
     Instruction *Input;
@@ -77,14 +68,6 @@ private:
 };
 
 } // End anonymous namespace
-
-char BPFAdjustOpt::ID = 0;
-INITIALIZE_PASS(BPFAdjustOpt, "bpf-adjust-opt", "BPF Adjust Optimization",
-                false, false)
-
-ModulePass *llvm::createBPFAdjustOpt() { return new BPFAdjustOpt(); }
-
-bool BPFAdjustOpt::runOnModule(Module &M) { return BPFAdjustOptImpl(&M).run(); }
 
 bool BPFAdjustOptImpl::run() {
   bool Changed = adjustICmpToBuiltin();
@@ -146,7 +129,7 @@ bool BPFAdjustOptImpl::adjustICmpToBuiltin() {
         Function *Fn = Intrinsic::getDeclaration(
             M, Intrinsic::bpf_compare, {Op0->getType(), ConstOp1->getType()});
         auto *NewInst = CallInst::Create(Fn, {Opcode, Op0, ConstOp1});
-        BB.getInstList().insert(I.getIterator(), NewInst);
+        NewInst->insertBefore(&I);
         Icmp->replaceAllUsesWith(NewInst);
         Changed = true;
         ToBeDeleted = Icmp;

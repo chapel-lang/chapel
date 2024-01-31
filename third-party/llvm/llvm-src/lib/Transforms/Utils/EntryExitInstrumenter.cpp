@@ -15,9 +15,7 @@
 #include "llvm/IR/Intrinsics.h"
 #include "llvm/IR/Module.h"
 #include "llvm/IR/Type.h"
-#include "llvm/InitializePasses.h"
-#include "llvm/Pass.h"
-#include "llvm/Transforms/Utils.h"
+#include "llvm/TargetParser/Triple.h"
 
 using namespace llvm;
 
@@ -34,9 +32,24 @@ static void insertCall(Function &CurFn, StringRef Func,
       Func == "__mcount" ||
       Func == "_mcount" ||
       Func == "__cyg_profile_func_enter_bare") {
-    FunctionCallee Fn = M.getOrInsertFunction(Func, Type::getVoidTy(C));
-    CallInst *Call = CallInst::Create(Fn, "", InsertionPt);
-    Call->setDebugLoc(DL);
+    Triple TargetTriple(M.getTargetTriple());
+    if (TargetTriple.isOSAIX() && Func == "__mcount") {
+      Type *SizeTy = M.getDataLayout().getIntPtrType(C);
+      Type *SizePtrTy = SizeTy->getPointerTo();
+      GlobalVariable *GV = new GlobalVariable(M, SizeTy, /*isConstant=*/false,
+                                              GlobalValue::InternalLinkage,
+                                              ConstantInt::get(SizeTy, 0));
+      CallInst *Call = CallInst::Create(
+          M.getOrInsertFunction(Func,
+                                FunctionType::get(Type::getVoidTy(C), {SizePtrTy},
+                                                  /*isVarArg=*/false)),
+          {GV}, "", InsertionPt);
+      Call->setDebugLoc(DL);
+    } else {
+      FunctionCallee Fn = M.getOrInsertFunction(Func, Type::getVoidTy(C));
+      CallInst *Call = CallInst::Create(Fn, "", InsertionPt);
+      Call->setDebugLoc(DL);
+    }
     return;
   }
 
@@ -67,6 +80,13 @@ static void insertCall(Function &CurFn, StringRef Func,
 }
 
 static bool runOnFunction(Function &F, bool PostInlining) {
+  // The asm in a naked function may reasonably expect the argument registers
+  // and the return address register (if present) to be live. An inserted
+  // function call will clobber these registers. Simply skip naked functions for
+  // all targets.
+  if (F.hasFnAttribute(Attribute::Naked))
+    return false;
+
   StringRef EntryAttr = PostInlining ? "instrument-function-entry-inlined"
                                      : "instrument-function-entry";
 
@@ -129,8 +149,8 @@ void llvm::EntryExitInstrumenterPass::printPipeline(
     raw_ostream &OS, function_ref<StringRef(StringRef)> MapClassName2PassName) {
   static_cast<PassInfoMixin<llvm::EntryExitInstrumenterPass> *>(this)
       ->printPipeline(OS, MapClassName2PassName);
-  OS << "<";
+  OS << '<';
   if (PostInlining)
     OS << "post-inline";
-  OS << ">";
+  OS << '>';
 }

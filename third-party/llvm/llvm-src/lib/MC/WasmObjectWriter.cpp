@@ -72,7 +72,7 @@ struct WasmDataSegment {
 // A wasm function to be written into the function section.
 struct WasmFunction {
   uint32_t SigIndex;
-  const MCSymbolWasm *Sym;
+  MCSection *Section;
 };
 
 // A wasm global to be written into the global section.
@@ -197,7 +197,7 @@ bool isDwoSection(const MCSection &Sec) {
 }
 
 class WasmObjectWriter : public MCObjectWriter {
-  support::endian::Writer *W;
+  support::endian::Writer *W = nullptr;
 
   /// The target specific Wasm writer instance.
   std::unique_ptr<MCWasmObjectTargetWriter> TargetObjectWriter;
@@ -671,6 +671,7 @@ WasmObjectWriter::getProvisionalValue(const WasmRelocationEntry &RelEntry,
     // Provisional value is same as the index
     return getRelocationIndexValue(RelEntry);
   case wasm::R_WASM_FUNCTION_INDEX_LEB:
+  case wasm::R_WASM_FUNCTION_INDEX_I32:
   case wasm::R_WASM_GLOBAL_INDEX_LEB:
   case wasm::R_WASM_GLOBAL_INDEX_I32:
   case wasm::R_WASM_TAG_INDEX_LEB:
@@ -716,7 +717,7 @@ static void addData(SmallVectorImpl<char> &DataBytes,
                     MCSectionWasm &DataSection) {
   LLVM_DEBUG(errs() << "addData: " << DataSection.getName() << "\n");
 
-  DataBytes.resize(alignTo(DataBytes.size(), DataSection.getAlignment()));
+  DataBytes.resize(alignTo(DataBytes.size(), DataSection.getAlign()));
 
   for (const MCFragment &Frag : DataSection) {
     if (Frag.hasInstructions())
@@ -791,6 +792,7 @@ void WasmObjectWriter::applyRelocations(
     case wasm::R_WASM_TABLE_INDEX_I32:
     case wasm::R_WASM_MEMORY_ADDR_I32:
     case wasm::R_WASM_FUNCTION_OFFSET_I32:
+    case wasm::R_WASM_FUNCTION_INDEX_I32:
     case wasm::R_WASM_SECTION_OFFSET_I32:
     case wasm::R_WASM_GLOBAL_INDEX_I32:
     case wasm::R_WASM_MEMORY_ADDR_LOCREL_I32:
@@ -1058,15 +1060,12 @@ uint32_t WasmObjectWriter::writeCodeSection(const MCAssembler &Asm,
   encodeULEB128(Functions.size(), W->OS);
 
   for (const WasmFunction &Func : Functions) {
-    auto &FuncSection = static_cast<MCSectionWasm &>(Func.Sym->getSection());
+    auto *FuncSection = static_cast<MCSectionWasm *>(Func.Section);
 
-    int64_t Size = 0;
-    if (!Func.Sym->getSize()->evaluateAsAbsolute(Size, Layout))
-      report_fatal_error(".size expression must be evaluatable");
-
+    int64_t Size = Layout.getSectionAddressSize(FuncSection);
     encodeULEB128(Size, W->OS);
-    FuncSection.setSectionOffset(W->OS.tell() - Section.ContentsOffset);
-    Asm.writeSectionData(W->OS, &FuncSection, Layout);
+    FuncSection->setSectionOffset(W->OS.tell() - Section.ContentsOffset);
+    Asm.writeSectionData(W->OS, FuncSection, Layout);
   }
 
   // Apply fixups.
@@ -1501,7 +1500,7 @@ uint64_t WasmObjectWriter::writeOneObject(MCAssembler &Asm,
 
     if (Section.isWasmData()) {
       uint32_t SegmentIndex = DataSegments.size();
-      DataSize = alignTo(DataSize, Section.getAlignment());
+      DataSize = alignTo(DataSize, Section.getAlign());
       DataSegments.emplace_back();
       WasmDataSegment &Segment = DataSegments.back();
       Segment.Name = SectionName;
@@ -1511,7 +1510,7 @@ uint64_t WasmObjectWriter::writeOneObject(MCAssembler &Asm,
       Segment.Offset = DataSize;
       Segment.Section = &Section;
       addData(Segment.Data, Section);
-      Segment.Alignment = Log2_32(Section.getAlignment());
+      Segment.Alignment = Log2(Section.getAlign());
       Segment.LinkingFlags = Section.getSegmentFlags();
       DataSize += Segment.Data.size();
       Section.setSegmentIndex(SegmentIndex);
@@ -1591,15 +1590,11 @@ uint64_t WasmObjectWriter::writeOneObject(MCAssembler &Asm,
             report_fatal_error(
                 "function sections must contain one function each");
 
-          if (WS.getSize() == nullptr)
-            report_fatal_error(
-                "function symbols must have a size set with .size");
-
           // A definition. Write out the function body.
           Index = NumFunctionImports + Functions.size();
           WasmFunction Func;
           Func.SigIndex = getFunctionType(WS);
-          Func.Sym = &WS;
+          Func.Section = &WS.getSection();
           assert(WasmIndices.count(&WS) == 0);
           WasmIndices[&WS] = Index;
           Functions.push_back(Func);
