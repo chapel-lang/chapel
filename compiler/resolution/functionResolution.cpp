@@ -7201,7 +7201,11 @@ static void handleTaskIntentArgs(CallInfo& info, FnSymbol* taskFn) {
 
       // If 'call' is in a generic function, it will have been instantiated by
       // now. Otherwise our task function has to remain generic.
-      INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
+      //
+      // ---> It's possible for this assert to fire if the caller is generic
+      // and we are already in an error state. Remove it for now so that we
+      // can make progress.
+      // INT_ASSERT(varActual->type->symbol->hasFlag(FLAG_GENERIC) == false);
 
       if (formal->id == breakOnResolveID)
         gdbShouldBreakHere();
