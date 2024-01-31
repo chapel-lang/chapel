@@ -614,7 +614,7 @@ CLASS_BEGIN(StringParam)
 CLASS_END(StringParam)
 
 CLASS_BEGIN(CompositeType)
-  PLAIN_GETTER(CompositeType, decl, "Get the location where this composite type is declared",
+  PLAIN_GETTER(CompositeType, decl, "Get the AstNode that declares this CompositeType",
                const AstNode*, return parsing::idToAst(context, node->id()))
 CLASS_END(CompositeType)
 
