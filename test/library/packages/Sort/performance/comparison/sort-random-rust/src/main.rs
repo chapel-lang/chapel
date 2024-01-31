@@ -2,15 +2,20 @@
 //  cd sort-random-rust
 //  cargo run --release
 
-use rand::distributions::Standard;
-use rand::prelude::*;
+use rand::{distributions::Standard, rngs::SmallRng, Rng, SeedableRng};
+use rayon::prelude::*;
 use std::time::Instant;
 
 fn main() {
     let n = 128 * 1024 * 1024;
 
     let t1 = Instant::now();
-    let mut values: Vec<u64> = rand::thread_rng().sample_iter(Standard).take(n).collect();
+    let rng = SmallRng::seed_from_u64(42);
+    let mut values = Vec::<u64>::new();
+    (0..n)
+        .into_par_iter()
+        .map_with(rng, |rng, _| rng.sample(Standard))
+        .collect_into_vec(&mut values);
     let gen_duration = t1.elapsed();
     println!(
         "generating {:?} MiB/s",

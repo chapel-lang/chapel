@@ -4,7 +4,8 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-rand = "0.8.4"
+rand = { version = "0.8.4", features = ["small_rng"] }
+rayon = "1.8.1"
 
 [profile.release]
 lto = true
