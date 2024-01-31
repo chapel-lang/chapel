@@ -2754,7 +2754,12 @@ static bool isTargetCpuValid(const char* targetCpu) {
 static std::string generateClangGpuLangArgs() {
   std::string args = "";
   if (isFullGpuCodegen()) {
-    args += "-D__STRICT_ANSI__=1 ";
+
+    if (getGpuCodegenType() == GpuCodegenType::GPU_CG_NVIDIA_CUDA) {
+      // workaround an issue with __float128 not being supported by clang in device code
+      args += "-D__STRICT_ANSI__=1 ";
+    }
+
     args += "-x ";
     switch (getGpuCodegenType()) {
       case GpuCodegenType::GPU_CG_NVIDIA_CUDA:
