@@ -420,17 +420,17 @@ void AstNodeObject_dealloc(AstNodeObject* self) {
   Py_TYPE(self)->tp_free((PyObject *) self);
 }
 
-PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_dump(AstNodeObject *self) {
   self->ptr->dump();
   Py_RETURN_NONE;
 }
 
-PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_tag(AstNodeObject *self) {
   const char* nodeType = asttags::tagToString(self->ptr->tag());
   return Py_BuildValue("s", nodeType);
 }
 
-PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_unique_id(AstNodeObject *self) {
   std::stringstream ss;
   self->ptr->id().stringify(ss, CHPL_SYNTAX);
   auto uniqueID = ss.str();
@@ -438,12 +438,12 @@ PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignor
 }
 
 
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_attribute_group(AstNodeObject *self) {
   return wrapAstNode((ContextObject*) self->contextObject,
                      self->ptr->attributeGroup());
 }
 
-PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_pragmas(AstNodeObject *self) {
   PyObject* elms = PySet_New(NULL);
   auto attrs = self->ptr->attributeGroup();
   if (attrs) {
@@ -455,7 +455,7 @@ PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored
   return elms;
 }
 
-PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_parent(AstNodeObject* self) {
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
@@ -487,7 +487,7 @@ PyObject* AstNodeObject_scope(AstNodeObject *self) {
   return scopeObjectPy;
 }
 
-PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_type(AstNodeObject *self) {
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
@@ -503,7 +503,7 @@ PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) 
   return ret;
 }
 
-PyObject* AstNodeObject_called_fn(AstNodeObject *self, PyObject *Py_UNUSED(ignored)) {
+PyObject* AstNodeObject_called_fn(AstNodeObject *self) {
   auto contextObject = (ContextObject*) self->contextObject;
   auto context = &contextObject->context;
 
