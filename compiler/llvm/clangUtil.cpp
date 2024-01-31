@@ -2951,6 +2951,7 @@ static void helpComputeClangArgs(std::string& clangCC,
     // this does not make sense in a Chapel context
     clangCCArgs.push_back("-fno-math-errno");
   }
+
   // Add include directories specified on the command line
   for_vector(const char, dirName, incDirs) {
     clangCCArgs.push_back(std::string("-I") + dirName);
