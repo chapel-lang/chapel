@@ -420,7 +420,7 @@ class GpuAssertionReporter {
     ssize_t firstPrintableStackElement = findFirstPrintableStackElement();
     // If the call is in user code, we can print it as usual.
     // But if it's in module code, maybe we don't want to show the exact reason
-    // GPUization failed (it's an implementation detail). Instead, we want
+    // gpuization failed (it's an implementation detail). Instead, we want
     // to call out a standard function as being ineligible for GPU execution.
     //
     // If no stack element is printable, begrudgingly print the call anyway.
