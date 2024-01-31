@@ -176,10 +176,13 @@ def completion_item_for_decl(
     )
 
 
+def location_to_location(loc) -> Location:
+    return Location("file://" + loc.path(), location_to_range(loc))
+
 def get_symbol_information(
-    decl: chapel.NamedDecl, uri: str
+    decl: chapel.NamedDecl
 ) -> Optional[SymbolInformation]:
-    loc = Location(uri, location_to_range(decl.location()))
+    loc = location_to_location(decl.location())
     kind = decl_kind(decl)
     if kind:
         # TODO: should we use DocumentSymbol or SymbolInformation? LSP spec says
@@ -727,20 +730,16 @@ def run_lsp():
         default_config_files=[".cls-config.yml"],
         config_file_parser_class=configargparse.YAMLConfigFileParser,
     )
-    parser.add(
-        "--resolver", action=argparse.BooleanOptionalAction, default=False
-    )
-    parser.add(
-        "--type-inlays", action=argparse.BooleanOptionalAction, default=True
-    )
-    parser.add(
-        "--literal-arg-inlays",
-        action=argparse.BooleanOptionalAction,
-        default=True,
-    )
-    parser.add(
-        "--param-inlays", action=argparse.BooleanOptionalAction, default=True
-    )
+
+    def add_bool_flag(name: str, dest: str, default: bool):
+        parser.add_argument(f'--{name}', dest=dest, action='store_true')
+        parser.add_argument(f'--no-{name}', dest=dest, action='store_false')
+        parser.set_defaults(**{dest: default})
+
+    add_bool_flag('resolver', 'resolver', False)
+    add_bool_flag('type-inlays', 'type_inlays', True)
+    add_bool_flag('param-inlays', 'param_inlays', True)
+    add_bool_flag('literal-arg-inlays', 'literal_arg_inlays', True)
 
     server = ChapelLanguageServer(parser.parse_args())
 
@@ -832,9 +831,7 @@ def run_lsp():
             return None
 
         decl = type_.decl()
-        return Location(
-            params.text_document.uri, location_to_range(decl.location())
-        )
+        return location_to_location(decl.location())
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
@@ -856,7 +853,7 @@ def run_lsp():
             chapel.NamedDecl,
             iterator=preorder_ignore_funcs,
         ):
-            si = get_symbol_information(node, text_doc.uri)
+            si = get_symbol_information(node)
             if si:
                 syms.append(si)
 
