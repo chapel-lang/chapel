@@ -1,0 +1,3 @@
+CoforallDefaultInitBug.chpl:13: error: cannot default-initialize a variable with generic type
+CoforallDefaultInitBug.chpl:13: note: 'm' has generic type 'MyClass'
+CoforallDefaultInitBug.chpl:13: note: cannot find initialization point to split-init this variable
