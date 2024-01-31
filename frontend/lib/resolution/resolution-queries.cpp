@@ -3205,23 +3205,32 @@ struct LastResortCandidateGroups {
     return forwardingCandidateGroups.get();
   }
 
-  const CandidatesVec nonPoiCandidates() const {
-    if (nonPoi)
+  // Get the most preferred candidates group that has candidates, if there is
+  // one. Otherwise, return an empty candidates group.
+  // Out-params:
+  // - firstPoiCandidate: Index of the first poi candidate. Presumed 0 to start
+  //   with, and set to the end of the non-poi candidates if they are returned.
+  // - forwardingInfo: Forwarding info for the returned group, set if it comes
+  //   from forwarding.
+  const CandidatesVec firstNonEmptyCandidatesGroup(
+      size_t* firstPoiCandidate, ForwardingInfoVec* forwardingInfo,
+      bool inForwardingGroups = false) const {
+    if (!nonPoiCandidates().empty()) {
+      *firstPoiCandidate = nonPoi->size();
+      if (inForwardingGroups) *forwardingInfo = nonPoiForwardingInfo;
       return *nonPoi;
-    else
-      return CandidatesVec();
-  }
-
-  const ForwardingInfoVec nonPoiForwardingTo() const {
-    return nonPoiForwardingInfo;
-  }
-
-  const size_t numPoiGroups() const {
-    return poi.size();
-  }
-
-  const CandidatesVec& poiCandidates(size_t idx) const {
-    return poi[idx];
+    }
+    for (size_t i = 0; i < numPoiGroups(); i++) {
+      if (!poi[i].empty()) {
+        if (inForwardingGroups) *forwardingInfo = poiForwardingInfo[i];
+        return poi[i];
+      }
+    }
+    if (forwardingCandidateGroups) {
+      return forwardingCandidateGroups->firstNonEmptyCandidatesGroup(
+          firstPoiCandidate, forwardingInfo, /* inForwardingGroups */ true);
+    }
+    return CandidatesVec();
   }
 
   const ForwardingInfoVec poiForwardingTo(size_t idx) const {
@@ -3257,6 +3266,26 @@ struct LastResortCandidateGroups {
   // Forwarding-to information, used if this instance is from forwarding.
   ForwardingInfoVec nonPoiForwardingInfo;
   std::vector<ForwardingInfoVec> poiForwardingInfo;
+
+  const CandidatesVec nonPoiCandidates() const {
+    if (nonPoi)
+      return *nonPoi;
+    else
+      return CandidatesVec();
+  }
+
+  const ForwardingInfoVec nonPoiForwardingTo() const {
+    return nonPoiForwardingInfo;
+  }
+
+  const size_t numPoiGroups() const {
+    return poi.size();
+  }
+
+  const CandidatesVec& poiCandidates(size_t idx) const {
+    return poi[idx];
+  }
+
 };
 
 // Returns candidates with last resort candidates removed and saved in a
@@ -3672,25 +3701,10 @@ gatherAndFilterCandidates(Context* context,
     }
   }
 
-  // If no candidates have been found, consider last resort candidates from
-  // innermost to outermost.
+  // If no candidates have been found, consider last resort candidates.
   if (candidates.empty()) {
-    candidates = lrcGroups.nonPoiCandidates();
-    firstPoiCandidate = candidates.size();
-  }
-  for (size_t i = 0; candidates.empty() && i < lrcGroups.numPoiGroups(); i++) {
-    candidates = lrcGroups.poiCandidates(i);
-  }
-  if (candidates.empty()) {
-    candidates = lrcGroups.getForwardingGroups()->nonPoiCandidates();
-    forwardingInfo = lrcGroups.getForwardingGroups()->nonPoiForwardingTo();
-    firstPoiCandidate = candidates.size();
-  }
-  for (size_t i = 0; candidates.empty() &&
-                     i < lrcGroups.getForwardingGroups()->numPoiGroups();
-       i++) {
-    candidates = lrcGroups.getForwardingGroups()->poiCandidates(i);
-    forwardingInfo = lrcGroups.getForwardingGroups()->poiForwardingTo(i);
+    candidates = lrcGroups.firstNonEmptyCandidatesGroup(&firstPoiCandidate,
+                                                        &forwardingInfo);
   }
 
   return candidates;
