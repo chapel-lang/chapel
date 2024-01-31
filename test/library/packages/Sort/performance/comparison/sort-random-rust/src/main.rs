@@ -18,7 +18,7 @@ fn main() {
         .collect_into_vec(&mut values);
     let gen_duration = t1.elapsed();
     println!(
-        "generating {:?} MiB/s",
+        "generating {} MiB/s",
         8.0 * (n as f64) / gen_duration.as_secs_f64() / 1024.0 / 1024.0
     );
 
@@ -27,12 +27,12 @@ fn main() {
     let duration = start.elapsed();
 
     println!(
-        "{:?} MiB/s",
+        "{} MiB/s",
         8.0 * (n as f64) / duration.as_secs_f64() / 1024.0 / 1024.0
     );
 
     println!(
-        "{:?} million elements sorted per second",
+        "{} million elements sorted per second",
         (n as f64) / duration.as_secs_f64() / 1000.0 / 1000.0
     );
 }
