@@ -7,6 +7,12 @@ use rayon::prelude::*;
 use std::time::Instant;
 
 fn main() {
+    // 4 threads performed the best on my 8 core machine.
+    rayon::ThreadPoolBuilder::new()
+        .num_threads(4)
+        .build_global()
+        .unwrap();
+
     let n = 128 * 1024 * 1024;
 
     let t1 = Instant::now();
@@ -23,7 +29,7 @@ fn main() {
     );
 
     let start = Instant::now();
-    values.sort_unstable();
+    values.par_sort_unstable();
     let duration = start.elapsed();
 
     println!(
