@@ -430,6 +430,8 @@ CLASS_BEGIN(Call)
                IterAdapterBase*, return mkIterPair(node->actuals()))
   PLAIN_GETTER(Call, called_expression, "Get the expression invoked by this Call node",
                const AstNode*, return node->calledExpression())
+  PLAIN_GETTER(Call, formal_actual_mapping, "Get the index of the function's formal for each of the call's actuals.",
+               std::vector<int>, return actualOrderForNode(context, node))
 CLASS_END(Call)
 
 CLASS_BEGIN(FnCall)
@@ -610,6 +612,11 @@ CLASS_BEGIN(StringParam)
   PLAIN_GETTER(StringParam, value, "Get the value of this string Param",
                UniqueString, return node->value())
 CLASS_END(StringParam)
+
+CLASS_BEGIN(CompositeType)
+  PLAIN_GETTER(CompositeType, decl, "Get the AstNode that declares this CompositeType",
+               const AstNode*, return parsing::idToAst(context, node->id()))
+CLASS_END(CompositeType)
 
 //
 // Cleanup and undefine all macros

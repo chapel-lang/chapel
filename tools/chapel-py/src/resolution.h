@@ -25,3 +25,9 @@ nodeOrNullFromToId(chpl::Context* context, const chpl::uast::AstNode* node);
 
 chpl::types::QualifiedType const&
 typeForNode(chpl::Context* context, const chpl::uast::AstNode* node);
+
+const chpl::uast::AstNode* const&
+calledFnForNode(chpl::Context* context, const chpl::uast::AstNode* node);
+
+std::vector<int> const&
+actualOrderForNode(chpl::Context* context, const chpl::uast::AstNode* node);

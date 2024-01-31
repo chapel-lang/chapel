@@ -22,8 +22,10 @@ from .core import *
 from collections import defaultdict
 import os
 from typing import Dict, List, Optional
+import typing
 from . import visitor
 
+QualifiedType = typing.Tuple[str, Optional[ChapelType], Optional[Param]]
 
 def preorder(node):
     """

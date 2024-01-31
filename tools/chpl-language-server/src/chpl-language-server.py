@@ -56,6 +56,7 @@ from lsprotocol.types import (
 from lsprotocol.types import TEXT_DOCUMENT_DID_OPEN, DidOpenTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DID_SAVE, DidSaveTextDocumentParams
 from lsprotocol.types import TEXT_DOCUMENT_DEFINITION, DefinitionParams
+from lsprotocol.types import TEXT_DOCUMENT_TYPE_DEFINITION, TypeDefinitionParams
 from lsprotocol.types import TEXT_DOCUMENT_DECLARATION, DeclarationParams
 from lsprotocol.types import TEXT_DOCUMENT_REFERENCES, ReferenceParams
 from lsprotocol.types import (
@@ -95,6 +96,15 @@ from lsprotocol.types import (
     CodeActionKind,
     WorkspaceEdit,
 )
+from lsprotocol.types import (
+    TEXT_DOCUMENT_INLAY_HINT,
+    InlayHintParams,
+    InlayHint,
+)
+from lsprotocol.types import WORKSPACE_INLAY_HINT_REFRESH
+
+import argparse
+import configargparse
 
 
 def decl_kind(decl: chapel.NamedDecl) -> Optional[SymbolKind]:
@@ -166,10 +176,13 @@ def completion_item_for_decl(
     )
 
 
+def location_to_location(loc) -> Location:
+    return Location("file://" + loc.path(), location_to_range(loc))
+
 def get_symbol_information(
-    decl: chapel.NamedDecl, uri: str
+    decl: chapel.NamedDecl
 ) -> Optional[SymbolInformation]:
-    loc = Location(uri, location_to_range(decl.location()))
+    loc = location_to_location(decl.location())
     kind = decl_kind(decl)
     if kind:
         # TODO: should we use DocumentSymbol or SymbolInformation? LSP spec says
@@ -331,9 +344,7 @@ class FileInfo:
         with self.context.context.track_errors() as _:
             return self.parse_file()
 
-    def _note_reference(
-        self, node: Union[chapel.Dot, chapel.Identifier]
-    ):
+    def _note_reference(self, node: Union[chapel.Dot, chapel.Identifier]):
         """
         Given a node that can refer to another node, note what it refers
         to in by updating the 'use' segment table and the list of uses.
@@ -412,6 +423,28 @@ class FileInfo:
         """lookup a def segment based upon a Position, likely a user mouse location"""
         return self.def_segments.find(position)
 
+    def get_use_or_def_segment_at_position(
+        self, position: Position
+    ) -> Optional[NodeAndRange]:
+        """
+        Retrieve the definition or reference to a definition at the given position.
+        This method is intended for LSP queries that ask for some property
+        of a definition: its type, references to it, etc. However, it is
+        convenient to be able to "find references" and "go to type definition"
+        from references to a definition too. Thus, this method returns
+        a definition when it can, and falls back to references otherwise.
+        """
+
+        segment = self.get_def_segment_at_position(position)
+        if segment:
+            return segment
+        else:
+            segment = self.get_use_segment_at_position(position)
+            if segment:
+                return segment.resolved_to
+
+        return None
+
 
 class WorkspaceConfig:
     def __init__(self, ls: "ChapelLanguageServer", json: Dict[str, Any]):
@@ -422,7 +455,7 @@ class WorkspaceConfig:
 
             if not isinstance(compile_commands, list):
                 ls.show_message(
-                    "invalid .cls-info.json file", MessageType.Error
+                    "invalid .cls-commands.json file", MessageType.Error
                 )
                 continue
 
@@ -432,7 +465,7 @@ class WorkspaceConfig:
             # at least one compile command.
             if len(compile_commands) == 0:
                 ls.show_message(
-                    ".cls-info.json file contains invalid file commands",
+                    ".cls-commands.json file contains invalid file commands",
                     MessageType.Error,
                 )
                 continue
@@ -454,12 +487,17 @@ class WorkspaceConfig:
 
 
 class ChapelLanguageServer(LanguageServer):
-    def __init__(self):
+    def __init__(self, config: argparse.Namespace):
         super().__init__("chpl-language-server", "v0.1")
 
         self.contexts: Dict[str, ContextContainer] = {}
         self.file_infos: Dict[str, FileInfo] = {}
         self.configurations: Dict[str, WorkspaceConfig] = {}
+
+        self.use_resolver: bool = config.resolver
+        self.type_inlays: bool = config.type_inlays
+        self.literal_arg_inlays: bool = config.literal_arg_inlays
+        self.param_inlays: bool = config.param_inlays
 
         self._setup_regexes()
 
@@ -475,7 +513,9 @@ class ChapelLanguageServer(LanguageServer):
         # use pat2 first since it is more specific
         self._find_rename_deprecation_regex = re.compile(f"({pat2})|({pat1})")
 
-    def get_deprecation_replacement(self, text: str) -> Tuple[Optional[str], Optional[str]]:
+    def get_deprecation_replacement(
+        self, text: str
+    ) -> Tuple[Optional[str], Optional[str]]:
         """
         Given a deprecation warning message, return the string to replace the deprecation with if possible
         """
@@ -485,7 +525,7 @@ class ChapelLanguageServer(LanguageServer):
             replacement = m.group("replace1") or m.group("replace2")
             original = None
             if m.group("original1"):
-                original =  m.group("original1")
+                original = m.group("original1")
             return (original, replacement)
 
         return (None, None)
@@ -580,7 +620,7 @@ class ChapelLanguageServer(LanguageServer):
             return "\n".join(lines)
 
     def register_workspace(self, uri: str):
-        path = os.path.join(uri[len("file://") :], ".cls-info.json")
+        path = os.path.join(uri[len("file://") :], ".cls-commands.json")
         config = WorkspaceConfig.from_file(self, path)
         if config:
             self.configurations[uri] = config
@@ -589,12 +629,119 @@ class ChapelLanguageServer(LanguageServer):
         if uri in self.configurations:
             del self.configurations[uri]
 
+    def _get_param_inlays(
+        self, decl: NodeAndRange, qt: chapel.QualifiedType
+    ) -> List[InlayHint]:
+        if not self.param_inlays:
+            return []
+
+        _, _, param = qt
+        if not param:
+            return []
+
+        return [
+            InlayHint(
+                position=decl.rng.end,
+                label="param value is " + str(param),
+                padding_left=True,
+            )
+        ]
+
+    def _get_type_inlays(
+        self, decl: NodeAndRange, qt: chapel.QualifiedType
+    ) -> List[InlayHint]:
+        if not self.type_inlays:
+            return []
+
+        # Only show type hints for variable declarations that don't have
+        # an explicit type, and whose type is valid.
+        _, type_, _ = qt
+        if (
+            not isinstance(decl.node, chapel.Variable)
+            or decl.node.type_expression() is not None
+            or isinstance(type_, chapel.ErroneousType)
+        ):
+            return []
+
+        name_rng = location_to_range(decl.node.name_location())
+        type_str = ": " + str(type_)
+        return [
+            InlayHint(
+                position=name_rng.end,
+                label=type_str,
+                text_edits=[
+                    TextEdit(Range(name_rng.end, name_rng.end), type_str)
+                ],
+            )
+        ]
+
+    def get_decl_inlays(self, decl: NodeAndRange) -> List[InlayHint]:
+        if not self.use_resolver:
+            return []
+
+        qt = decl.node.type()
+        if qt is None:
+            return []
+
+        inlays = []
+        inlays.extend(self._get_param_inlays(decl, qt))
+        inlays.extend(self._get_type_inlays(decl, qt))
+        return inlays
+
+    def get_call_inlays(self, call: chapel.FnCall) -> List[InlayHint]:
+        if not self.literal_arg_inlays or not self.use_resolver:
+            return []
+
+        fn = call.called_fn()
+        if not fn or not isinstance(fn, chapel.core.Function):
+            return []
+
+        inlays = []
+        for i, act in zip(call.formal_actual_mapping(), call.actuals()):
+            if not isinstance(act, chapel.core.AstNode):
+                # Named arguments are represented using (name, node)
+                # tuples. We don't need hints for those.
+                continue
+
+            if not isinstance(act, chapel.core.Literal):
+                # Only show named arguments for literals.
+                continue
+
+            fml = fn.formal(i)
+            if not isinstance(fml, chapel.core.Formal):
+                continue
+
+            begin = location_to_range(act.location()).start
+            inlays.append(
+                InlayHint(
+                    position=begin,
+                    label=fml.name() + " = ",
+                )
+            )
+
+        return inlays
+
 
 def run_lsp():
     """
     Start a language server on the standard input/output
     """
-    server = ChapelLanguageServer()
+    parser = configargparse.ArgParser(
+        default_config_files=[], # Empty for now because cwd() is odd with VSCode etc.
+        config_file_parser_class=configargparse.YAMLConfigFileParser,
+    )
+
+    def add_bool_flag(name: str, dest: str, default: bool):
+        parser.add_argument(f'--{name}', dest=dest, action='store_true')
+        parser.add_argument(f'--no-{name}', dest=dest, action='store_false')
+        parser.set_defaults(**{dest: default})
+
+    add_bool_flag('resolver', 'resolver', False)
+    add_bool_flag('type-inlays', 'type_inlays', True)
+    add_bool_flag('param-inlays', 'param_inlays', True)
+    add_bool_flag('literal-arg-inlays', 'literal_arg_inlays', True)
+
+    server = ChapelLanguageServer(parser.parse_args())
 
     # The following functions are handlers for LSP events received by the server.
 
@@ -628,6 +775,7 @@ def run_lsp():
         text_doc = ls.workspace.get_text_document(params.text_document.uri)
         diag = ls.build_diagnostics(text_doc.uri)
         ls.publish_diagnostics(text_doc.uri, diag)
+        ls.lsp.send_request_async(WORKSPACE_INLAY_HINT_REFRESH)
 
     @server.feature(TEXT_DOCUMENT_DECLARATION)
     @server.feature(TEXT_DOCUMENT_DEFINITION)
@@ -649,19 +797,7 @@ def run_lsp():
 
         fi, _ = ls.get_file_info(text_doc.uri)
 
-        node_and_loc = None
-        # First, search definitions. If the cursor is over a declaration,
-        # that's what we're looking for.
-        segment = fi.get_def_segment_at_position(params.position)
-        if segment:
-            node_and_loc = segment
-        else:
-            # Also search identifiers. If the cursor is over a reference,
-            # we might as well try find all the other references.
-            segment = fi.get_use_segment_at_position(params.position)
-            if segment:
-                node_and_loc = segment.resolved_to
-
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
         if not node_and_loc:
             return None
 
@@ -670,6 +806,32 @@ def run_lsp():
             locations.append(use.get_location())
 
         return locations
+
+    @server.feature(TEXT_DOCUMENT_TYPE_DEFINITION)
+    async def get_type_def(
+        ls: ChapelLanguageServer, params: TypeDefinitionParams
+    ):
+        if not ls.use_resolver:
+            return None
+
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        node_and_loc = fi.get_use_or_def_segment_at_position(params.position)
+        if not node_and_loc:
+            return None
+
+        qt = node_and_loc.node.type()
+        if qt is None:
+            return None
+
+        _, type_, _ = qt
+        if not isinstance(type_, chapel.CompositeType):
+            return None
+
+        decl = type_.decl()
+        return location_to_location(decl.location())
 
     @server.feature(TEXT_DOCUMENT_DOCUMENT_SYMBOL)
     async def get_sym(ls: ChapelLanguageServer, params: DocumentSymbolParams):
@@ -691,7 +853,7 @@ def run_lsp():
             chapel.NamedDecl,
             iterator=preorder_ignore_funcs,
         ):
-            si = get_symbol_information(node, text_doc.uri)
+            si = get_symbol_information(node)
             if si:
                 syms.append(si)
 
@@ -748,7 +910,9 @@ def run_lsp():
                     original = full_text
                 to_replace = full_text.replace(original, replacement)
                 te = TextEdit(d.range, to_replace)
-                msg = f"Resolve Deprecation: replace {original} with {to_replace}"
+                msg = (
+                    f"Resolve Deprecation: replace {original} with {to_replace}"
+                )
                 diagnostics_used.append(d)
                 edits_to_make.append(te)
                 ca = CodeAction(
@@ -771,6 +935,38 @@ def run_lsp():
             )
 
         return actions
+
+    @server.feature(TEXT_DOCUMENT_INLAY_HINT)
+    async def inlay_hint(ls: ChapelLanguageServer, params: InlayHintParams):
+        # The get_decl_inlays and get_call_inlays methods also check
+        # and return early if the resolver is not being used, but for
+        # the time being all hints are resolver-based, so we may
+        # as well save ourselves the work of finding declarations and
+        # calls to feed to those methods.
+        if not ls.use_resolver:
+            return None
+
+        text_doc = ls.workspace.get_text_document(params.text_document.uri)
+
+        fi, _ = ls.get_file_info(text_doc.uri)
+
+        decls = fi.def_segments.range(params.range)
+        calls = list(
+            call
+            for call, _ in chapel.each_matching(
+                fi.get_asts(), chapel.core.FnCall
+            )
+        )
+
+        inlays: List[InlayHint] = []
+        with fi.context.context.track_errors() as _:
+            for decl in decls:
+                inlays.extend(ls.get_decl_inlays(decl))
+
+            for call in calls:
+                inlays.extend(ls.get_call_inlays(call))
+
+        return inlays
 
     server.start_io()
 

@@ -199,8 +199,13 @@ def get_AstNode_header() -> str:
         ),
         _wrap_method(
             "type",
-            rettype="typing.Tuple[str, typing.Optional[ChapelType], typing.Optional[Param]]",
+            rettype="typing.Optional[typing.Tuple[str, typing.Optional[ChapelType], typing.Optional[Param]]]",
             docstring="Get the type for this AST node, as a tuple of (kind, type, param value)",
+        ),
+        _wrap_method(
+            "called_fn",
+            rettype="typing.Optional[Function]",
+            docstring="Get the function called by this node, if any",
         ),
         _wrap_method(
             "parent",

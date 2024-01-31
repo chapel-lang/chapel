@@ -83,16 +83,17 @@ void setupAstNodeType();
 
 int AstNodeObject_init(AstNodeObject* self, PyObject* args, PyObject* kwargs);
 void AstNodeObject_dealloc(AstNodeObject* self);
-PyObject* AstNodeObject_dump(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_tag(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_unique_id(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_attribute_group(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_pragmas(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
-PyObject* AstNodeObject_parent(AstNodeObject* self, PyObject *Py_UNUSED(ignored));
+PyObject* AstNodeObject_dump(AstNodeObject *self);
+PyObject* AstNodeObject_tag(AstNodeObject *self);
+PyObject* AstNodeObject_unique_id(AstNodeObject *self);
+PyObject* AstNodeObject_attribute_group(AstNodeObject *self);
+PyObject* AstNodeObject_pragmas(AstNodeObject *self);
+PyObject* AstNodeObject_parent(AstNodeObject* self);
 PyObject* AstNodeObject_iter(AstNodeObject *self);
 PyObject* AstNodeObject_location(AstNodeObject *self);
 PyObject* AstNodeObject_scope(AstNodeObject *self);
-PyObject* AstNodeObject_type(AstNodeObject *self, PyObject *Py_UNUSED(ignored));
+PyObject* AstNodeObject_type(AstNodeObject *self);
+PyObject* AstNodeObject_called_fn(AstNodeObject *self);
 
 typedef struct {
   PyObject_HEAD
