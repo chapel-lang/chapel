@@ -12,7 +12,7 @@ export CHPL_GPU=amd
 export CHPL_LAUNCHER_PARTITION=amdMI60
 export CHPL_GPU_ARCH=gfx906
 export CHPL_COMM=none
-export CHPL_LLVM=bundled
+export CHPL_LLVM=system
 export CHPL_NIGHTLY_TEST_CONFIG_NAME="perf.gpu-rocm"
 
 export CHPL_TEST_PERF_CONFIG_NAME="1-node-mi60"
