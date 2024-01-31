@@ -1,7 +1,7 @@
 // run it with
 //  cd sort-random-rust
-//  cargo build --release
-//  target/release/sort-random-rust
+//  cargo run --release
+
 use rand::distributions::Standard;
 use rand::prelude::*;
 use std::time::Instant;
