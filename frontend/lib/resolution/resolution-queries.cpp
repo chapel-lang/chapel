@@ -3152,6 +3152,43 @@ static void helpComputeForwardingTo(const CallInfo& fci,
 // preference.
 struct LastResortCandidateGroups {
   LastResortCandidateGroups() = default;
+  LastResortCandidateGroups(LastResortCandidateGroups&&) = default;
+  ~LastResortCandidateGroups() = default;
+
+  // Combine another set of groups into this one.
+  // For use with candidates from multiple potential forwarding types.
+  void mergeWithGroups(LastResortCandidateGroups&& other) {
+    // merge non-poi candidate group
+    if (nonPoi) {
+      nonPoi->insert(nonPoi->end(), other.nonPoiCandidates().begin(),
+                     other.nonPoiCandidates().end());
+    } else {
+      nonPoi = other.nonPoiCandidates();
+    }
+
+    // merge poi candidate groups at corresponding indexes
+    for (size_t i = 0; i < std::max(this->numPoiGroups(), other.numPoiGroups());
+         i++) {
+      if (i < this->numPoiGroups() && i < other.numPoiGroups()) {
+        // both have a poi candidates group at this index
+        this->poi[i].insert(this->poi[i].end(), other.poi[i].begin(),
+                            other.poi[i].end());
+      } else if (i < this->numPoiGroups()) {
+        // only this one has a group here, nothing to do
+      } else {
+        // only the other has a group
+        this->poi.push_back(other.poi[i]);
+      }
+    }
+
+    // recurse into other's forwarding groups
+    if (forwardingCandidateGroups) {
+      forwardingCandidateGroups->mergeWithGroups(
+          std::move(*other.forwardingCandidateGroups));
+    } else {
+      forwardingCandidateGroups = std::move(other.forwardingCandidateGroups);
+    }
+  }
 
   LastResortCandidateGroups* getForwardingGroups() {
     if (!forwardingCandidateGroups) {
@@ -3397,6 +3434,7 @@ gatherAndFilterCandidatesForwarding(Context* context,
     // This supports the forwarding-to-forwarding case.
     if (nonPoiCandidates.empty() && poiCandidates.empty()) {
       for (const auto& fci : forwardingCis) {
+        LastResortCandidateGroups thisForwardingLrcGroups;
         if (fci.isMethodCall() && fci.numActuals() >= 1) {
           const Type* receiverType = fci.actual(0).type().type();
           if (typeUsesForwarding(context, receiverType)) {
@@ -3406,10 +3444,12 @@ gatherAndFilterCandidatesForwarding(Context* context,
                                                 poiCandidates,
                                                 nonPoiForwardingTo,
                                                 poiForwardingTo,
-                                                *lrcGroups.getForwardingGroups(),
+                                                thisForwardingLrcGroups,
                                                 lrcForwardingTo);
           }
         }
+        lrcGroups.getForwardingGroups()->mergeWithGroups(
+            std::move(thisForwardingLrcGroups));
       }
     }
   }
