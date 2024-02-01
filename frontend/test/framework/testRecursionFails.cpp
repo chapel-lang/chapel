@@ -34,12 +34,14 @@ static const UniqueString& recursiveQuery(Context* context, UniqueString arg) {
   return QUERY_END(result);
 }
 
-int main() {
+static void test0() {
   Context ctx;
   Context* context = &ctx;
 
   auto s = UniqueString::get(context, "Nice To See You Again World, Hello");
   recursiveQuery(context, s);
+}
 
-  return 0;
+int main() {
+  test0();
 }

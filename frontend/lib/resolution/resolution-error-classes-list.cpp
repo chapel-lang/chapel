@@ -1021,6 +1021,12 @@ static bool firstIdFromDecls(
   return false;
 }
 
+void ErrorRecursion::write(ErrorWriterBase& wr) const {
+  auto queryName = std::get<UniqueString>(info);
+  wr.heading(kind_, type_, ID(),
+             "recursion detected in query '", queryName.c_str(), "'");
+}
+
 void ErrorRedefinition::write(ErrorWriterBase& wr) const {
   auto scopeId = std::get<ID>(info);
   auto name = std::get<UniqueString>(info);
