@@ -2382,9 +2382,13 @@ module TwoArrayPartitioning {
   // (e.g. sorted by the next digit in radix sort)
   // Counts per bin are stored in state.counts. Other data in
   // state is used locally by this routine or used elsewhere
+  // If allowSkipahead=true, and the count determines everything is
+  // in just one bin, startbit can be modified and the bucketize
+  // will reflect a later startbit.
   proc bucketize(start_n: int, end_n: int, ref dst:[], src:[],
                  ref state: TwoArrayBucketizerSharedState,
-                 criterion, inout startbit:int) {
+                 criterion, inout startbit:int,
+                 allowSkipahead=false) {
 
     if debug then
       writeln("bucketize ", start_n..end_n, " startbit=", startbit);
@@ -2441,7 +2445,7 @@ module TwoArrayPartitioning {
       counts[bin] = total;
     }
 
-    if !state.bucketizer.isSampleSort {
+    if !state.bucketizer.isSampleSort && allowSkipahead {
       // If the data parts we gathered all have the same leading bits,
       // we can skip ahead immediately to the next count step.
       //
@@ -2481,7 +2485,8 @@ module TwoArrayPartitioning {
           return;
 
         // start over with the new start bit
-        bucketize(start_n, end_n, dst, src, state, criterion, startbit);
+        bucketize(start_n, end_n, dst, src, state, criterion,
+                  startbit, allowSkipahead=true);
         return; // note: startbit is inout so will change at call site
       }
     }
@@ -2540,7 +2545,8 @@ module TwoArrayPartitioning {
 
     var state = new TwoArrayBucketizerSharedState(bucketizer=bucketizer);
 
-    bucketize(start_n, end_n, dst, src, state, criterion, startbit);
+    var myStartBit = startbit;
+    bucketize(start_n, end_n, dst, src, state, criterion, myStartBit);
 
     return state.counts;
   }
@@ -2635,7 +2641,7 @@ module TwoArrayPartitioning {
 
         // Count and partition
         bucketize(task.start, taskEnd, Scratch, A, state,
-                  criterion, taskStartBit);
+                  criterion, taskStartBit, allowSkipahead=true);
         // bucketized data now in Scratch
         if debug {
           writef("pb %i %i Scratch=%?\n", task.start, taskEnd, Scratch[task.start..taskEnd]);
@@ -2647,7 +2653,7 @@ module TwoArrayPartitioning {
 
         // Count and partition
         bucketize(task.start, taskEnd, A, Scratch, state,
-                  criterion, taskStartBit);
+                  criterion, taskStartBit, allowSkipahead=true);
         // bucketized data now in A
         if debug {
           writef("pb %i %i A=%?\n", task.start, taskEnd, A[task.start..taskEnd]);
@@ -3126,6 +3132,7 @@ module TwoArrayDistributedPartitioning {
           // This uses perLocale[tid].compat.
           const taskStart = task.start;
           const taskEnd = task.start + task.size - 1;
+          var taskStartBit = task.startbit;
 
           const localDomain = A.localSubdomain()[task.start..taskEnd];
           ref localSrc = A.localSlice(localDomain);
@@ -3137,7 +3144,7 @@ module TwoArrayDistributedPartitioning {
           bucketize(localDomain.low,
                     localDomain.high,
                     localDst, localSrc,
-                    state.perLocale[tid].compat, criterion, task.startbit);
+                    state.perLocale[tid].compat, criterion, taskStartBit);
 
           ref localCounts = state.perLocale[tid].compat.counts;
 
